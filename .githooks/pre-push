@@ -1,0 +1,27 @@
+#!/bin/sh
+# .githooks/pre-push
+#
+# Runs the SAIRN push gate on the GIT OPERATION rather than on the text of the
+# command that happened to trigger it.
+#
+# WHY THIS EXISTS. tools/sairn_push_gate_hook.py was reachable only as a Claude
+# Code PreToolUse hook keyed on a Bash command matching \bgit\s+push\b.
+# tools/sairn_claim.py pushes with subprocess.run(['git','push',...]) from
+# Python, so no such command text ever existed and every claim/release call
+# skipped all three checks. On 2026-09-01 the gate denied a sql/-touching
+# commit, and `sairn_claim.py claim` pushed that same commit to origin minutes
+# later. The gate was not overridden. It was never asked.
+#
+# git invokes this hook for EVERY push -- Bash, a Python subprocess, an IDE, a
+# script that does not exist yet. That is the property the regex never had.
+#
+# INSTALL (per clone, once):  python tools/install_git_hooks.py
+# It is not automatic: .git/ is not versioned, so a fresh clone has no hooks
+# until someone points core.hooksPath at this directory.
+#
+# Fails OPEN on any internal error, same standard as the other hooks: a gate
+# that crashes closed gets disabled, and then protects nothing.
+# Override deliberately with SAIRN_SEED_GATE=off, and say so out loud.
+
+command -v python >/dev/null 2>&1 && PY=python || PY=python3
+exec "$PY" "$(git rev-parse --show-toplevel)/tools/sairn_push_gate_hook.py" --pre-push

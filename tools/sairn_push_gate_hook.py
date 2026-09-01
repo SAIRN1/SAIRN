@@ -93,7 +93,37 @@ SEED_PATTERNS = [
 ]
 
 
+# ── TWO ENTRY POINTS, ONE SET OF CHECKS -- added 2026-09-01 ────────────────
+# This file used to be reachable ONE way: as a Claude Code PreToolUse hook that
+# fires when the Bash COMMAND TEXT matches \bgit\s+push\b. That is a gate on
+# how a push was spelled, not on the push.
+#
+# tools/sairn_claim.py pushes with subprocess.run(['git','push','origin',
+# 'HEAD:main']) from inside Python. No Bash command text ever contains "git
+# push", the regex never matches, and EVERY claim and release call sent
+# whatever commits were sitting on the branch straight past all three checks.
+#
+# That was not theoretical. On 2026-09-01 this gate DENIED a commit touching
+# sql/ for a missing schema snapshot, and minutes later `sairn_claim.py claim`
+# pushed the identical commit to origin, unchecked. The gate was not overridden
+# and did not fail -- it was simply never asked.
+#
+# So the checks now also run as a git PRE-PUSH hook, which git invokes for any
+# push from any caller: Bash, a Python subprocess, an IDE, a script nobody has
+# written yet. `--pre-push` selects that mode; the check bodies are identical
+# and are deliberately NOT duplicated, because two copies of a gate is how one
+# of them silently goes stale.
+MODE = 'pretooluse'
+
+
 def deny(reason):
+    if MODE == 'prepush':
+        # Non-zero from a pre-push hook aborts the push itself. stderr, because
+        # git relays it to whoever ran the push -- including a subprocess caller
+        # that only ever looks at returncode and stderr.
+        sys.stderr.write('\n' + reason + '\n\n')
+        sys.stderr.write('(blocked by .githooks/pre-push -> tools/sairn_push_gate_hook.py --pre-push)\n')
+        sys.exit(1)
     print(json.dumps({
         "hookSpecificOutput": {
             "hookEventName": "PreToolUse",
@@ -110,7 +140,7 @@ def git(repo, *args):
     return out.stdout if out.returncode == 0 else ''
 
 
-def outgoing_files(repo):
+def outgoing_files(repo, base=None):
     """Files changed by the commits this push would actually send.
 
     Falls back through three references rather than assuming an upstream is
@@ -118,19 +148,51 @@ def outgoing_files(repo):
     and HEAD~1 is a last resort that at least sees the newest commit. Returning
     an EMPTY list means 'no seed touched', so a wrong answer here fails open --
     which is why the fallbacks get progressively wider rather than narrower.
+
+    `base` is the remote sha git hands a PRE-PUSH hook on stdin. It is strictly
+    better than origin/main when present, because it is what the REMOTE has
+    right now rather than what this clone last fetched -- the same stale-ref
+    trap that made the deploy-drift hook false-alarm three times in one night.
     """
-    for ref in ('@{u}', 'origin/main'):
+    refs = ([base] if base else []) + ['@{u}', 'origin/main']
+    for ref in refs:
         out = git(repo, 'log', ref + '..HEAD', '--name-only', '--pretty=format:')
         if out.strip():
             return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
     return []
 
 
+def prepush_base():
+    """Remote sha for the ref being pushed, read from git's pre-push stdin.
+
+    Format per `git help hooks`: '<local ref> <local sha> <remote ref> <remote
+    sha>' per line. An all-zero remote sha means a brand-new branch, which has
+    no base -- return None and let the caller fall back rather than diffing
+    against a sha that does not exist.
+    """
+    try:
+        data = sys.stdin.read()
+    except Exception:
+        return None
+    for line in data.splitlines():
+        parts = line.split()
+        if len(parts) == 4 and set(parts[3]) != {'0'}:
+            return parts[3]
+    return None
+
+
 def main():
-    payload = json.load(sys.stdin)
-    cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
-    if not re.search(r'\bgit\s+push\b', cmd):
-        sys.exit(0)
+    base = None
+    if MODE == 'prepush':
+        # git already decided a push is happening. There is no command text to
+        # match and nothing to opt out of -- that is the entire point of this
+        # entry point existing.
+        base = prepush_base()
+    else:
+        payload = json.load(sys.stdin)
+        cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
+        if not re.search(r'\bgit\s+push\b', cmd):
+            sys.exit(0)
 
     repo = git(os.getcwd(), 'rev-parse', '--show-toplevel').strip()
     if not repo or not os.path.isdir(os.path.join(repo, 'sql')):
@@ -141,7 +203,7 @@ def main():
         sys.exit(0)
 
     # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
-    changed = outgoing_files(repo)
+    changed = outgoing_files(repo, base)
     sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
     if sql_changed:
         gcheck = os.path.join(repo, 'tools', 'employee_auth_guard_check.py')
@@ -302,6 +364,16 @@ def main():
         ]
         deny("\n".join(lines))
 
+    if untold and MODE == 'prepush':
+        # Same "could not tell is not a pass" rule, said where a pre-push caller
+        # will actually see it. Allowed, but never silently.
+        sys.stderr.write(
+            "\nSeed-load gate COULD NOT TELL for: "
+            + "; ".join("%s (%s)" % (a, why) for a, why in untold)
+            + ".\nThe push is allowed because a missing licence key must not block a legitimate\n"
+              "push, but nothing was verified about that app's live rules.\n\n")
+        sys.exit(0)
+
     if untold:
         # Not a block. Not a pass either, and it says so rather than being silent.
         print(json.dumps({
@@ -321,9 +393,13 @@ def main():
 
 if __name__ == '__main__':
     try:
+        if '--pre-push' in sys.argv:
+            MODE = 'prepush'
         if os.environ.get('SAIRN_SEED_GATE', '').lower() == 'off':
             sys.exit(0)
         main()
     except Exception:
-        # Fail open -- never let a hook bug block a legitimate command.
+        # Fail open -- never let a hook bug block a legitimate command. Exit 0
+        # means "allow" in BOTH modes, so this is the same promise either way:
+        # a gate that crashes closed gets disabled, and then protects nothing.
         sys.exit(0)
