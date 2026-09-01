@@ -696,6 +696,7 @@
                 <button class="nav-btn" onclick="showPanel('eye')" data-tip="Optometry/Ophthalmology -- routine vs medical, refraction split, co-management modifiers">Optometry / Ophth</button>
                 <button class="nav-btn" onclick="showPanel('cos')" data-tip="Cosmetic/Reconstructive -- direct-pay vs insurance routing, evidence, mixed-session modifiers">Cosmetic / Recon</button>
                 <button class="nav-btn" onclick="showPanel('chiro')" data-tip="Chiropractic -- three covered codes, region count, AT modifier, P.A.R.T. exam, GA/GZ on maintenance, statutory exclusions">Chiropractic</button>
+                <button class="nav-btn" onclick="showPanel('esrd')" data-tip="Dialysis / ESRD -- MCP code by age and visit count, per-diem units, AY modifier and consolidated billing, monthly treatment limit">Dialysis / ESRD</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1503,6 +1504,100 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runChiroCheck()">Check Claim</button>
             </div>
             <div id="chiro-result"></div>
+        </div>
+
+        <!-- Dialysis / ESRD (2026-09-01). Policy from CMS Pub. 100-04 Ch. 8
+             Rev. 13740 (17 Apr 2026), read in full; CPT descriptors from the
+             California Medi-Cal provider manual, which reproduces them where
+             Chapter 8 never names a single 909xx MCP code.
+
+             THREE SEPARATE TOOLS RATHER THAN ONE FORM, the shape the Drug
+             Administration panel already proved: the MCP code, the AY /
+             consolidated-billing question, and the facility's monthly
+             treatment count are asked by different people about different
+             claims, and folding them into one submit button would demand
+             fifteen irrelevant fields to answer any one of them.
+
+             THE WASTE-MODIFIER HALF IS NOT REIMPLEMENTED HERE. It calls
+             evaluateJwJz() from the Drug Administration module, which already
+             carries the ESRD branch and its AY note. -->
+        <div id="panel-esrd" class="panel">
+            <h1 class="panel-title">Dialysis &amp; ESRD</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                Under the ESRD PPS one per-treatment payment covers supplies, equipment, drugs, labs,
+                training and support services, and consolidated billing <b>denies or rejects</b> another
+                provider's claim for the same item. <b>Bundled is the default and separate payment is the
+                exception</b> &mdash; which is what makes the AY modifier load-bearing rather than clerical.
+            </div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">1. Monthly Capitation Payment code</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                The code is fixed by the age at the <b>end of the month</b>, by where the patient dialysed, and
+                &mdash; centre-based only &mdash; by the number of qualifying face-to-face visits. Inpatient
+                visits never count; observation and SNF-resident visits do.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="esrd-codes" placeholder="Codes e.g. 90961" class="search-input" style="min-width:170px;">
+                <input type="number" id="esrd-age" placeholder="Age at end of month" class="search-input" style="max-width:185px;">
+                <select id="esrd-setting"><option value="">Where did the patient dialyse?</option><option value="center">Centre / facility only</option><option value="home">Home only</option><option value="both">Both during the month</option></select>
+                <input type="number" id="esrd-visits" placeholder="Qualifying face-to-face visits" class="search-input" style="max-width:225px;">
+                <input type="number" id="esrd-ipvisits" placeholder="Inpatient visits (not counted)" class="search-input" style="max-width:225px;">
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="esrd-perdiem"><option value="">Per-diem circumstance (90967-90970)&hellip;</option><option value="home_partial">Home dialysis, less than a full month</option><option value="transient">Transient patient travelling away from home</option><option value="partial_no_assess">Partial month, visits but no complete assessment</option><option value="permanent_mcp_change">Permanent change of MCP physician</option></select>
+                <input type="number" id="esrd-days" placeholder="Days responsible" class="search-input" style="max-width:160px;">
+                <input type="number" id="esrd-units" placeholder="Units billed" class="search-input" style="max-width:140px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-fullmonth"> Full calendar month</label>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="esrd-pos" placeholder="POS (for 90935/90937/90945/90947)" class="search-input" style="max-width:250px;">
+                <input type="text" id="esrd-mods" placeholder="Modifiers e.g. 25" class="search-input" style="max-width:170px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-sameday-em"> E/M furnished the same date</label>
+                <button class="btn btn-primary" onclick="runEsrdMcpCheck()">Check MCP Code</button>
+            </div>
+            <div id="esrd-mcp-result"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. Consolidated billing and the AY modifier</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Every drug on an ESRD claim without AY is treated as inside the bundle. AY is the only thing
+                that makes a non-ESRD item separately payable &mdash; and putting it on an ESRD-related item
+                misstates the claim in the other direction.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="esrd-related"><option value="">Is this item for the treatment of ESRD?</option><option value="yes">Yes &mdash; ESRD-related</option><option value="no">No &mdash; unrelated to ESRD</option></select>
+                <input type="text" id="esrd-cb-mods" placeholder="Modifiers e.g. AY" class="search-input" style="max-width:170px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-erlab"> Lab billed with an ER service</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-tdapa"> TDAPA drug</label>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="esrd-rev" placeholder="Revenue code" class="search-input" style="max-width:150px;">
+                <input type="date" id="esrd-dos" class="search-input" style="max-width:180px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-drugline"> This line is a drug</label>
+                <select id="esrd-container"><option value="">Container type&hellip;</option><option value="single">Single-dose container</option><option value="multi">Multiple-dose container</option></select>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="esrd-payable"><option value="">Separately payable under Part B?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <select id="esrd-vaccine"><option value="">Vaccine under 1861(s)(10)?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <select id="esrd-waste"><option value="">Any drug discarded?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <button class="btn btn-primary" onclick="runEsrdBillingCheck()">Check Line</button>
+            </div>
+            <div id="esrd-cb-result"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. Monthly treatment count</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Three payments a week &mdash; 13 in a 30-day month, 14 in a 31-day month. Beyond that a
+                treatment needs the contractor's medical justification, or modifier CG, which attests the
+                justification is <b>not</b> met and forgoes payment for that line.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="number" id="esrd-treatments" placeholder="Treatments billed" class="search-input" style="max-width:180px;">
+                <input type="number" id="esrd-daysinmonth" placeholder="Days in month" class="search-input" style="max-width:160px;">
+                <input type="text" id="esrd-tc-mods" placeholder="Modifiers e.g. CG" class="search-input" style="max-width:170px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-justified"> Medical justification submitted</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="esrd-training"> Training / retraining only</label>
+                <button class="btn btn-primary" onclick="runEsrdTreatmentCheck()">Check Count</button>
+            </div>
+            <div id="esrd-tc-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -7104,6 +7199,51 @@ How to answer:
             }));
         }
 
+        function scNumOrNull(id){
+            var v = document.getElementById(id).value;
+            return v === '' ? null : Number(v);
+        }
+        function runEsrdMcpCheck(){
+            scRenderCheckResult('esrd-mcp-result', scValidateEsrdMcp({
+                codes: scParseList(document.getElementById('esrd-codes').value),
+                age: scNumOrNull('esrd-age'),
+                setting: document.getElementById('esrd-setting').value,
+                outpatient_visits: scNumOrNull('esrd-visits'),
+                inpatient_visits: scNumOrNull('esrd-ipvisits'),
+                per_diem_reason: document.getElementById('esrd-perdiem').value,
+                days_responsible: scNumOrNull('esrd-days'),
+                per_day_units: scNumOrNull('esrd-units'),
+                full_month: document.getElementById('esrd-fullmonth').checked,
+                pos: document.getElementById('esrd-pos').value,
+                modifiers: scParseList(document.getElementById('esrd-mods').value),
+                same_day_em: document.getElementById('esrd-sameday-em').checked
+            }));
+        }
+        function runEsrdBillingCheck(){
+            scRenderCheckResult('esrd-cb-result', scValidateEsrdConsolidatedBilling({
+                esrd_related: document.getElementById('esrd-related').value,
+                modifiers: scParseList(document.getElementById('esrd-cb-mods').value),
+                er_lab: document.getElementById('esrd-erlab').checked,
+                tdapa: document.getElementById('esrd-tdapa').checked,
+                revenue_code: document.getElementById('esrd-rev').value,
+                dos: document.getElementById('esrd-dos').value,
+                drug_line: document.getElementById('esrd-drugline').checked,
+                container: document.getElementById('esrd-container').value,
+                separately_payable: document.getElementById('esrd-payable').value,
+                is_vaccine: document.getElementById('esrd-vaccine').value,
+                had_waste: document.getElementById('esrd-waste').value
+            }));
+        }
+        function runEsrdTreatmentCheck(){
+            scRenderCheckResult('esrd-tc-result', scValidateEsrdTreatmentCount({
+                treatments_billed: scNumOrNull('esrd-treatments'),
+                days_in_month: scNumOrNull('esrd-daysinmonth'),
+                modifiers: scParseList(document.getElementById('esrd-tc-mods').value),
+                medical_justification: document.getElementById('esrd-justified').checked,
+                training_only: document.getElementById('esrd-training').checked
+            }));
+        }
+
         function runChiroCheck(){
             var abn = document.getElementById('chiro-abn').value;
             var xd  = document.getElementById('chiro-xraydays').value;
@@ -8262,6 +8402,421 @@ How to answer:
 
             return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length,
                      regions: normRegions, cmt_codes: cmt };
+        }
+
+        // ================================================================
+        // DIALYSIS / ESRD MODULE (2026-09-01).
+        //
+        // Policy read in full from CMS Pub. 100-04, Medicare Claims
+        // Processing Manual, Chapter 8 (Outpatient ESRD Hospital, Independent
+        // Facility, and Physician/Supplier Claims), Rev. 13740, issued
+        // 17 April 2026 -- the current revision, downloaded and read, not
+        // summarised from a billing article. The CPT descriptors that fix
+        // each code's age band and visit count come from the California
+        // Medi-Cal provider manual's Dialysis: End Stage Renal Disease
+        // Services section, a government publication that reproduces them in
+        // full; Chapter 8 states the POLICY without ever naming 90951-90970.
+        //
+        // DELIBERATELY REUSES THE DRUG ADMINISTRATION MODULE RATHER THAN
+        // RESTATING IT. evaluateJwJz() already carries an 'esrd' setting and
+        // the AY note that goes with it, and calcDrugBillingUnits() already
+        // does the unit arithmetic. This module calls the first and points at
+        // the second. A second copy of either would drift from it silently --
+        // the JW/JZ policy in particular has moved twice already (JW from
+        // 1 Jan 2017, JZ from 1 Jul 2023, unprocessable returns from
+        // 1 Oct 2023) and one copy is hard enough to keep current.
+        //
+        // THE THING THAT MAKES ESRD DIFFERENT: PAYMENT IS BUNDLED BY DEFAULT
+        // AND SEPARATE PAYMENT IS THE EXCEPTION. Under the ESRD PPS a single
+        // per-treatment payment covers supplies, equipment, drugs, biologicals,
+        // laboratory tests, training and support services, and consolidated
+        // billing edits DENY OR REJECT other providers' claims for the same
+        // items. So the AY modifier is not a formality -- it is the only thing
+        // that distinguishes a separately payable non-ESRD item from one the
+        // facility has already been paid for.
+        // ================================================================
+        var SC_ESRD_SOURCES = {
+            bundle:      'CMS Pub. 100-04, Medicare Claims Processing Manual, Ch. 8 sec. 10 (Rev. 13740, issued 17 Apr 2026) -- the ESRD PPS "provides a single payment to ESRD facilities that will cover all of the resources used in furnishing an outpatient dialysis treatment, including supplies and equipment used to administer dialysis (in the ESRD facility or at a patient\'s home), drugs, biologicals, laboratory tests, training, and support services." Consolidated billing edits "will deny or reject claims to other providers and suppliers billing for ESRD related labs, drugs and supplies"',
+            ay:          'CMS Pub. 100-04, Ch. 8 sec. 50.1 -- where a facility reports an item "that was not related to the treatment of ESRD, they must include the modifier AY to indicate the item or service is not for the treatment of ESRD." Sec. 20 outlier guidance confirms the other direction: every drug reported on the ESRD claim WITHOUT an AY modifier is treated as included in the bundle',
+            ay_er:       'CMS Pub. 100-04, Ch. 8 sec. 50.1.1 -- for dates of service on or after 1 January 2012 the consolidated billing edit for laboratory services is bypassed when billed in conjunction with an emergency room service on a hospital outpatient claim, and the AY modifier is not necessary',
+            tdapa:       'CMS Pub. 100-04, Ch. 8 sec. 20 -- a drug paid under the Transitional Drug Add-on Payment Adjustment "is not considered an outlier service, is not separately payable with the AY modifier and does not apply to acute kidney injury claims (AKI)." TDAPA drugs must be billed with revenue code 0636 and, for dates of service before 1 July 2026, modifier AX must be appended to the HCPCS',
+            treatments:  'CMS Pub. 100-04, Ch. 8 sec. 10.1 -- the policy allows 3 PPS payments per week: "for a 30-day month, payment is limited to 13 treatments, and for a 31-day month, payment is limited to 14 treatments, with exceptions made for medical justification." Additional treatments furnished without meeting the medical-justification requirement must carry modifier CG, which attests the treatment does not meet it, and are not paid',
+            training_ex: 'CMS Pub. 100-04, Ch. 8 sec. 10.1 -- the monthly treatment limit "does not apply for training and retraining treatments billed within the allowable limits"',
+            mcp_once:    'CMS Pub. 100-04, Ch. 8 sec. 140 and 140.4 -- "The MCP is reported once per month," and contractors must assure that "Only one monthly payment is made for any renal disease patient per month" and that duplicate charges billed as a duplicate MCP are denied. Where several physicians form a team, only one monthly payment is made for each patient',
+            mcp_center:  'CMS Pub. 100-04, Ch. 8 sec. 140.1 -- for centre-based patients "separate codes are billed for providing one visit per month, two to three visits per month and four or more visits per month." CPT descriptors (California Medi-Cal provider manual, Dialysis: ESRD Services): 90951/90954/90957/90960 four or more visits; 90952/90955/90958/90961 two to three; 90953/90956/90959/90962 one, for ages under 2, 2 thru 11, 12 thru 19 and 20 and older respectively',
+            mcp_home:    'CMS Pub. 100-04, Ch. 8 sec. 140 and 140.1.1 -- physicians managing patients who dialyse at home "are paid a single monthly rate based on the age of the ESRD beneficiary, regardless of the number of face-to-face physician or practitioner visits," but the MCP physician "must furnish at least one face-to-face patient visit per month," a requirement contractors may waive case by case. CPT: 90963 under 2, 90964 2 thru 11, 90965 12 thru 19, 90966 20 and older, per full month',
+            mcp_age:     'CMS Pub. 100-04, Ch. 8 sec. 140.1.b -- "The beneficiary\'s age at the end of the month is the age of the patient for determining the appropriate age related ESRD-related services code"',
+            mcp_month:   'CMS Pub. 100-04, Ch. 8 sec. 140.1.a -- "month" means a CALENDAR month; the first month runs from the date dialysis treatments begin through the end of that calendar month',
+            per_diem:    'CMS Pub. 100-04, Ch. 8 sec. 140.2 -- per-diem ESRD-related services codes are for four circumstances only: home dialysis patients for less than a full month; transient patients travelling away from home; a partial month with one or more face-to-face visits but no complete assessment where the patient was hospitalised before it, died, or had a transplant; and a permanent change of MCP physician during the month. "The per diem codes may not be used for a full month when a complete monthly assessment is not furnished." CPT: 90967 under 2, 90968 2 thru 11, 90969 12 thru 19, 90970 20 and older, per day',
+            per_diem_u:  'CMS Pub. 100-04, Ch. 8 sec. 140.2.1.A -- the physician "should specify the number of days he or she was responsible for the beneficiary\'s outpatient ESRD-related services during the month." Worked example: a home dialysis patient dialysing at home for two weeks and hospitalised for the rest of the month is billed 14 units of the age-appropriate per-day code, and the MCP service is not billed',
+            one_or_other:'CMS Pub. 100-04, Ch. 8 sec. 140.2.1.A -- "Only one code should be used to report the daily management of home dialysis patients, transient patients, and for partial month scenarios." Sec. 170.A states the same rule for the predecessor code set: a physician "may bill either the monthly code or the daily code, but not both"',
+            modality:    'CMS Pub. 100-04, Ch. 8 sec. 140.1.2 -- where a home dialysis patient receives dialysis in a centre or other outpatient facility during the month, the MCP physician "is paid the management fee for the home dialysis patient and cannot bill the ESRD-related services codes for managing center based patients," and this holds "regardless of whether the ESRD beneficiary went from home dialysis to center-based dialysis, or vice versa, and regardless of the proportion of the month"',
+            visits_who:  'CMS Pub. 100-04, Ch. 8 sec. 140.1.c -- qualifying visits "must be furnished face-to-face by a physician, clinical nurse specialist, nurse practitioner, or physician\'s assistant." Visits to patients in hospital OBSERVATION status and visits to beneficiaries RESIDING IN A SNF are counted; "Inpatient visits are not counted for purposes of the MCP service"',
+            inpatient:   'CMS Pub. 100-04, Ch. 8 sec. 170 -- A/B MACs make payment on the basis of 90935, 90937, 90945 or 90947 "only if the place of service on the claim is inpatient hospital. This is because all physicians\' outpatient renal-related services are included in payment made under the monthly capitation payment"',
+            inpatient_em:'CMS Pub. 100-04, Ch. 8 sec. 170.B -- 90935, 90937, 90945 and 90947 "include payment for any evaluation and management services related to the patients renal disease that are provided on the same date as the dialysis service," except for an enumerated set of E/M services reported with modifier 25 that are significant and separately identifiable and meet medical-necessity requirements. "Furthermore, payment is not allowed for more than one dialysis service per day"',
+            deleted:     'CPT 90919, 90920, 90921, 90922, 90923, 90924 and 90925 are DELETED ESRD-related codes (FindACode, "ESRD Related Services (deleted codes)"). Note that CMS Pub. 100-04, Ch. 8 sec. 170.A still names 90919-90925 as the codes to bill -- verified against Rev. 13740 itself, issued 17 April 2026 -- so following that section literally produces a deleted code'
+        };
+
+        // Age at the END OF THE MONTH decides the band (Ch. 8 sec. 140.1.b).
+        // Bands are held once and shared by all three families so a code
+        // cannot disagree with itself about what "2 thru 11" means.
+        var SC_ESRD_AGE_BANDS = [
+            { key: 'u2',    label: 'under 2',       min: 0,  max: 1 },
+            { key: 'p2_11', label: '2 thru 11',     min: 2,  max: 11 },
+            { key: 'p12_19',label: '12 thru 19',    min: 12, max: 19 },
+            { key: 'a20',   label: '20 and older',  min: 20, max: 200 }
+        ];
+        var SC_ESRD_VISIT_BANDS = [
+            { key: 'v4',   label: '4 or more visits', min: 4, max: 999 },
+            { key: 'v2_3', label: '2 to 3 visits',    min: 2, max: 3 },
+            { key: 'v1',   label: '1 visit',          min: 1, max: 1 }
+        ];
+        // family: 'center' full month by age+visits, 'home' full month by age,
+        // 'perday' less than a full month by age, per day.
+        var SC_ESRD_MCP = {
+            '90951': { family: 'center', age: 'u2',     visits: 'v4' },
+            '90952': { family: 'center', age: 'u2',     visits: 'v2_3' },
+            '90953': { family: 'center', age: 'u2',     visits: 'v1' },
+            '90954': { family: 'center', age: 'p2_11',  visits: 'v4' },
+            '90955': { family: 'center', age: 'p2_11',  visits: 'v2_3' },
+            '90956': { family: 'center', age: 'p2_11',  visits: 'v1' },
+            '90957': { family: 'center', age: 'p12_19', visits: 'v4' },
+            '90958': { family: 'center', age: 'p12_19', visits: 'v2_3' },
+            '90959': { family: 'center', age: 'p12_19', visits: 'v1' },
+            '90960': { family: 'center', age: 'a20',    visits: 'v4' },
+            '90961': { family: 'center', age: 'a20',    visits: 'v2_3' },
+            '90962': { family: 'center', age: 'a20',    visits: 'v1' },
+            '90963': { family: 'home',   age: 'u2',     visits: null },
+            '90964': { family: 'home',   age: 'p2_11',  visits: null },
+            '90965': { family: 'home',   age: 'p12_19', visits: null },
+            '90966': { family: 'home',   age: 'a20',    visits: null },
+            '90967': { family: 'perday', age: 'u2',     visits: null },
+            '90968': { family: 'perday', age: 'p2_11',  visits: null },
+            '90969': { family: 'perday', age: 'p12_19', visits: null },
+            '90970': { family: 'perday', age: 'a20',    visits: null }
+        };
+        var SC_ESRD_INPATIENT_CODES = {
+            '90935': 'Hemodialysis procedure with single physician evaluation',
+            '90937': 'Hemodialysis procedure requiring repeated evaluations',
+            '90945': 'Dialysis procedure other than hemodialysis, with single physician evaluation',
+            '90947': 'Dialysis procedure other than hemodialysis, requiring repeated physician evaluations'
+        };
+        var SC_ESRD_DELETED_CODES = ['90919', '90920', '90921', '90922', '90923', '90924', '90925'];
+        var SC_ESRD_PER_DIEM_REASONS = {
+            home_partial:         'Home dialysis patient, less than a full month',
+            transient:            'Transient patient travelling away from home',
+            partial_no_assess:    'Partial month with visits but no complete assessment (hospitalised before it, died, or transplanted)',
+            permanent_mcp_change: 'Permanent change of MCP physician during the month'
+        };
+        // The TDAPA AX requirement is written with its own boundary rather
+        // than as a standing rule, because Ch. 8 sec. 20 dates it: AX applies
+        // to dates of service BEFORE 1 July 2026 and not on or after. A rule
+        // that ignored the boundary would demand a modifier CMS has stopped
+        // asking for.
+        var SC_ESRD_AX_ENDS = '2026-07-01';
+
+        function scEsrdFinding(sev, rule, detail, k){
+            return { severity: sev, rule: rule, detail: detail, source: SC_ESRD_SOURCES[k] || '' };
+        }
+        function scEsrdAgeBand(age){
+            if (age === null || age === undefined || !isFinite(age) || age < 0) return null;
+            for (var i = 0; i < SC_ESRD_AGE_BANDS.length; i++) {
+                if (age >= SC_ESRD_AGE_BANDS[i].min && age <= SC_ESRD_AGE_BANDS[i].max) return SC_ESRD_AGE_BANDS[i];
+            }
+            return null;
+        }
+        function scEsrdVisitBand(n){
+            if (n === null || n === undefined || !isFinite(n)) return null;
+            for (var i = 0; i < SC_ESRD_VISIT_BANDS.length; i++) {
+                if (n >= SC_ESRD_VISIT_BANDS[i].min && n <= SC_ESRD_VISIT_BANDS[i].max) return SC_ESRD_VISIT_BANDS[i];
+            }
+            return null; // zero visits -- no band, and that is a finding, not a default
+        }
+        function scEsrdBandLabel(key, list){
+            for (var i = 0; i < list.length; i++) if (list[i].key === key) return list[i].label;
+            return key;
+        }
+
+        // ── 1. The MCP code itself ──
+        function scValidateEsrdMcp(input){
+            input = input || {};
+            var codes = (input.codes || []).map(function(c){ return String(c || '').trim().toUpperCase(); }).filter(Boolean);
+            var findings = [];
+
+            var deleted = codes.filter(function(c){ return SC_ESRD_DELETED_CODES.indexOf(c) !== -1; });
+            if (deleted.length) {
+                findings.push(scEsrdFinding('block', 'Deleted ESRD code on the claim',
+                    deleted.join(', ') + ' ' + (deleted.length === 1 ? 'is a deleted code' : 'are deleted codes')
+                    + '. The current monthly set is 90951-90966 and the per-day set is 90967-90970. Worth knowing WHY this keeps happening: Chapter 8 section 170.A still instructs billing 90919-90925, in the revision current today.', 'deleted'));
+            }
+
+            var mcp = codes.filter(function(c){ return SC_ESRD_MCP[c]; });
+            var inpatient = codes.filter(function(c){ return SC_ESRD_INPATIENT_CODES[c]; });
+
+            // Inpatient dialysis codes are place-of-service gated.
+            if (inpatient.length) {
+                var pos = String(input.pos || '').trim();
+                if (!pos) {
+                    findings.push(scEsrdFinding('block', 'Place of service not recorded for an inpatient dialysis code',
+                        inpatient.join(', ') + ' is payable only when the place of service is inpatient hospital, because outpatient renal-related physician services are inside the MCP.', 'inpatient'));
+                } else if (pos !== '21') {
+                    findings.push(scEsrdFinding('block', 'Inpatient dialysis code outside the inpatient hospital setting',
+                        inpatient.join(', ') + ' reported with place of service ' + pos + '. These codes are payable only at POS 21 (inpatient hospital); outpatient renal-related physician work is paid through the MCP instead.', 'inpatient'));
+                }
+                if (inpatient.length > 1) {
+                    findings.push(scEsrdFinding('block', 'More than one dialysis service on one day',
+                        inpatient.join(', ') + ' together. Payment is not allowed for more than one dialysis service per day.', 'inpatient_em'));
+                }
+                if (input.same_day_em === true && (input.modifiers || []).map(function(m){ return String(m).toUpperCase(); }).indexOf('25') === -1) {
+                    findings.push(scEsrdFinding('block', 'Same-day E/M without modifier 25',
+                        'These codes already include any renal-related E/M furnished the same date. A separately reportable E/M needs modifier 25 and must be significant and separately identifiable; without it the E/M is denied and only the dialysis service is paid.', 'inpatient_em'));
+                }
+                if (mcp.length) {
+                    findings.push(scEsrdFinding('block', 'Inpatient dialysis code billed alongside an MCP code',
+                        inpatient.join(', ') + ' with ' + mcp.join(', ') + '. The MCP covers outpatient ESRD-related physician services for the month; the inpatient dialysis codes are a different setting and a different payment.', 'inpatient'));
+                }
+            }
+
+            if (!mcp.length) {
+                return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+            }
+
+            // Only one MCP service per calendar month, across every physician.
+            var fullMonth = mcp.filter(function(c){ return SC_ESRD_MCP[c].family !== 'perday'; });
+            var perDay    = mcp.filter(function(c){ return SC_ESRD_MCP[c].family === 'perday'; });
+            if (fullMonth.length > 1) {
+                findings.push(scEsrdFinding('block', 'More than one monthly MCP code',
+                    fullMonth.join(', ') + '. Only one MCP service in 90951-90966 is payable per calendar month, even where several physicians share the patient\'s care.', 'mcp_once'));
+            }
+            if (fullMonth.length && perDay.length) {
+                findings.push(scEsrdFinding('block', 'Monthly and per-day codes on the same month',
+                    fullMonth.join(', ') + ' with ' + perDay.join(', ') + '. It is one or the other for a given month, never both.', 'one_or_other'));
+            }
+            if (perDay.length > 1) {
+                findings.push(scEsrdFinding('block', 'More than one per-day code',
+                    perDay.join(', ') + '. Only one code reports the daily management for the month.', 'one_or_other'));
+            }
+
+            // Age band.
+            var band = scEsrdAgeBand(input.age);
+            if (!band) {
+                findings.push(scEsrdFinding('block', 'Beneficiary age not recorded',
+                    'Every code in 90951-90970 is age-banded, and the age that governs is the age AT THE END OF THE MONTH, not at the visit.', 'mcp_age'));
+            } else {
+                mcp.forEach(function(c){
+                    if (SC_ESRD_MCP[c].age !== band.key) {
+                        findings.push(scEsrdFinding('block', 'Code does not match the age band',
+                            c + ' is the "' + scEsrdBandLabel(SC_ESRD_MCP[c].age, SC_ESRD_AGE_BANDS) + '" code, but the beneficiary is '
+                            + input.age + ' at the end of the month, which is the "' + band.label + '" band.', 'mcp_age'));
+                    }
+                });
+            }
+
+            // Modality: a month with any home dialysis takes the home code.
+            var setting = String(input.setting || '').toLowerCase();
+            if (setting === 'both') {
+                fullMonth.forEach(function(c){
+                    if (SC_ESRD_MCP[c].family === 'center') {
+                        findings.push(scEsrdFinding('block', 'Centre-based code for a month that included home dialysis',
+                            c + ' is a centre-based code. Where a home dialysis patient also dialysed in a centre during the month, the home dialysis per-full-month code is billed instead -- in either direction, and whatever the proportion of the month.', 'modality'));
+                    }
+                });
+            }
+
+            // Visit count -- centre-based only, and inpatient visits never count.
+            var visits = input.outpatient_visits;
+            var centerCodes = fullMonth.filter(function(c){ return SC_ESRD_MCP[c].family === 'center'; });
+            var homeCodes   = fullMonth.filter(function(c){ return SC_ESRD_MCP[c].family === 'home'; });
+            if (centerCodes.length) {
+                var vb = scEsrdVisitBand(visits);
+                if (visits === null || visits === undefined || !isFinite(visits)) {
+                    findings.push(scEsrdFinding('block', 'Face-to-face visit count not recorded',
+                        'The centre-based code is selected by the number of qualifying face-to-face visits in the calendar month. It cannot be checked without that count.', 'mcp_center'));
+                } else if (!vb) {
+                    findings.push(scEsrdFinding('block', 'No qualifying visit in the month',
+                        'Zero face-to-face visits are recorded. There is no centre-based MCP code for a month with no visit -- the lowest code, one visit per month, still requires one.', 'mcp_center'));
+                } else {
+                    centerCodes.forEach(function(c){
+                        if (SC_ESRD_MCP[c].visits !== vb.key) {
+                            findings.push(scEsrdFinding('block', 'Code does not match the visit count',
+                                c + ' is the "' + scEsrdBandLabel(SC_ESRD_MCP[c].visits, SC_ESRD_VISIT_BANDS) + '" code and '
+                                + visits + ' qualifying ' + (visits === 1 ? 'visit is' : 'visits are') + ' recorded, which is the "'
+                                + vb.label + '" band.', 'mcp_center'));
+                        }
+                    });
+                }
+            }
+            if (homeCodes.length) {
+                if (visits === 0) {
+                    findings.push(scEsrdFinding('warn', 'Home dialysis MCP with no face-to-face visit',
+                        'The home dialysis monthly rate does not vary with the number of visits, but at least one face-to-face visit per month is required and the documentation should support it. A contractor may waive this case by case where the notes show the nephrologist actively and adequately managed the month.', 'mcp_home'));
+                } else if (isFinite(visits) && visits > 0) {
+                    findings.push(scEsrdFinding('info', 'Visit count does not change the home dialysis code',
+                        'Home dialysis is a single monthly rate by age. ' + visits + ' ' + (visits === 1 ? 'visit' : 'visits') + ' recorded -- billing a higher-visit centre-based code instead would be wrong.', 'mcp_home'));
+                }
+            }
+            if (isFinite(input.inpatient_visits) && input.inpatient_visits > 0 && centerCodes.length) {
+                findings.push(scEsrdFinding('info', 'Inpatient visits are excluded from the MCP count',
+                    input.inpatient_visits + ' inpatient ' + (input.inpatient_visits === 1 ? 'visit is' : 'visits are') + ' recorded and none of them count toward the MCP visit band. Visits in hospital OBSERVATION status and to a beneficiary residing in a SNF do count.', 'visits_who'));
+            }
+
+            // Per-day codes: circumstance, and units == days.
+            if (perDay.length) {
+                var reason = String(input.per_diem_reason || '');
+                if (!reason) {
+                    findings.push(scEsrdFinding('block', 'No per-diem circumstance recorded',
+                        'The per-day codes are for four circumstances only: a home dialysis patient for less than a full month, a transient patient, a partial month with visits but no complete assessment, or a permanent change of MCP physician. None is recorded.', 'per_diem'));
+                } else if (!SC_ESRD_PER_DIEM_REASONS[reason]) {
+                    findings.push(scEsrdFinding('block', 'Per-diem circumstance not recognised',
+                        '"' + reason + '" is not one of the four circumstances the manual allows.', 'per_diem'));
+                }
+                if (input.full_month === true) {
+                    findings.push(scEsrdFinding('block', 'Per-day codes billed for a full month',
+                        'The per-diem codes may not be used for a full month when a complete monthly assessment is not furnished. A full month with a complete assessment takes the monthly MCP code instead.', 'per_diem'));
+                }
+                var days = input.days_responsible, units = input.per_day_units;
+                if (!isFinite(days) || days === null) {
+                    findings.push(scEsrdFinding('block', 'Days of responsibility not recorded',
+                        'The units billed are the number of days the physician was responsible for the beneficiary\'s outpatient ESRD-related services that month.', 'per_diem_u'));
+                } else if (isFinite(units) && units !== null && units !== days) {
+                    findings.push(scEsrdFinding('block', 'Units do not equal the days of responsibility',
+                        units + ' unit' + (units === 1 ? '' : 's') + ' billed for ' + days + ' day' + (days === 1 ? '' : 's') + ' of responsibility. The two are the same number.', 'per_diem_u'));
+                } else if (units === null || units === undefined || !isFinite(units)) {
+                    findings.push(scEsrdFinding('warn', 'Units not recorded',
+                        'Bill ' + days + ' unit' + (days === 1 ? '' : 's') + ' of the age-appropriate per-day code.', 'per_diem_u'));
+                }
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+        }
+
+        // ── 2. Consolidated billing and the AY modifier ──
+        // The JW/JZ half is DELEGATED to evaluateJwJz() from the Drug
+        // Administration module rather than restated. That function already
+        // knows the ESRD setting and already carries the AY note.
+        function scValidateEsrdConsolidatedBilling(input){
+            input = input || {};
+            var mods = (input.modifiers || []).map(function(m){ return String(m || '').trim().toUpperCase(); }).filter(Boolean);
+            var hasAY = mods.indexOf('AY') !== -1;
+            var hasAX = mods.indexOf('AX') !== -1;
+            var related = String(input.esrd_related || '').toLowerCase();
+            var findings = [];
+
+            if (!related) {
+                findings.push(scEsrdFinding('block', 'ESRD-related or not is not recorded',
+                    'Everything on an ESRD claim is bundled unless it is shown NOT to be for the treatment of ESRD. That single question decides whether the line is separately payable, so it cannot be left open.', 'bundle'));
+            } else if (related === 'yes') {
+                if (hasAY) {
+                    findings.push(scEsrdFinding('block', 'AY on an ESRD-related item',
+                        'AY states that the item or service is NOT for the treatment of ESRD. It is recorded here as ESRD-related, so AY misstates the claim and the item is already inside the PPS bundle.', 'ay'));
+                } else {
+                    findings.push(scEsrdFinding('info', 'Bundled, and correctly carrying no AY',
+                        'ESRD-related labs, drugs, supplies, equipment and training are paid through the facility\'s per-treatment PPS amount. Another provider billing Medicare for the same item is denied or rejected by the consolidated billing edits and must look to the ESRD facility for payment.', 'bundle'));
+                }
+            } else if (related === 'no') {
+                if (!hasAY) {
+                    if (input.er_lab === true) {
+                        findings.push(scEsrdFinding('info', 'Emergency room laboratory service -- AY not necessary',
+                            'For dates of service on or after 1 January 2012 the consolidated billing edit for laboratory services is bypassed when the lab is billed with an emergency room service on a hospital outpatient claim.', 'ay_er'));
+                    } else {
+                        findings.push(scEsrdFinding('block', 'Non-ESRD item with no AY modifier',
+                            'Without AY this line is treated as included in the ESRD PPS and will not be paid separately. AY is what makes a non-ESRD item separately payable.', 'ay'));
+                    }
+                } else {
+                    findings.push(scEsrdFinding('info', 'AY correctly present',
+                        'AY marks the item as not for the treatment of ESRD, which is what allows separate payment.', 'ay'));
+                }
+            }
+
+            if (input.tdapa === true) {
+                if (hasAY) {
+                    findings.push(scEsrdFinding('block', 'AY on a TDAPA drug',
+                        'A drug paid under the Transitional Drug Add-on Payment Adjustment is not separately payable with AY, is not an outlier service, and does not apply to acute kidney injury claims.', 'tdapa'));
+                }
+                var rev = String(input.revenue_code || '').trim();
+                if (rev && rev !== '0636') {
+                    findings.push(scEsrdFinding('block', 'TDAPA drug on the wrong revenue code',
+                        'Revenue code ' + rev + ' reported; TDAPA-eligible drugs must be billed with revenue code 0636.', 'tdapa'));
+                } else if (!rev) {
+                    findings.push(scEsrdFinding('warn', 'Revenue code not recorded for a TDAPA drug',
+                        'TDAPA-eligible drugs must be billed with revenue code 0636.', 'tdapa'));
+                }
+                var dos = String(input.dos || '').trim();
+                if (!dos) {
+                    findings.push(scEsrdFinding('warn', 'Date of service not recorded, and it decides the AX modifier',
+                        'AX is required on a TDAPA HCPCS for dates of service BEFORE 1 July 2026 and not on or after it.', 'tdapa'));
+                } else if (dos < SC_ESRD_AX_ENDS && !hasAX) {
+                    findings.push(scEsrdFinding('block', 'TDAPA drug before 1 July 2026 without AX',
+                        'Date of service ' + dos + ' is before 1 July 2026, so modifier AX must be appended to the HCPCS.', 'tdapa'));
+                } else if (dos >= SC_ESRD_AX_ENDS && hasAX) {
+                    findings.push(scEsrdFinding('warn', 'AX on a TDAPA drug on or after 1 July 2026',
+                        'Date of service ' + dos + ' is on or after 1 July 2026; the AX requirement is written as applying to dates of service before that date.', 'tdapa'));
+                }
+            }
+
+            // Delegate the waste-modifier question rather than duplicating it.
+            if (input.drug_line === true && related === 'no') {
+                var jw = evaluateJwJz(input.container, input.separately_payable, 'esrd', input.is_vaccine, input.had_waste);
+                findings.push(scEsrdFinding(
+                    jw.status === 'required' ? 'info' : (jw.status === 'exempt' ? 'info' : 'warn'),
+                    jw.status === 'required' ? ('Waste modifier required: ' + jw.modifier)
+                        : (jw.status === 'exempt' ? 'No JW/JZ modifier applies' : 'Waste modifier cannot be determined'),
+                    jw.message, 'ay'));
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+        }
+
+        // ── 3. Facility treatment count for the month ──
+        function scValidateEsrdTreatmentCount(input){
+            input = input || {};
+            var findings = [];
+            var billed = input.treatments_billed, days = input.days_in_month;
+            var mods = (input.modifiers || []).map(function(m){ return String(m || '').trim().toUpperCase(); }).filter(Boolean);
+            var hasCG = mods.indexOf('CG') !== -1;
+
+            if (input.training_only === true) {
+                findings.push(scEsrdFinding('info', 'Training and retraining are outside the monthly limit',
+                    'The 3-per-week payment limit does not apply to training and retraining treatments billed within their own allowable limits.', 'training_ex'));
+                return { findings: findings, blocking: 0 };
+            }
+            if (!isFinite(billed) || billed === null) {
+                findings.push(scEsrdFinding('block', 'Treatment count not recorded',
+                    'The ESRD PPS pays per treatment with a 3-per-week limit, so the count is what the check is about.', 'treatments'));
+                return { findings: findings, blocking: 1 };
+            }
+            var limit = days === 30 ? 13 : (days === 31 ? 14 : null);
+            if (limit === null) {
+                findings.push(scEsrdFinding('warn', 'No stated limit for a month of this length',
+                    (isFinite(days) && days ? ('A ' + days + '-day month is recorded. ') : 'Month length is not recorded. ')
+                    + 'The manual states the limit for a 30-day month (13) and a 31-day month (14) and gives no figure for February, so none is produced here. The underlying policy is 3 payments per week.', 'treatments'));
+                return { findings: findings, blocking: 0 };
+            }
+            if (billed <= limit) {
+                findings.push(scEsrdFinding('info', 'Within the monthly treatment limit',
+                    billed + ' of ' + limit + ' for a ' + days + '-day month.', 'treatments'));
+                if (hasCG) {
+                    findings.push(scEsrdFinding('block', 'CG modifier on a claim inside the limit',
+                        'CG attests that an additional treatment does NOT meet the medical-justification requirement, and such a line is not paid. Nothing here is over the limit, so CG gives away payment for no reason.', 'treatments'));
+                }
+            } else {
+                var extra = billed - limit;
+                if (input.medical_justification === true) {
+                    findings.push(scEsrdFinding('warn', 'Over the limit with medical justification',
+                        billed + ' treatments against a limit of ' + limit + ' for a ' + days + '-day month. The ' + extra + ' additional treatment' + (extra === 1 ? '' : 's') + ' need the medical justification the contractor requires, submitted with the claim.', 'treatments'));
+                    if (hasCG) {
+                        findings.push(scEsrdFinding('block', 'CG modifier contradicts the justification',
+                            'CG is the facility attesting that the additional treatment does not meet medical-justification requirements, and those lines are not paid. It cannot sit on a claim being submitted WITH justification.', 'treatments'));
+                    }
+                } else if (!hasCG) {
+                    findings.push(scEsrdFinding('block', 'Over the limit with neither justification nor CG',
+                        billed + ' treatments against a limit of ' + limit + ' for a ' + days + '-day month. ' + extra + ' additional treatment' + (extra === 1 ? '' : 's') + ' must either carry the required medical justification or be reported with modifier CG, which attests the justification is not met and forgoes payment for those lines.', 'treatments'));
+                } else {
+                    findings.push(scEsrdFinding('info', 'Over the limit and correctly flagged with CG',
+                        extra + ' additional treatment' + (extra === 1 ? '' : 's') + ' beyond the limit of ' + limit + ', reported with CG. Those lines are not paid and are not counted in the outlier calculation.', 'treatments'));
+                }
+            }
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
         }
 
         // PRE-SUBMISSION RISK CHECK (2026-08-20, Phase 3 item 5).
