@@ -1,0 +1,273 @@
+{
+  "_readme": "DELAWARE SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a DIFFERENT computation on the same subject -- different rollover basis, a legal-holiday definition with no Chief Justice limb, backward periods addressed expressly, an hours unit -- and the two agree only on the 11-day short-period threshold. Chancery has its own Rules 12, 33, 34 and 36 and NONE of them were read for this seed. A `de` seed spanning both courts would be a coverage claim nobody made, and would compute a Chancery deadline under the wrong rule. Chancery is its own gate, its own standard (de_ct_ch_r_6) and its own seed. Full gate: docs/sairnlaw-delaware-deadline-seed-gate.md. SOURCE: courts.delaware.gov/forms/download.aspx?id=173418, a 118-page authenticated PDF carrying per-rule amendment history, HTTP 200 to a plain browser-header request on the first attempt -- the cleanest retrieval of any state gated so far. Every effective_from below is that rule's own last published amendment date, not a guess and not a neighbour's. THE ELEVEN-DAY THRESHOLD IS LOAD-BEARING: five of these ten rows are TEN-day periods, so Rule 6(a)'s intermediate-day exclusion fires on half the seed. A 7 copied from New Jersey, North Carolina, Washington, Massachusetts, Missouri or South Carolina would compute all five as straight calendar days and report them EARLY.",
+  "rules": [
+    {
+      "rule_id": "de-sccr-12a-answer-after-service-20-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Answer after service of process, complaint and affidavit -- 20 days (Delaware Superior Court)",
+      "trigger_event": "service_of_process_and_complaint",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 12(a)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "A defendant shall serve an answer within 20 days after service of process, complaint and affidavit, if any, upon that defendant, unless the Court directs otherwise when service of process is made pursuant to Rule 4(f)(1)(VI).",
+        "note": "TWENTY, NOT THE FEDERAL TWENTY-ONE. NO MAIL EXTENSION IS CARRIED, AND THAT IS A DELIBERATE OMISSION RATHER THAN A READING OF THE RULE. Rule 6(e) adds three days to a period running 'after being served', and whether that reaches service of PROCESS -- as opposed to service of a paper on a party already in the case -- is an OPEN QUESTION ON THIS PLATFORM, raised against the us-federal answer-to-complaint row and not yet settled. Omitting the three days reports EARLIER than the true deadline if the extension does apply, which is safe; carrying them reports THREE DAYS LATE if it does not, which loses a filing. The safe direction is taken until the federal question is decided, and this note is the record of why. THE RULE'S OWN CARVE-OUTS ARE NOT COVERED BY THIS ROW: Rule 12(a) is headed 'When presented in actions other than certiorari, ditch returns, mechanics' liens, appeals under Rule 3(c), and actions in which writs of attachment and capias are used', and it also defers to a contrary direction of the Court where service was made under Rule 4(f)(1)(VI). A caller in any of those actions must not use this row. NOT SEEDED ALONGSIDE IT: the affidavit-of-defense and scire-facias limbs in the same subsection, which run from the same trigger and would make it match two rules. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "2001-02-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "de-sccr-12a-answer-after-appearance-20-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Answer where the defendant appears before service -- 20 days from appearance (Delaware Superior Court)",
+      "trigger_event": "appearance_before_service_is_made",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 20,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 12(a)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "If a defendant appears before service is made upon that defendant, that defendant shall serve an answer within 20 days after appearance.",
+        "note": "A SECOND, DISTINCT TRIGGER ON THE SAME SUBSECTION, seeded as its own row because the period runs from APPEARANCE rather than from service and the caller knows which happened. No mail extension can apply here at all: Rule 6(e) reaches periods running 'after being served', and this one does not run from service. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "2001-02-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "de-sccr-33a-interrogatory-answers-30-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Delaware Superior Court)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 33(a)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "The party upon whom the interrogatories have been served shall serve a copy of the answers, and objections if any, within 30 days after the service of the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "THE DEFENDANT'S 45-DAY ELECTION IS NOT MODELLED, AND IT IS AN ELECTION RATHER THAN A FLOOR. The rule says a defendant 'may serve' within 45 days after service of the summons and complaint -- two limbs with two different triggers, which the party chooses between. Compare Mississippi, New Mexico, South Carolina and Hawai'i, whose Rule 36 reads 'shall not be required to serve ... before the expiration of' 45 days: that is a FLOOR and is seeded as a later_of. Compare Nebraska in the other direction, where 'may' and 'whichever is longer' appear in one sentence and the comparative makes it a floor after all. The word alone never settles it; the sentence does. Seeding the 30-day limb reports EARLIER than a defendant who elects the 45 days, which is safe -- the same treatment Hawai'i's own Rules 33 and 34 receive. THE COURT MAY VARY IT: the next sentence is 'The Court may allow a shorter or longer time', so an order displaces this row entirely. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1997-11-12",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "de-sccr-34b-production-response-30-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production -- 30 days (Delaware Superior Court)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 34(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "The party upon whom the request is served shall serve a written response within 30 days after the service of the request, except that a defendant may serve a response within 45 days after service of the summons and complaint upon that defendant.",
+        "note": "THE DEFENDANT'S 45-DAY ELECTION IS NOT MODELLED, AND IT IS AN ELECTION RATHER THAN A FLOOR. The rule says a defendant 'may serve' within 45 days after service of the summons and complaint -- two limbs with two different triggers, which the party chooses between. Compare Mississippi, New Mexico, South Carolina and Hawai'i, whose Rule 36 reads 'shall not be required to serve ... before the expiration of' 45 days: that is a FLOOR and is seeded as a later_of. Compare Nebraska in the other direction, where 'may' and 'whichever is longer' appear in one sentence and the comparative makes it a floor after all. The word alone never settles it; the sentence does. Seeding the 30-day limb reports EARLIER than a defendant who elects the 45 days, which is safe -- the same treatment Hawai'i's own Rules 33 and 34 receive. RULE 34 IS THE MOST RECENTLY AMENDED OF THE SEEDED ROWS -- 27 June 2019, effective 1 August 2019 -- which is why its effective_from is later than Rule 33's despite the two carrying an identical period and an identical election. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "2019-08-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "de-sccr-36a-admissions-response-30-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- 30 days, self-executing (Delaware Superior Court)",
+      "trigger_event": "service_of_request_for_admission",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 36(a)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "The matter is admitted unless, within 30 days after service of the request, or within such shorter or longer time as the Court may allow, the party to whom the request is directed serves upon the party requesting the admission a written answer or objection addressed to the matter, signed by the party or by the party's attorney.",
+        "note": "RULES 33 AND 34 CARRY A DEFENDANT'S 45-DAY ELECTION AND RULE 36 DOES NOT. Verified by reading all three rather than inferring the third from the pair, because the surrounding states differ: Mississippi, New Mexico, South Carolina and Hawai'i all put a 45-day defendant FLOOR on their Rule 36, and Delaware puts an election on 33 and 34 and nothing on 36. Copying either pattern across would be wrong here, and copying a floor onto this row would be wrong in the dangerous direction: the rule is SELF-EXECUTING -- 'The matter is admitted unless' -- so telling a Delaware defendant the matter is still open when it has already been admitted is not a late date, it is a lost admission. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "de-sccr-59b-new-trial-after-judgment-10-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 10 days after entry of judgment (Delaware Superior Court)",
+      "trigger_event": "entry_of_judgment",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 59(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "The motion for a new trial shall be served and filed not later than 10 days after the entry of judgment, or the rendition of the verdict, if pursuant to Rule 58, the Court has directed that the judgment shall not be entered forthwith upon the verdict.",
+        "note": "TEN DAYS, WHICH IS UNDER THE ELEVEN-DAY THRESHOLD, so Rule 6(a)'s intermediate-day exclusion fires on this row and intermediate Saturdays, Sundays and legal holidays are skipped while counting. That is the whole reason the 11 in de_super_ct_civ_r_6a is load-bearing rather than decorative -- a 7-day threshold copied from a neighbour would compute this row as straight calendar days and report it EARLY. THE RENDITION LIMB IS A SEPARATE ROW because it applies only where the Court has directed under Rule 58 that judgment not be entered forthwith upon the verdict; the caller knows whether that direction was given and the engine cannot infer it. No mail extension: the period runs from entry of judgment, not from being served. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "de-sccr-59b-new-trial-after-verdict-10-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 10 days after rendition of the verdict, where the Court withheld judgment under Rule 58 (Delaware Superior Court)",
+      "trigger_event": "rendition_of_verdict_where_judgment_withheld_under_rule_58",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 59(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "The motion for a new trial shall be served and filed not later than 10 days after the entry of judgment, or the rendition of the verdict, if pursuant to Rule 58, the Court has directed that the judgment shall not be entered forthwith upon the verdict.",
+        "note": "THE CONDITIONAL LIMB OF THE SAME SENTENCE, given its own trigger rather than folded into the entry-of-judgment row. It is available ONLY where the Court has directed under Rule 58 that judgment not be entered forthwith upon the verdict -- a fact the caller knows and the engine cannot derive. Splitting on the trigger rather than on the number is the New Hampshire Rule 43 treatment. Under the 11-day threshold, so the exclusion fires. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "de-sccr-59b-answer-motion-without-affidavits-10-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Opposing party's answer where the new-trial motion carries no affidavits -- 10 days (Delaware Superior Court)",
+      "trigger_event": "service_of_new_trial_motion_not_accompanied_by_affidavits",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 59(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "If the motion is not accompanied by affidavits, the opposing party, within 10 days after service of such motion, may serve and file a short answer to each ground asserted in the motion, accompanied by a brief, if the opposing party desires to file one.",
+        "note": "SPLIT FROM THE WITH-AFFIDAVITS ROW ON THE TRIGGER, because Rule 59(b) states the two separately and they are not interchangeable: this limb is PERMISSIVE ('may serve and file') and carries no extension provision, while the with-affidavits limb gives the party a period it 'has' and is extendable by up to ten further days. Seeding one trigger for both would make the engine choose between two rules on a fact the caller already knows. Under the 11-day threshold, so the exclusion fires. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "de-sccr-59b-answer-motion-with-affidavits-10-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Opposing party's answer and opposing affidavits where the new-trial motion carries affidavits -- 10 days (Delaware Superior Court)",
+      "trigger_event": "service_of_new_trial_motion_accompanied_by_affidavits",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 59(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "If the motion is accompanied by affidavits, the opposing party has 10 days after such service within which to serve and file that party's answer and opposing affidavits and brief, if any; this period may be extended for an additional period not exceeding 10 days either by the Court for good cause shown or by the parties by written stipulation.",
+        "note": "THE EXTENSION IN THIS RULE IS NOT MODELLED AND MUST NOT BE READ AS ONE: 'may be extended for an additional period not exceeding 10 days either by the Court for good cause shown or by the parties by written stipulation' is a DISCRETIONARY grant, not an automatic addition, and this engine has no field for either a court order or a written stipulation. The row returns the unextended ten days, which is EARLIER than a party who obtains the extension -- safe. Under the 11-day threshold, so the exclusion fires. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    },
+    {
+      "rule_id": "de-sccr-59b-reply-affidavits-10-days",
+      "jurisdiction": "de",
+      "domain": "civil-litigation",
+      "label": "Reply affidavits and brief on a new-trial motion -- 10 days (Delaware Superior Court)",
+      "trigger_event": "service_of_opposing_affidavits_and_briefs",
+      "computation": "de_super_ct_civ_r_6a",
+      "count": {
+        "value": 10,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 59(b)",
+        "url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "Reply affidavits and brief may be served and filed within 10 days after service of the opposing affidavits and briefs; this period may be extended for an additional period not exceeding 10 days, either by the Court for good cause shown or by the parties by written stipulation.",
+        "note": "THE THIRD STEP OF THE SAME MOTION SEQUENCE, and it runs from service of the OPPOSING affidavits and briefs rather than from the motion -- a third distinct trigger, not a variant of the second. Its discretionary ten-day extension is unmodelled for the same reason as the row above. Under the 11-day threshold, so the exclusion fires. SUPERIOR COURT ONLY. Del. Ct. Ch. R. 6 is a different computation on the same subject and Chancery has its own Rules 12, 33, 34 and 36, none of which were read for this seed. A Chancery deadline must not be computed from this row.",
+        "retrieved_at": "2026-09-01"
+      },
+      "effective_from": "1991-01-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "de_super_ct_civ_r_6e",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail"
+        ]
+      }
+    }
+  ]
+}

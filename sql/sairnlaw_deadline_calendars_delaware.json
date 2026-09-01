@@ -1,0 +1,90 @@
+{
+  "holiday_calendars": [
+    {
+      "jurisdiction": "de",
+      "year": 2026,
+      "authority": {
+        "citation": "Del. Super. Ct. Civ. R. 6(a) via 1 Del. C. sec. 501",
+        "url": "https://delcode.delaware.gov/title1/c005/index.html",
+        "computation_url": "https://courts.delaware.gov/forms/download.aspx?id=173418",
+        "quote": "(a) The following days shall be legal holidays in this State: (1) January 1, known as New Year's Day. (2) The third Monday in January, known as Martin Luther King, Jr. Day. (3) Good Friday. (4) June 19, known as Juneteenth. (5) July 4, known as Independence Day. (6) The first Monday in September, known as Labor Day. (7) November 11, known as Veterans Day. (8) The fourth Thursday in November, known as Thanksgiving Day. (9) The Friday following Thanksgiving Day. (10) December 25, known as Christmas. (11) Saturdays. (12) The day of the General Election as it biennially occurs; and (13) In Sussex County, Return Day, the second day after the General Election, after 12:00 Noon. (b) If any of the legal holidays fall on Sunday, the Monday following shall be a legal holiday. If any of the legal holidays other than Saturday fall on Saturday, the Friday preceding shall be a legal holiday. (c) The last Monday in May shall be the legal holiday, known as Memorial Day, in the State.",
+        "note": "TWO ENUMERATED DAYS ARE DELIBERATELY ABSENT FROM THIS CALENDAR AND BOTH OMISSIONS RUN EARLY. (1) SATURDAYS, sec. 501(a)(11). Delaware makes every Saturday a statutory legal holiday and never lists Sunday at all -- the exact inverse of Louisiana. It is not enumerated here because Super. Ct. Civ. R. 6(a) names 'a Saturday or Sunday' in its own words, so the engine's ordinary weekend handling already covers it and a per-date entry would be redundant. No weekend_days declaration is needed for the same reason. (2) SUSSEX COUNTY RETURN DAY, sec. 501(a)(13), 'the second day after the General Election, after 12:00 Noon', which for 2026 is Thursday 5 November. It is unsafe in BOTH directions if modelled naively: county-scoped like Massachusetts's Suffolk County, AND a half day beginning at noon, so carrying it statewide as a full rolling day would report LATE. Omitting it is exactly correct in New Castle and Kent and EARLY in Sussex. ALSO NOT DERIVABLE: sec. 501(a)'s definition is reached through Rule 6(a)'s phrase 'those days provided by statute or appointed by the Governor or the Chief Justice', and appointed days are open-ended. Disclosed in JURISDICTION_COVERAGE.de rather than guessed at. 2026 ONLY: a later year is REFUSED rather than generated. Every date here would derive mechanically, which is precisely why generating is refused -- 2027 is an ODD year in which the General Election limb produces no day at all, and a generator that silently dropped it would look identical to one that had reasoned about it.",
+        "retrieved_at": "2026-09-01"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(1), 'January 1, known as New Year's Day'. 1 January 2026 is a Thursday, so sec. 501(b) does not shift it."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King, Jr. Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(2), 'The third Monday in January'. Computed for 2026 and verified by weekday: Monday 19 January 2026."
+        },
+        {
+          "date": "2026-04-03",
+          "name": "Good Friday",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(3), 'Good Friday'. Delaware names it outright, unlike Utah where it is reached only through a sweep limb and is omitted. Easter Sunday 2026 is 5 April, so Good Friday is Friday 3 April 2026."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(c), 'The last Monday in May shall be the legal holiday, known as Memorial Day'. Note it sits in its own SUBSECTION rather than in the (a) list. Monday 25 May 2026."
+        },
+        {
+          "date": "2026-06-19",
+          "name": "Juneteenth",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(4), 'June 19, known as Juneteenth'. Friday 19 June 2026, so sec. 501(b) does not shift it."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed)",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(5) fixes Independence Day at July 4, and 4 July 2026 is a SATURDAY. Sec. 501(b) provides that a legal holiday 'other than Saturday' falling on Saturday is observed the PRECEDING FRIDAY, so the observed day is Friday 3 July 2026. The 'other than Saturday' carve-out exists because (a)(11) makes every Saturday itself a legal holiday, which would otherwise make the shift self-referential."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(6), 'The first Monday in September'. Monday 7 September 2026."
+        },
+        {
+          "date": "2026-11-03",
+          "name": "General Election Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(12), 'The day of the General Election as it biennially occurs'. Del. Const. art. V sec. 1 fixes the general election 'biennially on the Tuesday next after the first Monday in the month of November'. The first Monday in November 2026 is Monday the 2nd, so the day is TUESDAY 3 NOVEMBER 2026, verified by weekday. CARRIED rather than omitted, and the contrast is deliberate: New Hampshire's equivalent day was OMITTED because RSA 288:1 names a 'biennial election' that ch. 652 never defines and dating it required RSA 653:7, which uses a different term. Delaware's statute and constitution use the SAME term, one reference apart, so this is a citation rather than a reading."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(7), 'November 11, known as Veterans Day'. Wednesday 11 November 2026. Sec. 501(d) separately makes it a holiday for public school students and employees with its own shift rules; that subsection is about schools and does not change this date."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(8), 'The fourth Thursday in November'. Thursday 26 November 2026."
+        },
+        {
+          "date": "2026-11-27",
+          "name": "The Friday following Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(9), 'The Friday following Thanksgiving Day'. Friday 27 November 2026. Delaware names this day in the statute itself, where most seeded states either omit it or observe it only administratively."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas",
+          "kind": "declared",
+          "derivation": "1 Del. C. sec. 501(a)(10), 'December 25, known as Christmas'. Friday 25 December 2026."
+        }
+      ]
+    }
+  ]
+}
