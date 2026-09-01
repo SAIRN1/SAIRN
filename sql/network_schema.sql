@@ -45,3 +45,50 @@ create index if not exists idx_network_insights_app_created_at
 
 create index if not exists idx_network_insights_type_pattern
   on network_insights (type, pattern);
+
+-- GRANTS -- ADDED 2026-09-01 (Cody). This file shipped 2026-08-01 with no
+-- grant statement at all, so re-running it on a fresh project produces a
+-- table api/network.js cannot read or write. Source and production have
+-- disagreed since creation; this closes that, and it is the reason the
+-- disagreement was invisible -- the live table works, so nothing failed.
+--
+-- WHY IT WORKS LIVE ANYWAY: the table was created through Supabase's Table
+-- Editor, which auto-grants, unlike a raw SQL migration. That mechanism is
+-- recorded as a hypothesis in sql/full_crud_truncate_sweep_2026-08-24.sql
+-- and is not upgraded to a finding here -- what IS verified is the access
+-- itself, both halves, below.
+--
+-- VERIFIED LIVE 2026-09-01 BEFORE WRITING THIS, not inferred from the
+-- grant table alone. api/network.js turns a missing grant into a NAMED 503
+-- PERMISSION_DENIED (:121 / :211) and a missing table into 503
+-- NOT_PROVISIONED (:115 / :207), so a 200 is positive evidence:
+--   SELECT: GET  /api/network?app=stonedesk       -> 200 {"ok":true,...}
+--   INSERT: POST /api/network {app:sairn_selftest,
+--           type:selftest, pattern:insert_path_verification}
+--                                                 -> 200 {"ok":true}
+-- THE INSERT CALL CLOSES A NAMED OPEN ITEM. full_crud_truncate_sweep's
+-- Correction A ends "SELECT confirmed present, INSERT unknown. Do not
+-- upgrade that to 'the table is fine' without checking the write path."
+-- The write path is now checked. It works. One throwaway row exists under
+-- app='sairn_selftest' -- invisible to every real caller, since GET filters
+-- app=eq.<app> and suppresses anything under MIN_OCCURRENCES=3.
+--
+-- WHY select, insert AND NOT THE FULL LIVE SET. The real grant-table
+-- export in full_crud_truncate_sweep_2026-08-24.sql:506 reads
+-- "INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE". TRUNCATE/REFERENCES/
+-- TRIGGER are the create-time default baseline, are used by nothing, and
+-- are precisely what that sweep's Section 2 exists to strip platform-wide.
+-- Writing them here would re-arm, from source, the excess a pending sweep
+-- is meant to remove -- so this grants the intersection of what is live
+-- and what api/network.js actually does: SELECT (handleGet) and INSERT
+-- (handlePost). There is no UPDATE or DELETE path in the endpoint, and an
+-- append-only signal log should not have one. Matches the closest existing
+-- analogue, alf_signals, which is also an append-only log granted exactly
+-- select, insert.
+--
+-- CONSEQUENCE, STATED PLAINLY: running this file against the LIVE table
+-- today does not revoke anything -- grant only adds. The three excess
+-- privileges stay until the sweep runs. This file simply stops being the
+-- thing that would put them back.
+grant usage on schema public to service_role;
+grant select, insert on public.network_insights to service_role;
