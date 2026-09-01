@@ -169,7 +169,7 @@ check('Rule 34 is NOT a floor either',
 {
   const r = compute('al-arcp-12a-answer-after-service', '2026-05-01');
   check('Alabama discloses its gaps on an ok result',
-    [r.ok, r.coverage && r.coverage.direction], [true, 'early']);
+    [r.ok, r.coverage && r.coverage.direction], [true, 'late']);
   check('and the disclosure names Mardi Gras AND the stay-open provision whose direction is LATE',
     [/mardi gras/i.test(r.coverage.detail), /LATE/.test(r.coverage.summary + r.coverage.detail)],
     [true, true]);

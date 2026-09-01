@@ -217,7 +217,7 @@ check('the disclosure names Arbor Day, the federal-override clause and the two o
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained ne and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
+  ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
 check('Nebraska adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 check('the no-exclusion family now has six members and the neighbours keep their own numbers',

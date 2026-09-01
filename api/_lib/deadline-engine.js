@@ -1882,6 +1882,28 @@ var COMPUTATION_STANDARDS = {
 //             deadline has passed when it has not is a usability cost, not a
 //             malpractice one. Refusing here would buy no safety.
 // Nothing is added to this table without deciding which of the two it is.
+//
+// ── THE THIRD CATEGORY, AND IT IS AN EXCEPTION TO THE RULE ABOVE ──────────
+// Added 2026-09-01 on Michael's direction, after an audit found the one entry
+// that does not fit the dichotomy hiding inside an 'early' label.
+//
+//   DISCLOSED-LATE  the gap can make the engine report a date that is LATE,
+//                   and refusing is not available because the trigger is
+//                   discretionary, per-office and published nowhere this
+//                   engine can read. It carries direction: 'late' AND a
+//                   late_exposure block naming the authority and the concrete
+//                   risk, so it cannot be read as one more safe omission.
+//
+// THERE IS EXACTLY ONE, AND THAT IS THE POINT. Alabama's Ala. Code
+// Sec. 1-3-8(f)(1) lets a state office STAY OPEN on a state holiday on sixty
+// days' notice; if a court did that and this engine rolled off the day anyway,
+// the date shown is LATER than the true deadline. Every other entry here is
+// EARLY-only. A second one must be a deliberate decision, not a default -- the
+// invariant below refuses to load an entry that is ambiguous about which it is.
+//
+// `direction` IS WORST-CASE, NOT TYPICAL. Alabama's other two gaps are EARLY
+// and safe; the field still reads 'late', because a caller switching on it is
+// asking "can this be late?" and for Alabama the answer is yes.
 var JURISDICTION_COVERAGE = {
   ks: {
     complete: false,
@@ -1895,6 +1917,27 @@ var JURISDICTION_COVERAGE = {
     summary: 'Maryland also rolls the last day when the clerk\'s office is closed or closed for PART of a day, which is per-court and not knowable in advance. This date may be EARLIER than the true deadline, never later.',
     detail: "Md. Rule 1-203(a)(2) rolls the last day on a SECOND, non-holiday trigger the calendar cannot express: \"the act to be done is the filing of a paper in court and the office of the clerk of that court on the last day of the period is not open, OR IS CLOSED FOR A PART OF THE DAY.\" That reaches weather, emergencies and partial-day closures, is published per court at mdcourts.gov/administration/closingsdelays rather than in any annual list, and is not knowable in advance. Omitting it can only make a computed date EARLIER than the true one. THE HOLIDAY LIST ITSELF IS INGESTED, NOT DERIVED, and is complete for the year it covers: Rule 1-202(l) points at State Personnel and Pensions Sec. 9-201, whose paragraph (14) reaches \"each other day that the President of the United States or the Governor designates for general cessation of business\" -- arbitrary by construction, and the Judiciary has published TWO observed days for one holiday in a past year. So the calendar is taken from the Judiciary's own published list rather than generated, and a year it does not cover is REFUSED rather than derived. NOTE ALSO THE WRONG-SOURCE TRAP, recorded because the obvious statute is the wrong one twice over: General Provisions Sec. 1-302 rolls only on \"a Sunday or legal holiday\" with no Saturday roll (reporting EARLY), and Sec. 1-111 adds Good Friday, Lincoln's Birthday, Maryland Day and Defenders' Day, which are NOT court holidays (reporting LATE). Rule 1-203's own committee note settles it: \"This section supersedes Code, General Provisions Article, Sec. 1-302 to the extent of any inconsistency.\" The correct chain is Rule 1-203 -> Rule 1-202(l) -> SPP Sec. 9-201."
   },
+  // ADDED 2026-09-01 on Michael's direction: JURISDICTION_COVERAGE is the
+  // contract for an EARLY-direction omission, and Utah and Nevada are migrated
+  // onto it. Both previously declared NO entry and asserted that absence in
+  // their own suites, on the view that their gaps were "row-level". An audit
+  // the same day measured that claim and it did not hold -- only 2 of Utah's 9
+  // rows and 2 of Nevada's 10 carried any omission-flavoured authority note,
+  // and the ones sampled explained rule STRUCTURE rather than naming these
+  // omissions, so a caller was told through neither channel. The majority of
+  // seeded states already used this table; these two now match them.
+  ut: {
+    complete: false,
+    direction: 'early',
+    summary: 'Utah omits the clerk-inaccessibility rollover, two party-status rules the engine has no field for, the inmate mailbox rule, and governor-proclaimed days. Every omission makes this date EARLIER than the true deadline, never later. The calendar covers 2026 ONLY -- any other year is refused rather than derived.',
+    detail: "URCP 6(a)(3)'s clerk's-office INACCESSIBILITY rollover is ADDITIONAL to the Saturday/Sunday/holiday rollover rather than a replacement for it -- the Minnesota 6.01(a)(4) shape, NOT Wisconsin's, where the closure test REPLACES the holiday test -- so omitting it can only report EARLY. URCP 6(d) runs the period from the SERVICE date instead of the FILING date for a party who is both unrepresented AND without an e-filing account, which is keyed on party status and this engine has no field for it. URCP 6(e)'s inmate mailbox rule, and its separate 'calculated from the date the papers are received by the court' limb, are likewise unmodelled. On holidays: limb (M) and Utah Code Sec. 63G-1-301(5) governor's proclamations are open-ended and underivable, and Good Friday is omitted on the reading that limb (M) sweeps the statute. THE CALENDAR IS CAPPED AT 2026 ON PURPOSE and a later year is REFUSED with NOT_PROVISIONED rather than generated, so the cap cannot silently produce a wrong date."
+  },
+  nv: {
+    complete: false,
+    direction: 'early',
+    summary: 'Nevada omits presidentially appointed days of public fast or thanksgiving, the hours-granular rollover in NRCP 6(a)(2), the electronic-filing cutoff in 6(a)(4)(A), and the clerk-inaccessibility limb in 6(a)(3). Every omission makes this date EARLIER than the true deadline, never later.',
+    detail: "The calendar is NRS 236.015(1) in full -- including NEVADA DAY, which the statute fixes at October 31 but directs be observed on the last Friday in October, and FAMILY DAY, the Friday following the fourth Thursday in November, neither of which exists on any other calendar here -- with the NRS 236.015(3) both-ways observation shift applied. That shift is enumerated to exactly five days (1 January, 19 June, 4 July, 11 November and 25 December), so it is NOT applied to the others; that is the statute's own limit and not an omission. WHAT IS OMITTED, all EARLY: presidentially appointed days of public fast or thanksgiving, which are ad hoc and not encodable; NRCP 6(a)(2), which states periods in HOURS with its own hour-granular rollover, and this engine has no hours unit; 6(a)(4)(A), which ends the last day at 11:59 p.m. for electronic filing -- a filing cutoff rather than a date shift; and 6(a)(3)'s clerk-inaccessibility limb, which like Utah's is ADDITIONAL to the ordinary rollover rather than a replacement for it."
+  },
   wi: {
     complete: false,
     direction: 'early',
@@ -1903,9 +1946,18 @@ var JURISDICTION_COVERAGE = {
   },
   al: {
     complete: false,
-    direction: 'early',
+    // WORST CASE, not typical -- see the DISCLOSED-LATE note above. Two of
+    // Alabama's three gaps are EARLY and safe; this reads 'late' because one
+    // of them is not, and that is the only answer a caller can act on.
+    direction: 'late',
+    late_exposure: {
+      authority: 'Ala. Code Sec. 1-3-8(f)(1)',
+      summary: 'A state office may STAY OPEN on a state holiday on sixty days written notice. If a court does that and this engine rolls the deadline off that day anyway, the date shown is LATER than the true deadline.',
+      why_not_refused: 'The trigger is discretionary, per-office, and published nowhere this engine can read, so there is no signal to refuse on. Refusing every Alabama date that lands on or near a listed holiday would withdraw the whole jurisdiction to guard against a rare exercise of a notice provision.',
+      caller_action: 'Before relying on an Alabama date that falls on or near a listed holiday, confirm that the court was in fact closed.'
+    },
     summary: 'Alabama county-scoped holidays and weather closures are NOT modelled (both EARLY, safe). ONE EXCEPTION RUNS LATE and is disclosed rather than modelled: Ala. Code 1-3-8(f)(1) lets an office stay OPEN on a state holiday on 60 days notice, and this engine would roll off that day anyway.',
-    detail: "The calendar is the union Ala. R. Civ. P. 6(a)(4) requires -- the eleven days the rule names, plus \"any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8\" -- derived for 2026 and checked by day-of-week. TWO GAPS RUN EARLY AND ARE SAFE. (1) MARDI GRAS: Sec. 1-3-8(e)(1) makes it a holiday and closes all state offices in BALDWIN AND MOBILE COUNTIES only, and a jurisdiction+year calendar cannot express a two-county day; omitting it is correct in the other 65 counties and EARLY in those two. (2) Rule 6(a)(3) also rolls the last day when \"weather or other conditions make the clerk's office inaccessible\", which is unknowable in advance; omitting it is EARLY. ONE GAP RUNS LATE, AND IT IS FLAGGED RATHER THAN BURIED: Sec. 1-3-8(f)(1) lets a state office STAY OPEN on a state holiday on sixty days' written notice. If a court did that and this engine rolled the deadline off that day anyway, the date shown would be LATER than the true deadline -- the direction that loses a filing. It is discretionary, per-office and not published anywhere this engine can read, so it cannot be modelled; it is disclosed instead. The same question in a sharper form is why WISCONSIN is not seeded: Wis. Stat. 801.15(1)(b) rolls on \"a day the clerk of courts office is closed\" rather than on any list, and the Wisconsin court system's own 2026 closure schedule shows counties genuinely open on listed holidays. Before relying on an Alabama date that falls on or near a listed holiday, confirm that the court was in fact closed."
+    detail: "The calendar is the union Ala. R. Civ. P. 6(a)(4) requires -- the eleven days the rule names, plus \"any other day declared a holiday by the President or Congress or as prescribed by Sec. 1-3-8\" -- derived for 2026 and checked by day-of-week. TWO GAPS RUN EARLY AND ARE SAFE. (1) MARDI GRAS: Sec. 1-3-8(e)(1) makes it a holiday and closes all state offices in BALDWIN AND MOBILE COUNTIES only, and a jurisdiction+year calendar cannot express a two-county day; omitting it is correct in the other 65 counties and EARLY in those two. (2) Rule 6(a)(3) also rolls the last day when \"weather or other conditions make the clerk's office inaccessible\", which is unknowable in advance; omitting it is EARLY. ONE GAP RUNS LATE, AND IT IS FLAGGED RATHER THAN BURIED: Sec. 1-3-8(f)(1) lets a state office STAY OPEN on a state holiday on sixty days' written notice. If a court did that and this engine rolled the deadline off that day anyway, the date shown would be LATER than the true deadline -- the direction that loses a filing. It is discretionary, per-office and not published anywhere this engine can read, so it cannot be modelled; it is disclosed instead. The same question in a sharper form is WISCONSIN, and the two were resolved differently -- corrected 2026-09-01, this sentence previously said Wisconsin was not seeded and it has been since August. Wis. Stat. 801.15(1)(b) rolls on \"a day the clerk of courts office is closed\" rather than on any list, and that state's own 2026 closure schedule shows counties genuinely open on listed holidays; Wisconsin resolved it by carrying ONLY the three days every county is closed, which is under-inclusive and therefore EARLY. Alabama cannot do the same, because its exposure is a discretionary notice provision rather than a published schedule to intersect. Before relying on an Alabama date that falls on or near a listed holiday, confirm that the court was in fact closed."
   },
   ar: {
     complete: false,
@@ -1995,6 +2047,44 @@ var JURISDICTION_COVERAGE = {
     detail: 'THE REFERENT NAMES A CHAPTER, NOT A SECTION, AND THAT DISTINCTION ALREADY DECIDED A DATE ONCE. N.H. Super. Ct. R. 2 rolls the last day off \"a Saturday, Sunday, or a legal holiday AS SPECIFIED IN RSA CH. 288, AS AMENDED\". Haw. R. Civ. P. 6(a) named HRS Sec. 8-1 by number, so the weekend-observance section beside it fell OUTSIDE the reference and Hawaii omits its shifted Friday as a reading. Here RSA 288:2 is INSIDE the reference and IS carried. IT THEN TURNS OUT NOT TO MATTER IN 2026, AND THE REASON IS WORTH STATING: RSA 288:2 reads in full \"When any holiday listed in RSA 288:1 falls on Sunday, the following day shall be observed as a holiday\" — A SUNDAY RULE ONLY, with no Saturday limb at all. 4 July 2026 is a SATURDAY, so New Hampshire has NO Friday 3 July observance, not by interpretation but because no clause could produce one. Idaho Code Sec. 73-108 and Neb. Rev. Stat. Sec. 25-2221 both shift a Saturday holiday back to the Friday and both calendars carry 3 July 2026; Hawaii omits it as a reading; New Hampshire omits it because the rule does not exist. Four jurisdictions, three reasons, one date. And NO RSA 288:1 holiday falls on a Sunday in 2026, checked date by date, so the shift that does exist is dormant this year. THE LIST IS CLOSED, WHICH NO OTHER SEEDED HOLIDAY STATUTE IS. Idaho and Hawaii both end with a day appointed by the President or the governor; Kansas reaches any day observed by order of the supreme court; Nebraska subordinates its dates to the federal schedule and adds a governor-proclamation limb. RSA 288:1 enumerates and stops: \"...and Christmas Day are legal holidays.\" There is no proclamation limb to disclose, which removes the open-ended gap every other jurisdiction here has to declare. THE ONE OMISSION IS THE BIENNIAL ELECTION DAY, AND IT IS THE ONE JUDGMENT CALL IN THIS SEED. RSA 288:1 lists \"the day on which the biennial election is held\" among the legal holidays. 2026 is an even-numbered year so such a day exists. DATING IT REQUIRES A SECOND STATUTE THAT DOES NOT USE THE SAME WORD: RSA 653:7 provides that \"the state general election shall be held on the first Tuesday following the first Monday in November of every even-numbered year\", which for 2026 is TUESDAY 3 NOVEMBER 2026; and RSA ch. 652, the election-law definitions chapter, defines \"election\" (652:1), \"regular election\" (652:2), \"state election\" (652:3) and \"state general election\" (652:4) and NEVER DEFINES \"biennial election\". The identification is near-certain and it is still a reading across two chapters. THE DIRECTION DECIDES IT: omitting a holiday returns the unrolled, sooner date, and filing early is safe; carrying a day that is not a holiday returns a date one day LATE and loses the filing. So it is omitted and named here. A New Hampshire deadline landing on Tuesday 3 November 2026 should be checked by hand; no other 2026 date is affected. THE SAME CALL WAS MADE ON HAWAII\'S ELECTION DAY for a related but not identical reason — Hawaii\'s is county-scoped by the statute\'s own words, New Hampshire\'s is statewide and merely undated. TWO CONDITIONAL CLAUSES ARE LIVE LAW, NOT MODELLED, AND DORMANT IN 2026. Memorial Day is \"the last Monday in May ... OR, ON A DATE TO COINCIDE WITH THE FEDERAL OBSERVANCE IF IT IS HELD ON A DIFFERENT DAY\"; the federal observance under 5 U.S.C. 6103 is also the last Monday in May, so both fall on 25 May 2026 and the clause moves nothing. Thanksgiving is \"Thanksgiving Day, WHENEVER APPOINTED\", which names no date at all; it is seeded as the fourth Thursday, which is what 5 U.S.C. 6103 fixes federally and what every appointment in living memory has been, and that is a CONVENTION rather than a transcription. THE JUDICIAL BRANCH PUBLISHES ITS OWN COURT-HOLIDAY SCHEDULE AND IT IS NOT THE LEGAL TEST. courts.nh.gov lists \"Court Holidays - 2026\" as a PDF posted 11 June 2025, and a 2027 one beside it. NEITHER WAS READ — both refuse every automated route available here — and that is recorded rather than guessed at. It would not change this calendar: Rule 2 keys the rollover on a day being \"a legal holiday as specified in RSA ch. 288\", not on whether a courthouse opened. This is the KANSAS POSITION INVERTED. There the statute keys on a day being observed BY ORDER OF THE SUPREME COURT, so the Judicial Branch list IS the legal test; here the statute keys on the legislature\'s enumeration, so the courts\' own list is practical information and nothing more. A day the New Hampshire courts close that RSA 288:1 does not name remains a countable day under Rule 2, and a practitioner should still check it before relying on being able to file. NO BACKWARD ROW IS SEEDED, AND THE ONE BEING GIVEN UP IS UNUSUAL. Rule 2 extends to \"the NEXT day\" and says nothing about a period measured before an event — the Mississippi, Idaho, Nebraska and Hawaii shape, not New Mexico\'s. Rule 26(b) requires deposition notice \"at least 3 days, EXCLUSIVE OF THE DAY OF SERVICE AND THE DAY OF CAPTION, before the day on which they are to be taken\", a period carrying its own both-endpoints-excluded convention that Rule 2 does not supply and this engine cannot express. Also unseeded and backward: Rule 5(a)(8) dispositive motions not less than 120 days before trial, Rule 5(a)(9) other pre-trial motions not later than 14 days before trial, and Rule 35 trial-management filings 14 days before the conference. AN EFFECTIVE-DATE WARNING THAT IS NOT ABOUT HOLIDAYS. The New Hampshire Judicial Branch publishes these rules with NO amendment history and NO per-rule effective dates — checked on the combined page and on an individual rule page, and in sharp contrast to Hawaii, Idaho, Nebraska and New Mexico, which all print bracketed amendment notes. Every effective_from in this seed therefore comes from the ADOPTION ORDER of 22 May 2013 (\"The amendments shall take effect October 1, 2013\") and from the rule set\'s own PREAMBLE in that order (\"They take effect on October 1, 2013, and apply to civil actions pending or filed in superior court on or after that date\"), a preamble the currently-published web version does not reproduce. Each seeded row was then diffed against that order sentence by sentence. TWO REAL PERIODS WERE DROPPED FOR WANT OF A DATE: Rule 13A\'s ten-day reply to an objection and three-day notice to the clerk, and Rule 12\'s thirty-day summary-judgment objection with its twenty-day reply — all current, all post-dating the 2013 adoption, none carrying a published effective date. A caller needing either must not compute it from this seed. 2026 ONLY: a later year is REFUSED rather than derived. All ten dates would generate mechanically, which is precisely why generating is refused — it would hide the biennial-election question behind a confident answer, and it would be wrong in a second way, since 2027 is an ODD year in which the election limb produces no day at all and a generator that silently dropped it would look identical to one that had reasoned about it.'
   }
 };
+
+// THE DISCLOSED-LATE CATEGORY IS SELF-ENFORCING. An entry cannot be ambiguous
+// about whether it carries a late-direction exposure: 'late' without the block,
+// or the block without 'late', is a load-time failure rather than a quiet
+// mislabel. Same standard as the weekend_days check above and for the same
+// reason -- this is in-code data, so a defect here is a bug, and a bug that
+// stops the engine loading is caught by the first test that requires it.
+// Exported so the invariant and its test assert the SAME function rather than
+// two implementations that can drift -- the weekendDaysDefect pattern.
+// Returns an array of defect strings; empty means the table is well formed.
+function coverageTableDefects(table) {
+  var REQUIRED_LATE_KEYS = ['authority', 'summary', 'why_not_refused', 'caller_action'];
+  var bad = [];
+  Object.keys(table).forEach(function (k) {
+    var e = table[k];
+    if (e.direction !== 'early' && e.direction !== 'late') {
+      bad.push(k + '.direction is ' + JSON.stringify(e.direction) + ', expected "early" or "late"');
+    }
+    if (e.direction === 'late' && !e.late_exposure) {
+      bad.push(k + " declares direction 'late' with no late_exposure block naming the authority and the risk");
+    }
+    if (e.late_exposure && e.direction !== 'late') {
+      bad.push(k + " carries a late_exposure block but direction is '" + e.direction + "'");
+    }
+    if (e.late_exposure) {
+      REQUIRED_LATE_KEYS.forEach(function (rk) {
+        if (!e.late_exposure[rk]) bad.push(k + '.late_exposure is missing ' + rk);
+      });
+    }
+  });
+  return bad;
+}
+(function validateCoverageDeclarations() {
+  var bad = coverageTableDefects(JURISDICTION_COVERAGE);
+  if (bad.length) {
+    throw new Error('deadline-engine: invalid JURISDICTION_COVERAGE declaration(s): ' + bad.join('; '));
+  }
+})();
 
 // ── Service-extension standards (Phase 2, Gap 3) ──────────────────────────
 // PREVIOUSLY A SINGLE GLOBAL ALLOWLIST, which was a latent defect: it held
@@ -4628,7 +4718,7 @@ function computeDeadline(input) {
 
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
-  DEFAULT_WEEKEND_DAYS, weekendDaysDefect,
+  DEFAULT_WEEKEND_DAYS, weekendDaysDefect, coverageTableDefects,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,

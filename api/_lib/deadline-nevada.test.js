@@ -219,8 +219,10 @@ check('a 2032 trigger refuses -- the calendar stops at 2031',
   dateOf(compute('nv-nrcp-33-b-2-interrogatory-response', '2032-03-01')), 'REFUSED:NOT_PROVISIONED');
 
 // ── Nothing else moved ────────────────────────────────────────────────────
-check('Nevada declares NO coverage entry -- its gaps are all EARLY and row-level',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
+// MIGRATED 2026-09-01 on Michael's direction -- same change as Utah's, and
+// for the same measured reason. Previously asserted the ABSENCE of an entry.
+check('Nevada declares an EARLY coverage entry, and the table holds every seeded discloser',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
 check('Nevada adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 {

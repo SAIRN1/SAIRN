@@ -229,8 +229,15 @@ check('supplying service_method: mail adds NOTHING -- no extension is seeded',
   dateOf(compute('ut-r-12-a-1-answer-in-state', '2026-06-01', { service_method: 'mail' })), '2026-06-22');
 
 // ── Nothing else moved ────────────────────────────────────────────────────
-check('Utah declares NO coverage entry -- its gaps are all EARLY and row-level',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'va', 'wi']);
+// MIGRATED 2026-09-01 on Michael's direction. This assertion previously read
+// "Utah declares NO coverage entry -- its gaps are all EARLY and row-level".
+// The row-level claim was measured during the stale-row audit and did not
+// hold: only 2 of these 9 rows carry any omission-flavoured authority note,
+// and neither names the clerk-inaccessibility, party-status or mailbox
+// omissions. JURISDICTION_COVERAGE is now the contract for an EARLY-direction
+// omission, and Utah is on it.
+check('Utah declares an EARLY coverage entry, and the table holds every seeded discloser',
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
 check('Utah adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // Two pre-existing jurisdictions must be untouched by the new standard.
