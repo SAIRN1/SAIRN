@@ -123,14 +123,31 @@ attempt to enumerate.
 
    **For 2026 this is not dormant.** Juneteenth, 19 June 2026, is a **Friday** —
    no shift. Independence Day, 4 July 2026, is a **Saturday**, so under
-   § 501(b) the **preceding Friday, 3 July 2026, is a legal holiday**.
-   **That is a fifth answer to the 3 July 2026 question** this platform has now
-   produced four times: Idaho and Nebraska carry it via Saturday-shift clauses
-   inside the sections their rules cite; Hawaii omits it because § 8-2 fell
-   outside the reference; New Hampshire omits it because RSA 288:2 is a
-   Sunday-only rule with no Saturday limb; **Delaware carries it because
-   § 501(b) has an explicit Saturday limb and Rule 6(a) reaches the whole
-   statute.** Five jurisdictions, four reasons, one date.
+   § 501(b) the **preceding Friday, 3 July 2026, is a legal holiday**, and
+   Delaware **carries** it because § 501(b) has an explicit Saturday limb and
+   Rule 6(a) reaches the whole statute rather than one section of it.
+
+   > **CORRECTED 2026-09-01, same day, before this doc was relied on.** The
+   > first version of this paragraph called that "a fifth answer to the 3 July
+   > 2026 question … five jurisdictions, four reasons, one date". **That was
+   > wrong, and wrong in the direction that overstates novelty.** It generalised
+   > a phrase from the New Hampshire commit, which was comparing one deliberately
+   > chosen set of four neighbours (ID, NE, HI, NH), into a platform-wide tally
+   > nobody had counted. **Counted 2026-09-01 across every seeded 2026 calendar:
+   > 19 of 30 CARRY Friday 3 July** — AL, AR, FL, ID, KS, MD, MN, NE, NV, NJ, NM,
+   > NC, OK, OR, SC, UT, VA, WA, WV — **and 11 OMIT it** — CA, GA, HI, IL, MA, MS,
+   > MO, NH, NY, TX, WI. **Delaware would be the twentieth carrier, not the
+   > fifth answer.**
+   >
+   > **What is actually worth recording is not the count but that the split is
+   > real and is decided per state by statutory mechanics, not by consensus.**
+   > Two-thirds of seeded states observe the Friday and a third do not, and the
+   > reason differs each time: an explicit shift clause inside the cited section
+   > (Idaho, Nebraska), a shift clause inside the cited *chapter* (Delaware,
+   > Maryland — whose Judiciary publishes 3 July itself), a shift clause that
+   > exists but fell **outside** the reference (Hawaii), and no Saturday limb at
+   > all (New Hampshire). **A neighbour's answer is never evidence here**, which
+   > was the only durable point the original sentence was reaching for.
 
 3. **THE GENERAL ELECTION DAY IS A HOLIDAY AND 2026 IS AN ELECTION YEAR** —
    § 501(a)(12), "the day of the General Election as it biennially occurs".
