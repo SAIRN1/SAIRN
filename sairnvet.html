@@ -283,15 +283,10 @@
 <div id="dashboard" class="panel active">
   <div class="panel-header">
     <h1 class="panel-title">Dashboard</h1>
-    <p class="panel-desc">Welcome to SAIRNvet — the complete veterinary platform with 465 diagnoses, 485 medication dosing entries, and AI-powered clinical support grounded in verified data across every species.</p>
+    <p class="panel-desc">Welcome to SAIRNvet &mdash; the complete veterinary platform with <span id="dash-dx-count">&mdash;</span> diagnoses, <span id="dash-drug-count">&mdash;</span> medication dosing entries, and AI-powered clinical support grounded in verified data across every species.</p>
   </div>
-  <div class="kpi-row">
-    <div class="kpi"><div class="kpi-label">Diagnoses Library</div><div class="kpi-value">465</div><div class="kpi-change">All species, growing weekly</div></div>
-    <div class="kpi"><div class="kpi-label">Medications</div><div class="kpi-value">485</div><div class="kpi-change">Verified where possible, flagged where not</div></div>
-    <div class="kpi"><div class="kpi-label">Active Patients</div><div class="kpi-value">1,847</div><div class="kpi-change">Every species group</div></div>
-    <div class="kpi"><div class="kpi-label">Panels</div><div class="kpi-value">55</div><div class="kpi-change">Full practice coverage</div></div>
-  </div>
-  <div class="card">
+  <div class="kpi-row" id="dashboard-kpis"></div>
+        <div class="card">
     <h3>Quick Start</h3>
     <ul style="margin:15px 0;padding-left:20px;list-style:none;">
       <li style="margin:8px 0;"><a href="#" onclick="svNav('panel-diagnoses');return false;" style="color:var(--primary);text-decoration:none;font-weight:600;">→ Search the Diagnosis Library by species and body system</a></li>
@@ -1668,39 +1663,19 @@
 </div>
 
 <div id="zoo-patients" class="panel">
-<div class="panel-header">
-<h1 class="panel-title">Zoo &amp; Wildlife</h1>
-<p class="panel-desc">Zoo animal medicine, immobilization, and species-specific protocols</p>
-</div>
-<div class="panel-actions">
-<button class="btn btn-sm" onclick="exportTableCSV('zoo-patients-table','zoo-patients')">Export CSV</button>
-<button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
-</div>
-<div class="kpi-row">
-<div class="kpi">
-<div class="kpi-label">Institutions Served</div>
-<div class="kpi-value">3</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Immobilizations YTD</div>
-<div class="kpi-value">28</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Species Covered</div>
-<div class="kpi-value">62</div>
-</div>
-<div class="kpi">
-<div class="kpi-label">Revenue YTD</div>
-<div class="kpi-value">$64K</div>
-</div>
-</div>
-<div class="card"><div class="sv-tw"><table id="zoo-patients-table">
-<thead><tr><th>Institution</th><th>Species</th><th>Procedure</th><th>Date</th></tr></thead>
-<tbody>
-<tr><td>Cleveland Metroparks Zoo</td><td>Amur Leopard</td><td>Annual exam under anesthesia</td><td>2026-06-20</td></tr>
-<tr><td>Private Wildlife Sanctuary</td><td>Red Wolf</td><td>Wellness check</td><td>2026-06-10</td></tr>
-</tbody></table></div></div>
-<div class="card"><h3>AI Zoo Immobilization Protocol</h3><label>Species</label><input type="text" id="zoo-species" placeholder="e.g., Amur Leopard, African Elephant" style="width:100%;margin:8px 0;"><label>Estimated Weight (kg)</label><input type="number" id="zoo-weight" placeholder="e.g., 45" style="width:100%;margin:8px 0;"><label>Procedure</label><input type="text" id="zoo-procedure" placeholder="e.g., annual exam, dental, transport" style="width:100%;margin:8px 0;"><button class="btn" onclick="getZooProtocol()">Get Immobilization Protocol</button><div id="zoo-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
+      <div class="panel-header">
+        <h1 class="panel-title">Zoo &amp; Wildlife</h1>
+        <p class="panel-desc">Zoo animal medicine, immobilization, and species-specific protocols</p>
+      </div>
+      <div class="panel-actions">
+        <button class="btn btn-sm" onclick="exportTableCSV('zoo-patients-table','zoo-patients')">Export CSV</button>
+        <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
+      </div>
+      <div class="kpi-row" id="zoo-patients-kpis"></div>
+      <div class="card"><div class="sv-tw"><table id="zoo-patients-table">
+        <thead><tr><th>Patient</th><th>Species</th><th>Breed</th><th>Owner</th><th>Age</th><th>Last Visit</th><th>Status</th></tr></thead>
+        <tbody id="zoo-patients-tbody"></tbody></table></div></div>
+      <div class="card"><h3>AI Zoo Immobilization Protocol</h3><label>Species</label><input type="text" id="zoo-species" placeholder="e.g., Amur Leopard, African Elephant" style="width:100%;margin:8px 0;"><label>Estimated Weight (kg)</label><input type="number" id="zoo-weight" placeholder="e.g., 45" style="width:100%;margin:8px 0;"><label>Procedure</label><input type="text" id="zoo-procedure" placeholder="e.g., annual exam, dental, transport" style="width:100%;margin:8px 0;"><button class="btn" onclick="getZooProtocol()">Get Immobilization Protocol</button><div id="zoo-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div></div>
 </div>
 </div>
 
@@ -4000,7 +3975,25 @@ var SV_SPECIES_GROUPS = {
   'exotic-patients':    { label: 'Exotic',           species: ['Lagomorph', 'Rodent', 'Ferret', 'Hedgehog', 'Sugar Glider', 'Primate'] },
   'avian-patients':     { label: 'Avian',            species: ['Avian', 'Psittacine', 'Passerine', 'Raptor', 'Waterfowl', 'Poultry'] },
   'reptile-patients':   { label: 'Reptile',          species: ['Reptile', 'Chelonian', 'Squamate', 'Serpent', 'Lizard', 'Crocodilian'] },
-  'aquatic-patients':   { label: 'Aquatic',          species: ['Fish', 'Piscine', 'Amphibian', 'Cephalopod'] }
+  'aquatic-patients':   { label: 'Aquatic',          species: ['Fish', 'Piscine', 'Amphibian', 'Cephalopod'] },
+  // THE EIGHTH PANEL, added 2026-09-01. The 2026-08-30 sweep converted seven
+  // species panels and missed this one, which still carried four hardcoded
+  // KPIs (including Revenue YTD $64K -- the same invented-revenue class this
+  // very comment says was DROPPED rather than re-fabricated), two invented
+  // rows naming a real institution, a table no code populated, and an Export
+  // CSV button wired to it, so a customer could export invented rows as
+  // records. Same defect shape, same fix.
+  //
+  // IT CHANGED MEANING, like `large` and `aquatic` before it, and for the
+  // same reason: it used to show Institution / Species / Procedure / Date --
+  // an institution-level entity with no data model behind it. Rather than
+  // invent one, it becomes a species-filtered view of the real roster.
+  //
+  // Species is FREE TEXT on a patient record, so this list is a matching set,
+  // not a taxonomy claim -- extend it in one line as a practice's own wording
+  // becomes known. Note it cannot catch a zoo big cat typed as 'Feline'; that
+  // patient stays on panel-patients, which is the authoritative roster.
+  'zoo-patients':       { label: 'Zoo and wildlife', species: ['Zoo', 'Wildlife', 'Cervid', 'Ursid', 'Felid', 'Canid', 'Pinniped', 'Marsupial', 'Elephant', 'Mustelid'] }
 };
 
 function svRenderSpeciesPanel(key){
@@ -4055,6 +4048,54 @@ function svRenderSpeciesPanel(key){
 function svRenderAllSpeciesPanels(){
   Object.keys(SV_SPECIES_GROUPS).forEach(svRenderSpeciesPanel);
 }
+
+// ===================================================================
+// DASHBOARD KPIs (2026-09-01) -- the first screen a practice sees, and the
+// last shell in this audit line.
+//
+// WHAT THEY WERE. Four values written straight into the markup with nothing
+// behind them: Diagnoses Library 465, Medications 485, Active Patients 1,847,
+// Panels 55. No render function touched any of them -- grepped, zero hits.
+//
+// ACTIVE PATIENTS 1,847 WAS THE ONE THAT MATTERED. This is the Dashboard
+// panel, not a marketing page, so that figure read as THIS practice's roster.
+// The real roster is getPatients(), and renderPatients() has always shown its
+// true length two clicks away -- so the dashboard was contradicting another
+// screen in the same app. It is DERIVED now rather than dropped, because
+// unlike the species panels' invented revenue there is a real field behind it.
+//
+// PANELS 55 WAS ACTUALLY CORRECT, and is still being changed. It was fixed
+// once already (2026-07, 54 -> 55) and a hardcoded count is guaranteed to go
+// stale again the next time a panel is added -- the fix is to stop writing it
+// down, not to write down a better number. querySelectorAll('.panel') is the
+// same selector svNav already uses to hide them, so the two cannot disagree.
+//
+// The 465/485 figures in the panel description are derived for the same
+// reason: the label under one of them literally says 'growing weekly'.
+function svRenderDashboard(){
+  var dx = (typeof VET_DIAGNOSES !== 'undefined' && VET_DIAGNOSES) ? VET_DIAGNOSES.length : null;
+  var drugs = (typeof VET_DRUGS !== 'undefined' && VET_DRUGS) ? VET_DRUGS.length : null;
+  var patients = getPatients().length;
+  var panels = document.querySelectorAll('.panel').length;
+
+  var dEl = document.getElementById('dash-dx-count');
+  if(dEl) dEl.textContent = dx === null ? '—' : dx;
+  var gEl = document.getElementById('dash-drug-count');
+  if(gEl) gEl.textContent = drugs === null ? '—' : drugs;
+
+  var kpis = document.getElementById('dashboard-kpis');
+  if(!kpis) return;
+  kpis.innerHTML =
+    '<div class="kpi"><div class="kpi-label">Diagnoses Library</div><div class="kpi-value">'+(dx===null?'—':dx)+'</div><div class="kpi-change">All species</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Medications</div><div class="kpi-value">'+(drugs===null?'—':drugs)+'</div><div class="kpi-change">Verified where possible, flagged where not</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Active Patients</div><div class="kpi-value">'+patients+'</div><div class="kpi-change">'+(patients?'This practice’s roster':'None on the roster yet')+'</div></div>'+
+    '<div class="kpi"><div class="kpi-label">Panels</div><div class="kpi-value">'+panels+'</div><div class="kpi-change">Counted live, not written down</div></div>';
+}
+window.svRenderDashboard = svRenderDashboard;
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', function(){ svRenderDashboard(); svRenderAllSpeciesPanels(); });
+} else { svRenderDashboard(); svRenderAllSpeciesPanels(); }
 
 // ===================================================================
 // SETTINGS (2026-08-30) — the ninth and last shell in the audit gap.
@@ -6503,6 +6544,11 @@ function svNav(panelId){
   }
   var btn=document.querySelector('[onclick="svNav(\''+panelId+'\')"]');
   if(btn){btn.classList.add('active');}
+  // The dashboard's figures are derived, so they must be recomputed when it
+  // is shown again -- a patient added since the last visit would otherwise
+  // leave the roster count stale, which is the failure mode the hardcoded
+  // version had permanently.
+  if(panelId==='dashboard' && typeof svRenderDashboard==='function') svRenderDashboard();
   window.scrollTo(0,0);
 }
 // backward-compat alias used by earlier builds
