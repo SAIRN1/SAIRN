@@ -80,6 +80,16 @@
       "claimed_at_epoch": 1788260699.5317907,
       "status": "released",
       "released_at": "2026-09-01T11:28:05Z"
+    },
+    {
+      "id": "hank-1788262237",
+      "session": "hank",
+      "subject": "sairncode",
+      "task": "dialysis ESRD specialty module",
+      "claimed_at": "2026-09-01T11:30:37Z",
+      "claimed_at_epoch": 1788262237.3467927,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
