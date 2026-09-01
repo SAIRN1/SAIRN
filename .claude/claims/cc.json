@@ -58,8 +58,8 @@
       "task": "event handler js-context escaping and markdown repoint",
       "claimed_at": "2026-09-01T12:58:06Z",
       "claimed_at_epoch": 1788267486.9324422,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T18:17:28Z"
     }
   ]
 }
