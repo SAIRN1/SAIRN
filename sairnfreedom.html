@@ -157,6 +157,10 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-members" onclick="sfNav('members')">Members</div>
       <div class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</div>
       <div class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</div>
+      <div class="nsec">Phase 3 &mdash; Gaming compliance</div>
+      <div class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</div>
+      <div class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</div>
+      <div class="nitem" id="nav-operators" onclick="sfNav('operators')">Operators</div>
     </nav>
 
     <main>
@@ -166,11 +170,19 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div class="pdesc">Foundation status for this post</div></div></div>
         <div class="kpi-row" id="dash-kpis"></div>
         <div id="dash-flags"></div>
-        <div class="card"><h3>Phase 1 scope</h3>
-          <div class="note">This build covers the foundation only &mdash; entity and licence
+        <div class="card"><h3>What is built, and what is not</h3>
+          <div class="note"><strong>Phase 1 &mdash; Foundation:</strong> entity and licence
           model, officer capabilities, member roster, the three-layer fee structure and
-          conditional waivers. Canteen, gaming compliance, disbursement and district
-          rollup are later phases and are deliberately absent rather than stubbed.</div>
+          conditional waivers.<br>
+          <strong>Phase 3 &mdash; Gaming compliance:</strong> bingo accounts and the
+          separate electronic instant bingo account (3.1, 3.2), the session model with
+          calendar refusals (3.3), the profit chain (3.4) and operator eligibility (3.6).
+          <strong>Item 3.5, the ORC 2915.10(A) record set, is deliberately held</strong>
+          &mdash; it requires winner Social Security numbers and is being researched as
+          its own task. This app does not yet produce a compliant 2915.10 record set.<br>
+          <strong>Not built:</strong> Phase 2 (canteen POS, events, hall rental, vendors),
+          Phase 4 (disbursement, donations, service hours), Phase 5 (member experience)
+          and Phase 6 (district rollup). Absent rather than stubbed.</div>
         </div>
       </div>
 
@@ -205,13 +217,23 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <h3>Licences</h3>
           <div class="grid">
             <div><label>Liquor permit class</label><select id="pp-liquor"></select></div>
-            <div><label>Bingo licence type</label><select id="pp-bingo"></select></div>
+          </div>
+          <!-- PHASE 3 CHANGED THIS FROM A SINGLE SELECT TO CHECKBOXES, deliberately.
+               OAC 109:1-4-08 Type II REQUIRES Type I, so a post running instant bingo
+               at a session necessarily holds two types at once and a single-select
+               could not express it. Phase 1's single value migrates into this list on
+               first render; nothing is lost. This is the ONE source of truth for
+               licence types -- the Sessions panel reads it and refuses on it. -->
+          <div style="margin-top:12px"><label>Bingo licence types held (OAC 109:1-4-08)</label>
+            <div id="pp-bingo-types" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px"></div>
           </div>
           <div class="note">OAC 109:1-4-08 Types I/II/III gate which lawful activity the
-          post may run. The gaming and liquor modules are <strong>coupled</strong>
-          (spec 0e): a Chapter 2915 violation is simultaneously a liquor-permit
-          exposure. Phase 3 builds that interlock; this phase records the facts it
-          will branch on.</div>
+          post may run &mdash; <strong>Type I</strong> is bingo under ORC 2915.01(O)(1);
+          <strong>Type II</strong> is instant / electronic instant bingo <em>at</em> a
+          session and requires Type I; <strong>Type III</strong> is instant / electronic
+          instant bingo <em>other than</em> at a session. The gaming and liquor modules
+          are <strong>coupled</strong> (spec 0e): a Chapter 2915 violation is
+          simultaneously a liquor-permit exposure under OAC 4301:1-1-53(D)&ndash;(E).</div>
         </div>
         <div class="card">
           <button class="btn" onclick="sfSavePost()">Save post profile</button>
@@ -313,6 +335,176 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="tw"><table>
           <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
           <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ============ PHASE 3 — SESSIONS AND CALENDAR (3.3) ============ -->
+      <div class="panel" id="panel-sessions">
+        <div class="ph"><div><div class="ptitle">Sessions &amp; Calendar</div>
+          <div class="pdesc">ORC 2915.01(S) defines what a session <em>is</em>; ORC 2915.09 constrains when one may be held</div></div></div>
+        <div id="sess-flags"></div>
+        <div class="kpi-row" id="sess-kpis"></div>
+
+        <div class="card"><h3>Schedule a session</h3>
+          <div class="grid">
+            <div><label>Date</label><input type="date" id="ss-date"></div>
+            <div><label>Core period starts</label><input type="time" id="ss-start" value="19:00"></div>
+            <div><label>Core period ends</label><input type="time" id="ss-end" value="22:00"></div>
+            <div><label>Instant bingo before (minutes)</label><input type="number" id="ss-before" min="0" max="600" step="15" value="0"></div>
+            <div><label>Instant bingo after (minutes)</label><input type="number" id="ss-after" min="0" max="600" step="15" value="0"></div>
+            <div><label>Planned maximum prize payout</label><input type="number" id="ss-prizecap" min="0" step="0.01" value="0"></div>
+            <div><label>Deposit gross profit to</label><select id="ss-account"></select></div>
+          </div>
+          <div style="margin-top:12px"><label>Games conducted</label>
+            <div id="ss-games" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px"></div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn sec" onclick="sfTestSession()">Test against the statute</button>
+            <button class="btn" onclick="sfScheduleSession()">Schedule session</button>
+          </div>
+          <div id="ss-testout"></div>
+          <div class="note">The calendar <strong>refuses</strong> rather than reporting
+          afterwards. Phase 2's events calendar must call this same check &mdash; it is
+          one calendar, not two. Building the booking surface separately would produce
+          something that cheerfully schedules a fourth session in a seven-day window and
+          reports the violation later.</div>
+        </div>
+
+        <div class="card"><h3>Scheduled sessions</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Core period</th><th>Instant windows</th><th>Games</th><th>Gross profit</th><th>Status</th><th></th></tr></thead>
+            <tbody id="ss-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Record session results</h3>
+          <div class="grid">
+            <div><label>Session</label><select id="sr-session"></select></div>
+          </div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Game type</th><th>Gross receipts</th><th>Prizes paid</th></tr></thead>
+            <tbody id="sr-tbody"></tbody></table></div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfRecordResults()">Record results</button></div>
+          <div class="note">Gross receipts is ORC 2915.01(T) &mdash; all money received
+          <strong>without</strong> deducting prizes or expenses. Gross profit is
+          2915.01(EE), receipts minus prizes actually paid, and that is the figure
+          2915.10(C) requires be deposited. Depositing gross receipts instead is a
+          records violation even when the arithmetic reconciles later.</div>
+        </div>
+
+        <div class="card"><h3>What is deliberately not built here</h3>
+          <div class="note">Phase 3 item <strong>3.5 &mdash; the ORC 2915.10(A) record
+          set &mdash; is held</strong>, by decision, not by oversight. 2915.10(A)(3)
+          requires storing winner Social Security numbers for prizes of $600 or more,
+          and encryption, access role and retention are being decided as their own
+          researched task rather than off the cuff. Held with it, because they belong to
+          the same record set: the itemised prize list with winner name and address,
+          participant count per session (A)(5), food and beverage sales (A)(6) and
+          expenses (A)(7), the three-year retention rule, the annual supply inventory
+          due 1 November (D), and notifying the Attorney General where records are kept
+          (B). <strong>This app does not yet produce a compliant 2915.10 record
+          set.</strong></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 3 — ACCOUNTS AND PROFIT CHAIN (3.1, 3.2, 3.4) ============ -->
+      <div class="panel" id="panel-accounts">
+        <div class="ph"><div><div class="ptitle">Bingo Accounts</div>
+          <div class="pdesc">Segregation is mandatory inbound; one enumerated expense class may cross outbound</div></div></div>
+        <div id="acct-flags"></div>
+        <div class="kpi-row" id="acct-kpis"></div>
+
+        <div class="card"><h3>Open an account</h3>
+          <div class="grid">
+            <div><label>Account name</label><input id="ac-name" placeholder="e.g. Post 214 Bingo Session Account"></div>
+            <div><label>Kind</label><select id="ac-kind"></select></div>
+            <div><label>Bank reference</label><input id="ac-bank" placeholder="last 4 or internal ref"></div>
+            <div><label>Opened</label><input type="date" id="ac-opened"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfOpenAccount()">Open account</button></div>
+          <div class="blockbox" style="margin-top:12px"><strong>ORC 2915.10(C).</strong>
+          The gross profit from each bingo session or game must be deposited into a
+          checking account <strong>devoted exclusively</strong> to that session or game,
+          and all bingo expenses and net-profit distributions must be made
+          <strong>only by check or electronic fund transfer drawn on that account</strong>.
+          There is deliberately no cash disbursement path in this app.</div>
+        </div>
+
+        <div class="card"><h3>Accounts</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Account</th><th>Kind</th><th>Bank ref</th><th>Deposits</th><th>Payments</th><th>Balance</th><th></th></tr></thead>
+            <tbody id="ac-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Record a payment</h3>
+          <div class="grid">
+            <div><label>Drawn on</label><select id="ex-account"></select></div>
+            <div><label>Date</label><input type="date" id="ex-date"></div>
+            <div><label>Payee</label><input id="ex-payee"></div>
+            <div><label>Amount</label><input type="number" id="ex-amount" min="0" step="0.01"></div>
+            <div><label>Category</label><select id="ex-cat"></select></div>
+            <div><label>Method</label><select id="ex-method"><option value="check">Check</option><option value="eft">Electronic fund transfer</option></select></div>
+          </div>
+          <div><label>Description (required for anything other than the canteen line)</label><input id="ex-desc" placeholder="what this expense was"></div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddExpense()">Record payment</button></div>
+          <div class="flagbox" style="margin-top:12px"><strong>Only ORC 2915.01(GG)(11) has been read against primary source in this build.</strong>
+          That division permits <em>"expenses for maintaining and operating a charitable
+          organization's facilities, including, but not limited to, a post home, club
+          house, lounge, tavern, or canteen and any grounds attached"</em> &mdash; which
+          is why a canteen cost may lawfully be paid out of the segregated account. The
+          other enumerated limbs of (GG) are <strong>unread</strong>. Anything recorded
+          as "other allowable expense" is stored with your description and is
+          <strong>not validated against the statute by this app</strong>.</div>
+          <div class="blockbox" style="margin-top:12px"><strong>Do not record a
+          distribution of net profit here.</strong> ORC 2915.10(C) requires distributions
+          to be drawn on this same account, so they will look like a payment &mdash; but
+          a distribution is <em>where net profit went</em>, not an expense subtracted in
+          arriving at it. Recording one here understates net profit and would feed a
+          wrong figure to the ORC 2915.101 tiered-distribution calculation. Disbursement
+          is Phase 4 and is not built; there is deliberately no category for it yet.</div>
+        </div>
+
+        <div class="card"><h3>Payments drawn on gaming accounts</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Account</th><th>Payee</th><th>Category</th><th>Method</th><th>Amount</th><th></th></tr></thead>
+            <tbody id="ex-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Profit chain</h3>
+          <div class="grid"><div><label>Calendar year</label><select id="pc-year"></select></div></div>
+          <div id="pc-out" style="margin-top:12px"></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 3 — OPERATOR ELIGIBILITY (3.6) ============ -->
+      <div class="panel" id="panel-operators">
+        <div class="ph"><div><div class="ptitle">Operators</div>
+          <div class="pdesc">ORC 2915.09(C)(7), (C)(8) and (D)(1) &mdash; who may work a bingo game, and on what terms</div></div></div>
+        <div id="op-flags"></div>
+
+        <div class="card"><h3>Add a bingo game operator</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="op-name"></div>
+            <div><label>Date of birth</label><input type="date" id="op-dob"></div>
+          </div>
+          <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:18px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" id="op-felony" style="width:auto"> Felony conviction</label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" id="op-gambling" style="width:auto"> Gambling conviction</label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" id="op-comp" style="width:auto"> Receives any compensation for operating</label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" id="op-canteen" style="width:auto"> Also paid canteen / bar staff</label>
+          </div>
+          <div style="margin-top:12px"><button class="btn" onclick="sfAddOperator()">Add operator</button></div>
+          <div class="note">Date of birth is used only to evaluate the ORC 2915.09(C)(7)
+          age bar and is stored in this browser like everything else in this build.
+          &quot;Also paid canteen staff&quot; is a <strong>manual flag today</strong> &mdash;
+          Phase 2 builds the canteen payroll that would set it automatically. It is asked
+          here rather than inferred, because inferring it from data that does not exist
+          would be a fabricated check.</div>
+        </div>
+
+        <div class="card"><h3>Operators</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Name</th><th>Age</th><th>Eligibility</th><th>Reason</th><th></th></tr></thead>
+            <tbody id="op-tbody"></tbody></table></div>
+        </div>
       </div>
     </main>
   </div>
@@ -433,7 +625,9 @@ var WAIVER_CONFIRMED_ORG_TYPES = ['elks'];
 
 var K_POST='sf_post', K_OFFICERS='sf_officers', K_MEMBERS='sf_members',
     K_FEES='sf_fees', K_LEDGER='sf_ledger', K_WAIVERS='sf_waivers',
-    K_PERMIT_FLAGS='sf_permit_flags', K_LIC='sf_license_key';
+    K_PERMIT_FLAGS='sf_permit_flags', K_LIC='sf_license_key',
+    K_ACCOUNTS='sf_accounts', K_SESSIONS='sf_sessions',
+    K_GEXPENSES='sf_gaming_expenses', K_OPERATORS='sf_operators';
 
 function getPost(){ return ld(K_POST, { name:'', orgType:'', founded:'', entityId:'', locationId:'', city:'', state:'OH', liquor:'', bingo:'' }); }
 function getOfficers(){ return ld(K_OFFICERS, []); }
@@ -442,6 +636,10 @@ function getFees(){ return ld(K_FEES, { initiation:0, dues:0, perCapita:0, perCa
 function getLedger(){ return ld(K_LEDGER, []); }
 function getWaivers(){ return ld(K_WAIVERS, []); }
 function getPermitFlags(){ return ld(K_PERMIT_FLAGS, []); }
+function getAccounts(){ return ld(K_ACCOUNTS, []); }
+function getSessions(){ return ld(K_SESSIONS, []); }
+function getGamingExpenses(){ return ld(K_GEXPENSES, []); }
+function getOperators(){ return ld(K_OPERATORS, []); }
 
 /* ---- LICENCE GATE ------------------------------------------------------ */
 function sfUnlock(){
@@ -470,7 +668,30 @@ function sfNav(id){
 
 /* ---- POST PROFILE (1.1, 1.6) ------------------------------------------- */
 var LIQUOR_CLASSES = ['','D-4','D-4A','D-5','D-3'];
-var BINGO_TYPES = ['','Type I','Type II','Type III'];
+
+/* OAC 109:1-4-08, effective 2021-12-23. Type II REQUIRES Type I -- that
+   dependency is data here, not prose, because sfLicenceRefusals() reads it. */
+var BINGO_LICENCE_TYPES = [
+  { id:'I',   label:'Type I',   desc:'Bingo under ORC 2915.01(O)(1)', requires:[] },
+  { id:'II',  label:'Type II',  desc:'Instant / electronic instant bingo AT a session', requires:['I'] },
+  { id:'III', label:'Type III', desc:'Instant / electronic instant bingo other than at a session', requires:[] }
+];
+
+/* Phase 1 stored ONE licence type in p.bingo as the string "Type I"/"Type II"/
+   "Type III". Phase 3 needs the set, because Type II requires Type I and a post
+   running instant bingo at a session holds both. Migrate once, non-destructively
+   -- p.bingo is left in place rather than deleted so an older read of the record
+   still finds what it wrote. */
+function licenceTypes(){
+  var p=getPost();
+  if(Array.isArray(p.bingoTypes)) return p.bingoTypes;
+  var seeded=[];
+  if(p.bingo==='Type I') seeded=['I'];
+  else if(p.bingo==='Type II') seeded=['II','I'];  // II cannot be held without I
+  else if(p.bingo==='Type III') seeded=['III'];
+  return seeded;
+}
+function hasLicence(t){ return licenceTypes().indexOf(t)>=0; }
 
 function sfRenderPost(){
   var p=getPost();
@@ -482,9 +703,15 @@ function sfRenderPost(){
   var lq=$('pp-liquor');
   if(lq) lq.innerHTML = LIQUOR_CLASSES.map(function(c){
     return '<option value="'+H(c)+'"'+(c===p.liquor?' selected':'')+'>'+H(c||'Not recorded')+'</option>'; }).join('');
-  var bg=$('pp-bingo');
-  if(bg) bg.innerHTML = BINGO_TYPES.map(function(c){
-    return '<option value="'+H(c)+'"'+(c===p.bingo?' selected':'')+'>'+H(c||'Not recorded')+'</option>'; }).join('');
+  var bt=$('pp-bingo-types');
+  if(bt){
+    var held=licenceTypes();
+    bt.innerHTML = BINGO_LICENCE_TYPES.map(function(t){
+      return '<label style="display:flex;align-items:center;gap:7px;font-weight:600">'+
+        '<input type="checkbox" style="width:auto" id="ppbt-'+H(t.id)+'"'+(held.indexOf(t.id)>=0?' checked':'')+'> '+
+        H(t.label)+' <span style="font-weight:400;color:var(--muted)">'+H(t.desc)+'</span></label>';
+    }).join('');
+  }
   if($('pp-name')) $('pp-name').value=p.name||'';
   if($('pp-founded')) $('pp-founded').value=p.founded||'';
   if($('pp-entity')) $('pp-entity').value=p.entityId||'';
@@ -542,7 +769,18 @@ function sfSavePost(){
   p.city=($('pp-city').value||'').trim();
   p.state=($('pp-state').value||'').trim().toUpperCase();
   p.liquor=$('pp-liquor').value;
-  p.bingo=$('pp-bingo').value;
+  var types=[];
+  BINGO_LICENCE_TYPES.forEach(function(t){ var b=$('ppbt-'+t.id); if(b && b.checked) types.push(t.id); });
+  /* Type II cannot be held without Type I (OAC 109:1-4-08). Refuse rather than
+     silently adding Type I -- the post either holds it or the record is wrong,
+     and quietly correcting a licence record is how a wrong one survives. */
+  var missing=[];
+  BINGO_LICENCE_TYPES.forEach(function(t){
+    if(types.indexOf(t.id)<0) return;
+    t.requires.forEach(function(r){ if(types.indexOf(r)<0) missing.push(t.label+' requires '+r); });
+  });
+  if(missing.length){ toast('Refused: '+missing.join('; ')+' under OAC 109:1-4-08','err'); return; }
+  p.bingoTypes=types;
   if(!p.name){ toast('Post name is required','err'); return; }
   if(!p.orgType){ toast('Organisation type is required -- everything downstream branches on it','err'); return; }
   st(K_POST,p);
@@ -880,6 +1118,695 @@ function sfRenderWaivers(){
   }
 }
 
+/* ========================================================================
+   PHASE 3 -- GAMING COMPLIANCE AND THE MONEY MODEL
+   Built to spec sections 4 (Phase 3) items 3.1, 3.2, 3.3, 3.4 and 3.6.
+   ITEM 3.5 IS DELIBERATELY NOT BUILT -- see the Sessions panel, and the
+   handoff. It is held by decision because ORC 2915.10(A)(3) requires winner
+   Social Security numbers, and that gets its own researched task.
+
+   Every constraint below carries its division. Per the research doc's
+   Correction 2, sections in Chapter 2915 have DIFFERENT effective dates --
+   2915.01 is effective 2025-09-30 and 2915.09 is effective 2021-09-30 -- so
+   nothing here cites "Chapter 2915" as though it moved as one.
+   ======================================================================== */
+
+/* ---- The statutory constants, each pinned to its division ---------------
+   ORC 2915.01(S)(1): "Not to exceed five continuous hours".
+   ORC 2915.01(S)(2): instant/e-instant "not more than two hours before and
+     not more than two hours after" that period.
+   ORC 2915.09(C)(4): no more than three sessions in any seven-day period.
+     The statute carries exceptions for volunteer firefighter and volunteer
+     rescue organisations. NOT IMPLEMENTED, deliberately -- none of the five
+     target orders (Legion, VFW, Elks, Moose, Eagles) is one, and building an
+     exemption path nobody here qualifies for would be a route to switching the
+     limit off. Recorded so a later reader knows it was seen, not missed.
+   ORC 2915.09(C)(5): maximum prize payout $6,000 per session.
+   ORC 2915.09(C)(6): no session between 2 a.m. and 10 a.m., with instant
+     bingo sales permitted to begin at 9 a.m. for a 10 a.m. session.
+
+   THESE ARE CONSTANTS AND THE $250,000 DISTRIBUTION THRESHOLD IS NOT.
+   2915.101 says "or adjusted amount" and so must be configuration when
+   Phase 4 builds it; 2915.09 carries no such adjustment language for these,
+   so hardcoding them here is correct rather than lazy. Noted because the two
+   look like the same kind of number and are not. */
+var MAX_CORE_MINUTES = 300;
+var MAX_INSTANT_WING_MINUTES = 120;
+var MAX_SESSIONS_PER_7_DAYS = 3;
+var MAX_PRIZE_PER_SESSION = 6000;
+var BLACKOUT_START_MIN = 120;   // 02:00
+var BLACKOUT_END_MIN   = 600;   // 10:00
+var INSTANT_EARLY_START_MIN = 540; // 09:00, only when the core period starts at exactly 10:00
+
+/* Game types. `atSessionLicence` is the licence type that authorises this game
+   WHEN CONDUCTED AT A SESSION -- everything in this panel is at a session by
+   construction, which is exactly why a Type III-only post fails here. */
+var GAME_TYPES = [
+  { id:'bingo_o1', label:'Bingo (ORC 2915.01(O)(1))',  atSessionLicence:'I'  },
+  { id:'instant',  label:'Instant bingo',              atSessionLicence:'II' },
+  { id:'einstant', label:'Electronic instant bingo',   atSessionLicence:'II' }
+];
+function gameLabel(id){ for(var i=0;i<GAME_TYPES.length;i++){ if(GAME_TYPES[i].id===id) return GAME_TYPES[i].label; } return id; }
+
+/* Account kinds. 3.1 is the session account required by 2915.10(C); 3.2 is the
+   separate electronic instant bingo account the Ohio Attorney General requires,
+   with its own quarterly reporting cycle. They are different money and must not
+   share an account. */
+var ACCOUNT_KINDS = [
+  { id:'session_bingo',     label:'Bingo session account (ORC 2915.10(C))', games:['bingo_o1','instant'] },
+  { id:'electronic_instant', label:'Electronic instant bingo account (Ohio AG)', games:['einstant'] }
+];
+function accountKind(id){ for(var i=0;i<ACCOUNT_KINDS.length;i++){ if(ACCOUNT_KINDS[i].id===id) return ACCOUNT_KINDS[i]; } return null; }
+
+/* Ohio AG electronic instant bingo quarterly report deadlines. Month is
+   1-indexed here for readability; the comparison below builds a local date. */
+var EIB_QUARTERLY_DUE = [ {m:2,d:28}, {m:5,d:31}, {m:8,d:31}, {m:11,d:30} ];
+
+/* ONLY (GG)(11) HAS BEEN READ AGAINST PRIMARY SOURCE. The other enumerated
+   limbs of ORC 2915.01(GG) are unread, so this app offers exactly one
+   validated category and one honest catch-all that it does NOT claim to
+   validate. Inventing the remaining ten would be the fabrication class this
+   whole platform's discipline exists to prevent. */
+var EXPENSE_CATEGORIES = [
+  { id:'canteen_facility', label:'Facility / canteen operating cost -- ORC 2915.01(GG)(11)', validated:true },
+  { id:'other_allowable',  label:'Other expense (not validated by this app)',                validated:false }
+];
+function expenseCategory(id){ for(var i=0;i<EXPENSE_CATEGORIES.length;i++){ if(EXPENSE_CATEGORIES[i].id===id) return EXPENSE_CATEGORIES[i]; } return null; }
+
+/* ---- time and date helpers, local, never UTC --------------------------- */
+function timeToMin(t){
+  if(!t) return null;
+  var p=String(t).split(':');
+  if(p.length<2) return null;
+  var h=Number(p[0]), m=Number(p[1]);
+  if(isNaN(h)||isNaN(m)) return null;
+  return h*60+m;
+}
+function minToTime(mins){
+  var v=((mins%1440)+1440)%1440;
+  return String(Math.floor(v/60)).padStart(2,'0')+':'+String(v%60).padStart(2,'0');
+}
+/* Day number from a local Y-M-D, computed through Date.UTC so a DST boundary
+   cannot shift the count. parseLocalDate builds a LOCAL date; only its
+   component parts are used here, never its epoch value. */
+function dayNum(s){
+  var d=parseLocalDate(s);
+  if(!d) return null;
+  return Math.round(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate())/86400000);
+}
+function overlaps(a0,a1,b0,b1){ return a0 < b1 && b0 < a1; }
+function hitsBlackout(start,end){
+  if(end<=start) return false;
+  for(var day=-1; day<=2; day++){
+    var b0=day*1440+BLACKOUT_START_MIN, b1=day*1440+BLACKOUT_END_MIN;
+    if(overlaps(start,end,b0,b1)) return true;
+  }
+  return false;
+}
+
+/* ---- THE CHECK. This is the function Phase 2's booking calendar must call.
+   It returns REFUSALS, not warnings, and the caller is expected to refuse.
+   `excludeId` lets an existing session be re-tested without counting itself. */
+function sfSessionRefusals(c, excludeId){
+  var out=[];
+  var cs=timeToMin(c.start), ce=timeToMin(c.end);
+  if(cs===null||ce===null){ out.push({ cite:'input', text:'Start and end times are required.' }); return out; }
+  if(ce<=cs) ce+=1440;  // crosses midnight
+  var core=ce-cs;
+  var before=Math.max(0, Number(c.before)||0), after=Math.max(0, Number(c.after)||0);
+
+  /* CORRECTION 1 FROM THE RESEARCH, AND IT IS THE SHARPEST POINT IN THIS PANEL.
+     The 5+2+2 window is not a rule a session can violate -- it is what the word
+     "session" legally MEANS under 2915.01(S). Anything longer is not a
+     non-compliant session, it is NOT A SESSION, and every downstream
+     per-session figure is then keyed to nothing. So this refusal is worded as a
+     definition failure, not as a violation. */
+  if(core<=0){
+    out.push({ cite:'ORC 2915.01(S)(1)', text:'The core period has no duration.', fatal:true });
+  } else if(core>MAX_CORE_MINUTES){
+    out.push({ cite:'ORC 2915.01(S)(1)', fatal:true,
+      text:'This is NOT A SESSION. The core period runs '+(core/60).toFixed(2)+' hours; 2915.01(S)(1) defines a session as not exceeding five continuous hours. This is not a non-compliant session -- it falls outside the statutory definition entirely, so every per-session figure that would key to it keys to nothing.' });
+  }
+  if(before>MAX_INSTANT_WING_MINUTES){
+    out.push({ cite:'ORC 2915.01(S)(2)', fatal:true,
+      text:'Instant bingo may run not more than two hours before the core period; '+before+' minutes was requested.' });
+  }
+  if(after>MAX_INSTANT_WING_MINUTES){
+    out.push({ cite:'ORC 2915.01(S)(2)', fatal:true,
+      text:'Instant bingo may run not more than two hours after the core period; '+after+' minutes was requested.' });
+  }
+
+  /* 2915.09(C)(6) blackout. The 9 a.m. carve-out is narrow and literal: instant
+     sales may begin at 9 for a session that starts at 10. It does not license
+     an 8 a.m. start, and it does not apply to the core period at all. */
+  if(core>0 && hitsBlackout(cs,ce)){
+    out.push({ cite:'ORC 2915.09(C)(6)', fatal:true,
+      text:'The core period falls inside the 2 a.m. to 10 a.m. blackout.' });
+  }
+  if(before>0){
+    var ib0=cs-before, ib1=cs;
+    var checkTo=ib1;
+    if(cs===BLACKOUT_END_MIN) checkTo=Math.min(ib1, INSTANT_EARLY_START_MIN); // 9-10 a.m. permitted for a 10 a.m. session
+    if(hitsBlackout(ib0, checkTo)){
+      out.push({ cite:'ORC 2915.09(C)(6)', fatal:true,
+        text:'Instant bingo would begin at '+minToTime(ib0)+', inside the 2 a.m. to 10 a.m. blackout. Sales may begin at 9 a.m. only for a session whose core period starts at 10 a.m.' });
+    }
+  }
+  if(after>0 && hitsBlackout(ce, ce+after)){
+    out.push({ cite:'ORC 2915.09(C)(6)', fatal:true,
+      text:'Instant bingo after the core period would run to '+minToTime(ce+after)+', inside the 2 a.m. to 10 a.m. blackout.' });
+  }
+
+  /* 2915.09(C)(5) prize cap, checked on the PLANNED figure at booking time.
+     Actual payouts are checked again when results are recorded. */
+  if(Number(c.prizeCap)>MAX_PRIZE_PER_SESSION){
+    out.push({ cite:'ORC 2915.09(C)(5)', fatal:true,
+      text:'Planned maximum prize payout of '+money(c.prizeCap)+' exceeds the $6,000 per-session cap.' });
+  }
+
+  /* 2915.09(C)(4) -- no more than three sessions in ANY seven-day period. The
+     window is anchored at each session date in turn: a maximal violating window
+     can always be slid to start on a session, so anchoring there is exhaustive
+     rather than a sample. */
+  var cd=dayNum(c.date);
+  if(cd===null){
+    out.push({ cite:'input', text:'A valid date is required.', fatal:true });
+  } else {
+    var days=getSessions().filter(function(s){ return s.id!==excludeId; }).map(function(s){ return dayNum(s.date); })
+              .filter(function(n){ return n!==null; });
+    days.push(cd);
+    days.sort(function(a,b){ return a-b; });
+    for(var i=0;i<days.length;i++){
+      var count=0;
+      for(var j=0;j<days.length;j++){ if(days[j]>=days[i] && days[j]<=days[i]+6) count++; }
+      if(count>MAX_SESSIONS_PER_7_DAYS){
+        out.push({ cite:'ORC 2915.09(C)(4)', fatal:true,
+          text:'This would be session '+count+' in the seven days beginning '+minToDateLabel(days[i])+'. No more than three bingo sessions may be conducted in any seven-day period.' });
+        break;
+      }
+    }
+  }
+
+  /* Licence gating -- OAC 109:1-4-08. Everything scheduled in this panel is AT
+     a session, which is precisely why holding only Type III is a failure here
+     rather than a technicality. */
+  var games=(c.games||[]);
+  if(!games.length){
+    out.push({ cite:'input', text:'Select at least one game.', fatal:true });
+  }
+  games.forEach(function(g){
+    var gt=null;
+    for(var i=0;i<GAME_TYPES.length;i++){ if(GAME_TYPES[i].id===g) gt=GAME_TYPES[i]; }
+    if(!gt) return;
+    if(!hasLicence(gt.atSessionLicence)){
+      var extra = (gt.atSessionLicence==='II' && hasLicence('III'))
+        ? ' This post holds Type III, which covers instant bingo conducted OTHER THAN at a session -- it does not authorise it here.'
+        : '';
+      out.push({ cite:'OAC 109:1-4-08', fatal:true,
+        text:gt.label+' at a session requires a Type '+gt.atSessionLicence+' licence, which this post does not hold.'+extra });
+    }
+  });
+
+  /* The account 2915.10(C) requires must exist and must be of the right kind
+     for the games being run, or the gross profit has nowhere lawful to go. */
+  if(!c.accountId){
+    out.push({ cite:'ORC 2915.10(C)', fatal:true,
+      text:'No account selected. Gross profit must be deposited into a checking account devoted exclusively to the session or game.' });
+  } else {
+    var acc=null, accs=getAccounts();
+    for(var a=0;a<accs.length;a++){ if(accs[a].id===c.accountId) acc=accs[a]; }
+    if(!acc){ out.push({ cite:'ORC 2915.10(C)', fatal:true, text:'The selected account no longer exists.' }); }
+    else if(games.indexOf('einstant')>=0 && acc.kind!=='electronic_instant'){
+      out.push({ cite:'Ohio AG -- electronic instant bingo', fatal:true,
+        text:'Electronic instant bingo proceeds must go to the separate electronic instant bingo account, not to '+acc.name+'.' });
+    }
+    else if(games.indexOf('einstant')<0 && acc.kind==='electronic_instant'){
+      out.push({ cite:'Ohio AG -- electronic instant bingo', fatal:true,
+        text:'The electronic instant bingo account is devoted exclusively to that game; this session does not include it.' });
+    }
+  }
+  return out;
+}
+function minToDateLabel(dn){
+  var d=new Date(dn*86400000);
+  return d.getUTCFullYear()+'-'+String(d.getUTCMonth()+1).padStart(2,'0')+'-'+String(d.getUTCDate()).padStart(2,'0');
+}
+
+function readSessionForm(){
+  var games=[];
+  GAME_TYPES.forEach(function(g){ var b=$('ssg-'+g.id); if(b && b.checked) games.push(g.id); });
+  return { date:$('ss-date').value, start:$('ss-start').value, end:$('ss-end').value,
+           before:Number($('ss-before').value||0), after:Number($('ss-after').value||0),
+           prizeCap:Number($('ss-prizecap').value||0), accountId:$('ss-account').value, games:games };
+}
+function refusalHtml(list, okText){
+  if(!list.length) return '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4"><strong>'+H(okText)+'</strong></div>';
+  return list.map(function(r){
+    return '<div class="blockbox"><strong>Refused &mdash; '+H(r.cite)+'.</strong> '+H(r.text)+'</div>';
+  }).join('');
+}
+function sfTestSession(){
+  var box=$('ss-testout'); if(!box) return;
+  var refusals=sfSessionRefusals(readSessionForm(), null);
+  box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'Passes every check this app implements. That is not a legal opinion.')+'</div>';
+}
+function sfScheduleSession(){
+  var c=readSessionForm();
+  var refusals=sfSessionRefusals(c, null);
+  var box=$('ss-testout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' statutory check(s) failed','err');
+    return;
+  }
+  var list=getSessions();
+  list.push({ id:'ss'+Date.now(), date:c.date, start:c.start, end:c.end, before:c.before, after:c.after,
+              prizeCap:c.prizeCap, accountId:c.accountId, games:c.games, receipts:{}, prizes:{}, recorded:false });
+  st(K_SESSIONS,list);
+  if(box) box.innerHTML='';
+  toast('Session scheduled');
+  sfRenderAll();
+}
+function sfDeleteSession(id){
+  st(K_SESSIONS, getSessions().filter(function(s){ return s.id!==id; }));
+  toast('Session removed');
+  sfRenderAll();
+}
+
+function sessionGross(s){
+  var r=0, pz=0;
+  GAME_TYPES.forEach(function(g){ r+=Number((s.receipts||{})[g.id]||0); pz+=Number((s.prizes||{})[g.id]||0); });
+  return { receipts:r, prizes:pz, grossProfit:r-pz };
+}
+
+function sfRenderSessions(){
+  var accs=getAccounts(), list=getSessions();
+  var gbox=$('ss-games');
+  if(gbox) gbox.innerHTML = GAME_TYPES.map(function(g){
+    return '<label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="ssg-'+H(g.id)+'"> '+H(g.label)+'</label>'; }).join('');
+  var asel=$('ss-account');
+  if(asel) asel.innerHTML = accs.length
+    ? accs.map(function(a){ return '<option value="'+H(a.id)+'">'+H(a.name)+' &mdash; '+H((accountKind(a.kind)||{}).label||a.kind)+'</option>'; }).join('')
+    : '<option value="">No account opened yet</option>';
+  if($('ss-date') && !$('ss-date').value) $('ss-date').value=localToday();
+
+  var tb=$('ss-tbody');
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No sessions scheduled.</td></tr>'; }
+    else {
+      tb.innerHTML = list.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).map(function(s){
+        var g=sessionGross(s);
+        var over = s.recorded && g.prizes>MAX_PRIZE_PER_SESSION;
+        var status = over ? '<span class="tag bad">Prize cap exceeded</span>'
+                   : s.recorded ? '<span class="tag ok">Results recorded</span>'
+                   : '<span class="tag info">Scheduled</span>';
+        var windows = (Number(s.before)||0 ? (s.before+'m before') : '--') + ' / ' + (Number(s.after)||0 ? (s.after+'m after') : '--');
+        return '<tr><td>'+H(s.date)+'</td><td>'+H(s.start)+'&ndash;'+H(s.end)+'</td><td>'+H(windows)+'</td>'+
+          '<td>'+H((s.games||[]).map(gameLabel).join(', '))+'</td>'+
+          '<td>'+(s.recorded?money(g.grossProfit):'--')+'</td><td>'+status+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfDeleteSession(\''+H(s.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var ssel=$('sr-session');
+  if(ssel){
+    var prev=ssel.value;
+    ssel.innerHTML = list.length
+      ? list.slice().sort(function(a,b){ return a.date<b.date?1:-1; }).map(function(s){
+          return '<option value="'+H(s.id)+'">'+H(s.date)+' '+H(s.start)+'&ndash;'+H(s.end)+(s.recorded?' (recorded)':'')+'</option>'; }).join('')
+      : '<option value="">No sessions yet</option>';
+    if(prev) ssel.value=prev;
+    ssel.onchange=sfRenderResultRows;
+  }
+  sfRenderResultRows();
+
+  var k=$('sess-kpis');
+  if(k){
+    var recorded=list.filter(function(s){ return s.recorded; });
+    var totalGross=recorded.reduce(function(a,s){ return a+sessionGross(s).grossProfit; },0);
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Sessions scheduled</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">Max 3 in any 7 days</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Results recorded</div><div class="kpi-value">'+recorded.length+'</div><div class="kpi-change">Of '+list.length+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Gross profit</div><div class="kpi-value">'+money(totalGross)+'</div><div class="kpi-change">Receipts minus prizes &mdash; 2915.01(EE)</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Licence types held</div><div class="kpi-value" style="font-size:19px">'+H(licenceTypes().length?licenceTypes().map(function(t){return 'Type '+t;}).join(', '):'None')+'</div><div class="kpi-change">OAC 109:1-4-08</div></div>';
+  }
+  sfRenderSessionFlags();
+}
+
+function sfRenderResultRows(){
+  var tb=$('sr-tbody'); if(!tb) return;
+  var sel=$('sr-session');
+  var s=null, id=sel?sel.value:'';
+  getSessions().forEach(function(x){ if(x.id===id) s=x; });
+  if(!s){ tb.innerHTML='<tr><td colspan="3" class="empty">Select a session.</td></tr>'; return; }
+  tb.innerHTML = (s.games||[]).map(function(g){
+    return '<tr><td>'+H(gameLabel(g))+'</td>'+
+      '<td><input type="number" min="0" step="0.01" id="srr-'+H(g)+'" value="'+H(String((s.receipts||{})[g]||0))+'"></td>'+
+      '<td><input type="number" min="0" step="0.01" id="srp-'+H(g)+'" value="'+H(String((s.prizes||{})[g]||0))+'"></td></tr>';
+  }).join('');
+}
+
+function sfRecordResults(){
+  var sel=$('sr-session'); if(!sel||!sel.value){ toast('No session selected','err'); return; }
+  var list=getSessions(), s=null;
+  for(var i=0;i<list.length;i++){ if(list[i].id===sel.value){ s=list[i]; break; } }
+  if(!s){ toast('Session not found','err'); return; }
+  var receipts={}, prizes={};
+  var bad=false;
+  (s.games||[]).forEach(function(g){
+    var r=Number(($('srr-'+g)||{}).value||0), p=Number(($('srp-'+g)||{}).value||0);
+    if(r<0||p<0) bad=true;
+    receipts[g]=r; prizes[g]=p;
+  });
+  if(bad){ toast('Receipts and prizes cannot be negative','err'); return; }
+  s.receipts=receipts; s.prizes=prizes; s.recorded=true;
+  st(K_SESSIONS,list);
+  var g=sessionGross(s);
+  /* The payout already happened in the real world. Refusing to RECORD it would
+     hide a violation rather than prevent one, so it is stored and flagged --
+     and per spec 0e it is simultaneously a liquor-permit exposure. */
+  if(g.prizes>MAX_PRIZE_PER_SESSION) toast('Recorded, and it breaches the $6,000 cap -- see the flag','err');
+  else if(g.grossProfit<0) toast('Recorded. Prizes exceeded receipts, so there is no gross profit to deposit.','err');
+  else toast('Results recorded -- '+money(g.grossProfit)+' gross profit to deposit');
+  sfRenderAll();
+}
+
+function sfRenderSessionFlags(){
+  var box=$('sess-flags'); if(!box) return;
+  var out='', list=getSessions(), p=getPost();
+  if(!licenceTypes().length){
+    out += '<div class="blockbox"><strong>No bingo licence type is recorded.</strong> OAC 109:1-4-08 Types I/II/III gate which games are lawful; with none recorded, every session below will be refused. Set them in Post Profile.</div>';
+  }
+  if(!getAccounts().length){
+    out += '<div class="blockbox"><strong>No gaming account exists.</strong> ORC 2915.10(C) requires gross profit to be deposited into an account devoted exclusively to the session or game. Open one under Bingo Accounts before scheduling.</div>';
+  }
+  var over=list.filter(function(s){ return s.recorded && sessionGross(s).prizes>MAX_PRIZE_PER_SESSION; });
+  if(over.length){
+    out += '<div class="blockbox"><strong>'+over.length+' recorded session(s) exceeded the $6,000 prize cap</strong> (ORC 2915.09(C)(5)). '+
+      'Under OAC 4301:1-1-53(D)&ndash;(E) a Chapter 2915 violation is simultaneously a liquor-permit exposure'+
+      (p.liquor?(' on this post’s '+H(p.liquor)+' permit'):'')+' &mdash; the gaming and liquor modules are coupled and this flag belongs on both.</div>';
+  }
+  var unrecorded=list.filter(function(s){ return !s.recorded && dayNum(s.date)!==null && dayNum(s.date) < dayNum(localToday()); });
+  if(unrecorded.length){
+    out += '<div class="flagbox"><strong>'+unrecorded.length+' past session(s) have no recorded results.</strong> Gross profit cannot be deposited under ORC 2915.10(C) until receipts and prizes are entered.</div>';
+  }
+  box.innerHTML=out;
+}
+
+/* ---- ACCOUNTS (3.1, 3.2) and the PROFIT CHAIN (3.4) -------------------- */
+function accountById(id){ var a=getAccounts(); for(var i=0;i<a.length;i++){ if(a[i].id===id) return a[i]; } return null; }
+function accountDeposits(id){
+  return getSessions().filter(function(s){ return s.accountId===id && s.recorded; })
+    .reduce(function(a,s){ return a+Math.max(0, sessionGross(s).grossProfit); },0);
+}
+function accountPayments(id){
+  return getGamingExpenses().filter(function(e){ return e.accountId===id; })
+    .reduce(function(a,e){ return a+Number(e.amount||0); },0);
+}
+
+function sfOpenAccount(){
+  var name=($('ac-name').value||'').trim();
+  if(!name){ toast('Account name is required','err'); return; }
+  var kind=$('ac-kind').value;
+  if(!kind){ toast('Account kind is required','err'); return; }
+  var list=getAccounts();
+  if(list.filter(function(a){ return a.kind===kind; }).length){
+    toast('Refused: an account of that kind already exists. 2915.10(C) requires exclusivity, not duplication.','err');
+    return;
+  }
+  list.push({ id:'ac'+Date.now(), name:name, kind:kind, bank:($('ac-bank').value||'').trim(),
+              opened:$('ac-opened').value||localToday() });
+  st(K_ACCOUNTS,list);
+  $('ac-name').value=''; $('ac-bank').value='';
+  toast('Account opened');
+  sfRenderAll();
+}
+function sfCloseAccount(id){
+  if(getSessions().filter(function(s){ return s.accountId===id; }).length){
+    toast('Refused: sessions are assigned to this account. Removing it would orphan their deposits.','err');
+    return;
+  }
+  st(K_ACCOUNTS, getAccounts().filter(function(a){ return a.id!==id; }));
+  toast('Account removed');
+  sfRenderAll();
+}
+
+function sfAddExpense(){
+  var accId=$('ex-account').value;
+  if(!accId){ toast('Select the account this is drawn on','err'); return; }
+  var payee=($('ex-payee').value||'').trim();
+  /* 2915.10(C) requires payment by check or EFT; a check needs a payee, and
+     2915.10(A)(2) requires the payee name on the record regardless. */
+  if(!payee){ toast('A payee is required -- 2915.10(C) permits payment only by check or electronic fund transfer','err'); return; }
+  var amount=Number($('ex-amount').value||0);
+  if(!(amount>0)){ toast('Amount must be greater than zero','err'); return; }
+  var cat=$('ex-cat').value, desc=($('ex-desc').value||'').trim();
+  var c=expenseCategory(cat);
+  if(c && !c.validated && !desc){
+    toast('Refused: an expense this app cannot validate against ORC 2915.01(GG) must carry your own description','err');
+    return;
+  }
+  var bal=accountDeposits(accId)-accountPayments(accId);
+  if(amount>bal){
+    toast('Refused: '+money(amount)+' exceeds the '+money(bal)+' in that account. 2915.10(C) permits payment only from the segregated account.','err');
+    return;
+  }
+  var list=getGamingExpenses();
+  list.push({ id:'ex'+Date.now(), accountId:accId, date:$('ex-date').value||localToday(), payee:payee,
+              amount:amount, category:cat, method:$('ex-method').value, description:desc });
+  st(K_GEXPENSES,list);
+  $('ex-payee').value=''; $('ex-amount').value=''; $('ex-desc').value='';
+  toast('Payment recorded');
+  sfRenderAll();
+}
+function sfDeleteExpense(id){
+  st(K_GEXPENSES, getGamingExpenses().filter(function(e){ return e.id!==id; }));
+  toast('Payment removed');
+  sfRenderAll();
+}
+
+function sfRenderAccounts(){
+  var accs=getAccounts();
+  var ks=$('ac-kind');
+  if(ks) ks.innerHTML='<option value="">Select kind</option>'+ACCOUNT_KINDS.map(function(k){
+    return '<option value="'+H(k.id)+'">'+H(k.label)+'</option>'; }).join('');
+  if($('ac-opened') && !$('ac-opened').value) $('ac-opened').value=localToday();
+  if($('ex-date') && !$('ex-date').value) $('ex-date').value=localToday();
+  var es=$('ex-account');
+  if(es) es.innerHTML = accs.length
+    ? accs.map(function(a){ return '<option value="'+H(a.id)+'">'+H(a.name)+'</option>'; }).join('')
+    : '<option value="">No account opened yet</option>';
+  var ec=$('ex-cat');
+  if(ec) ec.innerHTML = EXPENSE_CATEGORIES.map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+
+  var tb=$('ac-tbody');
+  if(tb){
+    if(!accs.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No accounts. ORC 2915.10(C) requires one before any session may be held.</td></tr>'; }
+    else {
+      tb.innerHTML = accs.map(function(a){
+        var dep=accountDeposits(a.id), pay=accountPayments(a.id);
+        return '<tr><td>'+H(a.name)+'</td><td>'+H((accountKind(a.kind)||{}).label||a.kind)+'</td><td>'+H(a.bank||'--')+'</td>'+
+          '<td>'+money(dep)+'</td><td>'+money(pay)+'</td><td><strong>'+money(dep-pay)+'</strong></td>'+
+          '<td><button class="btn sm sec" onclick="sfCloseAccount(\''+H(a.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var etb=$('ex-tbody'), exps=getGamingExpenses();
+  if(etb){
+    if(!exps.length){ etb.innerHTML='<tr><td colspan="7" class="empty">No payments recorded.</td></tr>'; }
+    else {
+      etb.innerHTML = exps.slice().reverse().map(function(e){
+        var c=expenseCategory(e.category);
+        var tag = (c && c.validated) ? '<span class="tag ok">(GG)(11)</span>' : '<span class="tag warn">Not validated</span>';
+        return '<tr><td>'+H(e.date)+'</td><td>'+H((accountById(e.accountId)||{}).name||'(removed)')+'</td><td>'+H(e.payee)+'</td>'+
+          '<td>'+tag+' '+H(e.description||'')+'</td><td>'+H(e.method==='eft'?'EFT':'Check')+'</td><td>'+money(e.amount)+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfDeleteExpense(\''+H(e.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var k=$('acct-kpis');
+  if(k){
+    var dep=accs.reduce(function(a,x){ return a+accountDeposits(x.id); },0);
+    var pay=accs.reduce(function(a,x){ return a+accountPayments(x.id); },0);
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Accounts</div><div class="kpi-value">'+accs.length+'</div><div class="kpi-change">Exclusive by statute</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Gross profit deposited</div><div class="kpi-value">'+money(dep)+'</div><div class="kpi-change">Never gross receipts</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Paid from accounts</div><div class="kpi-value">'+money(pay)+'</div><div class="kpi-change">Check or EFT only</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Net profit to date</div><div class="kpi-value">'+money(dep-pay)+'</div><div class="kpi-change">2915.01(FF)</div></div>';
+  }
+  sfRenderAccountFlags();
+  sfRenderProfitChain();
+}
+
+function sfRenderAccountFlags(){
+  var box=$('acct-flags'); if(!box) return;
+  var out='', accs=getAccounts();
+  var hasEIB = accs.filter(function(a){ return a.kind==='electronic_instant'; }).length>0;
+  var runsEIB = getSessions().filter(function(s){ return (s.games||[]).indexOf('einstant')>=0; }).length>0;
+  if(runsEIB && !hasEIB){
+    out += '<div class="blockbox"><strong>Electronic instant bingo is being run without its own account.</strong> The Ohio Attorney General requires a separate account for electronic instant bingo; it is a distinct money type and must not share the session account.</div>';
+  }
+  if(hasEIB){
+    var next=nextEIBDeadline();
+    if(next){
+      var days=next.days;
+      if(days<0) out += '<div class="blockbox"><strong>Electronic instant bingo quarterly report overdue by '+Math.abs(days)+' days</strong> ('+H(next.date)+').</div>';
+      else out += '<div class="flagbox"><strong>Next electronic instant bingo quarterly report due '+H(next.date)+'</strong> &mdash; '+days+' days. Ohio AG deadlines are 28 February, 31 May, 31 August and 30 November.</div>';
+    }
+  }
+  accs.forEach(function(a){
+    var bal=accountDeposits(a.id)-accountPayments(a.id);
+    if(bal<0) out += '<div class="blockbox"><strong>'+H(a.name)+' is overdrawn.</strong> Payments exceed deposited gross profit, which cannot happen lawfully under ORC 2915.10(C).</div>';
+  });
+  box.innerHTML=out;
+}
+
+function nextEIBDeadline(){
+  var today=parseLocalDate(localToday());
+  if(!today) return null;
+  var y=today.getFullYear();
+  for(var pass=0; pass<2; pass++){
+    for(var i=0;i<EIB_QUARTERLY_DUE.length;i++){
+      var q=EIB_QUARTERLY_DUE[i];
+      var s=(y+pass)+'-'+String(q.m).padStart(2,'0')+'-'+String(q.d).padStart(2,'0');
+      var d=parseLocalDate(s);
+      if(d && d>=today) return { date:s, days:Math.round((dayNum(s)-dayNum(localToday()))) };
+    }
+  }
+  return null;
+}
+
+/* THE PROFIT CHAIN -- ORC 2915.01(T), (EE), (FF).
+     gross receipts  - prizes paid = gross profit    (T) -> (EE)
+     gross profit    - expenses    = net profit      (EE) -> (FF)
+   The canteen line is broken out on its own because (GG)(11) is the one
+   enumerated class this app has actually read, and because it is the class
+   that legally crosses OUT of the account segregation requires INBOUND. */
+function sfRenderProfitChain(){
+  var sel=$('pc-year'), out=$('pc-out');
+  if(!sel||!out) return;
+  var sessions=getSessions().filter(function(s){ return s.recorded; });
+  var years={};
+  sessions.forEach(function(s){ var y=String(s.date||'').slice(0,4); if(y) years[y]=1; });
+  getGamingExpenses().forEach(function(e){ var y=String(e.date||'').slice(0,4); if(y) years[y]=1; });
+  var list=Object.keys(years).sort().reverse();
+  if(!list.length) list=[String(parseLocalDate(localToday()).getFullYear())];
+  var prev=sel.value;
+  sel.innerHTML=list.map(function(y){ return '<option value="'+H(y)+'">'+H(y)+'</option>'; }).join('');
+  if(prev && list.indexOf(prev)>=0) sel.value=prev;
+  sel.onchange=sfRenderProfitChain;
+  var year=sel.value||list[0];
+
+  var rows='';
+  var totR=0, totP=0;
+  GAME_TYPES.forEach(function(g){
+    var r=0,p=0;
+    sessions.forEach(function(s){
+      if(String(s.date||'').slice(0,4)!==year) return;
+      r+=Number((s.receipts||{})[g.id]||0); p+=Number((s.prizes||{})[g.id]||0);
+    });
+    if(!r && !p) return;
+    totR+=r; totP+=p;
+    rows += '<tr><td>'+H(g.label)+'</td><td>'+money(r)+'</td><td>'+money(p)+'</td><td>'+money(r-p)+'</td></tr>';
+  });
+  if(!rows) rows='<tr><td colspan="4" class="empty">No recorded results for '+H(year)+'.</td></tr>';
+
+  var exps=getGamingExpenses().filter(function(e){ return String(e.date||'').slice(0,4)===year; });
+  var canteen=exps.filter(function(e){ return e.category==='canteen_facility'; }).reduce(function(a,e){ return a+Number(e.amount||0); },0);
+  var other=exps.filter(function(e){ return e.category!=='canteen_facility'; }).reduce(function(a,e){ return a+Number(e.amount||0); },0);
+  var grossProfit=totR-totP, netProfit=grossProfit-canteen-other;
+
+  out.innerHTML =
+    '<div class="tw"><table><thead><tr><th>Game type</th><th>Gross receipts (T)</th><th>Prizes paid</th><th>Gross profit (EE)</th></tr></thead>'+
+    '<tbody>'+rows+'</tbody></table></div>'+
+    '<div class="tw" style="margin-top:14px"><table><tbody>'+
+      '<tr><td><strong>Gross profit</strong> &mdash; ORC 2915.01(EE)</td><td style="text-align:right"><strong>'+money(grossProfit)+'</strong></td></tr>'+
+      '<tr><td>Less facility / canteen cost &mdash; ORC 2915.01(GG)(11)</td><td style="text-align:right">'+money(canteen)+'</td></tr>'+
+      '<tr><td>Less other expenses <span class="tag warn">not validated</span></td><td style="text-align:right">'+money(other)+'</td></tr>'+
+      '<tr><td><strong>Net profit</strong> &mdash; ORC 2915.01(FF)</td><td style="text-align:right"><strong>'+money(netProfit)+'</strong></td></tr>'+
+    '</tbody></table></div>'+
+    '<div class="note">Net profit is the figure the distribution rules then bind. '+
+    '<strong>Those rules are Phase 4 and are not built.</strong> ORC 2915.101 is tiered '+
+    '&mdash; at least 25% of the first $250,000 and at least 50% above it, per calendar year, '+
+    'with the threshold expressed as "or adjusted amount" so it must be configuration rather '+
+    'than a constant. Separately, ORC 2915.01(V) governs purpose-tagged distribution of '+
+    'traditional bingo net profit only, and its category list differs between veterans '+
+    'organisations under (V)(2) and fraternal organisations under (V)(3). Nothing here '+
+    'distributes anything or claims a distribution is compliant.</div>';
+}
+
+/* ---- OPERATOR ELIGIBILITY (3.6) ---------------------------------------- */
+function ageOn(dob, onDate){
+  var d=parseLocalDate(dob), t=parseLocalDate(onDate);
+  if(!d||!t) return null;
+  var age=t.getFullYear()-d.getFullYear();
+  var m=t.getMonth()-d.getMonth();
+  if(m<0 || (m===0 && t.getDate()<d.getDate())) age--;
+  return age;
+}
+function operatorEligibility(o){
+  var reasons=[];
+  var age=ageOn(o.dob, localToday());
+  if(age===null) reasons.push({ cite:'ORC 2915.09(C)(7)', text:'Date of birth not recorded, so the age bar cannot be evaluated.' });
+  else if(age<18) reasons.push({ cite:'ORC 2915.09(C)(7)', text:'Under 18. A person under eighteen may not work as a bingo game operator.' });
+  if(o.felony) reasons.push({ cite:'ORC 2915.09(C)(8)', text:'Felony conviction recorded.' });
+  if(o.gambling) reasons.push({ cite:'ORC 2915.09(C)(8)', text:'Gambling conviction recorded.' });
+  if(o.compensated) reasons.push({ cite:'ORC 2915.09(D)(1)', text:'Receives compensation. No commission, wage, salary, reward, tip, donation, gratuity or other form of compensation may be paid to a bingo game operator.' });
+  if(o.paidCanteen) reasons.push({ cite:'ORC 2915.09(D)(1)', text:'Also paid canteen or bar staff. Paying the same person for canteen work while they operate the game is the interaction (D)(1) is most easily breached by -- confirm the two roles are genuinely separate and separately paid, or unpaid on the gaming side.' });
+  return { eligible: reasons.length===0, reasons: reasons, age: age };
+}
+function sfAddOperator(){
+  var name=($('op-name').value||'').trim();
+  if(!name){ toast('Operator name is required','err'); return; }
+  var list=getOperators();
+  list.push({ id:'op'+Date.now(), name:name, dob:$('op-dob').value||'',
+              felony:!!$('op-felony').checked, gambling:!!$('op-gambling').checked,
+              compensated:!!$('op-comp').checked, paidCanteen:!!$('op-canteen').checked,
+              added:localToday() });
+  st(K_OPERATORS,list);
+  $('op-name').value=''; $('op-dob').value='';
+  $('op-felony').checked=false; $('op-gambling').checked=false;
+  $('op-comp').checked=false; $('op-canteen').checked=false;
+  toast('Operator added');
+  sfRenderAll();
+}
+function sfRemoveOperator(id){
+  st(K_OPERATORS, getOperators().filter(function(o){ return o.id!==id; }));
+  toast('Operator removed');
+  sfRenderAll();
+}
+function sfRenderOperators(){
+  var list=getOperators(), tb=$('op-tbody');
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="5" class="empty">No operators recorded.</td></tr>'; }
+    else {
+      tb.innerHTML = list.map(function(o){
+        var e=operatorEligibility(o);
+        var tag = e.eligible ? '<span class="tag ok">Eligible</span>' : '<span class="tag bad">Barred</span>';
+        var why = e.reasons.map(function(r){ return H(r.cite)+' &mdash; '+H(r.text); }).join('<br>');
+        return '<tr><td>'+H(o.name)+'</td><td>'+(e.age===null?'--':e.age)+'</td><td>'+tag+'</td>'+
+          '<td style="font-size:12px;line-height:1.5">'+(why||'No bar recorded.')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveOperator(\''+H(o.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var box=$('op-flags');
+  if(box){
+    var barred=list.filter(function(o){ return !operatorEligibility(o).eligible; });
+    var out='';
+    if(barred.length){
+      out += '<div class="blockbox"><strong>'+barred.length+' of '+list.length+' recorded operator(s) are barred.</strong> '+
+        'ORC 2915.09(C)(7), (C)(8) and (D)(1) are conditions on who may work the game, not preferences. '+
+        'Under OAC 4301:1-1-53(D)&ndash;(E) a Chapter 2915 violation is simultaneously a liquor-permit exposure.</div>';
+    }
+    out += '<div class="flagbox"><strong>This list is not a background check.</strong> Convictions are recorded here because someone entered them. Nothing in this app queries a court record, and an empty conviction flag means nobody ticked it &mdash; not that a check was run and came back clean.</div>';
+    box.innerHTML=out;
+  }
+}
+
 /* ---- DASHBOARD --------------------------------------------------------- */
 function sfRenderDashboard(){
   var p=getPost(), members=getMembers(), led=getLedger();
@@ -899,6 +1826,24 @@ function sfRenderDashboard(){
       'SAIRNfreedom yet, so everything here lives in this browser and is not synced or backed up. '+
       'Stated on screen rather than implied, because several apps on this platform have had migrations that were never run and failed quietly for days.</div>';
     if(!p.orgType) out += '<div class="blockbox"><strong>Organisation type is not set.</strong> Officer titles, member categories, waiver conditions and the charitable-purpose test all branch on it. Set it in Post Profile before anything else.</div>';
+    /* SPEC 0e -- THE MODULES ARE COUPLED. OAC 4301:1-1-53(D)-(E) permits charitable
+       games "provided strict compliance occurs" with Chapter 2915, so a 2915
+       failure is simultaneously a liquor-permit exposure. There is no liquor
+       dashboard until Phase 2, so the flag surfaces here as well as on the
+       gaming panels rather than waiting for a page that does not exist. */
+    var gamingBreaches=[];
+    getSessions().forEach(function(s){
+      if(s.recorded && sessionGross(s).prizes>MAX_PRIZE_PER_SESSION) gamingBreaches.push('prize cap exceeded on '+s.date);
+    });
+    getOperators().forEach(function(o){
+      if(!operatorEligibility(o).eligible) gamingBreaches.push('barred operator: '+o.name);
+    });
+    if(gamingBreaches.length){
+      out += '<div class="blockbox"><strong>Gaming compliance failure &mdash; and it is a liquor-permit exposure too.</strong> '+
+        H(gamingBreaches.length)+' issue(s): '+H(gamingBreaches.slice(0,3).join('; '))+
+        (gamingBreaches.length>3?' and '+(gamingBreaches.length-3)+' more':'')+
+        '. OAC 4301:1-1-53(D)&ndash;(E) conditions charitable gaming on strict compliance with Chapter 2915, so these are not two separate problems.</div>';
+    }
     box.innerHTML=out;
   }
   var b=$('bn-post'), m=$('bn-meta'), ht=$('h-orgtype'), hu=$('h-user');
@@ -913,7 +1858,9 @@ function sfRenderDashboard(){
 }
 
 function sfRenderAll(){
-  sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers(); sfRenderDashboard();
+  sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers();
+  sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
+  sfRenderDashboard();
 }
 
 document.addEventListener('DOMContentLoaded', function(){
