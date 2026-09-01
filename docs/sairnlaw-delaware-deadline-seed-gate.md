@@ -203,31 +203,103 @@ shape. It is also **mail-only** — no electronic or consented-means limb — so
 
 ---
 
-## 5. What was NOT determined, and must be before seeding
+## 5. The four open items — ALL FOUR CLOSED 2026-09-01, same day
 
-- **Rule 34 was not located in the extracted text** under the heading searched
-  for, so the production-of-documents period is unread. It is almost certainly
-  30 days and parallel to Rule 33, and **"almost certainly" is not a citation**.
-- **Rule 33's "except that a defendant …" clause was truncated** in the extract
-  read here. It is very likely the federal-style carve-out giving a defendant a
-  longer period when interrogatories are served early, and that clause changes a
-  seeded row from a flat 30 to a `later_of`. **It must be read in full before a
-  Rule 33 row is written**, because guessing it flat reports EARLY for a
-  defendant and guessing it a floor reports LATE for a plaintiff.
-- **The statute fixing the date of the General Election was not read.** Needed
-  to date § 501(a)(12) and (a)(13) for 2026.
-- **Whether the Court of Chancery has its own computation rule** was not
-  checked. Delaware's commercial value is largely Chancery, and Chancery Rule 6
-  is a separate rule set from Superior Court Rule 6. A seed labelled `de` that
-  silently means "Superior Court only" would be a coverage claim nobody made —
-  the domain/label must say which court.
+Each was named in the first version of this document as unread. Each has now
+been read from the primary source, and two of them changed the answer.
+
+### 5.1 Rule 34 — READ. Same shape as Rule 33, and both are ELECTIONS
+
+> **Rule 34(b).** The party upon whom the request is served shall serve a
+> written response **within 30 days after the service of the request, except
+> that a defendant may serve a response within 45 days after** service of the
+> summons and complaint upon that defendant.
+
+> **Rule 33(a).** The party upon whom the interrogatories have been served shall
+> serve a copy of the answers, and objections if any, **within 30 days after the
+> service of the interrogatories, except that a defendant may serve answers or
+> objections within 45 days after service of the summons and complaint** upon
+> that defendant.
+
+**THE WORD IS "MAY", AND ON THIS PLATFORM THAT DECIDES THE SHAPE.** Mississippi,
+New Mexico, South Carolina and Hawai'i make Rule 36 a floor because their text
+is *"shall not be required to serve ... before the expiration of"* 45 days.
+Delaware says a defendant **may** serve within 45 days of a different trigger —
+an ELECTION between two limbs with two different triggers, which is Hawai'i's
+own 33/34 shape, **not** a `later_of` floor. Nebraska is the warning in the other
+direction: its rule says "may" **and** "whichever is longer" in one sentence, so
+the comparative governs there and the same word produces a floor. **The word
+alone never settles it; the sentence does.**
+
+### 5.2 Rule 36 — READ, and it does NOT carry the carve-out
+
+> **Rule 36(a).** The matter is admitted unless, **within 30 days after service
+> of the request**, or within such shorter or longer time as the Court may
+> allow, the party to whom the request is directed serves ... a written answer or
+> objection ...
+
+**Rules 33 and 34 give a defendant the 45-day election and Rule 36 does not.**
+Verified by reading all three, not inferred from the pair. So the admissions row
+is a **flat thirty and self-executing** — the New Hampshire shape — and copying
+33's election onto it would tell a Delaware defendant a matter is still open
+when it has already been admitted.
+
+### 5.3 The General Election date — READ, and it is CONSTITUTIONAL, not statutory
+
+> **Del. Const. art. V, § 1.** The general election shall be held **biennially on
+> the Tuesday next after the first Monday in the month of November**, and shall
+> be by ballot ...
+
+**THIS INVERTS THE NEW HAMPSHIRE CALL RATHER THAN REPEATING IT.** There,
+RSA 288:1 named a *"biennial election"* that ch. 652 never defines, dating it
+needed RSA 653:7 which uses a *different term*, and the day was omitted as the
+EARLY/safe direction. **Delaware has no definitional gap:** 1 Del. C.
+§ 501(a)(12) says *"the day of the General Election as it biennially occurs"* and
+the Constitution fixes *"the general election ... biennially"* on a named day.
+Same term, constitutional source, one reference.
+
+**For 2026 that is Tuesday 3 November 2026** — the first Monday in November 2026
+is Monday the 2nd, verified by weekday, and the Tuesday next after it is the 3rd.
+**It should be CARRIED, not omitted**, and the reason is that the identification
+is a citation rather than a reading. Sussex Return Day is then **Thursday 5
+November 2026**, and stays omitted for the separate reasons in §3.4.
+
+### 5.4 Chancery — READ, and it is a GENUINELY DIFFERENT COMPUTATION
+
+Ct. Ch. R. 6 was downloaded and read (231-page authenticated PDF, HTTP 200,
+same clean retrieval as the Superior Court set). **It is not a copy of Superior
+Court Rule 6, and the differences are not cosmetic:**
+
+| | Superior Court R. 6(a) | Ct. Ch. R. 6 |
+|---|---|---|
+| Last-day rollover | off Saturday/Sunday/legal holiday **or any day the Prothonotary's office is closed**, forward to the next day it is **open** | off Saturday/Sunday/legal holiday only, with **Register in Chancery inaccessibility as a SEPARATE additional limb** (6(a)(3)) |
+| "Legal holiday" | days "provided by statute **or appointed by the Governor or the Chief Justice**" | "declared a holiday by the **Governor** ... or identified in **1 Del. C. § 501**" — **no Chief Justice limb** |
+| Backward periods | not addressed | **6(a)(4) addresses them expressly** — count backward when the period is measured before an event |
+| Hours | none | **6(a)(2)**, a full hours unit with its own rollover |
+| Short-period exclusion | less than 11 days | less than 11 days — **the one place they agree** |
+
+**THE ROLLOVER DIFFERENCE IS THE DECISIVE ONE and it is the Wisconsin question
+in miniature.** Superior Court's closure limb REPLACES the holiday test inside
+the same sentence — the shape that made Wisconsin dangerous. Chancery's
+inaccessibility limb is ADDITIONAL to an ordinary holiday rollover — the
+Minnesota and Utah shape, where omitting it can only report EARLY.
+
+**SCOPING DECISION, MINE, STATED SO IT CAN BE OVERRULED: seed SUPERIOR COURT
+ONLY as jurisdiction `de`, and say so in the label, the coverage entry and every
+row's note.** Every period in §4 is a Superior Court rule; Chancery has its own
+Rules 12, 33, 34 and 36 that were NOT read here. **A `de` seed that silently
+spanned both courts would be a coverage claim nobody made** — and it would be
+wrong in a specific way, since a Chancery deadline computed on the Prothonotary
+closure basis is computed under the wrong rule. Chancery is its own gate, its own
+standard (`de_ct_ch_r_6`) and its own seed, and is not started here.
 
 ---
 
 ## 6. Verdict
 
-**PASS — seed it, with the four disclosures above written into
-`JURISDICTION_COVERAGE.de` before any row is loaded**, and with §5's four open
-items closed first. Nothing here is a blocker of the Louisiana or Colorado kind:
-every unresolved item is either a short additional read or an omission that runs
-EARLY.
+**PASS — seed Superior Court, with the disclosures in §2 and §3 written into
+`JURISDICTION_COVERAGE.de` before any row is loaded.** All four items formerly
+in this section are closed above. Nothing here is a blocker of the Louisiana or
+Colorado kind: every remaining omission runs EARLY, and the two items that
+changed on a second read — the 33/34 election shape and the election-day date —
+both moved toward MORE coverage rather than less.
