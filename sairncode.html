@@ -697,6 +697,7 @@
                 <button class="nav-btn" onclick="showPanel('cos')" data-tip="Cosmetic/Reconstructive -- direct-pay vs insurance routing, evidence, mixed-session modifiers">Cosmetic / Recon</button>
                 <button class="nav-btn" onclick="showPanel('chiro')" data-tip="Chiropractic -- three covered codes, region count, AT modifier, P.A.R.T. exam, GA/GZ on maintenance, statutory exclusions">Chiropractic</button>
                 <button class="nav-btn" onclick="showPanel('esrd')" data-tip="Dialysis / ESRD -- MCP code by age and visit count, per-diem units, AY modifier and consolidated billing, monthly treatment limit">Dialysis / ESRD</button>
+                <button class="nav-btn" onclick="showPanel('onc')" data-tip="Oncology -- chemotherapy administration beyond the initial code, off-label compendia coverage, radiation weekly management">Oncology</button>
             </div>
         </div>
         <div class="nav-group">
@@ -1598,6 +1599,117 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
                 <button class="btn btn-primary" onclick="runEsrdTreatmentCheck()">Check Count</button>
             </div>
             <div id="esrd-tc-result"></div>
+        </div>
+
+        <!-- Oncology (2026-09-01). Primary sources: CMS Pub. 100-04 Ch. 12
+             sec. 30.5 (chemotherapy administration, Rev. 13012 effective
+             1 Jan 2025), Pub. 100-02 Ch. 15 sec. 50.4.5 (off-label
+             anti-cancer coverage), and Pub. 100-04 Ch. 13 sec. 70 (radiation
+             oncology). All read in full.
+
+             DELIBERATELY THE NARROW MODULE. The Drug Administration panel
+             already covers J-code unit arithmetic, JW/JZ, NDC format, the
+             biosimilar families and the initial-code hierarchy, and all of
+             that is oncology work. This panel is only what was missing:
+             everything AFTER the initial code, the classification question
+             that decides whether the chemotherapy family applies at all,
+             off-label compendia coverage, and radiation oncology -- of which
+             the app contained nothing at all.
+
+             The service list and the initial-code pick come from the SAME
+             DU_INFUSION_SERVICES array and determineInitialInfusionCode()
+             the Drug Administration panel uses. One hierarchy, two panels. -->
+        <div id="panel-onc" class="panel">
+            <h1 class="panel-title">Oncology</h1>
+            <div style="font-size:12px;color:#666;margin-bottom:10px;">
+                The costliest oncology errors are not in the drug code. They are in <b>what counts as
+                chemotherapy administration at all</b>, in the units billed after the initial code, and in
+                whether an off-label use is actually supported by a compendium Medicare recognises.
+            </div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">1. Chemotherapy administration</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                <b>Anti-emetics and anti-anaemia drugs given to a cancer patient are not chemotherapy
+                administration</b>, however oncological the encounter looks &mdash; that one sentence is a
+                recurring overpayment finding and no amount of care about the hierarchy catches it.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="onc-class"><option value="">Drug class&hellip;</option></select>
+                <select id="onc-reported-as"><option value="">Reported as&hellip;</option><option value="infusion">Infusion</option><option value="push">Push / injection</option></select>
+                <input type="number" id="onc-minutes" placeholder="Infusion minutes" class="search-input" style="max-width:165px;">
+                <input type="number" id="onc-addhours" placeholder="Additional-hour units billed" class="search-input" style="max-width:230px;">
+            </div>
+            <div style="font-size:12px;color:#666;margin:8px 0 4px;">Services performed during the encounter &mdash; the initial code is chosen from these by the shared hierarchy:</div>
+            <div id="onc-services" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;"></div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="time" id="onc-start" class="search-input" style="max-width:150px;">
+                <input type="time" id="onc-stop" class="search-input" style="max-width:150px;">
+                <input type="number" id="onc-initials" placeholder="Initial codes billed" class="search-input" style="max-width:185px;">
+                <input type="number" id="onc-concurrent" placeholder="Concurrent infusions" class="search-input" style="max-width:190px;">
+                <input type="text" id="onc-mods" placeholder="Modifiers e.g. 25, 59" class="search-input" style="max-width:190px;">
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-two-sites"> Two IV sites per protocol</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-second-enc"> Separate encounter, same day</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-em"> E/M billed the same day</label>
+                <select id="onc-hydration"><option value="">Hydration on this claim&hellip;</option><option value="clinical">Clinically indicated fluid / electrolytes</option><option value="kvo">Keeping the line open before or after</option><option value="vehicle">The fluid carrying the drug</option><option value="drug">A drug, reported with a hydration code</option></select>
+            </div>
+            <div style="font-size:12px;color:#666;margin:8px 0 4px;">Billed separately on this claim:</div>
+            <div id="onc-bundled" style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:10px;"></div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <button class="btn btn-primary" onclick="runOncChemoCheck()">Check Administration</button>
+            </div>
+            <div id="onc-chemo-result"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">2. Off-label anti-cancer coverage</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                Off-label is not a denial reason on its own. Five compendia are recognised, each from its own
+                date, and there are <b>three</b> outcomes rather than two &mdash; supported, not supported, and
+                the manual's own explicit neither.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="onc-route"><option value="">Support route&hellip;</option><option value="compendium">A recognised compendium</option><option value="literature">Peer-reviewed medical literature</option></select>
+                <select id="onc-compendium"><option value="">Compendium&hellip;</option></select>
+                <input type="text" id="onc-rating" placeholder="Rating e.g. 2a, iib, absent" class="search-input" style="max-width:225px;">
+                <input type="date" id="onc-dos" class="search-input" style="max-width:180px;">
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-other-unsupported"> Another listed compendium calls it unsupported</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-denied-offlabel"> Being denied because the use is off-label</label>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <select id="onc-journal"><option value="">Journal on the manual's list?</option><option value="yes">Yes</option><option value="no">No</option></select>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-abstract"> Abstract</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-casereport"> Case report</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-mfr"> Manufacturer in-house publication</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-supplement"> Privately funded supplement</label>
+                <button class="btn btn-primary" onclick="runOncOffLabelCheck()">Check Coverage</button>
+            </div>
+            <div id="onc-offlabel-result"></div>
+
+            <div style="font-weight:700;font-size:16px;margin:24px 0 8px;">3. Radiation oncology &mdash; weekly treatment management</div>
+            <div style="font-size:12px;color:#666;margin-bottom:8px;">
+                A weekly unit is five fractions <b>regardless of the calendar time they took</b>. At final
+                billing three or four fractions beyond a multiple of five are paid as a week; one or two are
+                treated as already paid.
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="number" id="onc-fractions" placeholder="Fractions" class="search-input" style="max-width:140px;">
+                <input type="number" id="onc-weekly-units" placeholder="Weekly units billed" class="search-input" style="max-width:190px;">
+                <input type="number" id="onc-portfilm" placeholder="Port film units" class="search-input" style="max-width:165px;">
+                <input type="number" id="onc-resumed-fx" placeholder="Fractions after resuming" class="search-input" style="max-width:210px;">
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-snf"> SNF outpatient</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-sameday"> Two sessions on one day</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-break"> Distinct break documented</label>
+                <label style="font-size:12px;display:inline-flex;align-items:center;gap:6px;"><input type="checkbox" id="onc-resumed"> Resumed after final billing</label>
+            </div>
+            <div class="toolbar" style="margin-bottom:10px;">
+                <input type="text" id="onc-rad-bundled" placeholder="Activities billed separately (comma separated)" class="search-input" style="min-width:330px;">
+                <button class="btn btn-primary" onclick="runOncRadiationCheck()">Check Weekly Units</button>
+            </div>
+            <div id="onc-rad-result"></div>
         </div>
 
         <div id="panel-anesthesia" class="panel">
@@ -7199,6 +7311,106 @@ How to answer:
             }));
         }
 
+        // Populated from the SAME DU_INFUSION_SERVICES array the Drug
+        // Administration panel renders from, and from this module's own
+        // vocabularies, so a class or a bundled item cannot exist in the
+        // validator and be missing from the form.
+        function renderOncologyControls(){
+            var wrap = document.getElementById('onc-services');
+            if (wrap && !wrap.innerHTML) {
+                var html = '';
+                DU_INFUSION_SERVICES.forEach(function(sv){
+                    html += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">'
+                         +  '<input type="checkbox" id="onc-svc-'+escHtml(sv.key)+'" value="'+escHtml(sv.key)+'"> '
+                         +  escHtml(sv.label) + ' <span style="color:#666;font-size:11px;">('+escHtml(sv.initial)+')</span></label>';
+                });
+                wrap.innerHTML = html;
+            }
+            var cls = document.getElementById('onc-class');
+            if (cls && cls.options.length <= 1) {
+                var o = '<option value="">Drug class...</option>';
+                Object.keys(SC_ONC_DRUG_CLASSES).forEach(function(k){
+                    o += '<option value="'+escHtml(k)+'">'+escHtml(SC_ONC_DRUG_CLASSES[k].label)+'</option>';
+                });
+                cls.innerHTML = o;
+            }
+            var bund = document.getElementById('onc-bundled');
+            if (bund && !bund.innerHTML) {
+                var b = '';
+                Object.keys(SC_ONC_BUNDLED_ITEMS).forEach(function(k){
+                    b += '<label style="display:flex;align-items:center;gap:6px;font-size:13px;">'
+                      +  '<input type="checkbox" id="onc-b-'+escHtml(k)+'" value="'+escHtml(k)+'"> '
+                      +  escHtml(SC_ONC_BUNDLED_ITEMS[k]) + '</label>';
+                });
+                bund.innerHTML = b;
+            }
+            var comp = document.getElementById('onc-compendium');
+            if (comp && comp.options.length <= 1) {
+                var c = '<option value="">Compendium...</option>';
+                Object.keys(SC_ONC_COMPENDIA).forEach(function(k){
+                    var from = SC_ONC_COMPENDIA[k].from;
+                    c += '<option value="'+escHtml(k)+'">'+escHtml(SC_ONC_COMPENDIA[k].label)
+                      +  (from ? ' (recognised from '+escHtml(from)+')' : '')+'</option>';
+                });
+                comp.innerHTML = c;
+            }
+        }
+        function runOncChemoCheck(){
+            var services = DU_INFUSION_SERVICES.filter(function(sv){
+                var el = document.getElementById('onc-svc-'+sv.key); return el && el.checked;
+            }).map(function(sv){ return sv.key; });
+            var bundled = Object.keys(SC_ONC_BUNDLED_ITEMS).filter(function(k){
+                var el = document.getElementById('onc-b-'+k); return el && el.checked;
+            });
+            scRenderCheckResult('onc-chemo-result', scValidateChemoAdmin({
+                drug_class: document.getElementById('onc-class').value,
+                reported_as: document.getElementById('onc-reported-as').value,
+                infusion_minutes: scNumOrNull('onc-minutes'),
+                additional_hour_units: scNumOrNull('onc-addhours'),
+                initial_codes_billed: scNumOrNull('onc-initials'),
+                concurrent_units: scNumOrNull('onc-concurrent'),
+                services: services,
+                start_time: document.getElementById('onc-start').value,
+                stop_time: document.getElementById('onc-stop').value,
+                separate_iv_sites: document.getElementById('onc-two-sites').checked,
+                second_encounter: document.getElementById('onc-second-enc').checked,
+                em_billed: document.getElementById('onc-em').checked,
+                hydration_purpose: document.getElementById('onc-hydration').value,
+                separately_billed: bundled,
+                modifiers: scParseList(document.getElementById('onc-mods').value)
+            }));
+        }
+        function runOncOffLabelCheck(){
+            var j = document.getElementById('onc-journal').value;
+            scRenderCheckResult('onc-offlabel-result', scValidateOffLabelAnticancer({
+                route: document.getElementById('onc-route').value,
+                compendium: document.getElementById('onc-compendium').value,
+                rating: document.getElementById('onc-rating').value,
+                dos: document.getElementById('onc-dos').value,
+                other_compendium_unsupported: document.getElementById('onc-other-unsupported').checked,
+                denied_for_no_fda_label: document.getElementById('onc-denied-offlabel').checked,
+                journal_on_list: j === 'yes' ? true : (j === 'no' ? false : null),
+                is_abstract: document.getElementById('onc-abstract').checked,
+                is_case_report: document.getElementById('onc-casereport').checked,
+                is_manufacturer_publication: document.getElementById('onc-mfr').checked,
+                is_funded_supplement: document.getElementById('onc-supplement').checked
+            }));
+        }
+        function runOncRadiationCheck(){
+            scRenderCheckResult('onc-rad-result', scValidateRadiationWeekly({
+                fractions: scNumOrNull('onc-fractions'),
+                units_billed: scNumOrNull('onc-weekly-units'),
+                port_film_units: scNumOrNull('onc-portfilm'),
+                resumed_fractions: scNumOrNull('onc-resumed-fx'),
+                is_snf_outpatient: document.getElementById('onc-snf').checked,
+                same_day_fractions: document.getElementById('onc-sameday').checked,
+                distinct_break: document.getElementById('onc-break').checked,
+                resumed_after_final_billing: document.getElementById('onc-resumed').checked,
+                separately_billed: String(document.getElementById('onc-rad-bundled').value || '')
+                    .split(',').map(function(x){ return x.trim(); }).filter(Boolean)
+            }));
+        }
+
         function scNumOrNull(id){
             var v = document.getElementById(id).value;
             return v === '' ? null : Number(v);
@@ -8816,6 +9028,426 @@ How to answer:
                         extra + ' additional treatment' + (extra === 1 ? '' : 's') + ' beyond the limit of ' + limit + ', reported with CG. Those lines are not paid and are not counted in the outlier calculation.', 'treatments'));
                 }
             }
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+        }
+
+        // ================================================================
+        // ONCOLOGY MODULE (2026-09-01).
+        //
+        // Sources, all downloaded and read rather than summarised:
+        //   * CMS Pub. 100-04 Ch. 12 sec. 30.5 (Rev. 13012, effective
+        //     1 Jan 2025) -- chemotherapy administration and nonchemotherapy
+        //     injections/infusions. This is the primary rule text and carries
+        //     every arithmetic threshold below.
+        //   * CMS Pub. 100-02 Ch. 15 sec. 50.4.5 (Rev. 212) -- off-label use
+        //     of drugs and biologicals in an anti-cancer chemotherapeutic
+        //     regimen, the compendia and the peer-reviewed literature route.
+        //   * CMS Pub. 100-04 Ch. 13 sec. 70 (Rev. 13150, issued 11 Apr 2025)
+        //     -- radiation oncology weekly treatment management.
+        //   * CPT descriptors for 96401-96450 as reproduced in Providence
+        //     Health Plan reimbursement policy PRM152, which prints them in
+        //     full and quotes Ch. 12 sec. 30.5 verbatim beside them.
+        //
+        // WHY THIS IS SMALLER THAN "ONCOLOGY" SOUNDS, AND DELIBERATELY SO.
+        // The Drug Administration panel already does J-code unit arithmetic,
+        // the JW/JZ waste gate, NDC format and the biosimilar families, and
+        // determineInitialInfusionCode() already picks the one initial code
+        // from the chemotherapy > therapeutic > hydration hierarchy. All of
+        // that is oncology work and none of it is repeated here. THIS MODULE
+        // IS ONLY WHAT WAS ACTUALLY MISSING: everything AFTER the initial
+        // code (additional hours, sequential, concurrent, push), the
+        // classification question that decides whether the chemotherapy
+        // family applies at all, off-label compendia coverage, and radiation
+        // oncology -- of which the app contained nothing whatsoever.
+        //
+        // THE CLASSIFICATION RULE IS THE ONE MOST WORTH HAVING. Anti-emetics
+        // and anti-anaemia drugs given to a cancer patient are NOT
+        // chemotherapy administration, however obviously oncological the
+        // encounter looks. That single sentence in Ch. 12 sec. 30.5.D is a
+        // recurring overpayment finding, and no amount of care about the
+        // hierarchy catches it, because the drug is not in the hierarchy.
+        // ================================================================
+        var SC_ONC_SOURCES = {
+            classes:      'CMS Pub. 100-04, Medicare Claims Processing Manual, Ch. 12 sec. 30.5.D (Rev. 13012, effective 1 Jan 2025) -- chemotherapy administration codes apply to parenteral administration of non-radionuclide anti-neoplastic drugs, to anti-neoplastic agents given for NON-cancer diagnoses (cyclophosphamide for auto-immune conditions is CMS\'s own example), and to monoclonal antibody agents and other biologic response modifiers. Named monoclonals: infliximab, rituximab, alemtuzumab, gemtuzumab, trastuzumab. Named hormonal antineoplastics: leuprolide acetate and goserelin acetate. The lists are expressly not exhaustive and MACs may add to them',
+            not_chemo:    'CMS Pub. 100-04, Ch. 12 sec. 30.5.D -- "The administration of anti-anemia drugs and anti-emetic drugs by injection or infusion for cancer patients is not considered chemotherapy administration"',
+            complexity:   'CMS Pub. 100-04, Ch. 12 sec. 30.5.D -- MACs "should consider multiple factors when determining if the level of intensity for a complex drug administration service has been met, rather than just the drug name alone"',
+            one_initial:  'CMS Pub. 100-04, Ch. 12 sec. 30.5.E -- report only one "initial" service code unless protocol requires two separate IV sites. The initial code "is the code that best describes the key or primary reason for the encounter and should always be reported irrespective of the order in which the infusions or injections occur." A second initial billed the same day is denied unless the patient returns for a separately identifiable service or has two IV lines per protocol, and those are reported with modifier 59',
+            subsequent:   'CMS Pub. 100-04, Ch. 12 sec. 30.5.E -- "If an injection or infusion is of a subsequent or concurrent nature, even if it is the first such service within that group of services, then a subsequent or concurrent code should be reported." CMS\'s example: the first IV push given after an initial one-hour infusion is reported with a SUBSEQUENT push code',
+            concurrent:   'CMS Pub. 100-04, Ch. 12 sec. 30.5.E -- "Allow only one concurrent infusion per patient per encounter. Do not allow payment for the concurrent infusion billed with modifier 59 unless it is provided during a second encounter on the same day with the patient and is documented in the medical record"',
+            push_def:     'CMS Pub. 100-04, Ch. 12 sec. 30.5.E -- an intravenous or intra-arterial push is "1.) an injection in which the healthcare professional is continuously present to administer the substance/drug and observe the patient; or 2.) an infusion of 15 minutes or less"',
+            add_hour:     'CMS Pub. 100-04, Ch. 12 sec. 30.5.E -- "The physician may report the infusion code for \'each additional hour\' only if the infusion interval is greater than 30 minutes beyond the 1 hour increment." CMS\'s worked example: an infusion of 1 hour 45 minutes is the initial code up to 1 hour plus one add-on for the additional 45 minutes',
+            bundled:      'CMS Pub. 100-04, Ch. 12 sec. 30.5.D -- these are included in the administration payment and are not separately billable: use of local anaesthesia; IV access; access to an indwelling IV, subcutaneous catheter or port; flush at the conclusion of the infusion; standard tubing, syringes and supplies; and, for chemotherapy, PREPARATION OF THE CHEMOTHERAPY AGENT',
+            hydration:    'CMS Pub. 100-04, Ch. 12 sec. 30.5.B and 30.5.C -- hydration codes report an IV infusion of pre-packaged fluid and/or electrolytes and "are not used to report infusion of drugs or other substances." Where a therapeutic or chemotherapy infusion is given, "The fluid used to administer the drug(s) is incidental hydration and is not separately payable"',
+            em25:         'CMS Pub. 100-04, Ch. 12 sec. 30.5.C and 30.5.D -- a significant, separately identifiable E/M service is reported with modifier 25 in addition to the administration service, and "For an evaluation and management service provided on the same day, a different diagnosis is not required"',
+            cpt_desc:     'CPT descriptors as printed in Providence Health Plan reimbursement policy PRM152 (chemotherapy and complex drug administration coding), which reproduces them in full: 96409 IV push single or initial substance; 96411 IV push each additional substance; 96413 IV infusion up to 1 hour, single or initial; 96415 IV infusion each additional hour; 96416 initiation of prolonged infusion over 8 hours requiring a portable or implantable pump; 96417 each additional SEQUENTIAL infusion, different substance, up to 1 hour',
+            offlabel:     'CMS Pub. 100-02, Medicare Benefit Policy Manual, Ch. 15 sec. 50.4.5 (Rev. 212) -- do not deny coverage of an off-label anti-cancer use "based solely on the absence of FDA-approved labeling for the use" where a listed compendium supports it and no listed compendium calls it unsupported',
+            compendia:    'CMS Pub. 100-02, Ch. 15 sec. 50.4.5.B -- the recognised compendia and the dates from which each was recognised: AHFS-DI (existing), NCCN Drugs and Biologics Compendium (5 June 2008), Micromedex DrugDex (10 June 2008), Clinical Pharmacology (2 July 2008), Lexi-Drugs (12 August 2015)',
+            ratings:      'CMS Pub. 100-02, Ch. 15 sec. 50.4.5.B -- medically accepted where the indication is NCCN Category 1 or 2A, or DrugDex Class I, IIa or IIb, or the AHFS-DI / Clinical Pharmacology narrative is supportive, or Lexi-Drugs lists it as "Use: Off-Label" rated "Evidence Level A". NOT medically accepted where it is NCCN Category 3, DrugDex Class III, an AHFS or Clinical Pharmacology narrative that is "not supportive", or Lexi-Drugs "Use: Unsupported"',
+            silence:      'CMS Pub. 100-02, Ch. 15 sec. 50.4.5.B -- "The complete absence of narrative text on a use is considered neither supportive nor non-supportive"',
+            not_indicated:'CMS Pub. 100-02, Ch. 15 sec. 50.4.5.D -- where a use is identified as not indicated by CMS or the FDA, or is specifically identified as not indicated in one or more of the listed compendia, or the contractor determines from peer-reviewed literature that the use is not safe and effective, the off-label usage is not supported and the drug is not covered',
+            literature:   'CMS Pub. 100-02, Ch. 15 sec. 50.4.5.C -- peer-reviewed medical literature may support an off-label use, from the regular editions of an enumerated list of journals. EXCLUDED: in-house publications of entities whose business relates to the manufacture, sale or distribution of pharmaceutical products; abstracts including meeting abstracts; and supplement editions privately funded by parties with a vested interest. Case reports "are generally considered uncontrolled and anecdotal information and do not provide adequate supportive clinical evidence"',
+            rad_weekly:   'CMS Pub. 100-04, Ch. 13 sec. 70.1 (Rev. 13150, issued 11 Apr 2025) -- weekly radiation treatment management is paid under 77427 and "Billing entities must indicate on each claim the number of fractions for which payment is sought. A weekly unit of treatment management is equal to five fractions or treatment sessions... regardless of the actual time period in which the services are furnished." At final billing, three or four fractions beyond a multiple of five are paid as a week; one or two beyond a multiple of five are considered already paid through prior payments. CMS\'s own examples: 18 fractions = 4 weekly services, 62 = 12, 8 = 2, 6 = 1',
+            rad_sameday:  'CMS Pub. 100-04, Ch. 13 sec. 70.1 -- "Multiple fractions representing two or more treatment sessions furnished on the same day may be counted as long as there has been a distinct break in therapy sessions, and the fractions are of the character usually furnished on different days"',
+            rad_resume:   'CMS Pub. 100-04, Ch. 13 sec. 70.1 -- where billing indicated the course had ended and the residual fractions were determined, but treatment resumes, payment for the additional services is adjusted consistently with the same policy. CMS\'s example: 8 fractions paid as 2 weeks, then 2 further fractions by the same physician, and no additional payment is made',
+            rad_snf:      'CMS Pub. 100-04, Ch. 13 sec. 70.1.A -- a SNF may not bill weekly treatment management services for its outpatients (77419, 77420, 77425, 77430, 77431); it bills radiation treatment delivery instead, and bills therapeutic radiology port film separately, entering the number of services in the units field',
+            rad_bundled:  'CMS Pub. 100-04, Ch. 13 sec. 70.2 (Rev. 4267) -- no separate payment is made for services rendered by radiation oncologists in conjunction with radiation therapy. The activities named include checking of treatment charts, verification of dosage, continued patient evaluation and written progress notes, final physical examination, medical prescription writing, nutritional counselling, pain management, review and revision of the treatment plan, routine medical management of an unrelated problem, special care of an ostomy, written reports and progress notes, and FOLLOW-UP EXAMINATION AND CARE FOR 90 DAYS AFTER THE LAST TREATMENT',
+            rad_portfilm: 'CMS Pub. 100-04, Ch. 13 sec. 70.3 -- radiation treatment delivery is paid on a daily basis, multiple sessions the same day are payable where there has been a distinct break and the sessions are of the character usually furnished on different days, and therapeutic radiology port film is paid on a weekly (five fractions) basis'
+        };
+
+        // Drug classes that decide whether the chemotherapy family applies at
+        // all. 'supportive_cancer' is the trap: an anti-emetic or anti-anaemia
+        // drug given to a cancer patient during a chemotherapy course looks
+        // like chemotherapy administration and is expressly not.
+        var SC_ONC_DRUG_CLASSES = {
+            antineoplastic:   { chemo: true,  label: 'Non-radionuclide anti-neoplastic drug' },
+            antineoplastic_noncancer: { chemo: true, label: 'Anti-neoplastic agent for a non-cancer diagnosis' },
+            monoclonal:       { chemo: true,  label: 'Monoclonal antibody agent' },
+            biologic_modifier:{ chemo: true,  label: 'Other biologic response modifier' },
+            hormonal:         { chemo: true,  label: 'Hormonal anti-neoplastic' },
+            supportive_cancer:{ chemo: false, label: 'Anti-emetic or anti-anaemia drug for a cancer patient' },
+            other:            { chemo: false, label: 'Other therapeutic, prophylactic or diagnostic drug' }
+        };
+
+        var SC_ONC_BUNDLED_ITEMS = {
+            local_anesthesia: 'use of local anaesthesia',
+            iv_access:        'IV access or IV start',
+            port_access:      'access to an indwelling IV, subcutaneous catheter or port',
+            flush:            'flush at the conclusion of the infusion',
+            supplies:         'standard tubing, syringes and supplies',
+            chemo_prep:       'preparation of the chemotherapy agent'
+        };
+
+        // Compendia with the date each became recognised. A date is carried
+        // because recognition is not retroactive -- three of the five were
+        // added in 2008 and one in 2015, and a use supported only by a
+        // compendium that was not yet recognised on the date of service was
+        // not supported on that date.
+        var SC_ONC_COMPENDIA = {
+            ahfs:     { label: 'AHFS-DI (American Hospital Formulary Service - Drug Information)', from: null,
+                        supported: ['narrative_supportive'], unsupported: ['narrative_not_supportive'] },
+            nccn:     { label: 'NCCN Drugs and Biologics Compendium', from: '2008-06-05',
+                        supported: ['1', '2a'], unsupported: ['3'] },
+            drugdex:  { label: 'Micromedex DrugDex', from: '2008-06-10',
+                        supported: ['i', 'iia', 'iib'], unsupported: ['iii'] },
+            clinpharm:{ label: 'Clinical Pharmacology', from: '2008-07-02',
+                        supported: ['narrative_supportive'], unsupported: ['narrative_not_supportive'] },
+            lexi:     { label: 'Lexi-Drugs', from: '2015-08-12',
+                        supported: ['offlabel_level_a'], unsupported: ['unsupported'] }
+        };
+
+        function scOncFinding(sev, rule, detail, k){
+            return { severity: sev, rule: rule, detail: detail, source: SC_ONC_SOURCES[k] || '' };
+        }
+
+        // ── Additional-hour arithmetic ──
+        // CMS states the threshold once and gives ONE worked example, for the
+        // first additional hour. Applying the same threshold to each further
+        // increment is an APPLICATION of the stated rule rather than a second
+        // stated rule, and the caller is told so rather than being handed a
+        // number that looks equally authoritative. Returns null where the
+        // infusion is too short for any add-on.
+        function scOncAdditionalHours(minutes){
+            if (!isFinite(minutes) || minutes === null || minutes <= 60) return { units: 0, beyond: 0, derived: false };
+            var beyond = minutes - 60;
+            var whole = Math.floor(beyond / 60);
+            var rem = beyond - whole * 60;
+            var units = whole + (rem > 30 ? 1 : 0);
+            return { units: units, beyond: beyond, derived: minutes > 150 };
+        }
+
+        function scValidateChemoAdmin(input){
+            input = input || {};
+            var findings = [];
+            var mods = (input.modifiers || []).map(function(m){ return String(m || '').trim().toUpperCase(); }).filter(Boolean);
+            var cls = String(input.drug_class || '');
+
+            // --- 1. Does the chemotherapy family apply at all? ---
+            if (!cls) {
+                findings.push(scOncFinding('block', 'Drug class not recorded',
+                    'Whether the chemotherapy administration family applies is decided by what the drug IS, not by the diagnosis or the setting. Nothing below can be checked until that is stated.', 'classes'));
+            } else if (!SC_ONC_DRUG_CLASSES[cls]) {
+                findings.push(scOncFinding('block', 'Drug class not recognised',
+                    '"' + cls + '" is not one of the classes this check knows.', 'classes'));
+            } else if (cls === 'supportive_cancer') {
+                findings.push(scOncFinding('block', 'Anti-emetic or anti-anaemia drug is not chemotherapy administration',
+                    'Given to a cancer patient, by injection or infusion, this is expressly NOT chemotherapy administration however oncological the encounter looks. Report it from the therapeutic, prophylactic and diagnostic family (96360-96379) instead.', 'not_chemo'));
+            } else if (SC_ONC_DRUG_CLASSES[cls].chemo) {
+                findings.push(scOncFinding('info', 'Chemotherapy administration family applies',
+                    SC_ONC_DRUG_CLASSES[cls].label + '. Note that the qualifying question is the drug and the complexity of its administration, not the diagnosis -- an anti-neoplastic given for an auto-immune condition still uses this family, and a MAC weighs the level of intensity rather than the drug name alone.', 'classes'));
+            } else {
+                findings.push(scOncFinding('info', 'Therapeutic family, not chemotherapy',
+                    SC_ONC_DRUG_CLASSES[cls].label + '. Report from 96360-96379.', 'classes'));
+            }
+
+            // --- 2. One initial service code ---
+            var initials = input.initial_codes_billed;
+            if (isFinite(initials) && initials > 1) {
+                if (input.separate_iv_sites === true || input.second_encounter === true) {
+                    if (mods.indexOf('59') === -1) {
+                        findings.push(scOncFinding('block', 'Second initial code without modifier 59',
+                            initials + ' initial codes billed. The exception that allows this -- ' + (input.second_encounter === true ? 'a separately identifiable service at a return encounter the same day' : 'two IV lines per protocol') + ' -- is reported with modifier 59, and without it the second initial code is denied.', 'one_initial'));
+                    } else {
+                        findings.push(scOncFinding('info', 'Second initial code is supported by an exception',
+                            'Two initial codes with modifier 59, on ' + (input.second_encounter === true ? 'a separately identifiable return encounter the same day' : 'separate IV access sites per protocol') + '.', 'one_initial'));
+                    }
+                } else {
+                    findings.push(scOncFinding('block', 'More than one initial service code',
+                        initials + ' initial codes billed with neither exception recorded. Only one initial code is reported per encounter; everything else is sequential, concurrent or an add-on.', 'one_initial'));
+                }
+            }
+
+            // --- 3. The initial code itself, via the shared hierarchy ---
+            var services = (input.services || []).filter(Boolean);
+            if (services.length) {
+                var pick = determineInitialInfusionCode(services, input.start_time, input.stop_time);
+                if (pick.ok) {
+                    findings.push(scOncFinding('info', 'Initial code: ' + pick.initial.initial,
+                        pick.initial.label + '. The initial code is the one describing the key reason for the encounter and is reported irrespective of the ORDER in which the services occurred'
+                        + (pick.secondary.length ? '; everything else here is sequential, concurrent or an add-on, never a second initial: ' + pick.secondary.map(function(s){ return s.label; }).join('; ') : '.'), 'one_initial'));
+                    if (pick.secondary.length) {
+                        findings.push(scOncFinding('info', 'A first-of-its-kind service can still be a subsequent one',
+                            'A service that is subsequent or concurrent takes a subsequent or concurrent code even where it is the first of its own group -- CMS\'s example is the first IV push after an initial one-hour infusion, which is reported with a subsequent push code.', 'subsequent'));
+                    }
+                    if (pick.timeWarning) {
+                        findings.push(scOncFinding('warn', 'Start and stop times are missing',
+                            pick.timeWarning, 'add_hour'));
+                    }
+                }
+            }
+
+            // --- 4. Push versus infusion ---
+            var mins = input.infusion_minutes;
+            if (isFinite(mins) && mins !== null && mins > 0 && input.reported_as === 'infusion' && mins <= 15) {
+                findings.push(scOncFinding('block', 'An infusion of 15 minutes or less is a push',
+                    mins + ' minutes reported as an infusion. A push is defined as an injection with the professional continuously present, OR an infusion of 15 minutes or less -- so this is reported with a push code, not an infusion code.', 'push_def'));
+            }
+
+            // --- 5. Additional hours ---
+            if (isFinite(mins) && mins !== null && mins > 0) {
+                var add = scOncAdditionalHours(mins);
+                var claimed = input.additional_hour_units;
+                if (add.units === 0) {
+                    findings.push(scOncFinding(isFinite(claimed) && claimed > 0 ? 'block' : 'info',
+                        add.units === 0 && isFinite(claimed) && claimed > 0 ? 'No additional hour is reportable' : 'Initial code only',
+                        mins + ' minutes is ' + (mins <= 60 ? 'within the first hour' : (add.beyond + ' minutes beyond the first hour, and the threshold is MORE than 30'))
+                        + (isFinite(claimed) && claimed > 0 ? '. ' + claimed + ' additional-hour unit' + (claimed === 1 ? '' : 's') + ' billed.' : '.'), 'add_hour'));
+                } else if (isFinite(claimed) && claimed !== null && claimed !== add.units) {
+                    findings.push(scOncFinding('block', 'Additional-hour units do not match the infusion time',
+                        mins + ' minutes supports ' + add.units + ' additional-hour unit' + (add.units === 1 ? '' : 's') + ', and ' + claimed + ' ' + (claimed === 1 ? 'is' : 'are') + ' billed.'
+                        + (add.derived ? ' Note: CMS states the "more than 30 minutes beyond the increment" threshold once, with one worked example for the FIRST additional hour; applying it to each further increment is that rule applied again, not a separately stated rule.' : ''), 'add_hour'));
+                } else {
+                    findings.push(scOncFinding('info', add.units + ' additional-hour unit' + (add.units === 1 ? '' : 's') + ' reportable',
+                        mins + ' minutes: the initial code covers the first hour and ' + add.beyond + ' minutes remain.'
+                        + (add.derived ? ' CMS states the threshold once with one worked example for the first additional hour; the further increments apply that same rule.' : ''), 'add_hour'));
+                }
+            }
+
+            // --- 6. Concurrent ---
+            var conc = input.concurrent_units;
+            if (isFinite(conc) && conc > 1) {
+                findings.push(scOncFinding('block', 'More than one concurrent infusion in an encounter',
+                    conc + ' concurrent infusions billed. Only one is allowed per patient per encounter, and it is not time based -- it is reported once regardless of how many additional drugs run concurrently.', 'concurrent'));
+            }
+            if (isFinite(conc) && conc >= 1 && mods.indexOf('59') !== -1 && input.second_encounter !== true) {
+                findings.push(scOncFinding('block', 'Concurrent infusion with modifier 59 and no second encounter',
+                    'A concurrent infusion billed with modifier 59 is not payable unless it was provided during a second encounter with the patient on the same day and that is documented in the record.', 'concurrent'));
+            }
+
+            // --- 7. Bundled items ---
+            var billed = (input.separately_billed || []).filter(Boolean);
+            var badBundled = billed.filter(function(b){ return SC_ONC_BUNDLED_ITEMS[b]; });
+            if (badBundled.length) {
+                var isChemo = SC_ONC_DRUG_CLASSES[cls] && SC_ONC_DRUG_CLASSES[cls].chemo;
+                var names = badBundled.map(function(b){ return SC_ONC_BUNDLED_ITEMS[b]; });
+                findings.push(scOncFinding('block', 'Item billed separately that is inside the administration payment',
+                    names.join('; ') + '. ' + (badBundled.indexOf('chemo_prep') !== -1 && !isChemo
+                        ? 'Preparation of the chemotherapy agent is bundled specifically into the CHEMOTHERAPY administration payment, and this line is not recorded as chemotherapy at all.'
+                        : 'Payment for these is included in the administration service.'), 'bundled'));
+            }
+
+            // --- 8. Hydration ---
+            var hyd = String(input.hydration_purpose || '');
+            if (hyd === 'kvo') {
+                findings.push(scOncFinding('block', 'Hydration billed to keep a line open',
+                    'Fluid run to keep an IV line open before or after a therapeutic infusion is not a reportable hydration service.', 'hydration'));
+            } else if (hyd === 'vehicle') {
+                findings.push(scOncFinding('block', 'Hydration billed for the fluid carrying the drug',
+                    'The fluid used to administer the drug is incidental hydration and is not separately payable.', 'hydration'));
+            } else if (hyd === 'drug') {
+                findings.push(scOncFinding('block', 'A drug infusion reported with a hydration code',
+                    'Hydration codes report pre-packaged fluid and/or electrolytes and are not used to report the infusion of drugs or other substances.', 'hydration'));
+            } else if (hyd === 'clinical') {
+                findings.push(scOncFinding('info', 'Separately reportable hydration',
+                    'Clinically indicated hydration of pre-packaged fluid or electrolytes, not carrying a drug and not merely keeping a line open, is reportable on its own.', 'hydration'));
+            }
+
+            // --- 9. E/M ---
+            if (input.em_billed === true) {
+                if (mods.indexOf('25') === -1) {
+                    findings.push(scOncFinding('block', 'E/M on the same day without modifier 25',
+                        'A significant, separately identifiable E/M is reported with modifier 25 in addition to the administration service.', 'em25'));
+                } else {
+                    findings.push(scOncFinding('info', 'E/M correctly carries modifier 25',
+                        'And a different diagnosis is NOT required for a same-day E/M -- a common reason these are held back unnecessarily.', 'em25'));
+                }
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+        }
+
+        // ── Off-label anti-cancer coverage ──
+        function scValidateOffLabelAnticancer(input){
+            input = input || {};
+            var findings = [];
+            var route = String(input.route || '');
+            var comp = String(input.compendium || '').toLowerCase();
+            var rating = String(input.rating || '').toLowerCase();
+            var dos = String(input.dos || '').trim();
+
+            if (input.denied_for_no_fda_label === true) {
+                findings.push(scOncFinding('block', 'Denied solely because the use is off-label',
+                    'Absence of FDA-approved labeling is not on its own a reason to deny an anti-cancer use. The question is whether a recognised compendium supports it and none calls it unsupported.', 'offlabel'));
+            }
+
+            if (route === 'compendium') {
+                var c = SC_ONC_COMPENDIA[comp];
+                if (!comp) {
+                    findings.push(scOncFinding('block', 'No compendium named',
+                        'Five compendia are recognised: AHFS-DI, NCCN, Micromedex DrugDex, Clinical Pharmacology and Lexi-Drugs. A use supported by anything else is not supported by this route.', 'compendia'));
+                } else if (!c) {
+                    findings.push(scOncFinding('block', 'Not a recognised compendium',
+                        '"' + comp + '" is not one of the five recognised compendia.', 'compendia'));
+                } else {
+                    if (c.from && dos && dos < c.from) {
+                        findings.push(scOncFinding('block', 'Compendium was not yet recognised on this date of service',
+                            c.label + ' was recognised from ' + c.from + ', and the date of service is ' + dos + '. Recognition is not retroactive.', 'compendia'));
+                    }
+                    if (!rating) {
+                        findings.push(scOncFinding('block', 'No rating recorded',
+                            'The compendium entry\'s own rating decides this, and there are three outcomes, not two.', 'ratings'));
+                    } else if (rating === 'absent') {
+                        findings.push(scOncFinding('warn', 'Neither supportive nor non-supportive',
+                            'The complete absence of narrative text on a use is expressly neither. This is not a denial and it is not an approval -- another compendium or the peer-reviewed literature route has to carry it.', 'silence'));
+                    } else if (c.supported.indexOf(rating) !== -1) {
+                        findings.push(scOncFinding('info', 'Medically accepted by this compendium',
+                            c.label + ', rating "' + rating + '". Coverage must not be denied for absence of FDA labeling alone -- but check that NO listed compendium calls the use unsupported, because one that does defeats it.', 'ratings'));
+                    } else if (c.unsupported.indexOf(rating) !== -1) {
+                        findings.push(scOncFinding('block', 'Identified as not medically accepted',
+                            c.label + ', rating "' + rating + '". A use specifically identified as not indicated in one or more listed compendia is not covered.', 'not_indicated'));
+                    } else if (comp === 'nccn' && rating === '2b') {
+                        findings.push(scOncFinding('warn', 'NCCN Category 2B is in neither list',
+                            'The manual names Category 1 and 2A as medically accepted and Category 3 as not. Category 2B appears in neither, so this check will not assert either answer.', 'ratings'));
+                    } else {
+                        findings.push(scOncFinding('warn', 'Rating is not one the manual places in either list',
+                            '"' + rating + '" for ' + c.label + ' is neither in the medically-accepted list nor in the not-accepted list, so no determination is produced here.', 'ratings'));
+                    }
+                    if (input.other_compendium_unsupported === true) {
+                        findings.push(scOncFinding('block', 'Another listed compendium calls this use unsupported',
+                            'A use specifically identified as not indicated in one or more of the listed compendia is not covered, whatever a different compendium says.', 'not_indicated'));
+                    }
+                }
+            } else if (route === 'literature') {
+                if (input.is_abstract === true) {
+                    findings.push(scOncFinding('block', 'Abstracts are excluded',
+                        'Abstracts, including meeting abstracts, are excluded from consideration.', 'literature'));
+                }
+                if (input.is_case_report === true) {
+                    findings.push(scOncFinding('block', 'A case report is not adequate supportive evidence',
+                        'Case reports are generally considered uncontrolled and anecdotal and do not provide adequate supportive clinical evidence for determining accepted uses.', 'literature'));
+                }
+                if (input.is_manufacturer_publication === true) {
+                    findings.push(scOncFinding('block', 'In-house manufacturer publication',
+                        'In-house publications of entities whose business relates to the manufacture, sale or distribution of pharmaceutical products are excluded.', 'literature'));
+                }
+                if (input.is_funded_supplement === true) {
+                    findings.push(scOncFinding('block', 'Privately funded supplement edition',
+                        'Only the regular editions count; supplement editions privately funded by parties with a vested interest in the authors\' recommendations are excluded.', 'literature'));
+                }
+                if (input.journal_on_list === false) {
+                    findings.push(scOncFinding('block', 'Journal is not on the enumerated list',
+                        'The literature route runs on a closed list of publications named in the manual. A journal outside it does not support the use by this route.', 'literature'));
+                } else if (input.journal_on_list === true) {
+                    findings.push(scOncFinding('info', 'Journal is on the enumerated list',
+                        'The contractor still weighs whether the beneficiary and the cancer are adequately represented, whether the regimen is represented, whether the outcomes are clinically meaningful, and whether the design addresses the question.', 'literature'));
+                }
+            } else {
+                findings.push(scOncFinding('block', 'No support route recorded',
+                    'An off-label anti-cancer use is supported either by a listed compendium or by peer-reviewed medical literature. Which one is being relied on has to be stated.', 'offlabel'));
+            }
+
+            return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
+        }
+
+        // ── Radiation oncology weekly treatment management ──
+        // The arithmetic is asserted against CMS's own four worked examples
+        // rather than trusted: 18 -> 4, 62 -> 12, 8 -> 2, 6 -> 1.
+        function scOncWeeklyUnits(fractions){
+            if (!isFinite(fractions) || fractions === null || fractions < 0) return null;
+            var whole = Math.floor(fractions / 5);
+            var rem = fractions - whole * 5;
+            return { units: whole + (rem >= 3 ? 1 : 0), whole: whole, remainder: rem };
+        }
+
+        function scValidateRadiationWeekly(input){
+            input = input || {};
+            var findings = [];
+            var fractions = input.fractions;
+            var claimed = input.units_billed;
+
+            if (input.is_snf_outpatient === true) {
+                findings.push(scOncFinding('block', 'A SNF may not bill weekly treatment management',
+                    'For its outpatients a SNF bills radiation treatment delivery instead, and bills therapeutic radiology port film separately with the number of services in the units field.', 'rad_snf'));
+            }
+
+            if (!isFinite(fractions) || fractions === null) {
+                findings.push(scOncFinding('block', 'Number of fractions not recorded',
+                    'The claim must state the number of fractions for which payment is sought; the weekly unit is defined as five fractions regardless of the calendar time they took.', 'rad_weekly'));
+            } else {
+                var w = scOncWeeklyUnits(fractions);
+                var detail = fractions + ' fractions is ' + w.whole + ' complete week' + (w.whole === 1 ? '' : 's')
+                    + (w.remainder ? ' plus ' + w.remainder + ' fraction' + (w.remainder === 1 ? '' : 's') : '')
+                    + ' = ' + w.units + ' weekly service' + (w.units === 1 ? '' : 's') + '. '
+                    + (w.remainder === 0 ? 'No remainder.'
+                        : (w.remainder >= 3 ? 'Three or four fractions beyond a multiple of five are paid as a week.'
+                                            : 'One or two fractions beyond a multiple of five are treated as already paid through prior payments.'));
+                if (isFinite(claimed) && claimed !== null && claimed !== w.units) {
+                    findings.push(scOncFinding('block', 'Weekly units do not match the fraction count',
+                        detail + ' ' + claimed + ' unit' + (claimed === 1 ? '' : 's') + ' billed.', 'rad_weekly'));
+                } else {
+                    findings.push(scOncFinding('info', w.units + ' weekly service' + (w.units === 1 ? '' : 's'), detail, 'rad_weekly'));
+                }
+            }
+
+            if (input.same_day_fractions === true && input.distinct_break !== true) {
+                findings.push(scOncFinding('block', 'Two sessions on one day with no distinct break recorded',
+                    'Multiple fractions on the same day count only where there has been a distinct break in therapy sessions and the fractions are of the character usually furnished on different days.', 'rad_sameday'));
+            }
+
+            if (input.resumed_after_final_billing === true) {
+                var extra = input.resumed_fractions;
+                var note = 'Where the course was billed as ended and treatment then resumes, payment for the additional services is adjusted under the same policy rather than paid as a fresh week.';
+                if (isFinite(extra) && extra !== null) {
+                    note += ' CMS\'s own example is 8 fractions paid as 2 weeks followed by 2 more from the same physician, for which no additional payment is made'
+                          + (extra <= 2 ? ' -- which is this case.' : '.');
+                }
+                findings.push(scOncFinding('warn', 'Treatment resumed after the course was billed as ended', note, 'rad_resume'));
+            }
+
+            var bundled = (input.separately_billed || []).filter(Boolean);
+            if (bundled.length) {
+                findings.push(scOncFinding('block', 'Activity billed separately that is inside treatment management',
+                    bundled.join('; ') + '. No separate payment is made for the radiation oncologist\'s work in conjunction with radiation therapy -- including follow-up examination and care for 90 days after the last treatment.', 'rad_bundled'));
+            }
+
+            if (input.port_film_units !== null && input.port_film_units !== undefined && isFinite(input.port_film_units)
+                && isFinite(fractions) && fractions !== null) {
+                var expected = scOncWeeklyUnits(fractions);
+                if (input.port_film_units !== expected.units) {
+                    findings.push(scOncFinding('warn', 'Port film units do not follow the weekly basis',
+                        'Therapeutic radiology port film is paid on a weekly (five fractions) basis, which for ' + fractions + ' fractions is ' + expected.units + '; ' + input.port_film_units + ' billed.', 'rad_portfilm'));
+                }
+            }
+
             return { findings: findings, blocking: findings.filter(function(f){ return f.severity === 'block'; }).length };
         }
 
@@ -11064,6 +11696,7 @@ How to answer:
             renderEncoder();
             renderEfficiencyAdjustmentControls();
             renderDrugAdminControls();
+            renderOncologyControls();
             renderModifierRoutingControls();
             renderMaternityControls();
             renderRac();
