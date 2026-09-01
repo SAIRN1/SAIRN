@@ -172,6 +172,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</div>
       <div class="nitem" id="nav-service" onclick="sfNav('service')">Service Hours</div>
       <div class="nitem" id="nav-outreach" onclick="sfNav('outreach')">Community Outreach</div>
+      <div class="nsec">Phase 5 &mdash; Members &amp; operations</div>
+      <div class="nitem" id="nav-onboarding" onclick="sfNav('onboarding')">New-member Onboarding</div>
+      <div class="nitem" id="nav-paperwork" onclick="sfNav('paperwork')">Volunteer Paperwork</div>
+      <div class="nitem" id="nav-youth" onclick="sfNav('youth')">Youth Programs</div>
+      <div class="nitem" id="nav-services" onclick="sfNav('services')">Veteran Services</div>
+      <div class="nitem" id="nav-ceremonial" onclick="sfNav('ceremonial')">Ceremonial Duties</div>
+      <div class="nitem" id="nav-vehicles" onclick="sfNav('vehicles')">Vehicles</div>
+      <div class="nitem" id="nav-newsletter" onclick="sfNav('newsletter')">Monthly Newsletter</div>
       <div class="nsec">Phase 6 &mdash; District rollup</div>
       <div class="nitem" id="nav-district" onclick="sfNav('district')">District Rollup</div>
     </nav>
@@ -208,13 +216,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           enumerated purposes (4.6) and service-hour tracking (4.7).
           <strong>Receipts are generated but nothing is emailed</strong> &mdash; there is no
           email endpoint for this app, and that is stated rather than implied.<br>
+          <strong>Phase 5 &mdash; Members &amp; operations:</strong> new-member onboarding
+          through the same admission path the roster uses (5.1), volunteer e-sign bound to
+          a document version and text hash (5.2), honour-guard equipment with shell-casing
+          reconciliation and details shared across entities (5.3), post vehicles (5.4), a
+          newsletter whose every number is checked back against the figures it was given
+          (5.5), youth programmes named per order with photograph consent as a scope rather
+          than a boolean (5.6), and veteran services for every order &mdash; referral,
+          scheduling and accreditation only (5.7).<br>
           <strong>Phase 6 &mdash; District rollup:</strong> signed export and import of
           aggregate reports, including the compliance row. <strong>The live grant-gated
           cross-tenant read is deliberately not built</strong> &mdash; it needs a server
           tier and real authentication this app does not have, and a real district's use
           of the file exchange should inform that investment rather than the reverse.<br>
-          <strong>Not built:</strong> Phase 5 (member experience). Absent rather than
-          stubbed.</div>
+          <strong>Deferred, logged rather than built:</strong> building and grounds
+          maintenance, officer election and bonding tracking, and the Phase 2 passive
+          bottle-sensor hardware, which needs its own patent pass.</div>
         </div>
       </div>
 
@@ -371,6 +388,257 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="tw"><table>
           <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
           <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ============ PHASE 5 — ONBOARDING (5.1) ============ -->
+      <div class="panel" id="panel-onboarding">
+        <div class="ph"><div><div class="ptitle">New-member Onboarding</div>
+          <div class="pdesc">The one place the banner stops moving &mdash; a new member is being asked to concentrate</div></div></div>
+        <div id="ob-flags"></div>
+        <div class="card"><h3>1 &mdash; Who is joining</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="ob-name"></div>
+            <div><label>Category</label><select id="ob-cat"></select></div>
+            <div><label>Admitted on</label><input type="date" id="ob-admitted"></div>
+            <div><label>Separation date (if a veteran)</label><input type="date" id="ob-sep"></div>
+          </div>
+        </div>
+        <div class="card"><h3>2 &mdash; What joining costs, and what the lodge owes upward</h3>
+          <div id="ob-fees"></div>
+        </div>
+        <div class="card"><h3>3 &mdash; Waiver, if one applies</h3>
+          <div id="ob-waiver"></div>
+        </div>
+        <div class="card"><h3>4 &mdash; Paperwork to sign</h3>
+          <div id="ob-docs"></div>
+        </div>
+        <div class="card">
+          <button class="btn" onclick="sfCompleteOnboarding()">Admit this member</button>
+          <div id="ob-out"></div>
+          <div class="note">This writes through the <strong>same</strong> admission path the
+          Members panel uses &mdash; one write path, not a parallel one. A second route into
+          the roster is how two features end up disagreeing about what a member is.</div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — VOLUNTEER PAPERWORK (5.2) ============ -->
+      <div class="panel" id="panel-paperwork">
+        <div class="ph"><div><div class="ptitle">Volunteer Paperwork</div>
+          <div class="pdesc">The e-sign mechanism. The documents themselves are yours and need legal review</div></div></div>
+        <div id="pw-flags"></div>
+        <div class="card"><h3>Add a document</h3>
+          <div class="grid">
+            <div><label>Title</label><input id="pw-title" placeholder="e.g. Volunteer scope of work"></div>
+            <div><label>Version</label><input id="pw-version" placeholder="e.g. 2026-1"></div>
+          </div>
+          <div style="margin-top:12px"><label>Document text &mdash; paste your own, reviewed by your own counsel</label>
+            <textarea id="pw-body" rows="6" style="width:100%;border:1px solid var(--border);border-radius:7px;padding:8px 10px;font-size:13px;font-family:inherit"></textarea></div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddDocument()">Add document</button></div>
+          <div class="blockbox" style="margin-top:12px"><strong>This app supplies the
+          mechanism, not the wording.</strong> The build spec is explicit that volunteer
+          liability templates need legal review and that this is document <em>drafting</em>,
+          not schema. No template ships here, deliberately &mdash; a plausible-looking
+          liability waiver written by software is worse than a blank box, because it looks
+          like it was checked.</div>
+        </div>
+        <div class="card"><h3>Documents</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Title</th><th>Version</th><th>Added</th><th>Signatures</th><th></th></tr></thead>
+            <tbody id="pw-tbody"></tbody></table></div>
+        </div>
+        <div class="card"><h3>Sign a document</h3>
+          <div class="grid">
+            <div><label>Document</label><select id="pw-doc"></select></div>
+            <div><label>Signer</label><select id="pw-signer"></select></div>
+            <div><label>Type your full name to sign</label><input id="pw-typed" placeholder="typed signature"></div>
+            <div><label>Signed on</label><input type="date" id="pw-date"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfSignDocument()">Sign</button></div>
+          <div id="pw-signout"></div>
+          <div class="note">A signature is bound to the document's <strong>version and a
+          hash of its text</strong>. Editing a document after it has been signed produces a
+          new version rather than silently changing what somebody agreed to.</div>
+        </div>
+        <div class="card"><h3>Signatures</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Signed</th><th>Document</th><th>Version</th><th>Signer</th><th>Still current?</th></tr></thead>
+            <tbody id="pw-sigtbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — YOUTH PROGRAMS (5.6) ============ -->
+      <div class="panel" id="panel-youth">
+        <div class="ph"><div><div class="ptitle">Youth Programs</div>
+          <div class="pdesc">Named and distinct per order &mdash; structurally different things, not one shape with different labels</div></div></div>
+        <div id="yt-flags"></div>
+        <div class="card"><h3>Programs this order runs</h3>
+          <div id="yt-registry"></div>
+        </div>
+        <div class="card"><h3>Record a participant</h3>
+          <div class="grid">
+            <div><label>Program</label><select id="yt-program"></select></div>
+            <div><label>Participant reference</label><input id="yt-ref" placeholder="your own reference, not a full name"></div>
+            <div><label>Age</label><input type="number" id="yt-age" min="0" max="25" step="1"></div>
+            <div><label>Age division</label><select id="yt-division"></select></div>
+            <div><label>Photograph consent scope</label><select id="yt-consent"></select></div>
+            <div><label>Consent recorded on</label><input type="date" id="yt-consentdate"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddYouthParticipant()">Record participant</button></div>
+          <div id="yt-out"></div>
+        </div>
+        <div class="card"><h3>Check a photograph use before you publish it</h3>
+          <div class="grid">
+            <div><label>Participant</label><select id="yt-checkwho"></select></div>
+            <div><label>Intended use</label><select id="yt-checkuse"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn sec" onclick="sfCheckPhotoUse()">Check this use</button></div>
+          <div id="yt-checkout"></div>
+        </div>
+        <div class="card"><h3>Participants</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Program</th><th>Reference</th><th>Age</th><th>Division</th><th>Consent scope</th><th></th></tr></thead>
+            <tbody id="yt-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — VETERAN SERVICES (5.7) ============ -->
+      <div class="panel" id="panel-services">
+        <div class="ph"><div><div class="ptitle">Veteran Services</div>
+          <div class="pdesc">Referral, scheduling and accreditation tracking. Never claim preparation, and never behind a fee</div></div></div>
+        <div id="svc-flags"></div>
+        <div class="card"><h3>Referral directory</h3>
+          <div class="grid">
+            <div><label>Organisation</label><input id="rf-org"></div>
+            <div><label>Accreditation status</label><select id="rf-status"></select></div>
+            <div><label>Accreditation reference</label><input id="rf-ref" placeholder="VA accreditation number, if known"></div>
+            <div><label>Contact</label><input id="rf-contact" placeholder="phone or address"></div>
+            <div><label>Status verified on</label><input type="date" id="rf-verified"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddReferral()">Add to directory</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Organisation</th><th>Accreditation</th><th>Reference</th><th>Verified</th><th></th></tr></thead>
+            <tbody id="rf-tbody"></tbody></table></div>
+        </div>
+        <div class="card"><h3>Appointment log</h3>
+          <div class="grid">
+            <div><label>Member</label><select id="ap-member"></select></div>
+            <div><label>Referred to</label><select id="ap-referral"></select></div>
+            <div><label>Date</label><input type="date" id="ap-date"></div>
+            <div><label>Outcome</label><select id="ap-outcome"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfLogAppointment()">Log appointment</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Date</th><th>Member</th><th>Referred to</th><th>Outcome</th><th></th></tr></thead>
+            <tbody id="ap-tbody"></tbody></table></div>
+          <div class="blockbox" style="margin-top:12px"><strong>There is no field here for
+          what the claim is about, and that is deliberate.</strong> 38 U.S.C. &sect; 5901
+          bars acting as an agent or attorney in the preparation, presentation or
+          prosecution of a claim without recognition. This logs that a referral and an
+          appointment happened. It does not draft, assemble, or hold the substance of a
+          claim, and no fee may attach to this function anywhere in the product &mdash;
+          every recognition route in &sect;&sect; 5902, 5903 and 38 CFR 14.630 requires
+          certifying no compensation of any nature.</div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — CEREMONIAL (5.3) ============ -->
+      <div class="panel" id="panel-ceremonial">
+        <div class="ph"><div><div class="ptitle">Ceremonial Duties</div>
+          <div class="pdesc">Honour-guard equipment, shell-casing accountability, and details shared across posts</div></div></div>
+        <div id="ce-flags"></div>
+        <div class="card"><h3>Equipment</h3>
+          <div class="grid">
+            <div><label>Item</label><input id="ce-item" placeholder="e.g. ceremonial rifle #3"></div>
+            <div><label>Kind</label><select id="ce-kind"></select></div>
+            <div><label>Serial / reference</label><input id="ce-serial"></div>
+            <div><label>Last inspected</label><input type="date" id="ce-inspected"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddCeremonialItem()">Add equipment</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Item</th><th>Kind</th><th>Reference</th><th>Last inspected</th><th></th></tr></thead>
+            <tbody id="ce-tbody"></tbody></table></div>
+        </div>
+        <div class="card"><h3>Record a detail</h3>
+          <div class="grid">
+            <div><label>For</label><input id="hd-for" placeholder="e.g. funeral honours, Smith"></div>
+            <div><label>Date</label><input type="date" id="hd-date"></div>
+            <div><label>Team size from this post</label><input type="number" id="hd-ours" min="0" step="1" value="0"></div>
+            <div><label>Assisting entity IDs</label><input id="hd-shared" placeholder="comma-separated, e.g. ENT-0301, ENT-0412"></div>
+            <div><label>Casings issued</label><input type="number" id="hd-issued" min="0" step="1" value="0"></div>
+            <div><label>Casings recovered</label><input type="number" id="hd-recovered" min="0" step="1" value="0"></div>
+            <div><label>Casings presented to family</label><input type="number" id="hd-presented" min="0" step="1" value="0"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfRecordDetail()">Record detail</button></div>
+          <div id="hd-out"></div>
+          <div class="note">Casings are tracked <strong>issued, recovered and presented</strong>
+          because those three numbers are supposed to reconcile and an unreconciled detail
+          is the thing worth seeing. Assisting posts are recorded as <strong>entity IDs</strong>,
+          matching the district roll-up, which aggregates entities rather than buildings.</div>
+        </div>
+        <div class="card"><h3>Details</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>For</th><th>Our team</th><th>Assisting</th><th>Casings i/r/p</th><th>Reconciles</th><th></th></tr></thead>
+            <tbody id="hd-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — VEHICLES (5.4) ============ -->
+      <div class="panel" id="panel-vehicles">
+        <div class="ph"><div><div class="ptitle">Vehicles</div>
+          <div class="pdesc">Post-owned vehicles only &mdash; building and grounds maintenance is a deferred item, not this</div></div></div>
+        <div id="vh-flags"></div>
+        <div class="card"><h3>Add a vehicle</h3>
+          <div class="grid">
+            <div><label>Description</label><input id="vh-desc" placeholder="e.g. 2019 transit van"></div>
+            <div><label>Plate / reference</label><input id="vh-plate"></div>
+            <div><label>Odometer</label><input type="number" id="vh-odo" min="0" step="1"></div>
+            <div><label>Service due at odometer</label><input type="number" id="vh-duemiles" min="0" step="1"></div>
+            <div><label>Registration expires</label><input type="date" id="vh-reg"></div>
+            <div><label>Insurance expires</label><input type="date" id="vh-ins"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddVehicle()">Add vehicle</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Vehicle</th><th>Plate</th><th>Odometer</th><th>Service</th><th>Registration</th><th>Insurance</th><th></th></tr></thead>
+            <tbody id="vh-tbody"></tbody></table></div>
+        </div>
+        <div class="card"><h3>Log service</h3>
+          <div class="grid">
+            <div><label>Vehicle</label><select id="vs-vehicle"></select></div>
+            <div><label>Date</label><input type="date" id="vs-date"></div>
+            <div><label>Odometer at service</label><input type="number" id="vs-odo" min="0" step="1"></div>
+            <div><label>What was done</label><input id="vs-what"></div>
+            <div><label>Cost</label><input type="number" id="vs-cost" min="0" step="0.01"></div>
+            <div><label>Next service due at</label><input type="number" id="vs-next" min="0" step="1"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfLogVehicleService()">Log service</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Date</th><th>Vehicle</th><th>Odometer</th><th>Work</th><th>Cost</th></tr></thead>
+            <tbody id="vs-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 5 — NEWSLETTER (5.5) ============ -->
+      <div class="panel" id="panel-newsletter">
+        <div class="ph"><div><div class="ptitle">Monthly Newsletter</div>
+          <div class="pdesc">Drafted from this post's own figures, and checked afterwards for numbers nobody gave it</div></div></div>
+        <div id="nl-flags"></div>
+        <div class="card"><h3>The facts it will be given</h3>
+          <div id="nl-facts"></div>
+        </div>
+        <div class="card"><h3>Draft</h3>
+          <div class="grid">
+            <div><label>Month</label><input type="month" id="nl-month"></div>
+            <div><label>Anything to feature?</label><input id="nl-note" placeholder="optional, e.g. thank the Friday kitchen crew"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfDraftNewsletter()">Draft the newsletter</button></div>
+          <div id="nl-out" style="margin-top:12px"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Every number in the draft is
+          checked against the facts above, in code.</strong> A figure that appears in the
+          text and not in the supplied facts is a fabricated figure, and the draft is
+          flagged rather than presented as ready. This is the same rule the vendor search
+          and the outreach suggester already enforce: the check lives in the code, not in
+          the prompt, because a prompt is a request and a check is a guarantee.</div>
+        </div>
       </div>
 
       <!-- ============ PHASE 6 — SIGNED EXPORT / IMPORT ============ -->
@@ -1271,6 +1539,15 @@ function sfNav(id){
   var items=document.querySelectorAll('.nitem');
   for(var j=0;j<items.length;j++) items[j].classList.remove('on');
   var n=$('nav-'+id); if(n) n.classList.add('on');
+  /* SPEC 1d, IMPLEMENTED RATHER THAN JUST RECORDED: animated app-wide, STATIC
+     on onboarding -- "the one place a new member is being asked to concentrate
+     is the one place the banner does not move." Same component, .static
+     modifier, exactly as the gate already uses it. */
+  var banner=$('app-banner');
+  if(banner){
+    if(id==='onboarding') banner.classList.add('static');
+    else banner.classList.remove('static');
+  }
 }
 
 /* ---- POST PROFILE (1.1, 1.6) ------------------------------------------- */
@@ -3312,7 +3589,7 @@ function sfMarketSearch(){
   callClaude({
     max_tokens:1200,
     tools:[{ type:'web_search_20250305', name:'web_search' }],
-    system:'You find current supplier prices using web search. Report ONLY prices you actually found on a page you read, and always name the page. Never estimate, never average, never state a typical price. If you found no real price, say so plainly.'+extra,
+    system:'You find current supplier prices using web search. Report ONLY prices you actually found on a page you read, and always name the page. Never estimate, never average, never state a typical price. If you found no real price, say so plainly.'+extra+VA_CLAIM_REFUSAL,
     messages:[{ role:'user', content:'Find current supplier prices for: '+q+' (category: '+cat.label+'). For each result give the seller, the price, and the page it came from.' }]
   }).then(function(res){
     var txt='', cites=[];
@@ -4199,7 +4476,7 @@ function sfOutreachIdeas(){
     max_tokens:1200,
     system:'You suggest community outreach for an Ohio '+(orgType(getPost().orgType)||{}).label+
       ' post. Every suggestion MUST fall within one of these legally enumerated charitable purposes and you must name which one, verbatim, for each idea:\n- '+p.list.join('\n- ')+
-      '\nDo not invent programs the organisation runs. Do not suggest anything outside the list. Reply as a numbered list; begin each item with the purpose in square brackets, e.g. "[Disaster relief] ...".',
+      '\nDo not invent programs the organisation runs. Do not suggest anything outside the list. Reply as a numbered list; begin each item with the purpose in square brackets, e.g. "[Disaster relief] ...".'+VA_CLAIM_REFUSAL,
     messages:[{ role:'user', content:'The post wants to: '+goal }]
   }).then(function(res){
     if(res && res.error){ out.innerHTML='<div class="blockbox"><strong>The suggestion service could not be reached.</strong> Nothing is shown.</div>'; return; }
@@ -4236,6 +4513,799 @@ function sfRenderOutreach(){
   box.innerHTML = p.cite
     ? '<div class="flagbox"><strong>Constrained to '+H(p.cite)+' &mdash; '+H(String(p.list.length))+' enumerated purposes.</strong> A post of the other statutory type would be constrained to a different list in the same state.</div>'
     : '<div class="blockbox"><strong>Organisation type is not set</strong>, so there is no category set to constrain suggestions against.</div>';
+}
+
+/* ========================================================================
+   PHASE 5 -- MEMBER EXPERIENCE AND OPERATIONS
+   Items 5.1 - 5.7. Low regulatory risk compared with Phases 2-4, with two
+   sharp exceptions that are not low risk at all and are handled first:
+   minor-participant data in 5.6, and the 38 U.S.C. 5901 boundary in 5.7.
+   ======================================================================== */
+
+var K_DOCS='sf_documents', K_SIGNATURES='sf_signatures',
+    K_CEREMONIAL='sf_ceremonial_items', K_DETAILS='sf_honor_details',
+    K_VEHICLES='sf_vehicles', K_VEHSERVICE='sf_vehicle_service',
+    K_YOUTH='sf_youth_participants', K_REFERRALS='sf_service_referrals',
+    K_APPOINTMENTS='sf_service_appointments';
+
+function getDocuments(){ return ld(K_DOCS, []); }
+function getSignatures(){ return ld(K_SIGNATURES, []); }
+function getCeremonialItems(){ return ld(K_CEREMONIAL, []); }
+function getDetails(){ return ld(K_DETAILS, []); }
+function getVehicles(){ return ld(K_VEHICLES, []); }
+function getVehicleService(){ return ld(K_VEHSERVICE, []); }
+function getYouthParticipants(){ return ld(K_YOUTH, []); }
+function getReferrals(){ return ld(K_REFERRALS, []); }
+function getAppointments(){ return ld(K_APPOINTMENTS, []); }
+
+/* SPEC 9d, ENFORCED RATHER THAN RECORDED. Phase 1 surfaced this as a notice on
+   the Officers panel because no AI existed yet that could be asked. Three now
+   do, so the refusal goes in the system prompt of every one of them -- not a
+   disclaimer, a refusal. Precedent: SAIRNroofing's assistant was changed the
+   same way because nothing stopped it answering a claim question from general
+   knowledge, and an app-branded answer of that shape was the real exposure. */
+var VA_CLAIM_REFUSAL =
+  ' You must DECLINE any question about veterans-benefit claim strategy, what to claim for, ' +
+  'how to word a claim, what evidence to gather, or how to appeal a decision -- decline it ' +
+  'outright rather than answering with a caveat. 38 U.S.C. 5901 bars acting as an agent in ' +
+  'the preparation, presentation or prosecution of a claim without recognition, and an ' +
+  'answer of that shape published under a post’s name is exactly that. Say that the ' +
+  'post’s accredited Service Officer or a VA-accredited representative must be asked.';
+
+/* ---- 5.1 ONBOARDING ----------------------------------------------------
+   ONE WRITE PATH. Phase 1's sfAddMember owns admission; onboarding calls the
+   same function rather than duplicating the three-money-type ledger logic,
+   because two admission paths is how two features end up disagreeing about
+   what a member is. */
+function sfRenderOnboarding(){
+  var p=getPost();
+  var sel=$('ob-cat');
+  if(sel) sel.innerHTML=categoriesFor(p.orgType).map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  if($('ob-admitted') && !$('ob-admitted').value) $('ob-admitted').value=localToday();
+
+  var f=getFees(), fees=$('ob-fees');
+  if(fees){
+    fees.innerHTML='<div class="tw"><table><tbody>'+
+      '<tr><td>Initiation fee &mdash; one-time, lodge revenue</td><td style="text-align:right">'+money(f.initiation)+'</td></tr>'+
+      '<tr><td>Annual dues &mdash; lodge revenue</td><td style="text-align:right">'+money(f.dues)+'</td></tr>'+
+      '<tr><td>National per-capita &mdash; <strong>owed upward, not lodge income</strong></td><td style="text-align:right;color:var(--red)">'+money(f.perCapita)+'</td></tr>'+
+      '<tr><td><strong>Total collected on admission</strong></td><td style="text-align:right"><strong>'+money(Number(f.initiation||0)+Number(f.dues||0)+Number(f.perCapita||0))+'</strong></td></tr>'+
+      '</tbody></table></div>'+
+      '<div class="note">Three money types, not three prices. The per-capita line is money '+
+      'this lodge collects on behalf of the national body and owes upward &mdash; it never '+
+      'appears as lodge revenue anywhere in this app, and a dues waiver does not waive it.</div>';
+  }
+  var wv=$('ob-waiver');
+  if(wv){
+    var confirmed=WAIVER_CONFIRMED_ORG_TYPES.indexOf(p.orgType)>=0;
+    wv.innerHTML = confirmed
+      ? '<div class="note">If this member is active duty, separated within the last 24 months, or sick or in distress, grant the waiver on the Waivers panel <strong>after</strong> admission &mdash; a waiver is a governance decision with an audit trail, not a checkbox on a form.</div>'
+      : '<div class="blockbox">Waiver conditions are confirmed for <strong>Elks only</strong>. This post is set to '+H((orgType(p.orgType)||{}).label||'no organisation type')+', so no conditions are offered here rather than presenting unverified ones as if they applied.</div>';
+  }
+  var dl=$('ob-docs'), docs=getDocuments();
+  if(dl){
+    dl.innerHTML = docs.length
+      ? '<div class="note">'+docs.length+' document(s) are on file. Sign them on the Volunteer Paperwork panel once the member exists.</div>'+
+        '<ul style="margin-left:18px;font-size:13px">'+docs.map(function(d){ return '<li>'+H(d.title)+' <span class="kpi-change">v'+H(d.version)+'</span></li>'; }).join('')+'</ul>'
+      : '<div class="note">No documents are on file yet.</div>';
+  }
+  var fl=$('ob-flags');
+  if(fl){
+    fl.innerHTML='<div class="flagbox"><strong>The banner is deliberately still on this page.</strong> '+
+      'It moves everywhere else in the app; onboarding is the one place a new member is being asked to concentrate, so it does not.</div>';
+  }
+}
+function sfCompleteOnboarding(){
+  var name=($('ob-name').value||'').trim();
+  if(!name){ toast('Name is required','err'); return; }
+  /* Fill the Members panel's own inputs and call its handler -- literally the
+     same code path, so there is no second place admission can drift. */
+  $('mb-name').value=name;
+  $('mb-cat').value=$('ob-cat').value;
+  $('mb-admitted').value=$('ob-admitted').value||localToday();
+  $('mb-sep').value=$('ob-sep').value||'';
+  var before=getMembers().length;
+  sfAddMember();
+  var out=$('ob-out');
+  if(getMembers().length>before){
+    $('ob-name').value=''; $('ob-sep').value='';
+    if(out) out.innerHTML='<div class="flagbox" style="margin-top:12px;border-left-color:var(--ok);background:#F0FDF4"><strong>'+H(name)+' is on the roster.</strong> The per-capita liability accrued with the admission.</div>';
+  } else if(out){
+    out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Not admitted.</strong> The Members panel refused it &mdash; the same check, not a second one.</div>';
+  }
+}
+
+/* ---- 5.2 E-SIGN --------------------------------------------------------
+   The mechanism only. Per spec 9a.6 the documents themselves need legal
+   review, so no template ships -- a plausible-looking liability waiver
+   written by software is worse than a blank box because it looks checked.
+
+   A signature binds to the document VERSION and a hash of its text, so
+   editing a signed document cannot silently change what somebody agreed to. */
+function docTextHash(text){
+  var h=0, s=String(text||'');
+  for(var i=0;i<s.length;i++){ h=((h<<5)-h+s.charCodeAt(i))|0; }
+  return (h>>>0).toString(16);
+}
+function sfAddDocument(){
+  var title=($('pw-title').value||'').trim();
+  if(!title){ toast('Give the document a title','err'); return; }
+  var body=($('pw-body').value||'').trim();
+  if(!body){ toast('Paste the document text -- this app does not supply one','err'); return; }
+  var list=getDocuments();
+  list.push({ id:'dc'+Date.now(), title:title, version:($('pw-version').value||'1').trim(),
+              body:body, hash:docTextHash(body), added:localToday() });
+  st(K_DOCS,list);
+  $('pw-title').value=''; $('pw-body').value='';
+  toast('Document added');
+  sfRenderAll();
+}
+function sfRemoveDocument(id){
+  st(K_DOCS, getDocuments().filter(function(d){ return d.id!==id; }));
+  toast('Document removed -- its signatures remain, and will show as orphaned');
+  sfRenderAll();
+}
+function sfSignDocument(){
+  var docId=$('pw-doc').value;
+  if(!docId){ toast('Select a document','err'); return; }
+  var doc=null; getDocuments().forEach(function(d){ if(d.id===docId) doc=d; });
+  if(!doc){ toast('Document not found','err'); return; }
+  var signer=$('pw-signer').value;
+  if(!signer){ toast('Select who is signing','err'); return; }
+  var typed=($('pw-typed').value||'').trim();
+  if(!typed){ toast('The signer must type their name','err'); return; }
+  var expected=signer.trim().toLowerCase();
+  if(typed.toLowerCase()!==expected){
+    var out=$('pw-signout');
+    if(out) out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>The typed signature does not match the selected signer.</strong> It reads &ldquo;'+H(typed)+'&rdquo; and the signer is &ldquo;'+H(signer)+'&rdquo;. A signature that does not match the name it is filed under is not evidence of anything.</div>';
+    return;
+  }
+  var list=getSignatures();
+  list.push({ id:'sg'+Date.now(), docId:docId, docTitle:doc.title, version:doc.version,
+              hash:doc.hash, signer:signer, typed:typed, signed:$('pw-date').value||localToday() });
+  st(K_SIGNATURES,list);
+  $('pw-typed').value='';
+  var o=$('pw-signout'); if(o) o.innerHTML='';
+  toast('Signed');
+  sfRenderAll();
+}
+function sfRenderPaperwork(){
+  var docs=getDocuments(), sigs=getSignatures();
+  var ds=$('pw-doc');
+  if(ds){
+    var prev=ds.value;
+    ds.innerHTML = docs.length
+      ? docs.map(function(d){ return '<option value="'+H(d.id)+'">'+H(d.title)+' &mdash; v'+H(d.version)+'</option>'; }).join('')
+      : '<option value="">No documents on file</option>';
+    if(prev) ds.value=prev;
+  }
+  var people=getMembers().map(function(m){ return m.name; }).concat(getStaff().map(function(s){ return s.name; }));
+  var ss=$('pw-signer');
+  if(ss) ss.innerHTML = people.length
+    ? '<option value="">Select signer</option>'+people.map(function(n){ return '<option value="'+H(n)+'">'+H(n)+'</option>'; }).join('')
+    : '<option value="">No members or staff recorded</option>';
+  if($('pw-date') && !$('pw-date').value) $('pw-date').value=localToday();
+
+  var tb=$('pw-tbody');
+  if(tb){
+    if(!docs.length){ tb.innerHTML='<tr><td colspan="5" class="empty">No documents. This app supplies the mechanism, not the wording.</td></tr>'; }
+    else {
+      tb.innerHTML=docs.map(function(d){
+        var n=sigs.filter(function(s){ return s.docId===d.id; }).length;
+        return '<tr><td>'+H(d.title)+'</td><td>'+H(d.version)+'</td><td>'+H(d.added)+'</td><td>'+n+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveDocument(\''+H(d.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var stb=$('pw-sigtbody');
+  if(stb){
+    if(!sigs.length){ stb.innerHTML='<tr><td colspan="5" class="empty">No signatures.</td></tr>'; }
+    else {
+      stb.innerHTML=sigs.slice().reverse().map(function(s){
+        var doc=null; docs.forEach(function(d){ if(d.id===s.docId) doc=d; });
+        var state = !doc ? '<span class="tag bad">Document removed</span>'
+                  : (doc.hash!==s.hash ? '<span class="tag warn">Text changed since signing</span>'
+                                       : '<span class="tag ok">Current</span>');
+        return '<tr><td>'+H(s.signed)+'</td><td>'+H(s.docTitle)+'</td><td>'+H(s.version)+'</td><td>'+H(s.signer)+'</td><td>'+state+'</td></tr>';
+      }).join('');
+    }
+  }
+  var fl=$('pw-flags');
+  if(fl){
+    var stale=sigs.filter(function(s){
+      var doc=null; docs.forEach(function(d){ if(d.id===s.docId) doc=d; });
+      return doc && doc.hash!==s.hash;
+    }).length;
+    var out='';
+    if(stale) out += '<div class="blockbox"><strong>'+stale+' signature(s) are against text that has since changed.</strong> What those people agreed to is not what the document now says. Re-issue as a new version and re-sign.</div>';
+    fl.innerHTML=out;
+  }
+}
+
+/* ---- 5.6 YOUTH PROGRAMS ------------------------------------------------
+   NAMED AND PER ORG TYPE, and structurally different rather than one shape
+   with different labels: Elks run competitions with age divisions, VFW run
+   awards and curriculum with no bracket, and Mooseheart is not a competition
+   at all -- it is an ongoing residential welfare commitment. A shared
+   "contest -> round -> winner" schema fits one and breaks the others.
+
+   LEGION AND EAGLES ARE EMPTY ON PURPOSE. The research names programs for
+   Elks, VFW and Moose only, and Eagles is explicitly unresearched because the
+   Grand Aerie Constitution is sold as a physical product. An invented list
+   would look authoritative and be wrong. */
+var YOUTH_PROGRAM_SHAPES = { competition:'Competition', scholarship:'Scholarship', welfare:'Ongoing welfare', curriculum:'Curriculum / citizenship' };
+var YOUTH_PROGRAMS_BY_ORG = {
+  elks:[
+    { id:'hoop_shoot',   name:'Hoop Shoot',            shape:'competition', minAge:8, maxAge:13, note:'National free-throw contest' },
+    { id:'soccer_shoot', name:'Soccer Shoot',          shape:'competition' },
+    { id:'mvs',          name:'Most Valuable Student', shape:'scholarship' }
+  ],
+  vfw:[
+    { id:'youth_scholarship', name:'Youth scholarship',              shape:'scholarship', note:'Up to $30,000' },
+    { id:'citizenship',       name:'Classroom / citizenship programme', shape:'curriculum' }
+  ],
+  moose:[
+    { id:'mooseheart', name:'Mooseheart', shape:'welfare', note:'A residential community for children in need -- not a contest' }
+  ],
+  legion:[],
+  eagles:[]
+};
+function youthProgramsForOrg(){
+  var id=getPost().orgType;
+  return { list:(YOUTH_PROGRAMS_BY_ORG[id]||[]), researched:(id==='elks'||id==='vfw'||id==='moose') };
+}
+function youthProgram(pid){
+  var found=null;
+  youthProgramsForOrg().list.forEach(function(p){ if(p.id===pid) found=p; });
+  return found;
+}
+
+/* SCOPED CONSENT AS AN ENUM, NEVER A BOOLEAN -- the research is explicit.
+   ORC 2741.01(B)(4) makes FUNDRAISING a "commercial purpose", so the same
+   photograph is lawful in a results story and prohibited in a donation appeal,
+   and the standard Elks release is scoped to programme promotion only. A
+   boolean cannot express that difference, so it must not be one. */
+var CONSENT_SCOPES = [
+  { id:'none',                label:'No photograph consent on file', allows:[] },
+  { id:'results',             label:'Results publication only',      allows:['results'] },
+  { id:'program_promotion',   label:'Programme promotion',           allows:['results','promotion'] },
+  { id:'fundraising',         label:'Fundraising appeals (explicitly granted)', allows:['results','promotion','fundraising'] }
+];
+var PHOTO_USES = [
+  { id:'results',     label:'A results story' },
+  { id:'promotion',   label:'Promoting the programme' },
+  { id:'fundraising', label:'A donation appeal' }
+];
+function consentScope(id){ for(var i=0;i<CONSENT_SCOPES.length;i++){ if(CONSENT_SCOPES[i].id===id) return CONSENT_SCOPES[i]; } return null; }
+function photoUseCheck(participant, useId){
+  var sc=consentScope(participant && participant.consent);
+  if(!sc) return { allowed:false, cite:'input', text:'No consent scope is recorded for this participant.' };
+  if(sc.allows.indexOf(useId)>=0) return { allowed:true, scope:sc };
+  if(useId==='fundraising'){
+    return { allowed:false, cite:'ORC 2741.01(B)(4)',
+      text:'Consent on file is "'+sc.label+'". Fundraising is a COMMERCIAL PURPOSE under ORC 2741.01(B)(4), so a release scoped to results or programme promotion does not reach a donation appeal. The same photograph can be lawful in one and prohibited in the other.' };
+  }
+  return { allowed:false, cite:'Consent scope',
+    text:'Consent on file is "'+sc.label+'", which does not cover '+useId+'.' };
+}
+
+function sfAddYouthParticipant(){
+  var pid=$('yt-program').value;
+  if(!pid){ toast('Select a programme','err'); return; }
+  var ref=($('yt-ref').value||'').trim();
+  if(!ref){ toast('Enter your own participant reference','err'); return; }
+  var age=Number($('yt-age').value||0);
+  var prog=youthProgram(pid);
+  var out=$('yt-out');
+  if(prog && prog.minAge && age && (age<prog.minAge || age>prog.maxAge)){
+    if(out) out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Outside the programme’s age range.</strong> '+H(prog.name)+' runs ages '+prog.minAge+' to '+prog.maxAge+'; this participant is '+age+'.</div>';
+    return;
+  }
+  var list=getYouthParticipants();
+  list.push({ id:'yp'+Date.now(), programId:pid, ref:ref, age:age,
+              division:$('yt-division')?$('yt-division').value:'',
+              consent:$('yt-consent').value, consentDate:$('yt-consentdate').value||'' });
+  st(K_YOUTH,list);
+  $('yt-ref').value=''; $('yt-age').value='';
+  if(out) out.innerHTML='';
+  toast('Participant recorded');
+  sfRenderAll();
+}
+function sfRemoveYouthParticipant(id){
+  st(K_YOUTH, getYouthParticipants().filter(function(p){ return p.id!==id; }));
+  toast('Participant removed');
+  sfRenderAll();
+}
+function sfCheckPhotoUse(){
+  var out=$('yt-checkout'); if(!out) return;
+  var pid=$('yt-checkwho').value;
+  if(!pid){ toast('Select a participant','err'); return; }
+  var part=null; getYouthParticipants().forEach(function(p){ if(p.id===pid) part=p; });
+  if(!part){ toast('Participant not found','err'); return; }
+  var r=photoUseCheck(part, $('yt-checkuse').value);
+  out.innerHTML='<div style="margin-top:12px">'+ (r.allowed
+    ? '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4"><strong>Permitted.</strong> Consent on file is &ldquo;'+H(r.scope.label)+'&rdquo;, which covers this use.</div>'
+    : '<div class="blockbox"><strong>Do not publish &mdash; '+H(r.cite)+'.</strong> '+H(r.text)+'</div>') +'</div>';
+}
+function sfRenderYouth(){
+  var y=youthProgramsForOrg(), p=getPost();
+  var reg=$('yt-registry');
+  if(reg){
+    if(!p.orgType){
+      reg.innerHTML='<div class="blockbox"><strong>Organisation type is not set.</strong> The programmes are named per order and differ in kind, not just in label.</div>';
+    } else if(!y.list.length){
+      reg.innerHTML='<div class="blockbox"><strong>No programmes are listed for '+H((orgType(p.orgType)||{}).label||p.orgType)+', and that is a gap rather than an answer.</strong> '+
+        'The research behind this build names programmes for Elks, VFW and Moose only'+
+        (p.orgType==='eagles'?' &mdash; and Eagles specifically could not be researched at all, because the Grand Aerie Constitution is sold as a physical product rather than published':'')+
+        '. Shipping an invented list would look authoritative and be wrong.</div>';
+    } else {
+      reg.innerHTML='<div class="tw"><table><thead><tr><th>Programme</th><th>Shape</th><th>Ages</th><th>Note</th></tr></thead><tbody>'+
+        y.list.map(function(pr){
+          return '<tr><td><strong>'+H(pr.name)+'</strong></td><td>'+H(YOUTH_PROGRAM_SHAPES[pr.shape]||pr.shape)+'</td>'+
+            '<td>'+(pr.minAge?(pr.minAge+'&ndash;'+pr.maxAge):'&mdash;')+'</td><td class="kpi-change">'+H(pr.note||'')+'</td></tr>';
+        }).join('')+'</tbody></table></div>'+
+        '<div class="note">These are <strong>structurally different things</strong>, not one shape with different names. A schema built around contest &rarr; round &rarr; winner fits a Hoop Shoot and breaks on Mooseheart, which is an ongoing residential commitment rather than a contest at all.</div>';
+    }
+  }
+  var ps=$('yt-program');
+  if(ps) ps.innerHTML = y.list.length
+    ? y.list.map(function(pr){ return '<option value="'+H(pr.id)+'">'+H(pr.name)+'</option>'; }).join('')
+    : '<option value="">No programmes for this order</option>';
+  var dv=$('yt-division');
+  if(dv) dv.innerHTML='<option value="">No division</option>'+['8-9','10-11','12-13'].map(function(d){ return '<option value="'+H(d)+'">'+H(d)+'</option>'; }).join('');
+  var cs=$('yt-consent');
+  if(cs && !cs.options.length) cs.innerHTML=CONSENT_SCOPES.map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  var cu=$('yt-checkuse');
+  if(cu && !cu.options.length) cu.innerHTML=PHOTO_USES.map(function(u){ return '<option value="'+H(u.id)+'">'+H(u.label)+'</option>'; }).join('');
+  var parts=getYouthParticipants();
+  var cw=$('yt-checkwho');
+  if(cw) cw.innerHTML = parts.length
+    ? parts.map(function(x){ return '<option value="'+H(x.id)+'">'+H(x.ref)+'</option>'; }).join('')
+    : '<option value="">No participants recorded</option>';
+
+  var tb=$('yt-tbody');
+  if(tb){
+    if(!parts.length){ tb.innerHTML='<tr><td colspan="6" class="empty">No participants recorded.</td></tr>'; }
+    else {
+      tb.innerHTML=parts.map(function(x){
+        var pr=youthProgram(x.programId), sc=consentScope(x.consent);
+        var tag = x.consent==='none' ? '<span class="tag bad">'+H(sc?sc.label:'none')+'</span>'
+                : x.consent==='fundraising' ? '<span class="tag warn">'+H(sc.label)+'</span>'
+                : '<span class="tag info">'+H(sc?sc.label:x.consent)+'</span>';
+        return '<tr><td>'+H(pr?pr.name:'(programme not in this order)')+'</td><td>'+H(x.ref)+'</td>'+
+          '<td>'+(x.age||'--')+'</td><td>'+H(x.division||'--')+'</td><td>'+tag+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveYouthParticipant(\''+H(x.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var fl=$('yt-flags');
+  if(fl){
+    var out='<div class="blockbox"><strong>An architectural invariant, with an owner: no child ever types into this app.</strong> '+
+      'COPPA defines collection as gathering information <em>from a child</em>, and &ldquo;collected online&rdquo; is statutory &mdash; so it does not apply to a lodge officer entering a participant reference. '+
+      '<strong>It applies the moment a child enters anything themselves.</strong> There is deliberately no participant-facing input anywhere in this product, and adding one is not a UI decision.</div>'+
+      '<div class="flagbox"><strong>Consent is a scope, never a yes/no.</strong> ORC 2741.01(B)(4) makes fundraising a commercial purpose, so a release covering a results story does not reach a donation appeal. The standard Elks release is scoped to programme promotion only. Check a use before publishing it, above.</div>'+
+      '<div class="flagbox"><strong>The reference field is not a place for a full name.</strong> Use whatever your own records key on. This app stores no schools, no addresses and no photographs &mdash; only whether consent exists and how far it reaches.</div>';
+    var noConsent=parts.filter(function(x){ return x.consent==='none'; }).length;
+    if(noConsent) out += '<div class="blockbox"><strong>'+noConsent+' participant(s) have no photograph consent on file.</strong> Nothing may be published of them in any context.</div>';
+    fl.innerHTML=out;
+  }
+}
+
+/* ---- 5.7 VETERAN SERVICES ---------------------------------------------
+   AVAILABLE TO EVERY ORG TYPE, explicitly -- Elks and Moose posts run veteran
+   services too, and the spec calls this out because it would otherwise be
+   assumed veterans-org-only.
+
+   REFERRAL, SCHEDULING AND ACCREDITATION TRACKING ONLY. 38 U.S.C. 5901 bars
+   acting as agent or attorney in the preparation, presentation or prosecution
+   of a claim without recognition. There is no field here for the substance of
+   a claim, and its absence is the design. */
+var ACCREDITATION_STATUSES = [
+  { id:'accredited',   label:'VA-accredited' },
+  { id:'unknown',      label:'Not verified' },
+  { id:'not_accredited', label:'Not accredited' }
+];
+var APPOINTMENT_OUTCOMES = [
+  { id:'scheduled', label:'Scheduled' },
+  { id:'attended',  label:'Attended' },
+  { id:'no_show',   label:'Did not attend' },
+  { id:'referred_on', label:'Referred onward' }
+];
+function sfAddReferral(){
+  var org=($('rf-org').value||'').trim();
+  if(!org){ toast('Name the organisation','err'); return; }
+  var list=getReferrals();
+  list.push({ id:'rf'+Date.now(), org:org, status:$('rf-status').value,
+              ref:($('rf-ref').value||'').trim(), contact:($('rf-contact').value||'').trim(),
+              verified:$('rf-verified').value||'' });
+  st(K_REFERRALS,list);
+  $('rf-org').value=''; $('rf-ref').value=''; $('rf-contact').value='';
+  toast('Added to the directory');
+  sfRenderAll();
+}
+function sfRemoveReferral(id){
+  st(K_REFERRALS, getReferrals().filter(function(r){ return r.id!==id; }));
+  toast('Removed');
+  sfRenderAll();
+}
+function sfLogAppointment(){
+  var m=$('ap-member').value, r=$('ap-referral').value;
+  if(!m){ toast('Select the member','err'); return; }
+  if(!r){ toast('Select who they were referred to','err'); return; }
+  var list=getAppointments();
+  list.push({ id:'ap'+Date.now(), memberId:m, referralId:r,
+              date:$('ap-date').value||localToday(), outcome:$('ap-outcome').value });
+  st(K_APPOINTMENTS,list);
+  toast('Appointment logged');
+  sfRenderAll();
+}
+function sfRemoveAppointment(id){
+  st(K_APPOINTMENTS, getAppointments().filter(function(a){ return a.id!==id; }));
+  toast('Removed');
+  sfRenderAll();
+}
+function sfRenderServices(){
+  var refs=getReferrals(), members=getMembers(), appts=getAppointments();
+  var ss=$('rf-status');
+  if(ss && !ss.options.length) ss.innerHTML=ACCREDITATION_STATUSES.map(function(s){ return '<option value="'+H(s.id)+'">'+H(s.label)+'</option>'; }).join('');
+  var os=$('ap-outcome');
+  if(os && !os.options.length) os.innerHTML=APPOINTMENT_OUTCOMES.map(function(o){ return '<option value="'+H(o.id)+'">'+H(o.label)+'</option>'; }).join('');
+  if($('ap-date') && !$('ap-date').value) $('ap-date').value=localToday();
+  var ms=$('ap-member');
+  if(ms) ms.innerHTML = members.length
+    ? '<option value="">Select member</option>'+members.map(function(m){ return '<option value="'+H(m.id)+'">'+H(m.name)+'</option>'; }).join('')
+    : '<option value="">No members on the roster</option>';
+  var rs=$('ap-referral');
+  if(rs) rs.innerHTML = refs.length
+    ? '<option value="">Select</option>'+refs.map(function(r){ return '<option value="'+H(r.id)+'">'+H(r.org)+'</option>'; }).join('')
+    : '<option value="">Directory is empty</option>';
+
+  var tb=$('rf-tbody');
+  if(tb){
+    if(!refs.length){ tb.innerHTML='<tr><td colspan="5" class="empty">Directory is empty.</td></tr>'; }
+    else {
+      tb.innerHTML=refs.map(function(r){
+        var s=null; ACCREDITATION_STATUSES.forEach(function(x){ if(x.id===r.status) s=x; });
+        var tag = r.status==='accredited' ? '<span class="tag ok">'+H(s.label)+'</span>'
+                : r.status==='not_accredited' ? '<span class="tag bad">'+H(s.label)+'</span>'
+                : '<span class="tag warn">'+H(s?s.label:'Not verified')+'</span>';
+        return '<tr><td>'+H(r.org)+'</td><td>'+tag+'</td><td>'+H(r.ref||'--')+'</td><td>'+H(r.verified||'--')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveReferral(\''+H(r.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var atb=$('ap-tbody');
+  if(atb){
+    if(!appts.length){ atb.innerHTML='<tr><td colspan="5" class="empty">No appointments logged.</td></tr>'; }
+    else {
+      atb.innerHTML=appts.slice().reverse().map(function(a){
+        function nm(list,id,f){ for(var i=0;i<list.length;i++){ if(list[i].id===id) return list[i][f]; } return '(removed)'; }
+        var o=null; APPOINTMENT_OUTCOMES.forEach(function(x){ if(x.id===a.outcome) o=x; });
+        return '<tr><td>'+H(a.date)+'</td><td>'+H(nm(members,a.memberId,'name'))+'</td><td>'+H(nm(refs,a.referralId,'org'))+'</td>'+
+          '<td>'+H(o?o.label:a.outcome)+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveAppointment(\''+H(a.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var fl=$('svc-flags');
+  if(fl){
+    var o=orgType(getPost().orgType);
+    var out='<div class="flagbox"><strong>This is available to every order, not only veterans posts.</strong> '+
+      (o && o.statutory==='fraternal' ? 'Elks and Moose lodges run veteran services too, which is why this panel is here for a '+H(o.label)+' lodge rather than hidden.' : 'Elks and Moose lodges run veteran services too.')+'</div>'+
+      '<div class="blockbox"><strong>No fee may attach to this function anywhere in the product.</strong> '+
+      'Every recognition route in 38 U.S.C. &sect;&sect; 5902 and 5903 and 38 CFR 14.630 requires certifying <em>no compensation of any nature</em>. A post is a nonprofit and its officer serves free, so this is satisfied naturally &mdash; but it means the Service Officer function must never sit behind a paid tier, a subscription gate or an upgrade prompt. It does not, and it must not be moved behind one later.</div>';
+    var unverified=refs.filter(function(r){ return r.status!=='accredited'; }).length;
+    if(unverified) out += '<div class="flagbox"><strong>'+unverified+' directory entr(ies) are not recorded as VA-accredited.</strong> 38 U.S.C. &sect; 5902(a)(1) names the American Legion and the VFW in the statute, so a post Service Officer is typically already accredited &mdash; but "typically" is not a record. Verify and date it.</div>';
+    fl.innerHTML=out;
+  }
+}
+
+/* ---- 5.3 CEREMONIAL ---------------------------------------------------- */
+var CEREMONIAL_KINDS = ['Rifle','Flag','Bugle','Uniform','Colours / standard','Other'];
+function sfAddCeremonialItem(){
+  var item=($('ce-item').value||'').trim();
+  if(!item){ toast('Name the item','err'); return; }
+  var list=getCeremonialItems();
+  list.push({ id:'ci'+Date.now(), item:item, kind:$('ce-kind').value,
+              serial:($('ce-serial').value||'').trim(), inspected:$('ce-inspected').value||'' });
+  st(K_CEREMONIAL,list);
+  $('ce-item').value=''; $('ce-serial').value='';
+  toast('Equipment added');
+  sfRenderAll();
+}
+function sfRemoveCeremonialItem(id){
+  st(K_CEREMONIAL, getCeremonialItems().filter(function(i){ return i.id!==id; }));
+  toast('Removed');
+  sfRenderAll();
+}
+function casingsReconcile(d){
+  var issued=Number(d.issued||0), rec=Number(d.recovered||0), pres=Number(d.presented||0);
+  if(!issued && !rec && !pres) return { state:'none', text:'No casings recorded' };
+  if(pres>rec) return { state:'bad', text:'More presented ('+pres+') than recovered ('+rec+')' };
+  if(rec>issued) return { state:'bad', text:'More recovered ('+rec+') than issued ('+issued+')' };
+  if(rec<issued) return { state:'warn', text:(issued-rec)+' issued and not recovered' };
+  return { state:'ok', text:'Issued, recovered and presented reconcile' };
+}
+function sfRecordDetail(){
+  var forWhom=($('hd-for').value||'').trim();
+  if(!forWhom){ toast('Say what the detail was for','err'); return; }
+  var d={ id:'hd'+Date.now(), forWhom:forWhom, date:$('hd-date').value||localToday(),
+          ours:Number($('hd-ours').value||0),
+          shared:($('hd-shared').value||'').split(',').map(function(s){ return s.trim(); }).filter(Boolean),
+          issued:Number($('hd-issued').value||0), recovered:Number($('hd-recovered').value||0),
+          presented:Number($('hd-presented').value||0) };
+  var r=casingsReconcile(d);
+  var out=$('hd-out');
+  if(r.state==='bad'){
+    if(out) out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Refused &mdash; the casing numbers cannot be right.</strong> '+H(r.text)+'. Recording an impossible count is worse than recording none, because it looks reconciled in a total.</div>';
+    return;
+  }
+  var list=getDetails();
+  list.push(d);
+  st(K_DETAILS,list);
+  $('hd-for').value='';
+  if(out) out.innerHTML='';
+  toast('Detail recorded');
+  sfRenderAll();
+}
+function sfRemoveDetail(id){
+  st(K_DETAILS, getDetails().filter(function(d){ return d.id!==id; }));
+  toast('Removed');
+  sfRenderAll();
+}
+function sfRenderCeremonial(){
+  var ks=$('ce-kind');
+  if(ks && !ks.options.length) ks.innerHTML=CEREMONIAL_KINDS.map(function(k){ return '<option value="'+H(k)+'">'+H(k)+'</option>'; }).join('');
+  if($('hd-date') && !$('hd-date').value) $('hd-date').value=localToday();
+  var items=getCeremonialItems(), tb=$('ce-tbody');
+  if(tb){
+    if(!items.length){ tb.innerHTML='<tr><td colspan="5" class="empty">No equipment recorded.</td></tr>'; }
+    else {
+      tb.innerHTML=items.map(function(i){
+        return '<tr><td>'+H(i.item)+'</td><td>'+H(i.kind)+'</td><td>'+H(i.serial||'--')+'</td><td>'+H(i.inspected||'never')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveCeremonialItem(\''+H(i.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var details=getDetails(), dtb=$('hd-tbody');
+  if(dtb){
+    if(!details.length){ dtb.innerHTML='<tr><td colspan="7" class="empty">No details recorded.</td></tr>'; }
+    else {
+      dtb.innerHTML=details.slice().reverse().map(function(d){
+        var r=casingsReconcile(d);
+        var tag = r.state==='ok' ? '<span class="tag ok">Yes</span>'
+                : r.state==='warn' ? '<span class="tag warn">'+H(r.text)+'</span>'
+                : r.state==='none' ? '<span class="kpi-change">&mdash;</span>'
+                : '<span class="tag bad">'+H(r.text)+'</span>';
+        return '<tr><td>'+H(d.date)+'</td><td>'+H(d.forWhom)+'</td><td>'+d.ours+'</td>'+
+          '<td>'+H((d.shared||[]).join(', ')||'--')+'</td>'+
+          '<td>'+d.issued+' / '+d.recovered+' / '+d.presented+'</td><td>'+tag+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveDetail(\''+H(d.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var fl=$('ce-flags');
+  if(fl){
+    var unrec=details.filter(function(d){ return casingsReconcile(d).state==='warn'; }).length;
+    var out='';
+    if(unrec) out += '<div class="flagbox"><strong>'+unrec+' detail(s) have casings issued and not recovered.</strong> Recorded rather than absorbed &mdash; the gap is the thing worth seeing.</div>';
+    var neverInspected=getCeremonialItems().filter(function(i){ return !i.inspected; }).length;
+    if(neverInspected) out += '<div class="flagbox"><strong>'+neverInspected+' item(s) have no inspection date.</strong></div>';
+    fl.innerHTML=out;
+  }
+}
+
+/* ---- 5.4 VEHICLES ------------------------------------------------------ */
+function sfAddVehicle(){
+  var desc=($('vh-desc').value||'').trim();
+  if(!desc){ toast('Describe the vehicle','err'); return; }
+  var list=getVehicles();
+  list.push({ id:'vh'+Date.now(), desc:desc, plate:($('vh-plate').value||'').trim(),
+              odometer:Number($('vh-odo').value||0), dueAt:Number($('vh-duemiles').value||0),
+              registration:$('vh-reg').value||'', insurance:$('vh-ins').value||'' });
+  st(K_VEHICLES,list);
+  $('vh-desc').value=''; $('vh-plate').value='';
+  toast('Vehicle added');
+  sfRenderAll();
+}
+function sfRemoveVehicle(id){
+  st(K_VEHICLES, getVehicles().filter(function(v){ return v.id!==id; }));
+  st(K_VEHSERVICE, getVehicleService().filter(function(s){ return s.vehicleId!==id; }));
+  toast('Vehicle removed');
+  sfRenderAll();
+}
+function sfLogVehicleService(){
+  var vid=$('vs-vehicle').value;
+  if(!vid){ toast('Select a vehicle','err'); return; }
+  var what=($('vs-what').value||'').trim();
+  if(!what){ toast('Say what was done','err'); return; }
+  var odo=Number($('vs-odo').value||0);
+  var list=getVehicles(), veh=null;
+  for(var i=0;i<list.length;i++){ if(list[i].id===vid){ veh=list[i]; break; } }
+  if(veh && odo && odo<Number(veh.odometer||0)){
+    toast('Refused: '+odo+' is below the recorded odometer of '+veh.odometer,'err');
+    return;
+  }
+  var svc=getVehicleService();
+  svc.push({ id:'vs'+Date.now(), vehicleId:vid, date:$('vs-date').value||localToday(),
+             odometer:odo, what:what, cost:Number($('vs-cost').value||0) });
+  st(K_VEHSERVICE,svc);
+  if(veh){
+    if(odo) veh.odometer=odo;
+    var next=Number($('vs-next').value||0);
+    if(next) veh.dueAt=next;
+    st(K_VEHICLES,list);
+  }
+  $('vs-what').value=''; $('vs-cost').value='';
+  toast('Service logged');
+  sfRenderAll();
+}
+function sfRenderVehicles(){
+  var vehicles=getVehicles(), svc=getVehicleService();
+  var vs=$('vs-vehicle');
+  if(vs) vs.innerHTML = vehicles.length
+    ? vehicles.map(function(v){ return '<option value="'+H(v.id)+'">'+H(v.desc)+'</option>'; }).join('')
+    : '<option value="">No vehicles</option>';
+  if($('vs-date') && !$('vs-date').value) $('vs-date').value=localToday();
+
+  var tb=$('vh-tbody');
+  if(tb){
+    if(!vehicles.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No vehicles recorded.</td></tr>'; }
+    else {
+      tb.innerHTML=vehicles.map(function(v){
+        var due = v.dueAt && Number(v.odometer||0)>=Number(v.dueAt)
+          ? '<span class="tag bad">Due now</span>'
+          : (v.dueAt ? '<span class="kpi-change">at '+H(String(v.dueAt))+'</span>' : '--');
+        function expiry(d){
+          if(!d) return '--';
+          var days=dayNum(d)!==null ? dayNum(d)-dayNum(localToday()) : null;
+          if(days===null) return H(d);
+          if(days<0) return '<span class="tag bad">'+H(d)+'</span>';
+          if(days<=30) return '<span class="tag warn">'+H(d)+'</span>';
+          return H(d);
+        }
+        return '<tr><td>'+H(v.desc)+'</td><td>'+H(v.plate||'--')+'</td><td>'+H(String(v.odometer||0))+'</td>'+
+          '<td>'+due+'</td><td>'+expiry(v.registration)+'</td><td>'+expiry(v.insurance)+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveVehicle(\''+H(v.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var stb=$('vs-tbody');
+  if(stb){
+    if(!svc.length){ stb.innerHTML='<tr><td colspan="5" class="empty">No service logged.</td></tr>'; }
+    else {
+      stb.innerHTML=svc.slice().reverse().map(function(s){
+        var v=null; vehicles.forEach(function(x){ if(x.id===s.vehicleId) v=x; });
+        return '<tr><td>'+H(s.date)+'</td><td>'+H(v?v.desc:'(removed)')+'</td><td>'+H(String(s.odometer||0))+'</td>'+
+          '<td>'+H(s.what)+'</td><td>'+money(s.cost)+'</td></tr>';
+      }).join('');
+    }
+  }
+  var fl=$('vh-flags');
+  if(fl){
+    var out='', dueNow=vehicles.filter(function(v){ return v.dueAt && Number(v.odometer||0)>=Number(v.dueAt); }).length;
+    var expiring=vehicles.filter(function(v){
+      return [v.registration,v.insurance].some(function(d){
+        if(!d) return false; var n=dayNum(d); return n!==null && n-dayNum(localToday())<=30;
+      });
+    }).length;
+    if(dueNow) out += '<div class="blockbox"><strong>'+dueNow+' vehicle(s) are at or past their service odometer.</strong></div>';
+    if(expiring) out += '<div class="flagbox"><strong>'+expiring+' vehicle(s) have registration or insurance expiring within thirty days, or already expired.</strong></div>';
+    fl.innerHTML=out;
+  }
+}
+
+/* ---- 5.5 NEWSLETTER ----------------------------------------------------
+   GROUNDED IN THE POST'S OWN DATA, and then CHECKED. The facts are supplied
+   explicitly; afterwards every number in the draft is matched back against
+   them in code. A figure in the text that is not in the fact set is a
+   fabricated figure and the draft is flagged rather than presented as ready.
+   Same discipline as the vendor-search citation rule -- a prompt is a request,
+   a check is a guarantee. */
+function newsletterFacts(){
+  var y=String(parseLocalDate(localToday()).getFullYear());
+  var members=getMembers(), np=netProfitByGame(y);
+  var svc=getServiceLog().filter(function(s){ return String(s.date||'').slice(0,4)===y; });
+  var disb=getDisbursements().filter(function(d){ return String(d.date||'').slice(0,4)===y; });
+  var sessions=getSessions().filter(function(s){ return s.recorded && String(s.date||'').slice(0,4)===y; });
+  var events=getEvents().filter(function(e){ return String(e.date||'').slice(0,4)===y; });
+  function sum(rows,f){ return Math.round(rows.reduce(function(a,r){ return a+Number(r[f]||0); },0)*100)/100; }
+  return [
+    { k:'Members on the roster', v:members.length },
+    { k:'Bingo sessions held this year', v:sessions.length },
+    { k:'Lodge events held this year', v:events.length },
+    { k:'Traditional bingo net profit this year', v:Math.round(np.purposeRegimeNet*100)/100 },
+    { k:'Instant bingo net profit this year', v:Math.round(np.tieredRegimeNet*100)/100 },
+    { k:'Total disbursed to the community this year', v:sum(disb,'amount') },
+    { k:'Volunteer person-hours this year', v:sum(svc,'personHours') },
+    { k:'Volunteer person-miles this year', v:sum(svc,'personMiles') },
+    { k:'Donations received this year', v:sum(getDonations().filter(function(d){ return String(d.date||'').slice(0,4)===y; }),'amount') }
+  ];
+}
+function normaliseNumber(s){
+  var n=String(s).replace(/[$,]/g,'');
+  var f=parseFloat(n);
+  if(isNaN(f)) return null;
+  return String(Math.round(f*100)/100);
+}
+/* Numbers that are allowed without appearing in the facts: calendar dates,
+   small counts a sentence can legitimately contain, and the year itself.
+   Everything else must have been supplied. The allowance is stated rather
+   than hidden, because a check nobody can see the edges of is not a check. */
+function unsupportedNumbers(text, facts){
+  var supplied={};
+  facts.forEach(function(f){ var n=normaliseNumber(f.v); if(n!==null) supplied[n]=1; });
+  /* The calendar allowance exists so "see you on the 14th" is not reported as a
+     fabricated statistic. It is stated rather than hidden, because a check
+     whose edges nobody can see is not a check. */
+  var calendar={};
+  var yearNow=parseLocalDate(localToday()).getFullYear();
+  for(var i=1;i<=31;i++) calendar[String(i)]=1;
+  for(var y=yearNow-5;y<=yearNow+5;y++) calendar[String(y)]=1;
+  /* A MONEY AMOUNT OR A PERCENTAGE NEVER GETS THE CALENDAR ALLOWANCE. "Up 12%
+     on last year" and "we raised $12" are exactly the fabrications that matter,
+     and a bare small-integer allowance swallowed both until a test caught it. */
+  var re=/(\$?)(\d[\d,]*(?:\.\d+)?)(\s*(?:%|per ?cent))?/gi;
+  var bad={}, mm;
+  while((mm=re.exec(String(text||'')))!==null){
+    var n=normaliseNumber(mm[2]);
+    if(n===null) continue;
+    if(supplied[n]) continue;
+    var isClaim=!!mm[1] || !!mm[3];
+    if(!isClaim && calendar[n]) continue;
+    bad[mm[0].trim()]=1;
+  }
+  return Object.keys(bad);
+}
+function sfRenderNewsletter(){
+  var box=$('nl-facts');
+  if(box){
+    var facts=newsletterFacts();
+    box.innerHTML='<div class="tw"><table><tbody>'+facts.map(function(f){
+      return '<tr><td>'+H(f.k)+'</td><td style="text-align:right"><strong>'+H(String(f.v))+'</strong></td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    '<div class="note">These are the only figures the draft is given, and the only ones it is permitted to print.</div>';
+  }
+  if($('nl-month') && !$('nl-month').value) $('nl-month').value=localToday().slice(0,7);
+  var fl=$('nl-flags');
+  if(fl){
+    var thin=getSessions().filter(function(s){ return s.recorded; }).length===0 && getEvents().length===0;
+    fl.innerHTML = thin
+      ? '<div class="flagbox"><strong>There is very little to report yet.</strong> The newsletter is grounded in this post’s own figures, so it is only as interesting as the Phase 2 to 4 data behind it.</div>'
+      : '';
+  }
+}
+function sfDraftNewsletter(){
+  var out=$('nl-out'); if(!out) return;
+  var facts=newsletterFacts();
+  var p=getPost();
+  var month=($('nl-month').value||localToday().slice(0,7));
+  var note=($('nl-note').value||'').trim();
+  out.innerHTML='<div class="flagbox">Drafting...</div>';
+  callClaude({
+    max_tokens:1200,
+    system:'You write a short, warm monthly newsletter for a veterans or fraternal lodge. '+
+      'USE ONLY THE FIGURES SUPPLIED. Do not estimate, do not project, do not compare to a previous period you were not given, '+
+      'and do not invent any number at all -- not a percentage, not a count, not an amount. If something would be nicer with a '+
+      'figure you were not given, write it without one. Four short paragraphs at most, no headings.'+VA_CLAIM_REFUSAL,
+    messages:[{ role:'user', content:'Post: '+(p.name||'our post')+' ('+((orgType(p.orgType)||{}).label||'')+
+      '), '+(p.city||'')+'. Month: '+month+'.\nFigures you may use:\n'+
+      facts.map(function(f){ return '- '+f.k+': '+f.v; }).join('\n')+
+      (note?('\nPlease also mention: '+note):'') }]
+  }).then(function(res){
+    if(res && res.error){ out.innerHTML='<div class="blockbox"><strong>The drafting service could not be reached.</strong> Nothing is shown.</div>'; return; }
+    var txt='';
+    if(res && Array.isArray(res.content)) res.content.forEach(function(b){ if(b.type==='text') txt+=b.text; });
+    if(!txt.trim()){ out.innerHTML='<div class="blockbox"><strong>Nothing came back.</strong></div>'; return; }
+    var bad=unsupportedNumbers(txt, facts);
+    var head = bad.length
+      ? '<div class="blockbox"><strong>Do not send this as it stands &mdash; '+H(String(bad.length))+' number(s) appear in the draft that were never supplied: '+
+        H(bad.join(', '))+'.</strong> Every figure here is checked against the fact table above in code. A number nobody gave it is a fabricated number, and it is shown to you flagged rather than quietly published under the post’s name.</div>'
+      : '<div class="flagbox" style="border-left-color:var(--ok);background:#F0FDF4"><strong>Every number in this draft traces to a figure you supplied.</strong> That is a check on the arithmetic, not on the prose &mdash; read it before you send it.</div>';
+    out.innerHTML=head+'<div class="card" style="white-space:pre-wrap">'+H(txt)+'</div>';
+  })['catch'](function(){
+    out.innerHTML='<div class="blockbox"><strong>The drafting service could not be reached.</strong> Nothing is shown.</div>';
+  });
 }
 
 /* ========================================================================
@@ -4741,6 +5811,8 @@ function sfRenderAll(){
   sfRenderCanteen(); sfRenderCloseout(); sfRenderEvents(); sfRenderHall(); sfRenderVendors();
   sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
   sfRenderDisbursements(); sfRenderDonations(); sfRenderService(); sfRenderOutreach();
+  sfRenderOnboarding(); sfRenderPaperwork(); sfRenderYouth(); sfRenderServices();
+  sfRenderCeremonial(); sfRenderVehicles(); sfRenderNewsletter();
   sfRenderDistrict();
   sfRenderDashboard();
 }
