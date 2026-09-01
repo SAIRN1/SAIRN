@@ -59,7 +59,50 @@ function addDays(iso, n) {
   return fromUTC(d);
 }
 function dayOfWeek(iso) { var d = toUTC(iso); return d ? d.getUTCDay() : null; } // 0=Sun 6=Sat
-function isWeekend(iso) { var w = dayOfWeek(iso); return w === 0 || w === 6; }
+
+// WHICH DAYS ARE "THE WEEKEND" IS A PER-JURISDICTION FACT, NOT A CONSTANT.
+// Every rule seeded to date names both weekend days -- "a Saturday, a Sunday,
+// or a legal holiday" -- so [Sun, Sat] is the right default and every existing
+// computation standard is unchanged by this parameter existing.
+//
+// LOUISIANA IS THE FIRST JURISDICTION WHERE THE ASSUMPTION IS AFFIRMATIVELY
+// WRONG, which is why this became a parameter rather than staying a literal.
+// La. C.C.P. art. 5059(A) rolls the last day only "unless it is a legal
+// holiday" -- it never names Saturday or Sunday in its own right -- and
+// La. R.S. 1:55(A)(1) makes SUNDAYS a statewide legal holiday while making
+// "the whole of every Saturday" one ONLY in the parish of Orleans, the city of
+// Baton Rouge, the parishes of the 2nd and 6th congressional districts except
+// Ascension, and those of the 14th and 31st judicial districts. Everywhere
+// else in the state a Saturday is an ordinary day, and rolling off it produces
+// a date LATER than the true deadline -- the direction that misses a filing,
+// and one a coverage disclosure cannot repair.
+//
+// A STANDARD DECLARING A MALFORMED weekend_days IS A HARD FAILURE, NOT A
+// SILENT FALLBACK. Falling back to the default would restore exactly the
+// behaviour a jurisdiction declared wrong, and it would do it invisibly. The
+// check runs once at module load, below the standards table.
+var DEFAULT_WEEKEND_DAYS = [0, 6]; // Sunday, Saturday
+function isWeekend(iso, weekendDays) {
+  var w = dayOfWeek(iso);
+  if (w === null) return false;
+  var set = Array.isArray(weekendDays) ? weekendDays : DEFAULT_WEEKEND_DAYS;
+  return set.indexOf(w) !== -1;
+}
+
+// Returns null if valid, or a string naming the defect. Exported so the
+// load-time check and its test assert the SAME function rather than two
+// implementations that can drift.
+function weekendDaysDefect(v) {
+  if (v === undefined || v === null) return null; // not declared -- the default applies
+  if (!Array.isArray(v)) return 'must be an array of day numbers';
+  if (!v.length) return 'must not be empty -- a jurisdiction with no weekend days declares [] nowhere; omit the property instead';
+  for (var i = 0; i < v.length; i++) {
+    if (typeof v[i] !== 'number' || !isFinite(v[i]) || v[i] % 1 !== 0 || v[i] < 0 || v[i] > 6) {
+      return 'contains ' + JSON.stringify(v[i]) + ', which is not an integer day number 0-6 (0=Sunday)';
+    }
+  }
+  return null;
+}
 
 // Used only by the terminal-day-rule audit step, which has to name the day of
 // the week in prose an attorney reads. Indexed to match dayOfWeek above.
@@ -189,7 +232,7 @@ function exclusivityOf(input) {
 // periods roll forward; backward periods roll backward (Rule 6(a)(5)).
 // Returns a refusal if a year's calendar is missing rather than treating an
 // unknown year as holiday-free -- that would silently skip New Year's Day.
-function rollOff(iso, calendars, jurisdiction, direction) {
+function rollOff(iso, calendars, jurisdiction, direction, weekendDays) {
   var step = direction === 'backward' ? -1 : 1;
   var cur = iso;
   for (var guard = 0; guard < 30; guard++) {
@@ -201,7 +244,7 @@ function rollOff(iso, calendars, jurisdiction, direction) {
           '. The deadline is not computed rather than computed against an incomplete calendar.',
         missing: { jurisdiction: jurisdiction, year: h.missingYear || null } };
     }
-    if (!isWeekend(cur) && !h.hit) return { ok: true, date: cur };
+    if (!isWeekend(cur, weekendDays) && !h.hit) return { ok: true, date: cur };
     cur = addDays(cur, step);
   }
   return { ok: false, code: 'ROLL_RUNAWAY', message: 'Could not find a non-holiday day within 30 days.' };
@@ -214,7 +257,7 @@ function rollOff(iso, calendars, jurisdiction, direction) {
 // can regress the other. Used by Ohio's Civ.R. 6(A) short-period exclusion,
 // and shaped identically to the business_days loop because both rules mean
 // the same thing: skip non-business days while counting.
-function countExcludingWeekendsAndHolidays(triggerDate, sign, n, calendars, jurisdiction, direction) {
+function countExcludingWeekendsAndHolidays(triggerDate, sign, n, calendars, jurisdiction, direction, weekendDays) {
   var cur = triggerDate;
   var remaining = n;
   var guard = 0;
@@ -226,7 +269,7 @@ function countExcludingWeekendsAndHolidays(triggerDate, sign, n, calendars, juri
         message: 'No holiday calendar is loaded for ' + jurisdiction + (h.missingYear ? ' for ' + h.missingYear : '') + ', which this short-period computation requires.',
         missing: { jurisdiction: jurisdiction, year: h.missingYear || null } };
     }
-    if (!isWeekend(cur) && !h.hit) remaining--;
+    if (!isWeekend(cur, weekendDays) && !h.hit) remaining--;
   }
   return { ok: true, date: cur };
 }
@@ -1800,6 +1843,28 @@ var COMPUTATION_STANDARDS = {
     base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
+
+// A MALFORMED weekend_days FAILS AT LOAD, LOUDLY, AND TAKES THE MODULE WITH
+// IT. The alternative -- ignoring a bad value and using [Sun, Sat] -- would
+// silently restore the exact behaviour a jurisdiction declared wrong, and it
+// would do so on a code path nothing observes. A standard is in-code data, so
+// a defect here is a bug rather than bad input, and a bug that stops the
+// engine loading is caught by the first test that requires it.
+//
+// NOTE ON DIRECTION, because "fails safe" is not a property this one has: a
+// missing roll makes a FORWARD deadline earlier (safe) and a BACKWARD one
+// later (unsafe). There is no fallback that is safe in both directions, which
+// is the second reason this refuses rather than defaults.
+(function validateWeekendDayDeclarations() {
+  var bad = [];
+  Object.keys(COMPUTATION_STANDARDS).forEach(function (k) {
+    var defect = weekendDaysDefect(COMPUTATION_STANDARDS[k].weekend_days);
+    if (defect) bad.push(k + '.weekend_days ' + defect);
+  });
+  if (bad.length) {
+    throw new Error('deadline-engine: invalid weekend_days declaration(s): ' + bad.join('; '));
+  }
+})();
 
 // ── Per-jurisdiction coverage disclosure ──────────────────────────────────
 // A jurisdiction whose calendar is knowably INCOMPLETE in a way the engine
@@ -3392,7 +3457,7 @@ var SERVICE_COMPLETION_STANDARDS = {
 // the date service was COMPLETE. Pure: no calendar mutation, and it refuses
 // through the same NOT_PROVISIONED path rollOff already uses when the year is
 // not loaded.
-function applyServiceCompletion(cstd, txDate, serviceTime, calendars, jurisdiction) {
+function applyServiceCompletion(cstd, txDate, serviceTime, calendars, jurisdiction, weekendDays) {
   var t = serviceTime;
   if (!t || !/^([01]\d|2[0-3]):[0-5]\d$/.test(String(t))) {
     return { ok: false, code: 'SERVICE_COMPLETION_TIME_REQUIRED',
@@ -3417,7 +3482,7 @@ function applyServiceCompletion(cstd, txDate, serviceTime, calendars, jurisdicti
         '. Whether service was complete on the day of transmission cannot be determined, so no deadline is computed.',
       missing: { jurisdiction: jurisdiction, year: h.missingYear || null } };
   }
-  var badDay = isWeekend(txDate) || h.hit;
+  var badDay = isWeekend(txDate, weekendDays) || h.hit;
   var afterCutoff = minutes > cstd.cutoff_minutes;
 
   if (!badDay && !afterCutoff) {
@@ -3430,7 +3495,7 @@ function applyServiceCompletion(cstd, txDate, serviceTime, calendars, jurisdicti
   // holiday" -- strictly after the transmission date, hence the +1 before the
   // roll. rollOff alone would return the transmission date itself whenever that
   // date is already a good day, which is wrong for the after-5:00-p.m. limb.
-  var rolled = rollOff(addDays(txDate, 1), calendars, jurisdiction, 'forward');
+  var rolled = rollOff(addDays(txDate, 1), calendars, jurisdiction, 'forward', weekendDays);
   if (!rolled.ok) return rolled;
   return { ok: true, date: rolled.date, shifted: true,
     detail: 'The transmission was made ' +
@@ -3491,7 +3556,7 @@ function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, 
     if (std.short_period_exclusion_days && countValue < std.short_period_exclusion_days
         && (!std.short_period_exclusion_directions
             || std.short_period_exclusion_directions.indexOf(direction) !== -1)) {
-      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, calendars, jurisdiction, direction);
+      var shortRes = countExcludingWeekendsAndHolidays(triggerDate, sign, countValue, calendars, jurisdiction, direction, std.weekend_days);
       if (!shortRes.ok) return shortRes;
       return { ok: true, date: shortRes.date, authority: std.label,
         detail: 'Excluded the trigger day and counted ' + countValue + ' days ' + direction +
@@ -3523,7 +3588,7 @@ function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, 
       // and backward when measured before an event." rollOff already walks in
       // the direction it is given, so a backward Florida period shifts to the
       // preceding business day rather than the following one.
-      var startRes = rollOff(addDays(triggerDate, sign), calendars, jurisdiction, direction);
+      var startRes = rollOff(addDays(triggerDate, sign), calendars, jurisdiction, direction, std.weekend_days);
       if (!startRes.ok) return startRes;
       var firstCounted = startRes.date;
       return { ok: true, date: addDays(firstCounted, sign * (countValue - 1)),
@@ -3554,7 +3619,7 @@ function computeBasePeriod(std, triggerDate, countValue, unit, direction, sign, 
           message: 'No holiday calendar is loaded for ' + jurisdiction + (hb.missingYear ? ' for ' + hb.missingYear : '') + ', which business-day counting requires.',
           missing: { jurisdiction: jurisdiction, year: hb.missingYear || null } };
       }
-      if (!isWeekend(cur) && !hb.hit) remaining--;
+      if (!isWeekend(cur, std.weekend_days) && !hb.hit) remaining--;
     }
     return { ok: true, date: cur, authority: null,
       detail: 'Counted ' + countValue + ' business days ' + direction + ', skipping weekends and holidays.' };
@@ -3958,7 +4023,7 @@ function computeDeadline(input) {
           '", which this engine does not implement. The date the period runs from cannot be verified, so no deadline is computed.' };
     }
     if (cstd.governs(input.service_method)) {
-      var comp = applyServiceCompletion(cstd, triggerDate, input.service_time, input.calendars, input.jurisdiction);
+      var comp = applyServiceCompletion(cstd, triggerDate, input.service_time, input.calendars, input.jurisdiction, std.weekend_days);
       if (!comp.ok) return comp;
       completion = { state: comp.shifted ? 'shifted' : 'complete_on_transmission',
         standard: cKey, transmitted: triggerDate, complete_on: comp.date, detail: comp.detail };
@@ -4180,7 +4245,7 @@ function computeDeadline(input) {
   }
 
   // Rule 6(a)(1)(C) / 6(a)(5): roll the LAST day only.
-  var rolled = rollOff(base, input.calendars, input.jurisdiction, direction);
+  var rolled = rollOff(base, input.calendars, input.jurisdiction, direction, std.weekend_days);
   if (!rolled.ok) return rolled;
   if (rolled.date !== base) {
     // Direction-aware wording. A backward period rolls to the PRECEDING
@@ -4467,7 +4532,7 @@ function computeDeadline(input) {
               message: 'No holiday calendar is loaded for ' + input.jurisdiction + (hcd.missingYear ? ' for ' + hcd.missingYear : '') + ', which court-day counting requires.',
               missing: { jurisdiction: input.jurisdiction, year: hcd.missingYear || null } };
           }
-          if (!isWeekend(extended) && !hcd.hit) left--;
+          if (!isWeekend(extended, std.weekend_days) && !hcd.hit) left--;
         }
         extDetail = addN + ' ' + addUnit.replace(/_/g, ' ') + ' added because service was by ' + String(input.service_method).replace(/_/g, ' ') +
           ', counted after the base period expired and SKIPPING weekends and legal holidays (' +
@@ -4481,7 +4546,7 @@ function computeDeadline(input) {
           ', and including intermediate weekends and holidays.';
       }
       steps.push({ step: 'service_extension', detail: extDetail, authority: extLabel, date: extended });
-      var rolled2 = rollOff(extended, input.calendars, input.jurisdiction, direction);
+      var rolled2 = rollOff(extended, input.calendars, input.jurisdiction, direction, std.weekend_days);
       if (!rolled2.ok) return rolled2;
       if (rolled2.date !== extended) {
         steps.push({ step: 'rollover_after_extension', detail: 'The added day fell on a Saturday, Sunday or legal holiday, so the last day to act is the next day that is not.', authority: extLabel + (stdKey === 'frcp_6d' ? ', 2005 Advisory Committee Note' : ''), date: rolled2.date });
@@ -4563,6 +4628,7 @@ function computeDeadline(input) {
 
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
+  DEFAULT_WEEKEND_DAYS, weekendDaysDefect,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,
