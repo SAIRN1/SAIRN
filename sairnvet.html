@@ -1483,8 +1483,9 @@
 </div>
 <div class="kpi-row" id="well-kpis"></div>
 <div class="card"><div class="sv-tw"><table id="panel-wellness-table">
-<thead><tr><th>Patient</th><th>Plan</th><th>Monthly</th><th>Renewal Date</th></tr></thead>
+<thead><tr><th>Patient</th><th>Plan</th><th>Monthly</th><th>Renewal Date</th><th>Status</th></tr></thead>
 <tbody id="well-tbody"></tbody></table></div></div>
+<p style="font-size:0.85em;color:var(--text-muted,#666);margin:-6px 0 16px;">Active Plans and Monthly Recurring Revenue count only rows whose Status is Active. Click any row to change its status or remove it.</p>
 <div class="card"><h3>Enroll a Patient</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="well-add-patient" placeholder="Patient"><input type="text" id="well-add-plan" placeholder="Plan name"><input type="number" id="well-add-monthly" placeholder="Monthly ($)"><input type="date" id="well-add-renewal"><button class="btn" onclick="addWellnessPlan()">Enroll</button></div></div>
 </div>
 
@@ -4656,14 +4657,44 @@ function addReminder(){
   showToast('Reminder logged for '+patient,'success');
 }
 
+// A plan really can lapse, be cancelled, or expire, so status is a value the
+// practice sets -- not a boolean nothing could ever flip. Before 2026-09-01
+// every row carried active:true, set on seed and on enrol, and NO code path
+// anywhere set it false: "Active Plans" and "Total Enrolled" were therefore
+// guaranteed to print the same number forever and the w.active filter was
+// dead. The numbers were honest; the distinction they implied did not exist.
+var WELLNESS_STATUSES = ['Active','Lapsed','Cancelled','Expired'];
+
+// ONE source of truth. Legacy rows are migrated in place -- status derived
+// from the old boolean, then `active` deleted -- because two fields that can
+// disagree is a bug waiting to happen, and every legacy row is active:true so
+// the migration cannot lose a real deactivation (there were none to lose).
+function normalizeWellnessPlans(list){
+  var changed = false;
+  list.forEach(function(w){
+    if(WELLNESS_STATUSES.indexOf(w.status) === -1){
+      w.status = (w.active === false) ? 'Cancelled' : 'Active';
+      changed = true;
+    }
+    if('active' in w){ delete w.active; changed = true; }
+  });
+  return changed;
+}
+
 function getWellnessPlans(){
   try {
     var stored = localStorage.getItem('sv_wellness');
-    if(stored) return JSON.parse(stored);
+    if(stored){
+      var list = JSON.parse(stored);
+      if(Array.isArray(list)){
+        if(normalizeWellnessPlans(list)) saveWellnessPlans(list);
+        return list;
+      }
+    }
   } catch(e){}
   var seed = [
-    {id:'wp1', patient:'Max', plan:'Adult Wellness Plus', monthly:52.00, renewal:'2027-01-15', active:true},
-    {id:'wp2', patient:'Whiskers', plan:'Senior Wellness', monthly:68.00, renewal:'2026-11-02', active:true}
+    {id:'wp1', patient:'Max', plan:'Adult Wellness Plus', monthly:52.00, renewal:'2027-01-15', status:'Active'},
+    {id:'wp2', patient:'Whiskers', plan:'Senior Wellness', monthly:68.00, renewal:'2026-11-02', status:'Active'}
   ];
   saveWellnessPlans(seed);
   return seed;
@@ -4680,12 +4711,14 @@ function renderWellness(){
     tbody.innerHTML = '';
     list.forEach(function(w){
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+escHtml(w.patient)+'</td><td>'+escHtml(w.plan)+'</td><td>$'+w.monthly.toFixed(2)+'</td><td>'+escHtml(w.renewal)+'</td>';
+      tr.style.cursor = 'pointer';
+      tr.onclick = function(){ openWellnessEdit(w.id); };
+      tr.innerHTML = '<td>'+escHtml(w.patient)+'</td><td>'+escHtml(w.plan)+'</td><td>$'+w.monthly.toFixed(2)+'</td><td>'+escHtml(w.renewal)+'</td><td>'+escHtml(w.status||'Active')+'</td>';
       tbody.appendChild(tr);
     });
   }
 
-  var active = list.filter(function(w){ return w.active; });
+  var active = list.filter(function(w){ return w.status === 'Active'; });
   var mrr = active.reduce(function(s,w){ return s+w.monthly; },0);
 
   var kpis = document.getElementById('well-kpis');
@@ -4705,7 +4738,7 @@ function addWellnessPlan(){
   var renewal = document.getElementById('well-add-renewal').value;
   if(!patient||!plan||!monthly){ showToast('Patient, plan, and monthly amount required','error'); return; }
   var list = getWellnessPlans();
-  list.push({id:'wp'+Date.now(), patient:patient, plan:plan, monthly:monthly, renewal:renewal||'--', active:true});
+  list.push({id:'wp'+Date.now(), patient:patient, plan:plan, monthly:monthly, renewal:renewal||'--', status:'Active'});
   saveWellnessPlans(list);
   renderWellness();
   document.getElementById('well-add-patient').value='';
@@ -4713,6 +4746,70 @@ function addWellnessPlan(){
   document.getElementById('well-add-monthly').value='';
   document.getElementById('well-add-renewal').value='';
   showToast(patient+' enrolled in '+plan,'success');
+}
+
+// Deactivation, added 2026-09-01. Same click-a-row-to-edit idiom as Staff and
+// Multisite rather than a second pattern. Status is the only editable field
+// here on purpose: this closes the "nothing can ever set a plan inactive" gap
+// and is not a general plan editor.
+function openWellnessEdit(id){
+  var list = getWellnessPlans();
+  var w = list.find(function(x){ return x.id===id; });
+  if(!w) return;
+  var opts = WELLNESS_STATUSES.map(function(s){
+    return '<option'+(s===w.status?' selected':'')+'>'+s+'</option>';
+  }).join('');
+  var html =
+    '<div class="card" id="well-edit-card" style="border:2px solid var(--primary);">'+
+    '<h3>Editing: '+escHtml(w.patient)+' — '+escHtml(w.plan)+'</h3>'+
+    '<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:15px 0;">'+
+    '<div><label style="display:block;margin-bottom:6px;">Status</label><select id="well-edit-status" style="width:100%;">'+opts+'</select></div>'+
+    '</div>'+
+    '<p style="font-size:0.85em;color:var(--text-muted,#666);margin:0 0 12px;">Anything other than Active removes this plan\'s $'+w.monthly.toFixed(2)+' from Monthly Recurring Revenue. The row stays in the table and in the CSV export.</p>'+
+    '<button class="btn" onclick="saveWellnessEdit(\''+w.id+'\')">Save</button> '+
+    '<button class="btn btn-secondary" onclick="cancelWellnessEdit()">Cancel</button> '+
+    '<button class="btn" style="background:#DC2626;margin-left:20px;" onclick="removeWellnessPlan(\''+w.id+'\')">Remove Enrollment</button>'+
+    '</div>';
+  var existing = document.getElementById('well-edit-card');
+  if(existing) existing.remove();
+  var table = document.getElementById('panel-wellness-table');
+  if(!table) return;
+  table.parentElement.insertAdjacentHTML('afterend', html);
+  document.getElementById('well-edit-card').scrollIntoView({behavior:'smooth', block:'center'});
+}
+
+function cancelWellnessEdit(){
+  var existing = document.getElementById('well-edit-card');
+  if(existing) existing.remove();
+}
+
+function saveWellnessEdit(id){
+  var el = document.getElementById('well-edit-status');
+  if(!el) return;
+  var status = el.value;
+  // Refuse a value outside the list rather than storing it: normalizeWellnessPlans
+  // would silently rewrite an unrecognised status back to 'Active' on the next
+  // read, which would look like the save had been ignored.
+  if(WELLNESS_STATUSES.indexOf(status) === -1){ showToast('Unknown status','error'); return; }
+  var list = getWellnessPlans();
+  var w = list.find(function(x){ return x.id===id; });
+  if(!w) return;
+  w.status = status;
+  saveWellnessPlans(list);
+  cancelWellnessEdit();
+  renderWellness();
+  showToast(w.patient+' — plan '+status.toLowerCase(),'success');
+}
+
+function removeWellnessPlan(id){
+  var list = getWellnessPlans();
+  var w = list.find(function(x){ return x.id===id; });
+  if(!w) return;
+  if(!confirm('Remove '+w.patient+' from '+w.plan+'? This deletes the enrollment record. To keep the history, set its status instead.')) return;
+  saveWellnessPlans(list.filter(function(x){ return x.id!==id; }));
+  cancelWellnessEdit();
+  renderWellness();
+  showToast('Enrollment removed','success');
 }
 
 function getCogginsTests(){
