@@ -4639,7 +4639,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   };
   window.sdHistoryView=function(id){
     var d=load();
-    var x=d.find(function(q){return q.id===id;});
+    // String()===String(): quote-history ids are NUMBERS (seed 1..8, new
+    // rows Date.now()) while the onclick now passes a quoted string.
+    var x=d.find(function(q){return String(q.id)===String(id);});
     if(!x)return;
     sdHistoryDetailOpenId = id;
     document.getElementById('sd-hdm-title').textContent = (x.customer||'Quote') + ' — $' + (x.amount||0).toLocaleString() + ' — ' + (x.status||'Pending');
@@ -4676,7 +4678,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var id = sdHistoryDetailOpenId;
     if (id == null) return;
     var d = load();
-    var x = d.find(function(q){return q.id===id;});
+    var x = d.find(function(q){return String(q.id)===String(id);});
     if (!x || !x.drawingState || x.drawingState.schemaVersion !== 1) return;
     var hasUnsaved = (typeof dcPoly !== 'undefined' && dcPoly.length > 0)
       || (typeof dcCutouts !== 'undefined' && dcCutouts.length > 0)
@@ -4695,7 +4697,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var st=document.getElementById('hist-new-status').value;
     if(!id)return showToast('Select a quote first.');
     var d=load();
-    var x=d.find(function(q){return q.id===id;});
+    // String()===String(): quote-history ids are NUMBERS (seed 1..8, new
+    // rows Date.now()) while the onclick now passes a quoted string.
+    var x=d.find(function(q){return String(q.id)===String(id);});
     if(x){x.status=st;save(d);sdHistoryRender();showToast('Status updated to '+st+'.');}
   };
   window.sdHistoryAI=function(){
