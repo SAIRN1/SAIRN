@@ -145,6 +145,49 @@ product — was only found because two readers hit the same statute
 independently. That is a defence of the *outcome*, not of the process. Do not
 use it as an argument for running gates twice on purpose.
 
+### Check claims BEFORE dispatching a session — added 2026-09-01
+
+The line above says "the genuine fix is the coordinating chat session
+assigning gates explicitly." On 2026-09-01 that was tested and it is not
+enough on its own, because **an explicit assignment made without reading the
+claims is the same collision with a clearer author.** One session was
+dispatched four times in a row — stonedesk.html, sairncode.html,
+sairnfreedom.html, sairnvet.html — and **the first three were already claimed
+by other sessions.** Nothing was lost, only because the session checked before
+starting each time and bounced it back. Four round-trips bought what one
+`sairn_claim.py list` before the first dispatch would have.
+
+**The rule, for whoever is doing the dispatching:** run `list` and name the
+FILE before sending a session at it. "SAIRNvet is untouched tonight" is a
+claim about a file and needs the same verification as any other claim about
+state. Two of the three collisions above were also invisible to a
+pre-dispatch check by the receiving session — the other session's claim
+appeared *after* its check came back clear.
+
+**Two real defects in `sairn_claim.py`, both found the same night, neither
+fixed — know them before you trust its output:**
+
+1. **The overlap matcher fires on any shared word, not on real subject or
+   file overlap.** `sairnvet ... audit` was BLOCKED against `stonedesk
+   safehtml audit, session lock auth` — different subject, different file,
+   sole overlap the word "audit". Earlier the same night, `sairnfreedom
+   phase 2` was blocked by `sairnfreedom phase 3` on "phase" — same subject
+   there, so that one was arguably fair, but it blocked on the wrong reason.
+   **A block is a claim to verify, not a fact.** Read the named session's
+   actual task and file. If it is lexical, say so out loud and proceed —
+   **do not reword your task string to slip past the matcher.** That is
+   trivially easy and is exactly how a gate gets hollowed out; write the
+   claim directly with a note recording why, the same standard as saying so
+   when you use `SAIRN_SEED_GATE=off`.
+
+2. **`list` and `check` DESTROY an uncommitted claim.** Both run
+   `git checkout origin/main -- .claude/claims` (lines ~198-202, ~292-293)
+   to read claims as they exist on origin. That overwrites the working tree.
+   A claim written but not yet committed is **silently gone**, with no error
+   and no diff — a read-only-sounding command that mutates. **Commit and
+   push the claim first, then run `list` to confirm it.** The tool's own
+   `claim` path does this correctly; only hand-written claims are exposed.
+
 See the `sairn-session-handoff` skill for the full convention, the
 reasoning, and the template.
 
