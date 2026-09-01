@@ -47,7 +47,30 @@ const JURISDICTION_LABELS = {
   nv: 'Nevada',
   or: 'Oregon',
   ok: 'Oklahoma',
-  sc: 'South Carolina'
+  sc: 'South Carolina',
+  // ADDED 2026-09-01. TWELVE OF THE THIRTY-SIX LIVE JURISDICTIONS WERE
+  // DISPLAYING AS A BARE TWO-LETTER CODE -- al, ar, de, hi, id, ks, md, ms,
+  // ne, nh, nm and wi -- because jurLabel() falls back to `|| code` and a
+  // missing entry therefore looks exactly like a deliberate one. Every one of
+  // them was seeded after this map was last extended, and nothing ever
+  // compared the two. A lawyer choosing a jurisdiction saw "nh", not
+  // "New Hampshire".
+  //
+  // The guard against a thirteenth is api/_lib/deadline-jurisdiction-labels.test.js,
+  // which derives the jurisdiction set from the seed files on disk and fails
+  // if any of them lacks a label here.
+  al: 'Alabama',
+  ar: 'Arkansas',
+  de: 'Delaware',
+  hi: 'Hawaii',
+  id: 'Idaho',
+  ks: 'Kansas',
+  md: 'Maryland',
+  ms: 'Mississippi',
+  ne: 'Nebraska',
+  nh: 'New Hampshire',
+  nm: 'New Mexico',
+  wi: 'Wisconsin'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',
