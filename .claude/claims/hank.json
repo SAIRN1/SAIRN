@@ -138,8 +138,8 @@
       "task": "coverage disclosure contract standardisation",
       "claimed_at": "2026-09-01T18:43:04Z",
       "claimed_at_epoch": 1788288184.8469737,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T18:52:08Z"
     }
   ]
 }
