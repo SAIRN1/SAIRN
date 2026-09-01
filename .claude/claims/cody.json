@@ -81,6 +81,16 @@
       "claimed_at_epoch": 1788266184.5213354,
       "status": "released",
       "released_at": "2026-09-01T12:59:39Z"
+    },
+    {
+      "id": "cody-1788267897",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "invoice tax provenance misreport",
+      "claimed_at": "2026-09-01T13:04:57Z",
+      "claimed_at_epoch": 1788267897.332632,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
