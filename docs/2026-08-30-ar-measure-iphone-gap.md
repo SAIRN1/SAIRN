@@ -140,6 +140,81 @@ missing" as a bug.
 - Any announced Apple timeline for WebXR. Absence of evidence in the sources
   read, not evidence of absence.
 
+---
+
+# Addendum — 2026-09-01: re-verified live, three corrections
+
+Re-run from scratch against the current files and current sources, because a
+prior session's conclusion is a claim until re-checked. **The conclusion holds
+unchanged.** Three details in the body above are wrong or imprecise.
+
+## Re-verified, live, today
+
+- **`stonedesk.html` still guards.** `checkARSupport()` at line 20222 returns
+  `false` immediately when `!navigator.xr`; `attachARMeasure` at 20342 does
+  `if (!supported) return;` at 20346 before creating the button. Unchanged. The
+  most recent commits touching the file (`5611421`, `6d1a9c4`, `2b03b0a`) were
+  export/delete-scope fixes and did not go near this module.
+- **iOS Safari still has no WebXR.** `browser-compat-data` `api/XRSystem.json`
+  today: `XRSystem` and `isSessionSupported` both `safari: version_added:
+  false`, `safari_ios: "mirror"`. `caniuse` today: iOS Safari **3.2 – 26.5 not
+  supported, 26.6 not supported** — 26.6 is the newest version listed. No change
+  in two days and none announced.
+
+## Correction 1 — 8th Wall is *worse* than described, not better
+
+The body says what survives is a "free, MIT-licensed, unmaintained
+world-tracking/SLAM binary." **That conflates two separately-licensed things.**
+The MIT open-source engine framework **does not include SLAM**. SLAM ships as
+the "Distributed Engine Binary" under a **separate binary-only licence** (free
+for commercial and noncommercial use, released January 2026).
+
+So the actual proposition is: adopt an **unmaintained binary blob under a
+non-MIT licence** as the accuracy-critical component of a feature whose output
+is a pricing input. The recommendation to rule it out is unchanged and now rests
+on firmer ground.
+
+Also newly noted: existing hosted 8th Wall projects keep running until
+**2027-02-28**, after which hosting is decommissioned and remaining project data
+is **deleted**. Irrelevant to SAIRN (we host nothing there), but it is why the
+platform still appears alive in casual searches.
+
+## Correction 2 — "all five carry the same guard" was imprecise
+
+All five do guard. They do not all do it the same way, and a future grep for the
+common shape will produce a false negative:
+
+| App | Guard |
+|---|---|
+| `stonedesk.html` | `checkARSupport()` → `if (!supported) return;` (20345) |
+| `sairnbuild.html` | same shape (7425–7426) |
+| `sairngrounds.html` | same shape (4044–4045) |
+| `sairnscape.html` | same shape, **twice** — see correction 3 |
+| `sairndesign.html` | **different** — inline `if(!('xr' in navigator)||!navigator.xr||!navigator.xr.isSessionSupported)return;` at line 1832, no `checkARSupport` helper |
+
+`sairndesign` has no `checkARSupport` symbol at all. Grepping for it reports the
+app as having no AR implementation. It has one, and it is correctly guarded.
+
+## Correction 3 — `sairnscape` ships two AR modules, not one
+
+Two independent IIFEs, each with its own `checkARSupport` (lines 918 and 2990)
+and its own guarded entry point: `window.attachARMeasure` (1032, targets
+`#userInput`) and `window.installScpDesignARZone` (3107, targets
+`#scp-dw-ar-zone`). **Both guard correctly** — 1035–1036 and 3109–3110.
+
+Not a Guardian check-13 duplicate-global violation: `checkARSupport` is
+IIFE-scoped in both, and the two window-level exports have distinct names. Worth
+recording because a duplicate-symbol scan will flag it and the flag is a false
+positive.
+
+## What the re-run did not change
+
+Sections 3, 4 and 5 above stand as written. AR Quick Look still has no
+measurement API. The reference-object photo approach is still the only
+buildable-now iPhone path. The recommendation — **do not price AR measurement as
+a headline capability; describe it as an Android bonus** — is unchanged and is
+the answer to the pricing conversation.
+
 ## Sources
 
 - [MDN browser-compat-data — `api/XRSystem.json`](https://raw.githubusercontent.com/mdn/browser-compat-data/main/api/XRSystem.json)
@@ -147,3 +222,5 @@ missing" as a bug.
 - [Apple — AR Quick Look](https://developer.apple.com/augmented-reality/quick-look/)
 - [Road to VR — 8th Wall goes open source as hosted services go offline](https://roadtovr.com/niantic-webar-platform-8th-wall-open-source/)
 - [Apple Developer Forums — immersive-ar on visionOS](https://developer.apple.com/forums/thread/743655)
+
+- [Niantic Spatial — Goodbye 8thwall.com. Hello 8thwall.org.](https://info.nianticspatial.com/blog/8th-wall-open-source)
