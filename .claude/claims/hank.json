@@ -140,6 +140,16 @@
       "claimed_at_epoch": 1788288184.8469737,
       "status": "released",
       "released_at": "2026-09-01T18:52:08Z"
+    },
+    {
+      "id": "hank-1788288764",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "delaware seed build",
+      "claimed_at": "2026-09-01T18:52:44Z",
+      "claimed_at_epoch": 1788288764.083121,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
