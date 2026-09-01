@@ -462,6 +462,32 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 </div>
+<div class="modal" id="benmodal">
+  <div class="mbox">
+    <div class="mtitle">Benefits Enrollment</div>
+    <div id="bn-who" style="font-size:13px;color:var(--muted,#666);margin-bottom:10px;"></div>
+    <div class="fr"><div class="fg"><label>Health</label><select id="bnhealth"><option value="no">Not enrolled</option><option value="yes">Enrolled</option></select></div><div class="fg"><label>Dental</label><select id="bndental"><option value="no">Not enrolled</option><option value="yes">Enrolled</option></select></div></div>
+    <div class="fr"><div class="fg"><label>401(k)</label><select id="bnk401"><option value="no">Not enrolled</option><option value="yes">Enrolled</option></select></div><div class="fg"><label>Employer Cost / Month ($)</label><input id="bncost" type="number" placeholder="520"></div></div>
+    <div style="font-size:12px;color:var(--muted,#666);margin-top:6px;">Employer cost is what YOU pay per month for this employee. Leave it at 0 if you are not tracking it &mdash; the Benefits Cost KPI then simply reports less, rather than assuming a figure.</div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeBenModal()">Cancel</button>
+      <button class="btn bp" onclick="saveBenEnroll()">Save Enrollment</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="certmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Certification Renewal</div>
+    <div id="ct-who" style="font-size:13px;color:var(--muted,#666);margin-bottom:10px;"></div>
+    <div class="fr"><div class="fg"><label>New Completion Date</label><input id="ctdone" type="date"></div><div class="fg"><label>New Expiry Date</label><input id="ctexp" type="date"></div></div>
+    <div class="fr"><div class="fg"><label>Cost ($, optional)</label><input id="ctcost" type="number" placeholder="180"></div><div class="fg"><label>Hours (optional)</label><input id="cthrs" type="number" placeholder="30"></div></div>
+    <div style="font-size:12px;color:var(--muted,#666);margin-top:6px;">Status is not entered here -- it is worked out from the expiry date every time the panel renders, so it cannot go stale. Cost and hours are added to the panel's Training Spend and Hours Logged totals.</div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeCertModal()">Cancel</button>
+      <button class="btn bp" onclick="saveCertRenewal()">Save Renewal</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="vendmodal">
   <div class="mbox">
     <div class="mtitle">Add Vendor</div>
@@ -525,6 +551,11 @@ textarea{resize:vertical;min-height:80px;}
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
     <tbody id="pytbody"></tbody></table></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Payroll Run History</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">Each row records that a payroll calculation was performed on that date, with the figures it produced. <strong>No payment is sent from this app</strong> &mdash; process the run through your bank or payroll provider.</div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Run Date</th><th>Employees</th><th>Gross</th><th>Employer FICA</th><th>Benefits (assumed)</th><th>Total</th><th>What this is</th></tr></thead>
+    <tbody id="prtbody"></tbody></table></div>
+  </div></div>
 </div>
 
 <!-- BENEFITS -->
@@ -568,6 +599,11 @@ textarea{resize:vertical;min-height:80px;}
       <div class="srow"><span class="slbl">Tool Allowance</span><span class="sval">$500/yr fabricators</span></div>
     </div></div>
   </div>
+  <div class="card"><div class="ch"><span class="ct">Enrollment</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">The KPIs above count these elections. The plan cards are the offering; this is who is actually on it. Employer cost is the monthly employer share you enter per employee &mdash; it is not derived from the plan cards.</div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Health</th><th>Dental</th><th>401(k)</th><th>Employer Cost/Mo</th><th></th></tr></thead>
+    <tbody id="bntbody"></tbody></table></div>
+  </div></div>
 </div>
 
 <!-- PERFORMANCE -->
@@ -599,7 +635,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Training Spend</div><div class="kval" id="tr-bud">$0</div><div class="kt">Recorded</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th><th></th></tr></thead>
     <tbody id="trtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -708,6 +744,8 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Forecast Variance</div><div class="kval" id="bu-var">$0</div><div class="kt">vs plan</div></div>
   </div>
   <div class="card"><div class="cb">
+    <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">YTD Actual is the opening baseline for each category plus every <strong>approved</strong> expense recorded since that baseline was taken. Pending expenses are requests, not spend, and are excluded.</div>
+    <div id="bu-unmapped" style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;"></div>
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Category</th><th>Annual Budget</th><th>YTD Actual</th><th>Remaining</th><th>% Used</th><th>Status</th></tr></thead>
     <tbody id="butbody"></tbody></table></div>
   </div></div>
@@ -1044,7 +1082,7 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_attention_digest',
-  'Get a prioritized digest of four key business areas: budget categories over 90% (critical) or above 75% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). For AP, training, and performance items, findings are computed from real dates, not from stored status labels; a bill or review with no due date on file is flagged as a warning rather than silently skipped. IMPORTANT: This tool does NOT check accounts receivable (overdue customer invoices), which is a separate signal tracked elsewhere in the app. IMPORTANT: budget figures come from a static budget table (sb_bud) that has no live connection to recorded expenses -- no expense-entry path in this app ever updates sb_bud\'s actual-spend values. Budget utilization reflects the seeded/manually-entered baseline only, not a real-time sync with recorded expenses -- do not present it as reflecting expenses entered since setup. Synthesize across the covered domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
+  'Get a prioritized digest of four key business areas: budget categories over 90% (critical) or above 75% (warning) of annual spend, AP bills past due (critical) or due within 14 days (warning), employee certifications expired (critical) or expiring within 30 days (warning), and performance reviews overdue (critical) or due within 14 days (warning). For AP, training, and performance items, findings are computed from real dates, not from stored status labels; a bill or review with no due date on file is flagged as a warning rather than silently skipped. IMPORTANT: This tool does NOT check accounts receivable (overdue customer invoices), which is a separate signal tracked elsewhere in the app. IMPORTANT (updated 2026-09-01 -- this description previously said the budget had no live connection to expenses, which is no longer true): budget utilization is the opening baseline for each category PLUS every APPROVED expense recorded since that baseline was taken. Pending expenses are deliberately excluded, so utilization can understate committed spend. Expense categories that map to no budget category are excluded from every figure and reported separately on the Budget panel -- if the user asks why a total looks low, that is the first thing to check. Do not describe the budget as either "static" or as a full real-time sync; it is a baseline plus recorded approved spend, and saying so precisely is the point. Synthesize across the covered domains in your answer when more than one is present -- do not just list one domain and ignore the others.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1406,7 +1444,7 @@ function seed(){
 }
 
 function init(){
-  seed();rDash();rEmps();rTS();rPay();rInvs();rExps();rAP();rAR();rVends();rBud();rTax();rHire();rTrain();rPerf();rBenKPIs();
+  seed();rDash();rEmps();rTS();rPay();rPayRuns();rInvs();rExps();rAP();rAR();rVends();rBud();rTax();rHire();rTrain();rPerf();rBenKPIs();rBenTable();
   $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   renderSyncStatus();
   var lastSync=ld('sb_sync',null);if(lastSync)$('co-sync').textContent=lastSync;
@@ -1418,16 +1456,31 @@ function pbar(pct,color){return '<div class="pbar"><div class="pfill" style="wid
 // Cross-domain attention digest (2026-08-10) -- synthesizes budget
 // overages, AP bills nearing/past due, expiring certs, and overdue
 // performance reviews into one prioritized list. Pure function, no DOM,
-// no dependency on rBud()/rAP()/rTrain()/rPerf() -- reads sb_bud/sb_ap/
-// sb_train/sb_perf directly.
+// no dependency on rBud()/rAP()/rTrain()/rPerf().
 //
 // IMPORTANT: urgency is computed from the real date fields (due/exp),
-// NEVER from the stored `status` field on sb_ap/sb_train/sb_perf --
-// all three are confirmed stale and never recomputed after creation
-// (no edit path exists for sb_train at all; the AP "Pay" button is a
-// no-op toast; sb_perf status is chosen once at creation and never
-// auto-flips to overdue). Trusting those labels would silently miss
-// real problems -- the entire reason this function exists.
+// NEVER from a stored `status` label. That rule is unchanged and still the
+// entire reason this function exists.
+//
+// THE REASONS BEHIND IT CHANGED ON 2026-09-01 AND ARE RESTATED RATHER THAN
+// LEFT TO ROT. The original text justified the rule by saying no edit path
+// existed anywhere: "no edit path exists for sb_train at all; the AP Pay
+// button is a no-op toast". Two of those three facts are now false, and a
+// stale reason is worse than no reason -- a later reader would have trusted a
+// justification that no longer holds:
+//   * sb_ap DOES have a real edit path now -- sbPayBill() writes status,
+//     bal and paidDate. The rule still stands for it, because a bill that is
+//     Open and three weeks past due is exactly what this digest must catch,
+//     and no status label reports the passage of time.
+//   * sb_train no longer stores `status` AT ALL -- sbCertStatus() derives it
+//     from `exp` on every render, so the panel and this function now agree
+//     instead of contradicting each other on screen.
+//   * sb_perf is unchanged: chosen once at creation, never auto-flips to
+//     overdue. This is the one case the original warning still describes
+//     exactly.
+//
+// Budget figures come from sbBudgetActuals(), not from sb_bud directly --
+// see its header for why the store no longer holds an `actual` field.
 // See docs/superpowers/specs/2026-08-10-sairnbiz-attention-digest-design.md
 function checkAttentionItems() {
   var findings = [];
@@ -1435,7 +1488,12 @@ function checkAttentionItems() {
   var FOURTEEN_DAYS_MS = 14 * 86400000;
   var THIRTY_DAYS_MS = 30 * 86400000;
 
-  ld('sb_bud', []).forEach(function (b) {
+  // Repointed 2026-09-01 to sbBudgetActuals(). Reading sb_bud.actual directly
+  // would return undefined once the store migrated to baseline + recorded, so
+  // every utilisation would compute NaN, every comparison would be false, and
+  // the over-budget warnings would simply STOP FIRING -- with no error anywhere.
+  // A silent failure introduced by a fix is still a silent failure.
+  sbBudgetActuals().rows.forEach(function (b) {
     var u = b.annual > 0 ? Math.round(b.actual / b.annual * 100) : 0;
     if (u > 90) {
       findings.push({ severity: 'critical', domain: 'budget', subject: b.cat, message: b.cat + ' is over budget: ' + u + '% of annual (' + fmt(b.actual) + ' of ' + fmt(b.annual) + ').' });
@@ -1733,6 +1791,30 @@ function checkPayrollAnomalies() {
   return findings;
 }
 
+// One place the payroll figures are worked out, used by BOTH the KPI row and
+// the run record. Extracted 2026-09-01 when runPayroll() started persisting a
+// record: computing the same totals twice in two functions is how a saved
+// record ends up disagreeing with the screen it was saved from.
+//
+// The assumptions are the ones the panel already made, unchanged and now
+// stated in one place rather than buried in a render loop: 80 hours for full
+// time and 32 otherwise, employer-side FICA at 7.65%, and a FLAT $520 per
+// active employee for benefits. That $520 is an assumption, not a figure from
+// any benefits ledger -- the per-employee `ben.cost` on sb_emps is real and
+// differs (610, 480, ...). They disagree today and this does not change that;
+// it is recorded here and in the saved record so the number cannot be read as
+// something it is not.
+function sbPayrollTotals(){
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  var gross=0,taxes=0,bens=0;
+  emps.forEach(function(e){
+    var hrs=e.type==='Full Time'?80:32;
+    var g=e.rate*hrs;
+    gross+=g; taxes+=g*0.0765; bens+=520;
+  });
+  return {employees:emps.length,gross:gross,taxes_fica:taxes,benefits:bens,total:gross+taxes+bens};
+}
+
 function rPay(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var gross=0,taxes=0,bens=0;
@@ -1793,7 +1875,44 @@ function runPayroll() {
     toast('Cannot run payroll -- fix the flagged issue(s) first', 5000);
     return;
   }
-  toast('Payroll calculated - no real payment was sent. Process through your bank or payroll provider.', 4000);
+  // Persist the run (2026-09-01). Before this, running payroll produced a
+  // toast and nothing else -- there was no record anywhere that it had been
+  // done, by whom, or for what figures, so "did we run payroll this period?"
+  // was unanswerable from inside the app.
+  //
+  // WHAT THIS RECORD IS, AND THE WORDING IS THE POINT: it is a record that a
+  // CALCULATION was performed. No money moves anywhere in this app. The record
+  // carries that sentence itself rather than relying on the panel heading to
+  // convey it, because a CSV or a later reader sees the row and not the page.
+  var t=sbPayrollTotals();
+  var runs=ld('sb_payruns',[]);
+  runs.unshift({
+    id:'PR'+Date.now().toString(36),
+    run_on:sbLocalToday(),
+    employees:t.employees,
+    gross:t.gross,
+    taxes_fica:t.taxes_fica,
+    benefits:t.benefits,
+    total:t.total,
+    basis:'80h full time / 32h otherwise, employer FICA 7.65%, benefits assumed flat $520 per active employee',
+    note:'Calculation only -- no payment was sent from this app.'
+  });
+  st('sb_payruns',runs);
+  rPayRuns();
+  toast('Payroll calculated and recorded - no real payment was sent. Process through your bank or payroll provider.', 4000);
+}
+
+function rPayRuns(){
+  var el=$('prtbody');
+  if(!el) return;
+  var runs=ld('sb_payruns',[]);
+  if(!runs.length){
+    el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted,#666)">No payroll runs recorded yet. Running payroll records the calculation here.</td></tr>';
+    return;
+  }
+  el.innerHTML=runs.map(function(r){
+    return'<tr><td><strong>'+fdate(r.run_on)+'</strong></td><td style="text-align:center;">'+r.employees+'</td><td>'+fmt(r.gross)+'</td><td>'+fmt(r.taxes_fica)+'</td><td>'+fmt(r.benefits)+'</td><td><strong>'+fmt(r.total)+'</strong></td><td><span class="badge bx">Calculation only</span></td></tr>';
+  }).join('');
 }
 
 function rInvs(){
@@ -1830,15 +1949,65 @@ function rExps(){
   $('extbody').innerHTML=exps.map(function(e){var sc=e.status==='Approved'?'bg':'bw';return'<tr><td>'+fdate(e.date)+'</td><td>'+H(e.desc)+'</td><td>'+H(e.cat)+'</td><td>'+H(e.vendor)+'</td><td><strong>'+fmt(e.amt)+'</strong></td><td><span class="badge '+(e.ded==='Yes'?'bg':'bx')+'">'+H(e.ded)+'</span></td><td><span class="badge '+(e.receipt==='Yes'?'bg':'bw')+'">'+H(e.receipt)+'</span></td><td><span class="badge '+sc+'">'+H(e.status)+'</span></td></tr>';}).join('');
 }
 
+// Bills were stored with NO identifier of any kind -- the table rendered
+// straight off array order, so an action button had no stable handle to name a
+// row by. Array index is not one: it is only correct until something sorts,
+// filters, or removes. Ids are assigned on read and written back once, so
+// existing rows migrate in place. Same derive-then-persist shape as the
+// SAIRNvet wellness status migration.
+function sbNormalizeBills(bills){
+  var changed=false;
+  var seen={};
+  bills.forEach(function(b){ if(b.id) seen[b.id]=true; });
+  bills.forEach(function(b,i){
+    if(b.id) return;
+    // Collision-checked rather than assumed unique: two migration passes in
+    // the same millisecond would otherwise be able to mint the same id.
+    var id, n=0;
+    do { id='AP'+Date.now().toString(36)+'-'+(i+n); n++; } while(seen[id]);
+    seen[id]=true; b.id=id; changed=true;
+  });
+  if(changed) st('sb_ap',bills);
+  return bills;
+}
+
 function rAP(){
-  var bills=ld('sb_ap',[]);
+  var bills=sbNormalizeBills(ld('sb_ap',[]));
   var tot=bills.reduce(function(s,b){return s+b.bal;},0);
   var wk=bills.filter(function(b){return b.status==='Open';}).reduce(function(s,b){return s+b.bal;},0);
   var ov=bills.filter(function(b){return b.status==='Overdue';}).length;
   var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
   var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
   $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
-  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Marked paid\')">Pay</button></td></tr>';}).join('');
+  $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+(b.status==='Paid'?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>':'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>')+'</td></tr>';}).join('');
+}
+
+// Replaces onclick="toast('Marked paid')" -- a button whose entire action was
+// a success message. It wrote nothing: the bill was still Open after a reload,
+// while the user had been told otherwise. That is a false assurance in a money
+// panel, not a missing feature, which is why it was fixed as a bug rather than
+// scheduled as one.
+//
+// Shape matches the AR side, which already tracks a real paid figure and a
+// paidDate on sb_invs, so the two ledgers describe payment the same way.
+// paidDate uses sbLocalToday(), not a UTC date -- fdate() renders it back and a
+// bill paid after 8pm would otherwise display tomorrow.
+function sbPayBill(id){
+  var bills=sbNormalizeBills(ld('sb_ap',[]));
+  var b=null;
+  for(var i=0;i<bills.length;i++){ if(bills[i].id===id){ b=bills[i]; break; } }
+  // A missing row is reported, never silently ignored: the button was rendered
+  // from this same store, so not finding it means something is genuinely wrong.
+  if(!b){ toast('That bill is no longer on file - refresh and try again',4000); return; }
+  if(b.status==='Paid'){ toast(b.vendor+' - already marked paid'); return; }
+  b.status='Paid';
+  b.bal=0;
+  b.paidDate=sbLocalToday();
+  st('sb_ap',bills);
+  rAP();rDash();
+  // Names the real vendor and the real amount, so the confirmation is checkable
+  // against the row rather than being a generic reassurance.
+  toast('Marked paid: '+b.vendor+' '+fmt(b.amt)+' - recorded in this app only, no payment was sent',5000);
 }
 
 function rAR(){
@@ -1866,8 +2035,84 @@ function rVends(){
   $('vntbody').innerHTML=v.map(function(x){return'<tr><td><strong>'+H(x.name)+'</strong></td><td>'+H(x.cat)+'</td><td>'+H(x.contact)+'</td><td>'+H(x.phone)+'</td><td>'+fmt(x.ytd)+'</td><td>'+H(x.terms)+'</td><td><span class="badge '+(x.w9==='Yes'?'bg':'br')+'">'+H(x.w9)+'</span></td><td><span class="badge bg">Active</span></td></tr>';}).join('');
 }
 
+// Budget actuals, wired to recorded expenses -- 2026-09-01.
+//
+// THE OBVIOUS FIX WOULD HAVE BEEN WRONG. The open-work row said "derive
+// actuals from the expense store rather than a separate field". Done
+// literally, YTD Actual drops from $517,592 to the sum of eight seeded June
+// expenses, because sb_bud.actual is a YEAR-TO-DATE figure and sb_exps holds
+// only recent rows. That is not a sync, it is data loss wearing a fix.
+//
+// So the stored figure is kept and renamed for what it actually is -- an
+// opening BASELINE -- and expenses recorded from that point on are added to
+// it. `baselineAsOf` is stamped at migration so the expenses already sitting
+// in the store when the baseline was taken are NOT counted twice; only rows
+// dated after it are. A re-run adds nothing, because the baseline never moves.
+//
+// TWO JUDGMENTS STATED RATHER THAN BURIED:
+//   1. Only 'Approved' expenses count. A pending expense is a request, not
+//      spend, and counting it would overstate utilisation on the exact KPI
+//      that drives checkAttentionItems' "over budget" warnings.
+//   2. The category vocabularies genuinely differ between the two stores
+//      (sb_exps says "Tools", sb_bud says "Equipment & Tools"). The map below
+//      is explicit. Anything it does not cover is NOT silently dropped and
+//      NOT guessed into a nearby line -- it is totalled and named on screen,
+//      so an uncounted category is visible rather than quietly missing.
+var SB_EXP_TO_BUDGET={
+  'Materials':'Materials / COGS',
+  'Tools':'Equipment & Tools',
+  'Insurance':'Insurance',
+  'Vehicle':'Vehicle & Fuel',
+  'Marketing':'Marketing',
+  'Software':'Software & Tech'
+};
+
+function sbMigrateBudget(){
+  var b=ld('sb_bud',[]);
+  var changed=false;
+  var today=sbLocalToday();
+  b.forEach(function(x){
+    if(x.baseline===undefined){
+      x.baseline=x.actual||0;
+      x.baselineAsOf=today;
+      delete x.actual;   // one source of truth; `actual` is derived from here on
+      changed=true;
+    }
+  });
+  if(changed) st('sb_bud',b);
+  return b;
+}
+
+// Returns {rows:[{cat,annual,baseline,recorded,actual}], unmapped:{cat:amt}, unmappedTotal}
+function sbBudgetActuals(){
+  var b=sbMigrateBudget();
+  var byCat={},unmapped={},unmappedTotal=0;
+  ld('sb_exps',[]).forEach(function(e){
+    if(e.status!=='Approved') return;
+    var row=null;
+    for(var i=0;i<b.length;i++){ if(b[i].cat===SB_EXP_TO_BUDGET[e.cat]){ row=b[i]; break; } }
+    // Dated on or before the baseline means it is already inside the baseline
+    // figure. Counting it again is the double-count this whole design avoids.
+    if(row && e.date && e.date>row.baselineAsOf){ byCat[row.cat]=(byCat[row.cat]||0)+(e.amt||0); return; }
+    if(!row){ unmapped[e.cat]=(unmapped[e.cat]||0)+(e.amt||0); unmappedTotal+=(e.amt||0); }
+  });
+  var rows=b.map(function(x){
+    var rec=byCat[x.cat]||0;
+    return {cat:x.cat,annual:x.annual,baseline:x.baseline||0,recorded:rec,actual:(x.baseline||0)+rec};
+  });
+  return {rows:rows,unmapped:unmapped,unmappedTotal:unmappedTotal};
+}
+
 function rBud(){
-  var b=ld('sb_bud',[]);var tot=b.reduce(function(s,x){return s+x.annual;},0);var act=b.reduce(function(s,x){return s+x.actual;},0);
+  var bd=sbBudgetActuals();
+  var b=bd.rows;var tot=b.reduce(function(s,x){return s+x.annual;},0);var act=b.reduce(function(s,x){return s+x.actual;},0);
+  var un=$('bu-unmapped');
+  if(un){
+    var names=Object.keys(bd.unmapped);
+    un.innerHTML=names.length
+      ? '<strong>'+fmt(bd.unmappedTotal)+'</strong> of approved expenses is in no budget category and is <strong>not</strong> counted above: '+names.map(function(n){return H(n)+' '+fmt(bd.unmapped[n]);}).join(', ')+'. Add a matching budget category, or treat these figures as excluding it.'
+      : 'Every approved expense category maps to a budget line.';
+  }
   var rem=tot-act;var pct=tot>0?Math.round(act/tot*100):0;var fc=act*(12/6);var var2=tot-fc;
   $('bu-total').textContent=fmt(tot);$('bu-actual').textContent=fmt(act);$('bu-rem').textContent=fmt(rem);$('bu-pct').textContent=pct+'%';$('bu-var').textContent=fmt(var2);
   $('butbody').innerHTML=b.map(function(x){var u=x.annual>0?Math.round(x.actual/x.annual*100):0;var sc=u>90?'br':u>75?'bw':'bg';return'<tr><td><strong>'+H(x.cat)+'</strong></td><td>'+fmt(x.annual)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.annual-x.actual)+'</td><td>'+pbar(u,(u>90?'var(--danger)':u>75?'var(--warn)':'var(--p)'))+'<div style="font-size:11px;text-align:right;margin-top:2px">'+u+'%</div></td><td><span class="badge '+sc+'">'+(u>90?'Over Budget':u>75?'Watch':'On Track')+'</span></td></tr>';}).join('');
@@ -1916,6 +2161,68 @@ function rBenKPIs(){
   $('bn-cpe').textContent=enrolled.length?fmt(Math.round(totCost/enrolled.length)):'$0';
 }
 
+// The Benefits panel had five KPIs counting `e.ben` on sb_emps and NO way to
+// set it. The data shape already existed and was already read by rBenKPIs --
+// what was missing was only the write path, so this reuses that shape rather
+// than introducing a second benefits store that would then have to be
+// reconciled with the first.
+function rBenTable(){
+  var el=$('bntbody');
+  if(!el) return;
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+  if(!emps.length){
+    el.innerHTML='<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--muted,#666)">No active employees on the roster.</td></tr>';
+    return;
+  }
+  function yn(v){ return v?'<span class="badge bg">Yes</span>':'<span class="badge bx">No</span>'; }
+  el.innerHTML=emps.map(function(e){
+    var b=e.ben||{};
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+yn(b.health)+'</td><td>'+yn(b.dental)+'</td><td>'+yn(b.k401)+'</td><td>'+(b.cost?fmt(b.cost):'--')+'</td><td><button class="btn bo bs" onclick="openBenEnroll(\''+H(e.id)+'\')">Edit</button></td></tr>';
+  }).join('');
+}
+
+var sbBenId=null;
+function openBenEnroll(id){
+  var emps=ld('sb_emps',[]);
+  var e=null;
+  for(var i=0;i<emps.length;i++){ if(emps[i].id===id){ e=emps[i]; break; } }
+  if(!e){ toast('That employee is no longer on file - refresh and try again',4000); return; }
+  var b=e.ben||{};
+  sbBenId=id;
+  $('bn-who').textContent=e.fn+' '+e.ln+' — '+(e.role||'')+' ('+(e.type||'')+')';
+  $('bnhealth').value=b.health?'yes':'no';
+  $('bndental').value=b.dental?'yes':'no';
+  $('bnk401').value=b.k401?'yes':'no';
+  $('bncost').value=b.cost||'';
+  $('benmodal').classList.add('on');
+}
+function closeBenModal(){ sbBenId=null; $('benmodal').classList.remove('on'); }
+function saveBenEnroll(){
+  var emps=ld('sb_emps',[]);
+  var e=null;
+  for(var i=0;i<emps.length;i++){ if(emps[i].id===sbBenId){ e=emps[i]; break; } }
+  if(!e){ toast('That employee is no longer on file - refresh and try again',4000); return; }
+  var c=parseFloat($('bncost').value);
+  // A negative employer cost is a typo, not a credit. Refused rather than
+  // stored, because it would quietly pull the Benefits Cost KPI down and the
+  // total would look plausible while being wrong.
+  if(!isNaN(c)&&c<0){ toast('Employer cost cannot be negative'); return; }
+  e.ben={
+    health:$('bnhealth').value==='yes',
+    dental:$('bndental').value==='yes',
+    k401:$('bnk401').value==='yes',
+    cost:(!isNaN(c)&&c>0)?c:0
+  };
+  st('sb_emps',emps);
+  closeBenModal();
+  rBenKPIs();rBenTable();
+  var on=[];
+  if(e.ben.health)on.push('health');
+  if(e.ben.dental)on.push('dental');
+  if(e.ben.k401)on.push('401k');
+  toast('Enrollment saved: '+e.fn+' '+e.ln+' — '+(on.length?on.join(', '):'not enrolled in any plan'),4000);
+}
+
 function rHire(){
   var h=ld('sb_hire',[]);var apps=h.reduce(function(s,x){return s+x.apps;},0);
   var ints=h.filter(function(x){return x.stage==='Interviewing';}).length;
@@ -1928,13 +2235,91 @@ function rHire(){
   $('htbody').innerHTML=h.map(function(x){var sc={Active:'bg',Paused:'bw',Closed:'bx'}[x.status]||'bx';var ss={Screening:'bb',Interviewing:'bw','Offer Out':'bg',Closed:'bx'}[x.stage]||'bx';return'<tr><td><strong>'+H(x.pos)+'</strong></td><td>'+H(x.dept)+'</td><td style="text-align:center;">'+x.apps+'</td><td><span class="badge '+ss+'">'+H(x.stage)+'</span></td><td>'+fdate(x.posted)+'</td><td>'+H(x.rate)+'</td><td><span class="badge '+sc+'">'+H(x.status)+'</span></td><td><button class="btn bo bs" onclick="toast(\'Applicants - next build\')">View</button></td></tr>';}).join('');
 }
 
+// Certification status is DERIVED from the expiry date, never stored. The
+// stored `status` field it replaces was written once at creation and had no
+// edit path at all, so a cert that expired last year still displayed "Active"
+// forever -- and the "Expiring 90 Days" KPI counted that stale label rather
+// than any real date. checkAttentionItems() already refused to trust this
+// field for exactly that reason; this makes the panel agree with it instead of
+// contradicting it on screen.
+//
+// The stored field is DELETED on read rather than left beside the derived one:
+// two sources of truth for the same question is how the original defect
+// started. Same migration shape as the SAIRNvet wellness status.
+var SB_CERT_SOON_DAYS=90;
+function sbCertStatus(t){
+  if(!t||!t.exp) return 'No Expiry';
+  var ms=new Date(t.exp+'T00:00:00').getTime();
+  if(isNaN(ms)) return 'No Expiry';
+  var days=Math.floor((ms-new Date(sbLocalToday()+'T00:00:00').getTime())/86400000);
+  if(days<0) return 'Expired';
+  if(days<=SB_CERT_SOON_DAYS) return 'Expiring Soon';
+  return 'Active';
+}
+function sbNormalizeTrain(tr){
+  var changed=false,seen={};
+  tr.forEach(function(t){ if(t.id) seen[t.id]=true; });
+  tr.forEach(function(t,i){
+    if(!t.id){
+      var id,n=0;
+      do { id='TR'+Date.now().toString(36)+'-'+(i+n); n++; } while(seen[id]);
+      seen[id]=true; t.id=id; changed=true;
+    }
+    if('status' in t){ delete t.status; changed=true; }
+  });
+  if(changed) st('sb_train',tr);
+  return tr;
+}
+
 function rTrain(){
-  var tr=ld('sb_train',[]);var exp=tr.filter(function(t){return t.status==='Expiring Soon';}).length;
+  var tr=sbNormalizeTrain(ld('sb_train',[]));
+  var exp=tr.filter(function(t){return sbCertStatus(t)==='Expiring Soon';}).length;
   var hrs=tr.reduce(function(s,t){return s+(t.hrs||0);},0);
   var spend=tr.reduce(function(s,t){return s+(t.cost||0);},0);
   var incidents=ld('sb_incidents',[]).length;
   $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=hrs;$('tr-safe').textContent=incidents;$('tr-bud').textContent=fmt(spend);
-  $('trtbody').innerHTML=tr.map(function(t){var sc=t.status==='Active'?'bg':t.status==='Expiring Soon'?'bw':'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(t.status)+'</span></td></tr>';}).join('');
+  $('trtbody').innerHTML=tr.map(function(t){var stt=sbCertStatus(t);var sc={Active:'bg','Expiring Soon':'bw','No Expiry':'bx'}[stt]||'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(stt)+'</span></td><td><button class="btn bo bs" onclick="openCertRenew(\''+H(t.id)+'\')">Record Renewal</button></td></tr>';}).join('');
+}
+
+// The write path sb_train never had. It records the REAL transition a
+// certification goes through -- it was renewed on a date and now expires on a
+// later one -- rather than letting someone type a status word. A free status
+// dropdown would have re-created the exact defect being fixed: a label that
+// can disagree with the expiry date sitting next to it.
+var sbCertId=null;
+function openCertRenew(id){
+  var tr=sbNormalizeTrain(ld('sb_train',[]));
+  var t=null;
+  for(var i=0;i<tr.length;i++){ if(tr[i].id===id){ t=tr[i]; break; } }
+  if(!t){ toast('That certification is no longer on file - refresh and try again',4000); return; }
+  sbCertId=id;
+  $('ct-who').textContent=t.emp+' — '+t.cert+' (currently '+sbCertStatus(t).toLowerCase()+', expires '+fdate(t.exp)+')';
+  $('ctdone').value=sbLocalToday();
+  $('ctexp').value='';
+  $('ctcost').value='';
+  $('cthrs').value='';
+  $('certmodal').classList.add('on');
+}
+function closeCertModal(){ sbCertId=null; $('certmodal').classList.remove('on'); }
+function saveCertRenewal(){
+  var done=$('ctdone').value,exp=$('ctexp').value;
+  if(!done||!exp){ toast('Both the completion and expiry dates are required'); return; }
+  // A renewal that expires before it was completed is a typo, not a record.
+  // Refused rather than stored, because sbCertStatus would then read 'Expired'
+  // on a cert just renewed and the panel would look broken for no visible cause.
+  if(exp<=done){ toast('The expiry date must be after the completion date'); return; }
+  var tr=sbNormalizeTrain(ld('sb_train',[]));
+  var t=null;
+  for(var i=0;i<tr.length;i++){ if(tr[i].id===sbCertId){ t=tr[i]; break; } }
+  if(!t){ toast('That certification is no longer on file - refresh and try again',4000); return; }
+  t.done=done;
+  t.exp=exp;
+  var c=parseFloat($('ctcost').value); if(!isNaN(c)&&c>0) t.cost=(t.cost||0)+c;
+  var h=parseFloat($('cthrs').value); if(!isNaN(h)&&h>0) t.hrs=(t.hrs||0)+h;
+  st('sb_train',tr);
+  closeCertModal();
+  rTrain();
+  toast('Renewal recorded: '+t.emp+' — '+t.cert+', now '+sbCertStatus(t).toLowerCase(),4000);
 }
 
 function rPerf(){
@@ -2153,7 +2538,11 @@ function csv(type){
   if(type==='employees'){rows=[['ID','First','Last','Role','Dept','Type','Rate','Start','Status']];ld('sb_emps',[]).forEach(function(e){rows.push([e.id,e.fn,e.ln,e.role,e.dept,e.type,e.rate,e.start,e.status]);});}
   else if(type==='invoices'){rows=[['Invoice','Customer','Date','Due','Amount','Paid','Balance','Status']];ld('sb_invs',[]).forEach(function(i){rows.push([i.id,i.cust,i.date,i.due,i.amt,i.paid||0,i.amt-(i.paid||0),i.status]);});}
   else if(type==='vendors'){rows=[['ID','Name','Cat','Contact','Phone','YTD','Terms','W-9']];ld('sb_vends',[]).forEach(function(v){rows.push([v.id,v.name,v.cat,v.contact,v.phone,v.ytd,v.terms,v.w9]);});}
-  else if(type==='budget'){rows=[['Category','Budget','Actual','Remaining','% Used']];ld('sb_bud',[]).forEach(function(b){rows.push([b.cat,b.annual,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
+  // Same repoint as checkAttentionItems: sb_bud no longer stores `actual`, and
+  // an export of blank actuals is worse than no export. Baseline and recorded
+  // are separate columns so the exported figure can be reconciled rather than
+  // taken on trust.
+  else if(type==='budget'){rows=[['Category','Budget','Opening Baseline','Recorded Since','Actual','Remaining','% Used']];sbBudgetActuals().rows.forEach(function(b){rows.push([b.cat,b.annual,b.baseline,b.recorded,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
   else if(type==='payroll'){rows=[['Employee','Role','Type','Rate','Hours','Gross']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){var h=e.type==='Full Time'?80:32;rows.push([e.fn+' '+e.ln,e.role,e.type,e.rate,h,(e.rate*h).toFixed(2)]);});}
   else{rows=[['SAIRNbiz',type,new Date().toLocaleDateString()]];}
   var c=rows.map(function(r){return r.map(function(x){return'"'+String(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
