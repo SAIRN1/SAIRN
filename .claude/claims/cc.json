@@ -50,6 +50,16 @@
       "claimed_at_epoch": 1788262721.491689,
       "status": "released",
       "released_at": "2026-09-01T12:54:17Z"
+    },
+    {
+      "id": "cc-1788267486",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "event handler js-context escaping and markdown repoint",
+      "claimed_at": "2026-09-01T12:58:06Z",
+      "claimed_at_epoch": 1788267486.9324422,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
