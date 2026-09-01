@@ -4063,9 +4063,16 @@ function svRenderAllSpeciesPanels(){
 // sv_settings. Time Zone defaults to the browser's ACTUAL resolved zone
 // rather than a hardcoded 'America/New_York'. And a plain statement of where
 // the data lives, which is the honest replacement for the backup claim.
+// kennelCount added 2026-09-01. It deliberately has NO entry in `defaults`
+// below, unlike the other two: a kennel count is a fact about the customer's
+// building that this app cannot know, and the constant it replaces
+// (BOARDING_TOTAL_KENNELS = 20) asserted one. Unset renders as '—' here and
+// suppresses the denominator entirely in renderBoarding, rather than falling
+// back to a plausible number. Same standard as the backup-claim removal above.
 var SV_SETTING_FIELDS = [
   { key: 'practiceName', label: 'Practice Name' },
-  { key: 'timeZone',     label: 'Time Zone' }
+  { key: 'timeZone',     label: 'Time Zone' },
+  { key: 'kennelCount',  label: 'Total Kennels' }
 ];
 
 function getSettings(){
@@ -4130,6 +4137,17 @@ function saveSettingEdit(key){
   if(!el) return;
   var val = el.value.trim();
   if(!val){ showToast('Value cannot be empty','error'); return; }
+  // kennelCount is the one numeric field. Refuse non-numbers rather than
+  // storing them: getKennelCount() would parse "twenty" to null and the
+  // Boarding denominator would just silently not appear, which looks like
+  // the save failed for no reason. Say so instead.
+  if(key === 'kennelCount'){
+    var n = parseInt(val, 10);
+    if(!isFinite(n) || n <= 0 || String(n) !== val){
+      showToast('Total Kennels must be a whole number greater than 0','error');
+      return;
+    }
+  }
   var cfg = getSettings();
   cfg[key] = val;
   saveSettings(cfg);
@@ -4239,7 +4257,12 @@ function renderDocuments(){
   var list = getDocuments();
   var tbody = document.getElementById('docs-tbody');
   var today = new Date();
-  var thisMonth = today.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01). logDocUse() and addDocument() both write
+  // localToday(), so a UTC month boundary silently drops real uses: after 8pm
+  // local on the last of the month, UTC is already the next month and every
+  // local-dated use reads as "not this month". Same class as b08cb14.
+  // `today` stays a Date -- avgAge below does date arithmetic with it.
+  var thisMonth = localToday().slice(0,7);
   if(tbody){
     tbody.innerHTML = '';
     list.forEach(function(d){
@@ -4363,7 +4386,13 @@ function addMobileStop(){
   if(!unit||!location){ showToast('Unit and location required','error'); return; }
   var now = new Date();
   var list = getMobileStops();
-  list.push({id:'mv'+Date.now(), unit:unit, vet:vet||'--', location:location, date:now.toISOString().slice(0,10), arrival:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), departure:null, miles:miles});
+  // date:localToday(), not the UTC calendar date (2026-09-01). renderMobileVet
+  // filters `m.date===localToday()`, and arrival/departure below are already
+  // LOCAL clock times -- a UTC date stamped beside a local time is internally
+  // inconsistent as well as unmatchable. A stop added after 8pm Eastern got
+  // tomorrow's UTC date and vanished from Units Active / Calls Today / Miles
+  // Today on the very screen that logged it. Same class as b08cb14.
+  list.push({id:'mv'+Date.now(), unit:unit, vet:vet||'--', location:location, date:localToday(), arrival:String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'), departure:null, miles:miles});
   saveMobileStops(list);
   renderMobileVet();
   document.getElementById('mv-add-unit').value='';
@@ -4403,8 +4432,11 @@ function renderPetInsurance(){
     });
   }
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01). addClaim() writes submitted:localToday(),
+  // so "Claims Submitted MTD" dropped real claims across a UTC month boundary.
+  // The `var now` this replaces was used for nothing else in this function.
+  // Same class as b08cb14.
+  var thisMonth = localToday().slice(0,7);
   var mtd = list.filter(function(c){ return c.submitted && c.submitted.slice(0,7)===thisMonth; }).length;
   var reimbursedClaims = list.filter(function(c){ return typeof c.reimbursed==='number'; });
   var avgReimb = reimbursedClaims.length ? Math.round(reimbursedClaims.reduce(function(s,c){ return s+(c.reimbursed/c.amount*100); },0)/reimbursedClaims.length) : null;
@@ -6781,7 +6813,19 @@ function renderSoap(){
   }
 }
 
-var BOARDING_TOTAL_KENNELS = 20;
+// BOARDING_TOTAL_KENNELS = 20 REMOVED 2026-09-01. It was the denominator of
+// "Kennels Occupied 3/20" -- a hardcoded claim about how many kennels the
+// practice physically has, which this app has no way to know. The numerator
+// was real, which is exactly why it read as data. Same fabrication class as
+// the `Integrations Active 4` removed from Settings in beb5b5a, and the kind
+// a store+render-function signature check cannot see. The count is now the
+// optional `kennelCount` setting; when unset the denominator is omitted
+// rather than guessed. See SV_SETTING_FIELDS.
+function getKennelCount(){
+  var raw = (typeof getSettings === 'function') ? getSettings().kennelCount : null;
+  var n = parseInt(raw, 10);
+  return (isFinite(n) && n > 0) ? n : null;
+}
 var soapPendingNote = null;
 
 function getComms(){
@@ -6894,10 +6938,12 @@ function renderBoarding(){
     return s + (b.rate||0)*days;
   },0);
 
+  var kennelTotal = getKennelCount();
+
   var kpis = document.getElementById('boarding-kpis');
   if(kpis){
     kpis.innerHTML =
-      '<div class="kpi"><div class="kpi-label">Kennels Occupied</div><div class="kpi-value">'+occupied+'/'+BOARDING_TOTAL_KENNELS+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Kennels Occupied</div><div class="kpi-value">'+occupied+(kennelTotal!==null?'/'+kennelTotal:'')+'</div><div class="kpi-change">'+(kennelTotal!==null?'Of your configured total':'Set Total Kennels in Settings for capacity')+'</div></div>'+
       '<div class="kpi"><div class="kpi-label">Grooming Today</div><div class="kpi-value">'+groomingToday+'</div></div>'+
       '<div class="kpi"><div class="kpi-label">Avg Stay</div><div class="kpi-value">'+avgStay+'</div></div>'+
       '<div class="kpi"><div class="kpi-label">Revenue MTD</div><div class="kpi-value">$'+revenue.toLocaleString()+'</div></div>';
