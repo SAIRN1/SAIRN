@@ -18,8 +18,8 @@
       "task": "phase 3 gaming compliance ORC 2915",
       "claimed_at": "2026-09-01T11:01:40Z",
       "claimed_at_epoch": 1788260500.5269587,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T11:31:59Z"
     }
   ]
 }
