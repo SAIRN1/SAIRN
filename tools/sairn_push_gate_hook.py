@@ -32,9 +32,17 @@ TWO ENTRY POINTS, and the difference matters more than the checks do:
      in the Supabase editor. If that snapshot is missing, unreadable or empty,
      THE PUSH IS DENIED -- see the block comment at the check itself for why
      that is not the same trade as check 1's could-not-tell allowance.
+  4. ENDPOINT/ENGINE SEAM (added 2026-09-01) -- blocks a push where an endpoint
+     does not forward every input its api/_lib engine reads. SAIRNlaw's engine
+     grew a `service_methods` input, api/legal-deadlines.js was never updated,
+     and Florida deadlines came back five days late for five days with both
+     test suites green, because they call the engine directly and never
+     traverse the endpoint. Runs on any api/*.js change, not only on changed
+     endpoints: editing the ENGINE is how the seam breaks, and the endpoint
+     that stops matching it is a file the push never touched.
 
-Neither runs unless the commits being pushed actually touch the relevant files,
-so an ordinary push costs nothing.
+None of them run unless the commits being pushed actually touch the relevant
+files, so an ordinary push costs nothing.
 
 CHECK 1 IN DETAIL.
 
