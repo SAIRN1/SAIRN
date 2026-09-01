@@ -47,7 +47,14 @@ module.exports = async (req, res) => {
 
     res.status(200).json({ url: session.url, sessionId: session.id });
   } catch (err) {
+    // Same disclosure fix as verify.js (2026-09-01) -- Stripe's error text is
+    // descriptive by design and this endpoint is unauthenticated. This is the
+    // one that matters most once a real key is live, because it is the endpoint
+    // a stranger can reach with an unlimited number of tries.
+    // Error SHAPE deliberately unchanged: sairncash.html reads
+    // `data.error || 'Could not start checkout'` and expects a string, not the
+    // {error:{message}} envelope the natively-built trial endpoints use.
     console.error('SAIRNcash Stripe checkout error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Could not start checkout' });
   }
 };

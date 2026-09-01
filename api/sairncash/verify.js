@@ -110,7 +110,17 @@ module.exports = async (req, res) => {
         : null
     });
   } catch (err) {
+    // DO NOT RETURN err.message TO THE CALLER (fixed 2026-09-01).
+    // Stripe's own error text is descriptive by design, and this endpoint is
+    // unauthenticated -- an anonymous POST with any string as subscriptionId
+    // was enough to get back
+    //   "Expired API Key provided: sk_test_****...wz9bU6"
+    // which discloses that a key exists, that it is a TEST key, its prefix and
+    // its last six characters, to anyone who asks. That is how the stale key in
+    // this project's environment was discovered, by a probe rather than by a
+    // log. Upstream detail goes to the server log, where it belongs; the client
+    // gets a fixed string it cannot mine.
     console.error('SAIRNcash Stripe verify error:', err.message);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Could not verify the subscription' });
   }
 };
