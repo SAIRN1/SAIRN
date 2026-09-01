@@ -18987,26 +18987,26 @@ window.renderMarkdownRich = function(text) {
   // Fenced code blocks ```lang\n...\n```
   s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
     var escaped = code.trim();
-    return '<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;overflow-x:auto;margin:10px 0;font-size:12px;font-family:\'DM Mono\',monospace;line-height:1.6;color:rgba(240,240,255,0.85)">' + escaped + '</pre>';
+    return '<pre style="background:rgba(127,127,127,0.14);border:1px solid var(--border);border-radius:8px;padding:12px 16px;overflow-x:auto;margin:10px 0;font-size:12px;font-family:\'DM Mono\',monospace;line-height:1.6;color:inherit">' + escaped + '</pre>';
   });
 
   // Inline code `code`
-  s = s.replace(/`([^`\n]+)`/g, '<code style="background:rgba(255,255,255,0.08);border-radius:4px;padding:1px 6px;font-family:\'DM Mono\',monospace;font-size:12px;color:rgba(240,240,255,0.9)">$1</code>');
+  s = s.replace(/`([^`\n]+)`/g, '<code style="background:rgba(127,127,127,0.16);border-radius:4px;padding:1px 6px;font-family:\'DM Mono\',monospace;font-size:12px;color:inherit">$1</code>');
 
   // Headers
-  s = s.replace(/^#### (.*?)$/gm, '<h4 style="font-size:14px;font-weight:700;color:#F0F0FF;margin:14px 0 6px;letter-spacing:-.2px">$1</h4>');
-  s = s.replace(/^### (.*?)$/gm,  '<h3 style="font-size:16px;font-weight:700;color:#F0F0FF;margin:16px 0 8px;letter-spacing:-.3px">$1</h3>');
-  s = s.replace(/^## (.*?)$/gm,   '<h2 style="font-size:18px;font-weight:700;color:#F0F0FF;margin:18px 0 10px;letter-spacing:-.4px;border-bottom:1px solid rgba(255,255,255,0.08);padding-bottom:6px">$1</h2>');
-  s = s.replace(/^# (.*?)$/gm,    '<h1 style="font-size:22px;font-weight:700;color:#F0F0FF;margin:20px 0 12px;letter-spacing:-.5px">$1</h1>');
+  s = s.replace(/^#### (.*?)$/gm, '<h4 style="font-size:14px;font-weight:700;color:inherit;margin:14px 0 6px;letter-spacing:-.2px">$1</h4>');
+  s = s.replace(/^### (.*?)$/gm,  '<h3 style="font-size:16px;font-weight:700;color:inherit;margin:16px 0 8px;letter-spacing:-.3px">$1</h3>');
+  s = s.replace(/^## (.*?)$/gm,   '<h2 style="font-size:18px;font-weight:700;color:inherit;margin:18px 0 10px;letter-spacing:-.4px;border-bottom:1px solid var(--border);padding-bottom:6px">$1</h2>');
+  s = s.replace(/^# (.*?)$/gm,    '<h1 style="font-size:22px;font-weight:700;color:inherit;margin:20px 0 12px;letter-spacing:-.5px">$1</h1>');
 
   // Bold + italic
   s = s.replace(/\*\*\*(.*?)\*\*\*/g, '<strong><em>$1</em></strong>');
-  s = s.replace(/\*\*(.*?)\*\*/g, '<strong style="color:#F0F0FF;font-weight:600">$1</strong>');
-  s = s.replace(/\*(.*?)\*/g,     '<em style="color:rgba(240,240,255,0.8)">$1</em>');
-  s = s.replace(/__(.*?)__/g,     '<strong style="color:#F0F0FF;font-weight:600">$1</strong>');
+  s = s.replace(/\*\*(.*?)\*\*/g, '<strong style="color:inherit;font-weight:600">$1</strong>');
+  s = s.replace(/\*(.*?)\*/g,     '<em style="color:inherit;opacity:.85">$1</em>');
+  s = s.replace(/__(.*?)__/g,     '<strong style="color:inherit;font-weight:600">$1</strong>');
 
   // Horizontal rule
-  s = s.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid rgba(255,255,255,0.1);margin:16px 0">');
+  s = s.replace(/^---+$/gm, '<hr style="border:none;border-top:1px solid var(--border);margin:16px 0">');
 
   // Tables (simple: | col | col |)
   s = s.replace(/((?:\|[^\n]+\|\n?)+)/g, function(table) {
@@ -19018,8 +19018,8 @@ window.renderMarkdownRich = function(text) {
       var cells = row.split('|').filter(function(c){ return c.trim() !== ''; });
       var tag = i === 0 ? 'th' : 'td';
       var style = tag === 'th'
-        ? 'padding:8px 12px;border-bottom:2px solid rgba(255,255,255,0.15);font-weight:600;color:#F0F0FF;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px'
-        : 'padding:7px 12px;border-bottom:1px solid rgba(255,255,255,0.06);color:rgba(240,240,255,0.75)';
+        ? 'padding:8px 12px;border-bottom:2px solid var(--border);font-weight:600;color:inherit;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px'
+        : 'padding:7px 12px;border-bottom:1px solid var(--border);color:inherit;opacity:.85';
       html += '<tr>' + cells.map(function(c){ return '<' + tag + ' style="' + style + '">' + c.trim() + '</' + tag + '>'; }).join('') + '</tr>';
     });
     html += '</table>';
@@ -19030,7 +19030,7 @@ window.renderMarkdownRich = function(text) {
   s = s.replace(/((?:^[ \t]*[-*+] .*(?:\n|$))+)/gm, function(block) {
     var items = block.trim().split('\n').map(function(line) {
       var text = line.replace(/^[ \t]*[-*+] /, '').trim();
-      return '<li style="padding:3px 0;color:rgba(240,240,255,0.8);line-height:1.65">' + text + '</li>';
+      return '<li style="padding:3px 0;color:inherit;line-height:1.65">' + text + '</li>';
     });
     return '<ul style="margin:8px 0 8px 20px;padding:0;list-style:disc">' + items.join('') + '</ul>';
   });
@@ -19039,7 +19039,7 @@ window.renderMarkdownRich = function(text) {
   s = s.replace(/((?:^[ \t]*\d+\. .*(?:\n|$))+)/gm, function(block) {
     var items = block.trim().split('\n').map(function(line) {
       var text = line.replace(/^[ \t]*\d+\. /, '').trim();
-      return '<li style="padding:3px 0;color:rgba(240,240,255,0.8);line-height:1.65">' + text + '</li>';
+      return '<li style="padding:3px 0;color:inherit;line-height:1.65">' + text + '</li>';
     });
     return '<ol style="margin:8px 0 8px 20px;padding:0">' + items.join('') + '</ol>';
   });
@@ -19047,7 +19047,7 @@ window.renderMarkdownRich = function(text) {
   // Blockquotes. `&gt;` as well as `>` because escHtml now runs first and a
   // blockquote marker arrives here already escaped -- without this the escape
   // pass would have silently stopped blockquotes from rendering at all.
-  s = s.replace(/^(?:&gt;|>) (.*?)$/gm, '<blockquote style="border-left:3px solid rgba(99,102,241,0.5);margin:8px 0;padding:6px 14px;background:rgba(99,102,241,0.05);border-radius:0 8px 8px 0;color:rgba(240,240,255,0.7);font-style:italic">$1</blockquote>');
+  s = s.replace(/^(?:&gt;|>) (.*?)$/gm, '<blockquote style="border-left:3px solid rgba(99,102,241,0.5);margin:8px 0;padding:6px 14px;background:rgba(99,102,241,0.05);border-radius:0 8px 8px 0;color:inherit;opacity:.8;font-style:italic">$1</blockquote>');
 
   // Links. THE SCHEME IS CHECKED, because escHtml does not close this one:
   // it escapes quotes and angle brackets and leaves `:` alone, so
