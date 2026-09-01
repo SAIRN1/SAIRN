@@ -110,6 +110,16 @@
       "claimed_at_epoch": 1788267591.8510203,
       "status": "released",
       "released_at": "2026-09-01T13:16:00Z"
+    },
+    {
+      "id": "hank-1788268735",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "exclusivity verification and next jurisdiction seed",
+      "claimed_at": "2026-09-01T13:18:55Z",
+      "claimed_at_epoch": 1788268735.9818282,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
