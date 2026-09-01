@@ -150,6 +150,16 @@
       "claimed_at_epoch": 1788288764.083121,
       "status": "released",
       "released_at": "2026-09-01T19:35:58Z"
+    },
+    {
+      "id": "hank-1788291749",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "delete inert service extension order field",
+      "claimed_at": "2026-09-01T19:42:29Z",
+      "claimed_at_epoch": 1788291749.4121587,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
