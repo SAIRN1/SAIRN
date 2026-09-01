@@ -48,8 +48,8 @@
       "task": "escHtml attribute sweep, markdown renderer escaping, SD_PINS removal",
       "claimed_at": "2026-09-01T11:38:41Z",
       "claimed_at_epoch": 1788262721.491689,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T12:54:17Z"
     }
   ]
 }
