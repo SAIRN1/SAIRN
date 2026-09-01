@@ -10309,7 +10309,7 @@ function addMessage(role, content) {
 // cover for that: saSanitizeResponse strips script tags and javascript:, and
 // nothing else -- an event-handler attribute in a response survived it and
 // reached the DOM. escHtml first, markdown after, which is the order the
-// function-scoped renderMarkdown (~L24875) has always used. The user's own
+// top-level renderMarkdown (~L24938) has always used. The user's own
 // bubble was already safe; it uses textContent.
 function formatMessage(text) {
   return escHtml(text)
@@ -18867,8 +18867,34 @@ function installStreamingHook() {
 if (window._saircMarkdownInstalled) return;
 window._saircMarkdownInstalled = true;
 
-// Expose the renderer globally so streaming can use it
-window.renderMarkdown = function(text) {
+// RENAMED 2026-09-01 -- THIS FUNCTION WAS NEVER THE ONE THAT RAN.
+//
+// It used to be `window.renderMarkdown = function(text)`, and the comment
+// above it said "expose the renderer globally so streaming can use it".
+// Streaming never used it. `function renderMarkdown(txt)` at ~L24912 is a
+// top-level declaration in a LATER script block, so it overwrites this
+// assignment, and all four call sites -- the three streaming ones just above
+// and the exec-AI one at ~L24907 -- have always resolved to that simpler
+// renderer instead. Same shadowing shape as the saUnlock stub found earlier
+// tonight, and the third instance of it in this file.
+//
+// PROVEN IN THE BROWSER, NOT INFERRED: on the deployed page,
+// `window.renderMarkdown('[ok](https://example.com)')` returns its input
+// unchanged and `# H` produces a div rather than an h1 -- which is L24912's
+// behaviour and not this function's. My own node-based probe missed it
+// because it evaluated each renderer in isolation and so never modelled the
+// collision.
+//
+// Renamed rather than deleted, and the call sites are deliberately NOT
+// repointed: switching them would start rendering tables, fenced code blocks
+// and links in the AI panels, which is a visible product change and Michael's
+// call, not a side effect of clearing a name collision. It is unused today and
+// sairn_reachability_check.py will correctly say so.
+//
+// The escaping added to it this session is kept: if it is ever wired up it
+// must not arrive unescaped, and leaving a known-unsafe renderer parked in the
+// file for someone to adopt later is how this comes back.
+window.renderMarkdownRich = function(text) {
   if (!text) return '';
   // NOW IT ACTUALLY DOES, 2026-09-01. The comment below said "Escape HTML
   // first" and then did not -- the next line was `var s = text;` and the only
@@ -18878,7 +18904,7 @@ window.renderMarkdown = function(text) {
   // an event-handler attribute in a model response passed straight through.
   //
   // escHtml runs on the WHOLE input before any markdown replacement, the same
-  // order the function-scoped renderMarkdown (~L24875) already used. The tags
+  // order the top-level renderMarkdown (~L24938) already used. The tags
   // this function generates are added after escaping and so are unaffected;
   // the fenced-code branch below now escapes text that is already escaped,
   // which is harmless because escHtml is not applied twice to the same
