@@ -2,9 +2,22 @@
 PostToolUse hook for Bash, filtered (via the hooks-config "if" field) to
 git push commands only. Runs async so it never blocks the pushing turn.
 
-After a push, hashes the just-pushed stonedesk.html at HEAD and compares
-it against a fresh curl of the live sairn.vercel.app/stonedesk content,
-waiting ~60s first to give a normal deploy time to land. This is a
+After a push, waits ~60s for a normal deploy to land, then fetches and
+compares origin/main:stonedesk.html against a fresh curl of the live
+sairn.vercel.app/stonedesk content.
+
+BASELINE CORRECTED 2026-09-01: it used to compare against local HEAD, which
+is the wrong question in a four-clone repo and false-alarmed three times in
+one night. Vercel deploys origin/main; HEAD can be ahead of it, behind it, or
+a different sha entirely after a rebase. The fetch happens AFTER the wait so
+that a push from another clone during those 60 seconds moves the baseline
+rather than registering as drift.
+
+KNOWN SCOPE LIMIT, stated rather than implied: this checks stonedesk.html
+only, and it is a PostToolUse hook keyed on the Bash command text containing
+"git push" -- so a push driven from Python (tools/sairn_claim.py) never
+triggers it, the same blind spot the pre-push gate was moved off in task 1.
+This is a
 NOTIFY-ONLY check -- it never commits or pushes anything itself. On a
 mismatch it exits 2 (asyncRewake) so a live Claude turn sees the finding
 and decides what to do, same as the manual live-verify step already
@@ -41,15 +54,43 @@ def main():
     if tool_response and tool_response.get("success") is False:
         sys.exit(0)
 
+    # ── WAIT FIRST, THEN ESTABLISH THE BASELINE. Order matters -- see below.
+    time.sleep(WAIT_SECONDS)
+
+    # ── COMPARE AGAINST origin/main, NOT LOCAL HEAD -- corrected 2026-09-01 ──
+    # This hook used to hash `HEAD:stonedesk.html`. That is the wrong question
+    # in a four-clone repo, and it false-alarmed three separate times in one
+    # night before anyone worked out why:
+    #
+    #   * HEAD can be AHEAD of the remote (a local commit not pushed, or a push
+    #     that touched a different file), so live legitimately differs.
+    #   * HEAD can be BEHIND, because another clone pushed while this one sat
+    #     idle. Live then correctly serves THEIR commit and this hook called it
+    #     a stuck webhook.
+    #   * After a rebase, HEAD is a different sha than the one actually sent.
+    #
+    # Vercel deploys whatever is on origin/main. So origin/main is the only
+    # baseline that answers the question being asked -- "has the deploy caught
+    # up with the remote" -- and it is fetched AFTER the wait, not before, so a
+    # push landing from another clone during those 60 seconds moves the
+    # baseline with it rather than being reported as drift.
+    #
+    # (Task 1 got the equivalent fix from the other direction: a git pre-push
+    # hook is handed the remote's real sha on stdin. That mechanism is not
+    # available here -- this is a PostToolUse hook and no pre-push stdin
+    # exists -- so the same correctness is reached by fetching.)
     try:
-        local_bytes = subprocess.check_output(
-            ["git", "show", "HEAD:stonedesk.html"], timeout=15
+        subprocess.run(["git", "fetch", "origin", "--quiet"], timeout=30,
+                       capture_output=True)
+        base_bytes = subprocess.check_output(
+            ["git", "show", "origin/main:stonedesk.html"], timeout=15
         )
     except Exception:
-        sys.exit(0)  # can't establish what "just pushed" means -- fail open
-    local_hash = sha256(local_bytes)
-
-    time.sleep(WAIT_SECONDS)
+        # Cannot establish what the remote actually holds. Silent rather than
+        # alarming: the whole point of this change is to stop crying wolf, and
+        # a notify-only hook that guesses is worse than one that says nothing.
+        sys.exit(0)
+    base_hash = sha256(base_bytes)
 
     try:
         req = urllib.request.Request(
@@ -64,23 +105,42 @@ def main():
 
     remote_hash = sha256(remote_bytes)
 
-    if remote_hash == local_hash:
-        sys.exit(0)  # deploy matched -- nothing to report
+    if remote_hash == base_hash:
+        sys.exit(0)  # live matches the remote -- nothing to report
+
+    # Live disagrees with origin/main. Say whether THIS clone is also out of
+    # step, because the two situations need opposite responses and the old
+    # message could not tell them apart.
+    try:
+        head_bytes = subprocess.check_output(
+            ["git", "show", "HEAD:stonedesk.html"], timeout=15
+        )
+        clone_in_step = (sha256(head_bytes) == base_hash)
+    except Exception:
+        clone_in_step = None
+    clone_note = {
+        True:  "This clone's HEAD matches origin/main, so the difference is on the deploy side.",
+        False: "NOTE: this clone's HEAD does NOT match origin/main either -- fetch/rebase before "
+               "reading anything into the live comparison.",
+        None:  "Could not determine whether this clone is in step with origin/main.",
+    }[clone_in_step]
 
     print(json.dumps({
         "systemMessage": "Deploy check: sairn.vercel.app/stonedesk still doesn't match the just-pushed commit ~60s after push. Possible stuck Vercel webhook.",
         "hookSpecificOutput": {
             "hookEventName": "PostToolUse",
             "additionalContext": (
-                "Automated post-push deploy check failed: sairn.vercel.app/stonedesk's "
-                "content hash does not match HEAD:stonedesk.html roughly 60 seconds after "
-                "the last git push to main. This does not mean the push failed -- git log/"
-                "status should still show it committed and pushed. It means the live site "
-                "has not picked it up yet, same symptom as the earlier stuck-webhook "
-                "incident this session. Recommend: (1) push a trivial re-trigger commit, "
-                "same fix that worked last time, or (2) if that doesn't resolve it, flag "
-                "to the user that Vercel's Git integration may need checking directly in "
-                "the dashboard (Settings > Git) -- not something checkable from here."
+                "Automated post-push deploy check: sairn.vercel.app/stonedesk's content "
+                "hash does not match origin/main:stonedesk.html roughly 60 seconds after "
+                "the last push. " + clone_note + " This does not mean the push failed -- "
+                "git log/status should still show it committed and pushed. It means the "
+                "live site has not picked up what the REMOTE holds, same symptom as the "
+                "earlier stuck-webhook incident. Recommend: (1) push a trivial re-trigger "
+                "commit, same fix that worked last time, or (2) if that doesn't resolve "
+                "it, flag to the user that Vercel's Git integration may need checking "
+                "directly in the dashboard (Settings > Git) -- not something checkable "
+                "from here. Baseline is origin/main, fetched AFTER the 60s wait, so a "
+                "push from another clone during the wait is not reported as drift."
             ),
         },
     }))
