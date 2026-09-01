@@ -305,3 +305,57 @@ test('tax: the stored shape carries no derived tax figure in any case', () => {
     if (amt === null) assert.strictEqual('tax' in s, false, 'a derived tax was persisted for rate=' + rate);
   });
 });
+
+// ── The LEGACY half of row 141, still unfixed after b044f35 ────────────────
+// b044f35 fixed the WRITE path. It shipped no backfill, so every invoice and
+// issued proposal written before it still carries both `tax_rate` and the
+// derived `tax`, and still misreports on every read. These tests state the
+// exact property `sql/sairnroofing_tax_provenance_backfill_2026-09-01.sql`
+// relies on, so the migration's premise is asserted in code rather than
+// argued in a comment.
+
+function legacyBlob(rate) {
+  // What the pre-b044f35 writer persisted: the question AND the answer.
+  const t = b.computeTotals(LINES, rate, null);
+  return { line_items: t.line_items, subtotal: t.subtotal, total: t.total, tax_rate: rate, tax: t.tax };
+}
+
+test('legacy: a pre-b044f35 rate-priced row still misreports on read', () => {
+  const before = b.summarizeInvoice(Object.assign({}, legacyBlob(7.5), { payments: [] }));
+  assert.strictEqual(before.tax_basis, 'amount', 'if this ever reads "rate" the backfill is unnecessary');
+  assert.match(before.problems[0], /both a tax rate and a tax amount/);
+});
+
+test('legacy: dropping the derived tax key changes the disclosure and NOT the money', () => {
+  // This is the migration's safety property, and the only reason it is safe to
+  // run against real financial rows: subtotal, tax and total are identical
+  // before and after -- the UPDATE cannot move a number a customer was billed.
+  const before = b.summarizeInvoice(Object.assign({}, legacyBlob(7.5), { payments: [] }));
+  const after  = (() => { const r = legacyBlob(7.5); delete r.tax; return b.summarizeInvoice(Object.assign(r, { payments: [] })); })();
+  assert.strictEqual(after.subtotal, before.subtotal);
+  assert.strictEqual(after.tax,      before.tax);
+  assert.strictEqual(after.total,    before.total);
+  assert.strictEqual(after.tax_basis, 'rate');
+  assert.deepStrictEqual(after.problems, [], 'the spurious warning must be gone');
+});
+
+test('legacy: the migration must NOT match a genuine rate-and-amount conflict', () => {
+  // The condition is `stored tax == round(subtotal * rate/100, 2)`. A real
+  // disagreement fails it, so both keys survive and the true warning is kept.
+  const derived = b.computeTotals(LINES, 7.5, null).tax;   // 1200.19
+  const conflict = { line_items: b.normalizeLineItems(LINES), tax_rate: 7.5, tax: 800, payments: [] };
+  assert.notStrictEqual(conflict.tax, derived, 'fixture must be a real conflict, not a coincidence');
+  const s = b.summarizeInvoice(conflict);
+  assert.strictEqual(s.tax_basis, 'amount');
+  assert.strictEqual(s.tax, 800);
+  assert.match(s.problems[0], /both a tax rate and a tax amount/);
+});
+
+test('legacy: the derived figure the migration compares against is reproducible', () => {
+  // Hand-checked, and the same arithmetic the SQL performs:
+  // subtotal 16002.50 * 7.5 / 100 = 1200.1875 -> 1200.19
+  const t = b.computeTotals(LINES, 7.5, null);
+  assert.strictEqual(t.subtotal, 16002.5);
+  assert.strictEqual(t.tax, 1200.19);
+  assert.strictEqual(Math.round(16002.5 * 7.5 / 100 * 100) / 100, t.tax);
+});
