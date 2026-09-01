@@ -167,6 +167,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</div>
       <div class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</div>
       <div class="nitem" id="nav-operators" onclick="sfNav('operators')">Operators</div>
+      <div class="nsec">Phase 4 &mdash; Disbursement &amp; outreach</div>
+      <div class="nitem" id="nav-disbursements" onclick="sfNav('disbursements')">Disbursements</div>
+      <div class="nitem" id="nav-donations" onclick="sfNav('donations')">Donations &amp; Donors</div>
+      <div class="nitem" id="nav-service" onclick="sfNav('service')">Service Hours</div>
+      <div class="nitem" id="nav-outreach" onclick="sfNav('outreach')">Community Outreach</div>
     </nav>
 
     <main>
@@ -193,9 +198,16 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <strong>Item 3.5, the ORC 2915.10(A) record set, is deliberately held</strong>
           &mdash; it requires winner Social Security numbers and is being researched as
           its own task. This app does not yet produce a compliant 2915.10 record set.<br>
-          <strong>Not built:</strong> Phase 4 (disbursement, donations, service hours),
-          Phase 5 (member experience) and Phase 6 (district rollup). Absent rather than
-          stubbed.</div>
+          <strong>Phase 4 &mdash; Disbursement &amp; outreach:</strong> the disbursement log
+          with two independent taxonomies (4.1), the ORC 2915.101 tiered calculation (4.2),
+          funding source / game type / direction (4.3), donations with receipts that gate
+          on 26 U.S.C. 170(c)(3) versus (c)(4) (4.4), cumulative-lifetime donor recognition
+          with fulfilment state (4.5), outreach constrained to this organisation's own
+          enumerated purposes (4.6) and service-hour tracking (4.7).
+          <strong>Receipts are generated but nothing is emailed</strong> &mdash; there is no
+          email endpoint for this app, and that is stated rather than implied.<br>
+          <strong>Not built:</strong> Phase 5 (member experience) and Phase 6 (district
+          rollup). Absent rather than stubbed.</div>
         </div>
       </div>
 
@@ -352,6 +364,212 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="tw"><table>
           <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
           <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ============ PHASE 4 — DISBURSEMENT (4.1, 4.2, 4.3) ============ -->
+      <div class="panel" id="panel-disbursements">
+        <div class="ph"><div><div class="ptitle">Disbursements</div>
+          <div class="pdesc">Two regimes split by game type, and two taxonomies that do not derive from each other</div></div></div>
+        <div id="db-flags"></div>
+        <div class="kpi-row" id="db-kpis"></div>
+
+        <div class="card"><h3>ORC 2915.101 &mdash; the tiered distribution test</h3>
+          <div class="grid">
+            <div><label>Calendar year</label><select id="db-year"></select></div>
+            <div><label>Threshold (or adjusted amount)</label><input type="number" id="db-threshold" min="0" step="1"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn sec" onclick="sfSaveP4Config()">Save threshold</button></div>
+          <div id="db-tier"></div>
+          <div class="flagbox" style="margin-top:12px"><strong>The threshold is configuration, not a constant.</strong>
+          ORC 2915.101 states it as &ldquo;two hundred fifty thousand dollars <em>or the adjusted
+          amount</em>&rdquo;, and the Attorney General may adjust it for changes in prices as
+          measured by the consumer price index. Hardcoding $250,000 would silently go
+          stale the first time it moved.</div>
+        </div>
+
+        <div class="card"><h3>Record a disbursement</h3>
+          <div class="grid">
+            <div><label>Recipient</label><input id="db-recipient"></div>
+            <div><label>Amount</label><input type="number" id="db-amount" min="0" step="0.01"></div>
+            <div><label>Date</label><input type="date" id="db-date"></div>
+            <div><label>Funding source</label><select id="db-source" onchange="sfRenderDisbFields()"></select></div>
+            <div><label>Game type that produced the money</label><select id="db-game" onchange="sfRenderDisbFields()"></select></div>
+            <div><label>Direction</label><select id="db-direction"></select></div>
+          </div>
+          <div class="grid" style="margin-top:12px">
+            <div><label>Ohio charitable purpose (ORC 2915.01(V))</label><select id="db-purpose"></select></div>
+            <div><label>National program category</label><select id="db-natcat"></select></div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn sec" onclick="sfTestDisbursement()">Test this disbursement</button>
+            <button class="btn" onclick="sfRecordDisbursement()">Record</button>
+          </div>
+          <div id="db-testout"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>The two taxonomies are
+          independent and neither derives from the other.</strong> The Ohio list measures
+          <em>where gaming net profit legally went</em> and its content depends on
+          organisation type &mdash; ORC 2915.01(V)(2) gives veterans organisations one
+          enumerated list and (V)(3) gives fraternal organisations an entirely different
+          one, inside the same state. The national category measures what the order's own
+          reporting wants. A single shared enum would be wrong for one of them.</div>
+        </div>
+
+        <div class="card"><h3>National program categories</h3>
+          <div class="grid">
+            <div><label>Add a category from your order's own reporting form</label><input id="db-natcat-new"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn sec" onclick="sfAddNationalCategory()">Add category</button></div>
+          <div id="db-natcat-list" class="note"></div>
+          <div class="note"><strong>Empty by default, on purpose.</strong> The five orders'
+          national reporting categories differ and none of them was read against a real
+          form for this build. Rather than ship an invented list that looks authoritative,
+          this starts empty and you enter the categories your order actually uses.</div>
+        </div>
+
+        <div class="card"><h3>Disbursement log</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Recipient</th><th>Amount</th><th>Source</th><th>Game</th><th>Ohio purpose</th><th>National</th><th></th></tr></thead>
+            <tbody id="db-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 4 — DONATIONS AND DONORS (4.4, 4.5) ============ -->
+      <div class="panel" id="panel-donations">
+        <div class="ph"><div><div class="ptitle">Donations &amp; Donors</div>
+          <div class="pdesc">Money received &mdash; the other direction entirely from disbursement</div></div></div>
+        <div id="dn-flags"></div>
+        <div class="kpi-row" id="dn-kpis"></div>
+
+        <div class="card"><h3>Record a donation</h3>
+          <div class="grid">
+            <div><label>Donor</label><input id="dn-donor"></div>
+            <div><label>Donor is</label><select id="dn-donortype"><option value="individual">An individual</option><option value="entity">A company, trust or other entity</option></select></div>
+            <div><label>Amount</label><input type="number" id="dn-amount" min="0" step="0.01"></div>
+            <div><label>Date</label><input type="date" id="dn-date"></div>
+            <div><label>Designated use</label><select id="dn-use"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfRecordDonation()">Record donation</button></div>
+          <div id="dn-out"></div>
+        </div>
+
+        <div class="card"><h3>Recognition tiers</h3>
+          <div class="grid">
+            <div><label>Cumulative lifetime giving at or above</label><input type="number" id="dt-amount" min="0" step="0.01" value="100"></div>
+            <div><label>Item awarded</label><input id="dt-item" placeholder="e.g. bronze lapel pin"></div>
+            <div><label>Item cost to the post</label><input type="number" id="dt-cost" min="0" step="0.01"></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="dt-logo"> The item bears the post's name or emblem</label>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddTier()">Add tier</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>At</th><th>Item</th><th>Cost</th><th>Emblem</th><th>Insubstantial?</th><th></th></tr></thead>
+            <tbody id="dt-tbody"></tbody></table></div>
+          <div class="blockbox" style="margin-top:12px"><strong>A tier is an award, not a
+          disbursement.</strong> It sits on the money-<em>received</em> side and must never
+          appear in the ORC 2915.01(V) taxonomy, which governs where gaming net profit
+          <em>goes</em>. Two different directions of money; conflating them would put a
+          donor pin in a charitable-purpose report. The pin's cost to the post is an
+          expense on the other side of the books, and per the service-hour research
+          &ldquo;cost to post for X&rdquo; is a legitimate national-reporting line but
+          <strong>not</strong> a permitted (V)(2) destination for gaming net profit.</div>
+        </div>
+
+        <div class="card"><h3>Donors &mdash; cumulative lifetime</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Donor</th><th>Type</th><th>Lifetime</th><th>Gifts</th><th>Tier earned</th><th>Fulfilment</th><th></th></tr></thead>
+            <tbody id="dn-donortbody"></tbody></table></div>
+          <div class="note"><strong>Cumulative means lifetime, not annual.</strong> The
+          running total survives every year boundary and every reporting-period reset, and
+          it is rebuilt from the donation records on every render rather than stored as a
+          number that can drift away from them.</div>
+        </div>
+
+        <div class="card"><h3>Receipts</h3>
+          <div class="grid">
+            <div><label>Donation</label><select id="dn-receipt-pick"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfBuildReceipt()">Build receipt</button></div>
+          <div id="dn-receipt"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Nothing is emailed, and that
+          is a real gap rather than a setting.</strong> The spec calls for automatic
+          emailed tax receipts reusing the platform's Resend integration. There is no
+          email endpoint for this app &mdash; the only two on the platform are app-specific
+          and cron-only &mdash; and this app has no server table at all, so a receipt
+          cannot be queued, sent or logged. The receipt is <strong>generated and shown for
+          you to send yourself</strong>. Wiring the transport is real backend work, not a
+          checkbox, and claiming it worked would be exactly the silent failure that left
+          another app's reminders unsent for months.</div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 4 — SERVICE HOURS (4.7) ============ -->
+      <div class="panel" id="panel-service">
+        <div class="ph"><div><div class="ptitle">Service Hours</div>
+          <div class="pdesc">Decimal hours, round-trip miles by occupants, and a reporting period that is configuration</div></div></div>
+        <div id="sv-flags"></div>
+        <div class="kpi-row" id="sv-kpis"></div>
+
+        <div class="card"><h3>Reporting period</h3>
+          <div class="grid">
+            <div><label>Period starts (month)</label><select id="sv-startmonth"></select></div>
+            <div><label>Period starts (day)</label><input type="number" id="sv-startday" min="1" max="31" value="1"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn sec" onclick="sfSaveServicePeriod()">Save period</button></div>
+          <div class="note"><strong>Configuration, not a constant.</strong> The orders run
+          four different fiscal years and none of them is shared. This build does not ship
+          a per-order default because none was read against a real source &mdash; enter
+          your order's own period.</div>
+        </div>
+
+        <div class="card"><h3>Log service</h3>
+          <div class="grid">
+            <div><label>Activity</label><input id="sv-activity"></div>
+            <div><label>Date</label><input type="date" id="sv-date"></div>
+            <div><label>Volunteers &mdash; members</label><input type="number" id="sv-members" min="0" step="1" value="0"></div>
+            <div><label>Volunteers &mdash; non-members</label><input type="number" id="sv-nonmembers" min="0" step="1" value="0"></div>
+            <div><label>Minutes each</label><input type="number" id="sv-minutes" min="0" step="1" value="0"></div>
+            <div><label>Round-trip miles</label><input type="number" id="sv-miles" min="0" step="0.1" value="0"></div>
+            <div><label>Occupants per vehicle</label><input type="number" id="sv-occupants" min="1" step="1" value="1"></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="sv-national"> Counts toward national service reporting</label>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfLogService()">Log service</button></div>
+          <div id="sv-out"></div>
+          <div class="note">Hours are stored as <strong>decimal</strong> &mdash; five
+          minutes is 0.08, not 0:05 &mdash; because that is the unit the reporting forms
+          use. Miles are <strong>round trip multiplied by occupants</strong>, which is how
+          person-miles are counted, and is easy to under-report by a factor of the
+          carpool.</div>
+        </div>
+
+        <div class="card"><h3>Service log</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Activity</th><th>People</th><th>Person-hours</th><th>Person-miles</th><th>National</th><th></th></tr></thead>
+            <tbody id="sv-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 4 — OUTREACH (4.6) ============ -->
+      <div class="panel" id="panel-outreach">
+        <div class="ph"><div><div class="ptitle">Community Outreach</div>
+          <div class="pdesc">Suggestions constrained to this organisation's own legal category set</div></div></div>
+        <div id="or-flags"></div>
+        <div class="card"><h3>Ask for outreach ideas</h3>
+          <div class="grid">
+            <div><label>What is the post trying to achieve?</label><input id="or-goal" placeholder="e.g. reach more younger veterans this autumn"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfOutreachIdeas()">Suggest</button></div>
+          <div id="or-out" style="margin-top:12px"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>A suggestion outside this
+          organisation's own enumerated categories is a compliance hazard dressed as
+          marketing.</strong> The permitted set is read from ORC 2915.01(V)(2) for a
+          veterans organisation and (V)(3) for a fraternal one &mdash; different lists,
+          same state. Every suggestion returned is checked in code against that set and
+          <strong>discarded if it does not name one</strong>, rather than being shown with
+          a caveat.</div>
+        </div>
       </div>
 
       <!-- ============ PHASE 2 — CANTEEN POS (2.1) ============ -->
@@ -3147,6 +3365,809 @@ function sfRenderVendors(){
   }
 }
 
+/* ========================================================================
+   PHASE 4 -- DISBURSEMENT, DONATIONS, SERVICE HOURS AND OUTREACH
+   Items 4.1 - 4.7. Every statutory figure below was re-read against primary
+   source on 2026-09-01 rather than carried over from the research doc:
+   codes.ohio.gov for ORC 2915.101, 2915.01(V) and 5739.02(B)(12);
+   law.cornell.edu for 26 U.S.C. 170(c)(3) and (c)(4); and IRS Revenue
+   Procedure 2025-32 for the tax-year 2026 insubstantial-benefit figures.
+
+   THE SINGLE MOST IMPORTANT STRUCTURAL FACT, and it is easy to get backwards:
+   TWO REGIMES SPLIT BY GAME TYPE, running simultaneously on different money.
+   ORC 2915.01(V) opens "'Charitable purpose' means that the net profit of
+   bingo, OTHER THAN instant bingo or electronic instant bingo, is used by..."
+   -- so the purpose-tagged regime governs traditional bingo only. ORC 2915.101
+   governs instant and electronic instant bingo, and it is a PERCENTAGE regime
+   with no purpose list at all. A post running both is subject to both, on
+   different dollars. Applying one rule to all gaming net profit would be wrong
+   for whichever half it was not written for.
+   ======================================================================== */
+
+var K_DISB='sf_disbursements', K_DONATIONS='sf_donations', K_TIERS='sf_donor_tiers',
+    K_AWARDS='sf_donor_awards', K_SERVICE='sf_service_hours',
+    K_NATCATS='sf_national_categories', K_P4CONFIG='sf_phase4_config';
+
+function getDisbursements(){ return ld(K_DISB, []); }
+function getDonations(){ return ld(K_DONATIONS, []); }
+function getTiers(){ return ld(K_TIERS, []); }
+function getAwards(){ return ld(K_AWARDS, []); }
+function getServiceLog(){ return ld(K_SERVICE, []); }
+function getNationalCategories(){ return ld(K_NATCATS, []); }
+function getP4Config(){ return ld(K_P4CONFIG, { threshold:250000, serviceStartMonth:1, serviceStartDay:1 }); }
+
+/* ---- ORC 2915.101, verbatim structure ---------------------------------
+   Veteran's, fraternal or sporting organisations, per CALENDAR YEAR:
+     first $250,000 (or the adjusted amount) -- at least 25% distributed,
+       not more than 75% deducted and retained;
+     above that amount -- a minimum of 50% distributed, 5% may go to the
+       organisation's OWN charitable purposes, 45% deducted and retained.
+   Every other charitable organisation distributes 100%.
+   The Attorney General may adjust the threshold for changes in prices as
+   measured by the consumer price index, which is why it is configuration.
+   NOTE THE ASYMMETRY: the 5% own-purpose allowance appears only in the
+   ABOVE-threshold tier. There is no equivalent in the first tier, and adding
+   one by symmetry would overstate what may be retained. */
+var TIER1_MIN_DISTRIBUTION = 0.25;
+var TIER2_MIN_DISTRIBUTION = 0.50;
+var TIER2_OWN_PURPOSE_ALLOWANCE = 0.05;
+var OTHER_ORG_MIN_DISTRIBUTION = 1.00;
+var TIERED_REGIME_GAMES = ['instant','einstant'];
+var PURPOSE_REGIME_GAMES = ['bingo_o1'];
+
+/* Expenses are recorded per ACCOUNT, not per game, and the session account
+   lawfully holds both traditional and instant bingo. The statute prescribes no
+   allocation method, so gross profit within the account is used as the basis
+   and the method is stated on screen. This is an allocation, not a measurement,
+   and it is labelled as one. */
+function netProfitByGame(year){
+  var gross={}, expensesByAccount={}, grossByAccount={}, grossByAccountGame={};
+  GAME_TYPES.forEach(function(g){ gross[g.id]=0; });
+  getSessions().forEach(function(s){
+    if(!s.recorded || String(s.date||'').slice(0,4)!==String(year)) return;
+    GAME_TYPES.forEach(function(g){
+      var v=Number((s.receipts||{})[g.id]||0)-Number((s.prizes||{})[g.id]||0);
+      if(!v) return;
+      gross[g.id]+=v;
+      grossByAccount[s.accountId]=(grossByAccount[s.accountId]||0)+v;
+      grossByAccountGame[s.accountId]=grossByAccountGame[s.accountId]||{};
+      grossByAccountGame[s.accountId][g.id]=(grossByAccountGame[s.accountId][g.id]||0)+v;
+    });
+  });
+  getGamingExpenses().forEach(function(e){
+    if(String(e.date||'').slice(0,4)!==String(year)) return;
+    expensesByAccount[e.accountId]=(expensesByAccount[e.accountId]||0)+Number(e.amount||0);
+  });
+  var net={};
+  GAME_TYPES.forEach(function(g){ net[g.id]=gross[g.id]; });
+  Object.keys(expensesByAccount).forEach(function(acc){
+    var total=grossByAccount[acc]||0, exp=expensesByAccount[acc];
+    var perGame=grossByAccountGame[acc]||{};
+    if(total<=0){ return; } // nothing to allocate against; expense sits unallocated
+    Object.keys(perGame).forEach(function(gid){
+      net[gid]-= exp * (perGame[gid]/total);
+    });
+  });
+  var tiered=0, purpose=0;
+  TIERED_REGIME_GAMES.forEach(function(g){ tiered+=net[g]||0; });
+  PURPOSE_REGIME_GAMES.forEach(function(g){ purpose+=net[g]||0; });
+  return { byGame:net, gross:gross, tieredRegimeNet:tiered, purposeRegimeNet:purpose,
+           allocated:Object.keys(expensesByAccount).length>0 };
+}
+
+function tieredRequirement(net, threshold){
+  var t=Number(threshold)||0;
+  var n=Math.max(0, Number(net)||0);
+  var tier1=Math.min(n, t), tier2=Math.max(0, n-t);
+  return {
+    net:n, threshold:t, tier1:tier1, tier2:tier2,
+    required: tier1*TIER1_MIN_DISTRIBUTION + tier2*TIER2_MIN_DISTRIBUTION,
+    mayRetain: tier1*(1-TIER1_MIN_DISTRIBUTION) + tier2*(1-TIER2_MIN_DISTRIBUTION-TIER2_OWN_PURPOSE_ALLOWANCE),
+    ownPurposeAllowance: tier2*TIER2_OWN_PURPOSE_ALLOWANCE
+  };
+}
+
+/* ---- 4.1 THE TWO TAXONOMIES ------------------------------------------
+   ORC 2915.01(V)(2), veterans, cross-references ORC 5739.02(B)(12), read
+   verbatim on 2026-09-01. (V)(3), fraternal, contains NONE of the veterans
+   words -- no scholarships, no flags, no patriotism, no disaster relief -- and
+   carries a hard fifteen-years-in-Ohio precondition. Two lists, one state. */
+var ORC_5739_02_B12 = [
+  'Relief of poverty',
+  'Improvement of health through the alleviation of illness, disease, or injury',
+  'Operation of an organization exclusively providing professional, laundry, printing and purchasing services to hospitals or charitable institutions',
+  'Operation of a home for the aged',
+  'Operation of a noncommercial educational radio or television station licensed by the FCC',
+  'Operation of a nonprofit animal adoption service or a county humane society',
+  'Promotion of education by an institution of learning with a qualified faculty, continuous courses and a recognized diploma',
+  'Operation of a parent-teacher association, booster group or similar organization supporting a primary or secondary school',
+  'Operation of a community or area center presenting music, dramatics and the arts to foster public interest and education',
+  'Production of performances in music, dramatics and the arts',
+  'Promotion of education by an organization researching or disseminating scientific and technological knowledge for the public'
+];
+var VETERANS_ADDITIONAL_PURPOSES = [
+  'Awarding scholarships to or for attendance at an institution mentioned in ORC 5739.02(B)(12)',
+  'Donated to a governmental agency',
+  'Nonprofit youth activities',
+  'Purchase of United States or Ohio flags donated to schools, youth groups or other bona fide nonprofit organizations',
+  'Promotion of patriotism',
+  'Disaster relief'
+];
+var FRATERNAL_PURPOSES = [
+  'Religious', 'Charitable', 'Scientific', 'Literary', 'Educational',
+  'Prevention of cruelty to children or animals'
+];
+function ohioPurposesForOrg(){
+  var o=orgType(getPost().orgType);
+  if(!o) return { cite:null, list:[], reason:'Organisation type is not set.' };
+  if(o.statutory==='veterans') return { cite:'ORC 2915.01(V)(2)', list:ORC_5739_02_B12.concat(VETERANS_ADDITIONAL_PURPOSES) };
+  return { cite:'ORC 2915.01(V)(3)', list:FRATERNAL_PURPOSES, fifteenYear:true };
+}
+
+var FUNDING_SOURCES = [
+  { id:'gaming_net_profit', label:'Gaming net profit' },
+  { id:'general_funds',     label:'General funds' }
+];
+var DISB_DIRECTIONS = [
+  { id:'given_away',   label:'Given away (leaves the post)' },
+  { id:'cost_to_post', label:'Cost to post (spent on the post’s own program)' }
+];
+
+function disbursementRefusals(d){
+  var out=[];
+  if(!d.recipient) out.push({ cite:'input', text:'Name the recipient.' });
+  if(!(Number(d.amount)>0)) out.push({ cite:'input', text:'Amount must be greater than zero.' });
+  if(!d.date) out.push({ cite:'input', text:'A date is required.' });
+  if(d.source!=='gaming_net_profit') return out;   // general funds are not governed by Ch. 2915
+
+  var p=ohioPurposesForOrg();
+  var o=orgType(getPost().orgType);
+  if(!o){ out.push({ cite:'input', text:'Set the organisation type -- the permitted purpose list depends on it.' }); return out; }
+
+  /* CORRECTION 4 FROM THE RESEARCH, ENCODED: division (V) does not govern
+     instant bingo at all. Demanding a (V) purpose tag for instant-bingo money
+     would be applying the wrong regime; the constraint there is the 2915.101
+     percentage instead. */
+  if(PURPOSE_REGIME_GAMES.indexOf(d.game)>=0){
+    if(!d.purpose){
+      out.push({ cite:p.cite||'ORC 2915.01(V)', text:'Traditional bingo net profit must be tagged to an enumerated charitable purpose. Instant and electronic instant bingo are governed by the ORC 2915.101 percentages instead and are not tagged here.' });
+    }
+    if(p.fifteenYear){
+      var t=fifteenYearTest();
+      if(t.applies && t.known && !t.passes){
+        out.push({ cite:'ORC 2915.01(V)(3)', text:'This lodge does not yet meet the fifteen-years-continuous-existence precondition, so it does not qualify under the fraternal limb at all. Eligibility begins '+t.eligibleFrom+'.' });
+      } else if(t.applies && !t.known){
+        out.push({ cite:'ORC 2915.01(V)(3)', text:'The charter date is not recorded, so the fifteen-year precondition cannot be evaluated.' });
+      }
+    }
+    /* 4.3: "cost to post for X" is a legitimate NATIONAL reporting line and is
+       NOT a permitted (V)(2) destination for gaming net profit. */
+    if(d.direction==='cost_to_post' && o.statutory==='veterans'){
+      out.push({ cite:'ORC 2915.01(V)(2)', text:'Every destination enumerated in (V)(2) is money leaving the post -- given, donated or otherwise transferred. A cost-to-post line is legitimate in your national reporting and is not a permitted destination for gaming net profit here.' });
+    }
+  }
+  return out;
+}
+
+function readDisbForm(){
+  return { recipient:($('db-recipient').value||'').trim(), amount:Number($('db-amount').value||0),
+           date:$('db-date').value, source:$('db-source').value, game:$('db-game').value,
+           direction:$('db-direction').value,
+           purpose:$('db-purpose')?$('db-purpose').value:'',
+           natcat:$('db-natcat')?$('db-natcat').value:'' };
+}
+function sfTestDisbursement(){
+  var box=$('db-testout'); if(!box) return;
+  box.innerHTML='<div style="margin-top:12px">'+refusalHtml(disbursementRefusals(readDisbForm()),'Passes every check this app implements. That is not a legal opinion.')+'</div>';
+}
+function sfRecordDisbursement(){
+  var d=readDisbForm();
+  var refusals=disbursementRefusals(d);
+  var box=$('db-testout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' check(s) failed','err');
+    return;
+  }
+  var list=getDisbursements();
+  list.push({ id:'db'+Date.now(), recipient:d.recipient, amount:d.amount, date:d.date||localToday(),
+              source:d.source, game:d.game, direction:d.direction, purpose:d.purpose, natcat:d.natcat });
+  st(K_DISB,list);
+  $('db-recipient').value=''; $('db-amount').value='';
+  if(box) box.innerHTML='';
+  toast('Disbursement recorded');
+  sfRenderAll();
+}
+function sfDeleteDisbursement(id){
+  st(K_DISB, getDisbursements().filter(function(d){ return d.id!==id; }));
+  toast('Disbursement removed');
+  sfRenderAll();
+}
+function sfAddNationalCategory(){
+  var v=($('db-natcat-new').value||'').trim();
+  if(!v){ toast('Enter a category','err'); return; }
+  var list=getNationalCategories();
+  if(list.indexOf(v)>=0){ toast('Already listed','err'); return; }
+  list.push(v);
+  st(K_NATCATS,list);
+  $('db-natcat-new').value='';
+  toast('Category added');
+  sfRenderAll();
+}
+function sfRemoveNationalCategory(v){
+  st(K_NATCATS, getNationalCategories().filter(function(c){ return c!==v; }));
+  toast('Category removed');
+  sfRenderAll();
+}
+function sfSaveP4Config(){
+  var c=getP4Config();
+  c.threshold=Number($('db-threshold').value||0);
+  st(K_P4CONFIG,c);
+  toast('Threshold saved');
+  sfRenderAll();
+}
+function sfRenderDisbFields(){
+  var p=ohioPurposesForOrg();
+  var ps=$('db-purpose');
+  var isPurposeRegime = PURPOSE_REGIME_GAMES.indexOf($('db-game')?$('db-game').value:'')>=0
+                        && ($('db-source')?$('db-source').value:'')==='gaming_net_profit';
+  if(ps){
+    var prev=ps.value;
+    if(!isPurposeRegime){
+      ps.innerHTML='<option value="">Not applicable &mdash; ORC 2915.01(V) governs traditional bingo only</option>';
+      ps.disabled=true;
+    } else {
+      ps.disabled=false;
+      ps.innerHTML='<option value="">Select an enumerated purpose</option>'+
+        p.list.map(function(x){ return '<option value="'+H(x)+'">'+H(x)+'</option>'; }).join('');
+      if(prev) ps.value=prev;
+    }
+  }
+}
+
+function sfRenderDisbursements(){
+  var cfg=getP4Config(), list=getDisbursements();
+  var ss=$('db-source');
+  if(ss && !ss.options.length) ss.innerHTML=FUNDING_SOURCES.map(function(f){ return '<option value="'+H(f.id)+'">'+H(f.label)+'</option>'; }).join('');
+  var gs=$('db-game');
+  if(gs && !gs.options.length) gs.innerHTML=GAME_TYPES.map(function(g){ return '<option value="'+H(g.id)+'">'+H(g.label)+'</option>'; }).join('');
+  var ds=$('db-direction');
+  if(ds && !ds.options.length) ds.innerHTML=DISB_DIRECTIONS.map(function(x){ return '<option value="'+H(x.id)+'">'+H(x.label)+'</option>'; }).join('');
+  var nc=$('db-natcat'), cats=getNationalCategories();
+  if(nc){
+    var prevn=nc.value;
+    nc.innerHTML='<option value="">None recorded</option>'+cats.map(function(c){ return '<option value="'+H(c)+'">'+H(c)+'</option>'; }).join('');
+    if(prevn) nc.value=prevn;
+  }
+  var ncl=$('db-natcat-list');
+  if(ncl) ncl.innerHTML = cats.length
+    ? cats.map(function(c){ return '<span class="tag info" style="margin:3px 5px 3px 0;display:inline-block">'+H(c)+' <a href="#" onclick="sfRemoveNationalCategory(\''+H(c)+'\');return false;" style="color:inherit;text-decoration:none">&times;</a></span>'; }).join('')
+    : 'No national categories recorded yet.';
+  if($('db-date') && !$('db-date').value) $('db-date').value=localToday();
+  if($('db-threshold')) $('db-threshold').value=cfg.threshold;
+  sfRenderDisbFields();
+
+  var years={};
+  getSessions().forEach(function(s){ if(s.recorded && s.date) years[String(s.date).slice(0,4)]=1; });
+  list.forEach(function(d){ if(d.date) years[String(d.date).slice(0,4)]=1; });
+  var ylist=Object.keys(years).sort().reverse();
+  if(!ylist.length) ylist=[String(parseLocalDate(localToday()).getFullYear())];
+  var ys=$('db-year');
+  if(ys){
+    var prevy=ys.value;
+    ys.innerHTML=ylist.map(function(y){ return '<option value="'+H(y)+'">'+H(y)+'</option>'; }).join('');
+    if(prevy && ylist.indexOf(prevy)>=0) ys.value=prevy;
+    ys.onchange=sfRenderDisbursements;
+  }
+  var year=(ys && ys.value) || ylist[0];
+
+  var np=netProfitByGame(year);
+  var req=tieredRequirement(np.tieredRegimeNet, cfg.threshold);
+  var distributedTiered=list.filter(function(d){
+    return String(d.date||'').slice(0,4)===String(year) && d.source==='gaming_net_profit'
+           && TIERED_REGIME_GAMES.indexOf(d.game)>=0 && d.direction==='given_away';
+  }).reduce(function(a,d){ return a+Number(d.amount||0); },0);
+  var shortfall=req.required-distributedTiered;
+
+  var tier=$('db-tier');
+  if(tier){
+    tier.innerHTML =
+      '<div class="tw" style="margin-top:12px"><table><tbody>'+
+      '<tr><td>Instant and electronic instant bingo net profit, '+H(year)+'</td><td style="text-align:right"><strong>'+money(req.net)+'</strong></td></tr>'+
+      '<tr><td>First '+money(req.threshold)+' &mdash; at least 25% distributed</td><td style="text-align:right">'+money(req.tier1*TIER1_MIN_DISTRIBUTION)+'</td></tr>'+
+      '<tr><td>Above '+money(req.threshold)+' &mdash; at least 50% distributed</td><td style="text-align:right">'+money(req.tier2*TIER2_MIN_DISTRIBUTION)+'</td></tr>'+
+      '<tr><td><strong>Minimum that must be distributed</strong></td><td style="text-align:right"><strong>'+money(req.required)+'</strong></td></tr>'+
+      '<tr><td>Distributed so far ('+H(year)+', given away, instant regime)</td><td style="text-align:right">'+money(distributedTiered)+'</td></tr>'+
+      '<tr><td>May be deducted and retained</td><td style="text-align:right">'+money(req.mayRetain)+'</td></tr>'+
+      '<tr><td>Own-purpose allowance &mdash; 5%, above the threshold only</td><td style="text-align:right">'+money(req.ownPurposeAllowance)+'</td></tr>'+
+      '</tbody></table></div>'+
+      (shortfall>0.005
+        ? '<div class="blockbox" style="margin-top:12px"><strong>Short by '+money(shortfall)+'.</strong> ORC 2915.101 measures this on a calendar-year basis. The section sets no deadline for completing distributions within the year, so this is a running position rather than a missed date.</div>'
+        : '<div class="flagbox" style="margin-top:12px;border-left-color:var(--ok);background:#F0FDF4"><strong>The minimum distribution for '+H(year)+' is met on the figures recorded.</strong></div>')+
+      (np.allocated
+        ? '<div class="flagbox"><strong>Expenses were allocated, not measured.</strong> Payments are recorded per account and the bingo session account lawfully holds both traditional and instant bingo. The statute prescribes no allocation method, so gross profit within each account is used as the basis. Your own books govern; this is an estimate that is honest about being one.</div>'
+        : '');
+  }
+
+  var tb=$('db-tbody');
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="8" class="empty">No disbursements recorded.</td></tr>'; }
+    else {
+      tb.innerHTML=list.slice().reverse().map(function(d){
+        var src=''; FUNDING_SOURCES.forEach(function(f){ if(f.id===d.source) src=f.label; });
+        return '<tr><td>'+H(d.date)+'</td><td>'+H(d.recipient)+'</td><td>'+money(d.amount)+'</td>'+
+          '<td>'+H(src)+'</td><td>'+H(d.game?gameLabel(d.game):'--')+'</td>'+
+          '<td>'+H(d.purpose||'--')+'</td><td>'+H(d.natcat||'--')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfDeleteDisbursement(\''+H(d.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var k=$('db-kpis');
+  if(k){
+    var totalOut=list.filter(function(d){ return String(d.date||'').slice(0,4)===String(year); })
+      .reduce(function(a,d){ return a+Number(d.amount||0); },0);
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Traditional bingo net profit</div><div class="kpi-value">'+money(np.purposeRegimeNet)+'</div><div class="kpi-change">ORC 2915.01(V) &mdash; purpose-tagged</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Instant regime net profit</div><div class="kpi-value">'+money(np.tieredRegimeNet)+'</div><div class="kpi-change">ORC 2915.101 &mdash; tiered percentage</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Must distribute</div><div class="kpi-value">'+money(req.required)+'</div><div class="kpi-change">'+H(year)+' calendar year</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Disbursed '+H(year)+'</div><div class="kpi-value">'+money(totalOut)+'</div><div class="kpi-change">All sources</div></div>';
+  }
+
+  var box=$('db-flags');
+  if(box){
+    var out='', p=ohioPurposesForOrg();
+    if(!p.cite){
+      out += '<div class="blockbox"><strong>Organisation type is not set.</strong> The enumerated purpose list is different for veterans organisations under ORC 2915.01(V)(2) and fraternal organisations under (V)(3), so nothing can be tagged until it is.</div>';
+    } else {
+      out += '<div class="flagbox"><strong>This post tags against '+H(p.cite)+'.</strong> '+
+        H(p.list.length)+' enumerated purposes. A post of the other statutory type would see a different list in the same state &mdash; that is the whole reason the list is not one shared enum.</div>';
+    }
+    box.innerHTML=out;
+  }
+}
+
+/* ---- 4.4 / 4.5 DONATIONS, RECOGNITION AND THE IRS GATE ----------------
+   TWO SEPARATE LEGAL QUESTIONS, and the receipt has to answer both.
+
+   (1) IS IT DEDUCTIBLE AT ALL? 26 U.S.C. 170(c)(3) covers a post or
+       organization of WAR VETERANS with no donor-type or use condition.
+       170(c)(4) covers a domestic fraternal society "In the case of a
+       contribution or gift by an individual ... but only if such contribution
+       or gift is to be used exclusively for religious, charitable, scientific,
+       literary, or educational purposes, or for the prevention of cruelty to
+       children or animals." So for a lodge it is a GATE with two conditions,
+       not a fixed sentence -- a third legal regime splitting on the same
+       veterans/fraternal axis as ORC 2915.01(V) and the officer titles.
+
+   (2) DID THE DONOR GET SOMETHING BACK? The pin. Two safe harbours make a
+       benefit insubstantial, and the figures are inflation-adjusted ANNUALLY,
+       which is why they live in a per-year table with the Revenue Procedure
+       cited rather than as constants. IRS Publication 1771 still prints
+       2023 figures; it is not the source. */
+var IRS_YEAR_TABLE = {
+  '2026': { lowCostArticle:13.90, tokenMinPayment:69.50, twoPctCeiling:139.00, source:'IRS Rev. Proc. 2025-32' }
+};
+var QPQ_DISCLOSURE_THRESHOLD = 75; // 26 U.S.C. 6115 -- statutory, NOT inflation-indexed
+function irsFiguresFor(year){
+  return IRS_YEAR_TABLE[String(year)] || null;
+}
+
+var DESIGNATED_USES = [
+  { id:'religious',   label:'Religious',   fraternalOk:true },
+  { id:'charitable',  label:'Charitable',  fraternalOk:true },
+  { id:'scientific',  label:'Scientific',  fraternalOk:true },
+  { id:'literary',    label:'Literary',    fraternalOk:true },
+  { id:'educational', label:'Educational', fraternalOk:true },
+  { id:'cruelty',     label:'Prevention of cruelty to children or animals', fraternalOk:true },
+  { id:'general',     label:'General post funds — no designated use',  fraternalOk:false }
+];
+function designatedUseLabel(id){ for(var i=0;i<DESIGNATED_USES.length;i++){ if(DESIGNATED_USES[i].id===id) return DESIGNATED_USES[i].label; } return id; }
+
+function deductibilityGate(don){
+  var o=orgType(getPost().orgType);
+  if(!o) return { deductible:false, cite:null, reason:'Organisation type is not set, so deductibility cannot be determined.' };
+  if(o.statutory==='veterans'){
+    return { deductible:true, cite:'26 U.S.C. 170(c)(3)',
+      reason:'A post or organization of war veterans. No donor-type condition and no designated-use condition applies.' };
+  }
+  var use=null; DESIGNATED_USES.forEach(function(u){ if(u.id===don.use) use=u; });
+  if(don.donorType!=='individual'){
+    return { deductible:false, cite:'26 U.S.C. 170(c)(4)',
+      reason:'A gift to a domestic fraternal society is deductible only "In the case of a contribution or gift by an individual". This donor is not an individual.' };
+  }
+  if(!use || !use.fraternalOk){
+    return { deductible:false, cite:'26 U.S.C. 170(c)(4)',
+      reason:'A gift to a domestic fraternal society is deductible only if it "is to be used exclusively for religious, charitable, scientific, literary, or educational purposes, or for the prevention of cruelty to children or animals". No qualifying use is designated.' };
+  }
+  return { deductible:true, cite:'26 U.S.C. 170(c)(4)',
+    reason:'An individual’s gift designated exclusively for '+use.label.toLowerCase()+' purposes.' };
+}
+
+/* Returns whether the premium is INSUBSTANTIAL under either safe harbour, and
+   if not, the amount that must be subtracted and whether 6115 forces the
+   receipt to state a value. */
+function premiumTreatment(payment, tier, year){
+  var fig=irsFiguresFor(year);
+  if(!tier) return { premium:false, insubstantial:true, deductibleAmount:payment, figures:fig };
+  if(!fig){
+    return { premium:true, unknownYear:true, insubstantial:false, deductibleAmount:null, figures:null };
+  }
+  var cost=Number(tier.cost||0);
+  if(tier.logo && payment>=fig.tokenMinPayment && cost<=fig.lowCostArticle){
+    return { premium:true, insubstantial:true, route:'token', deductibleAmount:payment, figures:fig };
+  }
+  var twoPctLimit=Math.min(payment*0.02, fig.twoPctCeiling);
+  if(cost<=twoPctLimit){
+    return { premium:true, insubstantial:true, route:'twoPct', limit:twoPctLimit, deductibleAmount:payment, figures:fig };
+  }
+  return { premium:true, insubstantial:false, route:null, limit:twoPctLimit,
+           value:cost, deductibleAmount:Math.max(0,payment-cost),
+           mustStateValue: payment>QPQ_DISCLOSURE_THRESHOLD, figures:fig };
+}
+
+function donorKey(name){ return String(name||'').trim().toLowerCase(); }
+/* REBUILT FROM THE RECORDS on every read rather than stored as a running
+   number. The spec asks for a stored, incremented total that can be rebuilt;
+   deriving it means it can never disagree with the donations that produced it,
+   which is the failure the "be able to rebuild it" requirement exists for. */
+function donorTotals(){
+  var out={};
+  getDonations().forEach(function(d){
+    var k=donorKey(d.donor);
+    if(!out[k]) out[k]={ name:d.donor, donorType:d.donorType, lifetime:0, count:0 };
+    out[k].lifetime+=Number(d.amount||0);
+    out[k].count++;
+  });
+  return out;
+}
+function tierEarned(lifetime){
+  var best=null;
+  getTiers().forEach(function(t){ if(lifetime>=Number(t.amount||0)){ if(!best || Number(t.amount)>Number(best.amount)) best=t; } });
+  return best;
+}
+
+function sfRecordDonation(){
+  var donor=($('dn-donor').value||'').trim();
+  if(!donor){ toast('Donor name is required','err'); return; }
+  var amount=Number($('dn-amount').value||0);
+  if(!(amount>0)){ toast('Amount must be greater than zero','err'); return; }
+  var list=getDonations();
+  list.push({ id:'dn'+Date.now(), donor:donor, donorType:$('dn-donortype').value,
+              amount:amount, date:$('dn-date').value||localToday(), use:$('dn-use').value });
+  st(K_DONATIONS,list);
+  $('dn-donor').value=''; $('dn-amount').value='';
+  toast('Donation recorded');
+  sfRenderAll();
+}
+function sfAddTier(){
+  var amount=Number($('dt-amount').value||0);
+  if(!(amount>0)){ toast('Tier amount must be greater than zero','err'); return; }
+  var item=($('dt-item').value||'').trim();
+  if(!item){ toast('Name the item awarded','err'); return; }
+  var list=getTiers();
+  if(list.some(function(t){ return Number(t.amount)===amount; })){ toast('A tier at that amount already exists','err'); return; }
+  list.push({ id:'dt'+Date.now(), amount:amount, item:item, cost:Number($('dt-cost').value||0), logo:!!$('dt-logo').checked });
+  st(K_TIERS,list);
+  $('dt-item').value=''; $('dt-cost').value='';
+  toast('Tier added');
+  sfRenderAll();
+}
+function sfRemoveTier(id){
+  st(K_TIERS, getTiers().filter(function(t){ return t.id!==id; }));
+  st(K_AWARDS, getAwards().filter(function(a){ return a.tierId!==id; }));
+  toast('Tier removed');
+  sfRenderAll();
+}
+/* FULFILMENT STATE IS THE POINT, not decoration. A tier crossed and a pin never
+   sent is a promise silently broken to a donor -- the same silent-failure class
+   as a write that reports "Saved" and did not persist. */
+var FULFILMENT_STATES = ['earned','ordered','sent','presented'];
+function awardFor(donorK){
+  var a=null; getAwards().forEach(function(x){ if(x.donorKey===donorK) a=x; });
+  return a;
+}
+function sfAdvanceFulfilment(donorK, tierId){
+  var list=getAwards(), a=null;
+  for(var i=0;i<list.length;i++){ if(list[i].donorKey===donorK){ a=list[i]; break; } }
+  /* "Earned" is DERIVED from the lifetime total, not an action somebody took --
+     a donor who has crossed a tier is already in it before any record exists.
+     So the first Advance must produce "ordered", not re-assert "earned", which
+     would look to the user like the button did nothing. */
+  if(!a){ a={ donorKey:donorK, tierId:tierId, state:'ordered', updated:localToday() }; list.push(a); }
+  else {
+    var idx=FULFILMENT_STATES.indexOf(a.state);
+    a.tierId=tierId;
+    a.state=FULFILMENT_STATES[Math.min(idx+1, FULFILMENT_STATES.length-1)];
+    a.updated=localToday();
+  }
+  st(K_AWARDS,list);
+  toast('Fulfilment: '+a.state);
+  sfRenderAll();
+}
+
+function sfBuildReceipt(){
+  var box=$('dn-receipt'); if(!box) return;
+  var sel=$('dn-receipt-pick');
+  if(!sel || !sel.value){ toast('Select a donation','err'); return; }
+  var don=null; getDonations().forEach(function(d){ if(d.id===sel.value) don=d; });
+  if(!don){ toast('Donation not found','err'); return; }
+  var post=getPost();
+  var year=String(don.date||localToday()).slice(0,4);
+  var gate=deductibilityGate(don);
+  var totals=donorTotals();
+  var lifetime=(totals[donorKey(don.donor)]||{}).lifetime||0;
+  var tier=tierEarned(lifetime);
+  var prem=premiumTreatment(Number(don.amount||0), tier, year);
+
+  var html='<div class="card" style="margin-top:12px"><h3>Receipt &mdash; '+H(don.donor)+'</h3>';
+  html+='<div class="note" style="font-size:13px;color:var(--text)">'+
+    H(post.name||'This post')+' acknowledges a contribution of <strong>'+money(don.amount)+'</strong> received on '+H(don.date)+
+    ' from '+H(don.donorType==='individual'?'an individual':'an entity')+
+    ', designated for: <strong>'+H(designatedUseLabel(don.use))+'</strong>.</div>';
+
+  if(!gate.deductible){
+    html+='<div class="blockbox" style="margin-top:12px"><strong>Not deductible &mdash; '+H(gate.cite||'')+'.</strong> '+H(gate.reason)+
+      ' The receipt must not describe this gift as tax-deductible.</div>';
+  } else {
+    html+='<div class="flagbox" style="margin-top:12px;border-left-color:var(--ok);background:#F0FDF4"><strong>Deductible under '+H(gate.cite)+'.</strong> '+H(gate.reason)+'</div>';
+  }
+
+  if(prem.unknownYear){
+    html+='<div class="blockbox"><strong>No IRS figures are loaded for '+H(year)+', so no quid-pro-quo conclusion is offered.</strong> '+
+      'The insubstantial-benefit thresholds are inflation-adjusted every year by Revenue Procedure. Publication 1771 is not the source &mdash; it still prints 2023 figures. Load the year’s Revenue Procedure values before issuing this receipt.</div>';
+  } else if(!prem.premium){
+    html+='<div class="note">No goods or services were provided in exchange for this contribution.</div>';
+  } else if(prem.insubstantial){
+    html+='<div class="flagbox"><strong>The '+H(tier.item)+' is an insubstantial benefit, so the full '+money(don.amount)+' is deductible.</strong> '+
+      (prem.route==='token'
+        ? 'It bears the post’s name or emblem, the payment is at least '+money(prem.figures.tokenMinPayment)+', and the item cost '+money(tier.cost)+' which is at or below the '+money(prem.figures.lowCostArticle)+' low-cost article limit for '+H(year)+' ('+H(prem.figures.source)+').'
+        : 'Its cost of '+money(tier.cost)+' is at or below '+money(prem.limit)+' &mdash; the lesser of 2% of the payment and the '+money(prem.figures.twoPctCeiling)+' ceiling for '+H(year)+' ('+H(prem.figures.source)+').')+
+      '</div>';
+  } else {
+    html+='<div class="blockbox"><strong>The '+H(tier.item)+' is NOT insubstantial. Deductible amount is '+money(prem.deductibleAmount)+', not '+money(don.amount)+'.</strong> '+
+      'Its cost of '+money(tier.cost)+' exceeds '+money(prem.limit)+' (the lesser of 2% of the payment and the '+money(prem.figures.twoPctCeiling)+' ceiling), and it does not clear the emblem route'+
+      (tier.logo?' because the item cost is above the '+money(prem.figures.lowCostArticle)+' low-cost article limit':' because the item does not bear the post’s name or emblem')+'. '+
+      (prem.mustStateValue
+        ? '<strong>26 U.S.C. 6115 requires this receipt to state the value of the goods provided, because the payment exceeds '+money(QPQ_DISCLOSURE_THRESHOLD)+'.</strong> That statement is included below.'
+        : 'The payment does not exceed '+money(QPQ_DISCLOSURE_THRESHOLD)+', so the 6115 written-disclosure requirement is not triggered, but the deduction is still limited.')+
+      '</div>';
+    html+='<div class="note" style="font-size:13px;color:var(--text);border:1px solid var(--border);border-radius:8px;padding:12px">'+
+      'In exchange for this contribution you received '+H(tier.item)+', with an estimated value of '+money(tier.cost)+'. '+
+      'The amount of your contribution that is deductible for federal income tax purposes is limited to the excess of the amount contributed over the value of the goods provided: <strong>'+money(prem.deductibleAmount)+'</strong>.</div>';
+  }
+  html+='<div class="note"><strong>Nothing has been sent.</strong> This receipt was generated for you to issue yourself.</div></div>';
+  box.innerHTML=html;
+}
+
+function sfRenderDonations(){
+  var us=$('dn-use');
+  if(us && !us.options.length) us.innerHTML=DESIGNATED_USES.map(function(u){ return '<option value="'+H(u.id)+'">'+H(u.label)+'</option>'; }).join('');
+  if($('dn-date') && !$('dn-date').value) $('dn-date').value=localToday();
+  var dons=getDonations();
+  var rp=$('dn-receipt-pick');
+  if(rp){
+    var prev=rp.value;
+    rp.innerHTML = dons.length
+      ? dons.slice().reverse().map(function(d){ return '<option value="'+H(d.id)+'">'+H(d.date)+' &mdash; '+H(d.donor)+' &mdash; '+money(d.amount)+'</option>'; }).join('')
+      : '<option value="">No donations recorded</option>';
+    if(prev) rp.value=prev;
+  }
+
+  var tiers=getTiers().slice().sort(function(a,b){ return Number(a.amount)-Number(b.amount); });
+  var ttb=$('dt-tbody');
+  if(ttb){
+    if(!tiers.length){ ttb.innerHTML='<tr><td colspan="6" class="empty">No recognition tiers.</td></tr>'; }
+    else {
+      var year=String(parseLocalDate(localToday()).getFullYear());
+      var fig=irsFiguresFor(year);
+      ttb.innerHTML=tiers.map(function(t){
+        var verdict;
+        if(!fig) verdict='<span class="tag warn">No '+H(year)+' IRS figures loaded</span>';
+        else {
+          var tok = t.logo && Number(t.cost||0)<=fig.lowCostArticle;
+          verdict = tok
+            ? '<span class="tag ok">Emblem route clears at '+money(fig.tokenMinPayment)+'+</span>'
+            : (Number(t.cost||0)<=Math.min(Number(t.amount)*0.02, fig.twoPctCeiling)
+                ? '<span class="tag ok">Within 2% at this tier</span>'
+                : '<span class="tag bad">Reduces the deduction</span>');
+        }
+        return '<tr><td>'+money(t.amount)+'</td><td>'+H(t.item)+'</td><td>'+money(t.cost)+'</td>'+
+          '<td>'+(t.logo?'Yes':'No')+'</td><td>'+verdict+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveTier(\''+H(t.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var totals=donorTotals(), keys=Object.keys(totals).sort(function(a,b){ return totals[b].lifetime-totals[a].lifetime; });
+  var dtb=$('dn-donortbody');
+  if(dtb){
+    if(!keys.length){ dtb.innerHTML='<tr><td colspan="7" class="empty">No donations recorded.</td></tr>'; }
+    else {
+      dtb.innerHTML=keys.map(function(k){
+        var d=totals[k], t=tierEarned(d.lifetime), a=awardFor(k);
+        var ful = t ? (a ? '<span class="tag '+(a.state==='presented'?'ok':(a.state==='earned'?'bad':'warn'))+'">'+H(a.state)+'</span>' : '<span class="tag bad">earned, not ordered</span>') : '--';
+        return '<tr><td>'+H(d.name)+'</td><td>'+H(d.donorType==='individual'?'Individual':'Entity')+'</td>'+
+          '<td><strong>'+money(d.lifetime)+'</strong></td><td>'+d.count+'</td>'+
+          '<td>'+H(t?t.item:'--')+'</td><td>'+ful+'</td>'+
+          '<td>'+(t?'<button class="btn sm sec" onclick="sfAdvanceFulfilment(\''+H(k)+'\',\''+H(t.id)+'\')">Advance</button>':'')+'</td></tr>';
+      }).join('');
+    }
+  }
+
+  var k2=$('dn-kpis');
+  if(k2){
+    var total=dons.reduce(function(a,d){ return a+Number(d.amount||0); },0);
+    var owed=keys.filter(function(k){ var t=tierEarned(totals[k].lifetime); if(!t) return false; var a=awardFor(k); return !a || a.state!=='presented'; }).length;
+    k2.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Donations received</div><div class="kpi-value">'+money(total)+'</div><div class="kpi-change">'+dons.length+' gifts</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Donors</div><div class="kpi-value">'+keys.length+'</div><div class="kpi-change">Cumulative lifetime tracked</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Recognition owed</div><div class="kpi-value"'+(owed?' style="color:var(--red)"':'')+'>'+owed+'</div><div class="kpi-change">Tier crossed, not yet presented</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Tiers configured</div><div class="kpi-value">'+tiers.length+'</div><div class="kpi-change">Lifetime thresholds</div></div>';
+  }
+
+  var box=$('dn-flags');
+  if(box){
+    var out='', o=orgType(getPost().orgType);
+    if(o && o.statutory==='fraternal'){
+      out += '<div class="flagbox"><strong>Deductibility is a gate here, not a sentence.</strong> '+
+        'Under 26 U.S.C. 170(c)(4) a gift to a domestic fraternal society is deductible <em>only</em> where it is made by an individual <em>and</em> is to be used exclusively for religious, charitable, scientific, literary or educational purposes, or the prevention of cruelty to children or animals. A veterans post under 170(c)(3) has neither condition. Third legal regime splitting on the same axis as the officer titles and the ORC 2915.01(V) lists.</div>';
+    }
+    var yearNow=String(parseLocalDate(localToday()).getFullYear());
+    if(!irsFiguresFor(yearNow)){
+      out += '<div class="blockbox"><strong>No IRS insubstantial-benefit figures are loaded for '+H(yearNow)+'.</strong> '+
+        'They are inflation-adjusted annually by Revenue Procedure. No quid-pro-quo conclusion will be offered for a '+H(yearNow)+' gift until they are entered &mdash; a stale figure quietly applied is worse than none.</div>';
+    }
+    var owed2=keys.filter(function(k){ var t=tierEarned(totals[k].lifetime); if(!t) return false; var a=awardFor(k); return !a || a.state!=='presented'; });
+    if(owed2.length){
+      out += '<div class="flagbox"><strong>'+owed2.length+' donor(s) have crossed a tier and not been presented their item.</strong> A tier crossed and a pin never sent is a promise silently broken, and the person it was broken to is a donor.</div>';
+    }
+    box.innerHTML=out;
+  }
+}
+
+/* ---- 4.7 SERVICE HOURS ------------------------------------------------- */
+var MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+function decimalHours(minutes){ return Math.round((Number(minutes||0)/60)*100)/100; }
+function sfSaveServicePeriod(){
+  var c=getP4Config();
+  c.serviceStartMonth=Number($('sv-startmonth').value||1);
+  c.serviceStartDay=Number($('sv-startday').value||1);
+  st(K_P4CONFIG,c);
+  toast('Reporting period saved');
+  sfRenderAll();
+}
+function currentServicePeriod(){
+  var c=getP4Config(), today=parseLocalDate(localToday());
+  var y=today.getFullYear();
+  var start=new Date(y, (c.serviceStartMonth||1)-1, c.serviceStartDay||1);
+  if(today<start) start=new Date(y-1, (c.serviceStartMonth||1)-1, c.serviceStartDay||1);
+  var end=new Date(start.getFullYear()+1, start.getMonth(), start.getDate());
+  function fmt(d){ return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+  return { start:fmt(start), end:fmt(end) };
+}
+function sfLogService(){
+  var activity=($('sv-activity').value||'').trim();
+  if(!activity){ toast('Name the activity','err'); return; }
+  var members=Number($('sv-members').value||0), nonmembers=Number($('sv-nonmembers').value||0);
+  if(members+nonmembers<=0){ toast('Record at least one volunteer','err'); return; }
+  var minutes=Number($('sv-minutes').value||0);
+  if(!(minutes>0)){ toast('Minutes each must be greater than zero','err'); return; }
+  var occupants=Math.max(1, Number($('sv-occupants').value||1));
+  var miles=Number($('sv-miles').value||0);
+  var list=getServiceLog();
+  list.push({ id:'sv'+Date.now(), activity:activity, date:$('sv-date').value||localToday(),
+              members:members, nonmembers:nonmembers, minutesEach:minutes,
+              hoursEach:decimalHours(minutes),
+              personHours:Math.round((members+nonmembers)*decimalHours(minutes)*100)/100,
+              roundTripMiles:miles, occupants:occupants,
+              personMiles:Math.round(miles*occupants*100)/100,
+              national:!!$('sv-national').checked });
+  st(K_SERVICE,list);
+  $('sv-activity').value='';
+  toast('Service logged');
+  sfRenderAll();
+}
+function sfDeleteService(id){
+  st(K_SERVICE, getServiceLog().filter(function(s){ return s.id!==id; }));
+  toast('Entry removed');
+  sfRenderAll();
+}
+function sfRenderService(){
+  var c=getP4Config();
+  var ms=$('sv-startmonth');
+  if(ms){
+    var prev=ms.value;
+    ms.innerHTML=MONTHS.map(function(m,i){ return '<option value="'+(i+1)+'">'+H(m)+'</option>'; }).join('');
+    ms.value=String(c.serviceStartMonth||1);
+    if(prev && !c.serviceStartMonth) ms.value=prev;
+  }
+  if($('sv-startday')) $('sv-startday').value=c.serviceStartDay||1;
+  if($('sv-date') && !$('sv-date').value) $('sv-date').value=localToday();
+
+  var list=getServiceLog(), per=currentServicePeriod();
+  var inPeriod=list.filter(function(s){ return s.date>=per.start && s.date<per.end; });
+  var tb=$('sv-tbody');
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No service logged.</td></tr>'; }
+    else {
+      tb.innerHTML=list.slice().reverse().map(function(s){
+        return '<tr><td>'+H(s.date)+'</td><td>'+H(s.activity)+'</td>'+
+          '<td>'+s.members+' member'+(s.members===1?'':'s')+', '+s.nonmembers+' non-member'+(s.nonmembers===1?'':'s')+'</td>'+
+          '<td>'+H(String(s.personHours))+'</td><td>'+H(String(s.personMiles))+'</td>'+
+          '<td>'+(s.national?'<span class="tag ok">Yes</span>':'--')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfDeleteService(\''+H(s.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var k=$('sv-kpis');
+  if(k){
+    function sum(rows,f){ return Math.round(rows.reduce(function(a,r){ return a+Number(r[f]||0); },0)*100)/100; }
+    var nat=inPeriod.filter(function(s){ return s.national; });
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Person-hours this period</div><div class="kpi-value">'+H(String(sum(inPeriod,'personHours')))+'</div><div class="kpi-change">'+H(per.start)+' to '+H(per.end)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Person-miles this period</div><div class="kpi-value">'+H(String(sum(inPeriod,'personMiles')))+'</div><div class="kpi-change">Round trip &times; occupants</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Counts toward national</div><div class="kpi-value">'+H(String(sum(nat,'personHours')))+'</div><div class="kpi-change">Of '+H(String(sum(inPeriod,'personHours')))+' person-hours</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Member split</div><div class="kpi-value" style="font-size:19px">'+H(String(sum(inPeriod,'members')))+' / '+H(String(sum(inPeriod,'nonmembers')))+'</div><div class="kpi-change">Members / non-members</div></div>';
+  }
+  var box=$('sv-flags');
+  if(box){
+    box.innerHTML='<div class="flagbox"><strong>Hours here are not Chapter 2915 records.</strong> '+
+      'Volunteer hours are central to the orders’ own national reporting and appear nowhere in Chapter 2915, which measures where gaming net profit went rather than how long anyone worked. The two never reconcile and are not meant to.</div>';
+  }
+}
+
+/* ---- 4.6 OUTREACH, CONSTRAINED TO THE ORG'S OWN CATEGORY SET ---------- */
+function sfOutreachIdeas(){
+  var out=$('or-out'); if(!out) return;
+  var p=ohioPurposesForOrg();
+  if(!p.cite){ out.innerHTML='<div class="blockbox"><strong>Set the organisation type first.</strong> The permitted category set differs between ORC 2915.01(V)(2) and (V)(3), and there is nothing to constrain suggestions against until it is known.</div>'; return; }
+  var goal=($('or-goal').value||'').trim();
+  if(!goal){ toast('Say what the post is trying to achieve','err'); return; }
+  out.innerHTML='<div class="flagbox">Thinking...</div>';
+  callClaude({
+    max_tokens:1200,
+    system:'You suggest community outreach for an Ohio '+(orgType(getPost().orgType)||{}).label+
+      ' post. Every suggestion MUST fall within one of these legally enumerated charitable purposes and you must name which one, verbatim, for each idea:\n- '+p.list.join('\n- ')+
+      '\nDo not invent programs the organisation runs. Do not suggest anything outside the list. Reply as a numbered list; begin each item with the purpose in square brackets, e.g. "[Disaster relief] ...".',
+    messages:[{ role:'user', content:'The post wants to: '+goal }]
+  }).then(function(res){
+    if(res && res.error){ out.innerHTML='<div class="blockbox"><strong>The suggestion service could not be reached.</strong> Nothing is shown.</div>'; return; }
+    var txt='';
+    if(res && Array.isArray(res.content)) res.content.forEach(function(b){ if(b.type==='text') txt+=b.text; });
+    /* ENFORCED IN CODE, NOT ASKED FOR IN THE PROMPT. Each line must name a
+       permitted purpose in brackets; anything else is dropped rather than
+       shown with a caveat, because an app-branded suggestion outside the
+       organisation's own legal category set is a compliance hazard. */
+    var kept=[], dropped=0;
+    txt.split('\n').forEach(function(line){
+      if(!line.trim()) return;
+      var m=line.match(/\[([^\]]+)\]/);
+      if(!m){ if(/^\s*\d+[.)]/.test(line)) dropped++; return; }
+      var named=m[1].trim().toLowerCase();
+      var ok=p.list.some(function(x){ return x.toLowerCase()===named; });
+      if(ok) kept.push(line.trim()); else dropped++;
+    });
+    if(!kept.length){
+      out.innerHTML='<div class="blockbox"><strong>No suggestion named a permitted purpose, so none is shown.</strong> '+
+        H(String(dropped))+' were discarded. Every idea must fall inside '+H(p.cite)+'’s enumerated list for this organisation type.</div>';
+      return;
+    }
+    out.innerHTML='<div class="flagbox"><strong>'+H(String(kept.length))+' suggestion(s) inside '+H(p.cite)+'.</strong>'+
+      (dropped?' '+H(String(dropped))+' were discarded for naming no permitted purpose.':'')+'</div>'+
+      '<div class="card" style="white-space:pre-wrap">'+H(kept.join('\n'))+'</div>';
+  })['catch'](function(){
+    out.innerHTML='<div class="blockbox"><strong>The suggestion service could not be reached.</strong> Nothing is shown.</div>';
+  });
+}
+function sfRenderOutreach(){
+  var box=$('or-flags'); if(!box) return;
+  var p=ohioPurposesForOrg();
+  box.innerHTML = p.cite
+    ? '<div class="flagbox"><strong>Constrained to '+H(p.cite)+' &mdash; '+H(String(p.list.length))+' enumerated purposes.</strong> A post of the other statutory type would be constrained to a different list in the same state.</div>'
+    : '<div class="blockbox"><strong>Organisation type is not set</strong>, so there is no category set to constrain suggestions against.</div>';
+}
+
 /* ---- DASHBOARD --------------------------------------------------------- */
 function sfRenderDashboard(){
   var p=getPost(), members=getMembers(), led=getLedger();
@@ -3201,6 +4222,7 @@ function sfRenderAll(){
   sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers();
   sfRenderCanteen(); sfRenderCloseout(); sfRenderEvents(); sfRenderHall(); sfRenderVendors();
   sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
+  sfRenderDisbursements(); sfRenderDonations(); sfRenderService(); sfRenderOutreach();
   sfRenderDashboard();
 }
 
