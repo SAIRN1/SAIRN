@@ -198,6 +198,52 @@ def main():
     if not repo or not os.path.isdir(os.path.join(repo, 'sql')):
         sys.exit(0)
 
+    # ── COMMIT-AND-PUSH IN ONE CALL: A REAL HOLE, FOUND BY FALLING INTO IT ──
+    # This is a PreToolUse hook. It runs BEFORE a single character of the
+    # command executes, so it sees the repo as it is NOW. A command shaped
+    #
+    #     git add sql/x.sql && git commit -m ... && git push
+    #
+    # is therefore invisible to every check below: at hook time the commit does
+    # not exist, `origin/main..HEAD` contains no SQL, and the gate allows.
+    #
+    # THIS IS NOT HYPOTHETICAL. On 2026-09-01, hours after this file was made
+    # fail-closed, a migration (sql/sd_subs_compliance_2026-09-01.sql) reached
+    # origin/main through exactly this shape, in the same session that wrote
+    # the fail-closed logic and had just verified it denying correctly on a
+    # separate push. The gate was working; it was simply looking at a moment
+    # before the thing it guards existed.
+    #
+    # The fix cannot be "inspect what is about to be committed" -- the hook has
+    # no way to know what the command will stage. So it refuses only the narrow
+    # case where the ambiguity is real: a combined commit+push while SQL is
+    # uncommitted in the working tree or the index. An ordinary combined
+    # commit+push that touches no SQL is unaffected, which matters -- a gate
+    # that blocks every routine workflow gets switched off within a day.
+    if re.search(r'\bgit\s+commit\b', cmd):
+        pending = [ln[3:].strip().replace('\\', '/')
+                   for ln in git(repo, 'status', '--porcelain').splitlines() if ln.strip()]
+        pending_sql = sorted(q for q in pending if q.startswith('sql/') and q.endswith('.sql'))
+        if pending_sql:
+            deny(chr(10).join([
+                "Blocked: this command commits AND pushes SQL in one step, so the push gate",
+                "cannot see what it is being asked to check.",
+                "",
+                "Uncommitted SQL in the working tree or index:",
+                ] + ["  " + q for q in pending_sql] + [
+                "",
+                "This hook runs BEFORE the command does. At this moment the commit does not",
+                "exist yet, so the outgoing-file list is empty and checks 2 and 3 would pass",
+                "on a push that in fact ships these files. A migration reached origin/main",
+                "through exactly this shape on 2026-09-01, hours after the gate was made",
+                "fail-closed and verified denying correctly on a separate push.",
+                "",
+                "Run the commit and the push as TWO separate commands. The gate then sees",
+                "the real commit and checks it.",
+                "",
+                "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+            ]))
+
     checker = os.path.join(repo, 'tools', 'sairn_load_state_check.py')
     if not os.path.isfile(checker):
         sys.exit(0)
