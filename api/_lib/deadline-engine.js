@@ -1841,6 +1841,44 @@ var COMPUTATION_STANDARDS = {
   // court "waive the application of any rule" as justice may require.
   nh_scr_2: { label: 'N.H. Super. Ct. R. 2', impl: 'frcp_6a',
     base_period_suffix: '', months_years_suffix: '',
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Delaware SUPERIOR COURT Civil Rule 6(a). THE COURT IS PART OF THE NAME AND
+  // NOT DECORATION: Del. Ct. Ch. R. 6 is a DIFFERENT computation on the same
+  // subject, and a Chancery deadline computed under this standard is computed
+  // under the wrong rule. The two differ on the rollover basis, on what "legal
+  // holiday" means, on whether backward periods are addressed at all, and on
+  // whether an hours unit exists; they agree only on the 11-day threshold.
+  // Chancery is deliberately NOT seeded and would take its own standard,
+  // de_ct_ch_r_6. See docs/sairnlaw-delaware-deadline-seed-gate.md sec. 5.4.
+  //
+  // ELEVEN, joining Alabama and Wisconsin -- not the 7 of NJ, NC, WA, MA, MO
+  // and SC, and not Arkansas's 14. It is load-bearing here rather than
+  // theoretical: Rule 59(b)'s new-trial period is TEN days, so it sits under
+  // the threshold and excludes intermediate weekends and holidays.
+  //
+  // THE RULE NAMES BOTH WEEKEND DAYS ITSELF -- "unless it is a Saturday or
+  // Sunday, or other legal holiday" -- so the [Sat, Sun] default is correct and
+  // NO weekend_days declaration belongs here. Checked deliberately, because
+  // this landed the same day the per-jurisdiction weekend flag shipped and
+  // 1 Del. C. sec. 501(a)(11) makes SATURDAYS a statutory holiday while never
+  // listing Sunday at all -- the exact inverse of Louisiana. That inversion
+  // changes nothing, because Rule 6(a) does not defer the weekend question to
+  // the statute the way La. C.C.P. art. 5059(A) does.
+  //
+  // NOT MODELLED, and the reason it is a disclosure rather than a refusal:
+  // the rule also rolls off "any other day on which the office of the
+  // Prothonotary is closed" and runs to the next day that office is OPEN.
+  // That limb REPLACES nothing -- it sits beside the weekend/holiday test in
+  // the same sentence -- so omitting a closure day returns the earlier
+  // unrolled date, which is EARLY and safe. Same limb Indiana T.R. 6(A)
+  // carries. See JURISDICTION_COVERAGE.de.
+  //
+  // NO SUBDIVISION SUFFIXES. Rule 6(a) is one unnumbered paragraph carrying
+  // the exclusion, the rollover and the holiday definition together, so every
+  // suffix is empty rather than invented -- the New Hampshire treatment.
+  de_super_ct_civ_r_6a: { label: 'Del. Super. Ct. Civ. R. 6(a)', impl: 'frcp_6a',
+    short_period_exclusion_days: 11,
+    base_period_suffix: '', months_years_suffix: '',
     rollover_suffix_forward: '', rollover_suffix_backward: '' }
 };
 
@@ -1926,6 +1964,12 @@ var JURISDICTION_COVERAGE = {
   // and the ones sampled explained rule STRUCTURE rather than naming these
   // omissions, so a caller was told through neither channel. The majority of
   // seeded states already used this table; these two now match them.
+  de: {
+    complete: false,
+    direction: 'early',
+    summary: 'SUPERIOR COURT ONLY -- the Court of Chancery is a different computation and is not seeded. Delaware also rolls the last day off any day the Prothonotary office is closed, and its holiday definition reaches days appointed by the Governor or the Chief Justice; neither is modelled, and Sussex County Return Day is omitted. Every omission makes this date EARLIER than the true deadline, never later.',
+    detail: "SCOPE FIRST, BECAUSE IT IS THE ONE THAT COULD BE READ AS COVERAGE NOBODY OFFERED: these rows are Del. Super. Ct. Civ. R. 6(a) and the Superior Court civil rules. Del. Ct. Ch. R. 6 is a DIFFERENT computation -- it rolls off Saturday, Sunday and legal holidays with Register in Chancery inaccessibility as a SEPARATE additional limb, defines legal holiday as days declared by the Governor or identified in 1 Del. C. sec. 501 with NO Chief Justice limb, addresses backward periods expressly in 6(a)(4), and carries an hours unit in 6(a)(2). The two agree only on the 11-day short-period threshold. A Chancery deadline must not be computed from these rows. THE PROTHONOTARY LIMB IS NOT MODELLED: Rule 6(a) rolls the last day off \"any other day on which the office of the Prothonotary is closed\" and runs to the next day that office is OPEN, which is per-county and unknowable in advance; omitting it returns the earlier unrolled date and is EARLY. THE HOLIDAY DEFINITION HAS AN OPEN-ENDED LIMB: \"legal holidays\" are those \"provided by statute or appointed by the Governor or the Chief Justice\", and appointed days are underivable -- the Idaho and Hawaii shape. SUSSEX COUNTY RETURN DAY IS OMITTED, and it is unsafe in BOTH directions if modelled naively: 1 Del. C. sec. 501(a)(13) makes it a holiday only in Sussex County and only \"after 12:00 Noon\", so it is county-scoped like Massachusetts's Suffolk County AND a half day, and treating it as a full statewide rolling day would report LATE. Omitting it reports EARLY in Sussex County and is exactly correct in New Castle and Kent. For 2026 that day is Thursday 5 November. WHAT IS NOT OMITTED, and is worth stating because the neighbouring state answered it the other way: THE GENERAL ELECTION DAY IS CARRIED. Sec. 501(a)(12) makes \"the day of the General Election as it biennially occurs\" a holiday, and Del. Const. art. V sec. 1 fixes the general election \"biennially on the Tuesday next after the first Monday in the month of November\" -- the same term, in a constitutional provision, one reference away. New Hampshire's equivalent day was OMITTED because RSA ch. 652 never defines the term its holiday statute uses and dating it required a second statute using a different one. Delaware has no such gap, so the day is a citation rather than a reading: Tuesday 3 November 2026."
+  },
   ut: {
     complete: false,
     direction: 'early',
@@ -2601,6 +2645,34 @@ var SERVICE_EXTENSION_STANDARDS = {
   // route as West Virginia and North Carolina.
   wa_cr_6e: {
     label: 'Wash. Super. Ct. Civ. R. 6(e)',
+    sequence: 'add_to_period_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) { return method === 'mail'; }
+  },
+  // Del. Super. Ct. Civ. R. 6(e), verbatim on the operative sentence:
+  //   "Whenever a party has the right to or is required to do some act or take
+  //    some proceeding within a prescribed period after being served and
+  //    service is by mail, 3 days shall be added to the prescribed period."
+  //
+  // MAIL ONLY, AND NOT AN EXCLUSIVITY RULE. Checked against the Utah/Florida
+  // shape deliberately, since both were live when this was written: the text
+  // says "service is by mail" with no "only", "exclusively" or equivalent, so
+  // it takes no requires_exclusive and a caller supplying service_methods
+  // changes nothing. There is no electronic, facsimile or consented-means limb
+  // to reconcile -- unlike the FRCP family, this rule has exactly one method.
+  //
+  // "ADDED TO THE PRESCRIBED PERIOD" IS WHY THE SEQUENCE IS
+  // add_to_period_then_roll RATHER THAN after_base_period. The three days
+  // lengthen the period itself, so the weekend/holiday rollover acts ONCE, on
+  // the end of the lengthened period. Rolling first and then adding would give
+  // a different date whenever the unrolled last day lands on a weekend.
+  //
+  // THE SECOND SENTENCE IS A LIMIT ON WHO, NOT ON HOW MANY DAYS: "The
+  // additional 3-day period applies only to actions taken by parties and does
+  // not apply to actions taken by the Court." Every seeded Delaware row is a
+  // party's act, so the limb is satisfied by construction rather than modelled.
+  de_super_ct_civ_r_6e: {
+    label: 'Del. Super. Ct. Civ. R. 6(e)',
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
