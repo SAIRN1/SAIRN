@@ -130,6 +130,16 @@
       "claimed_at_epoch": 1788287179.3294854,
       "status": "released",
       "released_at": "2026-09-01T18:38:58Z"
+    },
+    {
+      "id": "hank-1788288184",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "coverage disclosure contract standardisation",
+      "claimed_at": "2026-09-01T18:43:04Z",
+      "claimed_at_epoch": 1788288184.8469737,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
