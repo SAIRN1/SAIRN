@@ -643,6 +643,28 @@ module.exports = async (req, res) => {
         jurisdiction: body.jurisdiction,
         domain: body.domain,
         service_method: body.service_method,
+        // The FULL SET of methods actually used, for rules whose extension
+        // requires service by one method AND BY NOTHING ELSE -- Utah URCP
+        // 6(c) ("exclusively by mail") and Fla. R. Gen. Prac. & Jud. Admin.
+        // 2.514(b) ("by only mail").
+        //
+        // ADDED 2026-09-01 AFTER A LIVE DEFECT: the engine grew this input on
+        // 2026-08-27 (a9daad1) and this payload was never updated, so the
+        // field was DROPPED on every request for five days. The consequences
+        // ran in both directions and neither was visible from the response
+        // shape: Florida returned applied_exclusivity_assumed and +5 even
+        // when the caller sent ["mail","email"], which is the FIVE-DAY-LATE
+        // case that change was built to close; and Utah's +7 was unreachable
+        // entirely, because on_unknown_exclusivity: 'refuse' fired on every
+        // call no matter what the caller supplied.
+        //
+        // Its 14/14 and 59/59 suites passed the whole time because they call
+        // computeDeadline() directly and never traverse this file. That is
+        // Guardian Check 29's exact shape -- two files, one change, one
+        // updated -- and the guard against a third instance is
+        // api/_lib/deadline-endpoint-inputs.test.js, which diffs the fields
+        // the engine reads against the fields this payload sends.
+        service_methods: body.service_methods,
         // The clock time service was completed, HH:MM in 24-hour form. Read
         // only by standards whose amount genuinely turns on it -- today that
         // is Va. Sup. Ct. R. 1:7, whose 5:00 p.m. cutoff decides between a
