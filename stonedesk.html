@@ -3242,7 +3242,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     }
     jobsEl.innerHTML = jobs.map(function(j){
       var photosHtml = (j.photos||[]).map(function(p){
-        return '<img src="'+p+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px;flex-shrink:0">';
+        return '<img src="'+subEsc(p)+'" style="width:80px;height:80px;object-fit:cover;border-radius:6px;flex-shrink:0">';
       }).join('');
       var paidBadge = j.paid
         ? '<span style="background:#DCFCE7;color:#166534;font-size:11px;font-weight:700;padding:3px 10px;border-radius:100px">PAID'+(j.paidDate?' — '+subEsc(j.paidDate):'')+'</span>'
@@ -4148,7 +4148,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     w.document.write('<html><head><title>Drawing - Pinnacle Stone</title><style>body{margin:20px;font-family:Arial,sans-serif;color:#1e293b}img{max-width:100%;border:1px solid #e2e8f0}</style><scr'+'ipt></scr'+'ipt></head><body>');
     w.document.write('<h2 style="color:'+sdThemeColor('--brand2','#16c762')+'">Pinnacle Stone & Design — '+jobName+'</h2>');
     w.document.write('<p style="color:#64748b">'+new Date().toLocaleDateString()+'</p>');
-    try{w.document.write('<img src="'+canvas.toDataURL('image/png')+'">');}catch(e){w.document.write('<p>Canvas drawing</p>');}
+    try{w.document.write('<img src="'+escHtml(canvas.toDataURL('image/png'))+'">');}catch(e){w.document.write('<p>Canvas drawing</p>');}
     w.document.write('</body></html>');
     w.document.close();w.print();
   };
@@ -5851,7 +5851,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     wrap.innerHTML=posItems.map(function(it,i){
       return '<div style="display:flex;gap:8px;margin-bottom:8px;align-items:center">'
         +'<input placeholder="Description" value="'+escHtml(it.desc)+'" oninput="posUpdateItem('+i+',\'desc\',this.value)" style="flex:2;padding:12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box">'
-        +'<input type="number" placeholder="0.00" value="'+(it.amt||'')+'" oninput="posUpdateItem('+i+',\'amt\',this.value)" style="flex:1;padding:12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;max-width:110px">'
+        +'<input type="number" placeholder="0.00" value="'+escHtml(it.amt||'')+'" oninput="posUpdateItem('+i+',\'amt\',this.value)" style="flex:1;padding:12px;font-size:14px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;max-width:110px">'
         +(posItems.length>1?'<button onclick="posRemoveItem('+i+')" style="padding:10px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;cursor:pointer;font-size:13px">✕</button>':'')
         +'</div>';
     }).join('');
@@ -6429,7 +6429,7 @@ window.sdPhotosExport=function(){
     w.document.write("<html><head><title>Integrations</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{color:#0A3D1F}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#0A3D1F;color:#fff;padding:8px 10px;text-align:left}td{padding:8px 10px;border-bottom:1px solid #ddd}.err{color:#dc2626;font-weight:700}</style><scr"+"ipt></scr"+"ipt></head><body>");
     w.document.write("<h1>Pinnacle Stone &amp; Design — Integrations</h1><p style='color:#888;font-size:11px'>"+new Date().toLocaleString()+"</p>");
     w.document.write("<table><tr><th>App</th><th>Category</th><th>Status</th><th>Last Sync</th><th>Records</th><th>Errors</th></tr>");
-    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.name)+"</td><td>"+x.cat+"</td><td>"+x.status+"</td><td>"+x.sync+"</td><td>"+(x.records||0).toLocaleString()+"</td><td class='"+(x.errors?"err":"")+"'>"+(x.errors||0)+"</td></tr>");});
+    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.name)+"</td><td>"+x.cat+"</td><td>"+x.status+"</td><td>"+x.sync+"</td><td>"+(x.records||0).toLocaleString()+"</td><td class=\""+escHtml(x.errors?"err":"")+"\">"+(x.errors||0)+"</td></tr>");});
     w.document.write("</table></body></html>");w.document.close();w.print();
   };
   sdIntegRender();
@@ -6727,9 +6727,9 @@ window.sdPhotosExport=function(){
     data.forEach(function(d,i){
       var x=15+i*28;var y=20+((i%2)*45);
       var sc=STATUS_COLOR[d.status]||'#6b7280';
-      pins+='<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);cursor:pointer" title="'+d.customer+' — '+d.status+'">'
+      pins+='<div style="position:absolute;left:'+x+'%;top:'+y+'%;transform:translate(-50%,-50%);cursor:pointer" title="'+escHtml(d.customer)+' — '+escHtml(d.status)+'">'
         +'<div style="background:'+sc+';color:#fff;border-radius:50%;width:32px;height:32px;display:flex;align-items:center;justify-content:center;font-size:14px;box-shadow:0 2px 6px rgba(0,0,0,.2)">'+(STATUS_ICON[d.status]||'📍')+'</div>'
-        +'<div style="font-size:9px;text-align:center;color:var(--text);font-weight:700;margin-top:2px;white-space:nowrap">'+d.customer.split(' ')[0]+'</div></div>';
+        +'<div style="font-size:9px;text-align:center;color:var(--text);font-weight:700;margin-top:2px;white-space:nowrap">'+escHtml(String(d.customer||'').split(' ')[0])+'</div></div>';
     });
     document.getElementById('fmap-pins').innerHTML=pins;
     var html='';
@@ -6841,7 +6841,7 @@ function sdInvPrint(){
   w.document.write('<table><tr><th>Item</th><th>SKU</th><th>Qty</th><th>Min</th><th>Unit Cost</th><th>Total</th><th>Vendor</th></tr>');
   sdInventory.forEach(function(i){
     var cls=i.qty===0?'oos':i.qty<=i.min?'low':'';
-    w.document.write('<tr><td>'+escHtml(i.name)+'</td><td>'+escHtml(i.sku)+'</td><td class="'+cls+'">'+i.qty+'</td><td>'+i.min+'</td><td>$'+i.cost+'</td><td>$'+(i.qty*i.cost).toLocaleString()+'</td><td>'+escHtml(i.vendor)+'</td></tr>');
+    w.document.write('<tr><td>'+escHtml(i.name)+'</td><td>'+escHtml(i.sku)+'</td><td class="'+escHtml(cls)+'">'+i.qty+'</td><td>'+i.min+'</td><td>$'+i.cost+'</td><td>$'+(i.qty*i.cost).toLocaleString()+'</td><td>'+escHtml(i.vendor)+'</td></tr>');
   });
   w.document.write('</table></body></html>');
   w.document.close();w.print();
@@ -6945,10 +6945,10 @@ function sdInvExport(){
   // resolving for card 1 can never wipe out text already typed into card 2's inputs.
   function bsuAddCard(item){
     document.getElementById('bsu-actions').style.display = 'flex';
-    var materialOptions = BSU_MATERIALS.map(function(m){ return '<option value="'+m[0]+'">'+m[1]+'</option>'; }).join('');
+    var materialOptions = BSU_MATERIALS.map(function(m){ return '<option value="'+escHtml(m[0])+'">'+escHtml(m[1])+'</option>'; }).join('');
     var html =
       '<div class="bsu-card" id="bsu-card-'+item.id+'" style="display:flex;gap:12px;padding:10px;border:1px solid var(--border);border-radius:8px;align-items:flex-start">' +
-        '<img src="'+item.dataUrl+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0">' +
+        '<img src="'+escHtml(item.dataUrl)+'" style="width:90px;height:90px;object-fit:cover;border-radius:6px;flex-shrink:0">' +
         '<div style="flex:1;min-width:0">' +
           '<div style="font-size:11px;color:var(--muted);margin-bottom:6px;font-style:italic" id="bsu-ai-'+item.id+'">🧠 Analyzing photo...</div>' +
           '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">' +
@@ -9004,7 +9004,7 @@ function tmHandleFiles(files){
         var isImg=['png','jpg','jpeg'].includes(ext);
         var item=document.createElement('div');
         item.style.cssText='display:flex;align-items:center;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;font-size:12px;border:1px solid var(--border)';
-        item.innerHTML=(isImg&&ev.target.result?'<img src="'+ev.target.result+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px;margin-right:8px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px;margin-right:8px">'+(icons[ext]||'FILE')+'</span>')+'<div><div style="font-weight:700;color:var(--navy)">'+escHtml(file.name)+'</div><div style="color:var(--muted)">'+(file.size/1024/1024).toFixed(2)+' MB</div></div>';
+        item.innerHTML=(isImg&&ev.target.result?'<img src="'+escHtml(ev.target.result)+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px;margin-right:8px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px;margin-right:8px">'+(icons[ext]||'FILE')+'</span>')+'<div><div style="font-weight:700;color:var(--navy)">'+escHtml(file.name)+'</div><div style="color:var(--muted)">'+(file.size/1024/1024).toFixed(2)+' MB</div></div>';
         listEl.appendChild(item);
         var pending={name:file.name,size:file.size,ext:ext,b64:ev.target.result};
         tmPendingFiles.push(pending);
@@ -9130,7 +9130,7 @@ function tmViewDetail(id){
     var iconMap={dxf:'DXF',dwg:'DWG',pdf:'PDF',zip:'ZIP'};
     return '<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface-2);border-radius:8px;margin-bottom:6px;border:1px solid var(--border)">'+
       '<div style="display:flex;align-items:center;gap:8px">'+
-        (isImg&&f.b64?'<img src="'+f.b64+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px">'+(iconMap[f.ext]||'FILE')+'</span>')+
+        (isImg&&f.b64?'<img src="'+escHtml(f.b64)+'" style="width:48px;height:36px;object-fit:cover;border-radius:4px" loading="lazy">':'<span style="font-size:11px;font-weight:700;background:var(--a);color:#fff;padding:2px 6px;border-radius:4px">'+(iconMap[f.ext]||'FILE')+'</span>')+
         '<div><div style="font-size:13px;font-weight:700;color:var(--navy)">'+escHtml(f.name)+'</div><div style="font-size:11px;color:var(--muted)">'+(f.size?(f.size/1024/1024).toFixed(2)+' MB':'')+' '+f.ext.toUpperCase()+'</div></div>'+
       '</div>'+
       (f.b64?'<a href="'+f.b64+'" download="'+escHtml(f.name)+'" style="padding:5px 12px;background:var(--a);color:#fff;border-radius:7px;font-size:11px;font-weight:600;text-decoration:none">&#11015; Download</a>':'<span style="font-size:11px;color:var(--muted)">No data</span>')+
@@ -9591,13 +9591,23 @@ const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform b
 // cutting rather than assumed from the name.
 let currentUser=null;
 
-// SAIRN Standard PIN Login
-var SD_PINS = {
-  owner:   localStorage.getItem('sd_pin_owner')   || '1234',
-  admin:   localStorage.getItem('sd_pin_admin')   || '2345',
-  sales:   localStorage.getItem('sd_pin_sales')   || '3456',
-  install: localStorage.getItem('sd_pin_install') || '4567'
-};
+// SD_PINS REMOVED 2026-09-01 (Michael's call). It was a four-entry table of
+// per-role default PINs -- four short numeric literals in a publicly served
+// file -- keyed off localStorage overrides that nothing ever wrote. It had
+// ZERO readers: `SD_PINS` appeared exactly once in this file, at its own
+// declaration, re-checked at HEAD before cutting rather than assumed.
+//
+// It is scaffolding from the shared-role-PIN login that api/sd-auth.js
+// replaced. Its three siblings below (SD_ROLE_LABELS, the depth-0
+// sdCurrentRole, sdSelRole) are dead by the same test and are left in place
+// only because removing them was not the ask -- SD_ROLE_LABELS and sdSelRole
+// each appear once, at their own declaration, and `#sd-role-pills` (the
+// element sdSelRole queries) has no id anywhere in the file.
+//
+// NOTE the sdCurrentRole below is NOT the one in use. The live one is a
+// function inside an IIFE at ~L3585 that reads sessionStorage 'sd_session_role';
+// different scope, no collision, which is why duplicate_global_check sees one
+// depth-0 name and not two.
 var SD_ROLE_LABELS = { owner:'Owner', admin:'Manager', sales:'Sales Rep', install:'Installer' };
 var sdCurrentRole = 'owner';
 
@@ -9868,7 +9878,7 @@ function fmStopCardHtml(s, orderNum){
   if(canEditStatus){
     statusControls =
       '<select onchange="fmMarkStopStatus(\''+s.sourceId+'\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
-        ['not-started','in-progress','done'].map(function(v){ return '<option value="'+v+'"'+(s.status===v?' selected':'')+'>'+(v==='not-started'?'Not Started':v==='in-progress'?'In Progress':'Done')+'</option>'; }).join('')+
+        ['not-started','in-progress','done'].map(function(v){ return '<option value="'+escHtml(v)+'"'+(s.status===v?' selected':'')+'>'+(v==='not-started'?'Not Started':v==='in-progress'?'In Progress':'Done')+'</option>'; }).join('')+
       '</select>'+
       '<button onclick="fmDeleteStop(\''+s.sourceId+'\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>';
   } else {
@@ -9897,7 +9907,7 @@ function fmRenderMap(containerId, stops){
   fetch(FM_API+'?action=maps-static', {method:'POST', headers:{'Content-Type':'application/json'},
     body:JSON.stringify({addresses:addrs})})
     .then(function(r){ return r.ok?r.json():Promise.reject(r.status); })
-    .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+data.imageUrl+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
+    .then(function(data){ if(data.imageUrl) el.innerHTML='<img src="'+escHtml(data.imageUrl)+'" alt="Route map">'; else el.innerHTML='<div class="fm-map-placeholder">Map unavailable.</div>'; })
     .catch(function(){ el.innerHTML='<div class="fm-map-placeholder">Map unavailable -- check GOOGLE_MAPS_API_KEY is set.</div>'; });
 }
 
@@ -10293,8 +10303,16 @@ function addMessage(role, content) {
   msgs.scrollTop = msgs.scrollHeight;
 }
 
+// ESCAPES FIRST as of 2026-09-01. Its output goes straight into the assistant
+// bubble's innerHTML (addMessage, just above), and it used to hand the model's
+// raw text to the markdown replacements with nothing removed. Layer 17 is not
+// cover for that: saSanitizeResponse strips script tags and javascript:, and
+// nothing else -- an event-handler attribute in a response survived it and
+// reached the DOM. escHtml first, markdown after, which is the order the
+// function-scoped renderMarkdown (~L24875) has always used. The user's own
+// bubble was already safe; it uses textContent.
 function formatMessage(text) {
-  return text
+  return escHtml(text)
     .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .replace(/\*(.*?)\*/g, '<em>$1</em>')
     .replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -11807,7 +11825,7 @@ function dcShowDragOverlay(anchorPx, liveLengthIn, onType) {
   // Rebuild only if not already focused, so typing isn't interrupted by every mousemove redraw.
   const existingInput = document.getElementById('dc-drag-input');
   if (!existingInput || document.activeElement !== existingInput) {
-    box.innerHTML = '<input id="dc-drag-input" type="number" step="0.125" value="' + displayVal + '" style="width:60px;background:#0A0E14;border:1px solid #333;border-radius:5px;padding:3px 5px;color:#fff;font-size:12px">' +
+    box.innerHTML = '<input id="dc-drag-input" type="number" step="0.125" value="' + escHtml(displayVal) + '" style="width:60px;background:#0A0E14;border:1px solid #333;border-radius:5px;padding:3px 5px;color:#fff;font-size:12px">' +
       '<span style="font-size:10px;color:#9CA3AF">in</span>';
     const inp = document.getElementById('dc-drag-input');
     inp.oninput = () => { const v = parseFloat(inp.value); dcDragOverlayTyped = (v>0) ? v : null; if (onType) onType(dcDragOverlayTyped); };
@@ -13998,7 +14016,7 @@ function updateDCCutoutList() {
   el.innerHTML = dcCutouts.map(c => {
     const warn = c.fitOk === false;
     const borderColor = warn ? '#F87171' : c.color;
-    return '<span title="'+(warn ? (c.fitReason||'').replace(/"/g,'&quot;') : '')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(warn?'rgba(248,113,113,0.12)':'rgba(255,255,255,0.05)')+';border:1px solid '+borderColor+(warn?'':'55')+';border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
+    return '<span title="'+(warn ? escHtml(c.fitReason||'') : '')+'" style="display:inline-flex;align-items:center;gap:6px;background:'+(warn?'rgba(248,113,113,0.12)':'rgba(255,255,255,0.05)')+';border:1px solid '+borderColor+(warn?'':'55')+';border-radius:6px;padding:4px 8px;font-size:11px;margin:2px">'+
       '<span style="width:8px;height:8px;border-radius:50%;background:'+c.color+'"></span>'+c.label+
       '<button onclick="dcRemoveCutout(\''+c.id+'\')" style="background:none;border:none;color:#F87171;cursor:pointer;font-size:12px;padding:0 0 0 4px">×</button>'+
     '</span>';
@@ -16298,10 +16316,18 @@ function sairnRangeBar(label,value,min,max,color,containerId){
 
 // Empty state renderer
 function sairnEmptyState(icon,title,sub,btnLabel,btnFn,containerId){
-  var btn=btnLabel?'<button class="sairn-empty-btn" style="background:var(--app-color,var(--brand2));color:#fff" onclick="'+btnFn+'()">'+btnLabel+'</button>':'';
-  var html='<div class="sairn-empty"><div class="sairn-empty-icon">'+icon+'</div>'
-    +'<div class="sairn-empty-title">'+title+'</div>'
-    +'<div class="sairn-empty-sub">'+sub+'</div>'+btn+'</div>';
+  // btnFn lands in an onclick, which is JS-in-an-attribute -- escHtml is the
+  // WRONG tool there and would give false comfort. The HTML parser decodes
+  // entities before the JS parser runs, so &#39; becomes a real quote and
+  // still breaks out. A bare identifier is the only thing this ever passes,
+  // so that is what it accepts; anything else renders as a plain label with
+  // no handler rather than as arbitrary script.
+  var safeFn = /^[A-Za-z_$][\w$]*$/.test(String(btnFn || '')) ? String(btnFn) : '';
+  var btn=btnLabel?'<button class="sairn-empty-btn" style="background:var(--app-color,var(--brand2));color:#fff"'
+    +(safeFn?' onclick="'+safeFn+'()"':'')+'>'+escHtml(btnLabel)+'</button>':'';
+  var html='<div class="sairn-empty"><div class="sairn-empty-icon">'+escHtml(icon)+'</div>'
+    +'<div class="sairn-empty-title">'+escHtml(title)+'</div>'
+    +'<div class="sairn-empty-sub">'+escHtml(sub)+'</div>'+btn+'</div>';
   var el=document.getElementById(containerId);
   if(el) el.innerHTML=html;
 }
@@ -16625,12 +16651,12 @@ function printAllSOPs(positions, shopName) {
 function initAdminFormula() {
   const matEl = document.getElementById('mat-formula-rows');
   if (!matEl) return;
-  matEl.innerHTML = Object.entries(MATERIALS).map(([k,m]) => '<div class="formula-row"><span style="font-size:12px">'+m.name+'</span><input type="number" id="adm-base-'+k+'" value="'+m.base+'" min="1" step="1"><input type="number" id="adm-rate-'+k+'" value="'+(m.matRate*100).toFixed(0)+'" min="1" max="99" step="1"><span style="font-size:11px;color:var(--muted)">%</span></div>').join('');
+  matEl.innerHTML = Object.entries(MATERIALS).map(([k,m]) => '<div class="formula-row"><span style="font-size:12px">'+escHtml(m.name)+'</span><input type="number" id="adm-base-'+escHtml(k)+'" value="'+escHtml(m.base)+'" min="1" step="1"><input type="number" id="adm-rate-'+escHtml(k)+'" value="'+(m.matRate*100).toFixed(0)+'" min="1" max="99" step="1"><span style="font-size:11px;color:var(--muted)">%</span></div>').join('');
   const tierEl = document.getElementById('tier-formula-rows');
   tierEl.innerHTML = '<div class="formula-row fr-hdr"><span>Tier</span><span>Multiplier</span><span></span><span></span></div>' +
-    Object.entries(TIERS).map(([k,t]) => '<div class="formula-row"><span>'+t.label+'</span><input type="number" id="adm-tier-'+k+'" value="'+t.mult+'" min="0.5" max="2" step="0.01"><span style="font-size:11px;color:var(--muted)">'+(t.mult>=1?'premium':'discount')+'</span><span></span></div>').join('');
+    Object.entries(TIERS).map(([k,t]) => '<div class="formula-row"><span>'+escHtml(t.label)+'</span><input type="number" id="adm-tier-'+escHtml(k)+'" value="'+escHtml(t.mult)+'" min="0.5" max="2" step="0.01"><span style="font-size:11px;color:var(--muted)">'+(t.mult>=1?'premium':'discount')+'</span><span></span></div>').join('');
   const projEl = document.getElementById('proj-formula-rows');
-  projEl.innerHTML = Object.entries(PROJECTS).map(([k,p]) => '<div class="formula-row"><span style="font-size:12px">'+p.name+'</span><input type="number" id="adm-depth-'+k+'" value="'+p.depthIn+'" min="10" max="60" step="0.5"><input type="number" id="adm-comp-'+k+'" value="'+p.comp+'" min="1" max="2" step="0.01"><input type="number" id="adm-min-'+k+'" value="'+p.min+'" min="0" step="50"></div>').join('');
+  projEl.innerHTML = Object.entries(PROJECTS).map(([k,p]) => '<div class="formula-row"><span style="font-size:12px">'+escHtml(p.name)+'</span><input type="number" id="adm-depth-'+escHtml(k)+'" value="'+escHtml(p.depthIn)+'" min="10" max="60" step="0.5"><input type="number" id="adm-comp-'+escHtml(k)+'" value="'+escHtml(p.comp)+'" min="1" max="2" step="0.01"><input type="number" id="adm-min-'+escHtml(k)+'" value="'+escHtml(p.min)+'" min="0" step="50"></div>').join('');
 }
 
 function saveFormula() {
@@ -16938,7 +16964,7 @@ modal.innerHTML =
       '<div class="sdm-drop-title">Drop your document here or tap to browse</div>' +
       '<div class="sdm-drop-sub">Supports PDF, JPG, PNG, and text files · Max 10MB<br>Your document is processed securely and never stored</div>' +
     '</div>' +
-    '<input type="file" id="sdm-file-input" class="sdm-file-input" accept="' + cfg.accept + '">' +
+    '<input type="file" id="sdm-file-input" class="sdm-file-input" accept="' + escHtml(cfg.accept) + '">' +
 
     // File preview
     '<div class="sdm-file-preview" id="sdm-file-preview">' +
@@ -18844,15 +18870,25 @@ window._saircMarkdownInstalled = true;
 // Expose the renderer globally so streaming can use it
 window.renderMarkdown = function(text) {
   if (!text) return '';
-  var s = text;
-
-  // Escape HTML first (except we want to allow our own tags)
-  // Actually we process markdown → HTML so we need to be careful
-  // Process in order: code blocks first, then inline
+  // NOW IT ACTUALLY DOES, 2026-09-01. The comment below said "Escape HTML
+  // first" and then did not -- the next line was `var s = text;` and the only
+  // escaping in the whole function was inside fenced code blocks. Everything
+  // outside a code fence went to innerHTML verbatim. Layer 17's
+  // saSanitizeResponse strips script tags and javascript: and nothing else, so
+  // an event-handler attribute in a model response passed straight through.
+  //
+  // escHtml runs on the WHOLE input before any markdown replacement, the same
+  // order the function-scoped renderMarkdown (~L24875) already used. The tags
+  // this function generates are added after escaping and so are unaffected;
+  // the fenced-code branch below now escapes text that is already escaped,
+  // which is harmless because escHtml is not applied twice to the same
+  // characters there -- it only sees the angle brackets escHtml already
+  // converted, and leaves them alone.
+  var s = escHtml(text);
 
   // Fenced code blocks ```lang\n...\n```
   s = s.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
-    var escaped = code.replace(/</g,'&lt;').replace(/>/g,'&gt;').trim();
+    var escaped = code.trim();
     return '<pre style="background:rgba(0,0,0,0.3);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:12px 16px;overflow-x:auto;margin:10px 0;font-size:12px;font-family:\'DM Mono\',monospace;line-height:1.6;color:rgba(240,240,255,0.85)">' + escaped + '</pre>';
   });
 
@@ -18910,11 +18946,22 @@ window.renderMarkdown = function(text) {
     return '<ol style="margin:8px 0 8px 20px;padding:0">' + items.join('') + '</ol>';
   });
 
-  // Blockquotes
-  s = s.replace(/^> (.*?)$/gm, '<blockquote style="border-left:3px solid rgba(99,102,241,0.5);margin:8px 0;padding:6px 14px;background:rgba(99,102,241,0.05);border-radius:0 8px 8px 0;color:rgba(240,240,255,0.7);font-style:italic">$1</blockquote>');
+  // Blockquotes. `&gt;` as well as `>` because escHtml now runs first and a
+  // blockquote marker arrives here already escaped -- without this the escape
+  // pass would have silently stopped blockquotes from rendering at all.
+  s = s.replace(/^(?:&gt;|>) (.*?)$/gm, '<blockquote style="border-left:3px solid rgba(99,102,241,0.5);margin:8px 0;padding:6px 14px;background:rgba(99,102,241,0.05);border-radius:0 8px 8px 0;color:rgba(240,240,255,0.7);font-style:italic">$1</blockquote>');
 
-  // Links
-  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, '<a href="$2" style="color:var(--brand2);text-decoration:underline;text-underline-offset:2px" target="_blank">$1</a>');
+  // Links. THE SCHEME IS CHECKED, because escHtml does not close this one:
+  // it escapes quotes and angle brackets and leaves `:` alone, so
+  // `[click](javascript:...)` in a model response would still have produced a
+  // live javascript: href. Anything that is not http/https/mailto or a plain
+  // relative path renders as text instead of a link.
+  s = s.replace(/\[([^\]]+)\]\(([^)]+)\)/g, function(m, label, url) {
+    var u = String(url).trim();
+    var ok = /^(https?:\/\/|mailto:)/i.test(u) || /^[\/#.]/.test(u);
+    if (!ok) return label + ' (' + u + ')';
+    return '<a href="' + u + '" style="color:var(--brand2);text-decoration:underline;text-underline-offset:2px" target="_blank" rel="noopener noreferrer">' + label + '</a>';
+  });
 
   // Line breaks — double newline = paragraph break
   s = s.replace(/\n\n+/g, '</p><p style="margin:8px 0;line-height:1.75">');
@@ -20876,9 +20923,9 @@ function renderMachines() {
   machines.map((m,i) => {
     const monthly = m.life > 0 ? (m.value / m.life).toFixed(2) : '0.00';
     return '<div class="machine-row">' +
-      '<input value="' + (m.name||'') + '" placeholder="e.g. CNC Saw" onchange="machines[' + i + '].name=this.value;calcBiz()">' +
-      '<input type="number" value="' + (m.value||'') + '" placeholder="150000" onchange="machines[' + i + '].value=parseFloat(this.value)||0;renderMachines()">' +
-      '<input type="number" value="' + (m.life||120) + '" placeholder="120" onchange="machines[' + i + '].life=parseFloat(this.value)||120;renderMachines()">' +
+      '<input value="' + escHtml(m.name||'') + '" placeholder="e.g. CNC Saw" onchange="machines[' + i + '].name=this.value;calcBiz()">' +
+      '<input type="number" value="' + escHtml(m.value||'') + '" placeholder="150000" onchange="machines[' + i + '].value=parseFloat(this.value)||0;renderMachines()">' +
+      '<input type="number" value="' + escHtml(m.life||120) + '" placeholder="120" onchange="machines[' + i + '].life=parseFloat(this.value)||120;renderMachines()">' +
       '<div style="font-size:13px;font-weight:700;color:var(--a);padding:5px 0">$' + monthly + '</div>' +
       '<button class="biz-del-btn" onclick="removeMachine(' + i + ')">✕</button>' +
     '</div>';
@@ -20909,7 +20956,7 @@ function renderEmployees() {
   employees.map((e,i) => {
     const monthly = (e.hourlyRate * e.hoursWeek * 4.33 * 1.15).toFixed(0); // 15% benefits/taxes
     return '<div class="employee-row">' +
-      '<input value="' + (e.name||'') + '" placeholder="Employee name" onchange="employees[' + i + '].name=this.value">' +
+      '<input value="' + escHtml(e.name||'') + '" placeholder="Employee name" onchange="employees[' + i + '].name=this.value">' +
       '<select onchange="employees[' + i + '].role=this.value">' +
         '<option value="fabricator"' + (e.role==='fabricator'?' selected':'') + '>Fabricator</option>' +
         '<option value="installer"' + (e.role==='installer'?' selected':'') + '>Installer</option>' +
@@ -20918,8 +20965,8 @@ function renderEmployees() {
         '<option value="admin"' + (e.role==='admin'?' selected':'') + '>Admin</option>' +
         '<option value="sales"' + (e.role==='sales'?' selected':'') + '>Sales</option>' +
       '</select>' +
-      '<input type="number" value="' + (e.hourlyRate||22) + '" placeholder="22" onchange="employees[' + i + '].hourlyRate=parseFloat(this.value)||0;renderEmployees()">' +
-      '<input type="number" value="' + (e.hoursWeek||40) + '" placeholder="40" onchange="employees[' + i + '].hoursWeek=parseFloat(this.value)||40;renderEmployees()">' +
+      '<input type="number" value="' + escHtml(e.hourlyRate||22) + '" placeholder="22" onchange="employees[' + i + '].hourlyRate=parseFloat(this.value)||0;renderEmployees()">' +
+      '<input type="number" value="' + escHtml(e.hoursWeek||40) + '" placeholder="40" onchange="employees[' + i + '].hoursWeek=parseFloat(this.value)||40;renderEmployees()">' +
       '<div style="font-size:12px;font-weight:700;color:var(--a);padding:5px 0;white-space:nowrap">$' + monthly + '/mo</div>' +
     '</div>';
   }).join('');
@@ -21357,7 +21404,7 @@ function custOpenDetail(id) {
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
       '<div style="font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:10px">Job Status</div>'+
       '<select onchange="custUpdateStatus('+id+',this.value)" style="width:100%;background:var(--bg);border:1.5px solid var(--a);border-radius:8px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--text);outline:none">'+
-      ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+s+'"'+(c.status===s?' selected':'')+'>'+statusLabels[s]+'</option>';}).join('')+
+      ['quoted','approved','templated','fabricating','scheduled','complete'].map(function(s){return '<option value="'+escHtml(s)+'"'+(c.status===s?' selected':'')+'>'+escHtml(statusLabels[s])+'</option>';}).join('')+
       '</select>'+
     '</div>'+
     '<div style="background:var(--card);border-radius:12px;padding:16px;margin-bottom:16px">'+
@@ -21688,13 +21735,13 @@ function photoBeforeAfter() {
     '<div>'+
       '<div style="font-size:13px;font-weight:800;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">Before / Template</div>'+
       (before.length?before.slice(0,4).map(function(p){
-        return '<div style="margin-bottom:8px"><img src="'+p.data+'" style="width:100%;border-radius:8px;object-fit:cover;max-height:180px" loading="lazy"><div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(p.job)+'</div></div>';
+        return '<div style="margin-bottom:8px"><img src="'+escHtml(p.data)+'" style="width:100%;border-radius:8px;object-fit:cover;max-height:180px" loading="lazy"><div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(p.job)+'</div></div>';
       }).join(''):'<div style="color:var(--muted);font-size:13px;padding:20px 0">No before photos.</div>')+
     '</div>'+
     '<div>'+
       '<div style="font-size:13px;font-weight:800;color:var(--brand2);margin-bottom:10px;text-transform:uppercase;letter-spacing:1px">After / Final</div>'+
       (after.length?after.slice(0,4).map(function(p){
-        return '<div style="margin-bottom:8px"><img src="'+p.data+'" style="width:100%;border-radius:8px;object-fit:cover;max-height:180px" loading="lazy"><div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(p.job)+'</div></div>';
+        return '<div style="margin-bottom:8px"><img src="'+escHtml(p.data)+'" style="width:100%;border-radius:8px;object-fit:cover;max-height:180px" loading="lazy"><div style="font-size:11px;color:var(--muted);margin-top:3px">'+escHtml(p.job)+'</div></div>';
       }).join(''):'<div style="color:var(--muted);font-size:13px;padding:20px 0">No final photos.</div>')+
     '</div>';
   modal.style.display='flex';
@@ -21705,7 +21752,7 @@ function photoLightbox(id) {
   if (!p) return;
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.88);z-index:99000;display:flex;align-items:center;justify-content:center;cursor:pointer';
-  overlay.innerHTML = '<img src="' + p.data + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)" loading="lazy">' +
+  overlay.innerHTML = '<img src="' + escHtml(p.data) + '" style="max-width:90vw;max-height:90vh;border-radius:8px;box-shadow:0 0 60px rgba(0,0,0,.5)" loading="lazy">' +
     '<div style="position:absolute;top:20px;right:20px;color:#fff;font-size:28px;cursor:pointer">×</div>' +
     '<div style="position:absolute;bottom:20px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,.7);font-size:13px">' + escHtml(p.job) + ' · ' + escHtml(p.name) + '</div>';
   overlay.onclick = () => document.body.removeChild(overlay);
@@ -22167,7 +22214,7 @@ function renderSchedule(){
       '</div>' +
       '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">' +
         '<select onchange="schedUpdateStage(\'' + j.id + '\',this.value)" style="font-size:11px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:4px 8px;color:var(--text);outline:none">'+
-          ['templated','cutting','polishing','qa','ready','installed'].map(s=>'<option value="'+s+'"'+(j.stage===s?' selected':'')+'>'+stageLabels[s]+'</option>').join('')+
+          ['templated','cutting','polishing','qa','ready','installed'].map(s=>'<option value="'+escHtml(s)+'"'+(j.stage===s?' selected':'')+'>'+escHtml(stageLabels[s])+'</option>').join('')+
         '</select>' +
         '<button onclick="schedDelete(\'' + j.id + '\')" style="font-size:10px;padding:2px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:5px;cursor:pointer">Delete</button>' +
       '</div>' +
@@ -22412,7 +22459,7 @@ function renderVendor(){
         '<div style="font-size:11px;color:var(--muted);margin-top:2px">'+p.cat+' &middot; '+p.sku+'</div></div>'+
       '<span style="font-size:14px;font-weight:800;color:var(--a)">$' + p.price.toFixed(2)+'</span>'+
       '<button onclick="vendorCompare(\'' + p.id + '\',\'' + _activeVendor + '\')" style="padding:5px 10px;background:#F0FEF6;color:#15803D;border:1px solid #BBF7D0;border-radius:7px;font-size:11px;font-weight:700;cursor:pointer">&#129504; Compare</button>'+
-      '<input type="number" class="qty-input" id="vpqty-'+p.id+'" value="'+cartQty+'" min="0" onchange="cartUpdate(\'' + _activeVendor + '\',\'' + p.id + '\',this.value)">'+
+      '<input type="number" class="qty-input" id="vpqty-'+escHtml(p.id)+'" value="'+escHtml(cartQty)+'" min="0" onchange="cartUpdate(\'' + _activeVendor + '\',\'' + p.id + '\',this.value)">'+
       '<button onclick="cartAdd(\'' + _activeVendor + '\',\'' + p.id + '\',1)" style="padding:5px 10px;background:var(--a);color:#fff;border:none;border-radius:7px;font-size:12px;font-weight:600;cursor:pointer">Add</button>'+
     '</div>';
   }).join('');
@@ -22660,10 +22707,10 @@ function vendorShowCompareModal(product, comparisons) {
             // Negotiated price input
             '<div style="margin-top:10px;display:flex;align-items:center;gap:8px;flex-wrap:wrap">' +
               '<span style="font-size:11px;color:var(--muted);font-weight:600">Your negotiated price:</span>' +
-              '<input id="neg-price-'+c.product.sku+'" type="number" step="0.01" placeholder="Enter your deal price" value="'+(negPriceSet?c.negotiatedPrice:'')+'" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none">' +
+              '<input id="neg-price-'+escHtml(c.product.sku)+'" type="number" step="0.01" placeholder="Enter your deal price" value="'+escHtml(negPriceSet?c.negotiatedPrice:'')+'" style="width:130px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:5px 8px;font-size:12px;color:var(--text);outline:none">' +
               '<button onclick="vendorSaveNegotiated(' + c.product.sku + ',document.getElementById(' + '\'neg-price-\'' + '+c.product.sku+' + '\'\'' + ').value)" style="padding:5px 12px;background:var(--brand2);color:#fff;border:none;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">Save Deal</button>' +
               (negPriceSet?'<button onclick="vendorSaveNegotiated(' + c.product.sku + ',null)" style="padding:5px 8px;background:none;color:#dc2626;border:1px solid #dc2626;border-radius:6px;font-size:10px;cursor:pointer">Clear</button>':'') +
-              '<a href="'+c.vendorWebsite+'" target="_blank" style="font-size:11px;color:var(--a);text-decoration:none;margin-left:auto">&#127758; Order from '+escHtml(c.vendorName)+' &#8594;</a>' +
+              '<a href="'+escHtml(c.vendorWebsite)+'" target="_blank" rel="noopener noreferrer" style="font-size:11px;color:var(--a);text-decoration:none;margin-left:auto">&#127758; Order from '+escHtml(c.vendorName)+' &#8594;</a>' +
             '</div>' +
           '</div>';
         }).join('') +
@@ -22826,7 +22873,7 @@ function pmRenderVendorDiscounts() {
     return '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:12px">' +
       '<div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px">' + v.logo + ' ' + v.name + '</div>' +
       '<div style="display:flex;align-items:center;gap:8px">' +
-        '<input type="number" id="vdisc-'+vk+'" value="'+disc+'" min="0" max="80" step="0.5" style="width:70px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text);text-align:center">' +
+        '<input type="number" id="vdisc-'+escHtml(vk)+'" value="'+escHtml(disc)+'" min="0" max="80" step="0.5" style="width:70px;background:var(--bg);border:1px solid var(--border);border-radius:6px;padding:6px 8px;font-size:13px;font-weight:700;color:var(--text);text-align:center">' +
         '<span style="font-size:13px;color:var(--muted)">% off all products</span>' +
         (disc>0 ? '<span style="font-size:11px;color:var(--brand2);font-weight:700">&#9989; Active</span>' : '') +
       '</div>' +
@@ -27709,7 +27756,7 @@ document.addEventListener('DOMContentLoaded', function() {
       // presentational, so staff/clients can visually tell slabs apart here too, same as the
       // upload queue itself. Falls back to a plain rock emoji tile when a slab has no photo yet.
       var thumb = s.photo_base64
-        ? '<img src="'+s.photo_base64+'" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0">'
+        ? '<img src="'+escHtml(s.photo_base64)+'" style="width:36px;height:36px;object-fit:cover;border-radius:5px;flex-shrink:0">'
         : '<div style="width:36px;height:36px;border-radius:5px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0">🪨</div>';
       return '<div class="viz-slab-row" data-id="'+escHtml(s.id)+'" onclick="vizSelectSlab(\''+s.id+'\')" ' +
         'style="padding:8px 10px;border:1px solid var(--border);border-radius:8px;cursor:pointer;font-size:12px;display:flex;gap:8px;align-items:center">' +
@@ -29585,7 +29632,7 @@ document.addEventListener('DOMContentLoaded', function() {
   });
   function subxRenderJobPhotoPreview(){
     document.getElementById('subx-job-photo-preview').innerHTML = _subxJobPhotos.map(function(p,i){
-      return '<div style="position:relative"><img src="'+p+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px">' +
+      return '<div style="position:relative"><img src="'+escHtml(p)+'" style="width:56px;height:56px;object-fit:cover;border-radius:6px">' +
         '<button onclick="subxRemoveJobPhoto('+i+')" style="position:absolute;top:-6px;right:-6px;background:#dc2626;color:#fff;border:none;border-radius:50%;width:18px;height:18px;font-size:11px;cursor:pointer">×</button></div>';
     }).join('');
   }
@@ -31348,7 +31395,7 @@ function agViewSigned(id) {
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Contact:</td><td>' + escHtml(ag.contact || '') + '</td></tr>');
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Plan:</td><td>' + escHtml(ag.planLabel || '') + '</td></tr>');
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Monthly Rate:</td><td><strong>$' + ag.price + '/month</strong>' + (ag.plan === 'founding' ? ' (founding rate — locked for life)' : '') + '</td></tr></table>');
-  if (ag.sigDataUrl) win.document.write('<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Customer Signature:</div><img class="sig-img" src="' + ag.sigDataUrl + '" alt="Signature"></div>');
+  if (ag.sigDataUrl) win.document.write('<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Customer Signature:</div><img class="sig-img" src="' + escHtml(ag.sigDataUrl) + '" alt="Signature"></div>');
   win.document.write('<div style="margin-top:24px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#999">StoneDesk Service Agreement ' + ag.num + ' | Executed ' + new Date(ag.signedAt).toLocaleString() + ' | SAIRN Technologies LLC</div>');
   win.document.write('</body></html>');
   win.document.close();
@@ -32734,7 +32781,7 @@ function intakeCardHtml(s) {
   var time = s.created_at ? new Date(s.created_at).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}) : '';
   var hasPhoto = s.photo_base64 || s.photo_count > 0;
   var photoHtml = s.photo_base64
-    ? '<img src="'+s.photo_base64+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0">'
+    ? '<img src="'+escHtml(s.photo_base64)+'" style="width:80px;height:80px;object-fit:cover;border-radius:8px;flex-shrink:0">'
     : (hasPhoto ? '<div style="width:80px;height:80px;border-radius:8px;background:var(--stone);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0">📷</div>' : '');
   var statusBadge = s.status === 'accepted'
     ? '<span style="background:#DCFCE7;color:#166534;font-size:10px;font-weight:700;padding:2px 8px;border-radius:100px">ACCEPTED</span>'
@@ -32885,7 +32932,7 @@ async function intakeAnalyzePhoto(id) {
     st('sd_intake', intakeSubmissions); // local cache; Supabase update above is the real record
 
     resultEl.innerHTML =
-      '<img src="'+s.photo_base64+'" style="width:100%;border-radius:10px;margin-bottom:12px">'+
+      '<img src="'+escHtml(s.photo_base64)+'" style="width:100%;border-radius:10px;margin-bottom:12px">'+
       '<div style="font-size:13px;line-height:1.7">'+
         '<b>Shape:</b> '+escHtml(analysis.shape||'?')+'<br>'+
         '<b>Main run:</b> '+(analysis.runA_in||'?')+' in ('+(Math.round((analysis.runA_in||0)/12*10)/10)+' ft)<br>'+
@@ -34258,9 +34305,11 @@ async function sdClaude(system,userMsg,maxTok){
     return(d.content&&d.content[0])?d.content[0].text:'';
   }catch(e){return '';}
 }
+// ESCAPES FIRST as of 2026-09-01 -- it feeds ~10 innerHTML sites in the Stone
+// Hub / pricing-intel panels with text that comes back from the Claude proxy.
 function sdMarkdown(t){
   if(!t)return '';
-  return t.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+  return escHtml(t).replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
     .replace(/^## (.+)$/gm,'<div style="font-size:15px;font-weight:800;color:var(--text);margin:12px 0 6px">$1</div>')
     .replace(/^### (.+)$/gm,'<div style="font-size:13px;font-weight:700;color:var(--text);margin:8px 0 4px">$1</div>')
     .replace(/^[*-] (.+)$/gm,'<div style="padding-left:14px;margin:3px 0">&#8226; $1</div>')
@@ -34530,7 +34579,7 @@ function saRenderRuns(){
   c.innerHTML=saRuns.map(function(r,i){return '<div style="display:grid;grid-template-columns:1fr 1fr 1fr auto;gap:8px;margin-bottom:6px">'+
     '<input value="'+escHtml(r.name)+'" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].name=this.value">'+
     '<input type="number" value="'+r.length+'" placeholder="Length in" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].length=parseFloat(this.value)||0">'+
-    '<input type="number" value="'+r.depth+'" placeholder="Depth in" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].depth=parseFloat(this.value)||0">'+
+    '<input type="number" value="'+escHtml(r.depth)+'" placeholder="Depth in" style="font-size:12px;padding:5px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none" onchange="saRuns['+i+'].depth=parseFloat(this.value)||0">'+
     '<button onclick="saRuns.splice('+i+',1);saRenderRuns()" style="padding:4px 7px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:4px;cursor:pointer;font-size:11px">x</button>'+
   '</div>';}).join('');
 }
@@ -34658,7 +34707,7 @@ function piInit(){
     PI_RATES.map(function(r){return '<tr style="border-bottom:1px solid var(--border)"><td style="padding:8px 12px">'+r.mat+'</td><td style="padding:8px 12px;text-align:center">$'+r.low+'</td><td style="padding:8px 12px;text-align:center">$'+r.high+'</td><td style="padding:8px 12px;text-align:center;font-weight:700;color:var(--a)">$'+r.avg+'</td></tr>';}).join('')+
     '</table></div>';
   var ri=document.getElementById('pi-rate-inputs');
-  if(ri)ri.innerHTML=PI_RATES.map(function(r){var key=r.mat.replace(/[^a-z0-9]/gi,'_');return '<div class="fg"><label style="font-size:11px">'+r.mat+'</label><div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:0 8px"><span style="font-size:12px;color:var(--muted)">$</span><input type="number" id="pir-'+key+'" value="'+(piMyRates[r.mat]||'')+'" placeholder="'+r.avg+'" style="border:none;outline:none;width:80px;font-size:13px;padding:6px 4px;background:transparent;color:var(--text)" oninput="piMyRates[\''+r.mat+'\']=parseFloat(this.value)||0;piUpdateComparison()"></div></div>';}).join('');
+  if(ri)ri.innerHTML=PI_RATES.map(function(r){var key=r.mat.replace(/[^a-z0-9]/gi,'_');return '<div class="fg"><label style="font-size:11px">'+escHtml(r.mat)+'</label><div style="display:flex;align-items:center;gap:4px;background:var(--card);border:1px solid var(--border);border-radius:6px;padding:0 8px"><span style="font-size:12px;color:var(--muted)">$</span><input type="number" id="pir-'+escHtml(key)+'" value="'+escHtml(piMyRates[r.mat]||'')+'" placeholder="'+escHtml(r.avg)+'" style="border:none;outline:none;width:80px;font-size:13px;padding:6px 4px;background:transparent;color:var(--text)" oninput="piMyRates[\''+r.mat+'\']=parseFloat(this.value)||0;piUpdateComparison()"></div></div>';}).join('');
   piUpdateComparison();
 }
 function piUpdateComparison(){
@@ -34832,7 +34881,7 @@ function dmgRender(){
     '</div>'+
     '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
       '<select onchange="dmgUpdateStatus(\''+c.id+'\',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+
-        ['open','repair','customer','resolved','denied'].map(function(s){return '<option value="'+s+'"'+(s===c.status?' selected':'')+'>'+s+'</option>';}).join('')+
+        ['open','repair','customer','resolved','denied'].map(function(s){return '<option value="'+escHtml(s)+'"'+(s===c.status?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+
       '</select>'+
       '<button onclick="dmgDelete(\''+c.id+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">Delete</button>'+
     '</div></div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No damage claims. Keep it that way.</div>';
