@@ -18924,10 +18924,31 @@ window._saircMarkdownInstalled = true;
 // because it evaluated each renderer in isolation and so never modelled the
 // collision.
 //
-// NOW WIRED, 2026-09-01 (Michael's call). The four AI-chat-area call sites --
+// REPOINTED 2026-09-01 (Michael's call): the four AI-chat-area call sites --
 // the three streaming ones above and the addMsg interception at ~L19057 -- now
-// call this by name. Tables, fenced code blocks and links render in the chat
-// area for the first time.
+// name this function instead of resolving to the simple renderer.
+//
+// AND IT CHANGES NOTHING VISIBLE TODAY, WHICH IS THE PART WORTH WRITING DOWN.
+// Checking the live page after repointing showed all four are unreachable:
+//
+//   - the three streaming sites live inside installStreamingHook(), which has
+//     exactly ONE occurrence in this file -- its own definition. Nothing calls
+//     it. `window.sendMessage` is assigned four times over (here, ~L19708,
+//     ~L25483, plus the top-level `async function sendMessage` at ~L10365) and
+//     the live one carries no reference to any markdown renderer at all;
+//   - the addMsg interception is guarded by `typeof window.addMsg ===
+//     'function'`, and window.addMsg is not a function on the live page, so
+//     installMarkdownHook() bails and its polling retry never fires either.
+//
+// So markdown in the AI chat still goes through formatMessage(), and this
+// function is still parked -- just parked under an honest name with the call
+// sites aimed at it for whenever the hooks get switched on.
+//
+// BEFORE ANYONE SWITCHES THEM ON: this renderer hardcodes #F0F0FF for headings
+// and bold and rgba(240,240,255,0.8) for list text, written for a dark surface.
+// The live chat bubble is `.msg-bubble { background:#FFFFFF; color:#1A1410 }`.
+// Wiring it up as-is paints near-white text on white. The colours need to move
+// to theme variables first -- a design change, not a security one.
 //
 // A COUNT I GOT WRONG AND AM CORRECTING HERE: I reported "four call sites,
 // three streaming and one exec-AI". There are FIVE. The four that belong
