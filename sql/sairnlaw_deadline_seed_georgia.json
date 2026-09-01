@@ -192,7 +192,7 @@
       "trigger_event": "service_of_more_definite_statement",
       "count": { "value": 15, "unit": "calendar_days", "direction": "forward" },
       "computation": "ga_ocga_1_3_1_d3",
-      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"], "order": "after" },
+      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"] },
       "authority": {
         "citation": "O.C.G.A. 9-11-12(a)(2)(B)",
         "url": "https://law.justia.com/codes/georgia/title-9/chapter-11/article-3/section-9-11-12/",
@@ -213,7 +213,7 @@
       "trigger_event": "service_of_interrogatories",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "ga_ocga_1_3_1_d3",
-      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"], "order": "after" },
+      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"] },
       "authority": {
         "citation": "O.C.G.A. 9-11-33(a)(2)",
         "url": "https://law.justia.com/codes/georgia/title-9/chapter-11/article-5/section-9-11-33/",
@@ -254,7 +254,7 @@
       "trigger_event": "service_of_request_for_production",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "ga_ocga_1_3_1_d3",
-      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"], "order": "after" },
+      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"] },
       "authority": {
         "citation": "O.C.G.A. 9-11-34(b)(2)",
         "url": "https://law.justia.com/codes/georgia/title-9/chapter-11/article-5/section-9-11-34/",
@@ -295,7 +295,7 @@
       "trigger_event": "service_of_request_for_admission",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "ga_ocga_1_3_1_d3",
-      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"], "order": "after" },
+      "service_extension": { "standard": "ga_ocga_9_11_6_e", "add": 3, "unit": "calendar_days", "applies_when": ["mail", "email"] },
       "authority": {
         "citation": "O.C.G.A. 9-11-36(a)(2)",
         "url": "https://law.justia.com/codes/georgia/title-9/chapter-11/article-5/section-9-11-36/",

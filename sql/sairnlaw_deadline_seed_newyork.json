@@ -208,8 +208,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 3012(a)",
@@ -266,8 +266,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 3133(a)",
@@ -300,8 +300,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 3122(a)(1)",
@@ -363,8 +363,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CPLR 2103(b)(2) adds 5 CALENDAR days for mail within the state and 6 for mail from outside the state but within the United States, and CPLR 2103(b)(6) adds 1 BUSINESS day for overnight delivery. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 3123(a)",
@@ -397,8 +397,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Attached on the express authority of CPLR 5513(d), which provides that where the judgment and notice of entry are served by mail under 2103(b)(2) or by overnight delivery under 2103(b)(6), the additional days provided by those paragraphs apply, regardless of which party served. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery.",
-        "order": "after"
+        "note": "Attached on the express authority of CPLR 5513(d), which provides that where the judgment and notice of entry are served by mail under 2103(b)(2) or by overnight delivery under 2103(b)(6), the additional days provided by those paragraphs apply, regardless of which party served. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 5513(a), (d)",
@@ -431,8 +431,8 @@
           "mail_outside_state_within_us",
           "overnight_delivery"
         ],
-        "note": "Attached on the express authority of CPLR 5513(d), whose closing words -- 'regardless of which party serves the judgment or order with notice of entry' -- reach this limb specifically. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery.",
-        "order": "after"
+        "note": "Attached on the express authority of CPLR 5513(d), whose closing words -- 'regardless of which party serves the judgment or order with notice of entry' -- reach this limb specifically. Amount and unit come from the standard: 5 CALENDAR days for mail within the state, 6 for mail from outside the state but within the United States, 1 BUSINESS day for overnight delivery."
+
       },
       "authority": {
         "citation": "N.Y. CPLR 5513(a), (d)",

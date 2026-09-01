@@ -143,8 +143,8 @@
           "mail",
           "left_with_clerk",
           "other_consented_means"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Fed. R. Civ. P. 12(a)(1)(B)",

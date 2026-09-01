@@ -120,8 +120,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 12(a)(1)",
@@ -177,8 +177,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 12(a)(2)(B)",
@@ -256,8 +256,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 6(c)",
@@ -291,8 +291,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 6(c)",
@@ -342,8 +342,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 33(b)(3)",
@@ -393,8 +393,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 34(b)(2)",
@@ -444,8 +444,8 @@
           "electronic",
           "email",
           "efiling_service_provider"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Ark. R. Civ. P. 36(a)",

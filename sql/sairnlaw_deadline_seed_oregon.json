@@ -205,7 +205,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "email", "facsimile", "electronic"],
-        "order": "add_to_period",
         "note": "ORCP 10 B: three days for mail, e-mail, facsimile communication OR electronic service — the broadest enumeration in the platform, and the opposite of Nevada, West Virginia, New York and the federal rule, where e-service takes nothing. DO NOT NARROW THIS ALLOWLIST by analogy to them. 'Added to the prescribed period' means the days lengthen the period and one rollover runs at the end, not the federal after-expiry order."
       }
     },
@@ -267,7 +266,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "email", "facsimile", "electronic"],
-        "order": "add_to_period",
         "note": "See the production row. All four methods qualify — mail, e-mail, facsimile and electronic service — and the allowlist must not be narrowed by analogy to the federal family."
       }
     },

@@ -171,7 +171,6 @@
         "add": 5,
         "unit": "calendar_days",
         "applies_when": ["mail", "statutory_agent"],
-        "order": "add_to_period",
         "note": "FIVE days, not three — Rule 6(e)'s own drafting Note says the federal three was 'increased from 3 to 5 days'. Carrying a neighbour's three computes TWO DAYS EARLY. It also reaches SERVICE UPON A STATUTORY AGENT, which no other seeded rule does. E-MAIL IS NOT LISTED, deliberately: whether the five days reach e-mail is unresolved on the primary sources read, and adding them would compute LATE if wrong. See the file readme."
       }
     },
@@ -199,7 +198,6 @@
         "add": 5,
         "unit": "calendar_days",
         "applies_when": ["mail", "statutory_agent"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },
@@ -227,7 +225,6 @@
         "add": 5,
         "unit": "calendar_days",
         "applies_when": ["mail", "statutory_agent"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },
@@ -275,7 +272,6 @@
         "add": 5,
         "unit": "calendar_days",
         "applies_when": ["mail", "statutory_agent"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },
@@ -323,7 +319,6 @@
         "add": 5,
         "unit": "calendar_days",
         "applies_when": ["mail", "statutory_agent"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },

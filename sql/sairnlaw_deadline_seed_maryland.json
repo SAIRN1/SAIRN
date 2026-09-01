@@ -59,8 +59,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(a)",
@@ -90,8 +90,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(b)",
@@ -121,8 +121,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(b)",
@@ -152,8 +152,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(b)",
@@ -183,8 +183,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(b)",
@@ -236,8 +236,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-321(c)",
@@ -283,8 +283,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-311(b)",
@@ -330,8 +330,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-421(b)",
@@ -377,8 +377,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-422(c)",
@@ -424,8 +424,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Md. Rule 2-424(b)",

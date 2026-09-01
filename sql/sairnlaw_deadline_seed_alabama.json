@@ -76,8 +76,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 12(a)",
@@ -109,8 +109,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 12(a)",
@@ -142,8 +142,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 12(a)",
@@ -197,8 +197,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 12(a)(2)",
@@ -274,8 +274,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 33(a)",
@@ -307,8 +307,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 34(b)",
@@ -356,8 +356,8 @@
           "mail",
           "efiling_service_provider",
           "electronic"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Ala. R. Civ. P. 36(a)",

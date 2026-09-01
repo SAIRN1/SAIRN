@@ -83,8 +83,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 12(a)(1)(B)",
@@ -108,8 +108,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 12(a)(1)(C)",
@@ -151,8 +151,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 12(a)(2)(B)",
@@ -176,8 +176,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 33(b)(2)",
@@ -201,8 +201,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 34(b)(2)(A)",
@@ -226,8 +226,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 36(a)(4)",
@@ -287,8 +287,8 @@
         "standard": "id_ircp_2_2_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "I.R.C.P. 59(c)",

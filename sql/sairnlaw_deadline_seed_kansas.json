@@ -51,8 +51,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-212(a)(1)(A)(i)",
@@ -83,8 +83,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-212(a)(1)(B)",
@@ -115,8 +115,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-212(a)(1)(C)",
@@ -169,8 +169,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-212(a)(2)(B)",
@@ -245,8 +245,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-233(b)(2)",
@@ -277,8 +277,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-234(b)(2)(A)",
@@ -309,8 +309,8 @@
         "applies_when": [
           "mail",
           "left_with_clerk"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "K.S.A. 60-236(a)(3)",

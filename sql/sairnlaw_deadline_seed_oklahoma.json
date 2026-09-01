@@ -237,7 +237,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "third_party_commercial_carrier", "electronic"],
-        "order": "add_to_period",
         "note": "§ 2006(D): three days for mail, THIRD-PARTY COMMERCIAL CARRIER or electronic means, added TO THE PRESCRIBED PERIOD. Electronic qualifies, unlike Nevada, West Virginia, New York and the federal rule. Oklahoma is the ONLY seeded jurisdiction naming third-party commercial carrier as its own category — Texas lists commercial delivery among its methods but extends for mail alone, so do not read the two across."
       }
     },
@@ -265,7 +264,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "third_party_commercial_carrier", "electronic"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },
@@ -293,7 +291,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "third_party_commercial_carrier", "electronic"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },
@@ -321,7 +318,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "third_party_commercial_carrier", "electronic"],
-        "order": "add_to_period",
         "note": "See the crossclaim row."
       }
     },

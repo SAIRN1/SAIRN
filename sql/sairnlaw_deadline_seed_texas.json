@@ -256,8 +256,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after"
+        ]
+
       },
       "authority": {
         "citation": "Tex. R. Civ. P. 197.2(a)",
@@ -289,8 +289,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after"
+        ]
+
       },
       "authority": {
         "citation": "Tex. R. Civ. P. 196.2(a)",
@@ -322,8 +322,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after"
+        ]
+
       },
       "authority": {
         "citation": "Tex. R. Civ. P. 198.2(a), (c)",

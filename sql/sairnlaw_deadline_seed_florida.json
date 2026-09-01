@@ -171,7 +171,7 @@
       "trigger_event": "service_of_original_process_and_initial_pleading",
       "count": { "value": 20, "unit": "calendar_days", "direction": "forward" },
       "computation": "fl_rgpja_2514",
-      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "order": "after", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
+      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
       "authority": {
         "citation": "Fla. R. Civ. P. 1.140(a)(1)",
         "url": "https://www-media.floridabar.org/uploads/2026/04/Civil-Procedure-Rules-04-01-26.pdf",
@@ -192,7 +192,7 @@
       "trigger_event": "service_of_interrogatories",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "fl_rgpja_2514",
-      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "order": "after", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
+      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
       "authority": {
         "citation": "Fla. R. Civ. P. 1.340(a)(9)",
         "url": "https://www-media.floridabar.org/uploads/2026/04/Civil-Procedure-Rules-04-01-26.pdf",
@@ -233,7 +233,7 @@
       "trigger_event": "service_of_request_for_production",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "fl_rgpja_2514",
-      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "order": "after", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
+      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
       "authority": {
         "citation": "Fla. R. Civ. P. 1.350(b)(3)",
         "url": "https://www-media.floridabar.org/uploads/2026/04/Civil-Procedure-Rules-04-01-26.pdf",
@@ -274,7 +274,7 @@
       "trigger_event": "service_of_request_for_admission",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "computation": "fl_rgpja_2514",
-      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "order": "after", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
+      "service_extension": { "standard": "fl_rgpja_2514b", "add": 5, "unit": "calendar_days", "requires_exclusive": true, "on_unknown_exclusivity": "assume_exclusive" },
       "authority": {
         "citation": "Fla. R. Civ. P. 1.370(a)(6)",
         "url": "https://www-media.floridabar.org/uploads/2026/04/Civil-Procedure-Rules-04-01-26.pdf",

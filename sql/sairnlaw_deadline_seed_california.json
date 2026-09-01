@@ -121,8 +121,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 412.20(a)(3)",
@@ -150,8 +150,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2030.260(a)",
@@ -179,8 +179,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2030.260(b)",
@@ -208,8 +208,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2031.260(a)",
@@ -237,8 +237,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2031.260(b)",
@@ -266,8 +266,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2033.250(a)",
@@ -295,8 +295,8 @@
       "computation": "ca_ccp_12_12a",
       "service_extension": {
         "standard": "ca_ccp_1013_1010_6",
-        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see.",
-        "order": "after"
+        "note": "Amount and unit come from the standard, not this row: CCP 1013(a) adds 5, 10, 12 or 20 CALENDAR days for mail depending on the places of mailing and address, and CCP 1013(c)/(e) and 1010.6(a)(3)(B) each add 2 COURT days. Supply the specific service_method -- a bare \"mail\" is deliberately not accepted, because the amount depends on facts this engine cannot see."
+
       },
       "authority": {
         "citation": "Cal. Code Civ. Proc. 2033.250(b)",

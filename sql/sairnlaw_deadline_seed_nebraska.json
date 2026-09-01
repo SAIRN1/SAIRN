@@ -89,8 +89,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(1)(B)",
@@ -120,8 +120,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(1)(C)",
@@ -173,8 +173,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Pldg. Sec. 6-1112(a)(2)(B)",
@@ -220,8 +220,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Disc. Sec. 6-333(b)(2)",
@@ -267,8 +267,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Disc. Sec. 6-334(b)(2)(A)",
@@ -314,8 +314,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_period_expires"
+        ]
+
       },
       "authority": {
         "citation": "Neb. Ct. R. Disc. Sec. 6-336(a)(4)",

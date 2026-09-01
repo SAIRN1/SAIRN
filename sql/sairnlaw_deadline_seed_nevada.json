@@ -246,7 +246,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "NRCP 6(d): three days for service under Rule 5(b)(2)(C) (mail), (D) (leaving with the clerk) or (F) (other means consented to), added AFTER the period would otherwise expire — the federal sequencing, so a second rollover runs. ELECTRONIC SERVICE UNDER 5(b)(2)(E) IS NOT LISTED AND TAKES NOTHING; do not widen this allowlist to email or the e-filing system by analogy to Massachusetts. Nevada's 5(b)(2) lettering was read directly and its pointers match their parentheticals, unlike West Virginia's."
       }
     },
@@ -274,7 +273,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "See the counterclaim row. Electronic service under 5(b)(2)(E) is not listed and takes nothing."
       }
     },
@@ -329,7 +327,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "See the counterclaim row. Electronic service under 5(b)(2)(E) is not listed and takes nothing."
       }
     },
@@ -357,7 +354,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "See the counterclaim row. Electronic service under 5(b)(2)(E) is not listed and takes nothing."
       }
     },
@@ -385,7 +381,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "See the counterclaim row. Electronic service under 5(b)(2)(E) is not listed and takes nothing."
       }
     },
@@ -413,7 +408,6 @@
         "add": 3,
         "unit": "calendar_days",
         "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period",
         "note": "See the counterclaim row. Electronic service under 5(b)(2)(E) is not listed and takes nothing."
       }
     }

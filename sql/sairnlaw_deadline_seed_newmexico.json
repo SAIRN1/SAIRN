@@ -87,8 +87,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-012(A) NMRA",
@@ -112,8 +112,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-012(A) NMRA",
@@ -137,8 +137,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-012(A) NMRA",
@@ -180,8 +180,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-012(A)(2) NMRA",
@@ -205,8 +205,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-033(C)(3) NMRA",
@@ -230,8 +230,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-034(B) NMRA",
@@ -269,8 +269,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-036(A) NMRA",
@@ -294,8 +294,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-056(D)(2) NMRA",
@@ -319,8 +319,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-056(D)(2) NMRA",
@@ -398,8 +398,8 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
-        "order": "after_period_expires"
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+
       },
       "authority": {
         "citation": "Rule 1-068(A) NMRA",

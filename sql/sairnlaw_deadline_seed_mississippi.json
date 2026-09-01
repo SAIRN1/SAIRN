@@ -93,8 +93,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 12(a)",
@@ -124,8 +124,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 12(a)",
@@ -155,8 +155,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 12(a)",
@@ -186,8 +186,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 12(a)(1)",
@@ -217,8 +217,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 12(a)(2)",
@@ -248,8 +248,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 33(b)(3)",
@@ -279,8 +279,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 34(b)(ii)(A)",
@@ -326,8 +326,8 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
-        ],
-        "order": "after_base_period"
+        ]
+
       },
       "authority": {
         "citation": "Miss. R. Civ. P. 36(a)",

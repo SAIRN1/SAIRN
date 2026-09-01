@@ -82,8 +82,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 12(a)(2)",
@@ -107,8 +107,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 12(a)(2)",
@@ -132,8 +132,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 12(a)(2)",
@@ -157,8 +157,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 12(a)(3)(A)",
@@ -182,8 +182,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 12(a)(3)(B)",
@@ -207,8 +207,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 33(b)(3)",
@@ -232,8 +232,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 34(b)",
@@ -271,8 +271,8 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"],
-        "order": "after_base_period"
+        "applies_when": ["mail"]
+
       },
       "authority": {
         "citation": "Haw. R. Civ. P. 36(a)",

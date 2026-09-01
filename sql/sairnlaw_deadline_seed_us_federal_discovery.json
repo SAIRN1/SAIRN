@@ -78,8 +78,8 @@
         "standard": "frcp_6d",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period"
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"]
+
       },
       "authority": {
         "citation": "Fed. R. Civ. P. 33(b)(2)",
@@ -105,8 +105,8 @@
         "standard": "frcp_6d",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period"
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"]
+
       },
       "authority": {
         "citation": "Fed. R. Civ. P. 34(b)(2)(A)",
@@ -152,8 +152,8 @@
         "standard": "frcp_6d",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "left_with_clerk", "other_consented_means"],
-        "order": "after_base_period"
+        "applies_when": ["mail", "left_with_clerk", "other_consented_means"]
+
       },
       "authority": {
         "citation": "Fed. R. Civ. P. 36(a)(3)",
