@@ -91,6 +91,16 @@
       "claimed_at_epoch": 1788267897.332632,
       "status": "released",
       "released_at": "2026-09-01T13:11:35Z"
+    },
+    {
+      "id": "cody-1788285125",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "dead action buttons",
+      "claimed_at": "2026-09-01T17:52:05Z",
+      "claimed_at_epoch": 1788285125.9745364,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
