@@ -596,9 +596,55 @@ async function reverifySubscription() {
   }
 }
 
-function showAccount() {
+// MANAGE BILLING IS A REAL ACTION NOW (2026-09-01).
+// This used to end with "Manage or cancel at stripe.com", which is not a
+// place -- there is no page a customer who checked out as a guest can log into
+// to find their subscription, so the only route to cancelling was emailing
+// support. api/sairncash/portal.js mints a real Stripe Billing Portal session
+// instead: update the card, see invoices, cancel.
+//
+// AND IT DID NOTHING AT ALL FOR A TRIAL USER. getSub() returns null on a trial,
+// so the whole function was a no-op -- the control looked broken rather than
+// having nothing to say. Same dead-control class swept out of the other apps
+// on this platform.
+async function showAccount() {
   const s = getSub();
-  if (s) alert(`SAIRNcash Pro\n\nEmail: ${s.email||'N/A'}\nPlan: ${s.plan}\nPrice: ${s.price}\nRenews: ${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : 'N/A'}\n\nManage or cancel at stripe.com`);
+  if (!s) {
+    const t = (typeof getTrial === 'function') ? getTrial() : null;
+    if (t) {
+      alert(`SAIRNcash Trial
+
+Email: ${t.email||'N/A'}
+Trial ends: ${t.expiresAt ? new Date(t.expiresAt).toLocaleDateString() : 'N/A'}
+
+There is no billing to manage on a trial -- nothing has been charged.`);
+    } else {
+      alert('No subscription or trial is active on this device.');
+    }
+    return;
+  }
+  const detail = `SAIRNcash Pro
+
+Email: ${s.email||'N/A'}
+Plan: ${s.plan}
+Price: ${s.price}
+Renews: ${s.expiresAt ? new Date(s.expiresAt).toLocaleDateString() : 'N/A'}`;
+  if (!s.subscriptionId) { alert(detail); return; }
+  if (!confirm(detail + `
+
+Open the Stripe billing portal to update your card or cancel?`)) return;
+  try {
+    const res = await fetch('/api/sairncash/portal', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ subscriptionId: s.subscriptionId })
+    });
+    const data = await res.json();
+    if (data && data.url) { window.location.href = data.url; return; }
+    showToast(data && data.error ? data.error : 'Could not open the billing portal', 'error');
+  } catch (e) {
+    showToast('Could not reach the billing portal', 'error');
+  }
 }
 function signOut() {
   if (confirm('Sign out? You will need to resubscribe.')) { localStorage.removeItem('sairncash_sub'); location.reload(); }

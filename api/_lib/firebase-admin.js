@@ -80,4 +80,62 @@ async function mintCustomToken(uid) {
   return admin.auth(app).createCustomToken(uid);
 }
 
-module.exports = { mintCustomToken };
+// ---------------------------------------------------------------------------
+// REALTIME DATABASE ACCESS (added 2026-09-01 for api/sairncash/stripe-webhook.js)
+//
+// A SEPARATE, NAMED ADMIN APP, deliberately. getAdminApp() above initialises
+// with credentials only and no databaseURL, and it may also REUSE a default app
+// that a sibling serverless invocation created in the same runtime -- so it
+// cannot be assumed to carry a database URL, and retrofitting one onto an
+// already-initialised app is not possible. Initialising our own named app
+// avoids the question entirely and leaves the token-minting path untouched.
+//
+// REQUIRES env: SAIRNCASH_FIREBASE_DATABASE_URL (already served to the client
+// by api/sairncash/firebase-config.js, so it is the same value, not a new one)
+// plus the same SAIRNCASH_FIREBASE_SERVICE_ACCOUNT the minting path uses.
+const DB_APP_NAME = 'sairncash-db';
+let _dbApp = null;
+
+function getDbApp() {
+  if (_dbApp) return _dbApp;
+  const raw = process.env.SAIRNCASH_FIREBASE_SERVICE_ACCOUNT;
+  const databaseURL = process.env.SAIRNCASH_FIREBASE_DATABASE_URL;
+  if (!raw || !databaseURL) {
+    const e = new Error('SAIRNCASH_FIREBASE_SERVICE_ACCOUNT / SAIRNCASH_FIREBASE_DATABASE_URL not set in environment');
+    e.code = 'CONFIG';
+    throw e;
+  }
+  let serviceAccount;
+  try {
+    serviceAccount = JSON.parse(raw);
+  } catch (err) {
+    const e = new Error('SAIRNCASH_FIREBASE_SERVICE_ACCOUNT is not valid JSON: ' + err.message);
+    e.code = 'CONFIG';
+    throw e;
+  }
+  const admin = require('firebase-admin');
+  const existing = (admin.apps || []).filter(Boolean).find(function (a) { return a.name === DB_APP_NAME; });
+  _dbApp = existing || admin.initializeApp(
+    { credential: admin.credential.cert(serviceAccount), databaseURL: databaseURL },
+    DB_APP_NAME
+  );
+  return _dbApp;
+}
+
+// Merge-writes an object at an RTDB path. update() rather than set() so a
+// write touching one field cannot silently erase a sibling written by a
+// different code path.
+async function rtdbUpdate(path, value) {
+  if (!path || typeof path !== 'string') throw new Error('rtdbUpdate requires a path');
+  const admin = require('firebase-admin');
+  await admin.database(getDbApp()).ref(path).update(value);
+}
+
+async function rtdbGet(path) {
+  if (!path || typeof path !== 'string') throw new Error('rtdbGet requires a path');
+  const admin = require('firebase-admin');
+  const snap = await admin.database(getDbApp()).ref(path).once('value');
+  return snap.val();
+}
+
+module.exports = { mintCustomToken, rtdbUpdate, rtdbGet };
