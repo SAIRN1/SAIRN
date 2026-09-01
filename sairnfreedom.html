@@ -157,6 +157,12 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="nitem" id="nav-members" onclick="sfNav('members')">Members</div>
       <div class="nitem" id="nav-dues" onclick="sfNav('dues')">Dues &amp; Fees</div>
       <div class="nitem" id="nav-waivers" onclick="sfNav('waivers')">Waivers</div>
+      <div class="nsec">Phase 2 &mdash; Canteen &amp; events</div>
+      <div class="nitem" id="nav-canteen" onclick="sfNav('canteen')">Canteen POS</div>
+      <div class="nitem" id="nav-closeout" onclick="sfNav('closeout')">Shift Close-out</div>
+      <div class="nitem" id="nav-events" onclick="sfNav('events')">Events Calendar</div>
+      <div class="nitem" id="nav-hall" onclick="sfNav('hall')">Hall Rental</div>
+      <div class="nitem" id="nav-vendors" onclick="sfNav('vendors')">Vendors &amp; Pricing</div>
       <div class="nsec">Phase 3 &mdash; Gaming compliance</div>
       <div class="nitem" id="nav-sessions" onclick="sfNav('sessions')">Sessions &amp; Calendar</div>
       <div class="nitem" id="nav-accounts" onclick="sfNav('accounts')">Bingo Accounts</div>
@@ -174,15 +180,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           <div class="note"><strong>Phase 1 &mdash; Foundation:</strong> entity and licence
           model, officer capabilities, member roster, the three-layer fee structure and
           conditional waivers.<br>
+          <strong>Phase 2 &mdash; Canteen &amp; events:</strong> the POS with its members-only,
+          permit-hours and staff-age gates (2.1), nightly close-out with cash
+          reconciliation and the trustees' liquor inventory (2.2), automatic-only bottle
+          fill determination (2.3), the events calendar &mdash; which is the <em>same</em>
+          calendar as gaming, not a second one (2.4), hall rental with the three
+          permit-modelled cases (2.5), vendors (2.6) and the two pricing capabilities
+          plus the beverage cost audit that replaces shopping for alcohol (2.7).<br>
           <strong>Phase 3 &mdash; Gaming compliance:</strong> bingo accounts and the
           separate electronic instant bingo account (3.1, 3.2), the session model with
           calendar refusals (3.3), the profit chain (3.4) and operator eligibility (3.6).
           <strong>Item 3.5, the ORC 2915.10(A) record set, is deliberately held</strong>
           &mdash; it requires winner Social Security numbers and is being researched as
           its own task. This app does not yet produce a compliant 2915.10 record set.<br>
-          <strong>Not built:</strong> Phase 2 (canteen POS, events, hall rental, vendors),
-          Phase 4 (disbursement, donations, service hours), Phase 5 (member experience)
-          and Phase 6 (district rollup). Absent rather than stubbed.</div>
+          <strong>Not built:</strong> Phase 4 (disbursement, donations, service hours),
+          Phase 5 (member experience) and Phase 6 (district rollup). Absent rather than
+          stubbed.</div>
         </div>
       </div>
 
@@ -224,6 +237,10 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
                could not express it. Phase 1's single value migrates into this list on
                first render; nothing is lost. This is the ONE source of truth for
                licence types -- the Sessions panel reads it and refuses on it. -->
+          <div style="margin-top:12px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="pp-d6"> D-6 held (Sunday sale)
+              <span style="font-weight:400;color:var(--muted)">&mdash; ORC 4303.182 issues one to a D-4 holder only where a local option election has approved Sunday sale</span></label>
+          </div>
           <div style="margin-top:12px"><label>Bingo licence types held (OAC 109:1-4-08)</label>
             <div id="pp-bingo-types" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px"></div>
           </div>
@@ -335,6 +352,301 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="tw"><table>
           <thead><tr><th>Member</th><th>Condition</th><th>Granted by</th><th>Granted</th><th>Status</th><th></th></tr></thead>
           <tbody id="wv-tbody"></tbody></table></div></div>
+      </div>
+
+      <!-- ============ PHASE 2 — CANTEEN POS (2.1) ============ -->
+      <div class="panel" id="panel-canteen">
+        <div class="ph"><div><div class="ptitle">Canteen POS</div>
+          <div class="pdesc">Members only, on premises, by the drink &mdash; ORC 4303.17(A)(1)</div></div></div>
+        <div id="cn-flags"></div>
+        <div class="kpi-row" id="cn-kpis"></div>
+
+        <div class="card"><h3>Ring a sale</h3>
+          <div class="grid">
+            <div><label>Date</label><input type="date" id="cn-date"></div>
+            <div><label>Time</label><input type="time" id="cn-time"></div>
+            <div><label>Member served</label><select id="cn-member"></select></div>
+            <div><label>Served by</label><select id="cn-staff"></select></div>
+            <div><label>Item</label><select id="cn-product"></select></div>
+            <div><label>Quantity</label><input type="number" id="cn-qty" min="1" step="1" value="1"></div>
+            <div><label>Payment rail</label><select id="cn-pay"><option value="cash">Cash</option><option value="stripe">Card &mdash; Stripe</option><option value="square">Card &mdash; Square</option></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfRingSale()">Ring sale</button></div>
+          <div id="cn-saleout"></div>
+          <div class="note">The POS is SAIRN's; Stripe and Square are recorded here as
+          <strong>payment rails only</strong>. No card processor is integrated in this
+          build &mdash; selecting one records how the member paid and nothing is charged.
+          Stated rather than implied, because a payment field that looks live and is not
+          is the silent-failure class this platform keeps finding.</div>
+        </div>
+
+        <div class="card"><h3>Products</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="pr-name" placeholder="e.g. Draft lager"></div>
+            <div><label>Category</label><select id="pr-cat"></select></div>
+            <div><label>Menu price</label><input type="number" id="pr-price" min="0" step="0.01"></div>
+            <div><label>Container cost</label><input type="number" id="pr-cost" min="0" step="0.01"></div>
+            <div><label>Container size (oz)</label><input type="number" id="pr-size" min="0" step="0.1"></div>
+            <div><label>Serving size (oz)</label><input type="number" id="pr-serving" min="0" step="0.1"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddProduct()">Add product</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Item</th><th>Category</th><th>Price</th><th>Cost / serving</th><th>Pour cost</th><th></th></tr></thead>
+            <tbody id="pr-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Canteen staff</h3>
+          <div class="grid">
+            <div><label>Name</label><input id="sfst-name"></div>
+            <div><label>Date of birth</label><input type="date" id="sfst-dob"></div>
+            <div><label>Paid?</label><select id="sfst-paid"><option value="yes">Paid staff</option><option value="no">Volunteer, unpaid</option></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddStaff()">Add staff member</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Name</th><th>Age</th><th>Paid</th><th>May serve</th><th>Limits</th><th></th></tr></thead>
+            <tbody id="sfst-tbody"></tbody></table></div>
+          <div class="note">ORC 4301.22 sets <strong>staffing</strong> gates, not service
+          gates: under <strong>18</strong> may not handle, serve or sell at all; under
+          <strong>19</strong> may not sell beer across a bar; under <strong>21</strong>
+          may not sell wine, mixed beverages or spirituous liquor across a bar.</div>
+        </div>
+
+        <div class="card"><h3>Recent sales</h3>
+          <div class="tw"><table>
+            <thead><tr><th>When</th><th>Member</th><th>Item</th><th>Qty</th><th>Served by</th><th>Rail</th><th>Total</th></tr></thead>
+            <tbody id="cn-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 2 — SHIFT CLOSE-OUT (2.2, 2.3) ============ -->
+      <div class="panel" id="panel-closeout">
+        <div class="ph"><div><div class="ptitle">Shift Close-out</div>
+          <div class="pdesc">Nightly cash reconciliation and the liquor inventory the trustees are required to take</div></div></div>
+        <div id="co-flags"></div>
+
+        <div class="card"><h3>Close a shift</h3>
+          <div class="grid">
+            <div><label>Shift date</label><input type="date" id="co-date"></div>
+            <div><label>Closed by</label><select id="co-by"></select></div>
+            <div><label>Opening float</label><input type="number" id="co-float" min="0" step="0.01" value="0"></div>
+            <div><label>Cash counted at close</label><input type="number" id="co-counted" min="0" step="0.01" value="0"></div>
+          </div>
+          <div id="co-expected" class="note"></div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfCloseShift()">Close shift</button></div>
+          <div class="note">Expected cash is computed from the cash-rail sales rung on
+          that date, not typed. A variance is recorded rather than absorbed &mdash; a
+          close-out that always balances is a close-out that is not being done.</div>
+        </div>
+
+        <div class="card"><h3>Closed shifts</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Closed by</th><th>Float</th><th>Cash sales</th><th>Expected</th><th>Counted</th><th>Variance</th></tr></thead>
+            <tbody id="co-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Bottle fill level &mdash; automatic determination only</h3>
+          <div class="grid">
+            <div><label>Bottle / product</label><select id="bf-product"></select></div>
+            <div><label>Photograph of the bottle</label><input type="file" accept="image/*" id="bf-photo"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfEstimateFill()">Determine fill level</button></div>
+          <div id="bf-out"></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>When</th><th>Bottle</th><th>Fill</th><th>Determined by</th></tr></thead>
+            <tbody id="bf-tbody"></tbody></table></div>
+          <div class="blockbox" style="margin-top:12px"><strong>There is no slider, no
+          tap-to-set and no adjustable guess, deliberately.</strong> The build spec
+          records automatic determination as a binding decision taken for
+          patent-avoidance reasons, so a manual override is not a convenience that was
+          left out &mdash; it is the thing that must not exist. If the determination
+          fails, <strong>no fill level is recorded at all</strong> rather than falling
+          back to a typed number.</div>
+        </div>
+
+        <div class="card"><h3>Liquor inventory count</h3>
+          <div class="grid">
+            <div><label>Count date</label><input type="date" id="inv-date"></div>
+            <div><label>Taken by</label><select id="inv-by"></select></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfRecordInventory()">Record that a count was taken</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Date</th><th>Taken by</th><th>Bottles with a current fill reading</th></tr></thead>
+            <tbody id="inv-tbody"></tbody></table></div>
+          <div class="note">The VFW's own materials require trustees to physically
+          inventory canteen liquor regularly. This records that the count happened and
+          who took it; the per-bottle figures come from the automatic determination
+          above, never from a typed estimate.</div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 2 — EVENTS CALENDAR (2.4) ============ -->
+      <div class="panel" id="panel-events">
+        <div class="ph"><div><div class="ptitle">Events Calendar</div>
+          <div class="pdesc">One calendar. Gaming sessions booked here run the real ORC 2915 refusals, not a copy of them</div></div></div>
+        <div id="ev-flags"></div>
+
+        <div class="card"><h3>Schedule an event</h3>
+          <div class="grid">
+            <div><label>Title</label><input id="ev-title" placeholder="e.g. Friday live music"></div>
+            <div><label>Date</label><input type="date" id="ev-date"></div>
+            <div><label>Starts</label><input type="time" id="ev-start" value="19:00"></div>
+            <div><label>Ends</label><input type="time" id="ev-end" value="23:00"></div>
+            <div><label>Kind</label><select id="ev-kind"></select></div>
+          </div>
+          <div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:18px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="ev-alcohol"> Alcohol will be served</label>
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="ev-gaming" onchange="sfToggleEventGaming()"> This event includes a bingo session</label>
+          </div>
+          <div id="ev-gamingfields" style="display:none;margin-top:12px">
+            <div class="grid">
+              <div><label>Instant bingo before (minutes)</label><input type="number" id="ev-before" min="0" step="15" value="0"></div>
+              <div><label>Instant bingo after (minutes)</label><input type="number" id="ev-after" min="0" step="15" value="0"></div>
+              <div><label>Planned maximum prize payout</label><input type="number" id="ev-prizecap" min="0" step="0.01" value="0"></div>
+              <div><label>Deposit gross profit to</label><select id="ev-account"></select></div>
+            </div>
+            <div style="margin-top:12px"><label>Games conducted</label>
+              <div id="ev-games" style="display:flex;flex-wrap:wrap;gap:16px;margin-top:6px"></div>
+            </div>
+            <div class="flagbox" style="margin-top:12px"><strong>These fields run
+            <code>sfSessionRefusals()</code> &mdash; the same function the Sessions panel
+            calls, not a second copy.</strong> A session booked here appears in Sessions
+            &amp; Calendar, counts toward the three-per-seven-days limit, and is refused
+            by every ORC 2915 check. That is the point of building the constraint engine
+            before the booking surface.</div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn sec" onclick="sfTestEvent()">Test against the statute</button>
+            <button class="btn" onclick="sfScheduleEvent()">Schedule event</button>
+          </div>
+          <div id="ev-testout"></div>
+        </div>
+
+        <div class="card"><h3>Calendar</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Date</th><th>Time</th><th>What</th><th>Kind</th><th>Alcohol</th><th></th></tr></thead>
+            <tbody id="ev-tbody"></tbody></table></div>
+          <div class="note">Bingo sessions are listed here alongside events because they
+          compete for the same room on the same night. Remove a session from the Sessions
+          panel; this view is the combined read.</div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 2 — HALL RENTAL (2.5) ============ -->
+      <div class="panel" id="panel-hall">
+        <div class="ph"><div><div class="ptitle">Hall Rental</div>
+          <div class="pdesc">Three permit-modelled cases, and the third one is a refusal rather than a price</div></div></div>
+        <div id="hr-flags"></div>
+
+        <div class="card"><h3>Rental rates</h3>
+          <div class="grid">
+            <div><label>Weekday &mdash; member</label><input type="number" id="hr-wd-mem" min="0" step="0.01"></div>
+            <div><label>Weekday &mdash; public</label><input type="number" id="hr-wd-pub" min="0" step="0.01"></div>
+            <div><label>Weekend &mdash; member</label><input type="number" id="hr-we-mem" min="0" step="0.01"></div>
+            <div><label>Weekend &mdash; public</label><input type="number" id="hr-we-pub" min="0" step="0.01"></div>
+            <div><label>Alcohol-service deposit</label><input type="number" id="hr-dep" min="0" step="0.01"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfSaveHallRates()">Save rates</button></div>
+        </div>
+
+        <div class="card"><h3>Take a booking</h3>
+          <div class="grid">
+            <div><label>Renter</label><input id="hr-renter"></div>
+            <div><label>Renter type</label><select id="hr-type"></select></div>
+            <div><label>Member host (if member-hosted)</label><select id="hr-host"></select></div>
+            <div><label>First date</label><input type="date" id="hr-date"></div>
+            <div><label>Consecutive days</label><input type="number" id="hr-days" min="1" step="1" value="1"></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="hr-alcohol"> Alcohol will be served</label>
+          </div>
+          <div id="hr-f2fields" style="display:none;margin-top:12px">
+            <div class="grid">
+              <div><label>Not-for-profit purpose</label><select id="hr-purpose"></select></div>
+              <div><label>Chief peace officer notified on</label><input type="date" id="hr-notified"></div>
+              <div><label>Where proceeds go</label><input id="hr-proceeds" placeholder="destination of the proceeds"></div>
+            </div>
+          </div>
+          <div style="margin-top:12px">
+            <button class="btn sec" onclick="sfTestRental()">Test this booking</button>
+            <button class="btn" onclick="sfTakeBooking()">Take booking</button>
+          </div>
+          <div id="hr-testout"></div>
+        </div>
+
+        <div class="card"><h3>Bookings</h3>
+          <div class="tw"><table>
+            <thead><tr><th>Renter</th><th>Type</th><th>Dates</th><th>Alcohol</th><th>Permit path</th><th>Charge</th><th></th></tr></thead>
+            <tbody id="hr-tbody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- ============ PHASE 2 — VENDORS AND PRICING (2.6, 2.7) ============ -->
+      <div class="panel" id="panel-vendors">
+        <div class="ph"><div><div class="ptitle">Vendors &amp; Pricing</div>
+          <div class="pdesc">What may be shopped for, what may only be audited, and why they are different</div></div></div>
+        <div id="vn-flags"></div>
+
+        <div class="card"><h3>Vendors</h3>
+          <div class="grid">
+            <div><label>Vendor</label><input id="vn-name"></div>
+            <div><label>Category</label><select id="vn-cat"></select></div>
+            <div><label>Brand / territory (alcohol)</label><input id="vn-brand" placeholder="the one lawful brand for this territory"></div>
+          </div>
+          <div style="margin-top:12px">
+            <label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="vn-licensed"> Licensed gaming-supply distributor</label>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddVendor()">Add vendor</button></div>
+          <div class="tw" style="margin-top:12px"><table>
+            <thead><tr><th>Vendor</th><th>Category</th><th>Brand / territory</th><th>Notes</th><th></th></tr></thead>
+            <tbody id="vn-tbody"></tbody></table></div>
+        </div>
+
+        <div class="card"><h3>Recorded prices &mdash; compare vendors already on file</h3>
+          <div class="grid">
+            <div><label>Vendor</label><select id="vp-vendor"></select></div>
+            <div><label>Item</label><input id="vp-item"></div>
+            <div><label>Unit price</label><input type="number" id="vp-price" min="0" step="0.01"></div>
+            <div><label>Quoted on</label><input type="date" id="vp-date"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfAddVendorPrice()">Record price</button></div>
+          <div id="vp-out" style="margin-top:12px"></div>
+          <div class="note">This comparison is grounded entirely in prices the post
+          entered. It is deterministic, auditable, and has <strong>no fabrication
+          surface</strong> &mdash; every number came from a record somebody here wrote
+          down. It needs no model at all, which is why it is a separate feature from the
+          market search below rather than a narrower setting on it.</div>
+        </div>
+
+        <div class="card"><h3>Search the wider market</h3>
+          <div class="grid">
+            <div><label>Category</label><select id="ms-cat"></select></div>
+            <div><label>What are you buying?</label><input id="ms-q" placeholder="e.g. 500 pull-tab tickets"></div>
+          </div>
+          <div style="margin-top:10px"><button class="btn" onclick="sfMarketSearch()">Search</button></div>
+          <div id="ms-out" style="margin-top:12px"></div>
+          <div class="blockbox" style="margin-top:12px"><strong>Alcohol cannot be shopped
+          for, and this is not a policy choice.</strong> Spirits are a state monopoly at a
+          uniform statewide price. For beer and wine, <strong>OAC
+          4301:1-1-43(J)(2)</strong> prohibits a retail permit holder from purchasing a
+          brand from a wholesaler whose exclusive territory does not cover the premises
+          &mdash; so per brand the lodge has exactly one lawful vendor. Retailers may not
+          buy from each other (4301:1-1-46(B)), discounts and rebates are banned both
+          directions (4301:1-1-43(A)(2)), and beer and US-made wine must be sold to a
+          retailer for cash (ORC 4301.24(D)). Buying outside that is a
+          <strong>first-degree misdemeanor</strong> under ORC 4301.99(C) and reaches the
+          permit through ORC 4301.25(A). <strong>The exposure is the lodge's, not
+          ours</strong> &mdash; which is exactly why this app refuses the flow rather
+          than warning about it.</div>
+          <div class="flagbox"><strong>Every price returned carries its source URL and
+          the date it was read.</strong> A figure with no source is not shown at all. A
+          searched price is a <strong>lead, not a quote</strong>: the Finance Officer
+          budgeting against a stale scraped number is the failure this rule exists to
+          prevent.</div>
+        </div>
+
+        <div class="card"><h3>Beverage cost audit &mdash; what replaces shopping around</h3>
+          <div id="ba-out"></div>
+        </div>
       </div>
 
       <!-- ============ PHASE 3 — SESSIONS AND CALENDAR (3.3) ============ -->
@@ -540,7 +852,14 @@ function st(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; 
 function ld(k,d){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch(e){ return d; } }
 function toast(msg,kind){ var t=$('toast'); if(!t) return; t.textContent=msg;
   t.className = 'on' + (kind==='err'?' err':''); setTimeout(function(){ t.className=''; }, 2600); }
-function money(n){ return '$' + (Number(n)||0).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2}); }
+/* The sign goes OUTSIDE the currency symbol. Phase 1 wrote '$' + value, which
+   is right until a value is negative and then renders "$-4.00". Phase 2's
+   cash-variance column and Phase 3's negative gross profit (prizes exceeding
+   receipts) are the first places this app produces one. */
+function money(n){
+  var v=Number(n)||0;
+  return (v<0?'-$':'$') + Math.abs(v).toLocaleString(undefined,{minimumFractionDigits:2,maximumFractionDigits:2});
+}
 
 /* LOCAL DATE, NOT UTC. The spec calls this out by name in 2b: waiver expiry is
    "date arithmetic on a boundary, in a codebase that has already shipped a
@@ -712,6 +1031,7 @@ function sfRenderPost(){
         H(t.label)+' <span style="font-weight:400;color:var(--muted)">'+H(t.desc)+'</span></label>';
     }).join('');
   }
+  if($('pp-d6')) $('pp-d6').checked=!!p.d6;
   if($('pp-name')) $('pp-name').value=p.name||'';
   if($('pp-founded')) $('pp-founded').value=p.founded||'';
   if($('pp-entity')) $('pp-entity').value=p.entityId||'';
@@ -769,6 +1089,7 @@ function sfSavePost(){
   p.city=($('pp-city').value||'').trim();
   p.state=($('pp-state').value||'').trim().toUpperCase();
   p.liquor=$('pp-liquor').value;
+  p.d6=!!$('pp-d6').checked;
   var types=[];
   BINGO_LICENCE_TYPES.forEach(function(t){ var b=$('ppbt-'+t.id); if(b && b.checked) types.push(t.id); });
   /* Type II cannot be held without Type I (OAC 109:1-4-08). Refuse rather than
@@ -1755,7 +2076,22 @@ function operatorEligibility(o){
   if(o.felony) reasons.push({ cite:'ORC 2915.09(C)(8)', text:'Felony conviction recorded.' });
   if(o.gambling) reasons.push({ cite:'ORC 2915.09(C)(8)', text:'Gambling conviction recorded.' });
   if(o.compensated) reasons.push({ cite:'ORC 2915.09(D)(1)', text:'Receives compensation. No commission, wage, salary, reward, tip, donation, gratuity or other form of compensation may be paid to a bingo game operator.' });
-  if(o.paidCanteen) reasons.push({ cite:'ORC 2915.09(D)(1)', text:'Also paid canteen or bar staff. Paying the same person for canteen work while they operate the game is the interaction (D)(1) is most easily breached by -- confirm the two roles are genuinely separate and separately paid, or unpaid on the gaming side.' });
+  /* (D)(1) INTERACTS WITH CANTEEN STAFFING, and Phase 2 closed this loop.
+     Phase 3 shipped with a manual checkbox because the canteen payroll did not
+     exist yet and inferring the flag from data that did not exist would have
+     been a fabricated check. It exists now, so the roster is matched on name
+     as well -- the manual flag is kept because a person can be paid by the
+     lodge without appearing on the canteen roster. */
+  var payrollMatch=null;
+  getStaff().forEach(function(s){
+    if(s.paid && String(s.name||'').trim().toLowerCase()===String(o.name||'').trim().toLowerCase()) payrollMatch=s;
+  });
+  if(o.paidCanteen || payrollMatch){
+    reasons.push({ cite:'ORC 2915.09(D)(1)', text:
+      (payrollMatch ? 'Appears on the canteen roster as PAID staff under the same name'
+                    : 'Recorded as also paid canteen or bar staff')+
+      '. Paying the same person for canteen work while they operate the game is the interaction (D)(1) is most easily breached by -- confirm the two roles are genuinely separate and separately paid, or unpaid on the gaming side.' });
+  }
   return { eligible: reasons.length===0, reasons: reasons, age: age };
 }
 function sfAddOperator(){
@@ -1803,6 +2139,1010 @@ function sfRenderOperators(){
         'Under OAC 4301:1-1-53(D)&ndash;(E) a Chapter 2915 violation is simultaneously a liquor-permit exposure.</div>';
     }
     out += '<div class="flagbox"><strong>This list is not a background check.</strong> Convictions are recorded here because someone entered them. Nothing in this app queries a court record, and an empty conviction flag means nobody ticked it &mdash; not that a check was run and came back clean.</div>';
+    box.innerHTML=out;
+  }
+}
+
+/* ========================================================================
+   PHASE 2 -- CANTEEN, EVENTS, HALL RENTAL AND VENDORS
+   Built to spec section 3 (Phase 2) items 2.1 - 2.7, and to the two research
+   docs that changed its shape after the spec was written:
+   docs/2026-08-30-sairnfreedom-ohio-liquor-permits.md (hours, who may be
+   served, the F-2 path) and docs/2026-08-30-sairnfreedom-four-research-items.md
+   (why alcohol cannot be shopped for, and what replaces it).
+
+   THE CALENDAR IS ONE CALENDAR. An event marked as including a bingo session
+   calls sfSessionRefusals() -- the Phase 3 function itself, not a copy -- and
+   writes a real session record. Nothing here re-implements an ORC 2915 rule.
+   ======================================================================== */
+
+var K_PRODUCTS='sf_products', K_TICKETS='sf_tickets', K_SHIFTS='sf_shifts',
+    K_EVENTS='sf_events', K_RENTALS='sf_rentals', K_VENDORS='sf_vendors',
+    K_STAFF='sf_staff', K_VPRICES='sf_vendor_prices', K_FILLS='sf_bottle_fills',
+    K_INVENTORY='sf_inventory_counts', K_HALLRATES='sf_hall_rates';
+
+function getProducts(){ return ld(K_PRODUCTS, []); }
+function getTickets(){ return ld(K_TICKETS, []); }
+function getShifts(){ return ld(K_SHIFTS, []); }
+function getEvents(){ return ld(K_EVENTS, []); }
+function getRentals(){ return ld(K_RENTALS, []); }
+function getVendors(){ return ld(K_VENDORS, []); }
+function getStaff(){ return ld(K_STAFF, []); }
+function getVendorPrices(){ return ld(K_VPRICES, []); }
+function getFills(){ return ld(K_FILLS, []); }
+function getInventoryCounts(){ return ld(K_INVENTORY, []); }
+function getHallRates(){ return ld(K_HALLRATES, { wdMember:0, wdPublic:0, weMember:0, wePublic:0, deposit:0 }); }
+
+/* ---- LIQUOR HOURS -- OAC 4301:1-1-49(B), the 1:00 a.m. group -----------
+   (B)(1) Monday to Saturday, prohibited between one a.m. and five-thirty a.m.
+   (B)(2) Sunday, prohibited between one a.m. and Sunday midnight, unless
+          statutorily authorized otherwise -- i.e. SUNDAY IS CLOSED ALL DAY
+          for a D-4 absent a D-6, and a D-6 is election-gated (ORC 4303.182).
+   (B)(3) CONSUMPTION is prohibited during those hours too, not just sale. Last
+          call is not the gate; the room must be clear of drinks by 1:00 a.m.
+
+   ONLY PARAGRAPH (B) WAS READ AGAINST PRIMARY SOURCE. Paragraph (C) -- the
+   2:30 a.m. group, which covers D-3-with-D-3A, D-4A, D-5 series and D-7 -- was
+   not. So this app applies (B) to every permit and SAYS SO when the recorded
+   permit is not a D-4, rather than inventing (C)'s text. That may refuse
+   something lawful for a D-5, which is the safe direction to be wrong in and
+   is disclosed instead of hidden. */
+var HOURS_1AM_GROUP = ['D-4'];
+function d6Held(){ return !!getPost().d6; }
+function liquorServiceCheck(dateStr, timeStr){
+  var d=parseLocalDate(dateStr), mins=timeToMin(timeStr);
+  if(!d || mins===null) return { allowed:true, unknown:true };
+  var dow=d.getDay(); // 0 = Sunday
+  if(dow===0 && !d6Held()){
+    return { allowed:false, cite:'OAC 4301:1-1-49(B)(2)',
+      text:'Sunday is closed all day. The prohibition runs from one a.m. to Sunday midnight unless statutorily authorized otherwise, and the authorization is a D-6, which ORC 4303.182 issues only where a local option election has approved Sunday sale.' };
+  }
+  if(mins>=60 && mins<330){
+    return { allowed:false, cite:'OAC 4301:1-1-49(B)'+(dow===0?'(2)':'(1)'),
+      text:'Sale and consumption are both prohibited between one a.m. and five-thirty a.m. Paragraph (B)(3) bars consumption as well as sale, so a last call before one a.m. is not enough -- the room must be clear of drinks.' };
+  }
+  return { allowed:true };
+}
+function permitHoursNote(){
+  var p=getPost();
+  if(!p.liquor) return 'No liquor permit class is recorded, so this app applies the OAC 4301:1-1-49(B) one a.m. group as the conservative default.';
+  if(HOURS_1AM_GROUP.indexOf(p.liquor)>=0) return '';
+  return 'This post is recorded as a '+p.liquor+'. Only paragraph (B) -- the one a.m. group, which is where D-4 sits -- was read against primary source; paragraph (C), the 2:30 a.m. group, was not. This app applies (B) to every permit, so it may refuse a sale a '+p.liquor+' could lawfully make.';
+}
+
+/* ---- MEMBERSHIP AND DUES-CURRENCY --------------------------------------
+   ORC 4303.17(A)(1) is the entire textual basis: sell "to its members only, in
+   glass or container, for consumption on the premises where sold."
+
+   GUESTS ARE UNRESOLVED IN THE SOURCES and are deliberately not modelled. The
+   liquor research found no statute, no rule and no definition of "guest"
+   anywhere in Chapter 4301:1-1 -- nothing permitting them and nothing
+   prohibiting them by name. Encoding a guest allowance would be presenting an
+   open question as settled law, so the POS sells to a member or refuses. */
+function duesCurrent(memberId){
+  var year=String(parseLocalDate(localToday()).getFullYear());
+  var paid=getLedger().some(function(r){
+    return r.memberId===memberId && r.layer==='annual_dues' && String(r.date||'').slice(0,4)===year;
+  });
+  if(paid) return { current:true, basis:'annual dues recorded for '+year };
+  var w=activeWaiverFor(memberId);
+  if(w) return { current:true, basis:'dues waived -- '+conditionLabel(w.condition) };
+  return { current:false, basis:'no annual dues recorded for '+year+' and no active waiver' };
+}
+
+/* ---- STAFF AND ORC 4301.22 --------------------------------------------- */
+var PRODUCT_CATEGORIES = [
+  { id:'beer',    label:'Beer',                      alcohol:true,  minSellAge:19, cite:'ORC 4301.22(A)(2)' },
+  { id:'wine',    label:'Wine',                      alcohol:true,  minSellAge:21, cite:'ORC 4301.22(A)(3)' },
+  { id:'spirits', label:'Spirits / mixed beverages', alcohol:true,  minSellAge:21, cite:'ORC 4301.22(A)(3)' },
+  { id:'food',    label:'Food / kitchen',            alcohol:false, minSellAge:0 },
+  { id:'nonalc',  label:'Non-alcoholic',             alcohol:false, minSellAge:0 }
+];
+function productCategory(id){ for(var i=0;i<PRODUCT_CATEGORIES.length;i++){ if(PRODUCT_CATEGORIES[i].id===id) return PRODUCT_CATEGORIES[i]; } return null; }
+function staffLimits(s){
+  var age=ageOn(s.dob, localToday());
+  if(age===null) return { age:null, mayHandleAlcohol:false, maySell:[], note:'Date of birth not recorded, so no ORC 4301.22 gate can be evaluated.' };
+  var may=[];
+  PRODUCT_CATEGORIES.forEach(function(c){ if(!c.alcohol || age>=c.minSellAge) may.push(c.id); });
+  var note='';
+  if(age<18) note='Under 18 -- may not handle, serve or sell alcohol at all.';
+  else if(age<19) note='May handle alcohol but may not sell beer, wine, mixed beverages or spirituous liquor across a bar.';
+  else if(age<21) note='May sell beer across a bar; may not sell wine, mixed beverages or spirituous liquor.';
+  return { age:age, mayHandleAlcohol:age>=18, maySell:may, note:note };
+}
+
+function sfAddStaff(){
+  var name=($('sfst-name').value||'').trim();
+  if(!name){ toast('Staff name is required','err'); return; }
+  var list=getStaff();
+  list.push({ id:'st'+Date.now(), name:name, dob:$('sfst-dob').value||'', paid:$('sfst-paid').value==='yes' });
+  st(K_STAFF,list);
+  $('sfst-name').value=''; $('sfst-dob').value='';
+  toast('Staff member added');
+  sfRenderAll();
+}
+function sfRemoveStaff(id){
+  st(K_STAFF, getStaff().filter(function(s){ return s.id!==id; }));
+  toast('Staff member removed');
+  sfRenderAll();
+}
+
+/* ---- PRODUCTS AND POUR COST -------------------------------------------- */
+function servingsPerContainer(p){
+  var size=Number(p.size||0), serving=Number(p.serving||0);
+  if(!(size>0) || !(serving>0)) return null;
+  return size/serving;
+}
+function costPerServing(p){
+  var n=servingsPerContainer(p);
+  if(n===null || !(Number(p.cost)>0)) return null;
+  return Number(p.cost)/n;
+}
+function pourCost(p){
+  var c=costPerServing(p);
+  if(c===null || !(Number(p.price)>0)) return null;
+  return c/Number(p.price);
+}
+function sfAddProduct(){
+  var name=($('pr-name').value||'').trim();
+  if(!name){ toast('Product name is required','err'); return; }
+  var list=getProducts();
+  list.push({ id:'pd'+Date.now(), name:name, category:$('pr-cat').value,
+              price:Number($('pr-price').value||0), cost:Number($('pr-cost').value||0),
+              size:Number($('pr-size').value||0), serving:Number($('pr-serving').value||0) });
+  st(K_PRODUCTS,list);
+  $('pr-name').value=''; $('pr-price').value=''; $('pr-cost').value='';
+  $('pr-size').value=''; $('pr-serving').value='';
+  toast('Product added');
+  sfRenderAll();
+}
+function sfRemoveProduct(id){
+  st(K_PRODUCTS, getProducts().filter(function(p){ return p.id!==id; }));
+  st(K_FILLS, getFills().filter(function(f){ return f.productId!==id; }));
+  toast('Product removed');
+  sfRenderAll();
+}
+
+/* ---- THE POS SALE CHECK ------------------------------------------------ */
+function saleRefusals(sale){
+  var out=[];
+  var prod=null; getProducts().forEach(function(p){ if(p.id===sale.productId) prod=p; });
+  if(!prod){ out.push({ cite:'input', text:'Select an item.' }); return out; }
+  var cat=productCategory(prod.category);
+  if(!sale.memberId){
+    out.push({ cite:'ORC 4303.17(A)(1)', text:'A D-4 sells to its members only. Select the member being served.' });
+  } else {
+    var dc=duesCurrent(sale.memberId);
+    if(!dc.current && cat && cat.alcohol){
+      out.push({ cite:'ORC 4303.17(A)(1)', text:'That member is not dues-current -- '+dc.basis+'. The roster is the only documentary record the statute names, which makes dues-status accuracy the whole evidentiary case.' });
+    }
+  }
+  if(cat && cat.alcohol){
+    var h=liquorServiceCheck(sale.date, sale.time);
+    if(!h.allowed) out.push({ cite:h.cite, text:h.text });
+  }
+  var staff=null; getStaff().forEach(function(s){ if(s.id===sale.staffId) staff=s; });
+  if(!staff){ out.push({ cite:'ORC 4301.22', text:'Record who served it -- the age gates are conditions on the person selling.' }); }
+  else if(cat && cat.alcohol){
+    var lim=staffLimits(staff);
+    if(lim.maySell.indexOf(cat.id)<0){
+      out.push({ cite:cat.cite||'ORC 4301.22', text:staff.name+(lim.age===null?' has no date of birth recorded, so the age gate cannot be cleared':' is '+lim.age+' and may not sell '+cat.label.toLowerCase()+' across a bar')+'.' });
+    }
+  }
+  if(!(Number(sale.qty)>0)) out.push({ cite:'input', text:'Quantity must be at least one.' });
+  return out;
+}
+function sfRingSale(){
+  var sale={ date:$('cn-date').value||localToday(), time:$('cn-time').value,
+             memberId:$('cn-member').value, staffId:$('cn-staff').value,
+             productId:$('cn-product').value, qty:Number($('cn-qty').value||0),
+             rail:$('cn-pay').value };
+  var refusals=saleRefusals(sale);
+  var box=$('cn-saleout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' check(s) failed','err');
+    return;
+  }
+  var prod=null; getProducts().forEach(function(p){ if(p.id===sale.productId) prod=p; });
+  var list=getTickets();
+  list.push({ id:'tk'+Date.now(), date:sale.date, time:sale.time, memberId:sale.memberId,
+              staffId:sale.staffId, productId:sale.productId, qty:sale.qty, rail:sale.rail,
+              unitPrice:Number(prod.price||0), total:Number(prod.price||0)*sale.qty });
+  st(K_TICKETS,list);
+  if(box) box.innerHTML='';
+  toast('Sale rung -- '+money(Number(prod.price||0)*sale.qty));
+  sfRenderAll();
+}
+
+function sfRenderCanteen(){
+  var members=getMembers(), staff=getStaff(), products=getProducts();
+  var pc=$('pr-cat');
+  if(pc) pc.innerHTML=PRODUCT_CATEGORIES.map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  if($('cn-date') && !$('cn-date').value) $('cn-date').value=localToday();
+  if($('cn-time') && !$('cn-time').value) $('cn-time').value='19:00';
+  var ms=$('cn-member');
+  if(ms) ms.innerHTML = members.length
+    ? '<option value="">Select member</option>'+members.map(function(m){
+        var dc=duesCurrent(m.id);
+        return '<option value="'+H(m.id)+'">'+H(m.name)+(dc.current?'':' (not dues-current)')+'</option>'; }).join('')
+    : '<option value="">No members on the roster</option>';
+  var ss=$('cn-staff');
+  if(ss) ss.innerHTML = staff.length
+    ? '<option value="">Select staff</option>'+staff.map(function(s){ return '<option value="'+H(s.id)+'">'+H(s.name)+'</option>'; }).join('')
+    : '<option value="">No staff recorded</option>';
+  var ps=$('cn-product');
+  if(ps) ps.innerHTML = products.length
+    ? products.map(function(p){ return '<option value="'+H(p.id)+'">'+H(p.name)+' &mdash; '+money(p.price)+'</option>'; }).join('')
+    : '<option value="">No products</option>';
+
+  var ptb=$('pr-tbody');
+  if(ptb){
+    if(!products.length){ ptb.innerHTML='<tr><td colspan="6" class="empty">No products yet.</td></tr>'; }
+    else {
+      ptb.innerHTML=products.map(function(p){
+        var cps=costPerServing(p), pcv=pourCost(p);
+        return '<tr><td>'+H(p.name)+'</td><td>'+H((productCategory(p.category)||{}).label||p.category)+'</td>'+
+          '<td>'+money(p.price)+'</td><td>'+(cps===null?'<span class="kpi-change">size and cost needed</span>':money(cps))+'</td>'+
+          '<td>'+(pcv===null?'--':(pcv*100).toFixed(1)+'%')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveProduct(\''+H(p.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var stb=$('sfst-tbody');
+  if(stb){
+    if(!staff.length){ stb.innerHTML='<tr><td colspan="6" class="empty">No staff recorded.</td></tr>'; }
+    else {
+      stb.innerHTML=staff.map(function(s){
+        var l=staffLimits(s);
+        var may=l.maySell.filter(function(id){ var c=productCategory(id); return c && c.alcohol; })
+                 .map(function(id){ return (productCategory(id)||{}).label; }).join(', ');
+        return '<tr><td>'+H(s.name)+'</td><td>'+(l.age===null?'--':l.age)+'</td>'+
+          '<td>'+(s.paid?'<span class="tag warn">Paid</span>':'<span class="tag info">Volunteer</span>')+'</td>'+
+          '<td>'+H(may||'Nothing alcoholic')+'</td>'+
+          '<td style="font-size:12px">'+H(l.note||'No age restriction applies.')+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfRemoveStaff(\''+H(s.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  var tickets=getTickets();
+  var ttb=$('cn-tbody');
+  if(ttb){
+    if(!tickets.length){ ttb.innerHTML='<tr><td colspan="7" class="empty">No sales rung.</td></tr>'; }
+    else {
+      ttb.innerHTML=tickets.slice().reverse().slice(0,40).map(function(t){
+        function nm(list,id){ for(var i=0;i<list.length;i++){ if(list[i].id===id) return list[i].name; } return '(removed)'; }
+        return '<tr><td>'+H(t.date)+' '+H(t.time||'')+'</td><td>'+H(nm(members,t.memberId))+'</td>'+
+          '<td>'+H(nm(products,t.productId))+'</td><td>'+H(String(t.qty))+'</td><td>'+H(nm(staff,t.staffId))+'</td>'+
+          '<td>'+H(t.rail)+'</td><td>'+money(t.total)+'</td></tr>';
+      }).join('');
+    }
+  }
+
+  var k=$('cn-kpis');
+  if(k){
+    var today=localToday();
+    var todaySales=tickets.filter(function(t){ return t.date===today; }).reduce(function(a,t){ return a+Number(t.total||0); },0);
+    var allSales=tickets.reduce(function(a,t){ return a+Number(t.total||0); },0);
+    var notCurrent=members.filter(function(m){ return !duesCurrent(m.id).current; }).length;
+    k.innerHTML =
+      '<div class="kpi"><div class="kpi-label">Sales today</div><div class="kpi-value">'+money(todaySales)+'</div><div class="kpi-change">'+H(today)+'</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Sales recorded</div><div class="kpi-value">'+money(allSales)+'</div><div class="kpi-change">'+tickets.length+' tickets</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Products</div><div class="kpi-value">'+products.length+'</div><div class="kpi-change">'+staff.length+' staff</div></div>'+
+      '<div class="kpi"><div class="kpi-label">Members not dues-current</div><div class="kpi-value"'+(notCurrent?' style="color:var(--red)"':'')+'>'+notCurrent+'</div><div class="kpi-change">Cannot be served alcohol</div></div>';
+  }
+
+  var box=$('cn-flags');
+  if(box){
+    var out='', note=permitHoursNote();
+    if(note) out += '<div class="flagbox"><strong>Permit hours.</strong> '+H(note)+'</div>';
+    out += '<div class="flagbox"><strong>Guests are not modelled, and that is a finding rather than a gap.</strong> '+
+      'ORC 4303.17(A)(1) permits sale to members only. The liquor research found no statute, no administrative rule and no definition of "guest" anywhere in Chapter 4301:1-1 &mdash; nothing permitting accompanied guests and nothing prohibiting them by name. Every lodge in Ohio serves them in practice; that practice has no verified basis in either direction, so this app sells to a member or refuses rather than encoding an open question as settled law. This one goes to counsel.</div>';
+    if(!d6Held()) out += '<div class="flagbox"><strong>No D-6 recorded, so Sunday is closed all day.</strong> ORC 4303.182 issues a D-6 to a D-4 holder only where a local option election has approved Sunday sale.</div>';
+    box.innerHTML=out;
+  }
+}
+
+/* ---- SHIFT CLOSE-OUT (2.2) --------------------------------------------- */
+function cashSalesOn(dateStr){
+  return getTickets().filter(function(t){ return t.date===dateStr && t.rail==='cash'; })
+    .reduce(function(a,t){ return a+Number(t.total||0); },0);
+}
+function sfCloseShift(){
+  var date=$('co-date').value||localToday();
+  if(getShifts().some(function(s){ return s.date===date; })){ toast('That date is already closed','err'); return; }
+  var by=$('co-by').value;
+  if(!by){ toast('Record who closed the shift','err'); return; }
+  var float=Number($('co-float').value||0), counted=Number($('co-counted').value||0);
+  var cash=cashSalesOn(date);
+  var list=getShifts();
+  list.push({ id:'sh'+Date.now(), date:date, by:by, float:float, cashSales:cash,
+              expected:float+cash, counted:counted, variance:counted-(float+cash) });
+  st(K_SHIFTS,list);
+  toast('Shift closed -- variance '+money(counted-(float+cash)));
+  sfRenderAll();
+}
+function sfRenderCloseout(){
+  var staff=getStaff();
+  function staffOpts(){
+    return staff.length ? '<option value="">Select</option>'+staff.map(function(s){ return '<option value="'+H(s.name)+'">'+H(s.name)+'</option>'; }).join('')
+                        : '<option value="">No staff recorded</option>';
+  }
+  ['co-by','inv-by'].forEach(function(id){ var e=$(id); if(e){ var prev=e.value; e.innerHTML=staffOpts(); if(prev) e.value=prev; } });
+  if($('co-date') && !$('co-date').value) $('co-date').value=localToday();
+  if($('inv-date') && !$('inv-date').value) $('inv-date').value=localToday();
+  var ex=$('co-expected');
+  if(ex){
+    var d=$('co-date')?$('co-date').value:localToday();
+    var cash=cashSalesOn(d), fl=Number(($('co-float')||{}).value||0);
+    ex.innerHTML='Cash-rail sales on '+H(d)+': <strong>'+money(cash)+'</strong>. With the float, expected drawer is <strong>'+money(cash+fl)+'</strong>.';
+  }
+  var tb=$('co-tbody'), shifts=getShifts();
+  if(tb){
+    if(!shifts.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No shifts closed.</td></tr>'; }
+    else {
+      tb.innerHTML=shifts.slice().reverse().map(function(s){
+        var tag = Math.abs(s.variance)<0.005 ? '<span class="tag ok">'+money(0)+'</span>'
+                : (s.variance<0 ? '<span class="tag bad">'+money(s.variance)+' short</span>'
+                                : '<span class="tag warn">'+money(s.variance)+' over</span>');
+        return '<tr><td>'+H(s.date)+'</td><td>'+H(s.by)+'</td><td>'+money(s.float)+'</td><td>'+money(s.cashSales)+'</td>'+
+          '<td>'+money(s.expected)+'</td><td>'+money(s.counted)+'</td><td>'+tag+'</td></tr>';
+      }).join('');
+    }
+  }
+
+  var bfp=$('bf-product');
+  if(bfp){
+    var bottles=getProducts().filter(function(p){ var c=productCategory(p.category); return c && c.alcohol; });
+    bfp.innerHTML = bottles.length
+      ? bottles.map(function(p){ return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>'; }).join('')
+      : '<option value="">No alcoholic products recorded</option>';
+  }
+  var ftb=$('bf-tbody'), fills=getFills();
+  if(ftb){
+    if(!fills.length){ ftb.innerHTML='<tr><td colspan="4" class="empty">No fill levels determined.</td></tr>'; }
+    else {
+      ftb.innerHTML=fills.slice().reverse().map(function(f){
+        var prod=null; getProducts().forEach(function(p){ if(p.id===f.productId) prod=p; });
+        return '<tr><td>'+H(f.when)+'</td><td>'+H(prod?prod.name:'(removed)')+'</td>'+
+          '<td><strong>'+H(String(f.percent))+'%</strong></td><td>'+H(f.method)+'</td></tr>';
+      }).join('');
+    }
+  }
+  var itb=$('inv-tbody'), counts=getInventoryCounts();
+  if(itb){
+    if(!counts.length){ itb.innerHTML='<tr><td colspan="3" class="empty">No inventory count recorded.</td></tr>'; }
+    else {
+      itb.innerHTML=counts.slice().reverse().map(function(c){
+        return '<tr><td>'+H(c.date)+'</td><td>'+H(c.by)+'</td><td>'+H(String(c.bottlesWithReading))+'</td></tr>';
+      }).join('');
+    }
+  }
+  var box=$('co-flags');
+  if(box){
+    var out='';
+    var bad=shifts.filter(function(s){ return Math.abs(s.variance)>=0.005; });
+    if(bad.length) out += '<div class="flagbox"><strong>'+bad.length+' shift(s) closed with a cash variance.</strong> Recorded rather than absorbed &mdash; the variance is the signal.</div>';
+    var last=counts.length?counts[counts.length-1]:null;
+    if(!last) out += '<div class="flagbox"><strong>No liquor inventory count has been recorded.</strong> The VFW’s own materials require trustees to physically inventory canteen liquor regularly.</div>';
+    box.innerHTML=out;
+  }
+}
+
+function sfRecordInventory(){
+  var by=$('inv-by').value;
+  if(!by){ toast('Record who took the count','err'); return; }
+  var date=$('inv-date').value||localToday();
+  var withReading=getFills().filter(function(f){ return f.date===date; }).length;
+  var list=getInventoryCounts();
+  list.push({ id:'iv'+Date.now(), date:date, by:by, bottlesWithReading:withReading });
+  st(K_INVENTORY,list);
+  toast('Inventory count recorded');
+  sfRenderAll();
+}
+
+/* ---- BOTTLE FILL, AUTOMATIC ONLY (2.3) --------------------------------
+   BINDING DECISION, taken for patent-avoidance reasons and recorded in the
+   canonical research doc: automatic determination ONLY. No slider, no
+   tap-to-set, no adjustable guess. So there is no manual entry path here and
+   no fallback to one -- if the determination fails, NOTHING is recorded. A
+   typed fallback would be precisely the adjustable guess the decision bars. */
+function callClaude(payload){
+  return fetch('/api/claude', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(Object.assign({ app_id:'sairnfreedom', is_demo:false }, payload))
+  }).then(function(r){ return r.json(); });
+}
+function sfEstimateFill(){
+  var out=$('bf-out'); if(!out) return;
+  var productId=$('bf-product').value;
+  if(!productId){ toast('Select a bottle','err'); return; }
+  var input=$('bf-photo');
+  if(!input || !input.files || !input.files.length){
+    out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>No photograph supplied.</strong> A fill level is determined from an image or it is not determined at all &mdash; there is deliberately no way to type one in.</div>';
+    return;
+  }
+  var file=input.files[0];
+  out.innerHTML='<div class="flagbox" style="margin-top:12px">Determining fill level from the photograph...</div>';
+  var reader=new FileReader();
+  reader.onerror=function(){
+    out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Could not read the photograph. Nothing was recorded.</strong></div>';
+  };
+  reader.onload=function(){
+    var dataUrl=String(reader.result||'');
+    var comma=dataUrl.indexOf(',');
+    var b64=comma>=0?dataUrl.slice(comma+1):'';
+    var mime=(dataUrl.match(/^data:([^;]+);/)||[])[1]||'image/jpeg';
+    if(!b64){ out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>Could not read the photograph. Nothing was recorded.</strong></div>'; return; }
+    callClaude({
+      max_tokens:300,
+      system:'You estimate how full a liquor bottle is from a photograph. Reply with ONLY a JSON object: {"percent": <integer 0-100>, "confident": <true|false>}. Set confident to false if the bottle is obscured, the liquid line is not visible, the image is not of a bottle, or you are otherwise unsure. Never guess a number when confident is false.',
+      messages:[{ role:'user', content:[
+        { type:'image', source:{ type:'base64', media_type:mime, data:b64 } },
+        { type:'text', text:'How full is this bottle?' }
+      ]}]
+    }).then(function(res){
+      var txt='';
+      if(res && Array.isArray(res.content)) res.content.forEach(function(b){ if(b.type==='text') txt+=b.text; });
+      var m=txt.match(/\{[\s\S]*\}/);
+      var parsed=null;
+      if(m){ try{ parsed=JSON.parse(m[0]); }catch(e){ parsed=null; } }
+      if(!parsed || parsed.confident!==true || typeof parsed.percent!=='number' || parsed.percent<0 || parsed.percent>100){
+        out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>The fill level could not be determined from that photograph, so nothing was recorded.</strong> '+
+          'Take another photograph with the liquid line visible. There is no manual entry to fall back on &mdash; that is the binding decision, not a missing feature.</div>';
+        return;
+      }
+      var pct=Math.round(parsed.percent);
+      var list=getFills();
+      list.push({ id:'bf'+Date.now(), productId:productId, date:localToday(),
+                  when:localToday()+' '+minToTime(new Date().getHours()*60+new Date().getMinutes()),
+                  percent:pct, method:'Automatic, from photograph' });
+      st(K_FILLS,list);
+      out.innerHTML='<div class="flagbox" style="margin-top:12px;border-left-color:var(--ok);background:#F0FDF4"><strong>Determined: '+H(String(pct))+'% full.</strong> Recorded automatically; it cannot be edited.</div>';
+      sfRenderAll();
+    })['catch'](function(){
+      out.innerHTML='<div class="blockbox" style="margin-top:12px"><strong>The determination service could not be reached, so nothing was recorded.</strong> No fill level is stored on a failure.</div>';
+    });
+  };
+  reader.readAsDataURL(file);
+}
+
+/* ---- EVENTS CALENDAR (2.4) -- ONE CALENDAR ----------------------------- */
+var EVENT_KINDS = [
+  { id:'live_music', label:'Live music' },
+  { id:'dinner',     label:'Dinner / kitchen night' },
+  { id:'meeting',    label:'Post meeting' },
+  { id:'ceremony',   label:'Ceremony / honour guard' },
+  { id:'other',      label:'Other lodge event' }
+];
+function eventKindLabel(id){ for(var i=0;i<EVENT_KINDS.length;i++){ if(EVENT_KINDS[i].id===id) return EVENT_KINDS[i].label; } return id; }
+
+function sfToggleEventGaming(){
+  var box=$('ev-gamingfields'), cb=$('ev-gaming');
+  if(box && cb) box.style.display = cb.checked ? 'block' : 'none';
+}
+function readEventForm(){
+  var games=[];
+  GAME_TYPES.forEach(function(g){ var b=$('evg-'+g.id); if(b && b.checked) games.push(g.id); });
+  return { title:($('ev-title').value||'').trim(), date:$('ev-date').value,
+           start:$('ev-start').value, end:$('ev-end').value, kind:$('ev-kind').value,
+           alcohol:!!$('ev-alcohol').checked, gaming:!!$('ev-gaming').checked,
+           before:Number($('ev-before').value||0), after:Number($('ev-after').value||0),
+           prizeCap:Number($('ev-prizecap').value||0), accountId:$('ev-account').value, games:games };
+}
+function eventRefusals(e){
+  var out=[];
+  if(!e.title) out.push({ cite:'input', text:'Give the event a title.' });
+  if(!e.date) out.push({ cite:'input', text:'A date is required.' });
+  /* Alcohol at an event runs the same OAC 4301:1-1-49(B) window as the bar --
+     both ends, because (B)(3) prohibits consumption as well as sale. */
+  if(e.alcohol){
+    var s=liquorServiceCheck(e.date, e.start);
+    if(!s.allowed) out.push({ cite:s.cite, text:'Alcohol at the start of this event: '+s.text });
+    var en=liquorServiceCheck(e.date, e.end);
+    if(!en.allowed && (s.allowed || en.cite!==s.cite)) out.push({ cite:en.cite, text:'Alcohol at the end of this event: '+en.text });
+  }
+  /* THE INTERLOCK. Not a re-implementation -- the Phase 3 function itself. */
+  if(e.gaming){
+    out = out.concat(sfSessionRefusals({ date:e.date, start:e.start, end:e.end, before:e.before,
+                                         after:e.after, prizeCap:e.prizeCap, accountId:e.accountId,
+                                         games:e.games }, null));
+  }
+  /* Room collision: an event and a session cannot both hold the hall. */
+  var cs=timeToMin(e.start), ce=timeToMin(e.end);
+  if(cs!==null && ce!==null){
+    if(ce<=cs) ce+=1440;
+    getSessions().forEach(function(sn){
+      if(sn.date!==e.date) return;
+      if(e.gaming) return; // the gaming event IS a session; it is checked above
+      var ss=timeToMin(sn.start), se=timeToMin(sn.end);
+      if(ss===null||se===null) return;
+      if(se<=ss) se+=1440;
+      ss-=Number(sn.before||0); se+=Number(sn.after||0);
+      if(overlaps(cs,ce,ss,se)){
+        out.push({ cite:'Room collision', text:'A bingo session already runs '+minToTime(ss)+' to '+minToTime(se)+' on '+sn.date+'. The hall cannot hold both.' });
+      }
+    });
+    getEvents().forEach(function(ev){
+      if(ev.date!==e.date) return;
+      var es=timeToMin(ev.start), ee=timeToMin(ev.end);
+      if(es===null||ee===null) return;
+      if(ee<=es) ee+=1440;
+      if(overlaps(cs,ce,es,ee)) out.push({ cite:'Room collision', text:'"'+ev.title+'" already runs '+ev.start+' to '+ev.end+' that day.' });
+    });
+  }
+  return out;
+}
+function sfTestEvent(){
+  var box=$('ev-testout'); if(!box) return;
+  box.innerHTML='<div style="margin-top:12px">'+refusalHtml(eventRefusals(readEventForm()),'Passes every check this app implements. That is not a legal opinion.')+'</div>';
+}
+function sfScheduleEvent(){
+  var e=readEventForm();
+  var refusals=eventRefusals(e);
+  var box=$('ev-testout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' check(s) failed','err');
+    return;
+  }
+  var sessionId=null;
+  if(e.gaming){
+    /* Written through the SAME store the Sessions panel reads, so it counts
+       toward the three-per-seven-days limit from the moment it is booked. */
+    var sess=getSessions();
+    sessionId='ss'+Date.now();
+    sess.push({ id:sessionId, date:e.date, start:e.start, end:e.end, before:e.before, after:e.after,
+                prizeCap:e.prizeCap, accountId:e.accountId, games:e.games,
+                receipts:{}, prizes:{}, recorded:false, fromEvent:true });
+    st(K_SESSIONS,sess);
+  }
+  var list=getEvents();
+  list.push({ id:'ev'+Date.now(), title:e.title, date:e.date, start:e.start, end:e.end,
+              kind:e.kind, alcohol:e.alcohol, sessionId:sessionId });
+  st(K_EVENTS,list);
+  /* RESET THE FORM AFTER A SUCCESSFUL BOOKING, and the gaming checkbox
+     especially. Leaving it ticked means the next event silently creates a
+     second bingo session nobody asked for -- a side effect with no error, which
+     is the exact failure class this codebase keeps finding. */
+  $('ev-title').value='';
+  $('ev-alcohol').checked=false;
+  $('ev-gaming').checked=false;
+  GAME_TYPES.forEach(function(g){ var b=$('evg-'+g.id); if(b) b.checked=false; });
+  sfToggleEventGaming();
+  if(box) box.innerHTML='';
+  toast(e.gaming ? 'Event scheduled, and a real bingo session was created with it' : 'Event scheduled');
+  sfRenderAll();
+}
+function sfDeleteEvent(id){
+  var ev=null;
+  getEvents().forEach(function(e){ if(e.id===id) ev=e; });
+  st(K_EVENTS, getEvents().filter(function(e){ return e.id!==id; }));
+  if(ev && ev.sessionId) st(K_SESSIONS, getSessions().filter(function(s){ return s.id!==ev.sessionId; }));
+  toast(ev && ev.sessionId ? 'Event and its bingo session removed' : 'Event removed');
+  sfRenderAll();
+}
+
+function sfRenderEvents(){
+  var ks=$('ev-kind');
+  if(ks) ks.innerHTML=EVENT_KINDS.map(function(k){ return '<option value="'+H(k.id)+'">'+H(k.label)+'</option>'; }).join('');
+  if($('ev-date') && !$('ev-date').value) $('ev-date').value=localToday();
+  var gb=$('ev-games');
+  if(gb) gb.innerHTML=GAME_TYPES.map(function(g){
+    return '<label style="display:flex;align-items:center;gap:7px;font-weight:600"><input type="checkbox" style="width:auto" id="evg-'+H(g.id)+'"> '+H(g.label)+'</label>'; }).join('');
+  var accs=getAccounts(), as=$('ev-account');
+  if(as) as.innerHTML = accs.length
+    ? accs.map(function(a){ return '<option value="'+H(a.id)+'">'+H(a.name)+'</option>'; }).join('')
+    : '<option value="">No account opened yet</option>';
+
+  var rows=[];
+  getEvents().forEach(function(e){
+    rows.push({ date:e.date, time:e.start+'–'+e.end, what:e.title,
+                kind:eventKindLabel(e.kind)+(e.sessionId?' + bingo session':''),
+                alcohol:e.alcohol, id:e.id, removable:true });
+  });
+  getSessions().forEach(function(s){
+    if(getEvents().some(function(e){ return e.sessionId===s.id; })) return;
+    rows.push({ date:s.date, time:s.start+'–'+s.end, what:'Bingo session',
+                kind:(s.games||[]).map(gameLabel).join(', '), alcohol:false, id:s.id, removable:false });
+  });
+  rows.sort(function(a,b){ return a.date<b.date?1:(a.date>b.date?-1:0); });
+  var tb=$('ev-tbody');
+  if(tb){
+    if(!rows.length){ tb.innerHTML='<tr><td colspan="6" class="empty">Nothing on the calendar.</td></tr>'; }
+    else {
+      tb.innerHTML=rows.map(function(r){
+        return '<tr><td>'+H(r.date)+'</td><td>'+H(r.time)+'</td><td>'+H(r.what)+'</td><td>'+H(r.kind)+'</td>'+
+          '<td>'+(r.alcohol?'<span class="tag warn">Alcohol</span>':'--')+'</td>'+
+          '<td>'+(r.removable?'<button class="btn sm sec" onclick="sfDeleteEvent(\''+H(r.id)+'\')">Remove</button>':'<span class="kpi-change">Sessions panel</span>')+'</td></tr>';
+      }).join('');
+    }
+  }
+  var box=$('ev-flags');
+  if(box){
+    var out='<div class="flagbox"><strong>This is the only calendar.</strong> A gaming '+
+      'session booked here is written to the same store the Sessions panel reads and is '+
+      'checked by <code>sfSessionRefusals()</code> itself &mdash; the Phase 3 function, not a '+
+      'second copy of the ORC 2915 rules. Building the booking surface first is how a '+
+      'calendar ends up scheduling a fourth session in a seven-day window and reporting it '+
+      'afterwards.</div>';
+    var note=permitHoursNote();
+    if(note) out += '<div class="flagbox"><strong>Permit hours.</strong> '+H(note)+'</div>';
+    box.innerHTML=out;
+  }
+}
+
+/* ---- HALL RENTAL (2.5) -- three cases, and one is a refusal ------------
+   OAC 4301:1-1-36(B) lets an F-2 applicant ask that the permit issue "jointly
+   to the applicant and a class D-3, D-4, or D-5 liquor permit holder, who is to
+   conduct the sale" -- but only for a not-for-profit renter organised for a
+   charitable, cultural, educational, fraternal or political purpose. A wedding,
+   a birthday and a corporate rental are none of those, and the D-4 itself sells
+   to members only. So the third case has no verified permit path at all. */
+var RENTER_TYPES = [
+  { id:'member_host', label:'Member-hosted (the lodge serves)' },
+  { id:'nonprofit',   label:'Not-for-profit renter' },
+  { id:'private',     label:'Private or commercial renter' }
+];
+var F2_PURPOSES = ['charitable','cultural','educational','fraternal','political'];
+var F2_MAX_CONSECUTIVE_DAYS = 4;
+var F2_DAYS_BETWEEN_PER_RENTER = 30;
+var F2_FEE = 150, F2_CO_APPLICANT_FEE = 10;
+
+function isWeekend(dateStr){
+  var d=parseLocalDate(dateStr);
+  if(!d) return false;
+  var w=d.getDay();
+  return w===0 || w===5 || w===6; // Fri, Sat, Sun
+}
+function hallCharge(b){
+  var r=getHallRates();
+  var weekend=isWeekend(b.date);
+  var member=b.type==='member_host';
+  var base = weekend ? (member?Number(r.weMember||0):Number(r.wePublic||0))
+                     : (member?Number(r.wdMember||0):Number(r.wdPublic||0));
+  var days=Math.max(1, Number(b.days||1));
+  var dep = b.alcohol ? Number(r.deposit||0) : 0;
+  return { base:base*days, deposit:dep, total:base*days+dep, weekend:weekend };
+}
+function sfRentalRefusals(b){
+  var out=[];
+  if(!b.renter) out.push({ cite:'input', text:'Record who is renting.' });
+  if(!b.date) out.push({ cite:'input', text:'A first date is required.' });
+
+  if(b.alcohol && b.type==='private'){
+    out.push({ cite:'ORC 4303.17(A)(1) / OAC 4301:1-1-36(B)', fatal:true,
+      text:'REFUSE THIS BOOKING AND ESCALATE TO COUNSEL. The D-4 sells to its members only, so it does not cover serving a renter’s non-member guests. Ohio’s mechanism is a jointly-issued F-2, and that path is open only to a not-for-profit renter organised for a charitable, cultural, educational, fraternal or political purpose. A wedding, a birthday or a corporate rental is none of those. No verified permit path exists -- do not price this.' });
+  }
+  if(b.alcohol && b.type==='member_host'){
+    if(!b.hostId){
+      out.push({ cite:'ORC 4303.17(A)(1)', text:'A member-hosted booking must name the member hosting it -- the permit covers sale to members only.' });
+    } else {
+      var dc=duesCurrent(b.hostId);
+      if(!dc.current) out.push({ cite:'ORC 4303.17(A)(1)', text:'The host is not dues-current -- '+dc.basis+'. The roster is the only documentary record the statute names.' });
+    }
+  }
+  if(b.alcohol && b.type==='nonprofit'){
+    if(!b.purpose) out.push({ cite:'OAC 4301:1-1-36(B)', text:'Record which not-for-profit purpose qualifies the renter: charitable, cultural, educational, fraternal or political.' });
+    if(Number(b.days||1) > F2_MAX_CONSECUTIVE_DAYS){
+      out.push({ cite:'F-2 conditions', text:'An F-2 covers at most four consecutive days; '+b.days+' were requested.' });
+    }
+    if(!b.notified) out.push({ cite:'F-2 conditions', text:'Record the date the chief peace officer was notified.' });
+    if(!b.proceeds) out.push({ cite:'F-2 conditions', text:'Record where the proceeds go.' });
+    var cd=dayNum(b.date);
+    if(cd!==null){
+      getRentals().forEach(function(r){
+        if(r.id===b.id) return;
+        if(String(r.renter||'').toLowerCase()!==String(b.renter||'').toLowerCase()) return;
+        if(!r.alcohol || r.type!=='nonprofit') return;
+        var rd=dayNum(r.date);
+        if(rd===null) return;
+        if(Math.abs(cd-rd) < F2_DAYS_BETWEEN_PER_RENTER){
+          out.push({ cite:'F-2 conditions', text:'This renter already holds an F-2 booking on '+r.date+'. One per thirty days per renter.' });
+        }
+      });
+    }
+  }
+  if(b.alcohol){
+    var h=liquorServiceCheck(b.date, '20:00');
+    if(!h.allowed) out.push({ cite:h.cite, text:'Alcohol on '+b.date+': '+h.text });
+  }
+  return out;
+}
+function readRentalForm(){
+  return { renter:($('hr-renter').value||'').trim(), type:$('hr-type').value,
+           hostId:$('hr-host').value, date:$('hr-date').value,
+           days:Number($('hr-days').value||1), alcohol:!!$('hr-alcohol').checked,
+           purpose:$('hr-purpose')?$('hr-purpose').value:'', notified:$('hr-notified')?$('hr-notified').value:'',
+           proceeds:$('hr-proceeds')?($('hr-proceeds').value||'').trim():'' };
+}
+function rentalPathLabel(b){
+  if(!b.alcohol) return 'No alcohol -- rental only';
+  if(b.type==='member_host') return 'Covered by the D-4 (members only)';
+  if(b.type==='nonprofit') return 'Joint F-2 -- ' + money(F2_FEE+F2_CO_APPLICANT_FEE);
+  return 'NO PERMIT PATH';
+}
+function sfTestRental(){
+  var box=$('hr-testout'); if(!box) return;
+  var b=readRentalForm();
+  var refusals=sfRentalRefusals(b);
+  var c=hallCharge(b);
+  var priced = refusals.some(function(r){ return r.fatal; })
+    ? '<div class="note">No charge is shown, deliberately. Pricing a booking with no permit path is how it gets taken.</div>'
+    : '<div class="note"><strong>'+H(rentalPathLabel(b))+'</strong> &mdash; '+(c.weekend?'weekend':'weekday')+' rate '+money(c.base)+
+      (c.deposit?(' plus '+money(c.deposit)+' alcohol-service deposit'):'')+', total <strong>'+money(c.total)+'</strong>.</div>';
+  box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'Passes every check this app implements. That is not a legal opinion.')+priced+'</div>';
+}
+function sfTakeBooking(){
+  var b=readRentalForm();
+  var refusals=sfRentalRefusals(b);
+  var box=$('hr-testout');
+  if(refusals.length){
+    if(box) box.innerHTML='<div style="margin-top:12px">'+refusalHtml(refusals,'')+'</div>';
+    toast('Refused -- '+refusals.length+' check(s) failed','err');
+    return;
+  }
+  var c=hallCharge(b);
+  var list=getRentals();
+  list.push({ id:'hr'+Date.now(), renter:b.renter, type:b.type, hostId:b.hostId, date:b.date,
+              days:b.days, alcohol:b.alcohol, purpose:b.purpose, notified:b.notified,
+              proceeds:b.proceeds, path:rentalPathLabel(b), charge:c.total });
+  st(K_RENTALS,list);
+  $('hr-renter').value='';
+  if(box) box.innerHTML='';
+  toast('Booking taken -- '+money(c.total));
+  sfRenderAll();
+}
+function sfDeleteRental(id){
+  st(K_RENTALS, getRentals().filter(function(r){ return r.id!==id; }));
+  toast('Booking removed');
+  sfRenderAll();
+}
+function sfSaveHallRates(){
+  st(K_HALLRATES, { wdMember:Number($('hr-wd-mem').value||0), wdPublic:Number($('hr-wd-pub').value||0),
+                    weMember:Number($('hr-we-mem').value||0), wePublic:Number($('hr-we-pub').value||0),
+                    deposit:Number($('hr-dep').value||0) });
+  toast('Rates saved');
+  sfRenderAll();
+}
+function sfRenderHall(){
+  var r=getHallRates();
+  if($('hr-wd-mem')) $('hr-wd-mem').value=r.wdMember||0;
+  if($('hr-wd-pub')) $('hr-wd-pub').value=r.wdPublic||0;
+  if($('hr-we-mem')) $('hr-we-mem').value=r.weMember||0;
+  if($('hr-we-pub')) $('hr-we-pub').value=r.wePublic||0;
+  if($('hr-dep')) $('hr-dep').value=r.deposit||0;
+  var ts=$('hr-type');
+  if(ts){
+    var prev=ts.value;
+    ts.innerHTML=RENTER_TYPES.map(function(t){ return '<option value="'+H(t.id)+'">'+H(t.label)+'</option>'; }).join('');
+    if(prev) ts.value=prev;
+    ts.onchange=sfToggleF2Fields;
+  }
+  var ps=$('hr-purpose');
+  if(ps) ps.innerHTML='<option value="">Select purpose</option>'+F2_PURPOSES.map(function(p){ return '<option value="'+H(p)+'">'+H(p.charAt(0).toUpperCase()+p.slice(1))+'</option>'; }).join('');
+  var hs=$('hr-host'), members=getMembers();
+  if(hs) hs.innerHTML = members.length
+    ? '<option value="">Select host</option>'+members.map(function(m){ return '<option value="'+H(m.id)+'">'+H(m.name)+'</option>'; }).join('')
+    : '<option value="">No members on the roster</option>';
+  if($('hr-date') && !$('hr-date').value) $('hr-date').value=localToday();
+  sfToggleF2Fields();
+
+  var tb=$('hr-tbody'), list=getRentals();
+  if(tb){
+    if(!list.length){ tb.innerHTML='<tr><td colspan="7" class="empty">No bookings.</td></tr>'; }
+    else {
+      tb.innerHTML=list.slice().reverse().map(function(b){
+        var tl=''; RENTER_TYPES.forEach(function(t){ if(t.id===b.type) tl=t.label; });
+        return '<tr><td>'+H(b.renter)+'</td><td>'+H(tl)+'</td><td>'+H(b.date)+(Number(b.days)>1?(' +'+(b.days-1)+'d'):'')+'</td>'+
+          '<td>'+(b.alcohol?'<span class="tag warn">Yes</span>':'--')+'</td><td>'+H(b.path)+'</td><td>'+money(b.charge)+'</td>'+
+          '<td><button class="btn sm sec" onclick="sfDeleteRental(\''+H(b.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+  var box=$('hr-flags');
+  if(box){
+    box.innerHTML='<div class="blockbox"><strong>A private or commercial renter who wants alcohol is refused, not priced.</strong> '+
+      'The D-4 sells to its members only, so it does not reach a renter’s non-member guests, and the joint F-2 under OAC 4301:1-1-36(B) is open only to a not-for-profit renter organised for a charitable, cultural, educational, fraternal or political purpose. A wedding is none of them. The failure this prevents is a lodge selling drinks to a wedding party under its D-4 and losing the permit under ORC 4301.25(A).</div>'+
+      '<div class="flagbox"><strong>The alcohol-service deposit is gated behind the first two cases only.</strong> It is not a way to price the third one.</div>';
+  }
+}
+function sfToggleF2Fields(){
+  var t=$('hr-type'), box=$('hr-f2fields');
+  if(t && box) box.style.display = (t.value==='nonprofit') ? 'block' : 'none';
+}
+
+/* ---- VENDORS AND PRICING (2.6, 2.7) -----------------------------------
+   TWO CAPABILITIES WITH DIFFERENT TRUTH RULES, built and labelled separately
+   because they have different failure modes: comparing vendors already on file
+   is grounded in the post's own records and has no fabrication surface, while
+   searching the wider market leaves that data and produces numbers no record
+   backs. And a third category exists that the spec did not anticipate --
+   alcohol, where searching is not merely ungrounded but unlawful for the
+   customer. */
+var VENDOR_CATEGORIES = [
+  { id:'beer',          label:'Beer',              shoppable:false, cite:'OAC 4301:1-1-43(J)(2)', why:'One distributor per brand per territory; a retailer may not purchase a brand from a wholesaler whose exclusive area does not cover the premises. Discounts and rebates are banned both directions and the sale must be for cash.' },
+  { id:'wine',          label:'Wine',              shoppable:false, cite:'OAC 4301:1-1-43(J)(2) and 4301:1-1-03(C)', why:'The territory bar applies, plus a 33 1/3% minimum wholesale markup and a quarterly price schedule stating the price to all wholesale and retail permit holders.' },
+  { id:'spirits',       label:'Spirits',           shoppable:false, cite:'State monopoly', why:'Spirits are sold at a uniform statewide price. There is no cheaper vendor to find, and a shop-around flow risks inducing an offence.' },
+  { id:'food',          label:'Food',              shoppable:true },
+  { id:'gaming',        label:'Gaming supplies',   shoppable:true, licensedOnly:true, cite:'ORC 2915.09(A)(1)', why:'Equipment must be owned or leased from licensed sources. A cheaper price from an unlicensed seller is not a saving, it is a licence problem.' },
+  { id:'entertainment', label:'Entertainment',     shoppable:true }
+];
+function vendorCategory(id){ for(var i=0;i<VENDOR_CATEGORIES.length;i++){ if(VENDOR_CATEGORIES[i].id===id) return VENDOR_CATEGORIES[i]; } return null; }
+
+function sfAddVendor(){
+  var name=($('vn-name').value||'').trim();
+  if(!name){ toast('Vendor name is required','err'); return; }
+  var list=getVendors();
+  list.push({ id:'vn'+Date.now(), name:name, category:$('vn-cat').value,
+              brand:($('vn-brand').value||'').trim(), licensed:!!$('vn-licensed').checked });
+  st(K_VENDORS,list);
+  $('vn-name').value=''; $('vn-brand').value=''; $('vn-licensed').checked=false;
+  toast('Vendor added');
+  sfRenderAll();
+}
+function sfRemoveVendor(id){
+  st(K_VENDORS, getVendors().filter(function(v){ return v.id!==id; }));
+  st(K_VPRICES, getVendorPrices().filter(function(p){ return p.vendorId!==id; }));
+  toast('Vendor removed');
+  sfRenderAll();
+}
+function sfAddVendorPrice(){
+  var vid=$('vp-vendor').value;
+  if(!vid){ toast('Select a vendor','err'); return; }
+  var item=($('vp-item').value||'').trim();
+  if(!item){ toast('Name the item','err'); return; }
+  var price=Number($('vp-price').value||0);
+  if(!(price>0)){ toast('Price must be greater than zero','err'); return; }
+  var list=getVendorPrices();
+  list.push({ id:'vp'+Date.now(), vendorId:vid, item:item, price:price, date:$('vp-date').value||localToday() });
+  st(K_VPRICES,list);
+  $('vp-item').value=''; $('vp-price').value='';
+  toast('Price recorded');
+  sfRenderAll();
+}
+
+function sfMarketSearch(){
+  var out=$('ms-out'); if(!out) return;
+  var cat=vendorCategory($('ms-cat').value);
+  var q=($('ms-q').value||'').trim();
+  if(!cat){ toast('Select a category','err'); return; }
+  if(!cat.shoppable){
+    out.innerHTML='<div class="blockbox"><strong>Refused &mdash; '+H(cat.cite)+'.</strong> '+H(cat.why)+
+      ' Buying outside that is a first-degree misdemeanour under ORC 4301.99(C) and reaches the permit through ORC 4301.25(A). '+
+      'The exposure is the lodge’s, not this app’s, which is why the flow is refused rather than warned about. '+
+      'Use the beverage cost audit below &mdash; cost per serving, pour cost, and verifying the lodge is actually charged the posted price.</div>';
+    return;
+  }
+  if(!q){ toast('Say what you are buying','err'); return; }
+  out.innerHTML='<div class="flagbox">Searching...</div>';
+  var extra = cat.licensedOnly
+    ? ' The buyer is an Ohio charitable-gaming licensee: under ORC 2915.09(A)(1) equipment must be owned or leased from licensed sources, so for every result state whether the seller appears to be a licensed distributor, and say plainly when you cannot tell.'
+    : '';
+  callClaude({
+    max_tokens:1200,
+    tools:[{ type:'web_search_20250305', name:'web_search' }],
+    system:'You find current supplier prices using web search. Report ONLY prices you actually found on a page you read, and always name the page. Never estimate, never average, never state a typical price. If you found no real price, say so plainly.'+extra,
+    messages:[{ role:'user', content:'Find current supplier prices for: '+q+' (category: '+cat.label+'). For each result give the seller, the price, and the page it came from.' }]
+  }).then(function(res){
+    var txt='', cites=[];
+    if(res && Array.isArray(res.content)){
+      res.content.forEach(function(b){
+        if(b.type==='text'){
+          txt+=b.text;
+          if(Array.isArray(b.citations)) b.citations.forEach(function(c){ if(c && c.url) cites.push({ url:c.url, title:c.title||c.url }); });
+        }
+      });
+    }
+    if(res && res.error){
+      out.innerHTML='<div class="blockbox"><strong>The search could not be run.</strong> Nothing is shown, because a price with no source is a fabricated price.</div>';
+      return;
+    }
+    /* THE RULE, ENFORCED MECHANICALLY RATHER THAN ASKED FOR IN A PROMPT: no
+       citation means no sourced page was read, so nothing is displayed. */
+    if(!cites.length){
+      out.innerHTML='<div class="blockbox"><strong>No sourced price was found, so none is shown.</strong> '+
+        'The model returned an answer with no citation to a page it read. Every price this app displays carries its source URL and the date it was read; a figure with no source is a fabricated price and is discarded rather than shown with a caveat.</div>';
+      return;
+    }
+    var seen={}, links='';
+    cites.forEach(function(c){ if(seen[c.url]) return; seen[c.url]=1;
+      links += '<li><a href="'+H(c.url)+'" target="_blank" rel="noopener noreferrer">'+H(c.title)+'</a></li>'; });
+    out.innerHTML='<div class="flagbox"><strong>These are leads, not quotes.</strong> Read '+H(localToday())+
+      '. Confirm with the seller before budgeting against any of it.'+
+      (cat.licensedOnly?' Gaming equipment must come from a licensed source under ORC 2915.09(A)(1) &mdash; a cheaper unlicensed seller is a licence problem, not a saving.':'')+'</div>'+
+      '<div class="card" style="white-space:pre-wrap">'+H(txt)+'</div>'+
+      '<div class="card"><h3>Sources read '+H(localToday())+'</h3><ul style="margin-left:18px">'+links+'</ul></div>';
+  })['catch'](function(){
+    out.innerHTML='<div class="blockbox"><strong>The search service could not be reached.</strong> Nothing is shown.</div>';
+  });
+}
+
+function sfRenderVendors(){
+  var vendors=getVendors();
+  var vc=$('vn-cat');
+  if(vc) vc.innerHTML=VENDOR_CATEGORIES.map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+'</option>'; }).join('');
+  var mc=$('ms-cat');
+  if(mc) mc.innerHTML=VENDOR_CATEGORIES.map(function(c){ return '<option value="'+H(c.id)+'">'+H(c.label)+(c.shoppable?'':' — cannot be shopped for')+'</option>'; }).join('');
+  var vs=$('vp-vendor');
+  if(vs) vs.innerHTML = vendors.length
+    ? vendors.map(function(v){ return '<option value="'+H(v.id)+'">'+H(v.name)+'</option>'; }).join('')
+    : '<option value="">No vendors</option>';
+  if($('vp-date') && !$('vp-date').value) $('vp-date').value=localToday();
+
+  var tb=$('vn-tbody');
+  if(tb){
+    if(!vendors.length){ tb.innerHTML='<tr><td colspan="5" class="empty">No vendors recorded.</td></tr>'; }
+    else {
+      tb.innerHTML=vendors.map(function(v){
+        var c=vendorCategory(v.category);
+        var note = (c && c.licensedOnly)
+          ? (v.licensed?'<span class="tag ok">Licensed distributor</span>':'<span class="tag bad">Not marked licensed &mdash; ORC 2915.09(A)(1)</span>')
+          : (c && !c.shoppable ? '<span class="tag info">One lawful vendor per brand</span>' : '');
+        return '<tr><td>'+H(v.name)+'</td><td>'+H((c||{}).label||v.category)+'</td><td>'+H(v.brand||'--')+'</td>'+
+          '<td>'+note+'</td><td><button class="btn sm sec" onclick="sfRemoveVendor(\''+H(v.id)+'\')">Remove</button></td></tr>';
+      }).join('');
+    }
+  }
+
+  /* (1) Grounded comparison. Every number came from a record the post entered. */
+  var vp=$('vp-out'), prices=getVendorPrices();
+  if(vp){
+    if(!prices.length){ vp.innerHTML='<div class="empty">No prices recorded yet.</div>'; }
+    else {
+      var byItem={};
+      prices.forEach(function(p){ (byItem[p.item.toLowerCase()] = byItem[p.item.toLowerCase()] || []).push(p); });
+      var html='<div class="tw"><table><thead><tr><th>Item</th><th>Vendor</th><th>Price</th><th>Quoted</th><th></th></tr></thead><tbody>';
+      Object.keys(byItem).sort().forEach(function(k){
+        var rows=byItem[k].slice().sort(function(a,b){ return a.price-b.price; });
+        var best=rows[0].price;
+        rows.forEach(function(p,i){
+          var vn=''; vendors.forEach(function(v){ if(v.id===p.vendorId) vn=v.name; });
+          html += '<tr><td>'+(i?'':H(p.item))+'</td><td>'+H(vn||'(removed)')+'</td><td>'+money(p.price)+'</td>'+
+            '<td>'+H(p.date)+'</td><td>'+(p.price===best && rows.length>1?'<span class="tag ok">Lowest on file</span>':'')+'</td></tr>';
+        });
+      });
+      vp.innerHTML=html+'</tbody></table></div>';
+    }
+  }
+
+  /* (3) The replacement for shopping around, and it is a better product. */
+  var ba=$('ba-out');
+  if(ba){
+    var drinks=getProducts().filter(function(p){ var c=productCategory(p.category); return c && c.alcohol; });
+    var rows='';
+    drinks.forEach(function(p){
+      var cps=costPerServing(p), pcv=pourCost(p);
+      rows += '<tr><td>'+H(p.name)+'</td><td>'+H((productCategory(p.category)||{}).label||'')+'</td>'+
+        '<td>'+(cps===null?'<span class="kpi-change">needs container cost, size and serving size</span>':money(cps))+'</td>'+
+        '<td>'+money(p.price)+'</td>'+
+        '<td>'+(pcv===null?'--':((pcv*100).toFixed(1)+'%'+(pcv>0.3?' <span class="tag warn">above 30%</span>':'')))+'</td></tr>';
+    });
+    if(!rows) rows='<tr><td colspan="5" class="empty">No alcoholic products recorded yet.</td></tr>';
+    ba.innerHTML =
+      '<div class="tw"><table><thead><tr><th>Item</th><th>Category</th><th>Cost per serving</th><th>Menu price</th><th>Pour cost</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div class="flagbox" style="margin-top:12px"><strong>Pour cost is business arithmetic, not a legal threshold.</strong> '+
+      'The 30% marker is a common trade rule of thumb and nothing in Ohio law sets it. It is shown because it is the number a Finance Officer can actually act on.</div>'+
+      '<div class="flagbox"><strong>Two markup floors exist and NEITHER binds this menu &mdash; a distinction worth stating, because applying them here would be wrong.</strong> '+
+      'The 25% minimum retail markup on beer (OAC 4301:1-1-72(B)(3)) applies to <em>off-premises</em> sales only, and a D-4 sells for consumption on the premises where sold. '+
+      'Wine’s 33 1/3% floor (OAC 4301:1-1-03(C)) is a <em>wholesale</em> markup &mdash; it governs what the lodge is charged, not what the lodge charges. '+
+      'So this app does not check menu prices against either.</div>'+
+      '<div class="flagbox"><strong>What those floors are actually useful for is the audit nobody runs.</strong> '+
+      'Wine has a quarterly price schedule stating the price to all wholesale and retail permit holders, and spirits have a uniform statewide price. '+
+      'That makes "is the lodge being charged the posted price" a real, checkable question &mdash; and unlike shopping around, it cannot get anyone’s permit pulled. '+
+      'Record what you were charged under Recorded prices above and compare it against the posted schedule.</div>';
+  }
+
+  var box=$('vn-flags');
+  if(box){
+    var out='';
+    var unlicensed=vendors.filter(function(v){ var c=vendorCategory(v.category); return c && c.licensedOnly && !v.licensed; });
+    if(unlicensed.length){
+      out += '<div class="blockbox"><strong>'+unlicensed.length+' gaming-supply vendor(s) are not marked as licensed distributors.</strong> '+
+        'ORC 2915.09(A)(1) requires bingo equipment to be owned or leased from licensed sources.</div>';
+    }
     box.innerHTML=out;
   }
 }
@@ -1859,6 +3199,7 @@ function sfRenderDashboard(){
 
 function sfRenderAll(){
   sfRenderPost(); sfRenderOfficers(); sfRenderMembers(); sfRenderDues(); sfRenderWaivers();
+  sfRenderCanteen(); sfRenderCloseout(); sfRenderEvents(); sfRenderHall(); sfRenderVendors();
   sfRenderSessions(); sfRenderAccounts(); sfRenderOperators();
   sfRenderDashboard();
 }
