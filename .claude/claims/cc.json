@@ -38,8 +38,8 @@
       "task": "safehtml audit, session lock auth, push gate live mode",
       "claimed_at": "2026-09-01T10:45:59Z",
       "claimed_at_epoch": 1788259559.776884,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T11:35:39Z"
     }
   ]
 }
