@@ -2794,8 +2794,11 @@ function renderDental(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). "This month" means the practice's
+  // month, not Greenwich's -- addDentalRecord stores a date the user picked
+  // from a local date input, so a UTC month boundary misfiles it. `var now`
+  // removed: it was used for nothing else here.
+  var thisMonth = localToday().slice(0,7);
   var cleaningsThisMonth = list.filter(function(r){
     return r.date && r.date.slice(0,7)===thisMonth && (r.procedure==='Cleaning' || r.procedure==='Cleaning + Extractions');
   }).length;
@@ -3223,8 +3226,10 @@ function renderLameness(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). This one was a STRAIGHT MISMATCH,
+  // not just a labelling question: addLamenessExam writes date:localToday(),
+  // so the UTC month silently dropped real exams. `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var examsThisMonth = list.filter(function(l){ return l.date && l.date.slice(0,7)===thisMonth; }).length;
   var grade3plus = list.filter(function(l){ return parseInt(l.grade,10) >= 3; }).length;
   var blocksPerformed = list.filter(function(l){ return l.block && l.block.trim() !== ''; }).length;
@@ -3355,7 +3360,9 @@ function renderFarmCalls(){
   var completed = list.filter(function(f){ return f.status==='Complete'; }).length;
   var milesLogged = list.reduce(function(sum,f){ return sum + (typeof f.miles==='number' ? f.miles : 0); }, 0);
   var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). `var now` is KEPT here, unlike the
+  // other eight sites -- it is used again further down this function.
+  var thisMonth = localToday().slice(0,7);
   var chargesLogged = list.reduce(function(sum,f){ return sum + ((f.date && f.date.slice(0,7)===thisMonth && typeof f.charge==='number') ? f.charge : 0); }, 0);
 
   var kpis = document.getElementById('farm-kpis');
@@ -3478,8 +3485,8 @@ function renderRepro(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var isPregCheck = function(r){ return r.procedure==='Ultrasound Pregnancy Check' || r.procedure==='Rectal Pregnancy Check'; };
   var checksMTD = list.filter(function(r){ return isPregCheck(r) && r.date && r.date.slice(0,7)===thisMonth; }).length;
   var confirmedMTD = list.filter(function(r){ return r.outcome==='Confirmed Pregnant' && r.date && r.date.slice(0,7)===thisMonth; }).length;
@@ -3604,8 +3611,8 @@ function renderEquineDental(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var floatsThisMonth = list.filter(function(r){ return r.procedure.indexOf('Float')===0 && r.date && r.date.slice(0,7)===thisMonth; }).length;
   var wolfTeeth = list.filter(function(r){ return r.procedure==='Float + Wolf Tooth Extraction'; }).length;
   var waveMouth = list.filter(function(r){ return r.procedure==='Wave Mouth Correction'; }).length;
@@ -3732,8 +3739,8 @@ function renderPPE(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var ppesThisMonth = list.filter(function(p){ return p.date && p.date.slice(0,7)===thisMonth; }).length;
   var passed = list.filter(function(p){ return p.result.indexOf('Passed')===0; }).length;
   var passRate = list.length ? Math.round((passed/list.length)*100)+'%' : '—';
@@ -3921,8 +3928,11 @@ function renderPatients(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). STRAIGHT MISMATCH, like
+  // renderLameness: addPatient writes added:localToday(), so a patient
+  // registered late on the last of the month was not counted as new this
+  // month. `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var newThisMonth = list.filter(function(p){ return p.added && p.added.slice(0,7)===thisMonth; }).length;
   var visits = list.map(function(p){ return p.visitsThisYear||0; });
   var avgVisits = visits.length ? (visits.reduce(function(a,b){return a+b;},0)/visits.length).toFixed(1) : '0.0';
@@ -4025,8 +4035,12 @@ function svRenderSpeciesPanel(key){
 
   var kpis = document.getElementById(key+'-kpis');
   if(!kpis) return;
-  var thisMonth = new Date().toISOString().slice(0,7);
-  var newThisMonth = list.filter(function(p){ return p.added && p.added.slice(0,7) === thisMonth; }).length;
+  // LOCAL month, not UTC (2026-09-01 sweep). Same mismatch as renderPatients,
+  // which this derived species view shares a store with -- addPatient writes
+  // added:localToday(). The two must agree or the same patient counts as new
+  // this month on one screen and not the other.
+  var thisMonth = localToday().slice(0,7);
+  var newThisMonth = list.filter(function(p){ return p.added && p.added.slice(0,7) === thisMonth;}).length;
   var visits = list.map(function(p){ return p.visitsThisYear || 0; });
   var avgVisits = visits.length ? (visits.reduce(function(a,b){ return a+b; }, 0) / visits.length).toFixed(1) : '0.0';
   var complete = list.filter(function(p){ return p.chartComplete; }).length;
@@ -4843,8 +4857,10 @@ function renderCoggins(){
     tbody.appendChild(tr);
   });
 
-  var now = new Date();
-  var thisMonth = now.toISOString().slice(0,7);
+  // LOCAL month, not UTC (2026-09-01 sweep). This is the site flagged but not
+  // fixed in the eleven-panel audit -- it is not one of the eleven, so it was
+  // reported rather than swept in silently. `var now` removed, unused.
+  var thisMonth = localToday().slice(0,7);
   var testsThisMonth = list.filter(function(c){ return c.date && c.date.slice(0,7)===thisMonth; }).length;
   var pending = list.filter(function(c){ return c.labStatus==='Pending'; }).length;
   var positive = list.filter(function(c){ return c.labStatus==='Positive'; }).length;
