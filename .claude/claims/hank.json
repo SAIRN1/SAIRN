@@ -108,8 +108,8 @@
       "task": "weekend rollover engine flag",
       "claimed_at": "2026-09-01T12:59:51Z",
       "claimed_at_epoch": 1788267591.8510203,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-01T13:16:00Z"
     }
   ]
 }
