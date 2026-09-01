@@ -2188,13 +2188,22 @@ if (window !== window.top) {
 }
 
 // LAYER 5 — Session Timeout & Auto-Lock
+// ACTIVITY NO LONGER DISMISSES THE LOCK — corrected 2026-09-01, found while
+// wiring saUnlock() to real auth.
+//
+// This function is registered on click, keydown, MOUSEMOVE, scroll and
+// touchstart. It used to set `sessionLocked = false` and remove the overlay on
+// any one of them, so the lock screen was dismissed by moving the mouse — and,
+// worse, by the first keystroke typed into its own PIN box. There was no path
+// through the lock that required a PIN at all, whatever the PIN was checked
+// against, which is why fixing only the hardcoded-PIN half would have changed
+// nothing an attacker could notice.
+//
+// Activity now only refreshes the idle clock, and only while unlocked. The one
+// way out of a locked session is saUnlock(), which asks the server.
 function saResetTimer() {
+  if (SAIRN_SEC.sessionLocked) return;
   SAIRN_SEC.lastActivity = Date.now();
-  if (SAIRN_SEC.sessionLocked) {
-    SAIRN_SEC.sessionLocked = false;
-    var lockOverlay = document.getElementById('sairn-lock-overlay');
-    if (lockOverlay) lockOverlay.remove();
-  }
 }
 ['click','keydown','mousemove','scroll','touchstart'].forEach(function(evt) {
   document.addEventListener(evt, saResetTimer, { passive: true });
@@ -2209,38 +2218,155 @@ setInterval(function() {
   }
 }, 60000);
 
+// THE LOCK SCREEN HAD NEVER RENDERED — corrected 2026-09-01.
+//
+// The first line used to be `if (document.getElementById('sairn-lock-overlay'))
+// return;`, meant as "don't stack two overlays". But line ~14855 of this file
+// carries a static stub -- a display:none div carrying that exact id, written
+// out here without its literal tag because div_balance_check.py counts tags
+// wherever they appear, comments included (the Layer 2 note above hit the same
+// trap). That element exists from first paint, so
+// the guard matched on the very first call and this function returned
+// immediately, every time, forever. Layer 5's auto-lock has been a no-op for as
+// long as that stub has existed — tools/sairn_reachability_check.py names it
+// R1, "stub placeholder squats an id the JS also creates."
+//
+// It now REUSES the stub rather than fighting it (removing the stub would fix
+// this file and silently break any other code that looks the id up), and the
+// already-showing test is a data attribute the stub does not carry.
 function saLockScreen() {
-  if (document.getElementById('sairn-lock-overlay')) return;
-  var overlay = document.createElement('div');
-  overlay.id = 'sairn-lock-overlay';
+  var overlay = document.getElementById('sairn-lock-overlay');
+  if (overlay && overlay.getAttribute('data-sa-locked') === '1') return;
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'sairn-lock-overlay';
+    document.body.appendChild(overlay);
+  }
+  overlay.setAttribute('data-sa-locked', '1');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(30,27,75,.97);z-index:99999;display:flex;align-items:center;justify-content:center;font-family:Inter,sans-serif';
   overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:40px;width:340px;text-align:center">' +
     '<div style="font-size:48px;margin-bottom:12px">🔒</div>' +
     '<div style="font-size:18px;font-weight:800;margin-bottom:6px">Session Locked</div>' +
-    '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your PIN to continue.</div>' +
-    '<input type="password" id="sairn-repin" maxlength="4" placeholder="Enter PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
-    '<button onclick="saUnlock()" style="width:100%;padding:11px;background:var(--brand2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
+    '<div style="font-size:13px;color:#6B7280;margin-bottom:24px">You were inactive for 30 minutes. Re-enter your employee PIN to continue.</div>' +
+    // maxlength was 4, which was correct for the old hardcoded '1234'/'9999'
+    // and WRONG for a real credential: api/sd-auth.js enforces /^\d{6,8}$/ on
+    // every PIN it ever stores, so a 4-character box could not accept a single
+    // valid PIN. Wiring the unlock to real auth without this would have locked
+    // out every employee in the shop.
+    '<input type="password" id="sairn-repin" maxlength="8" inputmode="numeric" autocomplete="off" placeholder="Enter your PIN" style="width:100%;padding:12px;border:2px solid #E0E0F0;border-radius:10px;font-size:18px;text-align:center;outline:none;margin-bottom:12px">' +
+    '<button id="sairn-unlock-btn" onclick="saUnlock()" style="width:100%;padding:11px;background:var(--brand2);color:#fff;border:none;border-radius:10px;font-size:14px;font-weight:700;cursor:pointer">Unlock</button>' +
     '<div id="salock-err" style="color:#DC2626;font-size:12px;margin-top:8px;min-height:16px"></div></div>';
-  document.body.appendChild(overlay);
-  setTimeout(function() { var inp = document.getElementById('sairn-repin'); if(inp) inp.focus(); }, 100);
+  setTimeout(function() {
+    var inp = document.getElementById('sairn-repin');
+    if (inp) {
+      inp.focus();
+      inp.addEventListener('keydown', function(e) { if (e.key === 'Enter') window.saUnlock(); });
+    }
+  }, 100);
 }
 
+// Hide rather than remove, because the element may be the static stub at
+// ~14855 that this file has always shipped. Removing it would work once and
+// then take the id away from anything else that looks it up.
+function saHideLock() {
+  var o = document.getElementById('sairn-lock-overlay');
+  if (!o) return;
+  o.removeAttribute('data-sa-locked');
+  o.innerHTML = '';
+  o.style.cssText = 'display:none';
+}
+
+// UNLOCK — routed through real per-employee auth 2026-09-01 (Michael's call).
+//
+// WHAT IT USED TO DO. It compared the typed PIN against `['1234','9999']`,
+// overridden by `Object.values(CODES)` or `Object.values(PINS)` if either
+// existed. CODES was `{sales:'1234', admin:'9999'}` a few thousand lines down
+// in the same file, so on StoneDesk the override changed nothing: the real
+// answer was always 1234 or 9999, sitting in plain text in a document any
+// visitor can View Source on. The front door had used server-verified
+// per-employee credentials since the sd-auth work, so the lock screen was
+// strictly WEAKER than the login it was supposedly re-confirming -- anyone who
+// walked up to an idle machine could type four digits read off the internet.
+//
+// WHAT IT DOES NOW. The same api/sd-auth.js `login` the front door uses, with
+// the employee_id already established by that login and the PIN typed here.
+// That buys the whole server-side apparatus for free: per-credential hashing,
+// the five-strike / fifteen-minute `locked_until` lockout, the identical
+// generic error for a bad id and a bad PIN, and constant-time verifyPin.
+//
+// IT FAILS CLOSED, WHICH IS THE PART WORTH ARGUING ABOUT. If there is no
+// session employee id or no licence key, this CANNOT verify anything, so it
+// refuses to unlock rather than falling back to a local comparison. A fallback
+// is what the old code was. The overlay is not a security boundary on its own
+// -- the app is still loaded underneath it -- so the honest fix for that state
+// is to send the user back through the front door, which is what the button
+// offers.
 window.saUnlock = function() {
-  var pin = document.getElementById('sairn-repin').value;
-  var validPins = ['1234','9999'];
-  // Also check any app-specific PIN vars
-  if (typeof CODES !== 'undefined') validPins = Object.values(CODES);
-  if (typeof PINS !== 'undefined') validPins = Object.values(PINS);
-  if (validPins.indexOf(pin) >= 0) {
-    SAIRN_SEC.sessionLocked = false;
-    var o = document.getElementById('sairn-lock-overlay');
-    if (o) o.remove();
-    saResetTimer();
-    saLog('L5-UNLOCK', 'Session unlocked', 'info');
-  } else {
-    document.getElementById('salock-err').textContent = 'Incorrect PIN';
-    saLog('L5-UNLOCK-FAIL', 'Failed unlock attempt', 'high');
+  var inp = document.getElementById('sairn-repin');
+  var err = document.getElementById('salock-err');
+  var btn = document.getElementById('sairn-unlock-btn');
+  var pin = inp ? inp.value.trim() : '';
+  function fail(msg) {
+    if (err) err.textContent = msg;
+    if (btn) { btn.disabled = false; btn.textContent = 'Unlock'; }
+    if (inp) { inp.value = ''; inp.focus(); }
   }
+  if (!pin) { fail('Enter your PIN'); return; }
+
+  // Both come from the front-door login. SD_AUTH_API is written out here rather
+  // than reused because every other copy in this file is a `var` inside an
+  // IIFE and none of them is reachable from this security block.
+  var employeeId = '';
+  try { employeeId = sessionStorage.getItem('sd_session_employee_id') || ''; } catch (e) {}
+  var lic = (typeof window.sdLicenseKey === 'function') ? window.sdLicenseKey() : '';
+
+  if (!employeeId || !lic) {
+    saLog('L5-UNLOCK-FAIL', 'Unlock refused — no verifiable session to check the PIN against', 'high');
+    fail('Cannot verify — sign in again.');
+    if (btn) { btn.textContent = 'Sign in again'; btn.onclick = function() { location.reload(); }; }
+    return;
+  }
+
+  if (err) err.textContent = '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Checking...'; }
+
+  fetch('https://sairn.vercel.app/api/sd-auth', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
+    body: JSON.stringify({ action: 'login', employee_id: employeeId, pin: pin })
+  }).then(function(r) {
+    return r.json().catch(function() { return null; }).then(function(d) { return { ok: r.ok, body: d }; });
+  }).then(function(res) {
+    if (!res.ok || !res.body || !res.body.ok) {
+      // Layer 6, same call the front door makes, so unlock attempts and login
+      // attempts share one counter instead of the lock screen being an
+      // unmetered second door onto the same credential.
+      if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(false);
+      var code = res.body && res.body.error && res.body.error.code;
+      saLog('L5-UNLOCK-FAIL', 'Failed unlock attempt (' + (code || 'REFUSED') + ')', 'high');
+      fail(code === 'LOCKED'
+        ? 'Too many attempts — locked for 15 minutes'
+        : ((res.body && res.body.error && res.body.error.message) || 'Incorrect PIN'));
+      return;
+    }
+    // A successful re-auth issues a NEW token; store it, because the old one
+    // may well have expired during the idle period that caused the lock.
+    try {
+      sessionStorage.setItem('sd_session_token', res.body.token);
+      sessionStorage.setItem('sd_session_role', res.body.role);
+      sessionStorage.setItem('sd_session_employee_id', res.body.employee_id);
+    } catch (e) {}
+    if (typeof window.saTrackLoginAttempt === 'function') window.saTrackLoginAttempt(true);
+    SAIRN_SEC.sessionLocked = false;
+    saHideLock();
+    saResetTimer();
+    saLog('L5-UNLOCK', 'Session unlocked by ' + res.body.employee_id, 'info');
+  }).catch(function() {
+    // Offline or the endpoint is down. Refuse rather than let a network failure
+    // be the way past the lock screen.
+    saLog('L5-UNLOCK-FAIL', 'Unlock could not be verified — network error', 'high');
+    fail('Could not reach the server — try again');
+  });
 };
 
 // LAYER 6 — Brute-Force Protection on PIN
@@ -9454,7 +9580,15 @@ let isTyping = false;
 const SYSTEM = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO.";
 
 // == STATE ======================================================
-let CODES = { sales: '1234', admin: '9999' };
+// CODES REMOVED 2026-09-01, with saveCodes() below. It held
+// `{sales:'1234', admin:'9999'}` -- the literal two PINs the session-lock
+// screen accepted, in plain text in a file served to the browser. It had
+// exactly two readers: saUnlock(), which now verifies against api/sd-auth.js
+// instead, and saveCodes(), which was already dead (neither
+// `sales-code-input` nor `admin-code-input` has an id="" anywhere in this
+// file, and no element calls saveCodes) -- the same shape as the
+// saveShopSettings removal of 2026-08-23, and confirmed the same way before
+// cutting rather than assumed from the name.
 let currentUser=null;
 
 // SAIRN Standard PIN Login
@@ -16556,15 +16690,14 @@ function parseAndStress(csvText) {
 }
 
 // == USERS =====================================================
-function saveCodes() {
-  const s=document.getElementById('sales-code-input').value.trim();
-  const a=document.getElementById('admin-code-input').value.trim();
-  if(!s||!a) return showToast('Both codes required.');
-  CODES.sales=s; CODES.admin=a;
-  const btn=document.querySelector('[onclick="saveCodes()"]');
-  btn.textContent='✓ Codes Updated'; btn.style.color='#4ADE80';
-  setTimeout(()=>{btn.textContent='Update Access Codes';btn.style.color='';},2000);
-}
+// saveCodes() removed 2026-09-01 alongside CODES (see the note at its former
+// declaration). It was unreachable before this change and would have been
+// pointless after it: it wrote shared access codes that nothing reads now that
+// both the front door and the lock screen go through api/sd-auth.js. Verified
+// dead at HEAD before cutting -- `sales-code-input` and `admin-code-input` each
+// appeared exactly once in this file, inside saveCodes' own getElementById
+// calls, and the only match for `saveCodes` outside its own body was the
+// querySelector it used to find its own button.
 
 // == SHOP SETTINGS =============================================
 // saveShopSettings() removed 2026-08-23 (approved). It was unreachable dead

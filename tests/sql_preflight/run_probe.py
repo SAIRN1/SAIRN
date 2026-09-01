@@ -125,7 +125,48 @@ def main():
         failures.append('gate over all of sql/ exit %d, expected 0 -- the gate '
                         'must not block existing correct files:\n%s' % (code, out))
 
+    # ── --require-live: the FAIL-CLOSED contract, added 2026-09-01 ─────────
+    # These are the cases the push gate now denies on. Before this flag the
+    # gate ran DECLARED-only and denied on exit 1 alone, so every other outcome
+    # -- including having no schema to check against at all -- allowed the push
+    # in silence. Each case below must be exit 4 and must NEVER be 0 or 2: the
+    # bug being guarded against is not "wrong answer", it is "no answer,
+    # reported as agreement".
+    fd2, corrupt = tempfile.mkstemp(suffix='.json')
+    os.close(fd2)
+    open(corrupt, 'w', encoding='utf-8').write('{"tables": [')
+    fd3, empty = tempfile.mkstemp(suffix='.json')
+    os.close(fd3)
+    open(empty, 'w', encoding='utf-8').write('{}')
+
+    for label, args in (
+            ('snapshot absent',   ['--gate', '--require-live', '--live', '/nope.json', control]),
+            ('snapshot corrupt',  ['--gate', '--require-live', '--live', corrupt, control]),
+            ('snapshot empty',    ['--gate', '--require-live', '--live', empty, control]),
+            ('--live omitted',    ['--gate', '--require-live', control])):
+        code, out = run(args)
+        if code != 4:
+            failures.append('require-live/%s exit %d, expected 4 (must fail closed)'
+                            % (label, code))
+        if 'LIVE SCHEMA UNAVAILABLE' not in out:
+            failures.append('require-live/%s did not say why it could not check' % label)
+
+    # And it must still pass a real check rather than blocking everything.
+    code, out = run(['--gate', '--require-live', '--live', snap, control])
+    if code != 0 or out.strip():
+        failures.append('require-live/clean exit %d output %r, expected 0 and silence'
+                        % (code, out))
+    code, out = run(['--gate', '--require-live', '--live', snap, defects])
+    if code != 1:
+        failures.append('require-live/defects exit %d, expected 1' % code)
+    # MISSING_TABLE blocks in LIVE mode (it is a fact about the database), while
+    # UNDECLARED_TABLE still does not (it is only a fact about this repo).
+    if 'MISSING_TABLE' not in out:
+        failures.append('require-live/defects did not block on the missing TABLE')
+
     os.remove(snap)
+    os.remove(corrupt)
+    os.remove(empty)
     if failures:
         print('FAIL')
         for f in failures:
@@ -133,7 +174,9 @@ def main():
         return 1
     print('PASS -- 4 defects caught, control clean, 7 exit codes correct, '
           '3 gate cases correct (blocks a phantom column, silent on clean, '
-          'does not block any existing file in sql/)')
+          'does not block any existing file in sql/), '
+          '6 --require-live cases correct (4 fail-closed, clean silent, '
+          'MISSING_TABLE blocks)')
     return 0
 
 

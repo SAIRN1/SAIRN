@@ -6,14 +6,13 @@
      that writes an `*_employee_auth` table without the guard that stops it
      leaving a licence with rows and ZERO active provisioners. SQL is the only
      path into that state; the API cannot reach it.
-  3. SQL PREFLIGHT (added 2026-08-31) -- blocks a push whose SQL names a column
-     the repo declares no such column for. Runs tools/sairn_sql_preflight.py in
-     DECLARED mode, which needs no schema snapshot and so costs an ordinary push
-     nothing. It blocks on MISSING_COLUMN only; UNDECLARED_TABLE is reported and
-     allowed, because in declared mode that fires on every real table with no
-     tracked CREATE TABLE (`license_keys` alone: 17 occurrences of correct code).
-     Live-snapshot blocking is deliberately NOT enabled -- that is a separate
-     decision about whether every SQL push should require a current snapshot.
+  3. SQL PREFLIGHT (added 2026-08-31, switched to LIVE + FAIL-CLOSED 2026-09-01)
+     -- blocks a push whose SQL names a table or column the live database does
+     not have. Checked against db/schema_snapshot.json (override with
+     SAIRN_SCHEMA_SNAPSHOT), produced by running sql/schema_snapshot_query.sql
+     in the Supabase editor. If that snapshot is missing, unreadable or empty,
+     THE PUSH IS DENIED -- see the block comment at the check itself for why
+     that is not the same trade as check 1's could-not-tell allowance.
 
 Neither runs unless the commits being pushed actually touch the relevant files,
 so an ordinary push costs nothing.
@@ -170,31 +169,70 @@ def main():
                 ]
                 deny(chr(10).join(msg))
 
-        # ── CHECK 3: SQL preflight, declared-only ─────────────────────────
-        # Blocks a push whose SQL names a column the repo declares no such
-        # column for. DECLARED mode on purpose: it needs no snapshot, so it adds
-        # zero freshness friction to an ordinary push. Full --live blocking is a
-        # separate, later decision.
+        # ── CHECK 3: SQL preflight, LIVE and FAIL-CLOSED ──────────────────
+        # LIVE MODE ENABLED 2026-09-01 (Michael's call), replacing declared-only.
+        # The file is now checked against a snapshot of what the DATABASE
+        # actually has, so MISSING_TABLE becomes a fact rather than an
+        # observation about the repo, and both it and MISSING_COLUMN block.
         #
-        # IT BLOCKS ON MISSING_COLUMN ONLY. UNDECLARED_TABLE fires on every real
-        # table with no tracked CREATE TABLE -- `license_keys` alone accounts for
-        # 17 across sql/, all correct code -- so blocking on it would stop every
-        # licence-seed push on day one, and a gate that cries wolf gets switched
-        # off. The tool's --gate mode encodes that split in its EXIT CODE rather
-        # than in prose this hook would have to parse, so a change to its output
-        # format cannot silently disarm the gate.
+        # AND IT FAILS CLOSED. This is the half that matters. The declared-only
+        # version denied on exit 1 and allowed on EVERYTHING ELSE -- including
+        # the tool refusing to run, and including there being no schema to check
+        # against at all. Every one of those allowed the push in silence, which
+        # is the exact could-not-tell-reported-as-a-pass shape that check 1 has
+        # a whole paragraph warning about and that check 3 then reproduced.
+        #
+        # So: no snapshot, an unreadable snapshot, a snapshot with no tables, a
+        # subprocess that will not start, or a timeout, ALL DENY. The tool's
+        # --require-live gives that its own exit code (4) rather than leaving
+        # this hook to infer it from prose.
+        #
+        # THE COST OF THIS IS REAL AND IS THE POINT: until db/schema_snapshot.json
+        # exists, every push that touches sql/ is denied. Generating it is a
+        # manual step (sql/schema_snapshot_query.sql in the Supabase editor) and
+        # the deny message says so. A push that touches no SQL is unaffected.
         pf = os.path.join(repo, 'tools', 'sairn_sql_preflight.py')
+        snapshot = (os.environ.get('SAIRN_SCHEMA_SNAPSHOT')
+                    or os.path.join(repo, 'db', 'schema_snapshot.json'))
         if os.path.isfile(pf):
             try:
                 p = subprocess.run(
-                    [sys.executable, pf, '--gate']
+                    [sys.executable, pf, '--gate', '--require-live', '--live', snapshot]
                     + [os.path.join(repo, q) for q in sql_changed],
                     capture_output=True, text=True, timeout=120, cwd=repo)
-            except Exception:
-                p = None
-            if p is not None and p.returncode == 1:
+            except Exception as e:
+                # Was `p = None` followed by a check that skipped silently. A
+                # checker that cannot be run has not passed anything.
+                deny(chr(10).join([
+                    "Blocked: the SQL preflight could not be run, so this push is unchecked.",
+                    "",
+                    "  %s: %s" % (type(e).__name__, e),
+                    "",
+                    "Check 3 runs live and fails closed as of 2026-09-01. An unrunnable",
+                    "checker used to allow the push silently; that is the failure mode this",
+                    "gate exists to prevent, so it now denies instead.",
+                    "",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]))
+            if p.returncode == 4:
+                deny(chr(10).join([
+                    "Blocked: no live schema snapshot, so this push's SQL cannot be checked.",
+                    "",
+                    p.stdout.strip(),
+                    "",
+                    "This is a DENY and not a warning on purpose. Until 2026-09-01 this check",
+                    "ran against the repo's own CREATE TABLE statements and allowed anything",
+                    "it could not answer, which meant a missing schema and a clean file were",
+                    "indistinguishable from the outside.",
+                    "",
+                    "Point it somewhere else with SAIRN_SCHEMA_SNAPSHOT=<path> if the snapshot",
+                    "lives outside the clone.",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]))
+            if p.returncode == 1:
                 msg = [
-                    "Blocked: this push contains SQL naming a column that does not exist.",
+                    "Blocked: this push contains SQL naming a table or column that the live",
+                    "database does not have.",
                     "",
                     p.stdout.strip(),
                     "",
@@ -204,13 +242,12 @@ def main():
                     "'nothing needed changing'. That is why this blocks before the file can",
                     "be pasted into the editor rather than after.",
                     "",
-                    "Checked against the repo's CREATE TABLE / ALTER TABLE ADD COLUMN",
-                    "statements, not the database. If the column really does exist because",
-                    "it was added by hand in the editor, the fix is to write that ALTER down",
-                    "in sql/ -- an undeclared column is the reason this can be wrong, and",
-                    "declaring it fixes the gate and the repo at the same time.",
+                    "Checked against %s, which is a SNAPSHOT and is only as current as the" % snapshot,
+                    "last time someone ran sql/schema_snapshot_query.sql. If the object really",
+                    "does exist because a migration was applied after that, regenerate the",
+                    "snapshot rather than overriding the gate.",
                     "",
-                    "Full detail:  python tools/sairn_sql_preflight.py <file>",
+                    "Full detail:  python tools/sairn_sql_preflight.py --live %s <file>" % snapshot,
                     "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
                 ]
                 deny(chr(10).join(msg))

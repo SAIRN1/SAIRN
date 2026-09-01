@@ -59,12 +59,25 @@ skipped.
 USAGE
     python tools/sairn_sql_preflight.py sql/some_change.sql
     python tools/sairn_sql_preflight.py --live db/schema_snapshot.json sql/*.sql
+    python tools/sairn_sql_preflight.py --gate --require-live --live db/schema_snapshot.json sql/x.sql
 
 EXIT CODES
     0  LIVE checked, nothing missing
     1  something is missing (either source)
     2  no live snapshot -- DECLARED-only, NOT a pass
     3  bad usage / unreadable input
+    4  --require-live was asked for and no usable live schema exists
+
+--require-live (added 2026-09-01) EXISTS BECAUSE EXIT 2 WAS BEING READ AS A PASS
+BY A CALLER THAT ONLY CHECKED FOR 1. The push gate ran this in DECLARED mode and
+denied only on exit 1, so every other outcome -- including "there is no live
+schema at all" -- allowed the push silently. That is the same could-not-tell-
+reported-as-silence shape this file's own docstring warns about, reproduced
+inside the gate meant to prevent it.
+
+With --require-live, an absent, unreadable or empty snapshot is exit 4 and never
+exit 0/2, so a caller that treats "not 1" as success still cannot mistake a
+missing schema for a clean file. The caller is expected to BLOCK on 4.
 """
 import re
 import sys
@@ -444,10 +457,18 @@ def _gate(paths, schema, source):
     stop every licence-seed push on day one, and a gate that cries wolf gets
     switched off. They are printed as a note instead.
 
-    Exit 0 = nothing blocking. Exit 1 = at least one MISSING_COLUMN.
+    MISSING_TABLE, WHICH ONLY EXISTS IN LIVE MODE, IS BLOCKING (2026-09-01).
+    The two labels are not synonyms and check() already keeps them apart:
+    UNDECLARED_TABLE means "no CREATE TABLE in this repo mentions it", which is
+    true of plenty of real tables; MISSING_TABLE means the DATABASE WAS ASKED
+    and does not have it. The second is a fact about production, so blocking on
+    it is the whole reason to run against a live snapshot rather than the repo.
+
+    Exit 0 = nothing blocking. Exit 1 = at least one blocking finding.
     Nothing else, so the hook keys on the code rather than parsing prose --
     a format change must not be able to silently disarm the gate.
     """
+    BLOCKING_KINDS = ('MISSING_COLUMN', 'MISSING_TABLE')
     blocking, notes = [], []
     for path in paths:
         if not os.path.exists(path):
@@ -455,7 +476,7 @@ def _gate(paths, schema, source):
         findings, _, _, _ = check(path, schema, source)
         for kind, t, c in findings:
             entry = '%s: %s %s' % (os.path.basename(path), kind, t + ('.' + c if c else ''))
-            (blocking if kind == 'MISSING_COLUMN' else notes).append(entry)
+            (blocking if kind in BLOCKING_KINDS else notes).append(entry)
     for b in blocking:
         print(b)
     if notes:
@@ -465,8 +486,24 @@ def _gate(paths, schema, source):
     return 1 if blocking else 0
 
 
+def _no_live(reason, live_path, require_live):
+    """One place to report an unusable live schema, and one place to decide
+    whether that is fatal. Under --require-live it is exit 4 and the caller is
+    expected to block; without it the historical behaviour is unchanged."""
+    print('LIVE SCHEMA UNAVAILABLE: %s' % reason)
+    print('  expected snapshot: %s' % live_path)
+    if not require_live:
+        return None
+    print('')
+    print('*** BLOCKING. --require-live was asked for, and "could not tell" is')
+    print('*** not a pass. Regenerate the snapshot before continuing:')
+    print('***   1. run sql/schema_snapshot_query.sql in the Supabase SQL editor')
+    print('***   2. save the single JSON result cell as %s' % live_path)
+    return 4
+
+
 def main(argv):
-    live_path, paths, gate = None, [], False
+    live_path, paths, gate, require_live = None, [], False, False
     i = 0
     while i < len(argv):
         if argv[i] == '--live':
@@ -476,16 +513,40 @@ def main(argv):
             live_path = argv[i]
         elif argv[i] == '--gate':
             gate = True
+        elif argv[i] == '--require-live':
+            require_live = True
         else:
             paths.append(argv[i])
         i += 1
     if not paths:
         print(__doc__); return 3
+    if require_live and not live_path:
+        rc = _no_live('--require-live given with no --live path', '(none given)', True)
+        return rc
 
     if live_path:
+        # EVERY WAY A SNAPSHOT CAN BE UNUSABLE GOES THROUGH ONE PATH. The
+        # original code only handled "file not found" and only as exit 3; a
+        # snapshot that existed but was truncated, empty, or invalid JSON threw
+        # out of main() instead, and a hook that catches exceptions and allows
+        # would have turned a corrupt schema into a silent pass.
         if not os.path.exists(live_path):
+            rc = _no_live('snapshot file does not exist', live_path, require_live)
+            if rc is not None:
+                return rc
             print('LIVE SNAPSHOT NOT FOUND: %s' % live_path); return 3
-        schema, generated = load_live(live_path)
+        try:
+            schema, generated = load_live(live_path)
+        except Exception as e:
+            rc = _no_live('snapshot is unreadable (%s)' % e, live_path, require_live)
+            if rc is not None:
+                return rc
+            return 3
+        if not schema:
+            rc = _no_live('snapshot declares no tables', live_path, require_live)
+            if rc is not None:
+                return rc
+            return 3
         source = 'LIVE'
     else:
         schema, generated, source = declared_schema(), None, 'DECLARED'
