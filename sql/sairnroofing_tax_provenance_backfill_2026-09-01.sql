@@ -173,9 +173,18 @@ where i.data ? 'tax_rate'
 -- the API and the schema header says a wrong proposal is superseded, never
 -- edited. This statement is a one-off data repair of a field the app itself
 -- wrote by mistake, not a product write path, and it changes no figure any
--- party agreed to. RUN IT DELIBERATELY, or skip it and accept that issued
--- proposals keep the wrong disclosure -- that is a real choice, not an
--- oversight, and it is called out here so it is made rather than defaulted.
+-- party agreed to.
+--
+-- DECIDED 2026-09-01 (Michael): RUN IT. Both tables are in scope, and this is
+-- an explicit, recorded one-off exception to the append-only rule -- not a
+-- precedent for editing proposals, and not a softening of the rule itself.
+-- The exception is safe for the same reason as the invoice statement above:
+-- it removes a key the app derived and should never have persisted, and every
+-- figure any party saw or agreed to is bit-identical afterwards.
+--
+-- Recorded here rather than left as an open question, because a file that
+-- keeps asking for a decision already made is exactly the stale-record shape
+-- that sent a session to rebuild row 141's fix six days after it shipped.
 update public.rf_proposals p
 set data = p.data - 'tax'
 where p.event_type = 'issued'
