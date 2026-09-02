@@ -1078,6 +1078,26 @@ let employees = JSON.parse(localStorage.getItem('sd_hr_employees') || '[]');
 let certifications = JSON.parse(localStorage.getItem('sd_hr_certs') || '{}');
 let currentCertType = '';
 
+// LOCAL calendar date, never UTC (2026-09-02).
+//
+// The training-date field was seeded with new Date().toISOString().slice(0,10),
+// which is UTC's calendar date -- a day ahead of the shop's own from roughly
+// 8pm Eastern onward. Whoever records a certification on an evening gets
+// tomorrow's date written onto a training record, and that record is what an
+// audit reads. One site, but it is the one date this file stores that a person
+// chose rather than the clock stamped.
+//
+// The three bare new Date().toISOString() calls here are INSTANTS -- addedAt,
+// inactivatedAt, recordedAt -- and are deliberately untouched. A timestamp is a
+// moment, not a calendar day, and rewriting those would be the opposite error.
+//
+// Same helper and same reasoning as sairnvet's localToday(), sairncare's
+// alfLocalToday() and sairnbuild's bldLocalToday().
+function hrLocalToday() {
+  const d = new Date();
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
 // ── NAVIGATION ──
 function showPage(id, el) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
@@ -1113,7 +1133,7 @@ function openEquipCert(type) {
   const sel = document.getElementById('cert-emp-select');
   sel.innerHTML = '<option value="">Select employee...</option>' +
     employees.map(e => '<option value="' + e.id + '">' + e.firstName + ' ' + e.lastName + ' — ' + e.role + '</option>').join('');
-  document.getElementById('cert-date').value = new Date().toISOString().slice(0,10);
+  document.getElementById('cert-date').value = hrLocalToday();
   document.getElementById('cert-modal').classList.add('open');
 }
 
