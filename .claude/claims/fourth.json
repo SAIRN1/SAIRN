@@ -80,6 +80,16 @@
       "claimed_at_epoch": 1788345341.0341878,
       "status": "released",
       "released_at": "2026-09-02T10:41:57Z"
+    },
+    {
+      "id": "fourth-1788346231",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "ai rate limit atomicity and scan tooling",
+      "claimed_at": "2026-09-02T10:50:31Z",
+      "claimed_at_epoch": 1788346231.9743443,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
