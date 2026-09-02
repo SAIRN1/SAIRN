@@ -88,8 +88,8 @@
       "task": "ai rate limit atomicity and scan tooling",
       "claimed_at": "2026-09-02T10:50:31Z",
       "claimed_at_epoch": 1788346231.9743443,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T11:16:23Z"
     }
   ]
 }
