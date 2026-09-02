@@ -159,8 +159,8 @@
       "task": "slab labels and scan to find, barcode",
       "claimed_at": "2026-09-02T14:25:12Z",
       "claimed_at_epoch": 1788359112.3815844,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:35:37Z"
     }
   ]
 }
