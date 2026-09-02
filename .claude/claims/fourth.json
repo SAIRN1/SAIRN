@@ -140,6 +140,17 @@
       "claimed_at_epoch": 1788356058.0197465,
       "status": "released",
       "released_at": "2026-09-02T13:48:45Z"
+    },
+    {
+      "id": "fourth-1788357186",
+      "session": "fourth",
+      "subject": "sairnsenior",
+      "task": "caregiver training hours in-service gap A6",
+      "claimed_at": "2026-09-02T13:53:06Z",
+      "claimed_at_epoch": 1788357186.6308038,
+      "status": "active",
+      "released_at": null,
+      "note": "Written by hand because sairn_claim.py BLOCKED it on a purely lexical overlap -- the sole shared word with both blocking claims was 'gap'. cody holds sairnroofing 'warranty registration and certification-gated tiers gap A1'; hank holds sairndental 'payer enrolment credentialing lifecycle gap B1'. Different apps, different files, different subjects; neither touches sairnsenior.html. Recorded here rather than reworded to slip past the matcher, per CLAUDE.md's rule on defect 1 of that tool."
     }
   ]
 }
