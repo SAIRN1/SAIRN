@@ -160,6 +160,16 @@
       "claimed_at_epoch": 1788291749.4121587,
       "status": "released",
       "released_at": "2026-09-02T08:58:27Z"
+    },
+    {
+      "id": "hank-1788339928",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "trigger derivation scope measurement",
+      "claimed_at": "2026-09-02T09:05:28Z",
+      "claimed_at_epoch": 1788339928.7321937,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
