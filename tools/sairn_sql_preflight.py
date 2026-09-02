@@ -341,11 +341,34 @@ def references(text):
     # local-names set, so the reference was skipped as if it named a CTE.
     # Only aliases bound to a name this file actually treats as a table are
     # mapped, so a CTE alias still resolves to nothing rather than to a guess.
+    # AN ALIAS REBOUND AS A COLUMN-ALIAS LIST IS NOT A TABLE ALIAS. Found
+    # 2026-09-02 on the first LIVE run, against the real snapshot: two audit
+    # files bind `k` twice --
+    #
+    #     from public.license_keys k                     -- table alias
+    #     join lateral unnest(con.conkey) as k(attnum)   -- column alias list
+    #
+    # -- and this map is per FILE, not per statement, so `k.attnum` in the
+    # second statement was attributed to license_keys and reported as
+    # MISSING_COLUMN license_keys.attnum. Both findings were false, and both
+    # would have blocked a push touching those files on the gate's first day
+    # live, which is exactly how a checker gets switched off.
+    #
+    # The narrow fix is to drop any identifier that is ALSO bound as `as
+    # name(cols)` anywhere in the file. Per-statement alias scoping would be
+    # the general answer and is a bigger change with its own regression risk;
+    # this removes the observed false positive without widening what the tool
+    # claims to resolve. A name used both ways in one file is ambiguous to a
+    # per-file map, and refusing to guess is this tool's stated rule.
+    rebound = set()
+    for m in re.finditer(r'\bas\s+([a-z_][\w]*)\s*\([^)]*\)', text, re.I):
+        rebound.add(m.group(1).lower())
+
     alias = {}
     for m in re.finditer(r'\b(?:from|join)\s+([\w".]+)(?:\s+as)?\s+([a-z_][\w]*)\b', text, re.I):
         tgt = _clean_ident(m.group(1))
         a = m.group(2).lower()
-        if tgt and tgt in tables and a not in NOT_A_TABLE:
+        if tgt and tgt in tables and a not in NOT_A_TABLE and a not in rebound:
             alias[a] = tgt
 
     for m in re.finditer(r'\b([a-z_][\w]*)\.([a-z_][\w]*)\b', text, re.I):
