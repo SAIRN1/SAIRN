@@ -651,6 +651,29 @@ var editingJobId=null;
 function $(s){return document.getElementById(s);}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 function rfLicenseKey(){return localStorage.getItem('rf_license_key')||'';}
+// Replaces the four bare `new Date().toISOString().slice(0,10)` call sites in
+// this file. toISOString() extracts the UTC calendar date, which is already
+// TOMORROW from roughly 8pm Eastern onward -- so a proposal issued on a Monday
+// evening was stored as issued on Tuesday, and a cheque taken at the end of the
+// day was recorded as received the next day. getFullYear()/getMonth()/getDate()
+// read the LOCAL calendar date the roofer is actually working in.
+//
+// NOT COSMETIC HERE, because the server keeps what the client sends: it
+// VALIDATES the format (api/_lib/roofing-billing.js checks issued_on,
+// decided_on and received_on are YYYY-MM-DD) and never recomputes the day, and
+// it then SORTS proposal history by issued_on and picks the latest decision by
+// decided_on. A wrong day is stored, displayed, exported and ordered on.
+//
+// A BARE `new Date().toISOString()` STORING AN INSTANT IS CORRECT AND IS NOT
+// TOUCHED -- assessed_at on a damage assessment and rescinded_at on a cancelled
+// agreement are moments, not calendar days. Rewriting those would be the
+// opposite error. Same helper and same reasoning as sairnbuild's
+// bldLocalToday(), stonedesk-hr's hrLocalToday() and sairndental's
+// dntLocalToday().
+function rfLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 
 function rfAuth(action,payload,withSession){
   var lic=rfLicenseKey();
@@ -1994,7 +2017,7 @@ function rfIssueProposal(){
   });
   rfDataRaw('write','rf_proposals',{
     id:'RFPRO-'+Date.now(), job_id:j.id, event_type:'issued',
-    issued_on:new Date().toISOString().slice(0,10), line_items:lines
+    issued_on:rfLocalToday(), line_items:lines
   }).then(function(r){
     if(!r.ok){toast(r.msg||'Could not issue the proposal',5000);return;}
     toast('Proposal issued');rfLoadBilling();
@@ -2007,7 +2030,7 @@ function rfRecordDecision(){
   var rec={
     id:'RFPRO-'+Date.now(), job_id:j.id, event_type:decision,
     supersedes:rfPropState.latest.proposal_id,
-    decided_on:$('jb-decided-on').value||new Date().toISOString().slice(0,10)
+    decided_on:$('jb-decided-on').value||rfLocalToday()
   };
   if(decision==='accepted'){
     rec.accepted_by=($('jb-accepted-by').value||'').trim();
@@ -2081,7 +2104,7 @@ function rfPromptPayment(id){
   if(amt===null)return;
   var n=Number(String(amt).trim());
   if(!n){toast('Enter a non-zero amount');return;}
-  var rec={payment_id:'RFPAY-'+Date.now(),amount:n,received_on:new Date().toISOString().slice(0,10),method:'check'};
+  var rec={payment_id:'RFPAY-'+Date.now(),amount:n,received_on:rfLocalToday(),method:'check'};
   if(n<0){
     var rev=prompt('Which payment_id does this reverse?');
     if(!rev)return;
@@ -3053,7 +3076,7 @@ function rfExportReport(key){
       return;
     }
     var csv=rfToCsv(rows,rep.columns);
-    var name='sairnroofing-'+rep.key+'-'+new Date().toISOString().slice(0,10)+'.csv';
+    var name='sairnroofing-'+rep.key+'-'+rfLocalToday()+'.csv';
     rfDownload(name,csv);
     if(out){
       out.innerHTML='Exported <strong>'+rows.length+'</strong> '+rfEsc(rep.label.toLowerCase())+
