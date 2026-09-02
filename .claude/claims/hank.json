@@ -230,6 +230,16 @@
       "claimed_at_epoch": 1788351054.3688138,
       "status": "released",
       "released_at": "2026-09-02T12:18:35Z"
+    },
+    {
+      "id": "hank-1788351618",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "wex grounded definition tool in the assistant",
+      "claimed_at": "2026-09-02T12:20:18Z",
+      "claimed_at_epoch": 1788351618.4795728,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
