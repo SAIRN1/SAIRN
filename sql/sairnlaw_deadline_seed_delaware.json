@@ -141,6 +141,13 @@
       "domain": "civil-litigation",
       "label": "Motion for a new trial -- 10 days after entry of judgment (Delaware Superior Court)",
       "trigger_event": "entry_of_judgment",
+      "trigger_document": {
+        "id": "entry_of_judgment",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Del. Super. Ct. Civ. R. 59(b)",
+        "on_unconfirmed": "warn"
+      },
       "computation": "de_super_ct_civ_r_6a",
       "count": {
         "value": 10,
@@ -163,6 +170,13 @@
       "domain": "civil-litigation",
       "label": "Motion for a new trial -- 10 days after rendition of the verdict, where the Court withheld judgment under Rule 58 (Delaware Superior Court)",
       "trigger_event": "rendition_of_verdict_where_judgment_withheld_under_rule_58",
+      "trigger_document": {
+        "id": "rendition_of_verdict_where_judgment_withheld_under_rule_58",
+        "label": "the date the verdict was RENDERED, in the case where the Court directed under Rule 58 that judgment not be entered forthwith upon it",
+        "not_the": "the date judgment was later entered -- this limb exists precisely because the two came apart",
+        "authority": "Del. Super. Ct. Civ. R. 59(b)",
+        "on_unconfirmed": "warn"
+      },
       "computation": "de_super_ct_civ_r_6a",
       "count": {
         "value": 10,

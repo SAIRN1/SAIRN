@@ -202,6 +202,13 @@
       "domain": "civil-litigation",
       "label": "Answer after a Rule 2-322 motion or a remand -- 15 days after the order (Maryland)",
       "trigger_event": "entry_of_order_on_preliminary_motion_or_remand",
+      "trigger_document": {
+        "id": "entry_of_order_on_preliminary_motion_or_remand",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Md. Rule 2-321(c)",
+        "on_unconfirmed": "warn"
+      },
       "computation": "md_rule_1_203",
       "count": {
         "value": 15,

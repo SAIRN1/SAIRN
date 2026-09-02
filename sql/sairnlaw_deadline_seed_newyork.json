@@ -389,6 +389,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "service_upon_appellant_of_judgment_with_written_notice_of_entry",
+        "label": "the date the appellant was SERVED with a copy of the judgment or order with written notice of its entry",
+        "not_the": "the date of entry itself, the date of the decision, or the date the APPELLANT served it on another party -- CPLR 5513 treats those as separate limbs",
+        "authority": "N.Y. CPLR 5513(a), (d)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ny_gcl_20",
       "service_extension": {
         "standard": "ny_cplr_2103b",
@@ -422,6 +429,13 @@
         "value": 30,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "service_by_appellant_of_judgment_with_written_notice_of_entry",
+        "label": "the date the APPELLANT served a copy of the judgment or order with written notice of its entry",
+        "not_the": "the date of entry itself, the date of the decision, or the date the appellant was SERVED by another party -- CPLR 5513 treats service by and service upon the appellant as separate limbs",
+        "authority": "N.Y. CPLR 5513(a), (d)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "ny_gcl_20",
       "service_extension": {

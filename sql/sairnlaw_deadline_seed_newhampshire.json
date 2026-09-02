@@ -368,6 +368,13 @@
       "domain": "civil-litigation",
       "label": "Motion to set aside a jury verdict -- 10 days after its rendition (New Hampshire)",
       "trigger_event": "rendition_of_jury_verdict",
+      "trigger_document": {
+        "id": "rendition_of_jury_verdict",
+        "label": "the date the jury RENDERED its verdict in open court",
+        "not_the": "the date judgment was entered on that verdict, or the date the verdict was recorded",
+        "authority": "N.H. Super. Ct. R. 43",
+        "on_unconfirmed": "warn"
+      },
       "computation": "nh_scr_2",
       "count": {
         "value": 10,

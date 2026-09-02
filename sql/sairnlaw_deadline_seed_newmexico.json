@@ -338,6 +338,13 @@
       "domain": "civil-litigation",
       "label": "Motion for a new trial -- 30 days after entry of judgment (New Mexico)",
       "trigger_event": "entry_of_judgment_new_mexico",
+      "trigger_document": {
+        "id": "entry_of_judgment_new_mexico",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Rule 1-059(B) NMRA",
+        "on_unconfirmed": "warn"
+      },
       "computation": "nm_1_006",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "authority": {
@@ -356,6 +363,13 @@
       "domain": "civil-litigation",
       "label": "Motion to alter, amend, or reconsider a final judgment -- 30 days after entry (New Mexico)",
       "trigger_event": "entry_of_judgment_for_motion_to_reconsider_new_mexico",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_motion_to_reconsider_new_mexico",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Rule 1-059(E) NMRA",
+        "on_unconfirmed": "warn"
+      },
       "computation": "nm_1_006",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
       "authority": {

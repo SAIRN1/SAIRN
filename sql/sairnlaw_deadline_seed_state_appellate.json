@@ -109,6 +109,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_final_order",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Ohio App.R. 4(A)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ohio_civ_r_6a",
       "retrigger": {
         "on_events": [
@@ -169,6 +176,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_final_judgment_noted_in_ccs",
+        "label": "the date the entry of final judgment was NOTED IN THE CHRONOLOGICAL CASE SUMMARY",
+        "not_the": "the date the judgment was signed, or the date it was mailed -- Ind. App. R. 9(A)(1) keys on the CCS notation specifically",
+        "authority": "Ind. App.R. 9(A)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "indiana_tr_6a",
       "authority": {
         "citation": "Ind. App.R. 9(A)(1)",
@@ -224,6 +238,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_the_judgment_or_order_appealed_from",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mich. Ct. R. 7.204(A)(1)(a)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(a)",
@@ -247,6 +268,13 @@
         "value": 21,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "entry_of_order_appointing_counsel",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mich. Ct. R. 7.204(A)(1)(b)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "michigan_mcr_1108",
       "authority": {
@@ -272,6 +300,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_order_denying_request_for_appointment_of_counsel",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mich. Ct. R. 7.204(A)(1)(c)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(c)",
@@ -296,6 +331,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_order_deciding_postjudgment_motion",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mich. Ct. R. 7.204(A)(1)(d)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "michigan_mcr_1108",
       "authority": {
         "citation": "Mich. Ct. R. 7.204(A)(1)(d)",
@@ -319,6 +361,13 @@
         "value": 30,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "entry_of_the_order_appealed_from",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Pa.R.A.P. 903(a)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "pa_rja_107",
       "authority": {
@@ -368,6 +417,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_order_changing_venue_or_venire_in_a_criminal_proceeding",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Pa.R.A.P. 903(c)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(c)(1)",
@@ -392,6 +448,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_order_in_a_matter_arising_under_the_election_code",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Pa.R.A.P. 903(c)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "pa_rja_107",
       "authority": {
         "citation": "Pa.R.A.P. 903(c)(1)",
@@ -415,6 +478,13 @@
         "value": 10,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "entry_of_order_in_a_matter_arising_under_the_local_government_unit_debt_act",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Pa.R.A.P. 903(c)(1)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "pa_rja_107",
       "authority": {

@@ -333,6 +333,13 @@
       "domain": "civil-litigation",
       "label": "Motion for a new trial -- 10 days after entry of judgment (Nebraska)",
       "trigger_event": "entry_of_judgment_nebraska",
+      "trigger_document": {
+        "id": "entry_of_judgment_nebraska",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Neb. Rev. Stat. Sec. 25-1144.01",
+        "on_unconfirmed": "warn"
+      },
       "computation": "ne_25_2221",
       "count": {
         "value": 10,
@@ -355,6 +362,13 @@
       "domain": "civil-litigation",
       "label": "Motion to alter or amend a judgment -- 10 days after entry (Nebraska)",
       "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend_nebraska",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_motion_to_alter_or_amend_nebraska",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Neb. Rev. Stat. Sec. 25-1329",
+        "on_unconfirmed": "warn"
+      },
       "computation": "ne_25_2221",
       "count": {
         "value": 10,

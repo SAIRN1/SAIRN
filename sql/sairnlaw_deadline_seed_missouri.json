@@ -188,6 +188,13 @@
     "unit": "calendar_days",
     "direction": "forward"
    },
+   "trigger_document": {
+     "id": "entry_of_order_requiring_reply",
+     "label": "the date the clerk ENTERED the order or judgment on the docket",
+     "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+     "authority": "Mo. R. Civ. P. 55.25(b)",
+     "on_unconfirmed": "warn"
+   },
    "computation": "mo_rule_44_01_a",
    "authority": {
     "citation": "Mo. R. Civ. P. 55.25(b)",

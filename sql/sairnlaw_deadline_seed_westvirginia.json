@@ -550,6 +550,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "entry_of_the_final_order_or_mandate",
+        "label": "the date the FINAL ORDER was entered, or the date the MANDATE issued -- whichever of the two this appeal actually runs from",
+        "not_the": "the other of those two documents. W. Va. R. App. P. 5(b) names both in one sentence and they bear different dates, and 5(f) runs from a third -- the judgment being appealed",
+        "authority": "W. Va. R. App. P. 5(b)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "wv_rap_39a",
       "authority": {
         "citation": "W. Va. R. App. P. 5(b)",
@@ -573,6 +580,13 @@
         "value": 4,
         "unit": "months",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "entry_of_the_judgment_being_appealed",
+        "label": "the date the JUDGMENT BEING APPEALED was entered",
+        "not_the": "the date of the final order or the mandate -- W. Va. R. App. P. 5(b) runs the notice-of-appeal clock from those instead, so the same case carries two different start dates",
+        "authority": "W. Va. R. App. P. 5(f)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "wv_rap_39a",
       "authority": {

@@ -345,6 +345,13 @@
       "domain": "civil-litigation",
       "label": "Motion for a new trial -- 10 days after entry of judgment (Mississippi)",
       "trigger_event": "entry_of_judgment",
+      "trigger_document": {
+        "id": "entry_of_judgment",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Miss. R. Civ. P. 59(b)",
+        "on_unconfirmed": "warn"
+      },
       "computation": "ms_r_civ_p_6",
       "count": {
         "value": 10,
@@ -367,6 +374,13 @@
       "domain": "civil-litigation",
       "label": "Motion to alter or amend the judgment -- 10 days after entry of judgment (Mississippi)",
       "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_motion_to_alter_or_amend",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Miss. R. Civ. P. 59(e)",
+        "on_unconfirmed": "warn"
+      },
       "computation": "ms_r_civ_p_6",
       "count": {
         "value": 10,

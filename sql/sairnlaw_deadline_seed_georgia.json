@@ -348,6 +348,13 @@
       "label": "Notice of appeal after entry of the appealable decision or judgment (Georgia)",
       "trigger_event": "entry_of_the_appealable_decision_or_judgment",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "trigger_document": {
+        "id": "entry_of_the_appealable_decision_or_judgment",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "O.C.G.A. 5-6-38(a)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ga_ocga_1_3_1_d3",
       "authority": {
         "citation": "O.C.G.A. 5-6-38(a)",
@@ -368,6 +375,13 @@
       "label": "Notice of appeal where a new trial, arrest of judgment or j.n.o.v. motion was filed, measured from its disposition (Georgia)",
       "trigger_event": "entry_of_order_disposing_of_postjudgment_motion",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "trigger_document": {
+        "id": "entry_of_order_disposing_of_postjudgment_motion",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "O.C.G.A. 5-6-38(a)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ga_ocga_1_3_1_d3",
       "authority": {
         "citation": "O.C.G.A. 5-6-38(a)",

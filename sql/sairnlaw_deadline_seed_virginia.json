@@ -131,6 +131,13 @@
    "domain": "civil-litigation",
    "label": "Answer after the court overrules all motions, demurrers and pleas (Virginia)",
    "trigger_event": "entry_of_order_overruling_all_motions_demurrers_and_pleas",
+   "trigger_document": {
+     "id": "entry_of_order_overruling_all_motions_demurrers_and_pleas",
+     "label": "the date the clerk ENTERED the order or judgment on the docket",
+     "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+     "authority": "Va. Sup. Ct. R. 3:8(b)",
+     "on_unconfirmed": "warn"
+   },
    "computation": "va_code_1_210",
    "authority": {
     "citation": "Va. Sup. Ct. R. 3:8(b)",
@@ -179,6 +186,13 @@
    "domain": "civil-litigation",
    "label": "Answer after the court overrules a sole motion objecting to personal jurisdiction or defective process",
    "trigger_event": "entry_of_order_overruling_motion_objecting_to_personal_jurisdiction_or_defective_process",
+   "trigger_document": {
+     "id": "entry_of_order_overruling_motion_objecting_to_personal_jurisdiction_or_defective_process",
+     "label": "the date the clerk ENTERED the order or judgment on the docket",
+     "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+     "authority": "Va. Sup. Ct. R. 3:8(b)",
+     "on_unconfirmed": "warn"
+   },
    "computation": "va_code_1_210",
    "authority": {
     "citation": "Va. Sup. Ct. R. 3:8(b)",

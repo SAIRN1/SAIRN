@@ -294,6 +294,13 @@
       "label": "Notice of appeal from a final order of a lower tribunal (Florida)",
       "trigger_event": "rendition_of_the_order_to_be_reviewed",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "trigger_document": {
+        "id": "rendition_of_the_order_to_be_reviewed",
+        "label": "the date of RENDITION -- the date a signed, written order was FILED with the clerk",
+        "not_the": "the date of the oral pronouncement, the hearing, or the mailing of a copy; an order announced from the bench is not rendered until it is signed and filed",
+        "authority": "Fla. R. App. P. 9.110(b)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "fl_rgpja_2514",
       "authority": {
         "citation": "Fla. R. App. P. 9.110(b)",

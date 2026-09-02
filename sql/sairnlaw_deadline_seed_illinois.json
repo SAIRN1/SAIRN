@@ -165,6 +165,13 @@
       "label": "Notice of appeal from a final judgment of the circuit court in a civil case (Illinois)",
       "trigger_event": "entry_of_the_final_judgment_appealed_from",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "trigger_document": {
+        "id": "entry_of_the_final_judgment_appealed_from",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Ill. S. Ct. R. 303(a)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "illinois_5ilcs70_111",
       "authority": {
         "citation": "Ill. S. Ct. R. 303(a)(1)",
@@ -185,6 +192,13 @@
       "label": "Notice of appeal where a timely postjudgment motion was filed (Illinois)",
       "trigger_event": "entry_of_order_disposing_of_last_pending_postjudgment_motion",
       "count": { "value": 30, "unit": "calendar_days", "direction": "forward" },
+      "trigger_document": {
+        "id": "entry_of_order_disposing_of_last_pending_postjudgment_motion",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Ill. S. Ct. R. 303(a)(1)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "illinois_5ilcs70_111",
       "authority": {
         "citation": "Ill. S. Ct. R. 303(a)(1)",

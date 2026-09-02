@@ -348,6 +348,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "signing_of_the_judgment",
+        "label": "the date the trial court SIGNED the judgment or order",
+        "not_the": "the date it was entered on the docket, filed by the clerk, or mailed to the parties -- Texas runs this clock from the signing alone, and the docket entry is routinely later",
+        "authority": "Tex. R. App. P. 26.1",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1",
@@ -371,6 +378,13 @@
         "value": 90,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "signing_of_the_judgment_with_timely_postjudgment_motion",
+        "label": "the date the trial court SIGNED the judgment or order",
+        "not_the": "the date it was entered on the docket, filed by the clerk, or mailed to the parties -- Texas runs this clock from the signing alone, and the docket entry is routinely later",
+        "authority": "Tex. R. App. P. 26.1(a)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "tx_trap_41",
       "authority": {
@@ -396,6 +410,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "signing_of_the_judgment_in_accelerated_appeal",
+        "label": "the date the trial court SIGNED the judgment or order",
+        "not_the": "the date it was entered on the docket, filed by the clerk, or mailed to the parties -- Texas runs this clock from the signing alone, and the docket entry is routinely later",
+        "authority": "Tex. R. App. P. 26.1(b)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "tx_trap_41",
       "authority": {
         "citation": "Tex. R. App. P. 26.1(b)",
@@ -419,6 +440,13 @@
         "value": 6,
         "unit": "months",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "signing_of_the_judgment_in_restricted_appeal",
+        "label": "the date the trial court SIGNED the judgment or order",
+        "not_the": "the date it was entered on the docket, filed by the clerk, or mailed to the parties -- Texas runs this clock from the signing alone, and the docket entry is routinely later",
+        "authority": "Tex. R. App. P. 26.1(c)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "tx_trap_41",
       "authority": {

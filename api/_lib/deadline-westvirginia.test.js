@@ -169,21 +169,49 @@ check('early-delivery limb takes no extension (it runs from a conference)',
   early.service_extension.state, 'not_requested');
 
 // ── Appellate computations ───────────────────────────────────────────────
+// WEST VIRGINIA IS THE REASON THE TRIGGER-DOCUMENT DISCRIMINATOR EXISTS, and
+// these assertions were REWRITTEN when it landed rather than patched around.
+// R. App. P. 5(b) runs from "entry of the final order OR MANDATE" and 5(f)
+// from "the date the judgment ... was entered" -- so inside ONE state the
+// notice-of-appeal clock and the perfect-the-appeal clock can start from two
+// different documents bearing two different dates. Both rows now REFUSE until
+// the caller says which document the date supplied came from.
+const NOA = 'wv-rap-5-b-notice-of-appeal';
+const PERFECT = 'wv-rap-5-f-perfect-appeal';
+const DOC_5B = 'entry_of_the_final_order_or_mandate';
+const DOC_5F = 'entry_of_the_judgment_being_appealed';
+
+// The refusal first, because it is the behaviour that is new.
+check('5(b) REFUSES an unconfirmed trigger rather than guessing which document',
+  dateOf(compute(NOA, '2026-05-01')), 'REFUSED:TRIGGER_DOCUMENT_UNCONFIRMED');
+check('and no date rides along with the refusal',
+  compute(NOA, '2026-05-01').due_date, undefined);
+check('5(f) refuses on the same basis', dateOf(compute(PERFECT, '2026-05-01')),
+  'REFUSED:TRIGGER_DOCUMENT_UNCONFIRMED');
+// Claiming the OTHER rule's document is an affirmative wrong answer, and the
+// two rules are the sharpest instance of that on the platform.
+check("5(b) refuses when the caller affirms 5(f)'s document",
+  dateOf(compute(NOA, '2026-05-01', { trigger_document: DOC_5F })), 'REFUSED:TRIGGER_DOCUMENT_MISMATCH');
+check("5(f) refuses when the caller affirms 5(b)'s document",
+  dateOf(compute(PERFECT, '2026-05-01', { trigger_document: DOC_5B })), 'REFUSED:TRIGGER_DOCUMENT_MISMATCH');
+
 // Entered Fri 2026-05-01, +30 = Sun 2026-05-31 -> Mon 2026-06-01.
-check('R. App. P. 5(b) 30-day notice of appeal',
-  dateOf(compute('wv-rap-5-b-notice-of-appeal', '2026-05-01')), '2026-06-01');
+check('R. App. P. 5(b) 30-day notice of appeal, once the document is confirmed',
+  dateOf(compute(NOA, '2026-05-01', { trigger_document: DOC_5B })), '2026-06-01');
+check('and the result records that it was confirmed rather than assumed',
+  compute(NOA, '2026-05-01', { trigger_document: DOC_5B }).trigger_document.state, 'confirmed');
 // Mail service must not extend a docketing deadline -- 39(c) says so, and the
 // row carries no service_extension at all, so the state is not_requested.
-const app = compute('wv-rap-5-b-notice-of-appeal', '2026-05-01', { service_method: 'mail' });
+const app = compute(NOA, '2026-05-01', { service_method: 'mail', trigger_document: DOC_5B });
 check('notice of appeal: mail adds nothing (39(c) docketing carve-out)', app.due_date, '2026-06-01');
 // Four months by anniversary. Entered 2026-05-01 -> 2026-09-01 (a Tuesday;
 // Labor Day 2026 is Mon 09-07, so no roll).
 check('R. App. P. 5(f) four months by anniversary date',
-  dateOf(compute('wv-rap-5-f-perfect-appeal', '2026-05-01')), '2026-09-01');
+  dateOf(compute(PERFECT, '2026-05-01', { trigger_document: DOC_5F })), '2026-09-01');
 // Entered 2026-10-31 -> 2027-02-28 by end-of-month clamping (2027 is not a
 // leap year), a Sunday, rolling to Mon 2027-03-01.
 check('R. App. P. 5(f) clamps to end of month, then rolls',
-  dateOf(compute('wv-rap-5-f-perfect-appeal', '2026-10-31')), '2027-03-01');
+  dateOf(compute(PERFECT, '2026-10-31', { trigger_document: DOC_5F })), '2027-03-01');
 // 20 days from filing. Filed Mon 2026-06-01 -> Sun 2026-06-21 -> Mon 06-22.
 check('R. App. P. 5(c) 20-day notice of continuing interest',
   dateOf(compute('wv-rap-5-c-notice-of-continuing-interest', '2026-06-01')), '2026-06-22');

@@ -321,6 +321,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "superior_court_clerk_serves_notice_of_entry_of_judgment",
+        "label": "the date the superior court CLERK served a document entitled Notice of Entry, or a filed-endorsed copy of the judgment showing the date it was served",
+        "not_the": "the date the judgment was entered, or the date a PARTY served notice -- Cal. R. Ct. 8.104(a)(1) makes those three separate limbs with three different dates",
+        "authority": "Cal. R. Ct. 8.104(a)(1)(A)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ca_crc_1_10",
       "authority": {
         "citation": "Cal. R. Ct. 8.104(a)(1)(A)",
@@ -345,6 +352,13 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_document": {
+        "id": "party_serves_or_is_served_with_notice_of_entry_of_judgment",
+        "label": "the date a PARTY served, or was served with, a document entitled Notice of Entry of judgment, or a filed-endorsed copy of the judgment",
+        "not_the": "the date the judgment was entered, or the date the CLERK served notice -- those are the other two limbs of Cal. R. Ct. 8.104(a)(1) and they bear different dates",
+        "authority": "Cal. R. Ct. 8.104(a)(1)(B)",
+        "on_unconfirmed": "refuse"
+      },
       "computation": "ca_crc_1_10",
       "authority": {
         "citation": "Cal. R. Ct. 8.104(a)(1)(B)",
@@ -368,6 +382,13 @@
         "value": 180,
         "unit": "calendar_days",
         "direction": "forward"
+      },
+      "trigger_document": {
+        "id": "entry_of_judgment",
+        "label": "the date the clerk ENTERED the order or judgment on the docket",
+        "not_the": "the date it was signed, decided, announced in court, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Cal. R. Ct. 8.104(a)(1)(C)",
+        "on_unconfirmed": "refuse"
       },
       "computation": "ca_crc_1_10",
       "authority": {
