@@ -48,8 +48,8 @@
       "task": "cleanup sql and ai capability rollout",
       "claimed_at": "2026-09-01T19:36:51Z",
       "claimed_at_epoch": 1788291411.42292,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T09:08:14Z"
     }
   ]
 }
