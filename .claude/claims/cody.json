@@ -232,8 +232,8 @@
       "task": "prequalification and bonding capacity B7",
       "claimed_at": "2026-09-02T14:54:52Z",
       "claimed_at_epoch": 1788360892.7596772,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:14:22Z"
     }
   ]
 }
