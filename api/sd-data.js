@@ -4098,6 +4098,155 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ── SAIRNROOFING: fall-protection equipment and hazard assessments (2026-09-02) ─
+    // Tier-B gap B4. NOT incident logging -- SAIRNbuild and StoneDesk both have
+    // that already, client-side. This is equipment that expires, and an
+    // assessment the crew on the roof today has or has not signed.
+    //
+    // NO INSPECTION INTERVAL COMES FROM THIS APPLICATION. The contractor enters
+    // it with a source; without both the engine refuses to compute a due date.
+    // An invented interval is a contractor repeating this app's number to an
+    // OSHA inspector.
+    if ((resource === 'rf_safety_equipment' || resource === 'rf_job_hazard_assessments') &&
+        ['read', 'write', 'board', 'crew_check'].indexOf(action) !== -1) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const safety = require('./_lib/roofing-safety');
+      const sToday = (payload && payload.today) || null;
+      let sWarn;
+      if (payload && payload.warn_days !== undefined && payload.warn_days !== null) {
+        const wd = payload.warn_days;
+        if (typeof wd !== 'number' || !isFinite(wd) || Math.floor(wd) !== wd || wd < 0 || wd > 365) {
+          res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        sWarn = wd;
+      }
+      const EQ_SELECT = 'equipment_id,kind,identifier,job_id,in_service_on,last_inspected_on,last_inspected_by,inspection_interval_days,interval_source,status,notes,data,updated_by';
+      const JHA_SELECT = 'jha_id,job_id,assessed_on,competent_person,hazards,controls,acknowledged_by,notes,data,updated_by';
+
+      if (resource === 'rf_safety_equipment' && (action === 'read' || action === 'board')) {
+        const r = await fetch(rest('rf_safety_equipment?license_hash=eq.' + enc(licHash) +
+          '&select=' + EQ_SELECT + '&order=kind.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (action === 'board') {
+          const b = safety.safetyBoard({ equipment: rows || [], today: sToday, warn_days: sWarn });
+          if (!b.ok) { res.status(400).json({ error: b.error }); return; }
+          res.status(200).json({ ok: true, provisioned: true, board: b });
+          return;
+        }
+        const out = (rows || []).map((x) => {
+          const e = safety.equipmentState({ item: x, today: sToday, warn_days: sWarn });
+          return Object.assign({}, x, { evaluation: e.ok ? e : null, evaluation_error: e.ok ? null : e.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: sToday, data: out, statuses: safety.EQUIPMENT_STATUSES });
+        return;
+      }
+
+      if (resource === 'rf_safety_equipment' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the equipment register' } }); return; }
+        const eid = payload && typeof payload.equipment_id === 'string' ? payload.equipment_id.trim() : '';
+        const kind = payload && typeof payload.kind === 'string' ? payload.kind.trim() : '';
+        if (!eid || !kind) { res.status(400).json({ error: { message: 'rf_safety_equipment: equipment_id and kind are required' } }); return; }
+        if (payload.status !== undefined && safety.EQUIPMENT_STATUSES.indexOf(payload.status) === -1) {
+          res.status(400).json({ error: { code: 'BAD_STATUS', message: 'rf_safety_equipment: status must be one of ' + safety.EQUIPMENT_STATUSES.join(', ') } }); return;
+        }
+        const badDate = ['in_service_on', 'last_inspected_on'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_safety_equipment: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        const intOrNull = (v) => (typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v > 0 && v <= 3650) ? v : null;
+        const w = await fetch(rest('rf_safety_equipment?on_conflict=license_hash,equipment_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, equipment_id: eid, kind: kind,
+            identifier: (payload.identifier || '').trim() || null,
+            job_id: (payload.job_id || '').trim() || null,
+            in_service_on: payload.in_service_on || null,
+            last_inspected_on: payload.last_inspected_on || null,
+            last_inspected_by: (payload.last_inspected_by || '').trim() || null,
+            // NOT defaulted. See the block header.
+            inspection_interval_days: intOrNull(payload.inspection_interval_days),
+            interval_source: (payload.interval_source || '').trim() || null,
+            status: payload.status || 'in_service',
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      if (resource === 'rf_job_hazard_assessments' && (action === 'read' || action === 'crew_check')) {
+        let q = 'rf_job_hazard_assessments?license_hash=eq.' + enc(licHash) + '&select=' + JHA_SELECT + '&order=assessed_on.desc';
+        if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
+        const r = await fetch(rest(q), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const validFor = (payload && typeof payload.valid_for_days === 'number' && isFinite(payload.valid_for_days)) ? Math.floor(payload.valid_for_days) : null;
+
+        // The crew comes from rf_schedule, read here rather than inferred. A
+        // schedule that is not provisioned yields an EMPTY crew, and that is
+        // said out loud -- an empty crew makes every assessment look fully
+        // acknowledged, which is the silent failure this check exists to stop.
+        let crewByJobDate = {}, scheduleProvisioned = true;
+        const sr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) +
+          '&select=job_id,scheduled_date,status,crew'), { headers });
+        if (sr.status === 404 || sr.status === 400) { scheduleProvisioned = false; }
+        else if (sr.ok) {
+          const srows = await sr.json();
+          (Array.isArray(srows) ? srows : []).forEach((x) => {
+            if (x.status === 'cancelled') return;
+            const k = String(x.job_id) + '|' + String(x.scheduled_date).slice(0, 10);
+            crewByJobDate[k] = (crewByJobDate[k] || []).concat(Array.isArray(x.crew) ? x.crew : []);
+          });
+        }
+        const out = (rows || []).map((x) => {
+          const key = String(x.job_id) + '|' + String(x.assessed_on || '').slice(0, 10);
+          const st = safety.jhaState({ jha: x, crew: crewByJobDate[key] || [], today: sToday, valid_for_days: validFor });
+          return Object.assign({}, x, { evaluation: st.ok ? st : null, evaluation_error: st.ok ? null : st.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: sToday, data: out, schedule_provisioned: scheduleProvisioned });
+        return;
+      }
+
+      if (resource === 'rf_job_hazard_assessments' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a hazard assessment' } }); return; }
+        const jid = payload && typeof payload.jha_id === 'string' ? payload.jha_id.trim() : '';
+        const jjob = payload && typeof payload.job_id === 'string' ? payload.job_id.trim() : '';
+        if (!jid || !jjob) { res.status(400).json({ error: { message: 'rf_job_hazard_assessments: jha_id and job_id are required' } }); return; }
+        if (payload.assessed_on !== undefined && payload.assessed_on !== null && payload.assessed_on !== '' &&
+            !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.assessed_on))) {
+          res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_job_hazard_assessments: assessed_on must be YYYY-MM-DD' } }); return;
+        }
+        const arr = (v) => Array.isArray(v) ? v.filter((x) => typeof x === 'string' && x.trim()).map((x) => x.trim()) : [];
+        const w = await fetch(rest('rf_job_hazard_assessments?on_conflict=license_hash,jha_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, jha_id: jid, job_id: jjob,
+            assessed_on: payload.assessed_on || null,
+            competent_person: (payload.competent_person || '').trim() || null,
+            hazards: arr(payload.hazards), controls: arr(payload.controls),
+            acknowledged_by: arr(payload.acknowledged_by),
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+    }
+
     // ── SAIRNROOFING: progress billing -- draws and retainage (2026-09-02) ────────
     // Tier-B gap B3's first two thirds. Certified payroll is NOT here: it needs
     // external prevailing-wage determinations and inventing a rate would put a

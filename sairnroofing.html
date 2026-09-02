@@ -165,6 +165,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-warranties" onclick="nav('warranties')">Warranties<span class="badge" id="warr-badge" style="display:none"></span></button>
       <button class="sb" id="sb-assets" onclick="nav('assets')">Roof Assets<span class="badge" id="assets-badge" style="display:none"></span></button>
       <button class="sb" id="sb-draws" onclick="nav('draws')">Progress Billing<span class="badge" id="draws-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-safety" onclick="nav('safety')">Safety<span class="badge" id="safety-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -637,6 +638,40 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Safety (2026-09-02). Tier-B gap B4. NOT an incident log -- SAIRNbuild
+           and StoneDesk both already have one, client-side. This is the other
+           half: fall-protection equipment that EXPIRES, and a hazard assessment
+           the crew on the roof today has or has not signed.
+           NO INSPECTION INTERVAL COMES FROM THIS APP. The contractor enters it
+           with a source; without both, the clock does not run and the board
+           says so rather than showing a green tick. -->
+      <div class="panel" id="panel-safety">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Safety</div>
+            <div class="psub" id="safety-scope-note">--</div>
+          </div>
+          <div class="pa">
+            <button class="btn bo" id="safety-eq-btn" onclick="openEquipModal()" style="display:none;">+ Equipment</button>
+            <button class="btn bp" id="safety-jha-btn" onclick="openJhaModal()" style="display:none;">+ Hazard Assessment</button>
+          </div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Warn within (days)</label><input type="number" id="safety-warn" value="14" min="0" max="365"></div>
+            <div class="fg" style="margin:0;"><label>Assessment valid for (days)</label><input type="number" id="safety-valid" value="1" min="0" max="365"></div>
+            <button class="btn bo" onclick="rfLoadSafety()">Refresh</button>
+          </div>
+          <div class="note" style="margin-top:8px;" id="safety-disclaimer">--</div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Fall-protection equipment</div></div>
+          <div class="cb" id="safety-equipment"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Hazard assessments &mdash; who has not signed</div></div>
+          <div class="cb" id="safety-jha"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -983,6 +1018,7 @@ function nav(id){
   if(id==='warranties'){ rfLoadWarranties(); }
   if(id==='assets'){ rfLoadAssets(); }
   if(id==='draws'){ rfLoadDraws(); }
+  if(id==='safety'){ rfLoadSafety(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2781,6 +2817,209 @@ function saveAssignment(){
   });
 }
 
+// ── SAFETY (gap B4, 2026-09-02) ────────────────────────────────────────────
+// Fall-protection equipment that expires, and hazard assessments cross-checked
+// against the crew actually scheduled that day. Deliberately NOT an incident
+// log -- SAIRNbuild and StoneDesk both have one already.
+//
+// The disclaimer on this panel is NOT panel copy: it comes from the engine's
+// own response, so a screen cannot present a safety board as a compliance
+// verdict by leaving it out.
+var rfEquipment=[],rfSafetyBoard=null,rfJhas=[];
+
+function rfSafetyWarn(){
+  var el=$('safety-warn');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+function rfJhaValidFor(){
+  var el=$('safety-valid');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+
+function rfLoadSafety(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  ['safety-eq-btn','safety-jha-btn'].forEach(function(id){var b=$(id);if(b)b.style.display=isMgmt?'':'none';});
+  var note=$('safety-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Equipment inspection clock, and who is on the roof without signing.'
+    : 'Safety records, read-only for your role.';
+  var p={today:rfLocalToday()};
+  var w=rfSafetyWarn();if(w!==undefined)p.warn_days=w;
+  return rfDataRaw('read','rf_safety_equipment',p).then(function(r){
+    if(!r.ok){
+      $('safety-equipment').innerHTML='<div class="empty">'+rfEsc(r.msg||'Could not load equipment.')+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('safety-equipment').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_safety_schema.sql, then refresh.</div>';
+      $('safety-jha').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfEquipment=d.data||[];
+    rfRenderEquipment();
+    return rfDataRaw('board','rf_safety_equipment',p).then(function(b){
+      rfSafetyBoard=(b.ok&&b.data&&b.data.board)||null;
+      var dis=$('safety-disclaimer');
+      if(dis)dis.textContent=rfSafetyBoard?rfSafetyBoard.disclaimer
+        :'Safety board not computed — nothing on this screen should be read as a compliance determination.';
+      var jp={today:rfLocalToday()};
+      var v=rfJhaValidFor();if(v!==undefined)jp.valid_for_days=v;
+      return rfDataRaw('crew_check','rf_job_hazard_assessments',jp).then(function(j){
+        var jd=(j.ok&&j.data)||{};
+        rfJhas=jd.data||[];
+        rfRenderJhas(jd);
+      });
+    });
+  });
+}
+
+function rfInspBadge(st){
+  var cls={current:'bg',due_soon:'bw',overdue:'br',never_inspected:'br',
+           no_interval_stated:'bx',no_source_for_interval:'bx',out_of_service:'bx',unknown:'bx'}[st]||'bx';
+  var lbl={current:'current',due_soon:'due soon',overdue:'OVERDUE',never_inspected:'never inspected',
+           no_interval_stated:'no interval stated',no_source_for_interval:'no source',
+           out_of_service:'out of service',unknown:'unknown'}[st]||st;
+  return '<span class="badge '+cls+'">'+rfEsc(lbl)+'</span>';
+}
+
+function rfRenderEquipment(){
+  var el=$('safety-equipment');
+  if(!rfEquipment.length){el.innerHTML='<div class="empty">No fall-protection equipment recorded.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var urgent=0;
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Kind</th><th>Identifier</th><th>Job</th>'+
+    '<th>Last inspected</th><th>Interval</th><th>Due</th><th>State</th><th></th></tr></thead><tbody>'+
+    rfEquipment.map(function(x,i){
+      var e=x.evaluation;
+      if(!e){
+        return '<tr><td><strong>'+rfEsc(x.kind||x.equipment_id||'--')+'</strong></td>'+
+          '<td colspan="6"><span class="badge br">'+rfEsc((x.evaluation_error&&x.evaluation_error.message)||'not evaluated')+'</span></td><td></td></tr>';
+      }
+      if(e.inspection==='overdue'||e.inspection==='never_inspected')urgent++;
+      return '<tr><td><strong>'+rfEsc(e.kind||'--')+'</strong></td>'+
+        '<td>'+rfEsc(e.identifier||'--')+'</td>'+
+        '<td>'+rfEsc(e.job_id||'--')+'</td>'+
+        '<td>'+rfEsc(e.last_inspected_on||'--')+(e.last_inspected_by?'<br><span style="font-size:12px;color:var(--muted)">'+rfEsc(e.last_inspected_by)+'</span>':'')+'</td>'+
+        // The source is shown beside the interval on purpose: an interval with
+        // no provenance is not something to run a safety clock on.
+        '<td>'+(e.interval_days===null?'--':e.interval_days+'d')+
+          '<br><span style="font-size:11px;color:var(--muted)">'+rfEsc(e.interval_source||'no source')+'</span></td>'+
+        '<td>'+rfEsc(e.due_on||'--')+(e.days_left!==null&&e.days_left!==undefined?' <span style="font-size:12px;color:var(--muted)">'+e.days_left+'d</span>':'')+'</td>'+
+        '<td>'+rfInspBadge(e.inspection)+
+          ((e.problems&&e.problems.length)?'<br><span style="font-size:11px;color:var(--danger)">'+rfEsc(e.problems.join('; '))+'</span>':'')+'</td>'+
+        '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openEquipModal('+i+')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  var b=$('safety-badge');
+  if(b){ b.textContent=urgent||''; b.style.display=urgent?'':'none'; b.className='badge '+(urgent?'br':'bx'); }
+}
+
+function rfRenderJhas(jd){
+  var el=$('safety-jha');
+  if(!rfJhas.length){el.innerHTML='<div class="empty">No hazard assessments recorded.</div>';return;}
+  var warn='';
+  // An empty crew makes every assessment look fully acknowledged. That is the
+  // silent failure this whole cross-check exists to stop, so it is said.
+  if(jd&&jd.schedule_provisioned===false){
+    warn='<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;">The schedule is not set up, so no crew could be compared against these assessments. '+
+      '<strong>Everything below will look fully signed and that means nothing.</strong></div>';
+  }
+  el.innerHTML=warn+'<div class="tw"><table><thead><tr><th>Assessment</th><th>Job</th><th>Assessed</th>'+
+    '<th>Competent person</th><th>Hazards</th><th>Currency</th><th>Not signed</th><th>Notes</th></tr></thead><tbody>'+
+    rfJhas.map(function(x){
+      var e=x.evaluation;
+      if(!e){
+        return '<tr><td><strong>'+rfEsc(x.jha_id||'--')+'</strong></td>'+
+          '<td colspan="7"><span class="badge br">'+rfEsc((x.evaluation_error&&x.evaluation_error.message)||'not evaluated')+'</span></td></tr>';
+      }
+      var cur={current:'bg',stale:'br',no_validity_stated:'bx',unknown:'bx'}[e.currency]||'bx';
+      var miss=e.missing_acknowledgement||[];
+      return '<tr><td><strong>'+rfEsc(e.jha_id||'--')+'</strong></td>'+
+        '<td>'+rfEsc(e.job_id||'--')+'</td>'+
+        '<td>'+rfEsc(e.assessed_on||'--')+'</td>'+
+        '<td>'+rfEsc(e.competent_person||'--')+'</td>'+
+        '<td>'+e.hazard_count+'</td>'+
+        '<td><span class="badge '+cur+'">'+rfEsc(String(e.currency).replace(/_/g,' '))+'</span></td>'+
+        '<td>'+(miss.length
+          ? '<span class="badge br">'+rfEsc(miss.join(', '))+'</span>'
+          : (e.crew_size?'<span class="badge bg">all '+e.crew_size+' signed</span>':'<span class="badge bx">no crew scheduled</span>'))+
+          (e.acknowledged_not_on_crew&&e.acknowledged_not_on_crew.length
+            ? '<br><span style="font-size:11px;color:var(--muted)">signed but not on the crew: '+rfEsc(e.acknowledged_not_on_crew.join(', '))+'</span>':'')+'</td>'+
+        '<td style="font-size:11px;color:var(--danger)">'+rfEsc((e.problems||[]).join('; '))+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function openEquipModal(i){
+  var x=(typeof i==='number')?rfEquipment[i]:null;
+  $('eq-modal-title').textContent=x?'Edit Equipment':'Add Equipment';
+  $('eq-id').value=x?(x.equipment_id||''):'';
+  $('eq-id').readOnly=!!x;
+  $('eq-kind').value=(x&&x.kind)||'';
+  $('eq-ident').value=(x&&x.identifier)||'';
+  $('eq-job').value=(x&&x.job_id)||'';
+  $('eq-inserv').value=(x&&x.in_service_on)||'';
+  $('eq-last').value=(x&&x.last_inspected_on)||'';
+  $('eq-by').value=(x&&x.last_inspected_by)||'';
+  $('eq-interval').value=(x&&x.inspection_interval_days!=null)?x.inspection_interval_days:'';
+  $('eq-source').value=(x&&x.interval_source)||'';
+  $('eq-status').value=(x&&x.status)||'in_service';
+  $('eq-err').textContent='';
+  $('equip-modal').classList.add('on');
+}
+function closeEquipModal(){ $('equip-modal').classList.remove('on'); }
+
+function saveEquip(){
+  var id=($('eq-id').value||'').trim(),kind=($('eq-kind').value||'').trim();
+  if(!id||!kind){ $('eq-err').textContent='Equipment id and kind are both required.'; return; }
+  var iv=($('eq-interval').value||'').trim(), ivNum=null;
+  if(iv!==''){ ivNum=parseInt(iv,10); if(!isFinite(ivNum)){ $('eq-err').textContent='Inspection interval must be a whole number of days, or blank.'; return; } }
+  $('eq-err').textContent='Saving…';
+  rfDataRaw('write','rf_safety_equipment',{
+    equipment_id:id, kind:kind,
+    identifier:($('eq-ident').value||'').trim()||null,
+    job_id:($('eq-job').value||'').trim()||null,
+    in_service_on:$('eq-inserv').value||null,
+    last_inspected_on:$('eq-last').value||null,
+    last_inspected_by:($('eq-by').value||'').trim()||null,
+    inspection_interval_days:ivNum,
+    interval_source:($('eq-source').value||'').trim()||null,
+    status:$('eq-status').value
+  }).then(function(r){
+    if(!r.ok){ $('eq-err').textContent=r.msg||'Could not save.'; return; }
+    closeEquipModal(); toast('Equipment saved.'); rfLoadSafety();
+  });
+}
+
+function openJhaModal(){
+  ['jha-id','jha-job','jha-person','jha-hazards','jha-controls','jha-ack'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('jha-date').value=rfLocalToday();
+  $('jha-err').textContent='';
+  $('jha-modal').classList.add('on');
+}
+function closeJhaModal(){ $('jha-modal').classList.remove('on'); }
+
+function saveJha(){
+  var id=($('jha-id').value||'').trim(),job=($('jha-job').value||'').trim();
+  if(!id||!job){ $('jha-err').textContent='Assessment id and job are both required.'; return; }
+  var split=function(v){ return (v||'').split(',').map(function(x){return x.trim();}).filter(Boolean); };
+  $('jha-err').textContent='Saving…';
+  rfDataRaw('write','rf_job_hazard_assessments',{
+    jha_id:id, job_id:job,
+    assessed_on:$('jha-date').value||null,
+    competent_person:($('jha-person').value||'').trim()||null,
+    hazards:split($('jha-hazards').value),
+    controls:split($('jha-controls').value),
+    acknowledged_by:split($('jha-ack').value)
+  }).then(function(r){
+    if(!r.ok){ $('jha-err').textContent=r.msg||'Could not save.'; return; }
+    closeJhaModal(); toast('Assessment saved.'); rfLoadSafety();
+  });
+}
+
 // ── PROGRESS BILLING (gap B3, 2026-09-02) ──────────────────────────────────
 // Draw requests, retainage and over/under billing. Every figure is computed
 // server-side by api/_lib/wip-accounting.js -- including retainage held, which
@@ -4320,6 +4559,61 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="equip-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle" id="eq-modal-title">Add Equipment</div>
+    <div class="qgrid">
+      <div class="fg"><label>Equipment id <span style="color:var(--danger)">*</span></label><input id="eq-id" placeholder="EQ-HARN-014"></div>
+      <div class="fg"><label>Kind <span style="color:var(--danger)">*</span></label><input id="eq-kind" placeholder="harness / anchor / lanyard / SRL"></div>
+      <div class="fg"><label>Serial or asset tag</label><input id="eq-ident" placeholder="H-4471"></div>
+      <div class="fg"><label>Currently on job</label><input id="eq-job" placeholder="JOB-2026-118"></div>
+      <div class="fg"><label>In service since</label><input type="date" id="eq-inserv"></div>
+      <div class="fg"><label>Last inspected</label><input type="date" id="eq-last"></div>
+      <div class="fg"><label>Inspected by</label><input id="eq-by" placeholder="competent person"></div>
+      <div class="fg"><label>Inspection interval (days)</label><input id="eq-interval" placeholder="from your own programme"></div>
+      <div class="fg"><label>Status</label><select id="eq-status">
+        <option value="in_service">In service</option><option value="removed_from_service">Removed from service</option>
+        <option value="failed_inspection">Failed inspection</option><option value="retired">Retired</option>
+      </select></div>
+    </div>
+    <div class="fg"><label>Source for the interval <span style="color:var(--danger)">*</span> if an interval is entered</label><input id="eq-source" placeholder="the standard, the manufacturer's instructions, your written programme s.4"></div>
+    <div class="note"><strong>This app does not know what any regulation requires and will not pretend to.</strong> The
+      inspection interval is yours, from your own programme, and an interval with no source recorded will not run a clock
+      &mdash; the board says <strong>no source</strong> rather than showing a green tick. An interval this application
+      invented is a number you would end up repeating to an inspector.
+      <strong>Removed from service is not the same as overdue</strong>: one means chase it, the other means do not touch it,
+      so out-of-service kit stops nagging rather than burying the items that matter.</div>
+    <div class="perr" id="eq-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveEquip()">Save</button>
+      <button class="btn bo" onclick="closeEquipModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="jha-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle">Job Hazard Assessment</div>
+    <div class="qgrid">
+      <div class="fg"><label>Assessment id <span style="color:var(--danger)">*</span></label><input id="jha-id" placeholder="JHA-2026-118-01"></div>
+      <div class="fg"><label>Job <span style="color:var(--danger)">*</span></label><input id="jha-job" placeholder="JOB-2026-118"></div>
+      <div class="fg"><label>Assessed on</label><input type="date" id="jha-date"></div>
+      <div class="fg"><label>Competent person</label><input id="jha-person" placeholder="employee id"></div>
+    </div>
+    <div class="fg"><label>Hazards (comma separated)</label><input id="jha-hazards" placeholder="leading edge, skylight, power line, weather"></div>
+    <div class="fg"><label>Controls (comma separated)</label><input id="jha-controls" placeholder="anchor points at ridge, warning line, covers screwed down"></div>
+    <div class="fg"><label>Acknowledged by (employee ids, comma separated)</label><input id="jha-ack" placeholder="fmA, crw1, crw2"></div>
+    <div class="note">This is compared against the crew <strong>actually scheduled on that job on that date</strong>, and the
+      board names anyone who is on the roof and has not signed. That comparison is the point &mdash; an assessment in a folder
+      tells you nothing. <strong>An assessment with no hazards recorded is flagged</strong>, because an empty one reads as
+      though the walk-round was done. If the schedule is not set up, every assessment will look fully signed and the board
+      says so in red rather than letting it pass.</div>
+    <div class="perr" id="jha-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveJha()">Save</button>
+      <button class="btn bo" onclick="closeJhaModal()">Cancel</button>
     </div>
   </div>
 </div>

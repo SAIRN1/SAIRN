@@ -117,6 +117,16 @@ module.exports = {
   //
   // Registered on day one for the reason rf_settings' note gives.
     'rf_draws',
+  // Fall-protection equipment and job hazard assessments (2026-09-02) -- see
+  // sql/sairnroofing_safety_schema.sql and api/_lib/roofing-safety.js. Tier-B
+  // gap B4. Deliberately NOT incident logging: SAIRNbuild and StoneDesk both
+  // already have that client-side, and this is the other half -- equipment
+  // that expires and an assessment the crew on the roof today has or has not
+  // signed.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_safety_equipment',
+    'rf_job_hazard_assessments',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -166,6 +176,16 @@ module.exports = {
     // under-billing kept APART rather than netted. Reads only -- looking at a
     // WIP position must never change one.
     rf_draws: ['wip'],
+    // 'board' (2026-09-02, gap B4) computes the fall-protection inspection
+    // board: overdue, due soon, never inspected, and -- kept apart -- the
+    // records whose clock CANNOT run because no sourced interval was entered.
+    // Reads only. It carries its own disclaimer in the response, because a
+    // safety screen that omits one reads as a compliance verdict.
+    rf_safety_equipment: ['board'],
+    // 'crew_check' compares a hazard assessment against the crew actually
+    // scheduled on that job that day and names who has not signed. Reads both
+    // rf_job_hazard_assessments and rf_schedule; writes nothing.
+    rf_job_hazard_assessments: ['crew_check'],
     // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the
