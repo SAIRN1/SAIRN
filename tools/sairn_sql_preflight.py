@@ -498,11 +498,64 @@ def _norm_predicate(s):
     return re.sub(r'[\s()]+', '', (s or '').lower())
 
 
+# ── WHAT THIS CAN AND CANNOT COMPARE -- narrowed 2026-09-02 after the first
+# real live run produced 33 findings and every single one was false.
+#
+# Postgres does not store the predicate you wrote, it stores its own rewrite:
+#     repo   status in ('active','never_in_force')
+#     live   status = ANY (ARRAY['active'::text, 'never_in_force'::text])
+# Semantically identical, textually unrecognisable. No amount of whitespace and
+# paren stripping bridges that, and trying to canonicalise every SQL form is a
+# parser I am not going to write correctly in a checker.
+#
+# So this compares ONLY the thing it can compare exactly, which is also the
+# thing the feature was built for: a NUMERIC BOUND. dnt_appointments enforcing
+# <= 65536 while the repo declared <= 1291059 is a size drift, and size drifts
+# are extractable from both sides without understanding the rest of the
+# expression.
+#
+# Everything else is reported as NOT COMPARABLE and never blocks. That is a
+# real reduction in scope and it is stated rather than hidden: an enum
+# constraint that genuinely drifts will NOT be caught here. A checker that
+# answers one question correctly beats one that answers three questions with 33
+# false alarms -- the platform has already learned twice tonight that a
+# permanently-red check is a check people stop reading.
+_SIZE_RE = re.compile(r'octet_length\s*\(.*?\)\s*<=\s*(\d+)', re.I | re.S)
+_CHARLEN_RE = re.compile(r'char_length\s*\(.*?\)\s*(?:<=|=)\s*(\d+)', re.I | re.S)
+
+
+def _numeric_bounds(pred):
+    """Sorted list of the size bounds a predicate asserts, or None if it has none."""
+    if not pred:
+        return None
+    nums = _SIZE_RE.findall(pred) + _CHARLEN_RE.findall(pred)
+    return sorted(int(n) for n in nums) if nums else None
+
+
+def _strip_comments_only(sql):
+    """Comments out, STRING LITERALS KEPT.
+
+    strip_noise() blanks literals so a table name is never read out of a string.
+    That is right for reference-finding and CATASTROPHIC here: a CHECK predicate
+    is mostly literals, so `status in ('active','superseded')` arrived as
+    `status in (        ,            )` and every enum constraint on the
+    platform reported drift against a live definition that was identical.
+
+    Caught on the first real live run -- 16 CONSTRAINT_DRIFT findings, all
+    false, all mine. The dnt_appointments case this feature was built for
+    passed correctly throughout precisely because it contains no literals,
+    which is exactly the shape of test that hides this bug.
+    """
+    sql = re.sub(r'/\*.*?\*/', ' ', sql, flags=re.S)
+    sql = re.sub(r'(?m)--[^\n]*', ' ', sql)
+    return sql
+
+
 def declared_constraints(sql_dir='sql'):
     """{table: {constraint_name: predicate}} from every CREATE TABLE in sql/."""
     out = {}
     for path in sorted(glob.glob(os.path.join(sql_dir, '*.sql'))):
-        text = strip_noise(open(path, encoding='utf-8', errors='replace').read())
+        text = _strip_comments_only(open(path, encoding='utf-8', errors='replace').read())
         for m in re.finditer(r'create\s+table\s+(?:if\s+not\s+exists\s+)?([a-z0-9_."]+)\s*\((.*?)\n\s*\)\s*;',
                              text, re.I | re.S):
             table = _clean_ident(m.group(1))
@@ -548,10 +601,19 @@ def constraint_findings(declared, live):
             if got is None:
                 findings.append(('MISSING_CONSTRAINT', table, name,
                                  'declared in sql/ and NOT present on the live table'))
-            elif _norm_predicate(pred) not in _norm_predicate(got):
+                continue
+            want_n, got_n = _numeric_bounds(pred), _numeric_bounds(got)
+            if want_n is None or got_n is None:
+                # Not a size predicate on one or both sides. Say so; do not guess.
+                unchecked.append('%s.%s -- not a numeric-bound predicate, so its text '
+                                 'cannot be compared across Postgres\'s own rewrite'
+                                 % (table, name))
+            elif want_n != got_n:
                 findings.append(('CONSTRAINT_DRIFT', table, name,
-                                 'repo declares %s | live enforces %s'
-                                 % (pred.strip(), got.strip())))
+                                 'repo declares bound(s) %s | live enforces %s  '
+                                 '(repo: %s | live: %s)'
+                                 % (want_n, got_n, ' '.join(pred.split()),
+                                    ' '.join(got.split()))))
     return findings, unchecked
 
 

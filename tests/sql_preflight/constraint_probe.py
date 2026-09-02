@@ -86,6 +86,27 @@ schema, _ = P.load_live(path)
 os.remove(path)
 R['metadata_keys_are_not_tables'] = (set(schema) == {'real_table'})
 
+# 7. THE TWO FALSE-POSITIVE CLASSES THE FIRST LIVE RUN EXPOSED, both now asserted.
+#    (a) strip_noise() blanked string literals, so `status in ('active','x')`
+#        arrived as `status in (        ,   )` and every enum reported drift.
+#    (b) Postgres rewrites `in (...)` as `= ANY (ARRAY[...]::text)`, which no
+#        whitespace normalisation can bridge. Enum predicates are now reported
+#        NOT COMPARABLE rather than as drift.
+enum_repo = P.declared_constraints().get('rf_cert_rules', {}).get('rfcr_status_check')
+R['literals_survive_parsing'] = bool(enum_repo and "'active'" in enum_repo)
+f, u = P.constraint_findings(
+    {'rf_cert_rules': {'rfcr_status_check': enum_repo or "status in ('active','superseded')"}},
+    {'rf_cert_rules': {'rfcr_status_check':
+        "CHECK ((status = ANY (ARRAY['active'::text, 'superseded'::text])))"}})
+R['enum_is_not_comparable_not_drift'] = (f == [] and len(u) == 1 and 'numeric-bound' in u[0])
+
+# 8. A REAL size drift must still be caught when it sits beside other clauses.
+f, u = P.constraint_findings(
+    {'t': {'c': "octet_length(data::text) <= 262144"}},
+    {'t': {'c': "CHECK ((octet_length((data)::text) <= 65536))"}})
+R['size_drift_still_caught'] = (len(f) == 1 and f[0][0] == 'CONSTRAINT_DRIFT'
+                                and '262144' in f[0][3] and '65536' in f[0][3])
+
 for k, v in R.items():
     print('%-40s %s' % (k, v))
 print()
