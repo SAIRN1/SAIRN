@@ -7,6 +7,8 @@ description: SAIRN-specific bug-pattern scanner. Encodes every recurring real bu
 
 Run this checklist on any file being touched before commit. Each item below is a bug class that has actually shipped in a SAIRN app and was later found live — not theoretical.
 
+Items 1–15 are defects in APP code. **Item 16 is a defect in TEST code**, added 2026-09-02 because the platform hit it five times in one session across three apps. It is listed here rather than kept separate on purpose: a test that passes for the wrong reason does not merely fail to catch a bug, it certifies the bug — which makes it the most expensive class in this file. This preamble is amended rather than left saying "shipped in a SAIRN app", which would have stopped being true the moment item 16 was added.
+
 ## 1. Unquoted/mis-quoted object keys with spaces
 JS object literal keys containing spaces MUST be quoted: `{'Sent to Client': 'bb'}` not `{Sent to Client: 'bb'}`. Unquoted breaks parsing silently in some contexts and produces duplicate map entries in others (one broken, one working) — grep any statusColors/lookup map literal for unquoted multi-word keys.
 
@@ -51,3 +53,21 @@ If a modal is opened and the user navigates to a different panel without clickin
 
 ## 15. AI chat placeholder removed by DOM position, not by identity
 A chat-style AI feature that shows a "Thinking..." placeholder while awaiting a response, then removes it via `querySelectorAll('.ama')` + take-the-last-element, silently misattributes the answer (or leaves a permanently stuck placeholder) the moment two questions are in flight at once — whichever request resolves first removes the OTHER request's placeholder, not its own. Shipped this exact way in three apps (`sairnbiz.html`, `sairnscape.html`, `sairngrounds.html` — the third found only by a fresh adversarial-review pass, since the other two had already been fixed and nobody had re-checked the third for the same class). Fix: the placeholder-adding function must `return` the DOM node it creates; the caller holds that specific reference and removes exactly that node in both the success and error handlers, never "the last one in the DOM." Any new AI/chat feature added to any app needs this pattern from the start, not retrofitted after a live report.
+
+## 16. An assertion that passes for the wrong reason
+A test that passes for the wrong reason does not merely fail to catch a bug -- it CERTIFIES the bug, and a green suite is then evidence for the wrong conclusion. Found FIVE times in one session (2026-09-02) across SAIRNlaw, SAIRNdental and SAIRNsenior, in two distinct shapes. Every one was found by deliberately breaking the code and watching the suite, never by reading the test.
+
+**Shape A -- the assertion matches PROSE ABOUT the code instead of the code.** Three cases, all false FAILURES, all from running a regex over a window of a file that also contains commentary:
+- a `no delete grant` check split the schema file on its grant statements and searched the remainder for the word `delete` -- and matched the file's own comment explaining why there is no delete grant;
+- a `no margin or profit is computed` check ran from the SECOND occurrence of the function name (its call site) straight into the panel's user-facing disclosure, which contains the words *"no margin or profit figure is computed here"* -- the test failed on the sentence written to say the thing it was checking for;
+- a `the rule's own carve-out is quoted in the engine` check missed because the quote is line-wrapped across `//` comment lines, so the single-line regex could not see it.
+
+**THE RULE: assert against EXTRACTED CODE, never against a window of a file that also contains commentary about that code.** Pull the function body out by brace-balance and match inside it. Where the target genuinely is prose (a disclosure that must appear on screen), scope the match to that element and say in the test that prose is what is being asserted. Where a quote is wrapped, match across the wrapping rather than assuming one line.
+
+**Shape B -- the assertion tests EXISTENCE where the requirement is USE.** Two cases, both false PASSES, which is the dangerous direction:
+- a lookup table replaced a stale ternary; the test asserted the table EXISTED. Reverting the call site to the old ternary while leaving the table declared passed 32/32;
+- a rollup had to bucket unassigned rows separately; the test asserted the totals added up and that an `Unassigned` row existed. Attributing every unassigned CLIENT to the first branch still totalled correctly, and an `Unassigned` row still appeared because an unassigned CAREGIVER made one -- passed 28/28.
+
+**THE RULE: assert the thing is CONSULTED, not that it is declared; and assert rows land in the right bucket, not that the buckets sum.** `total === expected` is satisfied by every possible misallocation. Assert the per-bucket contents. Where a mechanism replaces an older one, assert the old one is ABSENT at the call site as well as that the new one is present.
+
+**AND THE STANDING PRACTICE THAT CAUGHT ALL FIVE:** before trusting a new suite, break the behaviour it exists to protect -- one deliberate edit per claim -- and confirm the suite goes red and names the right thing. Restore the file and verify it is byte-identical afterwards. A suite that has never been seen to fail is a suite whose behaviour nobody knows.
