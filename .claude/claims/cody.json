@@ -140,8 +140,8 @@
       "task": "payer authorisation unit burn-down",
       "claimed_at": "2026-09-02T11:31:29Z",
       "claimed_at_epoch": 1788348689.3094444,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T11:43:18Z"
     }
   ]
 }
