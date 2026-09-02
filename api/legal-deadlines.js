@@ -148,6 +148,28 @@ function validateRulePayload(p) {
   // FRCP 12(a)(3)). A malformed spec is rejected rather than stored, because a
   // multi-trigger rule that silently degrades to one trigger produces a date
   // that is wrong in the direction that loses a right.
+  // A malformed trigger_document is rejected at WRITE time, not left to fail
+  // at compute time. The engine refuses on a malformed one -- the safe
+  // direction for a bug in a guard is to withhold the date -- but a row that
+  // refuses every computation is a silently dead rule, and the moment to catch
+  // that is when it is stored. Same reasoning as the on_unknown_exclusivity
+  // hardening: nothing here rejects unknown fields, so a MISSPELLED key would
+  // otherwise store happily and disable the guard it was meant to arm.
+  if (p.trigger_document !== undefined) {
+    const td = p.trigger_document;
+    if (!td || typeof td !== 'object' || Array.isArray(td)) {
+      return 'trigger_document must be an object declaring id, label, not_the, authority and on_unconfirmed.';
+    }
+    for (const k of ['id', 'label', 'not_the', 'authority', 'on_unconfirmed']) {
+      if (typeof td[k] !== 'string' || !td[k].trim()) {
+        return 'trigger_document.' + k + ' is required and must be a non-empty string. A row whose guard is incomplete would refuse every computation.';
+      }
+    }
+    if (td.on_unconfirmed !== 'refuse' && td.on_unconfirmed !== 'warn') {
+      return 'trigger_document.on_unconfirmed must be "refuse" or "warn". Refuse is for a trigger whose misreading runs LATE (the appellate class); warn is for one whose readings all run EARLY.';
+    }
+  }
+
   if (typeof p.trigger_event !== 'string') {
     const t = p.trigger_event;
     if (!t) return 'trigger_event must be an event name, a multi-trigger spec, or a resolve_periods spec.';
@@ -688,6 +710,16 @@ module.exports = async (req, res) => {
         // api/_lib/deadline-endpoint-inputs.test.js, which diffs the fields
         // the engine reads against the fields this payload sends.
         service_methods: body.service_methods,
+        // WHICH DOCUMENT the supplied trigger_date came from, for the 48 rows
+        // whose trigger is a term of art naming one specific document. Four
+        // states start the appeal clock four different ways -- Texas from the
+        // SIGNING of the judgment, Florida from its RENDITION, six from its
+        // ENTRY, New York from SERVICE with written notice of entry -- and a
+        // caller conflating them previously got a wrong date and no refusal.
+        // Thirty-one of the forty-eight are appellate, where the wrong reading
+        // runs LATE and a late notice of appeal is not curable, so those rows
+        // REFUSE until this is supplied rather than warning.
+        trigger_document: body.trigger_document,
         // The clock time service was completed, HH:MM in 24-hour form. Read
         // only by standards whose amount genuinely turns on it -- today that
         // is Va. Sup. Ct. R. 1:7, whose 5:00 p.m. cutoff decides between a

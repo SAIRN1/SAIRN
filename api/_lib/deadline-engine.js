@@ -89,6 +89,104 @@ function isWeekend(iso, weekendDays) {
   return set.indexOf(w) !== -1;
 }
 
+// ── The trigger-document discriminator ───────────────────────────────────
+// WHAT THIS EXISTS FOR. computeDeadline() counts from whatever date it is
+// handed and has never asked what that date MEANS. For most rules the trigger
+// is unambiguous -- a party was served, a motion was filed -- and the caller
+// cannot get it wrong. For 48 seeded rows it is a TERM OF ART naming one
+// specific document, and four states start the appeal clock four different
+// ways: Texas from the SIGNING of the judgment, Florida from its RENDITION,
+// six jurisdictions from its ENTRY on the docket, New York from SERVICE of a
+// copy with written notice of entry. West Virginia uses two different
+// documents within one state -- R. App. P. 5(b) runs from the final order OR
+// the mandate, 5(f) from the judgment.
+//
+// A CALLER CONFLATING THEM GETS A WRONG DATE AND NO REFUSAL, AND THE TWO
+// CLASSES FAIL IN OPPOSITE DIRECTIONS. Supplying an EARLIER document's date
+// than the rule means reports EARLY, which is safe. Supplying a LATER one --
+// the docket-entry date where the rule means the signing date, say -- reports
+// LATE. Thirty-one of the forty-eight are APPELLATE, where a late notice of
+// appeal is jurisdictional and not curable, so this platform's standing rule
+// since Kentucky applies: a gap that can report LATE refuses rather than
+// discloses.
+//
+// SO THE ROW DECLARES ITS DOCUMENT AND THE CALLER MUST AFFIRM IT. Prose in a
+// seed note was rejected as the fix -- it was already there, and it is
+// invisible at the point the date is read, which is the same reason
+// JURISDICTION_COVERAGE exists rather than a comment.
+//
+//   trigger_document: {
+//     id:             matched against input.trigger_document
+//     label:          what the date must BE, in an attorney's words
+//     not_the:        what it must NOT be -- the conflation being guarded
+//     authority:      the rule that makes it a term of art
+//     on_unconfirmed: 'refuse' | 'warn'
+//   }
+//
+// 'refuse' for the appellate class, 'warn' for the civil one. It is declared
+// PER ROW rather than derived from the domain on purpose: a default computed
+// from another field is exactly the kind of invisible rule this change exists
+// to remove, and one day a civil row will need to refuse.
+//
+// A MALFORMED DECLARATION REFUSES rather than degrading to 'warn'. This is
+// in-code data, so a defect is a bug, and the safe direction for a bug in the
+// guard is to withhold the date.
+var TRIGGER_DOCUMENT_KEYS = ['id', 'label', 'not_the', 'authority', 'on_unconfirmed'];
+function triggerDocumentDefects(td) {
+  var bad = [];
+  if (td === undefined || td === null) return bad;
+  if (typeof td !== 'object' || Array.isArray(td)) return ['must be an object'];
+  TRIGGER_DOCUMENT_KEYS.forEach(function (k) {
+    if (typeof td[k] !== 'string' || !td[k].trim()) bad.push('missing or empty ' + k);
+  });
+  if (td.on_unconfirmed !== undefined
+      && td.on_unconfirmed !== 'refuse' && td.on_unconfirmed !== 'warn') {
+    bad.push('on_unconfirmed is ' + JSON.stringify(td.on_unconfirmed) + ', expected "refuse" or "warn"');
+  }
+  return bad;
+}
+
+// Returns null when the rule declares no document, or a resolution object the
+// caller can act on. Pure: it decides, it does not compute.
+function resolveTriggerDocument(rule, input) {
+  var td = rule.trigger_document;
+  if (!td) return null;
+  var defects = triggerDocumentDefects(td);
+  if (defects.length) {
+    return { ok: false, code: 'INVALID_TRIGGER_DOCUMENT',
+      message: 'Rule ' + rule.rule_id + ' declares a malformed trigger_document (' + defects.join('; ') +
+        '). The date is withheld rather than computed from an unchecked trigger.' };
+  }
+  var supplied = input && input.trigger_document;
+  if (supplied && supplied !== td.id) {
+    // An affirmative WRONG answer is worse than silence, so this refuses
+    // whatever on_unconfirmed says.
+    return { ok: false, code: 'TRIGGER_DOCUMENT_MISMATCH',
+      message: 'This rule runs from ' + td.label + ' (' + td.authority + '), and the date supplied was affirmed to be "' +
+        supplied + '" instead. Those are different documents and they bear different dates. No deadline is computed.',
+      expected: td.id, supplied: supplied, label: td.label, not_the: td.not_the, authority: td.authority };
+  }
+  if (!supplied) {
+    if (td.on_unconfirmed === 'refuse') {
+      return { ok: false, code: 'TRIGGER_DOCUMENT_UNCONFIRMED',
+        message: 'This period runs from ' + td.label + ' (' + td.authority + '), which is NOT ' + td.not_the +
+          '. Those documents bear different dates, and supplying the wrong one produces a deadline that is LATE -- ' +
+          'on an appellate clock that is not curable. Confirm the date supplied is that document by sending ' +
+          'trigger_document: "' + td.id + '". No date is guessed.',
+        expected: td.id, label: td.label, not_the: td.not_the, authority: td.authority };
+    }
+    return { ok: true, state: 'unconfirmed', expected: td.id, label: td.label,
+      not_the: td.not_the, authority: td.authority,
+      detail: 'This period runs from ' + td.label + ' (' + td.authority + '), NOT ' + td.not_the +
+        '. The caller did not confirm which document the date supplied came from. Both readings of this rule ' +
+        'report EARLIER than the true deadline rather than later, so a date is returned -- but confirm it by ' +
+        'sending trigger_document: "' + td.id + '" before relying on it.' };
+  }
+  return { ok: true, state: 'confirmed', expected: td.id, label: td.label,
+    not_the: td.not_the, authority: td.authority,
+    detail: 'The caller confirmed the date supplied is ' + td.label + ' (' + td.authority + ').' };
+}
+
 // Returns null if valid, or a string naming the defect. Exported so the
 // load-time check and its test assert the SAME function rather than two
 // implementations that can drift.
@@ -4150,6 +4248,12 @@ function computeDeadline(input) {
       message: 'Rule ' + rule.rule_id + ' names computation standard "' + rule.computation + '", which this engine does not implement.' };
   }
 
+  // The discriminator runs BEFORE any arithmetic. A refusal here must not be
+  // reachable only after a date has already been computed -- the point is that
+  // no date exists to be misread.
+  var triggerDocument = resolveTriggerDocument(rule, input);
+  if (triggerDocument && triggerDocument.ok === false) return triggerDocument;
+
   // COUNT COMES FROM THE WINNING LIMB on a period-resolving rule, and such a
   // rule carries NO rule.count at all -- there is no single number to put
   // there, and storing a representative one would be a fabricated field that
@@ -4767,6 +4871,11 @@ function computeDeadline(input) {
     // because a caller must not have to read a rule note to learn that the
     // date carries a caveat. Null for every jurisdiction with no declared gap.
     coverage: JURISDICTION_COVERAGE[input.jurisdiction] || null,
+    // Present only for rules whose trigger names one specific document. Top
+    // level for the same reason coverage is: a caller must not have to read a
+    // rule note to learn that the date they supplied had to be a particular
+    // document's. Null for every rule with no such ambiguity.
+    trigger_document: triggerDocument,
     // Present only for rules that declare a cap. Reports which limb governed
     // AND what the other one would have been, because "your deadline is
     // earlier than the rule's own period because of what the subpoena said"
@@ -4791,6 +4900,7 @@ function computeDeadline(input) {
 module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
   DEFAULT_WEEKEND_DAYS, weekendDaysDefect, coverageTableDefects,
+  triggerDocumentDefects, resolveTriggerDocument,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,
