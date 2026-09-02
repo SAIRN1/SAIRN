@@ -1,6 +1,12 @@
 # Patent verification — six items, checked against the real code
 
 **For:** patent attorney review.
+**Verified as of commit `2bc6fb0` (2026-09-02).** A verification report with
+ no tree attached reads as timeless and is not: item 4 below went from
+ "not built" to built roughly an hour after it was written. **Re-check this
+ line against `git log` before relying on any item.** Every claim names its
+ file so that re-check is cheap.
+
 **Standard applied:** accuracy over completeness. "Not built" is recorded as
 "not built" wherever that is what the code says. Every claim below names the
 file and, where it matters, the line, so counsel can verify it independently
@@ -115,6 +121,52 @@ client, and has produced no data.
 
 ## 4. User style profiles
 
+> **CORRECTED 2026-09-02, later the same day.** This item read "Not built" and
+> was accurate when written. It stopped being accurate roughly an hour later,
+> when commit **`e634c8d`** landed a real per-user style profile. The original
+> finding is kept below the correction rather than deleted, because *when* a
+> thing was built is itself a fact counsel may need. **This is exactly why this
+> document now carries a "verified as of" commit at the top — a verification
+> report with no tree attached reads as timeless and is not.**
+
+### Built, as of `e634c8d` (2026-09-02)
+
+Verified against the code, not the commit message:
+
+- **Observed, not asked for.** `api/_lib/style-profile.js` derives a profile
+  from what the user actually writes. `analyse()` returns per-message counts
+  across real dimensions: word and sentence counts, questions, imperative
+  openings (a 30-verb list), bullets, numbered lists, markdown, caps emphasis,
+  **hedges** (`maybe|perhaps|i think|sort of|…`), **courtesies**
+  (`please|thanks|sorry|could you|…`), abbreviations, a length bucket
+  (`terse` / `short` / `medium` / long), and up to **12** frequent non-stopword
+  terms.
+- **Gated on evidence.** `MIN_SAMPLES = 5` — nothing is applied until at least
+  five messages have been seen.
+- **Persisted server-side.** `sql/sairn_style_profiles_schema.sql` creates
+  `public.sairn_style_profiles`, **unique on `(license_hash, employee_id)`**,
+  registered as a resource in `api/_resources/stonedesk.js` with a read/write
+  branch in `api/sd-data.js`.
+- **Per-user, with a stated limit.** `employee_id` comes from the session
+  token, and the schema's own header records that a caller can only read or
+  write **their own** profile. It also records the boundary honestly: because
+  `license_hash` is per-app-licence, the same human working under two licences
+  has two profiles.
+- **Applied to the prompt.** `stonedesk.html:25648` calls
+  `renderStyleDirectives(_sdStyleProfile, style)` and folds the result into the
+  system prompt, alongside — not replacing — the three-valued preference
+  described below.
+- **Client and server implement the same analysis and that duplication is
+  tested rather than trusted.** `api/_lib/style-profile.test.js` — **28
+  assertions pass**; `tests/style_profile_parity.js` — **19 assertions pass,
+  client and server agree.**
+
+**What this does not do**, so counsel is not left to infer it: it does not
+generate text in the user's voice, and it does not cross licences or apps. It
+observes how a user writes and conditions the assistant's response style.
+
+### Original finding, accurate until `e634c8d`
+
 **Not built.**
 
 No `style_profile`, `writingStyle`, `tone_profile`, `user_style` or
@@ -210,6 +262,6 @@ user or stored.
 | 1 | Database / storage structure | **Built** — hybrid: Postgres/jsonb via per-app API, plus substantial browser `localStorage` |
 | 2 | Composite Inference Context | **Not built** — no such construct; a per-app string concatenation exists instead |
 | 3 | Intelligence-extraction pipeline | **Half built** — server endpoint and table real and verified; the client write path is unreachable and has produced zero data |
-| 4 | User style profiles | **Not built** — a three-valued stored preference, nothing learned or derived |
+| 4 | User style profiles | **Built as of `e634c8d` (2026-09-02)** — observed from the user's own messages, gated at 5 samples, persisted per `(license_hash, employee_id)`, applied to the prompt, client/server parity tested. **Was "not built" earlier the same day** — see the correction in §4 |
 | 5 | Token-deduction concurrency | **Not built** — no balance, no deduction; the counter that exists is non-atomic and ships non-blocking |
 | 6 | StoneDesk risk-detection defaults | **Built** — hardcoded 12 h / 24 h / 30-day thresholds and a fixed −20/−30/−15 health score; thresholds not user-configurable |
