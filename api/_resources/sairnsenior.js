@@ -98,6 +98,14 @@ module.exports = {
   // yet staff, so a caregiver is out and the coordinator who screens the call
   // is in.
     'sen_applicants',
+  // SAIRNsenior branches (2026-09-02, competitive-gap audit B1) -- see
+  // sql/sairnsenior_branches_schema.sql. An office the agency operates from,
+  // and the STATE it operates in. Gate is SPLIT and matches sen_settings, not
+  // the referral family: READ is open to any signed-in employee because a
+  // caregiver's own roster row names a branch and the name has to resolve or
+  // the screen shows a raw id; WRITE is management-only, because opening or
+  // closing an office is not a scheduling decision. Bespoke branch below.
+    'sen_branches',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

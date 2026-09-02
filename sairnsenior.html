@@ -233,6 +233,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
       <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Training Hours<span class="badge br" id="tr-badge" style="display:none;margin-left:8px"></span></button>
       <button class="sb" id="sb-hiring" onclick="nav('hiring')"><span class="sico">&#128101;</span>Hiring</button>
+      <button class="sb" id="sb-branches" onclick="nav('branches')"><span class="sico">&#127970;</span>Branches</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -318,6 +319,11 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="fg"><label>Payer</label><select id="cl-payer"><option value="medicaid">Medicaid</option><option value="va">VA</option><option value="ltci">LTCI</option><option value="private">Private Pay</option><option value="self_pay">Self-Pay</option></select></div></div>
     <div class="fr"><div class="fg"><label>Authorized Hours / Week</label><input id="cl-hours" type="number" placeholder="20"></div>
       <div class="fg"><label>Status</label><select id="cl-status"><option value="active">Active</option><option value="intake">Intake</option><option value="on_hold">On Hold</option><option value="discharged">Discharged</option></select></div></div>
+    <!-- Optional and blank by default. An existing client has no branch and
+         reads UNASSIGNED everywhere rather than being folded into the first
+         one -- a rollup that quietly attributes rows is worse than one that
+         admits it does not know. -->
+    <div class="fg"><label>Branch</label><select id="cl-branch"></select></div>
     <div class="fg"><label>General Notes</label><textarea id="cl-notes" rows="2"></textarea></div>
     <!-- Care Plan Tasks: specific ordered services/goals for this client
          (e.g. "bathing assistance, 3x/week"), distinct from the free-text
@@ -463,6 +469,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </div>
     <div class="note" style="margin-bottom:12px">These two decide <strong>which</strong> training rule applies, and the rules genuinely differ &mdash; a personal care aide under Ohio ICDS owes 6 in-service hours a year while a home health aide at a Medicare-certified agency owes 12. Leave either blank and this app will say no rule applies rather than pick one.</div>
     <div class="fg"><label>Status</label><select id="cg-status"><option value="active">Active</option><option value="onboarding">Onboarding</option><option value="inactive">Inactive</option></select></div>
+    <div class="fg"><label>Branch</label><select id="cg-branch"></select></div>
     <div class="fg"><label>Notes</label><textarea id="cg-notes" rows="2"></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeCaregiverModal()">Cancel</button>
@@ -581,6 +588,59 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn bo" onclick="closeTrRecordModal()">Cancel</button>
     <button class="btn bp" onclick="saveTrRecord()">Save Training</button>
+  </div>
+</div></div>
+
+<!-- BRANCHES (competitive-gap audit B1, 2026-09-02)
+     The audit calls multi-branch/multi-state the DEFINING Tier B requirement
+     and records that SAIRNroofing and SAIRNdental both capture location while
+     SAIRNsenior captures none.
+
+     THE STATE IS THE POINT, NOT THE ADDRESS. EVV aggregators, Medicaid
+     programmes and caregiver training-hour requirements are all set PER STATE,
+     and this app holds a state in exactly one place today --
+     sen_settings.evv_config.state, a single agency-wide value. A two-state
+     agency therefore has one EVV state and it is wrong for one of them.
+     Recording state on the branch is what makes that fixable; this pass
+     captures and reports it and does NOT yet rewire the EVV or training
+     selection onto it, which is stated on the panel so the column is not read
+     as already-enforced.
+
+     UNASSIGNED IS ALWAYS ITS OWN ROW. Every existing client and caregiver has
+     no branch, and folding them into the first one -- or dropping them from a
+     total -- is how a rollup silently lies. -->
+<div class="panel" id="panel-branches">
+  <div class="ph"><div><div class="ptitle">Branches</div><div class="psub">Offices, the state each operates in, and what each one actually delivered &mdash; computed from real clients, visits and claims</div></div>
+    <div class="pa"><button class="btn bp bs" id="br-add-btn" onclick="openBrModal()">+ Branch</button></div>
+  </div>
+  <div id="br-content">
+    <div class="krow" id="br-kpis"></div>
+    <div class="card"><div class="ch"><span class="ct">Per branch, last 30 days</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">Hours and revenue are counted from the visits and claims of the clients assigned to each branch, never stored on the branch. A client with no branch is counted under <strong>Unassigned</strong> &mdash; it is never folded into another office and never dropped, so the columns always add up to the agency total.</div>
+      <div class="tw"><table><thead><tr><th>Branch</th><th>State</th><th>Clients</th><th>Caregivers</th><th>Visits (30d)</th><th>Hours (30d)</th><th id="br-th-revenue">Billed (30d)</th></tr></thead>
+      <tbody id="br-tbody"></tbody></table></div>
+      <div id="br-notes" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="brmodal"><div class="mbox">
+  <div class="mtitle" id="br-modal-title">Add Branch</div>
+  <div class="fr">
+    <div class="fg"><label>Name</label><input id="br-name" placeholder="e.g. Westlake office"></div>
+    <div class="fg"><label>State</label><input id="br-state" maxlength="2" placeholder="OH" style="text-transform:uppercase"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Phone</label><input id="br-phone"></div>
+    <div class="fg"><label>Status</label><select id="br-active"><option value="true">Open</option><option value="false">Closed</option></select></div>
+  </div>
+  <div class="fg"><label>Address</label><input id="br-address"></div>
+  <!-- Two letters, refused rather than normalised away, and the server refuses
+       it too. A free-text state is exactly what makes a per-state EVV or
+       training rule unmatchable later. -->
+  <div class="note" style="margin:0 0 12px">The state must be a two-letter code. It is what a per-state EVV or training requirement will be matched on, so a free-text state is refused rather than cleaned up. Closing a branch keeps its history &mdash; nothing is deleted.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeBrModal()">Cancel</button>
+    <button class="btn bp" onclick="saveBranch()">Save</button>
   </div>
 </div></div>
 
@@ -1052,6 +1112,7 @@ function nav(id){
   if(id==='referrals')rfRender();
   if(id==='training')trRender();
   if(id==='hiring')hrRender();
+  if(id==='branches')brRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -1233,6 +1294,7 @@ function openClientModal(){
   ceid=null;careTaskDraft=[];
   ['cl-name','cl-phone','cl-address','cl-diagnosis','cl-notes'].forEach(function(f){$(f).value='';});
   $('cl-payer').value='medicaid';$('cl-hours').value='';$('cl-status').value='intake';
+  brFillSelect('cl-branch','');
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
   renderCareTaskDraft();
   var row=$('cl-assignee-row');
@@ -1252,6 +1314,7 @@ function editClient(id){
   $('cl-name').value=c.name||'';$('cl-phone').value=c.phone||'';$('cl-address').value=c.address||'';
   $('cl-diagnosis').value=c.diagnosis||'';$('cl-payer').value=c.payer||'medicaid';$('cl-hours').value=c.authorized_hours||'';
   $('cl-status').value=c.status||'intake';$('cl-notes').value=c.notes||'';
+  brFillSelect('cl-branch',c.branch_id||'');
   $('cl-photo-preview').style.display='none';$('cl-photo-status').textContent='';$('cl-photo-input').value='';
   renderCareTaskDraft();
   var row=$('cl-assignee-row');
@@ -1284,7 +1347,7 @@ async function saveClient(){
     id:ceid||newId('CL'),name:name,phone:$('cl-phone').value.trim(),address:$('cl-address').value.trim(),
     diagnosis:$('cl-diagnosis').value.trim(),payer:$('cl-payer').value,authorized_hours:Number($('cl-hours').value)||0,
     status:$('cl-status').value,notes:$('cl-notes').value.trim(),care_tasks:careTaskDraft.slice(),created_at:senLocalToday(),
-    assigned_employee_id:assignedTo
+    assigned_employee_id:assignedTo,branch_id:($('cl-branch')&&$('cl-branch').value)||''
   };
   var list=clients();
   if(ceid){list=list.map(function(x){return x.id===ceid?rec:x;});}else{list.push(rec);}
@@ -1504,6 +1567,7 @@ function openCaregiverModal(){
   if(!senIsManagement()){toast('Only management can add or edit caregiver records');return;}
   cgeid=null;['cg-name','cg-phone','cg-cpr','cg-bgcheck','cg-notes'].forEach(function(f){$(f).value='';});
   $('cg-status').value='onboarding';
+  brFillSelect('cg-branch','');
   $('caregivermodal').classList.add('on');
 }
 function closeCaregiverModal(){$('caregivermodal').classList.remove('on');}
@@ -1513,6 +1577,7 @@ function editCaregiver(id){
   cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
   $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
   $('cg-aide-type').value=c.aide_type||'';$('cg-program').value=c.program||'';
+  brFillSelect('cg-branch',c.branch_id||'');
   $('caregivermodal').classList.add('on');
 }
 async function saveCaregiver(){
@@ -1520,7 +1585,8 @@ async function saveCaregiver(){
   if(!name){toast('Caregiver name required');return;}
   var rec={id:cgeid||newId('CG'),name:name,phone:$('cg-phone').value.trim(),cpr_expiry:$('cg-cpr').value,
     bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim(),
-    aide_type:$('cg-aide-type').value,program:$('cg-program').value};
+    aide_type:$('cg-aide-type').value,program:$('cg-program').value,
+    branch_id:($('cg-branch')&&$('cg-branch').value)||''};
   var list=caregivers();
   if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
   st('sen_caregivers',list);
@@ -2674,6 +2740,161 @@ function confirmClaimAction(){
 }
 function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
 function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
+
+// ── BRANCHES (competitive-gap audit B1, 2026-09-02) ──────────────────────
+// Computed in-page, matching the referral, training and hiring panels beside
+// it; api/_lib/sairnsenior-branches.test.js extracts these functions verbatim
+// from this file, so there is no second copy to drift from.
+//
+// A VISIT AND A CLAIM INHERIT THEIR BRANCH FROM THE CLIENT rather than storing
+// their own. Stamping the branch onto every visit at creation would FREEZE it:
+// moving a client to another office would leave their history attributed to
+// the old one forever, and correcting it would mean rewriting historical rows.
+// Deriving costs a lookup and cannot go stale.
+function branches(){return ld('sen_branches',[]);}
+
+var BR_WINDOW_DAYS=30;
+var brEditId=null;
+
+function brFillSelect(id,selected){
+  var sel=$(id);if(!sel)return;
+  var list=branches();
+  sel.innerHTML='<option value="">(unassigned)</option>'+list.map(function(b){
+    return '<option value="'+H(b.id)+'">'+H(b.name)+(b.state?' ('+H(b.state)+')':'')+(b.active===false?' -- closed':'')+'</option>';
+  }).join('');
+  sel.value=selected||'';
+}
+function brName(id){
+  if(!id)return 'Unassigned';
+  var b=branches().find(function(x){return x.id===id;});
+  // A branch that was removed from this device's copy still has history. Saying
+  // so beats rendering a raw id, and beats silently relabelling the rows
+  // "Unassigned" -- they were assigned, to something this device cannot name.
+  return b?b.name:'(branch not on this device)';
+}
+
+// ── THE ROLLUP ──────────────────────────────────────────────────────────
+// One pass over clients, caregivers, visits and claims, bucketed by the
+// client's branch. UNASSIGNED IS ALWAYS PRESENT as its own bucket whenever any
+// row lands in it, so the columns add up to the agency total and a shortfall
+// cannot look like an all-clear.
+//
+// NO COST, NO MARGIN, AND THAT IS DELIBERATE. The audit's B5 asks for
+// per-branch P&L. This app holds no payroll, no overhead and no cost of care,
+// so a "profit" figure here would be an invented number on a screen a Tier B
+// buyer would make decisions from. Revenue and hours are real and are reported;
+// the missing half is stated on the panel rather than filled in.
+function brRollup(today,windowDays){
+  var win=Number(windowDays)||BR_WINDOW_DAYS;
+  var since=hrAddDays(today,-win);
+  var cls=clients(),cgs=caregivers(),vis=visits(),cl=claims();
+  var byClient={};cls.forEach(function(c){byClient[c.id]=c;});
+  var acc={};
+  var bucket=function(bid){
+    var k=bid||'';
+    var r=acc[k];
+    if(!r)r=acc[k]={branch_id:k,name:brName(k),state:'',clients:0,caregivers:0,visits:0,hours:0,billed:0};
+    return r;
+  };
+  // Seed a bucket for every branch on file so an office with nothing yet
+  // shows as zero rather than vanishing from the table.
+  branches().forEach(function(b){var r=bucket(b.id);r.state=b.state||'';});
+  cls.forEach(function(c){bucket(c.branch_id).clients++;});
+  cgs.forEach(function(c){bucket(c.branch_id).caregivers++;});
+  vis.forEach(function(v){
+    if(!v||v.status!=='completed')return;
+    if(!hrIsDate(v.scheduled_date)||v.scheduled_date<since||v.scheduled_date>today)return;
+    var c=byClient[v.client_id];
+    var r=bucket(c?c.branch_id:'');
+    r.visits++;r.hours+=visitHours(v);
+  });
+  cl.forEach(function(x){
+    if(!x||!hrIsDate(x.service_date)||x.service_date<since||x.service_date>today)return;
+    // Draft claims are not billed to anyone yet, so counting them would report
+    // revenue the agency has not asked for. Same distinction the Billing
+    // panel's own KPIs already make.
+    if(x.status==='draft')return;
+    var c=byClient[x.client_id];
+    var r=bucket(c?c.branch_id:'');
+    r.billed+=Number(x.amount)||0;
+  });
+  var rows=Object.keys(acc).map(function(k){
+    var r=acc[k];r.hours=Math.round(r.hours*100)/100;r.billed=Math.round(r.billed*100)/100;return r;
+  });
+  // Real branches first by hours delivered, then Unassigned last -- it is a
+  // gap to close, not a branch to rank.
+  rows.sort(function(a,b){
+    if(!a.branch_id)return 1;
+    if(!b.branch_id)return -1;
+    return (b.hours-a.hours)||(b.clients-a.clients)||a.name.localeCompare(b.name);
+  });
+  return {window_days:win,since:since,rows:rows,
+    totals:rows.reduce(function(t,r){
+      t.clients+=r.clients;t.caregivers+=r.caregivers;t.visits+=r.visits;
+      t.hours=Math.round((t.hours+r.hours)*100)/100;t.billed=Math.round((t.billed+r.billed)*100)/100;return t;
+    },{clients:0,caregivers:0,visits:0,hours:0,billed:0})};
+}
+
+function openBrModal(id){
+  brEditId=id||null;
+  var b=id?branches().find(function(x){return x.id===id;}):null;
+  $('br-modal-title').textContent=b?'Edit Branch':'Add Branch';
+  $('br-name').value=b?b.name||'':'';
+  $('br-state').value=b?b.state||'':'';
+  $('br-phone').value=b?b.phone||'':'';
+  $('br-address').value=b?b.address||'':'';
+  $('br-active').value=(b&&b.active===false)?'false':'true';
+  $('brmodal').classList.add('on');
+}
+function closeBrModal(){$('brmodal').classList.remove('on');brEditId=null;}
+async function saveBranch(){
+  var name=$('br-name').value.trim();
+  if(!name){toast('A branch name is required');return;}
+  var state=($('br-state').value||'').trim().toUpperCase();
+  // Refused here AND on the server. Client-side alone would be a suggestion;
+  // server-side alone would let this page look like it saved.
+  if(!/^[A-Z]{2}$/.test(state)){toast('State must be a 2-letter code -- it is what a per-state rule is matched on');return;}
+  var rec={id:brEditId||newId('BR'),name:name,state:state,phone:$('br-phone').value.trim(),
+    address:$('br-address').value.trim(),active:$('br-active').value==='true',
+    created_at:(brEditId&&(branches().find(function(x){return x.id===brEditId;})||{}).created_at)||senLocalToday()};
+  var list=branches();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_branches',list);
+  closeBrModal();brRender();
+  var saved=await senData('write','sen_branches',rec,true);
+  toast(saved?'Branch saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function brRender(){
+  var isMgmt=senIsManagement();
+  var addBtn=$('br-add-btn');if(addBtn)addBtn.style.display=isMgmt?'':'none';
+  var today=senLocalToday();
+  var out=brRollup(today,BR_WINDOW_DAYS);
+  var list=branches();
+
+  var k=$('br-kpis');
+  if(k)k.innerHTML=
+    '<div class="kpi"><div class="klbl">Branches</div><div class="kval">'+list.filter(function(b){return b.active!==false;}).length+'</div><div class="kt">'+list.length+' on file</div></div>'+
+    '<div class="kpi"><div class="klbl">States</div><div class="kval">'+[...new Set(list.map(function(b){return b.state;}).filter(Boolean))].length+'</div><div class="kt">Where you operate</div></div>'+
+    '<div class="kpi"><div class="klbl">Unassigned clients</div><div class="kval">'+clients().filter(function(c){return !c.branch_id;}).length+'</div><div class="kt">Not yet attributed</div></div>'+
+    '<div class="kpi"><div class="klbl">Hours ('+out.window_days+'d)</div><div class="kval">'+out.totals.hours+'</div><div class="kt">'+out.totals.visits+' completed visits</div></div>';
+
+  var th=$('br-th-revenue');if(th)th.style.display=isMgmt?'':'none';
+  var tb=$('br-tbody');
+  if(tb)tb.innerHTML=out.rows.length?out.rows.map(function(r){
+    var editable=isMgmt&&r.branch_id;
+    return '<tr><td>'+H(r.name)+(editable?' <button class="btn bo bs" onclick="openBrModal(\''+H(r.branch_id)+'\')">Edit</button>':'')+'</td>'+
+      '<td>'+H(r.state||'--')+'</td><td>'+r.clients+'</td><td>'+r.caregivers+'</td>'+
+      '<td>'+r.visits+'</td><td>'+r.hours+'</td>'+
+      (isMgmt?'<td>'+fmt(r.billed)+'</td>':'<td style="display:none"></td>')+'</tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No branches yet &mdash; every client and caregiver is currently unassigned</td></tr>';
+
+  var nt=$('br-notes');
+  if(nt)nt.innerHTML='Counting completed visits and non-draft claims dated '+H(out.since)+' to '+H(today)+
+    '. <strong>No cost, overhead or payroll data is held by this app</strong>, so no margin or profit figure is computed here &mdash; the revenue half is real and the other half is absent rather than estimated. '+
+    'The state recorded against a branch is <strong>not yet</strong> what the EVV configuration or the training requirement is matched on; both still read the single agency-wide setting.';
+}
 
 // ── HIRING FUNNEL (competitive-gap audit A5, 2026-09-02) ─────────────────
 // Computed here rather than server-side, matching this app's own convention:

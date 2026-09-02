@@ -2919,6 +2919,58 @@ module.exports = async (req, res) => {
     // WRITE is management-only: the operating state is a compliance declaration, not a
     // preference. MANAGEMENT_ROLES is IMPORTED from api/sen-auth.js rather than re-listed
     // -- see that file's export note for why.
+    // ── SAIRNSENIOR: sen_branches (2026-09-02, competitive-gap audit B1) ────
+    // SPLIT GATE, matching sen_settings below rather than the referral family
+    // above. READ is any signed-in employee: a caregiver's own roster row names
+    // a branch, and if the name cannot resolve the screen shows a raw id.
+    // WRITE is management-only: opening or closing an office is not a
+    // scheduling decision. No delete path -- a closed office is active:false
+    // and keeps its history, because deleting it would orphan every client and
+    // caregiver ever assigned to it.
+    if (resource === 'sen_branches' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (action === 'read') {
+        const r = await fetch(rest('sen_branches?license_hash=eq.' + enc(licHash) + '&select=branch_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.branch_id }, x.data)), provisioned: true });
+        return;
+      }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can add or change a branch' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_branches payload.id is required' } }); return; }
+      // TWO LETTERS ONLY, and refused rather than normalised away. The state is
+      // what a per-state EVV rule and a per-state training requirement will be
+      // matched on; a free-text state is exactly what makes that unmatchable
+      // later, and it is cheaper to refuse now than to reconcile it once those
+      // selections are wired to it. Same check and same reasoning as
+      // sen_settings.evv_config.state below.
+      const brState = typeof payload.state === 'string' ? payload.state.trim().toUpperCase() : '';
+      if (!/^[A-Z]{2}$/.test(brState)) {
+        res.status(400).json({ error: { code: 'INVALID_BRANCH', message: 'sen_branches: state must be a 2-letter code (e.g. OH). It is what a per-state EVV or training rule is matched on.' } });
+        return;
+      }
+      const brBody = Object.assign({}, payload, { state: brState });
+      delete brBody.id;
+      const r = await fetch(rest('sen_branches?on_conflict=license_hash,branch_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', branch_id: String(payload.id), data: brBody, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_branches_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, brBody) });
+      return;
+    }
+
     if (resource === 'sen_settings' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
