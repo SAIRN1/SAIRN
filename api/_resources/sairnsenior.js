@@ -126,6 +126,17 @@ module.exports = {
   // stored on this resource and is computed from sen_visits. Bespoke branch
   // below.
     'sen_authorizations',
+  // SAIRNsenior caregiver pay rates (2026-09-02, competitive-gap audit B5) --
+  // see sql/sairnsenior_pay_rates_schema.sql. What one employee is paid per
+  // hour, for a stated period, plus the employer burden on top. The cost half
+  // of the per-branch margin; sen_payer_contracts is the revenue half and this
+  // is deliberately its mirror image. Gate is MANAGEMENT-ONLY for read AND
+  // write -- the narrowest in this app. A wage is the most sensitive record
+  // here: a coordinator or scheduler has no minimum-necessary reason to know
+  // what a colleague earns, and unlike an authorisation's units it is not
+  // scheduling capacity. Keyed on employee_id because that is what a visit
+  // actually carries. Bespoke branch below.
+    'sen_pay_rates',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

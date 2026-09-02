@@ -3551,6 +3551,73 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, azBody) });
       return;
     }
+    // ── SAIRNSENIOR: sen_pay_rates (2026-09-02, audit B5) ──────────────────
+    // MANAGEMENT-ONLY ON BOTH VERBS -- the narrowest gate in this app, and
+    // deliberately narrower than the authorisation gate directly above. That
+    // one opened READ to coordinators and schedulers because remaining units
+    // are scheduling capacity. A WAGE is not: it is the most sensitive record
+    // SAIRNsenior holds, and nothing on a coordinator's or scheduler's screen
+    // needs to know what a colleague earns.
+    //
+    // KEYED ON employee_id, which is what sen_visits actually carries in
+    // assigned_employee_id. Keying on a sen_caregivers row id would join to
+    // nothing, and a cost of zero from a failed join is indistinguishable from
+    // a cost of zero that is real.
+    if (resource === 'sen_pay_rates' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can view or manage pay rates' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest('sen_pay_rates?license_hash=eq.' + enc(licHash) + '&select=rate_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.rate_id }, x.data)), provisioned: true });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_pay_rates payload.id is required' } }); return; }
+      const prProblems = [];
+      if (!String(payload.employee_id || '').trim()) prProblems.push('employee_id is required');
+      // A zero wage is not a rate. It would cost every visit it matched at
+      // nothing while LOOKING resolved, which reports the branch as more
+      // profitable than it is -- the same shape as the zero-rate contract and
+      // the zero-unit authorisation refused above.
+      if (!(Number(payload.rate_per_hour) > 0)) prProblems.push('rate_per_hour must be greater than zero');
+      // Zero burden is ALLOWED and means "not modelled" -- a 1099 contractor
+      // legitimately carries none. Negative is not a discount on employment
+      // taxes, and anything at or above 100% is a typo, not a burden.
+      const prBurden = payload.burden_pct === undefined || payload.burden_pct === '' ? 0 : Number(payload.burden_pct);
+      if (!isFinite(prBurden) || prBurden < 0 || prBurden >= 100) prProblems.push('burden_pct must be between 0 and 99.99 (0 means not modelled)');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.effective_on || ''))) prProblems.push('effective_on must be YYYY-MM-DD');
+      if (payload.term_on && !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.term_on))) prProblems.push('term_on, when present, must be YYYY-MM-DD');
+      if (payload.term_on && String(payload.term_on) < String(payload.effective_on)) prProblems.push('term_on is before effective_on');
+      if (prProblems.length) {
+        res.status(400).json({ error: { code: 'INVALID_PAY_RATE', message: 'sen_pay_rates: ' + prProblems.join('; ') } });
+        return;
+      }
+      const prBody = Object.assign({}, payload, {
+        employee_id: String(payload.employee_id).trim(),
+        rate_per_hour: Number(payload.rate_per_hour),
+        burden_pct: prBurden
+      });
+      delete prBody.id;
+      const r = await fetch(rest('sen_pay_rates?on_conflict=license_hash,rate_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', rate_id: String(payload.id), data: prBody, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_pay_rates_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, prBody) });
+      return;
+    }
 
     if (resource === 'sen_settings' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');

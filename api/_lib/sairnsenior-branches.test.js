@@ -60,14 +60,24 @@ function scalar(name) {
 // suites (hrAddDays/hrIsDate from the hiring build, visitHours from the
 // scheduling code). They are extracted too rather than restubbed, so this test
 // exercises the real arithmetic end to end.
+// EXTENDED 2026-09-02 by the B5 margin build. brRollup now costs each visit
+// through visitLabourCost, so its real dependencies are extracted too rather
+// than stubbed -- a stub returning a tidy cost would let a genuine mismatch
+// between the rollup and the resolver pass here. `payRates` defaults to empty,
+// which is exactly the pre-B5 world these assertions were written against, so
+// every one of them still means what it meant.
 function build(world) {
   return new Function('W',
     scalar('BR_WINDOW_DAYS') + '\n' +
-    'var clients=W.clients, caregivers=W.caregivers, visits=W.visits, claims=W.claims, branches=W.branches;\n' +
+    'var clients=W.clients, caregivers=W.caregivers, visits=W.visits, claims=W.claims, branches=W.branches, payRates=W.payRates;\n' +
     'var H=function(s){return String(s==null?"":s);};\n' +
-    fn('hrAddDays') + '\n' + fn('hrIsDate') + '\n' + fn('visitHours') + '\n' +
+    // See the same stub in sairnsenior-pay-rates.test.js: it lets a break that
+    // costs visits at TODAY fail as assertions rather than as a crash.
+    'var senLocalToday=function(){return "' + TODAY + '";};\n' +
+    fn('hrAddDays') + '\n' + fn('hrIsDate') + '\n' + fn('hrSourceKey') + '\n' + fn('visitHours') + '\n' +
+    fn('prInForce') + '\n' + fn('prResolveRate') + '\n' + fn('visitLabourCost') + '\n' +
     fn('brName') + '\n' + fn('brRollup') + '\n' +
-    'return { brRollup, brName, BR_WINDOW_DAYS };'
+    'return { brRollup, brName, visitLabourCost, BR_WINDOW_DAYS };'
   )(world);
 }
 
@@ -79,7 +89,8 @@ function world(o) {
     clients: () => o.clients || [],
     caregivers: () => o.caregivers || [],
     visits: () => o.visits || [],
-    claims: () => o.claims || []
+    claims: () => o.claims || [],
+    payRates: () => o.payRates || []
   };
 }
 // 2 hours each, inside the window unless overridden.
@@ -177,18 +188,35 @@ const BASE = {
   check('a DRAFT claim is not billed to anyone yet and is not counted as revenue',
     w.totals.billed, 40);
 }
-// NO MARGIN, NO PROFIT, NO COST -- asserted on the source, because the failure
-// mode is a plausible number appearing rather than an exception being thrown.
+// SUPERSEDED 2026-09-02 BY THE B5 BUILD, and replaced rather than deleted.
 //
-// ASSERTED ON THE EXTRACTED FUNCTION BODY, not on a window of the file. The
-// first version matched from the SECOND occurrence of "brRollup" -- its call
-// site inside brRender -- straight into the panel's own disclosure, which
-// contains the words "no margin or profit figure is computed here". The test
-// failed on the sentence that exists to say the thing it was checking for.
-check('the rollup itself computes no margin, profit or cost figure',
-  /(margin|profit|cost_of|overhead)/i.test(fn('brRollup')), false);
-check('and the panel says the missing half is absent rather than estimated',
-  /No cost, overhead or payroll data is held by this app/.test(src), true);
+// This file used to assert `/(margin|profit|cost_of|overhead)/i.test(fn(
+// 'brRollup')) === false` and that the panel printed "No cost, overhead or
+// payroll data is held by this app". Both were correct while the app held no
+// cost data: a margin computed from nothing is an invented number on a screen a
+// Tier B buyer decides from.
+//
+// sen_pay_rates now supplies the cost half, so the rollup DOES compute a
+// margin. THE PROPERTY THOSE TWO ASSERTIONS PROTECTED HAS NOT BEEN DROPPED --
+// it has moved, and is asserted below in its new form: no cost is ever
+// invented, a visit with no rate is counted rather than treated as free, and
+// the panel still refuses the word "profit". Full behaviour lives in
+// api/_lib/sairnsenior-pay-rates.test.js.
+check('the rollup still invents no cost -- every figure comes from a resolved rate or is counted as uncosted',
+  /uncosted_visits/.test(fn('brRollup')) && !/(overhead|cost_of_care|estimate)/i.test(fn('brRollup')), true);
+check('and the panel still refuses to call it profit or a P&L',
+  /not profit and not a P&amp;L/.test(src), true);
+{
+  // The pre-B5 world, asserted directly: with NO pay rates on file nothing is
+  // costed, the margin equals revenue, and that is reported as OVERSTATED
+  // rather than presented as a result. This is the exact state every existing
+  // agency is in the moment this ships, so it is the state most likely to be
+  // read as a real margin.
+  const w = build(world(BASE)).brRollup(TODAY, 30);
+  check('with no rates on file, every completed visit is uncosted and the margin is flagged overstated',
+    [w.totals.labour_cost, w.totals.uncosted_visits, w.totals.margin, w.totals.margin_overstated],
+    [0, 3, 350, true]);
+}
 
 // ── a branch this device cannot name ─────────────────────────────────────
 {

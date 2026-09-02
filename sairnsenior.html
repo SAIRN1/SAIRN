@@ -236,6 +236,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-branches" onclick="nav('branches')"><span class="sico">&#127970;</span>Branches</button>
       <button class="sb" id="sb-contracts" onclick="nav('contracts')"><span class="sico">&#128220;</span>Payer Contracts</button>
       <button class="sb" id="sb-authorizations" onclick="nav('authorizations')"><span class="sico">&#9989;</span>Authorisations</button>
+      <button class="sb" id="sb-payrates" onclick="nav('payrates')"><span class="sico">&#128176;</span>Pay Rates</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -633,7 +634,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="krow" id="br-kpis"></div>
     <div class="card"><div class="ch"><span class="ct">Per branch, last 30 days</span></div><div class="cb">
       <div class="note" style="margin-bottom:12px">Hours and revenue are counted from the visits and claims of the clients assigned to each branch, never stored on the branch. A client with no branch is counted under <strong>Unassigned</strong> &mdash; it is never folded into another office and never dropped, so the columns always add up to the agency total.</div>
-      <div class="tw"><table><thead><tr><th>Branch</th><th>State</th><th>Clients</th><th>Caregivers</th><th>Visits (30d)</th><th>Hours (30d)</th><th id="br-th-revenue">Billed (30d)</th></tr></thead>
+      <div class="tw"><table><thead><tr><th>Branch</th><th>State</th><th>Clients</th><th>Caregivers</th><th>Visits (30d)</th><th>Hours (30d)</th><th id="br-th-revenue">Billed (30d)</th><th id="br-th-cost">Labour cost</th><th id="br-th-margin">Gross margin</th><th id="br-th-marginpct">Margin %</th><th id="br-th-uncosted">Uncosted</th></tr></thead>
       <tbody id="br-tbody"></tbody></table></div>
       <div id="br-notes" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
     </div></div>
@@ -775,6 +776,53 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn bo" onclick="closeAzModal()">Cancel</button>
     <button class="btn bp" onclick="saveAuthorization()">Save</button>
+  </div>
+</div></div>
+
+<!-- CAREGIVER PAY RATES (competitive-gap audit B5, 2026-09-02)
+     This closes a gap this app declared on itself. The Branches panel shipped
+     earlier today printing "No cost, overhead or payroll data is held by this
+     app, so no margin or profit figure is computed here." This is the missing
+     half, so the figure comes from something real rather than being filled in.
+
+     THE MIRROR IMAGE OF A PAYER CONTRACT: that says what an hour EARNS, this
+     says what an hour COSTS. Both resolve against the SERVICE DATE and both
+     refuse when two are equally in force. -->
+<div class="panel" id="panel-payrates">
+  <div class="ph"><div><div class="ptitle">Pay Rates</div><div class="psub">What an hour costs &mdash; the other half of the branch margin, resolved against the date the work was done</div></div>
+    <div class="pa"><button class="btn bp bs" id="pr-add-btn" onclick="openPrModal()">+ Pay Rate</button></div>
+  </div>
+  <div class="card" id="pr-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Pay rates are the most sensitive record this app holds and are limited to management.</div></div>
+  <div id="pr-content">
+    <div id="pr-conflicts" style="margin-bottom:14px"></div>
+    <div class="card"><div class="ch"><span class="ct">Rates on file</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">A visit is costed at the rate <strong>in force on the day it was worked</strong>, never today's &mdash; otherwise every historical margin would silently restate itself the next time anyone got a rise. Rates are keyed to the caregiver as the <strong>schedule</strong> knows them, because that is what a visit actually records.</div>
+      <!-- Zero burden is allowed and is NOT a claim that burden is zero. A 1099
+           contractor legitimately carries none; a W-2 aide does not, and
+           leaving it at zero there overstates the margin by whatever it really
+           is. Said on screen rather than left to be inferred from a blank. -->
+      <div class="note" style="margin-bottom:12px"><strong>Burden</strong> is employer payroll taxes, workers' compensation and benefits carried on top of the wage. It sits on each rate rather than on the agency because it differs by worker. <strong>Zero is allowed and means it is not modelled</strong> &mdash; it does not mean there is none, and where it is left at zero for a W-2 caregiver the branch margin is overstated by whatever the real burden is.</div>
+      <div class="tw"><table><thead><tr><th>Caregiver</th><th>Wage</th><th>Burden</th><th>Fully loaded</th><th>Period</th><th>Today</th><th>Actions</th></tr></thead>
+      <tbody id="pr-tbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="prmodal"><div class="mbox">
+  <div class="mtitle" id="pr-modal-title">Add Pay Rate</div>
+  <div class="fg"><label>Caregiver</label><select id="pr-employee"></select></div>
+  <div class="fr">
+    <div class="fg"><label>Wage per hour</label><input id="pr-rate" type="number" step="0.01" min="0" placeholder="18.50"></div>
+    <div class="fg"><label>Employer burden %</label><input id="pr-burden" type="number" step="0.01" min="0" max="99.99" placeholder="0"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Effective from</label><input id="pr-effective" type="date"></div>
+    <div class="fg"><label>Ends (blank = open)</label><input id="pr-term" type="date"></div>
+  </div>
+  <div class="fg"><label>Notes</label><input id="pr-notes" maxlength="300" placeholder="Anything that explains this rate"></div>
+  <div class="note" style="margin:0 0 12px">The wage must be greater than zero &mdash; a zero wage would cost every visit at nothing while looking resolved, and report the branch as more profitable than it is. To supersede a rate, give the old one an <strong>end date</strong> and add a new one: nothing is deleted, because deleting it would leave every visit costed under it with no explanation and would silently change a margin already reported.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closePrModal()">Cancel</button>
+    <button class="btn bp" onclick="savePayRate()">Save</button>
   </div>
 </div></div>
 
@@ -1255,6 +1303,7 @@ function nav(id){
   if(id==='branches')brRender();
   if(id==='contracts')pcRender();
   if(id==='authorizations')azRender();
+  if(id==='payrates')prRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -3240,6 +3289,183 @@ function pcPaint(){
     : '';
 }
 
+// ── CAREGIVER PAY RATES (competitive-gap audit B5, 2026-09-02) ───────────
+// THIS CLOSES A GAP THIS APP DECLARED ON ITSELF. The Branches panel shipped
+// earlier today printing: "No cost, overhead or payroll data is held by this
+// app, so no margin or profit figure is computed here." That was right at the
+// time -- a margin computed with no cost data is an invented number on a screen
+// a Tier B buyer decides from. This is the missing half.
+//
+// SYMMETRIC TO THE PAYER CONTRACT, ON PURPOSE. A contract says what an hour
+// EARNS; a pay rate says what an hour COSTS. Both resolve against the SERVICE
+// DATE, both refuse when two are equally in force. A visit worked in March is
+// costed at March's wage -- resolving against today would silently restate
+// every historical margin the next time anyone got a rise.
+//
+// KEYED ON employee_id BECAUSE THAT IS WHAT A VISIT CARRIES. sen_visits stores
+// assigned_employee_id from the auth roster, not a sen_caregivers row id.
+// Keying on the caregiver record would join to nothing, and a cost of zero from
+// a failed join looks exactly like a cost of zero that is real.
+function payRates(){return ld('sen_pay_rates',[]);}
+
+function senHydratePayRates(){
+  if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  return senData('read','sen_pay_rates',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var byId={};
+    payRates().forEach(function(r){if(r&&r.id)byId[r.id]=r;});
+    var changed=false;
+    serverRows.forEach(function(r){
+      if(!r||!r.id)return;
+      if(JSON.stringify(byId[r.id])!==JSON.stringify(r)){byId[r.id]=r;changed=true;}
+    });
+    if(changed)st('sen_pay_rates',Object.keys(byId).map(function(k){return byId[k];}));
+    return changed;
+  }).catch(function(){return false;});
+}
+
+function prInForce(r,onDate){
+  if(!r||!hrIsDate(onDate))return false;
+  if(!hrIsDate(r.effective_on)||r.effective_on>onDate)return false;
+  // A term date that is present but unreadable makes the rate not in force
+  // rather than being skipped as if the field were blank -- skipping it would
+  // turn a superseded wage into an open-ended one and keep costing visits at it
+  // forever. Same rule, same reason, as pcInForce.
+  if(r.term_on&&!hrIsDate(r.term_on))return false;
+  if(r.term_on&&r.term_on<onDate)return false;
+  return true;
+}
+// applied | none | ambiguous, matching pcResolveRate and azResolve exactly.
+function prResolveRate(employeeId,serviceDate){
+  if(!hrIsDate(serviceDate))return {status:'none',reason:'The visit has no service date, so no pay period can be checked.'};
+  var e=hrSourceKey(employeeId);
+  if(!e)return {status:'none',reason:'The visit names no caregiver, so there is no pay rate to match.'};
+  var live=payRates().filter(function(r){return hrSourceKey(r.employee_id)===e&&prInForce(r,serviceDate);});
+  if(!live.length){
+    var any=payRates().filter(function(r){return hrSourceKey(r.employee_id)===e;});
+    return {status:'none',reason:any.length
+      ? 'This caregiver has '+any.length+' pay rate(s) on file but none in force on '+serviceDate+'.'
+      : 'No pay rate is on file for this caregiver.'};
+  }
+  if(live.length>1){
+    return {status:'ambiguous',candidates:live.map(function(r){return {id:r.id,rate_per_hour:r.rate_per_hour};}),
+      reason:live.length+' pay rates for this caregiver are in force on '+serviceDate+
+        '. None is applied: costing a visit at a wage nobody chose puts a wrong number straight into the margin. Give one of them an end date.'};
+  }
+  var r=live[0];
+  return {status:'applied',rate_id:r.id,rate_per_hour:Number(r.rate_per_hour)||0,
+    burden_pct:Number(r.burden_pct)||0,
+    reason:'Pay rate in force on '+serviceDate+'.'};
+}
+
+// The direct labour cost of ONE visit: real clocked hours at the wage in force
+// on the day, plus employer burden. Returns status alongside the number so a
+// caller can tell "cost is zero" from "cost is not known" -- collapsing those
+// two is exactly what makes a badly-recorded branch look profitable.
+function visitLabourCost(v){
+  var hours=visitHours(v);
+  var res=prResolveRate(v&&v.assigned_employee_id,v&&v.scheduled_date);
+  if(res.status!=='applied')return {status:res.status,cost:0,hours:hours,reason:res.reason};
+  var cost=hours*res.rate_per_hour*(1+res.burden_pct/100);
+  return {status:'applied',cost:Math.round(cost*100)/100,hours:hours,
+    rate_per_hour:res.rate_per_hour,burden_pct:res.burden_pct,rate_id:res.rate_id};
+}
+
+var prEditId=null;
+function openPrModal(id){
+  prEditId=id||null;
+  var r=id?payRates().find(function(x){return x.id===id;}):null;
+  var sel=$('pr-employee');
+  // The roster is the source of employee_id, and it is what a visit stores. A
+  // free-text box here would let a rate be keyed to something no visit carries,
+  // which costs nothing and looks like it costs nothing.
+  var roster=_senRoster||[];
+  sel.innerHTML=roster.length
+    ? roster.map(function(e){return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+    : '<option value="">(roster not loaded -- reopen this panel)</option>';
+  sel.value=(r&&r.employee_id)||'';
+  $('pr-rate').value=(r&&r.rate_per_hour)||'';
+  $('pr-burden').value=(r&&r.burden_pct!==undefined)?r.burden_pct:0;
+  $('pr-effective').value=(r&&r.effective_on)||'';
+  $('pr-term').value=(r&&r.term_on)||'';
+  $('pr-notes').value=(r&&r.notes)||'';
+  $('pr-modal-title').textContent=r?'Edit Pay Rate':'Add Pay Rate';
+  $('prmodal').classList.add('on');
+}
+function closePrModal(){$('prmodal').classList.remove('on');prEditId=null;}
+async function savePayRate(){
+  var emp=$('pr-employee').value;
+  if(!emp){toast('Pick the caregiver this rate is for -- a rate keyed to nobody costs nothing and looks like it costs nothing');return;}
+  var rate=Number($('pr-rate').value);
+  if(!(rate>0)){toast('The hourly rate must be greater than zero -- a zero wage would cost every visit at nothing while looking resolved, and report the branch as more profitable than it is');return;}
+  var burdenRaw=$('pr-burden').value;
+  var burden=burdenRaw===''?0:Number(burdenRaw);
+  if(!isFinite(burden)||burden<0||burden>=100){toast('Burden must be between 0 and 99.99 percent -- 0 is allowed and means it is not modelled');return;}
+  var eff=$('pr-effective').value;
+  if(!eff){toast('An effective date is required -- a rate with no start cannot be matched to a service date');return;}
+  var term=$('pr-term').value||'';
+  if(term&&term<eff){toast('The end date is before the start date');return;}
+  var rec={id:prEditId||newId('PR'),employee_id:emp,employee_name:senEmployeeName(emp),
+    rate_per_hour:rate,burden_pct:burden,effective_on:eff,term_on:term,
+    notes:$('pr-notes').value.trim().slice(0,300),
+    created_at:(prEditId&&(payRates().find(function(x){return x.id===prEditId;})||{}).created_at)||senLocalToday()};
+  var list=payRates();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_pay_rates',list);
+  // prPaint, not prRender: prRender hydrates, and a hydrate firing the instant
+  // before the write lands would read the row back as the server still has it
+  // and silently undo the edit just made.
+  closePrModal();prPaint();
+  var saved=await senData('write','sen_pay_rates',rec,true);
+  toast(saved?'Pay rate saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function prRender(){
+  var ok=senIsManagement();
+  var denied=$('pr-denied'),content=$('pr-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  // The roster is what supplies employee_id AND the display name. Repainting
+  // on its callback means a rate saved before the roster loaded still shows a
+  // name rather than a raw id.
+  senRefreshRoster(prPaint);
+  prPaint();
+  senHydratePayRates().then(prPaint);
+}
+function prPaint(){
+  if(!senIsManagement())return;
+  var list=payRates(),today=senLocalToday();
+  var tb=$('pr-tbody');
+  if(tb)tb.innerHTML=list.length?list.slice().sort(function(a,b){
+    return (a.employee_name||'').localeCompare(b.employee_name||'')||(b.effective_on||'').localeCompare(a.effective_on||'');
+  }).map(function(r){
+    var live=prInForce(r,today);
+    var burden=Number(r.burden_pct)||0;
+    return '<tr><td>'+H(r.employee_name||senEmployeeName(r.employee_id))+'</td>'+
+      '<td>'+fmt(r.rate_per_hour)+'/hr</td>'+
+      '<td>'+(burden?burden+'%':'<span class="badge bw">not modelled</span>')+'</td>'+
+      '<td>'+fmt(Number(r.rate_per_hour)*(1+burden/100))+'/hr</td>'+
+      '<td>'+fdate(r.effective_on)+' &ndash; '+(r.term_on?fdate(r.term_on):'open')+'</td>'+
+      '<td>'+(live?'<span class="badge bg">In force</span>':'<span class="badge bx">Not today</span>')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openPrModal(\''+H(r.id)+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No pay rates on file &mdash; every visit will be uncosted and the branch margin will read as overstated</td></tr>';
+
+  // Same overlap surfacing as the Contracts panel: a conflict found here is
+  // found by whoever can fix it, not by a rollup that quietly drops a cost.
+  var conflicts=[];
+  var emps={};list.forEach(function(r){emps[hrSourceKey(r.employee_id)]=r.employee_id;});
+  Object.keys(emps).forEach(function(k){
+    var res=prResolveRate(emps[k],today);
+    if(res.status==='ambiguous')conflicts.push(H(senEmployeeName(emps[k]))+' &mdash; '+H(res.reason));
+  });
+  var cf=$('pr-conflicts');
+  if(cf)cf.innerHTML=conflicts.length
+    ? '<div class="note" style="margin:0"><strong>'+conflicts.length+' unresolved overlap(s).</strong><br>'+conflicts.join('<br>')+'</div>'
+    : '';
+}
+
 // ── PAYER AUTHORISATIONS (competitive-gap audit A3, 2026-09-02) ──────────
 // The audit records A3 as a genuine DIFFERENTIATOR rather than catch-up: unit
 // burn-down was "not found described in any Tier A product" and is named as a
@@ -3557,7 +3783,13 @@ function brRollup(today,windowDays){
   var bucket=function(bid){
     var k=bid||'';
     var r=acc[k];
-    if(!r)r=acc[k]={branch_id:k,name:brName(k),state:'',clients:0,caregivers:0,visits:0,hours:0,billed:0};
+    if(!r)r=acc[k]={branch_id:k,name:brName(k),state:'',clients:0,caregivers:0,visits:0,hours:0,billed:0,
+      // B5, 2026-09-02. labour_cost is DIRECT LABOUR ONLY. uncosted_visits is
+      // carried beside it and never folded in: a visit with no resolvable pay
+      // rate contributes hours but no cost, which understates cost and
+      // therefore OVERSTATES margin. The branch with the worst record-keeping
+      // would otherwise look like the most profitable one.
+      labour_cost:0,uncosted_visits:0,uncosted_hours:0};
     return r;
   };
   // Seed a bucket for every branch on file so an office with nothing yet
@@ -3571,6 +3803,9 @@ function brRollup(today,windowDays){
     var c=byClient[v.client_id];
     var r=bucket(c?c.branch_id:'');
     r.visits++;r.hours+=visitHours(v);
+    var lc=visitLabourCost(v);
+    if(lc.status==='applied')r.labour_cost+=lc.cost;
+    else{r.uncosted_visits++;r.uncosted_hours+=lc.hours;}
   });
   cl.forEach(function(x){
     if(!x||!hrIsDate(x.service_date)||x.service_date<since||x.service_date>today)return;
@@ -3583,7 +3818,18 @@ function brRollup(today,windowDays){
     r.billed+=Number(x.amount)||0;
   });
   var rows=Object.keys(acc).map(function(k){
-    var r=acc[k];r.hours=Math.round(r.hours*100)/100;r.billed=Math.round(r.billed*100)/100;return r;
+    var r=acc[k];r.hours=Math.round(r.hours*100)/100;r.billed=Math.round(r.billed*100)/100;
+    r.labour_cost=Math.round(r.labour_cost*100)/100;
+    r.uncosted_hours=Math.round(r.uncosted_hours*100)/100;
+    r.margin=Math.round((r.billed-r.labour_cost)*100)/100;
+    // A margin PERCENTAGE over zero revenue is not 0% and not 100% -- it is
+    // not a ratio at all. null renders as "--", the same rule the hiring
+    // panel's rates already follow for an empty denominator.
+    r.margin_pct=r.billed>0?Math.round(r.margin/r.billed*1000)/10:null;
+    // The direction of the error is KNOWN, so it is stated rather than hedged:
+    // missing cost can only push margin up.
+    r.margin_overstated=r.uncosted_visits>0;
+    return r;
   });
   // Real branches first by hours delivered, then Unassigned last -- it is a
   // gap to close, not a branch to rank.
@@ -3592,11 +3838,21 @@ function brRollup(today,windowDays){
     if(!b.branch_id)return -1;
     return (b.hours-a.hours)||(b.clients-a.clients)||a.name.localeCompare(b.name);
   });
-  return {window_days:win,since:since,rows:rows,
-    totals:rows.reduce(function(t,r){
-      t.clients+=r.clients;t.caregivers+=r.caregivers;t.visits+=r.visits;
-      t.hours=Math.round((t.hours+r.hours)*100)/100;t.billed=Math.round((t.billed+r.billed)*100)/100;return t;
-    },{clients:0,caregivers:0,visits:0,hours:0,billed:0})};
+  var totals=rows.reduce(function(t,r){
+    t.clients+=r.clients;t.caregivers+=r.caregivers;t.visits+=r.visits;
+    t.hours=Math.round((t.hours+r.hours)*100)/100;t.billed=Math.round((t.billed+r.billed)*100)/100;
+    t.labour_cost=Math.round((t.labour_cost+r.labour_cost)*100)/100;
+    t.uncosted_visits+=r.uncosted_visits;
+    t.uncosted_hours=Math.round((t.uncosted_hours+r.uncosted_hours)*100)/100;
+    return t;
+  },{clients:0,caregivers:0,visits:0,hours:0,billed:0,labour_cost:0,uncosted_visits:0,uncosted_hours:0});
+  // The CONSOLIDATED half of the audit's "consolidated + per-branch" item is
+  // this: the same arithmetic over every bucket, summed from the same rows the
+  // table shows, so the total can never disagree with the columns above it.
+  totals.margin=Math.round((totals.billed-totals.labour_cost)*100)/100;
+  totals.margin_pct=totals.billed>0?Math.round(totals.margin/totals.billed*1000)/10:null;
+  totals.margin_overstated=totals.uncosted_visits>0;
+  return {window_days:win,since:since,rows:rows,totals:totals};
 }
 
 function openBrModal(id){
@@ -3633,6 +3889,16 @@ async function saveBranch(){
 function brRender(){
   var isMgmt=senIsManagement();
   var addBtn=$('br-add-btn');if(addBtn)addBtn.style.display=isMgmt?'':'none';
+  // Pay rates are hydrated before the margin is drawn, not only when the Pay
+  // Rates panel is opened. A manager who goes straight to Branches on a fresh
+  // device would otherwise resolve every wage against an empty local list, cost
+  // every visit at nothing, and read a margin equal to revenue -- the most
+  // flattering possible wrong number.
+  if(isMgmt)senHydratePayRates().then(function(changed){if(changed)brPaint();});
+  brPaint();
+}
+function brPaint(){
+  var isMgmt=senIsManagement();
   var today=senLocalToday();
   var out=brRollup(today,BR_WINDOW_DAYS);
   var list=branches();
@@ -3644,20 +3910,46 @@ function brRender(){
     '<div class="kpi"><div class="klbl">Unassigned clients</div><div class="kval">'+clients().filter(function(c){return !c.branch_id;}).length+'</div><div class="kt">Not yet attributed</div></div>'+
     '<div class="kpi"><div class="klbl">Hours ('+out.window_days+'d)</div><div class="kval">'+out.totals.hours+'</div><div class="kt">'+out.totals.visits+' completed visits</div></div>';
 
-  var th=$('br-th-revenue');if(th)th.style.display=isMgmt?'':'none';
+  // Money columns are management-only, matching the sen_pay_rates and
+  // sen_payer_contracts gates. A wage-derived cost is not scheduling data.
+  ['br-th-revenue','br-th-cost','br-th-margin','br-th-marginpct','br-th-uncosted'].forEach(function(id){
+    var el=$(id);if(el)el.style.display=isMgmt?'':'none';
+  });
   var tb=$('br-tbody');
   if(tb)tb.innerHTML=out.rows.length?out.rows.map(function(r){
     var editable=isMgmt&&r.branch_id;
+    // A margin marked with a caret is one with uncosted visits behind it. The
+    // caret means OVERSTATED specifically -- missing cost can only push margin
+    // up -- so the marker names a direction rather than vaguely warning.
+    var mark=r.margin_overstated?' <span class="badge bw" title="Overstated -- some visits have no pay rate on file, so their cost is missing">&#9650;</span>':'';
     return '<tr><td>'+H(r.name)+(editable?' <button class="btn bo bs" onclick="openBrModal(\''+H(r.branch_id)+'\')">Edit</button>':'')+'</td>'+
       '<td>'+H(r.state||'--')+'</td><td>'+r.clients+'</td><td>'+r.caregivers+'</td>'+
       '<td>'+r.visits+'</td><td>'+r.hours+'</td>'+
-      (isMgmt?'<td>'+fmt(r.billed)+'</td>':'<td style="display:none"></td>')+'</tr>';
-  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No branches yet &mdash; every client and caregiver is currently unassigned</td></tr>';
+      (isMgmt
+        ? '<td>'+fmt(r.billed)+'</td><td>'+fmt(r.labour_cost)+'</td>'+
+          '<td><strong>'+fmt(r.margin)+'</strong>'+mark+'</td>'+
+          '<td>'+(r.margin_pct===null?'--':r.margin_pct+'%')+'</td>'+
+          '<td>'+(r.uncosted_visits?r.uncosted_visits+' ('+r.uncosted_hours+'h)':'--')+'</td>'
+        : '<td style="display:none"></td><td style="display:none"></td><td style="display:none"></td><td style="display:none"></td><td style="display:none"></td>')+'</tr>';
+  }).join(''):'<tr><td colspan="11" style="text-align:center;color:var(--muted);padding:24px;">No branches yet &mdash; every client and caregiver is currently unassigned</td></tr>';
 
   var nt=$('br-notes');
-  if(nt)nt.innerHTML='Counting completed visits and non-draft claims dated '+H(out.since)+' to '+H(today)+
-    '. <strong>No cost, overhead or payroll data is held by this app</strong>, so no margin or profit figure is computed here &mdash; the revenue half is real and the other half is absent rather than estimated. '+
-    'The state recorded against a branch is <strong>not yet</strong> what the EVV configuration or the training requirement is matched on; both still read the single agency-wide setting.';
+  if(nt){
+    var bits=['Counting completed visits and non-draft claims dated '+H(out.since)+' to '+H(today)+'.'];
+    if(isMgmt){
+      // WHAT THIS FIGURE IS NOT, said before what it is. The audit asks for
+      // per-branch P&L; this is the direct-labour half delivered honestly
+      // rather than the whole thing dishonestly, and calling it profit would be
+      // the fabrication the panel used to refuse outright.
+      bits.push('<strong>Gross margin is billed revenue minus direct labour only.</strong> It is <strong>not profit and not a P&amp;L</strong> &mdash; no rent, supervision, mileage, software, administration or insurance beyond the burden percentage on each pay rate is included. Labour is costed at the wage <strong>in force on the service date</strong>, never today\'s.');
+      if(out.totals.uncosted_visits){
+        bits.push('<strong>'+out.totals.uncosted_visits+' completed visit(s) ('+out.totals.uncosted_hours+'h) have no pay rate in force and are costed at nothing</strong>, so every margin marked &#9650; is <strong>overstated</strong> &mdash; not merely uncertain. Add the missing rates on the Pay Rates panel.');
+      }
+      bits.push('Consolidated: '+fmt(out.totals.billed)+' billed, '+fmt(out.totals.labour_cost)+' direct labour, <strong>'+fmt(out.totals.margin)+'</strong> gross margin'+(out.totals.margin_pct===null?'':' ('+out.totals.margin_pct+'%)')+'.');
+    }
+    bits.push('The state recorded against a branch is <strong>not yet</strong> what the EVV configuration or the training requirement is matched on; both still read the single agency-wide setting.');
+    nt.innerHTML=bits.join(' ');
+  }
 }
 
 // ── HIRING FUNNEL (competitive-gap audit A5, 2026-09-02) ─────────────────
