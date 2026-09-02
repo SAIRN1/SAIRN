@@ -1,5 +1,22 @@
 # Worldwide competitive-gap audit — StoneDesk
 
+> ## ⚠ STATUS MOVED. DO NOT DISPATCH FROM §3'S VERDICTS.
+>
+> **Current status lives in
+> [`docs/2026-09-02-competitive-gap-status-rederived.md`](../../2026-09-02-competitive-gap-status-rederived.md).**
+>
+> This audit was written on 2026-09-02 and **two of its eight gaps closed the
+> same day**: GAP 1 (customer-facing portal) and GAP 3 (barcode). GAP 8 became
+> partial — the publishing mechanism now exists but remnants are not wired into
+> it. §4.1 and §4.2, the two non-gap findings, are both **fixed** (verified: the
+> price book, chart of accounts and patent dates are gone from the advisor
+> context strings, and the wrong-codebase description is gone).
+>
+> **Everything else here stands and is still the reference:** the market map,
+> the vendor evidence, the premortem, and GAP 6's standing decision to carry the
+> QuickBooks gap deliberately. Only the built/not-built verdicts moved, and they
+> are not edited in place so the record of 2026-09-02 stays intact.
+
 Research pass, 2026-09-02. **No code written, no app file touched.** Findings only.
 Nothing here is a build decision; §7 lists what a build pass would need to settle
 first.

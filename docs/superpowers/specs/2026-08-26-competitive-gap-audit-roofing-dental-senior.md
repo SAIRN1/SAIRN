@@ -1,5 +1,21 @@
 # Worldwide competitive-gap audit — SAIRNroofing, SAIRNdental, SAIRNsenior
 
+> ## ⚠ THE STATE COLUMNS IN THIS FILE ARE OUT OF DATE. DO NOT DISPATCH FROM THEM.
+>
+> **Current status lives in
+> [`docs/2026-09-02-competitive-gap-status-rederived.md`](../../2026-09-02-competitive-gap-status-rederived.md).**
+>
+> On 2026-09-02 most of the items below were built. Three sessions that night
+> independently reached for work this file calls **"Absent"** — SAIRNdental A8,
+> A9, A4, A7 and SAIRNroofing A1 — **all five of which were already shipped and
+> live.** Each was caught only by grepping the code first.
+>
+> **Everything else in this file is still good and is still the reference:** the
+> market analysis, the evidence, the vendor citations, the reasoning about why
+> each item matters, and the §0/§6/§7 corrections. Only the *"is it built yet"*
+> column has gone stale. It is deliberately **not** being edited in place —
+> rewriting it would lose the record of what was believed on 2026-08-26.
+
 Research pass, 2026-08-26. **No code written, no app file touched.** Findings only.
 Nothing here is a build decision; §7 lists what a build pass would need to settle
 first.
