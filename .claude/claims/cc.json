@@ -151,6 +151,16 @@
       "status": "released",
       "note": "Written by hand. sairn_claim.py BLOCKED this against cody/sairnroofing 'crew field labour scheduling depth gap A2' -- overlap on the single word 'gap'. Different app, different files, no real subject overlap; the known lexical-matcher defect recorded in CLAUDE.md 2026-09-01. Recorded rather than reworded to slip past the matcher, per that same note.",
       "released_at": "2026-09-02T14:22:48Z"
+    },
+    {
+      "id": "cc-1788359112",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "slab labels and scan to find, barcode",
+      "claimed_at": "2026-09-02T14:25:12Z",
+      "claimed_at_epoch": 1788359112.3815844,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
