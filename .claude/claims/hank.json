@@ -188,8 +188,8 @@
       "task": "multi slot trigger document design",
       "claimed_at": "2026-09-02T09:39:43Z",
       "claimed_at_epoch": 1788341983.355074,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T09:51:20Z"
     }
   ]
 }
