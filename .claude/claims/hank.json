@@ -331,6 +331,16 @@
       "claimed_at_epoch": 1788361779.4788444,
       "status": "released",
       "released_at": "2026-09-02T15:46:30Z"
+    },
+    {
+      "id": "hank-1788364294",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "payer authorisation unit burn-down A3",
+      "claimed_at": "2026-09-02T15:51:34Z",
+      "claimed_at_epoch": 1788364294.9298992,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
