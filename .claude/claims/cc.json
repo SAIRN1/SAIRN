@@ -140,6 +140,16 @@
       "claimed_at_epoch": 1788355889.428014,
       "status": "released",
       "released_at": "2026-09-02T14:07:56Z"
+    },
+    {
+      "id": "cc-1788358436",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "saw and pick tickets from nesting, competitive gap 2",
+      "claimed_at": "2026-09-02T14:13:56Z",
+      "claimed_at_epoch": 1788358436.4591548,
+      "status": "active",
+      "note": "Written by hand. sairn_claim.py BLOCKED this against cody/sairnroofing 'crew field labour scheduling depth gap A2' -- overlap on the single word 'gap'. Different app, different files, no real subject overlap; the known lexical-matcher defect recorded in CLAUDE.md 2026-09-01. Recorded rather than reworded to slip past the matcher, per that same note."
     }
   ]
 }
