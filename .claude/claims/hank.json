@@ -289,8 +289,8 @@
       "task": "caregiver training hours and credential tracking A6",
       "claimed_at": "2026-09-02T14:14:26Z",
       "claimed_at_epoch": 1788358466.4973776,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:15:37Z"
     }
   ]
 }
