@@ -218,8 +218,8 @@
       "task": "montana deadline seed gate",
       "claimed_at": "2026-09-02T11:17:14Z",
       "claimed_at_epoch": 1788347834.4774728,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T12:08:29Z"
     }
   ]
 }
