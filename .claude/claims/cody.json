@@ -214,6 +214,16 @@
       "claimed_at_epoch": 1788359429.7320561,
       "status": "released",
       "released_at": "2026-09-02T14:43:48Z"
+    },
+    {
+      "id": "cody-1788360234",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "safety OSHA fall protection programme B4",
+      "claimed_at": "2026-09-02T14:43:54Z",
+      "claimed_at_epoch": 1788360234.7040992,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
