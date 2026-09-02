@@ -208,8 +208,8 @@
       "task": "trust void stale array check",
       "claimed_at": "2026-09-02T10:49:22Z",
       "claimed_at_epoch": 1788346162.1317477,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T10:59:20Z"
     }
   ]
 }
