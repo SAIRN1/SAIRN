@@ -3699,7 +3699,24 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     document.getElementById('ai-chat').appendChild(typing);
     document.getElementById('ai-chat').scrollTop=document.getElementById('ai-chat').scrollHeight;
     var toolDefs=Object.keys(SD_TOOLS).map(function(k){return SD_TOOLS[k].definition;});
-    var sys='You are the AI assistant for StoneDesk, a stone fabrication shop management platform. Be concise, practical, and industry-specific. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
+    // [0040] 2026-09-02 -- the live chat used to send ONLY the guardrail
+    // below, so the business profile, _sdMemories, network intelligence and
+    // the per-user style profile never reached the model on this path.
+    // buildSDSystemPrompt() was called only from the legacy window.sendMessage
+    // override, which returns on its first line because #userInput does not
+    // exist in this app -- verified on the deployed page. That override is NOT
+    // revived here: its message list and send button are absent too, and
+    // pointing it at #ai-input would run a second pipeline and double-send.
+    //
+    // The guardrail goes LAST, deliberately: it is the nearest instruction to
+    // the user's message and must not be diluted by profile text above it.
+    var _sdBase = '';
+    try { if (typeof buildSDSystemPrompt === 'function') _sdBase = buildSDSystemPrompt(); } catch(e) { _sdBase = ''; }
+    var _sdGuard='You are the AI assistant for StoneDesk, a stone fabrication shop management platform. Be concise, practical, and industry-specific. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
+    var sys = _sdBase ? (_sdBase + '\n\n' + _sdGuard) : _sdGuard;
+    // Fire the extraction trigger from the path that actually runs. The
+    // server half is already correct and is untouched.
+    try { if (typeof sendNetworkInsight === 'function') sendNetworkInsight('feature_usage', 'ai_chat_message_sent'); } catch(e) {}
     function finish(reply){
       sdAiBusy=false;
       var t=document.getElementById('ai-typing');if(t)t.remove();
