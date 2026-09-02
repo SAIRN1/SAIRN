@@ -181,6 +181,16 @@
       "claimed_at_epoch": 1788360396.6603687,
       "status": "released",
       "released_at": "2026-09-02T14:56:57Z"
+    },
+    {
+      "id": "fourth-1788361394",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "csv export scrapes the rendered dom instead of the data",
+      "claimed_at": "2026-09-02T15:03:14Z",
+      "claimed_at_epoch": 1788361394.2648563,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
