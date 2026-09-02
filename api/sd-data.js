@@ -7204,7 +7204,12 @@ module.exports = async (req, res) => {
     // no estimate, and the front desk and hygiene side both work the recall
     // list; putting it behind the owner/front-desk money gate would hide the
     // worklist from the people who work it.
-    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id', dnt_gfe: 'patient_id', dnt_recall_outreach: 'patient_id', dnt_txplans: 'patient_id' };
+    // dnt_denial joins the list 2026-09-02, when the denials-and-appeals
+    // workflow gave it its first client reader. The row names a patient and
+    // carries what a payer refused to pay for their care, so practice-wide
+    // visibility would undo the scoping dnt_patients enforces. It was already
+    // financial; it was never patient-scoped, because nothing read it.
+    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id', dnt_gfe: 'patient_id', dnt_recall_outreach: 'patient_id', dnt_txplans: 'patient_id', dnt_denial: 'patient_id' };
     if (DNT_RESOURCES[resource] && action === 'read') {
       const dntSess = dntGate(res);
       if (!dntSess) return;

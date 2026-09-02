@@ -245,6 +245,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-appointments" onclick="nav('appointments')"><span class="sico">&#128197;</span>Appointments</button>
       <button class="sb" id="sb-recall" onclick="nav('recall')"><span class="sico">&#128276;</span>Recall &amp; Reactivation<span class="badge br" id="recall-badge" style="display:none;margin-left:8px"></span></button>
       <button class="sb" id="sb-txplan" onclick="nav('txplan')"><span class="sico">&#128203;</span>Treatment Plans</button>
+      <button class="sb" id="sb-denials" onclick="nav('denials')"><span class="sico">&#9878;</span>Denials &amp; Appeals<span class="badge br" id="denials-badge" style="display:none;margin-left:8px"></span></button>
       <div class="ss">Billing</div>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128176;</span>Billing</button>
       <button class="sb" id="sb-gfe" onclick="nav('gfe')"><span class="sico">&#128203;</span>Good Faith Estimates<span class="badge br" id="gfe-badge" style="display:none;margin-left:8px"></span></button>
@@ -895,6 +896,105 @@ label.chk input{width:auto;}
         </div>
       </div></div>
 
+      <!-- DENIALS, APPEALS AND RECEIVABLE AGEING (competitive-gap audit B3, 2026-09-02) -->
+      <!-- The audit's finding here is unusual and worth restating: every
+           enterprise vendor claims "RCM" and "claim scrubbing", and NONE
+           published a concrete denials-and-appeals workflow. This is a
+           MARKET-WIDE gap, not one vendor's weakness. dnt_denial and dnt_ar
+           were registered as server resources months ago and had, until now,
+           no client accessor or render function at all -- so the tables
+           existed and the workflow did not.
+
+           TWO FIGURES THIS PANEL WILL NOT INVENT. An appeal DEADLINE is set by
+           the payer contract and varies; there is no universal 90 days, so the
+           deadline is entered per payer with the contract it came from, and a
+           denial whose payer has no deadline on file reads "no deadline on
+           file" rather than being called timely or late. And the audit's
+           "~30% of claims sit in 90+ day A/R" is trade-press, so it appears
+           NOWHERE as a benchmark -- a practice's real number shown against an
+           unverified figure would look good or bad for no reason. -->
+      <div class="panel" id="panel-denials">
+        <div class="ph"><div><div class="ptitle">Denials &amp; Appeals</div><div class="psub">The appeal lifecycle every vendor claims and none publishes &mdash; plus receivable ageing computed from real charges and payments</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="openPayerTermsModal()">Payer appeal windows</button><button class="btn bp bs" onclick="openDenialModal()">+ Record a denial</button></div>
+        </div>
+
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Open denials</div><div class="kval" id="k-dn-open">0</div><div class="kt">Not yet decided</div></div>
+          <div class="kpi"><div class="klbl">Appeal window closing</div><div class="kval" id="k-dn-closing">0</div><div class="kt">Within 14 days, or already past</div></div>
+          <div class="kpi"><div class="klbl">Appeal success</div><div class="kval" id="k-dn-success">--</div><div class="kt" id="k-dn-success-sub">No appeal decided yet</div></div>
+          <div class="kpi"><div class="klbl">Denied amount at stake</div><div class="kval" id="k-dn-atstake">$0</div><div class="kt">On denials not yet decided</div></div>
+        </div>
+
+        <div class="card"><div class="ch"><div class="ct">Denials</div></div><div class="cb" style="padding:0">
+          <table id="denials-table"><thead><tr><th>Denied on</th><th>Patient</th><th>Payer</th><th>Code as given</th><th>Amount</th><th>Appeal</th><th>Window</th><th>Outcome</th><th></th></tr></thead><tbody id="denials-tbody"></tbody></table>
+        </div></div>
+
+        <div id="dn-notes" style="margin-top:12px"></div>
+
+        <div class="card"><div class="ch"><div class="ct">Receivable ageing</div></div><div class="cb">
+          <div class="note" style="margin-bottom:12px">Buckets are measured from each charge&rsquo;s own date to today, and payments are applied oldest-charge-first because that is what an ageing report means &mdash; not because this practice has told us its allocation policy. A charge with no date is <strong>excluded and counted separately</strong> rather than dropped into 0&ndash;30. There is deliberately no industry benchmark on this card: the figures quoted in trade press for what a &ldquo;normal&rdquo; 90+ bucket looks like are not verified, and showing one would make a real number look good or bad against nothing.</div>
+          <div class="tw"><table><thead><tr><th>Bucket</th><th>Charges</th><th>Outstanding</th></tr></thead><tbody id="aging-tbody"></tbody></table></div>
+          <div id="aging-notes" style="margin-top:10px"></div>
+        </div></div>
+      </div>
+
+      <div class="modal" id="denialmodal"><div class="mbox" style="max-width:600px">
+        <div class="mtitle" id="dn-modal-title">Record a denial</div>
+        <div class="fr">
+          <div class="fg"><label>Patient</label><select id="dn-patient" onchange="onDenialPatientChange()"></select></div>
+          <div class="fg"><label>Charge being denied</label><select id="dn-charge" onchange="onDenialChargeChange()"></select></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Payer</label><input type="text" id="dn-payer" placeholder="as it appears on the remittance"></div>
+          <div class="fg"><label>Denied on</label><input type="date" id="dn-on"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Amount denied</label><input type="number" id="dn-amount" min="0" step="0.01"></div>
+          <div class="fg"><label>Code as given by the payer</label><input type="text" id="dn-code" placeholder="e.g. CARC 197"></div>
+        </div>
+        <div class="fg"><label>Reason, in the payer&rsquo;s own words</label><input type="text" id="dn-reason" placeholder="copied from the remittance, not summarised"></div>
+        <div class="note" style="margin-bottom:12px">The code and reason are stored exactly as the payer gave them. This app does not interpret a denial into a root cause it guessed &mdash; a wrong cause sends the appeal at the wrong argument.</div>
+
+        <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Appeal</div></div>
+        <div class="fr">
+          <div class="fg"><label>Stage</label><select id="dn-stage" onchange="onDenialStageChange()">
+            <option value="none">Not appealed</option>
+            <option value="drafted">Drafted</option>
+            <option value="submitted">Submitted</option>
+            <option value="won">Won &mdash; paid in full</option>
+            <option value="partial">Partially paid</option>
+            <option value="lost">Lost</option>
+            <option value="abandoned">Abandoned &mdash; not worth pursuing</option>
+          </select></div>
+          <div class="fg" id="dn-submitted-row" style="display:none"><label>Submitted on</label><input type="date" id="dn-submitted"></div>
+        </div>
+        <div class="fr" id="dn-decided-row" style="display:none">
+          <div class="fg"><label>Decided on</label><input type="date" id="dn-decided"></div>
+          <div class="fg"><label>Amount recovered</label><input type="number" id="dn-recovered" min="0" step="0.01"></div>
+        </div>
+        <div class="fg"><label>Working note</label><textarea id="dn-note" rows="2" placeholder="recorded as typed"></textarea></div>
+        <div id="dn-window-preview" style="margin-bottom:12px"></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn bo" onclick="closeDenialModal()">Cancel</button>
+          <button class="btn bp" onclick="saveDenial()">Save</button>
+        </div>
+      </div></div>
+
+      <div class="modal" id="payertermsmodal"><div class="mbox">
+        <div class="mtitle">Payer appeal windows</div>
+        <div class="note" style="margin-bottom:12px">There is <strong>no universal appeal deadline</strong>. It is set by your contract with each payer and differs between them, so nothing is assumed here. A denial from a payer with no window on file reads <em>no deadline on file</em> &mdash; not timely, and not late.</div>
+        <div class="fr">
+          <div class="fg"><label>Payer</label><input type="text" id="pw-payer" placeholder="exactly as it appears on remittances"></div>
+          <div class="fg"><label>Days to appeal</label><input type="number" id="pw-days" min="1" step="1" placeholder="from your contract"></div>
+        </div>
+        <div class="fg"><label>Where this came from</label><input type="text" id="pw-source" placeholder="e.g. provider agreement s.7.3, dated 2025-04-01"></div>
+        <button class="btn bo" onclick="savePayerTerm()">Save window</button>
+        <div class="tw" style="margin-top:12px"><table><thead><tr><th>Payer</th><th>Days</th><th>Source</th><th></th></tr></thead><tbody id="payerterms-tbody"></tbody></table></div>
+        <div style="display:flex;gap:10px;justify-content:flex-end;margin-top:14px">
+          <button class="btn bo" onclick="closePayerTermsModal()">Close</button>
+        </div>
+      </div></div>
+
       <div class="panel" id="panel-vendorcat">
         <div class="ph"><div><div class="ptitle">Vendor Catalog</div><div class="psub">Browse dental supplies/PPE/materials across vendors, compare prices, and order.</div></div>
           <div class="pa"><button class="btn bo bs" onclick="vShowSpendReport()">Spend Report</button></div>
@@ -1233,6 +1333,7 @@ function nav(id){
   if(id==='gfe')rGfe();
   if(id==='recall')rRecall();
   if(id==='txplan')rTxPlans();
+  if(id==='denials')rDenials();
   if(id==='referrals')rReferrals();
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
@@ -2264,6 +2365,396 @@ async function submitCompleteVisit(){
   closeCompleteVisitModal();
   await setAppointmentStatus(a.id,'Completed');
   toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+}
+
+// -- DENIALS, APPEALS AND RECEIVABLE AGEING (audit B3, 2026-09-02) --
+// The audit's finding here is unusual and worth restating: every enterprise
+// vendor claims "RCM" and "claim scrubbing", and NONE published a concrete
+// denials-and-appeals workflow. That makes this a MARKET-WIDE gap rather than
+// one vendor's weakness. dnt_denial and dnt_ar were registered as server
+// resources months ago and had, until now, NO client accessor and no render
+// function anywhere in this file -- the tables existed and the workflow did not.
+//
+// -- TWO FIGURES THIS PANEL WILL NOT INVENT --
+// 1. THE APPEAL DEADLINE. It is set by the payer contract and differs between
+//    payers; there is no universal ninety days. So the window is entered per
+//    payer WITH THE CONTRACT CLAUSE IT CAME FROM, and a denial whose payer has
+//    no window on file reads "no deadline on file" -- not timely, not late.
+//    Calling something timely against an invented deadline is worse than
+//    saying nothing, because the practice then stops checking.
+// 2. THE A/R BENCHMARK. The audit quotes ~30% of DSO claims sitting in 90+ day
+//    receivables and labels it trade-press. It appears NOWHERE on this panel.
+//    A practice's real ageing shown beside an unverified benchmark looks good
+//    or bad for no reason at all.
+//
+// -- WHAT IS DERIVED RATHER THAN STORED --
+// Ageing is computed at render time from dnt_charges and dnt_payments. There is
+// deliberately no write to dnt_ar: a stored ageing row is stale the next
+// morning, and the whole value of the report is that it is recomputed from the
+// charges and payments that really exist. dnt_ar stays registered and unwritten
+// for that reason, which is a decision rather than an oversight.
+//
+// -- AND THE DENIAL REASON IS RECORDED, NEVER INTERPRETED --
+// The payer's own code and wording are stored verbatim. This app does not turn
+// a denial into a "root cause" it guessed; a wrong cause sends the appeal at
+// the wrong argument, and the appeal window does not come round twice.
+function denials(){return ld('dnt_denial_list',[]);}
+// Appeal windows live on the dnt_settings row, NOT in their own table and NOT
+// in a local-only key. They are practice-wide configuration that a second
+// workstation must see -- a window saved at the front desk and invisible in the
+// billing office would let one of them call an appeal timely and the other not.
+// Same home and same merge discipline as the good-faith-estimate practice
+// identity added earlier today, and it means this feature needs no new
+// migration: dnt_denial's table already exists in
+// sql/sairndental_data_schema.sql.
+function payerTerms(){var s=settings();return Array.isArray(s.appeal_windows)?s.appeal_windows:[];}
+
+var DN_STAGE_LABELS={none:'Not appealed',drafted:'Drafted',submitted:'Submitted',
+  won:'Won',partial:'Partially paid',lost:'Lost',abandoned:'Abandoned'};
+var DN_STAGE_BADGE={none:'bx',drafted:'bw',submitted:'bb',won:'bg',partial:'bw',lost:'br',abandoned:'bx'};
+// Decided means the payer has answered, or the practice has stopped. A drafted
+// or submitted appeal is in neither half of the success rate.
+var DN_DECIDED={won:true,partial:true,lost:true,abandoned:true};
+
+function dnPayerTermFor(payer){
+  var key=String(payer||'').trim().toLowerCase();
+  if(!key)return null;
+  return payerTerms().find(function(t){return String(t.payer||'').trim().toLowerCase()===key;})||null;
+}
+function dnAddDays(dateStr,days){
+  if(!dateStr)return '';
+  var d=new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dnDaysUntil(dateStr){
+  if(!dateStr)return null;
+  var t=new Date(dateStr+'T00:00:00').getTime();
+  if(isNaN(t))return null;
+  return Math.round((t-new Date(dntLocalToday()+'T00:00:00').getTime())/86400000);
+}
+
+// Returns { known, deadline, days, source } -- known:false when the payer has
+// no window on file, which is a real answer and not a failure.
+function dnAppealWindow(d){
+  var term=dnPayerTermFor(d.payer);
+  if(!term||!(Number(term.days)>0)){
+    return {known:false, message:'No appeal window on file for '+(d.payer||'this payer')+
+      '. Appeal deadlines come from your contract and differ between payers, so none is assumed. Add it under "Payer appeal windows".'};
+  }
+  if(!d.denied_on){
+    return {known:false, message:'No denial date recorded, so the window cannot be counted from anywhere.'};
+  }
+  var deadline=dnAddDays(d.denied_on, Number(term.days));
+  return {known:true, deadline:deadline, days:dnDaysUntil(deadline),
+          termDays:Number(term.days), source:term.source||''};
+}
+
+// A denial is at stake while it is undecided AND some of it is unrecovered.
+function dnAtStake(d){
+  if(DN_DECIDED[d.stage])return 0;
+  return Number(d.amount)||0;
+}
+
+var dnEditId=null;
+
+function dnFillSelects(){
+  var psel=$('dn-patient');
+  if(psel){
+    var pts=patients();
+    var pk=psel.value;
+    psel.innerHTML=pts.length?pts.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a patient first</option>';
+    if(pk)psel.value=pk;
+  }
+  dnFillChargeSelect();
+}
+function dnFillChargeSelect(){
+  var sel=$('dn-charge'); if(!sel) return;
+  var pid=$('dn-patient')?$('dn-patient').value:'';
+  var mine=charges().filter(function(c){return c.patient_id===pid;});
+  var keep=sel.value;
+  sel.innerHTML='<option value="">(not linked to a charge)</option>'+mine.map(function(c){
+    var proc=procedureTypes().find(function(p){return p.id===c.procedure_type_id;});
+    return '<option value="'+H(c.id)+'">'+H(c.date||'--')+' '+H(proc?proc.cdt_code:'?')+' '+fmt(c.amount)+'</option>';
+  }).join('');
+  if(keep)sel.value=keep;
+}
+function onDenialPatientChange(){
+  dnFillChargeSelect();
+  var pt=patients().find(function(p){return p.id===$('dn-patient').value;});
+  if(pt&&!$('dn-payer').value)$('dn-payer').value=pt.insurance_payer||'';
+  dnRenderWindowPreview();
+}
+function onDenialChargeChange(){
+  var c=charges().find(function(x){return x.id===$('dn-charge').value;});
+  if(c&&!$('dn-amount').value)$('dn-amount').value=c.amount;
+}
+function onDenialStageChange(){
+  var v=$('dn-stage').value;
+  $('dn-submitted-row').style.display=(v==='submitted'||DN_DECIDED[v])?'block':'none';
+  $('dn-decided-row').style.display=DN_DECIDED[v]?'grid':'none';
+}
+function dnRenderWindowPreview(){
+  var box=$('dn-window-preview'); if(!box) return;
+  var w=dnAppealWindow({payer:$('dn-payer').value,denied_on:$('dn-on').value});
+  box.innerHTML=w.known
+    ? '<div class="psub"><span class="badge bw">appeal by '+H(w.deadline)+'</span> '+w.termDays+
+      ' days from the denial date, per your contract'+(w.source?(' ('+H(w.source)+')'):'')+'.</div>'
+    : '<div class="psub"><span class="badge bx">no deadline on file</span> '+H(w.message)+'</div>';
+}
+
+function openDenialModal(id){
+  dnEditId=id||null;
+  dnFillSelects();
+  var d=id?denials().find(function(x){return x.id===id;}):null;
+  $('dn-modal-title').textContent=d?'Edit denial':'Record a denial';
+  if(d&&d.patient_id)$('dn-patient').value=d.patient_id;
+  dnFillChargeSelect();
+  if(d&&d.charge_id)$('dn-charge').value=d.charge_id;
+  $('dn-payer').value=d?(d.payer||''):'';
+  $('dn-on').value=d?(d.denied_on||''):dntLocalToday();
+  $('dn-amount').value=d?d.amount:'';
+  $('dn-code').value=d?(d.code||''):'';
+  $('dn-reason').value=d?(d.reason||''):'';
+  $('dn-stage').value=d?(d.stage||'none'):'none';
+  $('dn-submitted').value=d?(d.submitted_on||''):'';
+  $('dn-decided').value=d?(d.decided_on||''):'';
+  $('dn-recovered').value=d?(d.recovered||''):'';
+  $('dn-note').value=d?(d.note||''):'';
+  if(!d)onDenialPatientChange();
+  onDenialStageChange();dnRenderWindowPreview();
+  $('denialmodal').classList.add('on');
+}
+function closeDenialModal(){$('denialmodal').classList.remove('on');dnEditId=null;}
+async function saveDenial(){
+  var patientId=$('dn-patient').value;
+  if(!patientId){toast('Pick the patient this denial is against');return;}
+  var amount=Number($('dn-amount').value);
+  if(!(amount>0)){toast('Record the amount denied -- a denial with no amount cannot be weighed against the effort of appealing it');return;}
+  var on=$('dn-on').value;
+  if(!on){toast('Record the denial date -- the appeal window is counted from it');return;}
+  if(on>dntLocalToday()){toast('That denial date is in the future');return;}
+  // The payer's own code and wording. Required, because an appeal argued
+  // against a reason nobody wrote down is argued against a memory.
+  var code=$('dn-code').value.trim(), reason=$('dn-reason').value.trim();
+  if(!code&&!reason){toast('Record the payer\'s code or its wording -- an appeal argued against a reason nobody wrote down is argued against a memory',7000);return;}
+  var stage=$('dn-stage').value;
+  var submitted=$('dn-submitted').value, decided=$('dn-decided').value, recovered=Number($('dn-recovered').value);
+  if((stage==='submitted'||DN_DECIDED[stage])&&stage!=='abandoned'&&!submitted){
+    toast('Record the date the appeal was submitted -- it is what proves it was inside the window');return;
+  }
+  if(DN_DECIDED[stage]&&stage!=='abandoned'&&!decided){
+    toast('A decided appeal needs the date it was decided -- it is not assumed to be today',6000);return;
+  }
+  if(submitted&&submitted<on){toast('The appeal was submitted before the denial date');return;}
+  if(decided&&submitted&&decided<submitted){toast('The decision date is before the appeal was submitted');return;}
+  if(decided&&decided>dntLocalToday()){toast('That decision date is in the future');return;}
+  if(stage==='partial'&&!(recovered>0)){toast('A partial payment needs the amount actually recovered');return;}
+  if(recovered>amount){toast('More was recovered than was denied -- check the figures');return;}
+  var rec={id:dnEditId||newId('DN'),patient_id:patientId,charge_id:$('dn-charge').value,
+    payer:$('dn-payer').value.trim(),denied_on:on,amount:amount,code:code,reason:reason,
+    stage:stage,submitted_on:submitted,decided_on:DN_DECIDED[stage]?decided:'',
+    recovered:(stage==='won')?amount:((stage==='partial')?recovered:0),
+    note:$('dn-note').value.trim(),created_at:dntLocalToday()};
+  var list=denials();
+  if(dnEditId){list=list.map(function(x){return x.id===dnEditId?rec:x;});}else{list.push(rec);}
+  st('dnt_denial_list',list);
+  closeDenialModal();rDenials();
+  var syncResult=await sdnData('write','dnt_denial',rec);
+  toast(syncResult?'Denial saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
+function openPayerTermsModal(){
+  $('pw-payer').value='';$('pw-days').value='';$('pw-source').value='';
+  rPayerTerms();
+  $('payertermsmodal').classList.add('on');
+}
+function closePayerTermsModal(){$('payertermsmodal').classList.remove('on');}
+function rPayerTerms(){
+  var tb=$('payerterms-tbody'); if(!tb) return;
+  var list=payerTerms();
+  tb.innerHTML=list.length?list.map(function(t,i){
+    return '<tr><td>'+H(t.payer)+'</td><td>'+H(String(t.days))+'</td>'+
+      '<td style="font-size:12px">'+H(t.source||'<not recorded>')+'</td>'+
+      '<td><button class="btn bo bs" onclick="removePayerTerm('+i+')">Remove</button></td></tr>';
+  }).join(''):'<tr><td colspan="4" style="color:var(--muted);text-align:center;padding:14px">No payer windows on file</td></tr>';
+}
+function savePayerTerm(){
+  var payer=$('pw-payer').value.trim();
+  var days=parseInt($('pw-days').value,10);
+  if(!payer){toast('Name the payer exactly as it appears on remittances -- the match is on that name');return;}
+  if(!(days>0)){toast('Record the number of days your contract allows');return;}
+  // The source is required for the same reason a training rule's citation is:
+  // a deadline nobody can trace back to a contract is indistinguishable from a
+  // guess, and this one decides whether an appeal is worth writing.
+  var source=$('pw-source').value.trim();
+  if(!source){toast('Record where this window came from -- an untraceable deadline is indistinguishable from a guess',7000);return;}
+  var list=payerTerms().slice();
+  var i=list.findIndex(function(t){return String(t.payer||'').trim().toLowerCase()===payer.toLowerCase();});
+  var rec={payer:payer,days:days,source:source};
+  if(i>=0)list[i]=rec;else list.push(rec);
+  $('pw-payer').value='';$('pw-days').value='';$('pw-source').value='';
+  dnPersistWindows(list);
+}
+function removePayerTerm(i){
+  var list=payerTerms().slice();list.splice(i,1);
+  dnPersistWindows(list);
+}
+// Merges onto the existing settings record and writes THROUGH to the server.
+// dntSyncFromServer() replaces dnt_settings_obj wholesale, so a window saved
+// only locally would be silently erased by the next sync -- the same defect
+// found and fixed on the GFE practice identity this morning, and the reason
+// this is a write-through rather than a local save with a promise to sync
+// later.
+async function dnPersistWindows(list){
+  var rec=Object.assign({},settings(),{appeal_windows:list});
+  st('dnt_settings_obj',rec);
+  rPayerTerms();rDenials();
+  var lic=dntLicenseKey();
+  if(!lic){toast('Saved on this device only -- no license key, so the next sync will overwrite it',7000);return;}
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
+      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
+    var d=await r.json().catch(function(){return null;});
+    toast((r.ok&&d&&d.ok)?'Appeal window saved'
+      :'Saved on this device only -- the server write failed, so the next sync will overwrite it',
+      (r.ok&&d&&d.ok)?3000:7000);
+  }catch(e){
+    toast('Saved on this device only -- could not reach the server, so the next sync will overwrite it',7000);
+  }
+}
+
+// -- RECEIVABLE AGEING -------------------------------------------------------
+// Payments are applied oldest-charge-first. That is what an ageing report
+// MEANS, and it is stated on screen rather than presented as this practice's
+// allocation policy, which the app has not been told.
+function dnAging(){
+  var buckets=[{label:'0-30 days',min:0,max:30,count:0,amount:0},
+               {label:'31-60 days',min:31,max:60,count:0,amount:0},
+               {label:'61-90 days',min:61,max:90,count:0,amount:0},
+               {label:'Over 90 days',min:91,max:1e9,count:0,amount:0}];
+  var undated=[];
+  var dated=[];
+  charges().forEach(function(c){
+    if(!c.date){undated.push(c);return;}
+    var t=new Date(c.date+'T00:00:00').getTime();
+    if(isNaN(t)){undated.push(c);return;}
+    dated.push(c);
+  });
+  // Outstanding per charge = amount - estimated insurance portion, less
+  // payments applied oldest first within that patient.
+  var byPatient={};
+  dated.forEach(function(c){
+    (byPatient[c.patient_id]=byPatient[c.patient_id]||[]).push(c);
+  });
+  var totalOutstanding=0;
+  Object.keys(byPatient).forEach(function(pid){
+    var list=byPatient[pid].slice().sort(function(a,b){return String(a.date).localeCompare(String(b.date));});
+    var pool=payments().filter(function(p){return p.patient_id===pid;})
+      .reduce(function(s,p){return s+(Number(p.amount)||0);},0);
+    list.forEach(function(c){
+      var owed=(Number(c.amount)||0)-(Number(c.estimated_insurance_portion)||0);
+      if(owed<0)owed=0;
+      var applied=Math.min(pool,owed);
+      pool-=applied;
+      var rem=owed-applied;
+      if(rem<=0)return;
+      var age=Math.round((new Date(dntLocalToday()+'T00:00:00').getTime()-new Date(c.date+'T00:00:00').getTime())/86400000);
+      for(var i=0;i<buckets.length;i++){
+        if(age>=buckets[i].min&&age<=buckets[i].max){buckets[i].count++;buckets[i].amount+=rem;break;}
+      }
+      totalOutstanding+=rem;
+    });
+  });
+  return {buckets:buckets,undated:undated.length,total:totalOutstanding};
+}
+
+function rDenials(){
+  dnFillSelects();
+  var list=denials();
+  var open=list.filter(function(d){return !DN_DECIDED[d.stage];});
+  var decided=list.filter(function(d){return DN_DECIDED[d.stage]&&d.stage!=='abandoned';});
+  var recoveredAny=decided.filter(function(d){return d.stage==='won'||d.stage==='partial';});
+  var atStake=open.reduce(function(s,d){return s+dnAtStake(d);},0);
+  var closing=open.filter(function(d){
+    var w=dnAppealWindow(d);
+    return w.known&&w.days!==null&&w.days<=14;
+  });
+
+  if($('k-dn-open'))$('k-dn-open').textContent=open.length;
+  if($('k-dn-closing'))$('k-dn-closing').textContent=closing.length;
+  if($('k-dn-atstake'))$('k-dn-atstake').textContent=fmt(atStake);
+  if($('k-dn-success')){
+    // Decided appeals only, and ABANDONED is excluded from both halves --
+    // walking away is not the payer deciding against you, and counting it as a
+    // loss would understate how the appeals that were actually argued went.
+    $('k-dn-success').textContent=decided.length?(Math.round(recoveredAny.length/decided.length*100)+'%'):'--';
+    if($('k-dn-success-sub'))$('k-dn-success-sub').textContent=decided.length
+      ? (recoveredAny.length+' of '+decided.length+' argued')
+      : 'No appeal decided yet';
+  }
+
+  var tb=$('denials-tbody');
+  if(tb){
+    var sorted=list.slice().sort(function(a,b){return String(b.denied_on||'').localeCompare(String(a.denied_on||''));});
+    tb.innerHTML=sorted.length?sorted.map(function(d){
+      var pt=patients().find(function(p){return p.id===d.patient_id;});
+      var w=dnAppealWindow(d);
+      var windowCell;
+      if(!w.known){
+        windowCell='<span class="badge bx">no deadline on file</span>';
+      }else if(DN_DECIDED[d.stage]){
+        windowCell='<span style="color:var(--muted)">'+H(w.deadline)+'</span>';
+      }else if(w.days<0){
+        windowCell='<span class="badge br">closed '+Math.abs(w.days)+' d ago</span>';
+      }else{
+        windowCell='<span class="badge '+(w.days<=14?'bw':'bg')+'">'+w.days+' d left</span>';
+      }
+      var outcome='<span class="badge '+(DN_STAGE_BADGE[d.stage]||'bx')+'">'+H(DN_STAGE_LABELS[d.stage]||d.stage)+'</span>';
+      if(d.stage==='partial')outcome+='<div style="font-size:11px;color:var(--muted)">'+fmt(d.recovered)+' of '+fmt(d.amount)+'</div>';
+      if(d.stage==='won')outcome+='<div style="font-size:11px;color:var(--muted)">'+fmt(d.amount)+' recovered</div>';
+      return '<tr><td>'+H(d.denied_on||'--')+'</td>'+
+        '<td>'+H(pt?pt.name:'(unknown patient)')+'</td><td>'+H(d.payer||'--')+'</td>'+
+        '<td>'+H(d.code||'--')+(d.reason?'<div style="font-size:11px;color:var(--muted)">'+H(d.reason)+'</div>':'')+'</td>'+
+        '<td>'+fmt(d.amount)+'</td>'+
+        '<td>'+H(DN_STAGE_LABELS[d.stage]||d.stage)+(d.submitted_on?'<div style="font-size:11px;color:var(--muted)">sent '+H(d.submitted_on)+'</div>':'')+'</td>'+
+        '<td>'+windowCell+'</td><td>'+outcome+'</td>'+
+        '<td><button class="btn bo bs" onclick="openDenialModal(\''+H(d.id)+'\')">Open</button></td></tr>';
+    }).join(''):'<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">No denials recorded</td></tr>';
+  }
+
+  var notes=$('dn-notes');
+  if(notes){
+    var bits=[];
+    var noWindow=open.filter(function(d){return !dnAppealWindow(d).known;});
+    if(noWindow.length)bits.push('<strong>'+noWindow.length+' open denial'+(noWindow.length===1?'':'s')+' '+(noWindow.length===1?'has':'have')+' no appeal window on file for the payer.</strong> Deadlines come from your contract and differ between payers, so none is assumed &mdash; those rows read &quot;no deadline on file&quot; rather than being called timely. Add the window under <em>Payer appeal windows</em>.');
+    var closed=open.filter(function(d){var w=dnAppealWindow(d);return w.known&&w.days!==null&&w.days<0;});
+    if(closed.length)bits.push('<strong>'+closed.length+' open denial'+(closed.length===1?'':'s')+' '+(closed.length===1?'is':'are')+' past the contracted appeal window.</strong> They are still listed rather than hidden: an appeal that can no longer be filed is a figure the practice should see, not one the software quietly drops.');
+    var abandoned=list.filter(function(d){return d.stage==='abandoned';});
+    if(abandoned.length)bits.push(abandoned.length+' denial'+(abandoned.length===1?' was':'s were')+' abandoned rather than argued. Those are excluded from the success rate in <strong>both</strong> halves &mdash; walking away is not the payer deciding against you, and counting it as a loss would understate how the appeals actually argued went.');
+    notes.innerHTML=bits.length?bits.map(function(b){return '<div class="msg" style="font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:8px">'+b+'</div>';}).join(''):'';
+  }
+
+  var ag=dnAging();
+  var atb=$('aging-tbody');
+  if(atb){
+    atb.innerHTML=ag.buckets.map(function(b){
+      return '<tr><td><strong>'+H(b.label)+'</strong></td><td>'+b.count+'</td><td>'+fmt(b.amount)+'</td></tr>';
+    }).join('')+'<tr><td><strong>Total outstanding</strong></td><td></td><td><strong>'+fmt(ag.total)+'</strong></td></tr>';
+  }
+  var an=$('aging-notes');
+  if(an){
+    an.innerHTML=ag.undated
+      ? '<div class="msg" style="font-size:13px;line-height:1.7;color:var(--muted)"><strong>'+ag.undated+' charge'+(ag.undated===1?'':'s')+' '+(ag.undated===1?'has':'have')+' no usable date and '+(ag.undated===1?'is':'are')+' excluded from every bucket.</strong> Undated charges are not dropped into 0&ndash;30 &mdash; that would make the newest bucket absorb the oldest debt and flatter the report exactly where it should not.</div>'
+      : '';
+  }
+
+  var badge=$('denials-badge');
+  if(badge){
+    if(closing.length){badge.style.display='inline-block';badge.textContent=closing.length;}
+    else badge.style.display='none';
+  }
 }
 
 // -- TREATMENT PLANNING (competitive-gap audit A9, 2026-09-02) ------
@@ -3644,7 +4135,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_credentials','dnt_credentials_list'],
   ['dnt_gfe','dnt_gfe_list'],
   ['dnt_recall_outreach','dnt_recall_outreach_list'],
-  ['dnt_txplans','dnt_txplans_list']
+  ['dnt_txplans','dnt_txplans_list'],
+  ['dnt_denial','dnt_denial_list']
 ];
 // dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
 // a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
@@ -3690,7 +4182,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();rRecall();rTxPlans();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();rRecall();rTxPlans();rDenials();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
     // Only refetch the board if the panel is actually open -- 'evaluate' is a
     // real server round trip, and a background sync should not fire one for a
