@@ -231,6 +231,16 @@
       "claimed_at_epoch": 1788392132.914514,
       "status": "released",
       "released_at": "2026-09-02T23:48:51Z"
+    },
+    {
+      "id": "cc-1788393209",
+      "session": "cc",
+      "subject": "sairnmechanical",
+      "task": "site asset registry",
+      "claimed_at": "2026-09-02T23:53:29Z",
+      "claimed_at_epoch": 1788393209.5393715,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
