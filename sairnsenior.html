@@ -232,6 +232,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Staff</div>
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
       <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Training Hours<span class="badge br" id="tr-badge" style="display:none;margin-left:8px"></span></button>
+      <button class="sb" id="sb-hiring" onclick="nav('hiring')"><span class="sico">&#128101;</span>Hiring</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -580,6 +581,84 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn bo" onclick="closeTrRecordModal()">Cancel</button>
     <button class="btn bp" onclick="saveTrRecord()">Save Training</button>
+  </div>
+</div></div>
+
+<!-- HIRING FUNNEL (competitive-gap audit A5, 2026-09-02)
+     The audit records A5 as BASELINE in this vertical rather than an
+     enterprise extra -- applicant tracking is native in both AxisCare and
+     Aaniie at Tier A -- and names caregiver turnover as "the market's
+     defining operational problem".
+
+     A BOLT-ON ATS CAN COUNT APPLICATIONS. It cannot say which sources produce
+     caregivers who are STILL WORKING three months later, because that answer
+     needs the applicant joined to the caregiver joined to the visit history,
+     and only the system of record holds all three. That join is the whole
+     reason this panel exists rather than a spreadsheet.
+
+     EVERY RATE HERE IS OVER A DECIDED DENOMINATOR, matching the referral
+     panel above and the appeal-outcome breakdown in Billing. A hire made
+     three weeks ago has no ninety-day answer; counting it as a failure would
+     make a source look worse the more recently it was used. -->
+<div class="panel" id="panel-hiring">
+  <div class="ph"><div><div class="ptitle">Hiring</div><div class="psub">Who applied, who was hired, and which sources produced caregivers who were still working &mdash; measured from real visits, never stored</div></div>
+    <div class="pa"><button class="btn bp bs" onclick="openHrApplicantModal()">+ Applicant</button></div>
+  </div>
+  <div class="card" id="hr-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Applicant records are limited to management, coordinators and schedulers.</div></div>
+  <div id="hr-content">
+    <div class="krow" id="hr-kpis"></div>
+    <div class="card"><div class="ch"><span class="ct">Pipeline</span></div><div class="cb">
+      <div id="hr-funnel" style="font-size:13px"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Sources, ranked by caregivers who stayed</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">Ranked by <strong>retained hires</strong>, not by applications and not by hires &mdash; a source that sends fifty people and produces one caregiver who leaves in a month is not better than one that sends four and produces two who stay. Sample size is printed beside every rate for the same reason. A source with nothing decided reads &quot;--&quot;, never 0% or 100%.</div>
+      <div class="tw"><table><thead><tr><th>Source</th><th>Applicants</th><th>Decided</th><th>Hired</th><th>Hire rate</th><th>Retained</th><th>Lapsed</th><th>Too soon</th><th>Retention</th></tr></thead>
+      <tbody id="hr-source-tbody"></tbody></table></div>
+      <div id="hr-notes" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Applicants</span></div><div class="cb">
+      <div class="tw"><table><thead><tr><th>Name</th><th>Source</th><th>Applied</th><th>Stage</th><th>Hired</th><th>Retention</th><th>Actions</th></tr></thead>
+      <tbody id="hr-applicant-tbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="hrapplicantmodal"><div class="mbox">
+  <div class="mtitle" id="hr-modal-title">Add Applicant</div>
+  <div class="fr">
+    <div class="fg"><label>Name</label><input id="hra-name" placeholder="Full name"></div>
+    <div class="fg"><label>Source</label><input id="hra-source" placeholder="e.g. Indeed, employee referral, job fair"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Phone</label><input id="hra-phone"></div>
+    <div class="fg"><label>Applied on</label><input id="hra-applied" type="date"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Stage</label><select id="hra-stage" onchange="hrStageChanged()">
+      <option value="applied">Applied</option>
+      <option value="screened">Screened</option>
+      <option value="interviewed">Interviewed</option>
+      <option value="offered">Offered</option>
+      <option value="hired">Hired</option>
+      <option value="rejected">Rejected</option>
+      <option value="withdrawn">Withdrawn</option>
+    </select></div>
+    <div class="fg"><label>Role applied for</label><input id="hra-role" placeholder="e.g. HHA, PCA"></div>
+  </div>
+  <div id="hra-hired-fields" style="display:none">
+    <div class="fr">
+      <div class="fg"><label>Hired on</label><input id="hra-hired" type="date"></div>
+      <div class="fg"><label>Caregiver record</label><select id="hra-caregiver"></select></div>
+    </div>
+    <!-- THE LINK IS WHAT MAKES RETENTION MEASURABLE. Without it the hire is
+         counted and reported as `unlinked`, never guessed at from a name
+         match -- two caregivers can share a name and the wrong join would
+         attribute someone else's work to this source. -->
+    <div class="note" style="margin:0 0 12px">Linking the caregiver record is what lets retention be measured from real completed visits. Left unlinked, the hire still counts &mdash; it is reported as <strong>not linked</strong> rather than being matched by name.</div>
+  </div>
+  <div class="fg"><label>Notes</label><input id="hra-notes" placeholder="Optional"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeHrApplicantModal()">Cancel</button>
+    <button class="btn bp" onclick="saveHrApplicant()">Save</button>
   </div>
 </div></div>
 
@@ -972,6 +1051,7 @@ function nav(id){
   if(id==='billing')blRender();
   if(id==='referrals')rfRender();
   if(id==='training')trRender();
+  if(id==='hiring')hrRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -2594,6 +2674,223 @@ function confirmClaimAction(){
 }
 function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
 function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
+
+// ── HIRING FUNNEL (competitive-gap audit A5, 2026-09-02) ─────────────────
+// Computed here rather than server-side, matching this app's own convention:
+// SAIRNsenior is local-first (ld/st) with a server hydrate, and the referral
+// and training panels beside this one compute in-page too. The drift risk that
+// justifies a server module elsewhere is answered differently here --
+// api/_lib/sairnsenior-hiring.test.js EXTRACTS THESE FUNCTIONS VERBATIM from
+// this file and drives them, the same harness already used for the trust-void
+// race and the appeals workflow. A second copy is what drifts; there is none.
+function hrApplicants(){return ld('sen_applicants',[]);}
+
+var HR_STAGES=['applied','screened','interviewed','offered','hired','rejected','withdrawn'];
+var HR_DECIDED={hired:1,rejected:1,withdrawn:1};
+// Ninety days is the market's conventional turnover checkpoint. It is a
+// DEFAULT and not a constant in the arithmetic -- every function takes the
+// window, so an agency measuring 30 or 180 is not arguing with the code.
+var HR_RETENTION_DAYS=90;
+
+function hrSourceKey(s){return String(s==null?'':s).trim().toLowerCase();}
+function hrAddDays(d,n){
+  var t=new Date(Date.UTC(+d.slice(0,4),+d.slice(5,7)-1,+d.slice(8,10)));
+  t.setUTCDate(t.getUTCDate()+n);
+  return t.toISOString().slice(0,10);
+}
+function hrIsDate(s){return typeof s==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(s);}
+
+// ── RETENTION, MEASURED RATHER THAN ASSERTED ─────────────────────────────
+//   retained  the hired caregiver has a COMPLETED visit dated on or after
+//             hire + window. Evidence they were still working, not an absence
+//             of evidence that they left.
+//   lapsed    the window has fully elapsed and no such visit exists.
+//   too_soon  today is before hire + window. NOT a failure, never counted as
+//             one, and excluded from the denominator -- otherwise a source
+//             looks worse the more recently it was used.
+//   unlinked  hired, but no caregiver record linked or no hire date, so there
+//             is nothing to measure. Reported, never guessed from a name.
+//
+// THE KNOWN LIMIT, stated because it changes how the number reads: a caregiver
+// still employed whose visits were never marked completed reads as `lapsed`.
+// This measures completed WORK, not payroll status, and the panel says so.
+function hrRetentionFor(a,vis,today,windowDays){
+  var win=Number(windowDays)||HR_RETENTION_DAYS;
+  if(!a||a.stage!=='hired')return {status:'not_hired'};
+  if(!hrIsDate(a.hired_on))return {status:'unlinked',reason:'no hire date recorded'};
+  if(!a.caregiver_id)return {status:'unlinked',reason:'no caregiver record linked'};
+  var mark=hrAddDays(a.hired_on,win);
+  if(today<mark)return {status:'too_soon',measurable_on:mark};
+  var worked=(vis||[]).some(function(v){
+    return v&&v.assigned_employee_id===a.caregiver_id&&v.status==='completed'&&
+      hrIsDate(v.scheduled_date)&&v.scheduled_date>=mark;
+  });
+  return {status:worked?'retained':'lapsed',measurable_on:mark};
+}
+
+// Stage counts only. A stage count is not a conversion and is not presented as
+// one; an unrecognised stage is counted separately rather than dropped, so a
+// bad row cannot quietly shrink the pipeline.
+function hrFunnel(list){
+  var counts={},unknown=0;
+  HR_STAGES.forEach(function(s){counts[s]=0;});
+  (list||[]).forEach(function(a){
+    if(!a)return;
+    if(counts[a.stage]===undefined){unknown++;return;}
+    counts[a.stage]++;
+  });
+  return {counts:counts,unknown_stage:unknown,total:(list||[]).length};
+}
+
+// Per source, ranked by RETAINED HIRES. Sources are free text, so they are
+// normalised the same way the payer name is in dental-credentials.js -- an
+// "Indeed" and an "indeed " that do not group are two half-samples, and a rate
+// on half a sample is worse than no rate.
+function hrBySource(list,vis,today,windowDays){
+  var win=Number(windowDays)||HR_RETENTION_DAYS;
+  var acc={};
+  (list||[]).forEach(function(a){
+    if(!a)return;
+    var k=hrSourceKey(a.source)||'(no source recorded)';
+    var r=acc[k];
+    if(!r)r=acc[k]={source:(a.source&&String(a.source).trim())||'(no source recorded)',
+      applicants:0,decided:0,hired:0,rejected:0,withdrawn:0,pending:0,
+      retained:0,lapsed:0,too_soon:0,unlinked:0};
+    r.applicants++;
+    if(HR_DECIDED[a.stage]){r.decided++;r[a.stage]++;}else{r.pending++;}
+    if(a.stage==='hired'){
+      var ret=hrRetentionFor(a,vis,today,win);
+      if(r[ret.status]!==undefined)r[ret.status]++;
+    }
+  });
+  var rows=Object.keys(acc).map(function(k){
+    var r=acc[k];
+    // A rate over an empty denominator is null -- never 0, never 100. A source
+    // with nothing decided has not performed badly, it has not performed yet.
+    r.hire_rate_of_decided=r.decided?Math.round((r.hired/r.decided)*1000)/10:null;
+    r.measurable_retention=r.retained+r.lapsed;
+    r.retention_rate=r.measurable_retention?Math.round((r.retained/r.measurable_retention)*1000)/10:null;
+    return r;
+  });
+  rows.sort(function(a,b){
+    return (b.retained-a.retained)||(b.measurable_retention-a.measurable_retention)||(b.applicants-a.applicants);
+  });
+  return rows;
+}
+
+var hrEditId=null;
+function hrStageChanged(){
+  $('hra-hired-fields').style.display=$('hra-stage').value==='hired'?'':'none';
+}
+function hrFillCaregiverSelect(){
+  var sel=$('hra-caregiver');if(!sel)return;
+  var keep=sel.value;
+  sel.innerHTML='<option value="">(not linked)</option>'+caregivers().map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';
+  }).join('');
+  if(keep)sel.value=keep;
+}
+function openHrApplicantModal(id){
+  hrEditId=id||null;
+  var a=id?hrApplicants().find(function(x){return x.id===id;}):null;
+  $('hr-modal-title').textContent=a?'Edit Applicant':'Add Applicant';
+  hrFillCaregiverSelect();
+  $('hra-name').value=a?a.name||'':'';
+  $('hra-source').value=a?a.source||'':'';
+  $('hra-phone').value=a?a.phone||'':'';
+  $('hra-applied').value=(a&&a.applied_on)||senLocalToday();
+  $('hra-stage').value=(a&&a.stage)||'applied';
+  $('hra-role').value=a?a.role||'':'';
+  $('hra-hired').value=(a&&a.hired_on)||'';
+  $('hra-caregiver').value=(a&&a.caregiver_id)||'';
+  $('hra-notes').value=a?a.notes||'':'';
+  hrStageChanged();
+  $('hrapplicantmodal').classList.add('on');
+}
+function closeHrApplicantModal(){$('hrapplicantmodal').classList.remove('on');hrEditId=null;}
+async function saveHrApplicant(){
+  var name=$('hra-name').value.trim();
+  if(!name){toast('A name is required');return;}
+  var stage=$('hra-stage').value;
+  var hiredOn=$('hra-hired').value||'';
+  // A HIRE WITH NO DATE CANNOT BE MEASURED, so it is refused at the point of
+  // entry rather than being stored and reported as unlinked forever.
+  if(stage==='hired'&&!hiredOn){toast('A hire needs the date it happened -- retention is counted from it');return;}
+  var appliedOn=$('hra-applied').value||senLocalToday();
+  if(stage==='hired'&&hiredOn<appliedOn){toast('The hire date is before the application date');return;}
+  var rec={id:hrEditId||newId('APP'),name:name,source:$('hra-source').value.trim(),
+    phone:$('hra-phone').value.trim(),applied_on:appliedOn,stage:stage,
+    role:$('hra-role').value.trim(),
+    hired_on:stage==='hired'?hiredOn:'',
+    caregiver_id:stage==='hired'?$('hra-caregiver').value:'',
+    notes:$('hra-notes').value.trim().slice(0,500),
+    created_at:(hrEditId&&(hrApplicants().find(function(x){return x.id===hrEditId;})||{}).created_at)||senLocalToday()};
+  var list=hrApplicants();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_applicants',list);
+  closeHrApplicantModal();hrRender();
+  var saved=await senData('write','sen_applicants',rec,true);
+  toast(saved?'Applicant saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function hrRetentionBadge(r){
+  if(r.status==='retained')return '<span class="badge bg">Retained</span>';
+  if(r.status==='lapsed')return '<span class="badge br">Lapsed</span>';
+  if(r.status==='too_soon')return '<span class="badge bw">Too soon &mdash; '+H(r.measurable_on)+'</span>';
+  if(r.status==='unlinked')return '<span class="badge bw">Not linked</span>';
+  return '--';
+}
+
+function hrRender(){
+  var ok=senIsBroadRead();
+  var denied=$('hr-denied'),content=$('hr-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  var list=hrApplicants(),vis=visits(),today=senLocalToday();
+  var f=hrFunnel(list);
+  var rows=hrBySource(list,vis,today,HR_RETENTION_DAYS);
+  var totals=rows.reduce(function(t,r){
+    t.hired+=r.hired;t.retained+=r.retained;t.lapsed+=r.lapsed;t.too_soon+=r.too_soon;t.unlinked+=r.unlinked;t.decided+=r.decided;
+    return t;
+  },{hired:0,retained:0,lapsed:0,too_soon:0,unlinked:0,decided:0});
+  var measurable=totals.retained+totals.lapsed;
+
+  var k=$('hr-kpis');
+  if(k)k.innerHTML=
+    '<div class="kpi"><div class="klbl">In pipeline</div><div class="kval">'+(f.total-f.counts.hired-f.counts.rejected-f.counts.withdrawn)+'</div><div class="kt">'+f.total+' applicants on file</div></div>'+
+    '<div class="kpi"><div class="klbl">Hired</div><div class="kval">'+totals.hired+'</div><div class="kt">'+totals.decided+' decided</div></div>'+
+    '<div class="kpi"><div class="klbl">Retained at '+HR_RETENTION_DAYS+'d</div><div class="kval">'+(measurable?Math.round(totals.retained/measurable*1000)/10+'%':'--')+'</div><div class="kt">'+totals.retained+' of '+measurable+' measurable</div></div>'+
+    '<div class="kpi"><div class="klbl">Not yet measurable</div><div class="kval">'+totals.too_soon+'</div><div class="kt">Hired less than '+HR_RETENTION_DAYS+'d ago</div></div>';
+
+  var fu=$('hr-funnel');
+  if(fu)fu.innerHTML=HR_STAGES.map(function(s){
+    return '<span style="display:inline-block;margin-right:16px"><strong>'+f.counts[s]+'</strong> '+s+'</span>';
+  }).join('')+(f.unknown_stage?'<div style="margin-top:8px;color:var(--warn,#b45309)">'+f.unknown_stage+' applicant(s) carry a stage this app does not recognise and are counted in the total but in no stage.</div>':'');
+
+  var stb=$('hr-source-tbody');
+  if(stb)stb.innerHTML=rows.length?rows.map(function(r){
+    return '<tr><td>'+H(r.source)+'</td><td>'+r.applicants+'</td><td>'+r.decided+'</td><td>'+r.hired+'</td>'+
+      '<td>'+(r.hire_rate_of_decided===null?'--':r.hire_rate_of_decided+'% <span style="color:var(--muted)">('+r.hired+'/'+r.decided+')</span>')+'</td>'+
+      '<td>'+r.retained+'</td><td>'+r.lapsed+'</td><td>'+r.too_soon+(r.unlinked?' <span class="badge bw">'+r.unlinked+' unlinked</span>':'')+'</td>'+
+      '<td>'+(r.retention_rate===null?'--':r.retention_rate+'% <span style="color:var(--muted)">('+r.retained+'/'+r.measurable_retention+')</span>')+'</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No applicants on file yet</td></tr>';
+
+  var nt=$('hr-notes');
+  if(nt)nt.textContent='Retention is evidenced by a COMPLETED visit on or after the '+HR_RETENTION_DAYS+
+    '-day mark, so a caregiver who is still employed but whose visits were never marked completed reads as lapsed. '+
+    'A hire with no linked caregiver record is reported as not linked rather than matched by name -- two caregivers can share one.';
+
+  var atb=$('hr-applicant-tbody');
+  if(atb)atb.innerHTML=list.length?list.slice().sort(function(a,b){return (b.applied_on||'').localeCompare(a.applied_on||'');}).map(function(a){
+    var ret=hrRetentionFor(a,vis,today,HR_RETENTION_DAYS);
+    return '<tr><td>'+H(a.name)+'</td><td>'+H(a.source||'--')+'</td><td>'+fdate(a.applied_on)+'</td>'+
+      '<td>'+H(a.stage||'applied')+'</td><td>'+(a.hired_on?fdate(a.hired_on):'--')+'</td>'+
+      '<td>'+(a.stage==='hired'?hrRetentionBadge(ret):'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openHrApplicantModal(\''+H(a.id)+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No applicants on file yet</td></tr>';
+}
 
 // ── COMPLIANCE ────────────────────────────────────────────────────────────
 // Broad-read tier only (owner/billing/coordinator/scheduler) -- caregiver

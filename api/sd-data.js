@@ -2610,9 +2610,27 @@ module.exports = async (req, res) => {
     // need both, and a caregiver has no business reading the roster's
     // compliance standing. Management-only would put it out of reach of the
     // people staffing the schedule.
+    // sen_applicants rides the same gate and branch (2026-09-02, competitive-
+    // gap audit A5): an applicant record is employment data about someone who
+    // is not yet staff, which is the same shape as a referral naming someone
+    // who is not yet a client -- a caregiver is out, the coordinator who
+    // screens the call is in.
     const SEN_REFERRAL_RESOURCES = {
       sen_referral_sources: 'source_id', sen_referrals: 'referral_id',
-      sen_training_rules: 'rule_id', sen_training_records: 'record_id'
+      sen_training_rules: 'rule_id', sen_training_records: 'record_id',
+      sen_applicants: 'applicant_id'
+    };
+    // THE SETUP FILE IS A LOOKUP, NOT A CHAIN OF TERNARIES. It was a single
+    // ternary on 'training', which was correct for two files and silently
+    // wrong for the third -- a new resource would have been told to run the
+    // referrals schema. A map goes stale loudly (a missing key is visible)
+    // rather than quietly naming the wrong file.
+    const SEN_REFERRAL_SETUP_FILE = {
+      sen_referral_sources: 'sql/sairnsenior_referrals_schema.sql',
+      sen_referrals: 'sql/sairnsenior_referrals_schema.sql',
+      sen_training_rules: 'sql/sairnsenior_training_schema.sql',
+      sen_training_records: 'sql/sairnsenior_training_schema.sql',
+      sen_applicants: 'sql/sairnsenior_applicants_schema.sql'
     };
     if (SEN_REFERRAL_RESOURCES[resource] && (action === 'read' || action === 'write')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
@@ -2643,10 +2661,8 @@ module.exports = async (req, res) => {
         ))
       });
       if (r.status === 404 || r.status === 400) {
-        const setupFile = (resource.indexOf('training') !== -1)
-          ? 'sql/sairnsenior_training_schema.sql'
-          : 'sql/sairnsenior_referrals_schema.sql';
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run ' + setupFile + ' in Supabase first.' } });
+        const setupFile = SEN_REFERRAL_SETUP_FILE[resource];
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run ' + (setupFile || 'the matching sql/sairnsenior_*_schema.sql') + ' in Supabase first.' } });
         return;
       }
       const rows = await r.json();

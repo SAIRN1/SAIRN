@@ -87,6 +87,17 @@ module.exports = {
   // visit and need to see standing; a caregiver does not read the roster's.
     'sen_training_rules',
     'sen_training_records',
+  // SAIRNsenior caregiver hiring funnel (2026-09-02, competitive-gap audit
+  // A5) -- see sql/sairnsenior_applicants_schema.sql. One person who applied,
+  // the source that sent them, the stage they reached, and once hired the
+  // sen_caregivers row they became. Retention is NOT stored: it is measured
+  // from sen_visits, so the answer to "which sources produce caregivers who
+  // stay" cannot drift away from the work those caregivers actually did.
+  // Same intake-role gate and same shared branch as the referral and training
+  // resources above: an applicant is employment data about someone who is not
+  // yet staff, so a caregiver is out and the coordinator who screens the call
+  // is in.
+    'sen_applicants',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the
