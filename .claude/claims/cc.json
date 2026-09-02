@@ -189,8 +189,8 @@
       "task": "license key in customer urls audit",
       "claimed_at": "2026-09-02T15:26:39Z",
       "claimed_at_epoch": 1788362799.355053,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T16:06:49Z"
     },
     {
       "id": "cc-1788363765",
@@ -199,8 +199,8 @@
       "task": "sairncode validate license and profile slabs memory gating",
       "claimed_at": "2026-09-02T15:42:45Z",
       "claimed_at_epoch": 1788363765.8562772,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T16:06:49Z"
     }
   ]
 }
