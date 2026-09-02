@@ -163,6 +163,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
       <button class="sb" id="sb-subs" onclick="nav('subs')">Subcontractors<span class="badge" id="subs-badge" style="display:none"></span></button>
       <button class="sb" id="sb-warranties" onclick="nav('warranties')">Warranties<span class="badge" id="warr-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-assets" onclick="nav('assets')">Roof Assets<span class="badge" id="assets-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -558,6 +559,48 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Roof Assets (2026-09-02). Tier-B gap B1, which the audit calls the
+           single largest Tier B structural gap: many roofs per customer, one
+           contractor servicing hundreds of buildings. rf_jobs is one job at a
+           time and was left alone rather than made to pretend otherwise.
+           NO SERVICE LIFE IS ASSUMED. "TPO lasts 20 years" is not this app's
+           to assert on somebody's capital budget -- the contractor enters the
+           figure with a source, and a section without one is excluded from the
+           forecast AND counted, never quietly dropped. -->
+      <div class="panel" id="panel-assets">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Roof Assets</div>
+            <div class="psub" id="assets-scope-note">--</div>
+          </div>
+          <div class="pa">
+            <button class="btn bo" id="assets-bld-btn" onclick="openBuildingModal()" style="display:none;">+ Building</button>
+            <button class="btn bp" id="assets-sec-btn" onclick="openSectionModal()" style="display:none;">+ Roof Section</button>
+          </div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Plan horizon (years)</label><input type="number" id="assets-horizon" value="5" min="0" max="50"></div>
+            <button class="btn bo" onclick="rfLoadAssets()">Refresh</button>
+          </div>
+          <div class="note" style="margin-top:8px;">
+            Condition and calendar life are shown <strong>side by side, never blended</strong>. Every commercial product in
+            this category quotes one condition-adjusted &ldquo;remaining service life&rdquo;; that adjustment is a model
+            relating a walk-over score to years, this app does not have one, and inventing it would put a fabricated curve
+            underneath your capital budget. Where the two <em>disagree</em> is flagged &mdash; that is the actionable fact.
+          </div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Capital forecast</div></div>
+          <div class="cb" id="assets-forecast"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Roof sections</div></div>
+          <div class="cb" id="assets-sections"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Buildings</div></div>
+          <div class="cb" id="assets-buildings"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -902,6 +945,7 @@ function nav(id){
   // registration clock and the tier gate are computed server-side by
   // api/_lib/roofing-warranties.js so the screen and the tests cannot drift.
   if(id==='warranties'){ rfLoadWarranties(); }
+  if(id==='assets'){ rfLoadAssets(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2700,6 +2744,235 @@ function saveAssignment(){
   });
 }
 
+// ── ROOF ASSETS (gap B1, 2026-09-02) ───────────────────────────────────────
+// The portfolio level rf_jobs does not have. Every verdict on this screen --
+// remaining life, replacement year, condition disagreement, warranty coverage
+// -- is computed server-side by api/_lib/roofing-asset-registry.js, so the
+// panel and the tests cannot drift.
+var rfBuildings=[],rfSections=[],rfForecast=null,rfCoverage=null;
+
+function rfAssetsHorizon(){
+  var el=$('assets-horizon');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=50)?n:undefined;
+}
+
+function rfLoadAssets(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  ['assets-bld-btn','assets-sec-btn'].forEach(function(id){var b=$(id);if(b)b.style.display=isMgmt?'':'none';});
+  var note=$('assets-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Buildings, roof sections, and what is coming due.'
+    : 'Portfolio and capital forecast, read-only for your role.';
+  var p={today:rfLocalToday()};
+  var h=rfAssetsHorizon();if(h!==undefined)p.horizon_years=h;
+  return rfDataRaw('read','rf_buildings',p).then(function(r){
+    if(!r.ok){
+      $('assets-buildings').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'The roof asset registry is management-level information.'
+        : rfEsc(r.msg||'Could not load buildings.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('assets-buildings').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_asset_registry_schema.sql, then refresh.</div>';
+      $('assets-sections').innerHTML='<div class="empty">&mdash;</div>';
+      $('assets-forecast').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfBuildings=d.data||[];
+    rfRenderBuildings();
+    return rfDataRaw('read','rf_roof_sections',p).then(function(s){
+      rfSections=(s.ok&&s.data&&s.data.data)||[];
+      rfRenderSections();
+      return rfDataRaw('portfolio','rf_roof_sections',p).then(function(f){
+        var fd=(f.ok&&f.data)||{};
+        rfForecast=fd.forecast||null; rfCoverage=fd.coverage||null;
+        rfRenderForecast(fd);
+      });
+    });
+  });
+}
+
+function rfLifeBadge(st){
+  var cls={within_life:'bg',due_within_horizon:'bw',past_expected_life:'br',
+           no_service_life_recorded:'bx',no_source_for_service_life:'bx',
+           no_install_date:'bx',unknown:'bx'}[st]||'bx';
+  var lbl={within_life:'within life',due_within_horizon:'due soon',past_expected_life:'PAST LIFE',
+           no_service_life_recorded:'no service life',no_source_for_service_life:'no source',
+           no_install_date:'no install date',unknown:'unknown'}[st]||st;
+  return '<span class="badge '+cls+'">'+rfEsc(lbl)+'</span>';
+}
+
+function rfRenderBuildings(){
+  var el=$('assets-buildings');
+  if(!rfBuildings.length){el.innerHTML='<div class="empty">No buildings on file.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Building</th><th>Customer</th><th>Address</th><th>Sections</th><th></th></tr></thead><tbody>'+
+    rfBuildings.map(function(b){
+      var n=rfSections.filter(function(s){return s.building_id===b.building_id;}).length;
+      return '<tr><td><strong>'+rfEsc(b.name||b.building_id)+'</strong><br><span style="font-size:12px;color:var(--muted)">'+rfEsc(b.building_id)+'</span></td>'+
+        '<td>'+rfEsc(b.customer||'--')+'</td><td>'+rfEsc(b.address||'--')+'</td><td>'+n+'</td>'+
+        '<td>'+(b.active===false?'<span class="badge bx">inactive</span>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function rfRenderSections(){
+  var el=$('assets-sections');
+  if(!rfSections.length){el.innerHTML='<div class="empty">No roof sections recorded.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var bldName={};rfBuildings.forEach(function(b){bldName[b.building_id]=b.name;});
+  var urgent=0;
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Section</th><th>Building</th><th>System</th><th>Area</th>'+
+    '<th>Age / life</th><th>Due</th><th>Condition</th><th>Needs a look</th><th></th></tr></thead><tbody>'+
+    rfSections.map(function(s,i){
+      var e=s.evaluation;
+      if(!e){
+        return '<tr><td><strong>'+rfEsc(s.name||s.section_id)+'</strong></td>'+
+          '<td colspan="7"><span class="badge br">'+rfEsc((s.evaluation_error&&s.evaluation_error.message)||'not evaluated')+'</span></td><td></td></tr>';
+      }
+      if(e.life_state==='past_expected_life'||e.condition_state==='poor')urgent++;
+      var cond=e.condition===null?'<span class="badge bx">not inspected</span>':
+        '<span class="badge '+(e.condition_state==='poor'?'br':e.condition_state==='fair'?'bw':'bg')+'">'+
+        e.condition+'/5 '+rfEsc(e.condition_state)+'</span>'+
+        (e.condition_on?' <span style="font-size:12px;color:var(--muted)">'+rfEsc(e.condition_on)+'</span>':'');
+      return '<tr><td><strong>'+rfEsc(s.name||s.section_id)+'</strong><br><span style="font-size:12px;color:var(--muted)">'+rfEsc(s.section_id)+'</span></td>'+
+        '<td>'+rfEsc(bldName[s.building_id]||s.building_id||'--')+'</td>'+
+        '<td>'+rfEsc(s.system_type||'--')+'</td>'+
+        '<td>'+(e.area_sqft?Number(e.area_sqft).toLocaleString()+' sf':'--')+'</td>'+
+        '<td>'+(e.age_years!==null?e.age_years+'y':'--')+
+          (e.expected_life_years?' / '+e.expected_life_years+'y':'')+'</td>'+
+        '<td>'+rfLifeBadge(e.life_state)+(e.replacement_year?' <span style="font-size:12px;color:var(--muted)">'+e.replacement_year+'</span>':'')+'</td>'+
+        '<td>'+cond+'</td>'+
+        '<td style="font-size:12px;color:var(--danger)">'+rfEsc((e.flags||[]).join('; '))+'</td>'+
+        '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openSectionModal('+i+')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  var b=$('assets-badge');
+  if(b){ b.textContent=urgent||''; b.style.display=urgent?'':'none'; b.className='badge '+(urgent?'br':'bx'); }
+}
+
+function rfRenderForecast(fd){
+  var el=$('assets-forecast');
+  var f=rfForecast;
+  if(!f){el.innerHTML='<div class="empty">Not computed.</div>';return;}
+  var out='';
+  if(!f.years.length){
+    out+='<div class="empty">Nothing can be forecast yet.</div>';
+  }else{
+    out+='<div class="tw"><table><thead><tr><th>Year</th><th>Sections due</th><th>Area</th></tr></thead><tbody>'+
+      f.years.map(function(y){
+        return '<tr><td><strong>'+y.year+'</strong></td><td>'+y.sections+'</td><td>'+Number(y.area_sqft).toLocaleString()+' sf</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  // BESIDE the totals, not beneath them. A forecast that hides the sections
+  // nobody has assessed understates the plan by exactly the roofs most likely
+  // to fail, so this is a warning block and not a footnote.
+  if(f.unplannable.length){
+    out+='<div class="note" style="margin-top:10px;background:#FEF3C7;border-color:#FCD34D;color:#78350F;">'+
+      '<strong>'+f.unplannable.length+' section'+(f.unplannable.length===1?'':'s')+' ('+
+      Number(f.unplannable_area_sqft).toLocaleString()+' sf) are NOT in the figures above</strong> &mdash; no expected '+
+      'service life, or none with a source. The plan is short by exactly these roofs. '+
+      rfEsc(f.unplannable.map(function(u){return u.section_id;}).join(', '))+'</div>';
+  }
+  out+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;">'+
+    '<div><strong>'+f.overdue.length+'</strong> past expected life</div>'+
+    '<div><strong>'+f.due_within_horizon.length+'</strong> due within '+f.horizon_years+'y</div>'+
+    '<div><strong>'+f.poor_condition.length+'</strong> scoring poor</div>'+
+    '<div><strong>'+Number(f.planned_area_sqft).toLocaleString()+' sf</strong> planned</div></div>';
+  // Warranty coverage. `null` means the check could not run, which is said
+  // rather than rendered as "nothing is covered".
+  if(fd&&fd.warranties_provisioned===false){
+    out+='<div class="note" style="margin-top:10px;margin-bottom:0;">Warranty coverage not checked &mdash; the warranties table is not set up.</div>';
+  }else if(rfCoverage){
+    var na=rfCoverage.needs_attention||[];
+    out+='<div class="ch" style="padding-left:0;margin-top:14px;"><div class="ct">Warranty coverage</div></div>'+
+      '<div style="font-size:13px;margin-bottom:8px;"><strong>'+rfCoverage.covered+'</strong> section(s) under active manufacturer warranty.</div>';
+    if(na.length){
+      out+='<div class="tw"><table><thead><tr><th>Section</th><th>Warranty</th><th>Coverage</th><th>Ends</th></tr></thead><tbody>'+
+        na.map(function(x){
+          var cls=x.coverage==='expired'?'br':x.coverage==='warranty_not_found'?'br':'bx';
+          return '<tr><td>'+rfEsc(x.section_id||'--')+'</td><td>'+rfEsc(x.warranty_id||'--')+'</td>'+
+            '<td><span class="badge '+cls+'">'+rfEsc(String(x.coverage).replace(/_/g,' '))+'</span></td>'+
+            '<td>'+rfEsc(x.expires_on||'--')+'</td></tr>';
+        }).join('')+'</tbody></table></div>';
+    }
+  }else{
+    out+='<div class="note" style="margin-top:10px;margin-bottom:0;">Warranty coverage not checked.</div>';
+  }
+  el.innerHTML=out;
+}
+
+function openBuildingModal(){
+  ['ab-id','ab-name','ab-customer','ab-address'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('ab-err').textContent='';
+  $('building-modal').classList.add('on');
+}
+function closeBuildingModal(){ $('building-modal').classList.remove('on'); }
+
+function saveBuilding(){
+  var id=($('ab-id').value||'').trim(),nm=($('ab-name').value||'').trim();
+  if(!id||!nm){ $('ab-err').textContent='Building id and name are both required.'; return; }
+  $('ab-err').textContent='Saving…';
+  rfDataRaw('write','rf_buildings',{
+    building_id:id, name:nm,
+    customer:($('ab-customer').value||'').trim()||null,
+    address:($('ab-address').value||'').trim()||null
+  }).then(function(r){
+    if(!r.ok){ $('ab-err').textContent=r.msg||'Could not save.'; return; }
+    closeBuildingModal(); rfLoadAssets();
+  });
+}
+
+function openSectionModal(i){
+  var s=(typeof i==='number')?rfSections[i]:null;
+  $('asec-modal-title').textContent=s?'Edit Roof Section':'Add a Roof Section';
+  $('as-sec-id').value=s?(s.section_id||''):'';
+  // The id is the upsert conflict key -- changing it on an existing row would
+  // create a second section rather than rename this one.
+  $('as-sec-id').readOnly=!!s;
+  $('as-bld').innerHTML=rfBuildings.map(function(b){
+    return '<option value="'+rfEsc(b.building_id)+'"'+((s&&s.building_id===b.building_id)?' selected':'')+'>'+
+      rfEsc(b.name||b.building_id)+'</option>';
+  }).join('')||'<option value="">-- add a building first --</option>';
+  $('as-sec-name').value=(s&&s.name)||'';
+  $('as-system').value=(s&&s.system_type)||'';
+  $('as-area').value=(s&&s.area_sqft!=null)?s.area_sqft:'';
+  $('as-installed').value=(s&&s.installed_on)||'';
+  $('as-life').value=(s&&s.expected_life_years!=null)?s.expected_life_years:'';
+  $('as-life-src').value=(s&&s.life_source)||'';
+  $('as-cond').value=(s&&s.condition_score!=null)?String(s.condition_score):'';
+  $('as-cond-on').value=(s&&s.condition_on)||'';
+  $('as-warr').value=(s&&s.warranty_id)||'';
+  $('asec-status').value=(s&&s.status)||'active';
+  $('as-sec-err').textContent='';
+  $('section-modal').classList.add('on');
+}
+function closeSectionModal(){ $('section-modal').classList.remove('on'); }
+
+function saveSection(){
+  var id=($('as-sec-id').value||'').trim(),bid=$('as-bld').value,nm=($('as-sec-name').value||'').trim();
+  if(!id||!bid||!nm){ $('as-sec-err').textContent='Section id, building and name are all required.'; return; }
+  var numOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseFloat(v); return isFinite(n)?n:'BAD'; };
+  var intOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseInt(v,10); return isFinite(n)?n:'BAD'; };
+  var area=numOrNull($('as-area').value), life=intOrNull($('as-life').value), cond=intOrNull($('as-cond').value);
+  // Refused, not coerced. A garbled service life silently becoming null would
+  // drop this roof out of the capital plan without saying so.
+  if(area==='BAD'||life==='BAD'||cond==='BAD'){ $('as-sec-err').textContent='Area, expected life and condition must be numbers, or blank.'; return; }
+  $('as-sec-err').textContent='Saving…';
+  rfDataRaw('write','rf_roof_sections',{
+    section_id:id, building_id:bid, name:nm,
+    system_type:($('as-system').value||'').trim()||null,
+    area_sqft:area, installed_on:$('as-installed').value||null,
+    expected_life_years:life, life_source:($('as-life-src').value||'').trim()||null,
+    condition_score:cond, condition_on:$('as-cond-on').value||null,
+    warranty_id:($('as-warr').value||'').trim()||null,
+    status:$('asec-status').value
+  }).then(function(r){
+    if(!r.ok){ $('as-sec-err').textContent=r.msg||'Could not save the section.'; return; }
+    closeSectionModal(); toast('Roof section saved.'); rfLoadAssets();
+  });
+}
+
 // ── WARRANTIES (gap A1, 2026-09-02) ────────────────────────────────────────
 // Two questions, deliberately kept apart on screen because they fail
 // differently: "may we offer this tier at all" (our certification standing)
@@ -3844,6 +4117,60 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="building-modal">
+  <div class="mbox" style="width:500px;">
+    <div class="mtitle">Building</div>
+    <div class="qgrid">
+      <div class="fg"><label>Building id <span style="color:var(--danger)">*</span></label><input id="ab-id" placeholder="BLD-WESTGATE"></div>
+      <div class="fg"><label>Name <span style="color:var(--danger)">*</span></label><input id="ab-name" placeholder="Westgate Distribution"></div>
+      <div class="fg"><label>Customer</label><input id="ab-customer" placeholder="Westgate Properties LLC"></div>
+      <div class="fg"><label>Address</label><input id="ab-address" placeholder="1400 Industrial Pkwy"></div>
+    </div>
+    <div class="note">A building holds many roof sections &mdash; that is the whole point of this registry, and it is the
+      level a job does not have. Add the building first; a section cannot point at one that does not exist.</div>
+    <div class="perr" id="ab-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveBuilding()">Save</button>
+      <button class="btn bo" onclick="closeBuildingModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="section-modal">
+  <div class="mbox" style="width:580px;">
+    <!-- ids are asec-* not as-*: the subcontractor ASSIGNMENT modal already
+         owns as-modal-title and as-status, and the duplicate-id check caught
+         the collision before it shipped. Sharing them would have made this
+         modal set the assignment modal's title and read its status field. -->
+    <div class="mtitle" id="asec-modal-title">Add a Roof Section</div>
+    <div class="qgrid">
+      <div class="fg"><label>Section id <span style="color:var(--danger)">*</span></label><input id="as-sec-id" placeholder="SEC-WG-MAIN"></div>
+      <div class="fg"><label>Building <span style="color:var(--danger)">*</span></label><select id="as-bld"></select></div>
+      <div class="fg"><label>Name <span style="color:var(--danger)">*</span></label><input id="as-sec-name" placeholder="Main roof"></div>
+      <div class="fg"><label>System</label><input id="as-system" placeholder="TPO 60mil"></div>
+      <div class="fg"><label>Area (sq ft)</label><input id="as-area" placeholder="42000"></div>
+      <div class="fg"><label>Installed on</label><input type="date" id="as-installed"></div>
+      <div class="fg"><label>Expected life (years)</label><input id="as-life" placeholder="from your own spec"></div>
+      <div class="fg"><label>Condition 1&ndash;5</label><input id="as-cond" placeholder="1 worst, 5 best"></div>
+      <div class="fg"><label>Inspected on</label><input type="date" id="as-cond-on"></div>
+      <div class="fg"><label>Warranty id</label><input id="as-warr" placeholder="WAR-2026-118"></div>
+      <div class="fg"><label>Status</label><select id="asec-status">
+        <option value="active">Active</option><option value="replaced">Replaced</option><option value="removed">Removed</option>
+      </select></div>
+    </div>
+    <div class="fg"><label>Source for the expected life <span style="color:var(--danger)">*</span> if a life is entered</label><input id="as-life-src" placeholder="manufacturer spec sheet, our own history, the owner's engineer"></div>
+    <div class="note"><strong>An expected life with no source is not planned against.</strong> &ldquo;TPO lasts 20 years&rdquo;
+      is real industry data and it is also wrong for a specific roof at a specific thickness in a specific climate, and a
+      capital plan built on a number nobody entered is a budget handed to an owner on the strength of a blog post. Leave it
+      blank if you have not assessed it &mdash; the section will be listed as <strong>not plannable</strong> and counted
+      beside the forecast, so the plan never looks more complete than it is.
+      The warranty id must match one on the Warranties panel; a typo reads as <strong>not found</strong>, never as covered.</div>
+    <div class="perr" id="as-sec-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveSection()">Save</button>
+      <button class="btn bo" onclick="closeSectionModal()">Cancel</button>
     </div>
   </div>
 </div>

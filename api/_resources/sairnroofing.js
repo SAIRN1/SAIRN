@@ -98,6 +98,16 @@ module.exports = {
   // Registered on day one for the reason rf_settings' note gives.
     'rf_warranty_tiers',
     'rf_job_warranties',
+  // Commercial roof asset registry (2026-09-02) -- see
+  // sql/sairnroofing_asset_registry_schema.sql and
+  // api/_lib/roofing-asset-registry.js. Tier-B gap B1, which the audit calls
+  // "the single largest Tier B structural gap": many roofs per customer, one
+  // contractor servicing hundreds of buildings. rf_jobs is one job at a time
+  // and was deliberately left alone rather than made to pretend otherwise.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_buildings',
+    'rf_roof_sections',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -136,6 +146,12 @@ module.exports = {
     // Phase 3a rf_certifications store and treating every business fact as
     // self-reported. Reads only, writes nothing.
     rf_company_programs: ['evaluate'],
+    // 'portfolio' (2026-09-02, gap B1) computes the capital/lifecycle forecast
+    // across every roof section: which year each is due, the area coming due,
+    // and -- surfaced beside the totals rather than under them -- the sections
+    // that CANNOT be planned because nobody has entered an expected service
+    // life. Reads only; looking at a capital plan must never write one.
+    rf_roof_sections: ['portfolio'],
     // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the

@@ -4030,6 +4030,163 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ── SAIRNROOFING: commercial roof asset registry (2026-09-02) ──────────────────
+    // Tier-B gap B1. Buildings and the roof sections on them -- many per
+    // customer, which is the level rf_jobs does not have and was deliberately
+    // not made to pretend to have.
+    //
+    // NOTHING IS COMPUTED FROM INDUSTRY DATA. Expected service life comes from
+    // the contractor with a source they name; without both, the engine reports
+    // 'no_service_life_recorded' and the section is excluded from the forecast
+    // AND counted in `unplannable`, never quietly dropped.
+    if ((resource === 'rf_buildings' || resource === 'rf_roof_sections') &&
+        (action === 'read' || action === 'write' || action === 'portfolio')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const reg = require('./_lib/roofing-asset-registry');
+      // A portfolio is commercial-account information -- what a customer owns,
+      // what it is worth replacing and when. Same tier as programme standing.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The roof asset registry is management-level information' } });
+        return;
+      }
+      // today and horizon come from the CALLER; the engine refuses without a
+      // date. A server clock computes a contractor's year in UTC.
+      const regToday = (payload && payload.today) || null;
+      let horizon;
+      if (payload && payload.horizon_years !== undefined && payload.horizon_years !== null) {
+        const hy = payload.horizon_years;
+        if (typeof hy !== 'number' || !isFinite(hy) || Math.floor(hy) !== hy || hy < 0 || hy > 50) {
+          res.status(400).json({ error: { code: 'BAD_HORIZON', message: 'horizon_years must be a whole number of years between 0 and 50, sent as a JSON number' } });
+          return;
+        }
+        horizon = hy;
+      }
+
+      if (resource === 'rf_buildings' && action === 'read') {
+        const r = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) +
+          '&select=building_id,name,customer,address,location_id,active,notes,data,updated_by&order=name.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true, data: rows || [] });
+        return;
+      }
+
+      if (resource === 'rf_buildings' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the building registry' } }); return; }
+        const bid = payload && typeof payload.building_id === 'string' ? payload.building_id.trim() : '';
+        const bname = payload && typeof payload.name === 'string' ? payload.name.trim() : '';
+        if (!bid || !bname) { res.status(400).json({ error: { message: 'rf_buildings: building_id and name are required' } }); return; }
+        const w = await fetch(rest('rf_buildings?on_conflict=license_hash,building_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, building_id: bid, name: bname,
+            customer: (payload.customer || '').trim() || null,
+            address: (payload.address || '').trim() || null,
+            location_id: (payload.location_id || '').trim() || null,
+            active: payload.active !== false,
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      if (resource === 'rf_roof_sections' && (action === 'read' || action === 'portfolio')) {
+        let q = 'rf_roof_sections?license_hash=eq.' + enc(licHash) +
+          '&select=section_id,building_id,name,system_type,area_sqft,installed_on,expected_life_years,life_source,condition_score,condition_on,warranty_id,status,notes,data,updated_by&order=building_id.asc';
+        if (payload && payload.building_id) q += '&building_id=eq.' + enc(String(payload.building_id));
+        const r = await fetch(rest(q), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        // Replaced and removed sections stay in the table (they are history)
+        // but are not part of a forward capital plan.
+        const live = (rows || []).filter((x) => x.status === 'active');
+
+        if (action === 'portfolio') {
+          const f = reg.portfolioForecast({ sections: live, today: regToday, horizon_years: horizon });
+          if (!f.ok) { res.status(400).json({ error: f.error }); return; }
+          // The warranty cross-check rides along rather than needing a second
+          // round trip -- the two questions ("when is it due" and "is it still
+          // covered") are asked together on the same screen. A missing
+          // warranties table is NOT fatal: the forecast still stands, and the
+          // coverage half says it could not run rather than reading as
+          // "nothing is covered".
+          let coverage = null, warrantiesProvisioned = true;
+          const wr = await fetch(rest('rf_job_warranties?license_hash=eq.' + enc(licHash) +
+            '&select=warranty_id,status,coverage_expires_on'), { headers });
+          if (wr.status === 404 || wr.status === 400) { warrantiesProvisioned = false; }
+          else if (wr.ok) {
+            const wrows = await wr.json();
+            const cv = reg.warrantyCoverage({ sections: live, warranties: wrows || [], today: regToday });
+            if (cv.ok) coverage = cv;
+          }
+          res.status(200).json({ ok: true, provisioned: true, forecast: f, coverage: coverage, warranties_provisioned: warrantiesProvisioned });
+          return;
+        }
+
+        const evaluated = live.map((x) => {
+          const e = reg.sectionState({ section: x, today: regToday, horizon_years: horizon });
+          return Object.assign({}, x, { evaluation: e.ok ? e : null, evaluation_error: e.ok ? null : e.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: regToday, data: evaluated });
+        return;
+      }
+
+      if (resource === 'rf_roof_sections' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the roof registry' } }); return; }
+        const sid = payload && typeof payload.section_id === 'string' ? payload.section_id.trim() : '';
+        const bid = payload && typeof payload.building_id === 'string' ? payload.building_id.trim() : '';
+        const sname = payload && typeof payload.name === 'string' ? payload.name.trim() : '';
+        if (!sid || !bid || !sname) { res.status(400).json({ error: { message: 'rf_roof_sections: section_id, building_id and name are required' } }); return; }
+        // The building must exist. A section pointing at nothing is invisible
+        // on every building screen while still counting in the portfolio
+        // totals -- a silent orphan, which is worse than a refusal.
+        const br = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) + '&building_id=eq.' + enc(bid) + '&select=building_id&limit=1'), { headers });
+        if (br.status === 404 || br.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The asset registry is not set up yet — run sql/sairnroofing_asset_registry_schema.sql in Supabase first.' } }); return; }
+        const brows = await br.json();
+        if (!(Array.isArray(brows) && brows[0])) { res.status(404).json({ error: { code: 'NO_BUILDING', message: 'No such building — add the building before adding a roof section to it' } }); return; }
+        const badDate = ['installed_on', 'condition_on'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_roof_sections: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        if (payload.status !== undefined && ['active', 'replaced', 'removed'].indexOf(payload.status) === -1) {
+          res.status(400).json({ error: { code: 'BAD_STATUS', message: 'rf_roof_sections: status must be active, replaced or removed' } }); return;
+        }
+        const intOrNull = (v, lo, hi) => (typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= lo && v <= hi) ? v : null;
+        const numOrNull = (v) => (typeof v === 'number' && isFinite(v) && v >= 0) ? v : null;
+        const w = await fetch(rest('rf_roof_sections?on_conflict=license_hash,section_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, section_id: sid, building_id: bid, name: sname,
+            system_type: (payload.system_type || '').trim() || null,
+            area_sqft: numOrNull(payload.area_sqft),
+            installed_on: payload.installed_on || null,
+            expected_life_years: intOrNull(payload.expected_life_years, 1, 100),
+            life_source: (payload.life_source || '').trim() || null,
+            condition_score: intOrNull(payload.condition_score, 1, 5),
+            condition_on: payload.condition_on || null,
+            warranty_id: (payload.warranty_id || '').trim() || null,
+            status: payload.status || 'active',
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+    }
+
     // ── SAIRNROOFING: manufacturer warranties (2026-09-02) ─────────────────────────
     // Tier-A gap A1. Two resources: the tiers this contractor can offer (and
     // what certification each is gated on) and the per-job warranty with its
