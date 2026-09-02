@@ -585,6 +585,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="cb">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
             <div class="fg" style="margin:0;"><label>Plan horizon (years)</label><input type="number" id="assets-horizon" value="5" min="0" max="50"></div>
+            <div class="fg" style="margin:0;"><label>Entity</label><select id="assets-entity" onchange="rfLoadAssets()"><option value="">All entities</option></select></div>
             <button class="btn bo" onclick="rfLoadAssets()">Refresh</button>
           </div>
           <div class="note" style="margin-top:8px;">
@@ -623,6 +624,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <div class="card"><div class="cb">
           <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
             <div class="fg" style="margin:0;"><label>Aged after (days)</label><input type="number" id="draws-aged" value="30" min="0" max="365"></div>
+            <div class="fg" style="margin:0;"><label>Entity</label><select id="draws-entity" onchange="rfLoadDraws()"><option value="">All entities</option></select></div>
             <button class="btn bo" onclick="rfLoadDraws()">Refresh</button>
           </div>
           <div class="note" style="margin-top:8px;">
@@ -2910,6 +2912,67 @@ function saveAssignment(){
 // panel PRINTS, because an invariant nobody checks is a comment.
 var rfEntities=[],rfConsolidation=null,rfEntLocations=[],rfEntMeta=null;
 
+// ── The entity filter, shared by every panel that totals company-wide ──────
+// The SELECT is populated here; the FILTERING is done server-side by
+// api/_lib/roofing-consolidation.js's entityMatcher, the same rule the
+// consolidation board uses. The browser never resolves an entity itself --
+// two answers to "which entity is this" would eventually disagree on one
+// screen, which is the failure this whole feature exists to avoid.
+var rfEntityOptionsLoaded=false;
+
+function rfFillEntitySelects(){
+  var opts='<option value="">All entities</option>'+
+    rfEntities.map(function(e){
+      return '<option value="'+rfEsc(e.entity_id)+'">'+rfEsc(e.legal_name)+'</option>';
+    }).join('')+
+    '<option value="__unassigned">Unassigned</option>';
+  ['draws-entity','assets-entity'].forEach(function(id){
+    var s=$(id);if(!s)return;
+    var keep=s.value;
+    s.innerHTML=opts;
+    // The selection survives a refill, so refreshing a panel does not silently
+    // widen the figures back to the whole book.
+    if(keep)s.value=keep;
+  });
+  rfEntityOptionsLoaded=true;
+}
+
+// Loaded once, lazily, so a shop with no entities never pays for the read.
+function rfEnsureEntityOptions(){
+  if(rfEntityOptionsLoaded)return Promise.resolve();
+  return rfDataRaw('read','rf_entities',{}).then(function(r){
+    var d=(r.ok&&r.data)||{};
+    rfEntities=(d.provisioned===false)?[]:(d.data||[]);
+    rfFillEntitySelects();
+  });
+}
+
+function rfEntitySelection(id){
+  var s=$(id);
+  return (s&&s.value)?s.value:'';
+}
+
+// ONE renderer for the "these figures are filtered" banner, used by every
+// filtered panel. A filtered total that looks company-wide is the entire
+// failure mode, so this is never optional and never panel-specific wording.
+function rfFilterBanner(meta){
+  if(!meta||!meta.entity_filter)return '';
+  if(meta.entity_filter==='unavailable'){
+    return '<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;">'+
+      '<strong>The entity filter could not be applied</strong> &mdash; branches could not be read. '+
+      'The figures below are the WHOLE BOOK, not the entity you picked.</div>';
+  }
+  var name=(function(){
+    if(meta.entity_filter==='__unassigned')return 'Unassigned';
+    for(var i=0;i<rfEntities.length;i++)if(rfEntities[i].entity_id===meta.entity_filter)return rfEntities[i].legal_name;
+    return meta.entity_filter;
+  })();
+  return '<div class="note" style="background:#DBEAFE;border-color:#93C5FD;color:#1E3A8A;">'+
+    '<strong>Filtered to '+rfEsc(name)+'.</strong> Every figure below is that entity only, '+
+    (meta.filtered_out?rfEsc(String(meta.filtered_out))+' record(s) are hidden':'nothing else was hidden')+
+    '. Attribution follows whichever entity each branch belongs to <em>now</em>, so this changes when a branch moves.</div>';
+}
+
 function rfLoadEntities(){
   var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
   var nb=$('ent-new-btn');if(nb)nb.style.display=isMgmt?'':'none';
@@ -2989,10 +3052,15 @@ function rfRenderConsolidation(cd){
   }
   // WHAT IS NOT ENTITY-AWARE YET, from the server rather than panel copy that
   // can drift away from the truth.
-  if(cd&&cd.not_yet_entity_aware&&cd.not_yet_entity_aware.length){
+  if(cd&&(cd.not_yet_entity_aware||cd.entity_aware)){
     out+='<div class="note" style="margin-bottom:0;"><strong>Only '+rfEsc((cd.consolidated_sources||[]).join(', '))+
-      ' is consolidated.</strong> These still total company-wide and are NOT split by entity: '+
-      rfEsc(cd.not_yet_entity_aware.join('; '))+'.</div>';
+      ' is consolidated on this board.</strong>'+
+      ((cd.entity_aware&&cd.entity_aware.length)
+        ? ' These can be filtered to one entity: '+rfEsc(cd.entity_aware.join('; '))+'.'
+        : '')+
+      ((cd.not_yet_entity_aware&&cd.not_yet_entity_aware.length)
+        ? ' <strong>Still company-wide:</strong> '+rfEsc(cd.not_yet_entity_aware.join('; '))+'.'
+        : '')+'</div>';
   }
   var b=$('entities-badge');
   var unass=C.unassigned.reduce(function(s,u){return s+u.row_count;},0);
@@ -3510,7 +3578,7 @@ function saveJha(){
 // server-side by api/_lib/wip-accounting.js -- including retainage held, which
 // is DERIVED from the percentage rather than stored beside it, because two
 // fields that can disagree eventually do.
-var rfDraws=[],rfWip=null;
+var rfDraws=[],rfWip=null,rfDrawsMeta=null,rfWipMeta=null;
 
 function rfDrawsAged(){
   var el=$('draws-aged');
@@ -3529,6 +3597,8 @@ function rfLoadDraws(){
     : 'Progress billing, read-only for your role.';
   var p={today:rfLocalToday()};
   var a=rfDrawsAged();if(a!==undefined)p.aged_days=a;
+  return rfEnsureEntityOptions().then(function(){
+  var ent=rfEntitySelection('draws-entity');if(ent)p.entity_id=ent;
   return rfDataRaw('read','rf_draws',p).then(function(r){
     if(!r.ok){
       $('draws-list').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
@@ -3543,20 +3613,23 @@ function rfLoadDraws(){
       return;
     }
     rfDraws=d.data||[];
+    rfDrawsMeta=d;
     rfRenderDraws();
     return rfDataRaw('wip','rf_draws',p).then(function(x){
-      rfWip=(x.ok&&x.data&&x.data.wip)||null;
+      var xd=(x.ok&&x.data)||{};
+      rfWip=xd.wip||null; rfWipMeta=xd;
       rfRenderWip();
     });
+  });
   });
 }
 
 function rfRenderDraws(){
   var el=$('draws-list');
-  if(!rfDraws.length){el.innerHTML='<div class="empty">No draw requests recorded.</div>';return;}
+  if(!rfDraws.length){el.innerHTML=rfFilterBanner(rfDrawsMeta)+'<div class="empty">'+((rfDrawsMeta&&rfDrawsMeta.entity_filter)?'No draw requests for this entity.':'No draw requests recorded.')+'</div>';return;}
   var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
   var aged=0;
-  el.innerHTML='<div class="tw"><table><thead><tr><th>Draw</th><th>Job</th><th>Period</th><th>%</th>'+
+  el.innerHTML=rfFilterBanner(rfDrawsMeta)+'<div class="tw"><table><thead><tr><th>Draw</th><th>Job</th><th>Period</th><th>%</th>'+
     '<th>Requested</th><th>Retainage</th><th>Net</th><th>Received</th><th>Outstanding</th><th>Status</th><th></th></tr></thead><tbody>'+
     rfDraws.map(function(x,i){
       var s=x.summary;
@@ -3590,7 +3663,7 @@ function rfRenderWip(){
   var el=$('draws-wip');
   var W=rfWip;
   if(!W){el.innerHTML='<div class="empty">Not computed.</div>';return;}
-  var out='<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:12px;">'+
+  var out=rfFilterBanner(rfWipMeta)+'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:12px;">'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Retainage held</div><strong style="font-size:18px;">'+rfMoney(W.retainage_held)+'</strong></div>'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Outstanding</div><strong style="font-size:18px;">'+rfMoney(W.outstanding_total)+'</strong></div>'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Over-billed</div><strong style="font-size:18px;color:var(--danger)">'+rfMoney(W.over_billed)+'</strong></div>'+
@@ -3676,7 +3749,7 @@ function saveDraw(){
 // remaining life, replacement year, condition disagreement, warranty coverage
 // -- is computed server-side by api/_lib/roofing-asset-registry.js, so the
 // panel and the tests cannot drift.
-var rfBuildings=[],rfSections=[],rfForecast=null,rfCoverage=null;
+var rfBuildings=[],rfSections=[],rfForecast=null,rfCoverage=null,rfSectionsMeta=null;
 
 function rfAssetsHorizon(){
   var el=$('assets-horizon');
@@ -3694,6 +3767,8 @@ function rfLoadAssets(){
     : 'Portfolio and capital forecast, read-only for your role.';
   var p={today:rfLocalToday()};
   var h=rfAssetsHorizon();if(h!==undefined)p.horizon_years=h;
+  return rfEnsureEntityOptions().then(function(){
+  var ent=rfEntitySelection('assets-entity');if(ent)p.entity_id=ent;
   return rfDataRaw('read','rf_buildings',p).then(function(r){
     if(!r.ok){
       $('assets-buildings').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
@@ -3711,7 +3786,8 @@ function rfLoadAssets(){
     rfBuildings=d.data||[];
     rfRenderBuildings();
     return rfDataRaw('read','rf_roof_sections',p).then(function(s){
-      rfSections=(s.ok&&s.data&&s.data.data)||[];
+      var sd=(s.ok&&s.data)||{};
+      rfSections=sd.data||[]; rfSectionsMeta=sd;
       rfRenderSections();
       return rfDataRaw('portfolio','rf_roof_sections',p).then(function(f){
         var fd=(f.ok&&f.data)||{};
@@ -3719,6 +3795,7 @@ function rfLoadAssets(){
         rfRenderForecast(fd);
       });
     });
+  });
   });
 }
 
@@ -3746,11 +3823,11 @@ function rfRenderBuildings(){
 
 function rfRenderSections(){
   var el=$('assets-sections');
-  if(!rfSections.length){el.innerHTML='<div class="empty">No roof sections recorded.</div>';return;}
+  if(!rfSections.length){el.innerHTML=rfFilterBanner(rfSectionsMeta)+'<div class="empty">'+((rfSectionsMeta&&rfSectionsMeta.entity_filter)?'No roof sections for this entity.':'No roof sections recorded.')+'</div>';return;}
   var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
   var bldName={};rfBuildings.forEach(function(b){bldName[b.building_id]=b.name;});
   var urgent=0;
-  el.innerHTML='<div class="tw"><table><thead><tr><th>Section</th><th>Building</th><th>System</th><th>Area</th>'+
+  el.innerHTML=rfFilterBanner(rfSectionsMeta)+'<div class="tw"><table><thead><tr><th>Section</th><th>Building</th><th>System</th><th>Area</th>'+
     '<th>Age / life</th><th>Due</th><th>Condition</th><th>Needs a look</th><th></th></tr></thead><tbody>'+
     rfSections.map(function(s,i){
       var e=s.evaluation;
@@ -3782,7 +3859,7 @@ function rfRenderForecast(fd){
   var el=$('assets-forecast');
   var f=rfForecast;
   if(!f){el.innerHTML='<div class="empty">Not computed.</div>';return;}
-  var out='';
+  var out=rfFilterBanner(fd);
   if(!f.years.length){
     out+='<div class="empty">Nothing can be forecast yet.</div>';
   }else{

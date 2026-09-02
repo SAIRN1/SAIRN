@@ -227,9 +227,45 @@ function previewMove(input) {
   };
 }
 
+// ── The filter, living next to the rule it must agree with ───────────────
+// Added 2026-09-02 when the money panels were made entity-aware. It is HERE
+// and not in each endpoint on purpose: "which entity does this row belong to"
+// must have exactly one answer, and a filter that resolved it a second way
+// would eventually disagree with the consolidation totals on the same screen.
+//
+// Returns a predicate over a location_id. `wanted` is an entity_id, or the
+// UNASSIGNED bucket, or null/'' meaning no filter at all.
+//
+// UNASSIGNED deliberately matches BOTH shapes the consolidation keeps apart --
+// a branch with no entity, and a row whose location is not on file. On the
+// consolidation board those are two rows because the fixes differ; as a FILTER
+// they are one selection, because "show me what is not attributed to anybody"
+// is a single question. The board is where the distinction earns its keep.
+function entityMatcher(input) {
+  input = input || {};
+  const wanted = str(input.entity_id);
+  if (!wanted) return function () { return true; };
+  const locEntity = Object.create(null);
+  (Array.isArray(input.locations) ? input.locations : []).forEach(function (l) {
+    const lid = str(l && l.location_id);
+    if (lid) locEntity[lid] = str(l.entity_id) || null;
+  });
+  if (wanted === UNASSIGNED || wanted === UNKNOWN_LOCATION) {
+    return function (locationId) {
+      const lid = str(locationId);
+      return !lid || !(lid in locEntity) || !locEntity[lid];
+    };
+  }
+  return function (locationId) {
+    const lid = str(locationId);
+    return !!lid && locEntity[lid] === wanted;
+  };
+}
+
 module.exports = {
   UNASSIGNED,
   UNKNOWN_LOCATION,
   consolidate,
-  previewMove
+  previewMove,
+  entityMatcher
 };

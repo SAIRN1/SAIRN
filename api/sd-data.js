@@ -4611,6 +4611,30 @@ module.exports = async (req, res) => {
 
       const drawSelect = 'draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,amount_received,status,requested_at,received_at,notes,data,updated_by';
 
+      // ENTITY FILTER (2026-09-02, gap B5's panel half). A draw carries no
+      // entity and no location -- it carries a job. So the chain is
+      // draw -> job -> location -> that location's CURRENT entity, resolved
+      // here rather than in the browser, and by the SAME matcher the
+      // consolidation board uses. Two answers to "which entity is this" would
+      // eventually disagree on the same screen.
+      //
+      // Returns null when no filter is asked for, so the unfiltered path does
+      // no extra reads at all.
+      const drawEntityFilter = async function () {
+        const want = (payload && typeof payload.entity_id === 'string') ? payload.entity_id.trim() : '';
+        if (!want) return null;
+        const consol = require('./_lib/roofing-consolidation');
+        const lr = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,entity_id'), { headers });
+        if (!lr.ok) return { unavailable: true };
+        const locs = await lr.json();
+        const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,location_id'), { headers });
+        const jrows = jr.ok ? await jr.json() : [];
+        const jobLoc = Object.create(null);
+        (Array.isArray(jrows) ? jrows : []).forEach((j) => { jobLoc[j.job_id] = j.location_id; });
+        const match = consol.entityMatcher({ locations: locs || [], entity_id: want });
+        return { entity_id: want, keep: (d) => match(jobLoc[d && d.job_id]) };
+      };
+
       if (action === 'read') {
         let q = 'rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect + '&order=period_end.desc';
         if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
@@ -4618,22 +4642,32 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
+        const df = await drawEntityFilter();
+        const kept = (df && df.keep) ? (rows || []).filter(df.keep) : (rows || []);
         // Retainage and ageing are COMPUTED ON READ, never stored: both depend
         // on today's date and on a percentage that can be edited, so a stored
         // figure is wrong the morning after it is written.
-        const out = (rows || []).map((x) => {
+        const out = kept.map((x) => {
           const s = wip.summariseDraw({ draw: x, today: wipToday, aged_days: agedDays });
           return Object.assign({}, x, { summary: s.ok ? s : null, summary_error: s.ok ? null : s.error });
         });
-        res.status(200).json({ ok: true, provisioned: true, today: wipToday, data: out, statuses: wip.DRAW_STATUSES });
+        // The filter is DECLARED in the response, with how many rows it hid.
+        // A filtered list that looks unfiltered is the whole failure mode here.
+        res.status(200).json({
+          ok: true, provisioned: true, today: wipToday, data: out, statuses: wip.DRAW_STATUSES,
+          entity_filter: df ? (df.unavailable ? 'unavailable' : df.entity_id) : null,
+          filtered_out: df && df.keep ? ((rows || []).length - kept.length) : 0
+        });
         return;
       }
 
       if (action === 'wip') {
         const r = await fetch(rest('rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect), { headers });
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, wip: null }); return; }
-        const draws = await r.json();
-        if (!r.ok) return upstream(res, draws);
+        const drawsAll = await r.json();
+        if (!r.ok) return upstream(res, drawsAll);
+        const wf = await drawEntityFilter();
+        const draws = (wf && wf.keep) ? (drawsAll || []).filter(wf.keep) : (drawsAll || []);
         // Contract value lives in rf_jobs' jsonb blob, which is where every
         // other roofing job field lives. Pulled out here rather than asking the
         // browser to join two lists and re-implement the WIP maths client-side.
@@ -4652,7 +4686,14 @@ module.exports = async (req, res) => {
         }).filter((j) => (draws || []).some((d) => d.job_id === j.job_id));
         const p = wip.portfolio({ jobs: jobs, draws: draws || [], today: wipToday, aged_days: agedDays });
         if (!p.ok) { res.status(400).json({ error: p.error }); return; }
-        res.status(200).json({ ok: true, provisioned: true, wip: p });
+        // Declared, always. A WIP schedule showing one entity's position while
+        // reading like the whole book is exactly the number an owner or a
+        // surety would be shown by mistake.
+        res.status(200).json({
+          ok: true, provisioned: true, wip: p,
+          entity_filter: wf ? (wf.unavailable ? 'unavailable' : wf.entity_id) : null,
+          filtered_out: wf && wf.keep ? ((drawsAll || []).length - draws.length) : 0
+        });
         return;
       }
 
@@ -4774,7 +4815,31 @@ module.exports = async (req, res) => {
         if (!r.ok) return upstream(res, rows);
         // Replaced and removed sections stay in the table (they are history)
         // but are not part of a forward capital plan.
-        const live = (rows || []).filter((x) => x.status === 'active');
+        let live = (rows || []).filter((x) => x.status === 'active');
+
+        // ENTITY FILTER (2026-09-02, gap B5's panel half). A roof section
+        // carries no entity and no location -- it carries a building. So the
+        // chain is section -> building -> location -> that location's CURRENT
+        // entity, resolved by the SAME matcher the consolidation board uses.
+        let secFilter = null, secFilteredOut = 0;
+        const wantEnt = (payload && typeof payload.entity_id === 'string') ? payload.entity_id.trim() : '';
+        if (wantEnt) {
+          const consol2 = require('./_lib/roofing-consolidation');
+          const lr2 = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,entity_id'), { headers });
+          if (!lr2.ok) { secFilter = 'unavailable'; }
+          else {
+            const locs2 = await lr2.json();
+            const br2 = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) + '&select=building_id,location_id'), { headers });
+            const brows2 = br2.ok ? await br2.json() : [];
+            const bldLoc = Object.create(null);
+            (Array.isArray(brows2) ? brows2 : []).forEach((b) => { bldLoc[b.building_id] = b.location_id; });
+            const m2 = consol2.entityMatcher({ locations: locs2 || [], entity_id: wantEnt });
+            const before = live.length;
+            live = live.filter((s) => m2(bldLoc[s.building_id]));
+            secFilteredOut = before - live.length;
+            secFilter = wantEnt;
+          }
+        }
 
         if (action === 'portfolio') {
           const f = reg.portfolioForecast({ sections: live, today: regToday, horizon_years: horizon });
@@ -4794,7 +4859,10 @@ module.exports = async (req, res) => {
             const cv = reg.warrantyCoverage({ sections: live, warranties: wrows || [], today: regToday });
             if (cv.ok) coverage = cv;
           }
-          res.status(200).json({ ok: true, provisioned: true, forecast: f, coverage: coverage, warranties_provisioned: warrantiesProvisioned });
+          // The filter is DECLARED with how many sections it hid. A capital
+          // forecast showing one entity while reading like the whole
+          // portfolio is the number somebody budgets against by mistake.
+          res.status(200).json({ ok: true, provisioned: true, forecast: f, coverage: coverage, warranties_provisioned: warrantiesProvisioned, entity_filter: secFilter, filtered_out: secFilteredOut });
           return;
         }
 
@@ -4802,7 +4870,7 @@ module.exports = async (req, res) => {
           const e = reg.sectionState({ section: x, today: regToday, horizon_years: horizon });
           return Object.assign({}, x, { evaluation: e.ok ? e : null, evaluation_error: e.ok ? null : e.error });
         });
-        res.status(200).json({ ok: true, provisioned: true, today: regToday, data: evaluated });
+        res.status(200).json({ ok: true, provisioned: true, today: regToday, data: evaluated, entity_filter: secFilter, filtered_out: secFilteredOut });
         return;
       }
 
@@ -5692,11 +5760,26 @@ module.exports = async (req, res) => {
         // splits by entity either. Saying so is the difference between a
         // partial feature and a misleading one.
         consolidated_sources: ['rf_invoices (excluding void)'],
-        not_yet_entity_aware: [
-          'Billing panel invoice totals',
+        // CORRECTED 2026-09-02, hours after this list was first written, when
+        // the panels were actually made entity-aware and two of my own four
+        // entries turned out to be wrong.
+        //
+        // "Billing panel invoice totals" is GONE from this list: rfRenderInvoices
+        // renders the invoices of ONE JOB inside the job detail tab, so it is
+        // single-branch and therefore single-entity by construction. There was
+        // never anything to filter. I listed it from a grep for "does this
+        // mention location" without checking what the panel actually shows,
+        // which is the same shortcut that produced the .fr mistake earlier
+        // today -- an accurate grep answering a question I had not asked.
+        //
+        // Progress Billing and the capital forecast DID total company-wide and
+        // now take an entity filter, so they leave this list too.
+        entity_aware: [
           'Progress Billing / WIP schedule',
-          'Reports and CSV export',
           'Roof asset capital forecast'
+        ],
+        not_yet_entity_aware: [
+          'Reports and CSV export (exports rows, not totals -- scoping an export by entity is its own task)'
         ]
       });
       return;

@@ -154,4 +154,40 @@ test('previewMove refuses without a location rather than previewing nothing', ()
   assert.strictEqual(p.error.code, 'NO_LOCATION');
 });
 
+// ── the filter, which must agree with the board ───────────────────────────
+
+test('no entity selected matches everything', () => {
+  const m = c.entityMatcher({ locations: locations });
+  assert.ok(['LOC-CBUS', 'LOC-TOL', 'LOC-NOPE', ''].every(m));
+});
+
+test('an entity matches only the branches assigned to it RIGHT NOW', () => {
+  const m = c.entityMatcher({ locations: locations, entity_id: 'ENT-A' });
+  assert.strictEqual(m('LOC-CBUS'), true);
+  assert.strictEqual(m('LOC-DAY'), true);
+  assert.strictEqual(m('LOC-CIN'), false);
+  assert.strictEqual(m('LOC-TOL'), false);
+  // The move again, through the filter this time: reassign and the SAME
+  // location answers differently, with nothing on the row having changed.
+  const moved = locations.map(l => l.location_id === 'LOC-DAY' ? Object.assign({}, l, { entity_id: 'ENT-B' }) : l);
+  assert.strictEqual(c.entityMatcher({ locations: moved, entity_id: 'ENT-A' })('LOC-DAY'), false);
+  assert.strictEqual(c.entityMatcher({ locations: moved, entity_id: 'ENT-B' })('LOC-DAY'), true);
+});
+
+test('the UNASSIGNED selection covers BOTH un-attributed shapes', () => {
+  const m = c.entityMatcher({ locations: locations, entity_id: c.UNASSIGNED });
+  assert.strictEqual(m('LOC-TOL'), true, 'a branch with no entity');
+  assert.strictEqual(m('LOC-DEFAULT'), true, 'a location that is not on file');
+  assert.strictEqual(m(''), true, 'no location at all');
+  assert.strictEqual(m('LOC-CBUS'), false);
+});
+
+test('the filter and the board agree: filtered totals sum to the board bucket', () => {
+  const board = c.consolidate(base);
+  const m = c.entityMatcher({ locations: locations, entity_id: 'ENT-A' });
+  const filteredTotal = rows.filter(r => m(r.location_id)).reduce((s, r) => s + r.total, 0);
+  assert.strictEqual(filteredTotal, board.entities.filter(x => x.entity_id === 'ENT-A')[0].total,
+    'two answers to "which entity is this" would eventually disagree on the same screen');
+});
+
 console.log(passed + ' passed');
