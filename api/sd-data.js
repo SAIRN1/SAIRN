@@ -2602,12 +2602,23 @@ module.exports = async (req, res) => {
     // WRITE IS THE SAME SET, deliberately: whoever can see a referral is whoever
     // logs its outcome, and splitting them would mean a coordinator could read a
     // pipeline they cannot update, which is how a stale pipeline happens.
-    const SEN_REFERRAL_RESOURCES = { sen_referral_sources: 'source_id', sen_referrals: 'referral_id' };
+    // sen_training_rules and sen_training_records ride the same gate and the
+    // same branch (2026-09-02, competitive-gap audit A6). Same reasoning, one
+    // step further: a training record is employment data about a named
+    // caregiver and a rule is the requirement it is measured against, so
+    // schedulers and coordinators -- who decide who can be sent to a visit --
+    // need both, and a caregiver has no business reading the roster's
+    // compliance standing. Management-only would put it out of reach of the
+    // people staffing the schedule.
+    const SEN_REFERRAL_RESOURCES = {
+      sen_referral_sources: 'source_id', sen_referrals: 'referral_id',
+      sen_training_rules: 'rule_id', sen_training_records: 'record_id'
+    };
     if (SEN_REFERRAL_RESOURCES[resource] && (action === 'read' || action === 'write')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!SEN_CLIENT_BROAD_READ_ROLES[session.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Referral records are limited to management, coordinators and schedulers' } });
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'These records are limited to management, coordinators and schedulers' } });
         return;
       }
       const idCol = SEN_REFERRAL_RESOURCES[resource];
@@ -2632,7 +2643,10 @@ module.exports = async (req, res) => {
         ))
       });
       if (r.status === 404 || r.status === 400) {
-        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Referral tracking is not set up yet — run sql/sairnsenior_referrals_schema.sql in Supabase first.' } });
+        const setupFile = (resource.indexOf('training') !== -1)
+          ? 'sql/sairnsenior_training_schema.sql'
+          : 'sql/sairnsenior_referrals_schema.sql';
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run ' + setupFile + ' in Supabase first.' } });
         return;
       }
       const rows = await r.json();

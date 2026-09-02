@@ -76,6 +76,17 @@ module.exports = {
   // Bespoke branch below, shared by both.
     'sen_referral_sources',
     'sen_referrals',
+  // SAIRNsenior caregiver training hours (2026-09-02, competitive-gap audit
+  // A6) -- see sql/sairnsenior_training_schema.sql. sen_training_rules holds
+  // the in-service/pre-service requirement as DATA carrying its own citation
+  // and its own scope (programme + aide type), because the real figures differ
+  // by both -- 12 hours under 42 CFR 484.80(d) against 6 under ORC
+  // 5164.913(A)(1). sen_training_records is what a caregiver actually
+  // completed. Same intake-role gate and same shared branch as the referral
+  // resources above: schedulers and coordinators decide who can be sent to a
+  // visit and need to see standing; a caregiver does not read the roster's.
+    'sen_training_rules',
+    'sen_training_records',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

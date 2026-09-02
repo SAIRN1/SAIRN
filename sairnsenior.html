@@ -231,6 +231,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Billing &amp; Claims</button>
       <div class="ss">Staff</div>
       <button class="sb" id="sb-caregivers" onclick="nav('caregivers')"><span class="sico">&#128119;</span>Caregivers</button>
+      <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Training Hours<span class="badge br" id="tr-badge" style="display:none;margin-left:8px"></span></button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -444,6 +445,22 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="mtitle">Add / Edit Caregiver</div>
     <div class="fr"><div class="fg"><label>Name</label><input id="cg-name"></div><div class="fg"><label>Phone</label><input id="cg-phone"></div></div>
     <div class="fr"><div class="fg"><label>CPR Cert Expires</label><input id="cg-cpr" type="date"></div><div class="fg"><label>Background Check Date</label><input id="cg-bgcheck" type="date"></div></div>
+    <div class="fr">
+      <div class="fg"><label>Aide type</label><select id="cg-aide-type">
+        <option value="">Not recorded</option>
+        <option value="home_health_aide">Home health aide</option>
+        <option value="personal_care_aide">Personal care aide</option>
+        <option value="other">Other / not an aide</option>
+      </select></div>
+      <div class="fg"><label>Program they work under</label><select id="cg-program">
+        <option value="">Not recorded</option>
+        <option value="medicare_hh">Medicare-certified home health agency</option>
+        <option value="oh_icds">Ohio integrated care delivery system</option>
+        <option value="oh_waiver">Ohio home care waiver agency provider</option>
+        <option value="other">Other / not listed</option>
+      </select></div>
+    </div>
+    <div class="note" style="margin-bottom:12px">These two decide <strong>which</strong> training rule applies, and the rules genuinely differ &mdash; a personal care aide under Ohio ICDS owes 6 in-service hours a year while a home health aide at a Medicare-certified agency owes 12. Leave either blank and this app will say no rule applies rather than pick one.</div>
     <div class="fg"><label>Status</label><select id="cg-status"><option value="active">Active</option><option value="onboarding">Onboarding</option><option value="inactive">Inactive</option></select></div>
     <div class="fg"><label>Notes</label><textarea id="cg-notes" rows="2"></textarea></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -452,6 +469,119 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     </div>
   </div>
 </div>
+
+<!-- TRAINING HOURS (competitive-gap audit A6, 2026-09-02) -->
+<!-- State licensure and the federal conditions of participation both set
+     in-service training-hour rules, and the audit recorded ZERO occurrences of
+     "training" in this app. CareAcademy exists as an entire add-on category
+     because agencies buy a second product for exactly this.
+
+     THE TRAP THIS FEATURE IS BUILT AROUND. The hour figures are NOT universal,
+     and picking the wrong one is easy and looks right. Three real rules, each
+     read against primary source, each with a different scope:
+
+       42 CFR 484.80(d)      home health aide at a Medicare-certified agency:
+                             at least 12 hours of in-service training during
+                             each 12-month period, supervised by an RN.
+       ORC 5164.913(A)(1)    personal care aide under the Ohio integrated care
+                             delivery system: 30 hours pre-service and 6 hours
+                             in-service every 12 months -- and (A)(2) CAPS it,
+                             barring the department from requiring more.
+       OAC 5160-46-12(D)(3)  non-licensed direct care staff at an Ohio home
+                             care waiver agency provider: 12 hours of
+                             in-service training every 12 months.
+
+     Six versus twelve is a 2x difference on a survey-citable requirement. So a
+     rule here is DATA carrying its own citation and its own scope, a caregiver
+     carries the aide type and programme that select it, and a caregiver whose
+     scope matches no rule reads NO RULE ON FILE rather than being measured
+     against whichever figure happened to be nearest. -->
+<div class="panel" id="panel-training">
+  <div class="ph"><div><div class="ptitle">Training Hours</div><div class="psub">In-service and pre-service hours against the rule that actually applies to each caregiver &mdash; every figure cited</div></div>
+    <div class="pa"><button class="btn bo bs" onclick="openTrRuleModal()">+ Rule</button><button class="btn bp bs" onclick="openTrRecordModal()">+ Training Completed</button></div>
+  </div>
+  <div id="tr-content">
+    <div class="krow" id="tr-kpis"></div>
+
+    <div class="card"><div class="ch"><span class="ct">Where each caregiver stands</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">Hours are counted inside the rolling window the rule itself sets, from the date each training was completed. A caregiver whose aide type or programme is not recorded, or whose combination has no rule on file, reads <strong>no rule on file</strong> &mdash; not compliant, and not deficient. Asserting either would be inventing a requirement or clearing one.</div>
+      <div class="tw"><table><thead><tr><th>Caregiver</th><th>Aide type</th><th>Programme</th><th>Requirement</th><th>Hours in window</th><th>Standing</th><th>Citation</th></tr></thead>
+      <tbody id="tr-board-tbody"></tbody></table></div>
+      <div id="tr-board-notes" style="margin-top:10px"></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Training on file</span></div><div class="cb" style="padding:0">
+      <div class="tw"><table><thead><tr><th>Completed</th><th>Caregiver</th><th>Title</th><th>Kind</th><th>Hours</th><th>Delivered by</th><th></th></tr></thead>
+      <tbody id="tr-records-tbody"></tbody></table></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Rules on file</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">Three rules ship seeded, and they are the only three read against primary source. <strong>Every other state is empty on purpose.</strong> An invented figure for a state nobody checked would look authoritative and be wrong, which is worse than an empty table. Add your own with the citation you verified it against.</div>
+      <div class="tw"><table><thead><tr><th>Jurisdiction</th><th>Programme</th><th>Aide type</th><th>Kind</th><th>Hours</th><th>Window</th><th>Citation</th><th></th></tr></thead>
+      <tbody id="tr-rules-tbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+
+<div class="modal" id="trrulemodal"><div class="mbox">
+  <div class="mtitle">Training Rule</div>
+  <div class="note" style="margin-bottom:12px">A rule with no citation cannot be checked by anyone reading it later, so one is required. Record where you actually read it.</div>
+  <div class="fr">
+    <div class="fg"><label>Jurisdiction</label><input id="trr-jurisdiction" placeholder="e.g. Federal, Ohio"></div>
+    <div class="fg"><label>Programme</label><select id="trr-program">
+      <option value="medicare_hh">Medicare-certified home health agency</option>
+      <option value="oh_icds">Ohio integrated care delivery system</option>
+      <option value="oh_waiver">Ohio home care waiver agency provider</option>
+      <option value="other">Other / not listed</option>
+    </select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Aide type</label><select id="trr-aide-type">
+      <option value="home_health_aide">Home health aide</option>
+      <option value="personal_care_aide">Personal care aide</option>
+      <option value="other">Other</option>
+    </select></div>
+    <div class="fg"><label>Kind</label><select id="trr-kind">
+      <option value="in_service">In-service (recurring)</option>
+      <option value="pre_service">Pre-service (one time)</option>
+    </select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Hours required</label><input id="trr-hours" type="number" min="0" step="0.5"></div>
+    <div class="fg"><label>Window in months (blank for one-time)</label><input id="trr-months" type="number" min="1" step="1" placeholder="12"></div>
+  </div>
+  <div class="fg"><label>Citation</label><input id="trr-citation" placeholder="e.g. 42 CFR 484.80(d)"></div>
+  <div class="fg"><label>Where you read it</label><input id="trr-url" placeholder="URL of the primary source"></div>
+  <div class="fg"><label>Effective from</label><input id="trr-effective" type="date"></div>
+  <div class="fg"><label><input type="checkbox" id="trr-ceiling" style="width:auto"> This rule also CAPS what may be required (a ceiling, not only a floor)</label></div>
+  <div class="fg"><label>Notes</label><textarea id="trr-notes" rows="2"></textarea></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeTrRuleModal()">Cancel</button>
+    <button class="btn bp" onclick="saveTrRule()">Save Rule</button>
+  </div>
+</div></div>
+
+<div class="modal" id="trrecordmodal"><div class="mbox">
+  <div class="mtitle">Training Completed</div>
+  <div class="fr">
+    <div class="fg"><label>Caregiver</label><select id="trc-caregiver"></select></div>
+    <div class="fg"><label>Completed on</label><input id="trc-on" type="date"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Hours</label><input id="trc-hours" type="number" min="0" step="0.25"></div>
+    <div class="fg"><label>Kind</label><select id="trc-kind">
+      <option value="in_service">In-service</option>
+      <option value="pre_service">Pre-service</option>
+    </select></div>
+  </div>
+  <div class="fg"><label>Title / subject</label><input id="trc-title" placeholder="e.g. Infection control refresher"></div>
+  <div class="fg"><label>Delivered by</label><input id="trc-provider" placeholder="e.g. agency RN, CareAcademy, community college"></div>
+  <div class="fg"><label>Evidence held</label><input id="trc-evidence" placeholder="e.g. signed roster in the personnel file -- recorded as typed"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeTrRecordModal()">Cancel</button>
+    <button class="btn bp" onclick="saveTrRecord()">Save Training</button>
+  </div>
+</div></div>
 
 <!-- COMPLIANCE -->
 <div class="panel" id="panel-compliance">
@@ -798,6 +928,7 @@ function senEnterApp(d){
   senHydrateVisits();
   senHydrateClaims();
   senHydrateReferrals().then(function(merged){if(merged)rfRender();});
+  senHydrateTraining().then(function(merged){if(merged)trRender();});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -840,6 +971,7 @@ function nav(id){
   if(id==='scheduling')vsRender();
   if(id==='billing')blRender();
   if(id==='referrals')rfRender();
+  if(id==='training')trRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -1300,17 +1432,19 @@ function editCaregiver(id){
   var c=caregivers().find(function(x){return x.id===id;});if(!c)return;
   cgeid=id;$('cg-name').value=c.name||'';$('cg-phone').value=c.phone||'';$('cg-cpr').value=c.cpr_expiry||'';
   $('cg-bgcheck').value=c.bgcheck_date||'';$('cg-status').value=c.status||'onboarding';$('cg-notes').value=c.notes||'';
+  $('cg-aide-type').value=c.aide_type||'';$('cg-program').value=c.program||'';
   $('caregivermodal').classList.add('on');
 }
 async function saveCaregiver(){
   var name=$('cg-name').value.trim();
   if(!name){toast('Caregiver name required');return;}
   var rec={id:cgeid||newId('CG'),name:name,phone:$('cg-phone').value.trim(),cpr_expiry:$('cg-cpr').value,
-    bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim()};
+    bgcheck_date:$('cg-bgcheck').value,status:$('cg-status').value,notes:$('cg-notes').value.trim(),
+    aide_type:$('cg-aide-type').value,program:$('cg-program').value};
   var list=caregivers();
   if(cgeid){list=list.map(function(x){return x.id===cgeid?rec:x;});}else{list.push(rec);}
   st('sen_caregivers',list);
-  closeCaregiverModal();rCaregivers();rDash();
+  closeCaregiverModal();rCaregivers();rDash();if(typeof trRender==='function')trRender();
   var syncResult=await senData('write','sen_caregivers',rec,true);
   toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
 }
@@ -1889,6 +2023,349 @@ function rfRender(){
         '<td><span class="badge '+(s.active===false?'bx':'bg')+'">'+(s.active===false?'inactive':'active')+'</span></td>'+
         '<td><button class="btn bo bs" onclick="openRfSourceModal(\''+s.id+'\')">Edit</button></td></tr>';
     }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No referral sources on file yet</td></tr>';
+  }
+}
+
+// ── TRAINING HOURS (competitive-gap audit A6, 2026-09-02) ────────────────
+// The audit recorded ZERO occurrences of "training" in this app, while state
+// licensure and the federal conditions of participation both set in-service
+// hour requirements and CareAcademy exists as a whole add-on category because
+// agencies buy a second product for it.
+//
+// ── THE ONE THING THAT MAKES THIS DANGEROUS TO BUILD CARELESSLY ──
+// The hour figures are not universal. Three real rules, each read against
+// primary source during this build, each scoped differently:
+//
+//   42 CFR 484.80(d)       home health aide, Medicare-certified agency:
+//                          "at least 12 hours of in-service training during
+//                          each 12-month period", RN-supervised.
+//   ORC 5164.913(A)(1)     personal care aide, Ohio integrated care delivery
+//                          system: 30 hours pre-service, 6 hours in-service
+//                          every 12 months. (A)(2) also CAPS it -- the
+//                          department "shall not require" more than either.
+//   OAC 5160-46-12(D)(3)   non-licensed direct care staff, Ohio home care
+//                          waiver agency provider: 12 hours every 12 months.
+//                          Effective 2025-09-22.
+//
+// Six versus twelve is a 2x error on a survey-citable requirement, and it is
+// the same shape as SAIRNfreedom's two-regimes-on-different-money finding:
+// applying a rule to the population it was not written for looks right and is
+// wrong. So a rule is DATA carrying its own citation and its own scope, and a
+// caregiver whose (aide type, programme) matches nothing reads NO RULE ON FILE
+// -- not compliant, not deficient. Clearing someone against a requirement that
+// does not apply to them is as wrong as inventing one that does.
+//
+// EVERY OTHER STATE IS EMPTY ON PURPOSE. Seeding a plausible figure for a
+// jurisdiction nobody read would look authoritative and be wrong, which is the
+// fabrication class this platform keeps finding. Same reasoning as
+// SAIRNfreedom's national categories starting empty.
+function trRules(){return ld('sen_training_rules',[]);}
+function trRecords(){return ld('sen_training_records',[]);}
+
+var TR_PROGRAM_LABELS={medicare_hh:'Medicare-certified home health agency',
+  oh_icds:'Ohio integrated care delivery system',
+  oh_waiver:'Ohio home care waiver agency provider',other:'Other / not listed'};
+var TR_AIDE_LABELS={home_health_aide:'Home health aide',
+  personal_care_aide:'Personal care aide',other:'Other'};
+
+// Seeded ONLY when the key is absent -- never when it is an emptied array, the
+// standing trap this platform documents. Each rule carries the citation it was
+// read from so a reader can check it rather than trust it.
+function trSeedRules(){
+  if(localStorage.getItem('sen_training_rules')!==null)return;
+  st('sen_training_rules',[
+    {id:'TRR-FED-HHA-IS',jurisdiction:'Federal',program:'medicare_hh',aide_type:'home_health_aide',
+     kind:'in_service',hours:12,period_months:12,ceiling:false,
+     citation:'42 CFR 484.80(d)',
+     citation_url:'https://www.govinfo.gov/content/pkg/CFR-2023-title42-vol5/xml/CFR-2023-title42-vol5-sec484-80.xml',
+     effective_from:'',
+     notes:'"A home health aide must receive at least 12 hours of in-service training during each 12-month period." Must be supervised by a registered nurse.',
+     seeded:true},
+    {id:'TRR-OH-PCA-IS',jurisdiction:'Ohio',program:'oh_icds',aide_type:'personal_care_aide',
+     kind:'in_service',hours:6,period_months:12,ceiling:true,
+     citation:'ORC 5164.913(A)(1), capped by (A)(2)',
+     citation_url:'https://codes.ohio.gov/ohio-revised-code/section-5164.913',
+     effective_from:'',
+     notes:'Six hours every twelve months. (A)(2) bars the department from requiring MORE than six in a twelve-month period, so this figure is a ceiling as well as a floor.',
+     seeded:true},
+    {id:'TRR-OH-PCA-PRE',jurisdiction:'Ohio',program:'oh_icds',aide_type:'personal_care_aide',
+     kind:'pre_service',hours:30,period_months:0,ceiling:true,
+     citation:'ORC 5164.913(A)(1), capped by (A)(2)',
+     citation_url:'https://codes.ohio.gov/ohio-revised-code/section-5164.913',
+     effective_from:'',
+     notes:'Thirty hours of pre-service training, one time. (A)(2) bars requiring more than thirty.',
+     seeded:true},
+    {id:'TRR-OH-WVR-IS',jurisdiction:'Ohio',program:'oh_waiver',aide_type:'other',
+     kind:'in_service',hours:12,period_months:12,ceiling:false,
+     citation:'OAC 5160-46-12(D)(3)',
+     citation_url:'https://codes.ohio.gov/ohio-administrative-code/rule-5160-46-12',
+     effective_from:'2025-09-22',
+     notes:'"Maintain evidence of non-licensed direct care staff\'s completion of twelve hours of in-service training every twelve months."',
+     seeded:true}
+  ]);
+}
+
+function senHydrateTraining(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return Promise.all([
+    senData('read','sen_training_rules',null,true),
+    senData('read','sen_training_records',null,true)
+  ]).then(function(res){
+    var merged=false;
+    [['sen_training_rules',res[0]],['sen_training_records',res[1]]].forEach(function(pair){
+      var key=pair[0],rows=pair[1];
+      if(!rows||!Array.isArray(rows))return;
+      // Read local INSIDE the .then, after the network completes -- the
+      // post-await re-read this platform standardised on after confirmReserve.
+      var local=ld(key,[]);
+      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
+      var added=false;
+      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
+      if(added){st(key,local);merged=true;}
+    });
+    return merged;
+  });
+}
+
+// Rolling window start, computed from local calendar parts. NOT
+// toISOString().slice(0,10), which is UTC's date and would move the window
+// boundary by a day for part of every evening.
+function trWindowStart(months){
+  var d=new Date(senLocalToday()+'T00:00:00');
+  d.setMonth(d.getMonth()-months);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+// The rule that governs THIS caregiver for THIS kind, or null. Matching is
+// exact on both programme and aide type: a near-miss is not a match, because
+// the near-misses in this domain are precisely the 6-versus-12 pairs.
+function trRuleFor(cg,kind){
+  if(!cg||!cg.program||!cg.aide_type)return null;
+  var rules=trRules().filter(function(r){
+    return r.program===cg.program && r.aide_type===cg.aide_type && r.kind===kind;
+  });
+  if(!rules.length)return null;
+  // Where more than one is on file for the same scope, the latest effective
+  // date wins; a rule with no effective date never displaces a dated one.
+  rules.sort(function(a,b){return String(b.effective_from||'').localeCompare(String(a.effective_from||''));});
+  return rules[0];
+}
+
+function trHoursFor(cgId,kind,sinceDate){
+  return trRecords().reduce(function(sum,r){
+    if(r.caregiver_id!==cgId)return sum;
+    if((r.kind||'in_service')!==kind)return sum;
+    if(sinceDate && (!r.completed_on || r.completed_on<sinceDate))return sum;
+    var h=Number(r.hours);
+    return isFinite(h)&&h>0?sum+h:sum;
+  },0);
+}
+
+// Returns { state, ... } where state is one of:
+//   no_scope   the caregiver's aide type or programme is not recorded
+//   no_rule    recorded, but no rule on file covers that combination
+//   met        hours in the window meet or exceed the requirement
+//   short      they do not
+// There is deliberately no fifth state that guesses.
+function trStandingFor(cg){
+  if(!cg.program||!cg.aide_type){
+    return {state:'no_scope',
+      message:'Aide type or programme not recorded, so no rule can be selected. Nothing is asserted about this caregiver either way.'};
+  }
+  var rule=trRuleFor(cg,'in_service');
+  if(!rule){
+    return {state:'no_rule',
+      message:'No in-service rule on file for '+(TR_AIDE_LABELS[cg.aide_type]||cg.aide_type)+
+              ' under '+(TR_PROGRAM_LABELS[cg.program]||cg.program)+
+              '. This is not a pass and not a failure -- add the rule with the citation you verified it against.'};
+  }
+  var months=Number(rule.period_months)||12;
+  var since=trWindowStart(months);
+  var hours=trHoursFor(cg.id,'in_service',since);
+  var need=Number(rule.hours)||0;
+  return {state:hours>=need?'met':'short', rule:rule, hours:hours, need:need,
+    since:since, months:months, deficit:Math.max(0,need-hours)};
+}
+
+var trRuleEditId=null, trRecordEditId=null;
+
+function trFillCaregiverSelect(){
+  var sel=$('trc-caregiver');if(!sel)return;
+  var list=caregivers();
+  var keep=sel.value;
+  sel.innerHTML=list.length?list.map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';
+  }).join(''):'<option value="">Add a caregiver first</option>';
+  if(keep)sel.value=keep;
+}
+
+function openTrRuleModal(id){
+  trRuleEditId=id||null;
+  var r=id?trRules().find(function(x){return x.id===id;}):null;
+  $('trr-jurisdiction').value=r?(r.jurisdiction||''):'';
+  $('trr-program').value=r?(r.program||'other'):'other';
+  $('trr-aide-type').value=r?(r.aide_type||'other'):'other';
+  $('trr-kind').value=r?(r.kind||'in_service'):'in_service';
+  $('trr-hours').value=r?r.hours:'';
+  $('trr-months').value=r?(r.period_months||''):'12';
+  $('trr-citation').value=r?(r.citation||''):'';
+  $('trr-url').value=r?(r.citation_url||''):'';
+  $('trr-effective').value=r?(r.effective_from||''):'';
+  $('trr-ceiling').checked=r?!!r.ceiling:false;
+  $('trr-notes').value=r?(r.notes||''):'';
+  $('trrulemodal').classList.add('on');
+}
+function closeTrRuleModal(){$('trrulemodal').classList.remove('on');trRuleEditId=null;}
+async function saveTrRule(){
+  var hours=Number($('trr-hours').value);
+  if(!(hours>0)){toast('A rule needs the number of hours it requires');return;}
+  // REQUIRED, not optional. A requirement with no citation cannot be checked by
+  // whoever reads it next, and an uncheckable requirement in a compliance tool
+  // is indistinguishable from an invented one.
+  var citation=$('trr-citation').value.trim();
+  if(!citation){toast('A rule needs its citation -- an uncheckable requirement is indistinguishable from an invented one',6000);return;}
+  var kind=$('trr-kind').value;
+  var months=Number($('trr-months').value)||0;
+  if(kind==='in_service'&&!(months>0)){toast('A recurring rule needs the window in months it recurs over');return;}
+  var rec={id:trRuleEditId||newId('TRR'),jurisdiction:$('trr-jurisdiction').value.trim(),
+    program:$('trr-program').value,aide_type:$('trr-aide-type').value,kind:kind,
+    hours:hours,period_months:kind==='in_service'?months:0,
+    ceiling:$('trr-ceiling').checked,citation:citation,
+    citation_url:$('trr-url').value.trim(),effective_from:$('trr-effective').value,
+    notes:$('trr-notes').value.trim(),seeded:false};
+  var list=trRules();
+  if(trRuleEditId){list=list.map(function(x){return x.id===trRuleEditId?rec:x;});}else{list.push(rec);}
+  st('sen_training_rules',list);
+  closeTrRuleModal();trRender();
+  var saved=await senData('write','sen_training_rules',rec,true);
+  toast(saved?'Rule saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function openTrRecordModal(id){
+  trRecordEditId=id||null;
+  trFillCaregiverSelect();
+  var r=id?trRecords().find(function(x){return x.id===id;}):null;
+  if(r&&r.caregiver_id)$('trc-caregiver').value=r.caregiver_id;
+  $('trc-on').value=r?(r.completed_on||''):senLocalToday();
+  $('trc-hours').value=r?r.hours:'';
+  $('trc-kind').value=r?(r.kind||'in_service'):'in_service';
+  $('trc-title').value=r?(r.title||''):'';
+  $('trc-provider').value=r?(r.provider||''):'';
+  $('trc-evidence').value=r?(r.evidence||''):'';
+  $('trrecordmodal').classList.add('on');
+}
+function closeTrRecordModal(){$('trrecordmodal').classList.remove('on');trRecordEditId=null;}
+async function saveTrRecord(){
+  var cgId=$('trc-caregiver').value;
+  if(!cgId){toast('Pick the caregiver this training was completed by');return;}
+  var hours=Number($('trc-hours').value);
+  if(!(hours>0)){toast('Record the hours actually completed');return;}
+  var on=$('trc-on').value;
+  if(!on){toast('Record the date it was completed -- the window it counts in depends on it');return;}
+  // A completion date in the future would count toward a window it has not
+  // happened in yet. Refused rather than clamped, because clamping would
+  // silently change what the agency recorded.
+  if(on>senLocalToday()){toast('That completion date is in the future');return;}
+  var rec={id:trRecordEditId||newId('TRC'),caregiver_id:cgId,completed_on:on,
+    hours:hours,kind:$('trc-kind').value,title:$('trc-title').value.trim(),
+    provider:$('trc-provider').value.trim(),evidence:$('trc-evidence').value.trim(),
+    created_at:senLocalToday()};
+  var list=trRecords();
+  if(trRecordEditId){list=list.map(function(x){return x.id===trRecordEditId?rec:x;});}else{list.push(rec);}
+  st('sen_training_records',list);
+  closeTrRecordModal();trRender();
+  var saved=await senData('write','sen_training_records',rec,true);
+  toast(saved?'Training recorded':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function trRender(){
+  trSeedRules();
+  trFillCaregiverSelect();
+  var cg=caregivers(), rules=trRules(), recs=trRecords();
+
+  var standings=cg.map(function(c){return {cg:c, st:trStandingFor(c)};});
+  var shortCount=standings.filter(function(x){return x.st.state==='short';}).length;
+  var unscoped=standings.filter(function(x){return x.st.state==='no_scope';}).length;
+  var norule=standings.filter(function(x){return x.st.state==='no_rule';}).length;
+
+  var k=$('tr-kpis');
+  if(k){
+    k.innerHTML=
+      '<div class="kpi"><div class="klbl">Short of their requirement</div><div class="kval'+(shortCount?' d':'')+'">'+shortCount+'</div><div class="kt">Measured against a rule on file</div></div>'+
+      '<div class="kpi"><div class="klbl">No aide type or programme</div><div class="kval">'+unscoped+'</div><div class="kt">Nothing asserted either way</div></div>'+
+      '<div class="kpi"><div class="klbl">No rule on file</div><div class="kval">'+norule+'</div><div class="kt">Scope recorded, rule missing</div></div>'+
+      '<div class="kpi"><div class="klbl">Training records</div><div class="kval">'+recs.length+'</div><div class="kt">'+rules.length+' rules on file</div></div>';
+  }
+
+  var bb=$('tr-board-tbody');
+  if(bb){
+    bb.innerHTML=cg.length?standings.map(function(x){
+      var c=x.cg, st=x.st;
+      var req, got, standing, cite;
+      if(st.state==='no_scope'||st.state==='no_rule'){
+        req='<span style="color:var(--muted)">--</span>';
+        got='<span style="color:var(--muted)">--</span>';
+        standing='<span class="badge bx">no rule on file</span>';
+        cite='<span style="color:var(--muted)">'+H(st.message)+'</span>';
+      }else{
+        req=st.need+' h / '+st.months+' mo'+(st.rule.ceiling?' <span class="badge bb" title="This rule also caps what may be required">ceiling</span>':'');
+        got=st.hours.toFixed(st.hours%1?2:0)+' h <span style="font-size:11px;color:var(--muted)">since '+H(st.since)+'</span>';
+        standing=st.state==='met'
+          ? '<span class="badge bg">met</span>'
+          : '<span class="badge br">short by '+st.deficit.toFixed(st.deficit%1?2:0)+' h</span>';
+        cite=st.rule.citation_url
+          ? '<a href="'+H(st.rule.citation_url)+'" target="_blank" rel="noopener">'+H(st.rule.citation)+'</a>'
+          : H(st.rule.citation);
+      }
+      return '<tr><td><strong>'+H(c.name)+'</strong></td>'+
+        '<td>'+(c.aide_type?H(TR_AIDE_LABELS[c.aide_type]||c.aide_type):'<span class="badge bw">not recorded</span>')+'</td>'+
+        '<td>'+(c.program?H(TR_PROGRAM_LABELS[c.program]||c.program):'<span class="badge bw">not recorded</span>')+'</td>'+
+        '<td>'+req+'</td><td>'+got+'</td><td>'+standing+'</td><td style="font-size:12px">'+cite+'</td></tr>';
+    }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No caregivers on file yet</td></tr>';
+  }
+
+  var notes=$('tr-board-notes');
+  if(notes){
+    var bits=[];
+    if(unscoped)bits.push('<strong>'+unscoped+' caregiver'+(unscoped===1?' has':'s have')+' no aide type or programme recorded.</strong> No rule can be selected for '+(unscoped===1?'them':'them')+', so this panel asserts nothing about '+(unscoped===1?'that person':'those people')+'. Open the caregiver and record both.');
+    if(norule)bits.push('<strong>'+norule+' caregiver'+(norule===1?'':'s')+' with a recorded scope '+(norule===1?'has':'have')+' no matching rule on file.</strong> Reading that as compliant would clear someone against a requirement nobody has entered.');
+    var ceilings=rules.filter(function(r){return r.ceiling;});
+    if(ceilings.length)bits.push('<strong>'+ceilings.length+' rule'+(ceilings.length===1?' is':'s are')+' a CEILING as well as a floor</strong> &mdash; ORC 5164.913(A)(2) bars the department from requiring more than the figure shown. Demanding more of a personal care aide than the statute permits is its own problem, and this panel will not treat extra hours as a fix for a different aide type.');
+    notes.innerHTML=bits.length?bits.map(function(b){return '<div class="note" style="margin-bottom:8px">'+b+'</div>';}).join(''):'';
+  }
+
+  var rb=$('tr-records-tbody');
+  if(rb){
+    var sorted=recs.slice().sort(function(a,b){return String(b.completed_on||'').localeCompare(String(a.completed_on||''));});
+    rb.innerHTML=sorted.length?sorted.map(function(r){
+      var c=cg.find(function(x){return x.id===r.caregiver_id;});
+      return '<tr><td>'+H(r.completed_on||'--')+'</td><td>'+H(c?c.name:'(caregiver removed)')+'</td>'+
+        '<td>'+H(r.title||'--')+'</td><td>'+H(r.kind==='pre_service'?'pre-service':'in-service')+'</td>'+
+        '<td>'+H(String(r.hours))+' h</td><td>'+H(r.provider||'--')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openTrRecordModal(\''+H(r.id)+'\')">Edit</button></td></tr>';
+    }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No training recorded yet</td></tr>';
+  }
+
+  var ub=$('tr-rules-tbody');
+  if(ub){
+    ub.innerHTML=rules.length?rules.map(function(r){
+      return '<tr><td>'+H(r.jurisdiction||'--')+'</td><td>'+H(TR_PROGRAM_LABELS[r.program]||r.program||'--')+'</td>'+
+        '<td>'+H(TR_AIDE_LABELS[r.aide_type]||r.aide_type||'--')+'</td>'+
+        '<td>'+H(r.kind==='pre_service'?'pre-service':'in-service')+'</td><td>'+H(String(r.hours))+' h</td>'+
+        '<td>'+(r.period_months?(r.period_months+' mo'):'one time')+'</td>'+
+        '<td style="font-size:12px">'+(r.citation_url
+          ? '<a href="'+H(r.citation_url)+'" target="_blank" rel="noopener">'+H(r.citation)+'</a>'
+          : H(r.citation))+
+          (r.effective_from?'<div style="font-size:11px;color:var(--muted)">effective '+H(r.effective_from)+'</div>':'')+
+          (r.ceiling?' <span class="badge bb">ceiling</span>':'')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openTrRuleModal(\''+H(r.id)+'\')">Edit</button></td></tr>';
+    }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No rules on file</td></tr>';
+  }
+
+  var badge=$('tr-badge');
+  if(badge){
+    if(shortCount){badge.style.display='inline-block';badge.textContent=shortCount;}
+    else badge.style.display='none';
   }
 }
 
@@ -2500,7 +2977,7 @@ async function aiAsk(){
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rClients();rCaregivers();rfRender();
+  rDash();rClients();rCaregivers();rfRender();trRender();
   // senLoadSettings() needs a session token, so it can only run after login --
   // init() is called from senEnterApp(), which is past that point. If the read
   // fails, rSettings() still renders from the legacy localStorage keys and says
