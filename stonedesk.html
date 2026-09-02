@@ -3489,6 +3489,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         <span>&#128640; Growth</span><span class="sb-caret" id="sbc-growth">&#9660;</span>
       </button>
       <div class="sb-section-body" id="sbsb-growth">
+        <button class="sb-btn admin-only" id="sb-publiccatalog" onclick="sbNav('publiccatalog')"><span class="sb-icon">&#127760;</span><span class="sb-text">Public Catalog</span></button>
         <button class="sb-btn" id="sb-contractor" onclick="sbNav('contractor')"><span class="sb-icon">&#127968;</span><span class="sb-text">Contractor Portal</span></button>
         <button class="sb-btn" id="sb-bidboard"   onclick="sbNav('bidboard')"> <span class="sb-icon">&#127919;</span><span class="sb-text">Bid Board</span></button>
         <button class="sb-btn" id="sb-business"   onclick="sbNav('business')"> <span class="sb-icon">&#128208;</span><span class="sb-text">Business Intel</span></button>
@@ -10797,6 +10798,19 @@ function showPanel(id) {
     try { _r = sessionStorage.getItem('sd_session_role') || ''; } catch (e) { _r = ''; }
     if (_r !== 'owner' && _r !== 'admin') {
       if (typeof notify === 'function') notify('The Executive Suite is limited to Owner and Manager accounts.', 'err');
+      return;
+    }
+  }
+  // Same gate, same reason, for the public catalog (2026-09-02, GAP 1). This
+  // panel decides what an anonymous visitor can see of this shop and holds the
+  // strangers who have written in; the server refuses a non-management caller
+  // on every read and write, and this stops the panel opening at all rather
+  // than rendering an empty board a shop-floor user would read as "no leads".
+  if (id === 'publiccatalog') {
+    var _pr = '';
+    try { _pr = sessionStorage.getItem('sd_session_role') || ''; } catch (e) { _pr = ''; }
+    if (_pr !== 'owner' && _pr !== 'admin') {
+      if (typeof notify === 'function') notify('The public catalog is limited to Owner and Manager accounts.', 'err');
       return;
     }
   }
@@ -26352,6 +26366,66 @@ document.addEventListener('DOMContentLoaded', function() {
 </div>
 
 <!-- PANEL: CRM LEAD PIPELINE -->
+<!-- PUBLIC CATALOG (competitive-gap audit GAP 1, 2026-09-02) -->
+<!-- The staff half of the public surface. The public half is a SEPARATE FILE,
+     stonedesk-catalog.html, served by api/stonedesk-public.js with no license
+     key and no session. That separation is not tidiness: this file carries
+     SAIRN's own chart of accounts, its price book and a patent deadline as
+     literal strings, which is the residual the audit left open at 4.1 -- so an
+     anonymous visitor must never be served this file. -->
+<div class="panel" id="panel-publiccatalog">
+  <div style="margin-bottom:18px">
+    <h2 style="margin:0 0 6px 0">&#127760; Public Catalog</h2>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;max-width:780px">What the world can see, and who has written in. Nothing here is public until you publish it, and a slab is published one at a time &mdash; there is no &ldquo;publish everything&rdquo; button, because the default for a yard full of slabs should be off.</div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:4px">Your public address</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:14px">The address is claimed, not reserved &mdash; two shops cannot hold the same one, and the server decides that, not this screen. Publishing without an address is refused rather than quietly ignored.</div>
+    <div class="q-two" style="margin-bottom:12px">
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Public address</label><input id="pc-slug" placeholder="e.g. main-street-stone" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Shop name shown to visitors</label><input id="pc-name" placeholder="e.g. Main Street Stone" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    </div>
+    <div class="q-two" style="margin-bottom:12px">
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Phone</label><input id="pc-phone" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Email</label><input id="pc-email" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    </div>
+    <div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Address</label><input id="pc-address" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    <div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">A line about the shop</label><textarea id="pc-blurb" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;font-family:inherit"></textarea></div>
+    <div style="margin-bottom:12px"><label style="font-size:13px"><input type="checkbox" id="pc-published" style="width:auto;margin-right:7px">Publish the catalog</label></div>
+    <button class="q-btn primary" onclick="pcSaveShop()">Save</button>
+    <div id="pc-shop-status" style="margin-top:12px;font-size:13px;line-height:1.7"></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:4px">Slabs on the public catalog</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">A visitor sees the colour, material, size, thickness and finish, and the photo. <strong>Never the cost, the vendor or the supplier</strong> &mdash; what you paid is not what a customer pays, and the public shape is built by naming its fields rather than by hiding the rest, so a field added to a slab later cannot leak by default.</div>
+    <div class="tw"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Slab</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Material</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Sqft</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">On the catalog</th>
+      </tr></thead><tbody id="pc-slabs-tbody"></tbody></table></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:4px">Quote requests</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">These land here, not in your CRM. An anonymous submitter must never write straight into the record the business runs on, so a request waits until someone promotes it. What the customer typed is kept exactly as typed and cannot be edited here &mdash; it is the evidence of what was asked for.</div>
+    <div class="tw"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Received</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Name</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Contact</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Project</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Asking about</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)"></th>
+      </tr></thead><tbody id="pc-requests-tbody"></tbody></table></div>
+  </div>
+</div>
+
 <div class="panel" id="panel-crm">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
@@ -34122,6 +34196,7 @@ function sbNav(id) {
   setTimeout(function(){
     if(id==='agreements'&&typeof agRender==='function')agRender();
     if(id==='crm'&&typeof window.sdCRMRender==='function')window.sdCRMRender();
+    if(id==='publiccatalog'&&typeof window.pcRenderPublicCatalog==='function')window.pcRenderPublicCatalog();
     if(id==='jobcost'&&typeof window.sdJCRender==='function')window.sdJCRender();
     if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
     if(id==='remnant'){if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
@@ -36947,4 +37022,187 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 })();
 </script>
 
+
+<script>
+// == PUBLIC CATALOG, STAFF SIDE (competitive-gap audit GAP 1, 2026-09-02) ==
+// The public half is a SEPARATE FILE -- stonedesk-catalog.html, served by
+// api/stonedesk-public.js with no license key and no session. That separation
+// is the whole security design: this file carries SAIRN's own chart of
+// accounts, its price book and a patent deadline as literal strings, which is
+// the residual the competitive audit left open at 4.1, so an anonymous visitor
+// must never be served it.
+//
+// THREE THINGS THIS PANEL WILL NOT DO:
+//   1. It will not publish a slab in bulk. Publication is one slab at a time,
+//      because the default for a yard full of slabs should be off and a
+//      "publish all" button makes the wrong thing one click away.
+//   2. It will not let staff edit what a customer typed. A quote request is
+//      evidence of what was asked for; a record editable after the fact stops
+//      being that. Staff set a status and nothing else, and the server enforces
+//      it -- the write branch accepts only a status and a decline reason.
+//   3. It will not claim a slab is live when the catalog is not published. The
+//      status line reads the real published flag and the real slug, and says
+//      plainly when a slab is marked for a catalog that is switched off.
+(function(){
+  var pcShop=null, pcRequests=[];
+
+  function pcEl(id){return document.getElementById(id);}
+  function pcHtml(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+  function pcNote(msg,kind){
+    var box=pcEl('pc-shop-status'); if(!box) return;
+    box.innerHTML='<span style="color:'+(kind==='err'?'#b91c1c':(kind==='ok'?'#166534':'var(--muted)'))+'">'+msg+'</span>';
+  }
+
+  async function pcRead(resource){
+    if(typeof sdData!=='function') return null;
+    try{ return await sdData('read',resource,{}); }catch(e){ return null; }
+  }
+  async function pcWrite(resource,payload){
+    if(typeof sdData!=='function') return null;
+    try{ return await sdData('write',resource,payload); }catch(e){ return null; }
+  }
+
+  function pcRenderShop(){
+    if(!pcShop)return;
+    pcEl('pc-slug').value=pcShop.shop_slug||'';
+    pcEl('pc-name').value=pcShop.shop_name||'';
+    pcEl('pc-phone').value=pcShop.phone||'';
+    pcEl('pc-email').value=pcShop.email||'';
+    pcEl('pc-address').value=pcShop.address||'';
+    pcEl('pc-blurb').value=pcShop.blurb||'';
+    pcEl('pc-published').checked=pcShop.published===true;
+    if(pcShop.published&&pcShop.shop_slug){
+      var url=location.origin+'/stonedesk-catalog?shop='+encodeURIComponent(pcShop.shop_slug);
+      pcNote('Live at <a href="'+pcHtml(url)+'" target="_blank" rel="noopener">'+pcHtml(url)+'</a>. '+
+             'Anyone with the address can see it &mdash; there is no login on that page, by design.','ok');
+    }else if(pcShop.shop_slug){
+      pcNote('Address claimed, catalog <strong>not published</strong>. The page returns &ldquo;no published catalog&rdquo; to anyone who tries it, '+
+             'including anyone who already had the link.');
+    }else{
+      pcNote('No public address set yet, so nothing is reachable.');
+    }
+  }
+
+  window.pcSaveShop=async function(){
+    var payload={
+      shop_slug:pcEl('pc-slug').value,
+      shop_name:pcEl('pc-name').value.trim(),
+      phone:pcEl('pc-phone').value.trim(),
+      email:pcEl('pc-email').value.trim(),
+      address:pcEl('pc-address').value.trim(),
+      blurb:pcEl('pc-blurb').value.trim(),
+      published:pcEl('pc-published').checked
+    };
+    pcNote('Saving...');
+    var r=await pcWrite('sd_public_shop',payload);
+    if(!r){
+      // A failed save is reported, never assumed. The old catalog stays live
+      // or stays dark exactly as it was, and this says so rather than leaving
+      // the tick box looking authoritative.
+      pcNote('Could not save. Nothing changed on the public page &mdash; it is still exactly as it was before you pressed Save.','err');
+      return;
+    }
+    pcShop=r;
+    pcRenderShop();
+    pcRenderSlabs();
+  };
+
+  function pcSlabPublished(sl){ return !!(sl && sl.published===true); }
+
+  function pcRenderSlabs(){
+    var tb=pcEl('pc-slabs-tbody'); if(!tb) return;
+    var list=(typeof sdSlabs!=='undefined'&&Array.isArray(sdSlabs))?sdSlabs:[];
+    var live=!!(pcShop&&pcShop.published&&pcShop.shop_slug);
+    if(!list.length){
+      tb.innerHTML='<tr><td colspan="5" style="padding:14px;color:var(--muted);text-align:center">No slabs on file yet</td></tr>';
+      return;
+    }
+    tb.innerHTML=list.map(function(sl){
+      var on=pcSlabPublished(sl);
+      return '<tr>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)"><strong>'+pcHtml(sl.colorName||sl.id)+'</strong></td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(sl.material||'')+'</td>'+
+        '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">'+pcHtml(sl.usableSqft||'')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(sl.status||'')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
+          '<label style="font-size:12px"><input type="checkbox" '+(on?'checked':'')+' style="width:auto;margin-right:6px" '+
+            'onchange="pcToggleSlab(\''+escAttrJs(String(sl.id))+'\',this.checked)">'+
+            (on?(live?'on the catalog':'marked, but the catalog is off'):'not published')+'</label>'+
+        '</td></tr>';
+    }).join('');
+  }
+
+  window.pcToggleSlab=async function(slabId,on){
+    var list=(typeof sdSlabs!=='undefined'&&Array.isArray(sdSlabs))?sdSlabs:[];
+    var sl=list.find(function(x){return String(x.id)===String(slabId);});
+    if(!sl){ if(typeof notify==='function') notify('Slab not found','err'); return; }
+    sl.published=!!on;
+    if(typeof saveSD4==='function') saveSD4();
+    // Written straight through to the server, because the public endpoint reads
+    // sd_slabs there and not from this browser. A publish that only happened
+    // locally would show as ticked here and be invisible to every visitor.
+    var ok=(typeof slabSyncOne==='function') ? await slabSyncOne(sl) : null;
+    pcRenderSlabs();
+    if(typeof notify==='function'){
+      notify(ok===false
+        ? 'Saved on this device only -- the catalog on the web has NOT changed. Try again with a connection.'
+        : (on?'Slab published to the catalog':'Slab taken off the catalog'), ok===false?'err':'ok');
+    }
+  };
+
+  function pcRenderRequests(){
+    var tb=pcEl('pc-requests-tbody'); if(!tb) return;
+    if(!pcRequests.length){
+      tb.innerHTML='<tr><td colspan="7" style="padding:14px;color:var(--muted);text-align:center">No quote requests yet</td></tr>';
+      return;
+    }
+    var sorted=pcRequests.slice().sort(function(a,b){
+      return String(b.received_at||'').localeCompare(String(a.received_at||''));
+    });
+    tb.innerHTML=sorted.map(function(q){
+      var contact=[q.phone,q.email].filter(Boolean).map(pcHtml).join('<br>');
+      var proj=[q.project_type,q.sqft?(q.sqft+' sqft'):'',q.timeline].filter(Boolean).map(pcHtml).join(' &middot; ');
+      var colour=q.status==='promoted'?'#166534':(q.status==='declined'?'#b91c1c':'#92400E');
+      return '<tr>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml((q.received_at||'').slice(0,10))+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)"><strong>'+pcHtml(q.name)+'</strong>'+
+          (q.message?'<div style="font-size:11px;color:var(--muted);margin-top:3px">'+pcHtml(q.message)+'</div>':'')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+(contact||'<span style="color:var(--muted)">--</span>')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+(proj||'<span style="color:var(--muted)">--</span>')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+(q.slab_label?pcHtml(q.slab_label):'<span style="color:var(--muted)">--</span>')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border);color:'+colour+';font-weight:700">'+pcHtml(q.status)+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
+          (q.status==='pending'
+            ? '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'promoted\')">Promote</button> '+
+              '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'declined\')">Decline</button>'
+            : '')+
+        '</td></tr>';
+    }).join('');
+  }
+
+  window.pcSetRequest=async function(id,status){
+    var r=await pcWrite('sd_quote_requests',{id:id,status:status});
+    if(!r){ if(typeof notify==='function') notify('Could not update that request -- nothing changed','err'); return; }
+    pcRequests=pcRequests.map(function(q){return String(q.id)===String(id)?Object.assign({},q,r):q;});
+    pcRenderRequests();
+    if(typeof notify==='function'){
+      notify(status==='promoted'
+        ? 'Marked promoted. It is NOT in your CRM yet -- add the customer there so the record is a real one.'
+        : 'Marked declined',
+        'ok');
+    }
+  };
+
+  window.pcRenderPublicCatalog=async function(){
+    var shop=await pcRead('sd_public_shop');
+    pcShop=shop||{shop_slug:'',published:false};
+    pcRenderShop();
+    pcRenderSlabs();
+    var reqs=await pcRead('sd_quote_requests');
+    pcRequests=Array.isArray(reqs)?reqs:[];
+    pcRenderRequests();
+  };
+})();
+</script>
 </body></html>

@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Slab Catalog</title>
+<!--
+  StoneDesk public slab catalog and quote request.
+  Competitive-gap audit GAP 1 (no customer-facing portal).
+
+  THIS IS A SEPARATE FILE FROM stonedesk.html AND THAT IS THE POINT.
+  stonedesk.html carries SAIRN's own chart of accounts, its price book and a
+  patent deadline as literal strings in its HTML -- the residual the audit
+  explicitly left open at 4.1, where gating the Executive Suite panel stopped
+  UI access and did nothing about View Source. Serving that file to an
+  anonymous visitor would publish all of it. Nothing internal is in this file:
+  it holds no license key, no employee session, no pricing, and it can only
+  render what api/stonedesk-public.js chooses to return.
+-->
+<style>
+:root{--a:#1B3A6B;--a2:#2a5298;--brand2:#16C762;--bg:#f5f7fa;--card:#fff;
+  --text:#0f1f3d;--muted:#5a6a7e;--border:rgba(0,0,0,.10);--danger:#b91c1c;
+  --sh:0 1px 4px rgba(0,0,0,.08);}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);font-size:15px;}
+.wrap{max-width:1080px;margin:0 auto;padding:28px 20px 70px;}
+.hero{background:linear-gradient(135deg,var(--a),var(--a2));color:#fff;border-radius:14px;padding:26px 24px;margin-bottom:22px;}
+.hero h1{font-size:24px;font-weight:800;margin-bottom:4px;}
+.hero .meta{font-size:13px;opacity:.9;line-height:1.7;}
+.hero .blurb{font-size:14px;margin-top:10px;opacity:.95;line-height:1.6;}
+.card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px;box-shadow:var(--sh);}
+.ct{font-size:15px;font-weight:800;margin-bottom:4px;}
+.csub{font-size:13px;color:var(--muted);margin-bottom:14px;line-height:1.6;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:14px;}
+.slab{border:1px solid var(--border);border-radius:10px;overflow:hidden;background:#fff;display:flex;flex-direction:column;}
+.slab .ph{height:130px;background:#eef1f5;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:12px;}
+.slab .ph img{width:100%;height:100%;object-fit:cover;display:block;}
+.slab .bd{padding:11px 12px;flex:1;display:flex;flex-direction:column;}
+.slab .nm{font-weight:700;font-size:14px;}
+.slab .mt{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.slab .ask{margin-top:auto;padding-top:10px;}
+.btn{border:none;border-radius:8px;padding:11px 18px;font-size:14px;font-weight:600;cursor:pointer;background:var(--a);color:#fff;}
+.btn:hover{background:var(--a2);}
+.btn.go{background:var(--brand2);}
+.btn.sm{padding:7px 12px;font-size:12px;width:100%;}
+.btn:disabled{opacity:.5;cursor:not-allowed;}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+@media(max-width:640px){.fr{grid-template-columns:1fr;}}
+.fg{margin-bottom:13px;}
+label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
+input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:14px;outline:none;background:#fff;font-family:inherit;}
+input:focus,select:focus,textarea:focus{border-color:var(--a2);}
+textarea{resize:vertical;min-height:84px;}
+.msg{font-size:13px;line-height:1.7;padding:12px 14px;border-radius:8px;}
+.msg.err{background:#fee2e2;color:var(--danger);}
+.msg.ok{background:#dcfce7;color:#166534;font-weight:600;}
+.note{font-size:12px;color:var(--muted);line-height:1.65;}
+.picked{background:#eef6ff;border:1px solid var(--a2);border-radius:8px;padding:9px 12px;font-size:13px;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.link{background:none;border:none;color:var(--a2);text-decoration:underline;cursor:pointer;font-size:12px;padding:0;}
+.foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px;line-height:1.7;}
+.hide{display:none;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div id="boot" class="card"><div class="note" id="boot-msg">Loading the catalog…</div></div>
+
+  <div id="app" class="hide">
+    <div class="hero">
+      <h1 id="shop-name">Slab Catalog</h1>
+      <div class="meta" id="shop-meta"></div>
+      <div class="blurb" id="shop-blurb"></div>
+    </div>
+
+    <div class="card">
+      <div class="ct">Slabs in stock</div>
+      <div class="csub" id="catalog-sub"></div>
+      <div id="catalog" class="grid"></div>
+    </div>
+
+    <div class="card" id="quote-card">
+      <div class="ct">Ask for a quote</div>
+      <div class="csub">No account, no login. Fill this in and the shop will come back to you.</div>
+      <div id="picked-wrap" class="hide"></div>
+      <div class="fr">
+        <div class="fg"><label>Your name</label><input id="q-name" autocomplete="name"></div>
+        <div class="fg"><label>Phone</label><input id="q-phone" autocomplete="tel"></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Email</label><input id="q-email" type="email" autocomplete="email"></div>
+        <div class="fg"><label>Project</label><select id="q-type">
+          <option value="">Not sure yet</option>
+          <option>Kitchen countertop</option><option>Bathroom vanity</option>
+          <option>Outdoor kitchen</option><option>Fireplace surround</option>
+          <option>Commercial</option><option>Other</option>
+        </select></div>
+      </div>
+      <div class="fr">
+        <div class="fg"><label>Approximate square footage</label><input id="q-sqft" type="number" min="0" step="1" placeholder="leave blank if you don't know"></div>
+        <div class="fg"><label>Timeline</label><select id="q-timeline">
+          <option value="">Not sure yet</option>
+          <option>As soon as possible</option><option>Within 30 days</option>
+          <option>30 to 60 days</option><option>Just planning</option>
+        </select></div>
+      </div>
+      <div class="fg"><label>Anything else the shop should know</label><textarea id="q-message" placeholder="colours you like, a deadline, an odd shape — whatever helps"></textarea></div>
+      <div class="note" style="margin-bottom:12px">A phone number or an email address is required, because there is no way to answer a request without one. Nothing else on this form is compulsory, and a blank field is left blank rather than guessed at.</div>
+      <button class="btn go" id="q-send" onclick="sendRequest()">Send the request</button>
+      <div id="q-result" style="margin-top:12px"></div>
+    </div>
+
+    <div class="foot" id="foot"></div>
+  </div>
+</div>
+
+<script>
+var API='/api/stonedesk-public';
+var SLUG=new URLSearchParams(location.search).get('shop')||'';
+var SHOP=null, PICKED=null;
+
+function $(id){return document.getElementById(id);}
+function H(s){return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+  .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+// For a value going INSIDE a single-quoted inline handler. H() alone is not
+// enough there: it escapes the quote for HTML but the JS string still has to
+// survive a backslash, and a newline would break the attribute outright.
+function A(s){return H(String(s==null?'':s).replace(/\\/g,'\\\\').replace(/[\r\n]+/g,' '));}
+
+async function post(payload){
+  var r=await fetch(API,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify(payload)});
+  var d=null;
+  try{d=await r.json();}catch(e){}
+  return {ok:r.ok,status:r.status,data:d};
+}
+
+// A photo is rendered ONLY if it is a data: URL for an image. The server sends
+// what a shop uploaded, and a public page should not be the place that
+// discovers a surprise there.
+function safePhoto(b64){
+  return (typeof b64==='string' && /^data:image\/(png|jpe?g|webp|gif);base64,[A-Za-z0-9+/=]+$/.test(b64)) ? b64 : '';
+}
+
+function renderCatalog(slabs){
+  var box=$('catalog');
+  $('catalog-sub').textContent = slabs.length
+    ? slabs.length+' slab'+(slabs.length===1?'':'s')+' the shop has published. Stock moves — ask and they will confirm what is still on the floor.'
+    : 'This shop has not published any slabs yet. The quote form below still works.';
+  if(!slabs.length){box.innerHTML='';return;}
+  box.innerHTML=slabs.map(function(s){
+    var ph=safePhoto(s.photo_base64);
+    var bits=[];
+    if(s.material)bits.push(H(s.material));
+    if(s.usable_sqft)bits.push(H(s.usable_sqft)+' sqft');
+    if(s.thickness)bits.push(H(s.thickness));
+    if(s.finish)bits.push(H(s.finish));
+    return '<div class="slab">'+
+      '<div class="ph">'+(ph?'<img alt="'+H(s.color_name||s.material||'Slab')+'" src="'+H(ph)+'">':'no photo')+'</div>'+
+      '<div class="bd"><div class="nm">'+H(s.color_name||s.material||'Slab')+'</div>'+
+      '<div class="mt">'+(bits.join(' &middot; ')||'&nbsp;')+'</div>'+
+      // JSON.stringify was WRONG here and produced a broken button: it emits
+      // DOUBLE quotes, which close the onclick attribute itself. Single-quoted
+      // and attribute-escaped instead.
+      '<div class="ask"><button class="btn sm" onclick="pick(\''+A(s.id)+'\',\''+
+        A(s.color_name||s.material||'Slab')+'\')">Ask about this slab</button></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+function pick(id,label){
+  PICKED={id:id,label:label};
+  var w=$('picked-wrap');
+  w.className='';
+  w.innerHTML='<div class="picked"><span>Asking about <strong>'+H(label)+'</strong></span>'+
+    '<button class="link" onclick="unpick()">remove</button></div>';
+  $('quote-card').scrollIntoView({behavior:'smooth',block:'start'});
+}
+function unpick(){PICKED=null;$('picked-wrap').className='hide';$('picked-wrap').innerHTML='';}
+
+async function sendRequest(){
+  var out=$('q-result');
+  var name=$('q-name').value.trim();
+  var phone=$('q-phone').value.trim();
+  var email=$('q-email').value.trim();
+  if(!name){out.innerHTML='<div class="msg err">Please add your name.</div>';return;}
+  if(!phone&&!email){out.innerHTML='<div class="msg err">Please add a phone number or an email address — there is no way to answer a quote request without one.</div>';return;}
+  $('q-send').disabled=true;
+  out.innerHTML='<div class="note">Sending…</div>';
+  var r=await post({action:'quote_request',slug:SLUG,request:{
+    name:name,phone:phone,email:email,
+    project_type:$('q-type').value,sqft:$('q-sqft').value,
+    timeline:$('q-timeline').value,message:$('q-message').value.trim(),
+    slab_id:PICKED?PICKED.id:'',slab_label:PICKED?PICKED.label:''
+  }});
+  $('q-send').disabled=false;
+  if(r.ok&&r.data&&r.data.ok){
+    // The reference is shown because it is useful on the phone. It is NOT a
+    // tracking link and the page says so, rather than letting anyone assume
+    // it opens something.
+    out.innerHTML='<div class="msg ok">Sent. Your reference is '+H(r.data.reference)+
+      ' — quote it if you call. The shop reviews requests by hand, so nothing is booked or priced yet.</div>';
+    ['q-name','q-phone','q-email','q-sqft','q-message'].forEach(function(id){$(id).value='';});
+    unpick();
+  }else{
+    var m=(r.data&&r.data.error&&r.data.error.message)||'Could not send your request. Please try again, or call the shop.';
+    out.innerHTML='<div class="msg err">'+H(m)+'</div>';
+  }
+}
+
+(async function init(){
+  if(!SLUG){
+    $('boot-msg').innerHTML='This address is missing a shop. A catalog link looks like <code>?shop=your-shop-name</code>.';
+    return;
+  }
+  var r=await post({action:'catalog',slug:SLUG});
+  if(!r.ok||!r.data||!r.data.ok){
+    var m=(r.data&&r.data.error&&r.data.error.message)||'Could not load this catalog.';
+    $('boot-msg').innerHTML='<span class="msg err" style="display:block">'+H(m)+'</span>';
+    return;
+  }
+  SHOP=r.data.shop||{};
+  $('shop-name').textContent=SHOP.name||'Slab Catalog';
+  var meta=[];
+  if(SHOP.phone)meta.push(H(SHOP.phone));
+  if(SHOP.email)meta.push(H(SHOP.email));
+  if(SHOP.address)meta.push(H(SHOP.address));
+  $('shop-meta').innerHTML=meta.join(' &middot; ');
+  $('shop-blurb').textContent=SHOP.blurb||'';
+  renderCatalog(r.data.slabs||[]);
+  $('foot').innerHTML='Prices are not listed here on purpose — a slab price depends on the size, the edge and the install, '+
+    'which is what a quote is for. Powered by StoneDesk&trade;.';
+  $('boot').className='hide';
+  $('app').className='';
+})();
+</script>
+</body>
+</html>

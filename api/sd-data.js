@@ -1169,6 +1169,128 @@ module.exports = async (req, res) => {
     // sql/sd_crm_schema.sql's own header). Read/write both require a real StoneDesk session
     // (X-SD-Auth) -- unlike shared_knowledge above, a lead is real customer-identifying sales
     // data, not aggregate topic-frequency noise, so there's no unauthenticated path at all.
+    // -- STONEDESK: PUBLIC SURFACE, STAFF SIDE (2026-09-02) ----------------
+    // The employee half of the public catalog (competitive-gap audit GAP 1).
+    // The public half is api/stonedesk-public.js, which holds no license key
+    // and reaches these same two tables with the service role.
+    //
+    // sd_public_shop     the shop's public slug, contact details and the
+    //                    publish switch. ONE ROW PER LICENSE -- the table's
+    //                    unique constraint is on license_hash alone.
+    // sd_quote_requests  inbound leads from the public form.
+    //
+    // MANAGEMENT ONLY, BOTH, READ AND WRITE. Publishing a catalog decides what
+    // the world can see of this shop, and a quote request is an unqualified
+    // stranger's name and phone number. Neither is a shop-floor concern, and
+    // the roles here are the same owner/admin pair that gates sd_crm's
+    // management view.
+    //
+    // THE SLUG IS CLAIMED, NOT ASSUMED. Two shops cannot hold the same public
+    // URL: a Postgres unique index enforces it and a 23505 maps to a clean 409
+    // here, rather than an application pre-check that could itself race.
+    if (resource === 'sd_public_shop' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!CRM_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can change what the public catalog shows' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest('sd_public_shop?license_hash=eq.' + enc(licHash) + '&select=shop_slug,published,data&limit=1'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: null, provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const row = (Array.isArray(rows) && rows[0]) || null;
+        res.status(200).json({ ok: true, provisioned: true,
+          data: row ? Object.assign({ shop_slug: row.shop_slug || '', published: row.published === true }, row.data || {}) : null });
+        return;
+      }
+      if (!payload) { res.status(400).json({ error: { message: 'sd_public_shop payload is required' } }); return; }
+      // A slug is normalised here rather than trusted from the client, because
+      // it becomes a public URL and two clients could otherwise disagree about
+      // what "Main Street Stone" means.
+      const rawSlug = String(payload.shop_slug == null ? '' : payload.shop_slug).trim().toLowerCase()
+        .replace(/[^a-z0-9-]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+      // PUBLISHING WITHOUT A SLUG IS REFUSED rather than silently ignored -- a
+      // shop that ticks "published" and gets no error would reasonably believe
+      // it has a live catalog, and it would have no address at all.
+      if (payload.published === true && !rawSlug) {
+        res.status(400).json({ error: { code: 'SLUG_REQUIRED', message: 'A catalog cannot be published without a public address - set one first' } });
+        return;
+      }
+      const shopData = {
+        shop_name: String(payload.shop_name || '').slice(0, 200),
+        phone: String(payload.phone || '').slice(0, 200),
+        email: String(payload.email || '').slice(0, 200),
+        address: String(payload.address || '').slice(0, 300),
+        blurb: String(payload.blurb || '').slice(0, 2000)
+      };
+      const w = await fetch(rest('sd_public_shop?on_conflict=license_hash'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'stonedesk',
+          shop_slug: rawSlug || null, published: payload.published === true,
+          data: shopData, updated_at: nowISO()
+        })
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
+        return;
+      }
+      if (w.status === 409) {
+        res.status(409).json({ error: { code: 'SLUG_TAKEN', message: 'Another shop already uses that public address - choose a different one.' } });
+        return;
+      }
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: Object.assign({ shop_slug: rawSlug, published: payload.published === true }, shopData) });
+      return;
+    }
+    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!CRM_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can work the incoming quote requests' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&select=request_id,status,created_at,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (rows || []).map((x) => Object.assign({ id: x.request_id, status: x.status, received_at: x.created_at }, x.data || {})) });
+        return;
+      }
+      // WRITE IS A STATUS DECISION ONLY. Staff mark a request promoted or
+      // declined; they do not edit what the customer typed. The submitted text
+      // is evidence of what was asked for, and a record that can be edited
+      // after the fact stops being that.
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_quote_requests payload.id is required' } }); return; }
+      const ALLOWED_QR = { pending: true, promoted: true, declined: true };
+      const qrStatus = String(payload.status || '');
+      if (!ALLOWED_QR[qrStatus]) { res.status(400).json({ error: { message: "status must be 'pending', 'promoted' or 'declined'" } }); return; }
+      const cur = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+      const curRows = cur.ok ? await cur.json() : [];
+      if (!Array.isArray(curRows) || !curRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That quote request no longer exists' } }); return; }
+      const curData = curRows[0].data || {};
+      const merged = Object.assign({}, curData, {
+        promoted_at: qrStatus === 'promoted' ? nowISO() : (curData.promoted_at || ''),
+        promoted_by: qrStatus === 'promoted' ? String(session.employee_id || '') : (curData.promoted_by || ''),
+        declined_reason: qrStatus === 'declined' ? String(payload.declined_reason || '').slice(0, 500) : ''
+      });
+      const w = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id))), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ status: qrStatus, data: merged, updated_at: nowISO() })
+      });
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id, status: qrStatus }, merged) });
+      return;
+    }
+
     if (resource === 'sd_crm' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }

@@ -59,6 +59,10 @@
       "dest": "/sairnmechanical.html"
     },
     {
+      "src": "/stonedesk-catalog$",
+      "dest": "/stonedesk-catalog.html"
+    },
+    {
       "src": "/sairndental-book$",
       "dest": "/sairndental-book.html"
     },

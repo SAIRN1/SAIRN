@@ -54,6 +54,15 @@ module.exports = {
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.
     'sd_crm',
+  // Public catalog + quote requests (2026-09-02, competitive-gap audit GAP 1)
+  // -- see sql/stonedesk_public_surface_schema.sql. These two are the STAFF
+  // half; the anonymous half is api/stonedesk-public.js, which holds no license
+  // key and is served by its own file, stonedesk-catalog.html, never by
+  // stonedesk.html. Both are management-only here (owner/admin): publishing a
+  // catalog decides what the world sees of this shop, and a quote request is an
+  // unqualified stranger's name and phone number. Bespoke branches below.
+    'sd_public_shop',
+    'sd_quote_requests',
   // Slab lineage (2026-08-22, Phase 1b) -- block -> bundle -> slab -> remnant.
   // See sql/sd_slab_lineage_schema.sql for why these are sibling tables and
   // not fields on sd_slabs' jsonb blob: that blob is capped at 65536 bytes by
