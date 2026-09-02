@@ -128,8 +128,8 @@
       "task": "executive panel role gate, 0039 token budget",
       "claimed_at": "2026-09-02T13:00:15Z",
       "claimed_at_epoch": 1788354015.1627033,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T13:26:03Z"
     }
   ]
 }
