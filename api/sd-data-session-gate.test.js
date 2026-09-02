@@ -8,11 +8,10 @@
 // read the whole slab inventory, the business profile (company, EIN, revenue
 // range, owner) and the shop's AI memories -- and WRITE slabs.
 //
-// `profile` READ is deliberately still open and asserted as such below, so the
-// exception is visible rather than remembered: SAIRNcode used it as its
-// pre-login licence probe and now calls api/sc-auth.js check_license instead.
-// This file is where that hole gets closed when that migration is verified
-// live -- move 'read' into the gated list and flip the one assertion.
+// `profile` READ was held open for exactly one commit while SAIRNcode migrated
+// off it, and is now gated too. The assertion that used to protect that hole is
+// inverted below rather than deleted, so the file still records that the
+// exception existed and that it closed.
 
 const assert = require('assert');
 
@@ -72,6 +71,7 @@ const GATED = [
   ['slabs', 'read'],
   ['slabs', 'write'],
   ['slabs', 'reserve'],
+  ['profile', 'read'],
   ['profile', 'write'],
   ['memory', 'read'],
   ['memory', 'write']
@@ -106,24 +106,26 @@ async function main() {
     });
   }
 
-  await test('THE ONE DELIBERATE HOLE: profile/read is still open, and is meant to be', async () => {
-    // SAIRNcode used this as its pre-login licence probe. It now calls
-    // api/sc-auth.js check_license; this closes when that is verified live.
-    // Asserted rather than left implicit so the exception cannot be forgotten.
-    const { handler } = loadHandler({ noSession: true });
-    const res = mockRes();
-    await handler(mockReq('read', 'profile', {}), res);
-    assert.notStrictEqual(res.statusCode, 403,
-      'profile/read was gated before SAIRNcode migrated -- that locks every SAIRNcode user out at the licence gate');
+  await test('THE HOLE IS CLOSED: no resource in the table is exempt any more', async () => {
+    // This assertion used to say the opposite. profile/read was open only
+    // while SAIRNcode probed it for licence validity without a session;
+    // SAIRNcode now calls api/sc-auth.js check_license, verified live. Kept
+    // inverted rather than deleted so the file records that the exception
+    // existed, and would fail loudly if anyone re-opened it.
+    const fs = require('fs');
+    const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
+    const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\};/);
+    assert.ok(!/'profile':\s*\['write'\]/.test(m[0]),
+      'profile/read is exempt again -- if that is deliberate, say why in the table');
   });
 
-  await test('the gate is a table, not scattered checks -- and lists exactly six pairs', () => {
+  await test('the gate is a table, not scattered checks -- and lists exactly seven pairs', () => {
     const fs = require('fs');
     const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
     const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\};/);
     assert.ok(m, 'the gate table is gone');
     assert.match(m[0], /'slabs':\s*\['read', 'write', 'reserve'\]/);
-    assert.match(m[0], /'profile':\s*\['write'\]/);
+    assert.match(m[0], /'profile':\s*\['read', 'write'\]/);
     assert.match(m[0], /'memory':\s*\['read', 'write'\]/);
   });
 

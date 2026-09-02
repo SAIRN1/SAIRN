@@ -296,15 +296,19 @@ module.exports = async (req, res) => {
     // EIN, revenue range, owner) and the shop's AI memories -- and WRITE
     // slabs.
     //
-    // `profile` READ is deliberately NOT in this list yet. SAIRNcode used it
-    // as its pre-login licence probe, which it cannot do with a session; it
-    // now calls api/sc-auth.js check_license instead, and this gate closes
-    // once that is live and verified. Recorded here rather than left as a
-    // silent omission, because a gate with an undocumented hole is the thing
-    // the audit argued against.
+    // `profile` READ was held open for exactly one commit and is now closed
+    // too. SAIRNcode was its only session-less caller -- it used the read
+    // purely as a licence probe -- and it now calls api/sc-auth.js
+    // check_license, verified live: a bogus key returns 401 INVALID_LICENSE
+    // from sc-auth, and the deployed sairncode page contains no
+    // `resource: 'profile'` outside comments.
+    //
+    // THERE IS NO EXCEPTION LEFT IN THIS TABLE, and that was the point. An
+    // exception nobody can see from the other side is worse than a small
+    // migration, so the migration happened instead of the carve-out.
     const SD_SESSION_GATED = {
       'slabs':   ['read', 'write', 'reserve'],
-      'profile': ['write'],
+      'profile': ['read', 'write'],
       'memory':  ['read', 'write']
     };
     if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) {
