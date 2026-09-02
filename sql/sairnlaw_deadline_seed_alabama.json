@@ -356,6 +356,9 @@
           "mail",
           "efiling_service_provider",
           "electronic"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
         ]
 
       },
@@ -367,7 +370,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "1995-10-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     }
   ]
 }

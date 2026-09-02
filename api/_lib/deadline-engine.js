@@ -4215,6 +4215,73 @@ function resolvePeriods(rule, input, std) {
   };
 }
 
+// ── WHICH LIMB DOES THE SERVICE EXTENSION ACTUALLY REACH? ─────────────────
+// Added 2026-09-02 after a platform-wide measurement, on Michael's decision to
+// build it per-limb rather than strip the extensions.
+//
+// THE DEFECT IT CLOSES. A service extension was declared per ROW and applied
+// AFTER resolution, to whichever limb won. Every multi-trigger row that
+// carries one has a second limb no mail rule reaches -- eleven run from
+// service of the SUMMONS (Rule 4 service, where the extension rules are gated
+// on Rule 5 service, either by an express subsection citation or by the words
+// "a notice or other paper"), and Maryland's four run from
+// `date_initial_pleading_is_required`, which is not a service event at all.
+// Measured against the engine's own service_extension.state rather than by
+// comparing dates: FOURTEEN OF FIFTEEN applied the days on that limb.
+//
+// DIRECTION: LATE, AND TEN OF THE FOURTEEN ARE RULE 36 ADMISSIONS ROWS, where
+// the matter is admitted unless answered and Rule 36(b) makes the admission
+// conclusively established. Telling a defendant they have two or three more
+// days than they do is how an admission is lost.
+//
+// MISSISSIPPI WAS NOT EVEN A READING. Miss. R. Civ. P. 6(e)'s final sentence,
+// already quoted verbatim in its own standard's comment in this file, says
+// "This subdivision does not apply to responses to service of summons under
+// Rule 4." The row added three days on exactly that limb.
+//
+//   service_extension.applies_to_limbs: [<limb event name>, ...]
+//
+// DECLARED PER ROW, NEVER DERIVED FROM THE LIMB'S EVENT NAME. A default
+// computed from another field is the invisible-rule shape the trigger_document
+// work already rejected: a limb called `service_of_summons_and_complaint_...`
+// looks inferable right up until a state writes one that is reached.
+//
+// AN UNDECLARED SCOPE REFUSES rather than defaulting either way. Defaulting to
+// "reaches everything" is the bug; defaulting to "reaches nothing" would
+// silently drop days a row legitimately earns, and would do it on the same
+// code path that used to add them.
+//
+// A NAME THAT IS NOT ONE OF THE RULE'S OWN LIMBS ALSO REFUSES. A misspelt
+// entry would scope the extension to nothing while looking deliberate --
+// the same silent-no-op class as a misspelt on_unknown_exclusivity.
+function limbScopeDefect(rule) {
+  var ext = rule.service_extension;
+  if (!ext) return null;
+  var spec = rule.trigger_event;
+  var isMulti = spec && typeof spec === 'object' && (spec.resolve_periods || spec.resolve);
+  var declared = ext.applies_to_limbs;
+  if (!isMulti) {
+    if (declared !== undefined) {
+      return 'declares service_extension.applies_to_limbs but is not a multi-trigger rule, so it has no limbs to scope';
+    }
+    return null;
+  }
+  if (declared === undefined) {
+    return 'is a multi-trigger rule with a service extension and does not declare service_extension.applies_to_limbs. ' +
+      'Which limbs the extension reaches is a reading of the rule text and is not inferable from a limb\'s name';
+  }
+  if (!Array.isArray(declared)) return 'declares service_extension.applies_to_limbs that is not an array';
+  var own = spec.resolve_periods
+    ? (spec.limbs || []).map(function (l) { return l.event; })
+    : (spec.events || []);
+  var unknown = declared.filter(function (e) { return own.indexOf(e) === -1; });
+  if (unknown.length) {
+    return 'declares service_extension.applies_to_limbs naming ' + unknown.join(', ') +
+      ', which ' + (unknown.length === 1 ? 'is not a limb' : 'are not limbs') + ' of this rule (its limbs are ' + own.join(', ') + ')';
+  }
+  return null;
+}
+
 function resolveTrigger(rule, input, std) {
   var spec = rule.trigger_event;
 
@@ -4814,9 +4881,39 @@ function computeDeadline(input) {
     var extStd = SERVICE_EXTENSION_STANDARDS[stdKey];
     var extLabel = extStd ? extStd.label : stdKey;
 
-    if (!input.service_method) {
+    // THE LIMB GATE RUNS FIRST AMONG THE SUBSTANTIVE BRANCHES. If the rule the
+    // extension comes from does not reach the limb that governed, nothing
+    // below it matters -- the method, the exclusivity and the amount are all
+    // questions about an extension that is not available at all.
+    var scopeDefect = limbScopeDefect(rule);
+    var govLimb = (resolved.period_resolution && resolved.period_resolution.governing_event) ||
+      (resolved.resolution && resolved.resolution.governing_event) || null;
+
+    if (scopeDefect) {
+      // IN-CODE-DATA STANDARD, APPLIED TO SEED DATA: refuse and say so. This
+      // cannot fail open, because failing open is precisely the behaviour
+      // being removed.
+      extension = { state: 'refused_undeclared_limb_scope', standard: stdKey, days_added: 0,
+        detail: 'Rule ' + rule.rule_id + ' ' + scopeDefect + '. No extension was applied and the date below may therefore be EARLIER than the true deadline. ' +
+          'This refusal exists because the alternative -- adding the days on whichever limb happened to govern -- reported dates that were LATE on fourteen rows across eight jurisdictions.' };
+      steps.push({ step: 'service_extension_refused',
+        detail: 'The rule does not declare which of its limbs this extension reaches, so no days were added.',
+        authority: extLabel, date: result });
+    } else if (!input.service_method) {
       extension = { state: 'not_requested', standard: stdKey, days_added: 0,
         detail: 'This rule can extend under ' + extLabel + ', but no service method was supplied, so no extension was applied.' };
+    } else if (govLimb && (ext.applies_to_limbs || []).indexOf(govLimb) === -1) {
+      // The extension is real and the method qualifies; this limb is simply
+      // not one the extension's own rule reaches. Reported as its own state
+      // because it is not fixable by the caller and is not a defect in the
+      // row -- it is the correct answer for this combination of facts.
+      extension = { state: 'not_applicable_to_governing_limb', standard: stdKey, days_added: 0,
+        governing_event: govLimb,
+        detail: extLabel + ' extends a period that runs after service of a paper on a party already in the case. The limb that governs this deadline is "' + govLimb +
+          '", which rule ' + rule.rule_id + ' does not list in applies_to_limbs, so no days were added. Had the other limb governed the extension would have applied.' };
+      steps.push({ step: 'service_extension_not_reached',
+        detail: 'The governing limb (' + govLimb + ') is outside the reach of ' + extLabel + '. No days were added.',
+        authority: extLabel, date: result });
     } else if (!extStd) {
       // REFUSED VISIBLY. The engine does not know this standard's condition,
       // so it will not guess -- and it says so rather than returning a date

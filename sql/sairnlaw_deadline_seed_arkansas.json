@@ -342,6 +342,9 @@
           "electronic",
           "email",
           "efiling_service_provider"
+        ],
+        "applies_to_limbs": [
+          "service_of_interrogatories"
         ]
 
       },
@@ -353,7 +356,8 @@
         "retrieved_at": "2026-08-29"
       },
       "effective_from": "2026-06-04",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ar-rcp-34b2-production-response-defendant-later-of",
@@ -393,6 +397,9 @@
           "electronic",
           "email",
           "efiling_service_provider"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_production"
         ]
 
       },
@@ -404,7 +411,8 @@
         "retrieved_at": "2026-08-29"
       },
       "effective_from": "2026-06-04",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ar-rcp-36a-admission-response-defendant-later-of",
@@ -444,6 +452,9 @@
           "electronic",
           "email",
           "efiling_service_provider"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
         ]
 
       },
@@ -455,7 +466,8 @@
         "retrieved_at": "2026-08-29"
       },
       "effective_from": "2026-06-04",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     }
   ]
 }

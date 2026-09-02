@@ -355,6 +355,46 @@ function validateRulePayload(p) {
         return 'service_extension.on_unknown_exclusivity must be "assume_exclusive" or "refuse". "assume_exclusive" applies the days and discloses that exclusivity was assumed (correct where exclusive service is the ordinary case, as in Florida); "refuse" adds nothing and says why (correct where the overshoot is large, as with Utah\'s seven days). A misspelling here would silently fall back to assuming — the LATE direction.';
       }
     }
+    // ── WHICH LIMB DOES THE EXTENSION REACH (2026-09-02) ────────────────
+    // Validated here for exactly the reason the comment above gives for
+    // on_unknown_exclusivity: nothing rejects unknown fields, so a MISSPELT
+    // key would be stored happily. The engine then sees an undeclared scope
+    // and refuses -- the safe direction, but silently narrower coverage on a
+    // row that looks correct in the store. Rejecting the write is what makes
+    // the mistake visible at the moment it is made.
+    //
+    // A MULTI-TRIGGER ROW WITH AN EXTENSION MUST DECLARE IT. Fourteen of the
+    // fifteen live rows in that shape were adding days on a limb their own
+    // rule does not reach -- eleven from service of the SUMMONS under Rule 4
+    // where the extension is gated on Rule 5 service, and Maryland's four from
+    // a limb that is not a service event at all. Direction LATE, on rows that
+    // are mostly self-executing Rule 36 admissions.
+    {
+      const t = p.trigger_event;
+      const isMulti = t && typeof t === 'object' && (t.resolve_periods || t.resolve);
+      const own = !isMulti ? [] : (t.resolve_periods
+        ? (t.limbs || []).map((l) => l && l.event)
+        : (t.events || []));
+      if (se.applies_to_limbs !== undefined) {
+        if (!isMulti) {
+          return 'service_extension.applies_to_limbs has no meaning on a single-trigger rule: there are no limbs to scope. Remove it.';
+        }
+        if (!Array.isArray(se.applies_to_limbs) || !se.applies_to_limbs.length) {
+          return 'service_extension.applies_to_limbs must be a non-empty array of this rule\'s own limb event names.';
+        }
+        const unknown = se.applies_to_limbs.filter((e) => own.indexOf(e) === -1);
+        if (unknown.length) {
+          return 'service_extension.applies_to_limbs names "' + unknown.join('", "') + '", which ' +
+            (unknown.length === 1 ? 'is not a limb' : 'are not limbs') + ' of this rule. Its limbs are "' + own.join('", "') +
+            '". A misspelt entry would scope the extension to nothing while looking deliberate.';
+        }
+        if (se.applies_to_limbs.length >= own.length) {
+          return 'service_extension.applies_to_limbs names every limb of this rule, which is the unscoped behaviour written out longhand. If the extension really does reach all of them, say so in the rule note and record which rule text says it — this guard exists because no seeded rule does.';
+        }
+      } else if (isMulti) {
+        return 'This is a multi-trigger rule with a service_extension, so it must declare service_extension.applies_to_limbs — the limb or limbs the extension\'s own rule actually reaches. It is not inferable from a limb\'s name: every mail-extension rule seeded so far is gated on service of a paper under the Rule 5 analogue, and a limb running from service of the SUMMONS is outside it, but a state could write one that is not. Applying the days on whichever limb happened to govern is what reported LATE on fourteen rows across eight jurisdictions.';
+      }
+    }
     if (p.cap && SERVICE_EXTENSION_STANDARDS[se.standard]
         && SERVICE_EXTENSION_STANDARDS[se.standard].sequence === 'add_to_period_then_roll') {
       return 'A rule cannot declare a cap together with a service-extension standard whose days are added to the period rather than after it expires (' + se.standard +

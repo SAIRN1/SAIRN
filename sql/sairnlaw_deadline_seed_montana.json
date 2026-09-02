@@ -298,11 +298,27 @@
         "citation": "Mont. R. Civ. P. 36(a)(3)",
         "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0050/section_0360/0250-0200-0050-0360.html",
         "quote": "A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons and complaint upon that defendant. A shorter or longer time for responding to requests for admission may be stipulated to under Rule 29 or be ordered by the court.",
-        "note": "THE ONLY MONTANA DISCOVERY PERIOD THAT IS A REAL FLOOR, AND IT IS THE ROW WHERE READING THE WRONG SHAPE COSTS THE MOST. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF 45 days' is mandatory, where Rules 33(b)(2) and 34(b)(2)(A) both say a defendant 'MAY serve' and are plain thirty-day rows. Montana therefore joins Mississippi, New Mexico, South Carolina and Hawai'i in making admissions the mandatory one -- and is the OPPOSITE of Delaware, whose Rule 36 carries no defendant limb at all while its 33 and 34 carry elections. All three Montana rules were read; the third was not inferred from the pair. SELF-EXECUTING: 'A matter is admitted unless ...', and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal, so seeding the flat thirty would tell a Montana defendant a matter is still open when it has already been admitted. NO SERVICE EXTENSION IS CARRIED, AND THIS IS THE ONE JUDGMENT CALL IN THIS SEED THAT COSTS COVERAGE. The 30-day limb runs from service of the REQUEST, a Rule 5(b)(2) paper that Rule 6(d) does reach. The 45-day limb runs from service of the SUMMONS AND COMPLAINT, which is Rule 4 service and which Rule 6(d) does not reach. This engine applies a service extension per ROW and not per LIMB, so carrying it would add three days whenever the floor governs -- which is exactly the common case for a defendant served with requests early in the action -- and would report LATE. Omitting it reports EARLIER than the true deadline for a mail-served party whose 30-day limb governs, which is safe. Note that Hawai'i's equivalent row DOES carry its extension; whether Haw. R. Civ. P. 6(e) is gated on a service subsection the way Mont. R. Civ. P. 6(d) expressly is was not read here, and that row is not changed on the strength of this one. A RULE 29 STIPULATION OR A COURT ORDER DISPLACES THIS ROW, and the court may also SHORTEN the 45-day floor. DISTRICT COURT ONLY.",
+        "note": "THE ONLY MONTANA DISCOVERY PERIOD THAT IS A REAL FLOOR, AND IT IS THE ROW WHERE READING THE WRONG SHAPE COSTS THE MOST. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF 45 days' is mandatory, where Rules 33(b)(2) and 34(b)(2)(A) both say a defendant 'MAY serve' and are plain thirty-day rows. Montana therefore joins Mississippi, New Mexico, South Carolina and Hawai'i in making admissions the mandatory one -- and is the OPPOSITE of Delaware, whose Rule 36 carries no defendant limb at all while its 33 and 34 carry elections. All three Montana rules were read; the third was not inferred from the pair. SELF-EXECUTING: 'A matter is admitted unless ...', and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal, so seeding the flat thirty would tell a Montana defendant a matter is still open when it has already been admitted. THE SERVICE EXTENSION IS SCOPED TO THE REQUEST LIMB, AND THIS ROW IS WHY THE PER-LIMB MECHANISM EXISTS. The 30-day limb runs from service of the REQUEST, a Rule 5(b)(2) paper that Rule 6(d) does reach. The 45-day limb runs from service of the SUMMONS AND COMPLAINT, which is Rule 4 service and which Rule 6(d) expressly does not reach. UNTIL 2026-09-02 THIS ENGINE APPLIED AN EXTENSION PER ROW AND NOT PER LIMB, so this row deliberately carried NONE -- adding three days whenever the floor governed would have reported LATE, and omitting them reported EARLY, which is safe but costs a mail-served defendant three days the rule gives them. `service_extension.applies_to_limbs` removes the trade: the days are added when the 30-day request limb governs and not when the 45-day summons floor does. THE SAME CORRECTION WAS APPLIED TO FOURTEEN OTHER ROWS ACROSS EIGHT JURISDICTIONS THE SAME DAY, and all fourteen were reporting LATE rather than early -- see the platform note on that field in api/_lib/deadline-engine.js. Hawai'i's equivalent row, which prompted the check, IS one of them: Haw. R. Civ. P. 6(e) is not gated on a subsection the way Mont. R. Civ. P. 6(d) is, but it reaches only 'the service of a notice or other paper', which is the same place by a different route. A RULE 29 STIPULATION OR A COURT ORDER DISPLACES THIS ROW, and the court may also SHORTEN the 45-day floor. DISTRICT COURT ONLY.",
         "retrieved_at": "2026-09-02"
       },
       "effective_from": "2011-10-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
+        ]
+      }
     },
     {
       "rule_id": "mt-mrcp-59b-new-trial-28-days",

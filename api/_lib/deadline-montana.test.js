@@ -229,8 +229,14 @@ check('mt_rcp_6d extends for consented electronic service and frcp_6d does not',
 check('and the sequence is the federal after-expiry order, not the Justice Court\'s period-lengthening one',
   engine.SERVICE_EXTENSION_STANDARDS.mt_rcp_6d.sequence, 'roll_then_add_then_roll');
 
-check('exactly six of the fifteen rows carry a service extension',
-  seed.rules.filter(r => r.service_extension).length, 6);
+// SEVEN, NOT SIX, SINCE 2026-09-02. The Rule 36 row deliberately carried NO
+// extension when this seed shipped, because the engine applied one per ROW and
+// adding three days whenever the 45-day summons floor governed would have
+// reported LATE. `service_extension.applies_to_limbs` removed that trade, so
+// the row now carries the extension scoped to the request limb and the seed's
+// disclosed coverage loss is recovered rather than left standing.
+check('exactly seven of the fifteen rows carry a service extension',
+  seed.rules.filter(r => r.service_extension).length, 7);
 check('and every one of them is the Rule 6(d) standard with the same five methods',
   [[...new Set(seed.rules.filter(r => r.service_extension).map(r => r.service_extension.standard))],
    [...new Set(seed.rules.filter(r => r.service_extension).map(r => r.service_extension.applies_when.join(',')))]],
@@ -249,11 +255,31 @@ check('nor on either backward row -- there is no period after service to extend'
   [dateOf(compute(NOTICE, '2026-06-01', { service_method: 'mail' })),
    dateOf(compute(OPPAFF6, '2026-06-01', { service_method: 'mail' }))],
   ['2026-05-18', '2026-05-22']);
-check('nor on Rule 36, whose 45-day limb runs from Rule 4 service and would be extended wrongly',
+// RULE 36 IS PER-LIMB, AND BOTH DIRECTIONS ARE PROBED. Rule 6(d) reaches
+// service under Rule 5(b)(2); the 45-day floor runs from service of the
+// summons under Rule 4 and is outside it.
+check('no extension when the 45-day summons floor governs -- Rule 6(d) does not reach Rule 4 service',
   dateOf(compute(ADMIT, '2026-06-01', { service_method: 'mail', trigger_dates: {
       service_of_request_for_admission: '2026-06-01',
       service_of_summons_and_complaint_for_admission: '2026-06-01' } })),
   '2026-07-16');
+check('and the engine says WHICH limb put it out of reach rather than just adding nothing',
+  compute(ADMIT, '2026-06-01', { service_method: 'mail', trigger_dates: {
+      service_of_request_for_admission: '2026-06-01',
+      service_of_summons_and_complaint_for_admission: '2026-06-01' } }).service_extension.state,
+  'not_applicable_to_governing_limb');
+// 30 days from 1 June = Wednesday 1 July, +3 = Saturday 4 July, rolls through
+// Sunday to Monday 6 July -- the same arithmetic as the interrogatory row,
+// which is the point: when the request limb governs this row is an ordinary
+// Rule 6(d) extension.
+check('but the extension DOES apply when the 30-day request limb governs',
+  dateOf(compute(ADMIT, '2026-06-01', { service_method: 'mail', trigger_dates: {
+      service_of_request_for_admission: '2026-06-01',
+      service_of_summons_and_complaint_for_admission: '2026-03-01' } })),
+  '2026-07-06');
+check('the Rule 36 row scopes the extension to the request limb and nothing else',
+  seed.rules.find(r => r.rule_id === ADMIT).service_extension.applies_to_limbs,
+  ['service_of_request_for_admission']);
 
 // EXCLUSIVITY: Utah and Florida both carry requires_exclusive. Montana's rule
 // says "service is made under Rule 5(b)(2)(C), (D), or (E), or (F)" with no

@@ -326,6 +326,9 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
         ]
 
       },
@@ -337,7 +340,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "1982-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ms-59b-motion-for-new-trial-10-days",

@@ -269,7 +269,10 @@
         "standard": "nm_1_006_c",
         "add": 3,
         "unit": "calendar_days",
-        "applies_when": ["mail", "facsimile", "court_facility_deposit"]
+        "applies_when": ["mail", "facsimile", "court_facility_deposit"],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
+        ]
 
       },
       "authority": {
@@ -280,7 +283,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "1980-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "nm-1-056d2-response-memorandum-15-days",

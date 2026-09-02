@@ -271,7 +271,10 @@
         "standard": "hi_hrcp_6_e",
         "add": 2,
         "unit": "calendar_days",
-        "applies_when": ["mail"]
+        "applies_when": ["mail"],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
+        ]
 
       },
       "authority": {
@@ -282,7 +285,8 @@
         "retrieved_at": "2026-08-31"
       },
       "effective_from": "2026-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "hi-hrcp-59b-motion-for-new-trial-10-days",

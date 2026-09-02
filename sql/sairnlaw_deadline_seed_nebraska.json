@@ -220,6 +220,9 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
+        ],
+        "applies_to_limbs": [
+          "service_of_interrogatories"
         ]
 
       },
@@ -231,7 +234,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "2025-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ne-6-334b2A-production-response-later-of",
@@ -267,6 +271,9 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_production"
         ]
 
       },
@@ -278,7 +285,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "2025-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ne-6-336a4-admissions-answer-later-of",
@@ -314,6 +322,9 @@
         "unit": "calendar_days",
         "applies_when": [
           "mail"
+        ],
+        "applies_to_limbs": [
+          "service_of_request_for_admission"
         ]
 
       },
@@ -325,7 +336,8 @@
         "retrieved_at": "2026-08-30"
       },
       "effective_from": "2025-01-01",
-      "effective_to": null
+      "effective_to": null,
+      "version": 2
     },
     {
       "rule_id": "ne-25-1144-01-motion-for-new-trial-10-days",
