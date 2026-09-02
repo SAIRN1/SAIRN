@@ -25460,7 +25460,25 @@ function execAiWelcome(role){
   var welcomes={
     ceo:'Good morning, CEO. I have full context on SAIRN Technologies™, your product suite, competitive landscape, and financial targets. What are we working on today — strategy, sales pipeline, investor prep, or something else?',
     cfo:'Good morning. I have your Chart of Accounts loaded, payroll tax rates current for 2026, and StoneDesk pricing on file. Need a journal entry, cash flow analysis, budget review, or something else?',
-    cto:'Good morning. Stack context loaded — React/Railway/Vercel/Supabase/PostgreSQL. Patents filed. QuickBooks OAuth is the next integration on the roadmap. What technical decision are we working through today?'
+    // CORRECTED 2026-09-02. This greeting said "QuickBooks OAuth is the next
+    // integration on the roadmap" — the third place on the platform asserting
+    // an integration that did not exist. Verified before removing:
+    // api/accounting.js had NEVER been on main (created 2026-06-16 on the
+    // unmerged lucid-ptolemy branch, reachable only from the archive tag),
+    // /api/accounting returned 404, no connection table existed among the 258
+    // in the schema snapshot, and no QB_* env var was set anywhere. The other
+    // two were fixed the same day in api/_lib/exec-context.js (the cto and cfo
+    // contexts) and sairnscape.html (a paid pricing tier).
+    //
+    // The stack line beside it is ALSO WRONG and is deliberately left alone:
+    // "React/Railway/PostgreSQL" is FABRICOR, which CLAUDE.md records as an
+    // abandoned duplicate codebase — StoneDesk is vanilla JS on Vercel with
+    // Supabase. That is finding 4.2's other half, tracked in
+    // api/_lib/exec-context.js's header, and correcting it means verifying the
+    // real architecture line across 21 apps rather than guessing at one
+    // greeting. Fixing the false roadmap claim here and quietly leaving the
+    // false stack claim would be the worse outcome, so it is named instead.
+    cto:'Good morning. Patents filed. There is no accounting integration on this platform — no QuickBooks, no Gusto, no Xero — and a read-only connector is in progress but not connected to anything. What technical decision are we working through today?'
   };
   EAI_HISTORY[role]=[{role:'assistant',content:welcomes[role]}];
   renderEaiMsgs(role);
