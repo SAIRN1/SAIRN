@@ -54,6 +54,40 @@ def main():
     if tool_response and tool_response.get("success") is False:
         sys.exit(0)
 
+    # ── ONLY CHECK A PUSH THAT ACTUALLY SHIPPED THIS FILE -- added 2026-09-02
+    # after this hook false-alarmed on a push that contained no HTML at all.
+    #
+    # It fired on a commit touching sql/, tools/ and tests/ only, then reported
+    # that sairn.vercel.app/stonedesk did not match origin/main -- which was
+    # true at that instant for an entirely unrelated reason: ANOTHER clone had
+    # just pushed a real stonedesk.html change and Vercel had not finished
+    # deploying it. Sixty seconds later live and origin/main agreed exactly.
+    #
+    # So the alarm was real drift belonging to someone else's in-flight deploy,
+    # attributed to a push that could not possibly have caused it. Checking a
+    # file the push never touched can only ever produce that: either a
+    # coincidence or a false alarm, never evidence about this push.
+    #
+    # WHAT THE RANGE ACTUALLY MEANS, stated because it is an approximation and
+    # not the literal question. `origin/main@{1}..origin/main` is "what arrived
+    # on origin since this clone last looked", which contains this push and may
+    # also contain another clone's commits fetched in the same window. It is
+    # therefore WIDER than "what I just pushed" -- so it can only ever suppress
+    # a check that could not possibly concern stonedesk.html, never suppress one
+    # that could. That asymmetry is the whole reason it is safe.
+    #
+    # Fails OPEN (checks anyway) if the file list cannot be determined, because
+    # the alternative is silently skipping a real verification.
+    try:
+        changed = subprocess.check_output(
+            ["git", "log", "origin/main@{1}..origin/main", "--name-only", "--pretty=format:"],
+            timeout=15, stderr=subprocess.DEVNULL
+        ).decode("utf-8", "replace")
+        if changed.strip() and "stonedesk.html" not in changed:
+            sys.exit(0)
+    except Exception:
+        pass
+
     # ── WAIT FIRST, THEN ESTABLISH THE BASELINE. Order matters -- see below.
     time.sleep(WAIT_SECONDS)
 
