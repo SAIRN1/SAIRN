@@ -108,8 +108,8 @@
       "task": "check5 exemptions, field quote wiring, 0039 0040 0072, competitive audit",
       "claimed_at": "2026-09-02T11:50:16Z",
       "claimed_at_epoch": 1788349816.2327213,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T12:57:17Z"
     },
     {
       "id": "cc-1788351785",
@@ -118,8 +118,8 @@
       "task": "0072 supplier lead time and job risk engine",
       "claimed_at": "2026-09-02T12:23:05Z",
       "claimed_at_epoch": 1788351785.160703,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T12:57:17Z"
     }
   ]
 }
