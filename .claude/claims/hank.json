@@ -329,8 +329,8 @@
       "task": "payer contract rates and MCO authorisation B4",
       "claimed_at": "2026-09-02T15:09:39Z",
       "claimed_at_epoch": 1788361779.4788444,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:46:30Z"
     }
   ]
 }
