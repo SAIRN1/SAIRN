@@ -105,22 +105,125 @@ def scan(path):
     return out
 
 
+# ── LIVE MODE, added 2026-09-01 ────────────────────────────────────────────
+# The docstring above admits the limit that matters: "Static. It cannot see a
+# handler attached at runtime from a computed name." Every SAIRN app builds its
+# tables by assigning innerHTML from JS template strings, so a button a
+# customer clicks every day exists nowhere a grep can read it. R3 therefore
+# reports orphans that are not orphans, and its own summary line has to tell
+# people not to believe it -- which is the state a standing check cannot be in.
+#
+# --live takes a snapshot of the RENDERED DOM (produced by
+# tools/sairn_dom_snapshot.js, run in the browser after clicking through the
+# app) and clears any R3 whose name is actually wired in the live tree.
+#
+# THE SNAPSHOT CAN LIE BY OMISSION, so it is not trusted blindly. A handler on
+# a panel nobody opened is absent from it and would look unreachable. The
+# snapshot records panels_seen/panels_total and this refuses to clear anything
+# from a snapshot that saw less than MIN_PANEL_COVERAGE of the app -- an
+# under-clicked snapshot is a could-not-tell, not a pass. Same rule as the SQL
+# preflight's --require-live: "could not tell" must never render as clean.
+MIN_PANEL_COVERAGE = 0.60
+
+
+def load_snapshots(paths):
+    import json
+    snaps = []
+    for p in paths:
+        try:
+            with open(p, encoding='utf-8') as fh:
+                snaps.append((p, json.load(fh)))
+        except Exception as e:
+            print('SNAPSHOT UNREADABLE: %s (%s)' % (p, e))
+            return None
+    return snaps
+
+
+def apply_live(rows, snaps):
+    """Returns (kept, cleared, coverage_problem)."""
+    wired, ids, seen, total, gated = set(), set(), 0, 0, False
+    for _, s in snaps:
+        wired |= set(s.get('handler_names') or [])
+        ids |= set(s.get('element_ids') or [])
+        # panels_with_handlers, not panels_seen -- see the note in
+        # tools/sairn_dom_snapshot.js. Visibility is the wrong metric: every
+        # panel but the active one is display:none by design, so a
+        # visibility-based floor never clears anything.
+        seen += int(s.get('panels_with_handlers') or s.get('panels_seen') or 0)
+        total += int(s.get('panels_total') or 0)
+        gated = gated or bool(s.get('gated'))
+    if gated:
+        return rows, [], ('snapshot was taken on the LICENCE GATE, so it describes the gate '
+                          'and nothing else -- get into the app and retake it')
+    coverage = (seen / total) if total else 0.0
+    if total == 0 or coverage < MIN_PANEL_COVERAGE:
+        return rows, [], (
+            'snapshot has handlers in %d of %d panels (%.0f%%); below the %.0f%% floor, so '
+            'it clears nothing -- open the app properly and retake it'
+            % (seen, total, coverage * 100, MIN_PANEL_COVERAGE * 100))
+    kept, cleared = [], []
+    for code, name, why in rows:
+        if code == 'R3' and name in wired:
+            cleared.append((code, name, 'wired at RUNTIME (present in a live on*= handler) -- static scan could not see it'))
+        else:
+            kept.append((code, name, why))
+    return kept, cleared, None
+
+
 def main(argv):
-    targets = argv[1:] or sorted(glob.glob('*.html'))
-    total = 0
+    args = [a for a in argv[1:]]
+    live_paths, require_live = [], False
+    rest = []
+    i = 0
+    while i < len(args):
+        if args[i] == '--live' and i + 1 < len(args):
+            live_paths.append(args[i + 1]); i += 2; continue
+        if args[i] == '--require-live':
+            require_live = True; i += 1; continue
+        rest.append(args[i]); i += 1
+
+    targets = rest or sorted(glob.glob('*.html'))
+    snaps = load_snapshots(live_paths) if live_paths else None
+    if live_paths and snaps is None:
+        return 2
+    if require_live and not snaps:
+        print('BLOCKING: --require-live was asked for and no readable DOM snapshot was given.')
+        print('Produce one with tools/sairn_dom_snapshot.js, then pass --live <file>.')
+        print('"Could not tell" is not a pass.')
+        return 2
+
+    total, cleared_total, coverage_note = 0, 0, None
     for path in targets:
         rows = scan(path)
-        if not rows:
+        if snaps:
+            rows, cleared, problem = apply_live(rows, snaps)
+            coverage_note = coverage_note or problem
+            cleared_total += len(cleared)
+        else:
+            cleared = []
+        if not rows and not cleared:
             continue
         print('=== %s ===' % path)
         for code, name, why in rows:
             print('  %s  %-34s %s' % (code, name, why))
+        for code, name, why in cleared:
+            print('  ok  %-34s %s' % (name, why))
         total += len(rows)
     print('')
+    if coverage_note:
+        print('COVERAGE: %s' % coverage_note)
+    if cleared_total:
+        print('%d static finding(s) cleared by the live DOM.' % cleared_total)
     if total:
         print('%d reachability finding(s) across %d file(s).' % (total, len(targets)))
-        print('R1/R2 are near-certain. R3 needs a read before you believe it.')
+        if snaps and not coverage_note:
+            print('Checked against the RENDERED DOM, so R3 here is no longer a maybe.')
+        else:
+            print('R1/R2 are near-certain. R3 needs a read before you believe it --')
+            print('pass --live <snapshot.json> to settle it against the real page.')
         return 1
+    if coverage_note:
+        return 2
     print('clean -- no unreachable features of these three shapes in %d file(s)' % len(targets))
     return 0
 

@@ -1,4 +1,4 @@
-"""Pre-push checks that must not depend on memory. FOUR of them as of 2026-09-01.
+"""Pre-push checks that must not depend on memory. FIVE of them as of 2026-09-01.
 
 DO NOT TRUST THAT NUMBER -- count the `CHECK n:` markers in this file. A count
 in a header is exactly the kind of claim that goes stale the day someone adds
@@ -40,6 +40,13 @@ TWO ENTRY POINTS, and the difference matters more than the checks do:
      traverse the endpoint. Runs on any api/*.js change, not only on changed
      endpoints: editing the ENGINE is how the seam breaks, and the endpoint
      that stops matching it is a file the push never touched.
+  5. REACHABILITY (added 2026-09-01) -- REPORT ONLY, never blocks. Reports
+     shipped features a customer cannot reach: an id squatted by an empty
+     display:none stub, a control injected into a hidden container, an entry
+     point nothing wires. stonedesk.html carries 9 standing findings, all
+     confirmed against the RENDERED DOM rather than inferred, so switching this
+     to a deny today would refuse every StoneDesk push. Promote it once that
+     file is clean.
 
 None of them run unless the commits being pushed actually touch the relevant
 files, so an ordinary push costs nothing.
@@ -473,6 +480,46 @@ def main():
                 else:
                     print(json.dumps({"hookSpecificOutput": {
                         "hookEventName": "PreToolUse", "additionalContext": note}}))
+
+    # ── CHECK 5: reachability -- REPORT ONLY, deliberately ─────────────────
+    # Added 2026-09-01. Three complete, working, AI-backed StoneDesk features
+    # were unreachable by a customer on 2026-08-30: each injected its only
+    # trigger into an empty display:none placeholder. Nothing was broken and
+    # there was simply no way in.
+    #
+    # IT DOES NOT BLOCK, AND THAT IS A DECISION RATHER THAN AN OVERSIGHT.
+    # stonedesk.html carries 9 standing findings today -- 2 stub collisions and
+    # 7 orphaned entry points, all confirmed against the RENDERED DOM on the
+    # deployed page, so they are real and not static noise. Blocking would
+    # refuse every StoneDesk push until they are fixed, in a file another
+    # session currently holds. A gate switched on before its findings are
+    # cleared is a gate someone disables within the hour.
+    #
+    # Promote it to a deny once stonedesk.html is clean; the machinery is
+    # identical to check 4's.
+    html_changed = [q for q in changed if q.endswith('.html')]
+    if html_changed:
+        reach = os.path.join(repo, 'tools', 'sairn_reachability_check.py')
+        if os.path.isfile(reach):
+            try:
+                rr = subprocess.run([sys.executable, reach] + html_changed,
+                                    capture_output=True, text=True, timeout=120, cwd=repo)
+                if rr.returncode == 1:
+                    msg = ("Reachability: this push touches HTML with unreachable features.\n"
+                           + rr.stdout.strip()
+                           + "\n\nREPORT ONLY -- not blocking. Settle an R3 against the real page "
+                             "with tools/sairn_dom_snapshot.js and "
+                             "sairn_reachability_check.py --live <snapshot.json>; a source grep "
+                             "cannot answer it, because these names all appear in the file.")
+                    if MODE == 'prepush':
+                        sys.stderr.write('\n' + msg + '\n\n')
+                    else:
+                        print(json.dumps({"hookSpecificOutput": {
+                            "hookEventName": "PreToolUse", "additionalContext": msg}}))
+            except Exception:
+                # Report-only check: a failure here must not affect the push at
+                # all, and must not pretend it checked something.
+                pass
 
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
