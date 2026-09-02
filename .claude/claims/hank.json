@@ -321,6 +321,16 @@
       "claimed_at_epoch": 1788360765.5962737,
       "status": "released",
       "released_at": "2026-09-02T15:05:11Z"
+    },
+    {
+      "id": "hank-1788361779",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "payer contract rates and MCO authorisation B4",
+      "claimed_at": "2026-09-02T15:09:39Z",
+      "claimed_at_epoch": 1788361779.4788444,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
