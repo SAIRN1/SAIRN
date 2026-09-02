@@ -169,8 +169,8 @@
       "task": "signed customer approvals persistence",
       "claimed_at": "2026-09-02T14:38:13Z",
       "claimed_at_epoch": 1788359893.4800012,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:57:47Z"
     }
   ]
 }
