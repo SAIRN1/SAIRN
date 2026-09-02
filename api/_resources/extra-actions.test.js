@@ -123,50 +123,88 @@ const REJECTED = 400;      // the gate refused the verb
     });
   });
 
-  test('the COMPLETE set of extra verbs is declared -- a wholly new one fails here', () => {
-    // GAP CLOSED 2026-08-25. The enumeration above catches a new resource
-    // granting a KNOWN verb, but three entirely new verbs (issue, add_payment,
-    // reconcile_claim) were added in Phase 4b and nothing fired, because no
-    // line named them. A verb nobody has enumerated is exactly as undeclared as
-    // a grant nobody has enumerated.
-    //
-    // Every verb below is compute-only or append-only and gated in its own
-    // handler branch. Adding one here is a deliberate act: check the branch
-    // actually refuses the roles it should before widening this list.
+  // GAP CLOSED 2026-08-25. The enumeration above catches a new resource
+  // granting a KNOWN verb, but three entirely new verbs (issue, add_payment,
+  // reconcile_claim) were added in Phase 4b and nothing fired, because no line
+  // named them. A verb nobody has enumerated is exactly as undeclared as a
+  // grant nobody has enumerated.
+  //
+  // Every verb below is gated in its own handler branch. Adding one here is a
+  // deliberate act: read the branch and check it refuses the roles it should
+  // before widening this list.
+  //
+  // -- WHY THIS IS TWO ASSERTIONS AND NOT ONE deepStrictEqual, 2026-09-02 ----
+  // It was one, and it had been RED SINCE 2026-08-27 -- SAIRNsenior's
+  // 'readiness' (f1d2b57) shipped undeclared and nobody noticed for five days.
+  // A tripwire that is already failing catches nothing: the next person reads
+  // the red, recognises it, and moves on. That very nearly happened when
+  // 'reserve' was added on 2026-09-02, and then happened AGAIN the same day
+  // when SAIRNroofing's 'crew_load' landed while this file was being fixed.
+  //
+  // A single deepStrictEqual also produces a diff of the whole list and makes
+  // the reader work out which direction the drift went. Split, each failure
+  // names the offending verb and says what to do about it -- and an
+  // already-known failure in one direction can no longer hide a new one in the
+  // other.
+  const DECLARED_VERBS = [
+    'add_payment',
+    'agreement_status',
+    'assess_damage',
+    // 'crew_load' (rf_schedule, 2026-09-02, gap A2) -- SAIRNroofing's, declared
+    // here after reading its branch: session-gated, management/broad-read only
+    // (it is a company-wide aggregate, and the branch says letting a narrow-tier
+    // role through would be a way around the schedule read's own filter), and
+    // it persists nothing -- one select, then a compute in
+    // api/_lib/roofing-crew-capacity.
+    'crew_load',
+    'delete',
+    'derive_charges',
+    'evaluate',
+    'issue',
+    // 'readiness' (sen_visits) DECLARED LATE, 2026-09-02. Shipped in f1d2b57 on
+    // 2026-08-27; this list was never updated. Declared rather than deleted,
+    // after reading its handler: session-gated, owner/billing/coordinator/
+    // scheduler only, and it genuinely persists nothing (one select, no write).
+    'readiness',
+    'reconcile',
+    'reconcile_claim',
+    // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
+    // neither compute-only nor append-only -- it WRITES, which is why the note
+    // above says adding one here is a deliberate act. It earns the exception by
+    // being the only write on this platform that REFUSES: 'write' on slabs is a
+    // blind upsert and silently reassigned a slab already reserved for another
+    // customer, destroying `reservedFor`. 'reserve' is a compare-and-swap that
+    // returns 409 instead. It reaches only 'slabs'; the enumeration test above
+    // holds that.
+    'reserve',
+    'route',
+    'set_status'
+  ];
+
+  function verbsInRegistry() {
     const all = new Set();
     reg.RESOURCE_NAMES.forEach((n) => (reg.EXTRA_ACTIONS[n] || []).forEach((v) => all.add(v)));
-    assert.deepStrictEqual([...all].sort(), [
-      'add_payment',
-      'agreement_status',
-      'assess_damage',
-      'delete',
-      'derive_charges',
-      'evaluate',
-      'issue',
-      // 'readiness' (sen_visits) DECLARED LATE, 2026-09-02. It shipped in
-      // f1d2b57 on 2026-08-27 and this list was never updated, so THIS TEST HAS
-      // BEEN RED FOR FIVE DAYS -- and a tripwire that is already failing catches
-      // nothing, because the next person reads the red and assumes it is the
-      // known one. It very nearly did exactly that here.
-      // Declared rather than deleted, after reading its handler: session-gated,
-      // owner/billing/coordinator/scheduler only, and it genuinely persists
-      // nothing (api/sd-data.js, `sen_visits && readiness` -- one select, no
-      // write).
-      'readiness',
-      'reconcile',
-      'reconcile_claim',
-      // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
-      // neither compute-only nor append-only -- it WRITES, which is why the
-      // note above says adding one here is a deliberate act. It earns the
-      // exception by being the only write on this platform that refuses:
-      // 'write' on slabs is a blind upsert and silently reassigned a slab
-      // already reserved for another customer, destroying `reservedFor`.
-      // 'reserve' is a compare-and-swap that returns 409 instead. It reaches
-      // only 'slabs'; the enumeration test above holds that.
-      'reserve',
-      'route',
-      'set_status'
-    ]);
+    return all;
+  }
+
+  test('no UNDECLARED verb exists -- a wholly new one fails here, by name', () => {
+    const declared = new Set(DECLARED_VERBS);
+    const undeclared = [...verbsInRegistry()].filter((v) => !declared.has(v)).sort();
+    const owners = undeclared.map((v) =>
+      v + ' (' + reg.RESOURCE_NAMES.filter((n) => (reg.EXTRA_ACTIONS[n] || []).includes(v)).join(', ') + ')');
+    assert.deepStrictEqual(undeclared, [],
+      'UNDECLARED VERB(S): ' + owners.join('; ') +
+      '\n    Read each handler branch in api/sd-data.js, confirm it refuses the roles it should,' +
+      '\n    then add the verb to DECLARED_VERBS above with a note saying what you checked.');
+  });
+
+  test('no STALE declaration remains -- a removed verb fails here too', () => {
+    const inRegistry = verbsInRegistry();
+    const stale = DECLARED_VERBS.filter((v) => !inRegistry.has(v)).sort();
+    assert.deepStrictEqual(stale, [],
+      'DECLARED BUT NO LONGER GRANTED: ' + stale.join(', ') +
+      '\n    The registry no longer grants these. Remove them from DECLARED_VERBS,' +
+      '\n    or find out why the grant disappeared.');
   });
 
   test('no resource outside the sc_ family grants delete', () => {
