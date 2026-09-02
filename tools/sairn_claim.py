@@ -74,6 +74,48 @@ STOPWORDS = {
     'with', 'from', 'work', 'task', 'gate', 'pass', 'run', 'new', 'app',
 }
 
+# ── GENERIC TOKENS: real words that carry no SUBJECT signal ────────────────
+# Added 2026-09-02, after the same false block happened twice.
+#
+#   2026-09-01: `sairnvet ... audit` BLOCKED against `stonedesk safehtml audit,
+#               session lock auth`. Different app, different file, sole overlap
+#               the word "audit". Recorded in CLAUDE.md as a known defect and
+#               left unfixed.
+#   2026-09-02: `sairnroofing ... gap A2` BLOCKED against `sairnsenior ... gap
+#               A6` AND `sairndental ... gap B1`. Three apps, three files, sole
+#               overlap the word "gap" -- which every task string derived from
+#               the worldwide competitive-gap audit contains, so the matcher was
+#               on course to block essentially every audit task that night.
+#
+# These are NOT stopwords. A stopword is dropped entirely and stops being
+# evidence; these still count, they just cannot block ALONE. The distinction
+# matters because two of them together is a real signal ("stonedesk audit fix"
+# vs "sairnvet audit fix" is worth a human read) while one is noise.
+#
+# DELIBERATELY SHORT, and it must stay short. The file's own rule still holds:
+# over-flagging costs a five-second read, under-flagging costs four hours. Every
+# word added here makes the tool quieter and blinder, so add one only after a
+# real false block names it -- not in anticipation.
+GENERIC_TOKENS = {
+    'gap', 'audit', 'fix', 'update', 'panel', 'check', 'phase', 'wiring',
+    'schema', 'engine', 'layer', 'seed', 'build', 'add', 'review',
+}
+
+
+def blocks_alone(shared):
+    """Is this shared-token set strong enough to BLOCK, or only to note?
+
+    A block needs one shared SPECIFIC token (an app name, a feature name, a
+    file name), or at least TWO shared generic ones. One generic word on its
+    own is a coincidence of English, not evidence of duplicated work.
+
+    Note this can never weaken a same-subject block: an app name is never
+    generic, so `sairnroofing` on both sides still blocks -- which is the case
+    the tool exists for.
+    """
+    specific = shared - GENERIC_TOKENS
+    return bool(specific) or len(shared) >= 2
+
 
 def sh(args, check=True):
     r = subprocess.run(args, cwd=REPO, capture_output=True, text=True)
@@ -203,14 +245,20 @@ def cmd_check(args, quiet=False):
     subj, task = args.subject, ' '.join(args.task)
     me = session_name()
     blocking = []
+    weak = []
     for c in load_all():
         if c.get('session') == me:
             continue
         if not is_active(c):
             continue
         shared = overlaps(c, subj, task)
-        if shared:
-            blocking.append((c, shared))
+        if not shared:
+            continue
+        # A single shared GENERIC word is reported, never blocked. It is still
+        # printed -- dropping it silently would be the other failure, and the
+        # whole point of this tool is that a human reads the other session's
+        # actual task rather than trusting a token match either way.
+        (blocking if blocks_alone(shared) else weak).append((c, shared))
     if blocking:
         if not quiet:
             print('BLOCKED -- another session already claimed overlapping work:\n')
@@ -229,6 +277,14 @@ def cmd_check(args, quiet=False):
         return 1
     if not quiet:
         print('CLEAR -- no active overlapping claim from another session.')
+        if weak:
+            print('\nNote: %d active claim(s) share ONE generic word with this '
+                  'task and are NOT blocking. Shown so you can judge, not '
+                  'because the tool thinks they overlap:' % len(weak))
+            for c, shared in weak:
+                print('  %s: %s -- %s  (shares only: %s)'
+                      % (c.get('session'), c.get('subject'), c.get('task'),
+                         ', '.join(sorted(shared))))
         stale = [c for c in load_all()
                  if c.get('session') != me and c.get('status') == 'active'
                  and not is_active(c) and overlaps(c, subj, task)]
