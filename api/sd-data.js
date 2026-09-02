@@ -5527,6 +5527,125 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNROOFING: legal entities and consolidation (2026-09-02, gap B5) ──────
+    // ATTRIBUTION IS DERIVED, NEVER STAMPED. entity_id lives on the LOCATION
+    // and nowhere else; no financial row carries one. Consolidation joins each
+    // invoice to its location and then to that location's CURRENT entity, so
+    // moving a branch moves its entire history and the grand total does not
+    // change. api/_lib/roofing-consolidation.js returns `reconciles` on every
+    // call so that is checkable rather than assumed.
+    if (resource === 'rf_entities' && ['read', 'write', 'consolidate', 'preview_move'].indexOf(action) !== -1) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Entity structure and consolidated figures are management-level information' } });
+        return;
+      }
+      const consol = require('./_lib/roofing-consolidation');
+      const ENT_SELECT = 'entity_id,legal_name,trading_name,tax_id,jurisdiction,active,notes,data,updated_by';
+
+      if (action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the entity structure' } }); return; }
+        const eid = payload && typeof payload.entity_id === 'string' ? payload.entity_id.trim() : '';
+        const lname = payload && typeof payload.legal_name === 'string' ? payload.legal_name.trim() : '';
+        if (!eid || !lname) { res.status(400).json({ error: { message: 'rf_entities: entity_id and legal_name are required' } }); return; }
+        // The engine reserves these two ids for its own buckets. A contractor
+        // entity carrying one would be silently merged into Unassigned.
+        if (eid === consol.UNASSIGNED || eid === consol.UNKNOWN_LOCATION) {
+          res.status(400).json({ error: { code: 'RESERVED_ID', message: 'rf_entities: that id is reserved for the consolidation engine\'s own buckets' } }); return;
+        }
+        const w = await fetch(rest('rf_entities?on_conflict=license_hash,entity_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, entity_id: eid, legal_name: lname,
+            trading_name: (payload.trading_name || '').trim() || null,
+            tax_id: (payload.tax_id || '').trim() || null,
+            jurisdiction: (payload.jurisdiction || '').trim() || null,
+            active: payload.active !== false,
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) {
+          if (w.status === 404 || w.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first.' } }); return; }
+          return upstream(res, saved);
+        }
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      const er = await fetch(rest('rf_entities?license_hash=eq.' + enc(licHash) + '&select=' + ENT_SELECT + '&order=legal_name.asc'), { headers });
+      if (er.status === 404 || er.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const ents = await er.json();
+      if (!er.ok) return upstream(res, ents);
+      if (action === 'read') { res.status(200).json({ ok: true, provisioned: true, data: ents || [] }); return; }
+
+      // Locations carry the assignment. Falls back if the column is absent so
+      // a half-migrated app says so rather than erroring.
+      let entityColumn = true;
+      let lr = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,entity_id'), { headers });
+      if (lr.status === 400) {
+        entityColumn = false;
+        lr = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active'), { headers });
+      }
+      const locs = lr.ok ? await lr.json() : [];
+
+      // THE MONEY IS NOT COMPUTED HERE. Invoices are summarised by
+      // api/_lib/roofing-billing.js's summarizeInvoice(), the one invoice
+      // arithmetic on this platform, and the consolidation engine only
+      // attributes and adds. A second implementation would drift from the
+      // Billing panel, which is the defect the platform keeps writing rules
+      // about.
+      let invoicesProvisioned = true;
+      const ir = await fetch(rest('rf_invoices?license_hash=eq.' + enc(licHash) +
+        '&select=invoice_id,location_id,status,data'), { headers });
+      let rows = [];
+      if (ir.status === 404 || ir.status === 400) { invoicesProvisioned = false; }
+      else if (ir.ok) {
+        const irows = await ir.json();
+        rows = (Array.isArray(irows) ? irows : [])
+          // A void invoice is not revenue. Excluded here rather than in the
+          // engine, because "what counts as money" is a billing question.
+          .filter((x) => x.status !== 'void')
+          .map((x) => {
+            const s = roofingBilling.summarizeInvoice(Object.assign({}, x.data || {}));
+            return { location_id: x.location_id, total: s.total, paid: s.paid, balance: s.balance };
+          });
+      }
+
+      if (action === 'preview_move') {
+        const pv = consol.previewMove({
+          entities: ents || [], locations: locs || [], rows: rows,
+          location_id: (payload && payload.location_id) || '',
+          to_entity_id: (payload && payload.to_entity_id) || null
+        });
+        if (!pv.ok) { res.status(400).json({ error: pv.error }); return; }
+        res.status(200).json({ ok: true, preview: pv });
+        return;
+      }
+
+      const con = consol.consolidate({ entities: ents || [], locations: locs || [], rows: rows });
+      res.status(200).json({
+        ok: true, provisioned: true, consolidation: con,
+        entity_column: entityColumn, invoices_provisioned: invoicesProvisioned,
+        // WHAT IS AND IS NOT ENTITY-AWARE, stated by the server rather than
+        // left to panel copy that can drift. Verified by grep 2026-09-02: none
+        // of these four surfaces filters or splits by location, so none of them
+        // splits by entity either. Saying so is the difference between a
+        // partial feature and a misleading one.
+        consolidated_sources: ['rf_invoices (excluding void)'],
+        not_yet_entity_aware: [
+          'Billing panel invoice totals',
+          'Progress Billing / WIP schedule',
+          'Reports and CSV export',
+          'Roof asset capital forecast'
+        ]
+      });
+      return;
+    }
+
     // ── SAIRNROOFING: locations + crew scheduling (2026-08-25, Phase 4a) ─────────────────────
     // location_id is ATTRIBUTION, not access control -- see the header of
     // api/_lib/roofing-locations.js. Nothing below grants or restricts anything
@@ -5536,11 +5655,23 @@ module.exports = async (req, res) => {
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       // Any signed-in role: a foreman needs to know which branch a job belongs
       // to, and the list is company structure, not sensitive data.
-      const r = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,data&order=name.asc'), { headers });
+      // entity_id (2026-09-02, gap B5) is asked for FIRST and fallen back on,
+      // the same shape api/sd-sub-data.js uses for its compliance columns.
+      // Without this, a shop that has not run
+      // sql/sairnroofing_entities_schema.sql would get a PostgREST 400 for the
+      // unknown column, which the line below maps to provisioned:false -- and
+      // every branch would VANISH from a working app because a feature they
+      // never asked for was added. The fallback is what keeps this additive.
+      let entityProvisioned = true;
+      let r = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,entity_id,data&order=name.asc'), { headers });
+      if (r.status === 400) {
+        entityProvisioned = false;
+        r = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active,data&order=name.asc'), { headers });
+      }
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { location_id: x.location_id, name: x.name, active: x.active })), default_location_id: roofingLocations.DEFAULT_LOCATION_ID });
+      res.status(200).json({ ok: true, provisioned: true, entity_provisioned: entityProvisioned, data: (rows || []).map((x) => Object.assign({}, x.data || {}, { location_id: x.location_id, name: x.name, active: x.active, entity_id: x.entity_id === undefined ? null : x.entity_id })), default_location_id: roofingLocations.DEFAULT_LOCATION_ID });
       return;
     }
     if (resource === 'rf_locations' && action === 'write') {
@@ -5549,18 +5680,27 @@ module.exports = async (req, res) => {
       if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can add or edit a location' } }); return; }
       const problems = roofingLocations.validateLocation(payload);
       if (problems.length) { res.status(400).json({ error: { message: 'rf_locations: ' + problems.join('; ') } }); return; }
-      const blob = Object.assign({}, payload); delete blob.id; delete blob.name; delete blob.active;
+      const blob = Object.assign({}, payload); delete blob.id; delete blob.name; delete blob.active; delete blob.entity_id;
+      const locRow = {
+        license_hash: licHash, app_id: 'sairnroofing', location_id: String(payload.id),
+        name: String(payload.name), active: payload.active !== false,
+        data: blob, updated_at: nowISO()
+      };
+      // Only sent when the caller actually set it, so an app that has not run
+      // the B5 migration keeps writing locations exactly as before. Assigning
+      // a branch to an entity is THE only write this feature makes to existing
+      // data -- no financial row carries an entity_id and none ever should.
+      if (payload.entity_id !== undefined) {
+        locRow.entity_id = (typeof payload.entity_id === 'string' && payload.entity_id.trim()) ? payload.entity_id.trim() : null;
+      }
       const r = await fetch(rest('rf_locations?on_conflict=license_hash,location_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-        body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairnroofing', location_id: String(payload.id),
-          name: String(payload.name), active: payload.active !== false,
-          data: blob, updated_at: nowISO()
-        })
+        body: JSON.stringify(locRow)
       });
       if (r.status === 404 || r.status === 400) {
         const bt = await r.text();
+        if (/entity_id/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Entities are not set up yet — run sql/sairnroofing_entities_schema.sql in Supabase first. The branch itself was NOT saved.' } }); return; }
         if (/relation .* does not exist|does not exist/i.test(bt)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Locations are not set up yet — run sql/sairnroofing_locations_schema.sql in Supabase first.' } }); return; }
         res.status(400).json({ error: { message: 'Data store rejected the location', detail: bt } }); return;
       }

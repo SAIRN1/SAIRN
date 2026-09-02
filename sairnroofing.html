@@ -167,6 +167,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-draws" onclick="nav('draws')">Progress Billing<span class="badge" id="draws-badge" style="display:none"></span></button>
       <button class="sb" id="sb-safety" onclick="nav('safety')">Safety<span class="badge" id="safety-badge" style="display:none"></span></button>
       <button class="sb" id="sb-prequal" onclick="nav('prequal')">Prequalification<span class="badge" id="prequal-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-entities" onclick="nav('entities')">Entities<span class="badge" id="entities-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -717,6 +718,43 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Entities (2026-09-02). Tier-B gap B5. The audit's own note is the
+           diagnosis: rf_locations is attribution-only, and branch != entity.
+           ATTRIBUTION IS DERIVED, NEVER STAMPED. entity_id lives on the
+           LOCATION and nowhere else -- no invoice, job or draw carries one --
+           so moving a branch moves its ENTIRE history and the consolidated
+           grand total does not change. The server returns `reconciles` on
+           every call and this panel prints it, because an invariant nobody
+           checks is a comment. -->
+      <div class="panel" id="panel-entities">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Entities</div>
+            <div class="psub" id="entities-scope-note">--</div>
+          </div>
+          <div class="pa">
+            <button class="btn bp" id="ent-new-btn" onclick="openEntityModal()" style="display:none;">+ Entity</button>
+            <button class="btn bo" onclick="rfLoadEntities()">Refresh</button>
+          </div>
+        </div>
+        <div class="card"><div class="cb">
+          <div class="note" style="margin-bottom:0;">
+            A branch belongs to an entity; <strong>an invoice does not</strong>. Nothing financial carries an entity id, so
+            reassigning a branch below moves everything it ever billed &mdash; and the consolidated total stays the same.
+            The reconciliation line proves that on your own data rather than asking you to take it on trust.
+          </div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Consolidated position</div></div>
+          <div class="cb" id="ent-consolidation"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Branch assignment</div></div>
+          <div class="cb" id="ent-assignment"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Entities on file</div></div>
+          <div class="cb" id="ent-list"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -1065,6 +1103,7 @@ function nav(id){
   if(id==='draws'){ rfLoadDraws(); }
   if(id==='safety'){ rfLoadSafety(); }
   if(id==='prequal'){ rfLoadPrequal(); }
+  if(id==='entities'){ rfLoadEntities(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2860,6 +2899,187 @@ function saveAssignment(){
     closeAssignModal();
     toast('Assignment saved.');
     rfLoadSubs();
+  });
+}
+
+// ── ENTITIES & CONSOLIDATION (gap B5, 2026-09-02) ──────────────────────────
+// Branch != entity. entity_id lives on the LOCATION and nowhere else, so every
+// figure here is attributed on READ through whichever entity a branch belongs
+// to now. Moving a branch therefore moves its entire history, and the grand
+// total does not change -- which the server reports as `reconciles` and this
+// panel PRINTS, because an invariant nobody checks is a comment.
+var rfEntities=[],rfConsolidation=null,rfEntLocations=[],rfEntMeta=null;
+
+function rfLoadEntities(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var nb=$('ent-new-btn');if(nb)nb.style.display=isMgmt?'':'none';
+  var note=$('entities-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Legal entities, which branch belongs to which, and the book totalled by entity.'
+    : 'Consolidated position, read-only for your role.';
+  return rfDataRaw('read','rf_entities',{}).then(function(r){
+    if(!r.ok){
+      $('ent-list').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Entity structure is management-level information.'
+        : rfEsc(r.msg||'Could not load entities.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('ent-list').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_entities_schema.sql, then refresh.</div>';
+      $('ent-consolidation').innerHTML='<div class="empty">&mdash;</div>';
+      $('ent-assignment').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfEntities=d.data||[];
+    rfRenderEntityList();
+    return rfDataRaw('read','rf_locations',{}).then(function(l){
+      rfEntLocations=(l.ok&&l.data&&l.data.data)||[];
+      var entCol=!(l.ok&&l.data&&l.data.entity_provisioned===false);
+      rfRenderAssignment(entCol);
+      return rfDataRaw('consolidate','rf_entities',{}).then(function(c){
+        var cd=(c.ok&&c.data)||{};
+        rfConsolidation=cd.consolidation||null; rfEntMeta=cd;
+        rfRenderConsolidation(cd);
+      });
+    });
+  });
+}
+
+function rfRenderConsolidation(cd){
+  var el=$('ent-consolidation');
+  var C=rfConsolidation;
+  if(!C){el.innerHTML='<div class="empty">Not computed.</div>';return;}
+  var out='';
+  if(cd&&cd.invoices_provisioned===false){
+    out+='<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;">Billing is not set up, so there is nothing to consolidate. '+
+      '<strong>Every figure below is zero because no invoices could be read, not because the book is empty.</strong></div>';
+  }
+  if(cd&&cd.entity_column===false){
+    out+='<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;">The <code>entity_id</code> column is not on <code>rf_locations</code> yet, '+
+      'so no branch can be assigned and everything falls into Unassigned. Run sql/sairnroofing_entities_schema.sql.</div>';
+  }
+  out+='<div class="tw"><table><thead><tr><th>Entity</th><th>Branches</th><th>Invoices</th><th>Billed</th><th>Paid</th><th>Outstanding</th></tr></thead><tbody>'+
+    C.entities.map(function(e){
+      return '<tr><td><strong>'+rfEsc(e.name)+'</strong>'+(e.active===false?' <span class="badge bx">inactive</span>':'')+
+        '<br><span style="font-size:12px;color:var(--muted)">'+rfEsc(e.entity_id)+'</span></td>'+
+        '<td>'+(e.location_ids.length?rfEsc(e.location_ids.join(', ')):'--')+'</td>'+
+        '<td>'+e.row_count+'</td><td>'+rfMoney(e.total)+'</td><td>'+rfMoney(e.paid)+'</td><td>'+rfMoney(e.balance)+'</td></tr>';
+    }).join('')+
+    // The two unassigned buckets are rendered in the SAME table but visually
+    // apart, so they are impossible to miss and equally impossible to mistake
+    // for an entity.
+    C.unassigned.map(function(u){
+      if(!u.row_count&&!u.location_ids.length)return '';
+      return '<tr style="background:#FEF3C7;"><td><strong>'+rfEsc(u.name)+'</strong></td>'+
+        '<td>'+(u.location_ids.length?rfEsc(u.location_ids.join(', ')):'--')+'</td>'+
+        '<td>'+u.row_count+'</td><td>'+rfMoney(u.total)+'</td><td>'+rfMoney(u.paid)+'</td><td>'+rfMoney(u.balance)+'</td></tr>';
+    }).join('')+
+    '<tr style="border-top:2px solid var(--border);font-weight:700;"><td>Whole book</td><td></td><td>'+C.rows_in+'</td>'+
+    '<td>'+rfMoney(C.grand_total)+'</td><td>'+rfMoney(C.grand_paid)+'</td><td>'+rfMoney(C.grand_balance)+'</td></tr>'+
+    '</tbody></table></div>';
+  // THE INVARIANT, printed. Reassign a branch and this line must still read
+  // reconciled with the same whole-book figure.
+  out+='<div class="note" style="margin-top:10px;'+(C.reconciles?'':'background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;')+'">'+
+    (C.reconciles
+      ? '<strong>Reconciled.</strong> The buckets add up to the whole book ('+rfMoney(C.input_total)+'). Reassign a branch below and the per-entity figures will move while this number does not &mdash; that is the point of attributing on read rather than stamping each invoice.'
+      : '<strong>DOES NOT RECONCILE.</strong> The buckets total '+rfMoney(C.grand_total)+' against '+rfMoney(C.input_total)+' read in. Do not use these figures.')+'</div>';
+  if(C.problems&&C.problems.length){
+    out+='<div class="note" style="margin-bottom:0;">'+rfEsc(C.problems.join('; '))+'</div>';
+  }
+  // WHAT IS NOT ENTITY-AWARE YET, from the server rather than panel copy that
+  // can drift away from the truth.
+  if(cd&&cd.not_yet_entity_aware&&cd.not_yet_entity_aware.length){
+    out+='<div class="note" style="margin-bottom:0;"><strong>Only '+rfEsc((cd.consolidated_sources||[]).join(', '))+
+      ' is consolidated.</strong> These still total company-wide and are NOT split by entity: '+
+      rfEsc(cd.not_yet_entity_aware.join('; '))+'.</div>';
+  }
+  var b=$('entities-badge');
+  var unass=C.unassigned.reduce(function(s,u){return s+u.row_count;},0);
+  if(b){ b.textContent=unass||''; b.style.display=unass?'':'none'; b.className='badge '+(unass?'bw':'bx'); }
+  el.innerHTML=out;
+}
+
+function rfRenderAssignment(entCol){
+  var el=$('ent-assignment');
+  if(!rfEntLocations.length){el.innerHTML='<div class="empty">No branches on file.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var byId={};rfEntities.forEach(function(e){byId[e.entity_id]=e.legal_name;});
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Branch</th><th>Entity</th><th></th></tr></thead><tbody>'+
+    rfEntLocations.map(function(l,i){
+      var eid=l.entity_id||null;
+      var opts='<option value="">-- unassigned --</option>'+rfEntities.map(function(e){
+        return '<option value="'+rfEsc(e.entity_id)+'"'+(eid===e.entity_id?' selected':'')+'>'+rfEsc(e.legal_name)+'</option>';
+      }).join('');
+      return '<tr><td><strong>'+rfEsc(l.name||l.location_id)+'</strong><br><span style="font-size:12px;color:var(--muted)">'+rfEsc(l.location_id)+'</span></td>'+
+        '<td>'+(isMgmt&&entCol
+          ? '<select id="entsel-'+i+'" onchange="rfPreviewMove('+i+')">'+opts+'</select><div id="entprev-'+i+'" style="font-size:11px;color:var(--muted);margin-top:4px;"></div>'
+          : rfEsc(eid?(byId[eid]||eid):'unassigned'))+'</td>'+
+        '<td>'+(isMgmt&&entCol?'<button class="btn bp" style="padding:4px 10px;font-size:11px;" onclick="rfAssignEntity('+i+')">Move</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>'+
+    (entCol?'':'<div class="note" style="margin-top:8px;margin-bottom:0;">Assignment is disabled until sql/sairnroofing_entities_schema.sql has been run.</div>');
+}
+
+function rfPreviewMove(i){
+  var l=rfEntLocations[i];if(!l)return;
+  var sel=$('entsel-'+i),out=$('entprev-'+i);
+  if(!sel||!out)return;
+  // Shows what WOULD move before anyone commits, including the fact that the
+  // whole book does not change size.
+  rfDataRaw('preview_move','rf_entities',{location_id:l.location_id,to_entity_id:sel.value||null}).then(function(r){
+    var p=(r.ok&&r.data&&r.data.preview)||null;
+    if(!p){ out.textContent=''; return; }
+    out.textContent=rfMoney(p.amount_moving)+' would move; whole book '+
+      (p.grand_total_unchanged?'unchanged at '+rfMoney(p.grand_total_after):'CHANGES — do not proceed');
+  });
+}
+
+function rfAssignEntity(i){
+  var l=rfEntLocations[i];if(!l)return;
+  var sel=$('entsel-'+i);if(!sel)return;
+  // The move is an ordinary write to the LOCATION. Nothing financial is
+  // touched, which is the whole design -- there is no backfill to run.
+  rfDataRaw('write','rf_locations',{
+    id:l.location_id, name:l.name||l.location_id, active:l.active!==false,
+    entity_id:sel.value||null
+  }).then(function(r){
+    if(!r.ok){ toast(r.msg||'Could not reassign that branch',5000); return; }
+    toast('Branch reassigned — its whole history moved with it.');
+    rfLoadEntities();
+  });
+}
+
+function rfRenderEntityList(){
+  var el=$('ent-list');
+  if(!rfEntities.length){el.innerHTML='<div class="empty">No entities on file. Add one, then assign branches to it below.</div>';return;}
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Legal name</th><th>Trading as</th><th>Reference</th><th>Jurisdiction</th><th></th></tr></thead><tbody>'+
+    rfEntities.map(function(e){
+      return '<tr><td><strong>'+rfEsc(e.legal_name)+'</strong><br><span style="font-size:12px;color:var(--muted)">'+rfEsc(e.entity_id)+'</span></td>'+
+        '<td>'+rfEsc(e.trading_name||'--')+'</td><td>'+rfEsc(e.tax_id||'--')+'</td>'+
+        '<td>'+rfEsc(e.jurisdiction||'--')+'</td>'+
+        '<td>'+(e.active===false?'<span class="badge bx">inactive</span>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function openEntityModal(){
+  ['en-id','en-legal','en-trading','en-tax','en-juris'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('en-err').textContent='';
+  $('entity-modal').classList.add('on');
+}
+function closeEntityModal(){ $('entity-modal').classList.remove('on'); }
+
+function saveEntity(){
+  var id=($('en-id').value||'').trim(),nm=($('en-legal').value||'').trim();
+  if(!id||!nm){ $('en-err').textContent='Entity id and legal name are both required.'; return; }
+  $('en-err').textContent='Saving…';
+  rfDataRaw('write','rf_entities',{
+    entity_id:id, legal_name:nm,
+    trading_name:($('en-trading').value||'').trim()||null,
+    tax_id:($('en-tax').value||'').trim()||null,
+    jurisdiction:($('en-juris').value||'').trim()||null
+  }).then(function(r){
+    if(!r.ok){ $('en-err').textContent=r.msg||'Could not save.'; return; }
+    closeEntityModal(); rfLoadEntities();
   });
 }
 
@@ -4824,6 +5044,29 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="entity-modal">
+  <div class="mbox" style="width:520px;">
+    <div class="mtitle">Legal Entity</div>
+    <div class="qgrid">
+      <div class="fg"><label>Entity id <span style="color:var(--danger)">*</span></label><input id="en-id" placeholder="ENT-ALPHA"></div>
+      <div class="fg"><label>Legal name <span style="color:var(--danger)">*</span></label><input id="en-legal" placeholder="Alpha Roofing LLC"></div>
+      <div class="fg"><label>Trading as</label><input id="en-trading" placeholder="Alpha Roofing"></div>
+      <div class="fg"><label>Jurisdiction</label><input id="en-juris" placeholder="Ohio"></div>
+    </div>
+    <div class="fg"><label>Your reference (tax id or similar)</label><input id="en-tax" placeholder="for your records only"></div>
+    <div class="note">An entity is the company that <strong>files a return</strong>; a branch is where work happens. One
+      entity can own several branches, and that is the level this app had no way to total by.
+      <strong>Nothing financial will carry this id.</strong> Branches point at an entity and invoices point at branches, so
+      when you move a branch its entire billing history moves with it and the consolidated total stays identical &mdash;
+      no migration, no backfill, no revenue stranded with a company that sold the branch. The reference field is for your
+      records: nothing here validates it or files anything with it.</div>
+    <div class="perr" id="en-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveEntity()">Save</button>
+      <button class="btn bo" onclick="closeEntityModal()">Cancel</button>
     </div>
   </div>
 </div>

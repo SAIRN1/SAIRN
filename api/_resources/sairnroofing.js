@@ -136,6 +136,14 @@ module.exports = {
   // Registered on day one for the reason rf_settings' note gives.
     'rf_prequal_documents',
     'rf_bonding',
+  // Legal entities, for multi-entity consolidation (2026-09-02) -- see
+  // sql/sairnroofing_entities_schema.sql and api/_lib/roofing-consolidation.js.
+  // Tier-B gap B5, whose own audit note is the diagnosis: rf_locations is
+  // attribution-only, and branch != entity. entity_id lives on the LOCATION
+  // and nowhere else, so moving a branch moves its whole history.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_entities',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -204,6 +212,12 @@ module.exports = {
     // than stored -- a second backlog figure would drift from it the moment a
     // draw was entered. Reads only.
     rf_bonding: ['capacity'],
+    // 'consolidate' (2026-09-02, gap B5) totals the book per legal entity by
+    // joining each invoice to its location and then to that location's CURRENT
+    // entity. Reads only. 'preview_move' answers what reassigning one branch
+    // would do BEFORE anyone clicks -- including proving the grand total does
+    // not change, which is the invariant the whole design rests on.
+    rf_entities: ['consolidate', 'preview_move'],
     // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the
