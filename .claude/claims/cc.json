@@ -90,6 +90,16 @@
       "claimed_at_epoch": 1788342092.8195758,
       "status": "released",
       "released_at": "2026-09-02T10:36:49Z"
+    },
+    {
+      "id": "cc-1788345835",
+      "session": "cc",
+      "subject": "roofing-audit-licence",
+      "task": "and nexus style profile",
+      "claimed_at": "2026-09-02T10:43:55Z",
+      "claimed_at_epoch": 1788345835.971716,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
