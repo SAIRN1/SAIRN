@@ -98,8 +98,8 @@
       "task": "utc local date fix",
       "claimed_at": "2026-09-02T11:35:42Z",
       "claimed_at_epoch": 1788348942.492686,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T11:46:16Z"
     }
   ]
 }
