@@ -21306,8 +21306,19 @@ function renderPredictiveInsights() {
   var patterns = computePipelinePatterns();
   var stageBits = Object.keys(patterns.byStage).filter(function(k) { return patterns.byStage[k] > 0; })
     .sort(function(a, b) { return patterns.byStage[b] - patterns.byStage[a]; })
-    .map(function(k) { return (statusLabels[k] || k) + ': $' + Math.round(patterns.byStage[k]).toLocaleString(); });
-  var matBits = patterns.topMaterials.map(function(e) { return e[0] + ' (' + e[1] + ')'; });
+    // escHtml on the LABEL, because `k` is a customer's own status value:
+    // computePipelinePatterns keys byStage on `c.status` straight off the
+    // sdCustomers record, and the `|| k` fallback is exactly the path an
+    // unexpected value takes -- a status that is not in statusLabels reaches
+    // innerHTML raw. Same for the material below, which is keyed on
+    // `c.material`, free text on a server-backed customer record.
+    //
+    // These two were the remainder of the 2026-09-01 innerHTML audit: the
+    // class it explicitly left unresolved, where the assignment reads
+    // `el.innerHTML = html` and the risk is wherever `html` was assembled.
+    // Traced by hand from the bare-variable site back to the builder.
+    .map(function(k) { return escHtml(statusLabels[k] || k) + ': $' + Math.round(patterns.byStage[k]).toLocaleString(); });
+  var matBits = patterns.topMaterials.map(function(e) { return escHtml(e[0]) + ' (' + e[1] + ')'; });
 
   var html = '<div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:14px 16px">';
   html += '<div style="font-weight:700;color:var(--text);margin-bottom:8px;font-size:13px">📊 Predictive Insights <span style="font-weight:400;color:var(--muted);font-size:11px">(from ' + patterns.totalCustomers + ' customers on record)</span></div>';
