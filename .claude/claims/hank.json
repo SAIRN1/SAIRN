@@ -250,6 +250,16 @@
       "claimed_at_epoch": 1788353267.1736782,
       "status": "released",
       "released_at": "2026-09-02T13:02:44Z"
+    },
+    {
+      "id": "hank-1788354168",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "denials and appeals workflow",
+      "claimed_at": "2026-09-02T13:02:48Z",
+      "claimed_at_epoch": 1788354168.7968369,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
