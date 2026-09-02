@@ -31,6 +31,11 @@ module.exports = {
   // how employee_profile silently 400'd, and a new resource that is not
   // registered here fails the same way.
     'style_profile',
+  // [0072] supplier lead time per (supplier, material) -- see
+  // sql/sd_supplier_lead_times_schema.sql and api/_lib/job-risk.js. Ships
+  // with NO rows and no defaults: a projection built on an invented lead
+  // time is a number a shop would schedule a customer against.
+    'supplier_lead_times',
   // StoneDesk CRM/Lead Pipeline (2026-08-19) -- see sql/sd_crm_schema.sql. First real server
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.

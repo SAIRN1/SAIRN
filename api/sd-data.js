@@ -451,6 +451,113 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SUPPLIER LEAD TIMES ([0072], 2026-09-02) ────────────────────────────
+    // sql/sd_supplier_lead_times_schema.sql. Read is any authenticated
+    // employee -- a fabricator needs to know whether the slab will land before
+    // the install date. Write is owner/admin: a lead time drives customer
+    // commitments and supplier negotiations, the same sensitivity class that
+    // gates the roster.
+    //
+    // THE WRITE PATH HAS TWO SHAPES AND THEY ARE NOT INTERCHANGEABLE.
+    //   quoted   -- what a supplier SAYS. Set directly.
+    //   observe  -- a REAL receipt (ordered_at, received_at), folded into the
+    //               running observed_* columns by api/_lib/job-risk.js.
+    // They are never merged into one number here or in storage. Which one a
+    // projection used is reported to the caller, because "quotes 14, last four
+    // took 31" is the most useful thing this data can say.
+    if (resource === 'supplier_lead_times' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      const norm = (v) => String(v == null ? '' : v).trim().toLowerCase();
+      const sel = 'sd_supplier_lead_times?license_hash=eq.' + enc(licHash) +
+        '&select=supplier,material,quoted_days,observed_total_days,observed_n,observed_min_days,observed_max_days,last_observed_at,notes,updated_at';
+
+      if (action === 'read') {
+        const r = await fetch(rest(sel), { headers });
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: rows || [], provisioned: true });
+        return;
+      }
+
+      if (!EMPLOYEE_PROFILE_MANAGE_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can set supplier lead times' } });
+        return;
+      }
+      const supplier = norm(payload && payload.supplier);
+      const material = norm(payload && payload.material);
+      if (!supplier || !material) {
+        res.status(400).json({ error: { message: 'supplier and material are required' } });
+        return;
+      }
+      const mode = (payload && payload.mode) === 'observe' ? 'observe' : 'quoted';
+      if (mode === 'quoted') {
+        const q = payload.quoted_days;
+        if (q !== null && (!Number.isInteger(Number(q)) || Number(q) < 0 || Number(q) > 730)) {
+          res.status(400).json({ error: { message: 'quoted_days must be null or a whole number of days between 0 and 730' } });
+          return;
+        }
+      }
+
+      // Read-then-fold-then-write, server side, so two tabs cannot race into a
+      // lost observation. Same reasoning as the style profile.
+      const cur = await fetch(rest(sel + '&supplier=eq.' + enc(supplier) + '&material=eq.' + enc(material) + '&limit=1'), { headers });
+      if (cur.status === 404 || cur.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql' } });
+        return;
+      }
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+      let row = (Array.isArray(curRows) && curRows[0]) || null;
+
+      if (mode === 'observe') {
+        const risk = require('./_lib/job-risk');
+        const folded = risk.observeReceipt(row, payload.ordered_at, payload.received_at);
+        if (!folded.applied) {
+          // A refused observation is a 400, not a silent no-op. "Received
+          // before it was ordered" is a data-entry error the shop must see.
+          res.status(400).json({ error: { code: 'BAD_OBSERVATION', message: folded.reason } });
+          return;
+        }
+        row = folded.row;
+        row.observed_days = folded.days;
+      } else {
+        row = Object.assign({}, row || {}, { quoted_days: payload.quoted_days === null ? null : Number(payload.quoted_days) });
+      }
+
+      const body = {
+        license_hash: licHash, supplier, material,
+        quoted_days: row.quoted_days == null ? null : row.quoted_days,
+        observed_total_days: row.observed_total_days || 0,
+        observed_n: row.observed_n || 0,
+        observed_min_days: row.observed_min_days == null ? null : row.observed_min_days,
+        observed_max_days: row.observed_max_days == null ? null : row.observed_max_days,
+        last_observed_at: row.last_observed_at || null,
+        notes: payload.notes === undefined ? (row.notes || null) : (String(payload.notes || '').trim() || null),
+        updated_at: nowISO()
+      };
+      const w = await fetch(rest('sd_supplier_lead_times?on_conflict=license_hash,supplier,material'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(body)
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier lead times table is not set up — run sql/sd_supplier_lead_times_schema.sql' } });
+        return;
+      }
+      const wRows = await w.json();
+      if (!w.ok) return upstream(res, wRows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(wRows) && wRows[0]) || body, observed_days: row.observed_days });
+      return;
+    }
+
     // ── STYLE PROFILE (sairn_style_profiles, 2026-09-02) ────────────────────
     // The NEXUS per-user style profile. See
     // docs/2026-09-02-nexus-style-profile-design.md and
