@@ -3554,6 +3554,161 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SHARED: subcontractor directory + assignments (2026-09-02) ──────────────────
+    // Tier-A gap A3 from the worldwide competitive-gap audit. SAIRNroofing is
+    // the first consumer; the tables and the engine are deliberately unprefixed
+    // and app_id-scoped so SAIRNbuild and (later, as its own guarded migration)
+    // StoneDesk can use the same ones rather than a third copy.
+    //
+    // COMPLIANCE IS COMPUTED ON READ, NEVER STORED. Whether a certificate is
+    // valid depends on today's date, so a stored verdict is wrong the morning
+    // after it is written -- the same reason rf_claim_agreements computes its
+    // rescission clock instead of persisting it.
+    if ((resource === 'subcontractors' || resource === 'sub_assignments') &&
+        (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const subs = require('./_lib/subcontractor-compliance');
+      const APP = 'sairnroofing';
+
+      if (resource === 'subcontractors' && action === 'read') {
+        const r = await fetch(rest('subcontractors?license_hash=eq.' + enc(licHash) +
+          '&app_id=eq.' + enc(APP) +
+          '&select=sub_id,name,trade,phone,email,active,coi_carrier,coi_policy_no,coi_expiry,licence_no,licence_expiry,w9_on_file,data,updated_at'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        // `today` comes from the CALLER, and the engine refuses to run without
+        // it. A server-side clock here would compute compliance in UTC for a
+        // contractor working in local time -- the defect class fixed across
+        // nine SAIRNvet panels on 2026-09-01.
+        const today = (payload && payload.today) || null;
+        const required = (payload && Array.isArray(payload.required)) ? payload.required : [];
+        // warn_days FORWARDED. Caught by tools/sairn_seam_check.py on this very
+        // branch before it shipped: the engine reads input.warn_days and this
+        // call site did not set it, so the review window was pinned to the
+        // engine default and no caller could change it. Identical to the
+        // roofing-programs warn_days gap the same tool found this morning --
+        // which is the argument for the tool, not against this code.
+        //
+        // A bad value is REFUSED rather than silently ignored: the engine
+        // accepts only a number, so "45" as a string would fall back to the
+        // default while the caller believed it had set 45.
+        let warnDays;
+        if (payload && payload.warn_days !== undefined && payload.warn_days !== null) {
+          const wd = payload.warn_days;
+          if (typeof wd !== 'number' || !isFinite(wd) || Math.floor(wd) !== wd || wd < 0 || wd > 365) {
+            res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+            return;
+          }
+          warnDays = wd;
+        }
+        const evaluated = (rows || []).map((x) => {
+          const ev = subs.evaluateSubcontractor({ subcontractor: x, today: today, required: required, warn_days: warnDays });
+          return Object.assign({}, x, { compliance: ev.ok ? ev : null, compliance_error: ev.ok ? null : ev.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: today, data: evaluated });
+        return;
+      }
+
+      if (resource === 'subcontractors' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the subcontractor roster' } }); return; }
+        const subId = payload && payload.sub_id;
+        const name = payload && typeof payload.name === 'string' ? payload.name.trim() : '';
+        if (!subId || typeof subId !== 'string') { res.status(400).json({ error: { message: 'subcontractors: sub_id is required' } }); return; }
+        if (!name) { res.status(400).json({ error: { message: 'subcontractors: name is required' } }); return; }
+        // Dates are validated before storage, not after. An unreadable expiry
+        // reads as 'unreadable' in the engine, which is honest but useless to a
+        // contractor -- refusing it here means it never gets that far.
+        const badDate = ['coi_expiry', 'licence_expiry'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'subcontractors: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        const row = {
+          license_hash: licHash, app_id: APP, sub_id: subId, name: name,
+          trade: payload.trade || null, phone: payload.phone || null, email: payload.email || null,
+          active: payload.active !== false,
+          coi_carrier: payload.coi_carrier || null, coi_policy_no: payload.coi_policy_no || null,
+          coi_expiry: payload.coi_expiry || null,
+          licence_no: payload.licence_no || null, licence_expiry: payload.licence_expiry || null,
+          w9_on_file: payload.w9_on_file === true,
+          data: payload.data || {}, updated_at: new Date().toISOString()
+        };
+        const w = await fetch(rest('subcontractors?on_conflict=license_hash,app_id,sub_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify(row)
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      if (resource === 'sub_assignments' && action === 'read') {
+        const r = await fetch(rest('sub_assignments?license_hash=eq.' + enc(licHash) +
+          '&app_id=eq.' + enc(APP) +
+          '&select=assignment_id,sub_id,job_id,scheduled_date,status,amount,payments,data,created_by,updated_at'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map(subs.summariseAssignment) });
+        return;
+      }
+
+      if (resource === 'sub_assignments' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can assign a subcontractor' } }); return; }
+        const aid = payload && payload.assignment_id;
+        const subId = payload && payload.sub_id;
+        if (!aid || !subId) { res.status(400).json({ error: { message: 'sub_assignments: assignment_id and sub_id are required' } }); return; }
+        if (payload.status !== undefined && subs.ASSIGNMENT_STATUSES.indexOf(payload.status) === -1) {
+          res.status(400).json({ error: { code: 'BAD_STATUS', message: 'sub_assignments: status must be one of ' + subs.ASSIGNMENT_STATUSES.join(', ') } });
+          return;
+        }
+        // THE GATE THAT MAKES THIS WORTH BUILDING. A subcontractor whose
+        // insurance has lapsed must not be schedulable, and the refusal has to
+        // happen HERE rather than in the UI -- a client-side check is a
+        // suggestion. `required` and `today` come from the caller so an
+        // operator sets their own policy; with neither, nothing is required and
+        // only an inactive sub is refused.
+        const today = payload.today || null;
+        const required = Array.isArray(payload.required) ? payload.required : [];
+        if (required.length) {
+          const sr = await fetch(rest('subcontractors?license_hash=eq.' + enc(licHash) +
+            '&app_id=eq.' + enc(APP) + '&sub_id=eq.' + enc(subId) + '&select=*&limit=1'), { headers });
+          const srows = sr.ok ? await sr.json() : null;
+          const theSub = Array.isArray(srows) && srows[0];
+          if (!theSub) { res.status(400).json({ error: { code: 'NO_SUCH_SUB', message: 'sub_assignments: no subcontractor with that sub_id' } }); return; }
+          const gate = subs.canAssign({ subcontractor: theSub, today: today, required: required });
+          if (!gate.ok) { res.status(400).json({ error: gate.error }); return; }
+          if (!gate.allowed) {
+            res.status(409).json({ error: { code: 'NOT_ASSIGNABLE', message: 'Cannot assign: ' + gate.reasons.join('; '), reasons: gate.reasons } });
+            return;
+          }
+        }
+        const row = {
+          license_hash: licHash, app_id: APP, assignment_id: aid, sub_id: subId,
+          job_id: payload.job_id || null,
+          scheduled_date: payload.scheduled_date || null,
+          status: payload.status || 'scheduled',
+          amount: typeof payload.amount === 'number' ? payload.amount : null,
+          payments: Array.isArray(payload.payments) ? payload.payments : [],
+          data: payload.data || {},
+          created_by: session.employee_id, updated_at: new Date().toISOString()
+        };
+        const w = await fetch(rest('sub_assignments?on_conflict=license_hash,app_id,assignment_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify(row)
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: subs.summariseAssignment(Array.isArray(saved) ? saved[0] : saved) });
+        return;
+      }
+    }
+
     // ── SAIRNROOFING: repair-vs-replace evidence assessment (2026-08-26) ────────────────────
     // Compute-only, same shape as 'reconcile' above. Reads the slope evidence
     // rows stored on the claim and the company's configured threshold, runs the

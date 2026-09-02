@@ -69,6 +69,22 @@ module.exports = {
   // see docs/SAIRN-OPEN-WORK-INDEX.md. Registering it on day one keeps this
   // one out of that list.
     'rf_settings',
+  // Subcontractor directory, compliance and assignments (2026-09-02) -- see
+  // sql/subcontractor_compliance_schema.sql and api/_lib/subcontractor-
+  // compliance.js. Tier-A gap A3 from the worldwide competitive-gap audit:
+  // scheduling, COI/licence/W-9 tracking and payment against a job.
+  //
+  // THESE TWO ARE UNPREFIXED BECAUSE THEY ARE SHARED. StoneDesk already built
+  // this once (sd_subs / sd_sub_auth / sd_sub_jobs) and SAIRNbuild is the
+  // obvious third consumer; a second and third per-app implementation is the
+  // duplication CLAUDE.md records as SAIRNsenior's root cause. They carry
+  // app_id so one table serves every app while keeping tenants apart, the
+  // same convention as `employees` and `business_profiles`.
+  //
+  // Registered on day one for the reason rf_settings' note gives: a table with
+  // no registered resource is invisible to the cheap provisioning probe.
+    'subcontractors',
+    'sub_assignments',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
