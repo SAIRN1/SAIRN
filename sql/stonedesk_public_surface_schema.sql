@@ -97,6 +97,27 @@ create table if not exists public.sd_quote_requests (
 );
 create index if not exists idx_sdqr_license on public.sd_quote_requests(license_hash);
 
+-- ── CUSTOMER RECORDS ────────────────────────────────────────────────────────
+-- Added in the same file as the tracking links because tracking cannot be
+-- honest without it. sd_customers was localStorage-only -- the shop's actual
+-- customer list lived in one browser and died with its cache, the same state
+-- sd_crm was in before it got a real sync. An order-tracking link has to
+-- resolve to the REAL record; the alternative was a status snapshot stored on
+-- the link itself, which drifts the moment anyone updates the job and would
+-- have shown a customer "in fabrication" after their kitchen shipped.
+create table if not exists public.sd_customers (
+  id           uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id       text not null default 'stonedesk',
+  customer_id  text not null,
+  data         jsonb not null default '{}'::jsonb,   -- name, phone, email, project, material, quote, status, referral, rating, createdAt
+  created_at   timestamptz not null default now(),
+  updated_at   timestamptz not null default now(),
+  unique (license_hash, customer_id),
+  constraint sdcust_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_sdcust_license on public.sd_customers(license_hash);
+
 -- ── ORDER TRACKING LINKS ────────────────────────────────────────────────────
 create table if not exists public.sd_order_links (
   id               uuid primary key default gen_random_uuid(),
@@ -134,16 +155,20 @@ create table if not exists public.sd_public_rate_limits (
 );
 create index if not exists idx_sdprl_window on public.sd_public_rate_limits(window_start);
 
+alter table public.sd_customers          enable row level security;
 alter table public.sd_public_shop        enable row level security;
 alter table public.sd_quote_requests     enable row level security;
 alter table public.sd_order_links        enable row level security;
 alter table public.sd_public_rate_limits enable row level security;
 
+drop policy if exists "svc only sd_customers"          on public.sd_customers;
 drop policy if exists "svc only sd_public_shop"        on public.sd_public_shop;
 drop policy if exists "svc only sd_quote_requests"     on public.sd_quote_requests;
 drop policy if exists "svc only sd_order_links"        on public.sd_order_links;
 drop policy if exists "svc only sd_public_rate_limits" on public.sd_public_rate_limits;
 
+create policy "svc only sd_customers" on public.sd_customers
+  for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "svc only sd_public_shop" on public.sd_public_shop
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 create policy "svc only sd_quote_requests" on public.sd_quote_requests
@@ -154,6 +179,7 @@ create policy "svc only sd_public_rate_limits" on public.sd_public_rate_limits
   for all using (auth.role() = 'service_role') with check (auth.role() = 'service_role');
 
 grant usage on schema public to service_role;
+grant select, insert, update on public.sd_customers          to service_role;
 grant select, insert, update on public.sd_public_shop        to service_role;
 grant select, insert, update on public.sd_quote_requests     to service_role;
 grant select, insert, update on public.sd_order_links        to service_role;

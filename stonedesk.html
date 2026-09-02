@@ -21586,8 +21586,40 @@ function loadSD3Data() {
 function saveSD3Data() {
   var a = st('sd_customers', sdCustomers);
   var b = st('sd_photos', sdPhotos);
+  // WRITTEN THROUGH TO THE SERVER TOO (2026-09-02). This list was local-only,
+  // so the shop's whole customer record set lived in one browser -- and an
+  // order-tracking link resolves to the SERVER copy, so a stage changed here
+  // and nowhere else would leave a customer reading a status that is no longer
+  // true. Fire-and-forget per record, deliberately: this function is called
+  // from render paths that must not wait on a network round trip, and a failed
+  // push leaves the local copy intact for the next save to retry.
+  if (typeof sdData === 'function' && Array.isArray(sdCustomers)) {
+    sdCustomers.forEach(function (c) {
+      if (c && c.id) { try { sdData('write', 'sd_customers', c); } catch (e) {} }
+    });
+  }
   return a && b;
 }
+
+// Read-through on load. Merges by id and never deletes: a record this browser
+// has not seen is added, and one it already holds is left alone, so a stale tab
+// cannot overwrite a colleague's newer edit just by starting up.
+async function sdHydrateCustomers() {
+  if (typeof sdData !== 'function') return false;
+  var rows = null;
+  try { rows = await sdData('read', 'sd_customers', {}); } catch (e) { return false; }
+  if (!Array.isArray(rows)) return false;
+  // Local is read INSIDE this function AFTER the await completes -- the
+  // post-await re-read this platform standardised on after confirmReserve.
+  var local = Array.isArray(sdCustomers) ? sdCustomers : [];
+  var seen = {};
+  local.forEach(function (c) { if (c && c.id) seen[c.id] = true; });
+  var added = false;
+  rows.forEach(function (c) { if (c && c.id && !seen[c.id]) { local.push(c); seen[c.id] = true; added = true; } });
+  if (added) { sdCustomers = local; st('sd_customers', sdCustomers); }
+  return added;
+}
+window.sdHydrateCustomers = sdHydrateCustomers;
 
 // == ALERT SYSTEM ==============================================
 function getUrgencyLevel(hoursElapsed, thresholdRed, thresholdYellow) {
@@ -26408,6 +26440,22 @@ document.addEventListener('DOMContentLoaded', function() {
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">On the catalog</th>
       </tr></thead><tbody id="pc-slabs-tbody"></tbody></table></div>
+  </div>
+
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:4px">Order tracking links</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">A link lets one customer see where their job is &mdash; the stage and nothing else, no pricing and no internal notes. There is no password: <strong>the link itself is the credential</strong>, so treat it like a key and revoke it if it goes astray. It is shown <strong>once, here, when it is created</strong> and never again &mdash; the same rule the PIN hashes follow.</div>
+    <div class="q-two" style="margin-bottom:12px">
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Customer</label><select id="pc-track-customer" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></select></div>
+      <div><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Label (for your own reference)</label><input id="pc-track-label" placeholder="e.g. Kitchen, sent 2 Sept" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
+    </div>
+    <button class="q-btn primary" onclick="pcCreateTrackLink()">Create a link</button>
+    <div id="pc-track-new" style="margin-top:12px;font-size:13px;line-height:1.7"></div>
+    <div class="tw" style="margin-top:12px"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Created</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Customer</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Label</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Last opened</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">State</th><th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)"></th>
+      </tr></thead><tbody id="pc-track-tbody"></tbody></table></div>
   </div>
 
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
@@ -37194,6 +37242,110 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     }
   };
 
+
+  // -- ORDER TRACKING LINKS (audit GAP 8, narrow slice) ---------------------
+  // The token is shown ONCE, at creation, and never again -- 'list' does not
+  // even select the column, so a secret that is never fetched cannot be leaked
+  // by a later change to that response shape. If a shop loses the URL the
+  // answer is revoke and reissue, which is the same rule the PIN hashes follow.
+  var TRACK_API = '/api/stonedesk-track';
+  var pcLinks = [];
+
+  async function pcTrackCall(payload){
+    var licKey = (typeof sdLicenseKey === 'function') ? sdLicenseKey() : '';
+    if(!licKey) return null;
+    var headers = {'Content-Type':'application/json','Authorization':'Bearer '+licKey};
+    try{ var tok = sessionStorage.getItem('sd_session_token'); if(tok) headers['X-SD-Auth']=tok; }catch(e){}
+    try{
+      var r = await fetch(TRACK_API,{method:'POST',headers:headers,body:JSON.stringify(payload)});
+      var d = null; try{ d = await r.json(); }catch(e){}
+      return (r.ok && d && d.ok) ? d : null;
+    }catch(e){ return null; }
+  }
+
+  function pcFillCustomerSelect(){
+    var sel = pcEl('pc-track-customer'); if(!sel) return;
+    var list = (typeof sdCustomers !== 'undefined' && Array.isArray(sdCustomers)) ? sdCustomers : [];
+    var keep = sel.value;
+    sel.innerHTML = list.length
+      ? list.map(function(c){
+          return '<option value="'+pcHtml(c.id)+'">'+pcHtml(c.name||c.id)+
+                 (c.project?(' — '+pcHtml(c.project)):'')+'</option>';
+        }).join('')
+      : '<option value="">No customers on file yet</option>';
+    if(keep) sel.value = keep;
+  }
+
+  function pcCustName(id){
+    var list = (typeof sdCustomers !== 'undefined' && Array.isArray(sdCustomers)) ? sdCustomers : [];
+    var c = list.find(function(x){ return String(x.id) === String(id); });
+    return c ? (c.name || c.id) : '(no longer on file)';
+  }
+
+  function pcRenderLinks(){
+    var tb = pcEl('pc-track-tbody'); if(!tb) return;
+    if(!pcLinks.length){
+      tb.innerHTML = '<tr><td colspan="6" style="padding:14px;color:var(--muted);text-align:center">No tracking links issued yet</td></tr>';
+      return;
+    }
+    var sorted = pcLinks.slice().sort(function(a,b){
+      return String(b.created_at||'').localeCompare(String(a.created_at||''));
+    });
+    tb.innerHTML = sorted.map(function(l){
+      var active = l.active === true;
+      return '<tr>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(String(l.created_at||'').slice(0,10))+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(pcCustName(l.job_id))+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(l.label||'')+'</td>'+
+        // NEVER OPENED is said in those words. A blank cell reads as "no data"
+        // and this is a real fact: the customer has not used the link.
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
+          (l.last_accessed_at ? pcHtml(String(l.last_accessed_at).slice(0,10))
+                              : '<span style="color:var(--muted)">never opened</span>')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border);font-weight:700;color:'+(active?'#166534':'#b91c1c')+'">'+
+          (active?'active':'revoked')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
+          (active ? '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcRevokeTrackLink(\''+escAttrJs(String(l.link_id))+'\')">Revoke</button>' : '')+
+        '</td></tr>';
+    }).join('');
+  }
+
+  window.pcCreateTrackLink = async function(){
+    var sel = pcEl('pc-track-customer');
+    if(!sel || !sel.value){ if(typeof notify==='function') notify('Pick a customer first','err'); return; }
+    var out = pcEl('pc-track-new');
+    out.innerHTML = '<span style="color:var(--muted)">Creating…</span>';
+    var r = await pcTrackCall({action:'create', customer_id:sel.value, label:pcEl('pc-track-label').value.trim()});
+    if(!r){
+      out.innerHTML = '<span style="color:#b91c1c">Could not create a link. Nothing was issued.</span>';
+      return;
+    }
+    var url = location.origin + '/stonedesk-catalog?track=' + encodeURIComponent(r.token);
+    // Shown once, and the page says so plainly rather than letting a shop
+    // assume they can come back for it.
+    out.innerHTML =
+      '<div style="background:#dcfce7;border-radius:8px;padding:12px">'+
+      '<div style="font-weight:700;color:#166534;margin-bottom:6px">Link created — copy it now</div>'+
+      '<div style="word-break:break-all;font-family:monospace;font-size:12px">'+pcHtml(url)+'</div>'+
+      '<div style="font-size:12px;color:var(--muted);margin-top:8px">This is the only time this address is shown. '+
+      'It is not stored anywhere you can read it back — if it is lost, revoke this link and create another.</div></div>';
+    pcEl('pc-track-label').value = '';
+    await pcLoadLinks();
+  };
+
+  window.pcRevokeTrackLink = async function(linkId){
+    var r = await pcTrackCall({action:'revoke', link_id:linkId});
+    if(!r){ if(typeof notify==='function') notify('Could not revoke that link -- it is still live','err'); return; }
+    await pcLoadLinks();
+    if(typeof notify==='function') notify('Link revoked. Anyone holding it now sees "not valid".','ok');
+  };
+
+  async function pcLoadLinks(){
+    var r = await pcTrackCall({action:'list'});
+    pcLinks = (r && Array.isArray(r.data)) ? r.data : [];
+    pcRenderLinks();
+  }
+
   window.pcRenderPublicCatalog=async function(){
     var shop=await pcRead('sd_public_shop');
     pcShop=shop||{shop_slug:'',published:false};
@@ -37202,6 +37354,8 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     var reqs=await pcRead('sd_quote_requests');
     pcRequests=Array.isArray(reqs)?reqs:[];
     pcRenderRequests();
+    pcFillCustomerSelect();
+    await pcLoadLinks();
   };
 })();
 </script>

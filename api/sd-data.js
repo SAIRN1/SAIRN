@@ -1173,6 +1173,56 @@ module.exports = async (req, res) => {
     // sql/sd_crm_schema.sql's own header). Read/write both require a real StoneDesk session
     // (X-SD-Auth) -- unlike shared_knowledge above, a lead is real customer-identifying sales
     // data, not aggregate topic-frequency noise, so there's no unauthenticated path at all.
+    // -- STONEDESK: CUSTOMER RECORDS (2026-09-02) --------------------------
+    // sd_customers was localStorage-only. The shop's actual customer list --
+    // every name, project, quote value and stage -- lived in one browser and
+    // died with its cache, the same state sd_crm was in before it got a real
+    // sync. This is that fix, and it is here because order tracking needs it:
+    // a tracking link must resolve to the REAL record, not to a status snapshot
+    // stored on the link, which would drift the moment anyone updated the job
+    // and show a customer "in fabrication" after their kitchen shipped.
+    //
+    // ANY AUTHENTICATED EMPLOYEE READS, MANAGEMENT WRITES. A fabricator needs
+    // to see whose job is on the saw; changing a customer's quote value or
+    // stage is a management action. Same read-broad/write-narrow split
+    // api/sd-data.js already applies to SAIRNsenior's caregiver roster.
+    if (resource === 'sd_customers' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (action === 'read') {
+        const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) + '&select=customer_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, provisioned: true,
+          data: (rows || []).map((x) => Object.assign({ id: x.customer_id }, x.data || {})) });
+        return;
+      }
+      if (!CRM_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can change a customer record' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_customers payload.id is required' } }); return; }
+      const custData = Object.assign({}, payload);
+      delete custData.id;
+      const w = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'stonedesk',
+          customer_id: String(payload.id), data: custData, updated_at: nowISO()
+        })
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
+        return;
+      }
+      const wrows = await w.json();
+      if (!w.ok) return upstream(res, wrows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, custData) });
+      return;
+    }
+
     // -- STONEDESK: PUBLIC SURFACE, STAFF SIDE (2026-09-02) ----------------
     // The employee half of the public catalog (competitive-gap audit GAP 1).
     // The public half is api/stonedesk-public.js, which holds no license key

@@ -61,6 +61,13 @@ module.exports = {
   // stonedesk.html. Both are management-only here (owner/admin): publishing a
   // catalog decides what the world sees of this shop, and a quote request is an
   // unqualified stranger's name and phone number. Bespoke branches below.
+  // Customer records (2026-09-02) -- see sql/stonedesk_public_surface_schema.sql.
+  // Was localStorage-only: the shop's whole customer list lived in one browser,
+  // the same state sd_crm was in before it got a real sync. Registered here
+  // because order tracking must resolve to the REAL record rather than to a
+  // status snapshot that drifts. Read by any authenticated employee, written by
+  // management only.
+    'sd_customers',
     'sd_public_shop',
     'sd_quote_requests',
   // Slab lineage (2026-08-22, Phase 1b) -- block -> bundle -> slab -> remnant.

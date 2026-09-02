@@ -63,7 +63,25 @@ textarea{resize:vertical;min-height:84px;}
 </head>
 <body>
 <div class="wrap">
-  <div id="boot" class="card"><div class="note" id="boot-msg">Loading the catalog…</div></div>
+  <div id="boot" class="card"><div class="note" id="boot-msg">Loading…</div></div>
+
+  <!-- ORDER TRACKING (competitive-gap audit GAP 8, narrow slice).
+       Reached with ?track=TOKEN. There is no login here and no password: the
+       token IS the credential, revocable and scoped to one job, exactly as
+       SAIRNsenior's family portal works. A customer is a different actor class
+       from an employee and does not belong in an employee credential table. -->
+  <div id="track" class="hide">
+    <div class="hero">
+      <h1 id="tr-title">Your order</h1>
+      <div class="meta" id="tr-shop"></div>
+    </div>
+    <div class="card">
+      <div class="ct" id="tr-project"></div>
+      <div class="csub" id="tr-material"></div>
+      <div id="tr-stage" style="font-size:18px;font-weight:800;margin:14px 0"></div>
+      <div class="note" id="tr-note"></div>
+    </div>
+  </div>
 
   <div id="app" class="hide">
     <div class="hero">
@@ -115,7 +133,10 @@ textarea{resize:vertical;min-height:84px;}
 
 <script>
 var API='/api/stonedesk-public';
-var SLUG=new URLSearchParams(location.search).get('shop')||'';
+var TRACK_API='/api/stonedesk-track';
+var Q=new URLSearchParams(location.search);
+var SLUG=Q.get('shop')||'';
+var TOKEN=Q.get('track')||'';
 var SHOP=null, PICKED=null;
 
 function $(id){return document.getElementById(id);}
@@ -207,7 +228,49 @@ async function sendRequest(){
   }
 }
 
+// The stages a shop actually uses, in order, so a customer can see where they
+// are in the run rather than just the current word. The LABELS come from the
+// server -- this list is only the ordering, and a stage the server does not
+// recognise is shown as-is with a note rather than mapped to a friendly name
+// nobody wrote.
+var TRACK_ORDER=['quoted','approved','templated','fabricating','scheduled','complete'];
+
+async function initTrack(){
+  var r=await fetch(TRACK_API,{method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({action:'view',token:TOKEN})});
+  var d=null; try{d=await r.json();}catch(e){}
+  if(!r.ok||!d||!d.ok){
+    var m=(d&&d.error&&d.error.message)||'This tracking link is not valid.';
+    $('boot-msg').innerHTML='<span class="msg err" style="display:block">'+H(m)+'</span>';
+    return;
+  }
+  $('tr-title').textContent=d.customer_name?('Hello '+d.customer_name):'Your order';
+  var shopBits=[];
+  if(d.shop&&d.shop.name)shopBits.push(H(d.shop.name));
+  if(d.shop&&d.shop.phone)shopBits.push(H(d.shop.phone));
+  $('tr-shop').innerHTML=shopBits.join(' &middot; ');
+  $('tr-project').textContent=d.project||'Your project';
+  $('tr-material').textContent=d.material||'';
+  var idx=TRACK_ORDER.indexOf(d.stage);
+  if(d.stage_known&&idx>=0){
+    $('tr-stage').textContent=d.stage_text;
+    $('tr-note').innerHTML='Step '+(idx+1)+' of '+TRACK_ORDER.length+'. '+
+      'This page shows where your job is and nothing else &mdash; no pricing and no internal notes. '+
+      'For anything else, call the shop.';
+  }else{
+    // The shop is using a stage this page has no wording for. Saying so is the
+    // honest answer; inventing a friendly label would tell a customer something
+    // nobody at the shop wrote.
+    $('tr-stage').textContent=d.stage?('Current status: '+d.stage):'No status recorded yet';
+    $('tr-note').innerHTML='The shop is using a status this page does not have wording for, so it is shown exactly as they recorded it. '+
+      'Call them if it is unclear.';
+  }
+  $('boot').className='hide';
+  $('track').className='';
+}
+
 (async function init(){
+  if(TOKEN){ await initTrack(); return; }
   if(!SLUG){
     $('boot-msg').innerHTML='This address is missing a shop. A catalog link looks like <code>?shop=your-shop-name</code>.';
     return;
