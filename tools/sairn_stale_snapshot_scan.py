@@ -34,14 +34,18 @@ Roughly half the shape-2 hits found by hand that night were CORRECT code. The
 script separates what it can (see LIKELY-OK below) and still cannot separate
 the rest, because the difference is semantic.
 
-AND A FIXED SITE USUALLY STILL TRIGGERS. The correct fix for shape 2 is to
-RE-READ after the await, which leaves the original pre-await read in place --
-so the shape is still there and this scanner still sees it. sairncode's
-scSaveSettings still appears in this scan after being fixed, for exactly that
-reason. This is the same trap tools/key_collision_check.py has: its count went
-UP when a stale-snapshot bug was fixed, because the correct pattern needs a
-second variable name for the same key. In both tools, a rising number can mean
-the code got better.
+AND A FIXED SITE CAN STILL TRIGGER. The correct fix for shape 2 is to RE-READ
+after the await, which leaves the original pre-await read in place -- so the
+shape survives the repair. This scanner narrows that by requiring the written
+variable to be the snapshotted one, which drops most repaired sites out
+entirely; sairncare's saveResident still shows as LIKELY-OK because it reuses
+the same variable name for its fresh read, which is correct code that simply
+cannot be distinguished from the bug by pattern alone.
+
+That is the same trap tools/key_collision_check.py has, and there it is worse:
+its count went UP 2 -> 3 when a real stale-snapshot bug was fixed, because the
+correct pattern needs a second variable name for the same key. In both tools a
+rising number can mean the code got better.
 
 So: read every hit, decide it individually, and record the verdict. A hit is a
 question, not a defect.
@@ -64,10 +68,37 @@ WRITE = re.compile(r"(?:localStorage\.setItem|\bst|\bsvStore|\bscSave)\(\s*['\"]
 # saveResident correctly re-reads after its await; requiring a bare `;` here
 # put a KNOWN-GOOD function in the wrong bucket on this script's first run.
 READ = re.compile(r"(?:var|let|const)?\s*([A-Za-z0-9_$]+)\s*=\s*([A-Za-z0-9_$]+)\(\s*\)\s*(?:[;,)\]]|\.[A-Za-z_])")
+# The VALUE being written, so a hit can require that the thing written is the
+# same variable that was snapshotted. Without this the scan pairs ANY pre-await
+# read with ANY post-await write in the same function, which is how it reported
+# sairncash's initFirebase: that reads getSub() before its await and later
+# writes a device id derived from localStorage.getItem -- two unrelated things.
+# A false positive of the scanner's own making, found by checking its output
+# rather than trusting it.
+WRITE_VALUE = re.compile(
+    r"(?:localStorage\.setItem|\bst|\bsvStore|\bscSave)\(\s*['\"][A-Za-z0-9_]+['\"]\s*,\s*([A-Za-z0-9_$]+)")
 
 
 def script_blocks(html):
     return re.findall(r"<script[^>]*>(.*?)</script>", html, re.S)
+
+
+def strip_comments(js):
+    """Remove comments before matching.
+
+    Added after this script's first run reported a hit in sairnbuild.html that
+    was the text of a comment DESCRIBING the helper which had already replaced
+    those call sites -- a fix being reported as the bug it fixed.
+
+    Block comments go entirely. Line comments are only stripped when `//`
+    starts the line (after whitespace), which is deliberately conservative:
+    stripping every `//` would eat the one inside a URL string and silently
+    change what the rest of the scan sees. Comment text is replaced with blank
+    lines rather than deleted, so reported line numbers stay true to the file.
+    """
+    js = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), js, flags=re.S)
+    js = re.sub(r"^[ \t]*//[^\n]*$", "", js, flags=re.M)
+    return js
 
 
 def scan_utc(js):
@@ -97,13 +128,21 @@ def scan_stale(js):
                 continue                      # write completes before any await -- safe
             last_await = before.rindex("await")
             pre_await = before[:last_await]
-            if not READ.search(pre_await):
+            snapshots = {m.group(1) for m in READ.finditer(pre_await)}
+            if not snapshots:
                 continue                      # nothing was snapshotted beforehand
+            vm = WRITE_VALUE.match(body[w.start():])
+            written = vm.group(1) if vm else None
+            # Only a hit if what is WRITTEN is what was SNAPSHOTTED.
+            if written is not None and written not in snapshots:
+                continue
             between = before[last_await:]
-            # MITIGATED: something is re-read from a call AFTER the await and
-            # before the write. That is the correct fix, and it is separated
-            # rather than silently dropped -- a reader may still want to look.
-            mitigated = bool(READ.search(between))
+            # MITIGATED: the written variable is re-read from a call AFTER the
+            # await and before the write. That is the correct fix, and it is
+            # separated rather than silently dropped -- a reader may still want
+            # to look at it.
+            reread = {m.group(1) for m in READ.finditer(between)}
+            mitigated = (written in reread) if written is not None else bool(reread & snapshots)
             hits.append({
                 "function": name,
                 "key": w.group(1),
@@ -119,7 +158,7 @@ def scan_file(path):
     blocks = script_blocks(html)
     if not blocks:
         return None
-    js = "\n".join(blocks)
+    js = strip_comments("\n".join(blocks))
     utc_lines, instants = scan_utc(js)
     return {
         "path": path,
