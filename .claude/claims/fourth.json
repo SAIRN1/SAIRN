@@ -68,8 +68,8 @@
       "task": "dashboard kpi drilldown and defect sweep",
       "claimed_at": "2026-09-02T09:50:57Z",
       "claimed_at_epoch": 1788342657.0980308,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T10:27:22Z"
     }
   ]
 }
