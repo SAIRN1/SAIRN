@@ -229,9 +229,16 @@ check('an unresolved rate produces a literal zero on the row, not a guess',
 check('the reason is STORED on the claim, not only shown in a toast that scrolls away',
   /rate_source:rate\.status,rate_source_note:rate\.reason\|\|''/.test(src), true);
 check('a zero-rate claim tells the biller it is zero and why, and stays on screen longer',
-  /Claim created at a ZERO rate/.test(src) && /rate\.status==='applied'&&!rate\.requires_authorization\?4000:9000/.test(src), true);
-check('a payer needing prior authorisation says so at the moment the claim is made',
-  /This payer requires prior authorisation/.test(src), true);
+  /Claim created at a ZERO rate/.test(src) && /rate\.status==='applied'&&!authMsg\?4000:9000/.test(src), true);
+// UPDATED 2026-09-02 by the A3 authorisation build, and it got STRONGER rather
+// than being relaxed to fit. This previously asserted the toast said "This
+// payer requires prior authorisation" -- which told a biller a requirement
+// exists and left them to go and check, on a screen where claims are generated
+// one after another. It now asserts the claim says whether one ACTUALLY
+// applies. Full behaviour is held by api/_lib/sairnsenior-authorizations.test.js.
+check('a payer needing prior authorisation is told whether one actually applies, not merely that one is required',
+  /PRIOR AUTHORISATION IS REQUIRED AND NONE APPLIES/.test(src) &&
+  /Prior authorisation required and '\+auth\.reason/.test(src), true);
 
 // ── the zero-rate refusal, in both places ────────────────────────────────
 check('the browser refuses a zero or negative rate', /if\(!\(rate>0\)\)\{toast\(/.test(src), true);
@@ -272,8 +279,12 @@ check('something on screen actually opens the modal -- the resolver is unreachab
 check('contracts hydrate from the server, replacing the local row rather than only adding unseen ones',
   /function senHydratePayerContracts\(\)/.test(src) &&
   /JSON\.stringify\(byId\[c\.id\]\)!==JSON\.stringify\(c\)/.test(src), true);
+// Asserted on the ELEMENT, not on the exact array literal: the A3 build added a
+// third hydrator to this same call and the literal match broke while the
+// property it was checking was untouched. An assertion that has to be edited
+// every time an unrelated sibling is added is testing the line, not the rule.
 check('Billing hydrates contracts alongside claims, so a fresh device does not price a screenful of claims at zero',
-  /Promise\.all\(\[senHydrateClaims\(\),senHydratePayerContracts\(\)\]\)/.test(src), true);
+  /Promise\.all\(\[[^\]]*senHydrateClaims\(\)[^\]]*senHydratePayerContracts\(\)[^\]]*\]\)/.test(src), true);
 check('saving repaints without hydrating -- a hydrate racing the write would undo the edit on screen',
   /closePcModal\(\);pcPaint\(\);/.test(src), true);
 

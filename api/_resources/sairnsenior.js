@@ -114,6 +114,18 @@ module.exports = {
   // coordinator or scheduler has no minimum-necessary reason to see what
   // each payer pays. Bespoke branch below.
     'sen_payer_contracts',
+  // SAIRNsenior payer authorisations (2026-09-02, competitive-gap audit A3) --
+  // see sql/sairnsenior_authorizations_schema.sql. What a payer approved for
+  // one client: the authorisation number, the period, and how many units.
+  // Gate is SPLIT and deliberately NOT the contract gate directly above:
+  // READ is open to management, coordinators and schedulers because remaining
+  // units are SCHEDULING CAPACITY and the person booking the next visit is
+  // exactly who needs them -- and an authorisation carries units, not money,
+  // so it does not leak what a payer pays. WRITE is management-only: recording
+  // what a payer approved is not a scheduling decision. Consumption is NOT
+  // stored on this resource and is computed from sen_visits. Bespoke branch
+  // below.
+    'sen_authorizations',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

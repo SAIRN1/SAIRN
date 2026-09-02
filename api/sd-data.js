@@ -3290,6 +3290,87 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, pcBody) });
       return;
     }
+    // ── SAIRNSENIOR: sen_authorizations (2026-09-02, audit A3) ─────────────
+    // SPLIT GATE, and deliberately NOT the contract gate directly above.
+    // READ is open to management, coordinators and schedulers: remaining units
+    // are SCHEDULING CAPACITY, the person booking the next visit is exactly who
+    // needs to know there are none left, and an authorisation carries units
+    // rather than money -- so it does not leak what a payer pays, which is the
+    // whole reason the contract gate is narrower.
+    // WRITE is management-only: recording what a payer approved is not a
+    // scheduling decision, same line the branch gate draws.
+    //
+    // THERE IS NO units_used COLUMN AND THERE MUST NOT BE. Consumption is
+    // recomputed from sen_visits on every render. A stored counter drifts the
+    // moment a visit is edited, cancelled or re-clocked, and nothing afterwards
+    // can say whether the counter or the visits are right.
+    if (resource === 'sen_authorizations' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (action === 'read') {
+        if (!SEN_CLIENT_BROAD_READ_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Authorisations are limited to management, coordinators and schedulers' } });
+          return;
+        }
+        const r = await fetch(rest('sen_authorizations?license_hash=eq.' + enc(licHash) + '&select=auth_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.auth_id }, x.data)), provisioned: true });
+        return;
+      }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record or change an authorisation' } });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_authorizations payload.id is required' } }); return; }
+      const azProblems = [];
+      if (!payload.client_id) azProblems.push('client_id is required');
+      if (!String(payload.auth_number || '').trim()) azProblems.push('auth_number is required');
+      // Zero units is not an authorisation. It is an empty field that would
+      // report every client under it as already exhausted while LOOKING like a
+      // real record -- the same shape as the zero-rate contract refused above.
+      if (!(Number(payload.units_authorized) > 0)) azProblems.push('units_authorized must be greater than zero');
+      // 15, 30 or 60 only. A free-text unit basis is what every remaining-units
+      // figure is divided by, so an unreadable one silently changes every
+      // number on the panel rather than failing visibly.
+      if ([15, 30, 60].indexOf(Number(payload.minutes_per_unit)) < 0) azProblems.push('minutes_per_unit must be 15, 30 or 60');
+      // BOTH dates are required, unlike a contract's open-ended term_on. A payer
+      // authorisation always has an end; one without a period cannot be burned
+      // down, cannot expire, and is the weekly-hours figure this table exists to
+      // replace.
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.start_on || ''))) azProblems.push('start_on must be YYYY-MM-DD');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.end_on || ''))) azProblems.push('end_on must be YYYY-MM-DD');
+      if (payload.start_on && payload.end_on && String(payload.end_on) < String(payload.start_on)) azProblems.push('end_on is before start_on');
+      if (azProblems.length) {
+        res.status(400).json({ error: { code: 'INVALID_AUTHORIZATION', message: 'sen_authorizations: ' + azProblems.join('; ') } });
+        return;
+      }
+      const azBody = Object.assign({}, payload, {
+        units_authorized: Number(payload.units_authorized),
+        minutes_per_unit: Number(payload.minutes_per_unit),
+        auth_number: String(payload.auth_number).trim()
+      });
+      delete azBody.id;
+      // Stripped rather than ignored. A client that posts one would otherwise
+      // have it stored on the row and read back by the next device, where it
+      // reads exactly like a figure the server computed -- and it is the one
+      // number that must always come from the visits.
+      delete azBody.units_used;
+      const r = await fetch(rest('sen_authorizations?on_conflict=license_hash,auth_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', auth_id: String(payload.id), data: azBody, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_authorizations_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, azBody) });
+      return;
+    }
 
     if (resource === 'sen_settings' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');

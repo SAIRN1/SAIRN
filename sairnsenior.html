@@ -235,6 +235,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-hiring" onclick="nav('hiring')"><span class="sico">&#128101;</span>Hiring</button>
       <button class="sb" id="sb-branches" onclick="nav('branches')"><span class="sico">&#127970;</span>Branches</button>
       <button class="sb" id="sb-contracts" onclick="nav('contracts')"><span class="sico">&#128220;</span>Payer Contracts</button>
+      <button class="sb" id="sb-authorizations" onclick="nav('authorizations')"><span class="sico">&#9989;</span>Authorisations</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -288,9 +289,16 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Name</th><th>Address</th><th>Payer</th><th>Authorized Hrs/wk</th><th>Assigned To</th><th>Actions</th></tr></thead>
     <tbody id="ctbody"></tbody></table></div>
   </div></div>
-  <div class="card"><div class="ch"><span class="ct">Authorization Burn-Down &mdash; this week</span></div><div class="cb">
+  <div class="card"><div class="ch"><span class="ct">Care-Plan Hours &mdash; this week</span></div><div class="cb">
+    <!-- RENAMED AND DISCLOSED 2026-09-02 (audit A3). This was headed
+         "Authorization Burn-Down" and measures against
+         sen_clients.authorized_hours -- a weekly figure with no number, no
+         period and no expiry. The real payer authorisation now lives on its own
+         panel, and two tables both called "authorization" that legitimately
+         disagree is worse than either alone. -->
+    <div class="note" style="margin-bottom:10px">This checks the week's schedule against the client's <strong>weekly care-plan hours</strong>. It is <strong>not the payer authorisation</strong> &mdash; that is issued for a period, has a number and an expiry, and is on the <strong>Authorisations</strong> panel. The two can legitimately differ.</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
-      Authorized hours are per week. <strong>Delivered</strong> counts only real clocked time
+      Care-plan hours are per week. <strong>Delivered</strong> counts only real clocked time
       (clock-out minus clock-in) &mdash; a visit that was never clocked contributes nothing and is
       counted separately, because scheduling a visit is not evidence it happened.
       <strong>Projected</strong> adds this week's still-scheduled visits, so an overrun shows up
@@ -705,6 +713,68 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div style="display:flex;gap:10px;justify-content:flex-end">
     <button class="btn bo" onclick="closePcModal()">Cancel</button>
     <button class="btn bp" onclick="savePayerContract()">Save</button>
+  </div>
+</div></div>
+
+<!-- PAYER AUTHORISATIONS (competitive-gap audit A3, 2026-09-02)
+     The audit records A3 as a genuine DIFFERENTIATOR rather than catch-up:
+     unit burn-down was "not found described in any Tier A product".
+
+     NOT A DUPLICATE OF THE WEEKLY BURN-DOWN ON THE CLIENTS PANEL. That one
+     measures against sen_clients.authorized_hours -- a single weekly figure
+     with no number, no period and no expiry -- and answers "is this week's
+     schedule sane against the care plan". A payer authorisation is issued for
+     a PERIOD and is what the agency actually gets paid against. Both screens
+     say which question they answer.
+
+     CONSUMPTION IS COMPUTED FROM VISITS AND NEVER STORED. -->
+<div class="panel" id="panel-authorizations">
+  <div class="ph"><div><div class="ptitle">Authorisations</div><div class="psub">What each payer approved, for what period, and how much of it is actually left &mdash; counted from real clocked visits, never stored</div></div>
+    <div class="pa"><button class="btn bp bs" id="az-add-btn" onclick="openAzModal()">+ Authorisation</button></div>
+  </div>
+  <div class="card" id="az-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Authorisations are limited to management, coordinators and schedulers.</div></div>
+  <div id="az-content">
+    <div id="az-warnings" style="margin-bottom:14px"></div>
+    <div class="card"><div class="ch"><span class="ct">Authorisations and what is left of them</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">
+        <strong>Delivered</strong> counts only real clocked time inside the authorisation period. <strong>Scheduled</strong> is future visits still booked against it, counted separately and never folded into delivered &mdash; merging them is how a screen reports room that has already been scheduled away. <strong>Remaining</strong> is against delivered only, so a cancelled visit cannot hand units back that were never spent. A past visit nobody clocked counts toward neither and is reported below.
+      </div>
+      <!-- No state rounding rule is applied and none is guessed. Real Medicaid
+           programmes round per visit and the rule differs by state; picking one
+           would make this figure quietly wrong everywhere it does not apply. -->
+      <div class="note" style="margin-bottom:12px">Units are converted exactly from clocked time at the unit basis on each row. <strong>No state-specific per-visit rounding rule is applied</strong> &mdash; some programmes round down, some use an eight-minute rule, some bill exact, and guessing one would make every figure here quietly wrong wherever it does not apply. The <strong>service code</strong> is recorded and shown for the biller to cite; <strong>nothing is matched on it</strong>, because a visit carries no service code.</div>
+      <div id="az-notes-line" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+      <div class="tw"><table><thead><tr><th>Client</th><th>Payer</th><th>Auth #</th><th>Code</th><th>Period</th><th>Authorised</th><th>Delivered</th><th>Scheduled</th><th>Remaining</th><th>Unit</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="az-tbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="azmodal"><div class="mbox">
+  <div class="mtitle" id="az-modal-title">Add Authorisation</div>
+  <div class="fr">
+    <div class="fg"><label>Client</label><select id="az-client"></select></div>
+    <div class="fg"><label>Authorisation number</label><input id="az-number" placeholder="As the payer issued it"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Service code (recorded, not matched)</label><input id="az-code" placeholder="e.g. T1019"></div>
+    <div class="fg"><label>Units authorised</label><input id="az-units" type="number" step="0.01" min="0" placeholder="520"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Unit basis</label><select id="az-basis"><option value="15">15 minutes</option><option value="30">30 minutes</option><option value="60">60 minutes (1 hour)</option></select></div>
+    <div class="fg"><label>Status</label><select id="az-active"><option value="true">Active</option><option value="false">Inactive</option></select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Starts</label><input id="az-start" type="date"></div>
+    <div class="fg"><label>Ends</label><input id="az-end" type="date"></div>
+  </div>
+  <div class="fg"><label>Notes</label><input id="az-notes" maxlength="300" placeholder="Anything the payer attached to this authorisation"></div>
+  <!-- Both dates required, unlike a contract's open-ended term. An
+       authorisation with no end cannot be burned down and cannot expire -- it
+       is the weekly-hours figure this panel exists to replace. -->
+  <div class="note" style="margin:0 0 12px">Both dates are required &mdash; an authorisation with no period cannot be burned down and cannot expire. Units must be greater than zero: a zero-unit record would report the client as exhausted while looking real. To retire one, set it <strong>Inactive</strong>; nothing is deleted, because a visit delivered under it would then have nothing on file saying it was authorised, which is exactly the record an appeal needs.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeAzModal()">Cancel</button>
+    <button class="btn bp" onclick="saveAuthorization()">Save</button>
   </div>
 </div></div>
 
@@ -1184,6 +1254,7 @@ function nav(id){
   if(id==='hiring')hrRender();
   if(id==='branches')brRender();
   if(id==='contracts')pcRender();
+  if(id==='authorizations')azRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -2721,7 +2792,7 @@ function blRender(){
   // is opened. A biller who goes straight to Billing on a fresh device would
   // otherwise resolve every rate against an empty local list and create a
   // screenful of zero-rate claims that a contract on the server already priced.
-  Promise.all([senHydrateClaims(),senHydratePayerContracts()]).then(function(){
+  Promise.all([senHydrateClaims(),senHydratePayerContracts(),senHydrateAuthorizations()]).then(function(){
     blRenderKpis();
     renderReadyToBill();
     renderClaimsTable();
@@ -2793,22 +2864,52 @@ async function generateClaim(visitId){
   // stored on the row and told to them, rather than leaving them to work out
   // why nothing was applied.
   var rate=pcResolveRate((cl&&cl.payer)||'',v.scheduled_date,pcStateForClient(v.client_id));
+  // THE AUTHORISATION IS RESOLVED AGAINST THE SERVICE DATE TOO, and its number
+  // is stored on the claim rather than looked up later. An appeal filed six
+  // weeks from now needs to cite the authorisation that was in force on the day
+  // the work was done, and by then the authorisation may have been superseded.
+  var auth=azResolve(v.client_id,v.scheduled_date);
   var rec={id:newId('CLM'),visit_id:v.id,client_id:v.client_id,client_name:v.client_name||(cl&&cl.name)||'',
     payer:(cl&&cl.payer)||'',service_date:v.scheduled_date,hours_billed:hoursBilled,
     rate:rate.status==='applied'?rate.rate_per_hour:0,
     amount:rate.status==='applied'?Math.round(rate.rate_per_hour*hoursBilled*100)/100:0,
     rate_source:rate.status,rate_source_note:rate.reason||'',
     rate_contract_id:rate.status==='applied'?rate.contract_id:'',
+    auth_status:auth.status,auth_note:auth.reason||'',
+    auth_id:auth.status==='applied'?auth.auth_id:'',
+    auth_number:auth.status==='applied'?auth.auth_number:'',
     status:'draft'};
   var list=claims();list.push(rec);st('sen_claims',list);
   renderReadyToBill();renderClaimsTable();blRenderKpis();
   var saved=await senData('write','sen_claims',rec,true);
   var priced=rate.status==='applied'
-    ? 'Claim created at '+fmt(rate.rate_per_hour)+'/hr -- '+rate.reason+
-      (rate.requires_authorization?' This payer requires prior authorisation'+(rate.auth_note?': '+rate.auth_note:'')+'.':'')
+    ? 'Claim created at '+fmt(rate.rate_per_hour)+'/hr -- '+rate.reason
     : 'Claim created at a ZERO rate -- '+rate.reason+' Set the rate by hand before submitting.';
-  toast(saved?priced:'Saved on this device only -- server sync failed, try again with a connection',
-    rate.status==='applied'&&!rate.requires_authorization?4000:9000);
+  // WHERE THE CONTRACT SAYS PRIOR AUTHORISATION IS REQUIRED, THIS NOW SAYS
+  // WHETHER ONE ACTUALLY EXISTS. Before, it said only that the payer requires
+  // one and left the biller to go and check -- which is the same as not saying
+  // it, on a screen where claims are generated one after another.
+  var authMsg='';
+  if(rate.status==='applied'&&rate.requires_authorization){
+    authMsg=auth.status==='applied'
+      ? ' Prior authorisation required and '+auth.reason
+      : ' PRIOR AUTHORISATION IS REQUIRED AND NONE APPLIES: '+auth.reason+
+        (rate.auth_note?' The contract says: '+rate.auth_note:'');
+  }else if(auth.status==='applied'){
+    authMsg=' '+auth.reason;
+  }
+  // Remaining is as of NOW, not as of the service date, and the wording says
+  // so. Recomputing what was left on a past day would mean replaying every
+  // visit in order, and a figure that looks like a historical balance but is
+  // not one is worse than a current one that says which it is.
+  if(auth.status==='applied'){
+    var az=authorizations().find(function(x){return x.id===auth.auth_id;});
+    var left=az?azBurnDown(az).remaining:null;
+    if(left!==null&&left<0)authMsg+=' That authorisation is OVER by '+Math.abs(left)+' unit(s) as of today.';
+    else if(left!==null&&left===0)authMsg+=' That authorisation has no units left as of today.';
+  }
+  toast(saved?priced+authMsg:'Saved on this device only -- server sync failed, try again with a connection',
+    rate.status==='applied'&&!authMsg?4000:9000);
 }
 function renderClaimsTable(){
   var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});
@@ -2834,6 +2935,16 @@ function renderClaimsTable(){
     }else if(c.appeal&&c.appeal.filed_on){
       note='<div style="font-size:11px;margin-top:3px;color:var(--muted)">Appeal filed '+fdate(c.appeal.filed_on)+
         (c.appeal.outcome?' -- '+H(c.appeal.outcome):'')+'</div>';
+    }
+    // THE AUTHORISATION STAMPED AT CREATION, SHOWN WHERE THE CLAIM IS WORKED.
+    // Guarded on the field being PRESENT: every claim created before 2026-09-02
+    // has no auth_status, and rendering "undefined" -- or worse, an absent
+    // authorisation warning -- on a historical claim would be inventing a
+    // finding about a claim nobody checked.
+    if(c.auth_status==='applied'&&c.auth_number){
+      note+='<div style="font-size:11px;margin-top:3px;color:var(--muted)">Auth '+H(c.auth_number)+'</div>';
+    }else if(c.auth_status&&c.auth_status!=='applied'){
+      note+='<div style="font-size:11px;margin-top:3px;color:var(--warn,#b45309)">No authorisation applied &mdash; '+H(c.auth_note||'')+'</div>';
     }
     return '<tr><td>'+H(c.client_name||'--')+'</td><td>'+fdate(c.service_date)+'</td>'+
       '<td><span class="badge bx">'+H((c.payer||'').replace('_',' ')||'--')+'</span></td>'+
@@ -3127,6 +3238,271 @@ function pcPaint(){
       conflicts.map(function(x){return H(x.payer)+' in '+H(x.state)+' &mdash; '+H(x.reason);}).join('<br>')+
       '</div>'
     : '';
+}
+
+// ── PAYER AUTHORISATIONS (competitive-gap audit A3, 2026-09-02) ──────────
+// The audit records A3 as a genuine DIFFERENTIATOR rather than catch-up: unit
+// burn-down was "not found described in any Tier A product" and is named as a
+// Tier-B-only capability by the research.
+//
+// WHAT WAS ALREADY HERE, AND WHY THIS IS NOT A DUPLICATE OF IT. The Clients
+// panel has an "Authorization Burn-Down -- this week" table. It is real, it is
+// correct, and it stays. But it measures against `sen_clients.authorized_hours`
+// -- a SINGLE WEEKLY HOURS FIGURE on the client record with no number, no
+// payer, no period, no expiry and no history. It answers "is this week's
+// schedule sane against the care plan."
+//
+// IT CANNOT ANSWER THE QUESTION A PAYER ASKS. A Medicaid or MCO authorisation
+// is issued for a PERIOD -- 520 units between January and June -- and the
+// agency is paid for what falls inside it. A weekly figure with no start and no
+// end cannot say how much of that period is left, cannot expire, and cannot be
+// cited on a claim or in an appeal. The weekly view now says on screen which of
+// the two questions it answers, because two tables both labelled
+// "authorization" that disagree is worse than either one alone.
+//
+// CONSUMPTION IS COMPUTED FROM VISITS AND NEVER STORED. There is no units_used
+// field and the server strips one if a client posts it. A stored counter drifts
+// the moment a visit is edited, cancelled or re-clocked, and nothing afterwards
+// can say whether the counter or the visits are right.
+function authorizations(){return ld('sen_authorizations',[]);}
+
+function senHydrateAuthorizations(){
+  // Broad-read, not management: a scheduler needs remaining units before
+  // booking, which is the whole point of a burn-down.
+  if(!senLicenseKey()||!senIsBroadRead())return Promise.resolve(false);
+  return senData('read','sen_authorizations',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var byId={};
+    authorizations().forEach(function(a){if(a&&a.id)byId[a.id]=a;});
+    var changed=false;
+    serverRows.forEach(function(a){
+      if(!a||!a.id)return;
+      if(JSON.stringify(byId[a.id])!==JSON.stringify(a)){byId[a.id]=a;changed=true;}
+    });
+    if(changed)st('sen_authorizations',Object.keys(byId).map(function(k){return byId[k];}));
+    return changed;
+  }).catch(function(){return false;});
+}
+
+function azCovers(a,onDate){
+  if(!a||a.active===false||!hrIsDate(onDate))return false;
+  if(!hrIsDate(a.start_on)||!hrIsDate(a.end_on))return false;
+  return a.start_on<=onDate&&onDate<=a.end_on;
+}
+// applied | none | ambiguous, matching pcResolveRate's shape exactly so the two
+// read the same way at a claim. AMBIGUITY REFUSES for a sharper reason than it
+// does for a rate: burning units off an authorisation nobody chose makes the
+// remaining figure wrong on BOTH records at once, and neither one says why.
+function azResolve(clientId,serviceDate){
+  if(!hrIsDate(serviceDate))return {status:'none',reason:'The visit has no service date, so no authorisation period can be checked.'};
+  if(!clientId)return {status:'none',reason:'The visit names no client, so there is no authorisation to match.'};
+  var live=authorizations().filter(function(a){return a.client_id===clientId&&azCovers(a,serviceDate);});
+  if(!live.length){
+    var any=authorizations().filter(function(a){return a.client_id===clientId;});
+    return {status:'none',reason:any.length
+      ? 'This client has '+any.length+' authorisation(s) on file but none covering '+serviceDate+'.'
+      : 'No authorisation is on file for this client.'};
+  }
+  if(live.length>1){
+    return {status:'ambiguous',candidates:live.map(function(a){return {id:a.id,auth_number:a.auth_number||'',units_authorized:a.units_authorized};}),
+      reason:live.length+' authorisations for this client are both in force on '+serviceDate+
+        '. None is applied: burning units off an authorisation nobody chose makes the remaining figure wrong on both at once. End one of them, or mark it inactive.'};
+  }
+  var a=live[0];
+  return {status:'applied',auth_id:a.id,auth_number:a.auth_number||'',service_code:a.service_code||'',
+    reason:'Authorisation '+(a.auth_number||a.id)+', '+fdate(a.start_on)+' to '+fdate(a.end_on)+'.'};
+}
+
+// UNITS ARE CONVERTED EXACTLY AND NO STATE ROUNDING RULE IS APPLIED. Real
+// Medicaid programmes round per visit and the rule differs by state -- some
+// round down, some apply an eight-minute rule, some bill exact. Picking one
+// would make this figure quietly wrong everywhere it does not apply, so none is
+// picked and the panel says so where the number is shown.
+function azUnits(hours,minutesPerUnit){
+  var m=Number(minutesPerUnit)||0;
+  if(!(m>0))return 0;
+  return Math.round((Number(hours)||0)*60/m*100)/100;
+}
+
+// DELIVERED AND SCHEDULED ARE NEVER MERGED, and a past visit nobody clocked
+// counts toward NEITHER -- the same three-way split the weekly view already
+// makes, for the same reason: scheduling a visit is not evidence it happened,
+// and folding an unclocked past visit into either column invents a fact.
+function azBurnDown(a){
+  var today=senLocalToday();
+  var deliveredH=0,scheduledH=0,unclockedPast=0,unparsed=0;
+  visits().forEach(function(v){
+    if(!v||v.client_id!==a.client_id)return;
+    if(!hrIsDate(v.scheduled_date)||v.scheduled_date<a.start_on||v.scheduled_date>a.end_on)return;
+    if(v.clock_in_at&&v.clock_out_at){
+      var ms=new Date(v.clock_out_at)-new Date(v.clock_in_at);
+      if(isFinite(ms)&&ms>0){deliveredH+=ms/3600000;return;}
+    }
+    var s=_senHhmmToMin(v.scheduled_start),e=_senHhmmToMin(v.scheduled_end);
+    if(s===null||e===null||e<=s){unparsed++;return;}
+    if(v.scheduled_date>=today)scheduledH+=(e-s)/60;
+    else unclockedPast++;
+  });
+  var authorized=Number(a.units_authorized)||0;
+  var delivered=azUnits(deliveredH,a.minutes_per_unit);
+  var scheduled=azUnits(scheduledH,a.minutes_per_unit);
+  var projected=Math.round((delivered+scheduled)*100)/100;
+  return {
+    authorized:authorized,delivered:delivered,scheduled:scheduled,projected:projected,
+    // Remaining is against DELIVERED only. Netting off still-scheduled visits
+    // would report units as spent before the work happened, and a cancelled
+    // visit would then hand them back -- a number that moves for reasons that
+    // are not deliveries.
+    remaining:Math.round((authorized-delivered)*100)/100,
+    unclocked_past:unclockedPast,unparsed:unparsed,
+    expired:hrIsDate(a.end_on)&&a.end_on<today
+  };
+}
+
+// The window is 90 days and it is DECLARED rather than left implied, because a
+// number computed over an unstated period is the shape a fabricated KPI takes.
+var AZ_UNCOVERED_DAYS=90;
+// THE DANGEROUS CASE, AND THE ONE NOTHING ELSE SURFACES: care that was
+// delivered with no authorisation covering it. It is invisible until a denial
+// arrives weeks later. Reported as a count with the reason, never as silence.
+function azUncoveredVisits(){
+  var today=senLocalToday(),since=hrAddDays(today,-AZ_UNCOVERED_DAYS);
+  return visits().filter(function(v){
+    if(!v||v.status!=='completed')return false;
+    if(!hrIsDate(v.scheduled_date)||v.scheduled_date<since||v.scheduled_date>today)return false;
+    return azResolve(v.client_id,v.scheduled_date).status!=='applied';
+  });
+}
+
+var azEditId=null;
+function openAzModal(id){
+  azEditId=id||null;
+  var a=id?authorizations().find(function(x){return x.id===id;}):null;
+  $('az-modal-title').textContent=a?'Edit Authorisation':'Add Authorisation';
+  var sel=$('az-client');
+  sel.innerHTML=clients().map(function(c){return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';}).join('');
+  sel.value=(a&&a.client_id)||'';
+  $('az-number').value=(a&&a.auth_number)||'';
+  $('az-code').value=(a&&a.service_code)||'';
+  $('az-units').value=(a&&a.units_authorized)||'';
+  $('az-basis').value=String((a&&a.minutes_per_unit)||15);
+  $('az-start').value=(a&&a.start_on)||'';
+  $('az-end').value=(a&&a.end_on)||'';
+  $('az-active').value=(a&&a.active===false)?'false':'true';
+  $('az-notes').value=(a&&a.notes)||'';
+  $('azmodal').classList.add('on');
+}
+function closeAzModal(){$('azmodal').classList.remove('on');azEditId=null;}
+async function saveAuthorization(){
+  var clientId=$('az-client').value;
+  if(!clientId){toast('Pick the client this authorisation was issued for');return;}
+  var num=$('az-number').value.trim();
+  if(!num){toast('The authorisation number is required -- it is what a claim and an appeal cite');return;}
+  var units=Number($('az-units').value);
+  // Zero units is not an authorisation. It would report the client as already
+  // exhausted while looking like a real record -- the same shape as the
+  // zero-rate contract refused in the Contracts panel.
+  if(!(units>0)){toast('Authorised units must be greater than zero -- a zero-unit authorisation would report the client as exhausted while looking real');return;}
+  var start=$('az-start').value,end=$('az-end').value;
+  // BOTH dates, unlike a contract's open-ended term. An authorisation with no
+  // end cannot be burned down and cannot expire -- it is the weekly-hours
+  // figure this panel exists to replace.
+  if(!start||!end){toast('Both a start and an end date are required -- an authorisation with no period cannot be burned down or expire');return;}
+  if(end<start){toast('The end date is before the start date');return;}
+  var cl=clients().find(function(c){return c.id===clientId;});
+  var rec={id:azEditId||newId('AUTH'),client_id:clientId,client_name:(cl&&cl.name)||'',
+    payer:(cl&&cl.payer)||'',auth_number:num,service_code:$('az-code').value.trim(),
+    units_authorized:units,minutes_per_unit:Number($('az-basis').value)||15,
+    start_on:start,end_on:end,active:$('az-active').value!=='false',
+    notes:$('az-notes').value.trim().slice(0,300),
+    created_at:(azEditId&&(authorizations().find(function(x){return x.id===azEditId;})||{}).created_at)||senLocalToday()};
+  var list=authorizations();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_authorizations',list);
+  // azPaint, not azRender: azRender hydrates, and a hydrate firing the instant
+  // before the write lands would read the row back as the server still has it
+  // and silently undo the edit just made -- the same race the Contracts panel
+  // hit.
+  closeAzModal();azPaint();
+  var saved=await senData('write','sen_authorizations',rec,true);
+  toast(saved?'Authorisation saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function azRender(){
+  var ok=senIsBroadRead();
+  var denied=$('az-denied'),content=$('az-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  var add=$('az-add-btn');
+  // A scheduler can READ the burn-down and cannot write one, which is what the
+  // server enforces. Showing them a button that will 403 is a dead control.
+  if(add)add.style.display=senIsManagement()?'':'none';
+  azPaint();
+  senHydrateAuthorizations().then(azPaint);
+}
+function azPaint(){
+  if(!senIsBroadRead())return;
+  var list=authorizations(),today=senLocalToday();
+  var tb=$('az-tbody');
+  if(tb)tb.innerHTML=list.length?list.slice().sort(function(a,b){
+    return (a.client_name||'').localeCompare(b.client_name||'')||(b.start_on||'').localeCompare(a.start_on||'');
+  }).map(function(a){
+    var b=azBurnDown(a);
+    var cls=a.active===false?'bx':b.expired?'bx':b.delivered>=b.authorized?'br':b.projected>b.authorized?'bw':'bg';
+    var state=a.active===false?'Inactive'
+      :b.expired?'Ended'
+      :b.delivered>=b.authorized?'Exhausted'
+      :b.projected>b.authorized?'Over-committed by '+Math.round((b.projected-b.authorized)*100)/100
+      :'OK';
+    return '<tr><td>'+H(a.client_name||'--')+'</td><td>'+H((a.payer||'').replace('_',' ')||'--')+'</td>'+
+      '<td>'+H(a.auth_number||'--')+'</td><td>'+H(a.service_code||'--')+'</td>'+
+      '<td>'+fdate(a.start_on)+' &ndash; '+fdate(a.end_on)+'</td>'+
+      '<td>'+b.authorized+'</td><td>'+b.delivered+'</td><td>'+b.scheduled+'</td>'+
+      '<td><strong>'+b.remaining+'</strong></td>'+
+      '<td>'+a.minutes_per_unit+' min</td>'+
+      '<td><span class="badge '+cls+'">'+H(state)+'</span></td>'+
+      '<td>'+(senIsManagement()?'<button class="btn bo bs" onclick="openAzModal(\''+H(a.id)+'\')">Edit</button>':'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="12" style="text-align:center;color:var(--muted);padding:24px;">No authorisations on file &mdash; nothing can be checked against one until there is</td></tr>';
+
+  var notes=[];
+  var uncl=0,unpar=0;
+  list.forEach(function(a){var b=azBurnDown(a);uncl+=b.unclocked_past;unpar+=b.unparsed;});
+  if(uncl)notes.push('<strong>'+uncl+'</strong> past visit(s) inside an authorisation period were never clocked and count toward neither delivered nor scheduled.');
+  if(unpar)notes.push('<strong>'+unpar+'</strong> visit(s) have unusable scheduled times and were skipped.');
+  var nt=$('az-notes-line');
+  if(nt)nt.innerHTML=notes.join(' ');
+
+  var warn=[];
+  // NO AUTHORISATIONS ON FILE IS NOT THE SAME AS EVERY VISIT BEING
+  // UNAUTHORISED. Listing hundreds of "uncovered" visits on a fresh install
+  // would be noise that trains people to ignore the warning, so the state is
+  // named instead of counted.
+  if(!list.length){
+    warn.push('No authorisations are on file, so no visit can be checked against one. Nothing here is a clean bill of health.');
+  }else{
+    var unc=azUncoveredVisits();
+    if(unc.length)warn.push('<strong>'+unc.length+' completed visit(s)</strong> in the last '+AZ_UNCOVERED_DAYS+' days have no single authorisation covering them. That is care delivered with nothing on file to bill it against, and it is normally found weeks later when the denial arrives.');
+    var amb={};
+    visits().forEach(function(v){
+      if(!v||!hrIsDate(v.scheduled_date))return;
+      var r=azResolve(v.client_id,v.scheduled_date);
+      if(r.status==='ambiguous')amb[v.client_id]=r.reason;
+    });
+    Object.keys(amb).forEach(function(k){warn.push(H(amb[k]));});
+    var soon=list.filter(function(a){
+      if(a.active===false||!hrIsDate(a.end_on)||a.end_on<today)return false;
+      var d=certDaysUntil(a.end_on);
+      if(d===null||d>30)return false;
+      return azBurnDown(a).scheduled>0;
+    });
+    soon.forEach(function(a){
+      warn.push('Authorisation '+H(a.auth_number||a.id)+' for '+H(a.client_name||'--')+' ends '+fdate(a.end_on)+' and visits are still scheduled against it.');
+    });
+  }
+  var wb=$('az-warnings');
+  if(wb)wb.innerHTML=warn.length?'<div class="note" style="margin:0"><strong>'+warn.length+' thing(s) to look at.</strong><br>'+warn.join('<br>')+'</div>':'';
 }
 
 // ── BRANCHES (competitive-gap audit B1, 2026-09-02) ──────────────────────
