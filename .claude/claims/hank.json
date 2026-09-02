@@ -220,6 +220,16 @@
       "claimed_at_epoch": 1788347834.4774728,
       "status": "released",
       "released_at": "2026-09-02T12:08:29Z"
+    },
+    {
+      "id": "hank-1788351054",
+      "session": "hank",
+      "subject": "sairnroofing",
+      "task": "utc local date derivations",
+      "claimed_at": "2026-09-02T12:10:54Z",
+      "claimed_at_epoch": 1788351054.3688138,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
