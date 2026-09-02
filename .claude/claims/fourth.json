@@ -159,8 +159,8 @@
       "task": "recall and reactivation worklist for overdue hygiene patients",
       "claimed_at": "2026-09-02T14:12:47Z",
       "claimed_at_epoch": 1788358367.2093823,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:24:47Z"
     }
   ]
 }
