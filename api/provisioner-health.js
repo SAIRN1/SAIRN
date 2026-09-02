@@ -66,8 +66,9 @@ module.exports = async (req, res) => {
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) { res.status(400).json({ error: { message: 'Invalid JSON body' } }); return; }
   }
-  if (!body || body.action !== 'provisioner_health') {
-    res.status(400).json({ error: { message: 'action must be: provisioner_health' } });
+  const ACTIONS = ['provisioner_health', 'rate_limit_health'];
+  if (!body || ACTIONS.indexOf(body.action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
     return;
   }
 
@@ -81,6 +82,61 @@ module.exports = async (req, res) => {
   }
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
+  // ── IS THE AI RATE LIMITER ACTUALLY ATOMIC RIGHT NOW? ───────────────────
+  // Added 2026-09-02, and it is here rather than in its own file for the same
+  // reason this file exists at all: a state that nothing reports gets
+  // discovered instead. api/_lib/ai-rate-limit.js silently degrades to its old
+  // count-then-insert path whenever the RPC is missing or erroring, and that
+  // path is racy by construction -- N concurrent requests all read the same
+  // count and all proceed. Nothing outside the server could tell which path was
+  // live, so "is the limit real" was unanswerable after any deploy or any
+  // change to the database.
+  //
+  // READ-ONLY, and that is not incidental. It probes with an EMPTY app_id,
+  // which the function rejects before it takes the advisory lock and before it
+  // inserts anything -- so this endpoint cannot add a row to the rate-limit log
+  // and cannot itself consume budget. Calling the function normally would
+  // record a call, which would make the health check pollute the thing it
+  // measures.
+  if (body.action === 'rate_limit_health') {
+    let sbrl;
+    try { sbrl = sbClient(); }
+    catch (err) {
+      console.error('rate-limit health supabase config error:', err.message);
+      res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+      return;
+    }
+    let status = null, payload = null;
+    try {
+      const rr = await fetch(sbrl.rest('rpc/sairn_ai_rate_limit_consume'), {
+        method: 'POST',
+        headers: sbrl.headers,
+        body: JSON.stringify({ p_app_id: '', p_limit: 1, p_window_seconds: 86400 })
+      });
+      status = rr.status;
+      payload = await rr.json().catch(() => null);
+    } catch (err) {
+      res.status(502).json({ ok: false, atomic: false, state: 'UNKNOWN',
+        message: 'Could not reach Supabase to probe the rate-limit function. Nothing is claimed about atomicity.' });
+      return;
+    }
+
+    const present = status === 200 && payload && payload.error === 'app_id required';
+    const absent = status === 404;
+    res.status(200).json({
+      ok: true,
+      atomic: present,
+      state: present ? 'ATOMIC' : (absent ? 'RACY_FALLBACK' : 'UNKNOWN'),
+      probe_status: status,
+      message: present
+        ? 'public.sairn_ai_rate_limit_consume exists and is callable by service_role, so the limiter counts and records inside one transaction under an advisory lock. The limit is real under concurrency.'
+        : absent
+          ? 'The RPC is absent, so api/_lib/ai-rate-limit.js is running its count-then-insert fallback. THE LIMIT IS APPROXIMATE UNDER CONCURRENCY -- do not set SAIRN_AI_RATE_LIMIT_MODE=enforce until sql/sairn_ai_rate_limit_consume_fn.sql has been run.'
+          : 'The RPC answered unexpectedly (HTTP ' + status + '). Treat the limiter as racy until this is explained; nothing is claimed either way.'
+    });
+    return;
+  }
 
   const cfg = APPS[lic.app_id];
   if (!cfg) {
