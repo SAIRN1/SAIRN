@@ -160,8 +160,8 @@
       "task": "subcontractor compliance warning matches the award gate",
       "claimed_at": "2026-09-02T13:23:47Z",
       "claimed_at_epoch": 1788355427.4446535,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:01:07Z"
     },
     {
       "id": "cody-1788355428",
