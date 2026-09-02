@@ -263,8 +263,8 @@
       "task": "fresh read-only quickbooks connector opt-in per customer",
       "claimed_at": "2026-09-02T16:14:21Z",
       "claimed_at_epoch": 1788365661.1117013,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T23:24:11Z"
     }
   ]
 }
