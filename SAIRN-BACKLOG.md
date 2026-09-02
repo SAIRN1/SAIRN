@@ -1239,6 +1239,51 @@ this gap and needs nothing from the new layer. The 2026-08-27 contrast above
 was re-read and still holds — it enforces at award, which is more than this
 engine's consumers currently do.
 
+**CORRECTION 2026-09-02, later the same day — THIS ROW WAS ALREADY CLOSED WHEN
+I UPDATED IT, AND MY UPDATE SAID THE OPPOSITE.** The paragraphs immediately
+above state that "nothing about StoneDesk changed" and treat this row as open.
+Both are false. **`c6dcb69` — "feat(stonedesk): subcontractor compliance layer
+— COI, licence, W-9, and a real assignment gate", 2026-09-01 14:50 — closed it
+eighteen hours before I wrote that.** It is server-side in
+`api/sd-sub-data.js`: `complianceStatus()` with untracked/expiring/expired/valid
+states, a 30-day window, and a **409 `SUB_NOT_COMPLIANT`** refusal on the
+assignment path. Its own commit message cites §5 Row 1 by name.
+
+**How I missed it, stated plainly because the shape will recur:** I checked
+`sd_subs`, `sd_sub_auth`, `sd_sub_jobs` and `api/sd-sub-auth.js` — the four
+things CLAUDE.md and the interrupted session's notes told me not to touch — and
+never grepped `api/` for the compliance columns themselves. **A list of what
+not to touch is not a list of what exists.**
+
+**What this actually means: the shared engine is the SECOND server-side
+compliance implementation in this repo, not the first, and the duplication it
+was built to prevent had already happened.** Neither app is broken; both work.
+But the argument in `62aaf61` that a shared layer avoids a third copy is
+weaker than it was written, and consolidating is now a real decision rather
+than the obvious cleanup:
+
+- **They disagree on not-tracked.** `sd-sub-data.js` deliberately does *not*
+  block on a null expiry — its note says every roster row is null the moment
+  the migration runs, so blocking would take assignment down on deploy day.
+  The shared engine blocks on `missing` when the operator requires that
+  document. Both positions are defensible; they are not the same product.
+- **They disagree on the clock.** `sd-sub-data.js` defaults to the server clock
+  (`nowISO().slice(0,10)`, UTC). The shared engine refuses to run without a
+  caller-supplied `today`. **This one is not a tie** — the UTC default is the
+  defect class fixed across nine SAIRNvet panels on 2026-09-01, and a
+  contractor in Ohio gets a different answer than the server does for six hours
+  of every day.
+
+**Third implementation, for completeness:** SAIRNbuild's `eligibleToBid()`
+(`sairnbuild.html:5143`) is **client-side only** — no `api/` counterpart exists,
+verified by grep 2026-09-02 — so its "hard block" at `:3862` is a suggestion to
+anyone who calls the data endpoint directly. That is a genuine gap, but it is
+*not* the A3 gap and SAIRNbuild's field coverage remains the best of the three.
+
+**Nothing was changed in StoneDesk or SAIRNbuild to act on any of this.**
+StoneDesk is CC's active claim and its sub tables are live. Flagged for a
+decision, not fixed.
+
 ## A repo file can be written, reported as delivered, and never committed — the 2026-08-25 entry documented this failure mode without closing it
 
 **Logged:** 2026-08-27, after it recurred. **This is a flag about a gap in our

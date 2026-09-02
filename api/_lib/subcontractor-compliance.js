@@ -2,12 +2,40 @@
 // ---------------------------------------------------------------------------
 // SHARED subcontractor compliance engine. Pure functions, no I/O, no app names.
 //
-// WHY SHARED AND NOT PER-APP. StoneDesk built this once (sd_subs / sd_sub_auth /
-// sd_sub_jobs, api/sd-sub-auth.js, 2026-09-01). The worldwide competitive-gap
-// audit then named the SAME gap for SAIRNroofing as Tier-A item A3, and
-// SAIRNbuild is the obvious third. Building it a second and third time per app
-// is precisely the duplication CLAUDE.md records as SAIRNsenior's root cause,
-// and the same reasoning that drove the api/_resources registry split.
+// WHY SHARED AND NOT PER-APP. The worldwide competitive-gap audit names
+// subcontractor management as Tier-A item A3 for SAIRNroofing. Building it once
+// per app is the duplication CLAUDE.md records as SAIRNsenior's root cause, and
+// the same reasoning that drove the api/_resources registry split.
+//
+// ══ CORRECTION 2026-09-02, AND IT IS AGAINST THIS FILE ══════════════════════
+// The paragraph above originally said StoneDesk had "built this once (sd_subs /
+// sd_sub_auth / sd_sub_jobs, api/sd-sub-auth.js)" -- naming only IDENTITY and
+// AUTH. That was wrong by omission and it mattered. StoneDesk shipped a full
+// server-side compliance layer WITH a 409 assignment gate in `c6dcb69`
+// (api/sd-sub-data.js, 2026-09-01 14:50), EIGHTEEN HOURS before this file was
+// written, closing the same backlog row this work cited as open.
+//
+// SO THIS FILE IS THE SECOND SERVER-SIDE COMPLIANCE ENGINE IN THIS REPO, NOT
+// THE FIRST. The duplication it exists to prevent had already happened, and it
+// was missed because the check looked at sd_subs / sd_sub_auth / sd_sub_jobs
+// and api/sd-sub-auth.js -- and never at api/sd-sub-data.js. Neither app is
+// broken by this; both engines work. What is not true is the claim that keeping
+// them apart is only a StoneDesk-credential-migration problem.
+//
+// The two DISAGREE on two substantive points, so consolidating is a decision
+// and not a merge:
+//   * NOT-TRACKED. sd-sub-data.js deliberately does NOT block on a null expiry
+//     (its own note: every roster row is null the moment the migration runs,
+//     so blocking would take assignment down on deploy day). This engine treats
+//     `missing` as blocking WHEN REQUIRED, and required is the operator's call.
+//   * THE CLOCK. sd-sub-data.js defaults to the server clock
+//     (`nowISO().slice(0,10)`, UTC). This engine REFUSES to run without a
+//     caller-supplied `today` -- see NO_TODAY below.
+//
+// SAIRNbuild is a third implementation again (eligibleToBid, sairnbuild.html
+// :5143) and is CLIENT-SIDE ONLY -- no api/ counterpart exists, verified by
+// grep on 2026-09-02 -- so its "hard block" at :3862 is a suggestion to anyone
+// who calls the endpoint directly.
 //
 // WHAT THIS FILE DELIBERATELY DOES NOT DO. It does not touch StoneDesk's live
 // implementation. sd_sub_auth is a live CREDENTIAL table -- pin_hash, pin_salt,

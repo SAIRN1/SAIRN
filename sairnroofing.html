@@ -72,6 +72,17 @@ input,select,textarea{width:100%;border:1px solid var(--border);border-radius:8p
 input:focus,select:focus{border-color:var(--p);}
 label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px;text-transform:uppercase;letter-spacing:.4px;}
 .fg{margin-bottom:14px;}
+/* .fr -- ADDED 2026-09-02. This class was used 25 times in this file and had
+   NO RULE anywhere, so every form row it wrapped rendered as stacked
+   full-width fields instead of a row. Not a defect this session introduced;
+   it was found while checking whether the new Subcontractors modal had
+   invented the class, and it had not.
+   FLEX, NOT GRID, and the arity is why: the 25 sites carry 2, 3, 4 and 5
+   children, so a fixed grid-template-columns would be correct for some rows
+   and wrong for the rest. flex-wrap keeps them readable on a narrow screen,
+   and the two sites that already set align-items:end inline still win. */
+.fr{display:flex;gap:10px;flex-wrap:wrap;}
+.fr>.fg{flex:1 1 140px;min-width:0;}
 .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:5000;align-items:center;justify-content:center;}
 .modal.on{display:flex;}
 .mbox{background:#fff;border-radius:16px;padding:28px;width:480px;max-height:90vh;overflow-y:auto;}
