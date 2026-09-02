@@ -412,6 +412,16 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="mtitle" id="cam-title">Update Claim</div>
     <div class="fg" id="cam-rate-row" style="display:none"><label>Hourly Rate ($)</label><input id="cam-rate" type="number"></div>
     <div class="fg" id="cam-reason-row" style="display:none"><label>Denial Reason</label><input id="cam-reason" placeholder="e.g. Missing authorization"></div>
+    <!-- OPTIONAL AND DELIBERATELY SO. Appeal-filing windows are set by the
+         payer contract and by state Medicaid rules; they are not the same
+         everywhere and this app has no way to know yours. A required field
+         here would make somebody type a plausible date, and a guessed
+         deadline on money you can still recover is worse than none. Left
+         blank, no countdown is shown at all. -->
+    <div class="fg" id="cam-deadline-row" style="display:none"><label>Appeal deadline (optional)</label><input id="cam-deadline" type="date"><div class="note" style="margin:6px 0 0">From your payer contract or state Medicaid rules. Leave blank if you do not know it -- nothing is assumed, and no countdown is shown.</div></div>
+    <div class="fg" id="cam-level-row" style="display:none"><label>Appeal level</label><select id="cam-level"><option value="first_level">First-level appeal / reconsideration</option><option value="second_level">Second-level appeal</option><option value="fair_hearing">State fair hearing</option><option value="other">Other</option></select></div>
+    <div class="fg" id="cam-basis-row" style="display:none"><label>Basis for the appeal</label><textarea id="cam-basis" rows="3" placeholder="What is being contested, and what supports it (EVV record, authorization number, corrected code)"></textarea></div>
+    <div class="fg" id="cam-outcome-note-row" style="display:none"><label>Outcome note (optional)</label><input id="cam-outcome-note" placeholder="What the payer said"></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
       <button class="btn bo" onclick="closeClaimActionModal()">Cancel</button>
       <button class="btn bp" onclick="confirmClaimAction()">Confirm</button>
@@ -1483,7 +1493,27 @@ function blRenderKpis(){
     '<div class="kpi"><div class="klbl">Ready to Bill</div><div class="kval">'+readyCount+'</div><div class="kt">EVV-verified, unbilled</div></div>'+
     '<div class="kpi"><div class="klbl">Submitted</div><div class="kval">'+cl.filter(function(c){return c.status==='submitted';}).length+'</div><div class="kt">Awaiting payer</div></div>'+
     '<div class="kpi"><div class="klbl">Paid</div><div class="kval">'+cl.filter(function(c){return c.status==='paid';}).length+'</div><div class="kt">Total on record</div></div>'+
-    '<div class="kpi"><div class="klbl">Denied</div><div class="kval">'+cl.filter(function(c){return c.status==='denied';}).length+'</div><div class="kt d">Needs follow-up</div></div>';
+    '<div class="kpi"><div class="klbl">Denied</div><div class="kval">'+cl.filter(function(c){return c.status==='denied';}).length+'</div><div class="kt d">Needs follow-up</div></div>'+
+    '<div class="kpi"><div class="klbl">Under Appeal</div><div class="kval">'+cl.filter(function(c){return c.status==='appealed';}).length+'</div><div class="kt">Filed, awaiting the payer</div></div>'+
+    // RECOVERED COUNTS MONEY THAT ACTUALLY ARRIVED, NOT APPEALS THAT WERE WON.
+    // An overturned appeal returns the claim to `submitted` -- the payer has
+    // agreed to reprocess it, which is not the same as having paid it. Counting
+    // an overturn as recovery would put a number on this screen that no bank
+    // statement backs, which is the fabricated-KPI shape this platform refuses.
+    '<div class="kpi"><div class="klbl">Recovered by Appeal</div><div class="kval">'+fmt(senRecoveredByAppeal())+'</div><div class="kt g">Appealed, overturned, and since paid</div></div>';
+}
+// Money a won appeal actually brought in: the claim was appealed, the appeal
+// was overturned, and the claim has since reached `paid`.
+function senRecoveredByAppeal(){
+  return Math.round(claims().filter(function(c){
+    return c.status==='paid'&&c.appeal&&c.appeal.outcome==='overturned';
+  }).reduce(function(s,c){return s+(Number(c.amount)||0);},0)*100)/100;
+}
+// Days until the agency's own entered appeal deadline. Null when no deadline
+// was entered -- the caller must render nothing, never a zero or a guess.
+function senAppealDaysLeft(c){
+  if(!c||!c.appeal_deadline)return null;
+  return certDaysUntil(c.appeal_deadline);
 }
 // A visit is ready to bill once EVV-completed and no claim references it
 // yet -- matches the client_id/visit linkage the SOP describes, computed
@@ -1524,15 +1554,32 @@ async function generateClaim(visitId){
 }
 function renderClaimsTable(){
   var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});
-  var statusColors={draft:'bx',ready:'bb',submitted:'bw',paid:'bg',denied:'br'};
+  var statusColors={draft:'bx',ready:'bb',submitted:'bw',paid:'bg',denied:'br',appealed:'bw',appeal_denied:'br'};
+  var statusLabels={appeal_denied:'appeal denied'};
   var tb=$('bl-claimstbody');
   tb.innerHTML=cl.length?cl.map(function(c){
     var actions='';
     if(c.status==='draft')actions+='<button class="btn bo bs" onclick="blSetRate(\''+c.id+'\')">Set Rate</button> <button class="btn bp bs" onclick="blSubmitClaim(\''+c.id+'\')">Submit</button>';
     else if(c.status==='submitted')actions+='<button class="btn bo bs" onclick="blMarkPaid(\''+c.id+'\')">Mark Paid</button> <button class="btn bo bs" onclick="blMarkDenied(\''+c.id+'\')">Mark Denied</button>';
+    // DENIED IS NO LONGER A DEAD END. Before this, a denied claim had no
+    // action at all -- the money was written off by the interface rather than
+    // by a decision.
+    else if(c.status==='denied')actions+='<button class="btn bp bs" onclick="blStartAppeal(\''+c.id+'\')">Appeal</button>';
+    else if(c.status==='appealed')actions+='<button class="btn bp bs" onclick="blAppealOverturned(\''+c.id+'\')">Overturned</button> <button class="btn bo bs" onclick="blAppealUpheld(\''+c.id+'\')">Upheld</button>';
+    var note='';
+    var left=senAppealDaysLeft(c);
+    if(c.status==='denied'&&left!==null){
+      note='<div style="font-size:11px;margin-top:3px;color:'+(left<0?'var(--danger,#b91c1c)':left<=7?'var(--warn,#b45309)':'var(--muted)')+'">'+
+        (left<0?'Appeal deadline passed '+Math.abs(left)+'d ago':'Appeal by '+fdate(c.appeal_deadline)+' -- '+left+'d left')+'</div>';
+    }else if(c.status==='denied'){
+      note='<div style="font-size:11px;margin-top:3px;color:var(--muted)">No appeal deadline recorded</div>';
+    }else if(c.appeal&&c.appeal.filed_on){
+      note='<div style="font-size:11px;margin-top:3px;color:var(--muted)">Appeal filed '+fdate(c.appeal.filed_on)+
+        (c.appeal.outcome?' -- '+H(c.appeal.outcome):'')+'</div>';
+    }
     return '<tr><td>'+H(c.client_name||'--')+'</td><td>'+fdate(c.service_date)+'</td>'+
       '<td><span class="badge bx">'+H((c.payer||'').replace('_',' ')||'--')+'</span></td>'+
-      '<td>'+fmt(c.amount||0)+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(c.status||'draft')+'</span></td>'+
+      '<td>'+fmt(c.amount||0)+'</td><td><span class="badge '+(statusColors[c.status]||'bx')+'">'+H(statusLabels[c.status]||c.status||'draft')+'</span>'+note+'</td>'+
       '<td>'+actions+'</td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No claims yet</td></tr>';
 }
@@ -1554,18 +1601,55 @@ function blSetRate(id){
   var c=claims().find(function(x){return x.id===id;});if(!c)return;
   _camMode='rate';_camClaimId=id;
   $('cam-title').textContent='Set Rate';
-  $('cam-rate-row').style.display='block';$('cam-reason-row').style.display='none';
+  camShow(['cam-rate-row']);
   $('cam-rate').value=c.rate||'';
   $('claimactionmodal').classList.add('on');
 }
+// Shows exactly the rows a mode needs and hides the rest, so a field can
+// never be left visible from a previous mode and silently submitted.
+var CAM_ROWS=['cam-rate-row','cam-reason-row','cam-deadline-row','cam-level-row','cam-basis-row','cam-outcome-note-row'];
+function camShow(ids){
+  CAM_ROWS.forEach(function(r){var el=$(r);if(el)el.style.display=(ids.indexOf(r)!==-1)?'block':'none';});
+}
 function blMarkDenied(id){
+  var c=claims().find(function(x){return x.id===id;});
   _camMode='deny';_camClaimId=id;
   $('cam-title').textContent='Mark Claim Denied';
-  $('cam-rate-row').style.display='none';$('cam-reason-row').style.display='block';
+  camShow(['cam-reason-row','cam-deadline-row']);
   $('cam-reason').value='';
+  $('cam-deadline').value=(c&&c.appeal_deadline)||'';
+  $('claimactionmodal').classList.add('on');
+}
+function blStartAppeal(id){
+  _camMode='appeal';_camClaimId=id;
+  $('cam-title').textContent='File an Appeal';
+  camShow(['cam-level-row','cam-basis-row','cam-deadline-row']);
+  var c=claims().find(function(x){return x.id===id;});
+  $('cam-level').value='first_level';$('cam-basis').value='';
+  $('cam-deadline').value=(c&&c.appeal_deadline)||'';
+  $('claimactionmodal').classList.add('on');
+}
+function blAppealOverturned(id){
+  _camMode='appeal_overturned';_camClaimId=id;
+  $('cam-title').textContent='Appeal Overturned';
+  camShow(['cam-outcome-note-row']);
+  $('cam-outcome-note').value='';
+  $('claimactionmodal').classList.add('on');
+}
+function blAppealUpheld(id){
+  _camMode='appeal_upheld';_camClaimId=id;
+  $('cam-title').textContent='Appeal Denied by the Payer';
+  camShow(['cam-outcome-note-row']);
+  $('cam-outcome-note').value='';
   $('claimactionmodal').classList.add('on');
 }
 function closeClaimActionModal(){$('claimactionmodal').classList.remove('on');_camMode=null;_camClaimId=null;}
+// Free text is capped before it is stored. sen_claims carries a 64KB
+// per-claim CHECK constraint (sql/sairnsenior_claims_schema.sql), and a
+// pasted denial letter in the basis field is exactly how a row crosses it --
+// the write would 400 and the claim would look saved locally. Same class as
+// SAIRNdental's appointments payload guard.
+function camTrim(v,max){return String(v||'').trim().slice(0,max);}
 function confirmClaimAction(){
   if(!_camClaimId){closeClaimActionModal();return;}
   if(_camMode==='rate'){
@@ -1573,7 +1657,24 @@ function confirmClaimAction(){
     var rateNum=Number($('cam-rate').value)||0;
     blUpdateClaim(_camClaimId,{rate:rateNum,amount:Math.round(rateNum*((c&&c.hours_billed)||0)*100)/100});
   }else if(_camMode==='deny'){
-    blUpdateClaim(_camClaimId,{status:'denied',denial_reason:($('cam-reason').value||'').trim()});
+    blUpdateClaim(_camClaimId,{status:'denied',denial_reason:camTrim($('cam-reason').value,300),
+      appeal_deadline:($('cam-deadline').value||'')});
+  }else if(_camMode==='appeal'){
+    var basis=camTrim($('cam-basis').value,1000);
+    if(!basis){toast('Record what is being contested -- an appeal with no basis is not a filing');return;}
+    blUpdateClaim(_camClaimId,{status:'appealed',appeal_deadline:($('cam-deadline').value||''),
+      appeal:{filed_on:senLocalToday(),level:$('cam-level').value,basis:basis,outcome:null,outcome_on:null,outcome_note:''}});
+  }else if(_camMode==='appeal_overturned'||_camMode==='appeal_upheld'){
+    var claim=claims().find(function(x){return x.id===_camClaimId;});
+    var prior=(claim&&claim.appeal)||{filed_on:senLocalToday(),level:'other',basis:''};
+    var won=_camMode==='appeal_overturned';
+    // AN OVERTURNED APPEAL GOES BACK TO `submitted`, NOT TO `paid`. The payer
+    // has agreed to reprocess it; that is not the same as having paid it, and
+    // the existing Mark Paid step is what records the money actually arriving.
+    // Jumping straight to paid would book revenue the agency has not received.
+    blUpdateClaim(_camClaimId,{status:won?'submitted':'appeal_denied',
+      appeal:Object.assign({},prior,{outcome:won?'overturned':'upheld',outcome_on:senLocalToday(),
+        outcome_note:camTrim($('cam-outcome-note').value,300)})});
   }
   closeClaimActionModal();
 }
@@ -1825,17 +1926,82 @@ function computeDenialPatternFindings(){
   });
   return{denied_claim_count:denied.length,by_reason:byReason};
 }
+// APPEAL OUTCOMES BY DENIAL REASON -- the question an agency actually has and
+// that nothing on this platform could answer before: which denial reasons are
+// worth appealing. It is computed from real filed appeals only; with none on
+// file it says so rather than returning an empty breakdown that reads like
+// "nothing is appealable".
+//
+// A CLAIM COUNTS AS DENIED-EVER IF IT CARRIES A DENIAL REASON, not by its
+// CURRENT status. A won appeal moves the claim back to `submitted` and then
+// to `paid`, so filtering on status==='denied' -- which the breakdown above
+// does, correctly, for its own question -- would drop every appeal that
+// SUCCEEDED and make the recovery rate read 0% however many were won.
+function computeAppealOutcomeFindings(){
+  if(!senIsManagement())return null;
+  var everDenied=claims().filter(function(c){return c.denial_reason!==undefined&&c.denial_reason!==null;});
+  var appealed=everDenied.filter(function(c){return c.appeal&&c.appeal.filed_on;});
+  if(!appealed.length){
+    return{appealed_claim_count:0,denied_ever_count:everDenied.length,
+      note:'No appeal has been filed yet, so there is no outcome history to learn from. This is not a finding that appeals do not work.'};
+  }
+  var byReason={};
+  appealed.forEach(function(c){
+    var k=(c.denial_reason||'').trim()||'Unspecified reason';
+    var r=byReason[k]||(byReason[k]={reason:k,appealed:0,overturned:0,upheld:0,pending:0,amount_appealed:0,amount_recovered:0});
+    r.appealed++;r.amount_appealed+=Number(c.amount)||0;
+    var o=c.appeal.outcome;
+    if(o==='overturned'){r.overturned++;if(c.status==='paid')r.amount_recovered+=Number(c.amount)||0;}
+    else if(o==='upheld')r.upheld++;
+    else r.pending++;
+  });
+  var rows=Object.keys(byReason).map(function(k){
+    var r=byReason[k];
+    r.amount_appealed=Math.round(r.amount_appealed*100)/100;
+    r.amount_recovered=Math.round(r.amount_recovered*100)/100;
+    // Decided appeals only. Counting a pending appeal as a loss would report
+    // a success rate that falls every time a new appeal is filed.
+    var decided=r.overturned+r.upheld;
+    r.overturn_rate_of_decided=decided?Math.round((r.overturned/decided)*1000)/10:null;
+    return r;
+  }).sort(function(a,b){return b.appealed-a.appealed;});
+  var decidedTotal=rows.reduce(function(s,r){return s+r.overturned+r.upheld;},0);
+  var overturnedTotal=rows.reduce(function(s,r){return s+r.overturned;},0);
+  return{appealed_claim_count:appealed.length,denied_ever_count:everDenied.length,
+    decided_count:decidedTotal,overturned_count:overturnedTotal,
+    overturn_rate_of_decided:decidedTotal?Math.round((overturnedTotal/decidedTotal)*1000)/10:null,
+    amount_recovered_and_paid:senRecoveredByAppeal(),by_reason:rows};
+}
+// Denied claims whose recorded appeal deadline is near or past and on which no
+// appeal has been filed. Only ever computed from a deadline the agency
+// entered; a denied claim with no deadline on file is reported separately
+// rather than being given a default window.
+function computeAppealDeadlineFindings(){
+  if(!senIsManagement())return null;
+  var denied=claims().filter(function(c){return c.status==='denied';});
+  var withDeadline=denied.filter(function(c){return !!c.appeal_deadline;});
+  var urgent=withDeadline.map(function(c){
+    return{client_name:c.client_name||'',amount:Number(c.amount)||0,denial_reason:c.denial_reason||'',
+      appeal_deadline:c.appeal_deadline,days_left:senAppealDaysLeft(c)};
+  }).filter(function(f){return f.days_left!==null&&f.days_left<=14;}).sort(function(a,b){return a.days_left-b.days_left;});
+  return{denied_open_count:denied.length,
+    without_recorded_deadline:denied.length-withDeadline.length,
+    closing_within_14_days:urgent,
+    note:'Deadlines are only those the agency entered on the denial. A denied claim with no deadline on file is counted in without_recorded_deadline and is NOT given an assumed window.'};
+}
 
 function computeOpsAttentionFindings(){
   return{
     insufficient_hours:computeInsufficientHoursFindings(),
-    denial_patterns:computeDenialPatternFindings() // null when this role can't see billing data
+    denial_patterns:computeDenialPatternFindings(), // null when this role can't see billing data
+    appeal_outcomes:computeAppealOutcomeFindings(), // same gate
+    appeal_deadlines:computeAppealDeadlineFindings() // same gate
   };
 }
 
 senRegisterTool(
   'get_ops_attention',
-  'Check this agency\'s real logged SAIRNsenior data for two things, both scoped to what THIS user is allowed to see (same server-enforced privacy gate as the rest of the app): (1) insufficient_hours -- active clients whose real delivered hours (from completed, clocked-in/out visits) fell short of their Authorized Hours/Week during the most recently FULLY COMPLETED 7-day window (never the current, still-in-progress week). Only clients with a real gap (delivered less than authorized) are included. (2) denial_patterns -- denied claims grouped by denial reason with counts and dollar totals; this is null if the current user\'s role cannot see billing data (caregivers never can, matching the Billing & Claims panel\'s own gate), and returns a note instead of a breakdown if fewer than 2 denied claims exist yet. Never invent a client, hours figure, or denial reason not present in this tool\'s real result.',
+  'Check this agency\'s real logged SAIRNsenior data for two things, both scoped to what THIS user is allowed to see (same server-enforced privacy gate as the rest of the app): (1) insufficient_hours -- active clients whose real delivered hours (from completed, clocked-in/out visits) fell short of their Authorized Hours/Week during the most recently FULLY COMPLETED 7-day window (never the current, still-in-progress week). Only clients with a real gap (delivered less than authorized) are included. (2) denial_patterns -- denied claims grouped by denial reason with counts and dollar totals; this is null if the current user\'s role cannot see billing data (caregivers never can, matching the Billing & Claims panel\'s own gate), and returns a note instead of a breakdown if fewer than 2 denied claims exist yet. (3) appeal_outcomes -- for claims that were denied and then APPEALED, the outcome history grouped by denial reason: how many were appealed, overturned, upheld or still pending, the dollars appealed, the dollars actually recovered (overturned AND since paid), and an overturn rate computed over DECIDED appeals only. Note a claim is counted here by whether it was ever denied, not by its current status, because a won appeal moves it back to submitted and then paid. If no appeal has been filed yet it returns a note saying so -- that is an empty history, NOT evidence that appeals do not work, and you must not report it as such. (4) appeal_deadlines -- denied claims with no appeal filed yet whose agency-entered appeal deadline falls within 14 days or has already passed, plus a count of denied claims with NO deadline recorded at all. Deadlines are only ever the ones the agency typed in; this app does not know any payer\'s appeal window, so never state or estimate one. Never invent a client, hours figure, denial reason, appeal outcome, recovery amount or deadline not present in this tool\'s real result.',
   {type:'object',properties:{},required:[]},
   function(input){return computeOpsAttentionFindings();}
 );

@@ -26,7 +26,19 @@ create table if not exists public.sen_claims (
   claim_id     text not null,                        -- client-generated id (CLM-<timestamp>)
   data         jsonb not null default '{}'::jsonb,    -- visit_id, client_id, client_name, payer,
                                                         -- service_date, hours_billed, rate, amount,
-                                                        -- status, denial_reason, submitted_date
+                                                        -- status, denial_reason, submitted_date,
+                                                        -- appeal_deadline, appeal{filed_on, level,
+                                                        --   basis, outcome, outcome_on, outcome_note}
+                                                        -- Added 2026-09-02 with the denials-and-appeals
+                                                        -- workflow. NO SCHEMA CHANGE WAS NEEDED and none
+                                                        -- was made: `data` is free-form jsonb and the
+                                                        -- server branch in api/sd-data.js stores it
+                                                        -- whole, so this line is documentation, not a
+                                                        -- migration. The client caps `basis` at 1000
+                                                        -- chars and the two note fields at 300 so a
+                                                        -- pasted denial letter cannot push a row past
+                                                        -- the 64KB CHECK below -- that constraint is the
+                                                        -- reason the cap exists.
   created_at   timestamptz not null default now(),
   updated_at   timestamptz not null default now(),
   unique (license_hash, claim_id),
