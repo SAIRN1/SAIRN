@@ -32,6 +32,26 @@
 // text, and correcting the text in the same change would make the diff
 // impossible to review as a relocation. Fix it as its own change.
 //
+// -- THE INTEGRATIONS HALF IS NOW FIXED, 2026-09-02 -------------------------
+// That "own change" is this one. The `Current integrations` line and the CFO
+// expertise list have been corrected; see the notes at each. The investigation
+// found MORE than the header above knew: four of the five claimed integrations
+// were false, not just QuickBooks. Only Resend was real.
+//
+// THE FABRICOR HALF IS STILL OPEN AND STILL DELIBERATE. The React/Railway/
+// Drizzle stack description and "all 21 apps share one Railway PostgreSQL
+// instance" remain wrong and remain untouched, because verifying what the real
+// architecture line should say across 21 apps is its own piece of work and not
+// a rider on an integrations fix. Do not read this note as the file being
+// clean -- it is half clean, and this sentence exists so nobody has to
+// rediscover which half.
+//
+// -- NOT FIXED HERE, AND NOT MINE TO FIX ------------------------------------
+// stonedesk.html:25406 has the cto GREETING saying "QuickBooks OAuth is the
+// next integration on the roadmap" -- the same false claim, in a different
+// file, which another session held an active claim on when this was written.
+// It needs the same correction. Flagged rather than edited.
+//
 // -- SCOPE -----------------------------------------------------------------
 // The email-triage roleContext in stonedesk.html is NOT here. It is generic
 // priority weighting with no SAIRN-internal data in it, so moving it would be
@@ -56,7 +76,15 @@ const EXEC_CONTEXT = {
     'Payroll tax rates 2026: SS 6.2%+6.2% (wage base $176,100), Medicare 1.45%+1.45%, FUTA 0.6% (first $7K), SUTA varies by state.',
     'Key SaaS financial metrics: Gross margin target 70-80%, CAC, LTV, burn rate, runway, DSO target <45 days, current ratio >1.5, quick ratio >1.0.',
     'StoneDesk pricing: Starter $199/mo, Professional $299/mo, Enterprise $599/mo. Stripe price IDs on file.',
-    'Your CFO expertise: cash flow forecasting and management, P&L analysis, payroll processing and journal entries (exact GAAP account codes), AR aging and collections strategy, budget vs actual variance analysis, tax planning (QSBS, ESOP, R&D credits), banking relationships and debt covenants, EBITDA optimization, financial risk management, QuickBooks integration, monthly close process, investor reporting.',
+    // CORRECTED 2026-09-02. "QuickBooks integration" sat in this expertise list
+    // between "financial risk management" and "monthly close process", where it
+    // reads as a capability the platform has rather than a subject the model
+    // knows about -- and the cto context on the same page was asserting exactly
+    // that. Reworded so the knowledge survives and the implied capability does
+    // not, and the absence is stated rather than left as a gap the model fills
+    // in optimistically.
+    'Your CFO expertise: cash flow forecasting and management, P&L analysis, payroll processing and journal entries (exact GAAP account codes), AR aging and collections strategy, budget vs actual variance analysis, tax planning (QSBS, ESOP, R&D credits), banking relationships and debt covenants, EBITDA optimization, financial risk management, general knowledge of accounting packages including QuickBooks, monthly close process, investor reporting.',
+    'SAIRN does NOT connect to QuickBooks, Gusto, Xero or any other accounting package. Verified against the code on 2026-09-02: no such endpoint is deployed and no connection table exists. If asked about pulling data from an accounting package, say it is not built rather than describing it as pending or on the roadmap.',
     'Always cite specific account codes (Dr 6010, Cr 2100). Give exact journal entries, exact tax rates, exact formulas. Lead with numbers. End every recommendation with the financial risk if ignored.',
     'Format financial data clearly: use line items, totals, and variances. Make it feel like a CFO dashboard briefing.'
   ].join(' '),
@@ -66,7 +94,28 @@ const EXEC_CONTEXT = {
     'Architecture: HONEY COMB cellular platform — each app is a standalone HTML file deployed to Vercel, authenticated against Railway backend, firewalled to allowlisted domains only. All 21 apps share one Railway PostgreSQL instance.',
     'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
     'Security: SAIRN Firewall blocks all non-allowlisted fetch calls. Claude proxy prevents direct API key exposure. Cookie auth: sameSite:none + secure:true for cross-origin Railway-Vercel auth.',
-    'Current integrations: QuickBooks Online (UI built, OAuth pending), Google Directions API (route optimization), xlsx library (import/export), Resend (email), node-cron (weekly reports).',
+    // CORRECTED 2026-09-02. This line previously read "QuickBooks Online (UI
+    // built, OAuth pending), Google Directions API (route optimization), xlsx
+    // library (import/export), Resend (email), node-cron (weekly reports)."
+    // FOUR OF THOSE FIVE WERE FALSE, and each was checked individually rather
+    // than the line being deleted wholesale:
+    //   * QuickBooks Online -- api/accounting.js has NEVER been on main (created
+    //     2026-06-16 on the unmerged lucid-ptolemy branch, reachable only from
+    //     the archive tag), /api/accounting returns 404, there is no
+    //     qb_connections table among the 258 in the schema snapshot, and no
+    //     QB_* env var exists. stonedesk.html:22249 records the UI as deleted
+    //     2026-07-29 because none was ever built.
+    //   * Google Directions API -- zero calls to googleapis / maps anywhere in
+    //     api/.
+    //   * xlsx and node-cron -- neither is in package.json (which holds exactly
+    //     three dependencies), and the ONLY occurrence of either string in the
+    //     whole api/ tree was this sentence claiming them.
+    //   * Resend -- REAL, and the only survivor: api/alf-alerts.js POSTs to
+    //     https://api.resend.com/emails with RESEND_API_KEY.
+    // Replaced with what is actually wired, verified the same way. Telling the
+    // model the company has an integration it does not have makes the model
+    // tell the owner the same thing.
+    'Current integrations, verified against the code on 2026-09-02: Anthropic Claude API (api/claude.js proxy), Supabase Postgres (78 API functions), Stripe (SAIRNcash checkout and webhooks), Firebase Admin (SAIRNcash trial verification), Resend email (api/alf-alerts.js), @simplewebauthn/server (StoneDesk passkey login). There is NO accounting integration of any kind: no QuickBooks, no Gusto, no Xero. If asked, say so plainly rather than describing one as pending.',
     'HIPAA compliance stack for SAIRNcomm: Supabase Pro (BAA required), Vercel Pro (BAA required), 15-min session timeout, audit log table, RLS policies, no PHI in logs.',
     'Your CTO expertise: system architecture decisions, security posture and threat modeling, vendor evaluation and integration roadmap, API design and optimization, database schema and query performance, CI/CD pipeline, monitoring and alerting, tech debt prioritization, HIPAA/SOC2 compliance, patent protection strategy, team technical hiring, infrastructure scaling.',
     'Always recommend specific tools, not categories. Cite actual version numbers and known issues. Lead with the architectural decision, then the implementation path. Flag security implications on every recommendation.',

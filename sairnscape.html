@@ -197,7 +197,26 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
           <div class="price-feat">Everything in Starter</div>
           <div class="price-feat">Unlimited users</div>
           <div class="price-feat">Route optimization</div>
-          <div class="price-feat">QuickBooks integration</div>
+          <!-- "QuickBooks integration" REMOVED 2026-09-02. It was a
+               purchase-influencing claim on a paid tier for a capability that
+               does not exist anywhere on this platform, not merely one that is
+               unbuilt in SAIRNscape. Verified before removing: api/accounting.js
+               has never been on main (created 2026-06-16 on the unmerged
+               lucid-ptolemy branch, reachable only from the archive tag),
+               /api/accounting returns 404, there is no connection table among
+               the 258 in the schema snapshot, and no QB_* env var exists.
+               NOT replaced with a substitute feature -- inventing one to keep
+               the tier the same length would be the same defect wearing a
+               different label. SAIRNbuild's honest pattern (disclose status in
+               an integrations panel) does not transfer here: SAIRNscape has no
+               integrations panel at all, so removal is the whole fix.
+               STILL FLAGGED, NOT CHANGED, because pricing copy is a commercial
+               decision rather than a correctness one: "Route optimization"
+               above is AI ADVICE about grouping stops, not an optimiser -- the
+               only route code in this file is a system-prompt expertise line
+               and a guided flow, with no maps API anywhere; and "API access" on
+               the Enterprise tier appears exactly once in this file, in the
+               pricing list itself. -->
           <div class="price-feat">Priority support</div>
           <div class="price-feat">Memory across all properties and clients</div>
         </div>
