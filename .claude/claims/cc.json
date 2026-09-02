@@ -219,8 +219,8 @@
       "task": "implement competitive research finding",
       "claimed_at": "2026-09-02T16:13:58Z",
       "claimed_at_epoch": 1788365638.8041728,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T23:17:58Z"
     }
   ]
 }
