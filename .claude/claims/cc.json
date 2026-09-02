@@ -100,6 +100,16 @@
       "claimed_at_epoch": 1788345835.971716,
       "status": "released",
       "released_at": "2026-09-02T11:20:57Z"
+    },
+    {
+      "id": "cc-1788349816",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "check5 exemptions, field quote wiring, 0039 0040 0072, competitive audit",
+      "claimed_at": "2026-09-02T11:50:16Z",
+      "claimed_at_epoch": 1788349816.2327213,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
