@@ -238,8 +238,8 @@
       "task": "wex grounded definition tool in the assistant",
       "claimed_at": "2026-09-02T12:20:18Z",
       "claimed_at_epoch": 1788351618.4795728,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T12:37:18Z"
     }
   ]
 }
