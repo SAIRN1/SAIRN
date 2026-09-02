@@ -162,4 +162,25 @@ test('non-numeric payment amounts are ignored rather than producing NaN', () => 
   assert.strictEqual(r.outstanding, 75);
 });
 
+// This is the test that would have caught the constant being wrong on the day
+// it was written: the exported vocabulary listed 'disputed' (never emitted) and
+// omitted 'part_paid' (emitted constantly). Asserting the shipped list against
+// every branch of the function, rather than eyeballing them side by side.
+test('every payment_status this engine emits is in the exported PAYMENT_STATUSES', () => {
+  const emitted = [
+    s.summariseAssignment({ amount: 0 }).payment_status,
+    s.summariseAssignment({ amount: 500, payments: [] }).payment_status,
+    s.summariseAssignment({ amount: 500, payments: [{ amount: 200 }] }).payment_status,
+    s.summariseAssignment({ amount: 500, payments: [{ amount: 500 }] }).payment_status,
+    s.summariseAssignment({ amount: 500, payments: [{ amount: 900 }] }).payment_status
+  ];
+  emitted.forEach((v) => {
+    assert.ok(s.PAYMENT_STATUSES.indexOf(v) !== -1, 'emits "' + v + '" which PAYMENT_STATUSES does not list');
+  });
+  assert.deepStrictEqual(
+    s.PAYMENT_STATUSES.filter((v) => emitted.indexOf(v) === -1), [],
+    'PAYMENT_STATUSES lists a value no branch produces -- a reader would treat it as reachable'
+  );
+});
+
 console.log(passed + ' passed');

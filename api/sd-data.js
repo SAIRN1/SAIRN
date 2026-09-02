@@ -3653,7 +3653,20 @@ module.exports = async (req, res) => {
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
-        res.status(200).json({ ok: true, provisioned: true, data: (rows || []).map(subs.summariseAssignment) });
+        // The raw `payments` array rides along beside the summary. Not folded
+        // into summariseAssignment: a summariser that hands its own input back
+        // has a muddier contract, and this is a round-trip concern, not a
+        // compliance one. Without it an editor cannot ADD a payment -- the
+        // write is a whole-row upsert, so appending needs the existing array,
+        // and a UI that could not see it would silently wipe payment history
+        // the first time anyone edited an assignment.
+        res.status(200).json({
+          ok: true, provisioned: true,
+          data: (rows || []).map((x) => Object.assign(
+            subs.summariseAssignment(x),
+            { payments: Array.isArray(x.payments) ? x.payments : [] }
+          ))
+        });
         return;
       }
 

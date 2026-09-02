@@ -39,7 +39,15 @@ const DEFAULT_WARN_DAYS = 30;
 const DOC_TYPES = ['coi', 'licence', 'w9'];
 
 const ASSIGNMENT_STATUSES = ['scheduled', 'in_progress', 'complete', 'cancelled'];
-const PAYMENT_STATUSES = ['unbilled', 'invoiced', 'paid', 'disputed'];
+// CORRECTED 2026-09-02, same day it was written. This list said
+// ['unbilled','invoiced','paid','disputed'] and summariseAssignment() below
+// emits none of 'disputed' and one value the list did not contain --
+// 'part_paid'. Nothing consumed the constant yet, so nothing broke; the first
+// consumer to validate against it would have rejected every partly-paid
+// assignment while accepting a status this engine never produces. An exported
+// vocabulary that does not match what the function actually returns is worse
+// than no vocabulary, because it reads as authoritative.
+const PAYMENT_STATUSES = ['unbilled', 'invoiced', 'part_paid', 'paid'];
 
 function isDate(s) {
   return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);

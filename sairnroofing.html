@@ -150,6 +150,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-certifications" onclick="nav('certifications')">Certifications<span class="badge" id="cert-badge" style="display:none;margin-left:6px;">0</span></button>
       <button class="sb" id="sb-schedule" onclick="nav('schedule')">Schedule</button>
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
+      <button class="sb" id="sb-subs" onclick="nav('subs')">Subcontractors<span class="badge" id="subs-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -450,6 +451,49 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
             <button class="btn bp" onclick="rfSaveLocation()">Save Location</button>
           </div>
         </div></div>
+      </div>
+
+      <!-- Subcontractors (2026-09-02). Tier-A gap A3 from the competitive-gap
+           audit. Backed by the SHARED api/_lib/subcontractor-compliance.js and
+           the unprefixed subcontractors / sub_assignments tables, not a
+           roofing-only copy -- StoneDesk already built one and SAIRNbuild is
+           the obvious third consumer.
+           COMPLIANCE IS COMPUTED SERVER-SIDE ON READ, never stored: whether a
+           certificate is valid depends on today's date, so a stored verdict is
+           wrong the morning after it is written. -->
+      <div class="panel" id="panel-subs">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Subcontractors</div>
+            <div class="psub" id="subs-scope-note">--</div>
+          </div>
+          <div class="pa"><button class="btn bp" id="subs-new-btn" onclick="openSubModal()" style="display:none;">+ Add Subcontractor</button></div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Require before assigning</label>
+              <select id="subs-required" multiple size="3" style="min-width:150px;">
+                <option value="coi" selected>Insurance (COI)</option>
+                <option value="licence">Licence</option>
+                <option value="w9">W-9</option>
+              </select>
+            </div>
+            <div class="fg" style="margin:0;"><label>Warn within (days)</label><input type="number" id="subs-warn" value="30" min="0" max="365"></div>
+            <button class="btn bo" onclick="rfLoadSubs()">Refresh</button>
+          </div>
+          <div class="note" style="margin-top:8px;">
+            <strong>Missing</strong> and <strong>expired</strong> are shown separately on purpose &mdash; a certificate never
+            collected and one that lapsed last week are different jobs. Anything you do not require here is still reported,
+            it just cannot block an assignment. The refusal is enforced by the server, not this screen.
+          </div>
+        </div></div>
+        <div class="card"><div class="cb" id="subs-list"><div class="empty">Loading&hellip;</div></div></div>
+        <div class="card"><div class="ch" style="display:flex;align-items:center;gap:12px;">
+            <div class="ct">Assignments</div>
+            <button class="btn bp" id="subs-assign-btn" onclick="openAssignModal()" style="display:none;margin-left:auto;padding:5px 12px;font-size:12px;">+ Assign</button>
+          </div>
+          <div class="cb" id="subs-assign-list"><div class="empty">Loading&hellip;</div></div>
+        </div>
       </div>
 
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
@@ -788,6 +832,10 @@ function nav(id){
   document.querySelectorAll('.panel').forEach(function(p){p.classList.remove('on');});
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   $('panel-'+id).classList.add('on');$('sb-'+id).classList.add('on');
+  // Subcontractors (2026-09-02). Same rule as the certification board below:
+  // the panel never decides a compliance status itself -- the shared engine
+  // does, server-side -- so the screen and the tests cannot drift apart.
+  if(id==='subs'){ rfLoadSubs(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2344,6 +2392,244 @@ function rfRenderLocations(){
     }).join('')+'</tbody></table></div>';
 }
 
+// ── SUBCONTRACTORS (shared layer, 2026-09-02) ──────────────────────────────
+// Tier-A gap A3. Reads subcontractors + sub_assignments through the ordinary
+// gated api/sd-data.js path; the COMPLIANCE VERDICT is computed server-side by
+// api/_lib/subcontractor-compliance.js and simply rendered here.
+//
+// `today` is sent from the BROWSER, deliberately. Compliance is a question
+// about the contractor's local date, and a server clock would answer it in UTC
+// -- the defect class fixed across nine SAIRNvet panels on 2026-09-01. The
+// engine refuses to run without it rather than defaulting.
+var rfSubs=[],rfSubAssignments=[];
+
+function rfSubsRequired(){
+  var sel=$('subs-required');
+  if(!sel)return [];
+  return Array.prototype.slice.call(sel.selectedOptions||[]).map(function(o){return o.value;});
+}
+function rfSubsWarnDays(){
+  var el=$('subs-warn');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+
+function rfLoadSubs(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var nb=$('subs-new-btn');if(nb)nb.style.display=isMgmt?'':'none';
+  var ab=$('subs-assign-btn');if(ab)ab.style.display=isMgmt?'':'none';
+  var note=$('subs-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Directory, compliance and assignments. You can add and assign.'
+    : 'Directory and compliance, read-only for your role.';
+  var p={today:rfLocalToday(),required:rfSubsRequired()};
+  var w=rfSubsWarnDays();if(w!==undefined)p.warn_days=w;
+  return rfDataRaw('read','subcontractors',p).then(function(r){
+    if(!r.ok){
+      // Not provisioned and not-permitted are different answers and the panel
+      // says which, rather than showing one "could not load" for both.
+      $('subs-list').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Your role cannot see the subcontractor directory.'
+        : rfEsc(r.msg||'Could not load subcontractors.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('subs-list').innerHTML='<div class="empty">Not set up yet &mdash; run sql/subcontractor_compliance_schema.sql, then refresh.</div>';
+      $('subs-assign-list').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfSubs=d.data||[];
+    rfRenderSubs();
+    return rfDataRaw('read','sub_assignments',{}).then(function(a){
+      rfSubAssignments=(a.ok&&a.data&&a.data.data)||[];
+      rfRenderSubAssignments();
+    });
+  });
+}
+
+function rfSubStateBadge(st){
+  var cls={valid:'bg',expiring:'bw',expired:'br',missing:'bx',unreadable:'br',unknown:'bx'}[st]||'bx';
+  return '<span class="badge '+cls+'">'+rfEsc(st)+'</span>';
+}
+
+function rfRenderSubs(){
+  var el=$('subs-list');
+  if(!rfSubs.length){el.innerHTML='<div class="empty">No subcontractors on file.</div>';return;}
+  var blocked=0;
+  var rows=rfSubs.map(function(s){
+    var c=s.compliance;
+    if(!c){
+      // The engine refused. Say why instead of rendering a blank verdict.
+      return '<tr><td><strong>'+rfEsc(s.name)+'</strong></td><td>'+rfEsc(s.trade||'--')+'</td>'+
+        '<td colspan="4"><span class="badge br">'+rfEsc((s.compliance_error&&s.compliance_error.message)||'not evaluated')+'</span></td>'+
+        '<td>'+(s.active===false?'<span class="badge bx">inactive</span>':'')+'</td></tr>';
+    }
+    if(!c.compliant)blocked++;
+    return '<tr><td><strong>'+rfEsc(s.name)+'</strong></td><td>'+rfEsc(s.trade||'--')+'</td>'+
+      '<td>'+rfSubStateBadge(c.documents.coi.state)+(c.documents.coi.days_left!==null?' <span style="color:var(--muted)">'+c.documents.coi.days_left+'d</span>':'')+'</td>'+
+      '<td>'+rfSubStateBadge(c.documents.licence.state)+(c.documents.licence.days_left!==null?' <span style="color:var(--muted)">'+c.documents.licence.days_left+'d</span>':'')+'</td>'+
+      '<td>'+rfSubStateBadge(c.documents.w9.state)+'</td>'+
+      '<td>'+(c.compliant?'<span class="badge bg">ok to assign</span>':'<span class="badge br">'+rfEsc(c.blocking.concat(c.unknown_requirements).join(', '))+'</span>')+'</td>'+
+      '<td>'+(s.active===false?'<span class="badge bx">inactive</span>':'')+'</td></tr>';
+  }).join('');
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Name</th><th>Trade</th><th>COI</th><th>Licence</th><th>W-9</th><th>Assignable</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  var b=$('subs-badge');
+  if(b){ b.textContent=blocked||''; b.style.display=blocked?'':'none'; }
+}
+
+function rfRenderSubAssignments(){
+  var el=$('subs-assign-list');
+  if(!rfSubAssignments.length){el.innerHTML='<div class="empty">No assignments recorded.</div>';return;}
+  var byId={};rfSubs.forEach(function(s){byId[s.sub_id]=s.name;});
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Subcontractor</th><th>Job</th><th>Date</th><th>Status</th><th>Agreed</th><th>Paid</th><th>Outstanding</th><th></th></tr></thead><tbody>'+
+    rfSubAssignments.map(function(a,i){
+      var cls=a.payment_status==='paid'?'bg':a.payment_status==='part_paid'?'bw':'bx';
+      return '<tr><td>'+rfEsc(byId[a.sub_id]||a.sub_id||'--')+'</td><td>'+rfEsc(a.job_id||'--')+'</td>'+
+        '<td>'+rfEsc(a.scheduled_date||'--')+'</td>'+
+        '<td>'+rfEsc(a.status||'--')+(a.problems&&a.problems.length?' <span class="badge br">'+rfEsc(a.problems[0])+'</span>':'')+'</td>'+
+        '<td>$'+Number(a.amount||0).toLocaleString()+'</td>'+
+        '<td>$'+Number(a.paid||0).toLocaleString()+'</td>'+
+        '<td><span class="badge '+cls+'">$'+Number(a.outstanding||0).toLocaleString()+
+        (a.overpaid?' (over $'+Number(a.overpaid).toLocaleString()+')':'')+'</span></td>'+
+        '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openAssignModal('+i+')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function openSubModal(){
+  ['sb-id','sb-name','sb-trade','sb-phone','sb-coi-carrier','sb-coi-expiry','sb-licence-no','sb-licence-expiry']
+    .forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('sb-w9').value='no';$('sb-active').value='yes';$('sb-err').textContent='';
+  $('sub-modal').classList.add('on');
+}
+function closeSubModal(){ $('sub-modal').classList.remove('on'); }
+
+function saveSub(){
+  var id=($('sb-id').value||'').trim(), name=($('sb-name').value||'').trim();
+  if(!id||!name){ $('sb-err').textContent='Subcontractor id and name are both required.'; return; }
+  var p={
+    sub_id:id, name:name,
+    trade:($('sb-trade').value||'').trim()||null,
+    phone:($('sb-phone').value||'').trim()||null,
+    coi_carrier:($('sb-coi-carrier').value||'').trim()||null,
+    coi_expiry:$('sb-coi-expiry').value||null,
+    licence_no:($('sb-licence-no').value||'').trim()||null,
+    licence_expiry:$('sb-licence-expiry').value||null,
+    w9_on_file:$('sb-w9').value==='yes',
+    active:$('sb-active').value==='yes'
+  };
+  $('sb-err').textContent='Saving…';
+  rfDataRaw('write','subcontractors',p).then(function(r){
+    // The server's message is shown verbatim rather than replaced with a
+    // generic failure: it names WHICH field was refused (BAD_DATE lists them),
+    // and a screen that swallows that makes the user guess.
+    if(!r.ok){ $('sb-err').textContent=r.msg||'Could not save.'; return; }
+    closeSubModal();
+    rfLoadSubs();
+  });
+}
+
+// ── ASSIGNMENTS: scheduling and payment (the other two thirds of gap A3) ────
+// The directory above answers "is this sub papered". This answers "is he on
+// this job on this day, and what is still owed him".
+//
+// PAYMENTS ARE EDITED AS A WHOLE ARRAY because the write is a whole-row
+// upsert. The draft below is seeded from what the server returned, so adding a
+// payment appends rather than replacing -- an editor that started from an
+// empty array would silently erase every payment already recorded the first
+// time anyone touched an assignment. `paid` and `outstanding` are never sent:
+// the engine derives them, and a client that posted its own arithmetic would
+// be the second source of truth for money.
+var rfAssignDraft={payments:[],editing:false};
+
+function rfAssignSubOptions(sel){
+  // Inactive subs are listed but marked, not hidden. A dropdown that silently
+  // omits someone reads as "he is not in the system", which sends the user
+  // looking for a record that exists.
+  return rfSubs.map(function(s){
+    return '<option value="'+rfEsc(s.sub_id)+'"'+(s.sub_id===sel?' selected':'')+'>'+
+      rfEsc(s.name||s.sub_id)+(s.active===false?' (inactive)':'')+'</option>';
+  }).join('');
+}
+
+function openAssignModal(i){
+  var a=(typeof i==='number')?rfSubAssignments[i]:null;
+  rfAssignDraft={payments:(a&&Array.isArray(a.payments))?a.payments.slice():[],editing:!!a};
+  $('as-modal-title').textContent=a?'Edit Assignment':'Assign a Subcontractor';
+  $('as-id').value=a?(a.assignment_id||''):'';
+  // The id is the upsert conflict key. Changing it on an existing row would
+  // create a second assignment rather than rename this one, so it is locked.
+  $('as-id').readOnly=!!a;
+  $('as-sub').innerHTML=rfAssignSubOptions(a&&a.sub_id);
+  $('as-job').value=(a&&a.job_id)||'';
+  $('as-date').value=(a&&a.scheduled_date)||'';
+  $('as-status').value=(a&&a.status)||'scheduled';
+  $('as-amount').value=(a&&a.amount)?a.amount:'';
+  $('as-pay-amount').value='';$('as-pay-date').value='';
+  $('as-err').textContent='';
+  rfRenderAssignPayments();
+  $('assign-modal').classList.add('on');
+}
+function closeAssignModal(){ $('assign-modal').classList.remove('on'); }
+
+function rfRenderAssignPayments(){
+  var el=$('as-pay-list');
+  var ps=rfAssignDraft.payments;
+  if(!ps.length){ el.innerHTML='<div style="font-size:12px;color:var(--muted);">No payments recorded.</div>'; return; }
+  var total=0;
+  el.innerHTML=ps.map(function(p,i){
+    total+=(typeof p.amount==='number'&&isFinite(p.amount))?p.amount:0;
+    return '<div class="certrow"><span style="flex:1;">'+rfEsc(p.date||'no date')+'</span>'+
+      '<span>$'+Number(p.amount||0).toLocaleString()+'</span>'+
+      '<button class="btn bo" style="padding:2px 8px;font-size:11px;" onclick="rfRemovePayment('+i+')">Remove</button></div>';
+  }).join('')+'<div style="font-size:12px;font-weight:700;margin-top:6px;">Recorded: $'+total.toLocaleString()+'</div>';
+}
+
+function rfAddPayment(){
+  var v=($('as-pay-amount').value||'').trim();
+  var n=parseFloat(v);
+  // Refused, not coerced. A blank or garbled amount silently becoming 0 would
+  // show as a recorded payment that paid nothing.
+  if(v===''||!isFinite(n)){ $('as-err').textContent='Enter a payment amount as a number.'; return; }
+  rfAssignDraft.payments.push({amount:n,date:$('as-pay-date').value||rfLocalToday()});
+  $('as-pay-amount').value='';$('as-pay-date').value='';
+  $('as-err').textContent='';
+  rfRenderAssignPayments();
+}
+function rfRemovePayment(i){ rfAssignDraft.payments.splice(i,1); rfRenderAssignPayments(); }
+
+function saveAssignment(){
+  var id=($('as-id').value||'').trim(), sub=$('as-sub').value;
+  if(!id){ $('as-err').textContent='An assignment id is required.'; return; }
+  if(!sub){ $('as-err').textContent='Pick a subcontractor. Add one on the directory above if the list is empty.'; return; }
+  var amtRaw=($('as-amount').value||'').trim();
+  var amt=amtRaw===''?null:parseFloat(amtRaw);
+  if(amtRaw!==''&&!isFinite(amt)){ $('as-err').textContent='Agreed amount must be a number, or blank.'; return; }
+  var p={
+    assignment_id:id, sub_id:sub,
+    job_id:($('as-job').value||'').trim()||null,
+    scheduled_date:$('as-date').value||null,
+    status:$('as-status').value,
+    amount:amt,
+    payments:rfAssignDraft.payments,
+    // Sent so the SERVER can refuse a non-compliant sub. The same policy the
+    // directory is being read under, so the board and the gate cannot disagree.
+    today:rfLocalToday(), required:rfSubsRequired()
+  };
+  $('as-err').textContent='Saving…';
+  rfDataRaw('write','sub_assignments',p).then(function(r){
+    // NOT_ASSIGNABLE arrives here with the server's reasons spelled out. Shown
+    // verbatim: "Cannot assign: coi is expired" is the whole point of the gate,
+    // and a generic failure message throws it away.
+    if(!r.ok){ $('as-err').textContent=r.msg||'Could not save the assignment.'; return; }
+    closeAssignModal();
+    toast('Assignment saved.');
+    rfLoadSubs();
+  });
+}
+
 function rfLoadSchedule(){
   var p={};
   if($('sch-from')&&$('sch-from').value)p.from=$('sch-from').value;
@@ -3147,6 +3433,63 @@ function aiSend(){
   }
 })();
 </script>
+<div class="modal" id="sub-modal">
+  <div class="mbox" style="width:520px;">
+    <div class="mtitle">Add / Edit Subcontractor</div>
+    <div class="qgrid">
+      <div class="fg"><label>Subcontractor id <span style="color:var(--danger)">*</span></label><input id="sb-id" placeholder="SUB-ACME"></div>
+      <div class="fg"><label>Name <span style="color:var(--danger)">*</span></label><input id="sb-name" placeholder="Acme Roofing LLC"></div>
+      <div class="fg"><label>Trade</label><input id="sb-trade" placeholder="tear-off crew"></div>
+      <div class="fg"><label>Phone</label><input id="sb-phone" placeholder="(216) 555-0100"></div>
+      <div class="fg"><label>Insurance carrier</label><input id="sb-coi-carrier" placeholder="Erie"></div>
+      <div class="fg"><label>COI expiry</label><input type="date" id="sb-coi-expiry"></div>
+      <div class="fg"><label>Licence no.</label><input id="sb-licence-no" placeholder="OH-12345"></div>
+      <div class="fg"><label>Licence expiry</label><input type="date" id="sb-licence-expiry"></div>
+      <div class="fg"><label>W-9 on file</label><select id="sb-w9"><option value="no">No</option><option value="yes">Yes</option></select></div>
+      <div class="fg"><label>Active</label><select id="sb-active"><option value="yes">Yes</option><option value="no">No</option></select></div>
+    </div>
+    <div class="note">Leave an expiry blank if you have not collected that document &mdash; blank reads as
+      <strong>missing</strong>, which is a different thing from expired and is shown separately. Dates are refused
+      by the server unless they are real dates, so a typo never becomes an unreadable certificate on the board.</div>
+    <div class="perr" id="sb-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveSub()">Save</button>
+      <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="assign-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle" id="as-modal-title">Assign a Subcontractor</div>
+    <div class="qgrid">
+      <div class="fg"><label>Assignment id <span style="color:var(--danger)">*</span></label><input id="as-id" placeholder="ASG-1042"></div>
+      <div class="fg"><label>Subcontractor <span style="color:var(--danger)">*</span></label><select id="as-sub"></select></div>
+      <div class="fg"><label>Job</label><input id="as-job" placeholder="JOB-2026-118"></div>
+      <div class="fg"><label>Scheduled date</label><input type="date" id="as-date"></div>
+      <div class="fg"><label>Status</label><select id="as-status">
+        <option value="scheduled">Scheduled</option><option value="in_progress">In Progress</option>
+        <option value="complete">Complete</option><option value="cancelled">Cancelled</option>
+      </select></div>
+      <div class="fg"><label>Agreed amount</label><input id="as-amount" placeholder="4200"></div>
+    </div>
+    <div class="ct" style="margin:6px 0 8px;">Payments</div>
+    <div id="as-pay-list" style="margin-bottom:10px;"></div>
+    <div class="qgrid">
+      <div class="fg"><label>Amount</label><input id="as-pay-amount" placeholder="1500"></div>
+      <div class="fg"><label>Date</label><input type="date" id="as-pay-date"></div>
+    </div>
+    <button class="btn bo" style="padding:5px 12px;font-size:12px;" onclick="rfAddPayment()">Record payment</button>
+    <div class="note" style="margin-top:12px;">Paid and outstanding are worked out from the payments listed here &mdash; they
+      are never typed in and never stored. If the payments add up to more than the agreed amount the board says
+      <strong>over</strong> rather than quietly showing zero. Saving is refused by the server if this subcontractor
+      does not meet the documents required on the panel behind this box.</div>
+    <div class="perr" id="as-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveAssignment()">Save</button>
+      <button class="btn bo" onclick="closeAssignModal()">Cancel</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="schedule-modal">
   <div class="mbox" style="width:520px;">
     <div class="mtitle" id="sch-modal-title">Schedule a Day</div>

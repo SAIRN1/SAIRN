@@ -1212,6 +1212,33 @@ would be needed already exist — the `active` flag on the roster and the
 single assignment path at `subxAssign` — so the gate has one place to live,
 not several.
 
+**Update 2026-09-02 (cody) — the ENGINE this row asks for now exists, shared,
+and StoneDesk is still not on it.** Building SAIRNroofing's Tier-A gap A3
+produced `api/_lib/subcontractor-compliance.js` plus the unprefixed,
+`app_id`-scoped `subcontractors` / `sub_assignments` tables
+(`sql/subcontractor_compliance_schema.sql`), deliberately generic so it is not
+a second per-app copy. It carries exactly what "done looks like" describes —
+COI carrier/policy/expiry, W-9 on file, licence number and expiry, a warn
+window whose default is 30 days to match SAIRNbuild's shape, and an assignment
+gate that refuses **at the endpoint**, not in the UI. It also splits `missing`
+from `expired`, which SAIRNbuild's single 30-day flag does not.
+
+**Nothing about StoneDesk changed, and the product decision this row is
+actually blocked on is still unmade.** `sd_subs`, `sd_sub_auth`, `sd_sub_jobs`
+and `api/sd-sub-auth.js` were left completely untouched: `sd_sub_auth` is a
+live credential table (`pin_hash`, `pin_salt`, `failed_attempts`,
+`locked_until`) and re-keying it is a credential migration in its own right,
+not a rider on a feature branch. So the "build it against a guess" risk is
+unchanged — what changed is only that **adopting it is now a wiring job rather
+than a build**, once someone answers which of {COI, carrier/policy, W-9,
+licence} a countertop-fabrication roster should carry and whether assignment
+is gated. Two implementations coexist until then; that is a stated cost.
+
+**Confirmed the same day, against the file:** SAIRNbuild does **not** share
+this gap and needs nothing from the new layer. The 2026-08-27 contrast above
+was re-read and still holds — it enforces at award, which is more than this
+engine's consumers currently do.
+
 ## A repo file can be written, reported as delivered, and never committed — the 2026-08-25 entry documented this failure mode without closing it
 
 **Logged:** 2026-08-27, after it recurred. **This is a flag about a gap in our
