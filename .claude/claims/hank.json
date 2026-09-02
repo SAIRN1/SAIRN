@@ -360,8 +360,8 @@
       "task": "competitive gap verdicts across all apps",
       "claimed_at": "2026-09-02T23:36:19Z",
       "claimed_at_epoch": 1788392179.5121918,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T23:47:27Z"
     }
   ]
 }
