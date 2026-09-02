@@ -634,25 +634,75 @@ async function callClaude(system, messages, maxTokens) {
 </div>
 <div class="page" id="page-technicians">
   <div class="ph">
-    <div><div class="ptitle">👷 Technicians</div><div class="psub">Tech roster, certifications, and performance</div></div>
+    <div><div class="ptitle">👷 Technician Credentials</div><div class="psub">Licences, certifications and expiry &mdash; the record dispatch eligibility is computed from</div></div>
     <div class="pacts">
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
-      <button class="btn bp">+ Add Tech</button>
+      <button class="btn bo bsm" onclick="mechCredRefresh()">↻ Refresh</button>
     </div>
   </div>
-  
+
+  <!-- LIVE AS OF 2026-09-02. The 2026-08-27 pass removed invented technicians
+       with invented NATE and EPA 608 certifications and left an honest empty
+       state saying certification tracking "has no backend in this app;
+       building one is separate scoped work". This is that work: the app's
+       FIRST data resource (sql/mech_credentials_schema.sql,
+       api/_lib/mech-credentials.js), ranked first of ten capabilities by the
+       2026-08-27 competitive research.
+
+       The page is named for what it holds. The technician ROSTER lives in
+       mech_employee_auth and is provisioned through api/mech-auth.js; this is
+       the credential registry, and calling it a roster is what let invented
+       certifications sit here looking like people. -->
+  <div class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Technician ID</label>
+        <input id="mc-tech" placeholder="employee id" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Type</label>
+        <select id="mc-type" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Choose…</option>
+          <option value="epa_608">EPA 608</option><option value="nate">NATE</option>
+          <option value="state_license">State licence</option><option value="manufacturer">Manufacturer</option>
+          <option value="safety_training">Safety training</option><option value="medical_gas">Medical gas</option>
+          <option value="backflow">Backflow</option>
+        </select></div>
+      <!-- Sections are EQUIPMENT, not ranks: Type I small appliances, Type II
+           high pressure, Type III low pressure. A Type I technician is not
+           "less certified" than a Type II one, and dispatching on "has an EPA
+           card" is how somebody is sent to a chiller they may not open. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">EPA section</label>
+        <select id="mc-section" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">n/a</option><option value="type_i">Type I (small appliances)</option>
+          <option value="type_ii">Type II (high pressure)</option><option value="type_iii">Type III (low pressure)</option>
+          <option value="universal">Universal</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Jurisdiction</label>
+        <input id="mc-jurisdiction" placeholder="OH" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Number</label>
+        <input id="mc-number" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Issuer</label>
+        <input id="mc-issuer" placeholder="ESCO, NATE, state board" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Issued</label>
+        <input id="mc-issued" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <!-- Stated, never defaulted. EPA 608 is for life (40 CFR 82.161); NATE
+           renews every two years. The endpoint refuses a record that leaves
+           this blank rather than guessing about a legal document. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Does it expire?</label>
+        <select id="mc-has-expiry" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">State it…</option><option value="true">Yes</option><option value="false">No — lifetime</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Expires</label>
+        <input id="mc-expires" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+    </div>
+    <button class="btn bp" onclick="mechCredAdd()">+ Record Credential</button>
+    <div id="mech-cred-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+    <div id="mech-cred-note" style="font-size:12px;color:var(--g400);margin-top:8px"></div>
+  </div>
+
   <div class="card">
     <div class="tw"><table>
-      <thead><tr><th>Name</th><th>Certs</th><th>EPA 608</th><th>Specialties</th><th>Jobs/Wk</th><th>Revenue</th><th>Status</th></tr></thead>
-      <!-- Hardcoded technician roster removed 2026-08-27. Same fabrication as
-           the commissions panel and found the same way -- by chasing a scanner
-           hit to its line number instead of trusting the earlier fix. Invented
-           people, invented certifications (NATE, EPA 608 Universal), invented
-           jobs-per-week and revenue, presented as a live roster. Certification
-           tracking has no backend in this app; building one is separate scoped
-           work, not this pass. -->
-      <tbody><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
-        Technician certification tracking is not live yet &mdash; no technicians are recorded.
+      <thead><tr><th>Technician</th><th>Type</th><th>Section / jurisdiction</th><th>Issued</th><th>Expires</th><th>Status</th></tr></thead>
+      <tbody id="mech-cred-tbody"><tr><td colspan="6" style="text-align:center;padding:18px;color:var(--g400)">
+        Loading&hellip;
       </td></tr></tbody>
     </table></div>
   </div>
@@ -1210,6 +1260,14 @@ async function runBlueprintAI(input){
     });
     var main = document.getElementById('main');
     if (main) main.scrollTop = 0;
+    // Load on show rather than on boot (2026-09-02). mech_credentials requires
+    // an employee session, and this app's session lives in a module variable
+    // that is only populated after login -- loading at boot would 401 and
+    // render as an empty registry, which is the failure StoneDesk had to be
+    // taught apart from a genuinely empty one the same day.
+    if (id === 'technicians' && typeof mechCredRefresh === 'function') {
+      try { mechCredRefresh(); } catch (e) {}
+    }
   }
   window.showPage = showPage;
   window.openFQ   = function() { showPage('field-quote'); };
@@ -1227,6 +1285,163 @@ async function runBlueprintAI(input){
     return fetch(AUTH_API,{method:'POST',headers:mechHeaders(withSession),body:JSON.stringify(body)})
       .then(function(r){return r.json().catch(function(){return{};}).then(function(d){return {status:r.status,body:d};});});
   }
+
+  // ── TECHNICIAN CREDENTIALS -- THIS APP'S FIRST DATA LAYER (2026-09-02) ────
+  //
+  // SAIRNmechanical had complete per-employee auth and NO data layer: no
+  // registry module, `sairnmechanical` appeared zero times in api/sd-data.js,
+  // and every panel was an honest empty state. mechData() is the first call
+  // this app makes to the shared endpoint.
+  //
+  // It sends BOTH secrets, and that is deliberate: the licence identifies the
+  // company, the session identifies the person. mech_credentials refuses
+  // without the session, and refuses a WRITE without a management role --
+  // nobody records their own licence.
+  var MECH_DATA_API = 'https://sairn.vercel.app/api/sd-data';
+
+  function mechData(action, payload) {
+    if (!mechLic()) return Promise.resolve({ status: 0, body: null });
+    return fetch(MECH_DATA_API, {
+      method: 'POST',
+      headers: mechHeaders(true),
+      body: JSON.stringify({ action: action, resource: 'mech_credentials', payload: payload || {} })
+    }).then(function (r) {
+      return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, body: d }; });
+    }).catch(function () { return { status: 0, body: null }; });
+  }
+
+  var MECH_TYPE_LABELS = {
+    epa_608: 'EPA 608', nate: 'NATE', state_license: 'State licence',
+    manufacturer: 'Manufacturer', safety_training: 'Safety training',
+    medical_gas: 'Medical gas', backflow: 'Backflow'
+  };
+  var MECH_SECTION_LABELS = {
+    type_i: 'Type I (small appliances)', type_ii: 'Type II (high pressure)',
+    type_iii: 'Type III (low pressure)', universal: 'Universal'
+  };
+  // Four states, and 'unknown' is deliberately not styled like a pass. A board
+  // that colours missing paperwork green is the fabricated-KPI problem wearing
+  // a different hat.
+  var MECH_STATUS_STYLE = {
+    current:  'background:#dcfce7;color:#166534',
+    expiring: 'background:#fef3c7;color:#92400e',
+    expired:  'background:#fee2e2;color:#991b1b',
+    unknown:  'background:#e5e7eb;color:#374151'
+  };
+
+  function mechEsc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
+  function mechCredRenderRows(board, rows) {
+    var body = document.getElementById('mech-cred-tbody');
+    if (!body) return;
+    if (!rows || !rows.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">' +
+        'No technician credentials recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.' +
+        '</td></tr>';
+      return;
+    }
+    body.innerHTML = board.rows.map(function (r) {
+      var st = MECH_STATUS_STYLE[r.status] || MECH_STATUS_STYLE.unknown;
+      // The status word is the server's classification, never re-derived here:
+      // two places computing an expiry is two places to disagree about it.
+      var when = r.no_expiry ? 'No expiry'
+        : (r.expires_on ? mechEsc(r.expires_on) + (r.days !== null ? ' (' + r.days + 'd)' : '') : 'not recorded');
+      return '<tr>' +
+        '<td>' + mechEsc(r.technician_id) + '</td>' +
+        '<td>' + mechEsc(MECH_TYPE_LABELS[r.record_type] || r.record_type) + '</td>' +
+        '<td>' + mechEsc(r.epa_section ? (MECH_SECTION_LABELS[r.epa_section] || r.epa_section) : (r.jurisdiction || '—')) + '</td>' +
+        '<td>' + mechEsc(r.issued_on || '—') + '</td>' +
+        '<td>' + when + '</td>' +
+        '<td><span style="' + st + ';padding:2px 9px;border-radius:100px;font-size:11px;font-weight:700">' + mechEsc(r.status) + '</span></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function mechCredRefresh() {
+    var note = document.getElementById('mech-cred-note');
+    return mechData('read', {}).then(function (res) {
+      if (res.status === 401 || res.status === 403) {
+        // A refusal is not an empty registry. Same distinction StoneDesk had to
+        // be taught the same day: "you may not see this" and "there is none of
+        // this" must not render identically.
+        if (note) note.textContent = 'Sign in to see technician credentials — the server declined without an employee session. This is not an empty registry.';
+        mechCredRenderRows({ rows: [] }, []);
+        return;
+      }
+      if (!res.body || !res.body.ok) {
+        if (note) note.textContent = 'Could not load credentials. Nothing is being shown rather than a partial board.';
+        mechCredRenderRows({ rows: [] }, []);
+        return;
+      }
+      if (res.body.provisioned === false) {
+        if (note) note.textContent = 'Credential storage is not set up yet — run sql/mech_credentials_schema.sql. Nothing is recorded, and nothing is being guessed.';
+        mechCredRenderRows({ rows: [] }, []);
+        return;
+      }
+      var b = res.body.board || { rows: [], counts: {}, unknown_count: 0 };
+      if (note) {
+        var c = b.counts || {};
+        note.textContent = (b.rows.length) +
+          ' credential(s): ' + (c.current || 0) + ' current, ' + (c.expiring || 0) + ' expiring, ' +
+          (c.expired || 0) + ' expired, ' + (c.unknown || 0) + ' with no expiry date recorded.' +
+          // Surfaced beside the totals rather than under them.
+          (b.unknown_count ? ' The unknowns are not passes — a missing renewal date is missing evidence.' : '');
+      }
+      mechCredRenderRows(b, res.body.data || []);
+    });
+  }
+  window.mechCredRefresh = mechCredRefresh;
+
+  window.mechCredAdd = function () {
+    var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var err = document.getElementById('mech-cred-err');
+    if (err) err.textContent = '';
+    var type = g('mc-type');
+    var hasExp = g('mc-has-expiry');
+    if (!g('mc-tech')) { if (err) err.textContent = 'Technician id is required.'; return; }
+    if (!type) { if (err) err.textContent = 'Choose a credential type.'; return; }
+    if (type === 'epa_608' && !g('mc-section')) {
+      if (err) err.textContent = 'EPA 608 records must state a section — Type I, II, III and Universal are different equipment, not ranks.';
+      return;
+    }
+    if (hasExp !== 'true' && hasExp !== 'false') {
+      if (err) err.textContent = 'State whether this credential expires. It is not guessed: EPA 608 is for life, NATE renews every two years.';
+      return;
+    }
+    if (hasExp === 'true' && !g('mc-expires')) { if (err) err.textContent = 'An expiry date is required when the credential expires.'; return; }
+    var payload = {
+      // Client-generated and stable. The server refuses a duplicate rather than
+      // overwriting, because a renewal is a NEW record.
+      credential_id: 'MC-' + Date.now() + '-' + Math.floor(Math.random() * 1000),
+      technician_id: g('mc-tech'),
+      record_type: type,
+      epa_section: type === 'epa_608' ? g('mc-section') : null,
+      jurisdiction: g('mc-jurisdiction') || null,
+      credential_no: g('mc-number') || null,
+      issuer: g('mc-issuer') || null,
+      issued_on: g('mc-issued') || null,
+      has_expiry: hasExp === 'true',
+      expires_on: hasExp === 'true' ? g('mc-expires') : null
+    };
+    mechData('write', payload).then(function (res) {
+      if (res.body && res.body.ok) {
+        ['mc-tech', 'mc-number', 'mc-issuer', 'mc-issued', 'mc-expires', 'mc-jurisdiction'].forEach(function (id) {
+          var el = document.getElementById(id); if (el) el.value = '';
+        });
+        mechCredRefresh();
+        return;
+      }
+      // The SERVER's message, not a generic one -- it names which rule was
+      // broken, and those messages exist precisely to be shown.
+      var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
+      if (err) err.textContent = msg;
+    });
+  };
+
   function mechShowBootstrap(){var l=document.getElementById('login'),b=document.getElementById('mech-bootstrap');if(l)l.style.display='none';if(b)b.style.display='';}
   function mechShowLogin(){var l=document.getElementById('login'),b=document.getElementById('mech-bootstrap');if(b)b.style.display='none';if(l)l.style.display='';}
   window.mechShowBootstrap=mechShowBootstrap;

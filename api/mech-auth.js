@@ -472,3 +472,9 @@ function upstream(res, detail) {
 // SAIRNcode's is 'admin' -- so the list is exported instead of duplicated.
 module.exports.PROVISIONING_ROLES = PROVISIONING_ROLES;
 module.exports.EMPLOYEE_TABLE = TABLE;
+// Exported for the same reason PROVISIONING_ROLES above is: api/sd-data.js
+// gates mech_credentials writes on management, and a second hardcoded copy of
+// this set there would pass forever while checking the wrong thing the moment
+// this one changed. Added 2026-09-02 with the credential registry.
+module.exports.MANAGEMENT_ROLES = MANAGEMENT_ROLES;
+module.exports.AUTHENTICATED_ROLES = AUTHENTICATED_ROLES;

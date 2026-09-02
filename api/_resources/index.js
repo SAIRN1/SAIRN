@@ -52,6 +52,9 @@ const REGISTRY_MODULES = [
   require('./sairnsenior'),
   require('./sairncare'),
   require('./sairnroofing'),
+  // SAIRNmechanical joined 2026-09-02 with its first data resource. It had
+  // complete per-employee auth and no registry module at all until then.
+  require('./sairnmechanical'),
 ];
 
 // Fail loudly at load rather than silently letting one app shadow another's

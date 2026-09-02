@@ -31,6 +31,8 @@ const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
+const mechAuth = require('./mech-auth');
+const mechCred = require('./_lib/mech-credentials');
 const dntLocation = require('./_lib/dnt-location');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -595,6 +597,134 @@ module.exports = async (req, res) => {
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
       res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(wRows) && wRows[0]) || body, observed_days: row.observed_days });
+      return;
+    }
+
+    // ── SAIRNMECHANICAL TECHNICIAN CREDENTIALS (2026-09-02) ─────────────────
+    // sql/mech_credentials_schema.sql and api/_lib/mech-credentials.js.
+    // SAIRNmechanical's FIRST data resource -- it had complete per-employee
+    // auth and no data layer at all, and every panel was an honest empty
+    // state. Ranked first of ten capabilities in the 2026-08-27 competitive
+    // research: "Nothing else can be gated correctly until this exists."
+    //
+    // APPEND ONLY. A renewal is a NEW ROW: "what did this technician hold on
+    // the day we dispatched them" is the question these records exist to
+    // answer, and editing a licence row in place destroys it. Plain INSERT
+    // (never merge-duplicates), unique (license_hash, credential_id) in the
+    // schema, and no UPDATE or DELETE grant.
+    //
+    // READ is any authenticated employee -- a dispatcher must see the board.
+    // WRITE is management only: a technician must not be able to record their
+    // own licence. Roles come from api/mech-auth.js rather than a second
+    // hardcoded copy, because SAIRNcode's provisioning role is 'admin' where
+    // most apps' is 'owner', and a duplicated set passes forever while
+    // checking the wrong thing.
+    if (resource === 'mech_credentials' &&
+        (action === 'read' || action === 'write' || action === 'eligibility')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnmechanical');
+      if (!session) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+        return;
+      }
+      const cols = 'credential_id,technician_id,record_type,epa_section,jurisdiction,credential_no,issuer,issued_on,has_expiry,expires_on,notes,recorded_by,created_at';
+      const sel = 'mech_credentials?license_hash=eq.' + enc(licHash) + '&select=' + cols + '&order=created_at.desc';
+
+      if (action === 'read' || action === 'eligibility') {
+        const r = await fetch(rest(sel), { headers });
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (action === 'read') {
+          const board = mechCred.evaluateBoard(rows || [], (payload && payload.today) || nowISO().slice(0, 10), payload && payload.warn_days);
+          res.status(200).json({ ok: true, provisioned: true, data: rows || [], board: board });
+          return;
+        }
+        // eligibility -- compute only, writes nothing. The engine refuses an
+        // empty requirement list rather than answering "anyone may go".
+        const eva = mechCred.evaluateEligibility(
+          rows || [],
+          (payload && payload.requirements) || [],
+          (payload && payload.today) || nowISO().slice(0, 10),
+          payload && payload.warn_days
+        );
+        if (!eva.ok) { res.status(400).json({ error: eva.error }); return; }
+        res.status(200).json({ ok: true, provisioned: true, eligibility: eva });
+        return;
+      }
+
+      // ---- write ----
+      if (!mechAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Manager can record a technician credential' } });
+        return;
+      }
+      const p = payload || {};
+      if (!p.credential_id || !String(p.credential_id).trim()) {
+        res.status(400).json({ error: { code: 'NO_CREDENTIAL_ID', message: 'credential_id is required' } });
+        return;
+      }
+      if (!p.technician_id || !String(p.technician_id).trim()) {
+        res.status(400).json({ error: { code: 'NO_TECHNICIAN', message: 'technician_id is required -- a credential belonging to nobody is not a record' } });
+        return;
+      }
+      if (!mechCred.RECORD_TYPES[p.record_type]) {
+        res.status(400).json({ error: { code: 'UNKNOWN_RECORD_TYPE', message: 'record_type must be one of: ' + Object.keys(mechCred.RECORD_TYPES).join(', ') } });
+        return;
+      }
+      if (p.record_type === 'epa_608' && !mechCred.EPA_SECTIONS[p.epa_section]) {
+        // The section is REQUIRED for EPA 608 and is not defaulted. Type I, II
+        // and III are different equipment, not ranks -- a record with no
+        // section could not answer the only question it exists to answer.
+        res.status(400).json({ error: { code: 'NO_EPA_SECTION', message: 'EPA 608 records must state a section: ' + Object.keys(mechCred.EPA_SECTIONS).join(', ') } });
+        return;
+      }
+      if (typeof p.has_expiry !== 'boolean') {
+        // Stated, never defaulted. EPA 608 is for life (40 CFR 82.161); NATE
+        // renews on two years. Guessing either way would be the app making a
+        // claim about a legal document.
+        res.status(400).json({ error: { code: 'NO_EXPIRY_STATED', message: 'has_expiry must be true or false -- state whether this credential expires rather than leaving it to be guessed' } });
+        return;
+      }
+      const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+      if (p.has_expiry === true && !DATE_RE.test(String(p.expires_on || ''))) {
+        res.status(400).json({ error: { code: 'NO_EXPIRY_DATE', message: 'expires_on (YYYY-MM-DD) is required when has_expiry is true' } });
+        return;
+      }
+
+      const r = await fetch(rest('mech_credentials'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          credential_id: String(p.credential_id),
+          technician_id: String(p.technician_id),
+          record_type: String(p.record_type),
+          epa_section: p.epa_section ? String(p.epa_section) : null,
+          jurisdiction: p.jurisdiction ? String(p.jurisdiction) : null,
+          credential_no: p.credential_no == null ? null : String(p.credential_no),
+          issuer: p.issuer == null ? null : String(p.issuer),
+          issued_on: DATE_RE.test(String(p.issued_on || '')) ? p.issued_on : null,
+          has_expiry: p.has_expiry,
+          expires_on: p.has_expiry ? p.expires_on : null,
+          notes: p.notes == null ? null : String(p.notes),
+          // From the verified session, never the body -- who entered a licence
+          // record is not a field the client gets to assert.
+          recorded_by: session.employee_id || null
+        })
+      });
+      const rows = await r.json();
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Technician credentials are not set up — run sql/mech_credentials_schema.sql' } });
+        return;
+      }
+      if (r.status === 409) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'That credential id already exists. A renewal is a NEW record, not an edit — use a new credential_id.' } });
+        return;
+      }
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
       return;
     }
 
