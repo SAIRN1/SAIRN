@@ -1740,29 +1740,61 @@ function rfRenderWorksheet(d){
 // the server's agreement_status verb, which runs the deterministic engine
 // against the state rule. A client-side date here would be a second source of
 // truth that could drift from the one a court would check.
-var rfSigCtx=null,rfSigDrawn=false;
-function rfSigInit(){
-  var cv=$('agr-sig');if(!cv)return;
-  rfSigCtx=cv.getContext('2d');
-  rfSigCtx.lineWidth=2;rfSigCtx.lineCap='round';rfSigCtx.strokeStyle='#111';
+// ONE signature pad implementation, shared by the agreement pad (#agr-sig) and
+// the proposal-acceptance pad (#jb-sig) -- consolidated 2026-09-02.
+//
+// THE TWO COPIES HAD ALREADY DRIFTED, WHICH IS WHY THIS IS A FIX AND NOT A
+// TIDY-UP. They were identical except for one clause: rfPropSigInit guarded
+// re-entry with `if(!cv||rfPropSigCtx)return;` and rfSigInit only checked
+// `if(!cv)return;`. rfSigInit is called from the claim-open path, so opening
+// the same claim five times bound five sets of seven listeners to the same
+// canvas -- `move` then fired five times per mousemove, restroking the same
+// segment, and nothing was ever removed. The proposal pad, guarded, bound
+// once. Same code, opposite behaviour, on the pad that produces the
+// legally-operative `signature_data` for a contingency agreement.
+//
+// The globals and the four public function names are deliberately unchanged.
+// Call sites read rfSigDrawn/rfPropSigDrawn directly and the open-work row
+// warns that rewriting verified live code inside another change is how a
+// regression gets in unnoticed -- so the duplication is removed and nothing
+// else moves.
+function rfSigPadInstall(canvasId, markDrawn){
+  var cv=$(canvasId);
+  if(!cv)return null;
+  var ctx=cv.getContext('2d');
+  ctx.lineWidth=2;ctx.lineCap='round';ctx.strokeStyle='#111';
   var drawing=false;
   function pos(e){
     var r=cv.getBoundingClientRect();
     var t=(e.touches&&e.touches[0])||e;
     return {x:(t.clientX-r.left)*(cv.width/r.width), y:(t.clientY-r.top)*(cv.height/r.height)};
   }
-  function start(e){e.preventDefault();drawing=true;rfSigDrawn=true;var p=pos(e);rfSigCtx.beginPath();rfSigCtx.moveTo(p.x,p.y);}
-  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);rfSigCtx.lineTo(p.x,p.y);rfSigCtx.stroke();}
+  function start(e){e.preventDefault();drawing=true;markDrawn();var p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);}
+  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);ctx.lineTo(p.x,p.y);ctx.stroke();}
   function end(){drawing=false;}
   cv.addEventListener('mousedown',start);cv.addEventListener('mousemove',move);
   cv.addEventListener('mouseup',end);cv.addEventListener('mouseleave',end);
   cv.addEventListener('touchstart',start,{passive:false});
   cv.addEventListener('touchmove',move,{passive:false});
   cv.addEventListener('touchend',end);
+  return ctx;
+}
+function rfSigPadClear(canvasId,ctx){
+  var cv=$(canvasId);
+  if(!cv||!ctx)return false;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  return true;
+}
+
+var rfSigCtx=null,rfSigDrawn=false;
+function rfSigInit(){
+  // The guard the agreement pad never had. Re-entrant by construction now:
+  // an installed pad is installed once, however many times a claim is opened.
+  if(rfSigCtx)return;
+  rfSigCtx=rfSigPadInstall('agr-sig',function(){rfSigDrawn=true;});
 }
 function rfSigClear(){
-  var cv=$('agr-sig');if(!cv||!rfSigCtx)return;
-  rfSigCtx.clearRect(0,0,cv.width,cv.height);rfSigDrawn=false;
+  if(rfSigPadClear('agr-sig',rfSigCtx))rfSigDrawn=false;
 }
 
 function rfAgreementRefresh(claimId){
@@ -1938,25 +1970,15 @@ function rfAcceptMethodChanged(){
   $('jb-sig-wrap').style.display=wantSig?'':'none';
   if(wantSig)rfPropSigInit();
 }
+// Same shared implementation as the agreement pad -- see rfSigPadInstall.
+// This one always had the re-entry guard; keeping it here means the two pads
+// can no longer disagree about whether they have one.
 function rfPropSigInit(){
-  var cv=$('jb-sig');if(!cv||rfPropSigCtx)return;
-  rfPropSigCtx=cv.getContext('2d');
-  rfPropSigCtx.lineWidth=2;rfPropSigCtx.lineCap='round';rfPropSigCtx.strokeStyle='#111';
-  var drawing=false;
-  function pos(e){var r=cv.getBoundingClientRect();var t=(e.touches&&e.touches[0])||e;
-    return {x:(t.clientX-r.left)*(cv.width/r.width),y:(t.clientY-r.top)*(cv.height/r.height)};}
-  function start(e){e.preventDefault();drawing=true;rfPropSigDrawn=true;var p=pos(e);rfPropSigCtx.beginPath();rfPropSigCtx.moveTo(p.x,p.y);}
-  function move(e){if(!drawing)return;e.preventDefault();var p=pos(e);rfPropSigCtx.lineTo(p.x,p.y);rfPropSigCtx.stroke();}
-  function end(){drawing=false;}
-  cv.addEventListener('mousedown',start);cv.addEventListener('mousemove',move);
-  cv.addEventListener('mouseup',end);cv.addEventListener('mouseleave',end);
-  cv.addEventListener('touchstart',start,{passive:false});
-  cv.addEventListener('touchmove',move,{passive:false});
-  cv.addEventListener('touchend',end);
+  if(rfPropSigCtx)return;
+  rfPropSigCtx=rfSigPadInstall('jb-sig',function(){rfPropSigDrawn=true;});
 }
 function rfPropSigClear(){
-  var cv=$('jb-sig');if(!cv||!rfPropSigCtx)return;
-  rfPropSigCtx.clearRect(0,0,cv.width,cv.height);rfPropSigDrawn=false;
+  if(rfSigPadClear('jb-sig',rfPropSigCtx))rfPropSigDrawn=false;
 }
 
 function rfIssueProposal(){
