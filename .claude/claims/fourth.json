@@ -151,6 +151,16 @@
       "status": "released",
       "released_at": "2026-09-02T14:09:13Z",
       "note": "Written by hand because sairn_claim.py BLOCKED it on a purely lexical overlap -- the sole shared word with both blocking claims was 'gap'. cody holds sairnroofing 'warranty registration and certification-gated tiers gap A1'; hank holds sairndental 'payer enrolment credentialing lifecycle gap B1'. Different apps, different files, different subjects; neither touches sairnsenior.html. Recorded here rather than reworded to slip past the matcher, per CLAUDE.md's rule on defect 1 of that tool."
+    },
+    {
+      "id": "fourth-1788358367",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "recall and reactivation worklist for overdue hygiene patients",
+      "claimed_at": "2026-09-02T14:12:47Z",
+      "claimed_at_epoch": 1788358367.2093823,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
