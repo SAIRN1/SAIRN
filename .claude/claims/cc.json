@@ -171,6 +171,16 @@
       "claimed_at_epoch": 1788359893.4800012,
       "status": "released",
       "released_at": "2026-09-02T14:57:47Z"
+    },
+    {
+      "id": "cc-1788361233",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "audit finding 4.2 and re-verify remaining findings",
+      "claimed_at": "2026-09-02T15:00:33Z",
+      "claimed_at_epoch": 1788361233.0073977,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
