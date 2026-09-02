@@ -198,8 +198,8 @@
       "task": "multi slot trigger document build",
       "claimed_at": "2026-09-02T10:28:39Z",
       "claimed_at_epoch": 1788344919.396069,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T10:46:20Z"
     }
   ]
 }
