@@ -84,7 +84,14 @@ function stubBackend(opts) {
   return calls;
 }
 
-function loadHandler() {
+// A SESSION IS STUBBED HERE SINCE 2026-09-02. slabs/reserve became
+// session-gated with the licence-key exposure fix, so every assertion below
+// about the compare-and-swap needs a caller the gate lets through -- otherwise
+// they all read 403 and prove nothing about reservation logic. The gate itself
+// is asserted in sd-data-session-gate.test.js and once more at the bottom of
+// this file, so stubbing it here cannot hide its removal.
+function loadHandler(opts) {
+  opts = opts || {};
   delete require.cache[require.resolve('./_lib/license')];
   require.cache[require.resolve('./_lib/license')] = {
     exports: {
@@ -92,6 +99,16 @@ function loadHandler() {
         return { valid: true, active: true, license_hash: 'test-hash', trial_ends_at: null, stripe_subscription_id: null };
       }
     }
+  };
+  const realAuth = require('./_lib/auth');
+  delete require.cache[require.resolve('./_lib/auth')];
+  require.cache[require.resolve('./_lib/auth')] = {
+    exports: Object.assign({}, realAuth, {
+      tokenFromRequest: function () { return 'tok'; },
+      verifySessionToken: function () {
+        return opts.noSession ? null : { employee_id: 'emp-1', role: 'sales' };
+      }
+    })
   };
   delete require.cache[require.resolve('./sd-data.js')];
   return require('./sd-data.js');
@@ -223,6 +240,17 @@ async function main() {
     await loadHandler()(mockReq({ id: 'S9', reservedFor: 'Chen' }), res);
     assert.strictEqual(res.statusCode, 409);
     assert.strictEqual(res.body.error.code, 'ALREADY_RESERVED');
+  });
+
+  await test('and reserve itself requires a session -- the licence key alone is not enough', async () => {
+    // Duplicated on purpose with sd-data-session-gate.test.js. Every other
+    // assertion in this file stubs a session in, so without this one, deleting
+    // the gate would leave the whole file green and silent about it.
+    stubBackend({ row: { id: 'S1', status: 'in-stock' } });
+    const res = mockRes();
+    await loadHandler({ noSession: true })(mockReq({ id: 'S1', reservedFor: 'Chen' }), res);
+    assert.strictEqual(res.statusCode, 403);
+    assert.match(res.body.error.message, /sign in first/i);
   });
 
   console.log('\n' + (process.exitCode ? 'FAILURES ABOVE' : 'ALL ' + passed + ' SLAB-RESERVE ASSERTIONS PASS'));

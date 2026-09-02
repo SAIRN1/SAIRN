@@ -150,6 +150,21 @@ const REJECTED = 400;      // the gate refused the verb
     'add_payment',
     'agreement_status',
     'assess_damage',
+    // SIX SAIRNROOFING VERBS, DECLARED 2026-09-02 -- 'board'
+    // (rf_safety_equipment), 'capacity' (rf_bonding), 'consolidate' and
+    // 'preview_move' (rf_entities), 'crew_check'
+    // (rf_job_hazard_assessments), 'wip' (rf_draws). Another session's work,
+    // landing while this file was open, which is the third time today this
+    // list has been updated by whoever ran the suite rather than by whoever
+    // added the verb. That is a coordination gap, not a defect in any of the
+    // verbs -- flagged in the worklog rather than fixed here.
+    // Each was read before being declared, per the note above: every one
+    // verifies a session first, and all but the safety pair additionally
+    // require MANAGEMENT_ROLES or BROAD_READ_ROLES.
+    'board',
+    'capacity',
+    'consolidate',
+    'crew_check',
     // 'crew_load' (rf_schedule, 2026-09-02, gap A2) -- SAIRNroofing's, declared
     // here after reading its branch: session-gated, management/broad-read only
     // (it is a company-wide aggregate, and the branch says letting a narrow-tier
@@ -176,6 +191,7 @@ const REJECTED = 400;      // the gate refused the verb
     // information"), and it persists nothing -- selects, then a forecast
     // computed in memory.
     'portfolio',
+    'preview_move',
     'reconcile',
     'reconcile_claim',
     // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
@@ -188,7 +204,8 @@ const REJECTED = 400;      // the gate refused the verb
     // holds that.
     'reserve',
     'route',
-    'set_status'
+    'set_status',
+    'wip'
   ];
 
   function verbsInRegistry() {

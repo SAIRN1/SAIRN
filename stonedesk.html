@@ -7489,6 +7489,17 @@ function sdInvExport(){
     }
 
     if(!data.length){
+      // A REFUSAL AND AN EMPTY YARD ARE DIFFERENT FACTS (2026-09-02). Since
+      // slabs became session-gated, a read without a session legitimately
+      // returns nothing -- and "No slabs in inventory yet" would be a
+      // confident wrong answer about a yard that may be full. Asked first.
+      if(typeof sdAuthWasRefused==='function' && sdAuthWasRefused('slabs')){
+        host.innerHTML=banner
+          +'<div style="border:1px dashed var(--border);border-radius:10px;padding:24px 20px">'
+          +sdAuthRefusedNote('slab inventory')
+          +'</div>';
+        return;
+      }
       // Honest empty state. The whole point of Phase 1a: no inventory shows
       // as no inventory, never as invented stock.
       host.innerHTML=banner
@@ -25750,6 +25761,31 @@ function getSDSupabase() {
 // role, including Owner, the moment the RBAC gate deployed. Harmless to
 // send on every call (other resources ignore it); sessionStorage key name
 // matches SD_SESSION_KEY in the login controller further down this file.
+// A REFUSAL IS NOT AN EMPTY RESULT (2026-09-02).
+//
+// sdData() answered every failure with `null` and said nothing. That was
+// survivable while slabs/profile/memory needed only the licence key; once they
+// require a session it is not, because a pre-login read now legitimately gets
+// 401/403 and `null` renders as "you have no slabs" rather than "sign in".
+// That is the fabricated-emptiness class this codebase keeps finding, so the
+// refusal is recorded and the surfaces below say so.
+//
+// The RETURN CONTRACT IS UNCHANGED -- still `data` or `null` -- deliberately.
+// Roughly thirty call sites do `if (data)`, and changing what they receive to
+// fix a message would be a far larger change than the problem warrants.
+var _sdAuthRefused = {};   // resource -> true, most recent state
+
+function sdAuthWasRefused(resource) { return !!_sdAuthRefused[resource]; }
+
+// The one line every empty state should show instead of "none yet" when the
+// server refused the read. Kept in one place so the wording cannot drift.
+function sdAuthRefusedNote(what) {
+  return '<div style="padding:14px;text-align:center;font-size:13px;color:var(--muted)">' +
+    '<div style="font-weight:700;color:var(--text);margin-bottom:2px">Sign in to see ' + escHtml(what) + '</div>' +
+    'This is not empty — the server declined to send it without an employee session.' +
+    '</div>';
+}
+
 async function sdData(action, resource, payload) {
   const licKey = sdLicenseKey();
   if (!licKey) return null;
@@ -25764,7 +25800,13 @@ async function sdData(action, resource, payload) {
       headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })
     });
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // 401/403 is "you may not have this", which is a different fact from
+      // "there is none of this", and the two must not render the same.
+      _sdAuthRefused[resource] = (res.status === 401 || res.status === 403);
+      return null;
+    }
+    _sdAuthRefused[resource] = false;
     const j = await res.json();
     return (j && j.ok) ? j.data : null;
   } catch (e) { return null; }
@@ -26095,12 +26137,30 @@ function sendNetworkInsight(insightType, pattern) {
 
 // === HOOK: patch sendMessage to use dynamic system prompt with memory ===
 document.addEventListener('DOMContentLoaded', function() {
-  loadSDProfile();
-  loadSDMemories();
-  // Load slab data on boot so dashboard low-stock alert is live from first screen
-  if(typeof loadSlabs==='function'){ loadSlabs(); _slabLoaded=true; }
-  // Phase 1b lineage. Loaded alongside slabs, not lazily, so the Slabs panel's
-  // block/bundle column is populated on first paint rather than after a sync.
+  // MOVED TO POST-LOGIN, 2026-09-02, AND THIS HAD TO SHIP WITH THE GATE.
+  //
+  // loadSDProfile(), loadSDMemories() and loadSlabs() used to run HERE, on
+  // DOMContentLoaded. The licence key lives in localStorage and survives a tab
+  // close; the session token lives in sessionStorage and does not. So on every
+  // fresh tab these three ran with a bearer key and NO session -- which is
+  // exactly why they worked, and exactly why the licence key alone could read
+  // a shop's inventory, business profile and AI memories.
+  //
+  // Now that api/sd-data.js requires a session for them, leaving these here
+  // would have made all three 403 -- and sdData() answers a failure with
+  // `null` and no explanation, so the result would have been a silently empty
+  // Slabs panel, a dead low-stock alert, and an AI prompt quietly missing the
+  // business profile and shop memories. Nothing would have said why. That is
+  // the fabricated-emptiness class this codebase keeps finding, so the move and
+  // the gate are one change, not two.
+  //
+  // They now run in showApp()'s post-login init list, alongside
+  // sdApprovalsLoad. sdData() also records a refusal now, and the surfaces
+  // below say "sign in" instead of "none" -- see sdAuthRefusedNote().
+  //
+  // Lineage stays here: sd_blocks / sd_bundles / sd_slab_history are NOT
+  // session-gated (api/sd-data.js says so explicitly and why), so gating this
+  // call would be tightening something the audit did not ask about.
   if(typeof sdLoadLineage==='function'){ sdLoadLineage(); }
   // SAIRN Intelligence Network: fetch cached cross-business patterns.
   // Defined further below in this same script block -- no cross-tag timing risk.
@@ -33012,8 +33072,17 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
     // sdApprovalsLoad added 2026-09-02: signed approvals had no server read at
     // all, so a device that had never signed one showed an empty list even
     // when the shop had a dozen.
+    //
+    // loadSDProfile / loadSDMemories / loadSlabs moved here the same day, out
+    // of DOMContentLoaded, because api/sd-data.js now requires a session for
+    // slabs and memory (and will for profile once SAIRNcode's check_license
+    // migration is verified live). They ran pre-login purely because the
+    // licence key alone was enough -- which was the exposure, not a feature.
+    // sdSlabsRender is re-run after loadSlabs so the panel repaints with the
+    // rows rather than keeping whatever the pre-login empty state drew.
     ['dbLoadAll','loadFormulas','watchAllTables','initAI','loadPricing',
-     'renderSuite','loadLastSync','loadWeather','sdApprovalsLoad'].forEach(function(fn) {
+     'renderSuite','loadLastSync','loadWeather','sdApprovalsLoad',
+     'loadSDProfile','loadSDMemories','loadSlabs'].forEach(function(fn) {
       if (typeof window[fn] === 'function') {
         try { window[fn](); } catch(e) {}
       }
@@ -33135,6 +33204,11 @@ var _slabLoaded = false;
 
 function loadSlabs(){
   try{ sdSlabs = JSON.parse(localStorage.getItem('sd_slabs')||'[]'); }catch(e){ sdSlabs=[]; }
+  // Set HERE rather than at the call site (2026-09-02). It used to be assigned
+  // next to the DOMContentLoaded call that no longer exists; leaving it there
+  // would have left the flag false forever and made the slab picker re-load on
+  // every open. The flag belongs to the load, not to one of its callers.
+  _slabLoaded = true;
   slabUpdateDashAlert();
   slabSyncFromSupabase();
 }
@@ -33514,7 +33588,14 @@ function qbOpenSlabPicker(ctx){
   var available=sdSlabs.filter(function(s){return s.status==='in-stock';});
   var body=document.getElementById('slab-action-modal-body');
   if(!available.length){
-    body.innerHTML='<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet. Add some in the Slabs tab.</div><button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
+    // Same distinction as the Slabs panel: if the server refused the read, the
+    // yard is not empty -- we were not allowed to look. Telling a salesperson
+    // "no in-stock slabs" mid-quote when there are dozens is the wrong answer,
+    // not a neutral one.
+    body.innerHTML=((typeof sdAuthWasRefused==='function' && sdAuthWasRefused('slabs'))
+        ? sdAuthRefusedNote('slab inventory')
+        : '<div style="font-size:13px;color:var(--muted)">No in-stock slabs yet. Add some in the Slabs tab.</div>')
+      +'<button class="q-btn" style="margin-top:12px" onclick="document.getElementById(\'slab-action-modal\').style.display=\'none\'">Close</button>';
   } else {
     body.innerHTML='<div style="font-size:14px;font-weight:700;margin-bottom:12px">Pick a Slab for this '+(_slabPickerCtx==='pos'?'Sale':'Quote')+'</div>'+
       '<div style="max-height:320px;overflow-y:auto">'+available.map(function(s){

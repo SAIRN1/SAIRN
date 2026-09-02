@@ -285,6 +285,41 @@ module.exports = async (req, res) => {
   const nowISO = () => new Date().toISOString();
 
   try {
+    // ── SESSION GATE FOR THE THREE ORIGINALLY-BEARER-ONLY RESOURCES ───────
+    // (2026-09-02, after docs/superpowers/specs/2026-09-02-licence-key-exposure-audit.md)
+    //
+    // slabs, profile and memory predate per-employee sessions and were
+    // reachable with the licence key alone. The audit proved what that meant
+    // in practice: the key is a bearer credential, StoneDesk was printing it
+    // into a link the shop is told to send to customers, and anyone holding
+    // it could read the whole slab inventory, the business profile (company,
+    // EIN, revenue range, owner) and the shop's AI memories -- and WRITE
+    // slabs.
+    //
+    // `profile` READ is deliberately NOT in this list yet. SAIRNcode used it
+    // as its pre-login licence probe, which it cannot do with a session; it
+    // now calls api/sc-auth.js check_license instead, and this gate closes
+    // once that is live and verified. Recorded here rather than left as a
+    // silent omission, because a gate with an undocumented hole is the thing
+    // the audit argued against.
+    const SD_SESSION_GATED = {
+      'slabs':   ['read', 'write', 'reserve'],
+      'profile': ['write'],
+      'memory':  ['read', 'write']
+    };
+    if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) {
+      const gateSession = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!gateSession) {
+        res.status(403).json({
+          error: {
+            code: 'FORBIDDEN',
+            message: 'A valid employee session is required — sign in first'
+          }
+        });
+        return;
+      }
+    }
+
     // ── PROFILE ──────────────────────────────────────────────────────────
     if (resource === 'profile' && action === 'read') {
       const r = await fetch(rest(
