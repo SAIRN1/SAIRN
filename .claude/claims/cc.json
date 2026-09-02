@@ -98,8 +98,8 @@
       "task": "and nexus style profile",
       "claimed_at": "2026-09-02T10:43:55Z",
       "claimed_at_epoch": 1788345835.971716,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T11:20:57Z"
     }
   ]
 }
