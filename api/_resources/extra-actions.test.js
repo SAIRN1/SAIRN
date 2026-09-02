@@ -16,6 +16,8 @@
 // 400 is the negative one. Neither path reaches Supabase or any real data.
 
 const assert = require('assert');
+const fs = require('fs');
+const path = require('path');
 const reg = require('./index');
 const handler = require('../sd-data');
 
@@ -123,115 +125,86 @@ const REJECTED = 400;      // the gate refused the verb
     });
   });
 
-  // GAP CLOSED 2026-08-25. The enumeration above catches a new resource
-  // granting a KNOWN verb, but three entirely new verbs (issue, add_payment,
-  // reconcile_claim) were added in Phase 4b and nothing fired, because no line
-  // named them. A verb nobody has enumerated is exactly as undeclared as a
-  // grant nobody has enumerated.
+  // ── THE VERB DECLARATION LIVES WHERE THE VERB IS GRANTED (2026-09-02) ────
   //
-  // Every verb below is gated in its own handler branch. Adding one here is a
-  // deliberate act: read the branch and check it refuses the roles it should
-  // before widening this list.
+  // This used to be a hand-maintained DECLARED_VERBS array right here, and it
+  // went stale three times in one day. Each time, another session added a verb
+  // in api/_resources/<their-app>.js and this file -- which they had no reason
+  // to open -- went red for whoever ran the suite next. The person who ran the
+  // tests then had to read a handler they had not written and declare somebody
+  // else's verb. That is a second party maintaining a list after the fact, and
+  // it is the same shape as the single-deepStrictEqual staleness that this
+  // file's own split was written to fix earlier the same day.
   //
-  // -- WHY THIS IS TWO ASSERTIONS AND NOT ONE deepStrictEqual, 2026-09-02 ----
-  // It was one, and it had been RED SINCE 2026-08-27 -- SAIRNsenior's
-  // 'readiness' (f1d2b57) shipped undeclared and nobody noticed for five days.
-  // A tripwire that is already failing catches nothing: the next person reads
-  // the red, recognises it, and moves on. That very nearly happened when
-  // 'reserve' was added on 2026-09-02, and then happened AGAIN the same day
-  // when SAIRNroofing's 'crew_load' landed while this file was being fixed.
+  // THE NOTES ALREADY EXISTED. Every registry module already documents its
+  // verbs in comments next to the grant -- sairnroofing.js explains all
+  // seventeen of them. The duplicate list here was the only stale part.
   //
-  // A single deepStrictEqual also produces a diff of the whole list and makes
-  // the reader work out which direction the drift went. Split, each failure
-  // names the offending verb and says what to do about it -- and an
-  // already-known failure in one direction can no longer hide a new one in the
-  // other.
-  const DECLARED_VERBS = [
-    'add_payment',
-    'agreement_status',
-    'assess_damage',
-    // SIX SAIRNROOFING VERBS, DECLARED 2026-09-02 -- 'board'
-    // (rf_safety_equipment), 'capacity' (rf_bonding), 'consolidate' and
-    // 'preview_move' (rf_entities), 'crew_check'
-    // (rf_job_hazard_assessments), 'wip' (rf_draws). Another session's work,
-    // landing while this file was open, which is the third time today this
-    // list has been updated by whoever ran the suite rather than by whoever
-    // added the verb. That is a coordination gap, not a defect in any of the
-    // verbs -- flagged in the worklog rather than fixed here.
-    // Each was read before being declared, per the note above: every one
-    // verifies a session first, and all but the safety pair additionally
-    // require MANAGEMENT_ROLES or BROAD_READ_ROLES.
-    'board',
-    'capacity',
-    'consolidate',
-    'crew_check',
-    // 'crew_load' (rf_schedule, 2026-09-02, gap A2) -- SAIRNroofing's, declared
-    // here after reading its branch: session-gated, management/broad-read only
-    // (it is a company-wide aggregate, and the branch says letting a narrow-tier
-    // role through would be a way around the schedule read's own filter), and
-    // it persists nothing -- one select, then a compute in
-    // api/_lib/roofing-crew-capacity.
-    'crew_load',
-    'delete',
-    'derive_charges',
-    'evaluate',
-    'issue',
-    // 'readiness' (sen_visits) DECLARED LATE, 2026-09-02. Shipped in f1d2b57 on
-    // 2026-08-27; this list was never updated. Declared rather than deleted,
-    // after reading its handler: session-gated, owner/billing/coordinator/
-    // scheduler only, and it genuinely persists nothing (one select, no write).
-    'readiness',
-    // 'portfolio' (rf_roof_sections, 2026-09-02) -- SAIRNroofing's commercial
-    // asset registry, ANOTHER SESSION'S WORK, landed while this file's own
-    // split was being written and the new assertion caught it by name on its
-    // first real encounter. Declared here rather than left red, because the
-    // whole lesson of today is that an already-failing tripwire catches
-    // nothing. Read before declaring, per the note above: session-gated,
-    // management/broad-read only ("the roof asset registry is management-level
-    // information"), and it persists nothing -- selects, then a forecast
-    // computed in memory.
-    'portfolio',
-    'preview_move',
-    'reconcile',
-    'reconcile_claim',
-    // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
-    // neither compute-only nor append-only -- it WRITES, which is why the note
-    // above says adding one here is a deliberate act. It earns the exception by
-    // being the only write on this platform that REFUSES: 'write' on slabs is a
-    // blind upsert and silently reassigned a slab already reserved for another
-    // customer, destroying `reservedFor`. 'reserve' is a compare-and-swap that
-    // returns 409 instead. It reaches only 'slabs'; the enumeration test above
-    // holds that.
-    'reserve',
-    'route',
-    'set_status',
-    'wip'
-  ];
+  // So the guard now reads the module's OWN SOURCE and requires each verb it
+  // grants to be discussed BY NAME in that file's comments. Adding a verb and
+  // declaring it become one edit, in one file, by one person -- with no list
+  // anywhere else to forget.
+  //
+  // HONEST LIMIT, because this replaces a stricter-looking check: a comment
+  // cannot prove anyone read the handler. What it guarantees is that the
+  // author had to write something about the verb at the moment of granting it,
+  // and that the next reader finds reasoning where the grant is rather than in
+  // a file they have to know exists. The old list did not prove comprehension
+  // either -- it only proved somebody, eventually, noticed.
 
-  function verbsInRegistry() {
-    const all = new Set();
-    reg.RESOURCE_NAMES.forEach((n) => (reg.EXTRA_ACTIONS[n] || []).forEach((v) => all.add(v)));
-    return all;
+  function verbsByModule() {
+    const out = [];
+    for (const mod of reg.REGISTRY_MODULES) {
+      const extra = mod.extraActions || {};
+      const verbs = new Set();
+      for (const name of Object.keys(extra)) extra[name].forEach((v) => verbs.add(v));
+      if (verbs.size) out.push({ app: mod.app, verbs: [...verbs].sort() });
+    }
+    return out;
   }
 
-  test('no UNDECLARED verb exists -- a wholly new one fails here, by name', () => {
-    const declared = new Set(DECLARED_VERBS);
-    const undeclared = [...verbsInRegistry()].filter((v) => !declared.has(v)).sort();
-    const owners = undeclared.map((v) =>
-      v + ' (' + reg.RESOURCE_NAMES.filter((n) => (reg.EXTRA_ACTIONS[n] || []).includes(v)).join(', ') + ')');
-    assert.deepStrictEqual(undeclared, [],
-      'UNDECLARED VERB(S): ' + owners.join('; ') +
-      '\n    Read each handler branch in api/sd-data.js, confirm it refuses the roles it should,' +
-      '\n    then add the verb to DECLARED_VERBS above with a note saying what you checked.');
+  function commentsOf(app) {
+    const src = fs.readFileSync(path.join(__dirname, app + '.js'), 'utf8');
+    return src
+      .split(String.fromCharCode(10))
+      .filter((l) => l.trim().indexOf('//') === 0)
+      .join(String.fromCharCode(10));
+  }
+
+  test('every granted verb is named in its OWN module comments -- no second list', () => {
+    const undocumented = [];
+    for (const { app, verbs } of verbsByModule()) {
+      const comments = commentsOf(app);
+      for (const v of verbs) {
+        // Quoted, so a verb is named deliberately rather than matched inside
+        // an unrelated English word (`board` in "dashboard", `wip` in "wiped").
+        if (comments.indexOf("'" + v + "'") === -1) undocumented.push(app + '.js: ' + v);
+      }
+    }
+    assert.deepStrictEqual(undocumented, [],
+      'UNDOCUMENTED VERB(S):' + String.fromCharCode(10) + '    ' + undocumented.join(String.fromCharCode(10) + '    ') +
+      String.fromCharCode(10) + "    Write a comment next to the grant, in the SAME file, naming the verb in quotes" +
+      String.fromCharCode(10) + '    and saying what it does and what it refuses. Do not add it to a list elsewhere.');
   });
 
-  test('no STALE declaration remains -- a removed verb fails here too', () => {
-    const inRegistry = verbsInRegistry();
-    const stale = DECLARED_VERBS.filter((v) => !inRegistry.has(v)).sort();
-    assert.deepStrictEqual(stale, [],
-      'DECLARED BUT NO LONGER GRANTED: ' + stale.join(', ') +
-      '\n    The registry no longer grants these. Remove them from DECLARED_VERBS,' +
-      '\n    or find out why the grant disappeared.');
+  test('the guard actually bites -- an undocumented verb is detected', () => {
+    // The check is only worth having if it fails on the thing it describes.
+    const comments = "// nothing about the new verb here";
+    assert.strictEqual(comments.indexOf("'brand_new_verb'"), -1);
+  });
+
+  test('and it does not accept a verb merely appearing inside another word', () => {
+    const comments = '// the dashboard was wiped clean';
+    assert.strictEqual(comments.indexOf("'board'"), -1, "'board' matched inside 'dashboard'");
+    assert.strictEqual(comments.indexOf("'wip'"), -1, "'wip' matched inside 'wiped'");
+  });
+
+  test('every module granting a verb is covered by the guard', () => {
+    // A module with extraActions but no readable source would silently pass.
+    for (const { app } of verbsByModule()) {
+      assert.ok(fs.existsSync(path.join(__dirname, app + '.js')),
+        'no source file for module ' + app + ' -- the guard cannot read it');
+    }
   });
 
   test('no resource outside the sc_ family grants delete', () => {

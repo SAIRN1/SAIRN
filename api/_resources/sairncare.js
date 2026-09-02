@@ -83,9 +83,18 @@ module.exports = {
   // off) and different retention. See sql/sairncare_op_audit_schema.sql.
     'alf_op_audits',
   ],
-  // Compute-only verbs, one resource each. All three read real data and write
-  // NOTHING -- previewing a routing decision, a compliance finding, or the
-  // charges a document implies must never itself route, find, or bill.
+  // Compute-only verbs, one resource each: 'route' on alf_payer_rules,
+  // 'evaluate' on alf_compliance_rules, 'derive_charges' on alf_billing. All
+  // three read real data and write NOTHING -- previewing a routing decision, a
+  // compliance finding, or the charges a document implies must never itself
+  // route, find, or bill.
+  //
+  // Named individually as of 2026-09-02, not out of pedantry: the guard in
+  // extra-actions.test.js now requires every verb a module grants to be
+  // discussed BY NAME in that module's own comments, so that adding a verb and
+  // documenting it are the same edit in the same file. Two of these three were
+  // described collectively and named nowhere, so a reader grepping for
+  // `derive_charges` found the grant and no reasoning.
   //
   // Declared here because the gate used to live in api/sd-data.js as three
   // hand-written `action === 'x' && resource === 'y'` flags, separate from the
