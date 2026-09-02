@@ -2674,8 +2674,12 @@ function saveAssignment(){
     payments:rfAssignDraft.payments,
     // Sent so the SERVER can refuse a non-compliant sub. The same policy the
     // directory is being read under, so the board and the gate cannot disagree.
+    // warn_days rides along for that reason too: without it the refusal came
+    // back carrying warnings computed at the engine default rather than the
+    // window set on the panel behind this modal.
     today:rfLocalToday(), required:rfSubsRequired()
   };
+  var gw=rfSubsWarnDays();if(gw!==undefined)p.warn_days=gw;
   $('as-err').textContent='Saving…';
   rfDataRaw('write','sub_assignments',p).then(function(r){
     // NOT_ASSIGNABLE arrives here with the server's reasons spelled out. Shown

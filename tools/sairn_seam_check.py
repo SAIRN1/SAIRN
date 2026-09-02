@@ -133,6 +133,14 @@ def discover_pairs(root='.'):
     return uniq
 
 
+# `if (x)` and `return (x)` look exactly like a call to a regex. Excluded so a
+# control-flow keyword is never mistaken for a delegate.
+KEYWORDS_NOT_CALLS = frozenset([
+    'if', 'for', 'while', 'switch', 'catch', 'return', 'typeof', 'void',
+    'delete', 'new', 'await', 'in', 'of', 'do', 'else', 'function',
+])
+
+
 def balanced(src, start, open_ch='{', close_ch='}'):
     """Substring from an opening brace to its match. None if unbalanced."""
     depth, i = 0, start
@@ -148,11 +156,14 @@ def balanced(src, start, open_ch='{', close_ch='}'):
     return None
 
 
-def engine_reads(lib_src, fn):
+def engine_reads(lib_src, fn, _depth=0):
     """Field names the engine function reads off its single object parameter.
 
     Returns (reads, problem). `problem` is a human sentence when the shape is
     one this tool cannot read, and `reads` is then meaningless.
+
+    `_depth` is internal: it bounds delegation-following to ONE level. Callers
+    always leave it alone.
     """
     m = re.search(r'function\s+' + re.escape(fn) + r'\s*\(([^)]*)\)', lib_src)
     if not m:
@@ -189,6 +200,46 @@ def engine_reads(lib_src, fn):
         aliases.add(m.group(1))
     for a in aliases:
         reads |= set(re.findall(r'(?<![.\w])' + re.escape(a) + r'\.([A-Za-z_$][\w$]*)', body))
+
+    # FOLLOW ONE LEVEL OF WHOLE-OBJECT DELEGATION. Added 2026-09-02, after this
+    # tool reported CANNOT TELL on subcontractor-compliance.js's canAssign():
+    #
+    #     function canAssign(input) {
+    #       input = input || {};
+    #       const ev = evaluateSubcontractor(input);   // <- never reads a field
+    #
+    # That verdict was accurate and blind. Delegation is a normal pattern --
+    # arguably cleaner than the copy-alias shape this tool ALREADY follows
+    # above -- and the fields canAssign depends on are exactly the ones its
+    # delegate reads. The alternative considered and rejected was restructuring
+    # canAssign to read fields it does not need, purely to satisfy a scanner.
+    # That is the same hollowing-out CLAUDE.md warns about when it says not to
+    # reword a claim string to slip past the overlap matcher: the fix belongs
+    # in the tool, not in code bent around the tool.
+    #
+    # STRICT ON PURPOSE -- one level, same file, WHOLE parameter only:
+    #   * `other(pname)` with pname as the sole argument. A partial forward
+    #     like `other(pname.sub)` is a different thing and is left alone.
+    #   * one level, so a chain of three delegates still reports CANNOT TELL
+    #     rather than being followed on a guess.
+    #   * if the delegate is itself a shape this tool cannot read, that problem
+    #     PROPAGATES. Inheriting a delegate's blindness as a clean pass would
+    #     be exactly the vacuous pass the `if not reads` branch below exists to
+    #     refuse -- the dnt-location.js lesson, one call deeper.
+    if _depth == 0:
+        for dm in re.finditer(r'(?<![.\w])([A-Za-z_$][\w$]*)\s*\(\s*'
+                              + re.escape(pname) + r'\s*\)', body):
+            callee = dm.group(1)
+            if callee == fn or callee in KEYWORDS_NOT_CALLS:
+                continue
+            sub_reads, sub_problem = engine_reads(lib_src, callee, _depth=1)
+            if sub_problem and sub_problem.startswith('no function declaration found'):
+                continue  # not defined in this file -- not delegation we can follow
+            if sub_problem:
+                return reads | sub_reads, (
+                    '%s() hands its whole input to %s(), whose own shape this tool '
+                    'cannot read: %s' % (fn, callee, sub_problem))
+            reads |= sub_reads
 
     dynamic = re.search(re.escape(pname) + r'\s*\[', body)
     problem = None

@@ -3830,6 +3830,29 @@ module.exports = async (req, res) => {
         // operator sets their own policy; with neither, nothing is required and
         // only an inactive sub is refused.
         const today = payload.today || null;
+        // warn_days FORWARDED to the gate, added 2026-09-02. Found by
+        // tools/sairn_seam_check.py the moment it learned to follow one level
+        // of whole-object delegation -- canAssign() hands its input straight to
+        // evaluateSubcontractor(), so its real dependencies were invisible to
+        // the tool and this omission had been sitting behind a CANNOT TELL.
+        //
+        // It does not change WHO IS REFUSED: `blocking` is missing/expired/
+        // unreadable and the warn window only classifies 'expiring'. What it
+        // changes is the `evaluation` this endpoint hands back with the
+        // refusal -- its warnings were computed at the engine's default 30
+        // days no matter what the operator had configured, so the assignment
+        // gate and the directory board could disagree about the same sub on
+        // the same day. Narrow, and exactly the kind of thing that is only
+        // ever found by a tool.
+        let gateWarn;
+        if (payload.warn_days !== undefined && payload.warn_days !== null) {
+          const gwd = payload.warn_days;
+          if (typeof gwd !== 'number' || !isFinite(gwd) || Math.floor(gwd) !== gwd || gwd < 0 || gwd > 365) {
+            res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+            return;
+          }
+          gateWarn = gwd;
+        }
         const required = Array.isArray(payload.required) ? payload.required : [];
         if (required.length) {
           const sr = await fetch(rest('subcontractors?license_hash=eq.' + enc(licHash) +
@@ -3837,7 +3860,7 @@ module.exports = async (req, res) => {
           const srows = sr.ok ? await sr.json() : null;
           const theSub = Array.isArray(srows) && srows[0];
           if (!theSub) { res.status(400).json({ error: { code: 'NO_SUCH_SUB', message: 'sub_assignments: no subcontractor with that sub_id' } }); return; }
-          const gate = subs.canAssign({ subcontractor: theSub, today: today, required: required });
+          const gate = subs.canAssign({ subcontractor: theSub, today: today, required: required, warn_days: gateWarn });
           if (!gate.ok) { res.status(400).json({ error: gate.error }); return; }
           if (!gate.allowed) {
             res.status(409).json({ error: { code: 'NOT_ASSIGNABLE', message: 'Cannot assign: ' + gate.reasons.join('; '), reasons: gate.reasons } });
