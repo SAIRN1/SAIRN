@@ -166,6 +166,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-assets" onclick="nav('assets')">Roof Assets<span class="badge" id="assets-badge" style="display:none"></span></button>
       <button class="sb" id="sb-draws" onclick="nav('draws')">Progress Billing<span class="badge" id="draws-badge" style="display:none"></span></button>
       <button class="sb" id="sb-safety" onclick="nav('safety')">Safety<span class="badge" id="safety-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-prequal" onclick="nav('prequal')">Prequalification<span class="badge" id="prequal-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -672,6 +673,50 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Prequalification (2026-09-02). Tier-B gap B7, facing the OPPOSITE way
+           from SAIRNbuild's prequal fields: those qualify the subs a GC hires,
+           these are what a GC asks THIS contractor for.
+           NO EMR THRESHOLD AND NO DEFAULT DOCUMENT LIST. "Under 1.0" is each
+           GC's own criterion and every prequalification form differs, so the
+           required list is typed per submission and the rate is reported,
+           never judged. -->
+      <div class="panel" id="panel-prequal">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Prequalification &amp; Bonding</div>
+            <div class="psub" id="prequal-scope-note">--</div>
+          </div>
+          <div class="pa">
+            <button class="btn bo" id="pq-doc-btn" onclick="openPqDocModal()" style="display:none;">+ Document</button>
+            <button class="btn bp" id="pq-bond-btn" onclick="openBondModal()" style="display:none;">+ Bonding Letter</button>
+          </div>
+        </div>
+        <div class="card"><div class="cb">
+          <div class="fg" style="margin:0 0 8px;"><label>What this GC asked for (comma separated kinds)</label>
+            <input id="pq-required" placeholder="emr_letter, financials, safety_program, references, bond_letter"></div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Warn within (days)</label><input type="number" id="pq-warn" value="30" min="0" max="365"></div>
+            <div class="fg" style="margin:0;"><label>Job value to test against the bond</label><input id="pq-candidate" placeholder="optional"></div>
+            <button class="btn bo" onclick="rfLoadPrequal()">Check</button>
+          </div>
+          <div class="note" style="margin-top:8px;">
+            There is <strong>no default list</strong> here on purpose &mdash; every GC's form asks for something slightly
+            different, and a built-in one would tell you that you are ready against a form nobody sent. An
+            <strong>EMR is recorded and shown, never judged</strong>: &ldquo;under 1.0&rdquo; is each GC's own criterion,
+            not a rule this app may apply on your behalf.
+          </div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Packet readiness</div></div>
+          <div class="cb" id="pq-readiness"><div class="empty">Enter what this GC asked for, then press Check.</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Bonding capacity</div></div>
+          <div class="cb" id="pq-bonding"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Documents on file</div></div>
+          <div class="cb" id="pq-docs"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -1019,6 +1064,7 @@ function nav(id){
   if(id==='assets'){ rfLoadAssets(); }
   if(id==='draws'){ rfLoadDraws(); }
   if(id==='safety'){ rfLoadSafety(); }
+  if(id==='prequal'){ rfLoadPrequal(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2817,6 +2863,225 @@ function saveAssignment(){
   });
 }
 
+// ── PREQUALIFICATION & BONDING (gap B7, 2026-09-02) ────────────────────────
+// The contractor's OWN packet -- what a GC asks THEM for -- which is the
+// opposite direction from SAIRNbuild's prequal fields on its subcontractors.
+// Every verdict is computed server-side by api/_lib/roofing-prequal.js.
+var rfPqDocs=[],rfPqReadiness=null,rfBonding=null;
+
+function rfPqWarn(){
+  var el=$('pq-warn');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+function rfPqRequired(){
+  return (($('pq-required')||{}).value||'').split(',').map(function(x){return x.trim();}).filter(Boolean);
+}
+
+function rfLoadPrequal(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  ['pq-doc-btn','pq-bond-btn'].forEach(function(id){var b=$(id);if(b)b.style.display=isMgmt?'':'none';});
+  var note=$('prequal-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'What a general contractor asks you for, and what you can bond.'
+    : 'Prequalification position, read-only for your role.';
+  var p={today:rfLocalToday()};
+  var w=rfPqWarn();if(w!==undefined)p.warn_days=w;
+  return rfDataRaw('read','rf_prequal_documents',p).then(function(r){
+    if(!r.ok){
+      $('pq-docs').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Prequalification and bonding are management-level information.'
+        : rfEsc(r.msg||'Could not load documents.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('pq-docs').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_prequal_schema.sql, then refresh.</div>';
+      $('pq-readiness').innerHTML='<div class="empty">&mdash;</div>';
+      $('pq-bonding').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfPqDocs=d.data||[];
+    rfRenderPqDocs();
+    var rp=Object.assign({},p,{required_kinds:rfPqRequired()});
+    return rfDataRaw('readiness','rf_prequal_documents',rp).then(function(x){
+      rfPqReadiness=(x.ok&&x.data&&x.data.readiness)||null;
+      rfRenderPqReadiness();
+      var cp=Object.assign({},p);
+      var cv=(($('pq-candidate')||{}).value||'').trim();
+      if(cv!==''){ var n=parseFloat(cv); if(isFinite(n))cp.candidate_value=n; }
+      return rfDataRaw('capacity','rf_bonding',cp).then(function(c){
+        var cd=(c.ok&&c.data)||{};
+        rfBonding=cd.capacity||null;
+        rfRenderBonding(cd);
+      });
+    });
+  });
+}
+
+function rfPqStateBadge(st){
+  var cls={current:'bg',expiring:'bw',expired:'br',no_expiry_recorded:'bx',unknown:'bx'}[st]||'bx';
+  return '<span class="badge '+cls+'">'+rfEsc(String(st).replace(/_/g,' '))+'</span>';
+}
+
+function rfRenderPqDocs(){
+  var el=$('pq-docs');
+  if(!rfPqDocs.length){el.innerHTML='<div class="empty">No prequalification documents on file.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Kind</th><th>Issuer</th><th>Figure</th><th>Expires</th><th>State</th><th>Notes</th><th></th></tr></thead><tbody>'+
+    rfPqDocs.map(function(x,i){
+      var e=x.evaluation;
+      if(!e){
+        return '<tr><td><strong>'+rfEsc(x.kind||'--')+'</strong></td><td colspan="5"><span class="badge br">'+
+          rfEsc((x.evaluation_error&&x.evaluation_error.message)||'not evaluated')+'</span></td><td></td></tr>';
+      }
+      // The figure is printed with its year and source and NO verdict beside
+      // it. An EMR judged here would be this app applying somebody else's
+      // prequalification criterion on the contractor's behalf.
+      return '<tr><td><strong>'+rfEsc(e.kind||'--')+'</strong></td>'+
+        '<td>'+rfEsc(e.issuer||'--')+'</td>'+
+        '<td>'+(e.value===null?'--':rfEsc(String(e.value))+(e.value_year?' <span style="font-size:12px;color:var(--muted)">('+e.value_year+')</span>':'')+
+          '<br><span style="font-size:11px;color:var(--muted)">'+rfEsc(e.source||'no source')+'</span>')+'</td>'+
+        '<td>'+rfEsc(e.expires_on||'--')+(e.days_left!==null&&e.days_left!==undefined?' <span style="font-size:12px;color:var(--muted)">'+e.days_left+'d</span>':'')+'</td>'+
+        '<td>'+rfPqStateBadge(e.state)+'</td>'+
+        '<td style="font-size:11px;color:var(--danger)">'+rfEsc((e.problems||[]).join('; '))+'</td>'+
+        '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openPqDocModal('+i+')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+}
+
+function rfRenderPqReadiness(){
+  var el=$('pq-readiness');
+  var R=rfPqReadiness;
+  if(!R){el.innerHTML='<div class="empty">Not computed.</div>';return;}
+  if(!R.required.length){
+    el.innerHTML='<div class="empty">Type the document kinds this GC asked for above, then press Check. There is no default list &mdash; every form differs.</div>';
+    return;
+  }
+  var out='<div style="margin-bottom:10px;">'+(R.ready
+    ? '<span class="badge bg" style="font-size:13px;padding:6px 14px;">Ready to submit</span>'
+    : '<span class="badge br" style="font-size:13px;padding:6px 14px;">Not ready</span>')+'</div>';
+  // Four failure states, listed apart, because they are four different jobs.
+  var line=function(label,arr,cls){
+    if(!arr||!arr.length)return '';
+    return '<div style="margin-bottom:6px;"><span class="badge '+cls+'">'+label+'</span> '+rfEsc(arr.join(', '))+'</div>';
+  };
+  out+=line('never collected',R.missing,'br')+
+       line('expired',R.expired,'br')+
+       line('on file, no expiry date',R.undated,'bx')+
+       line('expiring soon',R.expiring,'bw')+
+       line('satisfied',R.satisfied,'bg')+
+       line('held but not asked for',R.extra,'bb');
+  var urgent=(R.missing.length+R.expired.length+R.undated.length);
+  var b=$('prequal-badge');
+  if(b){ b.textContent=urgent||''; b.style.display=urgent?'':'none'; b.className='badge '+(urgent?'br':'bx'); }
+  el.innerHTML=out;
+}
+
+function rfRenderBonding(cd){
+  var el=$('pq-bonding');
+  var B=rfBonding;
+  if(!B){
+    el.innerHTML='<div class="empty">No bonding letter recorded.</div>';
+    return;
+  }
+  var out='<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:10px;">'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Surety</div><strong>'+rfEsc(B.surety||'--')+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Single project</div><strong>'+rfMoney(B.single_project_limit)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Aggregate</div><strong>'+rfMoney(B.aggregate_limit)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Committed backlog</div><strong>'+rfMoney(B.committed_backlog)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Remaining</div><strong style="'+(B.over_aggregate?'color:var(--danger)':'')+'">'+rfMoney(B.remaining_aggregate)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Letter</div>'+rfPqStateBadge(B.letter_state)+'</div></div>';
+  if(B.over_aggregate){
+    out+='<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;">Committed backlog is <strong>'+
+      rfMoney(B.over_aggregate)+' over the aggregate limit.</strong> Reported rather than shown as zero &mdash; it is exactly what a surety needs to hear about.</div>';
+  }
+  // The basis is printed, not just the number. A backlog figure with no stated
+  // derivation is one nobody can check.
+  if(B.backlog_basis){
+    out+='<div style="font-size:11px;color:var(--muted);margin-bottom:8px;">Backlog basis: '+rfEsc(B.backlog_basis)+'</div>';
+  }else if(cd&&cd.wip_provisioned===false){
+    out+='<div class="note" style="margin-bottom:8px;">Progress billing is not set up, so no committed backlog could be worked out and remaining capacity is unknown &mdash; not zero.</div>';
+  }
+  if(B.candidate!=='unknown'){
+    var cls={within_capacity:'bg',over_capacity:'br',cannot_tell:'bx'}[B.candidate]||'bx';
+    out+='<div style="margin-bottom:8px;"><span class="badge '+cls+'">'+rfEsc(String(B.candidate).replace(/_/g,' '))+'</span> for '+
+      rfMoney(B.candidate_value)+
+      ((B.candidate_reasons&&B.candidate_reasons.length)?' <span style="font-size:12px;color:var(--muted)">'+rfEsc(B.candidate_reasons.join('; '))+'</span>':'')+'</div>';
+  }
+  if(B.problems&&B.problems.length){
+    out+='<div style="font-size:11px;color:var(--danger)">'+rfEsc(B.problems.join('; '))+'</div>';
+  }
+  el.innerHTML=out;
+}
+
+function openPqDocModal(i){
+  var x=(typeof i==='number')?rfPqDocs[i]:null;
+  $('pd-modal-title').textContent=x?'Edit Document':'Add Document';
+  $('pd-id').value=x?(x.document_id||''):'';
+  $('pd-id').readOnly=!!x;
+  $('pd-kind').value=(x&&x.kind)||'';
+  $('pd-issuer').value=(x&&x.issuer)||'';
+  $('pd-eff').value=(x&&x.effective_on)||'';
+  $('pd-exp').value=(x&&x.expires_on)||'';
+  $('pd-value').value=(x&&x.value!=null)?x.value:'';
+  $('pd-year').value=(x&&x.value_year!=null)?x.value_year:'';
+  $('pd-ref').value=(x&&x.reference)||'';
+  $('pd-source').value=(x&&x.source)||'';
+  $('pd-err').textContent='';
+  $('pqdoc-modal').classList.add('on');
+}
+function closePqDocModal(){ $('pqdoc-modal').classList.remove('on'); }
+
+function savePqDoc(){
+  var id=($('pd-id').value||'').trim(),kind=($('pd-kind').value||'').trim();
+  if(!id||!kind){ $('pd-err').textContent='Document id and kind are both required.'; return; }
+  var numOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseFloat(v); return isFinite(n)?n:'BAD'; };
+  var intOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseInt(v,10); return isFinite(n)?n:'BAD'; };
+  var val=numOrNull($('pd-value').value), yr=intOrNull($('pd-year').value);
+  if(val==='BAD'||yr==='BAD'){ $('pd-err').textContent='The figure and its year must be numbers, or blank.'; return; }
+  $('pd-err').textContent='Saving…';
+  rfDataRaw('write','rf_prequal_documents',{
+    document_id:id, kind:kind,
+    issuer:($('pd-issuer').value||'').trim()||null,
+    effective_on:$('pd-eff').value||null, expires_on:$('pd-exp').value||null,
+    value:val, value_year:yr,
+    reference:($('pd-ref').value||'').trim()||null,
+    source:($('pd-source').value||'').trim()||null
+  }).then(function(r){
+    if(!r.ok){ $('pd-err').textContent=r.msg||'Could not save.'; return; }
+    closePqDocModal(); toast('Document saved.'); rfLoadPrequal();
+  });
+}
+
+function openBondModal(){
+  ['bd-id','bd-surety','bd-agent','bd-single','bd-agg','bd-eff','bd-exp','bd-source']
+    .forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('bd-err').textContent='';
+  $('bond-modal').classList.add('on');
+}
+function closeBondModal(){ $('bond-modal').classList.remove('on'); }
+
+function saveBond(){
+  var id=($('bd-id').value||'').trim();
+  if(!id){ $('bd-err').textContent='A bonding id is required.'; return; }
+  var numOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseFloat(v); return isFinite(n)?n:'BAD'; };
+  var single=numOrNull($('bd-single').value), agg=numOrNull($('bd-agg').value);
+  if(single==='BAD'||agg==='BAD'){ $('bd-err').textContent='The limits must be numbers, or blank.'; return; }
+  $('bd-err').textContent='Saving…';
+  rfDataRaw('write','rf_bonding',{
+    bonding_id:id,
+    surety:($('bd-surety').value||'').trim()||null,
+    agent:($('bd-agent').value||'').trim()||null,
+    single_project_limit:single, aggregate_limit:agg,
+    effective_on:$('bd-eff').value||null, expires_on:$('bd-exp').value||null,
+    source:($('bd-source').value||'').trim()||null
+  }).then(function(r){
+    if(!r.ok){ $('bd-err').textContent=r.msg||'Could not save.'; return; }
+    closeBondModal(); toast('Bonding letter saved.'); rfLoadPrequal();
+  });
+}
+
 // ── SAFETY (gap B4, 2026-09-02) ────────────────────────────────────────────
 // Fall-protection equipment that expires, and hazard assessments cross-checked
 // against the crew actually scheduled that day. Deliberately NOT an incident
@@ -4559,6 +4824,58 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="pqdoc-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle" id="pd-modal-title">Add Document</div>
+    <div class="qgrid">
+      <div class="fg"><label>Document id <span style="color:var(--danger)">*</span></label><input id="pd-id" placeholder="PQ-EMR-2026"></div>
+      <div class="fg"><label>Kind <span style="color:var(--danger)">*</span></label><input id="pd-kind" placeholder="emr_letter / financials / safety_program"></div>
+      <div class="fg"><label>Issuer</label><input id="pd-issuer" placeholder="Erie Insurance"></div>
+      <div class="fg"><label>Reference</label><input id="pd-ref" placeholder="file name or portal reference"></div>
+      <div class="fg"><label>Effective on</label><input type="date" id="pd-eff"></div>
+      <div class="fg"><label>Expires on</label><input type="date" id="pd-exp"></div>
+      <div class="fg"><label>Figure (e.g. an EMR rate)</label><input id="pd-value" placeholder="0.87"></div>
+      <div class="fg"><label>Year the figure is for</label><input id="pd-year" placeholder="2026"></div>
+    </div>
+    <div class="fg"><label>Source for the figure</label><input id="pd-source" placeholder="your insurer's letter, your accountant, your surety"></div>
+    <div class="note"><strong>A figure here is recorded and shown, never judged.</strong> &ldquo;Under 1.0&rdquo; is a
+      threshold individual GCs and owners set in their own prequalification criteria &mdash; it is not a rule, and this app
+      applying it on your behalf would lose you a bid on a number we made up. <strong>Leave the expiry blank only if there
+      genuinely is none</strong>: a document with no date reads as <em>no expiry recorded</em>, not as current, because a GC
+      asking for a <em>current</em> financial statement is asking something a dateless record cannot answer.</div>
+    <div class="perr" id="pd-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="savePqDoc()">Save</button>
+      <button class="btn bo" onclick="closePqDocModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="bond-modal">
+  <div class="mbox" style="width:520px;">
+    <div class="mtitle">Bonding Letter</div>
+    <div class="qgrid">
+      <div class="fg"><label>Bonding id <span style="color:var(--danger)">*</span></label><input id="bd-id" placeholder="BOND-2026"></div>
+      <div class="fg"><label>Surety</label><input id="bd-surety" placeholder="Travelers"></div>
+      <div class="fg"><label>Agent</label><input id="bd-agent" placeholder="Hall &amp; Co"></div>
+      <div class="fg"><label>Single-project limit</label><input id="bd-single" placeholder="2000000"></div>
+      <div class="fg"><label>Aggregate limit</label><input id="bd-agg" placeholder="5000000"></div>
+      <div class="fg"><label>Effective on</label><input type="date" id="bd-eff"></div>
+      <div class="fg"><label>Expires on</label><input type="date" id="bd-exp"></div>
+    </div>
+    <div class="fg"><label>Source</label><input id="bd-source" placeholder="surety letter dated 2026-01-15"></div>
+    <div class="note">Each letter is kept as <strong>its own record</strong> rather than one figure you overwrite &mdash;
+      last year's letter is what last year's bid was submitted under, and erasing it erases what you could bond when you
+      signed. <strong>Committed backlog is not typed here</strong>: it is worked out from your contract values less what has
+      been earned on the WIP schedule, so it cannot drift away from the progress billing it comes from. If the aggregate
+      limit or the backlog is unknown, remaining capacity reads <strong>unknown</strong> &mdash; never zero, and never
+      &ldquo;within capacity&rdquo;.</div>
+    <div class="perr" id="bd-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveBond()">Save</button>
+      <button class="btn bo" onclick="closeBondModal()">Cancel</button>
     </div>
   </div>
 </div>

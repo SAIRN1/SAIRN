@@ -4201,6 +4201,186 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ── SAIRNROOFING: own prequalification packet and bonding (2026-09-02) ────────
+    // Tier-B gap B7, facing the OPPOSITE way from SAIRNbuild's prequal fields:
+    // those qualify the subs a GC hires, these are what a GC asks THIS
+    // contractor for. Management-level throughout -- bonding limits and EMR are
+    // commercial position, not crew information.
+    if ((resource === 'rf_prequal_documents' || resource === 'rf_bonding') &&
+        ['read', 'write', 'readiness', 'capacity'].indexOf(action) !== -1) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Prequalification and bonding are management-level information' } });
+        return;
+      }
+      const pq = require('./_lib/roofing-prequal');
+      const pqToday = (payload && payload.today) || null;
+      let pqWarn;
+      if (payload && payload.warn_days !== undefined && payload.warn_days !== null) {
+        const wd = payload.warn_days;
+        if (typeof wd !== 'number' || !isFinite(wd) || Math.floor(wd) !== wd || wd < 0 || wd > 365) {
+          res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        pqWarn = wd;
+      }
+      const PQ_SELECT = 'document_id,kind,issuer,effective_on,expires_on,value,value_year,reference,source,notes,data,updated_by';
+      const BOND_SELECT = 'bonding_id,surety,agent,single_project_limit,aggregate_limit,effective_on,expires_on,source,notes,data,updated_by';
+
+      if (resource === 'rf_prequal_documents' && (action === 'read' || action === 'readiness')) {
+        const r = await fetch(rest('rf_prequal_documents?license_hash=eq.' + enc(licHash) +
+          '&select=' + PQ_SELECT + '&order=kind.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (action === 'readiness') {
+          // required_kinds comes from the CALLER because it is THIS GC's form.
+          // There is no default list and shipping one would tell a contractor
+          // they are ready against a form nobody asked for.
+          const req2 = (payload && Array.isArray(payload.required_kinds)) ? payload.required_kinds : [];
+          const rd = pq.packetReadiness({ documents: rows || [], required_kinds: req2, today: pqToday, warn_days: pqWarn });
+          if (!rd.ok) { res.status(400).json({ error: rd.error }); return; }
+          res.status(200).json({ ok: true, provisioned: true, readiness: rd });
+          return;
+        }
+        const out = (rows || []).map((x) => {
+          const d = pq.documentState({ document: x, today: pqToday, warn_days: pqWarn });
+          return Object.assign({}, x, { evaluation: d.ok ? d : null, evaluation_error: d.ok ? null : d.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: pqToday, data: out });
+        return;
+      }
+
+      if (resource === 'rf_prequal_documents' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can change the prequalification packet' } }); return; }
+        const pid = payload && typeof payload.document_id === 'string' ? payload.document_id.trim() : '';
+        const kind = payload && typeof payload.kind === 'string' ? payload.kind.trim() : '';
+        if (!pid || !kind) { res.status(400).json({ error: { message: 'rf_prequal_documents: document_id and kind are required' } }); return; }
+        const badDate = ['effective_on', 'expires_on'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_prequal_documents: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        const numOrNull = (v) => (typeof v === 'number' && isFinite(v)) ? v : null;
+        const yearOrNull = (v) => (typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= 1900 && v <= 2200) ? v : null;
+        const w = await fetch(rest('rf_prequal_documents?on_conflict=license_hash,document_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, document_id: pid, kind: kind,
+            issuer: (payload.issuer || '').trim() || null,
+            effective_on: payload.effective_on || null,
+            expires_on: payload.expires_on || null,
+            value: numOrNull(payload.value), value_year: yearOrNull(payload.value_year),
+            reference: (payload.reference || '').trim() || null,
+            source: (payload.source || '').trim() || null,
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      if (resource === 'rf_bonding' && (action === 'read' || action === 'capacity')) {
+        const r = await fetch(rest('rf_bonding?license_hash=eq.' + enc(licHash) +
+          '&select=' + BOND_SELECT + '&order=effective_on.desc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (action !== 'capacity') { res.status(200).json({ ok: true, provisioned: true, data: rows || [] }); return; }
+
+        // COMMITTED BACKLOG IS DERIVED, NOT STORED. Contract value less what
+        // has been earned, across the jobs on the WIP schedule -- the same
+        // figures api/_lib/wip-accounting.js already produces. A stored
+        // backlog would drift from that schedule the moment a draw was entered.
+        let backlog = null, basis = null, wipProvisioned = true;
+        const wipLib = require('./_lib/wip-accounting');
+        const dr = await fetch(rest('rf_draws?license_hash=eq.' + enc(licHash) +
+          '&select=draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,amount_received,status,requested_at'), { headers });
+        if (dr.status === 404 || dr.status === 400) { wipProvisioned = false; }
+        else if (dr.ok) {
+          const draws = await dr.json();
+          const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,data'), { headers });
+          const jrows = jr.ok ? await jr.json() : [];
+          const jobs = (Array.isArray(jrows) ? jrows : []).map((j) => {
+            const d = j.data || {};
+            const v = [d.contract_value, d.total, d.amount, d.quote_total]
+              .map((x) => (typeof x === 'number' && isFinite(x)) ? x : null).filter((x) => x !== null);
+            return { job_id: j.job_id, contract_value: v.length ? v[0] : null };
+          }).filter((j) => (draws || []).some((d) => d.job_id === j.job_id));
+          // aged_days FORWARDED. Caught by tools/sairn_seam_check.py on this
+          // very call site: the backlog figure does not depend on ageing, so
+          // the omission was harmless TODAY -- which is exactly the shape the
+          // tool exists for. A field the engine reads and the call site never
+          // sets takes its default silently, and the response looks reasonable.
+          let bAged;
+          if (payload && payload.aged_days !== undefined && payload.aged_days !== null) {
+            const ad = payload.aged_days;
+            if (typeof ad !== 'number' || !isFinite(ad) || Math.floor(ad) !== ad || ad < 0 || ad > 365) {
+              res.status(400).json({ error: { code: 'BAD_AGED_DAYS', message: 'aged_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+              return;
+            }
+            bAged = ad;
+          }
+          const port = wipLib.portfolio({ jobs: jobs, draws: draws || [], today: pqToday, aged_days: bAged });
+          if (port.ok) {
+            const usable = port.jobs.filter((x) => x.contract_value !== null && x.earned !== null);
+            backlog = usable.reduce((s, x) => s + Math.max(0, x.contract_value - x.earned), 0);
+            basis = 'contract value less earned, across ' + usable.length + ' job(s) on the WIP schedule' +
+              (port.not_computable.length ? ' -- ' + port.not_computable.length + ' job(s) could not be computed and are NOT included' : '');
+          }
+        }
+        const which = (payload && payload.bonding_id)
+          ? (rows || []).filter((x) => x.bonding_id === String(payload.bonding_id))[0]
+          : (rows || [])[0];
+        if (!which) { res.status(200).json({ ok: true, provisioned: true, capacity: null, wip_provisioned: wipProvisioned }); return; }
+        const cap = pq.bondingCapacity({
+          bonding: which, committed_backlog: backlog, backlog_basis: basis,
+          candidate_value: (payload && typeof payload.candidate_value === 'number' && isFinite(payload.candidate_value)) ? payload.candidate_value : null,
+          today: pqToday, warn_days: pqWarn
+        });
+        if (!cap.ok) { res.status(400).json({ error: cap.error }); return; }
+        res.status(200).json({ ok: true, provisioned: true, capacity: cap, wip_provisioned: wipProvisioned });
+        return;
+      }
+
+      if (resource === 'rf_bonding' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a bonding letter' } }); return; }
+        const bid = payload && typeof payload.bonding_id === 'string' ? payload.bonding_id.trim() : '';
+        if (!bid) { res.status(400).json({ error: { message: 'rf_bonding: bonding_id is required' } }); return; }
+        const badDate = ['effective_on', 'expires_on'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_bonding: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        const moneyOrNull = (v) => (typeof v === 'number' && isFinite(v) && v >= 0) ? v : null;
+        const w = await fetch(rest('rf_bonding?on_conflict=license_hash,bonding_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, bonding_id: bid,
+            surety: (payload.surety || '').trim() || null,
+            agent: (payload.agent || '').trim() || null,
+            single_project_limit: moneyOrNull(payload.single_project_limit),
+            aggregate_limit: moneyOrNull(payload.aggregate_limit),
+            effective_on: payload.effective_on || null,
+            expires_on: payload.expires_on || null,
+            source: (payload.source || '').trim() || null,
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+    }
+
     // ── SAIRNROOFING: fall-protection equipment and hazard assessments (2026-09-02) ─
     // Tier-B gap B4. NOT incident logging -- SAIRNbuild and StoneDesk both have
     // that already, client-side. This is equipment that expires, and an

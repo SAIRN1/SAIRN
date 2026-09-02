@@ -127,6 +127,15 @@ module.exports = {
   // Registered on day one for the reason rf_settings' note gives.
     'rf_safety_equipment',
     'rf_job_hazard_assessments',
+  // The contractor's OWN prequalification packet and bonding position
+  // (2026-09-02) -- see sql/sairnroofing_prequal_schema.sql and
+  // api/_lib/roofing-prequal.js. Tier-B gap B7. Faces the OPPOSITE way from
+  // SAIRNbuild's prequal fields, which sit on its subcontractors: SAIRNroofing's
+  // customer is the roofer, and at Tier B the roofer is the sub being qualified.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_prequal_documents',
+    'rf_bonding',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -186,6 +195,15 @@ module.exports = {
     // scheduled on that job that day and names who has not signed. Reads both
     // rf_job_hazard_assessments and rf_schedule; writes nothing.
     rf_job_hazard_assessments: ['crew_check'],
+    // 'readiness' (2026-09-02, gap B7) answers "can we submit THIS GC's
+    // prequalification form" against the kinds that GC asked for -- there is no
+    // default list, because every form differs. Reads only.
+    rf_prequal_documents: ['readiness'],
+    // 'capacity' computes remaining bonding capacity from the aggregate limit
+    // and the committed backlog, which is DERIVED from the WIP schedule rather
+    // than stored -- a second backlog figure would drift from it the moment a
+    // draw was entered. Reads only.
+    rf_bonding: ['capacity'],
     // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the
