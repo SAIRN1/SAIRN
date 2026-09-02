@@ -119,6 +119,34 @@ data-model problem from `location_id`-as-attribution.
 
 ### 3.2 Gaps — Tier A (small business)
 
+> **RE-VERIFIED IN FULL 2026-09-02 (Cody). The column holds. The doubt raised
+> against it did not, and that correction is the useful part.**
+>
+> I reported to Michael that A1 and A2 "look mislabeled as gaps when they're
+> built", on the strength of a two-item spot check: `api/_lib/roofing-programs.js`
+> and `rf_schedule` both exist and both predate this audit. **That was my error,
+> not the audit's.** Reading the state column properly, it already says
+> `rf_company_programs` models company programmes and distinguishes that from
+> warranty registration, and it already says `rf_schedule` exists and marks A2
+> **partially closed**. I had conflated "a related table exists" with "the gap
+> is closed" — the same shape as every stale-premise finding this session, run
+> in reverse.
+>
+> All twelve roofing rows were then checked against the current file rather than
+> the two: **A1 warranty 0 occurrences, A3 no `rf_subs`-class table** (confirmed
+> against the full `rf_*` table list), **A5 accounting 0, B1 asset registry 0,
+> B3 retainage/POC/certified-payroll 0, B4 safety-programme terms 0, B6 EDI/ASN/
+> punchout 0, B7 prequalification/bonding 0.** Every "Absent" is still absent.
+>
+> One counting nuance, recorded because it is the kind of thing that becomes a
+> false finding later: a naive `grep -i edi` returns 16 hits, all of them
+> `edit`/`edited`/`editingJobId`. A word-boundary search returns **0**. The
+> audit's "Absent" is right; the substring count is not evidence of anything.
+> Two of the audit's own hit-COUNTS have since drifted (A3's "23 keyword hits"
+> is now 0, B3's "1 keyword hit" is now 0) without changing a single verdict.
+> **Treat the counts as dated and the verdicts as current.**
+
+
 | # | Gap category | Evidence it matters | SAIRNroofing state (verified) |
 |---|---|---|---|
 | A1 | **Manufacturer warranty registration + certification-gated warranty tiers** | Enhanced/extended warranties are *contractually gated* behind manufacturer certification status (GAF Master Elite / Certified Plus, CertainTeed SELECT ShingleMaster). A real industry forcing-function, not a nice-to-have. [GAF registration](https://www.gaf.com/en-us/resources/warranties/register), [GAF verify](https://www.gaf.com/en-us/roofing-contractors/verify) | **Zero occurrences of "warranty" anywhere in `sairnroofing.html`.** `rf_company_programs` already models company-level manufacturer programmes — this is the natural hook and it is unused for warranty. |
