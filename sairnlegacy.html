@@ -707,6 +707,7 @@ label.chk input{width:auto;}
     <div class="kpi"><div class="klbl">Collected This Month</div><div class="kval" id="iv-collected">$0</div><div class="kt">Payments recorded</div></div>
     <div class="kpi"><div class="klbl">Open Invoices</div><div class="kval" id="iv-open">0</div><div class="kt">Not fully paid</div></div>
   </div>
+<div id="iv-predictive-zone"></div>
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Invoice #</th><th>Case</th><th>Total</th><th>Balance Due</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="ivtbody"></tbody></table></div>
@@ -2839,6 +2840,164 @@ async function saveGplServicePrice(id){
   var syncResult=await sdnData('write','leg_gplservices',s);
   toast(syncResult?'Rate updated':'Updated on this device only -- server sync not yet enabled',syncResult?2000:4000);
 }
+// ===================================================================
+// PREDICTIVE INSIGHTS (2026-09-01) -- brought up to the level StoneDesk's
+// renderPredictiveInsights() set, on this home's own data.
+//
+// WHAT WAS ALREADY HERE. rCaseCycleTrend() is real and honest: open-to-service
+// days, recent three against this home's own prior average, silent below six
+// cases with the actual count shown, and it says in words that it is not an
+// industry benchmark. It is a TREND, though -- one number moving. What was
+// missing is the other half of StoneDesk's pattern: a per-group OUTLIER flag
+// and a distribution summary.
+//
+// WHAT THIS ADDS, and every figure is computed from a field that exists:
+//   1. Undercharge flags. Invoice totals grouped by the case's service_type,
+//      averaged, and any invoice that is not yet fully paid and sits more than
+//      20% below this home's own average for that service type is surfaced --
+//      with the sample size it was measured against, so the reader can judge
+//      the average rather than trust it.
+//   2. A distribution summary: invoice value by status, case count by service
+//      type, and the outstanding balance.
+//
+// THE SAMPLE GATES ARE CHOSEN, NOT DERIVED, and are the same two StoneDesk
+// uses: five invoices before any insight renders at all, and four in a service
+// type before that type's average means anything. Below either, this stays
+// silent and says how far off it is rather than showing a confident comparison
+// off one or two records.
+//
+// TWO THINGS IT DELIBERATELY DOES NOT COMPUTE -- written down because the
+// reasoning is the point, not the omission.
+//
+//   CASE VOLUME FORECASTING. "Expect N cases next month" is the obvious
+//   dashboard candidate and it is refused. A single home's case history is a
+//   tiny sample of an essentially random process, so any projection would be
+//   fabricated confidence -- and a product that projects how many people will
+//   die next month is not something this home should be handing to a family
+//   member who glances at the screen. Dropped, not softened.
+//
+//   PRENEED CONVERSION RATE. leg_preneed rows carry linked_case_id, so a
+//   "conversion rate" looks one join away. It is refused for exactly the reason
+//   StoneDesk refuses a quote win rate: an UNLINKED preneed plan is
+//   indistinguishable from a client who is simply still alive. Counting those
+//   as non-conversions would treat every living prepaid client as a loss with
+//   no evidence either way. The same fabricated-confidence pattern, in a
+//   setting where it would also be tasteless.
+// ===================================================================
+
+// Below this many invoices, no insight renders at all.
+var LEG_MIN_INVOICES_FOR_INSIGHT = 5;
+// Below this many invoices in one service type, that type's average is not used.
+var LEG_MIN_SAMPLE_PER_SERVICE_TYPE = 4;
+// An invoice this far below its service type's own average is worth a look.
+var LEG_UNDERCHARGE_RATIO = 0.8;
+
+function legComputeServicePricingInsight(){
+  var caseById = {};
+  cases().forEach(function(c){ caseById[c.id] = c; });
+
+  var groups = {};
+  invoices().forEach(function(inv){
+    var c = caseById[inv.case_id];
+    if(!c || !c.service_type) return;              // no case, no service type, no group
+    var total = invoiceTotal(inv);
+    if(!(total > 0)) return;                       // an empty invoice is not a price
+    if(!groups[c.service_type]) groups[c.service_type] = [];
+    groups[c.service_type].push({ inv: inv, total: total, caseRec: c });
+  });
+
+  var flags = [];
+  Object.keys(groups).forEach(function(serviceType){
+    var list = groups[serviceType];
+    if(list.length < LEG_MIN_SAMPLE_PER_SERVICE_TYPE) return;
+    var avg = list.reduce(function(s, x){ return s + x.total; }, 0) / list.length;
+    list.forEach(function(x){
+      // Only an invoice that can still change. A fully paid invoice is history,
+      // and flagging it would be a complaint rather than an insight.
+      if(x.inv.status === 'Paid') return;
+      if(invoiceTotal(x.inv) - invoicePaid(x.inv) <= 0) return;
+      if(x.total >= avg * LEG_UNDERCHARGE_RATIO) return;
+      flags.push({
+        inv: x.inv, caseRec: x.caseRec, serviceType: serviceType,
+        avg: avg, sampleSize: list.length,
+        pctBelow: Math.round((1 - x.total / avg) * 100)
+      });
+    });
+  });
+  return flags.sort(function(a, b){ return b.pctBelow - a.pctBelow; });
+}
+
+function legComputeInvoicePatterns(){
+  var list = invoices();
+  var byStatus = {}, outstanding = 0;
+  list.forEach(function(inv){
+    var total = invoiceTotal(inv);
+    byStatus[inv.status] = (byStatus[inv.status] || 0) + total;
+    outstanding += total - invoicePaid(inv);
+  });
+  var byServiceType = {};
+  cases().forEach(function(c){
+    if(c.service_type) byServiceType[c.service_type] = (byServiceType[c.service_type] || 0) + 1;
+  });
+  return {
+    byStatus: byStatus,
+    byServiceType: Object.keys(byServiceType).sort(function(a, b){ return byServiceType[b] - byServiceType[a]; })
+      .map(function(k){ return [k, byServiceType[k]]; }),
+    outstanding: outstanding,
+    totalInvoices: list.length
+  };
+}
+
+function legRenderPredictiveInsights(){
+  var el = $('iv-predictive-zone');
+  if(!el) return;
+  var list = invoices();
+
+  if(list.length < LEG_MIN_INVOICES_FOR_INSIGHT){
+    el.innerHTML = '<div class="card"><div class="cb" style="color:var(--muted);font-size:12px">' +
+      'Pricing insights need more invoice history to mean anything -- ' + list.length +
+      ' invoice(s) on record so far, and at least ' + LEG_MIN_INVOICES_FOR_INSIGHT +
+      ' are needed before an average is worth comparing against. This will start surfacing real patterns once there is more volume.' +
+      '</div></div>';
+    return;
+  }
+
+  var flags = legComputeServicePricingInsight();
+  var patterns = legComputeInvoicePatterns();
+
+  var html = '<div class="card"><div class="ch"><span class="ct">Pricing Insights</span>' +
+    '<span style="color:var(--muted);font-size:11px;font-weight:400"> from ' + patterns.totalInvoices + ' invoice(s) on record</span></div><div class="cb">';
+
+  if(flags.length){
+    flags.slice(0, 3).forEach(function(f){
+      html += '<div class="srow"><span class="slbl">' + H(f.inv.invoice_number) + ' &middot; ' + H(caseLabel(f.inv.case_id)) + '</span>' +
+        '<span>' + fmt(invoiceTotal(f.inv)) + '</span></div>' +
+        '<div style="color:var(--muted);font-size:12px;margin:2px 0 10px">' + f.pctBelow +
+        '% below this home’s own ' + fmt(f.avg) + ' average for ' + H(f.serviceType) +
+        ' (across ' + f.sampleSize + ' invoice(s)) — still unpaid, so worth a second look before it settles.</div>';
+    });
+  } else {
+    html += '<div style="color:var(--muted);font-size:12px;margin-bottom:10px">' +
+      'No unpaid invoice sits more than ' + Math.round((1 - LEG_UNDERCHARGE_RATIO) * 100) +
+      '% below this home’s own average for its service type. Service types with fewer than ' +
+      LEG_MIN_SAMPLE_PER_SERVICE_TYPE + ' invoices are not compared at all.</div>';
+  }
+
+  var statusBits = Object.keys(patterns.byStatus).filter(function(k){ return patterns.byStatus[k] > 0; })
+    .sort(function(a, b){ return patterns.byStatus[b] - patterns.byStatus[a]; })
+    .map(function(k){ return H(k) + ': ' + fmt(patterns.byStatus[k]); });
+  var typeBits = patterns.byServiceType.map(function(e){ return H(e[0]) + ' (' + e[1] + ')'; });
+
+  html += '<div style="border-top:1px solid var(--border);padding-top:8px;margin-top:4px;color:var(--muted);font-size:11px;line-height:1.7">';
+  if(statusBits.length) html += 'Invoice value by status: ' + statusBits.join(' &middot; ') + '<br>';
+  if(typeBits.length) html += 'Cases by service type: ' + typeBits.join(', ') + '<br>';
+  html += 'Outstanding across all invoices: ' + fmt(patterns.outstanding) + '<br>';
+  html += 'Every figure above is this home’s own history, computed live — not an industry benchmark, and not a forecast.';
+  html += '</div></div></div>';
+
+  el.innerHTML = html;
+}
+
 function rInvoicing(){
   fillCaseSelects();
   var list=invoices();
@@ -2861,6 +3020,7 @@ function rInvoicing(){
   gtb.innerHTML=gplServices().map(function(s){
     return '<tr><td>'+H(s.category)+'</td><td><input id="gplprice-'+s.id+'" type="number" value="'+s.price+'" style="width:110px" onchange="saveGplServicePrice(\''+s.id+'\')"></td><td></td></tr>';
   }).join('');
+  legRenderPredictiveInsights();
 }
 
 // ── AI OBITUARY DRAFTING ──────────────────────────────────────────────────
