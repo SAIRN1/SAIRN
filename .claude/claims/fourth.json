@@ -100,6 +100,16 @@
       "claimed_at_epoch": 1788348942.492686,
       "status": "released",
       "released_at": "2026-09-02T11:46:16Z"
+    },
+    {
+      "id": "fourth-1788349710",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "cdt code catalogue versioning",
+      "claimed_at": "2026-09-02T11:48:30Z",
+      "claimed_at_epoch": 1788349710.2446814,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
