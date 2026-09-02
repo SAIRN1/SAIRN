@@ -2474,7 +2474,22 @@ async function confirmVoid(){
   if(!reason){$('void-err').textContent='A reason is required to void a trust transaction';return;}
   var list=trustTransactions();
   var t=list.find(function(x){return x.id===voidTxId;});if(!t)return;
-  t.status='Voided';t.voided_reason=reason;t.voided_at=new Date().toISOString();
+  // ALREADY VOIDED IS NOT A NO-OP, IT IS A TRAP. The Void button only renders
+  // on a Posted row, but the row is rendered from a snapshot: another device
+  // can void the same transaction between the render and the click. Re-voiding
+  // it here would overwrite that void's reason and timestamp with this one's,
+  // and if the server then rejected THIS request for any reason other than
+  // ALREADY_VOIDED the revert below would set it back to Posted -- resurrecting
+  // a genuinely voided trust transaction. Refuse instead. Found 2026-09-02 by
+  // driving this function overlapped, not by reading it.
+  if(t.status==='Voided'){
+    $('void-err').textContent='This transaction is already voided'+(t.voided_reason?' ('+t.voided_reason+')':'')+'. Refresh to see the current ledger.';
+    return;
+  }
+  // The timestamp is captured so the rollback can tell ITS OWN void from
+  // someone else's. See the revert below.
+  var myVoidedAt=new Date().toISOString();
+  t.status='Voided';t.voided_reason=reason;t.voided_at=myVoidedAt;
   st('law_trusttx',list);
   closeVoidModal();rTrust();rDash();
   var syncResult=await sdnData('write','law_trusttx',t);
@@ -2493,12 +2508,28 @@ async function confirmVoid(){
       toast(syncResult.message||'This transaction was already voided.',7000);
       return;
     }
+    // REVERT ONLY WHAT THIS CALL DID. Re-reading is necessary and is not
+    // sufficient: the record can have been voided by another device DURING the
+    // round trip, and setting it back to Posted would resurrect a void that is
+    // genuinely on the server -- putting money back into a client's trust
+    // balance that was properly removed, which is the direction that lets a
+    // later disbursement overdraw real client funds. So the revert fires only
+    // if this record is still carrying THIS call's void, identified by the
+    // timestamp captured above. If it carries a different one, that newer
+    // state is more correct than the one being rolled back to.
     var revertList=trustTransactions();
     var revertT=revertList.find(function(x){return x.id===t.id;});
-    if(revertT){revertT.status='Posted';revertT.voided_reason='';revertT.voided_at='';}
-    st('law_trusttx',revertList);
-    rTrust();rDash();
-    toast(syncResult.message||'Void rejected -- this transaction was not voided',7000);
+    if(revertT&&revertT.status==='Voided'&&revertT.voided_at===myVoidedAt){
+      revertT.status='Posted';revertT.voided_reason='';revertT.voided_at='';
+      st('law_trusttx',revertList);
+      rTrust();rDash();
+      toast(syncResult.message||'Void rejected -- this transaction was not voided',7000);
+    }else{
+      // Someone else changed this record while the request was in flight. Do
+      // not touch it; say so, because silently leaving it voided after a
+      // rejection would look like this void succeeded.
+      toast('Void rejected, and this transaction was changed on another device while the request was in flight -- its current state has been left alone. Refresh to see the current ledger.',9000);
+    }
     return;
   }
   toast(syncResult?'Transaction voided':'Voided on this device only -- server sync not yet enabled',syncResult?3000:5000);
