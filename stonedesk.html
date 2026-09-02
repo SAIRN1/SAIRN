@@ -4660,6 +4660,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     </table>
     </div>
     <div id="hist-empty" style="display:none;padding:32px;text-align:center;color:var(--muted)">No quotes match your search.</div>
+
+    <!-- SIGNED APPROVALS (2026-09-02). esigApprove() captured a real customer
+         signature and wrote it to localStorage, read back from NOWHERE in this
+         file -- so "did the Smith quote get signed, and for how much?" had no
+         answer anywhere in the app. It does now, in the panel where a shop
+         already goes to look at quotes. The THIS DEVICE ONLY badge marks a row
+         whose server copy failed: it is the one that exists nowhere else. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:16px;overflow:hidden">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="font-weight:800;font-size:13px;color:var(--text)">&#9998; Signed Approvals</div>
+        <div style="font-size:11px;color:var(--muted)">Signed estimates, with the total the customer actually agreed to</div>
+      </div>
+      <div id="sd-approvals-list"><div style="font-size:12px;color:var(--muted);padding:12px">No signed approvals yet.</div></div>
+    </div>
   </div>
   <div>
     <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
@@ -5561,7 +5575,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       </div>
     </div>
         <div id="est-esig-block" style="margin:24px 40px;padding:24px;border:2px solid var(--brand2);border-radius:14px;background:#F0FEF6">
-          <div style="font-size:15px;font-weight:800;color:#0A3D1F;margin-bottom:4px">&#9998; Approve &amp; Reserve Your Project</div>
+          <div style="font-size:15px;font-weight:800;color:#0A3D1F;margin-bottom:4px">&#9998; Approve Your Project</div>
           <div style="font-size:12px;color:#166534;margin-bottom:16px">Sign below to approve this estimate. A 50% deposit secures your installation date.</div>
           <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
             <div><label style="font-size:11px;font-weight:700;color:#374151;display:block;margin-bottom:4px">Client Full Name</label>
@@ -32986,8 +33000,11 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
       document.body.classList.remove('is-admin');
     }
     // Fire any post-login inits
+    // sdApprovalsLoad added 2026-09-02: signed approvals had no server read at
+    // all, so a device that had never signed one showed an empty list even
+    // when the shop had a dozen.
     ['dbLoadAll','loadFormulas','watchAllTables','initAI','loadPricing',
-     'renderSuite','loadLastSync','loadWeather'].forEach(function(fn) {
+     'renderSuite','loadLastSync','loadWeather','sdApprovalsLoad'].forEach(function(fn) {
       if (typeof window[fn] === 'function') {
         try { window[fn](); } catch(e) {}
       }
@@ -34398,6 +34415,119 @@ function esigInit(){
   var d=document.getElementById('esig-date');if(d&&!d.value)d.value=sdLocalToday();
 }
 function esigClear(){var c=document.getElementById('esig-canvas');if(c&&_esigCtx)_esigCtx.clearRect(0,0,c.width,c.height);}
+// ── SIGNED APPROVALS: OFF THE BROWSER, AND READ BACK (2026-09-02) ──────────
+// esigApprove() below captures a genuine signature and, until now, wrote it to
+// localStorage['sd_approvals'] AND NOWHERE ELSE -- read back from nowhere in
+// this entire file. One cache clear destroyed the document proving a customer
+// agreed to a price, and nobody on any other machine could see it at all.
+//
+// This is also a correction to the 2026-09-02 competitive audit, which had it
+// backwards: GAP 5 recorded that StoneDesk could not get a customer to e-sign
+// a quote. It could, and does. The signature just had nowhere to go.
+var _sdApprovals = [];
+
+// Server copy. Never awaited by the signing flow -- the customer is standing
+// there and the local write already succeeded -- but a failure is SAID OUT
+// LOUD. "It is on this laptop only" is something the shop needs to know now,
+// not when the laptop is replaced.
+// api/sd-data.js caps EVERY write at 64KB uniformly. The signature is by far
+// the largest field, so it is measured against the real budget HERE, before
+// the customer walks away -- being told to re-sign is recoverable, a raw
+// payload-size error after the fact is not. A first draft put a second,
+// larger (200KB) cap on the server; it was unreachable dead code and is gone.
+var SD_APPROVAL_MAX_BYTES = 64 * 1024;
+
+async function sdApprovalSync(a){
+  if(typeof sdData!=='function' || !a) return false;
+  try{
+    var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+    if(!lic) return false;
+    var headers={'Content-Type':'application/json',Authorization:'Bearer '+lic};
+    try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) headers['X-SD-Auth']=tok; }catch(e){}
+    var body={
+      action:'write',resource:'sd_approvals',payload:{
+        approval_id:a.id, client_name:a.clientName, quote_num:a.quoteNum,
+        signed_date:a.date, total_amount:a.totalAmt, deposit_amount:a.depositAmt,
+        signature_png:a.sigDataUrl, deposit_status:a.depositStatus||'pending'
+      }};
+    var payloadStr=JSON.stringify(body);
+    if(payloadStr.length>SD_APPROVAL_MAX_BYTES){
+      // Say what to DO. The customer is still standing there, and re-signing
+      // costs seconds; discovering the record was never stored costs a lot
+      // more later.
+      if(typeof showToast==='function') showToast('That signature is too detailed to store ('+Math.round(payloadStr.length/1024)+'KB, limit 64KB). Ask the customer to sign again with a simpler mark — this approval is on this device only until they do.','error',10000);
+      return false;
+    }
+    var res=await fetch('/api/sd-data',{method:'POST',headers:headers,body:payloadStr});
+    var j=null; try{ j=await res.json(); }catch(e){ j=null; }
+    if(res.ok && j && j.ok){ a.synced=true; sdApprovalsSaveLocal(); return true; }
+    // ALREADY_RECORDED is not a failure -- the row is on the server, which is
+    // the thing being checked. Anything else is.
+    if(j && j.error && j.error.code==='ALREADY_RECORDED'){ a.synced=true; sdApprovalsSaveLocal(); return true; }
+    var why=(j&&j.error&&j.error.message)||('HTTP '+res.status);
+    if(typeof showToast==='function') showToast('Signed approval saved on THIS DEVICE ONLY — the server copy failed: '+why,'error',9000);
+    return false;
+  }catch(e){
+    if(typeof showToast==='function') showToast('Signed approval saved on THIS DEVICE ONLY — could not reach the server. It exists nowhere else yet.','error',9000);
+    return false;
+  }
+}
+
+function sdApprovalsSaveLocal(){
+  try{ return st('sd_approvals',_sdApprovals); }catch(e){ return false; }
+}
+
+// Merge server and local by approval_id. The server copy wins on fields, but a
+// local-only row is KEPT rather than dropped -- it is the one that failed to
+// sync, i.e. exactly the row nothing else in the world has.
+async function sdApprovalsLoad(){
+  try{ _sdApprovals=JSON.parse(localStorage.getItem('sd_approvals')||'[]'); }catch(e){ _sdApprovals=[]; }
+  if(typeof sdData!=='function') { sdApprovalsRender(); return; }
+  try{
+    var rows=await sdData('read','sd_approvals',{});
+    if(Array.isArray(rows)){
+      var byId={};
+      _sdApprovals.forEach(function(a){ if(a&&a.id) byId[a.id]=a; });
+      rows.forEach(function(r){
+        byId[r.approval_id]={
+          id:r.approval_id, clientName:r.client_name, quoteNum:r.quote_num,
+          date:r.signed_date, totalAmt:Number(r.total_amount), depositAmt:Number(r.deposit_amount),
+          sigDataUrl:r.signature_png||'', depositStatus:r.deposit_status,
+          approvedAt:r.created_at, signedBy:r.signed_by, synced:true
+        };
+      });
+      _sdApprovals=Object.keys(byId).map(function(k){return byId[k];})
+        .sort(function(a,b){return String(b.approvedAt||'').localeCompare(String(a.approvedAt||''));});
+      sdApprovalsSaveLocal();
+    }
+  }catch(e){}
+  sdApprovalsRender();
+}
+
+// The read-back that did not exist. A shop could not answer "did the Smith
+// quote get signed, and for how much?" anywhere in the app.
+function sdApprovalsRender(){
+  var el=document.getElementById('sd-approvals-list');
+  if(!el) return;
+  if(!_sdApprovals.length){
+    el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px">No signed approvals yet.</div>';
+    return;
+  }
+  el.innerHTML=_sdApprovals.map(function(a){
+    var unsynced=!a.synced;
+    return '<div style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;border-bottom:1px solid var(--border);flex-wrap:wrap">'+
+      '<div><div style="font-size:13px;font-weight:700">'+escHtml(a.clientName||'')+
+        (a.quoteNum&&a.quoteNum!=='—'?' <span style="color:var(--muted);font-weight:500">'+escHtml(a.quoteNum)+'</span>':'')+'</div>'+
+      '<div style="font-size:11px;color:var(--muted)">Signed '+escHtml(a.date||'')+
+        ' &middot; deposit '+(isFinite(a.depositAmt)?('$'+Number(a.depositAmt).toLocaleString()):'—')+
+        ' &middot; '+escHtml(a.depositStatus||'pending')+'</div></div>'+
+      '<div style="display:flex;align-items:center;gap:10px">'+
+        (unsynced?'<span title="This signed approval exists only on this device" style="background:#fee2e2;color:#991b1b;font-size:10px;font-weight:800;padding:2px 8px;border-radius:100px">THIS DEVICE ONLY</span>':'')+
+        '<span style="font-size:14px;font-weight:800;color:var(--brand2)">'+(isFinite(a.totalAmt)?('$'+Number(a.totalAmt).toLocaleString()):'—')+'</span>'+
+      '</div></div>';
+  }).join('');
+}
+
 function esigApprove(){
   var name=((document.getElementById('esig-name')||{}).value||'').trim();
   var date=(document.getElementById('esig-date')||{}).value||sdLocalToday();
@@ -34415,10 +34545,27 @@ function esigApprove(){
   // Capture signature as data URL
   var sigDataUrl=c?c.toDataURL('image/png'):'';
 
-  // Pull total from estimate
-  var totalEl=document.getElementById('est-total');
-  var totalStr=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'0';
-  var totalAmt=parseFloat(totalStr)||0;
+  // THE TOTAL, AND WHY IT IS NOT READ OFF THE SCREEN ANY MORE (2026-09-02).
+  // This parsed #est-total.textContent. When no quote is loaded that element
+  // reads '—' (stonedesk.html:11410), which strips to '', parses to NaN, and
+  // `||0` turned it into ZERO -- so a customer could draw a signature and be
+  // recorded as having approved a $0 project with a $0 deposit, and it saved
+  // without a word. lastCalc.total is the value #est-total is rendered FROM
+  // (:11420), so it is the source, and the DOM is only a fallback for the case
+  // where the estimate was rendered by some path lastCalc did not populate.
+  var totalAmt = (typeof lastCalc !== 'undefined' && lastCalc && Number(lastCalc.total) > 0)
+    ? Number(lastCalc.total)
+    : (function(){
+        var el=document.getElementById('est-total');
+        var n=parseFloat(String(el?el.textContent:'').replace(/[^0-9.]/g,''));
+        return isFinite(n) ? n : 0;
+      })();
+  // Refuse rather than record. A signed approval with no price on it is not
+  // evidence of anything, and it looks exactly like one that is.
+  if (!(totalAmt > 0)) {
+    showToast('This estimate has no total yet — build the quote first. Nothing was recorded, and nothing was signed.','error',7000);
+    return;
+  }
   var depositAmt=Math.round(totalAmt*0.5);
   var depositStr='$'+depositAmt.toLocaleString();
   var balanceStr='$'+(totalAmt-depositAmt).toLocaleString();
@@ -34441,15 +34588,35 @@ function esigApprove(){
   };
   var approvalSaved=false;
   try{
-    var approvals=JSON.parse(localStorage.getItem('sd_approvals')||'[]');
-    approvals.unshift(approval);
-    if(approvals.length>100)approvals=approvals.slice(0,100);
-    approvalSaved = st('sd_approvals',approvals);
+    // Goes through the module array so the Signed Approvals list updates
+    // without a reload, instead of re-reading localStorage into a local
+    // variable the rest of the app never sees. The 100-row local cap stays --
+    // it is a cache now, and the server copy is the record.
+    if(!Array.isArray(_sdApprovals)){
+      try{ _sdApprovals=JSON.parse(localStorage.getItem('sd_approvals')||'[]'); }catch(e2){ _sdApprovals=[]; }
+    }
+    _sdApprovals.unshift(approval);
+    if(_sdApprovals.length>100)_sdApprovals=_sdApprovals.slice(0,100);
+    approvalSaved = sdApprovalsSaveLocal();
+    if(approvalSaved && typeof sdApprovalsRender==='function') sdApprovalsRender();
   }catch(e){}
   if(!approvalSaved){
     showToast('Could not save the signed approval -- storage may be full or unavailable. Do not tell the customer this is approved yet, try again.','error',8000);
     return;
   }
+
+  // ── AND OFF THIS BROWSER (2026-09-02) ────────────────────────────────────
+  // Until now `sd_approvals` was written to localStorage here and READ BACK
+  // FROM NOWHERE in the entire file. The document proving a customer agreed to
+  // a price lived on one machine and died with its cache -- no other device,
+  // nobody else in the shop, no copy anywhere.
+  //
+  // Deliberately NOT awaited: the customer is standing there and the local
+  // record already succeeded, so the confirmation below must not wait on a
+  // network round trip. But a failure is REPORTED rather than swallowed --
+  // "it is on this laptop only" is something the shop needs to know now, not
+  // when the laptop is replaced.
+  sdApprovalSync(approval);
 
   // Update matching customer record if exists
   if(typeof sdCustomers!=='undefined'){
@@ -34481,7 +34648,12 @@ function esigApprove(){
           '<div style="border-left:1px solid #BBF7D0;border-right:1px solid #BBF7D0"><div style="font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Deposit Due (50%)</div><div style="font-size:20px;font-weight:800;color:#dc2626">'+depositStr+'</div></div>' +
           '<div><div style="font-size:10px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:1px;margin-bottom:4px">Balance at Install</div><div style="font-size:20px;font-weight:800;color:#374151">'+balanceStr+'</div></div>' +
         '</div>' +
-        '<div style="font-size:12px;color:#374151;text-align:center;margin-bottom:14px">Your project is reserved. A 50% deposit of <strong>'+depositStr+'</strong> secures your installation date.</div>' +
+        // "Your project is reserved" was a claim nothing backed: approving an
+        // estimate sets a customer record to 'approved' and reserves no slab,
+        // no schedule slot and no install date. Say what actually happened,
+        // and what the deposit will do -- future tense, because it has not
+        // been paid yet either. 2026-09-02.
+        '<div style="font-size:12px;color:#374151;text-align:center;margin-bottom:14px">Your approval is recorded. A 50% deposit of <strong>'+depositStr+'</strong> is what secures your installation date &mdash; the date is booked once it is received.</div>' +
         '<div style="display:flex;gap:10px;flex-wrap:wrap">' +
           '<button onclick="esigSendDepositEmail(\''+name.replace(/'/g,"\\'")+'\')" style="flex:1;padding:13px;background:#16a34a;color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer">📧 Email Deposit Request</button>' +
           '<button onclick="esigPrintApproval()" style="flex:1;padding:13px;background:var(--a);color:#fff;border:none;border-radius:10px;font-size:13px;font-weight:800;cursor:pointer">🖨️ Print Approval Copy</button>' +

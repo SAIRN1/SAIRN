@@ -43,6 +43,13 @@ module.exports = {
   // meant every customer could read them with View Source. The showPanel()
   // role gate closed the UI path and could not close that one.
     'exec_context',
+  // Signed customer approvals (2026-09-02) -- see sql/sd_approvals_schema.sql.
+  // esigApprove() captured a real signature and wrote it to localStorage and
+  // nowhere else, read back from nowhere: the document proving a customer
+  // agreed to a price lived in one browser and died with its cache. APPEND
+  // ONLY here and in the table -- a signed price must not be editable, so the
+  // write branch refuses a duplicate approval_id rather than merging it.
+    'sd_approvals',
   // StoneDesk CRM/Lead Pipeline (2026-08-19) -- see sql/sd_crm_schema.sql. First real server
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.

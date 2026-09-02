@@ -559,6 +559,109 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SIGNED CUSTOMER APPROVALS (2026-09-02) ──────────────────────────────
+    // sql/sd_approvals_schema.sql. esigApprove() in stonedesk.html captures a
+    // real signature -- typed name, a canvas checked for being genuinely
+    // blank, the agreed total, the 50% deposit -- and wrote it to
+    // localStorage['sd_approvals'] AND NOWHERE ELSE, read back from nowhere in
+    // the whole file. The document proving a customer agreed to a price lived
+    // in one browser and died with its cache.
+    //
+    // APPEND ONLY, ENFORCED IN THREE PLACES because it is the property that
+    // makes the record worth keeping: a plain INSERT here (never
+    // merge-duplicates), `unique (license_hash, approval_id)` in the schema,
+    // and no UPDATE grant at all. A duplicate id is a 409, not an overwrite.
+    // Superseding an approval means a NEW row; the old one stays.
+    if (resource === 'sd_approvals' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      const cols = 'approval_id,client_name,quote_num,signed_date,total_amount,deposit_amount,signature_png,deposit_status,signed_by,created_at';
+
+      if (action === 'read') {
+        const r = await fetch(rest('sd_approvals?license_hash=eq.' + enc(licHash) +
+          '&select=' + cols + '&order=created_at.desc'), { headers });
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: rows || [], provisioned: true });
+        return;
+      }
+
+      // Validation BEFORE the database call, so a malformed approval is
+      // refused identically whether or not the migration has been run.
+      const p = payload || {};
+      const total = Number(p.total_amount);
+      const dep = Number(p.deposit_amount);
+      if (!p.approval_id || !String(p.approval_id).trim()) {
+        res.status(400).json({ error: { code: 'NO_APPROVAL_ID', message: 'approval_id is required' } });
+        return;
+      }
+      if (!p.client_name || !String(p.client_name).trim()) {
+        res.status(400).json({ error: { code: 'NO_CLIENT', message: 'client_name is required -- an unsigned-by-nobody approval is not one' } });
+        return;
+      }
+      // A signed approval for nothing is the specific defect this was built
+      // alongside: with no quote loaded the estimate total renders as an
+      // em-dash, parsed to 0, and a customer could sign a $0 agreement.
+      if (!isFinite(total) || total <= 0) {
+        res.status(400).json({ error: { code: 'NO_TOTAL', message: 'total_amount must be a positive number -- an approval with no price on it is not evidence of anything' } });
+        return;
+      }
+      if (!isFinite(dep) || dep < 0 || dep > total) {
+        res.status(400).json({ error: { code: 'BAD_DEPOSIT', message: 'deposit_amount must be between 0 and the total' } });
+        return;
+      }
+      // NO SEPARATE SIGNATURE SIZE CHECK HERE, DELIBERATELY. One was written
+      // (200KB) and it was DEAD CODE: this handler already refuses any write
+      // over MAX_PAYLOAD_BYTES (64KB) near the top of the file, uniformly, so a
+      // larger second limit further down could never be reached. Found by the
+      // test expecting a 400 and getting the 413. A second cap that never
+      // fires is worse than none -- it reads as protection.
+      // The client checks the signature against the REAL 64KB budget before
+      // sending, so the customer is asked to re-sign rather than shown a raw
+      // payload-size error.
+
+      const r = await fetch(rest('sd_approvals'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          approval_id: String(p.approval_id),
+          client_name: String(p.client_name),
+          quote_num: p.quote_num == null ? null : String(p.quote_num),
+          signed_date: p.signed_date == null ? null : String(p.signed_date),
+          total_amount: total,
+          deposit_amount: dep,
+          signature_png: p.signature_png == null ? null : String(p.signature_png),
+          deposit_status: p.deposit_status ? String(p.deposit_status) : 'pending',
+          // Taken from the verified session, never from the body -- who was
+          // present when a customer signed is not a field the client gets to
+          // assert.
+          signed_by: session.employee_id || null
+        })
+      });
+      const rows = await r.json();
+      if (r.status === 404 || r.status === 400) {
+        // A write, unlike a read, has genuinely failed to do the thing asked.
+        // 503 naming the file rather than a cheerful 200 with nothing stored.
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Signed approvals are not set up — run sql/sd_approvals_schema.sql' } });
+        return;
+      }
+      if (r.status === 409) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'That approval has already been recorded. A signed price is not editable — sign a new approval instead.' } });
+        return;
+      }
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
+      return;
+    }
+
     // ── EXECUTIVE SUITE ADVISOR CONTEXT (2026-09-02) ────────────────────────
     // See api/_lib/exec-context.js for what these strings are and why they no
     // longer live in stonedesk.html: they carry SAIRN's own chart of accounts,

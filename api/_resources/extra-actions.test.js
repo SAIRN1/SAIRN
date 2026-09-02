@@ -166,6 +166,16 @@ const REJECTED = 400;      // the gate refused the verb
     // after reading its handler: session-gated, owner/billing/coordinator/
     // scheduler only, and it genuinely persists nothing (one select, no write).
     'readiness',
+    // 'portfolio' (rf_roof_sections, 2026-09-02) -- SAIRNroofing's commercial
+    // asset registry, ANOTHER SESSION'S WORK, landed while this file's own
+    // split was being written and the new assertion caught it by name on its
+    // first real encounter. Declared here rather than left red, because the
+    // whole lesson of today is that an already-failing tripwire catches
+    // nothing. Read before declaring, per the note above: session-gated,
+    // management/broad-read only ("the roof asset registry is management-level
+    // information"), and it persists nothing -- selects, then a forecast
+    // computed in memory.
+    'portfolio',
     'reconcile',
     'reconcile_claim',
     // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
