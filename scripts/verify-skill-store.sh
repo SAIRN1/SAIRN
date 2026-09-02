@@ -63,13 +63,38 @@ only_canon=$(comm -13 <(ls -1 "$REPO" | sort) <(ls -1 "$CANON" | sort))
 [ -n "$only_repo" ]  && { echo "DRIFT: in repo, missing from canonical:"; echo "$only_repo" | sed 's/^/  /'; fail=1; }
 [ -n "$only_canon" ] && { echo "DRIFT: in canonical, missing from repo:";  echo "$only_canon" | sed 's/^/  /'; fail=1; }
 
-# 2. Byte-identical content, both directions (catches an edit to either copy).
+# 2. Identical content, both directions (catches an edit to either copy).
+#
+# COMPARED AFTER NORMALISING LINE ENDINGS -- corrected 2026-09-01.
+#
+# This used `cmp -s`, a RAW byte compare, and was therefore PERMANENTLY RED.
+# The repo is checked out CRLF (git autocrlf) and the canonical store holds LF,
+# so every file that has ever been synced differs by exactly its line endings
+# and nothing else. Measured at the time of this fix: sairn-guardian-v2
+# (76561 vs 75344 bytes) and sairn-contract-drafter (11970 vs 11727) both
+# reported "content differs" and both were byte-identical once normalised.
+#
+# That is not a cosmetic complaint. This script ALSO reports real findings --
+# ten skills present in the repo and missing from canonical, twelve global
+# entries that are copies rather than symlinks -- and a check that is red no
+# matter what buries them. A tool people learn to skim is a tool that stops
+# working, which is the same lesson as the reachability checker having to end
+# its own output with "needs a read before you believe it".
+#
+# Fifth CRLF false alarm of this session; CLAUDE.md's own note says to treat it
+# as a known instrument error rather than rediscover it a sixth time.
+norm_cmp() {
+  # Returns 0 when the two files match ignoring CR. Uses tr rather than dos2unix
+  # so it works in a bare Git-Bash with no extra tooling installed.
+  [ "$(tr -d '\r' < "$1" | sha256sum | cut -d' ' -f1)" = \
+    "$(tr -d '\r' < "$2" | sha256sum | cut -d' ' -f1)" ]
+}
 files=0
 for s in $(ls -1 "$REPO"); do
   [ -d "$CANON/$s" ] || continue
   for f in $(cd "$REPO/$s" && find . -type f); do
     files=$((files+1))
-    cmp -s "$REPO/$s/$f" "$CANON/$s/$f" || { echo "DRIFT: content differs: $s/$f"; fail=1; }
+    norm_cmp "$REPO/$s/$f" "$CANON/$s/$f" || { echo "DRIFT: content differs: $s/$f"; fail=1; }
   done
   for f in $(cd "$CANON/$s" && find . -type f); do
     [ -f "$REPO/$s/$f" ] || { echo "DRIFT: only in canonical: $s/$f"; fail=1; }
