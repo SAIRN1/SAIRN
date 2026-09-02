@@ -194,6 +194,16 @@
       "status": "active",
       "released_at": null,
       "note": "OVERRIDE, stated out loud. sairn_claim.py check BLOCKED this against fourth \"sairnsenior: caregiver training hours in-service gap A6\" and hank \"sairndental: payer enrolment credentialing lifecycle gap B1\". The tool prints its own reason: \"overlap on: gap\". Three different apps, three different files, sole shared token the word \"gap\". This is the lexical-matcher defect CLAUDE.md documents verbatim (2026-09-01, sairnvet blocked against stonedesk on the word \"audit\"). Task string NOT reworded to slip the matcher -- claim written directly with the reason attached, which is what CLAUDE.md instructs. Surfaced to Michael in the same turn."
+    },
+    {
+      "id": "cody-1788358477",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "commercial roof asset registry B1",
+      "claimed_at": "2026-09-02T14:14:37Z",
+      "claimed_at_epoch": 1788358477.2833092,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
