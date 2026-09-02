@@ -639,6 +639,55 @@ not to guarantee visual distinctness after the fact.
 
 ---
 
+## Reachability — derived, and settled against the live page
+
+Same treatment as the App File Map above, and for the same reason: a claim
+that needs a human to keep it true will stop being true.
+
+**The class.** On 2026-08-30 three complete, working, AI-backed StoneDesk
+features — Document Upload + Analysis, Feature 9 Compare, and the multi-modal
+camera path — were found to be unreachable by a customer. Nothing was broken.
+Each injected its only trigger into `#sairn-intake-actions`, an element that
+exists solely as an empty `display:none` placeholder. Check 0b asks whether a
+number has a function behind it. This asks the opposite question: the function
+is real — **can anyone reach it?**
+
+    python tools/sairn_reachability_check.py                 # all *.html
+    python tools/sairn_reachability_check.py --live dom/stonedesk.dom.json stonedesk.html
+
+Three detectors, deliberately narrow: **R1** an id squatted by an empty
+`display:none` stub the JS also creates, **R2** a control injected into a
+container that is hidden in markup, **R3** an entry point nothing wires.
+
+**WHY --live EXISTS, AND WHY A GREP CANNOT REPLACE IT.** The static pass had to
+end its own output with "R3 needs a read before you believe it," because every
+SAIRN app builds its tables by assigning `innerHTML` from JS template strings —
+a button a customer clicks daily exists nowhere a grep can read. `--live`
+consumes a snapshot of the **rendered DOM** produced by
+`tools/sairn_dom_snapshot.js` (run it in the browser, save the JSON) and clears
+any finding whose handler is really wired at run time. `--require-live` fails
+closed with exit 2 rather than reporting could-not-tell as clean, the same rule
+as the SQL preflight.
+
+**The evidence that this is not theoretical.** All seven static R3 findings on
+`stonedesk.html` were checked against the live DOM at
+`sairn.vercel.app/stonedesk` on 2026-09-01. Every one: defined on `window`,
+**not** wired in any live handler, and **mentioned somewhere in the file** —
+that last flag is exactly what a source grep sees, and exactly why grep cannot
+answer this. It also separated two names a grep conflates: `safetyExport` is
+wired live, `sdSafetyExport` is not. They are different functions.
+
+**Standing status:** wired as push-gate check 5, **report only**.
+`stonedesk.html` carries 9 confirmed findings, so a deny today would refuse
+every StoneDesk push. Promote it to a block once that file is clean — the
+machinery is identical to check 4's.
+
+**Do not trust the "9" in this section.** Run the tool; it is the source that
+moves. Same standing instruction as the app count in this file's own
+description.
+
+---
+
 ## Scan Procedure
 
 **CORRECTED 2026-07-26:** The Contents API silently fails on files over ~1MB — it
