@@ -128,7 +128,11 @@ async function consumeAtomic(client, appId, limit) {
   return {
     count: Number(body.prior_count) || 0,
     limited: body.limited === true,
-    counted: true
+    counted: true,
+    // Added 2026-09-02 with sql/sairn_ai_usage_columns_2026-09-02.sql. Null
+    // until that migration is run -- the older RPC simply does not return the
+    // key, and the usage recorder treats null as "nothing to attach to".
+    rowId: (body.row_id == null ? null : Number(body.row_id))
   };
 }
 
@@ -153,14 +157,23 @@ async function consumeRacy(client, appId, limit) {
     return null;
   }
 
-  const w = await fetch(client.rest(TABLE), {
+  // return=representation rather than minimal, so the inserted id comes back
+  // and a usage measurement can be attached to THIS row rather than to
+  // whichever row happened to be newest -- guessing the row under concurrency
+  // would put one app's token count on another app's request.
+  const w = await fetch(client.rest(TABLE + '?select=id'), {
     method: 'POST',
-    headers: Object.assign({}, client.headers, { Prefer: 'return=minimal' }),
+    headers: Object.assign({}, client.headers, { Prefer: 'return=representation' }),
     body: JSON.stringify({ app_id: appId })
   });
   if (!w.ok) console.error('ai rate limit: insert failed, HTTP', w.status);
+  let rowId = null;
+  try {
+    const wRows = w.ok ? await w.json() : null;
+    if (Array.isArray(wRows) && wRows[0] && wRows[0].id != null) rowId = Number(wRows[0].id);
+  } catch (e) { rowId = null; }
 
-  return { count: exact, limited: exact >= limit, counted: w.ok };
+  return { count: exact, limited: exact >= limit, counted: w.ok, rowId: rowId };
 }
 
 // Returns { allowed, limited, count, limit, mode, counted, atomic }
@@ -178,7 +191,7 @@ async function checkAiRateLimit(appId) {
   const base = {
     limited: false, count: null, limit: limit,
     mode: enforcing ? 'enforce' : 'observe',
-    counted: false, allowed: true, atomic: false
+    counted: false, allowed: true, atomic: false, rowId: null
   };
 
   const client = sb();
@@ -206,7 +219,10 @@ async function checkAiRateLimit(appId) {
       limit: limit,
       mode: mode,
       counted: res.counted,
-      atomic: atomic
+      atomic: atomic,
+      // The log row this call created. api/claude.js fills its token columns
+      // in after Anthropic answers; null means there is nothing to fill.
+      rowId: (res.rowId == null ? null : res.rowId)
     };
   } catch (e) {
     console.error('ai rate limit: check errored (failing open):', e && e.message);
@@ -214,4 +230,42 @@ async function checkAiRateLimit(appId) {
   }
 }
 
-module.exports = { checkAiRateLimit, dailyLimit, isEnforcing, exactCountFrom, consumeAtomic, consumeRacy };
+// Fill in what a call actually cost, on the row checkAiRateLimit() just
+// created. Added 2026-09-02: Anthropic returns a `usage` block on every
+// successful call and api/claude.js forwarded it to the client without ever
+// reading it, so this platform had NO record of how big any AI request was --
+// which is why StoneDesk's [0039] token budget is a labelled guess rather than
+// a measured number.
+//
+// A MEASUREMENT, NEVER A CONTROL. Called after the reply is already on its way
+// back, never awaited by the response path, and every failure mode -- no
+// migration, no client, no row, a refused RPC -- ends in a quiet false. An AI
+// feature must not break because a statistic could not be written. Requires
+// sql/sairn_ai_usage_columns_2026-09-02.sql; before that runs, the RPC 404s
+// and this returns false forever, which is the correct inert state.
+async function recordAiUsage(rowId, usage) {
+  const client = sb();
+  if (!client || rowId == null || !usage) return false;
+  const inTok = Number(usage.input_tokens);
+  const outTok = Number(usage.output_tokens);
+  if (!Number.isFinite(inTok) || !Number.isFinite(outTok)) return false;
+  try {
+    const r = await fetch(client.rest('rpc/sairn_ai_record_usage'), {
+      method: 'POST',
+      headers: client.headers,
+      body: JSON.stringify({ p_row_id: rowId, p_input_tokens: inTok, p_output_tokens: outTok })
+    });
+    if (!r.ok) {
+      // 404 = migration not run yet. Expected and quiet, same convention as
+      // consumeAtomic above; anything else is worth a line in the log.
+      if (r.status !== 404) console.error('ai usage: record failed, HTTP', r.status);
+      return false;
+    }
+    return (await r.json().catch(() => false)) === true;
+  } catch (e) {
+    console.error('ai usage: record errored (ignored):', e && e.message);
+    return false;
+  }
+}
+
+module.exports = { checkAiRateLimit, recordAiUsage, dailyLimit, isEnforcing, exactCountFrom, consumeAtomic, consumeRacy };

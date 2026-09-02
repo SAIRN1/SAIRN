@@ -36,6 +36,13 @@ module.exports = {
   // with NO rows and no defaults: a projection built on an invented lead
   // time is a number a shop would schedule a customer against.
     'supplier_lead_times',
+  // Executive Suite advisor prompts (2026-09-02). READ ONLY, owner/admin only,
+  // and it reads no table at all -- api/_lib/exec-context.js is the whole
+  // store. It exists because those strings carry SAIRN's own chart of
+  // accounts, price book and patent deadlines, and living in stonedesk.html
+  // meant every customer could read them with View Source. The showPanel()
+  // role gate closed the UI path and could not close that one.
+    'exec_context',
   // StoneDesk CRM/Lead Pipeline (2026-08-19) -- see sql/sd_crm_schema.sql. First real server
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.

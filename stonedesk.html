@@ -24923,41 +24923,35 @@ function toggleThread(id){commsToggle(id);}
 var EAI_HISTORY={ceo:[],cfo:[],cto:[]};
 var EAI_ACTIVE_TAB='ceo';
 
-var EAI_SYSTEMS={
-  ceo:[
-    'You are the personal AI executive assistant for the CEO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
-    'Products: StoneDesk™ (stone fabrication SaaS), SAIRNcode™ (medical coding AI), SAIRNhr™ (HR intelligence), SAIRNcomm™ (HIPAA messaging), SAIRNaccounting™ (accounting AI), plus 13 NEXUS consumer apps.',
-    'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk Starter $199/mo, Professional $299/mo, Enterprise $599/mo.',
-    'Your CEO expertise covers: strategic vision and annual planning, sales pipeline management and GTM strategy, investor relations and fundraising (Pre-seed $500K-$2M, Seed $1-5M), competitive positioning vs Moraware and generic SaaS, team culture and hiring decisions, partnership development, press and PR, market expansion, product-market fit analysis.',
-    'Stone industry context: 2,600+ shops, avg shop wastes $316/hr in rework, CA SB 20 silica compliance deadline July 1 2026, engineered stone 93% crystalline silica hazard creates urgent compliance need.',
-    'Key metrics you track: MRR/ARR, churn rate, LTV:CAC ratio (target >3:1), CAC payback (target <18 months), NRR (target >110%), magic number (target >0.75), burn rate, runway (keep 18+ months).',
-    'Communication style: direct, decisive, strategic. Lead with the answer. Back with data. End with the one action that moves the needle most. Never give generic advice — always specific to SAIRN context.',
-    'NEVER say "it depends" without giving specifics. NEVER be vague. Think like a founder-CEO who has built and sold companies before.'
-  ].join(' '),
-  cfo:[
-    'You are the personal AI executive assistant for the CFO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
-    'You are a world-class CFO advisor: Big 4 CPA + investment banker + tax attorney combined.',
-    'SAIRN Chart of Accounts: Assets 1000s (1010 Cash-Checking, 1100 AR, 1200 Inventory), Liabilities 2000s (2010 AP, 2100 Accrued Wages, 2110 FIT Payable, 2130 FICA), Equity 3000s, Revenue 4000s (4010 Service, 4020 Product), Expenses 5000s+ (5010 COGS, 6010 Wages, 6020 Payroll Taxes, 6030 Benefits, 6100 Rent, 6210 Software).',
-    'Payroll tax rates 2026: SS 6.2%+6.2% (wage base $176,100), Medicare 1.45%+1.45%, FUTA 0.6% (first $7K), SUTA varies by state.',
-    'Key SaaS financial metrics: Gross margin target 70-80%, CAC, LTV, burn rate, runway, DSO target <45 days, current ratio >1.5, quick ratio >1.0.',
-    'StoneDesk pricing: Starter $199/mo, Professional $299/mo, Enterprise $599/mo. Stripe price IDs on file.',
-    'Your CFO expertise: cash flow forecasting and management, P&L analysis, payroll processing and journal entries (exact GAAP account codes), AR aging and collections strategy, budget vs actual variance analysis, tax planning (QSBS, ESOP, R&D credits), banking relationships and debt covenants, EBITDA optimization, financial risk management, QuickBooks integration, monthly close process, investor reporting.',
-    'Always cite specific account codes (Dr 6010, Cr 2100). Give exact journal entries, exact tax rates, exact formulas. Lead with numbers. End every recommendation with the financial risk if ignored.',
-    'Format financial data clearly: use line items, totals, and variances. Make it feel like a CFO dashboard briefing.'
-  ].join(' '),
-  cto:[
-    'You are the personal AI executive assistant for the CTO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
-    'Current tech stack: React 18 + TypeScript frontend, Express backend, Drizzle ORM, PostgreSQL on Railway, Vercel hosting, Supabase (SAIRNcomm), Anthropic Claude API via sairn.vercel.app/api/claude proxy, Stripe payments, Resend email, Twilio SMS.',
-    'Architecture: HONEY COMB cellular platform — each app is a standalone HTML file deployed to Vercel, authenticated against Railway backend, firewalled to allowlisted domains only. All 21 apps share one Railway PostgreSQL instance.',
-    'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
-    'Security: SAIRN Firewall blocks all non-allowlisted fetch calls. Claude proxy prevents direct API key exposure. Cookie auth: sameSite:none + secure:true for cross-origin Railway-Vercel auth.',
-    'Current integrations: QuickBooks Online (UI built, OAuth pending), Google Directions API (route optimization), xlsx library (import/export), Resend (email), node-cron (weekly reports).',
-    'HIPAA compliance stack for SAIRNcomm: Supabase Pro (BAA required), Vercel Pro (BAA required), 15-min session timeout, audit log table, RLS policies, no PHI in logs.',
-    'Your CTO expertise: system architecture decisions, security posture and threat modeling, vendor evaluation and integration roadmap, API design and optimization, database schema and query performance, CI/CD pipeline, monitoring and alerting, tech debt prioritization, HIPAA/SOC2 compliance, patent protection strategy, team technical hiring, infrastructure scaling.',
-    'Always recommend specific tools, not categories. Cite actual version numbers and known issues. Lead with the architectural decision, then the implementation path. Flag security implications on every recommendation.',
-    'Think like a CTO who has shipped production systems at scale, not a consultant who theorizes.'
-  ].join(' ')
-};
+// ── EXECUTIVE SUITE ADVISOR CONTEXT -- DELIBERATELY NOT IN THIS FILE ──────
+// The three system prompts that used to sit here as literals now live in
+// api/_lib/exec-context.js and arrive only through an authenticated,
+// owner/admin-gated read (api/sd-data.js, resource 'exec_context').
+//
+// WHY THEY MOVED, 2026-09-02. They carry SAIRN Technologies' own chart of
+// accounts, the StoneDesk price book ($199/$299/$599 and the Stripe price
+// IDs), and the provisional-patent filing dates with the non-provisional
+// deadline. This file is served WHOLE to every customer of the product, so
+// all of it was readable with View Source. The role gate added to
+// showPanel() the same day closed the UI path and could not close this one --
+// a hidden panel does not un-download the page it is hidden in. Deleting the
+// literals is what actually fixed it.
+//
+// NOTHING HERE FALLS BACK TO A LOCAL COPY. If the read is refused or fails,
+// the assistant says so and sends nothing. A fallback literal would restore
+// the exact exposure this removed, which is why the failure path below is a
+// refusal rather than a degraded mode.
+var EAI_SYSTEM_CACHE={};
+async function eaiSystemFor(role){
+  if(EAI_SYSTEM_CACHE[role]) return EAI_SYSTEM_CACHE[role];
+  // sdData() sends the bearer licence AND the X-SD-Auth session token; the
+  // server decides on the token's role, not on anything sent from here.
+  var d=null;
+  try{ d=await sdData('read','exec_context',{role:role}); }catch(e){ d=null; }
+  if(!d||!d.system) return null;
+  EAI_SYSTEM_CACHE[role]=d.system;
+  return d.system;
+}
 
 function execAiSetTab(tab,btn){
   EAI_ACTIVE_TAB=tab;
@@ -25022,13 +25016,24 @@ async function execAiSend(role){
   var thinkingIdx=EAI_HISTORY[role].length-1;
   try{
     var msgs=EAI_HISTORY[role].filter(m=>!m.thinking).map(m=>({role:m.role,content:m.content}));
+    // The advisor context is fetched, not embedded. A refusal here is the
+    // server's owner/admin gate doing its job, and it must NOT degrade into
+    // sending the question with a generic prompt -- an executive advisor
+    // answering finance questions without the chart of accounts would look
+    // like it worked and be wrong.
+    var sys=await eaiSystemFor(role);
+    if(!sys){
+      EAI_HISTORY[role][thinkingIdx]={role:'assistant',content:'The Executive Suite could not load its context. It is limited to Owner and Manager accounts — sign in as one, or ask your administrator. Nothing was sent.'};
+      renderEaiMsgs(role);
+      return;
+    }
     var res=await fetch('https://sairn.vercel.app/api/claude',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body:JSON.stringify({is_demo:true,
         max_tokens:1500,
         app_id:'stonedesk',
-        system:EAI_SYSTEMS[role],
+        system:sys,
         messages:msgs
       })
     });

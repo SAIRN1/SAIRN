@@ -30,6 +30,7 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
+const { getExecContext } = require('./_lib/exec-context');
 const dntLocation = require('./_lib/dnt-location');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -555,6 +556,40 @@ module.exports = async (req, res) => {
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
       res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(wRows) && wRows[0]) || body, observed_days: row.observed_days });
+      return;
+    }
+
+    // ── EXECUTIVE SUITE ADVISOR CONTEXT (2026-09-02) ────────────────────────
+    // See api/_lib/exec-context.js for what these strings are and why they no
+    // longer live in stonedesk.html: they carry SAIRN's own chart of accounts,
+    // the StoneDesk price book, and the provisional-patent filing dates. That
+    // file is served whole to every customer, so View Source read all of it.
+    //
+    // READ ONLY. There is no write action and no table -- the module IS the
+    // store, so there is nothing to provision and nothing to seed.
+    //
+    // OWNER/ADMIN, ENFORCED HERE. The 2026-09-02 showPanel() gate is the same
+    // check in the browser, and a browser check is advice: the page it lives in
+    // is downloadable and editable. This is the copy that actually decides.
+    if (resource === 'exec_context' && action === 'read') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      if (session.role !== 'owner' && session.role !== 'admin') {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The Executive Suite is limited to Owner and Manager accounts' } });
+        return;
+      }
+      // An unknown role is a 400, never a fallback to some other role's
+      // context -- quietly serving the CFO's chart of accounts to a request
+      // for 'sales' is the exact failure this endpoint was built to end.
+      const ctx = getExecContext((payload && payload.role) || '');
+      if (!ctx) {
+        res.status(400).json({ error: { code: 'UNKNOWN_ROLE', message: 'role must be one of: ceo, cfo, cto' } });
+        return;
+      }
+      res.status(200).json({ ok: true, data: { role: String(payload.role).trim().toLowerCase(), system: ctx } });
       return;
     }
 

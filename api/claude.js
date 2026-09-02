@@ -28,7 +28,7 @@
 // straight through to the Anthropic API without inspecting shape, so vision (base64 image + text in a
 // message) works with zero changes here once an app's frontend sends it in the standard API format.
 
-const { checkAiRateLimit } = require('./_lib/ai-rate-limit');
+const { checkAiRateLimit, recordAiUsage } = require('./_lib/ai-rate-limit');
 
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
@@ -176,6 +176,9 @@ async function claudeProxyHandler(req, res) {
   }
 
   const { app_id, is_demo, system, messages, max_tokens, tools } = body;
+  // The rate-limit log row this request creates, if any. Declared here so the
+  // usage recorder below can see it after the is_demo block has closed.
+  let usageRowId = null;
 
   if (!app_id || !KNOWN_APP_IDS.includes(app_id)) {
     res.status(400).json({ error: { message: 'Missing or unrecognized app_id' } });
@@ -213,6 +216,7 @@ async function claudeProxyHandler(req, res) {
       res.status(200).json({ error: 'demo_limit' });
       return;
     }
+    usageRowId = rl.rowId;
   }
 
   const result = await callAnthropic({ system, messages, max_tokens, tools });
@@ -221,6 +225,27 @@ async function claudeProxyHandler(req, res) {
     return;
   }
   res.status(200).json(result.data);
+
+  // ── RECORD WHAT THIS ACTUALLY COST (2026-09-02) ───────────────────────────
+  // Anthropic returns `usage: { input_tokens, output_tokens }` on every
+  // successful call, and this proxy has forwarded it to the client since the
+  // day it was written WITHOUT EVER READING IT. So the platform had no record
+  // of how big any AI request was, which is why StoneDesk's [0039] token
+  // budget had to ship as a labelled guess -- there was nothing to measure.
+  //
+  // AFTER res.json(), and deliberately NOT awaited: this is a statistic, and a
+  // statistic must never be able to delay or fail a reply. recordAiUsage()
+  // swallows everything, including the 404 it returns until
+  // sql/sairn_ai_usage_columns_2026-09-02.sql is run.
+  //
+  // HONEST SCOPE: usageRowId only exists when is_demo was true, because that
+  // is the only path that writes a log row. Ten of eleven live apps send
+  // is_demo:true, so this covers most traffic and not all of it -- a non-demo
+  // call is absent from the table entirely rather than present with null
+  // tokens. Do not read this table as total platform AI volume.
+  if (usageRowId != null && result.data && result.data.usage) {
+    try { void recordAiUsage(usageRowId, result.data.usage); } catch (e) {}
+  }
 }
 
 claudeProxyHandler.sanitizeTools = sanitizeTools;
