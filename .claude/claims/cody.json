@@ -242,8 +242,8 @@
       "task": "multi entity financial consolidation B5",
       "claimed_at": "2026-09-02T15:14:27Z",
       "claimed_at_epoch": 1788362067.0667918,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:51:00Z"
     }
   ]
 }
