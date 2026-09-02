@@ -3041,10 +3041,29 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             }
             btn.disabled = true; btn.textContent = 'Checking…';
             try {
-                var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+                // VALIDATES AGAINST api/sc-auth.js, NOT api/sd-data.js (2026-09-02).
+                //
+                // This used to POST {action:'read', resource:'profile'} and read
+                // only the STATUS -- it never wanted a profile, it wanted to know
+                // whether the key was real. That made a data-read endpoint the
+                // platform's licence oracle, and it was the one thing blocking
+                // `profile` from requiring a session everywhere: SAIRNcode
+                // necessarily has no session at this moment and cannot have one.
+                //
+                // check_license already existed for exactly this ("Confirms the
+                // key is real/active before the client stores it", api/sc-auth.js
+                // header) and is a drop-in: it answers 401 INVALID_LICENSE /
+                // NO_LICENSE, 403 LICENSE_INACTIVE, and 200 on success -- the
+                // three cases this gate already branches on below, unchanged.
+                //
+                // Deliberately NOT a carve-out in the gate. An exception nobody
+                // can see from the other side is worse than a small migration:
+                // every other app should be able to trust that "profile read
+                // requires a session" is true without remembering who is exempt.
+                var res = await fetch('https://sairn.vercel.app/api/sc-auth', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + key },
-                    body: JSON.stringify({ action: 'read', resource: 'profile' })
+                    body: JSON.stringify({ action: 'check_license' })
                 });
                 if (res.status === 401) {
                     var body = await res.json().catch(function () { return {}; });
