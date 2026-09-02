@@ -101,6 +101,16 @@
       "claimed_at_epoch": 1788285125.9745364,
       "status": "released",
       "released_at": "2026-09-01T18:39:02Z"
+    },
+    {
+      "id": "cody-1788341374",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "signature pad duplication",
+      "claimed_at": "2026-09-02T09:29:34Z",
+      "claimed_at_epoch": 1788341374.8895497,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
