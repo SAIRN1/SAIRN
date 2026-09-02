@@ -50,6 +50,16 @@
       "claimed_at_epoch": 1788291411.42292,
       "status": "released",
       "released_at": "2026-09-02T09:08:14Z"
+    },
+    {
+      "id": "fourth-1788340741",
+      "session": "fourth",
+      "subject": "sairncare",
+      "task": "v1 scope verification",
+      "claimed_at": "2026-09-02T09:19:01Z",
+      "claimed_at_epoch": 1788340741.0129342,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
