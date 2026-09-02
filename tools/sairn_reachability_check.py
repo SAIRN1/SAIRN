@@ -42,6 +42,8 @@ KNOWN LIMITS, stated because they bound the claim:
     "every feature is reachable". Only a browser settles that.
 """
 import re
+import os
+import json
 import sys
 import glob
 import io
@@ -170,9 +172,51 @@ def apply_live(rows, snaps):
     return kept, cleared, None
 
 
+# ── ACKNOWLEDGED EXEMPTIONS (2026-09-02) ────────────────────────────────────
+# Added when this check was promoted to BLOCKING. A blocking gate with no way to
+# record a justified exception refuses correct code forever, and a gate that
+# refuses correct code gets switched off -- the same reasoning that gave the SQL
+# preflight its UNDECLARED_TABLE carve-out and the push gate its
+# SAIRN_SEED_GATE=off, made specific and reviewable instead of a blanket
+# override.
+#
+# An exemption is a claim that the CHECKER IS WRONG about a finding. A finding
+# that is real and unfixed belongs in SAIRN-BACKLOG.md. --check-exemptions
+# reports any entry that no longer matches a live finding as STALE, so this file
+# cannot quietly accumulate justifications for code that has moved on.
+EXEMPTIONS_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               'reachability_exemptions.json')
+
+
+def load_exemptions():
+    """Returns (set_of_(file,code,name), error_or_None).
+
+    A MISSING file is fine -- no exemptions. An UNREADABLE or malformed one is
+    NOT: silently treating a corrupt exemption file as "no exemptions" would
+    turn a typo into a wall of blocked findings, and silently treating it as
+    "everything exempt" would be worse. Either way the caller is told.
+    """
+    if not os.path.isfile(EXEMPTIONS_FILE):
+        return set(), None
+    try:
+        with open(EXEMPTIONS_FILE, encoding='utf-8') as fh:
+            data = json.load(fh)
+    except Exception as e:
+        return set(), 'exemption file is unreadable (%s): %s' % (type(e).__name__, e)
+    out = set()
+    for row in (data.get('exemptions') or []):
+        f, c, n = row.get('file'), row.get('code'), row.get('name')
+        if not (f and c and n):
+            return set(), 'an exemption entry is missing file/code/name'
+        if not str(row.get('reason') or '').strip():
+            return set(), 'exemption %s/%s carries no reason -- a bare id is not a justification' % (f, n)
+        out.add((f, c, n))
+    return out, None
+
+
 def main(argv):
     args = [a for a in argv[1:]]
-    live_paths, require_live = [], False
+    live_paths, require_live, check_exemptions = [], False, False
     rest = []
     i = 0
     while i < len(args):
@@ -180,7 +224,18 @@ def main(argv):
             live_paths.append(args[i + 1]); i += 2; continue
         if args[i] == '--require-live':
             require_live = True; i += 1; continue
+        if args[i] == '--check-exemptions':
+            check_exemptions = True; i += 1; continue
         rest.append(args[i]); i += 1
+
+    exempt, exempt_err = load_exemptions()
+    if exempt_err:
+        # Fail CLOSED on a broken exemption file. The alternative -- carrying on
+        # with an empty set -- silently converts a typo into a wall of blocked
+        # findings and invites someone to delete the file to make it stop.
+        print('BLOCKING: %s' % exempt_err)
+        print('Fix tools/reachability_exemptions.json; it is not optional once entries exist.')
+        return 2
 
     targets = rest or sorted(glob.glob('*.html'))
     snaps = load_snapshots(live_paths) if live_paths else None
@@ -193,8 +248,15 @@ def main(argv):
         return 2
 
     total, cleared_total, coverage_note = 0, 0, None
+    matched = set()          # exemptions that matched a real finding this run
+    exempted_count = 0
     for path in targets:
         rows = scan(path)
+        # Exempt AFTER scanning, never by skipping the scan, so an entry that
+        # stops matching a real finding is still visible as stale.
+        exempted_here = [r for r in rows if (path, r[0], r[1]) in exempt]
+        rows = [r for r in rows if (path, r[0], r[1]) not in exempt]
+        matched.update((path, c, n) for c, n, _ in exempted_here)
         if snaps:
             rows, cleared, problem = apply_live(rows, snaps)
             coverage_note = coverage_note or problem
@@ -208,12 +270,26 @@ def main(argv):
             print('  %s  %-34s %s' % (code, name, why))
         for code, name, why in cleared:
             print('  ok  %-34s %s' % (name, why))
+        for code, name, why in exempted_here:
+            print('  --  %-34s %s [EXEMPT]' % (name, why))
+        exempted_count += len(exempted_here)
         total += len(rows)
     print('')
     if coverage_note:
         print('COVERAGE: %s' % coverage_note)
     if cleared_total:
         print('%d static finding(s) cleared by the live DOM.' % cleared_total)
+    stale = sorted(exempt - matched)
+    if exempted_count:
+        print('%d finding(s) suppressed by tools/reachability_exemptions.json.' % exempted_count)
+    if stale:
+        # A stale exemption is not a blocker -- it suppresses nothing -- but it
+        # is a justification for code that has moved on, and left unsaid it
+        # becomes the reason a future real finding gets waved through.
+        print('')
+        print('STALE EXEMPTIONS -- these no longer match any finding and should be deleted:')
+        for f, c, n in stale:
+            print('    %s  %s  %s' % (f, c, n))
     if total:
         print('%d reachability finding(s) across %d file(s).' % (total, len(targets)))
         if snaps and not coverage_note:

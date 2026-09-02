@@ -1,0 +1,38 @@
+{
+  "_README": [
+    "Acknowledged exceptions for tools/sairn_reachability_check.py.",
+    "",
+    "This file exists because check 5 was promoted to BLOCKING on 2026-09-02, and a",
+    "blocking gate with no way to record a justified exception refuses correct code",
+    "forever -- which is how a gate gets switched off. Every other gate in this repo",
+    "has the same escape hatch (SAIRN_SEED_GATE=off) and the same rule about it: use",
+    "it deliberately and say so out loud. This is that, made specific and reviewable",
+    "instead of a blanket override.",
+    "",
+    "THE BAR FOR AN ENTRY. An exemption is a claim that the checker is WRONG about",
+    "this finding -- not that the finding is inconvenient, not that it is low",
+    "priority, and not that somebody will get to it. A finding that is real and",
+    "unfixed belongs in SAIRN-BACKLOG.md, not here.",
+    "",
+    "Every entry carries: the file, the exact finding id, the code (R1/R2/R3), a",
+    "reason a reader can check against the source, and the date. An entry that no",
+    "longer matches a real finding is reported as STALE by --check-exemptions, so",
+    "this file cannot quietly accumulate justifications for code that has moved on."
+  ],
+  "exemptions": [
+    {
+      "file": "stonedesk.html",
+      "code": "R1",
+      "name": "sairn-voice-btn",
+      "added": "2026-09-02",
+      "reason": "The stub is LOAD-BEARING and the file says so at the injector (search 'the sairn-voice-btn placeholder stub stays in place on purpose'). Feature 7's voice module is superseded by the visualizer's own mic controls; the empty stub is the thing making injectVoiceButton() return early, and deleting it makes the page grow a SECOND redundant mic button one level up in the DOM. That was verified in a real browser, which is the only reason it was caught -- from source alone it reads as a missing feature rather than a superseded one. The checker's rule is right in general and wrong here."
+    },
+    {
+      "file": "stonedesk.html",
+      "code": "R1",
+      "name": "sairn-lock-overlay",
+      "added": "2026-09-02",
+      "reason": "No longer a collision. saLockScreen() used to early-return on getElementById('sairn-lock-overlay'), which the static stub always satisfied -- that was a real defect and the lock screen had never rendered. Fixed 2026-09-01: it now REUSES the stub and keys 'already showing' on a data-sa-locked attribute the stub does not carry. The id is still both static and JS-touched, so the checker's pattern still matches, but the short-circuit it is looking for no longer exists. Verified by driving the lock screen in a browser."
+    }
+  ]
+}

@@ -481,22 +481,30 @@ def main():
                     print(json.dumps({"hookSpecificOutput": {
                         "hookEventName": "PreToolUse", "additionalContext": note}}))
 
-    # ── CHECK 5: reachability -- REPORT ONLY, deliberately ─────────────────
+    # ── CHECK 5: reachability -- BLOCKING as of 2026-09-02 ─────────────────
     # Added 2026-09-01. Three complete, working, AI-backed StoneDesk features
     # were unreachable by a customer on 2026-08-30: each injected its only
     # trigger into an empty display:none placeholder. Nothing was broken and
     # there was simply no way in.
     #
-    # IT DOES NOT BLOCK, AND THAT IS A DECISION RATHER THAN AN OVERSIGHT.
-    # stonedesk.html carries 9 standing findings today -- 2 stub collisions and
-    # 7 orphaned entry points, all confirmed against the RENDERED DOM on the
-    # deployed page, so they are real and not static noise. Blocking would
-    # refuse every StoneDesk push until they are fixed, in a file another
-    # session currently holds. A gate switched on before its findings are
-    # cleared is a gate someone disables within the hour.
+    # IT SHIPPED REPORT-ONLY ON PURPOSE, because stonedesk.html carried 9 real
+    # standing findings and a gate switched on before its findings are cleared
+    # is a gate someone disables within the hour. Those are now cleared:
+    # 4 dead exports removed, the Field Quote modal retired in favour of the
+    # page, its entry points wired, and 2 stub collisions moved to
+    # tools/reachability_exemptions.json with written justifications. The
+    # checker exits 0 on stonedesk.html, so this is now a deny.
     #
-    # Promote it to a deny once stonedesk.html is clean; the machinery is
-    # identical to check 4's.
+    # THE EXEMPTION FILE IS WHAT MAKES BLOCKING SURVIVABLE. Two of the nine were
+    # the checker being WRONG -- sairn-voice-btn's stub is the thing preventing a
+    # duplicate mic button, and sairn-lock-overlay no longer short-circuits
+    # anything. Without a way to record that, promoting this would have meant
+    # refusing correct code forever. An exemption is a claim the checker is
+    # wrong; a real-but-unfixed finding belongs in SAIRN-BACKLOG.md, and stale
+    # entries are reported rather than left to accumulate.
+    #
+    # It still only runs on a push that CHANGES HTML, so an ordinary push costs
+    # nothing.
     html_changed = [q for q in changed if q.endswith('.html')]
     if html_changed:
         reach = os.path.join(repo, 'tools', 'sairn_reachability_check.py')
@@ -505,21 +513,51 @@ def main():
                 rr = subprocess.run([sys.executable, reach] + html_changed,
                                     capture_output=True, text=True, timeout=120, cwd=repo)
                 if rr.returncode == 1:
-                    msg = ("Reachability: this push touches HTML with unreachable features.\n"
-                           + rr.stdout.strip()
-                           + "\n\nREPORT ONLY -- not blocking. Settle an R3 against the real page "
-                             "with tools/sairn_dom_snapshot.js and "
-                             "sairn_reachability_check.py --live <snapshot.json>; a source grep "
-                             "cannot answer it, because these names all appear in the file.")
-                    if MODE == 'prepush':
-                        sys.stderr.write('\n' + msg + '\n\n')
-                    else:
-                        print(json.dumps({"hookSpecificOutput": {
-                            "hookEventName": "PreToolUse", "additionalContext": msg}}))
-            except Exception:
-                # Report-only check: a failure here must not affect the push at
-                # all, and must not pretend it checked something.
-                pass
+                    deny(chr(10).join([
+                        "Blocked: this push touches HTML that ships an unreachable feature.",
+                        "",
+                        rr.stdout.strip(),
+                        "",
+                        "Every finding here is a feature a customer cannot get to. Three such",
+                        "features shipped in StoneDesk and nobody noticed, because nothing was",
+                        "broken -- there was simply no way in, and that is invisible to every",
+                        "other check in this file.",
+                        "",
+                        "Settle an R3 against the REAL page rather than by grepping: these names",
+                        "all appear in the source, which is why a grep cannot answer it. Use",
+                        "tools/sairn_dom_snapshot.js then",
+                        "  python tools/sairn_reachability_check.py --live <snapshot.json> <file>",
+                        "",
+                        "If the checker is WRONG about a finding, add it to",
+                        "tools/reachability_exemptions.json with a reason a reader can check",
+                        "against the source. If the finding is REAL and you are not fixing it now,",
+                        "it belongs in SAIRN-BACKLOG.md -- the exemption file is for the checker",
+                        "being wrong, not for work being deferred.",
+                        "",
+                        "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    ]))
+                if rr.returncode == 2:
+                    # The checker itself could not run -- a broken exemption file,
+                    # or --require-live with no snapshot. Same standard as check 3:
+                    # a checker that cannot answer has not passed anything.
+                    deny(chr(10).join([
+                        "Blocked: the reachability check could not complete.",
+                        "",
+                        rr.stdout.strip(),
+                        "",
+                        "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    ]))
+            except Exception as e:
+                deny(chr(10).join([
+                    "Blocked: the reachability check could not be run, so this push is unchecked.",
+                    "",
+                    "  %s: %s" % (type(e).__name__, e),
+                    "",
+                    "This check became blocking on 2026-09-02. An unrunnable checker used to be",
+                    "ignored here; that is the failure mode the whole gate exists to prevent.",
+                    "",
+                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                ]))
 
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
