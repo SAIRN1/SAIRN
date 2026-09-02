@@ -538,10 +538,20 @@ label.chk input{width:auto;}
             <div class="fg"><label>Default Fee</label><input type="number" id="pc-add-fee" placeholder="0.00" min="0" step="0.01"></div>
             <div class="fg"><label>Default Length (minutes)</label><input type="number" id="pc-add-length" placeholder="30" min="1"></div>
           </div>
+          <div class="fr">
+            <div class="fg"><label>CDT edition this code is from</label><input type="text" id="pc-add-version" placeholder="e.g. CDT 2026"></div>
+            <div class="fg"><label>Effective from</label><input type="date" id="pc-add-efffrom"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Retired after (blank if still current)</label><input type="date" id="pc-add-effto"></div>
+            <div class="fg"><label>Replaced by (code, if retired)</label><input type="text" id="pc-add-superseded" placeholder="e.g. D0121"></div>
+          </div>
           <button class="btn bp" onclick="addProcedureType()">Add Procedure Type</button>
+          <div class="psub" style="margin-top:8px">CDT is republished every year and payment ties to the exact code reported, so a code that was right last year can be wrong for a service performed this one. Recording the edition and the effective window is what lets this app check a code against the <strong>date of service</strong> rather than against today. Leave the window blank and the code cannot be checked at all &mdash; it will say so rather than quietly pass.</div>
         </div></div>
+        <div id="pc-maintenance"></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
-          <table id="procedures-table"><thead><tr><th>Code</th><th>Description</th><th>Fee</th><th>Length</th><th></th></tr></thead><tbody id="procedures-tbody"></tbody></table>
+          <table id="procedures-table"><thead><tr><th>Code</th><th>Description</th><th>Fee</th><th>Length</th><th>CDT edition</th><th>Effective</th><th>Status today</th><th></th></tr></thead><tbody id="procedures-tbody"></tbody></table>
         </div></div>
       </div>
 
@@ -701,6 +711,7 @@ label.chk input{width:auto;}
           <div class="fg"><label>Procedure</label><input type="text" id="cv-procedure-label" disabled></div>
           <div class="fg"><label>Amount</label><input type="number" id="cv-amount" min="0" step="0.01"></div>
           <div class="msg" id="cv-coverage-note" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+          <div id="cv-cdt-note" style="font-size:12px;margin-bottom:10px"></div>
           <div style="display:flex;gap:8px">
             <button class="btn bp" onclick="submitCompleteVisit()">Save &amp; Complete Visit</button>
             <button class="btn bo" onclick="closeCompleteVisitModal()">Cancel</button>
@@ -727,9 +738,22 @@ function dntAiError(data){
   return typeof data.error==='string'?data.error:'AI request failed';
 }
 
-function dntLocalToday(){
-  var d=new Date();
+function dntLocalDateOf(d){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function dntLocalToday(){
+  return dntLocalDateOf(new Date());
+}
+// The practice's calendar date for a stored appointment instant. NOT
+// toISOString().slice(0,10) -- that is UTC's calendar date and is a day ahead
+// of the practice's own from roughly 8pm Eastern, which would push an evening
+// appointment's DATE OF SERVICE onto the following day and check its CDT code
+// against the wrong day. Returns '' when there is no usable timestamp, so the
+// caller reports "no date of service" rather than inventing today's.
+function dntServiceDate(startTime){
+  if(!startTime) return '';
+  var d=new Date(startTime);
+  return isNaN(d.getTime())?'':dntLocalDateOf(d);
 }
 
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- not auth. Real
@@ -1517,24 +1541,163 @@ function removeProviderHours(id){
 // ── PROCEDURE TYPES ───────────────────────────────────────────────
 // Practice-entered only -- never a bundled/hardcoded CDT code list
 // (design spec §3, real ADA-copyright constraint).
+
+// ── CDT CODE VERSIONING (2026-09-02, competitive-gap audit A4) ──────────
+//
+// THE GAP, in the audit's own words: "CDT is republished annually (2026: 60
+// code changes per trade source). Stale codes create reimbursement AND audit
+// liability because payment ties to the exact code reported." SAIRNdental had
+// no versioned-code-catalogue-with-effective-dates concept at all.
+//
+// STILL NO BUNDLED CDT LIBRARY, and that is unchanged on purpose. CDT is
+// ADA-copyright, and SAIRNcode reached the same conclusion independently when
+// it scoped a CDT integration: no self-serve API exists, so the honest path is
+// the practice's own licensed data, entered or uploaded by them. What ships
+// here is the MECHANISM -- the edition, the effective window, the supersession
+// -- with no code content whatsoever.
+//
+// THE CHECK IS AGAINST THE DATE OF SERVICE, NOT AGAINST TODAY, and that
+// distinction is the whole feature. A retired code is not simply "bad": it is
+// correct for a service performed while it was live and wrong for one performed
+// after. Banning retired codes outright would break legitimate back-dated
+// claims; checking today's date against the window would flag them for the
+// wrong reason. Only the service date answers the question a payer or an
+// auditor is actually asking.
+//
+// AND "UNKNOWN" IS A REAL STATE. A procedure type with no effective window
+// recorded -- which is every row that existed before this shipped -- CANNOT be
+// validated. It reports as unverifiable rather than as fine. Calling it fine
+// would be a false assurance about exactly the thing this feature exists to
+// check, which is the fabrication class this platform keeps finding.
+
+var CDT_STATUS = {
+  ok:        { label: 'In effect',        cls: 'bg' },
+  retired:   { label: 'Retired',          cls: 'br' },
+  future:    { label: 'Not yet in effect', cls: 'bw' },
+  unknown:   { label: 'Not verifiable',   cls: 'bw' }
+};
+
+// serviceDate is 'YYYY-MM-DD'. Returns { state, message, supersededBy }.
+function cdtStatusFor(proc, serviceDate) {
+  if (!proc) return { state: 'unknown', message: 'No procedure type on file for this appointment.' };
+  var from = proc.effective_from || '';
+  var to = proc.effective_to || '';
+  if (!from && !to) {
+    return {
+      state: 'unknown',
+      message: 'No effective window recorded for ' + (proc.cdt_code || 'this code') +
+               ', so it cannot be checked against the date of service. Add the CDT edition and the dates it was in effect.'
+    };
+  }
+  if (!serviceDate) {
+    return { state: 'unknown', message: 'No date of service, so the code cannot be checked against its effective window.' };
+  }
+  if (from && serviceDate < from) {
+    return {
+      state: 'future',
+      message: (proc.cdt_code || 'This code') + ' did not take effect until ' + from +
+               ', and this service is dated ' + serviceDate + '. Reporting it would be reporting a code that did not exist on the day of service.'
+    };
+  }
+  if (to && serviceDate > to) {
+    return {
+      state: 'retired',
+      message: (proc.cdt_code || 'This code') + ' was retired after ' + to +
+               ', and this service is dated ' + serviceDate + '.' +
+               (proc.superseded_by ? ' It was replaced by ' + proc.superseded_by + '.' : '') +
+               ' Payment ties to the exact code reported, so this is a reimbursement and an audit exposure, not a formatting nit.',
+      supersededBy: proc.superseded_by || ''
+    };
+  }
+  return { state: 'ok', message: (proc.cdt_code || 'This code') + ' was in effect on ' + serviceDate + '.' };
+}
+
+// Practice-wide maintenance picture. Counts only -- never invents a CDT year
+// the practice has not told us about.
+function cdtMaintenance() {
+  var list = procedureTypes();
+  var unverifiable = list.filter(function (p) { return !p.effective_from && !p.effective_to; });
+  var retiredToday = list.filter(function (p) { return cdtStatusFor(p, dntLocalToday()).state === 'retired'; });
+  var futureToday = list.filter(function (p) { return cdtStatusFor(p, dntLocalToday()).state === 'future'; });
+  var editions = {};
+  list.forEach(function (p) { if (p.cdt_version) editions[p.cdt_version] = (editions[p.cdt_version] || 0) + 1; });
+  return {
+    total: list.length,
+    unverifiable: unverifiable.length,
+    retiredToday: retiredToday.length,
+    futureToday: futureToday.length,
+    editions: Object.keys(editions).sort().map(function (k) { return [k, editions[k]]; })
+  };
+}
+
+function rCdtMaintenance() {
+  var box = $('pc-maintenance');
+  if (!box) return;
+  var m = cdtMaintenance();
+  if (!m.total) { box.innerHTML = ''; return; }
+  var bits = [];
+  if (m.unverifiable) {
+    bits.push('<div class="psub"><strong>' + m.unverifiable + ' of ' + m.total +
+      ' code(s) have no effective window recorded</strong>, so they cannot be checked against any date of service. They are reported as not verifiable rather than as correct.</div>');
+  }
+  if (m.retiredToday) {
+    bits.push('<div class="psub"><strong>' + m.retiredToday +
+      ' code(s) are retired as of today.</strong> That is not automatically wrong &mdash; they remain correct for services performed while they were in effect &mdash; but a new service dated today must not use them.</div>');
+  }
+  if (m.futureToday) {
+    bits.push('<div class="psub"><strong>' + m.futureToday + ' code(s) do not take effect until a future date.</strong></div>');
+  }
+  if (m.editions.length) {
+    bits.push('<div class="psub">Editions on file: ' +
+      m.editions.map(function (e) { return H(e[0]) + ' (' + e[1] + ')'; }).join(', ') +
+      '. CDT is republished annually, so more than one edition on file is normal &mdash; what matters is that each code carries the window it was live for.</div>');
+  }
+  box.innerHTML = bits.length
+    ? '<div class="card"><div class="ch"><div class="ct">Code maintenance</div></div><div class="cb">' + bits.join('') + '</div></div>'
+    : '';
+}
+
+// The window is rendered as text rather than a status because a window is a
+// FACT about the code; the status is a JUDGEMENT and needs a date to be one.
+// The column is headed "Status today" and is computed against today for that
+// reason only -- every decision that matters uses the date of service.
+function cdtWindowText(p){
+  var from=p.effective_from||'', to=p.effective_to||'';
+  if(!from&&!to) return '<span style="color:var(--muted)">not recorded</span>';
+  return H((from||'?')+' → '+(to||'current'));
+}
 function rProcedures(){
   var list=procedureTypes();
+  var today=dntLocalToday();
   var tbody=$('procedures-tbody');
   tbody.innerHTML=list.map(function(p){
+    var s=cdtStatusFor(p,today),meta=CDT_STATUS[s.state]||CDT_STATUS.unknown;
     return '<tr><td>'+H(p.cdt_code)+'</td><td>'+H(p.description)+'</td><td>'+fmt(p.default_fee)+'</td><td>'+H(p.default_length_minutes)+' min</td>'+
+      '<td>'+(p.cdt_version?H(p.cdt_version):'<span style="color:var(--muted)">not recorded</span>')+'</td>'+
+      '<td>'+cdtWindowText(p)+'</td>'+
+      '<td><span class="badge '+meta.cls+'" title="'+H(s.message)+'">'+H(meta.label)+'</span>'+
+      (s.state==='retired'&&s.supersededBy?'<div style="font-size:11px;color:var(--muted);margin-top:3px">replaced by '+H(s.supersededBy)+'</div>':'')+'</td>'+
       '<td><button class="btn bo bs" onclick="removeProcedureType(\''+p.id+'\')">Remove</button></td></tr>';
-  }).join('')||'<tr><td colspan="5" style="color:var(--muted);text-align:center">No procedure types on file yet -- enter your practice\'s own codes and fees above</td></tr>';
+  }).join('')||'<tr><td colspan="8" style="color:var(--muted);text-align:center">No procedure types on file yet -- enter your practice\'s own codes and fees above</td></tr>';
+  rCdtMaintenance();
   fillDentalSelects();
 }
 async function addProcedureType(){
   var code=$('pc-add-code').value.trim(),desc=$('pc-add-desc').value.trim();
   var fee=parseFloat($('pc-add-fee').value),length=parseInt($('pc-add-length').value,10);
+  var version=$('pc-add-version').value.trim();
+  var effFrom=$('pc-add-efffrom').value,effTo=$('pc-add-effto').value;
+  var superseded=$('pc-add-superseded').value.trim();
   if(!code||!desc){toast('Code and description required');return;}
+  // Refused rather than stored and silently ignored: an inverted window makes
+  // every date-of-service check on this code meaningless in both directions.
+  if(effFrom&&effTo&&effTo<effFrom){toast('The retirement date is before the effective date -- that window cannot be checked against any date of service',5000);return;}
   var rec={id:newId('PC'),cdt_code:code,description:desc,default_fee:isNaN(fee)?0:fee,
-    default_length_minutes:isNaN(length)?30:length,created_at:dntLocalToday()};
+    default_length_minutes:isNaN(length)?30:length,cdt_version:version,
+    effective_from:effFrom,effective_to:effTo,superseded_by:superseded,created_at:dntLocalToday()};
   var list=procedureTypes();list.push(rec);st('dnt_procedures_list',list);
   rProcedures();
-  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length'].forEach(function(id){$(id).value='';});
+  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded'].forEach(function(id){$(id).value='';});
   var syncResult=await sdnData('write','dnt_procedure_types',rec);
   toast(syncResult?'Procedure type added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
@@ -1705,6 +1868,17 @@ function openCompleteVisitModal(appointmentId){
   $('cv-coverage-note').textContent=est.found
     ? ('Estimated insurance: '+fmt(est.amount)+' (locked in when saved)')
     : 'No coverage rule on file for this payer/procedure -- showing full amount due.';
+  // THE DATE-OF-SERVICE CHECK, at the one place in this app where a real date
+  // of service exists. The appointment's own start time is used, NOT today: a
+  // visit completed late, or back-dated, must be checked against the day the
+  // service happened, which is the entire point of recording the window.
+  // It REPORTS rather than blocks -- a retired code can be the correct code for
+  // that day, and refusing it would break a legitimate claim.
+  var cdtNote=$('cv-cdt-note');
+  var svc=dntServiceDate(a.start_time);
+  var s=cdtStatusFor(pc,svc),meta=CDT_STATUS[s.state]||CDT_STATUS.unknown;
+  cdtNote.innerHTML='<span class="badge '+meta.cls+'">'+H(meta.label)+'</span> '+
+    '<span style="color:var(--muted)">'+H(s.message)+'</span>';
   $('completeVisitModal').classList.add('on');
 }
 function closeCompleteVisitModal(){$('completeVisitModal').classList.remove('on');cvAppointmentId=null;}
