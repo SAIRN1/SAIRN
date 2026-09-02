@@ -3684,6 +3684,82 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   document.getElementById('ai-total').textContent=counts.total||0;
   var qtList=document.getElementById('ai-quick-topics-list');
   document.getElementById('ai-topics').textContent=qtList?qtList.children.length:0;
+  // ── [0039] PROMPT TOKEN BUDGET AND DROP POLICY (2026-09-02) ───────────────
+  // `history` above grows for the entire session and is posted WHOLE on every
+  // turn (messages:history, at both fetches below). Nothing ever trimmed it
+  // except the user clicking Clear. A tool_result carrying the whole Job
+  // Financials table lands in it too, so one tool call can add more than a
+  // dozen ordinary turns' worth in a single step.
+  //
+  // MEASURED FROM THIS FILE, not assumed. The fixed part of every request:
+  //   base system prompt 2,086 chars + guardrail 383 + style note <=49
+  //   tool definitions 466 bytes of JSON (one tool is registered)
+  // Bounded-but-variable: the style directives block (~1k chars ceiling) and
+  // the profile block. UNBOUNDED: the memory block (10 memories, no length
+  // limit on memory text) and `history` itself, which is the dominant term.
+  //
+  // THE TOKEN FIGURES HERE ARE ESTIMATES AND ARE LABELLED AS SUCH, because
+  // NOTHING ON THIS PLATFORM RECORDS A REAL ONE. api/claude.js receives
+  // Anthropic's own `usage` block and forwards it to the client without ever
+  // reading it, and sairn_ai_rate_limit_log stores only (app_id,
+  // requested_at). So there is no production measurement to calibrate
+  // against; this uses the standard ~4-chars-per-token approximation for
+  // English prose and errs high rather than pretending to precision.
+  var SD_TOK_CHARS = 4;
+  // PROVISIONAL, and deliberately generous: ~10% of the 200k context window,
+  // far above any ordinary conversation, so it bites on runaway tool-result
+  // accumulation rather than on real chat. It is a guess in the honest sense
+  // -- the number that would replace it needs the measurement described above.
+  var SD_PROMPT_BUDGET_TOKENS = 20000;
+
+  function sdEstTokens(v){
+    if (v == null) return 0;
+    var s = (typeof v === 'string') ? v : JSON.stringify(v);
+    return Math.ceil(s.length / SD_TOK_CHARS);
+  }
+
+  // Group messages into units that MUST travel together. An assistant turn
+  // carrying a tool_use block and the user turn carrying its tool_result are
+  // ONE unit -- sending either without the other is a 400 from the API. That
+  // is the specific way a naive "drop the oldest N messages" breaks this chat,
+  // and it is why this groups before it drops.
+  function sdMsgGroups(msgs){
+    var groups = [], i = 0;
+    while (i < msgs.length) {
+      var m = msgs[i], g = [m], usesTool = false;
+      if (m && m.role === 'assistant' && Array.isArray(m.content)) {
+        usesTool = m.content.some(function(b){ return b && b.type === 'tool_use'; });
+      }
+      if (usesTool && msgs[i+1]) { g.push(msgs[i+1]); i += 2; } else { i += 1; }
+      groups.push(g);
+    }
+    return groups;
+  }
+
+  // Returns the messages to SEND. `history` itself is never mutated -- the
+  // on-screen conversation stays complete, only the request is bounded.
+  function sdBudgetMessages(msgs, fixedTokens, budget){
+    var groups = sdMsgGroups(msgs);
+    var sizes = groups.map(function(g){
+      return g.reduce(function(a, m){ return a + sdEstTokens(m.content) + 4; }, 0);
+    });
+    var total = fixedTokens + sizes.reduce(function(a, b){ return a + b; }, 0);
+    var dropped = 0, first = 0;
+    // The LAST group is never dropped: it carries the message being answered.
+    // Dropping it would send a request with nothing to respond to.
+    while (total > budget && first < groups.length - 1) {
+      total -= sizes[first];
+      dropped += groups[first].length;
+      first++;
+    }
+    var kept = [];
+    for (var k = first; k < groups.length; k++) kept = kept.concat(groups[k]);
+    // `over` means even the irreducible request exceeds the budget. Reported
+    // rather than swallowed -- a silently oversized request is how this class
+    // of bug stays invisible until the API rejects it.
+    return { messages: kept, dropped: dropped, estimated: total, over: total > budget };
+  }
+
   function appendMsg(role,text){
     var d=document.getElementById('ai-chat');
     var isUser=role==='user';
@@ -3733,8 +3809,15 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       document.getElementById('ai-queries').textContent=counts.today;
       document.getElementById('ai-total').textContent=counts.total;
     }
+    // [0039] Bound the request. history is left intact so the on-screen
+    // conversation is unaffected; only what goes over the wire is trimmed.
+    var _plan=sdBudgetMessages(history,sdEstTokens(sys)+sdEstTokens(toolDefs),SD_PROMPT_BUDGET_TOKENS);
+    // Say so. Dropping context silently is the same failure class as a wrong
+    // number shown without a warning -- the answer changes and nobody knows why.
+    if(_plan.dropped&&typeof notify==='function')notify('Chat is long — the oldest '+_plan.dropped+' message'+(_plan.dropped===1?'':'s')+' were left out of this request to stay inside the model’s budget.','warn');
+    if(_plan.over&&typeof notify==='function')notify('This request is still over budget even after trimming — the reply may be truncated.','warn');
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:history,tools:toolDefs})
+      body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:_plan.messages,tools:toolDefs})
     }).then(function(r){return r.json();}).then(function(r){
       var blocks=(r&&r.content)||[];
       var toolUse=blocks.filter(function(b){return b.type==='tool_use';})[0];
@@ -3748,12 +3831,29 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       // reinforce the anti-fabrication instruction right next to the
       // trigger, in the same turn as the denial/error itself.
       var toolResultContent=outcome.ok?JSON.stringify(outcome.result):('Error: '+outcome.error+' Do not estimate or substitute your own figures for this -- state the restriction/error plainly and stop.');
+      // [0039] A tool result is the one part of this history that can exceed
+      // the whole budget on its own -- get_job_profitability returns every job
+      // financial record there is. The GROUP-drop above cannot help, because
+      // this group is the last one and the last one is never dropped. So cap
+      // it, at half the budget, and TELL THE MODEL it was capped: a silently
+      // truncated table would be answered as though it were the full table,
+      // which is the fabricated-total failure this file guards against
+      // everywhere else.
+      var _trMax=Math.floor(SD_PROMPT_BUDGET_TOKENS/2)*SD_TOK_CHARS;
+      if(outcome.ok&&toolResultContent.length>_trMax){
+        toolResultContent=toolResultContent.slice(0,_trMax)+
+          '\n\n[TRUNCATED: this tool returned more data than fits in one request. You are seeing the FIRST PART ONLY. Do not total, count, average or summarise across the full set from this partial output -- say plainly that the result was truncated and state what you can see.]';
+      }
       // Claude requires the assistant turn that requested the tool to be
       // present in history before the tool_result turn that answers it.
       history.push({role:'assistant',content:blocks});
       history.push({role:'user',content:[{type:'tool_result',tool_use_id:toolUse.id,content:toolResultContent}]});
+      // Re-plan: the two pushes above can add more than the whole first
+      // request did, so the budget has to be re-applied rather than reused.
+      var _plan2=sdBudgetMessages(history,sdEstTokens(sys),SD_PROMPT_BUDGET_TOKENS);
+      if(_plan2.dropped&&typeof notify==='function')notify('Chat is long — the oldest '+_plan2.dropped+' message'+(_plan2.dropped===1?'':'s')+' were left out of this request to stay inside the model’s budget.','warn');
       fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:history})
+        body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:_plan2.messages})
       }).then(function(r2){return r2.json();}).then(function(r2){
         var reply2=(r2.content&&r2.content[0]&&r2.content[0].text?r2.content[0].text:(r2.completion||'Sorry, I could not get a response.'));
         finish(reply2);
