@@ -143,8 +143,27 @@ const REJECTED = 400;      // the gate refused the verb
       'derive_charges',
       'evaluate',
       'issue',
+      // 'readiness' (sen_visits) DECLARED LATE, 2026-09-02. It shipped in
+      // f1d2b57 on 2026-08-27 and this list was never updated, so THIS TEST HAS
+      // BEEN RED FOR FIVE DAYS -- and a tripwire that is already failing catches
+      // nothing, because the next person reads the red and assumes it is the
+      // known one. It very nearly did exactly that here.
+      // Declared rather than deleted, after reading its handler: session-gated,
+      // owner/billing/coordinator/scheduler only, and it genuinely persists
+      // nothing (api/sd-data.js, `sen_visits && readiness` -- one select, no
+      // write).
+      'readiness',
       'reconcile',
       'reconcile_claim',
+      // 'reserve' (slabs, 2026-09-02) is the first verb on this list that is
+      // neither compute-only nor append-only -- it WRITES, which is why the
+      // note above says adding one here is a deliberate act. It earns the
+      // exception by being the only write on this platform that refuses:
+      // 'write' on slabs is a blind upsert and silently reassigned a slab
+      // already reserved for another customer, destroying `reservedFor`.
+      // 'reserve' is a compare-and-swap that returns 409 instead. It reaches
+      // only 'slabs'; the enumeration test above holds that.
+      'reserve',
       'route',
       'set_status'
     ]);

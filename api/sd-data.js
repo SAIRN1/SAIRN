@@ -785,6 +785,122 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SLAB RESERVATION -- COMPARE-AND-SWAP (2026-09-02) ───────────────────
+    // The double-sale. Three places in stonedesk.html did
+    // `rs.status='reserved'; rs.reservedFor=customer;` with NO check of what
+    // was already there, and the 'write' branch above is a blind upsert
+    // (resolution=merge-duplicates), so the second salesperson to save simply
+    // overwrote the first -- destroying `reservedFor`, the only record of who
+    // had the slab. Both quotes then displayed the same physical slab as
+    // theirs, and on the POS path the invoice was written BEFORE the slab was
+    // touched, so money was taken against it either way.
+    //
+    // Preventing that is the single thing every competing product builds its
+    // yard workflow around; iBlocky puts "niente più doppie vendite" second on
+    // its own homepage. StoneDesk had no mechanism for it at all.
+    //
+    // A CLIENT-SIDE CHECK CANNOT DO THIS. sdSlabs is a localStorage array
+    // loaded once per session, so a second device's reservation is not even
+    // visible to the first. The decision has to be made where both requests
+    // arrive, which is here.
+    //
+    // ATOMIC DESPITE THE READ. The read builds the merged jsonb blob; the
+    // write then asserts, in its own WHERE clause, that status and reservedFor
+    // are still exactly what the read saw. If another request won in between,
+    // PostgREST matches zero rows and this returns 409 -- it does not overwrite
+    // and it does not silently succeed. Optimistic concurrency, one statement.
+    if (resource === 'slabs' && action === 'reserve') {
+      const slabId = payload && payload.id;
+      const who = String((payload && payload.reservedFor) || '').trim();
+      if (!slabId) {
+        res.status(400).json({ error: { code: 'NO_SLAB_ID', message: 'slab payload.id is required' } });
+        return;
+      }
+      if (!who) {
+        res.status(400).json({ error: { code: 'NO_HOLDER', message: 'reservedFor is required -- a reservation with nobody to hold it is not a reservation' } });
+        return;
+      }
+      // PostgREST filter values are comma/parenthesis delimited, and customer
+      // names contain both ("Smith, Jones & Co (Ohio)"). Quote and escape
+      // rather than hoping.
+      const pgq = (v) => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
+      const base = 'sd_slabs?license_hash=eq.' + enc(licHash) + '&slab_id=eq.' + enc(String(slabId));
+
+      const cur = await fetch(rest(base + '&select=data'), { headers });
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+
+      // Absent server-side means no other device has claimed it either, so a
+      // plain INSERT is correct -- and it is a PLAIN insert, not the upsert the
+      // 'write' branch uses, precisely so that two devices racing on the same
+      // unsynced slab collide on the unique index instead of clobbering.
+      if (!Array.isArray(curRows) || !curRows.length) {
+        const merged = Object.assign({}, payload, { status: 'reserved', reservedFor: who });
+        delete merged.reservedFor_expected;
+        const ins = await fetch(rest('sd_slabs'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, app_id: 'stonedesk',
+            slab_id: String(slabId), data: merged, updated_at: nowISO()
+          })
+        });
+        const insRows = await ins.json();
+        if (ins.status === 409) {
+          res.status(409).json({ error: { code: 'ALREADY_RESERVED', message: 'Another device reserved this slab a moment ago. Reload the slab list and pick again.' } });
+          return;
+        }
+        if (!ins.ok) return upstream(res, insRows);
+        res.status(200).json({ ok: true, data: (Array.isArray(insRows) && insRows[0]) ? insRows[0].data : merged, created: true });
+        return;
+      }
+
+      const row = curRows[0].data || {};
+      const curStatus = row.status == null ? null : String(row.status);
+      const curWho = row.reservedFor == null ? null : String(row.reservedFor);
+
+      // Consumed is terminal. The slab has been cut; there is nothing to hold.
+      if (curStatus === 'consumed') {
+        res.status(409).json({ error: { code: 'SLAB_CONSUMED', message: 'That slab has already been consumed and cannot be reserved.' } });
+        return;
+      }
+      // Already held by someone else. Naming the holder is the whole point --
+      // "unavailable" sends a salesperson hunting, "held for Ruiz kitchen"
+      // ends the question.
+      if (curStatus === 'reserved' && curWho && curWho !== who) {
+        res.status(409).json({
+          error: {
+            code: 'ALREADY_RESERVED',
+            message: 'That slab is already reserved for ' + curWho + '.',
+            reservedFor: curWho
+          }
+        });
+        return;
+      }
+
+      const merged = Object.assign({}, row, payload, { status: 'reserved', reservedFor: who });
+      // THE COMPARE. Re-asserts the exact state the read saw; a change by any
+      // other request in between matches zero rows.
+      const guard = '&data->>status=' + (curStatus === null ? 'is.null' : 'eq.' + enc(pgq(curStatus))) +
+                    '&data->>reservedFor=' + (curWho === null ? 'is.null' : 'eq.' + enc(pgq(curWho)));
+      const upd = await fetch(rest(base + guard), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ data: merged, updated_at: nowISO() })
+      });
+      const updRows = await upd.json();
+      if (!upd.ok) return upstream(res, updRows);
+      if (!Array.isArray(updRows) || !updRows.length) {
+        // Zero rows changed: the slab moved under us between the read and the
+        // write. Reported as the conflict it is, never retried automatically --
+        // a retry here would be a loop that eventually wins the double-sale.
+        res.status(409).json({ error: { code: 'RESERVATION_RACE', message: 'Someone else changed this slab while you were reserving it. Reload the slab list and pick again.' } });
+        return;
+      }
+      res.status(200).json({ ok: true, data: updRows[0].data });
+      return;
+    }
+
     // ── SLAB LINEAGE: BLOCKS / BUNDLES / HISTORY (2026-08-22, Phase 1b) ─────────────────────
     // block -> bundle -> slab -> remnant. See sql/sd_slab_lineage_schema.sql for why these are
     // sibling tables rather than fields on sd_slabs' jsonb blob (that blob is capped at 65536

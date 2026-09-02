@@ -22,6 +22,22 @@
 
 module.exports = {
   app: 'shared',
+  // 'reserve' on slabs (2026-09-02). It is declared HERE rather than in
+  // stonedesk.js because this file owns 'slabs', and index.js enforces that a
+  // module may only grant verbs to its own resources -- it refused the first
+  // attempt to put this in stonedesk.js, which is the guard working.
+  //
+  // NOT a second way to write a slab. 'write' is a blind upsert
+  // (resolution=merge-duplicates, last writer wins) and that is exactly how a
+  // slab reserved for one customer was silently reassigned to another,
+  // destroying `reservedFor` -- the only record of who had it. 'reserve' is a
+  // compare-and-swap that REFUSES on conflict. The two verbs are kept apart on
+  // purpose: ordinary slab edits stay cheap, and a reservation does not.
+  //
+  // The handler branch is StoneDesk's, and the verb reaches only 'slabs'.
+  extraActions: {
+    slabs: ['reserve'],
+  },
   resources: [
     'profile',
     'memory',

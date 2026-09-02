@@ -6094,7 +6094,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     window.posEsigClear();
   };
 
-  window.posCompleteSale=function(){
+  window.posCompleteSale=async function(){
     var errEl=document.getElementById('pos-err');
     errEl.textContent='';
     var cust=document.getElementById('pos-cust').value.trim();
@@ -6105,6 +6105,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     if(!total||total<=0){errEl.textContent='Add at least one line item with an amount';return;}
     if(!method){errEl.textContent='Select a payment method';return;}
     if(posEsigIsBlank()){errEl.textContent='Get customer signature before completing sale';return;}
+    // RESERVE BEFORE TAKING THE MONEY (2026-09-02). This used to run AFTER
+    // sd_invoices.unshift(inv) and invSaveStore(), so a sale was already
+    // recorded -- with a deposit -- against a slab that might be another
+    // customer's. Order matters more than the check does: a refusal after the
+    // invoice exists is a refund conversation, a refusal before it is a
+    // salesperson picking a different slab.
+    if(posReservedSlabId && typeof sdSlabs!=='undefined'){
+      var posSlab=sdSlabs.find(function(x){return x.id===posReservedSlabId;});
+      var posRes=await sdReserveSlab(posSlab||{id:posReservedSlabId},cust);
+      if(!posRes.ok){
+        errEl.textContent=posRes.message;
+        return;
+      }
+    }
     var desc=posItems.filter(function(it){return it.desc;}).map(function(it){return it.desc;}).join(', ')||'Mobile POS sale';
     var canvas=document.getElementById('pos-esig-canvas');
     var sigDataUrl=canvas?canvas.toDataURL('image/png'):'';
@@ -6133,10 +6147,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     };
     sd_invoices.unshift(inv);
     invSaveStore();
-    if(posReservedSlabId && typeof sdSlabs!=='undefined'){
-      var rs=sdSlabs.find(function(x){return x.id===posReservedSlabId;});
-      if(rs){ rs.status='reserved'; rs.reservedFor=cust; if(typeof saveSlabs==='function') saveSlabs(); }
-    }
+    // The slab was reserved above, before the invoice existed. sdReserveSlab()
+    // already adopted the server's row into sdSlabs and saved -- nothing to do
+    // here, and doing it again locally would re-introduce the blind write.
     fetch('https://sairn.vercel.app/api/bridge',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',event_type:'pos_sale',source_device:'mobile',timestamp:new Date().toISOString(),payload:inv})
     }).catch(function(){ /* bridge sync optional -- sale is already saved locally */ });
@@ -10916,7 +10929,9 @@ function calc() {
 }
 
 // == SAVE QUOTE ================================================
-function saveQuote() {
+// async since 2026-09-02: the slab reservation below now asks the server and
+// obeys a refusal, instead of overwriting whoever already had the slab.
+async function saveQuote() {
   if (!lastCalc.total) return showToast('Build a quote first.');
   const q = {
     num: currentQuoteNum,
@@ -10927,32 +10942,31 @@ function saveQuote() {
     date: new Date().toLocaleDateString(),
   };
   if (typeof qbReservedSlabId !== 'undefined' && qbReservedSlabId) {
-    q.reservedSlabId = qbReservedSlabId;
-    if (typeof sdSlabs !== 'undefined') {
-      var rs = sdSlabs.find(function(x){ return x.id === qbReservedSlabId; });
-      if (rs) {
-        rs.status = 'reserved';
-        rs.reservedFor = q.client;
-        if (typeof saveSlabs === 'function') saveSlabs();
-        if (typeof slabSyncOne === 'function') slabSyncOne(rs);
-        // NOTE: slabRender() was removed here (and, as of the Tier-3
-        // slab-module cleanup, no longer exists at all -- its whole
-        // dead browse/manage UI was deleted; see the module header
-        // comment above slabOpenConsume() for the full writeup).
-        // Correction to this comment's original diagnosis: #slab-grid
-        // itself DID exist (hidden, display:none) -- the real crash was
-        // inside slabFilteredList(), called first, which read 3 DOM ids
-        // (slab-f-material/-search/-minsqft) that never existed. Either
-        // way, calling it here threw a synchronous, uncaught TypeError
-        // on every quote save that had a slab reserved, aborting the
-        // rest of saveQuote() before the quote itself was ever pushed to
-        // quoteHistory -- i.e. reserving a slab could silently prevent
-        // the quote from saving at all. The actual reservation
-        // (rs.status/rs.reservedFor/saveSlabs/slabSyncOne above) is
-        // unaffected and still persists correctly; only the crashing
-        // re-render call was removed.
-      }
+    // RESERVE FIRST, AND STOP IF IT IS REFUSED (2026-09-02).
+    //
+    // What this replaced: `rs.status='reserved'; rs.reservedFor=q.client;` with
+    // no check of what was already there. A slab held for another customer was
+    // silently reassigned, and reservedFor -- the only record of who had it --
+    // was destroyed. Two quotes then showed the same physical slab as theirs
+    // and nothing in the app could tell you that had happened.
+    //
+    // The old comment block here documented a crash in a since-deleted
+    // slabRender() call and noted the reservation itself "still persists
+    // correctly". It did persist. Persisting was the bug.
+    //
+    // The quote is NOT saved when the reservation is refused. Saving a quote
+    // that promises a slab belonging to somebody else is the same wrong answer
+    // as taking the slab, just quieter.
+    var qbSlab = (typeof sdSlabs !== 'undefined')
+      ? sdSlabs.find(function(x){ return x.id === qbReservedSlabId; })
+      : null;
+    var qbRes = await sdReserveSlab(qbSlab || { id: qbReservedSlabId }, q.client);
+    if (!qbRes.ok) {
+      if (typeof showToast === 'function') showToast(qbRes.message);
+      if (typeof notify === 'function') notify(qbRes.message, 'err');
+      return;
     }
+    q.reservedSlabId = qbReservedSlabId;
     qbReservedSlabId = null;
     var chip = document.getElementById('qb-slab-chip');
     if (chip) chip.innerHTML = '';
@@ -24272,7 +24286,13 @@ function remakeUrgency(r){
 // sdRMAdd() below (moved out of the old IIFE) now reads that real form
 // and writes the canonical sdRemakes shape instead of the old one.
 
-function remakeSave(){
+// async since 2026-09-02 so the slab reservation below goes through
+// sdReserveSlab() like every other one. NOTE: this function is DEAD -- nothing
+// calls it, and rm-cust does not exist in the markup (see the note above), so
+// this was never a live double-sale path. It is changed anyway because it held
+// the last remaining copy of the blind `status='reserved'` pattern, and a
+// wrong pattern left lying in the file is what the next person copies.
+async function remakeSave(){
   var cust=document.getElementById('rm-cust').value.trim();
   if(!cust){showToast('Customer name required');return;}
   var r={
@@ -24297,10 +24317,12 @@ function remakeSave(){
     completedAt:'',
     createdAt:new Date().toISOString()
   };
-  // Reserve the slab immediately if one was picked
+  // Reserve the slab if one was picked -- through the server, refusing on
+  // conflict, same as the quote and POS paths.
   if(r.reservedSlabId && typeof sdSlabs!=='undefined'){
-    var rs=sdSlabs.find(function(s){return s.id===r.reservedSlabId;});
-    if(rs){ rs.status='reserved'; rs.reservedFor=cust+' (remake)'; if(typeof saveSlabs==='function') saveSlabs(); if(typeof slabSyncOne==='function') slabSyncOne(rs); }
+    var rmSlab=sdSlabs.find(function(s){return s.id===r.reservedSlabId;});
+    var rmRes=await sdReserveSlab(rmSlab||{id:r.reservedSlabId},cust+' (remake)');
+    if(!rmRes.ok){ showToast(rmRes.message); return; }
   }
   var rmSlabIdEl=document.getElementById('rm-slab-id'); if(rmSlabIdEl) rmSlabIdEl.value='';
   var rmSlabChipEl=document.getElementById('rm-slab-chip'); if(rmSlabChipEl) rmSlabChipEl.textContent='';
@@ -32728,6 +32750,57 @@ async function slabSyncFromSupabase(){
   }catch(e){}
 }
 
+// ── THE ONLY WAY A SLAB GETS RESERVED (2026-09-02) ─────────────────────────
+// Three places used to do `rs.status='reserved'; rs.reservedFor=customer;`
+// directly -- the quote builder, the mobile POS and remakes -- and not one of
+// them looked at what was already there. A slab held for one customer was
+// silently reassigned to the next person who saved, destroying `reservedFor`,
+// which is the only record of who had it. Both quotes then showed the same
+// physical slab as theirs.
+//
+// A LOCAL CHECK WOULD NOT HAVE FIXED IT. sdSlabs is a localStorage array
+// loaded once per session, so a reservation made on the templater's tablet is
+// invisible to the salesperson's laptop until something syncs. The decision
+// has to be made where both requests land, so this asks the server and obeys
+// the answer. api/sd-data.js's 'reserve' action is a compare-and-swap that
+// returns 409 rather than overwriting.
+//
+// Returns { ok:true, slab } or { ok:false, code, message }. NEVER throws and
+// never falls back to writing locally on failure -- a local write that the
+// server refused is precisely the double-sale this exists to stop.
+async function sdReserveSlab(slab, forWho){
+  if(!slab || !slab.id) return {ok:false, code:'NO_SLAB', message:'No slab selected.'};
+  var who=String(forWho||'').trim();
+  if(!who) return {ok:false, code:'NO_HOLDER', message:'Enter the customer name before reserving a slab.'};
+  var lic=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+  if(!lic) return {ok:false, code:'NO_LICENSE', message:'Not signed in.'};
+  try{
+    var headers={'Content-Type':'application/json',Authorization:'Bearer '+lic};
+    try{ var tok=sessionStorage.getItem('sd_session_token'); if(tok) headers['X-SD-Auth']=tok; }catch(e){}
+    var payload=Object.assign({},slab,{reservedFor:who});
+    var res=await fetch('/api/sd-data',{method:'POST',headers:headers,
+      body:JSON.stringify({action:'reserve',resource:'slabs',payload:payload})});
+    var j=null; try{ j=await res.json(); }catch(e){ j=null; }
+    if(res.ok && j && j.ok){
+      // Adopt the SERVER's version of the row, not a locally-guessed one --
+      // it is the copy that won.
+      if(typeof sdSlabs!=='undefined' && j.data){
+        var i=sdSlabs.findIndex(function(x){return x.id===slab.id;});
+        if(i>=0) sdSlabs[i]=j.data; else sdSlabs.push(j.data);
+        if(typeof saveSlabs==='function') saveSlabs();
+      }
+      return {ok:true, slab:j.data||null};
+    }
+    var err=(j&&j.error)||{};
+    return {ok:false, code:err.code||('HTTP_'+res.status),
+            message:err.message||'Could not reserve that slab. Try again.'};
+  }catch(e){
+    // A network failure is NOT permission to reserve locally. Refuse and say
+    // why -- an unreachable server cannot tell you the slab is free.
+    return {ok:false, code:'OFFLINE', message:'Could not reach the server to reserve this slab, so it was not reserved. Check the connection and try again.'};
+  }
+}
+
 async function slabSyncOne(slab){
   if(typeof sdData!=='function') return;
   var lic=slabLicKey(); if(!lic) return;
@@ -33048,11 +33121,15 @@ function qbPickSlab(id){
   if(_slabPickerCtx==='pos'){
     posReservedSlabId=id;
     var posChip=document.getElementById('pos-slab-chip');
-    if(posChip && s) posChip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="posReservedSlabId=null;document.getElementById(\'pos-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+    // "Selected", not "Reserved" (2026-09-02). Nothing is reserved at pick
+    // time -- the reservation happens on save, against the server, and can be
+    // refused. Saying "Reserved" here told a salesperson the slab was theirs
+    // during exactly the window in which someone else could still take it.
+    if(posChip && s) posChip.innerHTML='📦 Selected: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="posReservedSlabId=null;document.getElementById(\'pos-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
   } else {
     qbReservedSlabId=id;
     var chip=document.getElementById('qb-slab-chip');
-    if(chip && s) chip.innerHTML='📦 Reserved: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="qbReservedSlabId=null;document.getElementById(\'qb-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
+    if(chip && s) chip.innerHTML='📦 Selected: <b>'+escHtml(s.colorName||'')+'</b> ('+slabMaterialLabel(s.material)+') <a href="#" onclick="qbReservedSlabId=null;document.getElementById(\'qb-slab-chip\').innerHTML=\'\';return false;" style="margin-left:6px;color:var(--muted)">remove</a>';
   }
   document.getElementById('slab-action-modal').style.display='none';
 }
