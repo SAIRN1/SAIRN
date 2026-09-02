@@ -221,6 +221,16 @@
       "claimed_at_epoch": 1788365638.8041728,
       "status": "released",
       "released_at": "2026-09-02T23:17:58Z"
+    },
+    {
+      "id": "cc-1788392132",
+      "session": "cc",
+      "subject": "platform",
+      "task": "shared credential engine extraction",
+      "claimed_at": "2026-09-02T23:35:32Z",
+      "claimed_at_epoch": 1788392132.914514,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
