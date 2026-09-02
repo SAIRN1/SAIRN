@@ -453,6 +453,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
           </div>
         </div></div>
         <div class="card"><div class="cb" id="sch-list"><div class="empty">Loading…</div></div></div>
+        <!-- Crew load (2026-09-02, gap A2). The schedule could hold a crew day
+             but nothing could see ACROSS days: the same person on two jobs on
+             one date was invisible. Computed server-side over the same range
+             as the list above, so this board and that list can never disagree
+             about who is out. -->
+        <div class="card" id="sch-load-card" style="display:none;"><div class="ch"><div class="ct">Crew load</div></div>
+          <div class="cb" id="sch-load"><div class="empty">--</div></div>
+        </div>
         <div class="card" id="sch-loc-card" style="display:none;"><div class="ch"><div class="ct">Locations / Branches</div></div><div class="cb">
           <div class="note">Deactivate a branch rather than deleting it &mdash; jobs point at it by id, and a deleted branch would orphan their attribution.</div>
           <div id="sch-loc-list" style="margin-top:10px;"></div>
@@ -2913,7 +2921,95 @@ function rfLoadSchedule(){
     if(!r.ok){$('sch-list').innerHTML='<div class="empty">Could not load the schedule.</div>';return;}
     rfSchedule=(r.data&&r.data.data)||[];
     rfRenderSchedule();
+    return rfLoadCrewLoad(p.from,p.to);
   });
+}
+
+// ── CREW LOAD (gap A2, 2026-09-02) ─────────────────────────────────────────
+// The depth the schedule was missing. rf_schedule could always hold a crew day
+// -- job, date, status, employee list, role-gated visibility -- but nothing
+// could see ACROSS days, so the same person on two jobs on one date was
+// invisible. Computed SERVER-SIDE by api/_lib/roofing-crew-capacity.js over
+// the same range the list above is showing, so the two cannot disagree.
+//
+// The range comes from the two date inputs and the engine refuses without
+// both. No "this week" default: a server-side week is a UTC week, which is the
+// defect class fixed across nine SAIRNvet panels on 2026-09-01.
+var rfCrewLoad=null;
+
+function rfLoadCrewLoad(from,to){
+  var card=$('sch-load-card');
+  if(!card)return;
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]||BROAD_READ_ROLES[rfSession&&rfSession.role]);
+  if(!isMgmt){ card.style.display='none'; return; }
+  card.style.display='';
+  if(!from||!to){
+    // Says WHY there is no board rather than showing an empty one. An empty
+    // capacity board reads as "nobody is double-booked".
+    $('sch-load').innerHTML='<div class="empty">Set both From and To above, then press Show &mdash; crew load is computed over an explicit range, never a guessed week.</div>';
+    return;
+  }
+  return rfDataRaw('crew_load','rf_schedule',{from:from,to:to}).then(function(r){
+    if(!r.ok){
+      $('sch-load').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Crew load across the company is management-level information.'
+        : rfEsc(r.msg||'Could not compute crew load.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){ $('sch-load').innerHTML='<div class="empty">Scheduling is not set up yet.</div>'; return; }
+    rfCrewLoad=d.load||null;
+    rfRenderCrewLoad();
+  });
+}
+
+function rfRenderCrewLoad(){
+  var el=$('sch-load');
+  var L=rfCrewLoad;
+  if(!L){el.innerHTML='<div class="empty">Not computed.</div>';return;}
+  var out='';
+  // Conflicts and duplicates FIRST and separately -- they need opposite fixes.
+  // A conflict may be deliberate (two small jobs on one street); a duplicate is
+  // always two rows that should be one.
+  if(L.conflicts.length){
+    out+='<div class="note" style="background:#FEE2E2;border-color:#FCA5A5;color:#7F1D1D;"><strong>'+L.conflicts.length+
+      ' double-booking'+(L.conflicts.length===1?'':'s')+'.</strong> This is not refused &mdash; two jobs in a day is a normal '+
+      'roofing day. It is shown so it is never done by accident.</div>'+
+      '<div class="tw"><table><thead><tr><th>Employee</th><th>Date</th><th>Jobs</th></tr></thead><tbody>'+
+      L.conflicts.map(function(c){
+        return '<tr><td><strong>'+rfEsc(c.employee_id)+'</strong></td><td>'+rfEsc(c.date)+'</td>'+
+          '<td><span class="badge br">'+rfEsc(c.jobs.join(' + '))+'</span></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  if(L.duplicates.length){
+    out+='<div class="note" style="margin-top:10px;"><strong>'+L.duplicates.length+' duplicated row'+
+      (L.duplicates.length===1?'':'s')+'</strong> &mdash; the same person on the <em>same</em> job twice on one day. '+
+      'That is two schedule entries that should be one, not a second job.</div>'+
+      '<div class="tw"><table><thead><tr><th>Employee</th><th>Date</th><th>Job</th></tr></thead><tbody>'+
+      L.duplicates.map(function(c){
+        return '<tr><td><strong>'+rfEsc(c.employee_id)+'</strong></td><td>'+rfEsc(c.date)+'</td>'+
+          '<td><span class="badge bw">'+rfEsc(c.duplicate.join(', '))+'</span></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  if(!L.days.length){
+    out+='<div class="empty">Nobody is scheduled in this range.</div>';
+  }else{
+    out+='<div class="ch" style="padding-left:0;margin-top:14px;"><div class="ct">People out per day</div></div>'+
+      '<div class="tw"><table><thead><tr><th>Date</th><th>People</th><th>Jobs</th></tr></thead><tbody>'+
+      L.days.map(function(d){
+        return '<tr><td>'+rfEsc(d.date)+'</td><td>'+d.people+'</td><td>'+d.job_count+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }
+  // What the report could NOT see. A skipped row is invisible to every number
+  // above, and a reader is entitled to know how many rather than being handed
+  // a total that quietly excludes them.
+  var sk=L.skipped||{};
+  if(sk.unreadable_date||sk.not_occupying){
+    out+='<div class="note" style="margin-top:10px;margin-bottom:0;">Not counted above: '+
+      (sk.unreadable_date?sk.unreadable_date+' row(s) with an unreadable date; ':'')+
+      (sk.not_occupying?sk.not_occupying+' cancelled or unrecognised-status day(s)':'')+'.</div>';
+  }
+  el.innerHTML=out;
 }
 
 function rfRenderSchedule(){
@@ -2976,7 +3072,25 @@ function rfSaveSchedule(){
   };
   rfDataRaw('write','rf_schedule',rec).then(function(r){
     if(!r.ok){toast(r.msg||'Could not save that day',5000);return;}
-    toast('Day saved');closeScheduleModal();rfLoadSchedule();
+    // The server reports who this day just double-booked. It does NOT refuse
+    // -- two jobs in a day is a normal roofing day -- but a toast that only
+    // says "Day saved" is how it happens by accident. `conflicts:null` means
+    // the check could not run, and that is said as "not checked" rather than
+    // being shown as clear.
+    var c=r.data&&r.data.conflicts;
+    var msg='Day saved';
+    if(c===null||c===undefined){ msg='Day saved — double-booking not checked'; }
+    else if(c.applicable===false){ msg='Day saved'; }
+    else if(c.conflicts&&c.conflicts.length){
+      msg='Day saved — '+c.conflicts.map(function(x){
+        return x.employee_id+' is also on '+x.with_jobs.join(', ');
+      }).join('; ');
+    }else if(c.duplicates&&c.duplicates.length){
+      msg='Day saved — '+c.duplicates.map(function(x){return x.employee_id;}).join(', ')+
+        ' already had a row on this same job today';
+    }
+    toast(msg,(c&&((c.conflicts&&c.conflicts.length)||(c.duplicates&&c.duplicates.length)))?7000:3000);
+    closeScheduleModal();rfLoadSchedule();
   });
 }
 

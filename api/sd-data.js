@@ -4871,7 +4871,70 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       const saved = Array.isArray(rows) && rows[0];
-      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { schedule_id: saved.schedule_id, job_id: saved.job_id, location_id: saved.location_id, scheduled_date: saved.scheduled_date, status: saved.status, crew: saved.crew, created_by: saved.created_by }) : payload });
+      // WHO IS NOW DOUBLE-BOOKED, reported WITH the save (2026-09-02, gap A2).
+      // It does NOT refuse, deliberately, and that is the opposite call from
+      // the subcontractor assignment gate above: two jobs in one day is a
+      // normal roofing day -- a small repair in the morning and another on the
+      // same street after lunch -- so a hard block would be wrong, and a wrong
+      // block is how a gate gets routed around. What is wrong is doing it by
+      // ACCIDENT, so it is named loudly and the operator decides.
+      //
+      // Computed AFTER the write against the stored row, not against the
+      // payload, so what is reported is what is actually on the board.
+      let conflictReport = null;
+      try {
+        const cr = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) +
+          '&scheduled_date=eq.' + enc(String(payload.scheduled_date)) +
+          '&select=schedule_id,job_id,scheduled_date,status,crew'), { headers });
+        if (cr.ok) {
+          const sameDay = await cr.json();
+          const cap = require('./_lib/roofing-crew-capacity');
+          const rep = cap.conflictsFor({
+            schedule: Array.isArray(sameDay) ? sameDay : [],
+            candidate: saved || { schedule_id: String(payload.id), job_id: String(payload.job_id), scheduled_date: payload.scheduled_date, status: payload.status || 'planned', crew: roofingLocations.normalizeCrew(payload.crew) }
+          });
+          if (rep.ok) conflictReport = rep;
+        }
+      } catch (e) {
+        // A failure to REPORT must never fail the save that already happened.
+        // Left null, which the client renders as "not checked" rather than as
+        // "clear" -- an unchecked day shown as clear is the silent failure.
+        console.error('rf_schedule conflict report failed:', e && e.message);
+      }
+      res.status(200).json({ ok: true, data: saved ? Object.assign({}, saved.data, { schedule_id: saved.schedule_id, job_id: saved.job_id, location_id: saved.location_id, scheduled_date: saved.scheduled_date, status: saved.status, crew: saved.crew, created_by: saved.created_by }) : payload, conflicts: conflictReport });
+      return;
+    }
+    // ── CREW LOAD (2026-09-02, gap A2) ─────────────────────────────────────
+    // Compute-only. Reads the schedule over an explicit range and reports who
+    // is on how many jobs each day. Writes nothing: looking at whether the
+    // week is overbooked must never change the week -- the same shape as
+    // rf_certifications 'evaluate' and rf_claim_agreements 'agreement_status'.
+    if (resource === 'rf_schedule' && action === 'crew_load') {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Management-level: a crew-wide capacity board shows who else is working
+      // and where, which is exactly the aggregate the narrow tier is kept from
+      // on the schedule read above. Letting it through here would be a way
+      // around that filter.
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Crew load across the company is management-level information' } });
+        return;
+      }
+      const cap = require('./_lib/roofing-crew-capacity');
+      // from/to come from the CALLER and the engine refuses without them. A
+      // server-side "this week" would compute a contractor's week in UTC.
+      const from = (payload && payload.from) || null;
+      const to = (payload && payload.to) || null;
+      if (!from || !to) { res.status(400).json({ error: { code: 'NO_RANGE', message: 'crew_load requires from and to (YYYY-MM-DD)' } }); return; }
+      const r = await fetch(rest('rf_schedule?license_hash=eq.' + enc(licHash) +
+        '&scheduled_date=gte.' + enc(String(from)) + '&scheduled_date=lte.' + enc(String(to)) +
+        '&select=schedule_id,job_id,scheduled_date,status,crew'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, load: null }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      const ev = cap.crewLoad({ schedule: rows || [], from: from, to: to });
+      if (!ev.ok) { res.status(400).json({ error: ev.error }); return; }
+      res.status(200).json({ ok: true, provisioned: true, load: ev });
       return;
     }
     // A crew member marking their own day. Status ONLY -- it cannot move the

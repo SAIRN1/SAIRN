@@ -124,7 +124,13 @@ module.exports = {
     // 'set_status' (Phase 4a) lets a crew member mark their own scheduled day.
     // Status ONLY -- it cannot move the day, change the job or touch the crew,
     // so it is not a way around the management-only schedule write.
-    rf_schedule: ['set_status'],
+    // 'crew_load' (2026-09-02, gap A2) computes who is on how many jobs each
+    // day over an explicit range, and names the two problem classes the
+    // schedule could not previously see at all: the same person on two jobs
+    // (a conflict, sometimes deliberate) and the same person on the same job
+    // twice (a duplicated row, always an error). Reads only -- looking at
+    // whether the week is overbooked must never change the week.
+    rf_schedule: ['set_status', 'crew_load'],
     // 'evaluate' (Phase 4d) scores the company against the requirements the
     // contractor entered, computing the roster-credential share from the real
     // Phase 3a rf_certifications store and treating every business fact as
