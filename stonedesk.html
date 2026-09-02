@@ -4763,6 +4763,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Company profile, users, PIN management, system config &amp; health</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdAdminSave()">💾 Save Settings</button>
+    <button class="q-btn" onclick="sairnOpenPricing()">&#128176; Pricing Setup</button>
     <button class="q-btn" onclick="sdAdminAI()">🤖 AI Recommendations</button>
     <button class="q-btn" onclick="sdAdminPrint()">🖨️ Print Report</button>
   </div>
@@ -6506,6 +6507,7 @@ window.sdPhotosExport=function(){
   <div style="font-size:13px;color:var(--muted);margin-top:2px">Crew assignments, job calendar, dispatch planning</div></div>
   <div style="display:flex;gap:8px;flex-wrap:wrap">
     <button class="q-btn primary" onclick="sdScheduleAdd()">+ Schedule Job</button>
+    <button class="q-btn" onclick="openFQ()">&#128241; Field Quote</button>
     <button class="q-btn" onclick="sdScheduleAI()">🤖 AI Optimize</button>
     <button class="q-btn" onclick="sdScheduleExport()">📊 Export CSV</button>
     <button class="q-btn" onclick="sdSchedulePrint()">🖨️ Print</button>
@@ -15765,107 +15767,14 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 </div>
 </div>
 <!-- ===== FIELD QUOTE MODAL ===== -->
-<div class="sairn-modal-overlay" id="sairn-fq-modal">
-<div class="sairn-modal">
-  <div class="sairn-modal-hdr">
-    <div class="sairn-modal-title">📷 Field Quote</div>
-    <button class="sairn-modal-close" onclick="sairnCloseFQ()">✕</button>
-  </div>
-
-  <!-- Steps -->
-  <div class="sairn-step-row" id="sairn-fq-steps">
-    <div class="sairn-step active" id="sairn-step-1"><div class="sairn-step-num">1</div>Scope</div>
-    <div class="sairn-step"        id="sairn-step-2"><div class="sairn-step-num">2</div>Photo</div>
-    <div class="sairn-step"        id="sairn-step-3"><div class="sairn-step-num">3</div>Questions</div>
-    <div class="sairn-step"        id="sairn-step-4"><div class="sairn-step-num">4</div>Quote</div>
-    <div class="sairn-step"        id="sairn-step-5"><div class="sairn-step-num">5</div>Sign</div>
-  </div>
-
-  <!-- Step 1: Scope -->
-  <div id="sairn-fq-p1">
-    <div class="sairn-form-grp">
-      <label class="sairn-form-lbl">Client Name</label>
-      <input class="sairn-form-inp" id="sairn-fq-client" placeholder="Client / address">
-    </div>
-    <div class="sairn-form-grp">
-      <label class="sairn-form-lbl">What are you quoting?</label>
-      <div class="sairn-chip-row" id="sairn-fq-chips"><div class="sairn-chip active" data-trade="kitchen-countertops" onclick="sairnSelectTrade(this)">Kitchen Countertops</div><div class="sairn-chip" data-trade="bathroom-vanity" onclick="sairnSelectTrade(this)">Bathroom Vanity</div><div class="sairn-chip" data-trade="fireplace-surround" onclick="sairnSelectTrade(this)">Fireplace Surround</div><div class="sairn-chip" data-trade="outdoor-kitchen" onclick="sairnSelectTrade(this)">Outdoor Kitchen</div><div class="sairn-chip" data-trade="custom-fabrication" onclick="sairnSelectTrade(this)">Custom Fabrication</div></div>
-    </div>
-    <button class="sairn-btn sairn-btn-primary" onclick="sairnFQStep(2)">Next: Photograph Sketch →</button>
-  </div>
-
-  <!-- Step 2: Photo -->
-  <div id="sairn-fq-p2" style="display:none">
-    <div class="sairn-upload-zone" onclick="document.getElementById('sairn-fq-file').click()">
-      <div class="sairn-upload-icon">📷</div>
-      <div class="sairn-upload-txt" id="sairn-fq-upload-lbl">Tap to photograph sketch or drawing</div>
-      <div class="sairn-upload-sub">Any drawing works — notepad, napkin, paper, whiteboard</div>
-      <input type="file" id="sairn-fq-file" accept="image/*" capture="environment"
-             style="display:none" onchange="sairnFQHandleFile(this)">
-    </div>
-    <div id="sairn-fq-preview" style="display:none;margin-bottom:12px">
-      <img id="sairn-fq-img" style="max-width:100%;border-radius:8px;border:1.5px solid #E5E7EB" loading="lazy">
-      <div style="font-size:13px;color:#16A34A;font-weight:600;margin-top:6px">✅ Drawing captured</div>
-    </div>
-    <div style="display:flex;gap:9px">
-      <button class="sairn-btn sairn-btn-outline" onclick="sairnFQStep(1)">← Back</button>
-      <button class="sairn-btn sairn-btn-primary" id="sairn-fq-analyze-btn"
-              onclick="sairnFQAnalyze()" disabled>🤖 Analyze with Claude →</button>
-    </div>
-  </div>
-
-  <!-- Step 3: Questions -->
-  <div id="sairn-fq-p3" style="display:none">
-    <div class="sairn-ai-bubble" id="sairn-fq-ai">
-      <div class="sairn-thinking"><span></span><span></span><span></span></div>
-      &nbsp;Reading your drawing...
-    </div>
-    <div id="sairn-fq-answer-wrap" style="display:none">
-      <div class="sairn-form-grp">
-        <label class="sairn-form-lbl">Your answers</label>
-        <textarea class="sairn-form-ta" id="sairn-fq-answers"
-          placeholder="Answer Claude's questions here..."></textarea>
-      </div>
-      <div style="display:flex;gap:9px">
-        <button class="sairn-btn sairn-btn-outline" onclick="sairnFQStep(2)">← Back</button>
-        <button class="sairn-btn sairn-btn-primary" onclick="sairnFQGenQuote()">Generate Quote →</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Step 4: Quote -->
-  <div id="sairn-fq-p4" style="display:none">
-    <div class="sairn-quote-out" id="sairn-fq-quote-out"></div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="sairn-btn sairn-btn-primary" onclick="sairnFQStep(5)">Get Signature →</button>
-      <button class="sairn-btn sairn-btn-outline" onclick="window.print()">🖨️ Print</button>
-      <button class="sairn-btn sairn-btn-outline" onclick="sairnFQShare()">📤 Share</button>
-      <button class="sairn-btn sairn-btn-outline" onclick="sairnSaveQuote()">💾 Save</button>
-    </div>
-  </div>
-
-  <!-- Step 5: Sign -->
-  <div id="sairn-fq-p5" style="display:none">
-    <div style="font-size:13px;color:#6B7280;margin-bottom:10px">Turn phone to client — have them sign below</div>
-    <div class="sairn-sig-wrap">
-      <canvas id="sairn-sig-canvas" width="500" height="110"></canvas>
-      <div class="sairn-sig-label">Sign here</div>
-    </div>
-    <div style="display:flex;gap:8px;margin-bottom:14px">
-      <button class="sairn-btn sairn-btn-outline sairn-btn-sm" onclick="sairnClearSig()">Clear</button>
-    </div>
-    <div class="sairn-form-grp">
-      <label class="sairn-form-lbl">Deposit Amount</label>
-      <input class="sairn-form-inp" id="sairn-fq-deposit" placeholder="$0.00" style="max-width:180px">
-    </div>
-    <div style="display:flex;gap:8px;flex-wrap:wrap">
-      <button class="sairn-btn sairn-btn-primary" onclick="sairnFQClose()">✅ Signed — Save & Close</button>
-      <button class="sairn-btn sairn-btn-outline" onclick="sairnSendDeposit()">💳 Text Deposit Link</button>
-      <button class="sairn-btn sairn-btn-outline" onclick="window.print()">🖨️ Print Signed</button>
-    </div>
-  </div>
-</div>
-</div>
+<!-- sairn-fq-modal REMOVED 2026-09-02. Superseded by page-field-quote,
+     which is the newer multi-trade implementation (selTrade across six
+     trades, fqStep, fqAnalyze) where this one was stone-only. Michael's
+     call: keep the page, drop the modal. Its entry point is now on the
+     Customer detail view and the Schedule panel. The legacy suite modal
+     and the pricing modal are UNAFFECTED and still live -- they share
+     helpers with this block, which is why the removal was by named
+     symbol rather than by line range. -->
 
 <!-- ===== SAIRN SUITE MODAL ===== -->
 <div class="sairn-modal-overlay" id="sairn-suite-modal">
@@ -16052,13 +15961,8 @@ let _sigDrawing  = false;
 let _sigCtx      = null;
 
 // ---- OPEN / CLOSE ----
-window.sairnOpenFQ = function() {
-  document.getElementById('sairn-fq-modal').classList.add('open');
-  sairnFQStep(1);
-};
-window.sairnCloseFQ = function() {
-  document.getElementById('sairn-fq-modal').classList.remove('open');
-};
+
+
 window.sairnOpenSuite = function() {
   document.getElementById('sairn-suite-modal').classList.add('open');
 };
@@ -16068,137 +15972,23 @@ window.sairnOpenPricing = function() {
 };
 
 // ---- FIELD QUOTE FLOW ----
-window.sairnFQStep = function(step) {
-  _fqStep = step;
-  for (let i=1; i<=5; i++) {
-    const p = document.getElementById('sairn-fq-p'+i);
-    const s = document.getElementById('sairn-step-'+i);
-    if (p) p.style.display = (i===step) ? 'block' : 'none';
-    if (s) {
-      s.classList.remove('active','done');
-      if (i < step) s.classList.add('done');
-      else if (i === step) s.classList.add('active');
-    }
-  }
-  if (step === 5) sairnInitSig();
-};
 
-window.sairnSelectTrade = function(chip) {
-  document.querySelectorAll('#sairn-fq-chips .sairn-chip').forEach(c => c.classList.remove('active'));
-  chip.classList.add('active');
-  _fqTrade = chip.dataset.trade;
-};
 
-window.sairnFQHandleFile = function(input) {
-  const file = input.files[0];
-  if (!file) return;
-  const reader = new FileReader();
-  reader.onload = e => {
-    _fqImg64 = e.target.result.split(',')[1];
-    const prev = document.getElementById('sairn-fq-preview');
-    const img  = document.getElementById('sairn-fq-img');
-    if (prev) prev.style.display = 'block';
-    if (img)  img.src = e.target.result;
-    const btn = document.getElementById('sairn-fq-analyze-btn');
-    if (btn) btn.disabled = false;
-    const lbl = document.getElementById('sairn-fq-upload-lbl');
-    if (lbl) lbl.innerHTML = '<strong>Drawing captured</strong> -- tap analyze to continue';
-  };
-  reader.readAsDataURL(file);
-};
 
-window.sairnFQAnalyze = async function() {
-  sairnFQStep(3);
-  const aiEl = document.getElementById('sairn-fq-ai');
-  aiEl.innerHTML = '<div class="sairn-thinking"><span></span><span></span><span></span></div>&nbsp;Reading your drawing...';
-  const pricing = sairnGetPricing();
-  const client  = document.getElementById('sairn-fq-client')?.value || 'Client';
-  const sys = `You are the StoneDesk Field Sales Intelligence Engine.
-A rep is standing in front of a customer with a photographed sketch.
-Scope: ${_fqTrade} | Client: ${client}
-COMPANY PRICING: ${JSON.stringify(pricing)}
-Read the drawing. Tell the rep what you see.
-Ask MAXIMUM 3 questions. Never ask what you can determine from the drawing.
-Be fast -- the customer is watching.`;
-  const msgs = [{
-    role:'user',
-    content: _fqImg64
-      ? [{type:'image',source:{type:'base64',media_type:'image/jpeg',data:_fqImg64}},
-         {type:'text', text:`Analyze this sketch for a ${_fqTrade} quote. Ask max 3 questions.`}]
-      : `I need a ${_fqTrade} quote. Ask max 3 questions then price it.`
-  }];
-  _fqConvo = [...msgs];
-  try {
-    const r = await sairnCallClaude(sys, msgs);
-    aiEl.textContent = r;
-    _fqConvo.push({role:'assistant', content:r});
-    const wrap = document.getElementById('sairn-fq-answer-wrap');
-    if (wrap) wrap.style.display = 'block';
-  } catch(e) {
-    aiEl.textContent = 'Could not connect to Claude. Check your connection and try again.';
-  }
-};
 
-window.sairnFQGenQuote = async function() {
-  const answers = document.getElementById('sairn-fq-answers')?.value?.trim();
-  if (!answers) { sairnToast('Please answer the questions above first.'); return; }
-  _fqConvo.push({role:'user', content: answers + '\n\nNow generate the full quote.'});
-  const aiEl = document.getElementById('sairn-fq-ai');
-  aiEl.innerHTML = '<div class="sairn-thinking"><span></span><span></span><span></span></div>&nbsp;Generating quote...';
-  const pricing = sairnGetPricing();
-  const sys = `You are the StoneDesk Field Sales Intelligence Engine.
-Generate a complete professional quote using EXACTLY these rates: ${JSON.stringify(pricing)}
-Format: itemized line items, quantities, unit prices, subtotals, Low/Mid/High total.
-Include: scope summary, exclusions, quote valid 30 days, signature line.
-Plain ASCII only -- no Unicode box characters.`;
-  try {
-    const r = await sairnCallClaude(sys, _fqConvo);
-    _fqQuoteTxt = r;
-    sairnFQStep(4);
-    const out = document.getElementById('sairn-fq-quote-out');
-    if (out) out.textContent = r;
-    const midMatch = r.match(/Mid[:\s]+\$?([\d,]+)/i);
-    if (midMatch) {
-      const mid = parseInt(midMatch[1].replace(/,/g,''));
-      const dep = document.getElementById('sairn-fq-deposit');
-      if (dep) dep.value = '$' + Math.round(mid * .33).toLocaleString();
-    }
-  } catch(e) {
-    aiEl.textContent = 'Quote generation failed. Check connection.';
-  }
-};
 
-window.sairnFQShare = function() {
-  if (navigator.share) {
-    navigator.share({title:'StoneDesk Quote', text:_fqQuoteTxt}).catch(()=>{});
-  } else {
-    navigator.clipboard.writeText(_fqQuoteTxt).then(()=>sairnToast('Quote copied!')).catch(()=>sairnToast('Use Print button'));
-  }
-};
 
-window.sairnSaveQuote = function() {
-  const quotes = JSON.parse(localStorage.getItem(SAIRN_APP_ID+'_quotes')||'[]');
-  quotes.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:_fqTrade,text:_fqQuoteTxt});
-  if(st(SAIRN_APP_ID+'_quotes', quotes)){ sairnToast('Quote saved'); }
-  else { sairnToast('Could not save -- storage may be full or unavailable'); }
-};
 
-window.sairnFQClose = function() {
-  sairnSaveQuote();
-  sairnToast('Signed quote saved.');
-  sairnFQStep(1);
-  _fqImg64=null; _fqConvo=[]; _fqQuoteTxt='';
-  const ta = document.getElementById('sairn-fq-answers'); if (ta) ta.value='';
-  sairnClearSig();
-  sairnCloseFQ();
-};
 
-window.sairnSendDeposit = function() {
-  const amt = document.getElementById('sairn-fq-deposit')?.value || '';
-  const txt = `Your StoneDesk project deposit of ${amt} is ready. Pay to get on the schedule.`;
-  if (navigator.share) navigator.share({title:'Deposit',text:txt});
-  else { navigator.clipboard.writeText(txt); sairnToast('Deposit text copied!'); }
-};
+
+
+
+
+
+
+
+
+
 
 // ---- SIGNATURE PAD ----
 function sairnInitSig() {
@@ -16219,9 +16009,10 @@ function sairnInitSig() {
   canvas.addEventListener('mousemove',e=>{if(!_sigDrawing)return;const p=getPos(e,0);_sigCtx.lineTo(p.x,p.y);_sigCtx.stroke();});
   canvas.addEventListener('mouseup',()=>_sigDrawing=false);
 }
-window.sairnClearSig = function() {
-  if (_sigCtx) _sigCtx.clearRect(0,0,500,110);
-};
+// sairnClearSig REMOVED 2026-09-02 -- signature-pad reset, whose only
+// caller was sairnFQClose inside the Field Quote modal removed above.
+// The suite and pricing modals do not capture signatures.
+
 
 // ---- BRIDGE SYNC ----
 window.sairnSyncAll = async function() {
@@ -21530,6 +21321,7 @@ function custOpenDetail(id) {
         (c.phone?'<a href="sms:'+escHtml(c.phone)+'" class="q-btn" style="text-decoration:none">&#128172; Text</a>':'')+
         (c.email?'<a href="mailto:'+escHtml(c.email)+'" class="q-btn" style="text-decoration:none">&#9993; Email</a>':'')+
         '<button class="q-btn" onclick="custFollowUpAI(\'' + escAttrJs(id) + '\')">&#129504; AI Follow-Up</button>'+
+        '<button class="q-btn" onclick="openFQ()">&#128241; Field Quote</button>'+
         '<button class="q-btn primary" onclick="custCreateInvoiceFrom(\'' + escAttrJs(id) + '\')">&#129534; Invoice</button>'+
       '</div>'+
     '</div>'+
