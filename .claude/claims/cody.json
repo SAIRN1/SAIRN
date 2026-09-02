@@ -204,6 +204,16 @@
       "claimed_at_epoch": 1788358477.2833092,
       "status": "released",
       "released_at": "2026-09-02T14:30:24Z"
+    },
+    {
+      "id": "cody-1788359429",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "WIP percentage of completion and retainage B3",
+      "claimed_at": "2026-09-02T14:30:29Z",
+      "claimed_at_epoch": 1788359429.7320561,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
