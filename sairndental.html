@@ -444,6 +444,7 @@ label.chk input{width:auto;}
               <option value="dea_registration">DEA Registration</option>
               <option value="ce_cycle">CE Cycle</option>
               <option value="certification">Certification (BLS/CPR)</option>
+              <option value="payer_enrollment">Payer Enrolment</option>
             </select></div>
           </div>
           <div id="cd-f-license">
@@ -490,11 +491,45 @@ label.chk input{width:auto;}
             </div>
             <div class="fg"><label>Expires</label><input type="date" id="cd-cert-expires"></div>
           </div>
+          <!-- PAYER ENROLMENT is not licensure and the copy says so, because
+               the two wear a similar word and conflating them is the whole
+               trap here: a licence says the dentist may practise, an enrolment
+               says a particular payer will pay them. Every date is the one on
+               the payer's own letter -- nothing is derived from a payer name. -->
+          <div id="cd-f-payer" style="display:none">
+            <div class="fr">
+              <div class="fg"><label>Payer</label><input type="text" id="cd-pe-payer" placeholder="Exactly as you write it on the patient record, e.g. Delta Dental"></div>
+              <div class="fg"><label>Provider number with this payer</label><input type="text" id="cd-pe-number" placeholder="As issued by the payer"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Network status</label><select id="cd-pe-network"><option value="applied">Applied / in process</option><option value="par">Participating (in network)</option><option value="non_par">Non-participating</option><option value="terminated">Terminated</option></select></div>
+              <div class="fg"><label>Effective on</label><input type="date" id="cd-pe-effective"></div>
+            </div>
+            <div class="fr">
+              <div class="fg"><label>Terminated on</label><input type="date" id="cd-pe-term"></div>
+              <div class="fg"><label>Revalidation due</label><input type="date" id="cd-pe-reval"></div>
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-bottom:12px">Leave Effective on blank while the application is still in process &mdash; the record then reads <strong>in process</strong>, which is the truth, rather than being given a date. The payer name must match what you type on the patient record; that is how a claim is matched back to an enrolment.</div>
+          </div>
           <button class="btn bp" onclick="addCredential()">Add Record</button>
           <div style="font-size:11px;color:var(--muted);margin-top:10px">Records are append-only. To correct one, add a new record for the same provider &mdash; the newest supersedes, and the original stays on file as the history of what was held when.</div>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">Status Board</div></div><div class="cb" style="padding:0">
           <table id="credentials-table"><thead><tr><th>Provider</th><th>Type</th><th>Detail</th><th>Expires</th><th>Status</th></tr></thead><tbody id="credentials-tbody"></tbody></table>
+        </div></div>
+        <!-- CLAIMS AT ENROLMENT RISK (competitive-gap audit B1, 2026-09-02).
+             The audit's finding: enterprise credentialing and payer-enrolment
+             lifecycle is the clearest whitespace in the dental market, and no
+             core PM vendor does it natively. This is the half that costs
+             money: a fully-licensed provider who is not yet effective with a
+             plan bills claims that are denied, and the practice finds out on
+             the remittance weeks later.
+             AT RISK and NOT CHECKED ARE NEVER ADDED TOGETHER. One is what a
+             stored record says; the other is the absence of a record, which
+             predicts nothing. -->
+        <div class="card"><div class="ch"><div class="ct">Claims at Enrolment Risk</div></div><div class="cb">
+          <div class="note">Charges where a stored enrolment record says the provider was <strong>not effective with that patient's payer on the service date</strong>. Computed from your own records on the server, never in this page. A charge is never blocked &mdash; this reports what is already billed or about to be.</div>
+          <div id="cd-risk-body" style="font-size:13px"></div>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">Requirements Loaded</div></div><div class="cb">
           <div id="cd-rules" style="font-size:12px;color:var(--muted);line-height:1.8"></div>
@@ -1404,12 +1439,13 @@ function cdTypeChanged(){
   $('cd-f-dea').style.display=t==='dea_registration'?'':'none';
   $('cd-f-ce').style.display=t==='ce_cycle'?'':'none';
   $('cd-f-cert').style.display=t==='certification'?'':'none';
+  $('cd-f-payer').style.display=t==='payer_enrollment'?'':'none';
 }
 
 // sdnData() returns d.data; 'evaluate' puts its result at the top level
 // alongside coverage, so it needs the whole body. Separate helper rather than
 // changing sdnData(), which every other panel depends on.
-function sdnEvaluateCredentials(today){
+function sdnEvaluateCredentials(today,lines){
   var lic=dntLicenseKey();
   if(!lic)return Promise.resolve(null);
   return fetch(DATA_API,{
@@ -1417,7 +1453,8 @@ function sdnEvaluateCredentials(today){
     // dntHeaders() so the session rides along -- this endpoint is session-gated
     // as of 2026-08-27 like every other dnt_* branch.
     headers:dntHeaders(),
-    body:JSON.stringify({action:'evaluate',resource:'dnt_credentials',app_id:APP_ID,payload:{today:today||dntLocalToday()}})
+    body:JSON.stringify({action:'evaluate',resource:'dnt_credentials',app_id:APP_ID,
+      payload:{today:today||dntLocalToday(),lines:Array.isArray(lines)?lines:[]}})
   }).then(function(r){return r.json().then(function(d){
     if(!r.ok||!d||!d.ok){console.warn('credential evaluate failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
     return d;
@@ -1457,6 +1494,19 @@ async function addCredential(){
     if(req!=='')rec.hours_required=Number(req);
     if(!rec.state||!rec.cycle_start||!rec.cycle_end){toast('State, cycle start and cycle end are required');return;}
     rec.label=rec.state+' CE '+rec.cycle_start+' to '+rec.cycle_end;
+  }else if(type==='payer_enrollment'){
+    rec.payer=$('cd-pe-payer').value.trim();
+    rec.provider_number=$('cd-pe-number').value.trim();
+    rec.network_status=$('cd-pe-network').value;
+    // BLANK STAYS BLANK. An application still in process genuinely has no
+    // effective date, and the engine reports that as `in_process`. Defaulting
+    // it to today would assert the payer had approved the provider.
+    rec.effective_on=$('cd-pe-effective').value||null;
+    rec.term_on=$('cd-pe-term').value||null;
+    rec.revalidation_due_on=$('cd-pe-reval').value||null;
+    if(!rec.payer){toast('The payer name is required -- it is what matches a claim back to this enrolment');return;}
+    if(rec.effective_on&&rec.term_on&&rec.term_on<rec.effective_on){toast('The termination date is before the effective date');return;}
+    rec.label=rec.payer+(rec.provider_number?' -- '+rec.provider_number:'');
   }else{
     rec.credential=$('cd-cert-name').value.trim();
     rec.issuer=$('cd-cert-issuer').value.trim();
@@ -1481,6 +1531,69 @@ function cdStatusBadge(item){
   if(item.status==='unresolved')return '<span class="badge bw">No rule loaded</span>';
   if(item.status==='unknown')return '<span class="badge bw">No date</span>';
   return '<span class="badge bg">OK</span>';
+}
+
+// The enrolment half of a payer_enrollment row: is this provider effective
+// with this payer TODAY. Deliberately separate from cdStatusBadge, which
+// speaks for the revalidation date -- the two can disagree and both matter.
+function cdEnrollmentBadge(item){
+  var s=item.enrollment_status;
+  if(s==='effective')return '<span class="badge bg">Effective</span>';
+  if(s==='not_yet_effective')return '<span class="badge bw">Not yet effective</span>';
+  if(s==='terminated')return '<span class="badge br">Terminated</span>';
+  if(s==='in_process')return '<span class="badge bw">In process</span>';
+  return '<span class="badge bw">'+H(s||'unresolved')+'</span>';
+}
+
+// The (provider, payer, service date, amount) lines the server needs to answer
+// which billed work is at enrolment risk. Built here because this page already
+// holds all three joined -- the answer itself is computed server-side by the
+// same module the tests exercise, never in this page.
+//
+// A charge with no appointment cannot name a provider, so it is left out
+// rather than attributed to one. That is an omission and the panel says how
+// many were skipped, because silently dropping rows from a money list is how
+// a shortfall looks like an all-clear.
+function cdEnrollmentLines(){
+  var appts=appointments(),pats=patients();
+  var lines=[],skipped=0;
+  charges().forEach(function(c){
+    var ap=appts.find(function(a){return a.id===c.appointment_id;});
+    var pt=pats.find(function(p){return p.id===c.patient_id;});
+    if(!ap||!ap.provider_id){skipped++;return;}
+    lines.push({charge_id:c.id,patient_name:(pt&&pt.name)||'',provider_id:ap.provider_id,
+      payer:(pt&&pt.insurance_payer)||'',service_date:c.date,amount:Number(c.amount)||0});
+  });
+  return {lines:lines,skipped:skipped};
+}
+
+function rEnrollmentRisk(risk,skipped){
+  var el=$('cd-risk-body');
+  if(!el)return;
+  if(!risk){
+    el.innerHTML='<span style="color:var(--muted)">Not checked yet &mdash; this needs a live connection and at least one charge on file.</span>';
+    return;
+  }
+  var provs=providers();
+  var pname=function(id){var p=provs.find(function(x){return x.id===id;});return p?p.name:id;};
+  var row=function(r){
+    return '<tr><td>'+H(r.patient_name||'--')+'</td><td>'+H(pname(r.provider_id))+'</td><td>'+H(r.payer||'--')+'</td>'+
+      '<td>'+H(r.service_date)+'</td><td>'+fmt(r.amount)+'</td><td>'+H(r.message||r.status)+'</td></tr>';
+  };
+  var table=function(rows){
+    return '<table style="width:100%"><thead><tr><th>Patient</th><th>Provider</th><th>Payer</th><th>Service date</th><th>Amount</th><th>Why</th></tr></thead><tbody>'+
+      rows.map(row).join('')+'</tbody></table>';
+  };
+  var out='';
+  out+='<div style="margin-bottom:10px"><strong>'+risk.at_risk.length+'</strong> charge(s) at risk, <strong>'+fmt(risk.amount_at_risk)+'</strong> &mdash; a stored enrolment record says the provider was not effective with that payer on the service date.</div>';
+  out+=risk.at_risk.length?table(risk.at_risk):'<div style="color:var(--muted);margin-bottom:12px">Nothing at risk on the records you have entered.</div>';
+  // KEPT SEPARATE AND NEVER SUMMED WITH THE ABOVE. An absent record predicts
+  // nothing; presenting it as exposure would invent a denial.
+  out+='<div style="margin:14px 0 10px"><strong>'+risk.unknown.length+'</strong> charge(s) with no enrolment record at all, '+fmt(risk.amount_unknown)+
+    ' &mdash; this is an <em>absence</em>, not a prediction. Add the enrolment above and these move to one side or the other.</div>';
+  out+=risk.unknown.length?table(risk.unknown):'';
+  if(skipped)out+='<div style="margin-top:12px;color:var(--muted);font-size:12px">'+skipped+' charge(s) could not be checked because they are not linked to an appointment, so no provider could be named. They are not counted in either figure above.</div>';
+  el.innerHTML=out;
 }
 
 // Renders whatever board the server last returned. With no board (offline, or
@@ -1514,6 +1627,18 @@ function rCredentials(board){
           : H(i.expires_on||'--');
         var mate=i.record_type==='dea_registration'&&i.mate_attested===false
           ? ' <span class="badge br">MATE not attested</span>' : '';
+        // AN ENROLMENT ROW CARRIES TWO STATUSES AND SHOWS BOTH. The board's
+        // own status is about the REVALIDATION date, which is the only part of
+        // an enrolment that expires; whether the provider is actually
+        // effective with the payer is a separate question and the more
+        // important one. Showing only the first would let a terminated
+        // enrolment read as "OK" because its revalidation date is far off.
+        if(i.record_type==='payer_enrollment'){
+          detail=H(i.payer||'--')+(i.provider_number?' &middot; '+H(i.provider_number):'');
+          when=H(i.revalidation_due_on||'--');
+          return '<tr><td>'+H(pname(i.provider_id))+'</td><td>payer enrolment</td><td>'+detail+'</td>'+
+            '<td>'+when+'</td><td>'+cdEnrollmentBadge(i)+' '+cdStatusBadge(i)+'</td></tr>';
+        }
         return '<tr><td>'+H(pname(i.provider_id))+'</td><td>'+H(i.record_type)+'</td><td>'+detail+'</td>'+
           '<td>'+when+'</td><td>'+cdStatusBadge(i)+mate+'</td></tr>';
       }).join('')
@@ -1554,10 +1679,12 @@ function rCredRules(coverage){
 }
 
 async function refreshCredentialBoard(){
-  var res=await sdnEvaluateCredentials();
-  if(!res){rCredentials(null);rCredRules(null);return;}
+  var built=cdEnrollmentLines();
+  var res=await sdnEvaluateCredentials(null,built.lines);
+  if(!res){rCredentials(null);rCredRules(null);rEnrollmentRisk(null,0);return;}
   rCredentials(res.board);
   rCredRules(res.coverage);
+  rEnrollmentRisk(res.claims_at_risk||null,built.skipped);
 }
 
 // ── OPERATORIES ───────────────────────────────────────────────────

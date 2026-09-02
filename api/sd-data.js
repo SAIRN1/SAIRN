@@ -6990,7 +6990,13 @@ module.exports = async (req, res) => {
         return;
       }
       if (!dentalCreds.RECORD_TYPES[payload.record_type]) {
-        res.status(400).json({ error: { message: "dnt_credentials record_type must be one of: state_license, dea_registration, ce_cycle, certification" } });
+        // DERIVED FROM THE ENGINE'S OWN TABLE, not retyped. This message used
+        // to hardcode the four original types and went stale the moment
+        // payer_enrollment was added -- the CHECK above already read
+        // RECORD_TYPES, so the guard was right and only the sentence was
+        // wrong. That is the worst shape for a validation message: it names
+        // the wrong permitted set while correctly permitting the right one.
+        res.status(400).json({ error: { message: 'dnt_credentials record_type must be one of: ' + Object.keys(dentalCreds.RECORD_TYPES).join(', ') } });
         return;
       }
       // APPEND-ONLY: a plain insert, deliberately NOT an upsert. A correction
@@ -7015,6 +7021,20 @@ module.exports = async (req, res) => {
         const msg = (bodyJson && (bodyJson.message || bodyJson.details || bodyJson.hint)) || bodyText || '';
         if (/relation .* does not exist|does not exist/i.test(msg)) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental credentialing tables are not set up yet — run sql/sairndental_credentials_schema.sql in Supabase first.' } }); return; }
         if (/duplicate key|unique constraint/i.test(msg)) { res.status(409).json({ error: { code: 'DUPLICATE_ENTRY', message: 'A credential record with this id already exists. Records are append-only — write a new record to supersede, do not reuse an id.' } }); return; }
+        // THE DATABASE HAS ITS OWN LIST OF RECORD TYPES AND IT IS NOT THE
+        // ENGINE'S. dntcd_type_check enumerates the four original types, so a
+        // payer_enrollment row passes every JavaScript guard and is then
+        // rejected by Postgres. Without this branch the caller sees a generic
+        // 502 and the page says "saved on this device only", which reads as a
+        // connectivity problem and is not one -- the write will never succeed
+        // until the migration at the bottom of the schema file is run.
+        // Named explicitly for the same reason NOT_PROVISIONED is: a fixable
+        // setup step must say which step.
+        if (/dntcd_type_check|violates check constraint/i.test(msg)) {
+          res.status(503).json({ error: { code: 'RECORD_TYPE_NOT_MIGRATED',
+            message: 'The database still restricts credential record types to the original four. Run the ALTER at the end of sql/sairndental_credentials_schema.sql in Supabase to allow "' + payload.record_type + '". Nothing was saved.' } });
+          return;
+        }
         console.error('dnt_credentials write error (status ' + r.status + '):', msg);
         res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
         return;
@@ -7046,8 +7066,23 @@ module.exports = async (req, res) => {
       }));
       const board = dentalCreds.evaluateBoard(records, rules, today);
       if (!board.ok) { res.status(400).json({ error: board.error }); return; }
+      // ── CLAIMS AT ENROLMENT RISK (2026-09-02, competitive-gap audit B1) ──
+      // The client sends the (provider, payer, service date, amount) lines it
+      // already holds and the SHARED engine decides. Deliberately not
+      // recomputed in the browser: this file's own credentialing comment
+      // already records that a second copy of the threshold logic in the UI
+      // is how a UI and its tests drift apart, and that applies with more
+      // force here, where the answer is about money a payer will refuse.
+      //
+      // The lines are not read from the database because charges live in
+      // dnt_charges and the payer lives on the patient -- joining them
+      // server-side would mean a second and third query on a compute-only
+      // action that currently reads two tables. The caller already has all
+      // three joined on screen.
+      const lines = Array.isArray(payload && payload.lines) ? payload.lines.slice(0, 500) : [];
       res.status(200).json({
         ok: true, provisioned: true, board: board,
+        claims_at_risk: lines.length ? dentalCreds.claimsAtEnrollmentRisk(records, lines) : null,
         coverage: dentalCreds.credentialCoverage(rules, Array.from(new Set(records.map((r2) => String(r2.state || '').toUpperCase()).filter(Boolean))))
       });
       return;

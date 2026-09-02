@@ -301,5 +301,169 @@ test('coverage names what is and is not sourced', () => {
   assert.deepStrictEqual(cov.uncovered_states, ['MI']);
 });
 
+// ── PAYER ENROLMENT (competitive-gap audit B1, 2026-09-02) ──────────────
+// A LICENCE SAYS THE DENTIST MAY PRACTISE; AN ENROLMENT SAYS A PARTICULAR
+// PAYER WILL PAY THEM. The two wear a similar word and this app already had
+// the first, which is exactly why the second was easy to believe was present.
+// Verified absent before building: `enroll`/`enrol` 0, `CAQH` 0, `revalidat` 0.
+//
+// The assertions that carry the most weight are the ones about NOT KNOWING.
+// `no_record` must never be reported as "not enrolled" and must never be
+// summed into money at risk: an absence predicts nothing, and turning it into
+// a denial forecast is the fabrication this whole module exists to avoid.
+console.log('\npayer enrolment:');
+const PE = (over) => Object.assign({
+  entry_id: 'pe1', provider_id: 'P1', record_type: 'payer_enrollment',
+  payer: 'Delta Dental', recorded_at: '2026-01-01T00:00:00Z'
+}, over || {});
+const ON = '2026-06-15';
+
+test('effective when the effective date is on or before the service date and nothing terminated it', () => {
+  const r = e.enrollmentOnDate([PE({ effective_on: '2026-01-01' })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON });
+  assert.strictEqual(r.status, 'effective');
+});
+test('the effective date boundary is INCLUSIVE -- effective ON the service date counts', () => {
+  assert.strictEqual(e.enrollmentOnDate([PE({ effective_on: ON })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'effective');
+  assert.strictEqual(e.enrollmentOnDate([PE({ effective_on: '2026-06-16' })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'not_yet_effective');
+});
+test('the termination boundary is inclusive too -- terminated ON the service date is still covered', () => {
+  assert.strictEqual(e.enrollmentOnDate([PE({ effective_on: '2026-01-01', term_on: ON })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'effective');
+  assert.strictEqual(e.enrollmentOnDate([PE({ effective_on: '2026-01-01', term_on: '2026-06-14' })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'terminated');
+});
+test('a record with no effective date reads in_process rather than being given one', () => {
+  const r = e.enrollmentOnDate([PE({ network_status: 'applied' })], { provider_id: 'P1', payer: 'Delta Dental', on_date: ON });
+  assert.strictEqual(r.status, 'in_process');
+  assert.strictEqual(r.effective_on, null);
+});
+test('NO RECORD is its own answer and says so -- never "not enrolled"', () => {
+  const r = e.enrollmentOnDate([PE({ effective_on: '2026-01-01' })], { provider_id: 'P1', payer: 'Guardian', on_date: ON });
+  assert.strictEqual(r.status, 'no_record');
+  assert.ok(/this is an absence, not a finding that the provider is out of network/.test(r.message));
+});
+test('a patient with no payer is not reported as a provider problem', () => {
+  assert.strictEqual(e.enrollmentOnDate([], { provider_id: 'P1', payer: '', on_date: ON }).status, 'no_payer_on_file');
+});
+test('the payer name is matched case- and whitespace-insensitively, matching the app\'s own coverage lookup', () => {
+  const recs = [PE({ effective_on: '2026-01-01' })];
+  assert.strictEqual(e.enrollmentOnDate(recs, { provider_id: 'P1', payer: '  delta DENTAL ', on_date: ON }).status, 'effective');
+});
+test('the payer is part of the append-only key, so a second payer does not retire the first', () => {
+  const recs = [
+    PE({ entry_id: 'a', payer: 'Delta Dental', effective_on: '2026-01-01', recorded_at: '2026-01-01T00:00:00Z' }),
+    PE({ entry_id: 'b', payer: 'Cigna', effective_on: '2026-08-01', recorded_at: '2026-02-01T00:00:00Z' })
+  ];
+  assert.strictEqual(e.enrollmentOnDate(recs, { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'effective');
+  assert.strictEqual(e.enrollmentOnDate(recs, { provider_id: 'P1', payer: 'Cigna', on_date: ON }).status, 'not_yet_effective');
+});
+test('a later record for the SAME payer supersedes the earlier one', () => {
+  const recs = [
+    PE({ entry_id: 'a', effective_on: '2026-01-01', recorded_at: '2026-01-01T00:00:00Z' }),
+    PE({ entry_id: 'b', effective_on: '2026-01-01', term_on: '2026-05-01', recorded_at: '2026-06-01T00:00:00Z' })
+  ];
+  assert.strictEqual(e.enrollmentOnDate(recs, { provider_id: 'P1', payer: 'Delta Dental', on_date: ON }).status, 'terminated');
+});
+test('one provider\'s enrolment never answers for another', () => {
+  const recs = [PE({ provider_id: 'P1', effective_on: '2026-01-01' })];
+  assert.strictEqual(e.enrollmentOnDate(recs, { provider_id: 'P2', payer: 'Delta Dental', on_date: ON }).status, 'no_record');
+});
+test('a bad service date refuses rather than resolving', () => {
+  assert.strictEqual(e.enrollmentOnDate([], { provider_id: 'P1', payer: 'x', on_date: 'June 2026' }).ok, false);
+});
+
+console.log('\nclaims at enrolment risk:');
+const RISK_RECS = [
+  PE({ entry_id: 'a', provider_id: 'P1', payer: 'Delta Dental', effective_on: '2026-07-01' }),        // not yet effective
+  PE({ entry_id: 'b', provider_id: 'P1', payer: 'Aetna', effective_on: '2025-01-01', term_on: '2026-03-01' }), // terminated
+  PE({ entry_id: 'c', provider_id: 'P2', payer: 'Cigna', effective_on: '2026-01-01' })                // fine
+];
+const LINES = [
+  { charge_id: 'c1', patient_name: 'A', provider_id: 'P1', payer: 'Delta Dental', service_date: ON, amount: 500 },
+  { charge_id: 'c2', patient_name: 'B', provider_id: 'P1', payer: 'Aetna', service_date: ON, amount: 300 },
+  { charge_id: 'c3', patient_name: 'C', provider_id: 'P2', payer: 'Cigna', service_date: ON, amount: 900 },
+  { charge_id: 'c4', patient_name: 'D', provider_id: 'P2', payer: 'Guardian', service_date: ON, amount: 700 },
+  { charge_id: 'c5', patient_name: 'E', provider_id: 'P2', payer: '', service_date: ON, amount: 250 }
+];
+test('only charges a stored record contradicts are at risk, and they are sorted by money', () => {
+  const out = e.claimsAtEnrollmentRisk(RISK_RECS, LINES);
+  assert.deepStrictEqual(out.at_risk.map((r) => r.charge_id), ['c1', 'c2']);
+  assert.strictEqual(out.amount_at_risk, 800);
+});
+test('a charge with NO enrolment record is reported separately and NEVER added to the exposure', () => {
+  const out = e.claimsAtEnrollmentRisk(RISK_RECS, LINES);
+  assert.deepStrictEqual(out.unknown.map((r) => r.charge_id), ['c4']);
+  assert.strictEqual(out.amount_unknown, 700);
+  assert.notStrictEqual(out.amount_at_risk, 1500);
+  assert.ok(/The two are never added together/.test(out.note));
+});
+test('an effective provider and a self-pay patient are in neither list', () => {
+  const out = e.claimsAtEnrollmentRisk(RISK_RECS, LINES);
+  const all = out.at_risk.concat(out.unknown).map((r) => r.charge_id);
+  assert.ok(all.indexOf('c3') === -1);
+  assert.ok(all.indexOf('c5') === -1);
+});
+test('a charge with no service date is skipped rather than dated to today', () => {
+  const out = e.claimsAtEnrollmentRisk(RISK_RECS, [{ charge_id: 'x', provider_id: 'P1', payer: 'Aetna', amount: 100 }]);
+  assert.deepStrictEqual(out.at_risk, []);
+  assert.deepStrictEqual(out.unknown, []);
+});
+test('risk is judged on the SERVICE date, not on today', () => {
+  const before = e.claimsAtEnrollmentRisk(RISK_RECS, [{ charge_id: 'x', provider_id: 'P1', payer: 'Delta Dental', service_date: '2026-06-15', amount: 100 }]);
+  const after = e.claimsAtEnrollmentRisk(RISK_RECS, [{ charge_id: 'x', provider_id: 'P1', payer: 'Delta Dental', service_date: '2026-07-02', amount: 100 }]);
+  assert.strictEqual(before.at_risk.length, 1);
+  assert.strictEqual(after.at_risk.length, 0);
+});
+
+console.log('\npayer enrolment on the board:');
+test('an enrolment shows BOTH its enrolment state and its revalidation state', () => {
+  const board = e.evaluateBoard([PE({ effective_on: '2026-01-01', revalidation_due_on: '2026-09-01' })], RULES, TODAY);
+  const item = board.items[0];
+  assert.strictEqual(item.enrollment_status, 'effective');
+  assert.strictEqual(item.revalidation_status, 'expiring');
+});
+test('a TERMINATED enrolment is not hidden behind a far-off revalidation date', () => {
+  const board = e.evaluateBoard([PE({ effective_on: '2025-01-01', term_on: '2026-01-01', revalidation_due_on: '2030-01-01' })], RULES, TODAY);
+  assert.strictEqual(board.items[0].enrollment_status, 'terminated');
+});
+test('no revalidation date on file counts as unknown, not ok', () => {
+  const board = e.evaluateBoard([PE({ effective_on: '2026-01-01' })], RULES, TODAY);
+  assert.strictEqual(board.items[0].revalidation_status, 'unknown');
+  assert.strictEqual(board.counts.unknown, 1);
+  assert.strictEqual(board.counts.ok, 0);
+});
+test('payer_enrollment is a permitted record type, so the write path accepts it', () => {
+  assert.strictEqual(e.RECORD_TYPES.payer_enrollment, true);
+});
+test('and the endpoint names the permitted set from that table rather than a retyped list', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+  assert.ok(/record_type must be one of: ' \+ Object\.keys\(dentalCreds\.RECORD_TYPES\)/.test(src));
+});
+// THE DATABASE HAD ITS OWN LIST AND IT WAS NOT THE ENGINE'S. dnt_credentials
+// carries a CHECK constraint enumerating the record types, so payer_enrollment
+// passed every JavaScript guard and would have been rejected by Postgres --
+// and the page would have said "saved on this device only", which reads as a
+// connectivity problem. Three places have to agree and now one test says so.
+test('the schema CHECK constraint permits exactly the engine\'s record types', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'sairndental_credentials_schema.sql'), 'utf8');
+  const m = sql.match(/constraint dntcd_type_check check \(record_type in\s*\r?\n?\s*\(([^)]*)\)/);
+  assert.ok(m, 'the CHECK constraint is still in the schema file');
+  const inSql = m[1].split(',').map((s) => s.trim().replace(/^'|'$/g, '')).sort();
+  assert.deepStrictEqual(inSql, Object.keys(e.RECORD_TYPES).sort());
+});
+test('and an idempotent ALTER is shipped for databases that already ran the file', () => {
+  const sql = fs.readFileSync(path.join(__dirname, '..', '..', 'sql', 'sairndental_credentials_schema.sql'), 'utf8');
+  assert.ok(/alter table public\.dnt_credentials drop constraint if exists dntcd_type_check/.test(sql));
+  assert.ok(/alter table public\.dnt_credentials add constraint dntcd_type_check[\s\S]*payer_enrollment/.test(sql));
+});
+test('a check-constraint rejection is reported as a migration step, not as a sync failure', () => {
+  const src = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+  assert.ok(/RECORD_TYPE_NOT_MIGRATED/.test(src));
+  assert.ok(/dntcd_type_check\|violates check constraint/.test(src));
+});
+test('the enrolment check is NOT reimplemented in the browser', () => {
+  const html = fs.readFileSync(path.join(__dirname, '..', '..', 'sairndental.html'), 'utf8');
+  assert.ok(html.indexOf('claims_at_risk') !== -1, 'the page reads the server result');
+  assert.ok(html.indexOf('enrollmentOnDate') === -1, 'the page must not carry its own copy of the decision');
+});
+
 console.log('\n' + passed + ' passed, ' + failed + ' failed');
 if (failed > 0) process.exit(1);

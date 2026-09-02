@@ -109,13 +109,21 @@ create table if not exists public.dnt_credentials (
   --                     MATE attestation flag (NOT an expiring thing itself)
   -- ce_cycle         -- one CE period: cycle_start, cycle_end, hours_logged
   -- certification    -- BLS/CPR and similar: issuer, expires_on
+  -- payer_enrollment -- 2026-09-02, competitive-gap audit B1. NOT licensure:
+  --                     a licence says the dentist may practise, an enrolment
+  --                     says a particular payer will pay them. Carries payer,
+  --                     provider_number, network_status, effective_on, term_on
+  --                     and revalidation_due_on. Every one of those dates is
+  --                     the one on the payer's own letter -- nothing is
+  --                     derived from a payer name, the same rule the licence
+  --                     half already states about ORC 4715.24(A).
   record_type   text not null,
   data          jsonb not null default '{}'::jsonb,
   recorded_at   timestamptz not null default now(),  -- server-stamped; supersession order
   created_at    timestamptz not null default now(),
   unique (license_hash, entry_id),
   constraint dntcd_type_check check (record_type in
-    ('state_license','dea_registration','ce_cycle','certification')),
+    ('state_license','dea_registration','ce_cycle','certification','payer_enrollment')),
   constraint dntcd_data_size check (octet_length(data::text) <= 65536)
 );
 
@@ -149,3 +157,27 @@ revoke all on public.dnt_credentials from anon, authenticated;
 -- row for dnt_credentials):
 --   select privilege_type from information_schema.role_table_grants
 --    where grantee = 'service_role' and table_name = 'dnt_credentials';
+
+-- ---------------------------------------------------------------------------
+-- MIGRATION 2026-09-02 -- payer_enrollment (competitive-gap audit B1)
+--
+-- REQUIRED ON ANY DATABASE THAT ALREADY RAN THIS FILE. `create table if not
+-- exists` above does NOT alter an existing table, so the CHECK constraint on
+-- an already-provisioned practice still enumerates only the original four
+-- record types. Until this runs, every payer-enrolment write is rejected by
+-- Postgres with a check-constraint violation -- api/sd-data.js catches that
+-- specific case and returns RECORD_TYPE_NOT_MIGRATED naming this block,
+-- rather than a generic error the app would render as 'saved on this device
+-- only'. That message would read as a connectivity problem, and it is not:
+-- the write will never succeed until this is run.
+--
+-- Idempotent and safe to re-run. Drops the old constraint by name and adds
+-- it back with the fifth type; a fresh database gets the same constraint from
+-- the create above and this simply replaces it with an identical one.
+alter table public.dnt_credentials drop constraint if exists dntcd_type_check;
+alter table public.dnt_credentials add constraint dntcd_type_check check (record_type in
+  ('state_license','dea_registration','ce_cycle','certification','payer_enrollment'));
+
+-- Confirm it took (expect the five-value list, including payer_enrollment):
+--   select pg_get_constraintdef(oid) from pg_constraint
+--    where conname = 'dntcd_type_check';

@@ -46,12 +46,53 @@ const DEFAULT_WARN_DAYS = 30;
 // 21 CFR 1301.13: the earliest a DEA renewal may be filed.
 const DEA_WARN_DAYS = 60;
 
+// ── PAYER ENROLMENT (2026-09-02, competitive-gap audit B1) ───────────────
+// The audit's own words: enterprise credentialing and payer-enrolment
+// lifecycle is "the clearest whitespace in the entire dental audit -- no core
+// PM vendor does it natively". Verified absent from this app before building:
+// `enroll`/`enrol` 0 occurrences, `CAQH` 0, `revalidat` 0, `provider number`
+// 0. What DOES exist is LICENSURE credentialing -- state licences, DEA, CE,
+// BLS -- which is a different thing wearing a similar word, and conflating the
+// two is the easy mistake here.
+//
+// A LICENCE SAYS THE DENTIST MAY PRACTISE. AN ENROLMENT SAYS A PARTICULAR
+// PAYER WILL PAY THEM. A fully-licensed provider who is not yet effective with
+// a plan generates claims that are denied, and the practice usually finds out
+// weeks later on the remittance.
+//
+// IT IS A RECORD TYPE ON THE EXISTING STORE, NOT A NEW TABLE. dnt_credentials
+// is already append-only, per-provider, session-gated and registered as a
+// resource, and it already carries an `evaluate` action. A new table would
+// have meant a schema file, a resource registration, a server branch and a
+// provisioning risk, for data with the same owner, the same lifetime and the
+// same access rule.
+//
+// NO DATE IS EVER DERIVED, the same discipline the licence half already
+// states about ORC 4715.24(A): effective, termination and revalidation dates
+// come from the payer's own letter and are typed in. There is deliberately no
+// function here that computes an enrolment date from a payer name.
 const RECORD_TYPES = {
   state_license: true,
   dea_registration: true,
   ce_cycle: true,
-  certification: true
+  certification: true,
+  payer_enrollment: true
 };
+
+// Revalidation gets the platform's ordinary 30-day window rather than a cited
+// one. Unlike the DEA's 60 days (21 CFR 1301.13, the earliest a renewal may be
+// filed), payer revalidation cycles are set per contract and there is no
+// single authority to cite -- so this reuses the existing platform threshold
+// and says that is what it is.
+const REVALIDATION_WARN_DAYS = DEFAULT_WARN_DAYS;
+
+// Normalised so "Delta Dental" and "delta dental " are one payer. The same
+// normalisation computeEstimatedInsurance already applies in the app, kept
+// identical on purpose: an enrolment that does not match the payer the
+// coverage rule matched would be worse than no check at all.
+function payerKey(s) {
+  return String(s == null ? '' : s).trim().toLowerCase();
+}
 
 function refuse(code, message, extra) {
   return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
@@ -196,7 +237,13 @@ function latestByKey(records) {
       rec.record_type,
       rec.record_type === 'state_license' ? String(rec.state || '').toUpperCase() :
         rec.record_type === 'ce_cycle' ? String(rec.cycle_start || '') :
-          rec.record_type === 'certification' ? String(rec.credential || '') : ''
+          rec.record_type === 'certification' ? String(rec.credential || '') :
+            // THE PAYER IS PART OF THE KEY. Without it every enrolment for one
+            // provider would collapse into a single "latest", so adding a
+            // Cigna record would silently retire that provider's Delta Dental
+            // one -- a superseding bug in a store whose whole design is that
+            // nothing is ever superseded by accident.
+            rec.record_type === 'payer_enrollment' ? payerKey(rec.payer) : ''
     ].join('|');
     const prev = best[key];
     // recorded_at is server-stamped; entry_id is the tiebreak so the result is
@@ -209,6 +256,109 @@ function latestByKey(records) {
     }
   });
   return Object.keys(best).map(function (k) { return best[k]; });
+}
+
+// ── IS THIS PROVIDER EFFECTIVE WITH THIS PAYER ON THIS DATE? ─────────────
+// The load-bearing function, and the one the market gap is actually about.
+//
+// FIVE ANSWERS, AND `no_record` IS THE IMPORTANT ONE. Reporting "not enrolled"
+// when the practice simply has not entered the record would invent a denial;
+// reporting "enrolled" would hide one. Neither is knowable from an absence, so
+// the absence gets its own answer and the caller must say so. This is the same
+// call the deadline engine makes on an unprovisioned calendar year: refuse to
+// resolve rather than pick a side.
+//
+//   effective          effective_on <= date, and no term_on, or term_on >= date
+//   not_yet_effective  an effective_on in the future -- the common real case,
+//                      a provider seeing patients while the application is
+//                      still in process
+//   terminated         term_on < date
+//   in_process         a record exists with a status but no effective_on
+//   no_record          nothing on file for this provider and payer
+//
+// PURE, and evaluated against the SERVICE date rather than today, because the
+// question a denied claim asks is about the day the work was done.
+function enrollmentOnDate(records, query) {
+  const q = query || {};
+  if (!isDate(q.on_date)) return refuse('BAD_DATE', 'on_date must be YYYY-MM-DD.');
+  const provider = String(q.provider_id || '');
+  const payer = payerKey(q.payer);
+  if (!provider) return refuse('BAD_QUERY', 'provider_id is required.');
+  if (!payer) {
+    // A patient with no payer recorded is self-pay or unknown; either way
+    // there is no enrolment question to answer, and saying "no_record" would
+    // read as a problem with the provider.
+    return { ok: true, status: 'no_payer_on_file', provider_id: provider, payer: null,
+      message: 'No payer is recorded, so there is no enrolment to check.' };
+  }
+  const rows = latestByKey(records).filter(function (r) {
+    return r.record_type === 'payer_enrollment' &&
+      String(r.provider_id || '') === provider && payerKey(r.payer) === payer;
+  });
+  if (!rows.length) {
+    return { ok: true, status: 'no_record', provider_id: provider, payer: q.payer,
+      message: 'No payer-enrolment record is on file for this provider with this payer. Whether the claim will be paid cannot be answered from what is stored -- this is an absence, not a finding that the provider is out of network.' };
+  }
+  const rec = rows[0];
+  const base = {
+    ok: true, provider_id: provider, payer: rec.payer || q.payer,
+    entry_id: rec.entry_id || null,
+    provider_number: rec.provider_number || null,
+    effective_on: rec.effective_on || null,
+    term_on: rec.term_on || null,
+    revalidation_due_on: rec.revalidation_due_on || null,
+    network_status: rec.network_status || null
+  };
+  if (!isDate(rec.effective_on)) {
+    return Object.assign(base, { status: 'in_process',
+      message: 'An enrolment record exists but carries no effective date, so this provider is not confirmed effective with this payer on ' + q.on_date + '.' });
+  }
+  if (rec.effective_on > q.on_date) {
+    return Object.assign(base, { status: 'not_yet_effective',
+      days_until_effective: daysUntil(rec.effective_on, q.on_date),
+      message: 'This provider becomes effective with this payer on ' + rec.effective_on + ', which is after ' + q.on_date + '.' });
+  }
+  if (isDate(rec.term_on) && rec.term_on < q.on_date) {
+    return Object.assign(base, { status: 'terminated',
+      message: 'This provider\'s enrolment with this payer ended on ' + rec.term_on + ', before ' + q.on_date + '.' });
+  }
+  return Object.assign(base, { status: 'effective',
+    message: 'Effective with this payer on ' + q.on_date + '.' });
+}
+
+// Charges whose provider was NOT confirmed effective with the patient's payer
+// on the service date. Computed entirely from records already stored; nothing
+// is written, and a charge is never blocked -- this reports what is already
+// billed or about to be.
+//
+// `no_record` AND `no_payer_on_file` ARE REPORTED SEPARATELY FROM THE REST.
+// Rolling them in would turn "we have not entered this yet" into "this claim
+// will be denied", which is the fabrication this whole module avoids.
+function claimsAtEnrollmentRisk(records, lines) {
+  const at_risk = [], unknown = [];
+  (lines || []).forEach(function (ln) {
+    if (!ln || !isDate(ln.service_date)) return;
+    const out = enrollmentOnDate(records, {
+      provider_id: ln.provider_id, payer: ln.payer, on_date: ln.service_date
+    });
+    if (!out.ok) return;
+    const row = {
+      charge_id: ln.charge_id || null, patient_name: ln.patient_name || '',
+      provider_id: ln.provider_id || '', payer: ln.payer || '',
+      service_date: ln.service_date, amount: Number(ln.amount) || 0,
+      status: out.status, message: out.message
+    };
+    if (out.status === 'not_yet_effective' || out.status === 'terminated' || out.status === 'in_process') at_risk.push(row);
+    else if (out.status === 'no_record') unknown.push(row);
+  });
+  const sum = function (a) { return Math.round(a.reduce(function (s, r) { return s + r.amount; }, 0) * 100) / 100; };
+  return {
+    at_risk: at_risk.sort(function (a, b) { return b.amount - a.amount; }),
+    amount_at_risk: sum(at_risk),
+    unknown: unknown.sort(function (a, b) { return b.amount - a.amount; }),
+    amount_unknown: sum(unknown),
+    note: 'at_risk are charges where a stored enrolment record says the provider was not effective with that payer on the service date. unknown are charges with no enrolment record at all -- an absence, not a denial prediction. The two are never added together.'
+  };
 }
 
 function evaluateBoard(records, rules, today) {
@@ -267,6 +417,39 @@ function evaluateBoard(records, rules, today) {
       items.push(Object.assign(base, out, {
         ok: undefined, hours_required_from: sourced_from, rule_id: ruleRef
       }));
+      return;
+    }
+
+    // PAYER ENROLMENT IS NOT AN EXPIRY ROW AND IS NOT FORCED INTO ONE. A
+    // licence has one date that matters; an enrolment has three -- when it
+    // starts, when it ends, and when it must be revalidated -- and the state
+    // that matters most (not yet effective) has no expiry at all. Running it
+    // through classifyExpiry would report `unknown` for a provider whose
+    // application is simply still in process, which is a real, common and
+    // entirely knowable situation.
+    if (rec.record_type === 'payer_enrollment') {
+      const en = enrollmentOnDate([rec], { provider_id: rec.provider_id, payer: rec.payer, on_date: today });
+      const reval = classifyExpiry(rec.revalidation_due_on, today, REVALIDATION_WARN_DAYS);
+      const item = Object.assign(base, {
+        payer: rec.payer || '',
+        provider_number: rec.provider_number || null,
+        network_status: rec.network_status || null,
+        enrollment_status: en.ok ? en.status : 'unresolved',
+        effective_on: rec.effective_on || null,
+        term_on: rec.term_on || null,
+        revalidation_due_on: rec.revalidation_due_on || null,
+        revalidation_status: reval.status,
+        revalidation_days: reval.days,
+        message: en.ok ? en.message : en.error.message
+      });
+      // The board's own counts stay about EXPIRY, which is what its KPIs mean.
+      // An enrolment contributes to them only through its revalidation date --
+      // the only part of it that expires -- and a record with no revalidation
+      // date on file counts as unknown rather than ok, because "we did not
+      // enter one" is not "there isn't one".
+      item.status = reval.status;
+      counts[reval.status]++;
+      items.push(item);
       return;
     }
 
@@ -347,5 +530,9 @@ module.exports = {
   evaluateCeCycle,
   latestByKey,
   evaluateBoard,
-  credentialCoverage
+  credentialCoverage,
+  REVALIDATION_WARN_DAYS,
+  payerKey,
+  enrollmentOnDate,
+  claimsAtEnrollmentRisk
 };
