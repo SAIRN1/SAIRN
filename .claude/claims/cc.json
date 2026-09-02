@@ -179,8 +179,8 @@
       "task": "audit finding 4.2 and re-verify remaining findings",
       "claimed_at": "2026-09-02T15:00:33Z",
       "claimed_at_epoch": 1788361233.0073977,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:15:21Z"
     }
   ]
 }
