@@ -170,6 +170,16 @@
       "claimed_at_epoch": 1788339928.7321937,
       "status": "released",
       "released_at": "2026-09-02T09:07:22Z"
+    },
+    {
+      "id": "hank-1788340597",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "trigger document discriminator build",
+      "claimed_at": "2026-09-02T09:16:37Z",
+      "claimed_at_epoch": 1788340597.7714593,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
