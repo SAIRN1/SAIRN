@@ -1234,6 +1234,60 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
       return;
     }
+    // === SAIRNGROUNDS: ON-COURSE CADDIE (2026-09-02) ===
+    // Rounds and cart orders, both property-scoped, both grd_-prefixed for the
+    // same collision reason documented above for grd_schedule/grd_invoices --
+    // SAIRNscape would want an identically-shaped 'rounds' one day and a bare
+    // name would silently 400 one of the two apps.
+    //
+    // WHY THESE NEED THE SERVER AT ALL, rather than staying localStorage-only
+    // like the msb_* panels did at first: pace of play is the loop back into
+    // operations (SAIRNGROUNDS-SCOPE.md section 5a item 5), and a cart order is
+    // useless to the Pro Shop if it never leaves the player's phone. Both are
+    // read by somebody other than the device that wrote them, which is exactly
+    // the line where localStorage stops being enough.
+    if (resource === 'grd_rounds' && action === 'read') {
+      const r = await fetch(rest('grd_rounds?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_rounds' && action === 'write') {
+      if (!payload || !payload.id || !payload.property_id) { res.status(400).json({ error: { message: 'round payload.id and payload.property_id are required' } }); return; }
+      const r = await fetch(rest('grd_rounds?on_conflict=license_hash,round_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', round_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+    if (resource === 'grd_cart_orders' && action === 'read') {
+      const r = await fetch(rest('grd_cart_orders?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'grd_cart_orders' && action === 'write') {
+      if (!payload || !payload.id || !payload.property_id) { res.status(400).json({ error: { message: 'cart order payload.id and payload.property_id are required' } }); return; }
+      const r = await fetch(rest('grd_cart_orders?on_conflict=license_hash,order_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairngrounds', order_id: String(payload.id), property_id: String(payload.property_id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNgrounds caddie tables are not set up yet — run sql/sairngrounds_caddie_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
     if (resource === 'grd_designs' && action === 'read') {
       const r = await fetch(rest('grd_designs?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }

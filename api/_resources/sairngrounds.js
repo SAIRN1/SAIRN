@@ -62,5 +62,11 @@ module.exports = {
     'msb_food_waste',
     'msb_food_cost_log',
     'msb_sale_hours',
+  // On-Course Caddie (2026-09-02) -- see sql/sairngrounds_caddie_schema.sql.
+  // Both are server-side rather than localStorage-only because each is read by
+  // somebody other than the device that wrote it: pace of play is the loop back
+  // into operations, and a cart order the Pro Shop cannot see is not an order.
+    'grd_rounds',
+    'grd_cart_orders',
   ],
 };

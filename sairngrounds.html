@@ -237,6 +237,8 @@ textarea{resize:vertical;min-height:80px;}
       <button class="sb" id="sb-invoices" onclick="nav('invoices')"><span class="sico">&#128179;</span>Invoicing</button>
       <div class="ss">Golf</div>
       <button class="sb" id="sb-golfcourse" onclick="nav('golfcourse')"><span class="sico">&#9971;</span>Golf Course Module</button>
+      <button class="sb" id="sb-caddie" onclick="nav('caddie')"><span class="sico">&#128506;</span>On-Course Caddie</button>
+      <button class="sb" id="sb-pace" onclick="nav('pace')"><span class="sico">&#9201;</span>Pace of Play</button>
       <div class="ss">Irrigation &amp; Water</div>
       <button class="sb" id="sb-irrigation" onclick="nav('irrigation')"><span class="sico">&#128167;</span>Irrigation</button>
       <button class="sb" id="sb-waterfeatures" onclick="nav('waterfeatures')"><span class="sico">&#9970;</span>Water Features</button>
@@ -459,6 +461,111 @@ textarea{resize:vertical;min-height:80px;}
       <button class="btn bo" onclick="closeCourseMapModal()">Close</button>
     </div>
   </div>
+</div>
+
+<!-- ON-COURSE CADDIE (SAIRNGROUNDS-SCOPE.md section 5a, base layer) -->
+<!-- The layer the item 10 mapping foundation was laid for. Until now every
+     GPS point a course captured was stored, counted in a badge, and read by
+     nothing. This panel is what reads them.
+
+     NO PAID COURSE-DATA VENDOR, unchanged. Section 5a's base layer named
+     "licensed course mapping data (Golf Intelligence API or equivalent)" --
+     the "or equivalent" is the course's OWN mapped points, which is why the
+     iGolf Connect path could be dropped without losing the feature.
+
+     THE HONESTY PROBLEM THIS FEATURE HAS TO SOLVE, stated up front because
+     getting it wrong is the whole risk: a golf rangefinder reads to about a
+     yard. Consumer phone GPS does not. A bare "147 yd" on this screen would
+     claim a precision the hardware cannot deliver, and a player would trust
+     it for club selection. So EVERY distance here carries the error band
+     computed from the real reported accuracy of the fixes it was derived
+     from, a fix too coarse to be useful produces NO yardage at all rather
+     than a confident wrong one, and the panel says in plain words that it
+     is not a rangefinder. -->
+<div class="panel" id="panel-caddie">
+  <div class="ph"><div><div class="ptitle">On-Course Caddie</div><div class="psub">Distance to pin, shot distance and hole conditions from the course's own mapped points &mdash; no paid course-data vendor</div></div></div>
+
+  <div class="note" style="margin-bottom:14px"><strong>This is not a rangefinder.</strong> Every distance below is computed from consumer phone GPS and is shown with the error band its own reported accuracy actually supports. A laser rangefinder reads to about a yard; a phone does not. Use this for course knowledge and pace, not for a club decision on a shot that matters.</div>
+
+  <div class="card"><div class="ch"><span class="ct">Round</span></div><div class="cb">
+    <div class="fr">
+      <div class="fg"><label>Property</label><select id="gcd-property" onchange="gcdOnPropertyChange()"></select></div>
+      <div class="fg"><label>Player / Group Label</label><input id="gcd-player" placeholder="e.g. Reynolds foursome, 9:20 tee"></div>
+    </div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <button class="btn bp" id="gcd-start-btn" onclick="gcdStartRound()">Start Round</button>
+      <button class="btn bo" id="gcd-end-btn" onclick="gcdEndRound()">End Round</button>
+    </div>
+    <div id="gcd-round-state" style="margin-top:12px"></div>
+  </div></div>
+
+  <div id="gcd-active-wrap" style="display:none">
+    <div class="card"><div class="ch"><span class="ct">Current hole</span></div><div class="cb">
+      <div class="fr">
+        <div class="fg"><label>Hole / Zone</label><select id="gcd-hole" onchange="gcdOnHoleChange()"></select></div>
+        <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bp" onclick="gcdArriveHole()" style="width:100%">Arrive at This Hole</button></div>
+      </div>
+      <div id="gcd-hole-conditions"></div>
+      <div id="gcd-hole-mismatch" style="margin-top:8px"></div>
+      <div id="gcd-hole-weather" style="margin-top:8px"></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Distance to pin</span></div><div class="cb">
+      <button class="btn bp" onclick="gcdMeasureToPin()">Take a Fix &amp; Measure</button>
+      <div id="gcd-pin-result" style="margin-top:12px"></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Shot distance</span></div><div class="cb">
+      <div class="note" style="margin-bottom:10px">Mark where the ball is, play the shot, then mark where it finished. The distance is the difference between two real GPS fixes &mdash; no sensor, no estimate. Both fixes' accuracies add into the error band, so a shot measured on a poor signal reports a wide band rather than a tidy number.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap">
+        <button class="btn bo" onclick="gcdMarkShotStart()">Mark Ball Position</button>
+        <button class="btn bp" onclick="gcdMarkShotEnd()">Mark Where It Finished</button>
+      </div>
+      <div id="gcd-shot-state" style="margin-top:10px"></div>
+      <div id="gcd-shots-hole" class="note" style="margin-top:10px"></div>
+      <div class="tw" style="margin-top:12px"><table><thead><tr><th>#</th><th>Distance</th><th>Fix quality</th><th>Recorded</th><th></th></tr></thead>
+      <tbody id="gcd-shots-tbody"></tbody></table></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Caddie read</span></div><div class="cb">
+      <div class="note" style="margin-bottom:10px">Written from what this course has actually recorded &mdash; the measured distance and its error band, the hole's own condition note and days since it was serviced, and the Weather Command Engine's current reading. It is given nothing else, and it is told to say so when a fact is missing rather than fill the gap.</div>
+      <button class="btn bp" onclick="gcdShotTip()">Get a Read for This Shot</button>
+      <div id="gcd-tip-result" style="margin-top:12px;white-space:pre-wrap;font-size:13px"></div>
+    </div></div>
+
+    <div class="card"><div class="ch"><span class="ct">Order to the cart</span></div><div class="cb">
+      <div class="note" style="margin-bottom:10px">Sends an order to the Pro Shop with the player's hole and current GPS position attached, so someone can actually find them. It is a REQUEST, not a sale &mdash; nothing is charged here and no stock moves; the shop rings it through the existing Pro Shop or Bar till when it is delivered.</div>
+      <div class="fr">
+        <div class="fg"><label>Item</label><select id="gcd-order-product"></select></div>
+        <div class="fg"><label>Qty</label><input id="gcd-order-qty" type="number" min="1" step="1" value="1"></div>
+      </div>
+      <button class="btn bo" onclick="gcdAddOrderLine()">+ Add to Order</button>
+      <div id="gcd-order-lines" style="margin-top:10px"></div>
+      <button class="btn bp" onclick="gcdPlaceOrder()" style="margin-top:10px">Send Order to Pro Shop</button>
+    </div></div>
+  </div>
+
+  <div class="card"><div class="ch"><span class="ct">Open cart orders</span></div><div class="cb" style="padding:0">
+    <div class="tw"><table><thead><tr><th>Placed</th><th>Player</th><th>Hole</th><th>Position</th><th>Items</th><th>Total</th><th>Status</th><th></th></tr></thead>
+    <tbody id="gcd-orders-tbody"></tbody></table></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Rounds on file</span></div><div class="cb" style="padding:0">
+    <div class="tw"><table><thead><tr><th>Started</th><th>Player</th><th>Property</th><th>Holes played</th><th>Shots measured</th><th>Status</th></tr></thead>
+    <tbody id="gcd-rounds-tbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<!-- PACE OF PLAY (section 5a item 5: the loop back into operations) -->
+<div class="panel" id="panel-pace">
+  <div class="ph"><div><div class="ptitle">Pace of Play</div><div class="psub">Minutes per hole, measured from real arrival times during rounds &mdash; the operations side of the caddie</div></div></div>
+  <div class="note" style="margin-bottom:14px">Every figure here comes from two recorded timestamps on the same round. A hole a group arrived at but never left has no elapsed time and is <strong>excluded</strong>, not estimated &mdash; so a small sample says so instead of averaging its way to a confident number. There is no target pace built in: a course's own target is a local decision and inventing one would make every hole look good or bad against a figure nobody set.</div>
+  <div class="fg" style="max-width:320px"><label>Property</label><select id="gcd-pace-property" onchange="rPace()"></select></div>
+  <div class="krow" id="gcd-pace-kpis"></div>
+  <div class="card"><div class="ch"><span class="ct">By hole</span></div><div class="cb" style="padding:0">
+    <div class="tw"><table><thead><tr><th>Hole / Zone</th><th>Rounds measured</th><th>Median minutes</th><th>Slowest</th><th>Fastest</th></tr></thead>
+    <tbody id="gcd-pace-tbody"></tbody></table></div>
+  </div></div>
 </div>
 
 <!-- SCHEDULING (item 9) -->
@@ -1448,7 +1555,8 @@ function fillPropertySelects(){
   var props=ld('grd_properties',[]);
   var opts=props.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join('');
   ['jproperty','qproperty','gcproperty','zproperty','dwproperty','schproperty','invproperty',
-    'ctlproperty','izproperty','wfproperty','ivproperty','ecoproperty','dc-property','boqproperty'].forEach(function(id){
+    'ctlproperty','izproperty','wfproperty','ivproperty','ecoproperty','dc-property','boqproperty',
+    'gcd-property','gcd-pace-property'].forEach(function(id){
     var el=$(id);if(!el)return;var cur=el.value;el.innerHTML=opts;if(cur)el.value=cur;
   });
 }
@@ -1456,7 +1564,7 @@ function fillPropertySelects(){
 function init(){
   seed();
   fillPropertySelects();
-  rDash();rProps();rJobs();rQuotes();rGolf();rDesignWalks();
+  rDash();rProps();rJobs();rQuotes();rGolf();rCaddie();rPace();rDesignWalks();
   rSched();rInv();rIrrigation();rWf();rInvasive();rEcosystem();rDreamClose();rTraining();rVendors();
   rBoqRates();rBoq();rPlantDb();
   rMsbProShop();rMsbBarCompliance();rMsbBottleScan();rMsbFoodInv();
@@ -1523,7 +1631,8 @@ async function grdSyncFromServer(){
     ['msb_licenses','msb_licenses'],['msb_inventory_log','msb_inventory_log'],
     ['msb_bottle_scans','msb_bottle_scans'],['msb_food_scans','msb_food_scans'],
     ['msb_food_waste','msb_food_waste'],['msb_food_cost_log','msb_food_cost_log'],
-    ['msb_sale_hours','msb_sale_hours']];
+    ['msb_sale_hours','msb_sale_hours'],
+    ['grd_rounds','grd_rounds'],['grd_cart_orders','grd_cart_orders']];
   var changed=false;
   for(var i=0;i<resources.length;i++){
     var res=await grdData('read',resources[i][0],{});
@@ -1547,6 +1656,8 @@ async function grdSyncFromServer(){
     if(typeof rMsbFoodInv==='function')rMsbFoodInv();
     if(typeof rMsbBottleScan==='function')rMsbBottleScan();
     if(typeof rMsbHours==='function')rMsbHours();
+    if(typeof rCaddie==='function')rCaddie();
+    if(typeof rPace==='function')rPace();
   }
 }
 
@@ -1974,6 +2085,561 @@ window.installCourseARZone=async function(){
     });
   };
 };
+
+// === ON-COURSE CADDIE (SAIRNGROUNDS-SCOPE.md section 5a, base layer) ======
+//
+// WHAT THIS CLOSES. Item 10 shipped the mapping foundation: a course walks
+// its holes and captures tee/pin/hazard points with a real GPS fix each.
+// Nothing read those points back. They were stored, counted in a badge on
+// the Golf Course Module table, and used for nothing -- the foundation
+// without the thing it was a foundation for. This is that thing.
+//
+// SECTION 5a's base layer named "licensed course mapping data (Golf
+// Intelligence API or equivalent)". The course's own mapped points ARE the
+// "or equivalent", which is precisely why the paid iGolf Connect path could
+// be dropped in 2026-08-06 without losing this feature. No vendor, no
+// bundled course library, no fabricated hole geometry.
+//
+// ── THE HONESTY PROBLEM, AND HOW IT IS SOLVED RATHER THAN HIDDEN ──
+// A laser rangefinder reads to about a yard. Consumer phone GPS does not --
+// getCurrentPosition reports its own accuracy in metres and it is routinely
+// 5-15m, which is 5-16 YARDS. A screen reading "147 yd" would be claiming
+// rangefinder precision the hardware cannot deliver, and a player would
+// pick a club on it. So:
+//
+//   1. EVERY distance is rendered with the error band its own inputs
+//      support. Never a bare number. gcdFmtDistance() is the only renderer
+//      and it cannot produce one without a band.
+//   2. The band is derived from the REAL reported accuracy_m of the fixes
+//      involved -- the pin point's stored accuracy plus the live fix's for a
+//      distance-to-pin, both fixes' for a shot. Worst case, added, not
+//      averaged: averaging would understate it and this is the one number
+//      that must not be flattering.
+//   3. A fix worse than GCD_MAX_USABLE_ACC_M produces NO yardage at all.
+//      A number carrying +/-30 yards is not a distance, it is noise wearing
+//      a distance's clothes, and showing it greyed-out would still get read.
+//   4. NO PIN MAPPED means no distance and an instruction to go map it.
+//      The zone's centroid is NOT substituted -- there is no centroid, only
+//      whatever points staff happened to capture, and averaging a tee and a
+//      hazard into a "pin" would be fabricated geometry.
+//   5. The panel says in words that it is not a rangefinder.
+//
+// The mapped pin points were captured with cmCaptureGps(), which already
+// stores accuracy_m per point precisely so it could be honoured here rather
+// than discarded. This is that discipline paying off two features later.
+
+// 25m is roughly 27 yards of uncertainty. Past that the band is wider than
+// the gap between a 7-iron and a driver for most players, so the reading
+// cannot inform any decision it looks like it is informing. Chosen as the
+// point where the number stops being useful, not as a hardware spec.
+var GCD_MAX_USABLE_ACC_M = 25;
+var GCD_M_TO_YD = 1.0936133;
+var gcdShotStart = null;      // the pending "ball is here" fix, if any
+var gcdOrderLines = [];       // the in-progress cart order
+
+function gcdRounds(){return ld('grd_rounds',[]);}
+function gcdOrders(){return ld('grd_cart_orders',[]);}
+
+// Great-circle distance in metres. Haversine on the WGS84 mean radius --
+// at golf-hole scale the ellipsoid correction is far below the GPS error
+// this function's callers are already reporting, so a more elaborate
+// formula would add precision the inputs do not have.
+function gcdHaversineM(a, b){
+  var R = 6371008.8;
+  var toRad = Math.PI / 180;
+  var dLat = (b.lat - a.lat) * toRad, dLng = (b.lng - a.lng) * toRad;
+  var la1 = a.lat * toRad, la2 = b.lat * toRad;
+  var h = Math.sin(dLat/2)*Math.sin(dLat/2) + Math.cos(la1)*Math.cos(la2)*Math.sin(dLng/2)*Math.sin(dLng/2);
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+function gcdYards(m){return m * GCD_M_TO_YD;}
+
+// THE ONLY DISTANCE RENDERER, deliberately. Every yardage on this panel goes
+// through here, so "a number without its band" is not something a future
+// caller can produce by forgetting.
+function gcdFmtDistance(meters, bandMeters){
+  return Math.round(gcdYards(meters)) + ' yd <span style="color:var(--muted);font-weight:400">&plusmn;' +
+         Math.round(gcdYards(bandMeters)) + ' yd</span>';
+}
+function gcdAccBadge(accM){
+  var cls = accM <= 8 ? 'bg' : (accM <= GCD_MAX_USABLE_ACC_M ? 'bw' : 'br');
+  return '<span class="badge '+cls+'">&plusmn;'+Math.round(accM)+'m fix</span>';
+}
+
+function gcdZonesFor(propertyId){
+  return ld('grd_golf_zones',[]).filter(function(z){return z.property_id===propertyId;});
+}
+// The hole's mapped pin. First point of type 'pin' with a real fix on it.
+// Returns null rather than guessing from any other point type.
+function gcdPinFor(zone){
+  if(!zone) return null;
+  var pts = zone.points || [];
+  for(var i=0;i<pts.length;i++){
+    if(pts[i].type==='pin' && pts[i].lat!=null && pts[i].lng!=null) return pts[i];
+  }
+  return null;
+}
+
+// Returns { usable, html, meters, bandMeters, reason }. Never returns a
+// yardage it cannot stand behind.
+function gcdDistanceToPin(zone, fix){
+  var pin = gcdPinFor(zone);
+  if(!pin){
+    return {usable:false, reason:'No pin is mapped for '+(zone?zone.name:'this hole')+
+      ', so there is nothing to measure to. Map it from the Golf Course Module (Map -> Pin / Green) and this will start working. Nothing is estimated from the other points on this hole.'};
+  }
+  if(!fix){
+    return {usable:false, reason:'Could not get a GPS fix -- check location permission and try again.'};
+  }
+  var pinAcc = (pin.accuracy_m!=null) ? pin.accuracy_m : null;
+  if(pinAcc===null){
+    return {usable:false, reason:'The mapped pin for '+zone.name+' has no recorded accuracy, so the error band on any distance to it is unknown. Re-capture that point and this will start working.'};
+  }
+  var band = fix.accuracy_m + pinAcc;
+  if(band > GCD_MAX_USABLE_ACC_M){
+    return {usable:false, reason:'The reading would be +/-'+Math.round(gcdYards(band))+' yards ('+Math.round(fix.accuracy_m)+
+      'm live fix, '+Math.round(pinAcc)+'m on the mapped pin). That is wider than the gap between clubs, so no yardage is shown. Move into clearer sky and take another fix, or re-map the pin on a better signal.'};
+  }
+  var m = gcdHaversineM({lat:fix.lat,lng:fix.lng},{lat:pin.lat,lng:pin.lng});
+  return {usable:true, meters:m, bandMeters:band, pinLabel:pin.label||'Pin',
+          html:gcdFmtDistance(m, band)};
+}
+
+// Conditions come from the SAME grd_golf_zones record course staff already
+// maintain in the Golf Course Module -- section 5a item 2's requirement that
+// the conditions feed is the operational data, not a second thing to keep up
+// to date. If staff have not filled it in, that is reported as absent.
+function gcdConditionsFor(zone){
+  if(!zone) return {hasAny:false, text:'No hole selected.'};
+  var bits = [];
+  if(zone.condition) bits.push(zone.condition);
+  var days = null;
+  if(zone.serviced){
+    var t = new Date(zone.serviced+'T00:00:00').getTime();
+    if(!isNaN(t)) days = Math.floor((new Date(grdLocalToday()+'T00:00:00').getTime() - t) / 86400000);
+  }
+  return {hasAny:bits.length>0 || days!==null, notes:bits.join(' '), daysSinceServiced:days,
+          text: (bits.length?bits.join(' '):'No condition note recorded for this hole.') +
+                (days!==null ? ' Last serviced '+days+' day'+(days===1?'':'s')+' ago.' : ' No service date recorded.')};
+}
+
+// Reads the ALREADY-RUNNING Weather Command Engine rather than firing a
+// second geolocation prompt and a second Open-Meteo call -- same approach
+// and same reasoning as schedWeatherCheck() and irrWeatherCheck().
+function gcdWeatherSignal(){
+  var s=$('grd-wx-status'), d=$('grd-wx-desc');
+  if(!s || !s.textContent) return null;
+  return {status:s.textContent, detail:(d&&d.textContent)||''};
+}
+
+function gcdActiveRound(){
+  return gcdRounds().find(function(r){return !r.finished_at;}) || null;
+}
+function gcdSaveRound(round){
+  var list = gcdRounds();
+  var i = list.findIndex(function(r){return r.id===round.id;});
+  if(i>=0){list[i]=round;}else{list.push(round);}
+  st('grd_rounds', list);
+  grdData('write','grd_rounds',round);
+}
+function gcdCurrentHole(round){
+  if(!round || !round.holes || !round.holes.length) return null;
+  return round.holes[round.holes.length-1];
+}
+
+function gcdOnPropertyChange(){gcdFillHoleSelect();rCaddie();}
+function gcdOnHoleChange(){gcdRenderHoleContext();}
+
+function gcdFillHoleSelect(){
+  var sel=$('gcd-hole'); if(!sel) return;
+  var propId = $('gcd-property') ? $('gcd-property').value : '';
+  var zones = gcdZonesFor(propId);
+  var keep = sel.value;
+  sel.innerHTML = zones.length
+    ? zones.map(function(z){
+        var mapped = gcdPinFor(z) ? '' : ' (no pin mapped)';
+        return '<option value="'+H(z.id)+'">'+H(z.name)+H(mapped)+'</option>';
+      }).join('')
+    : '<option value="">No holes/zones on file for this property</option>';
+  if(keep) sel.value = keep;
+}
+function gcdFillOrderProducts(){
+  var sel=$('gcd-order-product'); if(!sel) return;
+  var prods = bldMsbProducts();
+  sel.innerHTML = prods.length
+    ? prods.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+' - '+fmt(p.price)+'</option>';}).join('')
+    : '<option value="">No products on file -- add them in Pro Shop or Bar first</option>';
+}
+
+function gcdSelectedZone(){
+  var sel=$('gcd-hole'); if(!sel||!sel.value) return null;
+  return ld('grd_golf_zones',[]).find(function(z){return z.id===sel.value;}) || null;
+}
+
+function gcdRenderHoleContext(){
+  var z = gcdSelectedZone();
+  var c = gcdConditionsFor(z);
+  var box = $('gcd-hole-conditions');
+  if(box){
+    box.innerHTML = z
+      ? '<div class="note"><strong>'+H(z.name)+'</strong> &mdash; '+H(c.text)+
+        (gcdPinFor(z)?'':' <span class="badge bw">no pin mapped</span>')+'</div>'
+      : '<div class="note">No hole selected.</div>';
+  }
+  // THE PICKER AND THE ARRIVED HOLE ARE TWO DIFFERENT THINGS, and conflating
+  // them would mis-file a shot. Distances are measured to whatever hole is
+  // SELECTED (a player can legitimately range the next green); shots and pace
+  // are recorded against the hole actually ARRIVED at. Where the two differ,
+  // say so on screen rather than letting a shot land quietly on the wrong hole.
+  var round = gcdActiveRound();
+  var arrived = round ? gcdCurrentHole(round) : null;
+  var mism = $('gcd-hole-mismatch');
+  if(mism){
+    mism.innerHTML = (arrived && z && arrived.zone_id !== z.id)
+      ? '<div class="note"><span class="badge bw">heads up</span> Distances measure to <strong>'+H(z.name)+
+        '</strong> (the hole selected above), but shots and pace are still being recorded against <strong>'+
+        H(arrived.zone_name)+'</strong>, the hole you arrived at. Press "Arrive at This Hole" to move.</div>'
+      : '';
+  }
+  var wx = gcdWeatherSignal();
+  var wbox = $('gcd-hole-weather');
+  if(wbox){
+    wbox.innerHTML = wx
+      ? '<div class="note">Weather Command Engine: '+H(wx.detail)+' &mdash; '+H(wx.status)+'.</div>'
+      : '<div class="note">The Weather Command Engine has no reading yet, so no weather is factored into anything on this panel.</div>';
+  }
+}
+
+async function gcdStartRound(){
+  if(gcdActiveRound()){toast('A round is already open -- end it before starting another');return;}
+  var propId = $('gcd-property').value;
+  var player = $('gcd-player').value.trim();
+  if(!propId){toast('Select a property first');return;}
+  if(!player){toast('Give the round a player or group label');return;}
+  var round = {id:'RD-'+Date.now(), property_id:propId, player_label:player,
+    started_at:new Date().toISOString(), finished_at:null, holes:[]};
+  gcdSaveRound(round);
+  rCaddie();
+  toast('Round started');
+}
+async function gcdEndRound(){
+  var round = gcdActiveRound();
+  if(!round){toast('No round is open');return;}
+  var hole = gcdCurrentHole(round);
+  if(hole && !hole.completed_at) hole.completed_at = new Date().toISOString();
+  round.finished_at = new Date().toISOString();
+  gcdSaveRound(round);
+  gcdShotStart = null;
+  rCaddie(); rPace();
+  toast('Round closed');
+}
+
+// Arriving at a hole closes the previous one, which is what makes the pace
+// figures real: both timestamps are recorded by the same action a player
+// takes anyway, rather than asked for separately and therefore skipped.
+function gcdArriveHole(){
+  var round = gcdActiveRound();
+  if(!round){toast('Start a round first');return;}
+  var z = gcdSelectedZone();
+  if(!z){toast('Select a hole or zone');return;}
+  var prev = gcdCurrentHole(round);
+  if(prev && prev.zone_id===z.id && !prev.completed_at){toast('Already on this hole');return;}
+  if(prev && !prev.completed_at) prev.completed_at = new Date().toISOString();
+  round.holes.push({zone_id:z.id, zone_name:z.name, arrived_at:new Date().toISOString(), completed_at:null, shots:[]});
+  gcdSaveRound(round);
+  gcdShotStart = null;
+  rCaddie();
+  toast('Arrived at '+z.name);
+}
+
+async function gcdMeasureToPin(){
+  var z = gcdSelectedZone();
+  var out = $('gcd-pin-result');
+  if(!z){out.innerHTML='<div class="note">Select a hole first.</div>';return;}
+  out.innerHTML='<div class="note">Getting a GPS fix...</div>';
+  var fix = await cmCaptureGps();
+  var r = gcdDistanceToPin(z, fix);
+  if(!r.usable){
+    out.innerHTML = '<div class="note"><span class="badge bw">No yardage shown</span> '+H(r.reason)+'</div>';
+    return;
+  }
+  out.innerHTML = '<div style="font-size:26px;font-weight:800;color:var(--pd)">'+r.html+'</div>'+
+    '<div style="margin-top:6px">'+gcdAccBadge(fix.accuracy_m)+' to <strong>'+H(r.pinLabel)+'</strong> on '+H(z.name)+'</div>'+
+    '<div class="note" style="margin-top:8px">The band is this fix\'s accuracy plus the accuracy recorded when the pin was mapped. Both are real device readings, added rather than averaged.</div>';
+}
+
+async function gcdMarkShotStart(){
+  var round = gcdActiveRound();
+  if(!round || !gcdCurrentHole(round)){toast('Arrive at a hole first');return;}
+  toast('Getting GPS fix...');
+  var fix = await cmCaptureGps();
+  if(!fix){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
+  gcdShotStart = fix;
+  $('gcd-shot-state').innerHTML = '<div class="note">Ball position marked, '+gcdAccBadge(fix.accuracy_m)+'. Play the shot, then mark where it finished.</div>';
+}
+async function gcdMarkShotEnd(){
+  var round = gcdActiveRound();
+  var hole = round ? gcdCurrentHole(round) : null;
+  if(!hole){toast('Arrive at a hole first');return;}
+  if(!gcdShotStart){toast('Mark the ball position first -- a shot distance needs both ends');return;}
+  toast('Getting GPS fix...');
+  var fix = await cmCaptureGps();
+  if(!fix){toast('Could not get a GPS fix -- check location permission and try again',5000);return;}
+  var band = gcdShotStart.accuracy_m + fix.accuracy_m;
+  var m = gcdHaversineM(gcdShotStart, fix);
+  hole.shots.push({from:gcdShotStart, to:fix, meters:m, band_meters:band, at:new Date().toISOString()});
+  gcdShotStart = null;
+  gcdSaveRound(round);
+  rCaddie();
+  toast('Shot recorded');
+}
+
+function gcdRenderShots(){
+  var round = gcdActiveRound();
+  var hole = round ? gcdCurrentHole(round) : null;
+  var tb = $('gcd-shots-tbody'); if(!tb) return;
+  var lbl = $('gcd-shots-hole');
+  if(lbl) lbl.innerHTML = hole
+    ? 'Shots on <strong>'+H(hole.zone_name)+'</strong>, the hole arrived at.'
+    : 'Arrive at a hole before recording shots &mdash; a shot with no hole would have nothing to attach to.';
+  var shots = hole ? (hole.shots||[]) : [];
+  tb.innerHTML = shots.length ? shots.map(function(s,i){
+    // A shot whose combined band is unusable is still RECORDED -- it happened
+    // -- but its distance is withheld for the same reason a live reading is.
+    var usable = s.band_meters <= GCD_MAX_USABLE_ACC_M;
+    return '<tr><td>'+(i+1)+'</td>'+
+      '<td>'+(usable ? gcdFmtDistance(s.meters, s.band_meters)
+                     : '<span class="badge bw">band too wide to state ('+Math.round(gcdYards(s.band_meters))+' yd)</span>')+'</td>'+
+      '<td>'+gcdAccBadge(s.from.accuracy_m)+' &rarr; '+gcdAccBadge(s.to.accuracy_m)+'</td>'+
+      '<td>'+H(new Date(s.at).toLocaleTimeString())+'</td>'+
+      '<td><button class="btn bo bs" onclick="gcdRemoveShot('+i+')">Remove</button></td></tr>';
+  }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:14px">No shots measured on this hole yet</td></tr>';
+}
+function gcdRemoveShot(index){
+  var round = gcdActiveRound();
+  var hole = round ? gcdCurrentHole(round) : null;
+  if(!hole) return;
+  hole.shots = (hole.shots||[]).filter(function(s,i){return i!==index;});
+  gcdSaveRound(round);
+  rCaddie();
+}
+
+// Grounded in the real figures only, and told explicitly to refuse rather
+// than fill a gap -- the same enforcement-in-the-prompt-AND-in-the-caller
+// discipline the Ecosystem report uses. If there is no measured distance and
+// no condition note, no call is made at all: there would be nothing to
+// ground an answer in, and asking anyway is how a plausible invention gets
+// onto a screen.
+async function gcdShotTip(){
+  var out = $('gcd-tip-result');
+  var z = gcdSelectedZone();
+  if(!z){out.textContent='Select a hole first.';return;}
+  out.textContent='Taking a fix and reading the hole...';
+  var fix = await cmCaptureGps();
+  var dist = gcdDistanceToPin(z, fix);
+  var cond = gcdConditionsFor(z);
+  var wx = gcdWeatherSignal();
+  if(!dist.usable && !cond.hasAny && !wx){
+    out.textContent='Nothing to read from: no usable distance ('+dist.reason+'), no condition note on this hole, and no weather reading. A read written from none of those would be invented, so none is offered.';
+    return;
+  }
+  var facts =
+    'HOLE: '+z.name+'\n'+
+    'DISTANCE TO PIN: '+(dist.usable
+      ? (Math.round(gcdYards(dist.meters))+' yards, plus or minus '+Math.round(gcdYards(dist.bandMeters))+' yards (consumer GPS, not a rangefinder)')
+      : ('NOT AVAILABLE -- '+dist.reason))+'\n'+
+    'HOLE CONDITION (recorded by course staff): '+cond.text+'\n'+
+    'WEATHER (Weather Command Engine): '+(wx ? (wx.detail+' -- '+wx.status) : 'NOT AVAILABLE')+'\n';
+  var sys =
+    'You are a caddie reading one golf shot for a player, using ONLY the facts given below. '+
+    'Rules you must follow: never state a distance more precise than the one given, and always carry its '+
+    'plus-or-minus when you mention it -- the figure comes from phone GPS, not a rangefinder, and treating it '+
+    'as exact would be wrong advice. Where a fact says NOT AVAILABLE, say so plainly and do not guess at it. '+
+    'Never invent a hole layout, a hazard, a slope, a green speed or a pin position -- you have not been told any '+
+    'of those and this course has not recorded them. Do not recommend a specific club: club distance is personal '+
+    'to the player and you do not know theirs. Keep it under 90 words. Plain ASCII only.';
+  try{
+    var res = await fetch(PROXY,{method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:300,app_id:APP_ID,is_demo:true,system:sys,
+        messages:[{role:'user',content:facts}]})});
+    var data = await res.json();
+    out.textContent = (data.content&&data.content[0]&&data.content[0].text) ||
+      (data.error&&data.error.message ? ('Caddie read unavailable: '+data.error.message) : 'No response text returned.');
+  }catch(e){
+    out.textContent = 'Could not reach Claude. The measured facts are still real and usable on their own:\n\n'+facts;
+  }
+}
+
+// === ORDER TO THE CART (section 5a item 4, the part that rests on real data)
+// Hooks the EXISTING Merchandise/Bar catalogue rather than a second product
+// list. It records a REQUEST with the player's hole and position; it does not
+// take payment and does not move stock, because the till that does both
+// already exists in the Pro Shop and Bar panels and duplicating it here would
+// give two places to ring the same sale.
+function gcdAddOrderLine(){
+  var sel=$('gcd-order-product');
+  if(!sel||!sel.value){toast('No product selected');return;}
+  var p = bldMsbProducts().find(function(x){return x.id===sel.value;});
+  if(!p){toast('Product not found');return;}
+  var qty = parseInt($('gcd-order-qty').value,10);
+  if(!qty||qty<1){toast('Quantity must be at least 1');return;}
+  gcdOrderLines.push({product_id:p.id, name:p.name, qty:qty, price:p.price});
+  gcdRenderOrderLines();
+}
+function gcdRemoveOrderLine(i){gcdOrderLines.splice(i,1);gcdRenderOrderLines();}
+function gcdOrderTotal(){return gcdOrderLines.reduce(function(s,l){return s+(Number(l.price)||0)*l.qty;},0);}
+function gcdRenderOrderLines(){
+  var box=$('gcd-order-lines'); if(!box) return;
+  box.innerHTML = gcdOrderLines.length
+    ? gcdOrderLines.map(function(l,i){
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:4px 0">'+
+          '<span>'+l.qty+' x '+H(l.name)+'</span><span>'+fmt((Number(l.price)||0)*l.qty)+
+          ' <button class="btn bo bs" onclick="gcdRemoveOrderLine('+i+')">Remove</button></span></div>';
+      }).join('') + '<div style="border-top:1px solid var(--border);margin-top:6px;padding-top:6px;font-weight:800">Total '+fmt(gcdOrderTotal())+'</div>'
+    : '<div style="color:var(--muted);font-size:13px">Nothing on this order yet</div>';
+}
+async function gcdPlaceOrder(){
+  var round = gcdActiveRound();
+  var hole = round ? gcdCurrentHole(round) : null;
+  if(!round){toast('Start a round first -- the order is delivered to a player on the course');return;}
+  if(!gcdOrderLines.length){toast('Add at least one item');return;}
+  toast('Getting GPS fix so the shop can find you...');
+  var fix = await cmCaptureGps();
+  if(!fix){toast('Could not get a GPS fix. The order is not sent, because a delivery with no position is worse than none',6000);return;}
+  var rec = {id:'CO-'+Date.now(), property_id:round.property_id, round_id:round.id,
+    player_label:round.player_label, zone_id:hole?hole.zone_id:'', zone_name:hole?hole.zone_name:'',
+    lat:fix.lat, lng:fix.lng, accuracy_m:fix.accuracy_m,
+    items:gcdOrderLines.slice(), total:gcdOrderTotal(), status:'Open', placed_at:new Date().toISOString()};
+  var list = gcdOrders(); list.push(rec); st('grd_cart_orders', list);
+  gcdOrderLines = [];
+  gcdRenderOrderLines(); rCaddie();
+  var syncResult = await grdData('write','grd_cart_orders',rec);
+  toast(syncResult?'Order sent to the Pro Shop':'Order saved on this device only -- server sync failed, so the shop may not see it. Radio it through.',syncResult?3000:8000);
+}
+async function gcdMarkOrderDelivered(id){
+  var list = gcdOrders();
+  var rec = list.find(function(o){return o.id===id;});
+  if(!rec) return;
+  rec.status='Delivered'; rec.delivered_at=new Date().toISOString();
+  st('grd_cart_orders', list);
+  rCaddie();
+  await grdData('write','grd_cart_orders',rec);
+}
+
+function rCaddie(){
+  fillPropertySelects();
+  gcdFillHoleSelect();
+  gcdFillOrderProducts();
+  var round = gcdActiveRound();
+  var stateBox = $('gcd-round-state');
+  var wrap = $('gcd-active-wrap');
+  if(stateBox){
+    if(round){
+      var hole = gcdCurrentHole(round);
+      stateBox.innerHTML = '<span class="badge bg">Round open</span> <strong>'+H(round.player_label)+'</strong> at '+
+        H(propName(round.property_id))+', started '+H(new Date(round.started_at).toLocaleTimeString())+
+        (hole ? ' &mdash; currently on <strong>'+H(hole.zone_name)+'</strong>' : ' &mdash; not yet arrived at a hole');
+    } else {
+      stateBox.innerHTML = '<span class="badge bx">No round open</span> Start one to measure distances, record shots or send an order.';
+    }
+  }
+  if(wrap) wrap.style.display = round ? 'block' : 'none';
+  if(round){
+    var sel=$('gcd-property'); if(sel) sel.value = round.property_id;
+    gcdFillHoleSelect();
+  }
+  gcdRenderHoleContext();
+  gcdRenderShots();
+  gcdRenderOrderLines();
+
+  var ob = $('gcd-orders-tbody');
+  if(ob){
+    var open = gcdOrders().slice().reverse();
+    ob.innerHTML = open.length ? open.map(function(o){
+      return '<tr><td>'+H(new Date(o.placed_at).toLocaleString())+'</td><td>'+H(o.player_label)+'</td>'+
+        '<td>'+H(o.zone_name||'--')+'</td>'+
+        '<td>'+o.lat.toFixed(5)+', '+o.lng.toFixed(5)+' '+gcdAccBadge(o.accuracy_m)+'</td>'+
+        '<td>'+o.items.map(function(l){return H(l.qty+' x '+l.name);}).join('<br>')+'</td>'+
+        '<td>'+fmt(o.total)+'</td>'+
+        '<td><span class="badge '+(o.status==='Delivered'?'bg':'bw')+'">'+H(o.status)+'</span></td>'+
+        '<td>'+(o.status==='Delivered'?'':'<button class="btn bp bs" onclick="gcdMarkOrderDelivered(\''+o.id+'\')">Mark Delivered</button>')+'</td></tr>';
+    }).join('') : '<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No cart orders yet</td></tr>';
+  }
+
+  var rb = $('gcd-rounds-tbody');
+  if(rb){
+    var rounds = gcdRounds().slice().reverse();
+    rb.innerHTML = rounds.length ? rounds.map(function(r){
+      var shots = (r.holes||[]).reduce(function(s,h){return s+((h.shots||[]).length);},0);
+      return '<tr><td>'+H(new Date(r.started_at).toLocaleString())+'</td><td>'+H(r.player_label)+'</td>'+
+        '<td>'+H(propName(r.property_id))+'</td><td>'+((r.holes||[]).length)+'</td><td>'+shots+'</td>'+
+        '<td><span class="badge '+(r.finished_at?'bx':'bg')+'">'+(r.finished_at?'Closed':'Open')+'</span></td></tr>';
+    }).join('') : '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No rounds recorded yet</td></tr>';
+  }
+}
+
+// === PACE OF PLAY (section 5a item 5) ====================================
+// The loop back into operations: the same round data the caddie produces,
+// aggregated into the figure a superintendent actually schedules against.
+//
+// ONLY COMPLETE PAIRS COUNT. A hole with an arrival and no completion has no
+// elapsed time, and is EXCLUDED rather than estimated from the round's end or
+// the next hole's start -- both of those would silently attribute walking and
+// waiting time to the wrong hole. MEDIAN, not mean: one group that stopped
+// for lunch on the 9th would drag a mean upward and make a fine hole look
+// slow. NO TARGET PACE is built in, because a course's target is a local
+// decision and inventing one would grade every hole against a figure nobody
+// set.
+function gcdPaceSamples(propertyId){
+  var byZone = {};
+  gcdRounds().forEach(function(r){
+    if(propertyId && r.property_id!==propertyId) return;
+    (r.holes||[]).forEach(function(h){
+      if(!h.arrived_at || !h.completed_at) return;
+      var mins = (new Date(h.completed_at).getTime() - new Date(h.arrived_at).getTime()) / 60000;
+      if(!(mins>0)) return;
+      if(!byZone[h.zone_id]) byZone[h.zone_id] = {name:h.zone_name, mins:[]};
+      byZone[h.zone_id].mins.push(mins);
+    });
+  });
+  return byZone;
+}
+function gcdMedian(nums){
+  if(!nums.length) return null;
+  var s = nums.slice().sort(function(a,b){return a-b;});
+  var m = Math.floor(s.length/2);
+  return s.length%2 ? s[m] : (s[m-1]+s[m])/2;
+}
+function rPace(){
+  fillPropertySelects();
+  var propId = $('gcd-pace-property') ? $('gcd-pace-property').value : '';
+  var byZone = gcdPaceSamples(propId);
+  var keys = Object.keys(byZone);
+  var allMins = keys.reduce(function(a,k){return a.concat(byZone[k].mins);},[]);
+  var measuredRounds = gcdRounds().filter(function(r){
+    if(propId && r.property_id!==propId) return false;
+    return (r.holes||[]).some(function(h){return h.arrived_at && h.completed_at;});
+  }).length;
+
+  var k = $('gcd-pace-kpis');
+  if(k){
+    k.innerHTML =
+      '<div class="kpi"><div class="klbl">Holes with a measured time</div><div class="kval">'+keys.length+'</div></div>'+
+      '<div class="kpi"><div class="klbl">Rounds contributing</div><div class="kval">'+measuredRounds+'</div></div>'+
+      '<div class="kpi"><div class="klbl">Median minutes per hole</div><div class="kval">'+(allMins.length?Math.round(gcdMedian(allMins)):'--')+'</div></div>'+
+      '<div class="kpi"><div class="klbl">Timed hole records</div><div class="kval">'+allMins.length+'</div></div>';
+  }
+  var tb = $('gcd-pace-tbody');
+  if(tb){
+    tb.innerHTML = keys.length ? keys.map(function(id){
+      var z = byZone[id];
+      return '<tr><td><strong>'+H(z.name)+'</strong></td><td>'+z.mins.length+'</td>'+
+        '<td>'+Math.round(gcdMedian(z.mins))+' min</td>'+
+        '<td>'+Math.round(Math.max.apply(null,z.mins))+' min</td>'+
+        '<td>'+Math.round(Math.min.apply(null,z.mins))+' min</td></tr>';
+    }).join('') : '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:20px">No hole has both an arrival and a completion time yet. Use "Arrive at This Hole" through a round and the times appear here.</td></tr>';
+  }
+}
 
 // === ITEM 7 MODULE IDS ===========================================
 var schedid=null,invid=null,ctlid=null,izid=null,ischid=null,wfid=null,ivid=null,crsid=null,cplid=null,vendid=null;
