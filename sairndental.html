@@ -271,7 +271,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-patients">
         <div class="ph"><div><div class="ptitle">Patients</div><div class="psub">Patient records and insurance on file</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-patients','patients')">Export CSV</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('patients')" title="Exports the full patients dataset, not the rows currently shown">Export CSV</button></div>
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Patient</div></div><div class="cb">
           <div class="fr">
@@ -310,7 +310,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-referrals">
         <div class="ph"><div><div class="ptitle">Referrals</div><div class="psub">Incoming and outgoing patient referrals to/from external providers &mdash; record-keeping only, never a mechanism for referral payment (illegal under federal and state law).</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-referrals','referrals')">Export CSV</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('referrals')" title="Exports the full referrals dataset, not the rows currently shown">Export CSV</button></div>
         </div>
         <div class="card"><div class="ch"><div class="ct">Add Referral</div></div><div class="cb">
           <div class="fr">
@@ -435,7 +435,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-credentials">
         <div class="ph"><div><div class="ptitle">Licensing &amp; DEA</div><div class="psub">State licences, DEA registrations, CE cycles and BLS/CPR &mdash; every expiry date is the one on your own document, never calculated from the state</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-credentials','credentials')">Export CSV</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('credentials')" title="Exports the full credentials dataset, not the rows currently shown">Export CSV</button></div>
         </div>
         <div class="krow">
           <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="k-cred-expired">0</div><div class="kt">Act now</div></div>
@@ -684,7 +684,7 @@ label.chk input{width:auto;}
            covering ADA statements and said to verify against CMS primary --
            that is what the paragraph numbers on screen are. -->
       <div class="panel" id="panel-gfe">
-        <div class="ph"><div><div class="ptitle">Good Faith Estimates</div><div class="psub">No Surprises Act, 45 CFR 149.610 &mdash; the written estimate an uninsured or self-pay patient is federally entitled to, and the deadline it is owed by</div></div></div>
+        <div class="ph"><div><div class="ptitle">Good Faith Estimates</div><div class="psub">No Surprises Act, 45 CFR 149.610 &mdash; the written estimate an uninsured or self-pay patient is federally entitled to, and the deadline it is owed by</div></div><div class="pa"><button class="btn bo bs" onclick="exportDataset('gfe')" title="Exports the full good faith estimates dataset, not the rows currently shown">Export CSV</button></div></div>
 
         <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)">This is a drafting and deadline tool, not legal advice, and it does not transmit anything. It covers <strong>only this practice's own expected charges</strong>: 45 CFR 149.610(c)(1)(iii) requires the itemised list to be grouped by provider and facility, and (b)(1)(v) requires a convening provider to contact co-providers within 1 business day. SAIRNdental does not gather co-provider estimates and does not pretend to &mdash; and whether HHS's 2022 enforcement discretion on co-provider charges still stands could not be confirmed against a primary source, so nothing here assumes it does.</div>
 
@@ -773,7 +773,7 @@ label.chk input{width:auto;}
            silent-failure class that left api/sairndental/send-reminder.js
            firing a 500 every hour for months. -->
       <div class="panel" id="panel-recall">
-        <div class="ph"><div><div class="ptitle">Recall &amp; Reactivation</div><div class="psub">Who is due back, measured from the last time they actually had the procedure &mdash; on intervals this practice set</div></div></div>
+        <div class="ph"><div><div class="ptitle">Recall &amp; Reactivation</div><div class="psub">Who is due back, measured from the last time they actually had the procedure &mdash; on intervals this practice set</div></div><div class="pa"><button class="btn bo bs" onclick="exportDataset('recall')" title="Exports the full recall worklist dataset, not the rows currently shown">Export CSV</button></div></div>
 
         <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)">This panel <strong>records outreach, it does not send it</strong>. Nothing here emails, texts or calls anybody. Logging a contact means someone made it.</div>
 
@@ -836,7 +836,7 @@ label.chk input{width:auto;}
            points at the panel that does it properly. -->
       <div class="panel" id="panel-txplan">
         <div class="ph"><div><div class="ptitle">Treatment Plans</div><div class="psub">Proposed work, phased and priced from this practice&rsquo;s own fees and coverage rules &mdash; before any of it is charged</div></div>
-          <div class="pa"><button class="btn bp bs" onclick="openTxPlanModal()">+ New Plan</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('txplans')" title="Exports the full treatment plans dataset, not the rows currently shown">Export CSV</button><button class="btn bp bs" onclick="openTxPlanModal()">+ New Plan</button></div>
         </div>
 
         <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)"><strong>A plan estimate is not a Good Faith Estimate.</strong> 45 CFR 149.610 requires specific content and sets a deadline, and neither is satisfied by anything on this page. If the patient is uninsured or self-paying, produce the real one in <em>Good Faith Estimates</em>.</div>
@@ -915,7 +915,7 @@ label.chk input{width:auto;}
            unverified figure would look good or bad for no reason. -->
       <div class="panel" id="panel-denials">
         <div class="ph"><div><div class="ptitle">Denials &amp; Appeals</div><div class="psub">The appeal lifecycle every vendor claims and none publishes &mdash; plus receivable ageing computed from real charges and payments</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="openPayerTermsModal()">Payer appeal windows</button><button class="btn bp bs" onclick="openDenialModal()">+ Record a denial</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('denials')" title="Exports the full denials dataset, not the rows currently shown">Export CSV</button><button class="btn bo bs" onclick="exportDataset('ageing')" title="Exports the full receivable ageing dataset, not the rows currently shown">Export CSV</button><button class="btn bo bs" onclick="openPayerTermsModal()">Payer appeal windows</button><button class="btn bp bs" onclick="openDenialModal()">+ Record a denial</button></div>
         </div>
 
         <div class="krow">
@@ -1047,7 +1047,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-supplies">
         <div class="ph"><div><div class="ptitle">Supplies</div><div class="psub">Stock on hand for dental supplies/PPE/materials.</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="exportPanelCSV('panel-supplies','supplies')">Export CSV</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('supplies')" title="Exports the full supplies dataset, not the rows currently shown">Export CSV</button></div>
         </div>
         <div class="krow" id="supplies-kpis" style="grid-template-columns:repeat(3,1fr)"></div>
         <div class="card"><div class="ch"><div class="ct">Add Supply Item</div></div><div class="cb">
@@ -1344,23 +1344,152 @@ function nav(id){
   if(id==='credentials'){rCredentials(null);refreshCredentialBoard();}
 }
 
-function exportPanelCSV(panelId,name){
-  var panelEl=$(panelId);if(!panelEl)return;
-  var csv='';
-  function csvField(s){s=String(s==null?'':s);if(/[",\n]/.test(s))return '"'+s.replace(/"/g,'""')+'"';return s;}
-  panelEl.querySelectorAll('table').forEach(function(table){
-    table.querySelectorAll('tr').forEach(function(row){
-      var cells=row.querySelectorAll('th,td');
-      var line=Array.from(cells).map(function(c){return csvField(c.textContent);}).join(',');
-      csv+=line+'\n';
-    });
+// -- CSV EXPORT, REWRITTEN 2026-09-02 --------------------------------
+// THE OLD exportPanelCSV() SCRAPED THE RENDERED DOM, and that is a defect, not
+// a style choice. It was found while re-checking the competitive audit's B5
+// line, which reads "Absent. CSV export only" -- a sentence that assumes the
+// CSV export works. Four things it actually did:
+//
+//   1. IT EXPORTED THE VIEW, NOT THE DATA. Whatever the table happened to be
+//      showing is what landed in the file. The Recall worklist hides patients
+//      who are current unless a box is ticked, so "recall.csv" would silently
+//      omit them while being named after the whole dataset. A plausible file
+//      that is quietly partial -- the same failure class as a fabricated KPI,
+//      and the same one StoneDesk's nesting export was caught with today.
+//   2. IT CONCATENATED EVERY TABLE IN THE PANEL with no separator and no
+//      indication which table a row came from. The Denials panel has two --
+//      denials and receivable ageing -- with different columns and different
+//      meanings, and they would have been stacked into one file.
+//   3. IT EXPORTED UI TEXT. textContent of an action cell yields "Remove"; a
+//      status cell yields "overdue by 317 d". Those are labels drawn for a
+//      human, not values anything downstream can read.
+//   4. IT EXISTED ON FOUR PANELS OF TWENTY-ONE, none of them clinical or
+//      financial.
+//
+// WHAT REPLACES IT. Each export names its dataset, declares its columns, and
+// reads them from the same accessor the panel reads -- so an export cannot
+// drift from what the app believes, and cannot be narrowed by whatever filter
+// is on screen. Derived datasets (the recall worklist, the ageing buckets) call
+// the very same functions the panel renders from, for the same reason.
+//
+// AND IT SAYS WHAT IT CONTAINS. The toast reports the row count and states that
+// the file is the full dataset rather than the filtered view, because the whole
+// defect above was a file that looked complete and was not.
+function dntCsvField(v){
+  var t=String(v==null?'':v);
+  if(/[",\n\r]/.test(t))return '"'+t.replace(/"/g,'""')+'"';
+  return t;
+}
+function dntYesNo(v){return v?'yes':'no';}
+
+// Credentials are heterogeneous -- a DEA registration, a CE cycle and a payer
+// enrolment carry different fields on the same record shape. Rather than pick
+// one type's columns and silently drop the rest, the type-specific half is
+// flattened into a single `details` column as key=value pairs. Dropping them
+// would be the same "quietly partial" defect this rewrite exists to remove.
+var DNT_CRED_COMMON={id:1,provider_id:1,type:1,label:1,created_at:1};
+function dntCredDetails(rec){
+  return Object.keys(rec).filter(function(k){return !DNT_CRED_COMMON[k];})
+    .map(function(k){return k+'='+String(rec[k]==null?'':rec[k]);}).join('; ');
+}
+
+var DNT_EXPORTS={
+  patients:{label:'patients',rows:function(){return patients();},columns:[
+    ['Name',function(r){return r.name;}],['Date of birth',function(r){return r.dob;}],
+    ['Phone',function(r){return r.phone;}],['Email',function(r){return r.email;}],
+    ['Payer',function(r){return r.insurance_payer;}],['Member ID',function(r){return r.insurance_member_id;}],
+    ['Guardian',function(r){return r.guardian_name;}],['Guardian relationship',function(r){return r.guardian_relationship;}],
+    ['Guardian phone',function(r){return r.guardian_phone;}],['Guardian email',function(r){return r.guardian_email;}],
+    ['Recall override (months)',function(r){return r.recall_months_override||'';}],
+    ['Created',function(r){return r.created_at;}]]},
+  referrals:{label:'referrals',rows:function(){return referrals();},columns:[
+    ['Date',function(r){return r.date;}],['Direction',function(r){return r.direction;}],
+    ['Patient name',function(r){return r.patient_name;}],
+    ['Linked patient',function(r){var p=patients().find(function(x){return x.id===r.patient_id;});return p?p.name:'';}],
+    ['External party',function(r){return r.external_party;}],
+    ['Internal provider',function(r){var p=providers().find(function(x){return x.id===r.internal_provider_id;});return p?p.name:'';}],
+    ['Reason',function(r){return r.reason;}],['Status',function(r){return r.status;}],
+    ['Created',function(r){return r.created_at;}]]},
+  credentials:{label:'credentials',rows:function(){return credentials();},columns:[
+    ['Provider',function(r){var p=providers().find(function(x){return x.id===r.provider_id;});return p?p.name:r.provider_id;}],
+    ['Type',function(r){return r.type;}],['Label',function(r){return r.label;}],
+    ['Details',function(r){return dntCredDetails(r);}],
+    ['Created',function(r){return r.created_at;}]]},
+  supplies:{label:'supplies',rows:function(){return supplies();},columns:[
+    ['Name',function(r){return r.name;}],['Category',function(r){return r.category;}],
+    ['Qty',function(r){return r.qty;}],['Reorder at',function(r){return r.reorder_threshold;}],
+    ['Unit cost',function(r){return r.unit_cost;}],['Vendor SKU',function(r){return r.vendor_sku;}],
+    ['Created',function(r){return r.created_at;}]]},
+  gfe:{label:'good-faith-estimates',rows:function(){return gfeRecords();},columns:[
+    ['Patient',function(r){return r.patient_name;}],['Date of birth',function(r){return r.patient_dob;}],
+    ['Trigger',function(r){return r.trigger;}],['Trigger date',function(r){return r.trigger_date;}],
+    ['Service date',function(r){return r.service_date;}],
+    ['Primary item',function(r){return r.primary_description;}],
+    ['Total expected charges',function(r){return gfeTotal(r);}],
+    ['Due by',function(r){var d=gfeDeadline(r);return d.applies?gfeFmtDate(d.dueDate):'';}],
+    ['Deadline citation',function(r){var d=gfeDeadline(r);return d.applies?d.cite:'';}],
+    ['Status',function(r){return r.status;}],['Issued on',function(r){return r.issued_at;}],
+    ['Missing required elements',function(r){return gfeMissing(r).join('; ');}]]},
+  txplans:{label:'treatment-plans',rows:function(){return txPlans();},columns:[
+    ['Patient',function(r){var p=tpPatient(r.patient_id);return p?p.name:'';}],
+    ['Title',function(r){return r.title;}],['Created',function(r){return r.created_at;}],
+    ['Status',function(r){return r.status;}],['Decided on',function(r){return r.decided_on;}],
+    ['Phases',function(r){return tpPhases(r).length;}],['Items',function(r){return (r.items||[]).length;}],
+    ['Total fee',function(r){return tpPlanTotals(r).fee;}],
+    ['Est. insurance',function(r){return tpPlanTotals(r).fee?tpPlanTotals(r).insurance:'';}],
+    ['Patient portion',function(r){return tpPlanTotals(r).patient;}],
+    ['Items with no coverage rule',function(r){return tpPlanTotals(r).uncovered;}],
+    ['Started',function(r){return r.status==='accepted'?dntYesNo(tpIsStarted(r)):'';}]]},
+  denials:{label:'denials',rows:function(){return denials();},columns:[
+    ['Denied on',function(r){return r.denied_on;}],
+    ['Patient',function(r){var p=patients().find(function(x){return x.id===r.patient_id;});return p?p.name:'';}],
+    ['Payer',function(r){return r.payer;}],['Code as given',function(r){return r.code;}],
+    ['Reason as given',function(r){return r.reason;}],['Amount denied',function(r){return r.amount;}],
+    ['Appeal stage',function(r){return r.stage;}],['Submitted on',function(r){return r.submitted_on;}],
+    ['Decided on',function(r){return r.decided_on;}],['Recovered',function(r){return r.recovered;}],
+    ['Appeal deadline',function(r){var w=dnAppealWindow(r);return w.known?w.deadline:'';}],
+    ['Deadline source',function(r){var w=dnAppealWindow(r);return w.known?(w.source||''):'no window on file';}]]},
+  ageing:{label:'receivable-ageing',rows:function(){
+      var a=dnAging();
+      return a.buckets.concat([{label:'Excluded: no usable charge date',count:a.undated,amount:''}]);
+    },columns:[
+    ['Bucket',function(r){return r.label;}],['Charges',function(r){return r.count;}],
+    ['Outstanding',function(r){return r.amount;}]]},
+  recall:{label:'recall-worklist',rows:function(){return rcRows();},columns:[
+    ['Patient',function(r){return r.patient.name;}],['Code',function(r){return r.proc.cdt_code;}],
+    ['Procedure',function(r){return r.proc.description;}],
+    ['Last done',function(r){return r.last||'';}],
+    ['Interval (months)',function(r){return r.interval.months;}],
+    ['Interval source',function(r){return r.interval.source;}],
+    ['Due',function(r){return r.due||'';}],['Standing',function(r){return r.state;}],
+    ['Days',function(r){return r.days==null?'':r.days;}],
+    ['Reachable',function(r){return dntYesNo(r.reachable);}],
+    ['Last outreach',function(r){return r.outreach?r.outreach.on:'';}],
+    ['Last outcome',function(r){return r.outreach?r.outreach.outcome:'';}]]}
+};
+
+function exportDataset(key){
+  var def=DNT_EXPORTS[key];
+  if(!def){toast('No export is declared for '+key);return;}
+  var rows;
+  try{rows=def.rows()||[];}catch(e){toast('Could not build the '+key+' export');return;}
+  var lines=[def.columns.map(function(c){return dntCsvField(c[0]);}).join(',')];
+  rows.forEach(function(r){
+    lines.push(def.columns.map(function(c){
+      var v;
+      try{v=c[1](r);}catch(e){v='';}
+      return dntCsvField(v);
+    }).join(','));
   });
-  var blob=new Blob([csv],{type:'text/csv'});
+  var blob=new Blob([lines.join('\r\n')],{type:'text/csv'});
   var url=window.URL.createObjectURL(blob);
   var link=document.createElement('a');
-  link.href=url;link.download='sairndental-'+name+'-'+dntLocalToday()+'.csv';link.click();
+  link.href=url;link.download='sairndental-'+def.label+'-'+dntLocalToday()+'.csv';link.click();
   window.URL.revokeObjectURL(url);
-  toast('CSV exported: '+name);
+  // The count and the "full dataset" wording are the point: the defect this
+  // replaced produced a file that looked complete and was not.
+  toast(rows.length+' row'+(rows.length===1?'':'s')+' exported -- the full '+def.label+
+        ' dataset, not the filtered view',5000);
 }
 
 // ── DATA ACCESSORS ────────────────────────────────────────────────
