@@ -162,6 +162,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-schedule" onclick="nav('schedule')">Schedule</button>
       <button class="sb" id="sb-claims" onclick="nav('claims')">Insurance Claims</button>
       <button class="sb" id="sb-subs" onclick="nav('subs')">Subcontractors<span class="badge" id="subs-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-warranties" onclick="nav('warranties')">Warranties<span class="badge" id="warr-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -507,6 +508,48 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Warranties (2026-09-02). Tier-A gap A1 from the competitive-gap
+           audit, which recorded ZERO occurrences of "warranty" anywhere in
+           this file. Two halves: which tiers this company may currently offer
+           (gated on its own rf_company_programs standing) and the per-job
+           registration clock, which is the computable half -- an enhanced
+           warranty is LOST if the roof is not registered inside a deadline
+           measured from the installation date.
+           NOTHING ABOUT ANY MANUFACTURER IS SEEDED OR ASSUMED. Every tier,
+           condition and deadline is the contractor's own figure from their own
+           programme agreement, carrying the source they name -- the same
+           2026-08-25 decision the Programmes panel was built under. -->
+      <div class="panel" id="panel-warranties">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Warranties</div>
+            <div class="psub" id="warr-scope-note">--</div>
+          </div>
+          <div class="pa">
+            <button class="btn bo" id="warr-tier-btn" onclick="openTierModal()" style="display:none;">+ Warranty Tier</button>
+            <button class="btn bp" id="warr-new-btn" onclick="openWarrantyModal()" style="display:none;">+ Register a Roof</button>
+          </div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Warn within (days)</label><input type="number" id="warr-warn" value="30" min="0" max="365"></div>
+            <button class="btn bo" onclick="rfLoadWarranties()">Refresh</button>
+          </div>
+          <div class="note" style="margin-top:8px;">
+            Everything on this screen comes from <strong>your</strong> programme agreement, not from the manufacturer.
+            A tier with no source recorded is shown as <strong>unusable</strong> rather than being judged, and a roof with no
+            registration deadline entered reads <strong>no deadline stated</strong> &mdash; never a guessed 30 days, because
+            the common figure is wrong for some products and being wrong costs the homeowner the coverage.
+          </div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">Tiers you can offer today</div></div>
+          <div class="cb" id="warr-tier-list"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Registered roofs</div></div>
+          <div class="cb" id="warr-list"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -847,6 +890,10 @@ function nav(id){
   // the panel never decides a compliance status itself -- the shared engine
   // does, server-side -- so the screen and the tests cannot drift apart.
   if(id==='subs'){ rfLoadSubs(); }
+  // Same rule again: the panel never decides a warranty verdict itself. The
+  // registration clock and the tier gate are computed server-side by
+  // api/_lib/roofing-warranties.js so the screen and the tests cannot drift.
+  if(id==='warranties'){ rfLoadWarranties(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2641,6 +2688,219 @@ function saveAssignment(){
   });
 }
 
+// ── WARRANTIES (gap A1, 2026-09-02) ────────────────────────────────────────
+// Two questions, deliberately kept apart on screen because they fail
+// differently: "may we offer this tier at all" (our certification standing)
+// and "did we register this roof in time" (a per-job deadline that expires).
+//
+// `today` is sent from the BROWSER. A registration deadline is a local-date
+// question and a UTC server clock answers it wrong for several hours of every
+// day -- the defect class fixed across nine SAIRNvet panels on 2026-09-01. The
+// engine refuses to run without it rather than defaulting.
+var rfWarrTiers=[],rfWarrTierEval=null,rfWarranties=[];
+
+function rfWarrWarnDays(){
+  var el=$('warr-warn');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+
+function rfLoadWarranties(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  ['warr-tier-btn','warr-new-btn'].forEach(function(id){var b=$(id);if(b)b.style.display=isMgmt?'':'none';});
+  var note=$('warr-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Which tiers you can offer, and which roofs still need registering.'
+    : 'Warranty standing, read-only for your role.';
+  var p={today:rfLocalToday()};
+  var w=rfWarrWarnDays();if(w!==undefined)p.warn_days=w;
+  return rfDataRaw('read','rf_warranty_tiers',p).then(function(r){
+    if(!r.ok){
+      // Not provisioned and not-permitted are different answers and this says
+      // which, rather than one "could not load" for both.
+      $('warr-tier-list').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Your role cannot see warranty tiers.'
+        : rfEsc(r.msg||'Could not load warranty tiers.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('warr-tier-list').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_warranties_schema.sql, then refresh.</div>';
+      $('warr-list').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfWarrTiers=d.data||[];
+    rfWarrTierEval=d.availability||null;
+    rfRenderWarrTiers(d);
+    return rfDataRaw('read','rf_job_warranties',p).then(function(a){
+      var ad=(a.ok&&a.data)||{};
+      rfWarranties=ad.data||[];
+      rfRenderWarranties();
+    });
+  });
+}
+
+function rfWarrAvailBadge(av){
+  var cls={available:'bg',unrestricted:'bb',unavailable:'br',unusable:'bx'}[av]||'bx';
+  var label={available:'can offer',unrestricted:'no condition',unavailable:'cannot offer',unusable:'unusable'}[av]||av;
+  return '<span class="badge '+cls+'">'+rfEsc(label)+'</span>';
+}
+
+function rfRenderWarrTiers(d){
+  var el=$('warr-tier-list');
+  if(!rfWarrTiers.length){el.innerHTML='<div class="empty">No warranty tiers recorded. Add the tiers your programme agreement lets you sell.</div>';return;}
+  if(!rfWarrTierEval){
+    // The engine refused. Say why instead of rendering a blank gate -- a
+    // warranty screen with no verdict reads as "everything is fine".
+    el.innerHTML='<div class="empty">'+rfEsc((d&&d.availability_error&&d.availability_error.message)||'Tier availability was not evaluated.')+'</div>';
+    return;
+  }
+  var rows=rfWarrTierEval.tiers.map(function(t){
+    return '<tr><td><strong>'+rfEsc(t.tier_name||t.tier_id||'--')+'</strong></td>'+
+      '<td>'+rfEsc(t.manufacturer||'--')+'</td>'+
+      '<td>'+rfEsc(t.program_name||t.requires_program_id||'--')+'</td>'+
+      '<td>'+rfWarrAvailBadge(t.availability)+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+rfEsc(t.reason||'')+'</td>'+
+      '<td style="font-size:12px;color:var(--muted)">'+rfEsc(t.source||'no source recorded')+'</td></tr>';
+  }).join('');
+  var warn=(d&&d.programs_provisioned===false)
+    ? '<div class="note">The Programmes table is not set up, so no tier could be checked against a certification. Everything below reads as unusable until it is.</div>'
+    : '';
+  el.innerHTML=warn+'<div class="tw"><table><thead><tr><th>Tier</th><th>Manufacturer</th><th>Requires</th><th>Status</th><th>Why</th><th>Your source</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div class="note" style="margin-top:10px;margin-bottom:0;">These are <strong>your</strong> recorded terms, not the manufacturer&rsquo;s. Nothing here has been checked against GAF, CertainTeed or anyone else.</div>';
+}
+
+function rfWarrRegBadge(reg){
+  var cls={registered:'bg',open:'bb',due_soon:'bw',overdue:'br',void:'bx',
+           no_deadline_stated:'bx',no_install_date:'bx',unknown:'bx'}[reg]||'bx';
+  var label={registered:'registered',open:'open',due_soon:'due soon',overdue:'OVERDUE',
+             'void':'void',no_deadline_stated:'no deadline stated',
+             no_install_date:'no install date',unknown:'unknown'}[reg]||reg;
+  return '<span class="badge '+cls+'">'+rfEsc(label)+'</span>';
+}
+
+function rfRenderWarranties(){
+  var el=$('warr-list');
+  if(!rfWarranties.length){el.innerHTML='<div class="empty">No roofs registered yet.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var urgent=0;
+  var rows=rfWarranties.map(function(x,i){
+    var e=x.evaluation;
+    if(!e){
+      return '<tr><td><strong>'+rfEsc(x.job_id||x.warranty_id||'--')+'</strong></td>'+
+        '<td colspan="5"><span class="badge br">'+rfEsc((x.evaluation_error&&x.evaluation_error.message)||'not evaluated')+'</span></td>'+
+        '<td></td></tr>';
+    }
+    var reg=e.registration||{},cov=e.coverage||{};
+    if(reg.registration==='overdue'||reg.registration==='due_soon')urgent++;
+    var days=(reg.days_left===null||reg.days_left===undefined)?'':
+      ' <span style="color:var(--muted)">'+reg.days_left+'d</span>';
+    return '<tr><td><strong>'+rfEsc(x.job_id||'--')+'</strong><br><span style="font-size:12px;color:var(--muted)">'+rfEsc(x.warranty_id||'')+'</span></td>'+
+      '<td>'+rfEsc(x.manufacturer||'--')+'<br><span style="font-size:12px;color:var(--muted)">'+rfEsc(x.tier_name||'')+'</span></td>'+
+      '<td>'+rfEsc(x.installed_on||'--')+'</td>'+
+      '<td>'+rfWarrRegBadge(reg.registration)+days+
+        (reg.deadline_on?'<br><span style="font-size:12px;color:var(--muted)">by '+rfEsc(reg.deadline_on)+'</span>':'')+'</td>'+
+      '<td>'+(cov.expires_on?rfEsc(cov.expires_on)+' <span style="font-size:12px;color:var(--muted)">('+rfEsc(cov.basis)+')</span>':'--')+'</td>'+
+      '<td style="font-size:12px;color:var(--danger)">'+rfEsc((e.problems||[]).join('; '))+'</td>'+
+      '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openWarrantyModal('+i+')">Edit</button>':'')+'</td></tr>';
+  }).join('');
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Job</th><th>Manufacturer / tier</th><th>Installed</th><th>Registration</th><th>Coverage ends</th><th>Problems</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  var b=$('warr-badge');
+  if(b){ b.textContent=urgent||''; b.style.display=urgent?'':'none'; b.className='badge '+(urgent?'br':'bx'); }
+}
+
+function openTierModal(){
+  ['wt-id','wt-mfr','wt-name','wt-prog','wt-source'].forEach(function(f){var el=$(f);if(el)el.value='';});
+  $('wt-err').textContent='';
+  $('tier-modal').classList.add('on');
+}
+function closeTierModal(){ $('tier-modal').classList.remove('on'); }
+
+function saveTier(){
+  var id=($('wt-id').value||'').trim(),mfr=($('wt-mfr').value||'').trim(),nm=($('wt-name').value||'').trim();
+  if(!id||!mfr||!nm){ $('wt-err').textContent='Tier id, manufacturer and tier name are all required.'; return; }
+  $('wt-err').textContent='Saving…';
+  rfDataRaw('write','rf_warranty_tiers',{
+    tier_id:id, manufacturer:mfr, tier_name:nm,
+    requires_program_id:($('wt-prog').value||'').trim()||null,
+    source:($('wt-source').value||'').trim()||null
+  }).then(function(r){
+    if(!r.ok){ $('wt-err').textContent=r.msg||'Could not save.'; return; }
+    closeTierModal();
+    rfLoadWarranties();
+  });
+}
+
+function openWarrantyModal(i){
+  var x=(typeof i==='number')?rfWarranties[i]:null;
+  $('wr-modal-title').textContent=x?'Edit Warranty':'Register a Roof';
+  $('wr-id').value=x?(x.warranty_id||''):'';
+  // The id is the upsert conflict key: changing it on an existing row creates
+  // a second warranty rather than renaming this one, so it is locked.
+  $('wr-id').readOnly=!!x;
+  $('wr-job').value=(x&&x.job_id)||'';
+  $('wr-mfr').value=(x&&x.manufacturer)||'';
+  // Only tiers the gate currently allows are offerable. Blocked ones are
+  // listed but marked, not hidden -- a dropdown that silently omits a tier
+  // reads as "we never had it".
+  var opts='<option value="">--</option>';
+  (rfWarrTierEval?rfWarrTierEval.tiers:[]).forEach(function(t){
+    var ok=(t.availability==='available'||t.availability==='unrestricted');
+    opts+='<option value="'+rfEsc(t.tier_id)+'"'+((x&&x.tier_id===t.tier_id)?' selected':'')+'>'+
+      rfEsc(t.tier_name||t.tier_id)+(ok?'':' — '+rfEsc(t.availability))+'</option>';
+  });
+  $('wr-tier').innerHTML=opts;
+  $('wr-status').value=(x&&x.status)||'not_registered';
+  $('wr-installed').value=(x&&x.installed_on)||'';
+  $('wr-within').value=(x&&x.register_within_days!=null)?x.register_within_days:'';
+  $('wr-registered').value=(x&&x.registered_on)||'';
+  $('wr-regno').value=(x&&x.registration_number)||'';
+  $('wr-years').value=(x&&x.coverage_years!=null)?x.coverage_years:'';
+  $('wr-expires').value=(x&&x.coverage_expires_on)||'';
+  $('wr-err').textContent='';
+  $('warranty-modal').classList.add('on');
+}
+function closeWarrantyModal(){ $('warranty-modal').classList.remove('on'); }
+
+function saveWarranty(){
+  var id=($('wr-id').value||'').trim();
+  if(!id){ $('wr-err').textContent='A warranty id is required.'; return; }
+  var intOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseInt(v,10); return isFinite(n)?n:'BAD'; };
+  var within=intOrNull($('wr-within').value), years=intOrNull($('wr-years').value);
+  // Refused, not coerced. A garbled deadline silently becoming null would turn
+  // the registration clock off on the one roof somebody was tracking.
+  if(within==='BAD'||years==='BAD'){ $('wr-err').textContent='Register-within days and coverage years must be whole numbers, or blank.'; return; }
+  var tierId=$('wr-tier').value||null,tierName=null;
+  if(tierId){
+    var t=rfWarrTiers.filter(function(z){return z.tier_id===tierId;})[0];
+    // The tier NAME is stored alongside the id: what was sold stays readable
+    // even if the tier is later renamed or retired.
+    tierName=t?(t.tier_name||null):null;
+  }
+  $('wr-err').textContent='Saving…';
+  rfDataRaw('write','rf_job_warranties',{
+    warranty_id:id,
+    job_id:($('wr-job').value||'').trim()||null,
+    manufacturer:($('wr-mfr').value||'').trim()||null,
+    tier_id:tierId, tier_name:tierName,
+    status:$('wr-status').value,
+    installed_on:$('wr-installed').value||null,
+    registered_on:$('wr-registered').value||null,
+    register_within_days:within,
+    registration_number:($('wr-regno').value||'').trim()||null,
+    coverage_years:years,
+    coverage_expires_on:$('wr-expires').value||null
+  }).then(function(r){
+    // The server names which field it refused (BAD_DATE lists them,
+    // NO_REGISTERED_ON says what is missing). Shown verbatim.
+    if(!r.ok){ $('wr-err').textContent=r.msg||'Could not save the warranty.'; return; }
+    closeWarrantyModal();
+    toast('Warranty saved.');
+    rfLoadWarranties();
+  });
+}
+
 function rfLoadSchedule(){
   var p={};
   if($('sch-from')&&$('sch-from').value)p.from=$('sch-from').value;
@@ -3466,6 +3726,59 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="tier-modal">
+  <div class="mbox" style="width:520px;">
+    <div class="mtitle">Warranty Tier</div>
+    <div class="qgrid">
+      <div class="fg"><label>Tier id <span style="color:var(--danger)">*</span></label><input id="wt-id" placeholder="GAF-GOLDEN"></div>
+      <div class="fg"><label>Manufacturer <span style="color:var(--danger)">*</span></label><input id="wt-mfr" placeholder="GAF"></div>
+      <div class="fg"><label>Tier name <span style="color:var(--danger)">*</span></label><input id="wt-name" placeholder="Golden Pledge"></div>
+      <div class="fg"><label>Requires programme id</label><input id="wt-prog" placeholder="PRG-MASTER-ELITE"></div>
+    </div>
+    <div class="fg"><label>Your source <span style="color:var(--danger)">*</span></label><input id="wt-source" placeholder="2026 contractor programme agreement, p.4"></div>
+    <div class="note">Name where this tier and its certification condition come from in <strong>your</strong> programme
+      agreement. A tier with no source is reported as <strong>unusable</strong> rather than being judged &mdash; this app
+      does not hold any manufacturer&rsquo;s terms and will not act as though it does. Leave the programme id blank for a
+      standard warranty any installer may offer. It must match a programme id on the Certifications panel.</div>
+    <div class="perr" id="wt-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveTier()">Save</button>
+      <button class="btn bo" onclick="closeTierModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="warranty-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle" id="wr-modal-title">Register a Roof</div>
+    <div class="qgrid">
+      <div class="fg"><label>Warranty id <span style="color:var(--danger)">*</span></label><input id="wr-id" placeholder="WAR-2026-118"></div>
+      <div class="fg"><label>Job</label><input id="wr-job" placeholder="JOB-2026-118"></div>
+      <div class="fg"><label>Manufacturer</label><input id="wr-mfr" placeholder="GAF"></div>
+      <div class="fg"><label>Tier</label><select id="wr-tier"></select></div>
+      <div class="fg"><label>Installed on</label><input type="date" id="wr-installed"></div>
+      <div class="fg"><label>Register within (days)</label><input id="wr-within" placeholder="from your agreement"></div>
+      <div class="fg"><label>Status</label><select id="wr-status">
+        <option value="not_registered">Not registered</option><option value="submitted">Submitted</option>
+        <option value="registered">Registered</option><option value="registration_rejected">Rejected</option>
+        <option value="void">Void</option>
+      </select></div>
+      <div class="fg"><label>Registered on</label><input type="date" id="wr-registered"></div>
+      <div class="fg"><label>Registration no.</label><input id="wr-regno" placeholder="from the manufacturer"></div>
+      <div class="fg"><label>Coverage (years)</label><input id="wr-years" placeholder="25"></div>
+      <div class="fg"><label>Coverage ends</label><input type="date" id="wr-expires"></div>
+    </div>
+    <div class="note"><strong>Register within</strong> is the deadline from <em>your</em> programme agreement, and it is
+      stored on this roof rather than on the tier &mdash; so renegotiating later never silently re-dates a roof you already
+      installed. Leave it blank if you have not confirmed it: the board will say <strong>no deadline stated</strong>, which is
+      honest, instead of counting down to a date nobody checked. If you enter both a coverage term and an end date and they
+      disagree, the certificate date wins and the disagreement is shown rather than hidden.</div>
+    <div class="perr" id="wr-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveWarranty()">Save</button>
+      <button class="btn bo" onclick="closeWarrantyModal()">Cancel</button>
     </div>
   </div>
 </div>

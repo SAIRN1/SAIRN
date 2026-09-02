@@ -3866,6 +3866,162 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ── SAIRNROOFING: manufacturer warranties (2026-09-02) ─────────────────────────
+    // Tier-A gap A1. Two resources: the tiers this contractor can offer (and
+    // what certification each is gated on) and the per-job warranty with its
+    // registration clock.
+    //
+    // NOTHING IS SEEDED AND NOTHING IS COMPUTED FROM MANUFACTURER DATA. Every
+    // tier, condition and registration window comes from the contractor's own
+    // programme agreement with a source they name -- the same 2026-08-25
+    // decision rf_company_programs was built under. api/_lib/roofing-
+    // warranties.js reports an unsourced tier as unusable rather than
+    // evaluating it.
+    if ((resource === 'rf_warranty_tiers' || resource === 'rf_job_warranties') &&
+        (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const warr = require('./_lib/roofing-warranties');
+
+      // `today` comes from the CALLER and the engine refuses without it. A
+      // server clock here computes a registration deadline in UTC for a
+      // contractor working in local time -- the defect class fixed across nine
+      // SAIRNvet panels on 2026-09-01.
+      const wToday = (payload && payload.today) || null;
+      // warn_days FORWARDED and a bad value REFUSED, not silently ignored:
+      // the engine takes only a whole number, so "45" as a string would fall
+      // back to the default while the caller believed it had set 45. This is
+      // the exact gap tools/sairn_seam_check.py found in roofing-programs and
+      // again in the subcontractor endpoint on 2026-09-02.
+      let wWarn;
+      if (payload && payload.warn_days !== undefined && payload.warn_days !== null) {
+        const wd = payload.warn_days;
+        if (typeof wd !== 'number' || !isFinite(wd) || Math.floor(wd) !== wd || wd < 0 || wd > 365) {
+          res.status(400).json({ error: { code: 'BAD_WARN_DAYS', message: 'warn_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        wWarn = wd;
+      }
+
+      if (resource === 'rf_warranty_tiers' && action === 'read') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Warranty tiers are management-level information' } });
+          return;
+        }
+        const r = await fetch(rest('rf_warranty_tiers?license_hash=eq.' + enc(licHash) +
+          '&select=tier_id,manufacturer,tier_name,requires_program_id,source,notes,active,data,updated_by&order=manufacturer.asc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        // The availability verdict needs the company's programme standing, so
+        // it is read here rather than asking the browser to join two lists and
+        // re-implement the gate client-side.
+        const pr = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) +
+          '&select=program_id,program_name,status,expires_on,has_expiry'), { headers });
+        const programs = pr.ok ? await pr.json() : [];
+        const ev = warr.tierAvailability({ today: wToday, tiers: rows || [], programs: programs || [], warn_days: wWarn });
+        res.status(200).json({
+          ok: true, provisioned: true, today: wToday,
+          data: rows || [],
+          availability: ev.ok ? ev : null,
+          availability_error: ev.ok ? null : ev.error,
+          // Stated so the UI cannot quietly present a gate that never ran.
+          programs_provisioned: pr.ok
+        });
+        return;
+      }
+
+      if (resource === 'rf_warranty_tiers' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can define warranty tiers' } }); return; }
+        const tierId = payload && typeof payload.tier_id === 'string' ? payload.tier_id.trim() : '';
+        const mfr = payload && typeof payload.manufacturer === 'string' ? payload.manufacturer.trim() : '';
+        const tName = payload && typeof payload.tier_name === 'string' ? payload.tier_name.trim() : '';
+        if (!tierId || !mfr || !tName) { res.status(400).json({ error: { message: 'rf_warranty_tiers: tier_id, manufacturer and tier_name are required' } }); return; }
+        const w = await fetch(rest('rf_warranty_tiers?on_conflict=license_hash,tier_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, tier_id: tierId, manufacturer: mfr, tier_name: tName,
+            requires_program_id: (payload.requires_program_id || '').trim() || null,
+            source: (payload.source || '').trim() || null,
+            notes: (payload.notes || '').trim() || null,
+            active: payload.active !== false,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+
+      if (resource === 'rf_job_warranties' && action === 'read') {
+        const r = await fetch(rest('rf_job_warranties?license_hash=eq.' + enc(licHash) +
+          '&select=warranty_id,job_id,manufacturer,tier_id,tier_name,status,installed_on,registered_on,register_within_days,registration_number,coverage_years,coverage_expires_on,notes,data,updated_by&order=installed_on.desc'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        // Registration deadlines and coverage are COMPUTED ON READ, never
+        // stored: both depend on today's date, so a stored verdict is wrong the
+        // morning after it is written.
+        const out = (rows || []).map((x) => {
+          const ev = warr.evaluateWarranty({ warranty: x, today: wToday, warn_days: wWarn });
+          return Object.assign({}, x, { evaluation: ev.ok ? ev : null, evaluation_error: ev.ok ? null : ev.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: wToday, data: out });
+        return;
+      }
+
+      if (resource === 'rf_job_warranties' && action === 'write') {
+        if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a warranty' } }); return; }
+        const wid = payload && typeof payload.warranty_id === 'string' ? payload.warranty_id.trim() : '';
+        if (!wid) { res.status(400).json({ error: { message: 'rf_job_warranties: warranty_id is required' } }); return; }
+        if (payload.status !== undefined && warr.WARRANTY_STATUSES.indexOf(payload.status) === -1) {
+          res.status(400).json({ error: { code: 'BAD_STATUS', message: 'rf_job_warranties: status must be one of ' + warr.WARRANTY_STATUSES.join(', ') } });
+          return;
+        }
+        // Dates are refused here rather than stored and reported as garbled
+        // later -- an unreadable installation date silently disables the whole
+        // registration clock, which is the one thing this feature is for.
+        const badDate = ['installed_on', 'registered_on', 'coverage_expires_on'].filter((k) => {
+          const v = payload[k];
+          return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+        });
+        if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_job_warranties: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+        // The DB carries the same rule (rfjw_registered_needs_date); refusing
+        // here too gives the user a sentence instead of a Postgres error.
+        if (payload.status === 'registered' && !payload.registered_on) {
+          res.status(400).json({ error: { code: 'NO_REGISTERED_ON', message: 'rf_job_warranties: a registered warranty needs the date it was registered' } });
+          return;
+        }
+        const numOrNull = (v) => (typeof v === 'number' && isFinite(v) && Math.floor(v) === v && v >= 0) ? v : null;
+        const w = await fetch(rest('rf_job_warranties?on_conflict=license_hash,warranty_id'), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({
+            license_hash: licHash, warranty_id: wid,
+            job_id: (payload.job_id || '').trim() || null,
+            manufacturer: (payload.manufacturer || '').trim() || null,
+            tier_id: (payload.tier_id || '').trim() || null,
+            tier_name: (payload.tier_name || '').trim() || null,
+            status: payload.status || 'not_registered',
+            installed_on: payload.installed_on || null,
+            registered_on: payload.registered_on || null,
+            register_within_days: numOrNull(payload.register_within_days),
+            registration_number: (payload.registration_number || '').trim() || null,
+            coverage_years: numOrNull(payload.coverage_years),
+            coverage_expires_on: payload.coverage_expires_on || null,
+            notes: (payload.notes || '').trim() || null,
+            data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+          })
+        });
+        const saved = await w.json();
+        if (!w.ok) return upstream(res, saved);
+        res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+        return;
+      }
+    }
+
     // ── SAIRNROOFING: repair-vs-replace evidence assessment (2026-08-26) ────────────────────
     // Compute-only, same shape as 'reconcile' above. Reads the slope evidence
     // rows stored on the claim and the company's configured threshold, runs the

@@ -85,6 +85,19 @@ module.exports = {
   // no registered resource is invisible to the cheap provisioning probe.
     'subcontractors',
     'sub_assignments',
+  // Manufacturer warranty tiers and per-job registration (2026-09-02) -- see
+  // sql/sairnroofing_warranties_schema.sql and api/_lib/roofing-warranties.js.
+  // Tier-A gap A1 from the worldwide competitive-gap audit, which recorded ZERO
+  // occurrences of "warranty" anywhere in this app (re-verified 2026-09-02).
+  //
+  // APP-PREFIXED, the opposite call from the two above and deliberately: a
+  // shingle warranty gated on GAF Master Elite standing is roofing, and it
+  // hangs off rf_company_programs, which is already roofing-only. Generalising
+  // it now would carry a dependency from a platform table into an rf_ table.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_warranty_tiers',
+    'rf_job_warranties',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
