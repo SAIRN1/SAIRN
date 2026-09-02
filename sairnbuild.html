@@ -913,7 +913,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="pa"><button class="btn bo bs" onclick="csv('compliance')">Export CSV</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Expiring Soon</div><div class="kval" id="cp-expiring">0</div><div class="kt" id="cp-expiring-sub">Within 30 days</div></div>
-    <div class="kpi"><div class="klbl">Expired</div><div class="kval" id="cp-expired">0</div><div class="kt" id="cp-expired-sub">COI or licence lapsed</div></div>
+    <div class="kpi"><div class="klbl">Blocks Award</div><div class="kval" id="cp-expired">0</div><div class="kt" id="cp-expired-sub">Missing or expired documents</div></div>
     <div class="kpi"><div class="klbl">Missing W-9</div><div class="kval" id="cp-now9">0</div><div class="kt" id="cp-now9-sub">On file</div></div>
     <div class="kpi"><div class="klbl">Eligible to Bid</div><div class="kval" id="cp-eligible">0</div><div class="kt">Compliant + prequalified</div></div>
   </div>
@@ -1182,7 +1182,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="kpi"><div class="klbl">Active Committed Cost</div><div class="kval" id="rp-committed">$0</div><div class="kt">Across active jobs</div></div>
     <div class="kpi"><div class="klbl">Active Margin</div><div class="kval" id="rp-margin">$0</div><div class="kt">Revised contract less committed</div></div>
     <div class="kpi"><div class="klbl">Over-Billed Jobs</div><div class="kval" id="rp-overbilled">0</div><div class="kt" id="rp-overbilled-sub">Billed ahead of work earned</div></div>
-    <div class="kpi"><div class="klbl">Compliance Issues</div><div class="kval" id="rp-compliance">0</div><div class="kt" id="rp-compliance-sub">Subs expiring or expired</div></div>
+    <div class="kpi"><div class="klbl">Compliance Issues</div><div class="kval" id="rp-compliance">0</div><div class="kt" id="rp-compliance-sub">Subs missing, expiring or expired</div></div>
   </div>
 
   <div class="card">
@@ -4397,12 +4397,14 @@ function rDash(){
   // Compliance or Reports panel -- passive storage, not an active alert.
   // Surfacing it here means the first screen after login shows it, same
   // as every other attention item.
+  // Reads subDocIssues() so this feed cannot disagree with the award gate.
+  // It previously listed only expired/expiring dates, so a subcontractor with
+  // NO insurance on file -- refused at award -- reached this screen with
+  // nothing to say about him.
   bldSubs().forEach(function(s){
-    var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
-    if(coi!==null&&coi<0)att.push({t:H(s.company)+' - COI expired',b:'Expired',c:'br'});
-    else if(coi!==null&&coi<=30)att.push({t:H(s.company)+' - COI expires in '+coi+'d',b:'Expiring',c:'bw'});
-    if(lic!==null&&lic<0)att.push({t:H(s.company)+' - licence expired',b:'Expired',c:'br'});
-    else if(lic!==null&&lic<=30)att.push({t:H(s.company)+' - licence expires in '+lic+'d',b:'Expiring',c:'bw'});
+    var d=subDocIssues(s);
+    d.blocking.forEach(function(r){att.push({t:H(s.company)+' - '+H(r),b:'Blocks award',c:'br'});});
+    d.expiring.forEach(function(r){att.push({t:H(s.company)+' - '+H(r),b:'Expiring',c:'bw'});});
   });
   $('d-attention').innerHTML=att.length?att.map(function(a){return '<div class="srow"><span class="slbl">'+a.t+'</span><span class="badge '+a.c+'">'+a.b+'</span></div>';}).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing needs attention</div>';
 
@@ -5140,13 +5142,47 @@ function complianceDaysUntil(dateStr){
 // compliant -- so a clean-paperwork sub that failed prequal (SUB-05) and a
 // prequalified sub with a lapsed COI (SUB-03) are both correctly blocked,
 // not just one direction of the check.
-function eligibleToBid(s){
-  if(s.prequal_status!=='qualified'||!s.w9_on_file)return false;
+// ONE RULE, READ BY THE GATE AND BY EVERY SCREEN THAT REPORTS COMPLIANCE.
+// Added 2026-09-02. Before this, eligibleToBid() and subComplianceIssue()
+// each carried their own copy of the document rules and DISAGREED:
+//   * a sub with NO COI on file was blocked from award and raised no warning
+//     at all -- the Compliance board printed a green "Current" badge on an
+//     uninsured subcontractor;
+//   * a sub with NO W-9 was likewise blocked and silent;
+//   * a missing licence blocked nothing, which is correct, but nothing said so.
+// The bug was never the gate. It was two hardcoded rules that could drift, and
+// they had. Both now derive from this, so they cannot disagree again.
+//
+// THE PER-DOCUMENT ASYMMETRY IS DELIBERATE AND IS NOT THE BUG -- it encodes
+// three different real-world facts and flattening it would break the product
+// in one direction or the other:
+//   * COI missing BLOCKS. You cannot put an uninsured sub on a jobsite, and
+//     "we have not entered it yet" is indistinguishable from "there is none".
+//   * LICENCE missing does NOT block. Most trades are not licensed -- drywall,
+//     framing, cleanup -- so blocking here would bar the majority of a normal
+//     roster for a document they will never have.
+//   * W-9 missing BLOCKS. It is a payment prerequisite, not a safety one, but
+//     awarding work you cannot legally pay for is the same dead end.
+// Expiry blocks for both dated documents, in every case.
+//
+// Reasons are human sentences because they are shown to the user, not codes.
+function subDocIssues(s){
+  var out={blocking:[],expiring:[]};
+  if(!s.w9_on_file)out.blocking.push('no W-9 on file');
   var coi=complianceDaysUntil(s.coi_expiry);
-  if(coi===null||coi<0)return false;
+  if(coi===null)out.blocking.push('no certificate of insurance on file');
+  else if(coi<0)out.blocking.push('certificate of insurance expired');
+  else if(coi<=30)out.expiring.push('insurance expires in '+coi+'d');
   var lic=complianceDaysUntil(s.licence_expiry);
-  if(lic!==null&&lic<0)return false;
-  return true;
+  if(lic!==null&&lic<0)out.blocking.push('licence expired');
+  else if(lic!==null&&lic<=30)out.expiring.push('licence expires in '+lic+'d');
+  return out;
+}
+// Behaviour-preserving: this returns exactly what the previous hand-written
+// condition returned for every input. Only the reporting side changes.
+function eligibleToBid(s){
+  if(s.prequal_status!=='qualified')return false;
+  return subDocIssues(s).blocking.length===0;
 }
 function rSubs(){fillJobSelects();rSubsTbl();}
 function subScope(){
@@ -5308,12 +5344,17 @@ function rComplianceTbl(){
   else{
     tb.innerHTML=list.map(function(s){
       var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
-      var worst=[coi,lic].filter(function(d){return d!==null;});
-      var isExpired=worst.some(function(d){return d<0;});
-      var isExpiring=!isExpired&&worst.some(function(d){return d<=30;});
+      // THE WORST INSTANCE OF THE OLD DISAGREEMENT WAS HERE. `worst` was built
+      // only from non-null dates, so a sub with NO COI and NO licence produced
+      // an empty list, failed both tests, and this board printed a green
+      // "Current" badge on an uninsured subcontractor the award gate refused.
+      // Status now comes from the same rule the gate uses.
+      var d=subDocIssues(s);
+      var isExpired=d.blocking.length>0;
+      var isExpiring=!isExpired&&d.expiring.length>0;
       if(isExpired)expired++;else if(isExpiring)expiring++;
       if(!s.w9_on_file)noW9++;
-      var status=isExpired?{l:'Expired',c:'br'}:isExpiring?{l:'Expiring Soon',c:'bw'}:{l:'Current',c:'bg'};
+      var status=isExpired?{l:'Blocks Award',c:'br'}:isExpiring?{l:'Expiring Soon',c:'bw'}:{l:'Current',c:'bg'};
       return '<tr><td><strong>'+H(s.company)+'</strong></td>'+
         '<td>'+H(s.trade)+'</td>'+
         '<td>'+(s.coi_expiry?fdate(s.coi_expiry):'--')+'</td>'+
@@ -6226,9 +6267,14 @@ function jobWIP(j){
   var billed=bldDraws().filter(function(d){return d.job_id===j.id;}).reduce(function(s,d){return s+(d.amount_received||0);},0);
   return{costToDate:costToDate,estTotal:estTotal,pct:pct,earned:earned,billed:billed,overUnder:billed-earned};
 }
+// Now derived from subDocIssues() rather than carrying its own copy of the
+// rules. This is a STRICT SUPERSET of what it used to flag: everything it
+// caught before (expired or expiring COI/licence) it still catches, plus the
+// two cases it was silent on while the award gate refused them -- a missing
+// COI and a missing W-9. That silence was the bug.
 function subComplianceIssue(s){
-  var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
-  return(coi!==null&&coi<=30)||(lic!==null&&lic<=30);
+  var d=subDocIssues(s);
+  return d.blocking.length>0||d.expiring.length>0;
 }
 // Fixed (2026-08-09 audit): this used to sum PO amounts AND cleared-check
 // amounts into the same per-vendor total, with no relationship between the
@@ -6291,12 +6337,16 @@ function rReports(){
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No change orders on file</div>';
 
   var issueSubs=bldSubs().filter(subComplianceIssue);
+  // Same rule as the gate, and the row now NAMES the reason. The old badge was
+  // computed from dates alone, so a sub flagged for a missing document -- which
+  // has no date -- would have been labelled "Expiring Soon", which is not what
+  // is wrong with him.
   $('rp-compliance-list').innerHTML=issueSubs.length?issueSubs.map(function(s){
-    var coi=complianceDaysUntil(s.coi_expiry),lic=complianceDaysUntil(s.licence_expiry);
-    var worst=[coi,lic].filter(function(d){return d!==null;});
-    var isExpired=worst.some(function(d){return d<0;});
-    return '<div class="srow"><span class="slbl">'+H(s.company)+' <span style="color:var(--muted);font-size:12px">('+H(s.trade)+')</span></span><span class="badge '+(isExpired?'br':'bw')+'">'+(isExpired?'Expired':'Expiring Soon')+'</span></div>';
-  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Nothing expiring within 30 days</div>';
+    var d=subDocIssues(s);
+    var blocks=d.blocking.length>0;
+    var why=(blocks?d.blocking:d.expiring).join('; ');
+    return '<div class="srow"><span class="slbl">'+H(s.company)+' <span style="color:var(--muted);font-size:12px">('+H(s.trade)+') '+H(why)+'</span></span><span class="badge '+(blocks?'br':'bw')+'">'+(blocks?'Blocks Award':'Expiring Soon')+'</span></div>';
+  }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">Every subcontractor is documented and current</div>';
 
   var spend=subSpendMap();
   var names=Object.keys(spend).sort(function(a,b){return spend[b]-spend[a];});
