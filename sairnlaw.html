@@ -1688,7 +1688,24 @@ var LAW_CITATION_RULE='CRITICAL RULE: never output a specific case citation, sta
 // exists too -- added to the "available" list with the same precise
 // field-level discipline as before. Trust/invoices/time-entries/billing/
 // notes refusal is unchanged and stays exactly as strict as it was.
-var LAW_FIRM_DATA_RULE='CRITICAL RULE: you now have tool-based access to this firm\'s current MATTERS (matter number, matter name, client name, practice area, status, responsible attorney, opposing parties) via get_matters, and this firm\'s current PENDING deadlines (matter, deadline type, title, due date, due time, location, and a live-computed urgency) via get_deadlines -- use the matching tool for either topic rather than guessing, and never state a deadline\'s urgency, status, or existence without having actually called get_deadlines this turn. You do NOT have access to this firm\'s trust account balances, invoices, time entries, matter notes, deadline notes, or billing records -- none of that real data is available through any tool or included anywhere in this conversation. If asked something that depends on that still-unavailable data (e.g. "What is the trust balance on the Ostrander matter?", "How much has this client been billed?"), you MUST say plainly that you do not have access to it and direct the user to the relevant panel (Trust Accounting, Billing) to look it up -- never guess, estimate, or invent a specific figure or fact about that data. You may still help with general drafting, explaining concepts, and non-firm-specific questions.';
+var LAW_FIRM_DATA_RULE='CRITICAL RULE: you now have tool-based access to this firm\'s current MATTERS (matter number, matter name, client name, practice area, status, responsible attorney, opposing parties) via get_matters, and this firm\'s current PENDING deadlines (matter, deadline type, title, due date, due time, location, and a live-computed urgency) via get_deadlines -- use the matching tool for either topic rather than guessing, and never state a deadline\'s urgency, status, or existence without having actually called get_deadlines this turn. You do NOT have access to this firm\'s trust account balances, invoices, time entries, matter notes, deadline notes, or billing records -- none of that real data is available through any tool or included anywhere in this conversation. If asked something that depends on that still-unavailable data (e.g. "What is the trust balance on the Ostrander matter?", "How much has this client been billed?"), you MUST say plainly that you do not have access to it and direct the user to the relevant panel (Trust Accounting, Billing) to look it up -- never guess, estimate, or invent a specific figure or fact about that data. You may still help with general drafting and non-firm-specific questions, and you may explain how a process or a workflow works -- but a question about what a legal TERM, DOCTRINE or PHRASE MEANS is governed by the definition rule, not by this sentence.';
+// ADDED 2026-09-02. The two rules above guard fabricated CITATIONS and
+// fabricated FIRM DATA. Neither reached a fabricated DEFINITION, and the
+// firm-data rule actively permitted one by ending with "explaining concepts"
+// (now narrowed, above). Meanwhile the Legal Reference panel one screen away
+// promises that nothing on it comes from model memory and delivers on that
+// through a real Cornell LII retrieval. This closes the contradiction by
+// pointing the assistant at the SAME retrieval the panel uses.
+//
+// SAME CLASS OF MITIGATION AS THE CITATION RULE, AND THE SAME HONEST LIMIT:
+// a system prompt cannot make a fabricated definition structurally
+// impossible for any LLM. What makes this one stronger than a bare
+// instruction is that there is now a real tool behind it that either returns
+// retrieved text with its source URL or fails loudly, and sendAI() already
+// reinforces "do not substitute your own" in the same turn as any tool
+// failure. The instruction and the mechanism agree; before today only the
+// instruction existed, and it said the opposite.
+var LAW_DEFINITION_RULE='CRITICAL RULE: you have no legal dictionary in your own knowledge that this firm may rely on. Whenever the user asks what a legal term, doctrine, maxim or phrase MEANS -- including terms you are completely confident about -- you MUST call the define_legal_term tool and answer only from what it returns, quoting or closely paraphrasing the retrieved text and naming the source URL it gives you. If that tool reports that no definition was retrieved, for ANY reason, say so plainly along with the reason it gave, tell the user they can retry from the Legal Reference panel, and STOP -- do not then supply a definition from your own knowledge, do not offer a "general sense" or "roughly speaking" version, and do not describe the term\'s meaning in your own words as a substitute. An unsourced legal definition that sounds right is the same failure as an unsourced citation and is not made acceptable by a disclaimer. You MAY, without the tool, discuss how a term is used procedurally in this firm\'s own workflow (which panel records it, which deadline it drives) because that is operations rather than a definition.';
 // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
 // live in SAIRNbiz (see docs/superpowers/specs/2026-08-09-sairnbiz-ai-
 // tool-calling-design.md). Registry of read-only tools sendAI() may
@@ -1708,20 +1725,46 @@ function lawRegisterTool(name, description, inputSchema, sensitive, run) {
   };
 }
 
-// run() MUST be synchronous -- the try/catch below only catches thrown
-// errors. An async run() returning a rejected Promise would NOT be
-// caught and would silently report {ok:true, result:<pending Promise>}.
-// (Same documented constraint as SAIRNbiz's sbExecuteTool.)
-function lawExecuteTool(name, role, input) {
+// CONSTRAINT CHANGED 2026-09-02, AND THE OLD ONE IS RECORDED BECAUSE IT WAS
+// RIGHT ABOUT THE FAILURE MODE. This block previously read: "run() MUST be
+// synchronous -- the try/catch below only catches thrown errors. An async
+// run() returning a rejected Promise would NOT be caught and would silently
+// report {ok:true, result:<pending Promise>}." That is exactly what happened,
+// and it is worse than the comment implied: JSON.stringify of a pending
+// Promise is "{}", so the model would have been handed an EMPTY OBJECT as a
+// tool result with ok:true, and nothing anywhere would have errored.
+//
+// The constraint had to go, because the first genuinely grounded tool --
+// define_legal_term, which reads Cornell LII's Wex through the server -- is a
+// network call and cannot be synchronous. So this is now async and AWAITS
+// run(). `await` on a non-Promise returns it unchanged, so both existing
+// synchronous tools behave exactly as before, and a rejection now lands in
+// the catch rather than escaping it. The call site in sendAI() is already
+// inside an async function and awaits this.
+//
+// SAIRNbiz's sbExecuteTool STILL CARRIES THE SYNC-ONLY CONSTRAINT and is NOT
+// changed here: it has no async tool, and changing another app's dispatcher
+// on the strength of this one's need is the kind of unrequested spread that
+// makes a change hard to review. The divergence is deliberate and is noted so
+// the next person does not read it as drift.
+//
+// A THROWN ERROR MARKED userSafe KEEPS ITS OWN MESSAGE. Everything else is
+// still flattened to the generic line, so an unexpected crash cannot leak
+// internals -- but a grounded lookup that legitimately came back empty or
+// rate-limited must be able to say WHICH, because "could not retrieve that
+// data" and "Wex has no entry for this term" call for different answers from
+// the assistant and only one of them is worth retrying.
+async function lawExecuteTool(name, role, input) {
   var tool = LAW_TOOLS[name];
   if (!tool) return { ok: false, error: 'No tool named "' + name + '" exists.' };
   if (tool.sensitive && role !== 'owner') {
     return { ok: false, error: 'This data is restricted to the owner role.' };
   }
   try {
-    return { ok: true, result: tool.run(input || {}) };
+    var result = await tool.run(input || {});
+    return { ok: true, result: result };
   } catch (e) {
-    return { ok: false, error: 'Could not retrieve that data right now.' };
+    return { ok: false, error: (e && e.userSafe && e.message) ? e.message : 'Could not retrieve that data right now.' };
   }
 }
 
@@ -1783,6 +1826,82 @@ lawRegisterTool(
           urgency: computeDeadlineUrgency(d.due_date, today, weekAheadMs)
         };
       });
+  }
+);
+
+// ── GROUNDED LEGAL-TERM DEFINITION (2026-09-02) ──────────────────────────
+// THE GAP THIS CLOSES, stated plainly because it was a contradiction inside
+// one app: the Legal Reference panel tells the user "Nothing on this screen
+// is answered from the model's memory", and it means it -- refDefine() calls
+// /api/legal-reference, which calls api/_lib/wex.js, which returns the real
+// retrieved text and the real Cornell LII URL or an honest failure. The AI
+// Assistant on the NEXT panel had two tools, get_matters and get_deadlines,
+// neither of them this one, and its system prompt expressly permitted
+// "explaining concepts". So "what is res judicata?" was answered from model
+// memory, unsourced, in the same product that promises otherwise. The
+// citation rule already forbade emitting a citation STRING and expressly
+// allowed narrative description, so it did not reach this at all.
+//
+// THIS TOOL RETURNS ONLY WHAT WAS RETRIEVED. It composes nothing. On any
+// non-grounded outcome it THROWS with userSafe set, which routes through
+// lawExecuteTool's ok:false branch and therefore picks up sendAI()'s
+// anti-substitution reinforcement in the same turn -- the mechanism already
+// proven for a denied get_matters, reused rather than reinvented.
+//
+// THE FAILURE REASON IS CARRIED THROUGH DELIBERATELY. Wex publishes
+// Crawl-delay: 10 and api/_lib/wex.js honours it across the whole
+// deployment, so RATE_LIMITED is a normal, transient outcome that a user
+// should be told to retry -- and NOT_FOUND means Wex genuinely has no entry,
+// which is a different answer and is not worth retrying. Flattening both to
+// "could not retrieve that data" would make the retryable one look permanent
+// and the permanent one look like a glitch.
+//
+// NOT SENSITIVE: a dictionary lookup is not firm data, so it is not gated on
+// the owner role. The endpoint's own licence check still applies.
+lawRegisterTool(
+  'define_legal_term',
+  'Look up a legal term\'s definition in Cornell LII\'s Wex, the free legal encyclopedia maintained by Cornell Law School. Returns the real retrieved text and the real source URL, or reports that no entry exists. This is the ONLY source of legal-term definitions available to you -- you have no other. Use it for any question asking what a legal term, doctrine, or phrase means, and never answer such a question from your own knowledge.',
+  {
+    type: 'object',
+    properties: {
+      term: { type: 'string', description: 'The legal term to define, e.g. "res judicata" or "promissory estoppel". Give the term alone, not a sentence.' }
+    },
+    required: ['term']
+  },
+  false,
+  // ASYNC ON PURPOSE, and it is the reason lawExecuteTool became async. See
+  // the constraint note on that function for what the old synchronous
+  // version would have done with this: handed the model "{}" with ok:true.
+  async function (input) {
+    var term = (input && input.term ? String(input.term) : '').trim();
+    if (!term) { var e0 = new Error('No term was supplied to look up.'); e0.userSafe = true; throw e0; }
+    var d = await referenceFetch('define', { term: term });
+    if (d && d.error) {
+      var e1 = new Error('The definition lookup could not reach Cornell LII (' + (d.error.message || 'network error') + '). No definition is available for this term right now.');
+      e1.userSafe = true; throw e1;
+    }
+    if (!d || !d.ok) {
+      var why = d && d.code === 'RATE_LIMITED'
+        ? 'Cornell LII asks for 10 seconds between automated requests and this tool honours that, so the lookup was not run. Tell the user to try again in a few seconds.'
+        : d && d.code === 'NOT_FOUND'
+          ? 'Cornell LII\'s Wex has no entry for that term.'
+          : (d && d.message) || 'The lookup did not return a definition.';
+      var e2 = new Error('No definition was retrieved. ' + why);
+      e2.userSafe = true; throw e2;
+    }
+    // Only retrieved fields. `source_url` is included so the assistant can
+    // cite where the text came from -- it is a real URL that was fetched,
+    // not a citation the model produced, so LAW_CITATION_RULE does not reach
+    // it and must not be read as forbidding it.
+    return {
+      term: d.term,
+      definition_paragraphs: (d.paragraphs || []).slice(0, 4),
+      related_terms: (d.crossReferences || []).map(function (c) { return c.term; }),
+      source_name: d.source_name,
+      source_url: d.source_url,
+      retrieved_at: d.retrieved_at,
+      grounded: true
+    };
   }
 );
 
@@ -1882,7 +2001,7 @@ async function sendAI(){
   // renders the user-visible reply after a tool_result comes back, and
   // it sends no `tools` field at all, so a tool's own description has
   // zero influence on that turn.
-  var sys='You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_FIRM_DATA_RULE+' Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "likely" answers.';
+  var sys='You are a legal practice operations assistant (NOT a substitute for legal research or legal advice). '+LAW_CITATION_RULE+' Non-legal-research topics (matter organization, scheduling, drafting non-legal-conclusion text, billing) are not subject to that citation restriction. '+LAW_DEFINITION_RULE+' '+LAW_FIRM_DATA_RULE+' Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop. This applies even to "rough" or "likely" answers.';
   var sharedCtx=(typeof buildLawSharedCompanyContext==='function')?buildLawSharedCompanyContext():'';
   if(sharedCtx)sys+='\n\n'+sharedCtx;
   try{
@@ -1907,7 +2026,7 @@ async function sendAI(){
       chat.scrollTop=chat.scrollHeight;
       return;
     }
-    var outcome=lawExecuteTool(toolUse.name,prole,toolUse.input);
+    var outcome=await lawExecuteTool(toolUse.name,prole,toolUse.input);
     // Belt-and-suspenders, same as SAIRNbiz: reinforce the anti-fabrication
     // instruction right next to the trigger, in the same turn as the
     // denial/error itself, not just once at the system-prompt level.
