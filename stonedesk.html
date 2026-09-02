@@ -8987,6 +8987,7 @@ window.sdSafetyPrint=function(){
           <button class="q-btn primary" onclick="nestingSave()">&#128190; Save Layout</button>
           <button class="q-btn" onclick="nestingExport()">&#128202; Export CSV</button>
           <button class="q-btn" onclick="nestingPrint()">&#128424; Print</button>
+          <button class="q-btn" onclick="nestingExportDXF()" title="Geometry for your CAM, in inches. Not a machine program.">&#128208; Export DXF</button>
         </div>
       </div>
 
@@ -9148,6 +9149,146 @@ window.sdSafetyPrint=function(){
     a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='saw-ticket-'+sdLocalToday()+'.csv';a.click();
     if(typeof notify==='function') notify('Saw ticket exported -- '+sdNestingData.cutouts.length+' piece'+(sdNestingData.cutouts.length===1?'':'s')+'.','');
+  };
+
+
+  // -- DXF EXPORT (2026-09-02, competitive-gap audit GAP 2, machine half) ----
+  // The audit left this open with a scope call attached: "saw/pick tickets as
+  // PDF is days; true DXF-out to a specific CNC is a per-machine integration
+  // with no generic answer." That call has been made -- DXF first, G-code not
+  // at all -- and the distinction it rests on is real and is stated on screen:
+  //
+  //   DXF IS GEOMETRY. G-CODE IS A MACHINE PROGRAM.
+  //
+  // A DXF says where the shapes are. It carries no feed rate, no spindle
+  // speed, no tool number, no blade thickness and no machine origin, and it
+  // does not need to, because the shop's CAM post-processor supplies all of
+  // that for the machine it is actually posting to. Emitting "generic G-code"
+  // would mean inventing every one of those numbers for a machine this app has
+  // never seen -- which is the fabrication class this codebase exists to
+  // refuse, with a saw on the other end of it.
+  //
+  // -- R12 ASCII, DELIBERATELY --
+  // The oldest widely-used DXF revision and the one every CAM package reads.
+  // Closed POLYLINE/VERTEX/SEQEND rectangles rather than LWPOLYLINE, because
+  // LWPOLYLINE DOES NOT EXIST IN R12 and a file using it is not the thing it
+  // claims to be. Closed contours rather than four loose LINEs, because a
+  // toolpath needs a closed contour and four coincident lines is not one.
+  //
+  // -- THE Y AXIS IS FLIPPED, AND THIS IS THE WHOLE RISK OF THE FEATURE --
+  // The layout canvas measures Y DOWNWARD from the slab's top-left, which is
+  // the screen convention. DXF measures Y UPWARD from the bottom-left, which is
+  // the CAD convention. Writing the app's Y straight into the file would
+  // produce a layout MIRRORED VERTICALLY -- a file that opens cleanly, looks
+  // plausible, and cuts every piece in the wrong place. So Y is converted:
+  //     dxfBottomY = slabHeight - (canvasY + pieceHeight)
+  // and tests/nesting_dxf.js fails five assertions if it is ever emitted
+  // unflipped -- verified by mutating this line and watching them go red, not
+  // assumed from the fact that they are green.
+  //
+  // -- KERF IS NOT BAKED INTO THE GEOMETRY --
+  // The rectangles are FINISHED PART SIZES. Kerf is a saw allowance the CAM
+  // applies when it offsets the toolpath, and writing kerf-adjusted rectangles
+  // here would silently change every part's dimensions -- the customer's
+  // countertop would come out a blade narrower than the drawing says. The kerf
+  // value stays on the cut-list ticket where a human reads it.
+  function nestDxfNum(v){
+    // DXF reals: fixed notation always. Exponential ("1e-7") is not valid in a
+    // DXF real and some readers accept it silently and read it wrong.
+    var n = Number(v);
+    if (!isFinite(n)) n = 0;
+    return n.toFixed(4);
+  }
+  function nestDxfPair(code, value){ return code + '\n' + value + '\n'; }
+
+  // A closed rectangle as R12 POLYLINE + four VERTEX + SEQEND.
+  function nestDxfRect(layer, x, y, w, h){
+    var out = '';
+    out += nestDxfPair(0, 'POLYLINE') + nestDxfPair(8, layer) +
+           nestDxfPair(66, 1) +          // vertices follow
+           nestDxfPair(10, '0.0') + nestDxfPair(20, '0.0') + nestDxfPair(30, '0.0') +
+           nestDxfPair(70, 1);           // 1 = closed polyline
+    var pts = [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+    pts.forEach(function(pt){
+      out += nestDxfPair(0, 'VERTEX') + nestDxfPair(8, layer) +
+             nestDxfPair(10, nestDxfNum(pt[0])) +
+             nestDxfPair(20, nestDxfNum(pt[1])) +
+             nestDxfPair(30, '0.0');
+    });
+    out += nestDxfPair(0, 'SEQEND') + nestDxfPair(8, layer);
+    return out;
+  }
+  function nestDxfText(layer, x, y, height, str){
+    return nestDxfPair(0, 'TEXT') + nestDxfPair(8, layer) +
+           nestDxfPair(10, nestDxfNum(x)) + nestDxfPair(20, nestDxfNum(y)) +
+           nestDxfPair(30, '0.0') + nestDxfPair(40, nestDxfNum(height)) +
+           // Control characters and newlines would corrupt the group structure;
+           // a label is a single line of text by construction here.
+           nestDxfPair(1, String(str == null ? '' : str).replace(/[\r\n]+/g, ' ').slice(0, 80));
+  }
+
+  // Exposed for tests. Pure: same layout in, same file out, no DOM, no clock.
+  window.nestBuildDXF = function(slabW, slabH, cutouts, material){
+    var d = '';
+    d += nestDxfPair(999, 'StoneDesk slab layout. Units: inches. Origin: bottom-left of slab.');
+    d += nestDxfPair(999, 'Geometry only -- no feeds, speeds, tools or kerf offset. Post in your CAM.');
+    d += nestDxfPair(999, 'Material: ' + String(material || 'not stated'));
+
+    d += nestDxfPair(0, 'SECTION') + nestDxfPair(2, 'HEADER');
+    // $INSUNITS 1 = inches. Stated rather than left to the reader's default,
+    // because a CAM that assumes millimetres would scale the whole layout by
+    // 25.4 and every piece would be wrong by the same silent factor.
+    d += nestDxfPair(9, '$INSUNITS') + nestDxfPair(70, 1);
+    d += nestDxfPair(9, '$EXTMIN') + nestDxfPair(10, '0.0') + nestDxfPair(20, '0.0') + nestDxfPair(30, '0.0');
+    d += nestDxfPair(9, '$EXTMAX') + nestDxfPair(10, nestDxfNum(slabW)) +
+         nestDxfPair(20, nestDxfNum(slabH)) + nestDxfPair(30, '0.0');
+    d += nestDxfPair(0, 'ENDSEC');
+
+    d += nestDxfPair(0, 'SECTION') + nestDxfPair(2, 'TABLES');
+    d += nestDxfPair(0, 'TABLE') + nestDxfPair(2, 'LAYER') + nestDxfPair(70, 3);
+    [['SLAB', 8], ['PIECES', 3], ['LABELS', 2]].forEach(function(l){
+      d += nestDxfPair(0, 'LAYER') + nestDxfPair(2, l[0]) +
+           nestDxfPair(70, 0) + nestDxfPair(62, l[1]) + nestDxfPair(6, 'CONTINUOUS');
+    });
+    d += nestDxfPair(0, 'ENDTAB') + nestDxfPair(0, 'ENDSEC');
+
+    d += nestDxfPair(0, 'SECTION') + nestDxfPair(2, 'ENTITIES');
+    // The slab itself, so the pieces have something to sit in when the file is
+    // opened on its own.
+    d += nestDxfRect('SLAB', 0, 0, slabW, slabH);
+    (cutouts || []).forEach(function(c){
+      var w = Number(c.w) || 0, h = Number(c.h) || 0;
+      var x = Number(c.x) || 0;
+      // THE FLIP. canvasY is the piece's TOP edge measured downward; DXF wants
+      // its BOTTOM edge measured upward.
+      var yBottom = slabH - ((Number(c.y) || 0) + h);
+      d += nestDxfRect('PIECES', x, yBottom, w, h);
+      if (c.label) {
+        // Inset so the label sits inside its own piece rather than on the line.
+        d += nestDxfText('LABELS', x + 0.5, yBottom + 0.5, Math.min(2, Math.max(0.5, h / 6)), c.label);
+      }
+    });
+    d += nestDxfPair(0, 'ENDSEC');
+    d += nestDxfPair(0, 'EOF');
+    return d;
+  };
+
+  window.nestingExportDXF = function(){
+    if(!nestTicketGuard()) return;
+    var t = nestTicketTotals();
+    var mat = (document.getElementById('nest-slab-mat')||{}).value || 'Unknown';
+    var dxf = window.nestBuildDXF(t.slabW, t.slabH, sdNestingData.cutouts, mat);
+    var blob = new Blob([dxf], {type:'application/dxf'});
+    var url = window.URL.createObjectURL(blob);
+    var a = document.createElement('a');
+    a.href = url; a.download = 'slab-layout-' + sdLocalToday() + '.dxf'; a.click();
+    window.URL.revokeObjectURL(url);
+    if (typeof notify === 'function') {
+      // Says what it is AND what it is not. A shop that reads "DXF exported"
+      // and expects a machine program has been misled by the word alone.
+      notify(sdNestingData.cutouts.length + ' piece' + (sdNestingData.cutouts.length===1?'':'s') +
+             ' exported as DXF geometry, in inches, origin bottom-left. It is not a machine program -- post it in your CAM. Kerf is on the cut list, not in the drawing.', '');
+    }
   };
 
   window.nestingPrint=function(){
