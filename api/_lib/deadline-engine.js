@@ -187,6 +187,101 @@ function resolveTriggerDocument(rule, input) {
     detail: 'The caller confirmed the date supplied is ' + td.label + ' (' + td.authority + ').' };
 }
 
+// ── The MULTI-SLOT form, for multi-trigger rules ─────────────────────────
+// A rule whose trigger_event is a spec rather than a string has SEVERAL events,
+// and only some of them name a document. Across the four seeded cross-appeal
+// rows, four of the eight limbs are terms of art and four are not: the filing
+// or service of a notice of appeal has one unambiguous date, and forcing a
+// declaration on it would say "this is the date the notice was filed, not the
+// date it was filed" -- noise that trains a reader to skim.
+//
+// So `trigger_documents` is a MAP keyed by the limb's own event name, and a
+// limb with no entry is unguarded on purpose. The key is the vocabulary the
+// caller already uses for trigger_dates and that rules_status already reports
+// as requires_dates, so nothing new has to be learned to answer it.
+//
+// THE CALLER SENDS A MAP, NOT A LIST OF CONFIRMED EVENTS. A bare list can only
+// say "I confirm" and never "I confirm it is THIS document", which would throw
+// away the MISMATCH refusal. That is not theoretical here: Ohio App.R. 4(B)(1)
+// runs its guarded limb from ENTRY of the final order and Tex. R. App. P.
+// 26.1(d) runs its from SIGNING of the judgment, and a caller with both
+// matters open can affirm the wrong one.
+//
+// REFUSAL IS ALL-OR-NOTHING. Every one of these rules resolves later_of, so an
+// unverified limb can always be the limb that governs; returning the other
+// limb's date would be returning an answer that is correct only if the
+// unverified limb happens to lose, which cannot be known without using the
+// unverified date.
+function triggerDocumentsDefects(map) {
+  if (map === undefined || map === null) return [];
+  if (typeof map !== 'object' || Array.isArray(map)) return ['must be an object keyed by event name'];
+  var keys = Object.keys(map);
+  if (!keys.length) return ['must not be empty -- omit the field instead of declaring nothing'];
+  var bad = [];
+  keys.forEach(function (k) {
+    var one = triggerDocumentDefects(map[k]);
+    one.forEach(function (d) { bad.push(k + ': ' + d); });
+    if (map[k] && map[k].id && map[k].id !== k) {
+      // The key says WHICH LIMB and the id says WHICH DOCUMENT. They are the
+      // same string on every current row, and a mismatch is far more likely to
+      // be a copy-paste slip than a real distinction -- so it is refused
+      // rather than silently honoured in one direction or the other.
+      bad.push(k + ': id "' + map[k].id + '" does not match its key');
+    }
+  });
+  return bad;
+}
+
+// Returns null when the rule declares none, a refusal, or a per-event map of
+// resolutions. Pure: it decides, it does not compute.
+function resolveTriggerDocuments(rule, input) {
+  var map = rule.trigger_documents;
+  if (!map) return null;
+  var defects = triggerDocumentsDefects(map);
+  if (defects.length) {
+    return { ok: false, code: 'INVALID_TRIGGER_DOCUMENT',
+      message: 'Rule ' + rule.rule_id + ' declares a malformed trigger_documents map (' + defects.join('; ') +
+        '). The date is withheld rather than computed from unchecked triggers.' };
+  }
+  var supplied = (input && input.trigger_documents) || {};
+  if (typeof supplied !== 'object' || Array.isArray(supplied)) {
+    return { ok: false, code: 'INVALID_TRIGGER_DOCUMENT',
+      message: 'trigger_documents must be an object mapping each guarded limb event to the document id being affirmed for it.' };
+  }
+  var out = {};
+  var events = Object.keys(map);
+  for (var i = 0; i < events.length; i++) {
+    var ev = events[i], td = map[ev], got = supplied[ev];
+    if (got && got !== td.id) {
+      return { ok: false, code: 'TRIGGER_DOCUMENT_MISMATCH',
+        message: 'The "' + ev + '" limb of this rule runs from ' + td.label + ' (' + td.authority +
+          '), and the date supplied for it was affirmed to be "' + got + '" instead. Those are different ' +
+          'documents and they bear different dates. No deadline is computed.',
+        limb: ev, expected: td.id, supplied: got, label: td.label, not_the: td.not_the, authority: td.authority };
+    }
+    if (!got) {
+      if (td.on_unconfirmed === 'refuse') {
+        return { ok: false, code: 'TRIGGER_DOCUMENT_UNCONFIRMED',
+          message: 'The "' + ev + '" limb of this rule runs from ' + td.label + ' (' + td.authority +
+            '), which is NOT ' + td.not_the + '. This rule takes the LATER of its limbs, so an unverified ' +
+            'limb can be the one that governs and no partial answer is safe. Confirm the date supplied for ' +
+            'that limb by sending trigger_documents: {"' + ev + '": "' + td.id + '"}. No date is guessed.',
+          limb: ev, expected: td.id, label: td.label, not_the: td.not_the, authority: td.authority };
+      }
+      out[ev] = { state: 'unconfirmed', expected: td.id, label: td.label, not_the: td.not_the,
+        authority: td.authority,
+        detail: 'The "' + ev + '" limb runs from ' + td.label + ' (' + td.authority + '), NOT ' + td.not_the +
+          '. The caller did not confirm which document that date came from.' };
+    } else {
+      out[ev] = { state: 'confirmed', expected: td.id, label: td.label, not_the: td.not_the,
+        authority: td.authority,
+        detail: 'The caller confirmed the date supplied for the "' + ev + '" limb is ' + td.label +
+          ' (' + td.authority + ').' };
+    }
+  }
+  return { ok: true, limbs: out };
+}
+
 // Returns null if valid, or a string naming the defect. Exported so the
 // load-time check and its test assert the SAME function rather than two
 // implementations that can drift.
@@ -4207,13 +4302,24 @@ function computeDeadline(input) {
       return { ok: false, code: 'UNKNOWN_STANDARD',
         message: 'Rule ' + rr.rule_id + ' names computation standard "' + rr.computation + '", which this engine does not implement.' };
     }
+    // THE MULTI-SLOT GUARD RUNS HERE, NOT BESIDE ITS SINGULAR SIBLING, AND THE
+    // PLACEMENT IS THE WHOLE POINT. resolveTrigger() dispatches a
+    // resolve_periods spec into resolvePeriods(), which calls
+    // computeBasePeriod() for EVERY limb. The singular guard sits ~40 lines
+    // below, after the winning rule is chosen -- correct there, because a
+    // single-trigger rule computes nothing until then. Putting the plural one
+    // in the same place would read correctly, return the right refusal code,
+    // and still have done the arithmetic it exists to prevent.
+    var rrDocs = resolveTriggerDocuments(rr, input);
+    if (rrDocs && rrDocs.ok === false) return rrDocs;
+
     var res = resolveTrigger(rr, input, rrStd);
     if (!res.ok) return res;
     var ret = applyRetrigger(rr, res.date, input);
     if (!ret.ok) return ret;
     resolvedByRule[rr.rule_id] = { date: ret.date, resolution: res.resolution,
       period_resolution: res.period_resolution || null, count_override: res.count_override || null,
-      retrigger: ret.retriggered ? ret : null };
+      retrigger: ret.retriggered ? ret : null, trigger_documents: rrDocs };
   }
 
   // Effective-window selection: the rule as it stood at the TRIGGER date, not
@@ -4876,6 +4982,9 @@ function computeDeadline(input) {
     // rule note to learn that the date they supplied had to be a particular
     // document's. Null for every rule with no such ambiguity.
     trigger_document: triggerDocument,
+    // The multi-trigger form. Null for every single-trigger rule, and for a
+    // multi-trigger rule whose limbs are all unambiguous acts.
+    trigger_documents: resolved.trigger_documents ? resolved.trigger_documents.limbs : null,
     // Present only for rules that declare a cap. Reports which limb governed
     // AND what the other one would have been, because "your deadline is
     // earlier than the rule's own period because of what the subpoena said"
@@ -4901,6 +5010,7 @@ module.exports = {
   toUTC, fromUTC, addDays, addMonths, dayOfWeek, isWeekend,
   DEFAULT_WEEKEND_DAYS, weekendDaysDefect, coverageTableDefects,
   triggerDocumentDefects, resolveTriggerDocument,
+  triggerDocumentsDefects, resolveTriggerDocuments,
   holidayFor, rollOff, countExcludingWeekendsAndHolidays, computeDeadline,
   resolveTrigger, resolvePeriods, computeBasePeriod, applyRetrigger,
   COMPUTATION_STANDARDS, SERVICE_METHODS_EXTENDING, SERVICE_EXTENSION_STANDARDS,

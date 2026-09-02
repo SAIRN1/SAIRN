@@ -170,6 +170,52 @@ function validateRulePayload(p) {
     }
   }
 
+  // The multi-slot form, and the constraints that keep the two from drifting
+  // into overlapping meanings. A row carries the singular OR the plural, never
+  // both, and each belongs to one trigger shape.
+  if (p.trigger_documents !== undefined) {
+    if (p.trigger_document !== undefined) {
+      return 'A rule carries trigger_document OR trigger_documents, never both. The singular is for a string trigger; the plural is for a multi-trigger spec whose limbs are guarded individually.';
+    }
+    if (typeof p.trigger_event === 'string') {
+      return 'trigger_documents is for a multi-trigger rule. A rule with a plain string trigger uses the singular trigger_document.';
+    }
+    const m = p.trigger_documents;
+    if (!m || typeof m !== 'object' || Array.isArray(m)) {
+      return 'trigger_documents must be an object keyed by the limb event it guards.';
+    }
+    const keys = Object.keys(m);
+    if (!keys.length) {
+      return 'trigger_documents must not be empty. Omit the field rather than declaring nothing.';
+    }
+    // The events this rule actually has. A key naming a limb that does not
+    // exist would declare a guard on nothing and silently guard nothing --
+    // the same silent-no-op class as a misspelt on_unknown_exclusivity.
+    const t = p.trigger_event || {};
+    const limbEvents = Array.isArray(t.limbs) ? t.limbs.map(L => L && L.event)
+      : (Array.isArray(t.events) ? t.events.slice() : []);
+    for (const k of keys) {
+      if (limbEvents.length && !limbEvents.includes(k)) {
+        return 'trigger_documents key "' + k + '" is not one of this rule\'s limb events (' + limbEvents.join(', ') + '). A key naming a limb that does not exist would guard nothing.';
+      }
+      const td = m[k];
+      if (!td || typeof td !== 'object' || Array.isArray(td)) {
+        return 'trigger_documents["' + k + '"] must be an object declaring id, label, not_the, authority and on_unconfirmed.';
+      }
+      for (const f of ['id', 'label', 'not_the', 'authority', 'on_unconfirmed']) {
+        if (typeof td[f] !== 'string' || !td[f].trim()) {
+          return 'trigger_documents["' + k + '"].' + f + ' is required and must be a non-empty string.';
+        }
+      }
+      if (td.id !== k) {
+        return 'trigger_documents["' + k + '"].id is "' + td.id + '", which does not match its key. The key says which limb and the id says which document; a mismatch is a copy-paste slip, not a distinction.';
+      }
+      if (td.on_unconfirmed !== 'refuse' && td.on_unconfirmed !== 'warn') {
+        return 'trigger_documents["' + k + '"].on_unconfirmed must be "refuse" or "warn".';
+      }
+    }
+  }
+
   if (typeof p.trigger_event !== 'string') {
     const t = p.trigger_event;
     if (!t) return 'trigger_event must be an event name, a multi-trigger spec, or a resolve_periods spec.';
@@ -720,6 +766,13 @@ module.exports = async (req, res) => {
         // runs LATE and a late notice of appeal is not curable, so those rows
         // REFUSE until this is supplied rather than warning.
         trigger_document: body.trigger_document,
+        // The multi-trigger form: a map from each guarded limb's event to the
+        // document id the caller affirms for it. A map rather than a list of
+        // confirmed events, because a list could only say "I confirm" and never
+        // "I confirm it is THIS document" -- and Ohio's guarded limb runs from
+        // ENTRY while Texas's runs from SIGNING, so affirming the wrong one is
+        // a real mistake a caller with both matters open can make.
+        trigger_documents: body.trigger_documents,
         // The clock time service was completed, HH:MM in 24-hour form. Read
         // only by standards whose amount genuinely turns on it -- today that
         // is Va. Sup. Ct. R. 1:7, whose 5:00 p.m. cutoff decides between a

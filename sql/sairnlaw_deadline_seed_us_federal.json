@@ -315,6 +315,15 @@
         "unit": "calendar_days",
         "direction": "forward"
       },
+      "trigger_documents": {
+        "entry_of_judgment_or_order_being_appealed": {
+          "id": "entry_of_judgment_or_order_being_appealed",
+          "label": "the date the clerk ENTERED the judgment or order being appealed on the criminal docket",
+          "not_the": "the date it was signed, the date sentence was orally pronounced, or the date it was mailed",
+          "authority": "Fed. R. App. P. 4(b)(1)(A)",
+          "on_unconfirmed": "refuse"
+        }
+      },
       "computation": "frap_26a",
       "authority": {
         "citation": "Fed. R. App. P. 4(b)(1)(A)",
