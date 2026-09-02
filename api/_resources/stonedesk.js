@@ -23,6 +23,14 @@
 module.exports = {
   app: 'stonedesk',
   resources: [
+  // NEXUS per-user style profile (2026-09-02). One shared table across apps,
+  // keyed (license_hash, employee_id); see sql/sairn_style_profiles_schema.sql
+  // and docs/2026-09-02-nexus-style-profile-design.md. Listed here because
+  // api/sd-data.js validates against THIS file -- api/_resources/index.js
+  // records that a working resource missing from a hand-kept list is exactly
+  // how employee_profile silently 400'd, and a new resource that is not
+  // registered here fails the same way.
+    'style_profile',
   // StoneDesk CRM/Lead Pipeline (2026-08-19) -- see sql/sd_crm_schema.sql. First real server
   // sync this resource has ever had (was pure localStorage) -- also carries the per-lead
   // assignment privacy gate, see the read/write branches below.

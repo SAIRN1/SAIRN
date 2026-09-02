@@ -451,6 +451,84 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── STYLE PROFILE (sairn_style_profiles, 2026-09-02) ────────────────────
+    // The NEXUS per-user style profile. See
+    // docs/2026-09-02-nexus-style-profile-design.md and
+    // api/_lib/style-profile.js.
+    //
+    // SELF ONLY, BOTH DIRECTIONS. employee_id comes from the verified session
+    // token and never from the body -- there is no read-anyone and no
+    // write-anyone action, deliberately. How a colleague writes is not roster
+    // data, and the manager-visible case is already covered by
+    // sd_employee_profiles, which this deliberately does not duplicate.
+    //
+    // WRITE TAKES AN OBSERVATION, NOT A MESSAGE. The client runs
+    // styleProfile.analyse() locally and posts the resulting counts, so the
+    // user's raw text is never transmitted here. The merge happens server-side
+    // so two tabs cannot race each other into a lost update -- the row is read,
+    // folded, and written in one request rather than the client sending a whole
+    // profile it computed from a stale copy.
+    if (resource === 'style_profile' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!session) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'A valid employee session is required' } });
+        return;
+      }
+      const styleLib = require('./_lib/style-profile');
+      const meId = session.employee_id;
+      const sel = 'sairn_style_profiles?license_hash=eq.' + enc(licHash) +
+        '&employee_id=eq.' + enc(meId) + '&select=employee_id,app_id,data,samples,updated_at&limit=1';
+
+      const cur = await fetch(rest(sel), { headers });
+      if (cur.status === 404 || cur.status === 400) {
+        // Table not provisioned. Say so rather than returning an empty profile
+        // that reads as "this person has no style yet" -- those are different
+        // facts and conflating them is how a dead feature looks alive.
+        res.status(200).json({ ok: true, data: null, provisioned: false });
+        return;
+      }
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+      const existing = (Array.isArray(curRows) && curRows[0]) || null;
+
+      if (action === 'read') {
+        res.status(200).json({
+          ok: true, provisioned: true,
+          data: existing ? existing.data : null,
+          samples: existing ? existing.samples : 0
+        });
+        return;
+      }
+
+      const obs = payload && payload.observation;
+      if (!obs || typeof obs !== 'object' || !obs.samples) {
+        res.status(400).json({ error: { message: 'observation is required' } });
+        return;
+      }
+      // Guard against a client posting a whole conversation as one "sample".
+      if (Number(obs.samples) !== 1) {
+        res.status(400).json({ error: { code: 'ONE_AT_A_TIME', message: 'Post one observation per message' } });
+        return;
+      }
+      const merged = styleLib.mergeObservation(existing ? existing.data : null, obs);
+      const w = await fetch(rest('sairn_style_profiles?on_conflict=license_hash,employee_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, employee_id: meId, app_id: 'stonedesk',
+          data: merged, samples: merged.samples, updated_at: nowISO()
+        })
+      });
+      if (w.status === 404 || w.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Style profiles table is not set up — run sql/sairn_style_profiles_schema.sql' } });
+        return;
+      }
+      const wRows = await w.json();
+      if (!w.ok) return upstream(res, wRows);
+      res.status(200).json({ ok: true, provisioned: true, data: merged, samples: merged.samples });
+      return;
+    }
+
     // ── EMPLOYEE PROFILE (sd_employee_profiles, 2026-08-06) ─────────────────
     // Read has two modes: self-read (default -- any authenticated role reads
     // ONLY their own profile, derived from their own verified token, never a

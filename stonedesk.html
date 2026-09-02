@@ -10373,6 +10373,10 @@ async function sendMessage() {
 
   addMessage('user', text);
   chatHistory.push({ role:'user', content: text });
+  // Observe how this person writes. Fire-and-forget by design: the profile is
+  // never worth delaying or failing a real chat message for, and analyse() runs
+  // locally so only counts leave the browser -- never the text above.
+  try { if (window.sdObserveStyle) window.sdObserveStyle(text); } catch (e) {}
   input.value = '';
   input.style.height = 'auto';
   await sendToClaudeAndRender();
@@ -25390,6 +25394,167 @@ async function saveSDProfile(profile) {
 // === AI MEMORY ENGINE ===
 let _sdMemories = [];
 
+// ── NEXUS PER-USER STYLE PROFILE (2026-09-02) ──────────────────────────────
+// The browser half. api/_lib/style-profile.js is the server half and the two
+// share one implementation of the merge -- this file carries only analyse()
+// and renderStyleDirectives(), which are the parts the CLIENT must run.
+//
+// analyse() runs HERE, on the user's own machine, and only the resulting counts
+// are posted. The user's message text never reaches the style endpoint. That is
+// a deliberate privacy property, not an optimisation: see
+// sql/sairn_style_profiles_schema.sql.
+//
+// This is a deliberate duplication of two pure functions across the client and
+// api/_lib/style-profile.js, and the duplication is tested rather than trusted:
+// tests/style_profile_parity.js asserts the two produce identical output for
+// the same input, so a change to one that is not made to the other fails loudly
+// instead of silently personalising differently on each side.
+let _sdStyleProfile = null;       // the merged profile, loaded once per session
+let _sdStyleProvisioned = null;   // true / false / null-if-not-yet-asked
+
+window.SAIRNStyle = (function () {
+  'use strict';
+  var MIN_SAMPLES = 5;
+  var MAX_WORDS_PER_SAMPLE = 400;
+  var MAX_TERMS = 12;
+  var STOPWORDS = {};
+  ('a an and are as at be but by for from has have how i if in is it its of on or ' +
+   'that the this to was were what when where which who will with you your me my we our us do does did ' +
+   'can could should would need want get got make made just also then than there their they them so not ' +
+   'no yes ok okay please thanks thank hi hey hello about into over under out up down all any some more ' +
+   'most other new now here very really much many one two three').split(' ').forEach(function (w) { STOPWORDS[w] = 1; });
+
+  var HEDGES = /\b(maybe|perhaps|possibly|i think|i guess|sort of|kind of|might|probably|not sure|wondering)\b/gi;
+  var COURTESY = /\b(please|thanks|thank you|appreciate|sorry|could you|would you|if you don't mind)\b/gi;
+  var IMPERATIVE_START = /^(give|show|list|make|build|write|add|remove|fix|check|find|tell|explain|calculate|quote|price|compare|send|open|close|set|update|delete|run|generate|create|draft)\b/i;
+
+  function words(text) { return String(text || '').toLowerCase().match(/[a-z][a-z0-9'\-]{1,}/g) || []; }
+
+  function analyse(text) {
+    var trimmed = String(text == null ? '' : text).trim();
+    var w = words(trimmed).slice(0, MAX_WORDS_PER_SAMPLE);
+    var wordCount = w.length;
+    var sentences = Math.max(1, (trimmed.match(/[.!?]+(\s|$)/g) || []).length);
+    var lines = trimmed.split('\n');
+    var usesBullets = lines.some(function (l) { return /^\s*[-*\u2022]\s+\S/.test(l); });
+    var usesNumbered = lines.some(function (l) { return /^\s*\d+[.)]\s+\S/.test(l); });
+    var usesMarkdown = /\*\*[^*]+\*\*|`[^`]+`|^#{1,6}\s/m.test(trimmed);
+    var capsTokens = trimmed.match(/\b[A-Z]{3,}\b/g) || [];
+    var abbrevTokens = trimmed.match(/\b[A-Z]{2,5}\b/g) || [];
+    var terms = {};
+    for (var i = 0; i < w.length; i++) {
+      var tk = w[i];
+      if (STOPWORDS[tk] || tk.length < 4) continue;
+      terms[tk] = (terms[tk] || 0) + 1;
+    }
+    return {
+      samples: 1, words: wordCount, sentences: sentences,
+      questions: /\?/.test(trimmed) ? 1 : 0,
+      imperatives: IMPERATIVE_START.test(trimmed) ? 1 : 0,
+      bullets: usesBullets ? 1 : 0,
+      numbered: usesNumbered ? 1 : 0,
+      markdown: usesMarkdown ? 1 : 0,
+      caps_emphasis: capsTokens.length > 0 ? 1 : 0,
+      hedges: (trimmed.match(HEDGES) || []).length,
+      courtesies: (trimmed.match(COURTESY) || []).length,
+      abbrevs: abbrevTokens.length,
+      bucket: wordCount < 8 ? 'terse' : wordCount < 25 ? 'short' : wordCount < 70 ? 'medium' : 'long',
+      terms: terms
+    };
+  }
+
+  function ratio(n, d) { return d > 0 ? n / d : 0; }
+
+  function summarise(p) {
+    p = p || {};
+    var s = p.samples || 0;
+    var b = p.buckets || { terse: 0, short: 0, medium: 0, long: 0 };
+    var terms = p.terms || {};
+    var dominant = Object.keys(b).sort(function (x, y) { return b[y] - b[x]; })[0];
+    return {
+      samples: s,
+      avg_words: s ? (p.total_words || 0) / s : 0,
+      question_ratio: ratio(p.questions || 0, s),
+      imperative_ratio: ratio(p.imperatives || 0, s),
+      bullet_ratio: ratio(p.bullets || 0, s),
+      numbered_ratio: ratio(p.numbered || 0, s),
+      markdown_ratio: ratio(p.markdown || 0, s),
+      caps_ratio: ratio(p.caps_emphasis || 0, s),
+      hedge_per_msg: ratio(p.hedges || 0, s),
+      courtesy_per_msg: ratio(p.courtesies || 0, s),
+      abbrev_per_msg: ratio(p.abbrevs || 0, s),
+      dominant_length: s ? dominant : null,
+      top_terms: Object.keys(terms).sort(function (x, y) { return terms[y] - terms[x] || x.localeCompare(y); }).slice(0, MAX_TERMS)
+    };
+  }
+
+  function renderStyleDirectives(profile, managerOverride) {
+    var p = profile || {};
+    if ((p.samples || 0) < MIN_SAMPLES) return '';
+    var s = summarise(p);
+    var out = [];
+    var target = Math.round(Math.max(30, Math.min(400, s.avg_words * 6)));
+    if (s.dominant_length === 'terse' || s.dominant_length === 'short') {
+      out.push('This user writes short. Answer in roughly ' + target + ' words or fewer; lead with the answer, no preamble.');
+    } else if (s.dominant_length === 'long') {
+      out.push('This user writes at length and expects the same. Around ' + target + ' words is appropriate; give reasoning, not just conclusions.');
+    } else {
+      out.push('Aim for roughly ' + target + ' words.');
+    }
+    if (s.bullet_ratio >= 0.3 || s.numbered_ratio >= 0.3) {
+      out.push('They use lists themselves \u2014 structure answers as lists where it fits.');
+    } else if (s.bullet_ratio < 0.1 && s.numbered_ratio < 0.1) {
+      out.push('They write in prose, not lists \u2014 prefer connected sentences over bullets.');
+    }
+    if (s.markdown_ratio >= 0.3) out.push('They use markdown; formatting is welcome.');
+    if (s.imperative_ratio >= 0.5) out.push('They give direct instructions. Match that: no hedging, no "you might consider".');
+    if (s.hedge_per_msg >= 0.6) out.push('They hedge when unsure \u2014 flag genuine uncertainty rather than sounding certain.');
+    if (s.courtesy_per_msg >= 0.6) {
+      out.push('Their register is polite; stay warm rather than clipped.');
+    } else if (s.courtesy_per_msg < 0.15 && s.imperative_ratio >= 0.3) {
+      out.push('Their register is terse and businesslike; skip pleasantries.');
+    }
+    if (s.caps_ratio >= 0.3) out.push('They use capitals for emphasis; strong emphasis in replies reads as normal to them.');
+    if (s.abbrev_per_msg >= 0.3) out.push('They use trade abbreviations freely \u2014 do not expand them.');
+    if (s.top_terms.length >= 3) {
+      out.push('Vocabulary they actually use: ' + s.top_terms.slice(0, 8).join(', ') + '. Prefer their words over synonyms.');
+    }
+    var body = out.map(function (l) { return '- ' + l; }).join('\n');
+    if (managerOverride) {
+      body += '\n- A manager has explicitly set this person\'s preferred style to "' + String(managerOverride) +
+        '". That is a deliberate instruction and OUTRANKS the observations above wherever they conflict.';
+    }
+    return '\n\nHOW THIS PERSON WRITES (observed over ' + s.samples + ' messages \u2014 adjust, do not caricature):\n' + body;
+  }
+
+  return { MIN_SAMPLES: MIN_SAMPLES, analyse: analyse, summarise: summarise, renderStyleDirectives: renderStyleDirectives };
+})();
+
+// Load once per session. A failed load leaves _sdStyleProvisioned null, which
+// renders nothing -- the same as having no evidence, which is the honest state.
+window.sdLoadStyleProfile = async function () {
+  try {
+    var d = await sdData('read', 'style_profile', {});
+    if (!d) { _sdStyleProvisioned = null; return null; }
+    _sdStyleProvisioned = d.provisioned === true;
+    _sdStyleProfile = d.data || null;
+    return _sdStyleProfile;
+  } catch (e) { _sdStyleProvisioned = null; return null; }
+};
+
+// Observe ONE message. Fire-and-forget: a style profile is never worth
+// delaying or failing a user's actual chat message for.
+window.sdObserveStyle = function (text) {
+  try {
+    if (!text || !String(text).trim()) return;
+    var obs = window.SAIRNStyle.analyse(text);
+    sdData('write', 'style_profile', { observation: obs }).then(function (d) {
+      if (d && d.ok) { _sdStyleProfile = d.data || _sdStyleProfile; _sdStyleProvisioned = true; }
+    }).catch(function () {});
+  } catch (e) {}
+};
+
+
 function loadSDMemories() {
   try {
     const raw = localStorage.getItem('stonedesk:ai_memories');
@@ -25460,10 +25625,32 @@ function buildSDSystemPrompt() {
       _sdMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
   }
 
+  // NEXUS STYLE PROFILE (2026-09-02). The block below was, until now, the ONLY
+  // per-person signal in this prompt -- and it is one word, set by hand, on the
+  // SHOP record, so two people at the same shop got byte-identical prompts.
+  // _sdStyleDirectives is observed from how THIS user actually writes; see
+  // docs/2026-09-02-nexus-style-profile-design.md.
+  //
+  // It returns '' below five observed messages, so until there is real evidence
+  // the prompt is exactly what it was before. And the shop's hand-set style is
+  // passed in as an override rather than replaced: a deliberately declared
+  // preference outranks an inferred one, and the renderer says so in the prompt
+  // instead of silently picking a winner.
   const style = (p && p.preferences && p.preferences.ai_style) || 'direct';
   const styleNote = '\n\nResponse style: ' + (style === 'direct' ? 'Be direct and concise.' : style === 'detailed' ? 'Provide detailed explanations.' : 'Be conversational and friendly.');
 
-  return base + profileBlock + memBlock + styleNote;
+  // The observed block goes LAST so it is the nearest instruction to the
+  // user's own message, and renderStyleDirectives returns '' until five
+  // messages have been observed -- so below the floor this line is a no-op
+  // and the prompt is byte-identical to what it was before.
+  var styleDirectives = '';
+  try {
+    if (window.SAIRNStyle && _sdStyleProfile) {
+      styleDirectives = window.SAIRNStyle.renderStyleDirectives(_sdStyleProfile, style) || '';
+    }
+  } catch (e) { styleDirectives = ''; }
+
+  return base + profileBlock + memBlock + styleNote + styleDirectives;
 }
 
 // === SAIRN INTELLIGENCE NETWORK WIRING (added June 16 2026) ===
