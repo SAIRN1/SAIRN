@@ -400,8 +400,17 @@ def load_live(path):
     generated = None
     if isinstance(data, dict):
         for t, c in data.items():
-            if t == '_generated_at':
-                generated = c
+            # EVERY underscore-prefixed key is metadata, not a table. This used
+            # to skip only '_generated_at', so the two
+            # `_anon_*_baseline_2026_08_26` keys already in the snapshot were
+            # being loaded as tables whose "columns" were their contents. It
+            # never surfaced because nothing references a table starting with
+            # an underscore -- a latent wrong answer waiting for the first file
+            # that did. Fixed here rather than left, since this change adds a
+            # third metadata key.
+            if t.startswith('_'):
+                if t == '_generated_at':
+                    generated = c
                 continue
             schema[_clean_ident(t) or t.lower()] = set(x.lower() for x in c)
         return schema, generated
@@ -461,6 +470,95 @@ def declared_from_text(text):
     return schema
 
 
+# ── CHECK-CONSTRAINT DRIFT, added 2026-09-02 ───────────────────────────────
+# WHY: SAIRNdental's dnt_appointments enforced octet_length(data::text) <= 65536
+# in production while sql/sairndental_data_schema.sql said 1291059 and a
+# migration sat written-but-unrun. Nothing could see it. This tool compared the
+# two things that agreed -- tables and columns -- and never looked at the one
+# that did not. A schema file claiming one bound while the database enforces
+# another is the same class as a seed committed but never loaded, and it was
+# invisible to every gate running at the time.
+#
+# NORMALISATION, AND ITS LIMIT, STATED. Postgres does not store what you typed:
+# `octet_length(data::text) <= 65536` comes back as
+# `CHECK ((octet_length((data)::text) <= 65536))`. Comparing raw text would
+# report drift on every constraint in the platform, which is the
+# permanently-red failure that made verify-skill-store's content check useless.
+# So both sides are lowercased with all whitespace and parentheses removed.
+# That is deliberately blunt: it cannot tell `a <= b` from `(a) <= (b)`, which
+# is the point, but it also cannot tell `a and b` from `b and a`. A reordered
+# predicate reads as drift. That is the safe direction -- a false positive gets
+# looked at, a false negative is the bug this exists to catch.
+CONSTRAINT_RE = re.compile(
+    r'constraint\s+([a-z0-9_]+)\s+check\s*\((.*?)\)\s*(?:,|\)\s*;|$)',
+    re.I | re.S)
+
+
+def _norm_predicate(s):
+    return re.sub(r'[\s()]+', '', (s or '').lower())
+
+
+def declared_constraints(sql_dir='sql'):
+    """{table: {constraint_name: predicate}} from every CREATE TABLE in sql/."""
+    out = {}
+    for path in sorted(glob.glob(os.path.join(sql_dir, '*.sql'))):
+        text = strip_noise(open(path, encoding='utf-8', errors='replace').read())
+        for m in re.finditer(r'create\s+table\s+(?:if\s+not\s+exists\s+)?([a-z0-9_."]+)\s*\((.*?)\n\s*\)\s*;',
+                             text, re.I | re.S):
+            table = _clean_ident(m.group(1))
+            body = m.group(2)
+            for c in CONSTRAINT_RE.finditer(body):
+                out.setdefault(table, {})[c.group(1).lower()] = c.group(2)
+    return out
+
+
+def load_live_constraints(path):
+    """{table: {name: definition}} from the snapshot's _constraints key."""
+    try:
+        data = json.load(open(path, encoding='utf-8'))
+    except Exception:
+        return None
+    raw = data.get('_constraints') if isinstance(data, dict) else None
+    if not isinstance(raw, dict):
+        return None
+    out = {}
+    for t, defs in raw.items():
+        if isinstance(defs, dict):
+            out[_clean_ident(t) or t.lower()] = {k.lower(): v for k, v in defs.items()}
+    return out
+
+
+def constraint_findings(declared, live):
+    """(findings, unchecked) -- findings are (severity, table, name, detail)."""
+    findings, unchecked = [], []
+    if live is None:
+        return findings, ['snapshot carries no _constraints key -- re-run '
+                          'sql/schema_snapshot_query.sql to capture them']
+    for table, cons in sorted(declared.items()):
+        if table not in live:
+            # The table itself may be genuinely absent; that is MISSING_TABLE's
+            # job to report, not this one's. Saying nothing here would hide it,
+            # so it is recorded as unchecked rather than skipped.
+            unchecked.append('%s -- not present in the live snapshot, so its '
+                             '%d declared CHECK(s) could not be compared'
+                             % (table, len(cons)))
+            continue
+        for name, pred in sorted(cons.items()):
+            got = live[table].get(name)
+            if got is None:
+                findings.append(('MISSING_CONSTRAINT', table, name,
+                                 'declared in sql/ and NOT present on the live table'))
+            elif _norm_predicate(pred) not in _norm_predicate(got):
+                findings.append(('CONSTRAINT_DRIFT', table, name,
+                                 'repo declares %s | live enforces %s'
+                                 % (pred.strip(), got.strip())))
+    return findings, unchecked
+
+
+_GATE_LIVE_PATH = None   # set by main() before _gate(); keeps _gate's
+                         # signature untouched for its existing callers.
+
+
 def _gate(paths, schema, source):
     """--gate: a narrow, blockable answer for tools/sairn_push_gate_hook.py.
 
@@ -506,6 +604,38 @@ def _gate(paths, schema, source):
         print('NON-BLOCKING (%s mode cannot prove these are absent from the database):' % source)
         for n in notes:
             print('  ' + n)
+    # ── CHECK-constraint drift (2026-09-02) ───────────────────────────────
+    # Blocks ONLY on a real disagreement, and only when the snapshot actually
+    # carries constraint data. "The snapshot has no _constraints key" is a
+    # could-not-tell, not a pass and not a block: making it blocking would
+    # refuse every SQL push until someone re-runs the snapshot query, which is
+    # how a gate gets switched off in its first hour.
+    #
+    # Once the data is there, drift IS blocking, because it is a fact about
+    # production: the repo says one bound and the database enforces another,
+    # which is exactly the state SAIRNdental shipped in with a 64 KiB ceiling
+    # under a 1.2 MiB photo payload.
+    if _GATE_LIVE_PATH:
+        cf, cu = constraint_findings(declared_constraints(),
+                                     load_live_constraints(_GATE_LIVE_PATH))
+        if cf:
+            print('')
+            print('CHECK CONSTRAINT DRIFT -- the repo and the database disagree:')
+            for kind, table, name, detail in cf:
+                print('  %-20s %s.%s' % (kind, table, name))
+                print('      %s' % detail)
+            print('  A migration is inert until someone runs it. Apply it, or correct')
+            print('  the schema file, then re-run sql/schema_snapshot_query.sql.')
+            blocking = True
+        # NO OUTPUT ON could-not-tell IN GATE MODE, and that is a deliberate
+        # reversal. My first version printed a "NOT CHECKED (not a pass)" line
+        # here and tests/sql_preflight/run_probe.py caught it immediately: it
+        # asserts that a clean gate run is exit 0 AND SILENT, because the push
+        # hook's clean case is silence. Printing on every clean SQL push is
+        # noise, and quietly changing a contract another session encoded in a
+        # committed test is not mine to do. The note still appears in the
+        # normal (non-gate) output, which is where a human reads it.
+
     return 1 if blocking else 0
 
 
@@ -575,6 +705,7 @@ def main(argv):
         schema, generated, source = declared_schema(), None, 'DECLARED'
 
     if gate:
+        globals()['_GATE_LIVE_PATH'] = live_path if source == 'LIVE' else None
         return _gate(paths, schema, source)
 
     print('schema source: %s  (%d tables, %d columns)%s' %
@@ -603,6 +734,28 @@ def main(argv):
                sum(len(v) for v in cols.values()), unresolved))
         for kind, t, c in findings:
             print('    %-16s %s' % (kind, t + ('.' + c if c else '')))
+
+    # ── CHECK-constraint drift (2026-09-02) ───────────────────────────────
+    # Runs only in LIVE mode: comparing the repo against itself would report
+    # nothing by construction. Reported separately from the per-file findings
+    # because it is a property of the DATABASE vs the repo, not of any file
+    # being pushed -- the dental drift existed while every SQL file in the repo
+    # was internally consistent.
+    if source == 'LIVE':
+        cf, cu = constraint_findings(declared_constraints(), load_live_constraints(live_path))
+        if cf or cu:
+            print('')
+            print('CHECK CONSTRAINTS')
+            for kind, table, name, detail in cf:
+                print('    %-20s %s.%s' % (kind, table, name))
+                print('        %s' % detail)
+            for note in cu:
+                print('    COULD NOT CHECK      %s' % note)
+            if cf:
+                print('    A schema file saying one bound while the database enforces another is')
+                print('    the same class as a seed committed and never loaded. SAIRNdental ran')
+                print('    that way with a 64 KiB ceiling under a 1.2 MiB photo payload.')
+            total += len(cf)
 
     print('')
     print('TOTAL FINDINGS: %d' % total)
