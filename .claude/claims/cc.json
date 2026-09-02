@@ -191,6 +191,16 @@
       "claimed_at_epoch": 1788362799.355053,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1788363765",
+      "session": "cc",
+      "subject": "platform",
+      "task": "sairncode validate license and profile slabs memory gating",
+      "claimed_at": "2026-09-02T15:42:45Z",
+      "claimed_at_epoch": 1788363765.8562772,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
