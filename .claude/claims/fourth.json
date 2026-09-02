@@ -189,8 +189,8 @@
       "task": "csv export scrapes the rendered dom instead of the data",
       "claimed_at": "2026-09-02T15:03:14Z",
       "claimed_at_epoch": 1788361394.2648563,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:14:37Z"
     }
   ]
 }
