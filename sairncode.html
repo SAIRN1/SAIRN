@@ -5201,9 +5201,32 @@ How to answer:
             var err = synced ? null : scLastDataError();
             var refused = !!(err && (err.code === 'FORBIDDEN' || err.code === 'NO_SESSION'));
             if (refused) {
-                try { localStorage.setItem('sc_settings', JSON.stringify([prior])); } catch (e) {}
+                // ROLL BACK ONLY THE FIELDS THIS CALL SET, ONTO THE CURRENT
+                // RECORD (fixed 2026-09-02). `prior` is the snapshot taken
+                // BEFORE the await above, so writing it back wholesale also
+                // reverted anything another scSaveSettings() call changed while
+                // this request was in flight -- and this file already documents
+                // that more than one panel writes this same 'default' row: the
+                // retention control lives in Privacy & Data, practice name and
+                // payer schedules live in Settings, and all four go through
+                // here. Save a payer schedule successfully, have a practice-name
+                // save refused a moment later, and the payer schedule silently
+                // disappeared with nothing said about it.
+                //
+                // The merge-on-write above was always right; only the rollback
+                // was not. Re-read, revert this call's own keys to their prior
+                // values, and leave every other field exactly as it now is.
+                var current = scSettingsRecord();
+                var reverted = Object.assign({}, current);
+                Object.keys(fields || {}).forEach(function (k) {
+                    if (Object.prototype.hasOwnProperty.call(prior, k)) reverted[k] = prior[k];
+                    else delete reverted[k];
+                });
+                reverted.id = 'default';
+                try { localStorage.setItem('sc_settings', JSON.stringify([reverted])); } catch (e) {}
+                return { record: reverted, synced: false, refused: true, error: err };
             }
-            return { record: refused ? prior : rec, synced: !!synced, refused: refused, error: err };
+            return { record: rec, synced: !!synced, refused: false, error: err };
         }
         // Shared honest-outcome message for every practice-level settings save.
         // Three genuinely different outcomes, never collapsed into two:
