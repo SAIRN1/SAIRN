@@ -265,6 +265,16 @@
       "claimed_at_epoch": 1788365661.1117013,
       "status": "released",
       "released_at": "2026-09-02T23:24:11Z"
+    },
+    {
+      "id": "cody-1788393595",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "click through pass every panel",
+      "claimed_at": "2026-09-02T23:59:55Z",
+      "claimed_at_epoch": 1788393595.9920993,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
