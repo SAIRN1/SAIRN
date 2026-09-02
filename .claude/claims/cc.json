@@ -201,6 +201,16 @@
       "claimed_at_epoch": 1788363765.8562772,
       "status": "released",
       "released_at": "2026-09-02T16:06:49Z"
+    },
+    {
+      "id": "cc-1788365393",
+      "session": "cc",
+      "subject": "platform",
+      "task": "self declaring extra action notes",
+      "claimed_at": "2026-09-02T16:09:53Z",
+      "claimed_at_epoch": 1788365393.2561357,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
