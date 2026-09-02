@@ -7056,8 +7056,24 @@ function sdInvExport(){
     <button class="q-btn" onclick="sdAddBundlePrompt()">📦 + Bundle</button>
     <button class="q-btn" onclick="sdLineageReport()">🧬 Lineage</button>
     <button class="q-btn" onclick="sdSlabsPrint()">🖨️ Print</button>
+    <button class="q-btn" onclick="sdSlabsPrintLabels()">🏷️ Print Labels</button>
   </div>
 </div>
+
+<!-- SCAN / FIND (2026-09-02, competitive-gap audit GAP 3). A USB barcode
+     scanner types into a focused field and sends Enter, so this needs no
+     driver and no camera permission -- onchange covers both the scanner and
+     someone typing an ID by hand. The reservation is what the yard actually
+     needs to know before cutting, so sdSlabScanLookup() puts it in a coloured
+     block rather than a field halfway down a list. -->
+<div style="display:flex;gap:8px;align-items:center;margin-bottom:12px;flex-wrap:wrap">
+  <input id="sd-slab-scan" placeholder="Scan a slab label or type an ID…"
+         onchange="sdSlabScanLookup()" onkeydown="if(event.key==='Enter'){event.preventDefault();sdSlabScanLookup();}"
+         style="flex:1;min-width:220px;padding:9px 12px;border:1px solid var(--border);border-radius:8px;font-size:14px;background:var(--card);color:var(--text)">
+  <button class="q-btn" onclick="sdSlabScanLookup()">🔍 Find</button>
+  <button class="q-btn" onclick="sdSlabScanClear()">Clear</button>
+</div>
+<div id="sd-slab-scan-out" style="margin-bottom:14px"></div>
 
 <!-- BULK SLAB UPLOAD (2026-08-04; comment corrected 2026-08-22 by Phase 1a) -- feeds
      "Visualize on Your Kitchen" with REAL photographed slabs. Saves into sdSlabs
@@ -7565,6 +7581,241 @@ function sdInvExport(){
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='slabs-'+sdLocalToday()+'.csv';a.click();
   };
+
+
+  // ── SLAB LABELS AND SCAN-TO-FIND (2026-09-02, competitive-gap audit GAP 3) ─
+  //
+  // `barcode` appeared ZERO times in this file. The only trace was
+  // `externalBarcode:''` on the bulk-upload path -- an empty placeholder wired
+  // to nothing. ActionFlow, Stone Profit Systems, Slabsmith, DDL (with a
+  // handheld scanner app) and Sistrom all have this, because it is the
+  // mechanism the industry uses to stop the DOUBLE SALE -- the error iBlocky
+  // puts second on its own homepage.
+  //
+  // The server-side compare-and-swap added earlier today stops the double-sale
+  // IN THE SYSTEM. It cannot stop someone walking into the yard and cutting a
+  // slab that is already promised, because nothing on the slab says so. That
+  // is what this closes: scan the slab, see who has it.
+  //
+  // NO NEW DEPENDENCY. qrcodejs was already being loaded on every page load
+  // (stonedesk.html:25450) and `new QRCode(` appeared ZERO times in the file --
+  // a library downloaded by every user and never used. It is used now.
+  //
+  // HONEST LIMIT, stated in the UI as well as here: these are QR labels. A
+  // 1D-only laser scanner will not read them; a 2D imager or a phone camera
+  // will. Supplier labels that ARE 1D still work, via externalBarcode below.
+
+  // The resolver. Deliberately separate from any DOM so it can be tested, and
+  // deliberately returns AMBIGUITY rather than picking a winner.
+  //
+  //   'SDSLAB:' prefix -- what our own labels carry, so a scan is unambiguous
+  //                       even if a supplier's code happens to equal a slab id
+  //   bare id          -- typed by hand, or scanned from an older label
+  //   externalBarcode  -- the supplier's own label, bound to a slab here
+  //
+  // TWO SLABS SHARING ONE EXTERNAL BARCODE IS REPORTED, NOT RESOLVED. Supplier
+  // codes repeat across bundles, and silently returning the first match is the
+  // same shape of mistake as the blind reservation write: a confident answer
+  // about the wrong physical stone.
+  function sdResolveSlabCode(code, slabs) {
+    var raw = String(code == null ? '' : code).trim();
+    if (!raw) return { match: null, how: null, candidates: [] };
+    var list = Array.isArray(slabs) ? slabs : [];
+    var norm = function (v) { return String(v == null ? '' : v).trim().toLowerCase(); };
+    var prefixed = /^sdslab:/i.test(raw);
+    var key = norm(prefixed ? raw.replace(/^sdslab:/i, '') : raw);
+    if (!key) return { match: null, how: null, candidates: [] };
+
+    var byId = list.filter(function (s) { return norm(s.id) === key; });
+    if (byId.length === 1) return { match: byId[0], how: prefixed ? 'prefixed-id' : 'id', candidates: byId };
+    if (byId.length > 1) return { match: null, how: 'id', candidates: byId };
+
+    // A prefixed code is OURS and means a slab id. It must not fall through to
+    // a supplier-barcode match -- that would answer a question nobody asked.
+    if (prefixed) return { match: null, how: null, candidates: [] };
+
+    var byBarcode = list.filter(function (s) { return norm(s.externalBarcode) === key; });
+    if (byBarcode.length === 1) return { match: byBarcode[0], how: 'external', candidates: byBarcode };
+    if (byBarcode.length > 1) return { match: null, how: 'external', candidates: byBarcode };
+    return { match: null, how: null, candidates: [] };
+  }
+
+  // Binding a supplier's own label to a slab. Refuses a code already bound
+  // elsewhere for the same reason the reservation refuses: one physical code
+  // pointing at two stones is worse than no code at all.
+  function sdBarcodeBindCheck(code, slabId, slabs) {
+    var raw = String(code == null ? '' : code).trim();
+    if (!raw) return { ok: false, message: 'Scan or type a code first.' };
+    if (/^sdslab:/i.test(raw)) return { ok: false, message: 'That is a StoneDesk label. It already identifies a slab — nothing to bind.' };
+    var norm = function (v) { return String(v == null ? '' : v).trim().toLowerCase(); };
+    var list = Array.isArray(slabs) ? slabs : [];
+    if (list.some(function (s) { return norm(s.id) === norm(raw); })) {
+      return { ok: false, message: 'That code is already a StoneDesk slab ID. Binding it as a supplier barcode would make one code mean two different slabs.' };
+    }
+    var clash = list.filter(function (s) { return norm(s.externalBarcode) === norm(raw) && norm(s.id) !== norm(slabId); });
+    if (clash.length) {
+      return { ok: false, message: 'That barcode is already bound to slab ' + clash[0].id + (clash[0].colorName ? ' (' + clash[0].colorName + ')' : '') + '. Unbind it there first.' };
+    }
+    return { ok: true, code: raw };
+  }
+
+  window.sdSlabScanLookup = function () {
+    var inp = document.getElementById('sd-slab-scan');
+    var out = document.getElementById('sd-slab-scan-out');
+    if (!inp || !out) return;
+    var raw = inp.value;
+    var r = sdResolveSlabCode(raw, eng());
+    if (!String(raw || '').trim()) { out.innerHTML = ''; return; }
+
+    if (!r.match && r.candidates.length > 1) {
+      // Say which slabs, not "ambiguous". A yard hand needs the list.
+      out.innerHTML = '<div style="padding:10px 12px;border-radius:8px;background:#fef3c7;border:1px solid #fbbf24;font-size:13px">' +
+        '<strong>' + r.candidates.length + ' slabs carry that code</strong> — it cannot identify one stone. ' +
+        'Check the physical labels for: ' +
+        r.candidates.map(function (s) { return escHtml(s.id) + (s.colorName ? ' (' + escHtml(s.colorName) + ')' : ''); }).join(', ') +
+        '</div>';
+      return;
+    }
+    if (!r.match) {
+      out.innerHTML = '<div style="padding:10px 12px;border-radius:8px;background:var(--stone);border:1px solid var(--border);font-size:13px">' +
+        'No slab carries the code <strong>' + escHtml(String(raw).trim()) + '</strong>. ' +
+        'If this is the supplier’s own label, bind it to a slab:' +
+        '<div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap">' +
+        '<select id="sd-slab-bind-target" style="flex:1;min-width:200px;padding:6px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px">' +
+        eng().filter(function(x){return dispStatus(x)!=='Cut';}).map(function(x){
+          return '<option value="' + escHtml(x.id) + '">' + escHtml(x.id + ' — ' + (x.colorName || x.material || 'Slab')) + '</option>';
+        }).join('') +
+        '</select>' +
+        '<button class="q-btn" onclick="sdSlabBindBarcode()">Bind barcode</button>' +
+        '</div></div>';
+      return;
+    }
+    var s = r.match;
+    var status = dispStatus(s);
+    // The reservation is the answer the yard actually needs, so it is the
+    // loudest thing on the card -- not a field halfway down a list.
+    var held = s.reservedFor
+      ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#fee2e2;border:1px solid #ef4444;font-size:13px"><strong>RESERVED FOR ' + escHtml(s.reservedFor) + '</strong> — do not cut this for another job.</div>'
+      : (status === 'Cut'
+        ? '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#e5e7eb;border:1px solid #9ca3af;font-size:13px"><strong>ALREADY CONSUMED</strong> — this slab has been cut.</div>'
+        : '<div style="margin-top:8px;padding:8px 10px;border-radius:6px;background:#dcfce7;border:1px solid #22c55e;font-size:13px"><strong>AVAILABLE</strong> — not reserved for anyone.</div>');
+    out.innerHTML = '<div style="padding:12px 14px;border-radius:8px;background:var(--card);border:1px solid var(--border)">' +
+      '<div style="font-size:15px;font-weight:800">' + escHtml(s.colorName || s.material || 'Slab') + '</div>' +
+      '<div style="font-size:12px;color:var(--muted);margin-top:2px">' +
+        'ID ' + escHtml(s.id) +
+        (dispSize(s) ? ' &middot; ' + escHtml(dispSize(s)) : '') +
+        (s.yardLocation ? ' &middot; ' + escHtml(s.yardLocation) : '') +
+        (s.supplier || s.vendor ? ' &middot; ' + escHtml(s.supplier || s.vendor) : '') +
+        ' &middot; matched by ' + (r.how === 'external' ? 'supplier barcode' : 'slab ID') +
+      '</div>' + held + '</div>';
+  };
+
+  window.sdSlabScanClear = function () {
+    var inp = document.getElementById('sd-slab-scan');
+    var out = document.getElementById('sd-slab-scan-out');
+    if (inp) { inp.value = ''; inp.focus(); }
+    if (out) out.innerHTML = '';
+  };
+
+  // Label sheet. What goes ON a label is only what does not change: a slab's
+  // status and reservation are deliberately NOT printed. A label saying
+  // "Available" outlives the fact by months and would be read as current --
+  // status is what the scan is for.
+  window.sdSlabsPrintLabels = function () {
+    var data = eng().filter(function (s) { return dispStatus(s) !== 'Cut'; });
+    if (!data.length) {
+      if (typeof notify === 'function') notify('No uncut slabs to label.', 'warn');
+      return;
+    }
+    var haveQR = (typeof QRCode !== 'undefined');
+    var imgs = {};
+    if (haveQR) {
+      var holder = document.createElement('div');
+      holder.style.cssText = 'position:absolute;left:-9999px;top:-9999px';
+      document.body.appendChild(holder);
+      try {
+        data.forEach(function (s) {
+          var cell = document.createElement('div');
+          holder.appendChild(cell);
+          try {
+            new QRCode(cell, { text: 'SDSLAB:' + s.id, width: 160, height: 160 });
+            var cv = cell.querySelector('canvas');
+            if (cv) imgs[s.id] = cv.toDataURL('image/png');
+          } catch (e) { /* one bad label must not lose the sheet */ }
+        });
+      } finally { holder.remove(); }
+    }
+    var w = window.open('', '_blank');
+    if (!w) { if (typeof notify === 'function') notify('The print window was blocked — allow pop-ups for this site.', 'warn'); return; }
+    var h = [];
+    h.push('<html><head><title>Slab Labels</title><style>' +
+      'body{font-family:Arial,sans-serif;padding:16px;color:#111}' +
+      '.sheet{display:flex;flex-wrap:wrap;gap:10px}' +
+      '.lab{border:1px solid #333;border-radius:6px;padding:10px;width:220px;box-sizing:border-box;page-break-inside:avoid;text-align:center}' +
+      '.lab img{width:130px;height:130px}' +
+      '.id{font-family:monospace;font-size:13px;font-weight:700;margin-top:4px;word-break:break-all}' +
+      '.nm{font-size:14px;font-weight:800;margin-top:2px}' +
+      '.mt{font-size:11px;color:#444}' +
+      '.warn{background:#fef3c7;border:1px solid #d97706;padding:10px 12px;border-radius:6px;font-size:13px;margin-bottom:12px}' +
+      '@media print{body{padding:6px}.warn{border-style:dashed}}' +
+      '</style></head><body>');
+    if (!haveQR) {
+      // Loud, and on the printed page -- a silently text-only label sheet is a
+      // pile of paper somebody scans at and gets nothing from.
+      h.push('<div class="warn"><strong>No QR codes on this sheet.</strong> The QR library did not load ' +
+        '(it comes from a CDN, so this usually means no internet at the time of printing). ' +
+        'The slab IDs below are correct and can be typed into Scan / Find by hand. Reprint when back online for scannable labels.</div>');
+    }
+    h.push('<div class="warn">Status and reservations are deliberately NOT printed on a label — they change, and a printed one would still say ' +
+      '&ldquo;available&rdquo; long after it was not. Scan the label to see who a slab is reserved for.</div>');
+    h.push('<div class="sheet">');
+    data.forEach(function (s) {
+      h.push('<div class="lab">');
+      if (imgs[s.id]) h.push('<img src="' + imgs[s.id] + '" alt="">');
+      h.push('<div class="nm">' + escHtml(s.colorName || s.material || 'Slab') + '</div>');
+      h.push('<div class="id">' + escHtml(s.id) + '</div>');
+      var meta = [dispSize(s), s.yardLocation || '', s.supplier || s.vendor || ''].filter(Boolean);
+      if (meta.length) h.push('<div class="mt">' + escHtml(meta.join(' · ')) + '</div>');
+      h.push('</div>');
+    });
+    h.push('</div></body></html>');
+    w.document.write(h.join(''));
+    w.document.close();
+    w.print();
+    if (typeof notify === 'function') {
+      notify(data.length + ' label' + (data.length === 1 ? '' : 's') + ' sent to print' + (haveQR ? '.' : ' — WITHOUT QR codes, see the note on the sheet.'), haveQR ? '' : 'warn');
+    }
+  };
+
+  // Binds the supplier's own label to a slab. The refusal cases live in
+  // sdBarcodeBindCheck() above so they can be tested without a DOM.
+  //
+  // HONEST LIMIT: this writes through the ordinary 'write' action, which is a
+  // blind upsert. Two devices binding the SAME code to DIFFERENT slabs in the
+  // same moment would both succeed, and the check below would not see it. That
+  // hole is real and it is smaller than the reservation one it deliberately
+  // does not copy: a duplicate barcode makes a scan ambiguous, and
+  // sdResolveSlabCode() REPORTS ambiguity rather than guessing, so it surfaces
+  // at the next scan instead of quietly identifying the wrong stone.
+  window.sdSlabBindBarcode = function () {
+    var inp = document.getElementById('sd-slab-scan');
+    var sel = document.getElementById('sd-slab-bind-target');
+    if (!inp || !sel) return;
+    var slabs = eng();
+    var chk = sdBarcodeBindCheck(inp.value, sel.value, slabs);
+    if (!chk.ok) { if (typeof notify === 'function') notify(chk.message, 'err'); return; }
+    var target = slabs.filter(function (s) { return String(s.id) === String(sel.value); })[0];
+    if (!target) { if (typeof notify === 'function') notify('That slab is no longer in the list — reload and try again.', 'err'); return; }
+    target.externalBarcode = chk.code;
+    if (typeof saveSlabs === 'function') saveSlabs();
+    if (typeof slabSyncOne === 'function') slabSyncOne(target);
+    if (typeof notify === 'function') notify('Bound ' + chk.code + ' to slab ' + target.id + '.', '');
+    sdSlabScanLookup();
+  };
+
+  // Exposed for tests; nothing else calls them from outside this IIFE.
+  window.sdResolveSlabCode = sdResolveSlabCode;
+  window.sdBarcodeBindCheck = sdBarcodeBindCheck;
 
   sdSlabsRender();
 })();
