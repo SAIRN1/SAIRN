@@ -90,6 +90,16 @@
       "claimed_at_epoch": 1788346231.9743443,
       "status": "released",
       "released_at": "2026-09-02T11:16:23Z"
+    },
+    {
+      "id": "fourth-1788348942",
+      "session": "fourth",
+      "subject": "stonedesk-hr",
+      "task": "utc local date fix",
+      "claimed_at": "2026-09-02T11:35:42Z",
+      "claimed_at_epoch": 1788348942.492686,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
