@@ -526,16 +526,9 @@ module.exports = async (req, res) => {
         return;
       }
 
-      const obs = payload && payload.observation;
-      if (!obs || typeof obs !== 'object' || !obs.samples) {
-        res.status(400).json({ error: { message: 'observation is required' } });
-        return;
-      }
-      // Guard against a client posting a whole conversation as one "sample".
-      if (Number(obs.samples) !== 1) {
-        res.status(400).json({ error: { code: 'ONE_AT_A_TIME', message: 'Post one observation per message' } });
-        return;
-      }
+      // Validated above, before the database was touched. Deliberately NOT
+      // re-checked here: two copies of one rule is how they drift apart.
+      const obs = payload.observation;
       const merged = styleLib.mergeObservation(existing ? existing.data : null, obs);
       const w = await fetch(rest('sairn_style_profiles?on_conflict=license_hash,employee_id'), {
         method: 'POST',
