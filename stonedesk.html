@@ -8538,14 +8538,11 @@ window.sdSafetyPrint=function(){
   w.document.write('</table></body></html>');
   w.document.close();w.print();
 };
-window.sdSafetyExport=function(){
-  var d=sdSafetyData.incidents;
-  var rows=[['ID','Date','Type','Employee','Description','Root Cause','Actions','OSHA Reportable']];
-  d.forEach(function(i){rows.push([i.id,(i.datetime||'').slice(0,10),i.type,i.employee,i.desc,i.cause||'',i.actions||'',i.oshaReportable||'']);});
-  var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-  var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='safety-incidents-pinnacle-'+sdLocalToday()+'.csv';a.click();
-};
+// sdSafetyExport REMOVED 2026-09-02 -- superseded, not lost. The safety panel
+// already exports incidents via safetyExport, which IS wired to a button.
+// This is the duplicate the 2026-08-31 dead-function sweep identified as
+// "1 of 16 is a superseded duplicate". Removing the duplicate, not the
+// feature.
 </script>
 </div>
 
@@ -16656,9 +16653,14 @@ function crExportCSV() {
 }
 
 // Stubs for any remaining old references
-window.crSave   = function(){ if(typeof showToast==='function') showToast('Use Send to SAIRNbiz'); };
+// crSave REMOVED 2026-09-02 -- a no-op that toasted "Use Send to SAIRNbiz".
+// Its own comment called it "kept as no-op for backwards compat", but it had
+// TWO occurrences in the file: that comment and its own definition. The
+// compatibility it preserved was with no caller. crSendToBridge is the real
+// action and always was.
 window.crUpdate = function(){};
-window.crPostGL = function(){ crSendToBridge(); };
+// crPostGL REMOVED 2026-09-02 -- a one-line wrapper around crSendToBridge
+// with zero callers. Call crSendToBridge directly.
 
 document.addEventListener('DOMContentLoaded', function() {
   var dateEl = document.getElementById('cr-date');
@@ -25304,14 +25306,12 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
 
 <script>
 // SAIRN Debounce Utility — prevents Claude call hammering on rapid input
-window.saDebounce = function(func, wait) {
-  var timeout;
-  return function() {
-    var context = this, args = arguments;
-    clearTimeout(timeout);
-    timeout = setTimeout(function() { func.apply(context, args); }, wait || 300);
-  };
-};
+// saDebounce REMOVED 2026-09-02 -- a generic debounce utility whose comment
+// stated a real purpose ("prevents Claude call hammering on rapid input")
+// and which had no callers anywhere in the file. Deleting it is NOT a
+// decision that input hammering is fine; it is a statement that nothing was
+// using this to prevent it. If a debounce is wanted on the AI input, wire
+// one deliberately rather than assuming this was doing it.
 </script>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
@@ -32542,6 +32542,15 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
 
   function showApp() {
     if (!checkTrialGate()) return;
+    // NEXUS style profile: load once, on the ONE path every session takes into
+    // the app. Without this the observer wrote a profile on every message and
+    // nothing ever read it back, so _sdStyleProfile stayed null and
+    // buildSDSystemPrompt's directives never rendered -- observed forever,
+    // applied never. Caught by the reachability check flagging
+    // sdLoadStyleProfile as defined-but-never-called, which is exactly the
+    // class of miss that check exists for.
+    // Fire-and-forget: a style profile must never delay or block sign-in.
+    try { if (window.sdLoadStyleProfile) window.sdLoadStyleProfile(); } catch (e) {}
     // Hide ALL possible login containers
     ['login','auth-screen','login-screen','auth-gate','ls','auth-box'].forEach(function(id) {
       var el = document.getElementById(id);
