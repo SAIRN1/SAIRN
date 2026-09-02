@@ -201,6 +201,16 @@
       "claimed_at_epoch": 1788362743.10882,
       "status": "released",
       "released_at": "2026-09-02T23:20:41Z"
+    },
+    {
+      "id": "fourth-1788392038",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "nesting dxf machine output",
+      "claimed_at": "2026-09-02T23:33:58Z",
+      "claimed_at_epoch": 1788392038.4037964,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
