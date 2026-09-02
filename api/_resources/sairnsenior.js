@@ -106,6 +106,14 @@ module.exports = {
   // the screen shows a raw id; WRITE is management-only, because opening or
   // closing an office is not a scheduling decision. Bespoke branch below.
     'sen_branches',
+  // SAIRNsenior payer contracts (2026-09-02, competitive-gap audit B4) --
+  // see sql/sairnsenior_payer_contracts_schema.sql. What a payer pays per
+  // hour, for a stated period, optionally scoped to one state. Gate is
+  // MANAGEMENT-ONLY for read AND write, matching sen_claims rather than the
+  // referral family: a contracted rate is financial data and a caregiver,
+  // coordinator or scheduler has no minimum-necessary reason to see what
+  // each payer pays. Bespoke branch below.
+    'sen_payer_contracts',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

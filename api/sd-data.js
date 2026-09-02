@@ -3073,6 +3073,62 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, brBody) });
       return;
     }
+    // ── SAIRNSENIOR: sen_payer_contracts (2026-09-02, audit B4) ────────────
+    // MANAGEMENT-ONLY ON BOTH VERBS, matching sen_claims rather than the
+    // branch gate directly above. The branch split read open because a
+    // caregiver's own roster row names a branch and the name has to resolve; a
+    // contracted RATE is financial data and nothing on a caregiver's,
+    // coordinator's or scheduler's screen needs it.
+    if (resource === 'sen_payer_contracts' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can view or manage payer contracts' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest('sen_payer_contracts?license_hash=eq.' + enc(licHash) + '&select=contract_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.contract_id }, x.data)), provisioned: true });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_payer_contracts payload.id is required' } }); return; }
+      const pcProblems = [];
+      if (!payload.payer) pcProblems.push('payer is required');
+      // A rate of zero is not a contract, it is an empty field that would price
+      // every claim it matched at nothing while LOOKING like a resolved rate --
+      // strictly worse than no contract at all, which at least says so.
+      if (!(Number(payload.rate_per_hour) > 0)) pcProblems.push('rate_per_hour must be greater than zero');
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.effective_on || ''))) pcProblems.push('effective_on must be YYYY-MM-DD');
+      if (payload.term_on && !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.term_on))) pcProblems.push('term_on, when present, must be YYYY-MM-DD');
+      if (payload.term_on && String(payload.term_on) < String(payload.effective_on)) pcProblems.push('term_on is before effective_on');
+      // Blank means agency-wide and is allowed. A non-blank state must be two
+      // letters, for the same reason sen_branches refuses a free-text one: it
+      // is what the contract is matched on.
+      const pcState = typeof payload.state === 'string' ? payload.state.trim().toUpperCase() : '';
+      if (pcState && !/^[A-Z]{2}$/.test(pcState)) pcProblems.push('state, when present, must be a 2-letter code (blank means agency-wide)');
+      if (pcProblems.length) {
+        res.status(400).json({ error: { code: 'INVALID_CONTRACT', message: 'sen_payer_contracts: ' + pcProblems.join('; ') } });
+        return;
+      }
+      const pcBody = Object.assign({}, payload, { state: pcState, rate_per_hour: Number(payload.rate_per_hour) });
+      delete pcBody.id;
+      const r = await fetch(rest('sen_payer_contracts?on_conflict=license_hash,contract_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', contract_id: String(payload.id), data: pcBody, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_payer_contracts_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, pcBody) });
+      return;
+    }
 
     if (resource === 'sen_settings' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');

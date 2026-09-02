@@ -234,6 +234,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-training" onclick="nav('training')"><span class="sico">&#127891;</span>Training Hours<span class="badge br" id="tr-badge" style="display:none;margin-left:8px"></span></button>
       <button class="sb" id="sb-hiring" onclick="nav('hiring')"><span class="sico">&#128101;</span>Hiring</button>
       <button class="sb" id="sb-branches" onclick="nav('branches')"><span class="sico">&#127970;</span>Branches</button>
+      <button class="sb" id="sb-contracts" onclick="nav('contracts')"><span class="sico">&#128220;</span>Payer Contracts</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -651,6 +652,62 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div></div>
 
+<!-- PAYER CONTRACTS (competitive-gap audit B4, 2026-09-02)
+     Before this panel, generateClaim() created every claim with rate 0 and a
+     biller typed the rate in by hand, one claim at a time, from memory or a
+     spreadsheet. A rate typed from memory is how a multi-payer agency
+     under-bills for months without noticing, and nothing in the record
+     afterwards says which rate was SUPPOSED to apply.
+
+     THE RATE IS RESOLVED AGAINST THE SERVICE DATE, NEVER TODAY -- a claim is
+     billed under the contract in force on the day the work was done.
+
+     AND WHERE TWO EQUALLY SPECIFIC CONTRACTS ARE BOTH IN FORCE, NOTHING IS
+     APPLIED. The overlap is surfaced on this panel, to whoever can fix it,
+     rather than only ambushing a biller mid-claim. -->
+<div class="panel" id="panel-contracts">
+  <div class="ph"><div><div class="ptitle">Payer Contracts</div><div class="psub">What each payer pays per hour, for what period, in what state &mdash; so a claim is priced from the contract instead of from memory</div></div>
+    <div class="pa"><button class="btn bp bs" id="pc-add-btn" onclick="openPcModal()">+ Contract</button></div>
+  </div>
+  <div class="card" id="pc-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Contracted rates are financial data and are limited to management.</div></div>
+  <div id="pc-content">
+    <div id="pc-conflicts" style="margin-bottom:14px"></div>
+    <div class="card"><div class="ch"><span class="ct">Contracts on file</span></div><div class="cb">
+      <div class="note" style="margin-bottom:12px">A contract with a <strong>state</strong> applies only in that state and outranks an agency-wide one for the same payer &mdash; specific beats general. The state comes from the client's <strong>branch</strong>, so a client with no branch has no known state and a state-scoped contract will not match them. <strong>In force</strong> below is judged against today; a claim is always judged against its own service date.</div>
+      <div class="tw"><table><thead><tr><th>Payer</th><th>Plan</th><th>Scope</th><th>Rate</th><th>Period</th><th>Today</th><th>Authorisation</th><th>Actions</th></tr></thead>
+      <tbody id="pc-tbody"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="pcmodal"><div class="mbox">
+  <div class="mtitle" id="pc-modal-title">Add Contract</div>
+  <div class="fr">
+    <div class="fg"><label>Payer</label><select id="pc-payer"><option value="medicaid">Medicaid</option><option value="va">VA</option><option value="ltci">LTCI</option><option value="private">Private Pay</option><option value="self_pay">Self-Pay</option></select></div>
+    <div class="fg"><label>Plan name</label><input id="pc-plan" placeholder="e.g. Buckeye MyCare, or leave blank"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>State (blank = agency-wide)</label><input id="pc-state" maxlength="2" placeholder="OH" style="text-transform:uppercase"></div>
+    <div class="fg"><label>Rate per hour</label><input id="pc-rate" type="number" step="0.01" min="0" placeholder="28.50"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Effective from</label><input id="pc-effective" type="date"></div>
+    <div class="fg"><label>Ends (blank = open)</label><input id="pc-term" type="date"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Prior authorisation</label><select id="pc-auth"><option value="false">Not required</option><option value="true">Required</option></select></div>
+    <div class="fg"><label>Authorisation note</label><input id="pc-auth-note" maxlength="300" placeholder="What the payer requires, in your words"></div>
+  </div>
+  <!-- A zero rate is refused here and on the server. It is not a contract, it
+       is an empty field that would price every claim it matched at nothing
+       while LOOKING resolved -- strictly worse than no contract at all, which
+       at least says so on the claim. -->
+  <div class="note" style="margin:0 0 12px">The rate must be greater than zero and an effective date is required &mdash; a zero-rate or undated contract would price claims at nothing while looking resolved. To retire a contract, give it an <strong>end date</strong>: nothing is deleted, because a deleted contract leaves every claim it priced with no explanation of where the rate came from.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closePcModal()">Cancel</button>
+    <button class="btn bp" onclick="savePayerContract()">Save</button>
+  </div>
+</div></div>
+
 <!-- HIRING FUNNEL (competitive-gap audit A5, 2026-09-02)
      The audit records A5 as BASELINE in this vertical rather than an
      enterprise extra -- applicant tracking is native in both AxisCare and
@@ -935,7 +992,13 @@ function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
-function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
+// CENTS ARE SHOWN, ALWAYS (2026-09-02). This rounded to whole dollars, which
+// is a rounding of the DISPLAY and not of the stored number -- so a $28.50
+// contract rate read back as "$28/hr" and a $427.50 claim as "$428". Neither is
+// a number anyone can reconcile against a remittance. The four aggregate call
+// sites (branch revenue, referral revenue, appeal recovery) now carry cents
+// too; that is noisier and it is never wrong, which is the trade wanted here.
+function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 function senLocalToday(){var d=new Date();return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
@@ -1120,6 +1183,7 @@ function nav(id){
   if(id==='training')trRender();
   if(id==='hiring')hrRender();
   if(id==='branches')brRender();
+  if(id==='contracts')pcRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -2653,7 +2717,11 @@ function blRender(){
   if(denied)denied.style.display=isMgmt?'none':'block';
   if(content)content.style.display=isMgmt?'block':'none';
   if(!isMgmt)return;
-  senHydrateClaims().then(function(){
+  // Contracts are hydrated alongside claims, not only when the Contracts panel
+  // is opened. A biller who goes straight to Billing on a fresh device would
+  // otherwise resolve every rate against an empty local list and create a
+  // screenful of zero-rate claims that a contract on the server already priced.
+  Promise.all([senHydrateClaims(),senHydratePayerContracts()]).then(function(){
     blRenderKpis();
     renderReadyToBill();
     renderClaimsTable();
@@ -2718,12 +2786,29 @@ async function generateClaim(visitId){
   var v=visits().find(function(x){return x.id===visitId;});if(!v){toast('Visit not found');return;}
   var cl=clients().find(function(c){return c.id===v.client_id;});
   var hoursBilled=visitHours(v);
+  // THE RATE COMES FROM THE CONTRACT IN FORCE ON THE SERVICE DATE, not from
+  // the biller's memory and not from today's contract. Where no single
+  // contract resolves, the claim is still created at zero -- a visible,
+  // obviously-unfinished number a biller must fill in -- and the REASON is
+  // stored on the row and told to them, rather than leaving them to work out
+  // why nothing was applied.
+  var rate=pcResolveRate((cl&&cl.payer)||'',v.scheduled_date,pcStateForClient(v.client_id));
   var rec={id:newId('CLM'),visit_id:v.id,client_id:v.client_id,client_name:v.client_name||(cl&&cl.name)||'',
-    payer:(cl&&cl.payer)||'',service_date:v.scheduled_date,hours_billed:hoursBilled,rate:0,amount:0,status:'draft'};
+    payer:(cl&&cl.payer)||'',service_date:v.scheduled_date,hours_billed:hoursBilled,
+    rate:rate.status==='applied'?rate.rate_per_hour:0,
+    amount:rate.status==='applied'?Math.round(rate.rate_per_hour*hoursBilled*100)/100:0,
+    rate_source:rate.status,rate_source_note:rate.reason||'',
+    rate_contract_id:rate.status==='applied'?rate.contract_id:'',
+    status:'draft'};
   var list=claims();list.push(rec);st('sen_claims',list);
   renderReadyToBill();renderClaimsTable();blRenderKpis();
   var saved=await senData('write','sen_claims',rec,true);
-  toast(saved?'Claim created -- set a rate to compute the amount':'Saved on this device only -- server sync failed, try again with a connection');
+  var priced=rate.status==='applied'
+    ? 'Claim created at '+fmt(rate.rate_per_hour)+'/hr -- '+rate.reason+
+      (rate.requires_authorization?' This payer requires prior authorisation'+(rate.auth_note?': '+rate.auth_note:'')+'.':'')
+    : 'Claim created at a ZERO rate -- '+rate.reason+' Set the rate by hand before submitting.';
+  toast(saved?priced:'Saved on this device only -- server sync failed, try again with a connection',
+    rate.status==='applied'&&!rate.requires_authorization?4000:9000);
 }
 function renderClaimsTable(){
   var cl=claims().slice().sort(function(a,b){return (b.service_date||'').localeCompare(a.service_date||'');});
@@ -2853,6 +2938,196 @@ function confirmClaimAction(){
 }
 function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
 function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
+
+// ── PAYER CONTRACTS (competitive-gap audit B4, 2026-09-02) ───────────────
+// THE PROBLEM, IN THE CODE THIS CHANGES: generateClaim() created every claim
+// with `rate: 0` and the biller typed the rate in by hand, one claim at a
+// time. That is not merely laborious -- a rate typed from memory is how a
+// multi-payer agency under-bills for months without noticing, and nothing in
+// the record afterwards says which rate was SUPPOSED to apply.
+//
+// RESOLVED AGAINST THE SERVICE DATE, NEVER TODAY. A claim is billed under the
+// contract in force on the day the work was done. Resolving against today
+// would re-rate historical claims every time a contract renews and would
+// silently change what an already-submitted claim says it was worth.
+//
+// SPECIFIC BEATS GENERAL, DECLARED RATHER THAN EMERGENT: a contract carrying a
+// state applies only in that state and outranks an agency-wide one for the
+// same payer. The state comes from the CLIENT'S BRANCH -- and a client with no
+// branch has no known state, so a state-scoped contract does not match them.
+// Matching it anyway would be assuming the state, which is what the column
+// exists to stop.
+//
+// AND WHEN TWO EQUALLY SPECIFIC CONTRACTS ARE BOTH IN FORCE, THIS REFUSES. It
+// does not take the newer, the higher, or the first row. Billing at a rate
+// nobody chose is worse than billing at zero: a zero is visible on the screen
+// and a plausible wrong rate is not.
+function payerContracts(){return ld('sen_payer_contracts',[]);}
+
+// HYDRATION REPLACES, IT DOES NOT ONLY ADD. senHydrateClaims() above merges
+// server rows the device has never seen and leaves any row it already holds
+// alone -- correct there, because a claim's local copy may be an edit this
+// device made and has not yet synced.
+//
+// A CONTRACT IS THE OPPOSITE CASE. The server copy is the agency's rate; a
+// stale local copy is a rate that was changed on another manager's machine and
+// never arrived here, which is precisely the "billing from memory" failure this
+// whole panel exists to remove. So a server row wins over the local row of the
+// same id, and local-only rows (written offline, not yet synced) are kept.
+function senHydratePayerContracts(){
+  if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  return senData('read','sen_payer_contracts',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var byId={};
+    payerContracts().forEach(function(c){if(c&&c.id)byId[c.id]=c;});
+    var changed=false;
+    serverRows.forEach(function(c){
+      if(!c||!c.id)return;
+      if(JSON.stringify(byId[c.id])!==JSON.stringify(c)){byId[c.id]=c;changed=true;}
+    });
+    if(changed)st('sen_payer_contracts',Object.keys(byId).map(function(k){return byId[k];}));
+    return changed;
+  }).catch(function(){return false;});
+}
+
+function pcInForce(c,onDate){
+  if(!c||!hrIsDate(onDate))return false;
+  if(!hrIsDate(c.effective_on)||c.effective_on>onDate)return false;
+  // A term date that is PRESENT but unreadable makes the contract not in force,
+  // rather than being skipped as if the field were blank. Skipping it would
+  // turn a malformed end date into an open-ended one and keep pricing claims
+  // under an expired contract forever, which is the silent-wrong direction.
+  // This way the claim lands at a visible zero with a reason on it.
+  if(c.term_on&&!hrIsDate(c.term_on))return false;
+  if(c.term_on&&c.term_on<onDate)return false;
+  return true;
+}
+// The state a claim is judged in: the client's branch's state, or '' when the
+// client has no branch or the branch is not on this device. '' is "not known",
+// never "no state" -- the caller must not treat it as a match for anything.
+function pcStateForClient(clientId){
+  var c=clients().find(function(x){return x.id===clientId;});
+  if(!c||!c.branch_id)return '';
+  var b=branches().find(function(x){return x.id===c.branch_id;});
+  return (b&&b.state)||'';
+}
+// applied | none | ambiguous, and the reason in words for the last two.
+function pcResolveRate(payer,serviceDate,state){
+  if(!hrIsDate(serviceDate))return {status:'none',reason:'The visit has no service date, so no contract period can be checked.'};
+  var p=hrSourceKey(payer);
+  if(!p)return {status:'none',reason:'This client has no payer recorded, so there is no contract to match.'};
+  var live=payerContracts().filter(function(c){
+    return hrSourceKey(c.payer)===p&&pcInForce(c,serviceDate);
+  });
+  var scoped=live.filter(function(c){return c.state&&state&&c.state===state;});
+  var wide=live.filter(function(c){return !c.state;});
+  var pick=scoped.length?scoped:wide;
+  if(!pick.length){
+    return {status:'none',reason:live.length
+      ? 'A contract for this payer exists but is scoped to another state, and this client\'s branch is '+(state?'in '+state:'not recorded')+'.'
+      : 'No contract is on file for this payer covering '+serviceDate+'.'};
+  }
+  if(pick.length>1){
+    return {status:'ambiguous',candidates:pick.map(function(c){return {id:c.id,plan_name:c.plan_name||'',rate_per_hour:c.rate_per_hour,state:c.state||''};}),
+      reason:pick.length+' contracts for this payer are equally specific and both in force on '+serviceDate+
+        '. No rate is applied: billing at a rate nobody chose is worse than billing at zero. Give one of them a term date, or scope one to a state.'};
+  }
+  var c=pick[0];
+  return {status:'applied',contract_id:c.id,plan_name:c.plan_name||'',rate_per_hour:Number(c.rate_per_hour)||0,
+    state:c.state||'',requires_authorization:c.requires_authorization===true,auth_note:c.auth_note||'',
+    reason:'Rate from '+(c.plan_name||'the contract on file')+(c.state?' ('+c.state+')':' (agency-wide)')+', in force on '+serviceDate+'.'};
+}
+
+var pcEditId=null;
+function openPcModal(id){
+  pcEditId=id||null;
+  var c=id?payerContracts().find(function(x){return x.id===id;}):null;
+  $('pc-modal-title').textContent=c?'Edit Contract':'Add Contract';
+  $('pc-payer').value=(c&&c.payer)||'medicaid';
+  $('pc-plan').value=(c&&c.plan_name)||'';
+  $('pc-state').value=(c&&c.state)||'';
+  $('pc-rate').value=(c&&c.rate_per_hour)||'';
+  $('pc-effective').value=(c&&c.effective_on)||'';
+  $('pc-term').value=(c&&c.term_on)||'';
+  $('pc-auth').value=(c&&c.requires_authorization)?'true':'false';
+  $('pc-auth-note').value=(c&&c.auth_note)||'';
+  $('pcmodal').classList.add('on');
+}
+function closePcModal(){$('pcmodal').classList.remove('on');pcEditId=null;}
+async function savePayerContract(){
+  var rate=Number($('pc-rate').value);
+  // A zero rate is not a contract -- it is an empty field that would price
+  // every claim it matched at nothing while looking resolved. Refused here and
+  // on the server.
+  if(!(rate>0)){toast('The hourly rate must be greater than zero -- a zero-rate contract would price claims at nothing while looking resolved');return;}
+  var eff=$('pc-effective').value;
+  if(!eff){toast('An effective date is required -- a contract with no start cannot be matched to a service date');return;}
+  var term=$('pc-term').value||'';
+  if(term&&term<eff){toast('The end date is before the start date');return;}
+  var state=($('pc-state').value||'').trim().toUpperCase();
+  if(state&&!/^[A-Z]{2}$/.test(state)){toast('State must be blank (agency-wide) or a 2-letter code');return;}
+  var rec={id:pcEditId||newId('PC'),payer:$('pc-payer').value,plan_name:$('pc-plan').value.trim(),
+    state:state,rate_per_hour:rate,effective_on:eff,term_on:term,
+    requires_authorization:$('pc-auth').value==='true',auth_note:$('pc-auth-note').value.trim().slice(0,300),
+    created_at:(pcEditId&&(payerContracts().find(function(x){return x.id===pcEditId;})||{}).created_at)||senLocalToday()};
+  var list=payerContracts();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_payer_contracts',list);
+  // pcPaint, NOT pcRender: pcRender hydrates, and a hydrate fired the instant
+  // before the write lands would read the row back as the server still has it
+  // and silently undo the edit that was just made on screen.
+  closePcModal();pcPaint();
+  var saved=await senData('write','sen_payer_contracts',rec,true);
+  toast(saved?'Contract saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function pcRender(){
+  var ok=senIsManagement();
+  var denied=$('pc-denied'),content=$('pc-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  // Painted once from what is on the device so the panel is never blank while
+  // the network is slow, then again once the server has answered.
+  pcPaint();
+  senHydratePayerContracts().then(pcPaint);
+}
+function pcPaint(){
+  if(!senIsManagement())return;
+  var list=payerContracts(),today=senLocalToday();
+  var tb=$('pc-tbody');
+  if(tb)tb.innerHTML=list.length?list.slice().sort(function(a,b){
+    return (a.payer||'').localeCompare(b.payer||'')||(b.effective_on||'').localeCompare(a.effective_on||'');
+  }).map(function(c){
+    var live=pcInForce(c,today);
+    return '<tr><td>'+H((c.payer||'').replace('_',' '))+'</td><td>'+H(c.plan_name||'--')+'</td>'+
+      '<td>'+H(c.state||'agency-wide')+'</td><td>'+fmt(c.rate_per_hour)+'/hr</td>'+
+      '<td>'+fdate(c.effective_on)+' &ndash; '+(c.term_on?fdate(c.term_on):'open')+'</td>'+
+      '<td>'+(live?'<span class="badge bg">In force</span>':'<span class="badge bx">Not today</span>')+'</td>'+
+      '<td>'+(c.requires_authorization?'<span class="badge bw">Auth required</span>':'--')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openPcModal(\''+H(c.id)+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No contracts on file &mdash; every claim will be created at a zero rate for a biller to set by hand</td></tr>';
+
+  // AMBIGUITY IS SURFACED BEFORE IT BLOCKS A CLAIM, not only at billing time.
+  // A conflict found while creating a claim is found by a biller in a hurry;
+  // found here it is found by whoever can fix it.
+  var conflicts=[];
+  var payers={};list.forEach(function(c){payers[hrSourceKey(c.payer)]=c.payer;});
+  Object.keys(payers).forEach(function(k){
+    var states=[''].concat(list.filter(function(c){return hrSourceKey(c.payer)===k&&c.state;}).map(function(c){return c.state;}));
+    [...new Set(states)].forEach(function(s){
+      var r=pcResolveRate(payers[k],today,s);
+      if(r.status==='ambiguous')conflicts.push({payer:payers[k],state:s||'agency-wide',reason:r.reason});
+    });
+  });
+  var cf=$('pc-conflicts');
+  if(cf)cf.innerHTML=conflicts.length
+    ? '<div class="note" style="margin:0"><strong>'+conflicts.length+' unresolved overlap(s).</strong> '+
+      conflicts.map(function(x){return H(x.payer)+' in '+H(x.state)+' &mdash; '+H(x.reason);}).join('<br>')+
+      '</div>'
+    : '';
+}
 
 // ── BRANCHES (competitive-gap audit B1, 2026-09-02) ──────────────────────
 // Computed in-page, matching the referral, training and hiring panels beside
