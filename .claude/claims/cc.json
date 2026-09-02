@@ -138,8 +138,8 @@
       "task": "exec context relocation, ai usage token columns",
       "claimed_at": "2026-09-02T13:31:29Z",
       "claimed_at_epoch": 1788355889.428014,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:07:56Z"
     }
   ]
 }
