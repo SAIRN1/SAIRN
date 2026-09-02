@@ -118,8 +118,8 @@
       "task": "golf course module caddie",
       "claimed_at": "2026-09-02T12:39:31Z",
       "claimed_at_epoch": 1788352771.0616627,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T13:07:16Z"
     }
   ]
 }
