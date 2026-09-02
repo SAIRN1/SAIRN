@@ -178,8 +178,8 @@
       "task": "trigger document discriminator build",
       "claimed_at": "2026-09-02T09:16:37Z",
       "claimed_at_epoch": 1788340597.7714593,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T09:34:42Z"
     }
   ]
 }
