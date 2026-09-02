@@ -110,6 +110,16 @@
       "claimed_at_epoch": 1788349816.2327213,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1788351785",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "0072 supplier lead time and job risk engine",
+      "claimed_at": "2026-09-02T12:23:05Z",
+      "claimed_at_epoch": 1788351785.160703,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
