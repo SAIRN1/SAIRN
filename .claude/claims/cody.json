@@ -212,8 +212,8 @@
       "task": "WIP percentage of completion and retainage B3",
       "claimed_at": "2026-09-02T14:30:29Z",
       "claimed_at_epoch": 1788359429.7320561,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:43:48Z"
     }
   ]
 }
