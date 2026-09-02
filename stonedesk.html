@@ -257,6 +257,12 @@ body{font-family:'Outfit',sans-serif;background:var(--bg);color:var(--text);font
 .nav-btn.active{color:var(--a);background:rgba(232,133,10,0.1)}
 .nav-btn.admin-only{display:none}
 body.is-admin .nav-btn.admin-only{display:inline-block}
+/* The SIDEBAR uses .sb-btn, not .nav-btn, so the rule above never covered it --
+   which is why #sb-executive was visible to every role. .sb-btn is display:flex
+   (see .sb-btn below), so the shown state must restore flex, not inline-block.
+   CSS is the cosmetic half only; showPanel() refuses the panel outright. */
+.sb-btn.admin-only{display:none}
+body.is-admin .sb-btn.admin-only{display:flex}
 
 .topbar-right{
   display:flex;align-items:center;gap:12px;
@@ -3473,7 +3479,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         <button class="sb-btn" id="sb-sintered"  onclick="sbNav('sintered')"> <span class="sb-icon">&#128293;</span><span class="sb-text">Sintered Stone</span></button>
         <button class="sb-btn" id="sb-market"    onclick="sbNav('market')">   <span class="sb-icon">&#128225;</span><span class="sb-text">Market Intel</span></button>
         <button class="sb-btn" id="sb-stonehub"  onclick="sbNav('stonehub')"> <span class="sb-icon">&#127963;</span><span class="sb-text">Stone Hub</span></button>
-        <button class="sb-btn" id="sb-executive" onclick="sbNav('executive')"><span class="sb-icon">&#128084;</span><span class="sb-text">Executive AI</span></button>
+        <button class="sb-btn admin-only" id="sb-executive" onclick="sbNav('executive')"><span class="sb-icon">&#128084;</span><span class="sb-text">Executive AI</span></button>
       </div>
     </div>
 
@@ -10244,7 +10250,25 @@ function showWelcome() {
 
 // == PANEL NAV =================================================
 function showPanel(id) {
-  
+  // ROLE GATE (2026-09-02, competitive-audit finding 4.1). The Executive Suite's
+  // advisor prompts carry SAIRN's own internal business data, and its nav button
+  // was reachable by every role. CSS hiding is not a gate -- a hidden button can
+  // be unhidden -- so the refusal lives here, on the only path that can open a
+  // panel, rather than on the one button that happened to link to it.
+  //
+  // The session-role read is inlined rather than calling sdExecPrivileged(),
+  // which is declared in a LATER script block: depending on block order to
+  // decide an access question would fail open exactly once, on first load.
+  // Same reason SD_TOOLS carries its own sdCurrentRole() copy.
+  if (id === 'executive') {
+    var _r = '';
+    try { _r = sessionStorage.getItem('sd_session_role') || ''; } catch (e) { _r = ''; }
+    if (_r !== 'owner' && _r !== 'admin') {
+      if (typeof notify === 'function') notify('The Executive Suite is limited to Owner and Manager accounts.', 'err');
+      return;
+    }
+  }
+
   document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
   document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
   // 'dashboard' has no panel-dashboard/page-dashboard element -- the old stub
@@ -24020,7 +24044,36 @@ function saveSD5(){
 }
 
 // == ROLE SYSTEM ===============================================
+// The real, SERVER-VERIFIED session role. Same convention sdCurrentRole() uses
+// at the SD_TOOLS dispatcher: read sessionStorage 'sd_session_role' (SD_ROLE_KEY),
+// written only by a successful api/sd-auth.js login. The auth module's own
+// `currentRole` variable lives inside its IIFE and is not reachable from here,
+// so this reads the session value directly rather than reaching into that scope.
+//
+// sessionStorage, NOT localStorage, and that distinction is the whole bug below:
+// the session role dies with the tab, an 'sd_exec_role' preference in
+// localStorage does not.
+function sdExecPrivileged(){
+  var r='';
+  try{ r=sessionStorage.getItem('sd_session_role')||''; }catch(e){ r=''; }
+  return r==='owner'||r==='admin';   // same two-role check as showApp()'s body.is-admin gate
+}
+
 function applyExecRole(user){
+  // GATE ADDED 2026-09-02 (competitive-audit finding 4.1). The stored-preference
+  // branch below used to run FIRST, before any role check at all -- so any
+  // session on a machine where 'sd_exec_role' had ever been set got is-exec,
+  // whatever role that employee actually logged in as. localStorage is
+  // per-origin and permanent: one owner setting it once granted the Executive
+  // Suite to every Sales Rep and Installer who later used that browser.
+  // The role is checked FIRST now, and a stale preference belonging to someone
+  // else is actively cleared rather than merely ignored.
+  if(!sdExecPrivileged()){
+    document.body.classList.remove('is-exec');
+    sdExecRole='';
+    try{ localStorage.removeItem('sd_exec_role'); }catch(e){}
+    return;
+  }
   // Exec roles are set by email domain or stored preference
   // Admin user can select their exec title once logged in
   var stored=localStorage.getItem('sd_exec_role')||'';
@@ -24053,6 +24106,15 @@ function showExecRolePicker(){
 }
 
 function setExecRoleAndClose(role){
+  // This is a global, callable from anywhere, and it WRITES the localStorage
+  // preference applyExecRole() then trusts on every later load. Unchecked it was
+  // the second door into the same exposure -- so it refuses for anyone who is
+  // not a server-verified owner/admin, and does not persist the preference.
+  if(!sdExecPrivileged()){
+    var pk=document.getElementById('exec-role-picker');
+    if(pk) pk.remove();
+    return;
+  }
   setExecRoleAndClose._close=true;
   sdExecRole=role;
   stRaw('sd_exec_role',role); // raw string, not JSON -- see stRaw()'s own header comment

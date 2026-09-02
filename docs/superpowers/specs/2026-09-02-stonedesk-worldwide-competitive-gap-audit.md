@@ -157,7 +157,16 @@ service-agreement text. **No payment processing in the product.**
 Who has it: SlabWise (e-sign + Stripe deposit on the quote), ActionFlow
 (E-Signature + ActionPay).
 
-### GAP 6 — No QuickBooks integration, and this one is a deliberate strategic choice.
+### GAP 6 — No QuickBooks integration. **HELD OPEN ON PURPOSE — decided 2026-09-02, not to be closed.**
+
+> **Status: real gap, deliberately not being built.** Michael's call, 2026-09-02:
+> a direct QuickBooks connector would contradict the SAIRNbiz-routing decision
+> already shipped in the AI system prompt, so it is on hold rather than in the
+> backlog. This paragraph exists so the gap is never mistaken for an oversight,
+> a missed finding, or something quietly dropped — it is a known competitive
+> disadvantage that StoneDesk is choosing to carry. Reversing it is a platform
+> decision about SAIRNbiz, not a StoneDesk feature request, and it should be
+> reopened at that level or not at all.
 
 `sdIntegQuickAdd('QuickBooks Desktop','Accounting')` (`:6358`) adds a **row to an
 integrations registry** — it is a catalogue entry, not a connector. The other hit
@@ -275,10 +284,26 @@ Per the prioritisation principle (risk first, not scope first), and per the rule
 that real feature/scope decisions are the correct thing to defer to fresh
 judgment:
 
-1. **§4.1 and §4.2 are not competitive work and should not wait on this
-   audit.** 4.1 is a data-exposure decision (gate the panel, or strip SAIRN's
-   internal data out of the advisor context, or both). 4.2 is a factual
-   correction to a prompt. Both are small and neither is a feature decision.
+1. ~~**§4.1 and §4.2 are not competitive work and should not wait on this
+   audit.**~~ **§4.1 CLOSED 2026-09-02** — treated as a live data-exposure bug,
+   not a research-adjacent curiosity, and fixed ahead of everything else in this
+   list. `showPanel()` now refuses `executive` for any role but owner/admin,
+   `#sb-executive` carries `admin-only` (and `.sb-btn.admin-only` CSS now exists
+   — it never did, which is why the button was visible to everyone),
+   `applyExecRole()` checks the server-verified session role **before** the
+   `localStorage` preference and clears a stale one, and `setExecRoleAndClose()`
+   refuses unprivileged callers instead of writing the preference they would
+   later be trusted on. 16 assertions in `tests/exec_role_gate.js`, driven
+   against the real functions extracted from the real file; mutation-tested by
+   disabling the gate, which fails 3 of them.
+   **The residual is stated rather than closed: the advisor strings are still IN
+   the HTML.** Gating the panel stops UI access; it does not stop View Source.
+   Anyone served `stonedesk.html` can still read SAIRN's chart of accounts, the
+   `$199/$299/$599` price book and the May 21 2027 patent deadline. **Removing
+   or relocating those strings is the actual fix and is a separate decision**,
+   because it changes what the Executive Suite does for SAIRN's own internal use.
+   §4.2 (the CTO advisor describing Fabricor's Railway stack) is still open and
+   is a factual correction to a prompt, not a feature decision.
 2. **GAP 1 (customer portal) is the largest and is a genuine architecture
    decision** — a public, unauthenticated-or-tokenised surface on a platform
    whose entire auth model is per-employee session tokens. That is a
@@ -289,9 +314,11 @@ judgment:
 4. **GAP 3 (barcode) is the cheapest real win on this list** — the field already
    exists and is empty. But "cheapest" is not "most valuable," and it should not
    be picked *because* it is easy.
-5. **GAP 6 (QuickBooks) is a strategy question for Michael, not an engineering
-   one.** Do not build a QuickBooks connector that contradicts the SAIRNbiz
-   routing already shipped in the AI prompt without an explicit decision.
+5. **GAP 6 (QuickBooks) — ASKED AND ANSWERED 2026-09-02: hold, do not build.**
+   The connector would contradict the SAIRNbiz routing already shipped in the AI
+   prompt. It stays in §3 as a real, named competitive disadvantage that is being
+   carried knowingly — see the status block on GAP 6. Do not quietly reopen it as
+   an engineering task; it is a platform decision about SAIRNbiz.
 6. **§5's pricing observation is a business decision and is only raised, not
    recommended.**
 
