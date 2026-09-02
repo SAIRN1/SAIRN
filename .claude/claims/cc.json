@@ -80,6 +80,16 @@
       "claimed_at_epoch": 1788291710.3664508,
       "status": "released",
       "released_at": "2026-09-01T19:49:42Z"
+    },
+    {
+      "id": "cc-1788342092",
+      "session": "cc",
+      "subject": "stonedesk-and-roofing",
+      "task": "innerhtml indirection, competitive remainder, roofing refusal paths",
+      "claimed_at": "2026-09-02T09:41:32Z",
+      "claimed_at_epoch": 1788342092.8195758,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
