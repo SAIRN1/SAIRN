@@ -479,12 +479,38 @@ module.exports = async (req, res) => {
       const sel = 'sairn_style_profiles?license_hash=eq.' + enc(licHash) +
         '&employee_id=eq.' + enc(meId) + '&select=employee_id,app_id,data,samples,updated_at&limit=1';
 
+      // VALIDATE BEFORE TOUCHING THE DATABASE. A malformed observation is
+      // malformed whether or not the table exists, and doing this first means a
+      // bad payload cannot be masked by a provisioning answer.
+      if (action === 'write') {
+        const o = payload && payload.observation;
+        if (!o || typeof o !== 'object' || !o.samples) {
+          res.status(400).json({ error: { message: 'observation is required' } });
+          return;
+        }
+        // Guard against a client posting a whole conversation as one "sample".
+        if (Number(o.samples) !== 1) {
+          res.status(400).json({ error: { code: 'ONE_AT_A_TIME', message: 'Post one observation per message' } });
+          return;
+        }
+      }
+
       const cur = await fetch(rest(sel), { headers });
       if (cur.status === 404 || cur.status === 400) {
-        // Table not provisioned. Say so rather than returning an empty profile
-        // that reads as "this person has no style yet" -- those are different
-        // facts and conflating them is how a dead feature looks alive.
-        res.status(200).json({ ok: true, data: null, provisioned: false });
+        // Table not provisioned.
+        //
+        // THE TWO ACTIONS MUST NOT ANSWER THE SAME WAY HERE, and the first
+        // version of this branch got it wrong: it returned {ok:true,
+        // provisioned:false} for BOTH, so a WRITE against a missing table came
+        // back 200 ok -- a silent success for something that stored nothing.
+        // Caught by driving the live endpoint before the table existed, not by
+        // reading the code. A read has genuinely nothing to report; a write
+        // FAILED and has to say so.
+        if (action === 'read') {
+          res.status(200).json({ ok: true, data: null, provisioned: false });
+        } else {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Style profiles table is not set up — run sql/sairn_style_profiles_schema.sql' } });
+        }
         return;
       }
       const curRows = await cur.json();
