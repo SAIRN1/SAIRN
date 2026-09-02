@@ -40,27 +40,44 @@ async function test(name, fn) {
   catch (e) { console.error('  FAIL - ' + name + '\n    ' + e.message); process.exitCode = 1; }
 }
 
-// A PostgREST stand-in. `row` is what the initial SELECT returns (null = the
-// slab has never been synced). `patchReturns` is what the conditional PATCH
-// matches -- an empty array is a lost race, which is the case that matters.
+// A PostgREST stand-in that HONOURS THE FILTER.
+//
+// The first version of this stub returned a row from PATCH no matter what the
+// URL said. Twelve assertions passed and the shipped code failed every real
+// reservation -- the compare predicate was one PostgREST does not match, and a
+// stub that ignores predicates cannot see that. So this one evaluates the
+// `updated_at=eq.` filter against the stored row, which is the whole point of
+// the guard being tested.
+//
+// `row` is what the initial SELECT returns (null = never synced).
+// `mutateBefore` simulates another request winning the race: it changes the
+// stored updated_at between the read and the write, so the PATCH filter stops
+// matching exactly as it would in Postgres.
 function stubBackend(opts) {
   const calls = [];
+  const store = opts.row ? { data: opts.row, updated_at: opts.updatedAt || '2026-09-02T10:00:00+00:00' } : null;
   global.fetch = async (url, init) => {
     const u = String(url);
     const method = (init && init.method) || 'GET';
     calls.push({ url: u, method: method, headers: (init && init.headers) || {}, body: init && init.body });
     if (method === 'GET') {
-      return { ok: true, status: 200, json: async () => (opts.row ? [{ data: opts.row }] : []) };
+      return { ok: true, status: 200, json: async () => (store ? [store] : []) };
     }
     if (method === 'POST') {
       if (opts.insertConflict) return { ok: false, status: 409, json: async () => ({ code: '23505' }) };
       return { ok: true, status: 201, json: async () => [{ data: JSON.parse(init.body).data }] };
     }
     if (method === 'PATCH') {
-      const returned = opts.patchReturns === undefined
-        ? [{ data: JSON.parse(init.body).data }]
-        : opts.patchReturns;
-      return { ok: true, status: 200, json: async () => returned };
+      if (opts.mutateBefore && store) store.updated_at = '2026-09-02T11:11:11+00:00';
+      // Evaluate the guard the way the database would.
+      const m = decodeURIComponent(u).match(/updated_at=(is\.null|eq\.([^&]*))/);
+      let matches = false;
+      if (m && store) {
+        matches = m[1] === 'is.null' ? store.updated_at == null : m[2] === store.updated_at;
+      }
+      if (!matches) return { ok: true, status: 200, json: async () => [] };
+      store.data = JSON.parse(init.body).data;
+      return { ok: true, status: 200, json: async () => [{ data: store.data }] };
     }
     throw new Error('unexpected method ' + method);
   };
@@ -132,7 +149,7 @@ async function main() {
   });
 
   await test('LOST RACE: the row moved between read and write -> 409, not an overwrite', async () => {
-    stubBackend({ row: { id: 'S1', status: 'in-stock' }, patchReturns: [] });
+    stubBackend({ row: { id: 'S1', status: 'in-stock' }, mutateBefore: true });
     const res = mockRes();
     await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Chen' }), res);
     assert.strictEqual(res.statusCode, 409);
@@ -149,12 +166,9 @@ async function main() {
     assert.strictEqual(res.body.data.reservedFor, 'Chen bath');
     const patch = calls.find(c => c.method === 'PATCH');
     assert.ok(patch, 'no conditional write was issued');
-    // Without these two filters the update is just the blind write again.
-    assert.ok(/data-%3E%3Estatus=eq\.|data->>status=eq\./.test(decodeURI(patch.url)) ||
-              patch.url.includes('data->>status=eq.'),
-      'the write did not assert the status it read: ' + patch.url);
-    assert.ok(patch.url.includes('data->>reservedFor=is.null'),
-      'the write did not assert reservedFor was still empty: ' + patch.url);
+    // Without this filter the update is just the blind write again.
+    assert.ok(decodeURIComponent(patch.url).includes('updated_at=eq.2026-09-02T10:00:00+00:00'),
+      'the write did not assert the row was unchanged: ' + patch.url);
   });
 
   await test('re-reserving for the SAME customer is allowed, not a self-conflict', async () => {
@@ -164,18 +178,20 @@ async function main() {
     assert.strictEqual(res.statusCode, 200);
   });
 
-  await test('a customer name with a comma and quotes is QUOTED in the filter', async () => {
-    // PostgREST filter values are comma and parenthesis delimited. Real shop
-    // names contain both, and an unquoted one would silently change the
-    // predicate -- i.e. compare against the wrong thing and pass.
-    const calls = stubBackend({ row: { id: 'S1', status: 'reserved', reservedFor: 'Smith, Jones & Co (Ohio)' } });
+  await test('a customer name full of PostgREST delimiters is stored intact', () => {
+    // The predicate used to embed this name and had to quote it. It no longer
+    // embeds anything but a timestamp -- which is why that whole class of
+    // escaping bug is gone rather than fixed. The name still has to survive
+    // into the row, so that is what is checked now.
+    const calls = stubBackend({ row: { id: 'S1', status: 'in-stock' } });
     const res = mockRes();
-    await loadHandler()(mockReq({ id: 'S1', reservedFor: 'Smith, Jones & Co (Ohio)' }), res);
-    assert.strictEqual(res.statusCode, 200);
-    const patch = calls.find(c => c.method === 'PATCH');
-    const decoded = decodeURIComponent(patch.url);
-    assert.ok(decoded.includes('data->>reservedFor=eq."Smith, Jones & Co (Ohio)"'),
-      'the holder name was not quoted in the filter: ' + decoded);
+    return loadHandler()(mockReq({ id: 'S1', reservedFor: 'Smith, Jones & Co (Ohio)' }), res).then(() => {
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.body.data.reservedFor, 'Smith, Jones & Co (Ohio)');
+      const patch = calls.find(c => c.method === 'PATCH');
+      assert.ok(!patch.url.includes('Smith'),
+        'the customer name is back in the filter, and back in escaping trouble');
+    });
   });
 
   // ---- the never-synced slab --------------------------------------------

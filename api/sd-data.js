@@ -820,13 +820,9 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { code: 'NO_HOLDER', message: 'reservedFor is required -- a reservation with nobody to hold it is not a reservation' } });
         return;
       }
-      // PostgREST filter values are comma/parenthesis delimited, and customer
-      // names contain both ("Smith, Jones & Co (Ohio)"). Quote and escape
-      // rather than hoping.
-      const pgq = (v) => '"' + String(v).replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"';
       const base = 'sd_slabs?license_hash=eq.' + enc(licHash) + '&slab_id=eq.' + enc(String(slabId));
 
-      const cur = await fetch(rest(base + '&select=data'), { headers });
+      const cur = await fetch(rest(base + '&select=data,updated_at'), { headers });
       const curRows = await cur.json();
       if (!cur.ok) return upstream(res, curRows);
 
@@ -856,6 +852,7 @@ module.exports = async (req, res) => {
       }
 
       const row = curRows[0].data || {};
+      const curUpdated = curRows[0].updated_at == null ? null : String(curRows[0].updated_at);
       const curStatus = row.status == null ? null : String(row.status);
       const curWho = row.reservedFor == null ? null : String(row.reservedFor);
 
@@ -881,8 +878,22 @@ module.exports = async (req, res) => {
       const merged = Object.assign({}, row, payload, { status: 'reserved', reservedFor: who });
       // THE COMPARE. Re-asserts the exact state the read saw; a change by any
       // other request in between matches zero rows.
-      const guard = '&data->>status=' + (curStatus === null ? 'is.null' : 'eq.' + enc(pgq(curStatus))) +
-                    '&data->>reservedFor=' + (curWho === null ? 'is.null' : 'eq.' + enc(pgq(curWho)));
+      // KEYED ON updated_at, NOT ON THE JSONB FIELDS, AND THAT IS A CORRECTION.
+      // The first version of this guarded on `data->>status` and
+      // `data->>reservedFor` with quoted values. It passed twelve unit
+      // assertions and FAILED EVERY REAL RESERVATION: driven against the
+      // deployed API, a plain in-stock slab with no concurrency at all came
+      // back RESERVATION_RACE, because the predicate never matched anything.
+      // The tests passed because the stub returned a row regardless of the
+      // filter -- they proved a PATCH was issued, not that PostgREST agreed
+      // with it. Only live-driving found it.
+      //
+      // updated_at is a plain timestamptz column: no JSON path, no identifier
+      // case-folding, no value quoting to get wrong. It is also a STRICTLY
+      // STRONGER guard, because every writer on this table stamps it -- the
+      // 'write' branch above and this branch both do -- so it also catches
+      // changes to fields the old predicate never looked at.
+      const guard = '&updated_at=' + (curUpdated === null ? 'is.null' : 'eq.' + enc(curUpdated));
       const upd = await fetch(rest(base + guard), {
         method: 'PATCH',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
