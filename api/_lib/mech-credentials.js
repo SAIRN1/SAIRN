@@ -58,9 +58,14 @@
 
 'use strict';
 
-// Platform-standard "expiring soon" window -- sairncare.html, sairnbuild.html,
-// api/_lib/dental-credentials.js and api/_lib/roofing-credentials.js all use 30.
-const DEFAULT_WARN_DAYS = 30;
+// The shared primitives, extracted 2026-09-02 as its own task. Only the
+// arithmetic is shared -- the vocabulary below stays this app's own, because
+// roofing's 'current' and this app's 'current' mean different things and
+// reconciling them would change what two shipped UIs display. See the header
+// of api/_lib/credential-expiry.js.
+const shared = require('./credential-expiry');
+
+const DEFAULT_WARN_DAYS = shared.DEFAULT_WARN_DAYS;
 
 // What a credential record may be. Unknown types are REFUSED on write rather
 // than stored, so the eligibility engine can never be asked about a kind of
@@ -79,23 +84,10 @@ const RECORD_TYPES = {
 // covers the other three; nothing else covers anything else.
 const EPA_SECTIONS = { type_i: true, type_ii: true, type_iii: true, universal: true };
 
-function refuse(code, message, extra) {
-  return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
-}
-
-function isDate(s) {
-  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
-
-// Whole days from `today` to `dateStr`, negative once past. Compared as UTC
-// midnights so a technician's licence does not expire an hour early for a
-// dispatcher in a different timezone.
-function daysUntil(dateStr, today) {
-  if (!isDate(dateStr) || !isDate(today)) return null;
-  const a = Date.UTC(+dateStr.slice(0, 4), +dateStr.slice(5, 7) - 1, +dateStr.slice(8, 10));
-  const b = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
-  return Math.round((a - b) / 86400000);
-}
+// Byte-identical to the copies roofing and dental carried; now one copy.
+const refuse = shared.refuse;
+const isDate = shared.isDate;
+const daysUntil = shared.daysUntil;
 
 // Four states, and 'unknown' is one of them on purpose.
 //   current  -- valid, or genuinely has no expiry
@@ -107,12 +99,20 @@ function classifyRecord(rec, today, warnDays) {
   if (!rec || typeof rec !== 'object') return { status: 'unknown', days: null, warn_days: w, no_expiry: false };
   // has_expiry === false is a POSITIVE answer about a lifetime credential, not
   // an absence of data. EPA 608 is the case this exists for.
+  // Handled HERE and not in the shared primitive, because dentistry has no
+  // lifetime credential at all and roofing spells the same idea with a
+  // different word.
   if (rec.has_expiry === false) return { status: 'current', days: null, warn_days: w, no_expiry: true };
-  const days = daysUntil(rec.expires_on, today);
-  if (days === null) return { status: 'unknown', days: null, warn_days: w, no_expiry: false };
-  if (days < 0) return { status: 'expired', days: days, warn_days: w, no_expiry: false };
-  if (days <= w) return { status: 'expiring', days: days, warn_days: w, no_expiry: false };
-  return { status: 'current', days: days, warn_days: w, no_expiry: false };
+  // Shared arithmetic, this app's vocabulary. The primitive answers 'valid'
+  // and never any app's word, so a caller cannot inherit roofing's meaning of
+  // 'current' by accident.
+  const c = shared.classifyDays(daysUntil(rec.expires_on, today), w);
+  return {
+    status: c.status === 'valid' ? 'current' : c.status,
+    days: c.days,
+    warn_days: c.warn_days,
+    no_expiry: false
+  };
 }
 
 // One record per (technician, type, section-or-jurisdiction) -- the newest by
@@ -127,20 +127,18 @@ function recordKey(r) {
 }
 
 function latestByKey(records) {
-  const best = Object.create(null);
-  (Array.isArray(records) ? records : []).forEach(function (r) {
-    if (!r || typeof r !== 'object') return;
-    const k = recordKey(r);
-    const cur = best[k];
-    if (!cur) { best[k] = r; return; }
-    const a = isDate(r.issued_on) ? r.issued_on : '';
-    const b = isDate(cur.issued_on) ? cur.issued_on : '';
-    // A dated record beats an undated one; between two dated ones the later
-    // wins. Two undated records keep the first seen, and that is reported as
-    // unknown downstream anyway.
-    if (a > b) best[k] = r;
+  // Shared supersede, this app's ranking: a dated record beats an undated one;
+  // between two dated ones the later wins; two undated records keep the first
+  // seen, which is reported as unknown downstream anyway.
+  //
+  // Parameterised rather than unified with roofing's. Roofing ranks by
+  // recorded_at then entry_id and DROPS unknown record types; forcing one
+  // shape would change which row a live board displays.
+  return shared.latestBy(records, recordKey, function (prev, next) {
+    const a = isDate(next.issued_on) ? next.issued_on : '';
+    const b = isDate(prev.issued_on) ? prev.issued_on : '';
+    return a > b;
   });
-  return Object.keys(best).map(function (k) { return best[k]; });
 }
 
 // The board: every technician's credentials, classified. No aggregate verdict

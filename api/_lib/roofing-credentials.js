@@ -49,20 +49,18 @@ const RECORD_TYPES = {
   local_license: true       // municipal/county registration where required
 };
 
-function refuse(code, message, extra) {
-  return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
-}
+// EXTRACTED 2026-09-02, on the condition this file's own header set: "revisit
+// after 3c, when both shapes have stopped moving". 3c has shipped and
+// mech-credentials.js made it three copies. Only the arithmetic moved --
+// classifyRecord's FIVE-state vocabulary below is unchanged and stays this
+// app's, because mechanical's 'current' means something narrower and
+// reconciling them would change what a shipped board displays. See the header
+// of api/_lib/credential-expiry.js.
+const shared = require('./credential-expiry');
 
-function isDate(s) {
-  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
-
-function daysUntil(dateStr, today) {
-  if (!isDate(dateStr) || !isDate(today)) return null;
-  const a = Date.UTC(+dateStr.slice(0, 4), +dateStr.slice(5, 7) - 1, +dateStr.slice(8, 10));
-  const b = Date.UTC(+today.slice(0, 4), +today.slice(5, 7) - 1, +today.slice(8, 10));
-  return Math.round((a - b) / 86400000);
-}
+const refuse = shared.refuse;
+const isDate = shared.isDate;
+const daysUntil = shared.daysUntil;
 
 // current | expired | expiring | ok | unknown.
 //
@@ -74,21 +72,23 @@ function classifyRecord(rec, today, warnDays) {
   if (rec && rec.has_expiry === false) {
     return { status: 'current', days: null, warn_days: w, no_expiry: true };
   }
-  const days = daysUntil(rec && rec.expires_on, today);
-  if (days === null) return { status: 'unknown', days: null, warn_days: w, no_expiry: false };
-  if (days < 0) return { status: 'expired', days: days, warn_days: w, no_expiry: false };
-  if (days <= w) return { status: 'expiring', days: days, warn_days: w, no_expiry: false };
-  return { status: 'ok', days: days, warn_days: w, no_expiry: false };
+  // Shared arithmetic, this app's vocabulary. The primitive answers 'valid'
+  // and deliberately never any app's word: mapping it to 'ok' HERE is what
+  // keeps roofing's five-state contract ('current' = lifetime, 'ok' = valid
+  // and dated) from silently becoming mechanical's four-state one.
+  const c = shared.classifyDays(daysUntil(rec && rec.expires_on, today), w);
+  return {
+    status: c.status === 'valid' ? 'ok' : c.status,
+    days: c.days,
+    warn_days: c.warn_days,
+    no_expiry: false
+  };
 }
 
-function ruleInForce(rule, onDate) {
-  if (!rule || !rule.effective_from) return false;
-  if (rule.status && rule.status !== 'active') return false;
-  if (!isDate(onDate)) return false;
-  if (rule.effective_from > onDate) return false;
-  if (rule.effective_to && rule.effective_to < onDate) return false;
-  return true;
-}
+// Was byte-identical to dental's copy. dental-credentials.js still carries its
+// own and is NOT repointed here -- a third live app was outside this task --
+// which makes it the obvious next candidate rather than a forgotten one.
+const ruleInForce = shared.ruleInForce;
 
 // Licensing answer for one state. Federal rules (state 'US') are returned
 // separately and always apply -- they are not a substitute for a state answer.
@@ -120,23 +120,30 @@ function federalRules(rules, onDate) {
 
 // Append-only: only the LATEST row per (employee, type, subject) is evaluated.
 function latestByKey(records) {
-  const best = Object.create(null);
-  (records || []).forEach(function (rec) {
-    if (!rec || !RECORD_TYPES[rec.record_type]) return;
-    const key = [
-      rec.employee_id || '',
-      rec.record_type,
-      String(rec.credential || rec.jurisdiction || '')
-    ].join('|');
-    const prev = best[key];
-    if (!prev ||
-      String(rec.recorded_at || '') > String(prev.recorded_at || '') ||
-      (String(rec.recorded_at || '') === String(prev.recorded_at || '') &&
-        String(rec.entry_id || '') > String(prev.entry_id || ''))) {
-      best[key] = rec;
+  // Shared supersede, this app's key and ranking. keyOf returns null for an
+  // unknown record type, which the shared helper treats as "not a record" --
+  // preserving this function's original behaviour of DROPPING them rather than
+  // grouping them under an empty key.
+  //
+  // Parameterised rather than unified with mechanical's, which keys on
+  // (technician_id, type, epa_section|jurisdiction) and ranks by issued_on.
+  // Forcing one shape would change which row a live board displays.
+  return shared.latestBy(
+    records,
+    function (rec) {
+      if (!RECORD_TYPES[rec.record_type]) return null;
+      return [
+        rec.employee_id || '',
+        rec.record_type,
+        String(rec.credential || rec.jurisdiction || '')
+      ].join('|');
+    },
+    function (prev, rec) {
+      return String(rec.recorded_at || '') > String(prev.recorded_at || '') ||
+        (String(rec.recorded_at || '') === String(prev.recorded_at || '') &&
+          String(rec.entry_id || '') > String(prev.entry_id || ''));
     }
-  });
-  return Object.keys(best).map(function (k) { return best[k]; });
+  );
 }
 
 function evaluateBoard(records, rules, today) {
