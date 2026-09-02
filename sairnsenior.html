@@ -283,6 +283,18 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="tw"><table><thead><tr><th>Name</th><th>Address</th><th>Payer</th><th>Authorized Hrs/wk</th><th>Assigned To</th><th>Actions</th></tr></thead>
     <tbody id="ctbody"></tbody></table></div>
   </div></div>
+  <div class="card"><div class="ch"><span class="ct">Authorization Burn-Down &mdash; this week</span></div><div class="cb">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+      Authorized hours are per week. <strong>Delivered</strong> counts only real clocked time
+      (clock-out minus clock-in) &mdash; a visit that was never clocked contributes nothing and is
+      counted separately, because scheduling a visit is not evidence it happened.
+      <strong>Projected</strong> adds this week's still-scheduled visits, so an overrun shows up
+      <em>before</em> the hours are delivered rather than at claim time.
+    </div>
+    <div id="auth-nokey" style="font-size:12px;color:var(--muted);margin-bottom:10px"></div>
+    <div class="tw"><table><thead><tr><th>Client</th><th>Payer</th><th>Authorized</th><th>Delivered</th><th>Scheduled left</th><th>Projected</th><th>Status</th></tr></thead>
+    <tbody id="authtbody"></tbody></table></div>
+  </div></div>
 </div>
 <div class="modal" id="clientmodal">
   <div class="mbox">
@@ -975,6 +987,105 @@ function rClients(){
       '<td>'+(c.authorized_hours||0)+'</td><td>'+assignedCell+'</td>'+
       '<td><button class="btn bo bs" onclick="editClient(\''+c.id+'\')">Edit</button></td></tr>';
   }).join(''):'<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:24px;">No clients found</td></tr>';
+  rAuthBurnDown();
+}
+
+// ── Payer authorization burn-down (Tier A gap A3, 2026-09-02) ─────────────
+// The competitive-gap audit records this as a Tier-A gap: the app stored an
+// `authorized_hours` number per client and nothing ever compared it to hours
+// actually delivered. An agency discovers an overrun when the claim is denied,
+// which is the worst possible moment -- the care has already been given and
+// cannot be un-given.
+//
+// DELIVERED IS CLOCKED TIME, NOT SCHEDULED TIME, and that distinction is the
+// whole point. A scheduled visit is an intention; a clocked visit is evidence,
+// and under EVV it is the evidence a payer will accept. Visits with no
+// clock-out contribute ZERO to delivered and are counted separately rather
+// than being estimated from their schedule -- estimating there would produce a
+// burn-down that looks precise and is not.
+//
+// Week boundary is LOCAL, derived from senLocalToday(). Deriving it from
+// toISOString() would roll the week over at 8pm Eastern and silently move
+// hours between weeks -- the exact defect fixed across nine SAIRNvet panels
+// on 2026-09-01.
+function senWeekStart(){
+  var t = senLocalToday().split('-');
+  var d = new Date(Number(t[0]), Number(t[1]) - 1, Number(t[2]));
+  d.setDate(d.getDate() - d.getDay());           // Sunday
+  return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function _senHhmmToMin(s){
+  var m = /^(\d{1,2}):(\d{2})/.exec(String(s || ''));
+  return m ? Number(m[1]) * 60 + Number(m[2]) : null;
+}
+
+function senAuthRows(){
+  var start = senWeekStart(), today = senLocalToday();
+  var end = (function(){
+    var t = start.split('-'); var d = new Date(Number(t[0]), Number(t[1]) - 1, Number(t[2]));
+    d.setDate(d.getDate() + 6);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  })();
+  var week = visits().filter(function(v){
+    return v.scheduled_date && v.scheduled_date >= start && v.scheduled_date <= end;
+  });
+  var unclocked = 0, unparsed = 0;
+  var byClient = {};
+  week.forEach(function(v){
+    var key = v.client_id || v.client_name || '';
+    var b = byClient[key] || (byClient[key] = { delivered: 0, scheduled: 0 });
+    if (v.clock_in_at && v.clock_out_at) {
+      var ms = new Date(v.clock_out_at) - new Date(v.clock_in_at);
+      if (isFinite(ms) && ms > 0) { b.delivered += ms / 3600000; return; }
+    }
+    // Not clocked (or unusable clock times). Counted as still-scheduled only
+    // if it has not already passed -- a past visit nobody clocked is neither
+    // delivered nor upcoming, and saying it is either would be inventing.
+    var s = _senHhmmToMin(v.scheduled_start), e = _senHhmmToMin(v.scheduled_end);
+    if (s === null || e === null || e <= s) { unparsed++; return; }
+    if (v.scheduled_date >= today) b.scheduled += (e - s) / 60;
+    else unclocked++;
+  });
+  var rows = clients().map(function(c){
+    var b = byClient[c.id] || byClient[c.name] || { delivered: 0, scheduled: 0 };
+    var auth = Number(c.authorized_hours) || 0;
+    var projected = b.delivered + b.scheduled;
+    return {
+      name: c.name, payer: (c.payer || '').replace('_', ' '),
+      auth: auth, delivered: b.delivered, scheduled: b.scheduled, projected: projected,
+      // No authorisation on file is NOT the same as zero remaining, and the
+      // status says so instead of rendering a misleading 0%.
+      status: auth <= 0 ? 'no authorization on file'
+            : projected > auth ? 'OVER by ' + (projected - auth).toFixed(1) + ' h'
+            : b.delivered > auth ? 'delivered over authorization'
+            : projected === auth ? 'at limit'
+            : Math.round(projected / auth * 100) + '% of authorization'
+    };
+  });
+  return { rows: rows, start: start, end: end, unclocked: unclocked, unparsed: unparsed };
+}
+
+function rAuthBurnDown(){
+  var tb = $('authtbody');
+  if (!tb) return;
+  var d = senAuthRows();
+  var note = $('auth-nokey');
+  if (note) {
+    var bits = ['Week of ' + fdate(d.start) + ' to ' + fdate(d.end) + '.'];
+    if (d.unclocked) bits.push('<strong>' + d.unclocked + '</strong> past visit(s) this week were never clocked and count toward nothing.');
+    if (d.unparsed) bits.push('<strong>' + d.unparsed + '</strong> visit(s) have unusable scheduled times and were skipped.');
+    note.innerHTML = bits.join(' ');
+  }
+  tb.innerHTML = d.rows.length ? d.rows.map(function(r){
+    var cls = r.auth <= 0 ? 'bx' : (r.projected > r.auth ? 'br' : (r.projected >= r.auth * 0.9 ? 'bw' : 'bg'));
+    return '<tr><td>' + H(r.name) + '</td><td><span class="badge bx">' + H(r.payer) + '</span></td>' +
+      '<td>' + (r.auth ? r.auth + ' h' : '--') + '</td>' +
+      '<td>' + r.delivered.toFixed(1) + ' h</td>' +
+      '<td>' + r.scheduled.toFixed(1) + ' h</td>' +
+      '<td><strong>' + r.projected.toFixed(1) + ' h</strong></td>' +
+      '<td><span class="badge ' + cls + '">' + H(r.status) + '</span></td></tr>';
+  }).join('') : '<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:24px;">No clients on file</td></tr>';
 }
 
 // MD order / authorization photo -> Claude extraction (required v1
