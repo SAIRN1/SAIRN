@@ -373,7 +373,14 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 <!-- SCHEDULING & VISITS (scheduling + EVV, one entity -- EVV verifies a
      scheduled visit, it isn't a separate concept) -->
 <div class="panel" id="panel-scheduling">
-  <div class="ph"><div><div class="ptitle">Scheduling &amp; Visits</div><div class="psub">Assign caregivers to clients, then verify each visit with EVV</div></div></div>
+  <div class="ph"><div><div class="ptitle">Scheduling &amp; Visits</div><div class="psub">Assign caregivers to clients, then verify each visit with EVV</div></div>
+    <!-- OFFLINE EVV (competitive-gap audit A2). A clock event recorded
+         without a connection is KEPT with its real time and location, not
+         discarded, and this badge is how the caregiver knows it has not
+         reached the agency yet. Showing nothing here would be the silent
+         success this platform keeps finding. -->
+    <div class="pa"><span class="badge bw" id="vs-offline-badge" style="display:none"></span></div>
+  </div>
   <div class="krow" id="vs-kpi-row"></div>
   <div class="card"><div class="cb" style="display:flex;gap:10px;flex-wrap:wrap">
     <button class="btn bp bs" id="vs-tab-schedule" onclick="vsShowTab('schedule')">Schedule</button>
@@ -1645,6 +1652,11 @@ function vsRenderKpis(){
     '<div class="kpi"><div class="klbl">Missed</div><div class="kval">'+todays.filter(function(v){return v.status==='missed';}).length+'</div><div class="kt d">Today</div></div>';
 }
 function vsRender(){
+  evvRenderQueueBadge();
+  // Opening the panel is the cheapest natural moment to retry a backlog:
+  // the caregiver has just come back to a screen, which usually means they
+  // are somewhere with signal again.
+  senFlushEvvQueue().then(function(r){if(r.sent){evvRenderQueueBadge();vsRenderKpis();renderClockView();}});
   vsHydrateAndRoster(function(){
     vsRenderKpis();
     // Cosmetic only -- the server gate in sd-data.js's 'readiness' branch is the
@@ -1782,6 +1794,13 @@ function renderClockView(){
       '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">Scheduled '+H(v.scheduled_start||'--')+' - '+H(v.scheduled_end||'--')+'</div>'+
       (v.clock_in_at?'<div class="srow"><span class="slbl">Clocked in</span><span class="sval">'+new Date(v.clock_in_at).toLocaleTimeString()+'</span></div>':'')+
       (v.clock_out_at?'<div class="srow"><span class="slbl">Clocked out</span><span class="sval">'+new Date(v.clock_out_at).toLocaleTimeString()+'</span></div>':'')+
+      // Told on the row, not only in a toast the caregiver has already
+      // dismissed. A record sitting on one phone is not yet with the agency,
+      // and the times shown are the real ones -- which is what makes it safe
+      // to say so plainly rather than hiding it.
+      (v.evv_offline&&!v.evv_synced_at
+        ? '<div class="srow"><span class="slbl">Sync</span><span class="sval"><span class="badge bw">On this device only</span></span></div>'
+        : (v.evv_synced_at?'<div class="srow"><span class="slbl">Sync</span><span class="sval"><span class="badge bg">Sent &mdash; recorded offline</span></span></div>':''))+
       (canClockIn?'<button class="btn bp" style="margin-top:10px" onclick="vsClockIn(\''+v.id+'\')">Clock In</button>':'')+
       (canClockOut?'<div class="fg" style="margin-top:10px"><label>Services Performed</label><textarea id="vs-notes-'+v.id+'" rows="2"></textarea></div><button class="btn bp" onclick="vsClockOut(\''+v.id+'\')">Clock Out</button>':'')+
       '</div></div>';
@@ -1800,32 +1819,126 @@ function vsGetPosition(){
     );
   });
 }
+// ── OFFLINE EVV CAPTURE (competitive-gap audit A2, 2026-09-02) ───────────
+// THE GAP, IN THE CODE THIS REPLACES: a failed write returned "check your
+// connection and try again" and DISCARDED the clock event. A caregiver in a
+// basement, a rural home or a concrete stairwell could not record the visit at
+// all -- and EVV is federally mandated, so the visit that did happen has no
+// record. The audit names GPS-plus-telephony as the table-stakes pairing and
+// rural/no-signal visits as the reason telephony persists; this is the half
+// that does not need a phone system.
+//
+// THE ONE RULE EVERYTHING ELSE FOLLOWS: THE RECORDED TIME IS THE MOMENT THE
+// CAREGIVER CLOCKED, NEVER THE MOMENT IT SYNCED. The queued payload carries
+// its own clock_in_at/clock_out_at and is replayed UNCHANGED. Re-stamping on
+// flush would produce an EVV record that is precise, plausible and false --
+// worse than a missing one, because nothing downstream could tell.
+//
+// GPS STILL WORKS OFFLINE. navigator.geolocation reads the device's own
+// receiver and does not need the network, so an offline clock-in normally
+// still carries a real position. Offline is not an excuse for a missing
+// location and is not recorded as one.
+var SEN_EVV_QUEUE_KEY='sen_evv_queue';
+// A hard ceiling so a device that is offline for a week cannot fill its own
+// storage and lose the earlier entries silently. 200 is far above any real
+// caregiver's backlog; the panel says plainly if it is ever reached.
+var SEN_EVV_QUEUE_MAX=200;
+function evvQueue(){return ld(SEN_EVV_QUEUE_KEY,[]);}
+function evvQueueAdd(payload){
+  // Re-read INSIDE the add, not before the await that led here -- the
+  // post-await re-read this platform standardised on after confirmReserve.
+  var q=evvQueue();
+  if(q.length>=SEN_EVV_QUEUE_MAX)return false;
+  q.push({queued_at:new Date().toISOString(),payload:payload});
+  st(SEN_EVV_QUEUE_KEY,q);
+  return true;
+}
+// FIFO AND STOP-ON-FIRST-FAILURE, AND THAT IS NOT A STYLE CHOICE. A visit
+// clocked in and then out while offline queues TWO entries for the same visit.
+// Flushing them in parallel, or skipping a failure to try the next one, can
+// apply the clock-out before the clock-in -- leaving a completed visit with no
+// start time, which reads as an EVV exception that never happened. Sequential,
+// in order, stopping at the first failure, preserves the sequence exactly.
+var _evvFlushing=false;
+async function senFlushEvvQueue(){
+  if(_evvFlushing)return {sent:0,left:evvQueue().length};
+  if(!senLicenseKey())return {sent:0,left:evvQueue().length};
+  _evvFlushing=true;
+  var sent=0;
+  try{
+    while(true){
+      var q=evvQueue();
+      if(!q.length)break;
+      var entry=q[0];
+      var saved=await senData('write','sen_visits',entry.payload,true);
+      if(!saved)break;
+      // Re-read after the await before removing -- another clock action may
+      // have appended while this was in flight, and writing back the
+      // pre-await array would drop it.
+      var cur=evvQueue();
+      cur.shift();
+      st(SEN_EVV_QUEUE_KEY,cur);
+      var list=visits();
+      var v=list.find(function(x){return x.id===entry.payload.id;});
+      if(v){Object.assign(v,saved);v.evv_synced_at=new Date().toISOString();}
+      st('sen_visits',list);
+      sent++;
+    }
+  }finally{_evvFlushing=false;}
+  return {sent:sent,left:evvQueue().length};
+}
+function evvRenderQueueBadge(){
+  var n=evvQueue().length;
+  var el=$('vs-offline-badge');
+  if(!el)return;
+  if(!n){el.style.display='none';return;}
+  el.style.display='';
+  el.textContent=n+' waiting to sync';
+  el.title='Recorded on this device with the real time and location. They will be sent when a connection returns; the times will not change.';
+}
+// Shared by both clock actions. Tries the server first; on failure the event is
+// KEPT rather than discarded, applied locally so the caregiver's own screen is
+// correct, and flagged evv_offline so a compliance reviewer can see which
+// records were captured without a connection.
+async function vsRecordClockEvent(id,payload,okMsg){
+  var saved=await senData('write','sen_visits',payload,true);
+  var offline=false;
+  if(!saved){
+    offline=true;
+    if(!evvQueueAdd(payload)){
+      // The one case where the event really is lost, and it is said plainly
+      // rather than swallowed.
+      toast('Could not record this -- this device already has '+SEN_EVV_QUEUE_MAX+' visits waiting to sync. Get a connection before continuing.',8000);
+      return false;
+    }
+  }
+  var list=visits();
+  var v=list.find(function(x){return x.id===id;});
+  if(v){
+    Object.assign(v,saved||payload);
+    if(offline){v.evv_offline=true;}
+    else if(v.evv_offline&&!v.evv_synced_at){v.evv_synced_at=new Date().toISOString();}
+  }
+  st('sen_visits',list);
+  toast(offline
+    ? okMsg+' -- saved on this device with the real time and location. It will sync when a connection returns and the time will not change.'
+    : okMsg, offline?7000:3000);
+  renderClockView();vsRenderKpis();evvRenderQueueBadge();
+  if(!offline)senFlushEvvQueue().then(function(r){if(r.sent)evvRenderQueueBadge();});
+  return true;
+}
 async function vsClockIn(id){
   var pos=await vsGetPosition();
   var payload={id:id,clock_in_at:new Date().toISOString(),status:'in_progress'};
   if(pos){payload.clock_in_lat=pos.lat;payload.clock_in_lng=pos.lng;}
-  var saved=await senData('write','sen_visits',payload,true);
-  if(!saved){toast('Could not clock in -- check your connection and try again');return;}
-  var list=visits();
-  var v=list.find(function(x){return x.id===id;});
-  if(v)Object.assign(v,saved);
-  st('sen_visits',list);
-  toast(pos?'Clocked in (location captured)':'Clocked in -- location unavailable, flagged for review');
-  renderClockView();vsRenderKpis();
+  await vsRecordClockEvent(id,payload,pos?'Clocked in (location captured)':'Clocked in -- location unavailable, flagged for review');
 }
 async function vsClockOut(id){
   var pos=await vsGetPosition();
   var notesEl=$('vs-notes-'+id);
   var payload={id:id,clock_out_at:new Date().toISOString(),status:'completed',services_notes:(notesEl&&notesEl.value.trim())||''};
   if(pos){payload.clock_out_lat=pos.lat;payload.clock_out_lng=pos.lng;}
-  var saved=await senData('write','sen_visits',payload,true);
-  if(!saved){toast('Could not clock out -- check your connection and try again');return;}
-  var list=visits();
-  var v=list.find(function(x){return x.id===id;});
-  if(v)Object.assign(v,saved);
-  st('sen_visits',list);
-  toast('Visit completed');
-  renderClockView();vsRenderKpis();
+  await vsRecordClockEvent(id,payload,'Visit completed');
 }
 function openVisitModal(){
   if(!senIsScheduler()){toast('Only scheduling staff can create a visit');return;}
@@ -3549,7 +3662,18 @@ document.addEventListener('DOMContentLoaded',function(){
   var lic=localStorage.getItem('sen_license_key');
   if(!lic)return;
   $('gate').style.display='none';
-  if(senRestoreSession())return;
+  // OFFLINE EVV: try the backlog as soon as there is a session, and again
+  // whenever the browser says the network came back. 'online' is a hint and
+  // not a guarantee -- it fires on a captive-portal wifi that routes
+  // nowhere -- so the flush stops on the first failure and simply tries
+  // again next time rather than treating the event as proof.
+  window.addEventListener('online',function(){
+    senFlushEvvQueue().then(function(r){if(r.sent){evvRenderQueueBadge();renderClockView();vsRenderKpis();}});
+  });
+  if(senRestoreSession()){
+    senFlushEvvQueue().then(function(r){if(r.sent||r.left)evvRenderQueueBadge();});
+    return;
+  }
   $('pin').classList.add('on');
   senShowStep('lstep-login');
 });
