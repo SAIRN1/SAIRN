@@ -108,8 +108,8 @@
       "task": "cdt code catalogue versioning",
       "claimed_at": "2026-09-02T11:48:30Z",
       "claimed_at_epoch": 1788349710.2446814,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T12:35:39Z"
     }
   ]
 }
