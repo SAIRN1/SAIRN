@@ -58,6 +58,13 @@ module.exports = {
   // in api/sd-data.js, and registered there as BOTH financial (it prices a
   // service) and patient-scoped (it names one patient and their date of birth).
     'dnt_gfe',
+  // Recall & reactivation outreach (2026-09-02, competitive-gap audit A8) --
+  // see sql/sairndental_recall_schema.sql. One row per contact ACTUALLY made
+  // about a patient being due back; this app sends nothing itself. Handled by
+  // the generic DNT_RESOURCES block and registered as patient-scoped (it names
+  // a patient and records what they said) but NOT financial -- it carries no
+  // charge, and the hygiene side works this list as much as the front desk.
+    'dnt_recall_outreach',
   ],
   // 'evaluate' computes the expiry/CE alert board from stored records and the
   // seeded rules. It READS ONLY and writes nothing -- looking at who is about

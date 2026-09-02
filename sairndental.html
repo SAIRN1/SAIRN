@@ -243,6 +243,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-booking-settings" onclick="nav('booking-settings')"><span class="sico">&#128279;</span>Booking Settings</button>
       <button class="sb" id="sb-pending" onclick="nav('pending')"><span class="sico">&#128203;</span>Pending Requests</button>
       <button class="sb" id="sb-appointments" onclick="nav('appointments')"><span class="sico">&#128197;</span>Appointments</button>
+      <button class="sb" id="sb-recall" onclick="nav('recall')"><span class="sico">&#128276;</span>Recall &amp; Reactivation<span class="badge br" id="recall-badge" style="display:none;margin-left:8px"></span></button>
       <div class="ss">Billing</div>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128176;</span>Billing</button>
       <button class="sb" id="sb-gfe" onclick="nav('gfe')"><span class="sico">&#128203;</span>Good Faith Estimates<span class="badge br" id="gfe-badge" style="display:none;margin-left:8px"></span></button>
@@ -282,6 +283,10 @@ label.chk input{width:auto;}
           <div class="fr">
             <div class="fg"><label>Insurance Payer</label><input type="text" id="pt-add-payer" placeholder="e.g. Delta Dental"></div>
             <div class="fg"><label>Member ID</label><input type="text" id="pt-add-memberid" placeholder="Member ID"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Recall interval for this patient, in months (blank to use the procedure's)</label><input type="number" id="pt-add-recall" min="1" step="1" placeholder="blank unless this patient differs"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><div class="psub" style="margin:0">Recall intervals are meant to be risk-based per patient, so this overrides the procedure's interval where a clinician has decided it should.</div></div>
           </div>
           <!-- Pediatric fields (2026-08-13): hidden unless pt-add-dob implies
                a minor (see onPtDobChange()/isMinorPatient()) -- supplements,
@@ -582,6 +587,10 @@ label.chk input{width:auto;}
             <div class="fg"><label>Retired after (blank if still current)</label><input type="date" id="pc-add-effto"></div>
             <div class="fg"><label>Replaced by (code, if retired)</label><input type="text" id="pc-add-superseded" placeholder="e.g. D0121"></div>
           </div>
+          <div class="fr">
+            <div class="fg"><label>Recall interval in months (blank if this is not a recall procedure)</label><input type="number" id="pc-add-recall" min="1" step="1" placeholder="leave blank unless you recall on it"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><div class="psub" style="margin:0">Set this only on procedures you actually recall patients for. There is deliberately no default &mdash; see the Recall panel for why six months is not assumed.</div></div>
+          </div>
           <button class="btn bp" onclick="addProcedureType()">Add Procedure Type</button>
           <div class="psub" style="margin-top:8px">CDT is republished every year and payment ties to the exact code reported, so a code that was right last year can be wrong for a service performed this one. Recording the edition and the effective window is what lets this app check a code against the <strong>date of service</strong> rather than against today. Leave the window blank and the code cannot be checked at all &mdash; it will say so rather than quietly pass.</div>
         </div></div>
@@ -740,6 +749,75 @@ label.chk input{width:auto;}
           <div id="gfe-doc"></div>
         </div></div>
       </div>
+
+      <!-- RECALL & REACTIVATION (competitive-gap audit A8, 2026-09-02) -->
+      <!-- The audit recorded ZERO occurrences of "recall" in this app and
+           called it table stakes in every product surveyed -- and, more
+           pointedly, the reason an entire bolt-on category exists (Weave,
+           NexHealth, RevenueWell, Solutionreach), because native PM
+           communication tooling is widely judged inadequate and practices buy
+           a second product for it.
+
+           THE THING THIS PANEL REFUSES TO DO IS ASSUME SIX MONTHS. A six-month
+           recall is a convention, not a rule, and the profession's own guidance
+           is that recall intervals should be risk-based and set per patient.
+           So the interval is practice-set per procedure type, optionally
+           overridden per patient, and a practice that has set none is told
+           there is nothing to compute rather than shown a worklist built on a
+           number this app invented.
+
+           AND IT DOES NOT SEND ANYTHING. Outreach is recorded, not performed.
+           A panel that implied a reminder went out when nothing was sent is the
+           silent-failure class that left api/sairndental/send-reminder.js
+           firing a 500 every hour for months. -->
+      <div class="panel" id="panel-recall">
+        <div class="ph"><div><div class="ptitle">Recall &amp; Reactivation</div><div class="psub">Who is due back, measured from the last time they actually had the procedure &mdash; on intervals this practice set</div></div></div>
+
+        <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)">This panel <strong>records outreach, it does not send it</strong>. Nothing here emails, texts or calls anybody. Logging a contact means someone made it.</div>
+
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Overdue</div><div class="kval" id="k-rc-overdue">0</div><div class="kt">Past their interval</div></div>
+          <div class="kpi"><div class="klbl">Due within 30 days</div><div class="kval" id="k-rc-soon">0</div><div class="kt">Worth calling now</div></div>
+          <div class="kpi"><div class="klbl">No baseline</div><div class="kval" id="k-rc-nobase">0</div><div class="kt">Never had it here &mdash; not overdue</div></div>
+          <div class="kpi"><div class="klbl">Unreachable</div><div class="kval" id="k-rc-unreachable">0</div><div class="kt">No phone and no email on file</div></div>
+        </div>
+
+        <div id="rc-preconditions"></div>
+
+        <div class="card"><div class="ch"><div class="ct">Worklist</div>
+          <div class="pa" style="margin-left:auto"><label style="font-size:12px;color:var(--muted);font-weight:600"><input type="checkbox" id="rc-show-all" onchange="rRecall()" style="width:auto;min-height:0"> show everyone, including those not yet due</label></div>
+        </div><div class="cb" style="padding:0">
+          <table id="recall-table"><thead><tr><th>Patient</th><th>Procedure</th><th>Last done</th><th>Interval</th><th>Due</th><th>Standing</th><th>Reachable</th><th>Last outreach</th><th></th></tr></thead><tbody id="recall-tbody"></tbody></table>
+        </div></div>
+
+        <div id="rc-notes" style="margin-top:12px"></div>
+      </div>
+
+      <div class="modal" id="recalloutreachmodal"><div class="mbox">
+        <div class="mtitle">Log an outreach</div>
+        <div class="fg"><label>Patient</label><input type="text" id="rc-out-patient" disabled></div>
+        <div class="fg"><label>Procedure recalled for</label><input type="text" id="rc-out-procedure" disabled></div>
+        <div class="fr">
+          <div class="fg"><label>How they were contacted</label><select id="rc-out-channel">
+            <option value="phone">Phone</option><option value="email">Email</option>
+            <option value="text">Text</option><option value="mail">Letter</option><option value="in_person">In person</option>
+          </select></div>
+          <div class="fg"><label>On</label><input type="date" id="rc-out-on"></div>
+        </div>
+        <div class="fg"><label>Outcome</label><select id="rc-out-outcome">
+          <option value="no_answer">No answer / left a message</option>
+          <option value="booked">Booked an appointment</option>
+          <option value="declined">Declined for now</option>
+          <option value="bad_contact">Contact details are wrong</option>
+          <option value="other">Other</option>
+        </select></div>
+        <div class="fg"><label>Note</label><input type="text" id="rc-out-note" placeholder="recorded as typed"></div>
+        <div class="note" style="margin-bottom:12px">Logging this records that a person made contact. It does not send anything, and marking &quot;booked&quot; does not create an appointment &mdash; book it in Appointments so the record is real.</div>
+        <div style="display:flex;gap:10px;justify-content:flex-end">
+          <button class="btn bo" onclick="closeRecallOutreachModal()">Cancel</button>
+          <button class="btn bp" onclick="saveRecallOutreach()">Log It</button>
+        </div>
+      </div></div>
 
       <div class="panel" id="panel-vendorcat">
         <div class="ph"><div><div class="ptitle">Vendor Catalog</div><div class="psub">Browse dental supplies/PPE/materials across vendors, compare prices, and order.</div></div>
@@ -1077,6 +1155,7 @@ function nav(id){
   if(id==='appointments')rAppointments();
   if(id==='billing')rBilling();
   if(id==='gfe')rGfe();
+  if(id==='recall')rRecall();
   if(id==='referrals')rReferrals();
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
@@ -1195,10 +1274,11 @@ async function addPatient(){
     email:$('pt-add-email').value.trim(),insurance_payer:$('pt-add-payer').value.trim(),
     insurance_member_id:$('pt-add-memberid').value.trim(),insurance_group_number:'',insurance_plan_type:'',
     guardian_name:gName,guardian_relationship:gRel,guardian_phone:gPhone,guardian_email:gEmail,
+    recall_months_override:(function(){var n=parseInt($('pt-add-recall').value,10);return (isNaN(n)||n<1)?0:n;})(),
     created_at:dntLocalToday()};
   var list=patients();list.push(rec);st('dnt_patients_list',list);
   rPatients();
-  ['pt-add-name','pt-add-dob','pt-add-phone','pt-add-email','pt-add-payer','pt-add-memberid',
+  ['pt-add-name','pt-add-dob','pt-add-phone','pt-add-email','pt-add-payer','pt-add-memberid','pt-add-recall',
    'pt-add-guardian-name','pt-add-guardian-phone','pt-add-guardian-email'].forEach(function(id){$(id).value='';});
   $('pt-add-guardian-relationship').selectedIndex=0;
   onPtDobChange();
@@ -1885,6 +1965,7 @@ function rProcedures(){
   }).join('')||'<tr><td colspan="8" style="color:var(--muted);text-align:center">No procedure types on file yet -- enter your practice\'s own codes and fees above</td></tr>';
   rCdtMaintenance();
   fillDentalSelects();
+  if(typeof rRecall==='function')rRecall();
 }
 async function addProcedureType(){
   var code=$('pc-add-code').value.trim(),desc=$('pc-add-desc').value.trim();
@@ -1892,16 +1973,20 @@ async function addProcedureType(){
   var version=$('pc-add-version').value.trim();
   var effFrom=$('pc-add-efffrom').value,effTo=$('pc-add-effto').value;
   var superseded=$('pc-add-superseded').value.trim();
+  // Blank means "we do not recall on this", which is the correct answer for
+  // most codes. It is stored as 0, never as a default interval.
+  var recallMonths=parseInt($('pc-add-recall').value,10);
   if(!code||!desc){toast('Code and description required');return;}
   // Refused rather than stored and silently ignored: an inverted window makes
   // every date-of-service check on this code meaningless in both directions.
   if(effFrom&&effTo&&effTo<effFrom){toast('The retirement date is before the effective date -- that window cannot be checked against any date of service',5000);return;}
   var rec={id:newId('PC'),cdt_code:code,description:desc,default_fee:isNaN(fee)?0:fee,
     default_length_minutes:isNaN(length)?30:length,cdt_version:version,
-    effective_from:effFrom,effective_to:effTo,superseded_by:superseded,created_at:dntLocalToday()};
+    effective_from:effFrom,effective_to:effTo,superseded_by:superseded,
+    recall_months:(isNaN(recallMonths)||recallMonths<1)?0:recallMonths,created_at:dntLocalToday()};
   var list=procedureTypes();list.push(rec);st('dnt_procedures_list',list);
   rProcedures();
-  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded'].forEach(function(id){$(id).value='';});
+  ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded','pc-add-recall'].forEach(function(id){$(id).value='';});
   var syncResult=await sdnData('write','dnt_procedure_types',rec);
   toast(syncResult?'Procedure type added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
 }
@@ -2102,6 +2187,253 @@ async function submitCompleteVisit(){
   closeCompleteVisitModal();
   await setAppointmentStatus(a.id,'Completed');
   toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+}
+
+// ── RECALL & REACTIVATION (competitive-gap audit A8, 2026-09-02) ──
+// The audit recorded ZERO occurrences of "recall" in this app, called it table
+// stakes in every product surveyed, and made the sharper point that its absence
+// from native PM tooling is why an entire bolt-on category exists -- Weave,
+// NexHealth, RevenueWell, Solutionreach -- which practices buy as a second
+// product.
+//
+// ── THE THING THIS REFUSES TO DO IS ASSUME SIX MONTHS ──
+// A six-month recall is a convention, not a rule, and the profession's own
+// guidance is that recall intervals should be risk-based and set per patient.
+// Shipping a default would put a number this app invented underneath a worklist
+// a practice then acts on. So:
+//   * the interval is set per PROCEDURE TYPE by the practice, blank by default,
+//     which is the correct answer for most codes;
+//   * a per-PATIENT override exists because the clinical guidance is per
+//     patient, not per code;
+//   * a practice that has set none is told there is nothing to compute, and
+//     why, instead of being shown a fabricated worklist.
+//
+// ── "NEVER HAD IT HERE" IS NOT "OVERDUE" ──
+// Due dates are counted from the last COMPLETED appointment for that patient
+// and that procedure. A patient with no such appointment has no baseline to
+// count from, and is reported as such. Counting from the day the record was
+// created would make every new patient instantly overdue for everything.
+//
+// ── AND IT DOES NOT SEND ANYTHING ──
+// Outreach is RECORDED, not performed. A panel that implied a reminder went out
+// when nothing was sent is exactly the silent failure that left
+// api/sairndental/send-reminder.js firing a 500 every hour for months while
+// everyone believed reminders were going out.
+function recallOutreach(){return ld('dnt_recall_outreach_list',[]);}
+
+var RC_CHANNEL_LABELS={phone:'Phone',email:'Email',text:'Text',mail:'Letter',in_person:'In person'};
+var RC_OUTCOME_LABELS={no_answer:'No answer',booked:'Booked',declined:'Declined',
+  bad_contact:'Bad contact details',other:'Other'};
+
+// Local calendar arithmetic. NOT toISOString().slice(0,10) -- that is UTC's
+// date and would shift a due date by a day for part of every evening.
+function rcAddMonths(dateStr,months){
+  if(!dateStr)return '';
+  var d=new Date(dateStr+'T00:00:00');
+  if(isNaN(d.getTime()))return '';
+  var day=d.getDate();
+  d.setMonth(d.getMonth()+months);
+  // setMonth overflows a short month (31 Jan + 1 month = 3 Mar). Clamp back to
+  // the last day of the intended month so a due date never silently skips one.
+  if(d.getDate()<day)d.setDate(0);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function rcDaysUntil(dateStr){
+  if(!dateStr)return null;
+  var t=new Date(dateStr+'T00:00:00').getTime();
+  if(isNaN(t))return null;
+  return Math.round((t-new Date(dntLocalToday()+'T00:00:00').getTime())/86400000);
+}
+// The local calendar date of a stored appointment instant, reusing the helper
+// the good-faith-estimate work added rather than a second copy.
+function rcServiceDate(a){return dntServiceDate(a&&a.start_time);}
+
+function rcRecallProcedures(){
+  return procedureTypes().filter(function(p){return Number(p.recall_months)>0;});
+}
+// The interval that governs THIS patient for THIS procedure. A patient-level
+// override wins, because the guidance is per patient; otherwise the procedure's
+// own interval. Never a fallback constant.
+function rcIntervalFor(patient,proc){
+  var over=patient&&patient.recall_months_override;
+  if(Number(over)>0)return {months:Number(over),source:'patient'};
+  if(Number(proc.recall_months)>0)return {months:Number(proc.recall_months),source:'procedure'};
+  return null;
+}
+function rcLastCompleted(patientId,procId){
+  var best=null;
+  appointments().forEach(function(a){
+    if(a.patient_id!==patientId||a.procedure_type_id!==procId)return;
+    if(a.status!=='Completed')return;
+    var d=rcServiceDate(a);
+    if(!d)return;
+    if(!best||d>best)best=d;
+  });
+  return best;
+}
+function rcLastOutreach(patientId,procId){
+  var best=null;
+  recallOutreach().forEach(function(o){
+    if(o.patient_id!==patientId||o.procedure_type_id!==procId)return;
+    if(!o.on)return;
+    if(!best||o.on>best.on)best=o;
+  });
+  return best;
+}
+// A MINOR'S CONTACT DETAILS LIVE ON THE GUARDIAN, and this form already
+// enforces that -- a minor cannot be saved without a guardian phone or email.
+// Checking only the patient's own fields would report every paediatric patient
+// as unreachable when the practice can in fact ring them, which is the reverse
+// of the honest failure this column exists for.
+function rcReachable(pt){
+  return !!((pt.phone&&pt.phone.trim())||(pt.email&&pt.email.trim())||
+            (pt.guardian_phone&&pt.guardian_phone.trim())||(pt.guardian_email&&pt.guardian_email.trim()));
+}
+
+// One row per (patient, recall procedure). state is one of:
+//   no_baseline  never completed here -- NOT overdue
+//   overdue      past the due date
+//   due_soon     due within 30 days
+//   current      not yet due
+function rcRows(){
+  var procs=rcRecallProcedures();
+  var out=[];
+  patients().forEach(function(pt){
+    procs.forEach(function(proc){
+      var iv=rcIntervalFor(pt,proc);
+      if(!iv)return;
+      var last=rcLastCompleted(pt.id,proc.id);
+      var row={patient:pt,proc:proc,interval:iv,last:last,
+        reachable:rcReachable(pt),outreach:rcLastOutreach(pt.id,proc.id)};
+      if(!last){
+        row.state='no_baseline';
+        row.message='No completed '+(proc.cdt_code||'procedure')+' on file for this patient, so there is nothing to count an interval from. Not overdue.';
+        out.push(row);return;
+      }
+      row.due=rcAddMonths(last,iv.months);
+      var days=rcDaysUntil(row.due);
+      row.days=days;
+      row.state=days===null?'no_baseline':(days<0?'overdue':(days<=30?'due_soon':'current'));
+      out.push(row);
+    });
+  });
+  return out;
+}
+
+var rcOutPatientId=null, rcOutProcId=null;
+function openRecallOutreachModal(patientId,procId){
+  var pt=patients().find(function(p){return p.id===patientId;});
+  var proc=procedureTypes().find(function(p){return p.id===procId;});
+  if(!pt||!proc){toast('Record not found');return;}
+  rcOutPatientId=patientId;rcOutProcId=procId;
+  $('rc-out-patient').value=pt.name;
+  $('rc-out-procedure').value=(proc.cdt_code||'')+' -- '+(proc.description||'');
+  $('rc-out-on').value=dntLocalToday();
+  $('rc-out-note').value='';
+  $('recalloutreachmodal').classList.add('on');
+}
+function closeRecallOutreachModal(){$('recalloutreachmodal').classList.remove('on');rcOutPatientId=null;rcOutProcId=null;}
+async function saveRecallOutreach(){
+  if(!rcOutPatientId||!rcOutProcId){toast('No patient selected');return;}
+  var on=$('rc-out-on').value;
+  if(!on){toast('Record the date contact was made');return;}
+  // A future date would claim a contact that has not happened. Refused rather
+  // than clamped, because clamping changes what was recorded without saying so.
+  if(on>dntLocalToday()){toast('That contact date is in the future');return;}
+  var rec={id:newId('RC'),patient_id:rcOutPatientId,procedure_type_id:rcOutProcId,
+    on:on,channel:$('rc-out-channel').value,outcome:$('rc-out-outcome').value,
+    note:$('rc-out-note').value.trim(),created_at:dntLocalToday()};
+  var list=recallOutreach();list.push(rec);st('dnt_recall_outreach_list',list);
+  closeRecallOutreachModal();rRecall();
+  var syncResult=await sdnData('write','dnt_recall_outreach',rec);
+  toast(syncResult?'Outreach logged':'Logged on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
+function rRecall(){
+  var procs=rcRecallProcedures();
+  var pre=$('rc-preconditions');
+  var tb=$('recall-tbody');
+  var badge=$('recall-badge');
+
+  // PRECONDITION, NOT AN EMPTY STATE. There is a real difference between "no
+  // patient is due" and "this practice has not told us what due means", and
+  // rendering the second as the first would be a clean-looking worklist built
+  // on nothing.
+  if(!procs.length){
+    if(pre)pre.innerHTML='<div class="card"><div class="cb"><span class="badge bw">nothing to compute</span> '+
+      'No procedure type has a recall interval set, so this app has no basis for deciding who is due. '+
+      '<strong>Six months is deliberately not assumed</strong> &mdash; it is a convention rather than a rule, and the profession\'s own guidance is that recall intervals should be risk-based and set per patient. '+
+      'Open <em>Procedure Types</em> and set an interval on the procedures you actually recall on.</div></div>';
+    if(tb)tb.innerHTML='<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">No recall intervals set</td></tr>';
+    ['k-rc-overdue','k-rc-soon','k-rc-nobase','k-rc-unreachable'].forEach(function(id){if($(id))$(id).textContent='0';});
+    if(badge)badge.style.display='none';
+    return;
+  }
+  if(pre)pre.innerHTML='';
+
+  var rows=rcRows();
+  var overdue=rows.filter(function(r){return r.state==='overdue';});
+  var soon=rows.filter(function(r){return r.state==='due_soon';});
+  var nobase=rows.filter(function(r){return r.state==='no_baseline';});
+  var unreachable=rows.filter(function(r){return !r.reachable&&(r.state==='overdue'||r.state==='due_soon');});
+
+  if($('k-rc-overdue'))$('k-rc-overdue').textContent=overdue.length;
+  if($('k-rc-soon'))$('k-rc-soon').textContent=soon.length;
+  if($('k-rc-nobase'))$('k-rc-nobase').textContent=nobase.length;
+  if($('k-rc-unreachable'))$('k-rc-unreachable').textContent=unreachable.length;
+
+  var showAll=$('rc-show-all')&&$('rc-show-all').checked;
+  var visible=showAll?rows:rows.filter(function(r){return r.state!=='current';});
+  // Worst first, and no_baseline last -- it is a data gap, not a queue item.
+  var ORDER={overdue:0,due_soon:1,no_baseline:3,current:2};
+  visible.sort(function(a,b){
+    if(ORDER[a.state]!==ORDER[b.state])return ORDER[a.state]-ORDER[b.state];
+    return (a.days==null?0:a.days)-(b.days==null?0:b.days);
+  });
+
+  var STATE_BADGE={overdue:'br',due_soon:'bw',current:'bg',no_baseline:'bx'};
+  var STATE_LABEL={overdue:'overdue',due_soon:'due soon',current:'current',no_baseline:'no baseline'};
+
+  if(tb){
+    tb.innerHTML=visible.length?visible.map(function(r){
+      var cdt=cdtStatusFor(r.proc,dntLocalToday());
+      var cdtMeta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
+      var standing=r.state==='overdue'
+        ? '<span class="badge br">overdue by '+Math.abs(r.days)+' d</span>'
+        : (r.state==='due_soon'
+            ? '<span class="badge bw">due in '+r.days+' d</span>'
+            : '<span class="badge '+STATE_BADGE[r.state]+'">'+STATE_LABEL[r.state]+'</span>');
+      return '<tr><td><strong>'+H(r.patient.name)+'</strong></td>'+
+        '<td>'+H(r.proc.cdt_code)+' -- '+H(r.proc.description)+
+          (cdt.state==='retired'?' <span class="badge br" title="'+H(cdt.message)+'">retired code</span>':'')+'</td>'+
+        '<td>'+(r.last?H(r.last):'<span style="color:var(--muted)">never here</span>')+'</td>'+
+        '<td>'+r.interval.months+' mo'+(r.interval.source==='patient'?' <span class="badge bb" title="Set on this patient, overriding the procedure default">per patient</span>':'')+'</td>'+
+        '<td>'+(r.due?H(r.due):'<span style="color:var(--muted)">--</span>')+'</td>'+
+        '<td>'+standing+(r.state==='no_baseline'?'<div style="font-size:11px;color:var(--muted)">'+H(r.message)+'</div>':'')+'</td>'+
+        '<td>'+(r.reachable
+          ? '<span class="badge bg">yes</span>'
+          : '<span class="badge br">no phone or email</span>')+'</td>'+
+        '<td>'+(r.outreach
+          ? (H(r.outreach.on)+' <span style="font-size:11px;color:var(--muted)">'+H(RC_CHANNEL_LABELS[r.outreach.channel]||r.outreach.channel)+', '+H(RC_OUTCOME_LABELS[r.outreach.outcome]||r.outreach.outcome)+'</span>')
+          : '<span style="color:var(--muted)">none logged</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openRecallOutreachModal(\''+H(r.patient.id)+'\',\''+H(r.proc.id)+'\')">Log outreach</button></td></tr>';
+    }).join(''):'<tr><td colspan="9" style="color:var(--muted);text-align:center;padding:20px">Nobody is due &mdash; tick "show everyone" to see patients who are current</td></tr>';
+  }
+
+  var notes=$('rc-notes');
+  if(notes){
+    var bits=[];
+    if(unreachable.length)bits.push('<strong>'+unreachable.length+' patient'+(unreachable.length===1?'':'s')+' who '+(unreachable.length===1?'is':'are')+' due or overdue '+(unreachable.length===1?'has':'have')+' neither a phone number nor an email address.</strong> They cannot be contacted from the record this practice holds, and no outreach against them can honestly be counted as attempted.');
+    if(nobase.length)bits.push('<strong>'+nobase.length+' row'+(nobase.length===1?'':'s')+' '+(nobase.length===1?'has':'have')+' no completed appointment for that procedure</strong>, so there is no date to count an interval from. Counting from when the patient record was created would make every new patient instantly overdue for everything, so they are listed as having no baseline instead.');
+    var retired=rows.filter(function(r){return cdtStatusFor(r.proc,dntLocalToday()).state==='retired';});
+    if(retired.length)bits.push('<strong>'+retired.length+' row'+(retired.length===1?' recalls':'s recall')+' on a CDT code that is retired as of today.</strong> The recall itself is fine; reporting that code on a service performed now is not. Check the code before booking.');
+    notes.innerHTML=bits.length?bits.map(function(b){return '<div class="msg" style="font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:8px">'+b+'</div>';}).join(''):'';
+  }
+
+  if(badge){
+    if(overdue.length){badge.style.display='inline-block';badge.textContent=overdue.length;}
+    else badge.style.display='none';
+  }
 }
 
 // ── GOOD FAITH ESTIMATES / NO SURPRISES ACT ───────────────────────
@@ -2933,7 +3265,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_referrals','dnt_referrals_list'],
   ['dnt_complaints','dnt_complaints_list'],
   ['dnt_credentials','dnt_credentials_list'],
-  ['dnt_gfe','dnt_gfe_list']
+  ['dnt_gfe','dnt_gfe_list'],
+  ['dnt_recall_outreach','dnt_recall_outreach_list']
 ];
 // dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
 // a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
@@ -2979,7 +3312,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();rRecall();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
     // Only refetch the board if the panel is actually open -- 'evaluate' is a
     // real server round trip, and a background sync should not fire one for a
