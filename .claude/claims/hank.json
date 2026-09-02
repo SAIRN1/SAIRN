@@ -309,8 +309,8 @@
       "task": "multi branch operation and per branch rollup B1",
       "claimed_at": "2026-09-02T14:33:59Z",
       "claimed_at_epoch": 1788359639.984726,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:47:33Z"
     }
   ]
 }
