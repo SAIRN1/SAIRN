@@ -255,6 +255,16 @@
       "status": "released",
       "released_at": "2026-09-02T15:57:10Z",
       "note": "OVERRIDE, stated out loud. I first tried subject \"platform\" and check BLOCKED it against cc \"platform: sairncode validate license and profile slabs memory gating\" -- overlap on the literal subject string \"platform\". That is a NAMESPACE, not a subject, and using it was my own imprecision: this work is the accounting/QuickBooks connector and touches no file cc is in. I have named the subject accurately rather than reworded the TASK to slip the matcher, and I am saying so here because \"pick a different subject\" and \"game the gate\" can look identical from the outside. Surfaced to Michael in the same turn. This claim covers VERIFICATION ONLY -- read-only investigation, no build."
+    },
+    {
+      "id": "cody-1788365661",
+      "session": "cody",
+      "subject": "accounting",
+      "task": "fresh read-only quickbooks connector opt-in per customer",
+      "claimed_at": "2026-09-02T16:14:21Z",
+      "claimed_at_epoch": 1788365661.1117013,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
