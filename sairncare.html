@@ -1015,6 +1015,38 @@ function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
+// LOCAL calendar date, never UTC (2026-09-02).
+//
+// Every date in this file was derived with alfLocalToday(),
+// which extracts the UTC calendar date -- one day ahead of the facility's own
+// date from roughly 8pm Eastern onward, every single day. That is not a display
+// nuisance here, it is a records problem, because these dates go onto records a
+// regulator reads:
+//
+//   - a medication administration is stamped with tomorrow's date on any
+//     evening med pass, in the eMAR
+//   - so is a controlled-substance count, a med reconciliation and a refusal
+//   - an incident report -- a fall, on the evening shift -- is dated the day
+//     after it happened, and state licensing requires incident reporting
+//   - currentMonth() rolls to the next month on the last evening of every
+//     month, and billing keys off it
+//   - certDaysUntil() is off by one for part of every day, so a staff
+//     credential reads as expiring a day later than it does
+//
+// getFullYear()/getMonth()/getDate() read the LOCAL calendar instead. Same fix
+// and same reasoning as sairnvet.html's localToday(), which was introduced for
+// exactly this defect.
+//
+// SCOPE, stated so the next reader does not assume it covers more than it does:
+// this replaces the "today, as a calendar date" derivations only. A bare
+// new Date().toISOString() storing an INSTANT (superseded_at) is correct and is
+// deliberately left alone -- a timestamp is a moment, not a calendar day. Nor
+// does it cover new Date(Date.now() +/- N) offset patterns; there are none in
+// this file today, checked, but that is the shape to watch for next.
+function alfLocalToday(){
+  var d=new Date();
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
 function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTimeout(function(){t.classList.remove('on');},d||3000);}
 
@@ -1476,7 +1508,7 @@ function openChangeLevelModal(){
   $('cl-current-display').textContent=cur?careLevelLabel(cur):'Not yet set';
   $('cl-level').value='assisted_living';$('cl-subtier').value='al1';
   clToggleSubTier();
-  $('cl-effective-date').value=new Date().toISOString().slice(0,10);
+  $('cl-effective-date').value=alfLocalToday();
   $('changelevelmodal').classList.add('on');
 }
 function closeChangeLevelModal(){$('changelevelmodal').classList.remove('on');}
@@ -1640,7 +1672,7 @@ function openAdlModal(residentId){
   adlResidentId=residentId;
   adlPopulateSelects();
   $('adl-modal-title').textContent='ADL Assessment — '+r.name;
-  $('adl-date').value=new Date().toISOString().slice(0,10);
+  $('adl-date').value=alfLocalToday();
   ADL_DOMAINS.forEach(function(d){$('adl-'+d[0]).value='independent';});
   $('adl-notes').value='';
   var hist=r.adl_assessments||[];
@@ -1657,7 +1689,7 @@ async function saveAdlAssessment(){
   var list=residents();
   var r=list.find(function(x){return x.id===adlResidentId;});
   if(!r){toast('Resident not found');return;}
-  var assessment={id:newId('ADL'),date:$('adl-date').value||new Date().toISOString().slice(0,10),assessed_by:(alfSession&&alfSession.employee_id)||''};
+  var assessment={id:newId('ADL'),date:$('adl-date').value||alfLocalToday(),assessed_by:(alfSession&&alfSession.employee_id)||''};
   ADL_DOMAINS.forEach(function(d){assessment[d[0]]=$('adl-'+d[0]).value;});
   assessment.notes=$('adl-notes').value.trim();
   r.adl_assessments=(r.adl_assessments||[]).concat([assessment]);
@@ -1796,7 +1828,7 @@ function openMedOrderModal(id){
   }else{
     ['mo-name','mo-dose','mo-schedule','mo-prn-instructions','mo-prescriber','mo-startdate','mo-notes'].forEach(function(f){$(f).value='';});
     $('mo-route').value='oral';$('mo-prn').value='0';$('mo-controlled').value='0';$('mo-highpriority').value='0';
-    $('mo-startdate').value=new Date().toISOString().slice(0,10);
+    $('mo-startdate').value=alfLocalToday();
   }
   moTogglePrnRow();
   $('medordermodal').classList.add('on');
@@ -2093,7 +2125,7 @@ function openMarAdminModal(){
   if(!meds.length){toast('No active medications on file for this resident');return;}
   var sel=$('ma-medication');
   sel.innerHTML=meds.map(function(m){return '<option value="'+H(m.id)+'">'+H(m.name)+' '+H(m.dose||'')+'</option>';}).join('');
-  $('ma-date').value=new Date().toISOString().slice(0,10);
+  $('ma-date').value=alfLocalToday();
   $('ma-time').value=new Date().toTimeString().slice(0,5);
   $('ma-status').value='given';$('ma-prn-reason').value='';$('ma-effectiveness').value='';
   $('ma-refusal-reason').value='';$('ma-supervisor-notified').checked=false;$('ma-notes').value='';
@@ -2114,7 +2146,7 @@ async function saveMarAdmin(){
   var medId=$('ma-medication').value;
   if(!medId){toast('Select a medication');return;}
   var rec={
-    id:newId('ADM'),medication_id:medId,date:$('ma-date').value||new Date().toISOString().slice(0,10),
+    id:newId('ADM'),medication_id:medId,date:$('ma-date').value||alfLocalToday(),
     time:$('ma-time').value,status:$('ma-status').value,administered_by:(alfSession&&alfSession.employee_id)||'',
     prn_reason:$('ma-prn-reason').value.trim(),effectiveness_check:$('ma-effectiveness').value.trim(),
     refusal_reason:$('ma-refusal-reason').value.trim(),supervisor_notified:$('ma-supervisor-notified').checked,
@@ -2138,7 +2170,7 @@ function openCsCountModal(){
   witnessSel.innerHTML='<option value="">Select witness…</option>'+(_alfRoster||[]).map(function(e){
     return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';
   }).join('');
-  $('cs-date').value=new Date().toISOString().slice(0,10);
+  $('cs-date').value=alfLocalToday();
   $('cs-count-value').value='';$('cs-discrepancy').checked=false;$('cs-discrepancy-notes').value='';
   csToggleDiscrepancy();
   $('cs-policy-note').textContent='Active policy: '+csPolicyLabel(facility().cs_policy)+'. A second signature (witness) is required regardless of which policy is active -- the one converged best practice found in research.';
@@ -2157,7 +2189,7 @@ async function saveCsCount(){
   if(!medId){toast('Select a medication');return;}
   if(!witness){toast('A witness (second signature) is required for a controlled-substance count');return;}
   var rec={
-    id:newId('CNT'),medication_id:medId,date:$('cs-date').value||new Date().toISOString().slice(0,10),
+    id:newId('CNT'),medication_id:medId,date:$('cs-date').value||alfLocalToday(),
     count_value:Number($('cs-count-value').value)||0,counted_by:(alfSession&&alfSession.employee_id)||'',
     witness_id:witness,discrepancy:$('cs-discrepancy').checked,discrepancy_notes:$('cs-discrepancy-notes').value.trim()
   };
@@ -2178,7 +2210,7 @@ function closeReconModal(){$('reconModal').classList.remove('on');}
 async function saveRecon(){
   var summary=$('rc-summary').value.trim();
   if(!summary){toast('Summary required');return;}
-  var rec={id:newId('REC'),type:$('rc-type').value,date:new Date().toISOString().slice(0,10),reconciled_by:(alfSession&&alfSession.employee_id)||'',summary:summary};
+  var rec={id:newId('REC'),type:$('rc-type').value,date:alfLocalToday(),reconciled_by:(alfSession&&alfSession.employee_id)||'',summary:summary};
   var list=marEntries();
   list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'reconciliation'},rec));
   st('alf_mar',list);
@@ -2194,7 +2226,7 @@ function openAssessRefusalModal(){
 }
 function closeAssessRefusalModal(){$('assessRefusalModal').classList.remove('on');}
 async function saveAssessRefusal(){
-  var rec={id:newId('REF'),date:new Date().toISOString().slice(0,10),documented_by:(alfSession&&alfSession.employee_id)||'',
+  var rec={id:newId('REF'),date:alfLocalToday(),documented_by:(alfSession&&alfSession.employee_id)||'',
     legal_rep_notified:$('ar-legal-notified').checked,notes:$('ar-notes').value.trim()};
   var list=marEntries();
   list.push(Object.assign({resident_id:marSelectedResidentId(),entry_type:'assessment_refusal'},rec));
@@ -2255,7 +2287,7 @@ async function saveStaff(){
   var syncResult=await alfData('write','alf_staff',rec,true);
   toast(syncResult?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
 }
-function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-new Date(new Date().toISOString().slice(0,10)+'T00:00:00'))/86400000;return Math.round(diff);}
+function certDaysUntil(d){if(!d)return null;var diff=(new Date(d+'T00:00:00')-new Date(alfLocalToday()+'T00:00:00'))/86400000;return Math.round(diff);}
 function rStaff(){
   var sf=staff();
   var isMgmt=alfIsManagement();
@@ -2302,7 +2334,7 @@ function alfHydrateBilling(){
     return added;
   });
 }
-function currentMonth(){return new Date().toISOString().slice(0,7);}
+function currentMonth(){return alfLocalToday().slice(0,7);}
 function fmt2(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
 function latestInvoiceFor(residentId){
   var all=billingEntries().filter(function(e){return e.resident_id===residentId;}).sort(function(a,b){return (a.month||'')<(b.month||'')?1:-1;});
@@ -2979,7 +3011,7 @@ function openCredModal(){
   // Never present a working-looking form with an empty required picker.
   sel.innerHTML=opts.length?opts.join(''):'<option value="">No staff or employee accounts yet — add one under Security &amp; Access</option>';
   $('cr-type').value='training_hours';crToggleType();
-  $('cr-hours').value='';$('cr-completed').value=new Date().toISOString().slice(0,10);
+  $('cr-hours').value='';$('cr-completed').value=alfLocalToday();
   $('cr-credname').value='';$('cr-expires').value='';$('cr-notes').value='';
   $('credmodal').classList.add('on');
 }
@@ -3045,7 +3077,7 @@ async function saveIncidentDeadline(){
   toast(syncResult?'Reporting deadline saved (facility setting, not enforced by the app)':'Saved on this device only -- server sync failed, try again with a connection');
 }
 function openIncidentModal(){
-  $('inc-category').value='fall';$('inc-date').value=new Date().toISOString().slice(0,10);
+  $('inc-category').value='fall';$('inc-date').value=alfLocalToday();
   $('inc-time').value=new Date().toTimeString().slice(0,5);$('inc-severity').value='minor';
   $('inc-description').value='';$('inc-action').value='';
   var sel=$('inc-resident');
@@ -3057,7 +3089,7 @@ async function saveIncident(){
   var desc=$('inc-description').value.trim();
   if(!desc){toast('Description required');return;}
   var rec={
-    id:newId('INC'),category:$('inc-category').value,date:$('inc-date').value||new Date().toISOString().slice(0,10),
+    id:newId('INC'),category:$('inc-category').value,date:$('inc-date').value||alfLocalToday(),
     time:$('inc-time').value,resident_id:$('inc-resident').value||'',severity:$('inc-severity').value,
     description:desc,action_taken:$('inc-action').value.trim(),reported_by:(alfSession&&alfSession.employee_id)||'',
     status:'open',state_reported:false,state_reported_date:'',follow_up_notes:''
@@ -3158,7 +3190,7 @@ function openOpAuditModal(type){
     :(type==='sanitation'?'Record Sanitation Check':'Record Emergency Drill');
   $('opa-food-fields').style.display=(type==='food_temp')?'block':'none';
   $('opa-generic-fields').style.display=(type==='food_temp')?'none':'block';
-  $('opa-date').value=new Date().toISOString().slice(0,10);
+  $('opa-date').value=alfLocalToday();
   $('opa-temp').value='';$('opa-location').value='';$('opa-subject').value='';$('opa-notes').value='';
   $('opa-holding').value='cold';$('opa-passed').value='1';
   $('opauditmodal').classList.add('on');
@@ -3210,7 +3242,7 @@ function openActivityModal(id){
   var a=id?activities().find(function(x){return x.id===id;}):null;
   $('ac-modal-title').textContent=id?'Edit Activity':'Add Activity';
   $('ac-name').value=a?a.name||'':'';$('ac-category').value=a?a.category||'social':'social';
-  $('ac-date').value=a?a.date||'':new Date().toISOString().slice(0,10);
+  $('ac-date').value=a?a.date||'':alfLocalToday();
   $('ac-time').value=a?a.time||'':'';$('ac-description').value=a?a.description||'':'';
   var attendees=a?(a.attendees||[]):[];
   var rs=residents();
