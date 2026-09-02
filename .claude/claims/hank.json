@@ -180,6 +180,16 @@
       "claimed_at_epoch": 1788340597.7714593,
       "status": "released",
       "released_at": "2026-09-02T09:34:42Z"
+    },
+    {
+      "id": "hank-1788341983",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "multi slot trigger document design",
+      "claimed_at": "2026-09-02T09:39:43Z",
+      "claimed_at_epoch": 1788341983.355074,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
