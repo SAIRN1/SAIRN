@@ -171,6 +171,16 @@
       "claimed_at_epoch": 1788359259.6301193,
       "status": "released",
       "released_at": "2026-09-02T14:40:00Z"
+    },
+    {
+      "id": "fourth-1788360396",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "denial appeals lifecycle and receivable aging",
+      "claimed_at": "2026-09-02T14:46:36Z",
+      "claimed_at_epoch": 1788360396.6603687,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
