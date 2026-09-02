@@ -164,6 +164,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-subs" onclick="nav('subs')">Subcontractors<span class="badge" id="subs-badge" style="display:none"></span></button>
       <button class="sb" id="sb-warranties" onclick="nav('warranties')">Warranties<span class="badge" id="warr-badge" style="display:none"></span></button>
       <button class="sb" id="sb-assets" onclick="nav('assets')">Roof Assets<span class="badge" id="assets-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-draws" onclick="nav('draws')">Progress Billing<span class="badge" id="draws-badge" style="display:none"></span></button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -601,6 +602,41 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         </div>
       </div>
 
+      <!-- Progress Billing (2026-09-02). Tier-B gap B3's first two thirds:
+           draw requests, retainage, and over/under billing. CERTIFIED PAYROLL
+           IS NOT HERE and is not coming as a side effect -- it needs external
+           prevailing-wage determinations, and inventing a rate would put a
+           fabricated number in a federal filing.
+           Retainage held is DERIVED from the percentage on read, never stored
+           beside it, because two fields that can disagree eventually do. -->
+      <div class="panel" id="panel-draws">
+        <div class="ph">
+          <div>
+            <div class="ptitle">Progress Billing</div>
+            <div class="psub" id="draws-scope-note">--</div>
+          </div>
+          <div class="pa"><button class="btn bp" id="draws-new-btn" onclick="openDrawModal()" style="display:none;">+ Draw Request</button></div>
+        </div>
+        <div class="card"><div class="cb">
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap;">
+            <div class="fg" style="margin:0;"><label>Aged after (days)</label><input type="number" id="draws-aged" value="30" min="0" max="365"></div>
+            <button class="btn bo" onclick="rfLoadDraws()">Refresh</button>
+          </div>
+          <div class="note" style="margin-top:8px;">
+            <strong>Over-billed and under-billed are shown apart, never netted</strong> &mdash; they cancel on paper and mean
+            opposite things to an owner or a surety. Percent complete is whatever you stated on the draw, and every figure
+            built on it says so: this app has no job-cost store, so it does <strong>not</strong> compute cost-to-cost
+            percentage of completion and will not label a stated percentage as though it did.
+          </div>
+        </div></div>
+        <div class="card"><div class="ch"><div class="ct">WIP position</div></div>
+          <div class="cb" id="draws-wip"><div class="empty">Loading&hellip;</div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Draw requests</div></div>
+          <div class="cb" id="draws-list"><div class="empty">Loading&hellip;</div></div>
+        </div>
+      </div>
+
       <!-- Reports / CSV export (Phase 4c). Every report below is produced from
            the rows the ordinary gated read already returned -- see the
            rfReports block in the script for why there is no server-side
@@ -946,6 +982,7 @@ function nav(id){
   // api/_lib/roofing-warranties.js so the screen and the tests cannot drift.
   if(id==='warranties'){ rfLoadWarranties(); }
   if(id==='assets'){ rfLoadAssets(); }
+  if(id==='draws'){ rfLoadDraws(); }
   // Render from nothing first, then replace with the server-computed board.
   // The panel never decides a status itself -- api/_lib/roofing-credentials.js
   // does, so the UI and the tests cannot drift apart.
@@ -2744,6 +2781,172 @@ function saveAssignment(){
   });
 }
 
+// ── PROGRESS BILLING (gap B3, 2026-09-02) ──────────────────────────────────
+// Draw requests, retainage and over/under billing. Every figure is computed
+// server-side by api/_lib/wip-accounting.js -- including retainage held, which
+// is DERIVED from the percentage rather than stored beside it, because two
+// fields that can disagree eventually do.
+var rfDraws=[],rfWip=null;
+
+function rfDrawsAged(){
+  var el=$('draws-aged');
+  if(!el||el.value==='')return undefined;
+  var n=parseInt(el.value,10);
+  return (isFinite(n)&&n>=0&&n<=365)?n:undefined;
+}
+function rfMoney(n){ return (n===null||n===undefined)?'--':'$'+Number(n).toLocaleString(); }
+
+function rfLoadDraws(){
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var nb=$('draws-new-btn');if(nb)nb.style.display=isMgmt?'':'none';
+  var note=$('draws-scope-note');
+  if(note)note.textContent=isMgmt
+    ? 'Draws, retainage, and where each job sits against what it has earned.'
+    : 'Progress billing, read-only for your role.';
+  var p={today:rfLocalToday()};
+  var a=rfDrawsAged();if(a!==undefined)p.aged_days=a;
+  return rfDataRaw('read','rf_draws',p).then(function(r){
+    if(!r.ok){
+      $('draws-list').innerHTML='<div class="empty">'+(r.code==='FORBIDDEN'
+        ? 'Progress billing is management-level information.'
+        : rfEsc(r.msg||'Could not load draw requests.'))+'</div>';
+      return;
+    }
+    var d=r.data||{};
+    if(d.provisioned===false){
+      $('draws-list').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_draws_schema.sql, then refresh.</div>';
+      $('draws-wip').innerHTML='<div class="empty">&mdash;</div>';
+      return;
+    }
+    rfDraws=d.data||[];
+    rfRenderDraws();
+    return rfDataRaw('wip','rf_draws',p).then(function(x){
+      rfWip=(x.ok&&x.data&&x.data.wip)||null;
+      rfRenderWip();
+    });
+  });
+}
+
+function rfRenderDraws(){
+  var el=$('draws-list');
+  if(!rfDraws.length){el.innerHTML='<div class="empty">No draw requests recorded.</div>';return;}
+  var isMgmt=!!(MANAGEMENT_ROLES[rfSession&&rfSession.role]);
+  var aged=0;
+  el.innerHTML='<div class="tw"><table><thead><tr><th>Draw</th><th>Job</th><th>Period</th><th>%</th>'+
+    '<th>Requested</th><th>Retainage</th><th>Net</th><th>Received</th><th>Outstanding</th><th>Status</th><th></th></tr></thead><tbody>'+
+    rfDraws.map(function(x,i){
+      var s=x.summary;
+      if(!s){
+        return '<tr><td><strong>'+rfEsc(x.draw_id||'--')+'</strong></td>'+
+          '<td colspan="9"><span class="badge br">'+rfEsc((x.summary_error&&x.summary_error.message)||'not evaluated')+'</span></td><td></td></tr>';
+      }
+      if(s.aged)aged++;
+      var cls=s.status==='received'?'bg':s.status==='rejected'?'br':s.aged?'br':s.status==='requested'?'bw':'bx';
+      return '<tr><td><strong>'+rfEsc(s.draw_id||'--')+'</strong>'+(s.draw_no?' <span style="color:var(--muted)">#'+s.draw_no+'</span>':'')+'</td>'+
+        '<td>'+rfEsc(s.job_id||'--')+'</td>'+
+        '<td>'+rfEsc(s.period_end||'--')+'</td>'+
+        '<td>'+(s.pct_complete===null?'--':s.pct_complete+'%')+'</td>'+
+        '<td>'+rfMoney(s.amount)+'</td>'+
+        // A null retainage is shown as "not recorded", never as $0 -- "we hold
+        // nothing" and "nobody priced it" are different facts about money.
+        '<td>'+(s.retainage_held===null?'<span class="badge bx">not recorded</span>':rfMoney(s.retainage_held)+' <span style="font-size:12px;color:var(--muted)">'+s.retainage_pct+'%</span>')+'</td>'+
+        '<td>'+rfMoney(s.net_requested)+'</td>'+
+        '<td>'+rfMoney(s.received)+'</td>'+
+        '<td>'+rfMoney(s.outstanding)+(s.overpaid?' <span class="badge bw">over '+rfMoney(s.overpaid)+'</span>':'')+'</td>'+
+        '<td><span class="badge '+cls+'">'+rfEsc(s.status||'--')+'</span>'+
+          (s.aged?'<br><span class="badge br">'+s.days_outstanding+'d</span>':'')+
+          ((s.problems&&s.problems.length)?'<br><span style="font-size:11px;color:var(--danger)">'+rfEsc(s.problems.join('; '))+'</span>':'')+'</td>'+
+        '<td>'+(isMgmt?'<button class="btn bo" style="padding:4px 10px;font-size:11px;" onclick="openDrawModal('+i+')">Edit</button>':'')+'</td></tr>';
+    }).join('')+'</tbody></table></div>';
+  var b=$('draws-badge');
+  if(b){ b.textContent=aged||''; b.style.display=aged?'':'none'; b.className='badge '+(aged?'br':'bx'); }
+}
+
+function rfRenderWip(){
+  var el=$('draws-wip');
+  var W=rfWip;
+  if(!W){el.innerHTML='<div class="empty">Not computed.</div>';return;}
+  var out='<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:12px;">'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Retainage held</div><strong style="font-size:18px;">'+rfMoney(W.retainage_held)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Outstanding</div><strong style="font-size:18px;">'+rfMoney(W.outstanding_total)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Over-billed</div><strong style="font-size:18px;color:var(--danger)">'+rfMoney(W.over_billed)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Under-billed</div><strong style="font-size:18px;color:var(--danger)">'+rfMoney(W.under_billed)+'</strong></div>'+
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Aged draws</div><strong style="font-size:18px;">'+W.aged_draws+'</strong></div></div>';
+  var rows=W.jobs.filter(function(j){return j.over_under!==null;});
+  if(rows.length){
+    out+='<div class="tw"><table><thead><tr><th>Job</th><th>Contract</th><th>%</th><th>Basis</th><th>Earned</th><th>Billed</th><th>Over / under</th></tr></thead><tbody>'+
+      rows.map(function(j){
+        var cls=j.position==='over_billed'?'br':j.position==='under_billed'?'bw':'bg';
+        return '<tr><td><strong>'+rfEsc(j.job_id||'--')+'</strong></td>'+
+          '<td>'+rfMoney(j.contract_value)+'</td>'+
+          '<td>'+(j.pct_complete===null?'--':j.pct_complete+'%')+'</td>'+
+          // The basis is on every row on purpose. A WIP schedule whose reader
+          // cannot tell whether a percentage was stated or computed from costs
+          // is one an accountant cannot reproduce.
+          '<td><span style="font-size:11px;color:var(--muted)">'+rfEsc(String(j.basis||'').replace(/_/g,' '))+
+            (j.pct_complete_as_of?'<br>as of '+rfEsc(j.pct_complete_as_of):'')+'</span></td>'+
+          '<td>'+rfMoney(j.earned)+'</td>'+
+          '<td>'+rfMoney(j.billed)+'</td>'+
+          '<td><span class="badge '+cls+'">'+rfMoney(Math.abs(j.over_under))+' '+rfEsc(String(j.position).replace(/_/g,' '))+'</span></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  }else{
+    out+='<div class="empty">No job has both a contract value and a percent complete yet.</div>';
+  }
+  // BESIDE the totals, not beneath them. A WIP schedule that silently omits
+  // what it could not compute reads as a complete book.
+  if(W.not_computable.length){
+    out+='<div class="note" style="margin-top:10px;margin-bottom:0;background:#FEF3C7;border-color:#FCD34D;color:#78350F;">'+
+      '<strong>'+W.not_computable.length+(W.not_computable.length===1?' job is':' jobs are')+' NOT in the figures above.</strong> '+
+      W.not_computable.map(function(n){return rfEsc(n.job_id)+' ('+rfEsc((n.reasons||[]).join('; '))+')';}).join(' &middot; ')+'</div>';
+  }
+  el.innerHTML=out;
+}
+
+function openDrawModal(i){
+  var d=(typeof i==='number')?rfDraws[i]:null;
+  $('dw-modal-title').textContent=d?'Edit Draw Request':'New Draw Request';
+  $('dw-id').value=d?(d.draw_id||''):'';
+  // The id is the upsert conflict key -- changing it would create a second
+  // draw rather than rename this one.
+  $('dw-id').readOnly=!!d;
+  $('dw-job').value=(d&&d.job_id)||'';
+  $('dw-no').value=(d&&d.draw_no!=null)?d.draw_no:'';
+  $('dw-period').value=(d&&d.period_end)||'';
+  $('dw-pct').value=(d&&d.pct_complete!=null)?d.pct_complete:'';
+  $('dw-amount').value=(d&&d.amount!=null)?d.amount:'';
+  $('dw-ret').value=(d&&d.retainage_pct!=null)?d.retainage_pct:'';
+  $('dw-received').value=(d&&d.amount_received!=null)?d.amount_received:'';
+  $('dw-status').value=(d&&d.status)||'draft';
+  $('dw-requested').value=(d&&d.requested_at)||'';
+  $('dw-err').textContent='';
+  $('draw-modal').classList.add('on');
+}
+function closeDrawModal(){ $('draw-modal').classList.remove('on'); }
+
+function saveDraw(){
+  var id=($('dw-id').value||'').trim(),job=($('dw-job').value||'').trim();
+  if(!id||!job){ $('dw-err').textContent='Draw id and job are both required.'; return; }
+  var numOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseFloat(v); return isFinite(n)?n:'BAD'; };
+  var pct=numOrNull($('dw-pct').value), amt=numOrNull($('dw-amount').value),
+      ret=numOrNull($('dw-ret').value), rec=numOrNull($('dw-received').value),
+      no=numOrNull($('dw-no').value);
+  // Refused, not coerced. A garbled retainage silently becoming null would
+  // read on the board as "not recorded" when the user believed they set it.
+  if([pct,amt,ret,rec,no].indexOf('BAD')!==-1){ $('dw-err').textContent='Percent, amount, retainage, received and draw number must be numbers, or blank.'; return; }
+  $('dw-err').textContent='Saving…';
+  rfDataRaw('write','rf_draws',{
+    draw_id:id, job_id:job, draw_no:no,
+    period_end:$('dw-period').value||null,
+    pct_complete:pct, amount:amt, retainage_pct:ret,
+    amount_received:rec===null?0:rec,
+    status:$('dw-status').value,
+    requested_at:$('dw-requested').value||null
+  }).then(function(r){
+    if(!r.ok){ $('dw-err').textContent=r.msg||'Could not save the draw.'; return; }
+    closeDrawModal(); toast('Draw saved.'); rfLoadDraws();
+  });
+}
+
 // ── ROOF ASSETS (gap B1, 2026-09-02) ───────────────────────────────────────
 // The portfolio level rf_jobs does not have. Every verdict on this screen --
 // remaining life, replacement year, condition disagreement, warranty coverage
@@ -4117,6 +4320,38 @@ function aiSend(){
     <div style="display:flex;gap:8px;margin-top:8px;">
       <button class="btn bp" onclick="saveSub()">Save</button>
       <button class="btn bo" onclick="closeSubModal()">Cancel</button>
+    </div>
+  </div>
+</div>
+<div class="modal" id="draw-modal">
+  <div class="mbox" style="width:560px;">
+    <div class="mtitle" id="dw-modal-title">New Draw Request</div>
+    <div class="qgrid">
+      <div class="fg"><label>Draw id <span style="color:var(--danger)">*</span></label><input id="dw-id" placeholder="DR-2026-04"></div>
+      <div class="fg"><label>Job <span style="color:var(--danger)">*</span></label><input id="dw-job" placeholder="JOB-2026-118"></div>
+      <div class="fg"><label>Draw no.</label><input id="dw-no" placeholder="4"></div>
+      <div class="fg"><label>Period end</label><input type="date" id="dw-period"></div>
+      <div class="fg"><label>Percent complete</label><input id="dw-pct" placeholder="55"></div>
+      <div class="fg"><label>Amount requested</label><input id="dw-amount" placeholder="78000"></div>
+      <div class="fg"><label>Retainage %</label><input id="dw-ret" placeholder="10"></div>
+      <div class="fg"><label>Amount received</label><input id="dw-received" placeholder="0"></div>
+      <div class="fg"><label>Status</label><select id="dw-status">
+        <option value="draft">Draft</option><option value="requested">Requested</option>
+        <option value="approved">Approved</option><option value="received">Received</option>
+        <option value="rejected">Rejected</option>
+      </select></div>
+      <div class="fg"><label>Requested on</label><input type="date" id="dw-requested"></div>
+    </div>
+    <div class="note"><strong>Retainage held is worked out from the percentage</strong> &mdash; it is never a second field
+      that can drift away from it. Leave the percentage blank if you have not agreed one: the board will say
+      <strong>not recorded</strong> and refuse to state what is collectable, rather than showing $0 held and implying the
+      whole amount is yours. Ageing runs from <em>Requested on</em>, not the period end, because that is when the clock an
+      owner is judged against actually starts. <strong>Percent complete is what you state here</strong> and every figure
+      built on it is labelled as such.</div>
+    <div class="perr" id="dw-err"></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <button class="btn bp" onclick="saveDraw()">Save</button>
+      <button class="btn bo" onclick="closeDrawModal()">Cancel</button>
     </div>
   </div>
 </div>

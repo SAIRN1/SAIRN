@@ -108,6 +108,15 @@ module.exports = {
   // Registered on day one for the reason rf_settings' note gives.
     'rf_buildings',
     'rf_roof_sections',
+  // Progress billing: draw requests and retainage (2026-09-02) -- see
+  // sql/sairnroofing_draws_schema.sql and api/_lib/wip-accounting.js. Tier-B
+  // gap B3's first two thirds. Certified payroll is NOT included and is not
+  // coming as a side effect -- it needs external prevailing-wage
+  // determinations, and inventing a wage rate would put a fabricated number in
+  // a federal filing.
+  //
+  // Registered on day one for the reason rf_settings' note gives.
+    'rf_draws',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -152,6 +161,11 @@ module.exports = {
     // that CANNOT be planned because nobody has entered an expected service
     // life. Reads only; looking at a capital plan must never write one.
     rf_roof_sections: ['portfolio'],
+    // 'wip' (2026-09-02, gap B3) computes the work-in-progress schedule across
+    // every job: retainage held, what is outstanding, and over- versus
+    // under-billing kept APART rather than netted. Reads only -- looking at a
+    // WIP position must never change one.
+    rf_draws: ['wip'],
     // Phase 4b. 'issue' allocates the gapless invoice number and is idempotent
     // -- re-issuing must never burn a second number. 'add_payment' appends ONE
     // entry server-side. 'reconcile_claim' compares the invoice against the

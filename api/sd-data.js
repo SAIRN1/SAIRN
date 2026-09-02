@@ -4046,6 +4046,117 @@ module.exports = async (req, res) => {
       }
     }
 
+    // ── SAIRNROOFING: progress billing -- draws and retainage (2026-09-02) ────────
+    // Tier-B gap B3's first two thirds. Certified payroll is NOT here: it needs
+    // external prevailing-wage determinations and inventing a rate would put a
+    // fabricated number in a federal filing.
+    if (resource === 'rf_draws' && (action === 'read' || action === 'write' || action === 'wip')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Progress billing is management-level information' } });
+        return;
+      }
+      const wip = require('./_lib/wip-accounting');
+      const wipToday = (payload && payload.today) || null;
+      let agedDays;
+      if (payload && payload.aged_days !== undefined && payload.aged_days !== null) {
+        const ad = payload.aged_days;
+        if (typeof ad !== 'number' || !isFinite(ad) || Math.floor(ad) !== ad || ad < 0 || ad > 365) {
+          res.status(400).json({ error: { code: 'BAD_AGED_DAYS', message: 'aged_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        agedDays = ad;
+      }
+
+      const drawSelect = 'draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,amount_received,status,requested_at,received_at,notes,data,updated_by';
+
+      if (action === 'read') {
+        let q = 'rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect + '&order=period_end.desc';
+        if (payload && payload.job_id) q += '&job_id=eq.' + enc(String(payload.job_id));
+        const r = await fetch(rest(q), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        // Retainage and ageing are COMPUTED ON READ, never stored: both depend
+        // on today's date and on a percentage that can be edited, so a stored
+        // figure is wrong the morning after it is written.
+        const out = (rows || []).map((x) => {
+          const s = wip.summariseDraw({ draw: x, today: wipToday, aged_days: agedDays });
+          return Object.assign({}, x, { summary: s.ok ? s : null, summary_error: s.ok ? null : s.error });
+        });
+        res.status(200).json({ ok: true, provisioned: true, today: wipToday, data: out, statuses: wip.DRAW_STATUSES });
+        return;
+      }
+
+      if (action === 'wip') {
+        const r = await fetch(rest('rf_draws?license_hash=eq.' + enc(licHash) + '&select=' + drawSelect), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, wip: null }); return; }
+        const draws = await r.json();
+        if (!r.ok) return upstream(res, draws);
+        // Contract value lives in rf_jobs' jsonb blob, which is where every
+        // other roofing job field lives. Pulled out here rather than asking the
+        // browser to join two lists and re-implement the WIP maths client-side.
+        const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,data'), { headers });
+        const jrows = jr.ok ? await jr.json() : [];
+        const jobs = (Array.isArray(jrows) ? jrows : []).map((j) => {
+          const d = j.data || {};
+          const v = [d.contract_value, d.total, d.amount, d.quote_total]
+            .map((x) => (typeof x === 'number' && isFinite(x)) ? x : null)
+            .filter((x) => x !== null);
+          return { job_id: j.job_id, contract_value: v.length ? v[0] : null };
+        // Only jobs that actually have a draw are in the WIP book. A job with
+        // no progress billing is not "level" -- it is not on this schedule at
+        // all, and showing it at zero would pad the book with rows nobody is
+        // billing.
+        }).filter((j) => (draws || []).some((d) => d.job_id === j.job_id));
+        const p = wip.portfolio({ jobs: jobs, draws: draws || [], today: wipToday, aged_days: agedDays });
+        if (!p.ok) { res.status(400).json({ error: p.error }); return; }
+        res.status(200).json({ ok: true, provisioned: true, wip: p });
+        return;
+      }
+
+      // write
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) { res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can record a draw' } }); return; }
+      const did = payload && typeof payload.draw_id === 'string' ? payload.draw_id.trim() : '';
+      const djob = payload && typeof payload.job_id === 'string' ? payload.job_id.trim() : '';
+      if (!did || !djob) { res.status(400).json({ error: { message: 'rf_draws: draw_id and job_id are required' } }); return; }
+      if (payload.status !== undefined && wip.DRAW_STATUSES.indexOf(payload.status) === -1) {
+        res.status(400).json({ error: { code: 'BAD_STATUS', message: 'rf_draws: status must be one of ' + wip.DRAW_STATUSES.join(', ') } }); return;
+      }
+      const badDate = ['period_end', 'requested_at', 'received_at'].filter((k) => {
+        const v = payload[k];
+        return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
+      });
+      if (badDate.length) { res.status(400).json({ error: { code: 'BAD_DATE', message: 'rf_draws: ' + badDate.join(', ') + ' must be YYYY-MM-DD' } }); return; }
+      const pctOrNull = (v) => (typeof v === 'number' && isFinite(v) && v >= 0 && v <= 100) ? v : null;
+      const moneyOrNull = (v) => (typeof v === 'number' && isFinite(v) && v >= 0) ? v : null;
+      const dw = await fetch(rest('rf_draws?on_conflict=license_hash,draw_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, draw_id: did, job_id: djob,
+          draw_no: (typeof payload.draw_no === 'number' && isFinite(payload.draw_no)) ? Math.floor(payload.draw_no) : null,
+          period_end: payload.period_end || null,
+          pct_complete: pctOrNull(payload.pct_complete),
+          amount: moneyOrNull(payload.amount),
+          // NOT defaulted. A default here would tell a contractor that a draw
+          // nobody has priced holds a percentage back.
+          retainage_pct: pctOrNull(payload.retainage_pct),
+          amount_received: moneyOrNull(payload.amount_received) || 0,
+          status: payload.status || 'draft',
+          requested_at: payload.requested_at || null,
+          received_at: payload.received_at || null,
+          notes: (payload.notes || '').trim() || null,
+          data: payload.data || {}, updated_by: session.employee_id, updated_at: nowISO()
+        })
+      });
+      const saved = await dw.json();
+      if (!dw.ok) return upstream(res, saved);
+      res.status(200).json({ ok: true, data: Array.isArray(saved) ? saved[0] : saved });
+      return;
+    }
+
     // ── SAIRNROOFING: commercial roof asset registry (2026-09-02) ──────────────────
     // Tier-B gap B1. Buildings and the roof sections on them -- many per
     // customer, which is the level rf_jobs does not have and was deliberately
