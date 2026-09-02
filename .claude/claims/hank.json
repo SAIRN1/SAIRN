@@ -240,6 +240,16 @@
       "claimed_at_epoch": 1788351618.4795728,
       "status": "released",
       "released_at": "2026-09-02T12:37:18Z"
+    },
+    {
+      "id": "hank-1788353267",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "grounded definitions in drafting and review surfaces",
+      "claimed_at": "2026-09-02T12:47:47Z",
+      "claimed_at_epoch": 1788353267.1736782,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
