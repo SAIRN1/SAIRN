@@ -319,8 +319,8 @@
       "task": "offline EVV capture for no signal visits A2",
       "claimed_at": "2026-09-02T14:52:45Z",
       "claimed_at_epoch": 1788360765.5962737,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T15:05:11Z"
     }
   ]
 }
