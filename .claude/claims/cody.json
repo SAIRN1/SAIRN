@@ -142,6 +142,16 @@
       "claimed_at_epoch": 1788348689.3094444,
       "status": "released",
       "released_at": "2026-09-02T11:43:18Z"
+    },
+    {
+      "id": "cody-1788351773",
+      "session": "cody",
+      "subject": "sairnroofing",
+      "task": "shared subcontractor compliance layer",
+      "claimed_at": "2026-09-02T12:22:53Z",
+      "claimed_at_epoch": 1788351773.4569364,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
