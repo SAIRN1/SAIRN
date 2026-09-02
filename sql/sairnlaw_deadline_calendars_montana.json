@@ -1,0 +1,84 @@
+{
+  "holiday_calendars": [
+    {
+      "jurisdiction": "mt",
+      "year": 2026,
+      "authority": {
+        "citation": "Mont. R. Civ. P. 6(a)(6) via MCA sec. 1-1-216",
+        "url": "https://mca.legmt.gov/bills/mca/title_0010/chapter_0010/part_0020/section_0160/0010-0010-0020-0160.html",
+        "computation_url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0020/section_0060/0250-0200-0020-0060.html",
+        "quote": "(1) The following are legal holidays in the state of Montana: (a) each Sunday; (b) New Year's Day, January 1; (c) Martin Luther King Jr. Day, the third Monday in January; (d) Presidents' Day, the third Monday in February; (e) Memorial Day, the last Monday in May; (f) Independence Day, July 4; (g) Labor Day, the first Monday in September; (h) Indigenous Peoples' Day and Columbus Day, the second Monday in October; (i) Veterans' Day, November 11; (j) Thanksgiving Day, the fourth Thursday in November; (k) Christmas Day, December 25; (l) state general election day. (2) (a) If any of the holidays in subsections (1)(b) through (1)(l) fall on a Sunday, the Monday following is a holiday. (b) If any of the holidays in subsections (1)(b) through (1)(l) fall on a Saturday, the Friday preceding is a holiday. (c) All other days are business days.",
+        "note": "THE OPERATIVE TEST IS THE RULE, NOT THE STATUTE ALONE, AND THE RULE IS NARROWER IN ONE DIRECTION AND WIDER IN THE OTHER. Mont. R. Civ. P. 6(a)(6) defines \"legal holiday\" in three limbs: (A) \"the day set aside by statute for observing\" a NAMED list -- New Year's Day, Martin Luther King, Jr. Day, Lincoln's and Washington's Birthdays, Memorial Day, Independence Day, Labor Day, Columbus Day, Veterans' Day, Thanksgiving Day, Christmas Day, or state general election day; (B) any day declared a holiday by the President or the Governor; and (C) FOR PERIODS MEASURED AFTER AN EVENT ONLY, any other day declared a holiday by the state. So the set is genuinely wider forward than backward. Every date below is in the (A) list under its own name except Presidents' Day, which is discussed in its own derivation. ONE ENUMERATED STATUTORY HOLIDAY IS DELIBERATELY ABSENT: SUNDAYS, sec. 1-1-216(1)(a). Montana makes each Sunday a legal holiday and never lists Saturday at all -- Louisiana's shape, and the inverse of Delaware's. It is not enumerated here because Rule 6(a)(1)(C) names \"a Saturday, Sunday, or legal holiday\" in its own words, so the engine's ordinary weekend handling already covers it and a per-date entry would be redundant. No weekend_days declaration is needed for the same reason. NOT DERIVABLE AND DISCLOSED IN JURISDICTION_COVERAGE.mt RATHER THAN GUESSED AT: limb (B)'s presidential and gubernatorial declarations, and limb (C)'s open forward-only catch-all. NOT PRESENT AND NOT TO BE ADDED FROM A NEIGHBOUR: Montana has NO day-after-Thanksgiving holiday (Delaware and Nebraska do), NO Good Friday (Delaware and Hawaii do) and NO Juneteenth in sec. 1-1-216 at all. DISTRICT COURT ONLY. The Montana Justice and City Court Rules of Civil Procedure carry their own Rule 6, which defines \"legal holiday\" NOT AT ALL and therefore does not narrow sec. 1-1-216 the way this rule does; this calendar is built for the District Court rule and must not be assumed to describe that one. 2026 ONLY: a later year is REFUSED rather than generated. Every date here would derive mechanically, which is precisely why generating is refused -- 2027 is an ODD year in which the state general election limb produces no day at all, and a generator that silently dropped it would look identical to one that had reasoned about it.",
+        "retrieved_at": "2026-09-02"
+      },
+      "dates": [
+        {
+          "date": "2026-01-01",
+          "name": "New Year's Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(b), \"New Year's Day, January 1\", and named in Mont. R. Civ. P. 6(a)(6)(A). 1 January 2026 is a Thursday, verified by weekday, so neither sec. 1-1-216(2)(a) nor (2)(b) shifts it."
+        },
+        {
+          "date": "2026-01-19",
+          "name": "Martin Luther King Jr. Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(c), \"the third Monday in January\", and named in Mont. R. Civ. P. 6(a)(6)(A). Computed for 2026 and verified by weekday: Monday 19 January 2026."
+        },
+        {
+          "date": "2026-02-16",
+          "name": "Presidents' Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(d), \"Presidents' Day, the third Monday in February\". Monday 16 February 2026, verified by weekday. THIS IS THE ONE DATE WHERE THE RULE'S LIST AND THE STATUTE NO LONGER USE THE SAME WORDS, and the mismatch is recent rather than ancient. Mont. R. Civ. P. 6(a)(6)(A) reaches \"the day set aside by statute for observing ... Lincoln's and Washington's Birthdays\" -- which is what sec. 1-1-216(1)(d) itself said, verbatim, when the rule was adopted effective 1 October 2011 and still said in the 2023 edition of the MCA. Ch. 561, L. 2025 renamed the entry \"Presidents' Day\" and moved nothing: it is the same third Monday in February. The rule's list was not conformed. CARRIED IN BOTH DIRECTIONS, DELIBERATELY, AND EACH DIRECTION FOR ITS OWN REASON. Forward it is certain twice over: on any ordinary reading it is still the day set aside for observing those birthdays under (A), and independently Rule 6(a)(6)(C) reaches \"any other day declared a holiday by the state\" for periods measured after an event, which sec. 1-1-216(1)(d) plainly is. Backward, limb (C) is unavailable by its own terms, so only the (A) reading carries it -- and carrying it is the SAFE direction there, because a backward period that fails to roll off a holiday reports a date LATER than the true one. Disclosed in JURISDICTION_COVERAGE.mt rather than left to be rediscovered."
+        },
+        {
+          "date": "2026-05-25",
+          "name": "Memorial Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(e), \"the last Monday in May\", and named in Mont. R. Civ. P. 6(a)(6)(A). Monday 25 May 2026, verified by weekday."
+        },
+        {
+          "date": "2026-07-03",
+          "name": "Independence Day (observed)",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(f) fixes Independence Day at July 4, and 4 July 2026 is a SATURDAY, verified by weekday. Sec. 1-1-216(2)(b) -- added by Ch. 131, L. 2013, so in force for every year this platform computes -- provides that a holiday in (1)(b) through (1)(l) falling on a Saturday makes the PRECEDING FRIDAY a holiday. THE SHIFT IS INSIDE THE RULE'S REFERENCE, WHICH IS WHY IT IS CARRIED: Rule 6(a)(6)(A) reaches \"the day SET ASIDE BY STATUTE FOR OBSERVING\" Independence Day, an observance reference rather than a date reference, so the day the statute sets aside for the observance is the operative one. Contrast Hawai'i, whose Rule 6(a) names HRS sec. 8-1 BY NUMBER and therefore leaves sec. 8-2's shift outside, and New Hampshire, whose RSA 288:2 has no Saturday limb at all and so produces no Friday observance for anyone. 4 July itself is not separately enumerated: it is a Saturday and the engine's weekend handling already rolls it."
+        },
+        {
+          "date": "2026-09-07",
+          "name": "Labor Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(g), \"the first Monday in September\", and named in Mont. R. Civ. P. 6(a)(6)(A). Monday 7 September 2026, verified by weekday."
+        },
+        {
+          "date": "2026-10-12",
+          "name": "Indigenous Peoples' Day and Columbus Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(h), \"Indigenous Peoples' Day and Columbus Day, the second Monday in October\". Monday 12 October 2026, verified by weekday. Ch. 561, L. 2025 (SB 224) added Indigenous Peoples' Day ALONGSIDE Columbus Day on the day that already existed -- it created no new date and moved none. Mont. R. Civ. P. 6(a)(6)(A) still names only \"Columbus Day\", which remains in the statutory entry verbatim, so unlike Presidents' Day this one raises no naming question in either direction."
+        },
+        {
+          "date": "2026-11-03",
+          "name": "State general election day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(l), \"state general election day\", and Mont. R. Civ. P. 6(a)(6)(A) names \"state general election day\" IN THE RULE'S OWN LIST -- the same three words in both, which is a shorter reach than any other seeded election-day holiday. MCA sec. 13-1-104(1) fixes it: \"A general election must be held throughout the state on the first Tuesday after the first Monday in November.\" The first Monday in November 2026 is Monday the 2nd, so the day is TUESDAY 3 NOVEMBER 2026, verified by weekday. 2026 is an EVEN-numbered year, which sec. 13-1-104(2) makes the year in which federal officers, legislators, state officers, district court judges and county officers are elected, so a state general election unambiguously occurs. CARRIED, and the contrast with the two nearest calls is deliberate: Delaware's equivalent day is carried but needed Del. Const. art. V sec. 1 to date it, and New Hampshire's is OMITTED because RSA 288:1 names a \"biennial election\" that its election code never defines. Montana needs no reach at all -- the rule, the holiday statute and the election statute use one term."
+        },
+        {
+          "date": "2026-11-11",
+          "name": "Veterans' Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(i), \"Veterans' Day, November 11\", and named in Mont. R. Civ. P. 6(a)(6)(A). Wednesday 11 November 2026, verified by weekday, so neither shift clause applies."
+        },
+        {
+          "date": "2026-11-26",
+          "name": "Thanksgiving Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(j), \"the fourth Thursday in November\", and named in Mont. R. Civ. P. 6(a)(6)(A). Thursday 26 November 2026, verified by weekday. THE FRIDAY FOLLOWING IS NOT A MONTANA LEGAL HOLIDAY: sec. 1-1-216 does not name it, unlike 1 Del. C. sec. 501(a)(9), which does. Adding it from a neighbour would report LATE."
+        },
+        {
+          "date": "2026-12-25",
+          "name": "Christmas Day",
+          "kind": "declared",
+          "derivation": "MCA sec. 1-1-216(1)(k), \"Christmas Day, December 25\", and named in Mont. R. Civ. P. 6(a)(6)(A). Friday 25 December 2026, verified by weekday, so neither shift clause applies."
+        }
+      ]
+    }
+  ]
+}

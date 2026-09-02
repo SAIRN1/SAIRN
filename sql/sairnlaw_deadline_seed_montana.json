@@ -1,0 +1,444 @@
+{
+  "_readme": "MONTANA DISTRICT COURT ONLY -- the Montana Rules of Civil Procedure, MCA Title 25 ch. 20. THE MONTANA JUSTICE AND CITY COURT RULES OF CIVIL PROCEDURE, MCA Title 25 ch. 23, ALSO CONTAIN A RULE 6, AND IT IS A DIFFERENT COMPUTATION: it defines 'legal holiday' NOT AT ALL, so nothing narrows MCA sec. 1-1-216 the way District Court Rule 6(a)(6) does; it has no clerk-inaccessibility limb, no hours unit and no backward 'next day' rule; and its mail extension is MAIL ONLY and reads '3 days must be added to the prescribed period', which lengthens the period and rolls once, against District Court Rule 6(d)'s '3 days are added AFTER the period would otherwise expire', which rolls, adds and rolls again. Two rules numbered 6, in one title of one code, with opposite sequencing and a different method set. Justice and City Court is its own gate, its own standard (mt_jc_r_6) and its own seed, and none of its answer, discovery or new-trial periods were read here. A Justice or City Court deadline must not be computed from these rows. Full gate: docs/sairnlaw-montana-deadline-seed-gate.md. SOURCE: mca.legmt.gov, the Legislative Services Division's own Montana Code Annotated 2025, HTTP 200 to a plain browser-header request on every section, retrieved 2026-09-02. Each rule carries a per-section History line and every effective_from below is that section's own last published one -- 2011-10-01 for the rules adopted by Sup. Ct. Ord. No. AF 07-0157 effective 1 October 2011, and 2017-07-01 for Rule 59, which that same order amended on 14 December 2016 effective 1 July 2017. Montana publishes amendment history PER RULE and not per subsection, so Rule 59's three seeded rows all carry the rule-level date even though only part of the rule was amended; that is what the source supports and is stated rather than refined by guess. THE ABSENCE OF A SHORT-PERIOD THRESHOLD IS THE SINGLE MOST LOAD-BEARING FACT IN THIS SEED: Rule 6(a)(1)(B) counts 'every day, including intermediate Saturdays, Sundays, and legal holidays', so Montana has NO exclusion threshold. Five of these fifteen rows are shorter than 15 days. A 7 copied from New Jersey, North Carolina, Washington, Massachusetts, Missouri or South Carolina, or an 11 copied from Delaware, would lengthen all five and report them LATE.",
+  "rules": [
+    {
+      "rule_id": "mt-mrcp-12a1A-answer-after-service-21-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answer after service of the summons and complaint -- 21 days (Montana District Court)",
+      "trigger_event": "service_of_summons_and_complaint",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(1)(A)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "A defendant must serve an answer within 21 days after being served with the summons and complaint, unless the court orders otherwise under Rule 4(c)(2)(C).",
+        "note": "NO MAIL OR ELECTRONIC EXTENSION, AND HERE THAT IS A CITATION RATHER THAN A JUDGMENT CALL. Rule 6(d) adds its three days only when 'service is made under Rule 5(b)(2)(C), (D), or (E), or (F)'; a summons and complaint are served under Rule 4. Contrast Delaware, whose Rule 6(e) says only 'after being served' and leaves the same question genuinely open -- the Montana rule names the subsection, so nothing has to be assumed. THE RULE'S OWN CARVE-OUT IS NOT COVERED BY THIS ROW: 'unless the court orders otherwise under Rule 4(c)(2)(C)', which is the statutory-exceptions provision -- where a Montana statute, or a court order or citation issued under one, provides for service of a notice, order or citation in lieu of summons, service and its timing are as that statute, order or citation prescribes. A caller in such an action must not use this row. NOT SEEDED ALONGSIDE IT and deliberately: Rule 12(a)(2) and 12(a)(3) give the State, its agencies and its officers 42 days, and both have their own rows here. DISTRICT COURT ONLY -- the Justice and City Court rules have their own answer period and their own Rule 6, and neither was read for this seed.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-12a1B-answer-counterclaim-crossclaim-21-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answer to a counterclaim or crossclaim -- 21 days (Montana District Court)",
+      "trigger_event": "service_of_counterclaim_or_crossclaim_pleading",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(1)(B)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "A party must serve an answer to a counterclaim or crossclaim within 21 days after being served with the pleading that states the counterclaim or crossclaim.",
+        "note": "A SEPARATE TRIGGER FROM THE ANSWER-TO-COMPLAINT ROW, AND IT CARRIES THE EXTENSION WHERE THAT ONE DOES NOT. The period runs from service of a PLEADING FILED AFTER THE ORIGINAL COMPLAINT, which Rule 5(a)(1)(B) requires to be served on every party and which therefore goes out under Rule 5(b)(2) -- exactly the subsection Rule 6(d) names. The count is identical to Rule 12(a)(1)(A)'s and the extension treatment is not; that difference is the reason these are two rows rather than one. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-12a1C-reply-to-answer-21-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Reply to an answer, where the court has ordered one -- 21 days (Montana District Court)",
+      "trigger_event": "service_of_court_order_to_reply",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 21,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(1)(C)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "A party must serve a reply to an answer within 21 days after being served with an order to reply, unless the order specifies a different time.",
+        "note": "AN ORDER DISPLACES THIS ROW ENTIRELY -- 'unless the order specifies a different time' -- and this engine has no field for a court order, so the date returned is the rule's default and a caller holding an order that sets a time must use that instead. The extension applies: Rule 5(a)(1)(A) requires 'an order stating that service is required' to be served on every party, so the order goes out under Rule 5(b)(2), which is what Rule 6(d) names. Contrast the Rule 12(a)(4)(A) row, whose period runs from NOTICE OF THE COURT'S ACTION rather than from service of a paper, and which therefore carries no extension. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-12a2-state-official-capacity-answer-42-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answer by the State, a state agency, or a state officer or employee sued only in an official capacity -- 42 days from service on the attorney general (Montana District Court)",
+      "trigger_event": "service_on_montana_attorney_general_official_capacity",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 42,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(2)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "The State of Montana, a state agency, or a state officer or employee sued only in an official capacity must serve an answer to a complaint, counterclaim, or crossclaim within 42 days after service on the attorney general.",
+        "note": "FORTY-TWO, NOT THE FEDERAL SIXTY. Fed. R. Civ. P. 12(a)(2) gives the United States 60 days and Montana gives the State 42; the rules are otherwise parallel in structure, which is exactly what makes the number easy to carry across and get wrong by eighteen days in the LATE direction. ONE TRIGGER ONLY, and that is the difference from the individual-capacity row below: this period runs from service on the attorney general alone, with no second event to compare. No extension: service on the attorney general is service of process under Rule 4, and Rule 6(d) reaches only service made under Rule 5(b)(2). DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-12a3-state-officer-individual-capacity-42-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answer by a state officer or employee sued in an individual capacity -- 42 days from the LATER of service on the officer and service on the attorney general (Montana District Court)",
+      "trigger_event": {
+        "id": "mt_state_officer_individual_capacity_service",
+        "resolve": "later_of",
+        "events": [
+          "service_on_montana_state_officer_or_employee",
+          "service_on_montana_attorney_general_individual_capacity"
+        ]
+      },
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 42,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(3)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "A state officer or employee sued in an individual capacity for an act or omission occurring in connection with duties performed on the state's behalf must serve an answer to a complaint, counterclaim, or crossclaim within 42 days after service on the officer or employee or service on the attorney general, whichever is later.",
+        "note": "'WHICHEVER IS LATER' MAKES THIS A resolve RATHER THAN A resolve_periods, AND THE DISTINCTION IS NOT COSMETIC. There is ONE count of 42 days and TWO possible start dates, so the LATER DATE governs and the single count runs from it; a resolve_periods would compute a separate period from each event and compare the RESULTS, which is the Rule 36 shape below and is a different arithmetic whenever the two counts differ. Here they do not differ, so the two shapes would agree by coincidence -- which is precisely why the right one has to be chosen by reading rather than by checking the answer. THE ENGINE REFUSES UNLESS BOTH DATES ARE SUPPLIED, and that is the safe direction: resolving from whichever one the caller happened to have would report EARLY if the other governs, and this row exists because the two commonly come apart by days. Same shape as Fed. R. Civ. P. 12(a)(3), at 42 days rather than 60. No extension: both events are service of process under Rule 4. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-12a4A-responsive-pleading-after-motion-resolved-14-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a Rule 12 motion is denied or its disposition postponed -- 14 days (Montana District Court)",
+      "trigger_event": "notice_of_court_action_on_rule_12_motion",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(4)(A)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "if the court denies the motion or postpones its disposition until trial, the responsive pleading must be served within 14 days after notice of the court's action",
+        "note": "FOURTEEN DAYS AND NO EXCLUSION OF INTERMEDIATE WEEKENDS -- Montana has no short-period threshold at all, so this is a straight calendar count. Under Ohio's or Indiana's seven-day threshold it would still be straight; under Arkansas's fourteen it would not, and under Delaware's eleven a shorter Montana period would not. NO EXTENSION IS CARRIED AND THE OMISSION IS DELIBERATE. Rule 6(d) is gated on a party acting 'within a specified time after SERVICE and service is made under Rule 5(b)(2)'; this period runs from NOTICE OF THE COURT'S ACTION, which is not stated to be Rule 5 service of a paper by a party. Carrying three days that the rule may not authorise reports LATE and loses the pleading; omitting them reports EARLY. The safe direction is taken and this note is the record of why. 'Unless the court sets a different time' opens Rule 12(a)(4), so an order displaces this row. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-12a4B-responsive-pleading-after-more-definite-statement-14-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Responsive pleading after a more definite statement is served -- 14 days (Montana District Court)",
+      "trigger_event": "service_of_more_definite_statement",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 12(a)(4)(B)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0030/section_0120/0250-0200-0030-0120.html",
+        "quote": "if the court grants a motion for a more definite statement, the responsive pleading must be served within 14 days after the more definite statement is served",
+        "note": "THE SECOND LIMB OF RULE 12(a)(4), SEEDED SEPARATELY BECAUSE ITS TRIGGER IS A PARTY'S PAPER AND THE FIRST LIMB'S IS THE COURT'S ACTION -- which is also why this row carries the Rule 6(d) extension and the row above does not. A more definite statement is a pleading served under Rule 5(b)(2), so the gate in Rule 6(d) is satisfied on the rule's own words. 'Unless the court sets a different time' opens Rule 12(a)(4), so an order displaces this row. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-33b2-interrogatory-answers-30-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answers and objections to interrogatories -- 30 days (Montana District Court)",
+      "trigger_event": "service_of_interrogatories",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 33(b)(2)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0050/section_0330/0250-0200-0050-0330.html",
+        "quote": "The responding party must serve its answers and any objections within 30 days after being served with the interrogatories, except that a defendant may serve answers or objections within 45 days after service of the summons and complaint upon that defendant. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "THE DEFENDANT'S 45-DAY LIMB IS AN ELECTION, NOT A FLOOR, AND IS NOT MODELLED. 'A defendant MAY serve answers or objections within 45 days' offers two limbs with two different triggers and lets the party choose; compare this seed's own Rule 36 row, which reads 'shall not be required to serve ... before the expiration of 45 days' and IS a floor. MONTANA THEREFORE SPLITS 33/34 FROM 36 THE WAY MISSISSIPPI, NEW MEXICO, SOUTH CAROLINA AND HAWAI'I DO -- and the OPPOSITE way from Delaware, which puts an election on 33 and 34 and NOTHING on 36. All three rules were read here; none was inferred from the other two. Seeding the 30-day limb reports EARLIER than a defendant who elects the 45 days, which is safe. A RULE 29 STIPULATION OR A COURT ORDER DISPLACES THIS ROW; the engine has no field for either. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-34b2A-production-response-30-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Written response to a request for production or entry onto land -- 30 days (Montana District Court)",
+      "trigger_event": "service_of_request_for_production",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 30,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 34(b)(2)(A)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0050/section_0340/0250-0200-0050-0340.html",
+        "quote": "The party to whom the request is directed must respond in writing within 30 days after being served, except that a defendant may serve a response within 45 days after service of the summons and complaint upon that defendant. A shorter or longer time may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "IDENTICAL IN SHAPE TO RULE 33(b)(2) AND READ SEPARATELY RATHER THAN ASSUMED FROM IT. The defendant's 45-day limb is again 'MAY serve' -- an election between two triggers, not a floor -- so the 30-day limb is seeded and the election is not modelled, which reports EARLIER and is safe. Rule 33, Rule 34 and Rule 36 were each read in full for this seed precisely because Delaware, two months of gates ago, turned out to carry the election on 33 and 34 and nothing at all on 36. A Rule 29 stipulation or a court order displaces this row. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-36a3-admissions-later-of",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Answer or objection to a request for admission -- the later of 30 days and the 45-day defendant floor, self-executing (Montana District Court)",
+      "trigger_event": {
+        "id": "mt_admission_defendant_later_of",
+        "resolve_periods": "later_of",
+        "limbs": [
+          {
+            "event": "service_of_request_for_admission",
+            "count": {
+              "value": 30,
+              "unit": "calendar_days"
+            },
+            "label": "30 days after service of the request for admission"
+          },
+          {
+            "event": "service_of_summons_and_complaint_for_admission",
+            "count": {
+              "value": 45,
+              "unit": "calendar_days"
+            },
+            "label": "45 days after service of the summons and complaint on the defendant"
+          }
+        ]
+      },
+      "computation": "mt_rcp_6a",
+      "authority": {
+        "citation": "Mont. R. Civ. P. 36(a)(3)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0050/section_0360/0250-0200-0050-0360.html",
+        "quote": "A matter is admitted unless, within 30 days after being served, the party to whom the request is directed serves on the requesting party a written answer or objection addressed to the matter and signed by the party or its attorney, but, unless the court shortens the time, a defendant shall not be required to serve answers or objections before the expiration of 45 days after service of the summons and complaint upon that defendant. A shorter or longer time for responding to requests for admission may be stipulated to under Rule 29 or be ordered by the court.",
+        "note": "THE ONLY MONTANA DISCOVERY PERIOD THAT IS A REAL FLOOR, AND IT IS THE ROW WHERE READING THE WRONG SHAPE COSTS THE MOST. 'SHALL NOT BE REQUIRED TO SERVE ... BEFORE THE EXPIRATION OF 45 days' is mandatory, where Rules 33(b)(2) and 34(b)(2)(A) both say a defendant 'MAY serve' and are plain thirty-day rows. Montana therefore joins Mississippi, New Mexico, South Carolina and Hawai'i in making admissions the mandatory one -- and is the OPPOSITE of Delaware, whose Rule 36 carries no defendant limb at all while its 33 and 34 carry elections. All three Montana rules were read; the third was not inferred from the pair. SELF-EXECUTING: 'A matter is admitted unless ...', and Rule 36(b) makes an admission conclusively established unless the court permits withdrawal, so seeding the flat thirty would tell a Montana defendant a matter is still open when it has already been admitted. NO SERVICE EXTENSION IS CARRIED, AND THIS IS THE ONE JUDGMENT CALL IN THIS SEED THAT COSTS COVERAGE. The 30-day limb runs from service of the REQUEST, a Rule 5(b)(2) paper that Rule 6(d) does reach. The 45-day limb runs from service of the SUMMONS AND COMPLAINT, which is Rule 4 service and which Rule 6(d) does not reach. This engine applies a service extension per ROW and not per LIMB, so carrying it would add three days whenever the floor governs -- which is exactly the common case for a defendant served with requests early in the action -- and would report LATE. Omitting it reports EARLIER than the true deadline for a mail-served party whose 30-day limb governs, which is safe. Note that Hawai'i's equivalent row DOES carry its extension; whether Haw. R. Civ. P. 6(e) is gated on a service subsection the way Mont. R. Civ. P. 6(d) expressly is was not read here, and that row is not changed on the strength of this one. A RULE 29 STIPULATION OR A COURT ORDER DISPLACES THIS ROW, and the court may also SHORTEN the 45-day floor. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-59b-new-trial-28-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Motion for a new trial -- 28 days after entry of judgment (Montana District Court)",
+      "trigger_event": "entry_of_judgment",
+      "trigger_document": {
+        "id": "entry_of_judgment",
+        "label": "the date the clerk ENTERED the judgment on the docket",
+        "not_the": "the date it was signed, decided, announced from the bench, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mont. R. Civ. P. 59(b)",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 28,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 59(b)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0070/section_0590/0250-0200-0070-0590.html",
+        "quote": "A motion for a new trial must be filed no later than 28 days after the entry of judgment. The motion for a new trial must set forth, in the heading of the motion and under the cause number and department identification, the date which is 60 days from the date of the filing of the motion, and the date which is 120 days from the date of filing of the motion.",
+        "note": "THIS PERIOD CANNOT BE EXTENDED BY THE COURT, WHICH MAKES IT THE MOST DANGEROUS ROW IN THE SEED TO GET LATE. Rule 6(b)(2): 'The court MUST NOT extend the time to act under Rules 50(b) and (d), 52(b), 59(b), (d), and (e), and 60(b).' There is no good-cause and no excusable-neglect relief; a late motion is simply late. THE trigger_document GUARD IS SET TO 'warn' RATHER THAN 'refuse', WHICH IS A DECISION AND NOT A DEFAULT. The platform's convention is refuse for the appellate class, where a late notice of appeal is jurisdictional and not curable, and warn for civil; Delaware's identical entry-of-judgment new-trial row is warn. Rule 6(b)(2) is an argument the other way, since it removes the relief that normally makes a civil slip survivable. It is set to warn for consistency with the equivalent rows already live, and this sentence is the record that the alternative was considered rather than missed. TWENTY-EIGHT, NOT TEN. Delaware's Rule 59(b) is a ten-day period and half of that seed turns on Delaware's eleven-day exclusion threshold; Montana's is 28 days counted straight through weekends and holidays because Rule 6(a)(1)(B) excludes nothing. The two rules share a number and agree on nothing else. FILED, NOT SERVED, and no mail extension is possible: the period runs from entry of judgment rather than from service, so Rule 6(d)'s gate is not met on either half of its test. THE MOTION'S OWN 60- AND 120-DAY HEADING DATES ARE NOT SEEDED: they run from the date of FILING, which is the party's own future act and not a trigger this engine is given; Rule 59(f)'s deemed-denial mechanism turns on them. Filed as unseeded rather than approximated. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2017-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-59e-alter-or-amend-judgment-28-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Motion to alter or amend a judgment -- 28 days after entry of judgment (Montana District Court)",
+      "trigger_event": "entry_of_judgment_for_motion_to_alter_or_amend",
+      "trigger_document": {
+        "id": "entry_of_judgment_for_motion_to_alter_or_amend",
+        "label": "the date the clerk ENTERED the judgment on the docket",
+        "not_the": "the date it was signed, decided, announced from the bench, or mailed to the parties -- those are different events and they bear different dates",
+        "authority": "Mont. R. Civ. P. 59(e)",
+        "on_unconfirmed": "warn"
+      },
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 28,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 59(e)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0070/section_0590/0250-0200-0070-0590.html",
+        "quote": "A motion to alter or amend a judgment must be filed no later than 28 days after the entry of the judgment.",
+        "note": "SEEDED AS ITS OWN ROW RATHER THAN FOLDED INTO RULE 59(b) DESPITE AN IDENTICAL COUNT AND AN IDENTICAL TRIGGER DATE, because they are different motions with different consequences and a caller selecting one must not be given the other's authority note. Rule 6(b)(2) makes this period non-extendable too. Its own trigger_event string is distinct so that no single event can match two rules -- a rule-selection property, not a legal one, and it is asserted in the suite. No extension: the period runs from entry of judgment, not from service. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2017-07-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-59c-opposing-affidavits-14-days",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavits on a new-trial motion supported by affidavits -- 14 days after service (Montana District Court)",
+      "trigger_event": "service_of_new_trial_motion_with_affidavits",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "forward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 59(c)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0070/section_0590/0250-0200-0070-0590.html",
+        "quote": "When a motion for a new trial is based on affidavits, they must be filed with the motion. The opposing party has 14 days after being served to file opposing affidavits. The court may permit reply affidavits.",
+        "note": "RULE 59(c) DISPLACES THE GENERAL RULE 6(c)(2) TIMETABLE AND SAYS SO FROM THE OTHER SIDE: Rule 6(c)(2) opens 'Except as Rule 59(c) provides otherwise'. So an opposing affidavit on a new-trial motion runs FORWARD 14 days from service, while every other opposing affidavit runs BACKWARD 7 days from the hearing. Two opposite shapes for the same document, decided by which motion it answers -- which is why both are seeded and why neither may be used for the other. THIS ONE RUNS FROM BEING SERVED, so Rule 6(d)'s extension applies on the rule's own words. THE REPLY AFFIDAVITS ARE NOT SEEDED: 'The court MAY permit reply affidavits' grants no period at all, so there is nothing to count. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2017-07-01",
+      "effective_to": null,
+      "service_extension": {
+        "standard": "mt_rcp_6d",
+        "add": 3,
+        "unit": "calendar_days",
+        "applies_when": [
+          "mail",
+          "left_with_clerk",
+          "electronic",
+          "email",
+          "other_consented_means"
+        ]
+      }
+    },
+    {
+      "rule_id": "mt-mrcp-6c1-motion-and-notice-of-hearing-14-days-before",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Written motion and notice of hearing -- served at least 14 days before the hearing, counted BACKWARD (Montana District Court)",
+      "trigger_event": "hearing_date_for_written_motion",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 14,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 6(c)(1)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0020/section_0060/0250-0200-0020-0060.html",
+        "quote": "A written motion and notice of the hearing must be served at least 14 days before the time specified for any hearing, with the following exceptions: (A) when the motion may be heard ex parte; (B) when these rules set a different time; or (C) when a court order -- which a party may, for good cause, apply for ex parte -- sets a different time.",
+        "note": "BACKWARD-COUNTED, AND MONTANA IS ONE OF THE FEW SEEDED STATES WHOSE COMPUTATION RULE ADDRESSES THAT DIRECTION EXPRESSLY. Rule 6(a)(5): 'The \"next day\" is determined by continuing to count forward when the period is measured after an event and BACKWARD when measured before an event.' So a fourteenth day landing on a Saturday, Sunday or legal holiday moves to the PRECEDING good day, giving the served party at least the full fourteen; rolling forward would give fewer and would be wrong in the direction that shortens notice. Delaware's Superior Court Rule 6(a) says nothing about backward periods and no backward Delaware row is seeded for that reason; Montana's rule supplies the missing sentence. NO SERVICE EXTENSION, AND THE REASON IS STRUCTURAL RATHER THAN A JUDGMENT CALL: Rule 6(d) adds days when a party must act 'within a specified time AFTER service'. This obligation is to serve, and it is measured BEFORE an event. There is no period after service to extend. ALL THREE OF THE RULE'S OWN EXCEPTIONS DISPLACE THIS ROW -- an ex parte motion, another rule setting a different time, or a court order -- and the engine has a field for none of them. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    },
+    {
+      "rule_id": "mt-mrcp-6c2-opposing-affidavit-7-days-before",
+      "jurisdiction": "mt",
+      "domain": "civil-litigation",
+      "label": "Opposing affidavit on a motion other than a new-trial motion -- served at least 7 days before the hearing, counted BACKWARD (Montana District Court)",
+      "trigger_event": "hearing_date_for_opposing_affidavit",
+      "computation": "mt_rcp_6a",
+      "count": {
+        "value": 7,
+        "unit": "calendar_days",
+        "direction": "backward"
+      },
+      "authority": {
+        "citation": "Mont. R. Civ. P. 6(c)(2)",
+        "url": "https://mca.legmt.gov/bills/mca/title_0250/chapter_0200/part_0020/section_0060/0250-0200-0020-0060.html",
+        "quote": "Any affidavit supporting a motion must be served with the motion. Except as Rule 59(c) provides otherwise, any opposing affidavit must be served at least 7 days before the hearing, unless the court permits service at another time.",
+        "note": "THIS ROW DOES NOT COVER A NEW-TRIAL MOTION. The rule carves out Rule 59(c) by name, and that carve-out inverts the whole shape: an affidavit opposing a new-trial motion runs FORWARD 14 days from service and is its own row in this seed. A caller who uses this row for a new-trial motion gets a date computed backward from the wrong event. SEVEN DAYS, COUNTED STRAIGHT THROUGH WEEKENDS AND HOLIDAYS, and this is the row where a borrowed threshold does the most damage: under Ohio's or Indiana's seven-day exclusion the count would be 'less than seven' and unaffected, but under Arkansas's fourteen or Delaware's eleven this period would exclude intermediate weekends and land days earlier -- shortening the notice the opposing party in fact has. Montana excludes nothing; Rule 6(a)(1)(B) counts every day. Backward-rolled under Rule 6(a)(5) for the same reason as the row above. NO SERVICE EXTENSION: the obligation is to serve, measured before an event, so there is no period after service to extend. THE SUPPORTING AFFIDAVIT IS NOT SEEDED -- 'must be served WITH the motion' is a simultaneity requirement, not a period. 'Unless the court permits service at another time' displaces this row. DISTRICT COURT ONLY.",
+        "retrieved_at": "2026-09-02"
+      },
+      "effective_from": "2011-10-01",
+      "effective_to": null
+    }
+  ]
+}
