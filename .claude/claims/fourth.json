@@ -60,6 +60,16 @@
       "claimed_at_epoch": 1788340741.0129342,
       "status": "released",
       "released_at": "2026-09-02T09:29:09Z"
+    },
+    {
+      "id": "fourth-1788342657",
+      "session": "fourth",
+      "subject": "sairncode",
+      "task": "dashboard kpi drilldown and defect sweep",
+      "claimed_at": "2026-09-02T09:50:57Z",
+      "claimed_at_epoch": 1788342657.0980308,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
