@@ -349,8 +349,8 @@
       "task": "per branch gross margin from caregiver pay rates B5",
       "claimed_at": "2026-09-02T16:18:20Z",
       "claimed_at_epoch": 1788365900.0,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-02T23:30:57Z",
       "note": "Written directly, not via sairn_claim.py claim. That command exited 1 on a LEXICAL FALSE POSITIVE and printed its own reason: \"overlap on: per\". The blocking claim is cody's \"accounting -- fresh read-only quickbooks connector opt-in PER customer\". Verified rather than assumed: different app (accounting/QuickBooks connector vs SAIRNsenior branch margin), different files (cody is in the QuickBooks connector; mine are sairnsenior.html, api/sd-data.js, api/_resources/sairnsenior.js and a new sql/sairnsenior_pay_rates_schema.sql), different subject entirely. Sole shared token is the preposition \"per\". This is the matcher defect CLAUDE.md records as known-and-unfixed. Task string NOT reworded to slip the matcher -- claim written directly with the reason attached, which is what CLAUDE.md instructs."
     }
   ]
