@@ -2459,6 +2459,61 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── SAIRNSENIOR: sen_referral_sources + sen_referrals (2026-09-02) ──────────
+    // Competitive-gap audit item A7 -- the referral-source relationship layer
+    // (hospitals, SNFs, discharge planners, physician practices). Mosai is built
+    // entirely around it; AxisCare, Aaniie, Alora and KanTime do not publish it.
+    //
+    // GATED ON THE INTAKE ROLES, not on management alone and not on every
+    // employee. A referral row carries a PROSPECTIVE client's name and the reason
+    // they were referred -- that is PHI about someone who is not yet a client, so
+    // a caregiver has no business in the pipeline. But coordinators and
+    // schedulers are the people who actually take the referral call, so
+    // management-only (the sen_claims gate) would put the work out of reach of
+    // the people doing it. SEN_CLIENT_BROAD_READ_ROLES is exactly that set.
+    //
+    // WRITE IS THE SAME SET, deliberately: whoever can see a referral is whoever
+    // logs its outcome, and splitting them would mean a coordinator could read a
+    // pipeline they cannot update, which is how a stale pipeline happens.
+    const SEN_REFERRAL_RESOURCES = { sen_referral_sources: 'source_id', sen_referrals: 'referral_id' };
+    if (SEN_REFERRAL_RESOURCES[resource] && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!SEN_CLIENT_BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Referral records are limited to management, coordinators and schedulers' } });
+        return;
+      }
+      const idCol = SEN_REFERRAL_RESOURCES[resource];
+      if (action === 'read') {
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=' + idCol + ',data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const data = (rows || []).map((x) => Object.assign({ id: x[idCol] }, x.data));
+        res.status(200).json({ ok: true, data, provisioned: true });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: resource + ' payload.id is required' } }); return; }
+      const body = Object.assign({}, payload);
+      delete body.id;
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify(Object.assign(
+          { license_hash: licHash, app_id: 'sairnsenior', data: body, updated_at: nowISO() },
+          { [idCol]: String(payload.id) }
+        ))
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Referral tracking is not set up yet — run sql/sairnsenior_referrals_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, body) });
+      return;
+    }
+
     // ── SAIRNSENIOR: sen_caregivers (2026-08-20, closing the Phase 1 disclosed gap) ──────────
     // Employment/certification data, not client PHI -- lighter gate than sen_clients.
     // Read: any authenticated employee (scheduling/coordination needs the whole roster).

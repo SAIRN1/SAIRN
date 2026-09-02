@@ -66,6 +66,16 @@ module.exports = {
   // tables ended up unmeasurable -- see docs/SAIRN-OPEN-WORK-INDEX.md.
   // Bespoke branch below.
     'sen_settings',
+  // SAIRNsenior referral-source CRM (2026-09-02, competitive-gap audit A7) --
+  // see sql/sairnsenior_referrals_schema.sql. sen_referral_sources is the
+  // hospital / SNF / discharge-planner / physician-practice relationship;
+  // sen_referrals is one referred person and what happened to them. Gated on
+  // the INTAKE roles (management + coordinator + scheduler), not on management
+  // alone and not on every employee -- a referral names a prospective client, so
+  // a caregiver is out, but a coordinator takes the call and must be in.
+  // Bespoke branch below, shared by both.
+    'sen_referral_sources',
+    'sen_referrals',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

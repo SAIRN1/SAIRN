@@ -226,6 +226,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <div class="ss">Care</div>
       <button class="sb" id="sb-clients" onclick="nav('clients')"><span class="sico">&#128100;</span>Clients</button>
       <button class="sb" id="sb-scheduling" onclick="nav('scheduling')"><span class="sico">&#128197;</span>Scheduling &amp; Visits</button>
+      <button class="sb" id="sb-referrals" onclick="nav('referrals')"><span class="sico">&#127973;</span>Referral Sources</button>
       <div class="ss">Money</div>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128179;</span>Billing &amp; Claims</button>
       <div class="ss">Staff</div>
@@ -471,6 +472,120 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 </div>
 
 <!-- REPORTS -->
+<!-- REFERRAL SOURCES (competitive-gap audit A7, 2026-09-02) -->
+<!-- The relationship layer with hospitals, SNFs, physician practices and
+     discharge planners. The audit found this NOTABLY ABSENT from AxisCare,
+     Aaniie, Alora and KanTime while Mosai is built entirely around it -- so it
+     is a differentiator at Tier A, not catch-up.
+
+     EVERY NUMBER ON THIS PANEL IS COMPUTED FROM RECORDS THAT ALREADY EXIST.
+     A referral marked Admitted is linked to a real sen_clients row, and the
+     hours and revenue attributed to a source are read back through that link
+     from sen_visits and sen_claims. Nothing is stored pre-aggregated on the
+     referral, because a stored total drifts from the claims it came from and
+     then has to be believed rather than checked. -->
+<div class="panel" id="panel-referrals">
+  <div class="ph"><div><div class="ptitle">Referral Sources</div><div class="psub">Who sends you clients, and what actually came of it &mdash; measured from your own visits and claims, not from a score</div></div>
+    <div class="pa"><button class="btn bo bs" onclick="openRfSourceModal()">+ Source</button><button class="btn bp bs" onclick="openRfReferralModal()">+ Referral</button></div>
+  </div>
+
+  <div class="krow" id="rf-kpis"></div>
+
+  <div class="card"><div class="ch"><span class="ct">Pipeline</span></div><div class="cb" style="padding:0">
+    <div class="tw"><table><thead><tr><th>Referred</th><th>Name</th><th>Source</th><th>Payer</th><th>Status</th><th>Days to decision</th><th>Client record</th><th></th></tr></thead>
+    <tbody id="rf-pipeline-tbody"></tbody></table></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Source performance</span></div><div class="cb">
+    <div class="note" style="margin-bottom:12px">Conversion counts <strong>decided</strong> referrals only &mdash; admitted, declined or lost. A pending referral is in neither half, and a source with nothing decided reads &quot;--&quot; rather than 0% or 100%. Sample size is shown beside every rate on purpose: one-for-one is not a better source than twelve-for-twenty, and sorting by rate alone would say it was.</div>
+    <div class="tw"><table><thead><tr><th>Source</th><th>Type</th><th>Referrals</th><th>Decided</th><th>Admitted</th><th>Conversion</th><th>Median days to admit</th><th>Hours delivered</th><th>Revenue</th></tr></thead>
+    <tbody id="rf-perf-tbody"></tbody></table></div>
+    <div id="rf-perf-notes" style="margin-top:10px"></div>
+  </div></div>
+
+  <div class="card"><div class="ch"><span class="ct">Sources on file</span></div><div class="cb" style="padding:0">
+    <div class="tw"><table><thead><tr><th>Name</th><th>Type</th><th>Contact</th><th>Phone</th><th>Email</th><th>Status</th><th></th></tr></thead>
+    <tbody id="rf-sources-tbody"></tbody></table></div>
+  </div></div>
+</div>
+
+<div class="modal" id="rfsourcemodal"><div class="mbox">
+  <div class="mtitle">Referral Source</div>
+  <div class="fr">
+    <div class="fg"><label>Name</label><input id="rfs-name" placeholder="e.g. Riverside General Hospital"></div>
+    <div class="fg"><label>Type</label><select id="rfs-type">
+      <option value="hospital">Hospital</option>
+      <option value="snf">Skilled nursing facility</option>
+      <option value="physician">Physician practice</option>
+      <option value="community">Community organisation</option>
+      <option value="family">Family / word of mouth</option>
+      <option value="other">Other</option>
+    </select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Contact name</label><input id="rfs-contact" placeholder="e.g. Dana Whitfield"></div>
+    <div class="fg"><label>Their role</label><input id="rfs-role" placeholder="e.g. Discharge planner"></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Phone</label><input id="rfs-phone"></div>
+    <div class="fg"><label>Email</label><input id="rfs-email"></div>
+  </div>
+  <div class="fg"><label>Address</label><input id="rfs-address"></div>
+  <div class="fg"><label>Notes</label><textarea id="rfs-notes" rows="2"></textarea></div>
+  <div class="fg"><label><input type="checkbox" id="rfs-active" checked style="width:auto"> Active relationship</label></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeRfSourceModal()">Cancel</button>
+    <button class="btn bp" onclick="saveRfSource()">Save Source</button>
+  </div>
+</div></div>
+
+<div class="modal" id="rfreferralmodal"><div class="mbox">
+  <div class="mtitle">Referral</div>
+  <div class="fr">
+    <div class="fg"><label>Referred person</label><input id="rfr-name" placeholder="name as given by the source"></div>
+    <div class="fg"><label>Source</label><select id="rfr-source"></select></div>
+  </div>
+  <div class="fr">
+    <div class="fg"><label>Referred on</label><input type="date" id="rfr-on"></div>
+    <div class="fg"><label>Likely payer</label><select id="rfr-payer">
+      <option value="">Not stated</option>
+      <option value="medicaid">Medicaid</option>
+      <option value="va">VA</option>
+      <option value="ltci">Long-term care insurance</option>
+      <option value="private">Private pay</option>
+      <option value="self">Self pay</option>
+    </select></div>
+  </div>
+  <div class="fg"><label>Reason given</label><textarea id="rfr-reason" rows="2" placeholder="e.g. post-discharge personal care, 20h/week"></textarea></div>
+  <div class="fr">
+    <div class="fg"><label>Status</label><select id="rfr-status" onchange="onRfStatusChange()">
+      <option value="pending">Pending</option>
+      <option value="admitted">Admitted</option>
+      <option value="declined">Declined by the family</option>
+      <option value="lost">Lost &mdash; went elsewhere</option>
+    </select></div>
+    <div class="fg"><label>Decided on</label><input type="date" id="rfr-decided"></div>
+  </div>
+  <div class="fg" id="rfr-client-row" style="display:none"><label>Client record this became</label><select id="rfr-client"></select>
+    <div class="note" style="margin-top:6px">An admitted referral with no client record linked contributes <strong>nothing</strong> to the hours and revenue on this panel, and is counted as unlinked rather than estimated.</div>
+  </div>
+  <div class="fg" id="rfr-decline-row" style="display:none"><label>Why</label><input id="rfr-decline-reason" placeholder="recorded as given -- no inference"></div>
+  <div class="fg"><label>Notes</label><textarea id="rfr-notes" rows="2"></textarea></div>
+  <div id="rfr-touches" style="margin-bottom:12px"></div>
+  <div class="fr">
+    <div class="fg"><label>Log an outreach</label><select id="rfr-touch-kind">
+      <option value="call">Call</option><option value="visit">In-person visit</option>
+      <option value="email">Email</option><option value="other">Other</option>
+    </select></div>
+    <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bo" onclick="addRfTouch()" style="width:100%">+ Log It</button></div>
+  </div>
+  <div class="fg"><label>What happened</label><input id="rfr-touch-note" placeholder="recorded as typed"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeRfReferralModal()">Cancel</button>
+    <button class="btn bp" onclick="saveRfReferral()">Save Referral</button>
+  </div>
+</div></div>
+
 <div class="panel" id="panel-reports">
   <div class="ph"><div><div class="ptitle">Reports</div><div class="psub">Export real operational data -- nothing here is a placeholder</div></div></div>
   <div class="card"><div class="cb">
@@ -682,6 +797,7 @@ function senEnterApp(d){
   senHydrateCaregivers().then(function(merged){if(merged)rCaregivers();});
   senHydrateVisits();
   senHydrateClaims();
+  senHydrateReferrals().then(function(merged){if(merged)rfRender();});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -723,6 +839,7 @@ function nav(id){
   if(id==='caregivers')rCaregivers();
   if(id==='scheduling')vsRender();
   if(id==='billing')blRender();
+  if(id==='referrals')rfRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -1455,6 +1572,326 @@ async function saveVisit(){
   toast(saved?'Visit scheduled':'Saved on this device only -- server sync failed, try again with a connection');
 }
 
+// ── REFERRAL SOURCES (competitive-gap audit A7, 2026-09-02) ──────────────
+// The relationship layer with hospitals, SNFs, physician practices and
+// discharge planners. The audit found it NOTABLY ABSENT from AxisCare, Aaniie,
+// Alora and KanTime while Mosai is built entirely around it -- a differentiator
+// at Tier A rather than catch-up.
+//
+// ── THE DESIGN RULE THAT MAKES THIS WORTH HAVING ──
+// A referral CRM is trivially easy to fill with numbers nobody can check. Every
+// figure here is instead COMPUTED, at render time, from records this app
+// already holds: an admitted referral links to a real sen_clients row, and the
+// hours and revenue attributed to a source are read back through that link from
+// sen_visits and sen_claims. Nothing is stored pre-aggregated on the referral,
+// because a stored total drifts from the claims it came from and then has to be
+// believed rather than checked.
+//
+// FOUR REFUSALS, each of which is the honest answer to a question this feature
+// would otherwise fudge:
+//   1. CONVERSION COUNTS DECIDED REFERRALS ONLY (admitted + declined + lost).
+//      A pending referral is in neither half. A source with nothing decided
+//      reads "--", never 0% or 100% -- the same discipline SAIRNgrounds' quote
+//      win-rate uses, and for the same reason.
+//   2. AN ADMITTED REFERRAL WITH NO LINKED CLIENT CONTRIBUTES NOTHING to hours
+//      or revenue and is reported as unlinked. Attributing a guess would make
+//      the strongest-looking source the one with the sloppiest data entry.
+//   3. SAMPLE SIZE IS SHOWN BESIDE EVERY RATE. One-for-one is not a better
+//      source than twelve-for-twenty, and a bare percentage says it is.
+//   4. THERE IS NO SCORE AND NO RANKING. A "referral source score" would be an
+//      invented weighting presented as a measurement.
+//
+// AND ONE PERMISSION-SHAPED HONESTY PROBLEM, worth stating because getting it
+// wrong is silent: sen_claims is management-only. A coordinator reading this
+// panel has an EMPTY claims list, so a revenue column would render $0 -- a
+// fabricated figure produced by a permission check, which is exactly Guardian
+// Check 0b's class. Revenue therefore reports "not visible to your role" for
+// anyone who is not management, rather than a zero they would believe.
+function rfSources(){return ld('sen_referral_sources',[]);}
+function rfReferrals(){return ld('sen_referrals',[]);}
+
+function senHydrateReferrals(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return Promise.all([
+    senData('read','sen_referral_sources',null,true),
+    senData('read','sen_referrals',null,true)
+  ]).then(function(res){
+    var merged=false;
+    [['sen_referral_sources',res[0]],['sen_referrals',res[1]]].forEach(function(pair){
+      var key=pair[0],rows=pair[1];
+      if(!rows||!Array.isArray(rows))return;
+      // Local read INSIDE the .then, after the network completes -- the
+      // post-await re-read this platform standardised on after confirmReserve.
+      var local=ld(key,[]);
+      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
+      var added=false;
+      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
+      if(added){st(key,local);merged=true;}
+    });
+    return merged;
+  });
+}
+
+var rfSourceEditId=null, rfReferralEditId=null, rfTouchDraft=[];
+
+function rfSourceName(id){
+  var s=rfSources().find(function(x){return x.id===id;});
+  return s?s.name:'(source removed)';
+}
+function rfFillSourceSelect(){
+  var sel=$('rfr-source');if(!sel)return;
+  var list=rfSources();
+  var keep=sel.value;
+  sel.innerHTML=list.length?list.map(function(s){
+    return '<option value="'+H(s.id)+'">'+H(s.name)+(s.active===false?' (inactive)':'')+'</option>';
+  }).join(''):'<option value="">Add a source first</option>';
+  if(keep)sel.value=keep;
+}
+function rfFillClientSelect(){
+  var sel=$('rfr-client');if(!sel)return;
+  var list=clients();
+  var keep=sel.value;
+  sel.innerHTML='<option value="">(not linked yet)</option>'+list.map(function(c){
+    return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';
+  }).join('');
+  if(keep)sel.value=keep;
+}
+function onRfStatusChange(){
+  var v=$('rfr-status').value;
+  $('rfr-client-row').style.display=(v==='admitted')?'block':'none';
+  $('rfr-decline-row').style.display=(v==='declined'||v==='lost')?'block':'none';
+}
+
+function openRfSourceModal(id){
+  rfSourceEditId=id||null;
+  var s=id?rfSources().find(function(x){return x.id===id;}):null;
+  $('rfs-name').value=s?s.name:'';
+  $('rfs-type').value=s?(s.type||'hospital'):'hospital';
+  $('rfs-contact').value=s?(s.contact_name||''):'';
+  $('rfs-role').value=s?(s.contact_role||''):'';
+  $('rfs-phone').value=s?(s.phone||''):'';
+  $('rfs-email').value=s?(s.email||''):'';
+  $('rfs-address').value=s?(s.address||''):'';
+  $('rfs-notes').value=s?(s.notes||''):'';
+  $('rfs-active').checked=s?(s.active!==false):true;
+  $('rfsourcemodal').classList.add('on');
+}
+function closeRfSourceModal(){$('rfsourcemodal').classList.remove('on');rfSourceEditId=null;}
+async function saveRfSource(){
+  var name=$('rfs-name').value.trim();
+  if(!name){toast('A source needs a name');return;}
+  var rec={id:rfSourceEditId||newId('RS'),name:name,type:$('rfs-type').value,
+    contact_name:$('rfs-contact').value.trim(),contact_role:$('rfs-role').value.trim(),
+    phone:$('rfs-phone').value.trim(),email:$('rfs-email').value.trim(),
+    address:$('rfs-address').value.trim(),notes:$('rfs-notes').value.trim(),
+    active:$('rfs-active').checked,created_at:senLocalToday()};
+  var list=rfSources();
+  if(rfSourceEditId){list=list.map(function(x){return x.id===rfSourceEditId?rec:x;});}else{list.push(rec);}
+  st('sen_referral_sources',list);
+  closeRfSourceModal();rfRender();
+  var saved=await senData('write','sen_referral_sources',rec,true);
+  toast(saved?('Saved - '+rec.name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function openRfReferralModal(id){
+  rfReferralEditId=id||null;
+  rfFillSourceSelect();rfFillClientSelect();
+  var r=id?rfReferrals().find(function(x){return x.id===id;}):null;
+  rfTouchDraft=r?((r.touches||[]).slice()):[];
+  $('rfr-name').value=r?(r.referred_name||''):'';
+  if(r&&r.source_id)$('rfr-source').value=r.source_id;
+  $('rfr-on').value=r?(r.referred_on||''):senLocalToday();
+  $('rfr-payer').value=r?(r.payer||''):'';
+  $('rfr-reason').value=r?(r.reason||''):'';
+  $('rfr-status').value=r?(r.status||'pending'):'pending';
+  $('rfr-decided').value=r?(r.decided_on||''):'';
+  $('rfr-client').value=r?(r.client_id||''):'';
+  $('rfr-decline-reason').value=r?(r.decline_reason||''):'';
+  $('rfr-notes').value=r?(r.notes||''):'';
+  $('rfr-touch-note').value='';
+  onRfStatusChange();rfRenderTouches();
+  $('rfreferralmodal').classList.add('on');
+}
+function closeRfReferralModal(){$('rfreferralmodal').classList.remove('on');rfReferralEditId=null;rfTouchDraft=[];}
+function rfRenderTouches(){
+  var box=$('rfr-touches');if(!box)return;
+  box.innerHTML=rfTouchDraft.length
+    ? '<div style="font-size:12px;font-weight:700;margin-bottom:4px">Outreach log</div>'+rfTouchDraft.map(function(t,i){
+        return '<div style="font-size:12px;padding:3px 0;display:flex;justify-content:space-between">'+
+          '<span>'+H(t.on)+' &mdash; '+H(t.kind)+(t.note?': '+H(t.note):'')+'</span>'+
+          '<button class="btn bo bs" onclick="removeRfTouch('+i+')">Remove</button></div>';
+      }).join('')
+    : '<div style="font-size:12px;color:var(--muted)">No outreach logged on this referral yet.</div>';
+}
+function addRfTouch(){
+  var note=$('rfr-touch-note').value.trim();
+  rfTouchDraft.push({on:senLocalToday(),kind:$('rfr-touch-kind').value,note:note});
+  $('rfr-touch-note').value='';
+  rfRenderTouches();
+}
+function removeRfTouch(i){rfTouchDraft.splice(i,1);rfRenderTouches();}
+
+async function saveRfReferral(){
+  var name=$('rfr-name').value.trim();
+  if(!name){toast('The referred person needs a name');return;}
+  var sourceId=$('rfr-source').value;
+  if(!sourceId){toast('Pick the source this came from -- a referral with no source cannot be measured against one');return;}
+  var status=$('rfr-status').value;
+  var decided=$('rfr-decided').value;
+  // A decided referral with no decision date cannot contribute a time-to-admit
+  // and would otherwise sit in the conversion denominator with an unknowable
+  // duration. Asked for rather than back-filled with today.
+  if(status!=='pending'&&!decided){toast('A decided referral needs the date it was decided -- it is not assumed to be today');return;}
+  if(status!=='pending'&&decided&&$('rfr-on').value&&decided<$('rfr-on').value){
+    toast('The decision date is before the referral date');return;
+  }
+  var rec={id:rfReferralEditId||newId('RF'),source_id:sourceId,referred_name:name,
+    referred_on:$('rfr-on').value,payer:$('rfr-payer').value,reason:$('rfr-reason').value.trim(),
+    status:status,decided_on:decided,
+    client_id:(status==='admitted')?($('rfr-client').value||''):'',
+    decline_reason:(status==='declined'||status==='lost')?$('rfr-decline-reason').value.trim():'',
+    touches:rfTouchDraft.slice(),notes:$('rfr-notes').value.trim(),created_at:senLocalToday()};
+  var list=rfReferrals();
+  if(rfReferralEditId){list=list.map(function(x){return x.id===rfReferralEditId?rec:x;});}else{list.push(rec);}
+  st('sen_referrals',list);
+  closeRfReferralModal();rfRender();
+  var saved=await senData('write','sen_referrals',rec,true);
+  toast(saved?('Saved - '+rec.referred_name):'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function rfDaysBetween(a,b){
+  if(!a||!b)return null;
+  var d1=new Date(a+'T00:00:00').getTime(),d2=new Date(b+'T00:00:00').getTime();
+  if(isNaN(d1)||isNaN(d2)||d2<d1)return null;
+  return Math.round((d2-d1)/86400000);
+}
+function rfMedian(nums){
+  if(!nums.length)return null;
+  var s=nums.slice().sort(function(a,b){return a-b;});
+  var m=Math.floor(s.length/2);
+  return s.length%2?s[m]:(s[m-1]+s[m])/2;
+}
+// Real clocked hours for one client, from sen_visits. Reuses the same
+// only-count-what-was-actually-clocked rule the authorisation burn-down uses --
+// a scheduled visit nobody clocked is not delivered time.
+function rfDeliveredHoursFor(clientId){
+  var h=0;
+  visits().forEach(function(v){
+    if(v.client_id!==clientId)return;
+    if(!v.actual_start||!v.actual_end)return;
+    var ms=new Date(v.actual_end).getTime()-new Date(v.actual_start).getTime();
+    if(isFinite(ms)&&ms>0)h+=ms/3600000;
+  });
+  return h;
+}
+function rfRevenueFor(clientId){
+  return claims().reduce(function(s,c){
+    return c.client_id===clientId?s+(Number(c.amount)||0):s;
+  },0);
+}
+
+// Returns one row per source, every figure derived. Never invents a rate.
+function rfPerformance(){
+  var refs=rfReferrals();
+  return rfSources().map(function(src){
+    var mine=refs.filter(function(r){return r.source_id===src.id;});
+    var decided=mine.filter(function(r){return r.status&&r.status!=='pending';});
+    var admitted=mine.filter(function(r){return r.status==='admitted';});
+    var linked=admitted.filter(function(r){return !!r.client_id;});
+    var unlinked=admitted.length-linked.length;
+    var days=admitted.map(function(r){return rfDaysBetween(r.referred_on,r.decided_on);})
+                     .filter(function(n){return n!==null;});
+    var hours=linked.reduce(function(s,r){return s+rfDeliveredHoursFor(r.client_id);},0);
+    var revenue=linked.reduce(function(s,r){return s+rfRevenueFor(r.client_id);},0);
+    return {
+      source:src, total:mine.length, decided:decided.length, admitted:admitted.length,
+      linked:linked.length, unlinked:unlinked,
+      // null, not 0 -- rendered as "--" so an untested source is never shown as
+      // a failing one.
+      conversion: decided.length ? (admitted.length/decided.length) : null,
+      medianDays: rfMedian(days), daysSample: days.length,
+      hours:hours, revenue:revenue
+    };
+  });
+}
+
+function rfRender(){
+  var sources=rfSources(), refs=rfReferrals();
+  var canSeeMoney=senIsManagement();
+
+  var pending=refs.filter(function(r){return !r.status||r.status==='pending';}).length;
+  var decidedAll=refs.filter(function(r){return r.status&&r.status!=='pending';});
+  var admittedAll=refs.filter(function(r){return r.status==='admitted';});
+  var unlinkedAll=admittedAll.filter(function(r){return !r.client_id;}).length;
+  var convAll=decidedAll.length?Math.round(admittedAll.length/decidedAll.length*100)+'%':'--';
+  var k=$('rf-kpis');
+  if(k){
+    k.innerHTML=
+      '<div class="kpi"><div class="klbl">Active sources</div><div class="kval">'+sources.filter(function(s){return s.active!==false;}).length+'</div><div class="kt">'+sources.length+' on file</div></div>'+
+      '<div class="kpi"><div class="klbl">Pending referrals</div><div class="kval">'+pending+'</div><div class="kt">Not yet decided</div></div>'+
+      '<div class="kpi"><div class="klbl">Conversion</div><div class="kval">'+convAll+'</div><div class="kt">'+admittedAll.length+' of '+decidedAll.length+' decided</div></div>'+
+      '<div class="kpi"><div class="klbl">Admitted, unlinked</div><div class="kval'+(unlinkedAll?' d':'')+'">'+unlinkedAll+'</div><div class="kt">Contribute no hours or revenue</div></div>';
+  }
+
+  var STATUS_CLS={pending:'bw',admitted:'bg',declined:'bx',lost:'br'};
+  var pb=$('rf-pipeline-tbody');
+  if(pb){
+    var sorted=refs.slice().sort(function(a,b){return (b.referred_on||'').localeCompare(a.referred_on||'');});
+    pb.innerHTML=sorted.length?sorted.map(function(r){
+      var d=rfDaysBetween(r.referred_on,r.decided_on);
+      var cl=clients().find(function(c){return c.id===r.client_id;});
+      return '<tr><td>'+H(r.referred_on||'--')+'</td><td>'+H(r.referred_name)+'</td>'+
+        '<td>'+H(rfSourceName(r.source_id))+'</td><td>'+H((r.payer||'--').replace('_',' '))+'</td>'+
+        '<td><span class="badge '+(STATUS_CLS[r.status]||'bx')+'">'+H(r.status||'pending')+'</span></td>'+
+        '<td>'+(d===null?'<span style="color:var(--muted)">--</span>':(d+' d'))+'</td>'+
+        '<td>'+(r.status==='admitted'
+          ? (cl?H(cl.name):'<span class="badge bw">not linked</span>')
+          : '<span style="color:var(--muted)">--</span>')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openRfReferralModal(\''+r.id+'\')">Open</button></td></tr>';
+    }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:20px">No referrals recorded yet</td></tr>';
+  }
+
+  var perf=rfPerformance();
+  var tb=$('rf-perf-tbody');
+  if(tb){
+    tb.innerHTML=perf.length?perf.map(function(p){
+      return '<tr><td><strong>'+H(p.source.name)+'</strong></td><td>'+H(p.source.type||'--')+'</td>'+
+        '<td>'+p.total+'</td><td>'+p.decided+'</td><td>'+p.admitted+'</td>'+
+        '<td>'+(p.conversion===null
+          ? '<span style="color:var(--muted)">--</span> <span style="font-size:11px;color:var(--muted)">nothing decided</span>'
+          : (Math.round(p.conversion*100)+'% <span style="font-size:11px;color:var(--muted)">of '+p.decided+'</span>'))+'</td>'+
+        '<td>'+(p.medianDays===null
+          ? '<span style="color:var(--muted)">--</span>'
+          : (p.medianDays+' d <span style="font-size:11px;color:var(--muted)">n='+p.daysSample+'</span>'))+'</td>'+
+        '<td>'+(p.linked?(p.hours.toFixed(1)+' h'):'<span style="color:var(--muted)">--</span>')+
+          (p.unlinked?'<div style="font-size:11px;color:var(--danger)">'+p.unlinked+' admitted, not linked</div>':'')+'</td>'+
+        '<td>'+(canSeeMoney
+          ? (p.linked?fmt(p.revenue):'<span style="color:var(--muted)">--</span>')
+          : '<span style="color:var(--muted)">not visible to your role</span>')+'</td></tr>';
+    }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:20px">No sources on file yet</td></tr>';
+  }
+  var notes=$('rf-perf-notes');
+  if(notes){
+    var bits=[];
+    if(!canSeeMoney)bits.push('Revenue is management-only (owner or billing), matching the sen_claims gate. Your role cannot read claims, so this column says so rather than showing $0 &mdash; a zero here would be a permission result dressed as a figure.');
+    if(unlinkedAll)bits.push('<strong>'+unlinkedAll+' admitted referral'+(unlinkedAll===1?'':'s')+' with no client record linked.</strong> Their hours and revenue are not attributed to any source. Open the referral and link it.');
+    var noDates=refs.filter(function(r){return r.status==='admitted'&&!rfDaysBetween(r.referred_on,r.decided_on);}).length;
+    if(noDates)bits.push(noDates+' admitted referral'+(noDates===1?' has':'s have')+' no usable pair of dates, so '+(noDates===1?'it is':'they are')+' excluded from the median rather than estimated.');
+    notes.innerHTML=bits.length?bits.map(function(b){return '<div class="note" style="margin-bottom:8px">'+b+'</div>';}).join(''):'';
+  }
+
+  var sb=$('rf-sources-tbody');
+  if(sb){
+    sb.innerHTML=sources.length?sources.map(function(s){
+      return '<tr><td><strong>'+H(s.name)+'</strong></td><td>'+H(s.type||'--')+'</td>'+
+        '<td>'+H(s.contact_name||'--')+(s.contact_role?' <span style="font-size:11px;color:var(--muted)">'+H(s.contact_role)+'</span>':'')+'</td>'+
+        '<td>'+H(s.phone||'--')+'</td><td>'+H(s.email||'--')+'</td>'+
+        '<td><span class="badge '+(s.active===false?'bx':'bg')+'">'+(s.active===false?'inactive':'active')+'</span></td>'+
+        '<td><button class="btn bo bs" onclick="openRfSourceModal(\''+s.id+'\')">Edit</button></td></tr>';
+    }).join(''):'<tr><td colspan="7" style="text-align:center;color:var(--muted);padding:20px">No referral sources on file yet</td></tr>';
+  }
+}
+
 // ── BILLING & CLAIMS ─────────────────────────────────────────────────────
 // Management-only (owner/billing), matching api/sd-data.js's sen_claims
 // gate exactly -- financial/billing data, not clinical assignment data.
@@ -2063,7 +2500,7 @@ async function aiAsk(){
 
 // ── WIRE EVERYTHING ON DOM READY ────────────────────────────────────────
 function init(){
-  rDash();rClients();rCaregivers();
+  rDash();rClients();rCaregivers();rfRender();
   // senLoadSettings() needs a session token, so it can only run after login --
   // init() is called from senEnterApp(), which is past that point. If the read
   // fails, rSettings() still renders from the legacy localStorage keys and says
