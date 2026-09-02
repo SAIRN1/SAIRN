@@ -299,8 +299,8 @@
       "task": "caregiver applicant tracking and hiring funnel A5",
       "claimed_at": "2026-09-02T14:16:25Z",
       "claimed_at_epoch": 1788358585.967059,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-02T14:31:28Z"
     }
   ]
 }
