@@ -516,7 +516,13 @@ def _norm_predicate(s):
 #
 # Everything else is reported as NOT COMPARABLE and never blocks. That is a
 # real reduction in scope and it is stated rather than hidden: an enum
-# constraint that genuinely drifts will NOT be caught here. A checker that
+# constraint that genuinely drifts will NOT be caught here.
+#
+# THE UNCOMPARED SET IS WRITTEN DOWN, because "not flagged" and "verified
+# identical" must not be the same thing to a future reader:
+#     docs/2026-09-02-constraints-not-comparable.md
+# 39 predicates across 30 tables as of the 2026-09-02 snapshot. Regenerate it
+# whenever this narrowing changes; a silent gap is how a checker starts lying. A checker that
 # answers one question correctly beats one that answers three questions with 33
 # false alarms -- the platform has already learned twice tonight that a
 # permanently-red check is a check people stop reading.
