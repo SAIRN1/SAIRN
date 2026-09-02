@@ -2256,8 +2256,27 @@ async function confirmReserve(){
       // Server rejected it -- someone else's reservation actually won.
       // Roll the local optimistic write back so this device isn't left
       // showing a reservation the server never actually holds.
-      u.status='Available';u.reserved_for_case_id='';u.reserved_at='';
-      st('leg_merch_units',list);rMerch();
+      //
+      // RE-READ RATHER THAN REUSING `list` (fixed 2026-09-02). `list` is the
+      // snapshot taken BEFORE the await above, so writing it back here would
+      // also revert every other change made to leg_merch_units while the
+      // request was in flight -- a release, a mark-sold, or another unit's
+      // reservation on the same device would all be silently undone by a
+      // rollback that only ever meant to touch this one unit. Re-reading and
+      // patching a single record keeps the blast radius at the unit this
+      // function actually owns.
+      //
+      // And only if it is still OUR reservation: if something else already
+      // changed this unit during the await, that newer state is more correct
+      // than the one being rolled back to, and clobbering it would be the
+      // same bug in the other direction.
+      var fresh = merchUnits();
+      var fu = fresh.find(function(x){ return x.id === mcReserveUnit; });
+      if(fu && fu.status === 'Reserved' && fu.reserved_for_case_id === caseId){
+        fu.status='Available'; fu.reserved_for_case_id=''; fu.reserved_at='';
+        st('leg_merch_units', fresh);
+      }
+      rMerch();
       toast(d.error.message,6000);
       return;
     }
