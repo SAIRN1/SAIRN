@@ -260,6 +260,16 @@
       "claimed_at_epoch": 1788354168.7968369,
       "status": "released",
       "released_at": "2026-09-02T13:14:23Z"
+    },
+    {
+      "id": "hank-1788355057",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "per limb service extension scoping",
+      "claimed_at": "2026-09-02T13:17:37Z",
+      "claimed_at_epoch": 1788355057.7007658,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
