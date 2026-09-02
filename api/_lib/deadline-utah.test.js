@@ -237,7 +237,7 @@ check('supplying service_method: mail adds NOTHING -- no extension is seeded',
 // omissions. JURISDICTION_COVERAGE is now the contract for an EARLY-direction
 // omission, and Utah is on it.
 check('Utah declares an EARLY coverage entry, and the table holds every seeded discloser',
-  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
+  Object.keys(engine.JURISDICTION_COVERAGE).sort(), ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'mt', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
 check('Utah adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // Two pre-existing jurisdictions must be untouched by the new standard.

@@ -70,7 +70,11 @@ const JURISDICTION_LABELS = {
   ne: 'Nebraska',
   nh: 'New Hampshire',
   nm: 'New Mexico',
-  wi: 'Wisconsin'
+  wi: 'Wisconsin',
+  // Added with the Montana seed itself rather than after it, which is the whole
+  // point of the guard above: every one of the twelve bare codes was seeded
+  // first and labelled later, and nothing noticed in between.
+  mt: 'Montana'
 };
 const DOMAIN_LABELS = {
   'civil-litigation': 'Civil litigation',

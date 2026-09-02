@@ -2072,7 +2072,50 @@ var COMPUTATION_STANDARDS = {
   de_super_ct_civ_r_6a: { label: 'Del. Super. Ct. Civ. R. 6(a)', impl: 'frcp_6a',
     short_period_exclusion_days: 11,
     base_period_suffix: '', months_years_suffix: '',
-    rollover_suffix_forward: '', rollover_suffix_backward: '' }
+    rollover_suffix_forward: '', rollover_suffix_backward: '' },
+  // Montana DISTRICT COURT Rule 6(a). THE COURT IS PART OF THE NAME FOR THE
+  // SAME REASON IT IS IN DELAWARE'S, and the trap here is arguably sharper
+  // because both rules are numbered 6 and both sit in Title 25 of the same
+  // code. Mont. Just. & City Ct. R. Civ. P. 6 (Title 25 ch. 23) is a DIFFERENT
+  // computation on the same subject: it defines "legal holiday" not at all, has
+  // no clerk-inaccessibility limb, no hours unit, no backward "next day" rule,
+  // and its mail extension is MAIL ONLY and lengthens the period rather than
+  // running after it expires. Justice and City Court is deliberately NOT seeded
+  // and would take its own standard, mt_jc_r_6. See
+  // docs/sairnlaw-montana-deadline-seed-gate.md sec. 6.
+  //
+  // NO short_period_exclusion_days, AND THAT IS THE LOAD-BEARING ABSENCE.
+  // Rule 6(a)(1)(B) says "count every day, INCLUDING intermediate Saturdays,
+  // Sundays, and legal holidays" -- the post-2009 federal text. Montana has no
+  // threshold at all, so a 7 borrowed from NJ/NC/WA/MA/MO/SC or an 11 borrowed
+  // from its own neighbour Delaware would silently lengthen every period under
+  // that threshold and report LATE. Three seeded rows are 14 days and two are
+  // 7; all five would move.
+  //
+  // THE RULE NAMES BOTH WEEKEND DAYS ITSELF -- "if the last day is a Saturday,
+  // Sunday, or legal holiday" -- so the [Sat, Sun] default is correct and NO
+  // weekend_days declaration belongs here. Checked deliberately, because
+  // MCA 1-1-216(1)(a) makes each SUNDAY a statutory legal holiday and never
+  // lists Saturday at all. That is Louisiana's shape, not Delaware's inverse of
+  // it, and it changes nothing here for the same reason it changed nothing
+  // there: Rule 6(a)(1)(C) does not defer the weekend question to the statute.
+  //
+  // FEDERAL SUBDIVISION NUMBERING, VERIFIED RATHER THAN ASSUMED FROM THE
+  // FAMILY: (a)(1)(A)-(B) is the base count, (a)(1)(C) the rollover, and
+  // (a)(5) the backward "next day" rule -- which Montana ADDRESSES EXPRESSLY,
+  // unlike Delaware's Superior Court rule. Two seeded rows are backward and
+  // depend on it.
+  //
+  // NOT MODELLED, and disclosed rather than refused: Rule 6(a)(3) extends the
+  // time for filing when the clerk's office is inaccessible. It is an
+  // ADDITIONAL limb sitting beside the weekend/holiday test, not a replacement
+  // for it -- the Minnesota/Utah shape -- so omitting an inaccessible day
+  // returns the earlier unrolled date, which is EARLY and safe. Contrast
+  // Wisconsin, where the closure test REPLACES the holiday test and the
+  // omission could not be made safe. See JURISDICTION_COVERAGE.mt.
+  mt_rcp_6a: { label: 'Mont. R. Civ. P. 6(a)', impl: 'frcp_6a',
+    base_period_suffix: '(1)(A)-(B)', months_years_suffix: '(1)(C)',
+    rollover_suffix_forward: '(1)(C)', rollover_suffix_backward: '(5)' }
 };
 
 // A MALFORMED weekend_days FAILS AT LOAD, LOUDLY, AND TAKES THE MODULE WITH
@@ -2282,6 +2325,12 @@ var JURISDICTION_COVERAGE = {
     direction: 'early',
     summary: 'The New Hampshire calendar is the ten dated holidays RSA 288:1 enumerates — the chapter N.H. Super. Ct. R. 2 names. ONE ENTRY IS DELIBERATELY OMITTED: RSA 288:1 makes \"the day on which the biennial election is held\" a legal holiday, and 2026 is an even-numbered year, so such a day exists — TUESDAY 3 NOVEMBER 2026 on the only statute that dates a statewide November election, RSA 653:7, which calls it the \"state general election\" and never uses the words \"biennial election\". Omitting it makes a date EARLIER, never later. Check any New Hampshire deadline falling in the first week of November 2026 by hand. Note separately that New Hampshire has NO mailed-service extension of any kind, which is a feature of its rules and not a gap in this seed.',
     detail: 'THE REFERENT NAMES A CHAPTER, NOT A SECTION, AND THAT DISTINCTION ALREADY DECIDED A DATE ONCE. N.H. Super. Ct. R. 2 rolls the last day off \"a Saturday, Sunday, or a legal holiday AS SPECIFIED IN RSA CH. 288, AS AMENDED\". Haw. R. Civ. P. 6(a) named HRS Sec. 8-1 by number, so the weekend-observance section beside it fell OUTSIDE the reference and Hawaii omits its shifted Friday as a reading. Here RSA 288:2 is INSIDE the reference and IS carried. IT THEN TURNS OUT NOT TO MATTER IN 2026, AND THE REASON IS WORTH STATING: RSA 288:2 reads in full \"When any holiday listed in RSA 288:1 falls on Sunday, the following day shall be observed as a holiday\" — A SUNDAY RULE ONLY, with no Saturday limb at all. 4 July 2026 is a SATURDAY, so New Hampshire has NO Friday 3 July observance, not by interpretation but because no clause could produce one. Idaho Code Sec. 73-108 and Neb. Rev. Stat. Sec. 25-2221 both shift a Saturday holiday back to the Friday and both calendars carry 3 July 2026; Hawaii omits it as a reading; New Hampshire omits it because the rule does not exist. Four jurisdictions, three reasons, one date. And NO RSA 288:1 holiday falls on a Sunday in 2026, checked date by date, so the shift that does exist is dormant this year. THE LIST IS CLOSED, WHICH NO OTHER SEEDED HOLIDAY STATUTE IS. Idaho and Hawaii both end with a day appointed by the President or the governor; Kansas reaches any day observed by order of the supreme court; Nebraska subordinates its dates to the federal schedule and adds a governor-proclamation limb. RSA 288:1 enumerates and stops: \"...and Christmas Day are legal holidays.\" There is no proclamation limb to disclose, which removes the open-ended gap every other jurisdiction here has to declare. THE ONE OMISSION IS THE BIENNIAL ELECTION DAY, AND IT IS THE ONE JUDGMENT CALL IN THIS SEED. RSA 288:1 lists \"the day on which the biennial election is held\" among the legal holidays. 2026 is an even-numbered year so such a day exists. DATING IT REQUIRES A SECOND STATUTE THAT DOES NOT USE THE SAME WORD: RSA 653:7 provides that \"the state general election shall be held on the first Tuesday following the first Monday in November of every even-numbered year\", which for 2026 is TUESDAY 3 NOVEMBER 2026; and RSA ch. 652, the election-law definitions chapter, defines \"election\" (652:1), \"regular election\" (652:2), \"state election\" (652:3) and \"state general election\" (652:4) and NEVER DEFINES \"biennial election\". The identification is near-certain and it is still a reading across two chapters. THE DIRECTION DECIDES IT: omitting a holiday returns the unrolled, sooner date, and filing early is safe; carrying a day that is not a holiday returns a date one day LATE and loses the filing. So it is omitted and named here. A New Hampshire deadline landing on Tuesday 3 November 2026 should be checked by hand; no other 2026 date is affected. THE SAME CALL WAS MADE ON HAWAII\'S ELECTION DAY for a related but not identical reason — Hawaii\'s is county-scoped by the statute\'s own words, New Hampshire\'s is statewide and merely undated. TWO CONDITIONAL CLAUSES ARE LIVE LAW, NOT MODELLED, AND DORMANT IN 2026. Memorial Day is \"the last Monday in May ... OR, ON A DATE TO COINCIDE WITH THE FEDERAL OBSERVANCE IF IT IS HELD ON A DIFFERENT DAY\"; the federal observance under 5 U.S.C. 6103 is also the last Monday in May, so both fall on 25 May 2026 and the clause moves nothing. Thanksgiving is \"Thanksgiving Day, WHENEVER APPOINTED\", which names no date at all; it is seeded as the fourth Thursday, which is what 5 U.S.C. 6103 fixes federally and what every appointment in living memory has been, and that is a CONVENTION rather than a transcription. THE JUDICIAL BRANCH PUBLISHES ITS OWN COURT-HOLIDAY SCHEDULE AND IT IS NOT THE LEGAL TEST. courts.nh.gov lists \"Court Holidays - 2026\" as a PDF posted 11 June 2025, and a 2027 one beside it. NEITHER WAS READ — both refuse every automated route available here — and that is recorded rather than guessed at. It would not change this calendar: Rule 2 keys the rollover on a day being \"a legal holiday as specified in RSA ch. 288\", not on whether a courthouse opened. This is the KANSAS POSITION INVERTED. There the statute keys on a day being observed BY ORDER OF THE SUPREME COURT, so the Judicial Branch list IS the legal test; here the statute keys on the legislature\'s enumeration, so the courts\' own list is practical information and nothing more. A day the New Hampshire courts close that RSA 288:1 does not name remains a countable day under Rule 2, and a practitioner should still check it before relying on being able to file. NO BACKWARD ROW IS SEEDED, AND THE ONE BEING GIVEN UP IS UNUSUAL. Rule 2 extends to \"the NEXT day\" and says nothing about a period measured before an event — the Mississippi, Idaho, Nebraska and Hawaii shape, not New Mexico\'s. Rule 26(b) requires deposition notice \"at least 3 days, EXCLUSIVE OF THE DAY OF SERVICE AND THE DAY OF CAPTION, before the day on which they are to be taken\", a period carrying its own both-endpoints-excluded convention that Rule 2 does not supply and this engine cannot express. Also unseeded and backward: Rule 5(a)(8) dispositive motions not less than 120 days before trial, Rule 5(a)(9) other pre-trial motions not later than 14 days before trial, and Rule 35 trial-management filings 14 days before the conference. AN EFFECTIVE-DATE WARNING THAT IS NOT ABOUT HOLIDAYS. The New Hampshire Judicial Branch publishes these rules with NO amendment history and NO per-rule effective dates — checked on the combined page and on an individual rule page, and in sharp contrast to Hawaii, Idaho, Nebraska and New Mexico, which all print bracketed amendment notes. Every effective_from in this seed therefore comes from the ADOPTION ORDER of 22 May 2013 (\"The amendments shall take effect October 1, 2013\") and from the rule set\'s own PREAMBLE in that order (\"They take effect on October 1, 2013, and apply to civil actions pending or filed in superior court on or after that date\"), a preamble the currently-published web version does not reproduce. Each seeded row was then diffed against that order sentence by sentence. TWO REAL PERIODS WERE DROPPED FOR WANT OF A DATE: Rule 13A\'s ten-day reply to an objection and three-day notice to the clerk, and Rule 12\'s thirty-day summary-judgment objection with its twenty-day reply — all current, all post-dating the 2013 adoption, none carrying a published effective date. A caller needing either must not compute it from this seed. 2026 ONLY: a later year is REFUSED rather than derived. All ten dates would generate mechanically, which is precisely why generating is refused — it would hide the biennial-election question behind a confident answer, and it would be wrong in a second way, since 2027 is an ODD year in which the election limb produces no day at all and a generator that silently dropped it would look identical to one that had reasoned about it.'
+  },
+  mt: {
+    complete: false,
+    direction: 'early',
+    summary: 'DISTRICT COURT ONLY -- the Montana Justice and City Court Rules of Civil Procedure are a DIFFERENT computation, numbered Rule 6 in the same title of the same code, and are not seeded. Montana also extends the time for filing when the clerk\'s office is inaccessible, and Rule 6(a)(6) reaches days declared by the President or the Governor and, for forward periods only, any other day declared a holiday by the state; none of those is modelled. Every omission makes this date EARLIER than the true deadline, never later.',
+    detail: "SCOPE FIRST, BECAUSE THE COLLISION IS SHARPER HERE THAN IN DELAWARE: these rows are Mont. R. Civ. P. 6(a) and the Montana Rules of Civil Procedure, MCA Title 25 ch. 20, which govern the DISTRICT COURTS. Mont. Just. & City Ct. R. Civ. P. 6 sits in MCA Title 25 ch. 23, is also called Rule 6, and is a different computation in four ways that all move dates: it contains NO definition of \"legal holiday\" at all, so nothing narrows MCA 1-1-216 the way Rule 6(a)(6) does; it has NO clerk-inaccessibility limb; it has NO backward \"next day\" rule, so a period measured before an event has no stated rollover direction; and its mail extension is MAIL ONLY and reads \"3 days must be added to the prescribed period\" -- period-lengthening with ONE rollover -- against District Court Rule 6(d)'s \"3 days are added AFTER the period would otherwise expire\", which rolls, adds, and rolls again. A Justice or City Court deadline must not be computed from these rows. THE CLERK-INACCESSIBILITY LIMB IS NOT MODELLED: Rule 6(a)(3) extends the time for filing to the first accessible day when the clerk's office is inaccessible. It is an ADDITIONAL limb beside the weekend/holiday test rather than a replacement for it -- the Minnesota and Utah shape, not the Wisconsin one -- so omitting an inaccessible day returns the earlier unrolled date and is EARLY. Closures are per-court and published nowhere this engine can read. THE HOLIDAY DEFINITION HAS TWO OPEN LIMBS AND ONE ASYMMETRY. Rule 6(a)(6)(B) reaches \"any day declared a holiday by the President of the United States or by the Governor of this state\", which is open-ended and underivable -- the Idaho and Hawaii shape. Rule 6(a)(6)(C) reaches, FOR PERIODS MEASURED AFTER AN EVENT ONLY, \"any other day declared a holiday by the state\". So Montana's holiday set is genuinely WIDER for forward periods than for backward ones, and this calendar carries the MCA 1-1-216 enumeration, which is the same in both directions. THE ONE PLACE THAT ASYMMETRY BITES IS PRESIDENTS' DAY, AND IT IS CARRIED IN BOTH DIRECTIONS DELIBERATELY. Rule 6(a)(6)(A) names \"the day set aside by statute for observing ... Lincoln's and Washington's Birthdays\" -- which was MCA 1-1-216(1)(d)'s own wording, verbatim, when the rule was adopted in 2011 and remained so through the 2023 edition. Ch. 561, L. 2025 renamed that entry \"Presidents' Day\" and left the third Monday in February exactly where it was; the rule's list was not conformed. The day is therefore reached by (A) on any ordinary reading and, for forward periods, by (C) beyond argument, since the State plainly declares it. Carrying it forward is certain; carrying it BACKWARD is the safe direction on the residual reading question, because a backward period that fails to roll off a holiday reports a date LATER than the true one. For 2026 that day is Monday 16 February. WHAT IS NOT OMITTED, and both are citations rather than readings: THE SATURDAY OBSERVANCE SHIFT IS CARRIED. MCA 1-1-216(2)(b), added by Ch. 131, L. 2013, provides that a holiday in (1)(b) through (1)(l) falling on a Saturday makes the PRECEDING FRIDAY a holiday, and Rule 6(a)(6)(A) reaches \"the day SET ASIDE BY STATUTE FOR OBSERVING\" the named holidays -- an observance reference, so the shifted day is inside it. 4 July 2026 is a Saturday, so FRIDAY 3 JULY 2026 is a Montana legal holiday and this calendar carries it. Contrast Hawaii, whose rule names HRS Sec. 8-1 BY NUMBER and leaves the Sec. 8-2 shift outside, and New Hampshire, whose shift clause has no Saturday limb at all. AND THE STATE GENERAL ELECTION DAY IS CARRIED. Rule 6(a)(6)(A) names \"state general election day\" IN THE RULE'S OWN LIST, MCA 1-1-216(1)(l) makes it a legal holiday under the same words, and MCA 13-1-104(1) fixes it on \"the first Tuesday after the first Monday in November\" -- for 2026 TUESDAY 3 NOVEMBER, verified by weekday. This is a shorter reach than Delaware's, which needed the state constitution, and the opposite of New Hampshire's, where the holiday statute used a term the election code never defines. NO SHORT-PERIOD EXCLUSION EXISTS IN MONTANA and its absence is not a gap: Rule 6(a)(1)(B) counts \"every day, including intermediate Saturdays, Sundays, and legal holidays\", so the five seeded rows shorter than 15 days are straight calendar counts. A threshold borrowed from a neighbour would report them LATE. NOT MODELLED AND NOT A DATE QUESTION: Rule 6(a)(4) ends the last day at midnight for electronic filing but \"when the clerk's office is scheduled to close\" for filing by other means. This engine computes a DATE and expresses no time of day, so a paper filing made after the counter closes on the correct date is late by a rule this seed cannot express. 2026 ONLY: a later year is REFUSED rather than derived. Every date here would generate mechanically, which is precisely why generating is refused -- 2027 is an ODD year in which the general election limb produces no state general election day, and a generator that silently dropped it would look identical to one that had reasoned about it."
   }
 };
 
@@ -2869,6 +2918,63 @@ var SERVICE_EXTENSION_STANDARDS = {
     sequence: 'add_to_period_then_roll',
     shape: 'enumerated_allowlist',
     qualifies: function (method) { return method === 'mail'; }
+  },
+  // ── MONTANA: THE PRE-2016 FEDERAL SET, ELECTRONIC LIMB AND ALL ──────────
+  // Mont. R. Civ. P. 6(d), verbatim in full:
+  //
+  //   "When a party may or must act within a specified time after service and
+  //    service is made under Rule 5(b)(2)(C), (D), or (E), or (F), 3 days are
+  //    added after the period would otherwise expire under Rule 6(a)."
+  //
+  // THIS IS NOT frcp_6d AND REUSING THAT STANDARD WOULD BE WRONG BY THREE DAYS
+  // ON EVERY CONSENTED ELECTRONIC SERVICE. Federal Rule 6(d) was amended in
+  // 2016 to DROP subparagraph (E) -- electronic service -- from the list.
+  // Montana's rule still carries it, so a Montana party served by e-mail with
+  // written consent gets the three days and a federal one does not. The four
+  // Rule 5(b)(2) limbs this reaches, read from Rule 5 rather than assumed from
+  // the federal numbering:
+  //   (C) mailing to the last known address           -> mail
+  //   (D) leaving it with the court clerk where the
+  //       person has no known address                 -> left_with_clerk
+  //   (E) sending it by electronic means where the
+  //       person consented IN WRITING                 -> electronic, email
+  //   (F) delivering it by any other means the person
+  //       consented to IN WRITING                     -> other_consented_means
+  // Rule 5(b)(2)(A) handing it to the person and (B) leaving it at an office or
+  // dwelling are NOT in the list and add nothing.
+  //
+  // THE WRITTEN CONSENT IN (E) AND (F) IS NOT EXPRESSIBLE AS A METHOD TOKEN and
+  // is not modelled. It does not need to be: service by an unconsented
+  // electronic means is not service under Rule 5(b)(2) at all, so a caller who
+  // reports it has already reported something the rules do not recognise. Same
+  // treatment as Massachusetts, whose 6(d) also extends for electronic service.
+  //
+  // "ADDED AFTER THE PERIOD WOULD OTHERWISE EXPIRE UNDER RULE 6(a)" IS WHY THE
+  // SEQUENCE IS roll_then_add_then_roll. Those are the federal words, and they
+  // are the OPPOSITE of the Justice and City Court rule in the same title,
+  // whose 6.C says "3 days must be added to the prescribed period" --
+  // period-lengthening, one rollover. Two rules numbered 6, in one code, with
+  // opposite sequencing; the difference moves real dates whenever the unrolled
+  // last day lands on a weekend.
+  //
+  // NOT AN EXCLUSIVITY RULE. Checked against the Utah and Florida shape
+  // deliberately: the text says "service is made under Rule 5(b)(2)(C), (D), or
+  // (E), or (F)" with no "only", "exclusively" or equivalent, so it takes no
+  // requires_exclusive and a caller supplying service_methods changes nothing.
+  //
+  // WHAT IT DOES NOT REACH: service of the summons and complaint. Rule 6(d) is
+  // expressly gated on service "made under Rule 5(b)(2)", and a summons and
+  // complaint go out under Rule 4. That is a citation rather than a reading,
+  // which is why the Montana answer row carries no extension and needs no
+  // open-question note -- contrast Delaware, where Rule 6(e) says only "after
+  // being served" and the same question is still open.
+  mt_rcp_6d: {
+    label: 'Mont. R. Civ. P. 6(d)',
+    sequence: 'roll_then_add_then_roll',
+    shape: 'enumerated_allowlist',
+    qualifies: function (method) {
+      return ({ mail: 1, left_with_clerk: 1, electronic: 1, email: 1, other_consented_means: 1 })[method] === 1;
+    }
   },
   // ── NEW JERSEY: FIVE DAYS, AND ORDINARY MAIL IS NOT "MAIL" ──────────────
   // R. 1:3-3, verbatim: "When service of a notice or paper is made by ordinary

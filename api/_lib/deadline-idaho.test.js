@@ -184,7 +184,7 @@ check('the disclosure names the three lists, Juneteenth, and why no backward row
 // ── Nothing else moved ───────────────────────────────────────────────────
 check('the coverage table gained id and nothing else',
   Object.keys(engine.JURISDICTION_COVERAGE).sort(),
-  ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
+  ['al', 'ar', 'de', 'fl', 'hi', 'id', 'ks', 'ma', 'md', 'mn', 'mo', 'ms', 'mt', 'ne', 'nh', 'nm', 'nv', 'ut', 'va', 'wi']);
 check('Idaho adds no service-completion standard',
   Object.keys(engine.SERVICE_COMPLETION_STANDARDS), ['mo_rule_43_01_d']);
 // The other four no-threshold jurisdictions must still declare no threshold,
