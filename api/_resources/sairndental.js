@@ -53,6 +53,11 @@ module.exports = {
   // (state licences, DEA registrations, CE cycles, BLS/CPR certifications).
     'dnt_cred_rules',
     'dnt_credentials',
+  // Good faith estimates (2026-09-02) -- No Surprises Act, 45 CFR 149.610. See
+  // sql/sairndental_gfe_schema.sql. Handled by the generic DNT_RESOURCES block
+  // in api/sd-data.js, and registered there as BOTH financial (it prices a
+  // service) and patient-scoped (it names one patient and their date of birth).
+    'dnt_gfe',
   ],
   // 'evaluate' computes the expiry/CE alert board from stored records and the
   // seeded rules. It READS ONLY and writes nothing -- looking at who is about

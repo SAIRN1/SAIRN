@@ -6054,7 +6054,13 @@ module.exports = async (req, res) => {
     const DNT_FINANCIAL_ROLES = { owner: true, frontdesk: true };
     const DNT_FINANCIAL_RESOURCES = {
       dnt_charges: true, dnt_payments: true, dnt_denial: true,
-      dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true
+      dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true,
+      // A good faith estimate is a priced document about one named patient --
+      // expected charges per service code, alongside their name and date of
+      // birth. It belongs on the financial side for the same reason dnt_charges
+      // does, and the roles that gate it (owner, front desk) are the ones who
+      // actually issue estimates under 45 CFR 149.610.
+      dnt_gfe: true
     };
 
     // ── SAIRNDENTAL: PROVIDER-SCOPED PATIENT READ (2026-08-27, scope extended) ──
@@ -6115,13 +6121,16 @@ module.exports = async (req, res) => {
       dnt_provider_hours: 'provider_hour_id', dnt_procedure_types: 'procedure_type_id',
       dnt_coverage_rules: 'coverage_rule_id', dnt_charges: 'charge_id',
       dnt_payments: 'payment_id', dnt_denial: 'denial_id', dnt_ar: 'ar_id', dnt_revenue: 'revenue_id',
-      dnt_referrals: 'referral_id'
+      dnt_referrals: 'referral_id', dnt_gfe: 'gfe_id'
     };
     // Patient-scoped resources: the record itself is about a specific patient.
     // dnt_referrals is here deliberately -- it carries patient_id and a clinical
     // reason, so leaving it practice-wide would have leaked exactly what scoping
     // dnt_patients was meant to stop.
-    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id' };
+    // dnt_gfe joins them for the same reason: the record names one patient and
+    // carries their date of birth, so leaving it practice-wide would undo the
+    // scoping dnt_patients exists to enforce.
+    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id', dnt_gfe: 'patient_id' };
     if (DNT_RESOURCES[resource] && action === 'read') {
       const dntSess = dntGate(res);
       if (!dntSess) return;

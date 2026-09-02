@@ -245,6 +245,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-appointments" onclick="nav('appointments')"><span class="sico">&#128197;</span>Appointments</button>
       <div class="ss">Billing</div>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128176;</span>Billing</button>
+      <button class="sb" id="sb-gfe" onclick="nav('gfe')"><span class="sico">&#128203;</span>Good Faith Estimates<span class="badge br" id="gfe-badge" style="display:none;margin-left:8px"></span></button>
       <div class="ss">Supplies</div>
       <button class="sb" id="sb-supplies" onclick="nav('supplies')"><span class="sico">&#128230;</span>Supplies</button>
       <button class="sb" id="sb-vendorcat" onclick="nav('vendorcat')"><span class="sico">&#128722;</span>Vendor Catalog</button>
@@ -630,6 +631,81 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <!-- GOOD FAITH ESTIMATES / NO SURPRISES ACT (competitive-gap audit A4->A7, 2026-09-02) -->
+      <!-- Every requirement below is cited to 45 CFR 149.610 / 149.620 read
+           against the primary text on govinfo.gov, not to trade press. The
+           audit that raised this gap flagged its own source as trade press
+           covering ADA statements and said to verify against CMS primary --
+           that is what the paragraph numbers on screen are. -->
+      <div class="panel" id="panel-gfe">
+        <div class="ph"><div><div class="ptitle">Good Faith Estimates</div><div class="psub">No Surprises Act, 45 CFR 149.610 &mdash; the written estimate an uninsured or self-pay patient is federally entitled to, and the deadline it is owed by</div></div></div>
+
+        <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)">This is a drafting and deadline tool, not legal advice, and it does not transmit anything. It covers <strong>only this practice's own expected charges</strong>: 45 CFR 149.610(c)(1)(iii) requires the itemised list to be grouped by provider and facility, and (b)(1)(v) requires a convening provider to contact co-providers within 1 business day. SAIRNdental does not gather co-provider estimates and does not pretend to &mdash; and whether HHS's 2022 enforcement discretion on co-provider charges still stands could not be confirmed against a primary source, so nothing here assumes it does.</div>
+
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Drafts</div><div class="kval" id="k-gfe-draft">0</div><div class="kt">Not yet issued</div></div>
+          <div class="kpi"><div class="klbl">Due today or overdue</div><div class="kval" id="k-gfe-due">0</div><div class="kt">Against the 149.610(b)(1)(vi) clock</div></div>
+          <div class="kpi"><div class="klbl">Issued</div><div class="kval" id="k-gfe-issued">0</div><div class="kt">Given to the patient</div></div>
+          <div class="kpi"><div class="klbl">Incomplete</div><div class="kval" id="k-gfe-incomplete">0</div><div class="kt">Missing a required element</div></div>
+        </div>
+
+        <div class="card"><div class="ch"><div class="ct">Practice identity &mdash; required on every estimate</div></div><div class="cb">
+          <div class="psub" style="margin-bottom:10px">45 CFR 149.610(c)(1)(v) requires the name, <strong>National Provider Identifier</strong> and <strong>Tax Identification Number</strong> of each provider or facility on the estimate, plus the State and location where services are furnished. Without these an estimate is missing a required element, and this panel will say so rather than produce a document that looks finished.</div>
+          <div class="fr">
+            <div class="fg"><label>Practice legal name</label><input type="text" id="gfe-legal-name" placeholder="as it appears on the TIN"></div>
+            <div class="fg"><label>Practice NPI (Type 2)</label><input type="text" id="gfe-npi" placeholder="10 digits"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Tax Identification Number</label><input type="text" id="gfe-tin" placeholder="EIN"></div>
+            <div class="fg"><label>State where services are furnished</label><input type="text" id="gfe-state" placeholder="e.g. OH"></div>
+          </div>
+          <button class="btn bp" onclick="saveGfeIdentity()">Save Practice Identity</button>
+          <div id="gfe-identity-status" style="margin-top:10px"></div>
+        </div></div>
+
+        <div class="card"><div class="ch"><div class="ct">Draft an estimate</div></div><div class="cb">
+          <div class="fr">
+            <div class="fg"><label>Patient</label><select id="gfe-patient" onchange="onGfePatientChange()"></select></div>
+            <div class="fg"><label>Provider</label><select id="gfe-provider"></select></div>
+          </div>
+          <div id="gfe-eligibility" style="margin-bottom:12px"></div>
+          <div class="fr">
+            <div class="fg"><label>What started the clock</label><select id="gfe-trigger" onchange="rGfeDeadlinePreview()">
+              <option value="scheduled">The patient scheduled a service</option>
+              <option value="request">The patient asked what it will cost</option>
+            </select></div>
+            <div class="fg"><label>Date it was scheduled or asked</label><input type="date" id="gfe-trigger-date" onchange="rGfeDeadlinePreview()"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Date of service (blank if not scheduled)</label><input type="date" id="gfe-service-date" onchange="rGfeDeadlinePreview()"></div>
+            <div class="fg"><label>Primary item or service</label><select id="gfe-primary" onchange="rGfeDeadlinePreview()"></select></div>
+          </div>
+          <div class="psub" style="margin-bottom:10px">&sect;149.610(a)(2) defines the <strong>primary item or service</strong> as the one that is the initial reason for the visit. &sect;149.610(b)(1)(iv) is worth knowing: a convening provider must treat <em>any discussion or inquiry regarding the potential costs</em> as a request &mdash; a patient asking "what will this run me?" starts the 3-business-day clock whether or not anyone called it a request.</div>
+          <div id="gfe-deadline-preview" style="margin-bottom:12px"></div>
+
+          <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Itemised list</div></div>
+          <div class="fr">
+            <div class="fg"><label>Add procedure</label><select id="gfe-line-proc"></select></div>
+            <div class="fg"><label>Expected charge</label><input type="number" id="gfe-line-charge" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
+          </div>
+          <div class="fr">
+            <div class="fg"><label>Diagnosis code (if one applies)</label><input type="text" id="gfe-line-dx" placeholder="e.g. K02.51 -- leave blank if none applies"></div>
+            <div class="fg" style="display:flex;align-items:flex-end"><button class="btn bo" onclick="addGfeLine()" style="width:100%">+ Add to Estimate</button></div>
+          </div>
+          <div id="gfe-lines"></div>
+          <div class="fg" style="margin-top:12px"><label>Items or services that need separate scheduling &mdash; 149.610(c)(1)(vi)</label><textarea id="gfe-separate" rows="2" placeholder="e.g. Oral surgery referral, orthodontic consult -- listed but not priced here"></textarea></div>
+          <button class="btn bp" onclick="saveGfe()">Save Draft Estimate</button>
+        </div></div>
+
+        <div class="card"><div class="ch"><div class="ct">Estimates on file</div></div><div class="cb" style="padding:0">
+          <table id="gfe-table"><thead><tr><th>Patient</th><th>Trigger</th><th>Service date</th><th>Total</th><th>Due by</th><th>Status</th><th></th></tr></thead><tbody id="gfe-tbody"></tbody></table>
+        </div></div>
+
+        <div class="card" id="gfe-doc-card" style="display:none"><div class="ch"><div class="ct">The estimate</div><button class="btn bo bs" style="margin-left:auto" onclick="closeGfeDoc()">Close</button></div><div class="cb">
+          <div id="gfe-doc"></div>
+        </div></div>
+      </div>
+
       <div class="panel" id="panel-vendorcat">
         <div class="ph"><div><div class="ptitle">Vendor Catalog</div><div class="psub">Browse dental supplies/PPE/materials across vendors, compare prices, and order.</div></div>
           <div class="pa"><button class="btn bo bs" onclick="vShowSpendReport()">Spend Report</button></div>
@@ -965,6 +1041,7 @@ function nav(id){
   if(id==='pending')rPending();
   if(id==='appointments')rAppointments();
   if(id==='billing')rBilling();
+  if(id==='gfe')rGfe();
   if(id==='referrals')rReferrals();
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
@@ -1767,9 +1844,15 @@ async function saveBookingSettings(){
   var timezone=$('bs-timezone').value.trim();
   if(!slug){toast('Booking slug required');return;}
   var checkedIds=Array.from(document.querySelectorAll('#bs-procedure-checks input[type=checkbox]:checked')).map(function(el){return el.getAttribute('data-proc-id');});
-  var rec={id:'default',booking_slug:slug,timezone:timezone,publicly_bookable_procedure_type_ids:checkedIds,
+  // MERGED ONTO THE EXISTING RECORD, not built from scratch. This row is now
+  // written by two panels -- Booking Settings and the Good Faith Estimates
+  // panel's practice-identity card -- and rebuilding it from only this form's
+  // fields would silently wipe the NPI/TIN the other one saved. That is the
+  // lost-update shape this platform has now found in three apps.
+  var rec=Object.assign({},settings(),{id:'default',booking_slug:slug,timezone:timezone,
+    publicly_bookable_procedure_type_ids:checkedIds,
     practice_name:$('bs-practice-name').value.trim(),practice_phone:$('bs-practice-phone').value.trim(),
-    practice_address:$('bs-practice-address').value.trim()};
+    practice_address:$('bs-practice-address').value.trim()});
   st('dnt_settings_obj',rec);
   var lic=dntLicenseKey();
   if(!lic){toast('Saved on this device only -- server sync not yet enabled for this app',5000);return;}
@@ -1892,6 +1975,439 @@ async function submitCompleteVisit(){
   closeCompleteVisitModal();
   await setAppointmentStatus(a.id,'Completed');
   toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+}
+
+// ── GOOD FAITH ESTIMATES / NO SURPRISES ACT ───────────────────────
+// Competitive-gap audit item A7. Every rule below was read against the
+// primary regulatory text (45 CFR 149.610 and 149.620 on govinfo.gov), not
+// against the trade-press summary the audit itself flagged as needing
+// verification. Paragraph numbers are carried onto the screen so a practice
+// can check the app rather than trust it.
+//
+// ── THE TIMING RULE, AND THE AMBIGUITY IN IT THAT IS NOT PAPERED OVER ──
+// 149.610(b)(1)(vi) reads, verbatim:
+//   (A) scheduled at least 3 business days before the service:
+//       not later than 1 business day after the date of scheduling
+//   (B) scheduled at least 10 business days before the service:
+//       not later than 3 business days after the date of scheduling
+//   (C) requested by the individual:
+//       not later than 3 business days after the date of the request
+// A service scheduled 12 business days out satisfies BOTH (A) and (B) on
+// their face, and they give different answers -- 1 day and 3 days. CMS's own
+// decision tree reads them as tiers (3-9 -> 1 day, 10+ -> 3 days) and that is
+// what this app shows as the deadline. But where the two readings differ the
+// app SAYS SO and shows the earlier date beside it, because picking the later
+// one silently is how a practice misses a federal deadline by two days on an
+// app's say-so. Surfacing the conflict costs a line of text; getting it wrong
+// costs a violation.
+//
+// ── FEWER THAN 3 BUSINESS DAYS IS NOT "OVERDUE", IT IS NOT REQUIRED ──
+// There is no (b)(1)(vi) limb for a service scheduled less than 3 business
+// days out, so scheduling alone triggers no deadline there. Reporting that as
+// an overdue estimate would invent an obligation. A REQUEST still triggers
+// (C) regardless, and the app says which of the two is doing the work.
+//
+// ── "BUSINESS DAY" IS NOT DEFINED IN THE RULE ──
+// So this counts weekdays and does NOT silently drop federal holidays. It
+// computes the weekday answer and then NAMES any federal holiday falling in
+// the window, with the earlier date, so the practice decides. Quietly
+// excluding holidays would be a reading of an undefined term presented as
+// arithmetic.
+var GFE_DISPUTE_THRESHOLD = 400;   // 45 CFR 149.620(a)(2)(ii): "at least $400 more"
+var GFE_DISPUTE_DAYS = 120;        // 45 CFR 149.620(c)(1): postmarked within 120 calendar days
+
+function gfeRecords(){return ld('dnt_gfe_list',[]);}
+function gfeDateOnly(s){return s?new Date(s+'T00:00:00'):null;}
+function gfeFmtDate(d){
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+function gfeIsWeekend(d){var w=d.getDay();return w===0||w===6;}
+
+// The eleven federal holidays of 5 U.S.C. 6103, with the standard observance
+// shift (Saturday -> preceding Friday, Sunday -> following Monday). Computed,
+// never a hardcoded table of dates that would go stale next year.
+function gfeNthWeekday(year,month,weekday,n){
+  var d=new Date(year,month,1);
+  var add=(weekday-d.getDay()+7)%7;
+  d.setDate(1+add+(n-1)*7);
+  return d;
+}
+function gfeLastWeekday(year,month,weekday){
+  var d=new Date(year,month+1,0);
+  d.setDate(d.getDate()-((d.getDay()-weekday+7)%7));
+  return d;
+}
+function gfeObserved(d){
+  var o=new Date(d.getTime());
+  if(o.getDay()===6)o.setDate(o.getDate()-1);
+  else if(o.getDay()===0)o.setDate(o.getDate()+1);
+  return o;
+}
+function gfeFederalHolidays(year){
+  return [
+    ['New Year’s Day',       gfeObserved(new Date(year,0,1))],
+    ['Birthday of Martin Luther King, Jr.', gfeNthWeekday(year,0,1,3)],
+    ['Washington’s Birthday', gfeNthWeekday(year,1,1,3)],
+    ['Memorial Day',              gfeLastWeekday(year,4,1)],
+    ['Juneteenth National Independence Day', gfeObserved(new Date(year,5,19))],
+    ['Independence Day',          gfeObserved(new Date(year,6,4))],
+    ['Labor Day',                 gfeNthWeekday(year,8,1,1)],
+    ['Columbus Day',              gfeNthWeekday(year,9,1,2)],
+    ['Veterans Day',              gfeObserved(new Date(year,10,11))],
+    ['Thanksgiving Day',          gfeNthWeekday(year,10,4,4)],
+    ['Christmas Day',             gfeObserved(new Date(year,11,25))]
+  ];
+}
+// Weekday arithmetic only. Holidays are reported separately, never applied
+// silently -- see the header note on why.
+function gfeAddBusinessDays(startStr,n){
+  var d=gfeDateOnly(startStr); if(!d)return null;
+  var added=0;
+  while(added<n){ d.setDate(d.getDate()+1); if(!gfeIsWeekend(d))added++; }
+  return d;
+}
+function gfeBusinessDaysBetween(aStr,bStr){
+  var a=gfeDateOnly(aStr),b=gfeDateOnly(bStr);
+  if(!a||!b||b<a)return null;
+  var n=0,d=new Date(a.getTime());
+  while(d<b){ d.setDate(d.getDate()+1); if(!gfeIsWeekend(d))n++; }
+  return n;
+}
+function gfeHolidaysInWindow(startStr,endDate){
+  var a=gfeDateOnly(startStr); if(!a||!endDate)return [];
+  var out=[];
+  for(var y=a.getFullYear();y<=endDate.getFullYear();y++){
+    gfeFederalHolidays(y).forEach(function(h){
+      if(h[1]>a && h[1]<=endDate && !gfeIsWeekend(h[1])) out.push(h[0]+' ('+gfeFmtDate(h[1])+')');
+    });
+  }
+  return out;
+}
+
+// Returns { applies, cite, dueDate, altDate, altCite, leadDays, note }.
+// Never returns a due date it cannot cite a paragraph for.
+function gfeDeadline(rec){
+  var trig=rec.trigger_date||'';
+  if(!trig) return {applies:false,note:'No date recorded for the scheduling or the request, so no deadline can be computed.'};
+  if(rec.trigger==='request'){
+    return {applies:true, cite:'149.610(b)(1)(vi)(C)', dueDate:gfeAddBusinessDays(trig,3),
+      note:'Requested by the patient: due not later than 3 business days after the date of the request.'};
+  }
+  var svc=rec.service_date||'';
+  if(!svc) return {applies:false,note:'Scheduled, but with no date of service recorded, so the lead time (b)(1)(vi) turns on cannot be measured.'};
+  var lead=gfeBusinessDaysBetween(trig,svc);
+  if(lead===null) return {applies:false,note:'The date of service is before the date it was scheduled, so no lead time can be measured.'};
+  if(lead<3){
+    return {applies:false, leadDays:lead,
+      note:'Scheduled only '+lead+' business day'+(lead===1?'':'s')+' ahead. 149.610(b)(1)(vi) has no limb below 3 business days, so scheduling alone sets no deadline here -- this is NOT overdue. A request from the patient would still start the 3-business-day clock under (C).'};
+  }
+  if(lead>=10){
+    return {applies:true, cite:'149.610(b)(1)(vi)(B)', dueDate:gfeAddBusinessDays(trig,3), leadDays:lead,
+      altCite:'149.610(b)(1)(vi)(A)', altDate:gfeAddBusinessDays(trig,1),
+      note:'Scheduled '+lead+' business days ahead, so (B) gives 3 business days. Note that (A) also applies on its face at this lead time and gives 1 business day -- the two limbs overlap and the rule does not resolve it. The earlier date is shown alongside.'};
+  }
+  return {applies:true, cite:'149.610(b)(1)(vi)(A)', dueDate:gfeAddBusinessDays(trig,1), leadDays:lead,
+    note:'Scheduled '+lead+' business days ahead, so (A) gives 1 business day.'};
+}
+
+// Every required element of 149.610(c)(1) that this record cannot supply.
+// Returned as citations, so the panel names the paragraph rather than saying
+// "incomplete" and leaving the practice to guess which one.
+function gfeMissing(rec){
+  var s=settings(), miss=[];
+  var pt=patients().find(function(p){return p.id===rec.patient_id;});
+  if(!pt||!pt.name) miss.push('(c)(1)(i) patient name');
+  if(!pt||!pt.dob) miss.push('(c)(1)(i) patient date of birth');
+  if(!rec.primary_description) miss.push('(c)(1)(ii) description of the primary item or service');
+  if(!rec.lines||!rec.lines.length) miss.push('(c)(1)(iii) itemised list of items and services');
+  else{
+    if(rec.lines.some(function(l){return !l.cdt_code;})) miss.push('(c)(1)(iv) a service code on every line');
+    if(rec.lines.some(function(l){return !(Number(l.expected_charge)>0);})) miss.push('(c)(1)(iv) an expected charge on every line');
+  }
+  if(!s.gfe_legal_name) miss.push('(c)(1)(v) practice legal name');
+  if(!s.gfe_npi) miss.push('(c)(1)(v) National Provider Identifier');
+  if(!s.gfe_tin) miss.push('(c)(1)(v) Tax Identification Number');
+  if(!s.gfe_state) miss.push('(c)(1)(v) State where services are furnished');
+  if(!s.practice_address) miss.push('(c)(1)(v) location where services are furnished');
+  return miss;
+}
+
+// 149.610(b)(1)(i)-(ii): the two questions that decide whether this patient is
+// owed a GFE at all. An insured patient who IS submitting a claim is not an
+// "uninsured (or self-pay) individual" under (a)(2)(xiii) -- and an insured
+// patient who is NOT submitting one IS.
+function gfeEligibility(pt){
+  if(!pt) return {eligible:false, text:'Select a patient.'};
+  var insured=!!(pt.insurance_payer&&String(pt.insurance_payer).trim());
+  if(!insured) return {eligible:true, insured:false,
+    text:'No payer on file, so this patient is an uninsured (or self-pay) individual under 149.610(a)(2)(xiii) and is owed a good faith estimate.'};
+  return {eligible:true, insured:true,
+    text:'This patient has '+H(pt.insurance_payer)+' on file. 149.610(a)(2)(xiii) also covers an insured patient who does not seek to have a claim submitted, and (b)(1)(ii) requires you to ASK. If a claim is going to this payer, no good faith estimate is owed and this draft should not be issued; if the patient is self-paying for this service, it is.'};
+}
+
+function gfeTotal(rec){return (rec.lines||[]).reduce(function(s,l){return s+(Number(l.expected_charge)||0);},0);}
+
+var gfeLines=[];
+function rGfeLines(){
+  var box=$('gfe-lines'); if(!box) return;
+  box.innerHTML=gfeLines.length
+    ? gfeLines.map(function(l,i){
+        var svc=$('gfe-service-date')?$('gfe-service-date').value:'';
+        var proc=procedureTypes().find(function(p){return p.id===l.procedure_type_id;});
+        var cdt=cdtStatusFor(proc, svc||dntLocalToday());
+        var meta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
+        return '<div style="display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--border)">'+
+          '<span>'+H(l.cdt_code)+' &mdash; '+H(l.description)+(l.diagnosis_code?' <span style="color:var(--muted)">dx '+H(l.diagnosis_code)+'</span>':'')+
+          ' <span class="badge '+meta.cls+'" title="'+H(cdt.message)+'">'+H(meta.label)+'</span></span>'+
+          '<span>'+fmt(l.expected_charge)+' <button class="btn bo bs" onclick="removeGfeLine('+i+')">Remove</button></span></div>';
+      }).join('')+'<div style="padding-top:8px;font-weight:800">Total expected charges '+fmt(gfeLines.reduce(function(s,l){return s+(Number(l.expected_charge)||0);},0))+'</div>'
+    : '<div style="color:var(--muted);font-size:13px">Nothing on this estimate yet</div>';
+}
+function addGfeLine(){
+  var sel=$('gfe-line-proc'); if(!sel||!sel.value){toast('Select a procedure');return;}
+  var p=procedureTypes().find(function(x){return x.id===sel.value;});
+  if(!p){toast('Procedure not found');return;}
+  var raw=$('gfe-line-charge').value;
+  var charge=raw===''?Number(p.default_fee||0):Number(raw);
+  if(!(charge>0)){toast('149.610(c)(1)(iv) requires an expected charge on every line -- enter one');return;}
+  gfeLines.push({procedure_type_id:p.id,cdt_code:p.cdt_code,description:p.description,
+    diagnosis_code:$('gfe-line-dx').value.trim(),expected_charge:charge});
+  $('gfe-line-charge').value='';$('gfe-line-dx').value='';
+  rGfeLines();
+}
+function removeGfeLine(i){gfeLines.splice(i,1);rGfeLines();}
+
+function onGfePatientChange(){
+  var pt=patients().find(function(p){return p.id===$('gfe-patient').value;});
+  var e=gfeEligibility(pt);
+  $('gfe-eligibility').innerHTML='<div class="psub"><span class="badge '+(e.eligible&&!e.insured?'bg':'bw')+'">'+
+    (e.eligible?(e.insured?'ask first':'owed an estimate'):'select a patient')+'</span> '+e.text+'</div>';
+}
+function rGfeDeadlinePreview(){
+  var box=$('gfe-deadline-preview'); if(!box) return;
+  var d=gfeDeadline({trigger:$('gfe-trigger').value,trigger_date:$('gfe-trigger-date').value,service_date:$('gfe-service-date').value});
+  box.innerHTML=gfeDeadlineHtml(d);
+}
+function gfeDeadlineHtml(d){
+  if(!d.applies) return '<div class="psub"><span class="badge bx">no deadline</span> '+H(d.note)+'</div>';
+  var hol=gfeHolidaysInWindow($('gfe-trigger-date')?$('gfe-trigger-date').value:'', d.dueDate);
+  return '<div class="psub"><span class="badge bw">due '+gfeFmtDate(d.dueDate)+'</span> '+H(d.note)+
+    ' <span style="color:var(--muted)">['+H(d.cite)+']</span>'+
+    (d.altDate?'<br><strong>The other reading gives '+gfeFmtDate(d.altDate)+'</strong> ['+H(d.altCite)+']. Treat the earlier date as binding unless you have advice otherwise.':'')+
+    (hol.length?'<br><span class="badge bw">holiday in the window</span> '+H(hol.join(', '))+'. The rule does not define "business day", so this app counted weekdays only and did not drop these &mdash; if your practice treats them as non-business days the real due date is earlier.':'')+
+    '</div>';
+}
+
+async function saveGfeIdentity(){
+  // Re-reads the settings record and patches ONLY its own four keys, leaving
+  // whatever Booking Settings wrote intact -- the same discipline the merge in
+  // saveBookingSettings() now uses from the other side.
+  var rec=Object.assign({},settings(),{
+    gfe_legal_name:$('gfe-legal-name').value.trim(),
+    gfe_npi:$('gfe-npi').value.trim(),
+    gfe_tin:$('gfe-tin').value.trim(),
+    gfe_state:$('gfe-state').value.trim()});
+  st('dnt_settings_obj',rec);
+  rGfe();
+  // WRITTEN TO THE SERVER HERE, not left for a later Booking Settings save.
+  // dntSyncFromServer() REPLACES dnt_settings_obj wholesale with the server's
+  // row -- so an identity saved only on this device would be silently erased by
+  // the next sync, and the practice would find out when an estimate it thought
+  // was compliant reported a missing NPI. dnt_settings' write handler needs
+  // only payload.id; booking_slug is nullable there, so a practice that has
+  // never set a slug can still save this.
+  var lic=dntLicenseKey();
+  if(!lic){toast('Practice identity saved on this device only -- no license key, so it is not on the server and the next sync will overwrite it',7000);return;}
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
+      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
+    var d=await r.json().catch(function(){return null;});
+    toast((r.ok&&d&&d.ok)
+      ? 'Practice identity saved'
+      : 'Saved on this device only -- the server write failed, so the next sync will overwrite it. Try again with a connection.',
+      (r.ok&&d&&d.ok)?3000:7000);
+  }catch(e){
+    toast('Saved on this device only -- could not reach the server, so the next sync will overwrite it',7000);
+  }
+}
+
+async function saveGfe(){
+  var patientId=$('gfe-patient').value;
+  if(!patientId){toast('Select a patient');return;}
+  if(!gfeLines.length){toast('149.610(c)(1)(iii) requires an itemised list -- add at least one line');return;}
+  var primarySel=$('gfe-primary').value;
+  var primary=procedureTypes().find(function(p){return p.id===primarySel;});
+  var pt=patients().find(function(p){return p.id===patientId;});
+  var rec={id:newId('GF'),patient_id:patientId,patient_name:pt?pt.name:'',patient_dob:pt?(pt.dob||''):'',
+    provider_id:$('gfe-provider').value,
+    trigger:$('gfe-trigger').value,trigger_date:$('gfe-trigger-date').value,service_date:$('gfe-service-date').value,
+    primary_procedure_id:primarySel,primary_description:primary?(primary.cdt_code+' -- '+primary.description):'',
+    lines:gfeLines.slice(),separate_scheduling:$('gfe-separate').value.trim(),
+    status:'Draft',issued_at:'',created_at:dntLocalToday()};
+  var list=gfeRecords();list.push(rec);st('dnt_gfe_list',list);
+  gfeLines=[];rGfeLines();
+  rGfe();
+  var syncResult=await sdnData('write','dnt_gfe',rec);
+  toast(syncResult?'Draft estimate saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
+async function issueGfe(id){
+  var list=gfeRecords();
+  var rec=list.find(function(g){return g.id===id;});
+  if(!rec)return;
+  var miss=gfeMissing(rec);
+  if(miss.length){
+    // REFUSED, not warned. An estimate handed to a patient missing a required
+    // element is a non-compliant document that looks compliant, which is worse
+    // than no document at all -- the practice believes it has met the
+    // obligation and has not.
+    toast('Cannot issue: 45 CFR 149.610(c)(1) still requires '+miss.length+' element'+(miss.length===1?'':'s')+' -- see the row for which',7000);
+    return;
+  }
+  rec.status='Issued';rec.issued_at=dntLocalToday();
+  st('dnt_gfe_list',list);
+  rGfe();
+  var syncResult=await sdnData('write','dnt_gfe',rec);
+  toast(syncResult?'Marked as issued to the patient':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
+function openGfeDoc(id){
+  var rec=gfeRecords().find(function(g){return g.id===id;});
+  if(!rec)return;
+  var s=settings();
+  var prov=providers().find(function(p){return p.id===rec.provider_id;});
+  var miss=gfeMissing(rec);
+  var d=gfeDeadline(rec);
+  var total=gfeTotal(rec);
+  var svc=rec.service_date||'';
+  var lines=(rec.lines||[]).map(function(l){
+    var proc=procedureTypes().find(function(p){return p.id===l.procedure_type_id;});
+    var cdt=cdtStatusFor(proc, svc||rec.created_at);
+    var meta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
+    return '<tr><td>'+H(l.cdt_code)+' <span class="badge '+meta.cls+'" title="'+H(cdt.message)+'">'+H(meta.label)+'</span></td>'+
+      '<td>'+H(l.description)+'</td><td>'+(l.diagnosis_code?H(l.diagnosis_code):'<span style="color:var(--muted)">none applies</span>')+'</td>'+
+      '<td>'+fmt(l.expected_charge)+'</td></tr>';
+  }).join('');
+  $('gfe-doc').innerHTML=
+    (miss.length?'<div class="psub" style="margin-bottom:10px"><span class="badge br">not compliant yet</span> 45 CFR 149.610(c)(1) requires: '+H(miss.join('; '))+'.</div>':'')+
+    '<div style="font-size:13px;line-height:1.8">'+
+    '<strong>Good Faith Estimate of Expected Charges</strong><br>'+
+    'Issued under the No Surprises Act, 45 CFR 149.610.<br><br>'+
+    '<strong>Patient</strong> '+H(rec.patient_name||'--')+', date of birth '+H(rec.patient_dob||'--')+' &nbsp;<span style="color:var(--muted)">[(c)(1)(i)]</span><br>'+
+    '<strong>Primary item or service</strong> '+H(rec.primary_description||'--')+
+      (svc?(', scheduled for '+H(svc)):', not yet scheduled')+' &nbsp;<span style="color:var(--muted)">[(c)(1)(ii)]</span><br>'+
+    '<strong>Provider / facility</strong> '+H(s.gfe_legal_name||'(practice legal name not set)')+
+      (prov?(' &mdash; '+H(prov.name)):'')+
+      ', NPI '+H(s.gfe_npi||'(not set)')+', TIN '+H(s.gfe_tin||'(not set)')+
+      ', '+H(s.gfe_state||'(state not set)')+', '+H(s.practice_address||'(location not set)')+
+      ' &nbsp;<span style="color:var(--muted)">[(c)(1)(v)]</span>'+
+    '</div>'+
+    '<div class="tw" style="margin-top:12px"><table><thead><tr><th>Service code</th><th>Description</th><th>Diagnosis code</th><th>Expected charge</th></tr></thead>'+
+    '<tbody>'+(lines||'<tr><td colspan="4" style="color:var(--muted)">No lines</td></tr>')+'</tbody></table></div>'+
+    '<div style="font-size:15px;font-weight:800;margin-top:10px">Total expected charges '+fmt(total)+
+      ' <span style="font-size:11px;font-weight:400;color:var(--muted)">[(c)(1)(iii)-(iv)]</span></div>'+
+    '<div style="font-size:13px;line-height:1.8;margin-top:14px">'+
+    '<strong>Items or services that must be scheduled separately</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(vi)]</span><br>'+
+      (rec.separate_scheduling?H(rec.separate_scheduling):'None identified.')+
+      ' These are not included in the total above and would have their own estimate.<br><br>'+
+    '<strong>This estimate does not include</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(viii)]</span><br>'+
+      'any item or service that may be recommended to you later as part of your care and that is not listed above.<br><br>'+
+    '<strong>This is an estimate</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(ix)]</span><br>'+
+      'It reflects the items and services reasonably expected for this care. The actual items, services or charges may differ.<br><br>'+
+    '<strong>Your right to dispute a bill</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(x), 149.620]</span><br>'+
+      'If you are billed for an amount at least $'+GFE_DISPUTE_THRESHOLD+' more than the total expected charges on this estimate, you may start the patient-provider dispute resolution process. Your notice must be postmarked within '+GFE_DISPUTE_DAYS+' calendar days of receiving the bill. On these figures, that threshold is '+fmt(total+GFE_DISPUTE_THRESHOLD)+'.<br><br>'+
+    '<strong>This good faith estimate is not a contract</strong> &nbsp;<span style="color:var(--muted)">[(c)(1)(xi)]</span><br>'+
+      'It does not require you to obtain the items or services listed.<br><br>'+
+    '<strong>Scope of this estimate</strong><br>'+
+      'It covers only the charges of the provider and facility named above. 149.610(c)(1)(iii) requires the itemised list to be grouped by provider and facility, and any other provider involved in this care would have its own expected charges, which are not gathered here.'+
+    '</div>'+
+    '<div class="psub" style="margin-top:12px">'+(d.applies
+      ? ('Due to the patient by '+gfeFmtDate(d.dueDate)+' ['+H(d.cite)+'].')
+      : H(d.note))+'</div>';
+  $('gfe-doc-card').style.display='block';
+  $('gfe-doc-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeGfeDoc(){$('gfe-doc-card').style.display='none';}
+
+function rGfe(){
+  var s=settings();
+  if($('gfe-legal-name')){
+    $('gfe-legal-name').value=s.gfe_legal_name||'';
+    $('gfe-npi').value=s.gfe_npi||'';
+    $('gfe-tin').value=s.gfe_tin||'';
+    $('gfe-state').value=s.gfe_state||'';
+  }
+  var idBox=$('gfe-identity-status');
+  if(idBox){
+    var idMiss=[];
+    if(!s.gfe_legal_name)idMiss.push('legal name');
+    if(!s.gfe_npi)idMiss.push('NPI');
+    if(!s.gfe_tin)idMiss.push('TIN');
+    if(!s.gfe_state)idMiss.push('State');
+    if(!s.practice_address)idMiss.push('location (set it in Booking Settings)');
+    idBox.innerHTML=idMiss.length
+      ? '<div class="psub"><span class="badge br">incomplete</span> 149.610(c)(1)(v) still needs: '+H(idMiss.join(', '))+'. No estimate can be issued until these are on file.</div>'
+      : '<div class="psub"><span class="badge bg">complete</span> Every (c)(1)(v) identifier is on file.</div>';
+  }
+  var pts=patients();
+  var psel=$('gfe-patient');
+  if(psel){
+    var keep=psel.value;
+    psel.innerHTML=pts.length?pts.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a patient first</option>';
+    if(keep)psel.value=keep;
+    onGfePatientChange();
+  }
+  var vsel=$('gfe-provider');
+  if(vsel){
+    var provs=providers();
+    var pkeep=vsel.value;
+    vsel.innerHTML=provs.length?provs.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a provider first</option>';
+    if(pkeep)vsel.value=pkeep;
+  }
+  var procs=procedureTypes();
+  var popts=procs.length?procs.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.cdt_code)+' -- '+H(p.description)+'</option>';}).join(''):'<option value="">Add a procedure type first</option>';
+  ['gfe-primary','gfe-line-proc'].forEach(function(id){
+    var el=$(id);if(!el)return;var k=el.value;el.innerHTML=popts;if(k)el.value=k;
+  });
+
+  var list=gfeRecords();
+  var today=dntLocalToday();
+  var dueCount=0,incompleteCount=0;
+  var rows=list.map(function(g){
+    var d=gfeDeadline(g);
+    var miss=gfeMissing(g);
+    if(miss.length)incompleteCount++;
+    var overdue=false;
+    if(d.applies&&g.status!=='Issued'){
+      var due=gfeFmtDate(d.dueDate);
+      if(due<=today){dueCount++;overdue=true;}
+    }
+    return '<tr><td>'+H(g.patient_name||'--')+'</td>'+
+      '<td>'+(g.trigger==='request'?'Requested':'Scheduled')+' '+H(g.trigger_date||'--')+'</td>'+
+      '<td>'+(g.service_date?H(g.service_date):'<span style="color:var(--muted)">not scheduled</span>')+'</td>'+
+      '<td>'+fmt(gfeTotal(g))+'</td>'+
+      '<td>'+(d.applies
+        ? ('<span class="badge '+(g.status==='Issued'?'bx':(overdue?'br':'bw'))+'">'+gfeFmtDate(d.dueDate)+'</span>'+
+           (d.altDate?'<div style="font-size:11px;color:var(--muted)">other reading '+gfeFmtDate(d.altDate)+'</div>':''))
+        : '<span class="badge bx">none</span>')+'</td>'+
+      '<td><span class="badge '+(g.status==='Issued'?'bg':'bw')+'">'+H(g.status)+'</span>'+
+        (miss.length?'<div style="font-size:11px;color:var(--danger)">missing '+H(miss.join('; '))+'</div>':'')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openGfeDoc(\''+g.id+'\')">View</button>'+
+        (g.status==='Issued'?'':' <button class="btn bp bs" onclick="issueGfe(\''+g.id+'\')">Mark Issued</button>')+'</td></tr>';
+  }).join('');
+  var tb=$('gfe-tbody');
+  if(tb)tb.innerHTML=rows||'<tr><td colspan="7" style="color:var(--muted);text-align:center;padding:20px">No good faith estimates on file yet</td></tr>';
+  if($('k-gfe-draft'))$('k-gfe-draft').textContent=list.filter(function(g){return g.status!=='Issued';}).length;
+  if($('k-gfe-due'))$('k-gfe-due').textContent=dueCount;
+  if($('k-gfe-issued'))$('k-gfe-issued').textContent=list.filter(function(g){return g.status==='Issued';}).length;
+  if($('k-gfe-incomplete'))$('k-gfe-incomplete').textContent=incompleteCount;
+  var badge=$('gfe-badge');
+  if(badge){
+    if(dueCount){badge.style.display='inline-block';badge.textContent=dueCount;}
+    else badge.style.display='none';
+  }
+  rGfeLines();
+  rGfeDeadlinePreview();
 }
 
 // ── BILLING PANEL (2026-08-11) ────────────────────────────────────
@@ -2289,7 +2805,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_payments','dnt_payments_list'],
   ['dnt_referrals','dnt_referrals_list'],
   ['dnt_complaints','dnt_complaints_list'],
-  ['dnt_credentials','dnt_credentials_list']
+  ['dnt_credentials','dnt_credentials_list'],
+  ['dnt_gfe','dnt_gfe_list']
 ];
 // dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
 // a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
@@ -2335,7 +2852,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
     // Only refetch the board if the panel is actually open -- 'evaluate' is a
     // real server round trip, and a background sync should not fire one for a
