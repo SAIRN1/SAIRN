@@ -244,6 +244,7 @@ label.chk input{width:auto;}
       <button class="sb" id="sb-pending" onclick="nav('pending')"><span class="sico">&#128203;</span>Pending Requests</button>
       <button class="sb" id="sb-appointments" onclick="nav('appointments')"><span class="sico">&#128197;</span>Appointments</button>
       <button class="sb" id="sb-recall" onclick="nav('recall')"><span class="sico">&#128276;</span>Recall &amp; Reactivation<span class="badge br" id="recall-badge" style="display:none;margin-left:8px"></span></button>
+      <button class="sb" id="sb-txplan" onclick="nav('txplan')"><span class="sico">&#128203;</span>Treatment Plans</button>
       <div class="ss">Billing</div>
       <button class="sb" id="sb-billing" onclick="nav('billing')"><span class="sico">&#128176;</span>Billing</button>
       <button class="sb" id="sb-gfe" onclick="nav('gfe')"><span class="sico">&#128203;</span>Good Faith Estimates<span class="badge br" id="gfe-badge" style="display:none;margin-left:8px"></span></button>
@@ -819,6 +820,81 @@ label.chk input{width:auto;}
         </div>
       </div></div>
 
+      <!-- TREATMENT PLANNING (competitive-gap audit A9, 2026-09-02) -->
+      <!-- The audit called this table stakes and drew the distinction that
+           matters: it is DISTINCT FROM CHARGING A COMPLETED PROCEDURE. This app
+           could bill work it had done and could not propose work it had not.
+
+           THE ONE THING A TREATMENT-PLAN ESTIMATE MUST NOT BE MISTAKEN FOR is a
+           Good Faith Estimate. They look identical on paper -- a list of codes
+           with expected charges -- and they are legally different objects. A
+           GFE under 45 CFR 149.610 has required content and a deadline; a
+           treatment-plan estimate has neither and satisfies none of it. A
+           practice that handed this to an uninsured patient believing the No
+           Surprises Act was covered would be wrong, so this panel says so and
+           points at the panel that does it properly. -->
+      <div class="panel" id="panel-txplan">
+        <div class="ph"><div><div class="ptitle">Treatment Plans</div><div class="psub">Proposed work, phased and priced from this practice&rsquo;s own fees and coverage rules &mdash; before any of it is charged</div></div>
+          <div class="pa"><button class="btn bp bs" onclick="openTxPlanModal()">+ New Plan</button></div>
+        </div>
+
+        <div class="msg" style="font-size:13px;line-height:1.7;margin-bottom:14px;color:var(--muted)"><strong>A plan estimate is not a Good Faith Estimate.</strong> 45 CFR 149.610 requires specific content and sets a deadline, and neither is satisfied by anything on this page. If the patient is uninsured or self-paying, produce the real one in <em>Good Faith Estimates</em>.</div>
+
+        <div class="krow">
+          <div class="kpi"><div class="klbl">Open plans</div><div class="kval" id="k-tp-open">0</div><div class="kt">Proposed or presented</div></div>
+          <div class="kpi"><div class="klbl">Case acceptance</div><div class="kval" id="k-tp-accept">--</div><div class="kt" id="k-tp-accept-sub">No plan decided yet</div></div>
+          <div class="kpi"><div class="klbl">Accepted, not started</div><div class="kval" id="k-tp-notstarted">0</div><div class="kt">Nothing scheduled against them</div></div>
+          <div class="kpi"><div class="klbl">Value of open plans</div><div class="kval" id="k-tp-value">$0</div><div class="kt">Practice fees, not a forecast</div></div>
+        </div>
+
+        <div class="card"><div class="ch"><div class="ct">Plans</div></div><div class="cb" style="padding:0">
+          <table id="txplan-table"><thead><tr><th>Patient</th><th>Title</th><th>Created</th><th>Phases</th><th>Items</th><th>Total fee</th><th>Est. insurance</th><th>Patient portion</th><th>Status</th><th></th></tr></thead><tbody id="txplan-tbody"></tbody></table>
+        </div></div>
+
+        <div id="tp-notes" style="margin-top:12px"></div>
+
+        <div class="card" id="tp-detail-card" style="display:none"><div class="ch"><div class="ct" id="tp-detail-title">Plan</div><button class="btn bo bs" style="margin-left:auto" onclick="closeTxPlanDetail()">Close</button></div><div class="cb">
+          <div id="tp-detail"></div>
+        </div></div>
+      </div>
+
+      <div class="modal" id="txplanmodal"><div class="mbox" style="max-width:640px">
+        <div class="mtitle" id="tp-modal-title">Treatment Plan</div>
+        <div class="fr">
+          <div class="fg"><label>Patient</label><select id="tp-patient"></select></div>
+          <div class="fg"><label>Presenting provider</label><select id="tp-provider"></select></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Title</label><input type="text" id="tp-title" placeholder="e.g. Quadrant 1 restorative + perio"></div>
+          <div class="fg"><label>Status</label><select id="tp-status" onchange="onTxStatusChange()">
+            <option value="proposed">Proposed &mdash; not yet shown to the patient</option>
+            <option value="presented">Presented &mdash; patient has seen it</option>
+            <option value="accepted">Accepted</option>
+            <option value="declined">Declined</option>
+          </select></div>
+        </div>
+        <div class="fg" id="tp-decided-row" style="display:none"><label>Decided on</label><input type="date" id="tp-decided"></div>
+        <div class="fg"><label>Clinical note shown with the plan</label><textarea id="tp-note" rows="2" placeholder="recorded as typed"></textarea></div>
+
+        <div class="ch" style="padding-left:0;border-bottom:none"><div class="ct">Items</div></div>
+        <div class="fr">
+          <div class="fg"><label>Procedure</label><select id="tp-item-proc" onchange="onTxItemProcChange()"></select></div>
+          <div class="fg"><label>Phase</label><input type="number" id="tp-item-phase" min="1" step="1" value="1"></div>
+        </div>
+        <div class="fr">
+          <div class="fg"><label>Fee</label><input type="number" id="tp-item-fee" min="0" step="0.01" placeholder="defaults to the procedure fee"></div>
+          <div class="fg"><label>Tooth / area (optional)</label><input type="text" id="tp-item-tooth" placeholder="e.g. #14 MOD"></div>
+        </div>
+        <div class="fg"><label>Planned for (optional &mdash; used to check the code against the day it would be done)</label><input type="date" id="tp-item-planned"></div>
+        <button class="btn bo" onclick="addTxItem()">+ Add Item</button>
+        <div id="tp-items" style="margin-top:10px"></div>
+
+        <div style="display:flex;gap:10px;margin-top:14px;justify-content:flex-end">
+          <button class="btn bo" onclick="closeTxPlanModal()">Cancel</button>
+          <button class="btn bp" onclick="saveTxPlan()">Save Plan</button>
+        </div>
+      </div></div>
+
       <div class="panel" id="panel-vendorcat">
         <div class="ph"><div><div class="ptitle">Vendor Catalog</div><div class="psub">Browse dental supplies/PPE/materials across vendors, compare prices, and order.</div></div>
           <div class="pa"><button class="btn bo bs" onclick="vShowSpendReport()">Spend Report</button></div>
@@ -1156,6 +1232,7 @@ function nav(id){
   if(id==='billing')rBilling();
   if(id==='gfe')rGfe();
   if(id==='recall')rRecall();
+  if(id==='txplan')rTxPlans();
   if(id==='referrals')rReferrals();
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
@@ -2187,6 +2264,306 @@ async function submitCompleteVisit(){
   closeCompleteVisitModal();
   await setAppointmentStatus(a.id,'Completed');
   toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+}
+
+// -- TREATMENT PLANNING (competitive-gap audit A9, 2026-09-02) ------
+// The audit called this table stakes and drew the distinction that matters: it
+// is DISTINCT FROM CHARGING A COMPLETED PROCEDURE. This app could bill work it
+// had already done and had no way to propose work it had not.
+//
+// -- THE ONE CONFUSION THIS FEATURE MUST NOT CREATE --
+// A treatment-plan estimate and a Good Faith Estimate look identical on paper:
+// a list of CDT codes with expected charges. They are legally different
+// objects. A GFE under 45 CFR 149.610 carries required content and a deadline;
+// a plan estimate carries neither and satisfies none of it. A practice handing
+// this to an uninsured patient believing the No Surprises Act was covered would
+// be wrong in a way that is expensive and invisible, so the panel says so and
+// points at the panel that does it properly. That warning is the single most
+// load-bearing sentence on the page.
+//
+// -- WHAT IS COMPUTED AND WHAT IS NOT --
+// Item fees default from the procedure's own fee and are editable. The
+// insurance estimate comes from this practice's real coverage rules via
+// computeEstimatedInsurance(), and where NO RULE EXISTS for that payer and
+// procedure the panel says "no coverage rule" rather than rendering $0 as
+// though zero coverage had been computed -- a $0 produced by an absent rule is
+// a fabricated figure, and the patient-portion column would inherit it.
+//
+// -- CASE ACCEPTANCE COUNTS DECIDED PLANS ONLY --
+// Accepted plus declined. A proposed or presented plan is in neither half, and
+// a practice with nothing decided reads "--" rather than 0% or 100%. Same
+// discipline as the referral CRM's conversion rate and SAIRNgrounds' quote win
+// rate, for the same reason.
+//
+// -- AND THE CODE IS CHECKED AGAINST THE DAY THE WORK WOULD BE DONE --
+// A plan is written before the service, so its items carry an optional planned
+// date and cdtStatusFor() is asked about THAT date, not today. Planning six
+// months out on a code that retires in three is exactly the case the CDT
+// versioning work was built for.
+function txPlans(){return ld('dnt_txplans_list',[]);}
+
+var TP_STATUS_LABELS={proposed:'Proposed',presented:'Presented',accepted:'Accepted',declined:'Declined'};
+var TP_STATUS_BADGE={proposed:'bx',presented:'bw',accepted:'bg',declined:'br'};
+
+var tpEditId=null, tpItems=[];
+
+function tpPatient(id){return patients().find(function(p){return p.id===id;})||null;}
+function tpProc(id){return procedureTypes().find(function(p){return p.id===id;})||null;}
+
+// Per-item money. Returns { fee, insurance, patient, covered } where covered is
+// FALSE when no coverage rule exists -- the caller must not render the zero as
+// a computed estimate.
+function tpItemMoney(item,patient){
+  var fee=Number(item.fee)||0;
+  var est=computeEstimatedInsurance(fee, patient?patient.insurance_payer:'', item.procedure_type_id);
+  return {fee:fee, insurance:est.found?est.amount:0, patient:est.found?(fee-est.amount):fee, covered:est.found};
+}
+function tpPlanTotals(plan){
+  var pt=tpPatient(plan.patient_id);
+  var fee=0, ins=0, pat=0, uncovered=0;
+  (plan.items||[]).forEach(function(it){
+    var m=tpItemMoney(it,pt);
+    fee+=m.fee; ins+=m.insurance; pat+=m.patient;
+    if(!m.covered)uncovered++;
+  });
+  return {fee:fee, insurance:ins, patient:pat, uncovered:uncovered, anyCovered:(plan.items||[]).length>uncovered};
+}
+function tpPhases(plan){
+  var seen={};
+  (plan.items||[]).forEach(function(it){seen[Number(it.phase)||1]=true;});
+  return Object.keys(seen).map(Number).sort(function(a,b){return a-b;});
+}
+
+// An accepted plan counts as STARTED when at least one of its procedures has a
+// real appointment on file for that patient -- scheduled, confirmed or
+// completed. Derived from appointments rather than from a flag somebody ticks,
+// so a plan cannot report progress the schedule does not show.
+function tpIsStarted(plan){
+  var appts=appointments();
+  return (plan.items||[]).some(function(it){
+    return appts.some(function(a){
+      return a.patient_id===plan.patient_id && a.procedure_type_id===it.procedure_type_id &&
+             a.status!=='Cancelled' && a.status!=='Declined';
+    });
+  });
+}
+
+function tpFillSelects(){
+  var pts=patients();
+  var psel=$('tp-patient');
+  if(psel){
+    var pk=psel.value;
+    psel.innerHTML=pts.length?pts.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a patient first</option>';
+    if(pk)psel.value=pk;
+  }
+  var vsel=$('tp-provider');
+  if(vsel){
+    var provs=activeProviders();
+    var vk=vsel.value;
+    vsel.innerHTML=provs.length?provs.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';}).join(''):'<option value="">Add a provider first</option>';
+    if(vk)vsel.value=vk;
+  }
+  var isel=$('tp-item-proc');
+  if(isel){
+    var procs=procedureTypes();
+    var ik=isel.value;
+    isel.innerHTML=procs.length?procs.map(function(p){return '<option value="'+H(p.id)+'">'+H(p.cdt_code)+' -- '+H(p.description)+'</option>';}).join(''):'<option value="">Add a procedure type first</option>';
+    if(ik)isel.value=ik;
+  }
+}
+function onTxItemProcChange(){
+  var proc=tpProc($('tp-item-proc').value);
+  if(proc&&!$('tp-item-fee').value)$('tp-item-fee').value=proc.default_fee;
+}
+function onTxStatusChange(){
+  var v=$('tp-status').value;
+  $('tp-decided-row').style.display=(v==='accepted'||v==='declined')?'block':'none';
+}
+
+function tpRenderItems(){
+  var box=$('tp-items'); if(!box) return;
+  var pt=tpPatient($('tp-patient')?$('tp-patient').value:'');
+  if(!tpItems.length){box.innerHTML='<div style="color:var(--muted);font-size:13px">No items on this plan yet</div>';return;}
+  var rows=tpItems.map(function(it,i){
+    var proc=tpProc(it.procedure_type_id);
+    var m=tpItemMoney(it,pt);
+    var cdt=cdtStatusFor(proc, it.planned_on||dntLocalToday());
+    var meta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
+    return '<tr><td>'+(Number(it.phase)||1)+'</td>'+
+      '<td>'+H(proc?proc.cdt_code:'(removed)')+' '+
+        '<span class="badge '+meta.cls+'" title="'+H(cdt.message)+'">'+H(meta.label)+'</span>'+
+        (it.planned_on?'<div style="font-size:11px;color:var(--muted)">planned '+H(it.planned_on)+'</div>':'')+'</td>'+
+      '<td>'+H(proc?proc.description:'')+(it.tooth?' <span style="color:var(--muted)">'+H(it.tooth)+'</span>':'')+'</td>'+
+      '<td>'+fmt(m.fee)+'</td>'+
+      '<td>'+(m.covered?fmt(m.insurance):'<span style="color:var(--muted)">no coverage rule</span>')+'</td>'+
+      '<td>'+fmt(m.patient)+'</td>'+
+      '<td><button class="btn bo bs" onclick="removeTxItem('+i+')">Remove</button></td></tr>';
+  }).join('');
+  var tot=tpPlanTotals({patient_id:pt?pt.id:'',items:tpItems});
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Phase</th><th>Code</th><th>Description</th><th>Fee</th><th>Est. insurance</th><th>Patient</th><th></th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+    '<div style="margin-top:8px;font-weight:800">Total '+fmt(tot.fee)+' &nbsp; Est. insurance '+fmt(tot.insurance)+' &nbsp; Patient portion '+fmt(tot.patient)+'</div>'+
+    (tot.uncovered?'<div class="psub" style="margin-top:6px">'+tot.uncovered+' item'+(tot.uncovered===1?' has':'s have')+' no coverage rule on file for this payer, so no insurance estimate is offered for '+(tot.uncovered===1?'it':'them')+' and the full fee sits in the patient portion. That is an absence of data, not a finding that the payer covers nothing.</div>':'');
+}
+function addTxItem(){
+  var sel=$('tp-item-proc');
+  if(!sel||!sel.value){toast('Pick a procedure');return;}
+  var proc=tpProc(sel.value);
+  if(!proc){toast('Procedure not found');return;}
+  var raw=$('tp-item-fee').value;
+  var fee=raw===''?Number(proc.default_fee||0):Number(raw);
+  if(!(fee>0)){toast('An item needs a fee -- a plan with a zero-fee item understates what the patient is being asked to accept');return;}
+  var phase=parseInt($('tp-item-phase').value,10);
+  tpItems.push({procedure_type_id:proc.id,phase:(isNaN(phase)||phase<1)?1:phase,
+    fee:fee,tooth:$('tp-item-tooth').value.trim(),planned_on:$('tp-item-planned').value});
+  $('tp-item-fee').value='';$('tp-item-tooth').value='';
+  tpRenderItems();
+}
+function removeTxItem(i){tpItems.splice(i,1);tpRenderItems();}
+
+function openTxPlanModal(id){
+  tpEditId=id||null;
+  tpFillSelects();
+  var pl=id?txPlans().find(function(x){return x.id===id;}):null;
+  tpItems=pl?((pl.items||[]).slice()):[];
+  $('tp-modal-title').textContent=pl?'Edit Treatment Plan':'New Treatment Plan';
+  if(pl&&pl.patient_id)$('tp-patient').value=pl.patient_id;
+  if(pl&&pl.provider_id)$('tp-provider').value=pl.provider_id;
+  $('tp-title').value=pl?(pl.title||''):'';
+  $('tp-status').value=pl?(pl.status||'proposed'):'proposed';
+  $('tp-decided').value=pl?(pl.decided_on||''):'';
+  $('tp-note').value=pl?(pl.note||''):'';
+  $('tp-item-phase').value='1';$('tp-item-fee').value='';$('tp-item-tooth').value='';$('tp-item-planned').value='';
+  onTxStatusChange();tpRenderItems();
+  $('txplanmodal').classList.add('on');
+}
+function closeTxPlanModal(){$('txplanmodal').classList.remove('on');tpEditId=null;tpItems=[];}
+async function saveTxPlan(){
+  var patientId=$('tp-patient').value;
+  if(!patientId){toast('Pick a patient');return;}
+  var title=$('tp-title').value.trim();
+  if(!title){toast('Give the plan a title -- a patient shown two untitled plans cannot tell them apart');return;}
+  if(!tpItems.length){toast('A plan with no items is not a plan -- add at least one procedure');return;}
+  var status=$('tp-status').value;
+  var decided=$('tp-decided').value;
+  // A decided plan with no decision date cannot contribute a real acceptance
+  // date, and it would sit in the case-acceptance denominator with an unknowable
+  // one. Asked for rather than back-filled with today.
+  if((status==='accepted'||status==='declined')&&!decided){
+    toast('An accepted or declined plan needs the date it was decided -- it is not assumed to be today',6000);return;
+  }
+  if(decided&&decided>dntLocalToday()){toast('That decision date is in the future');return;}
+  var rec={id:tpEditId||newId('TP'),patient_id:patientId,provider_id:$('tp-provider').value,
+    title:title,status:status,decided_on:(status==='accepted'||status==='declined')?decided:'',
+    note:$('tp-note').value.trim(),items:tpItems.slice(),created_at:dntLocalToday()};
+  var list=txPlans();
+  if(tpEditId){list=list.map(function(x){return x.id===tpEditId?rec:x;});}else{list.push(rec);}
+  st('dnt_txplans_list',list);
+  closeTxPlanModal();rTxPlans();
+  var syncResult=await sdnData('write','dnt_txplans',rec);
+  toast(syncResult?'Treatment plan saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+}
+
+function openTxPlanDetail(id){
+  var pl=txPlans().find(function(x){return x.id===id;});
+  if(!pl)return;
+  var pt=tpPatient(pl.patient_id);
+  var prov=providers().find(function(x){return x.id===pl.provider_id;});
+  var tot=tpPlanTotals(pl);
+  var phases=tpPhases(pl);
+  var body=phases.map(function(ph){
+    var items=(pl.items||[]).filter(function(it){return (Number(it.phase)||1)===ph;});
+    var pf=0,pi=0,pp=0;
+    var rows=items.map(function(it){
+      var proc=tpProc(it.procedure_type_id);
+      var m=tpItemMoney(it,pt);
+      pf+=m.fee;pi+=m.insurance;pp+=m.patient;
+      var cdt=cdtStatusFor(proc, it.planned_on||dntLocalToday());
+      var meta=CDT_STATUS[cdt.state]||CDT_STATUS.unknown;
+      return '<tr><td>'+H(proc?proc.cdt_code:'(removed)')+' <span class="badge '+meta.cls+'" title="'+H(cdt.message)+'">'+H(meta.label)+'</span></td>'+
+        '<td>'+H(proc?proc.description:'')+(it.tooth?' <span style="color:var(--muted)">'+H(it.tooth)+'</span>':'')+'</td>'+
+        '<td>'+(it.planned_on?H(it.planned_on):'<span style="color:var(--muted)">not dated</span>')+'</td>'+
+        '<td>'+fmt(m.fee)+'</td>'+
+        '<td>'+(m.covered?fmt(m.insurance):'<span style="color:var(--muted)">no coverage rule</span>')+'</td>'+
+        '<td>'+fmt(m.patient)+'</td></tr>';
+    }).join('');
+    return '<div style="margin-bottom:14px"><div style="font-weight:800;margin-bottom:6px">Phase '+ph+'</div>'+
+      '<div class="tw"><table><thead><tr><th>Code</th><th>Description</th><th>Planned for</th><th>Fee</th><th>Est. insurance</th><th>Patient</th></tr></thead><tbody>'+rows+'</tbody></table></div>'+
+      '<div style="margin-top:4px;font-size:12px;color:var(--muted)">Phase total '+fmt(pf)+' &mdash; est. insurance '+fmt(pi)+', patient '+fmt(pp)+'</div></div>';
+  }).join('');
+  $('tp-detail-title').textContent=(pt?pt.name:'(unknown patient)')+' -- '+(pl.title||'');
+  $('tp-detail').innerHTML=
+    '<div style="font-size:13px;line-height:1.8;margin-bottom:12px">'+
+      '<strong>Status</strong> <span class="badge '+(TP_STATUS_BADGE[pl.status]||'bx')+'">'+H(TP_STATUS_LABELS[pl.status]||pl.status)+'</span>'+
+      (pl.decided_on?(' on '+H(pl.decided_on)):'')+'<br>'+
+      '<strong>Presented by</strong> '+H(prov?prov.name:'--')+'<br>'+
+      (pl.note?('<strong>Note</strong> '+H(pl.note)+'<br>'):'')+
+    '</div>'+
+    body+
+    '<div style="font-size:15px;font-weight:800;margin-top:8px">Plan total '+fmt(tot.fee)+
+      ' &nbsp; Est. insurance '+fmt(tot.insurance)+' &nbsp; Patient portion '+fmt(tot.patient)+'</div>'+
+    (tot.uncovered?'<div class="psub" style="margin-top:6px">'+tot.uncovered+' item'+(tot.uncovered===1?' has':'s have')+' no coverage rule on file for this payer. No insurance estimate is offered for '+(tot.uncovered===1?'it':'them')+' and the full fee sits in the patient portion &mdash; an absence of data, not a finding that the payer covers nothing.</div>':'')+
+    '<div class="msg" style="font-size:13px;line-height:1.7;color:var(--muted);margin-top:12px"><strong>This is not a Good Faith Estimate.</strong> 45 CFR 149.610 requires content this document does not carry and sets a deadline this page does not track. If this patient is uninsured or self-paying, produce the real one in Good Faith Estimates.</div>';
+  $('tp-detail-card').style.display='block';
+  $('tp-detail-card').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+function closeTxPlanDetail(){$('tp-detail-card').style.display='none';}
+
+function rTxPlans(){
+  tpFillSelects();
+  var list=txPlans();
+  var open=list.filter(function(p){return p.status==='proposed'||p.status==='presented';});
+  var decided=list.filter(function(p){return p.status==='accepted'||p.status==='declined';});
+  var accepted=list.filter(function(p){return p.status==='accepted';});
+  var notStarted=accepted.filter(function(p){return !tpIsStarted(p);});
+  var openValue=open.reduce(function(s,p){return s+tpPlanTotals(p).fee;},0);
+
+  if($('k-tp-open'))$('k-tp-open').textContent=open.length;
+  if($('k-tp-notstarted'))$('k-tp-notstarted').textContent=notStarted.length;
+  if($('k-tp-value'))$('k-tp-value').textContent=fmt(openValue);
+  if($('k-tp-accept')){
+    // "--" not 0%. A practice that has decided nothing has no acceptance rate,
+    // and rendering one would be a figure with no denominator behind it.
+    $('k-tp-accept').textContent=decided.length?(Math.round(accepted.length/decided.length*100)+'%'):'--';
+    if($('k-tp-accept-sub'))$('k-tp-accept-sub').textContent=decided.length
+      ? (accepted.length+' of '+decided.length+' decided')
+      : 'No plan decided yet';
+  }
+
+  var tb=$('txplan-tbody');
+  if(tb){
+    var sorted=list.slice().sort(function(a,b){return String(b.created_at||'').localeCompare(String(a.created_at||''));});
+    tb.innerHTML=sorted.length?sorted.map(function(pl){
+      var pt=tpPatient(pl.patient_id);
+      var tot=tpPlanTotals(pl);
+      var started=pl.status==='accepted'?tpIsStarted(pl):null;
+      return '<tr><td><strong>'+H(pt?pt.name:'(unknown patient)')+'</strong></td>'+
+        '<td>'+H(pl.title||'--')+'</td><td>'+H(pl.created_at||'--')+'</td>'+
+        '<td>'+tpPhases(pl).length+'</td><td>'+((pl.items||[]).length)+'</td>'+
+        '<td>'+fmt(tot.fee)+'</td>'+
+        '<td>'+(tot.anyCovered?fmt(tot.insurance):'<span style="color:var(--muted)">no rules</span>')+'</td>'+
+        '<td>'+fmt(tot.patient)+'</td>'+
+        '<td><span class="badge '+(TP_STATUS_BADGE[pl.status]||'bx')+'">'+H(TP_STATUS_LABELS[pl.status]||pl.status)+'</span>'+
+          (started===false?'<div style="font-size:11px;color:var(--danger)">nothing scheduled</div>':'')+'</td>'+
+        '<td><button class="btn bo bs" onclick="openTxPlanDetail(\''+H(pl.id)+'\')">View</button> '+
+          '<button class="btn bo bs" onclick="openTxPlanModal(\''+H(pl.id)+'\')">Edit</button></td></tr>';
+    }).join(''):'<tr><td colspan="10" style="color:var(--muted);text-align:center;padding:20px">No treatment plans yet</td></tr>';
+  }
+
+  var notes=$('tp-notes');
+  if(notes){
+    var bits=[];
+    if(notStarted.length)bits.push('<strong>'+notStarted.length+' accepted plan'+(notStarted.length===1?'':'s')+' '+(notStarted.length===1?'has':'have')+' nothing scheduled against '+(notStarted.length===1?'it':'them')+'.</strong> Started is derived from real appointments for the planned procedures, not from a box anyone ticks, so a plan cannot report progress the schedule does not show.');
+    var retired=[];
+    list.forEach(function(pl){
+      (pl.items||[]).forEach(function(it){
+        var proc=tpProc(it.procedure_type_id);
+        if(cdtStatusFor(proc, it.planned_on||dntLocalToday()).state==='retired')retired.push(pl.id);
+      });
+    });
+    if(retired.length)bits.push('<strong>'+retired.length+' planned item'+(retired.length===1?'':'s')+' '+(retired.length===1?'uses':'use')+' a CDT code that is retired as of the day it is planned for.</strong> Planning ahead on a code that retires before the appointment is exactly what the effective windows exist to catch &mdash; check the code before the work is booked.');
+    if(!decided.length&&list.length)bits.push('No plan has been accepted or declined yet, so there is no case-acceptance rate to report. It reads &quot;--&quot; rather than 0%.');
+    notes.innerHTML=bits.length?bits.map(function(b){return '<div class="msg" style="font-size:13px;line-height:1.7;color:var(--muted);margin-bottom:8px">'+b+'</div>';}).join(''):'';
+  }
 }
 
 // ── RECALL & REACTIVATION (competitive-gap audit A8, 2026-09-02) ──
@@ -3266,7 +3643,8 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_complaints','dnt_complaints_list'],
   ['dnt_credentials','dnt_credentials_list'],
   ['dnt_gfe','dnt_gfe_list'],
-  ['dnt_recall_outreach','dnt_recall_outreach_list']
+  ['dnt_recall_outreach','dnt_recall_outreach_list'],
+  ['dnt_txplans','dnt_txplans_list']
 ];
 // dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
 // a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
@@ -3312,7 +3690,7 @@ async function dntSyncFromServer(){
   }
   if(changed){
     rDash();rPatients();rProviders();rOperatories();rHours();rProcedures();
-    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();rRecall();
+    rCoverage();rPending();rAppointments();rBilling();rReferrals();rComplaints();rGfe();rRecall();rTxPlans();
     if($('panel-booking-settings')&&$('panel-booking-settings').classList.contains('on'))rBookingSettings();
     // Only refetch the board if the panel is actually open -- 'evaluate' is a
     // real server round trip, and a background sync should not fire one for a

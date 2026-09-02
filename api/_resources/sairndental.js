@@ -65,6 +65,13 @@ module.exports = {
   // a patient and records what they said) but NOT financial -- it carries no
   // charge, and the hygiene side works this list as much as the front desk.
     'dnt_recall_outreach',
+  // Treatment plans (2026-09-02, competitive-gap audit A9) -- see
+  // sql/sairndental_treatment_plans_schema.sql. Proposed work, phased and
+  // priced, BEFORE any of it is charged; distinct from dnt_charges, which
+  // records work already done. Handled by the generic DNT_RESOURCES block and
+  // registered as BOTH financial (it prices what the patient is being asked to
+  // accept) and patient-scoped (it names one patient and their proposed care).
+    'dnt_txplans',
   ],
   // 'evaluate' computes the expiry/CE alert board from stored records and the
   // seeded rules. It READS ONLY and writes nothing -- looking at who is about

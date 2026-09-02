@@ -6701,6 +6701,11 @@ module.exports = async (req, res) => {
     const DNT_FINANCIAL_RESOURCES = {
       dnt_charges: true, dnt_payments: true, dnt_denial: true,
       dnt_ar: true, dnt_revenue: true, dnt_coverage_rules: true,
+      // A treatment plan is a priced proposal: per-item fees, an insurance
+      // estimate drawn from this practice's coverage rules, and the patient
+      // portion that falls out of both. It is money the patient is being asked
+      // to accept, so it sits with the other priced records.
+      dnt_txplans: true,
       // A good faith estimate is a priced document about one named patient --
       // expected charges per service code, alongside their name and date of
       // birth. It belongs on the financial side for the same reason dnt_charges
@@ -6768,7 +6773,7 @@ module.exports = async (req, res) => {
       dnt_coverage_rules: 'coverage_rule_id', dnt_charges: 'charge_id',
       dnt_payments: 'payment_id', dnt_denial: 'denial_id', dnt_ar: 'ar_id', dnt_revenue: 'revenue_id',
       dnt_referrals: 'referral_id', dnt_gfe: 'gfe_id',
-      dnt_recall_outreach: 'outreach_id'
+      dnt_recall_outreach: 'outreach_id', dnt_txplans: 'txplan_id'
     };
     // Patient-scoped resources: the record itself is about a specific patient.
     // dnt_referrals is here deliberately -- it carries patient_id and a clinical
@@ -6784,7 +6789,7 @@ module.exports = async (req, res) => {
     // no estimate, and the front desk and hygiene side both work the recall
     // list; putting it behind the owner/front-desk money gate would hide the
     // worklist from the people who work it.
-    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id', dnt_gfe: 'patient_id', dnt_recall_outreach: 'patient_id' };
+    const DNT_PATIENT_SCOPED_RESOURCES = { dnt_patients: 'id', dnt_referrals: 'patient_id', dnt_gfe: 'patient_id', dnt_recall_outreach: 'patient_id', dnt_txplans: 'patient_id' };
     if (DNT_RESOURCES[resource] && action === 'read') {
       const dntSess = dntGate(res);
       if (!dntSess) return;
