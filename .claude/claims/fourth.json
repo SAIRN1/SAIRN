@@ -70,6 +70,16 @@
       "claimed_at_epoch": 1788342657.0980308,
       "status": "released",
       "released_at": "2026-09-02T10:27:22Z"
+    },
+    {
+      "id": "fourth-1788345341",
+      "session": "fourth",
+      "subject": "sairncare",
+      "task": "read-await-write review",
+      "claimed_at": "2026-09-02T10:35:41Z",
+      "claimed_at_epoch": 1788345341.0341878,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
