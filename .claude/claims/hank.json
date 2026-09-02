@@ -362,6 +362,16 @@
       "claimed_at_epoch": 1788392179.5121918,
       "status": "released",
       "released_at": "2026-09-02T23:47:27Z"
+    },
+    {
+      "id": "hank-1788392946",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "franchise network royalty reporting B3",
+      "claimed_at": "2026-09-02T23:49:06Z",
+      "claimed_at_epoch": 1788392946.2450597,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
