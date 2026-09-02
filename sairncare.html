@@ -1900,9 +1900,28 @@ async function reviewPharmacyOrder(id,status){
   var payload=Object.assign({},m,{pharmacy_status:status,resident_id:m.resident_id,entry_type:'medication_order'});
   var saved=await alfData('write','alf_mar',payload,true);
   if(!saved){toast('Server sync failed -- the order was NOT '+status+'. Try again with a connection.');return;}
-  var idx=list.findIndex(function(x){return x.id===id;});
-  if(idx!==-1)list[idx]=Object.assign({},list[idx],saved);
-  st('alf_mar',list);
+  // RE-READ AFTER THE AWAIT (fixed 2026-09-02). `list` was captured BEFORE the
+  // server round-trip, so patching and writing it back also discarded anything
+  // else written to alf_mar while this request was in flight -- and alf_mar is
+  // the eMAR: a medication administration, a controlled-substance count and a
+  // refusal all write it, and an evening med pass runs concurrently with a nurse
+  // accepting pharmacy orders. Accepting one order could silently drop a med
+  // administration that had just been recorded.
+  //
+  // saveResident() in this same file already does it correctly -- re-reads with
+  // residents() inside its success branch and patches the single record. This is
+  // that pattern, applied to the one place that was still writing a stale array.
+  var fresh=marEntries();
+  var idx=fresh.findIndex(function(x){return x.id===id;});
+  if(idx===-1){
+    // Gone during the round trip. The server accepted the change, so say so
+    // rather than silently re-adding a row this client no longer knows about.
+    rPharmacyQueue();rMar();
+    toast('Order '+status+' on the server, but it is no longer in this device’s list -- refresh to see the current queue.');
+    return;
+  }
+  fresh[idx]=Object.assign({},fresh[idx],saved);
+  st('alf_mar',fresh);
   rPharmacyQueue();rMar();
   toast('Order '+status+': '+(m.name||''));
 }
