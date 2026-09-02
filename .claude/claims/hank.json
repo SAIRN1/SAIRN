@@ -200,6 +200,16 @@
       "claimed_at_epoch": 1788344919.396069,
       "status": "released",
       "released_at": "2026-09-02T10:46:20Z"
+    },
+    {
+      "id": "hank-1788346162",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "trust void stale array check",
+      "claimed_at": "2026-09-02T10:49:22Z",
+      "claimed_at_epoch": 1788346162.1317477,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
