@@ -1706,6 +1706,125 @@ var LAW_FIRM_DATA_RULE='CRITICAL RULE: you now have tool-based access to this fi
 // failure. The instruction and the mechanism agree; before today only the
 // instruction existed, and it said the opposite.
 var LAW_DEFINITION_RULE='CRITICAL RULE: you have no legal dictionary in your own knowledge that this firm may rely on. Whenever the user asks what a legal term, doctrine, maxim or phrase MEANS -- including terms you are completely confident about -- you MUST call the define_legal_term tool and answer only from what it returns, quoting or closely paraphrasing the retrieved text and naming the source URL it gives you. If that tool reports that no definition was retrieved, for ANY reason, say so plainly along with the reason it gave, tell the user they can retry from the Legal Reference panel, and STOP -- do not then supply a definition from your own knowledge, do not offer a "general sense" or "roughly speaking" version, and do not describe the term\'s meaning in your own words as a substitute. An unsourced legal definition that sounds right is the same failure as an unsourced citation and is not made acceptable by a disclaimer. You MAY, without the tool, discuss how a term is used procedurally in this firm\'s own workflow (which panel records it, which deadline it drives) because that is operations rather than a definition.';
+// ── GROUNDED DEFINITIONS ON THE TWO SINGLE-SHOT SURFACES (2026-09-02) ─────
+// The AI Assistant closes its definition gap with a TOOL. Drafting
+// (runAiDraft) and document review (reviewDocument) cannot: both send a
+// single ai_generate call with NO `tools` field at all, so an instruction to
+// "call define_legal_term" would order them to use something they cannot
+// reach -- an instruction that reads as a guard and enforces nothing.
+//
+// SO THE MECHANISM IS INVERTED: retrieve FIRST, inject the real text into the
+// prompt, and forbid anything outside it. Michael's call, 2026-09-02.
+//
+// THE PROHIBITION IS THE GUARANTEE AND THE INJECTION IS ONLY THE COVERAGE.
+// That split matters, because term extraction from free text is a heuristic
+// and will miss things. When it misses, the model has NO grounded material
+// for that term and the rule requires it to say so -- which is the safe
+// outcome. A missed extraction costs a refusal, never a fabrication.
+var LAW_GROUNDED_DEFINITIONS_RULE='CRITICAL RULE ON LEGAL DEFINITIONS: you have no tools available in this request. You may state what a legal term, doctrine or phrase MEANS only if that meaning appears in the GROUNDED LEGAL DEFINITIONS section below, which was retrieved from Cornell LII before this request was sent. Quote or closely paraphrase that retrieved text and name the source URL given with it. If a term you would otherwise want to define is NOT in that section -- including terms you are completely confident about -- do not define it: say plainly that no grounded definition was retrieved for it and that the user can look it up in this app\'s Legal Reference panel, then carry on with the rest of the work. Do not offer a "general sense", a "roughly speaking" version, or your own paraphrase as a substitute. Drafting or reviewing document TEXT is unaffected by this rule -- you may write a contract clause that defines a term for the parties, and you may say a document uses a term inconsistently or ambiguously, because neither of those is you asserting what the term means as a matter of law.';
+
+// Deterministic candidate extraction. NOT a model judgment and not a
+// hardcoded glossary -- either of those would reintroduce the thing being
+// removed. It looks only for places the text ITSELF marks a term as a term:
+// an explicit ask ("define X", "what does X mean", "the doctrine of X") or a
+// quoted phrase, which is how both a drafting request and a real document
+// flag a term of art.
+//
+// DELIBERATELY NARROW. A wider net would spend the rate limit on ordinary
+// words and ground nothing; the 2026-08-30 SAIRNsenior sweep is the recorded
+// case of a broad pattern producing 42 hits and one real finding. Precision
+// beats recall here for the same reason: an unmatched term costs a refusal.
+// EACH PATTERN STOPS AT PUNCTUATION *OR* AT " and "/" or ", which is not
+// cosmetic: "the doctrine of laches and the meaning of estoppel" has no
+// punctuation until the full stop, so without the conjunction boundary the
+// capture ran to five words, was rejected for length, and LOST laches
+// entirely while a later pattern picked up estoppel. Found by running the
+// extractor on prose it had not been asserted against.
+var LAW_DEFN_PATTERNS = [
+  /\bdefine\s+(?:the\s+(?:term|doctrine|phrase)\s+)?["'“]?([a-z][a-z\- ]{2,40}?)["'”]?(?=[\.,;:\?\n]|\s+(?:and|or)\s+|$)/gi,
+  /\bwhat\s+(?:is|are|does)\s+["'“]?([a-z][a-z\- ]{2,40}?)["'”]?\s*(?:mean)?(?=[\.,;:\?\n]|\s+(?:and|or)\s+|$)/gi,
+  /\b(?:the\s+)?(?:meaning|definition)\s+of\s+["'“]?([a-z][a-z\- ]{2,40}?)["'”]?(?=[\.,;:\?\n]|\s+(?:and|or)\s+|$)/gi,
+  /\bdoctrine\s+of\s+["'“]?([a-z][a-z\- ]{2,40}?)["'”]?(?=[\.,;:\?\n]|\s+(?:and|or)\s+|$)/gi,
+  /["“]([a-z][a-z\- ]{2,40}?)["”]/gi
+];
+// Words that are never a Wex term on their own. Kept short on purpose: this
+// is a stop-list for the extractor's own noise, not a vocabulary.
+var LAW_DEFN_STOPWORDS = { 'the': 1, 'this': 1, 'that': 1, 'it': 1, 'they': 1, 'we': 1, 'you': 1, 'i': 1, 'a': 1, 'an': 1 };
+// Stripped from the FRONT of a capture. "What is a novation?" should look up
+// `novation`, not `a novation`, which slugs to a_novation and misses.
+var LAW_DEFN_LEADING_ARTICLES = { 'a': 1, 'an': 1, 'the': 1 };
+// A capture led by one of these is a phrase about the matter, not a term of
+// art. See the rejection in lawExtractDefinitionCandidates for the case.
+var LAW_DEFN_LEADING_REJECT = { 'our': 1, 'your': 1, 'their': 1, 'his': 1, 'her': 1, 'its': 1, 'my': 1, 'this': 1, 'that': 1, 'these': 1, 'those': 1 };
+var LAW_DEFN_MAX_LOOKUPS = 2;
+
+function lawExtractDefinitionCandidates(text) {
+  var s = String(text || '');
+  if (!s) return [];
+  var seen = {}, out = [];
+  for (var i = 0; i < LAW_DEFN_PATTERNS.length; i++) {
+    var re = new RegExp(LAW_DEFN_PATTERNS[i].source, LAW_DEFN_PATTERNS[i].flags);
+    var m;
+    while ((m = re.exec(s)) !== null) {
+      var t = String(m[1] || '').trim().toLowerCase().replace(/\s+/g, ' ');
+      var words = t.split(' ');
+      // A capture led by a possessive is a phrase about the matter, not a
+      // term of art -- "What is our next step?" was extracting `our next
+      // step` and spending the one available lookup on it. Rejected rather
+      // than stripped: removing the determiner leaves prose, not a term.
+      if (words.length > 1 && LAW_DEFN_LEADING_REJECT[words[0]]) continue;
+      // NORMALISE IN THIS ORDER -- article first, then the framing noun.
+      // "What is THE DOCTRINE OF unclean hands" captures `the doctrine of
+      // unclean hands`; stripping the framing noun first anchors on `the`,
+      // never fires, and the extractor then spends both of its lookups on the
+      // same term -- once as the full phrase, which misses. Article-then-noun
+      // leaves `unclean hands` on both patterns and dedupe collapses them.
+      // Found by running the extractor on prose it had not been asserted
+      // against, twice.
+      if (words.length > 1 && LAW_DEFN_LEADING_ARTICLES[words[0]]) { words = words.slice(1); t = words.join(' '); }
+      var stripped = t.replace(/^(?:doctrine|defence|defense|principle|rule|concept)\s+of\s+/, '');
+      if (stripped !== t) { t = stripped; words = t.split(' '); }
+      if (!t || t.length < 3 || t.length > 40) continue;
+      if (words.length > 4) continue;
+      if (words.length === 1 && LAW_DEFN_STOPWORDS[t]) continue;
+      if (seen[t]) continue;
+      seen[t] = 1; out.push(t);
+      if (out.length >= LAW_DEFN_MAX_LOOKUPS) return out;
+    }
+  }
+  return out;
+}
+
+// Retrieves the candidates and returns the prompt block plus a plain-English
+// note for the user. SEQUENTIAL AND SHORT-CIRCUITING ON RATE_LIMITED: Cornell
+// LII publishes Crawl-delay: 10 and api/_lib/wex.js honours it across the
+// whole deployment, so once one request is refused for that reason the next
+// one in the same second will be too -- issuing it anyway would waste a round
+// trip and tell the user nothing new.
+//
+// EVERY OUTCOME IS REPORTED TO THE USER, including "nothing was looked up".
+// A grounding step that runs invisibly is indistinguishable from one that
+// silently did nothing, which is the failure this app keeps finding.
+async function lawGroundedDefinitions(text) {
+  var terms = lawExtractDefinitionCandidates(text);
+  if (!terms.length) return { block: '', note: 'No legal term was explicitly named or quoted in this request, so nothing was looked up. Any term the response would otherwise define is refused rather than answered from memory.' };
+  var got = [], missed = [], stopped = false;
+  for (var i = 0; i < terms.length; i++) {
+    if (stopped) { missed.push(terms[i] + ' (not attempted -- the previous lookup was rate-limited)'); continue; }
+    var d = await referenceFetch('define', { term: terms[i] });
+    if (d && d.ok) { got.push(d); continue; }
+    if (d && d.code === 'RATE_LIMITED') { stopped = true; missed.push(terms[i] + ' (rate-limited by Cornell LII)'); continue; }
+    missed.push(terms[i] + (d && d.code === 'NOT_FOUND' ? ' (no Wex entry)' : ' (lookup failed)'));
+  }
+  var block = got.length ? '\n\nGROUNDED LEGAL DEFINITIONS -- retrieved from Cornell LII before this request was sent. This is the ONLY definitional material you may rely on:\n' +
+    got.map(function (d) {
+      return '\n[' + d.term + '] ' + (d.paragraphs || []).slice(0, 3).join(' ') + '\nSource: ' + d.source_name + ' -- ' + d.source_url;
+    }).join('\n') : '';
+  var note = (got.length ? 'Grounded from Cornell LII: ' + got.map(function (d) { return d.term; }).join(', ') + '.' : 'No definition was retrieved.') +
+    (missed.length ? ' Not grounded: ' + missed.join('; ') + '.' : '');
+  return { block: block, note: note };
+}
+
 // AI tool-calling dispatcher (2026-08-10) -- ports the mechanism proven
 // live in SAIRNbiz (see docs/superpowers/specs/2026-08-09-sairnbiz-ai-
 // tool-calling-design.md). Registry of read-only tools sendAI() may
@@ -2999,20 +3118,29 @@ async function runAiDraft(){
   var m=matters().find(function(x){return x.id===matterId;});
   var context='Matter: '+(m?m.matter_name:'')+'. Client: '+(m?clientLabel(m.client_id):'')+'. Practice area: '+(m&&m.practice_area?m.practice_area:'unspecified')+
     (m&&m.opposing_parties&&m.opposing_parties.length?'. Opposing parties: '+m.opposing_parties.join(', '):'')+(m&&m.notes?'. Matter notes: '+m.notes:'')+'.';
-  $('draftresult').value='Drafting...';
+  $('draftresult').value='Grounding legal terms...';
   lawDraftSeq++;
   var myDraftSeq=lawDraftSeq;
   try{
+    // RETRIEVE BEFORE GENERATING. This call has no tools, so the only way to
+    // put real definitional material in front of the model is to fetch it
+    // first. Extraction runs on the REQUEST, which is where a drafting user
+    // names a term of art.
+    var grounded=await lawGroundedDefinitions(request);
+    if(myDraftSeq!==lawDraftSeq)return;
+    $('draftresult').value='Drafting...';
     var draftPrompt='Matter context: '+context+'\n\nRequest: '+request;
     var rr=await lawAuth('ai_generate',{max_tokens:1200,
-      system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally.',
+      system:'You are a legal document drafting and review assistant for a law firm, working from the real matter data provided below. Draft or review documents professionally and precisely, using the matter facts given -- do not invent facts about the matter you were not given. '+LAW_CITATION_RULE+' Drafting document text itself (letters, contract language, motion structure) is expected and not restricted -- the restriction is specifically on inventing citation numbers, not on legal drafting generally. '+LAW_GROUNDED_DEFINITIONS_RULE+grounded.block,
       messages:[{role:'user',content:draftPrompt}],prompt_for_log:draftPrompt,matter_id:matterId,tools_used:[]},true);
     var data=rr.data;
     if(myDraftSeq!==lawDraftSeq)return;
     var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
     if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    $('draftresult').value=text;
+    // The grounding outcome is shown, always, including when nothing was
+    // retrieved. A step the user cannot see is a step they cannot rely on.
+    $('draftresult').value=text+'\n\n--- '+grounded.note;
   }catch(e){
     if(myDraftSeq!==lawDraftSeq)return;
     $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
@@ -3046,20 +3174,26 @@ function closeReviewPicker(){$('reviewpickermodal').classList.remove('on');}
 async function reviewDocument(docId){
   closeReviewPicker();
   var d=matterDocs().find(function(x){return x.id===docId;});if(!d)return;
-  $('draftresult').value='Reviewing "'+d.title+'"...';
+  $('draftresult').value='Grounding legal terms in "'+d.title+'"...';
   lawDraftSeq++;
   var myDraftSeq=lawDraftSeq;
   try{
+    // Extraction runs on the DOCUMENT here, because a review has no user
+    // request to mine -- a real document flags its own terms of art by
+    // quoting them, which is what the extractor looks for.
+    var grounded=await lawGroundedDefinitions(d.content_text);
+    if(myDraftSeq!==lawDraftSeq)return;
+    $('draftresult').value='Reviewing "'+d.title+'"...';
     var reviewPrompt='Please review this document:\n\n'+d.content_text;
     var rr=await lawAuth('ai_generate',{max_tokens:800,
-      system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE,
+      system:'You are reviewing a legal document for a law firm. Give specific, actionable feedback (clarity, structure, missing elements, risk flags) -- do not rewrite the whole document unless asked. '+LAW_CITATION_RULE+' '+LAW_GROUNDED_DEFINITIONS_RULE+grounded.block,
       messages:[{role:'user',content:reviewPrompt}],prompt_for_log:reviewPrompt,matter_id:d.matter_id||'general',tools_used:[]},true);
     var data=rr.data;
     if(myDraftSeq!==lawDraftSeq)return;
     var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
     if(aiErr){$('draftresult').value=aiErr;return;}
     var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-    $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text;
+    $('draftresult').value='--- REVIEW OF: '+d.title+' ---\n\n'+text+'\n\n--- '+grounded.note;
   }catch(e){
     if(myDraftSeq!==lawDraftSeq)return;
     $('draftresult').value='Could not connect to Claude. Check your connection and try again.';
