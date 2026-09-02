@@ -129,8 +129,8 @@
       "task": "capture CHECK constraints in the schema snapshot and diff them in preflight",
       "claimed_at": "2026-09-02T10:54:56Z",
       "claimed_at_epoch": 1788346496.638024,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-02T11:43:22Z",
       "note": "sairn_claim.py claim exited 1 on a LEXICAL overlap with fourth's 'platform -- ai rate limit atomicity and scan tooling'. Verified before proceeding, not assumed either way: fourth's log shows their scan tooling is a save/await pattern scan across app HTML files (explicitly NOT committed as a tools/ script), and their other half is api/_lib/ai-rate-limit.js. My files are sql/schema_snapshot_query.sql, tools/sairn_sql_preflight.py and db/schema_snapshot.json -- fourth has touched none of them. Overlap is on the word 'platform'. Disclosed rather than reworded to slip past the matcher."
     },
     {
