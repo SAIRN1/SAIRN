@@ -286,6 +286,22 @@ against production (`392ac37`).
 
 ### 5.1 The sharpest finding — and it is a defect, not a gap
 
+> **CLOSED 2026-09-02 (Cody) — verified against the code, not assumed.** This
+> was fixed on 2026-08-27, the day after this audit was written.
+> `sql/sairnsenior_settings_schema.sql` creates `public.sen_settings`, it is
+> registered in `api/_resources/sairnsenior.js`, and `senLoadSettings()` in
+> `sairnsenior.html` reads the server FIRST — `agency_profile` and
+> `evv_config` both come from `sen_settings`. The remaining `ld('sen_agency')`
+> / `ld('sen_evv_config')` calls are a **flagged legacy-migration fallback**
+> used only when the server has no row, and each sets a `migrated` flag so the
+> panel can say the value is device-local rather than presenting it as saved.
+> `saveAgency()` is server-first with no optimistic local write. The table is
+> also live: `db/schema_snapshot.json` (2026-09-02) contains `sen_settings`.
+> **What is still open is the separate, larger item — actual EVV transmission
+> to an aggregator (§5.2 A1). Naming four aggregators and transmitting to none
+> remains true.** The configuration being device-local does not.
+
+
 **`sen_evv_config` and `sen_agency` are `localStorage`-only.** Verified at
 `sairnsenior.html:1452`, `:1461`, `:1470`, `:1476` — both read via `ld()` and
 written via `st()`, never server-synced.
