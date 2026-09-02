@@ -111,6 +111,16 @@
       "claimed_at_epoch": 1788341374.8895497,
       "status": "released",
       "released_at": "2026-09-02T09:40:00Z"
+    },
+    {
+      "id": "cody-1788345642",
+      "session": "cody",
+      "subject": "sairndental",
+      "task": "appointments payload size guard",
+      "claimed_at": "2026-09-02T10:40:42Z",
+      "claimed_at_epoch": 1788345642.9668348,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
