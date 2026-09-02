@@ -8763,30 +8763,164 @@ window.sdSafetyPrint=function(){
   </div>
 <script>
 (function(){
+  // ── SAW AND PICK TICKETS (2026-09-02, competitive-gap audit GAP 2) ────────
+  //
+  // CORRECTION TO THAT AUDIT, recorded here because the audit was wrong in the
+  // specific: it said panel-nesting had "no export function of any kind",
+  // having grepped for function names. Both of these EXISTED. They were worse
+  // than missing.
+  //
+  //   nestingExport() produced a CSV of exactly TWO ROWS -- a header and one
+  //   row of slab width, height, material and cost. It exported NOT ONE
+  //   CUTOUT. The only data a layout export exists to carry was absent.
+  //
+  //   nestingPrint() printed the material, slab size, yield, waste cost, an
+  //   empty AI line and a signature line. No pieces, no positions, no
+  //   dimensions, and not even the canvas. A cover sheet for a layout it did
+  //   not contain.
+  //
+  // That is the failure this codebase already knows by another name: a
+  // plausible artefact that is quietly empty. A fabricator prints it, carries
+  // it to the saw, and has nothing to cut from -- and nothing tells them.
+  //
+  // SCOPE, STATED: this is the SAW/PICK TICKET half of GAP 2, not the machine
+  // half. It does not emit DXF or G-code to a specific CNC; that is a
+  // per-machine integration with no generic answer, and the audit says so.
+  // What a shop actually carries to the saw is a cut list, and that is what
+  // this produces.
+
+  // Cut order, and it is not the order pieces were added. A bridge saw works
+  // across the slab and then down it, so pieces are sequenced by Y then X --
+  // the same order the operator's cuts go in. Ties broken by label so the
+  // sequence is stable between two prints of the same layout.
+  function nestCutOrder(cutouts){
+    return (cutouts||[]).slice().sort(function(a,b){
+      return (a.y||0)-(b.y||0) || (a.x||0)-(b.x||0) ||
+             String(a.label||'').localeCompare(String(b.label||''));
+    });
+  }
+
+  // Every number on a ticket is computed from the cutout data, never read back
+  // out of a rendered KPI element. A ticket that reports what the screen says
+  // rather than what the data says is one DOM change away from being wrong on
+  // paper while looking right.
+  function nestTicketTotals(){
+    var sw=parseFloat((document.getElementById('nest-slab-w')||{}).value)||sdNestingData.slabW||126;
+    var sh=parseFloat((document.getElementById('nest-slab-h')||{}).value)||sdNestingData.slabH||63;
+    var cost=parseFloat((document.getElementById('nest-cost-sqft')||{}).value);
+    if(!isFinite(cost)) cost=null;
+    var slabSqft=sw*sh/144;
+    var usedSqft=(sdNestingData.cutouts||[]).reduce(function(t,c){return t+(c.w*c.h/144);},0);
+    var wasteSqft=Math.max(0,slabSqft-usedSqft);
+    return {
+      slabW:sw, slabH:sh, costPerSqft:cost,
+      slabSqft:slabSqft, usedSqft:usedSqft, wasteSqft:wasteSqft,
+      yieldPct: slabSqft>0 ? (usedSqft/slabSqft*100) : 0,
+      // null, not 0, when no cost was entered -- "$0.00 of waste" is a claim,
+      // and an unentered cost is not a zero cost.
+      wasteCost: cost===null ? null : wasteSqft*cost
+    };
+  }
+
+  // An empty ticket IS the bug being fixed. Refuse rather than produce one.
+  function nestTicketGuard(){
+    if(!sdNestingData.cutouts || !sdNestingData.cutouts.length){
+      if(typeof notify==='function') notify('Add at least one piece before printing or exporting -- a ticket with no cut list is worse than none.','warn');
+      return false;
+    }
+    return true;
+  }
+
   window.nestingExport=function(){
-    var w=parseFloat(document.getElementById('nest-slab-w').value)||126;
-    var h=parseFloat(document.getElementById('nest-slab-h').value)||63;
-    var mat=document.getElementById('nest-slab-mat').value||'Unknown';
-    var cost=parseFloat(document.getElementById('nest-cost-sqft').value)||18;
-    var slabSqFt=Math.round(w*h/144*10)/10;
-    var rows=[['Slab Width (in)','Slab Height (in)','Material','Cost/SqFt','Slab SqFt'],
-              [w,h,mat,('$'+cost),slabSqFt]];
-    var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
-    var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-    a.download='nesting-layout-'+sdLocalToday()+'.csv';a.click();
+    if(!nestTicketGuard()) return;
+    var t=nestTicketTotals();
+    var mat=(document.getElementById('nest-slab-mat')||{}).value||'Unknown';
+    var q=function(c){return '"'+String(c==null?'':c).replace(/"/g,'""')+'"';};
+    var rows=[];
+    rows.push(['StoneDesk Saw Ticket']);
+    rows.push(['Generated', new Date().toISOString()]);
+    rows.push(['Material', mat]);
+    rows.push(['Slab (in)', t.slabW+' x '+t.slabH]);
+    rows.push(['Slab sq ft', t.slabSqft.toFixed(2)]);
+    rows.push(['Used sq ft', t.usedSqft.toFixed(2)]);
+    rows.push(['Waste sq ft', t.wasteSqft.toFixed(2)]);
+    rows.push(['Yield %', t.yieldPct.toFixed(1)]);
+    rows.push(['Cost per sq ft', t.costPerSqft===null?'not entered':('$'+t.costPerSqft.toFixed(2))]);
+    rows.push(['Waste cost', t.wasteCost===null?'not entered':('$'+t.wasteCost.toFixed(2))]);
+    rows.push(['Pieces', sdNestingData.cutouts.length]);
+    rows.push([]);
+    // Origin named on the sheet. An X/Y with no stated reference corner is a
+    // number the operator has to guess the meaning of.
+    rows.push(['CUT LIST -- X/Y are inches from the TOP-LEFT corner of the slab, in cut order']);
+    rows.push(['Seq','Label','Width (in)','Height (in)','Sq Ft','X (in)','Y (in)','Kerf (in)']);
+    nestCutOrder(sdNestingData.cutouts).forEach(function(c,i){
+      rows.push([i+1, c.label||'', c.w, c.h, (c.w*c.h/144).toFixed(2),
+                 (c.x||0), (c.y||0), (c.kerf==null?'':c.kerf)]);
+    });
+    var csv=rows.map(function(r){return r.map(q).join(',');}).join('\n');
+    var a=document.createElement('a');
+    a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
+    a.download='saw-ticket-'+sdLocalToday()+'.csv';a.click();
+    if(typeof notify==='function') notify('Saw ticket exported -- '+sdNestingData.cutouts.length+' piece'+(sdNestingData.cutouts.length===1?'':'s')+'.','');
   };
+
   window.nestingPrint=function(){
-    var w=document.getElementById('nest-slab-w').value;
-    var h=document.getElementById('nest-slab-h').value;
-    var mat=document.getElementById('nest-slab-mat').value||'Stone';
+    if(!nestTicketGuard()) return;
+    var t=nestTicketTotals();
+    var mat=(document.getElementById('nest-slab-mat')||{}).value||'Stone';
+    var order=nestCutOrder(sdNestingData.cutouts);
+    // The layout diagram itself. Without it the operator has coordinates and
+    // no picture; with it they can sanity-check the numbers against the shape.
+    var img='';
+    try{
+      var cv=document.getElementById('nest-canvas');
+      if(cv && cv.width && cv.height) img=cv.toDataURL('image/png');
+    }catch(e){ img=''; }
     var pw=window.open('','_blank');
-    pw.document.write('<html><head><title>Nesting Layout</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{color:#0A3D1F}@media print{body{padding:12px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-    pw.document.write('<h1>Pinnacle Stone & Design — Slab Nesting Layout</h1>');
-    pw.document.write('<p>Material: <strong>'+escHtml(mat)+'</strong> | Slab: '+w+'" x '+h+'" | Date: '+new Date().toLocaleDateString()+'</p>');
-    pw.document.write('<p>Yield: '+document.getElementById('nest-kpi-yield').textContent+' | Used: '+document.getElementById('nest-kpi-used').textContent+' sqft | Waste Cost: '+document.getElementById('nest-kpi-cost').textContent+'</p>');
-    pw.document.write('<p>AI Recommendation: '+document.getElementById('nest-ai-text').textContent+'</p>');
-    pw.document.write('<p style="margin-top:40px">Fabricator: _________________ Date: _________________</p>');
-    pw.document.write('</body></html>');pw.document.close();pw.print();
+    if(!pw){ if(typeof notify==='function') notify('The print window was blocked -- allow pop-ups for this site.','warn'); return; }
+    var esc=(typeof escHtml==='function')?escHtml:function(v){return String(v==null?'':v);};
+    var h=[];
+    h.push('<html><head><title>Saw Ticket</title><style>'+
+      'body{font-family:Arial,sans-serif;padding:24px;color:#111}'+
+      'h1{color:#0A3D1F;margin:0 0 4px}'+
+      'table{border-collapse:collapse;width:100%;margin-top:10px}'+
+      'th,td{border:1px solid #999;padding:5px 7px;font-size:12px;text-align:left}'+
+      'th{background:#eee}'+
+      'td.n{text-align:right}'+
+      '.sum{margin:8px 0 0;font-size:13px}'+
+      '.note{font-size:11px;color:#555;margin-top:2px}'+
+      'img{max-width:100%;border:1px solid #ccc;margin-top:10px}'+
+      '@media print{body{padding:12px}}'+
+      '</style></head><body>');
+    h.push('<h1>Pinnacle Stone &amp; Design &mdash; Saw Ticket</h1>');
+    h.push('<div class="sum"><strong>Material:</strong> '+esc(mat)+
+           ' &nbsp;|&nbsp; <strong>Slab:</strong> '+esc(t.slabW)+'&quot; &times; '+esc(t.slabH)+'&quot;'+
+           ' &nbsp;|&nbsp; <strong>Date:</strong> '+new Date().toLocaleDateString()+'</div>');
+    h.push('<div class="sum"><strong>Pieces:</strong> '+order.length+
+           ' &nbsp;|&nbsp; <strong>Used:</strong> '+t.usedSqft.toFixed(2)+' sq ft'+
+           ' &nbsp;|&nbsp; <strong>Waste:</strong> '+t.wasteSqft.toFixed(2)+' sq ft'+
+           ' &nbsp;|&nbsp; <strong>Yield:</strong> '+t.yieldPct.toFixed(1)+'%'+
+           ' &nbsp;|&nbsp; <strong>Waste cost:</strong> '+
+           (t.wasteCost===null?'not entered':('$'+t.wasteCost.toFixed(2)))+'</div>');
+    h.push('<table><thead><tr><th>#</th><th>Label</th><th>W (in)</th><th>H (in)</th>'+
+           '<th>Sq Ft</th><th>X (in)</th><th>Y (in)</th><th>Kerf</th><th>Cut</th></tr></thead><tbody>');
+    order.forEach(function(c,i){
+      h.push('<tr><td class="n">'+(i+1)+'</td><td>'+esc(c.label||'')+'</td>'+
+        '<td class="n">'+esc(c.w)+'</td><td class="n">'+esc(c.h)+'</td>'+
+        '<td class="n">'+(c.w*c.h/144).toFixed(2)+'</td>'+
+        '<td class="n">'+esc(c.x||0)+'</td><td class="n">'+esc(c.y||0)+'</td>'+
+        '<td class="n">'+esc(c.kerf==null?'':c.kerf)+'</td><td>&#9744;</td></tr>');
+    });
+    h.push('</tbody></table>');
+    h.push('<div class="note">X and Y are inches from the TOP-LEFT corner of the slab. Pieces are listed in cut order (across, then down), which is not the order they were entered.</div>');
+    if(img) h.push('<img src="'+img+'" alt="Slab layout">');
+    // Say it plainly rather than printing a ticket that looks complete.
+    else h.push('<div class="note"><strong>No layout diagram available</strong> &mdash; the nesting canvas had not been drawn when this ticket was generated. The cut list above is complete; open the Nesting panel and print again if you need the picture.</div>');
+    h.push('<p style="margin-top:32px">Fabricator: _________________ &nbsp;&nbsp; Date: _________________</p>');
+    h.push('</body></html>');
+    pw.document.write(h.join(''));
+    pw.document.close();
+    pw.print();
   };
 })();
 </script>

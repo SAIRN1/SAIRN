@@ -98,11 +98,37 @@ now the industry's default expectation, and StoneDesk cannot do it at all.
 
 ### GAP 2 — Nesting produces no machine output. **Highest operational risk.**
 
+> **CORRECTED 2026-09-02, and the correction is worse than the original
+> finding.** This section said "there is no export function of any kind." That
+> was wrong in the specific and I found it by trying to build the missing
+> feature. **Two exports existed** — `nestingExport()` (Export CSV) and
+> `nestingPrint()` (Print), both wired to real buttons in the panel. The grep
+> below missed them because it searched for the names a reader would *expect*
+> (`nestExport`, `sawTicket`, `pickTicket`) rather than reading the panel's own
+> markup for what its buttons actually call. **A grep for the name you assume
+> is not a search for the thing.**
+>
+> What they did is the point. `nestingExport()` wrote a CSV of **exactly two
+> rows** — a header and one row of slab width, height, material and cost — and
+> **exported not one cutout**. `nestingPrint()` printed the material, slab size,
+> yield, waste cost, an empty AI line and a signature line: **no pieces, no
+> positions, no dimensions, and not even the canvas.** A cover sheet for a
+> layout it did not contain. A fabricator printed it, carried it to the saw and
+> had nothing to cut from, with nothing on the page saying so.
+>
+> **That is strictly worse than the absence this section reported**, and it is
+> the same failure class as a fabricated KPI: a plausible artefact that is
+> quietly empty. **Fixed the same day** — both now emit the full cut list in saw
+> order with a stated origin corner, and the print embeds the layout image or
+> says why it could not. 16 assertions in `tests/nesting_saw_ticket.js`. The
+> machine half of this gap (DXF/G-code out to a specific CNC) is untouched and
+> everything below still stands.
+
 `panel-nesting` has `nestingInit / UpdateSlab / Scale / Draw / MouseDown /
 MouseMove / AddCutout / UpdateKPIs / RenderList / Remove / Clear / Save / Load /
-AIOptimize`. **There is no export function of any kind** — grep for
-`nestExport|exportNest|downloadDxf|toDxf|sawTicket|cutTicket|pickTicket` returns
-zero. `g-code` and `gcode` appear **zero times in the entire file**.
+AIOptimize`, plus the two exports named in the correction above.
+`g-code` and `gcode` appear **zero times in the entire file**, and that part
+was and remains true.
 
 DXF is **inbound only** — `panel-template` accepts `.dxf,.dwg,.pdf,...` uploads
 from LT-2D3D / Proliner / Flexijet / Leica (`stonedesk.html:8899-8900, 8969`).
