@@ -161,6 +161,16 @@
       "claimed_at_epoch": 1788358367.2093823,
       "status": "released",
       "released_at": "2026-09-02T14:24:47Z"
+    },
+    {
+      "id": "fourth-1788359259",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "treatment planning phased case presentation acceptance",
+      "claimed_at": "2026-09-02T14:27:39Z",
+      "claimed_at_epoch": 1788359259.6301193,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
