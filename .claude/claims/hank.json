@@ -210,6 +210,16 @@
       "claimed_at_epoch": 1788346162.1317477,
       "status": "released",
       "released_at": "2026-09-02T10:59:20Z"
+    },
+    {
+      "id": "hank-1788347834",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "montana deadline seed gate",
+      "claimed_at": "2026-09-02T11:17:14Z",
+      "claimed_at_epoch": 1788347834.4774728,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
