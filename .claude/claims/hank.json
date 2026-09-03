@@ -400,8 +400,8 @@
       "task": "replace curl with vercel mcp fetch across deploy watchers",
       "claimed_at": "2026-09-03T01:28:58Z",
       "claimed_at_epoch": 1788398938.180723,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T01:51:22Z"
     }
   ]
 }
