@@ -1691,6 +1691,60 @@ function saveReview(){
 
 function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=sbLocalToday();$('ivdue2').value='';$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
 function closeInvModal(){$('invmodal').classList.remove('on');}
+// ── GENERAL LEDGER POSTING (2026-09-02) ────────────────────────────────────
+// SAIRNbiz's business records live in localStorage; the ledger lives on the
+// server. This is the bridge, and three rules govern it.
+//
+// 1. POST ON ACTION, NEVER ON LOAD. Only a transaction a person just performed
+//    produces an entry. The seeded demo rows are NEVER bulk-posted -- posting
+//    them would launder demo figures into a real set of books, which is the
+//    same thing the timesheet CSV export was refused for earlier today.
+//
+// 2. A FAILED POST IS REPORTED, NEVER SWALLOWED. The ledger this replaces
+//    (unmerged lucid-ptolemy branch) wrapped its inserts in `.catch(() => {})`,
+//    so a failed GL post vanished while the payment reported success. Here the
+//    business record still saves -- refusing to record a real invoice because
+//    a ledger call failed would be worse -- but the user is TOLD, in a toast
+//    that names the entry, so "the books are behind" is knowable rather than
+//    silent.
+//
+// 3. THE BALANCE RULE IS NOT CHECKED HERE. api/_lib/ledger.js decides, and the
+//    endpoint writes nothing unless it passes. A second copy of that rule in
+//    the browser would eventually disagree with the server's, and the server's
+//    is the one that matters.
+var LEDGER_API='https://sairn.vercel.app/api/ledger';
+
+// Expense/bill categories to account codes. ONLY codes that exist in the
+// platform chart of accounts (api/_lib/ledger.js) appear here. An unmapped
+// category returns null and the posting is REFUSED rather than dropped into a
+// nearby account -- a wrong account code is harder to find later than a
+// missing entry, because it balances.
+var SB_GL_EXPENSE_ACCOUNTS={
+  'Materials':'5010','Subcontractor':'5010','Equipment':'5010','Tools':'5010',
+  'Rent':'6100','Software':'6210','Benefits':'6030','Payroll Taxes':'6020','Wages':'6010'
+};
+
+function sbGlPost(entry,label){
+  // Read the same way sbDoLogin() reads it, rather than through a helper that
+  // does not exist in this file.
+  var lic=ld('sb_lic',null)||'';
+  var tok=null;try{tok=sessionStorage.getItem(SB_SESSION_KEY);}catch(e){}
+  if(!lic||!tok){toast('Not signed in — '+label+' was saved here but NOT posted to the ledger',6000);return;}
+  entry.entry_id='JE-'+Date.now().toString(36)+'-'+Math.floor(Math.random()*1000);
+  return fetch(LEDGER_API,{method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic,'X-SD-Auth':tok},
+    body:JSON.stringify({action:'post',app_id:'sairnbiz',payload:{today:sbLocalToday(),entry:entry}})})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      if(r.ok&&d&&d.ok){toast(label+' posted to the ledger ('+d.entry.entry_id+')');return;}
+      // ALREADY_POSTED is not a failure -- it is the idempotence guard doing
+      // its job on a double-click, and saying "failed" would train people to
+      // ignore the message that matters.
+      if(d&&d.error&&d.error.code==='ALREADY_POSTED'){toast(label+' was already in the ledger — not posted twice');return;}
+      toast('SAVED HERE, NOT IN THE LEDGER: '+((d&&d.error&&d.error.message)||('the ledger refused this ('+r.status+')')),8000);
+    });})
+    .catch(function(){toast('SAVED HERE, NOT IN THE LEDGER: could not reach the ledger — the books are now behind',8000);});
+}
+
 function saveInv(){
   var cust=$('ivcust').value.trim(),amt=parseFloat($('ivamt').value)||0;
   if(!cust||!amt){toast('Customer and amount required');return;}
@@ -1700,6 +1754,16 @@ function saveInv(){
   var r={id:'INV-'+String(Date.now()).slice(-4),cust:cust,date:$('ivdate').value||sbLocalToday(),due:$('ivdue2').value,amt:amt,paid:paid,status:status,cat:$('ivcat').value};
   if(status==='Paid')r.paidDate=r.date;
   invs.push(r);st('sb_invs',invs);closeInvModal();rInvs();rDash();rPay();rAR();toast('Invoice created - '+r.id);
+  // Revenue is credited in FULL; the debit splits between cash actually
+  // received and the remainder still owed. Three lines when partly paid, two
+  // when not -- and it balances either way because the split sums to the
+  // total, not because anything rounds it into place.
+  var glLines=[];
+  if(paid>0)glLines.push({account_code:'1010',debit:paid,memo:'Cash received'});
+  if(amt-paid>0)glLines.push({account_code:'1100',debit:amt-paid,memo:'Receivable'});
+  glLines.push({account_code:'4010',credit:amt,memo:'Service revenue'});
+  sbGlPost({entry_date:r.date,memo:'Invoice '+r.id+' — '+cust,
+    source_app:'sairnbiz',source_kind:'invoice_issued',source_id:r.id,lines:glLines},'Invoice '+r.id);
 }
 
 function openExpModal(){['exdesc','exvendor','examt'].forEach(function(f){$(f).value='';});$('exdate').value=sbLocalToday();$('excat').value='Materials';$('exded').value='Yes';$('exreceipt').value='Yes';$('exstatus').value='Approved';$('expmodal').classList.add('on');}
@@ -1710,6 +1774,19 @@ function saveExp(){
   var exps=ld('sb_exps',[]);
   exps.push({date:$('exdate').value||sbLocalToday(),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
   st('sb_exps',exps);closeExpModal();rExps();rDash();rPay();toast('Expense recorded - '+fmt(amt));
+  // An unmapped category REFUSES rather than posting to a nearby account. A
+  // wrong account code is harder to find later than a missing entry, because
+  // a wrong one still balances.
+  var exCat=$('excat').value, exAcct=SB_GL_EXPENSE_ACCOUNTS[exCat];
+  var exId='EX-'+String(Date.now()).slice(-6);
+  if(!exAcct){
+    toast('Recorded here, NOT posted to the ledger: no account is mapped for the category "'+exCat+'"',8000);
+  }else{
+    sbGlPost({entry_date:$('exdate').value||sbLocalToday(),memo:'Expense — '+desc,
+      source_app:'sairnbiz',source_kind:'expense',source_id:exId,
+      lines:[{account_code:exAcct,debit:amt,memo:exCat},
+             {account_code:'1010',credit:amt,memo:'Cash paid'}]},'Expense');
+  }
 }
 
 function openBillModal(){
@@ -1726,6 +1803,16 @@ function saveBill(){
   var bills=ld('sb_ap',[]);
   bills.push({vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
   st('sb_ap',bills);closeBillModal();rAP();rDash();toast('Bill added - '+vendor);
+  // A supplier bill has no category field in this app, so it posts to 5010
+  // COGS. THAT IS AN ASSUMPTION, and it is written into the entry memo rather
+  // than hidden in code -- a bill that is really rent or software is corrected
+  // by a reversing entry, which is exactly what reversals are for.
+  var blId=($('blinv').value.trim()||('BILL-'+String(Date.now()).slice(-6)));
+  sbGlPost({entry_date:$('bldate').value||sbLocalToday(),
+    memo:'Bill from '+vendor+' — posted to COGS (assumed; reverse and re-post if another account is right)',
+    source_app:'sairnbiz',source_kind:'bill_received',source_id:blId,
+    lines:[{account_code:'5010',debit:amt,memo:vendor},
+           {account_code:'2010',credit:amt,memo:'Payable to '+vendor}]},'Bill');
 }
 
 function openVendModal(){['vnname','vncontact','vnphone'].forEach(function(f){$(f).value='';});$('vncat').value='Materials';$('vnterms').value='Net 30';$('vnw9').value='Yes';$('vendmodal').classList.add('on');}
@@ -1900,6 +1987,20 @@ function runPayroll() {
   st('sb_payruns',runs);
   rPayRuns();
   toast('Payroll calculated and recorded - no real payment was sent. Process through your bank or payroll provider.', 4000);
+  // ACCRUAL, not a payment -- and that distinction is the reason this posts to
+  // 2100 Accrued Wages and 2130 FICA Payable rather than to cash. The app is
+  // explicit that no money moved; the ledger has to say the same thing, and
+  // crediting cash here would assert a payment that did not happen.
+  // Benefits are deliberately NOT posted: the $520 per head is a stated flat
+  // ASSUMPTION in sbPayrollTotals(), not a real cost, and an assumption does
+  // not belong in a set of books.
+  var pr=runs[0];
+  sbGlPost({entry_date:pr.run_on,memo:'Payroll accrual — '+pr.employees+' employees (calculation only, no payment sent)',
+    source_app:'sairnbiz',source_kind:'payroll_run',source_id:pr.id,
+    lines:[{account_code:'6010',debit:Math.round(t.gross*100)/100,memo:'Gross wages'},
+           {account_code:'6020',debit:Math.round(t.taxes_fica*100)/100,memo:'Employer FICA'},
+           {account_code:'2100',credit:Math.round(t.gross*100)/100,memo:'Accrued wages'},
+           {account_code:'2130',credit:Math.round(t.taxes_fica*100)/100,memo:'FICA payable'}]},'Payroll accrual');
 }
 
 function rPayRuns(){
@@ -2008,6 +2109,14 @@ function sbPayBill(id){
   // Names the real vendor and the real amount, so the confirmation is checkable
   // against the row rather than being a generic reassurance.
   toast('Marked paid: '+b.vendor+' '+fmt(b.amt)+' - recorded in this app only, no payment was sent',5000);
+  // Settling a payable moves it off the balance sheet against cash. Note this
+  // is a SECOND entry, not an edit of the bill's original one: the ledger
+  // records what happened and when, and the receipt of the bill and its
+  // payment are two different events.
+  sbGlPost({entry_date:b.paidDate,memo:'Paid '+b.vendor+(b.inv?' — '+b.inv:''),
+    source_app:'sairnbiz',source_kind:'bill_paid',source_id:b.id,
+    lines:[{account_code:'2010',debit:b.amt,memo:'Payable settled'},
+           {account_code:'1010',credit:b.amt,memo:'Cash paid'}]},'Bill payment');
 }
 
 function rAR(){
