@@ -325,6 +325,16 @@
       "claimed_at_epoch": 1788433521.5033526,
       "status": "released",
       "released_at": "2026-09-03T11:32:26Z"
+    },
+    {
+      "id": "cody-1788435359",
+      "session": "cody",
+      "subject": "competitive-gap-audit",
+      "task": "sairnbuild sairnvet sairnbiz sairngrounds sairncash write up",
+      "claimed_at": "2026-09-03T11:35:59Z",
+      "claimed_at_epoch": 1788435359.3877275,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
