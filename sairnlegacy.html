@@ -1376,10 +1376,124 @@ function legShowStep(id){
 function legLoginReset(){var e=$('l-eid');if(e)e.value='';var p=$('l-pin');if(p)p.value='';legShowStep('lstep-login');}
 function legShowBootstrap(){legShowStep('lstep-bootstrap');}
 
+
+// -- LICENCE RE-KEY ISOLATION (2026-09-03) ---------------------------------
+// docs/SAIRN-OPEN-WORK-INDEX.md: "No app clears local data on a license/device
+// re-key; storage keys are not license-scoped."
+//
+// THE HARM, concretely. Every SAIRN app keeps its working data in localStorage
+// under a fixed prefix that has nothing to do with WHICH LICENCE it belongs
+// to. Replace the key on a device -- a demo upgraded to a paid licence, a
+// contractor moving between two shops, a resold laptop, a support person
+// entering a different customer's key -- and the previous licence's jobs,
+// customers and records are still sitting there. The new licence opens the app
+// and sees them as its own. That is cross-tenant exposure inside the browser,
+// and no amount of server-side licence scoping prevents it, because the leak
+// never reaches a server.
+//
+// WHAT THIS DOES: remembers which licence the local data belongs to, and on a
+// CHANGE, stops and asks before letting the new licence in.
+//
+// WHAT IT DELIBERATELY DOES NOT DO:
+//   * It does NOT namespace every storage key by licence hash, which is what
+//     the open-work row proposed. That rewrites every read and write in the
+//     file and needs a migration for existing installs; getting it wrong
+//     orphans a customer's records. This closes the same exposure at one hook.
+//   * It does NOT wipe silently. A legitimate re-key (demo -> paid, same
+//     customer) would destroy real work, so it asks, and a refusal keeps the
+//     door shut rather than mixing two licences' data.
+//   * On FIRST RUN it ADOPTS whatever is already here rather than wiping. An
+//     existing install has no fingerprint and there is no way to know which
+//     licence its data belongs to; wiping on that guess would be the worse
+//     error by far.
+//
+// The fingerprint is a CHANGE DETECTOR, not a security primitive, and needs no
+// secrecy: these apps already store the licence key itself in plain
+// localStorage right beside it. It exists so a comparison does not require
+// keeping a second copy of the key.
+var LEG_LIC_FP = 'leg_lic_fp';
+var LEG_OWN_PREFIX = 'leg_';
+// Owned by no single app -- consent, install age, the cross-app learning store.
+// Reading another app's data has never made it yours to delete, and neither has
+// sharing an origin with it.
+var LEG_SHARED_KEYS = ['sairn_created', 'sairn_privacy_accepted', 'sairn_learned_global',
+                    'sairn_tone_prefs', 's_attempts', 'sairn_audit'];
+// THE UNDERSCORE IN THE PREFIX IS LOAD-BEARING, and this is StoneDesk's lesson
+// applied rather than rediscovered: a prefix of 'sd' rather than 'sd_' matches
+// 'sdn_clients' and deletes a design studio's client list from inside another
+// app. Every SAIRN prefix is disjoint ONLY when the underscore is included.
+function legIsOwnKey(k) {
+  if (LEG_SHARED_KEYS.indexOf(k) !== -1) return false;
+  if (k === LEG_LIC_FP) return false;
+  return String(k).indexOf(LEG_OWN_PREFIX) === 0;
+}
+// A live assertion, not a comment. If a future edit widens the prefix so
+// another app's keys start matching, this fires on load and the wipe refuses to
+// run rather than quietly eating somebody else's records.
+var LEG_SCOPE_OK = ['sd_jobs', 'law_matters'].every(function (k) { return legIsOwnKey(k) === false; })
+  && ['leg_lic', 'leg_jobs', 'leg_settings'].every(function (k) { return legIsOwnKey(k) === true; });
+
+// FNV-1a. Deliberately not a crypto hash: this only has to notice that two
+// strings differ, it runs synchronously in a gate handler, and crypto.subtle is
+// async. Said plainly so nobody later mistakes it for a security control.
+function legLicFingerprint(k) {
+  var h = 0x811c9dc5, s = String(k || '');
+  for (var i = 0; i < s.length; i++) {
+    h ^= s.charCodeAt(i);
+    h = (h + ((h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24))) >>> 0;
+  }
+  return ('0000000' + h.toString(16)).slice(-8);
+}
+
+// Returns true if it is safe to proceed with this key. Call it BEFORE storing
+// the key -- the old key lives under this app's own prefix and is removed by
+// the wipe, so the caller writes the new one afterwards.
+function legLicenceGuard(k) {
+  var next = legLicFingerprint(k);
+  var prev = null;
+  try { prev = localStorage.getItem(LEG_LIC_FP); } catch (e) { return true; }
+  if (!prev) { try { localStorage.setItem(LEG_LIC_FP, next); } catch (e) {} return true; }
+  if (prev === next) return true;
+
+  var ls = [], ss = [];
+  try { ls = Object.keys(localStorage).filter(legIsOwnKey); } catch (e) {}
+  try { ss = Object.keys(sessionStorage).filter(legIsOwnKey); } catch (e) {}
+
+  if (!LEG_SCOPE_OK) {
+    // Fail CLOSED. The scope check is the only thing standing between this
+    // wipe and another app's data, so a broken one means no wipe and no entry.
+    alert('This device holds SAIRNlegacy data for a different licence, and the ' +
+          'safety check that decides which data belongs to SAIRNlegacy has failed. ' +
+          'Nothing was deleted and the app will not open with this key. ' +
+          'Contact support rather than clearing your browser.');
+    return false;
+  }
+  if (!ls.length && !ss.length) {
+    // Different licence, nothing local to leak. Adopt and carry on.
+    try { localStorage.setItem(LEG_LIC_FP, next); } catch (e) {}
+    return true;
+  }
+  if (!confirm('This device already holds SAIRNlegacy data belonging to a DIFFERENT licence.\n\n' +
+               'Continuing removes ' + ls.length + ' locally stored item' + (ls.length === 1 ? '' : 's') +
+               ' from this browser so the two licences cannot be mixed.\n\n' +
+               'Anything that licence has synced to the server is NOT affected -- server records are ' +
+               'stored per licence and stay where they are. Local-only records are gone for good.\n\n' +
+               'Continue with the new licence key?')) {
+    return false;
+  }
+  ls.forEach(function (key) { try { localStorage.removeItem(key); } catch (e) {} });
+  ss.forEach(function (key) { try { sessionStorage.removeItem(key); } catch (e) {} });
+  // Cookies are origin-wide, not per app, so a scoped clear must not touch
+  // them -- doing so would reach every other app while claiming not to.
+  try { localStorage.setItem(LEG_LIC_FP, next); } catch (e) {}
+  return true;
+}
+
 function gateGo(){
   var k=($('gkey').value||'').trim().toUpperCase();
   var ok=VALID.some(function(p){return k.startsWith(p)&&k.length>p.length;});
   if(!ok){$('gerr').textContent='Invalid key format. Try LEG-PINNACLE-2026';return;}
+  if(!legLicenceGuard(k)){$('gerr').textContent='Cancelled -- this device still holds another licence\u2019s data.';return;}
   localStorage.setItem('leg_license_key',k);
   $('gerr').textContent='Checking key…';
   // Real server-side license check BEFORE moving on -- otherwise a bad key
