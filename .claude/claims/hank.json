@@ -412,6 +412,16 @@
       "claimed_at_epoch": 1788400390.1685426,
       "status": "released",
       "released_at": "2026-09-03T02:23:24Z"
+    },
+    {
+      "id": "hank-1788402917",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "trust disbursement cross client trusttx collision",
+      "claimed_at": "2026-09-03T02:35:17Z",
+      "claimed_at_epoch": 1788402917.837665,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
