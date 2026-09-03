@@ -285,7 +285,14 @@ async function callClaude(system, messages, maxTokens) {
   <div class="tname">SAIRN<span>mechanical</span></div>
   <div class="tsp"></div>
   <button class="fqbtn" onclick="openFQ()">📷 Field Quote</button>
-  <div class="tusr"><div class="tavtr" id="tavtr">OW</div><span id="trole">Owner</span></div>
+  <!-- SIGN OUT -- ADDED 2026-09-03. mechLogout() was correct, was attached to
+       window as both mechLogout and doLogout, and had NO user-facing caller:
+       its only reference was mechRestore()'s whoami-failure path. So a signed-in
+       user could not sign out at all. That is not a cosmetic gap on this app --
+       SAIRNmechanical is used on a shared shop tablet, and the session it
+       writes to localStorage survives every reload until the token expires.
+       Same shape as mechRestore itself (correct function, zero callers). -->
+  <div class="tusr"><div class="tavtr" id="tavtr">OW</div><span id="trole">Owner</span><button class="btn bo bsm" style="margin-left:12px" onclick="mechLogout()">Sign out</button></div>
 </div>
 
 <div class="sidebar">
@@ -313,7 +320,7 @@ async function callClaude(system, messages, maxTokens) {
 <!-- DASHBOARD -->
 <div class="page active" id="page-dashboard">
   <div class="ph">
-    <div><div class="ptitle">SAIRNmechanical Dashboard</div><div class="psub">HVAC & Mechanical · $149/mo · June 15, 2026</div></div>
+    <div><div class="ptitle">SAIRNmechanical Dashboard</div><div class="psub">HVAC & Mechanical · $149/mo · <span id="dash-date">--</span></div></div>
     <div class="pacts">
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
       <button class="btn bp" onclick="runIntel()">🤖 AI Intelligence</button>
@@ -358,8 +365,14 @@ async function callClaude(system, messages, maxTokens) {
   <div class="suite-wrap">
     <div class="suite-hdr">
       <div class="suite-logo">S</div>
-      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Connected apps</div></div>
-      <div class="suite-live">● Live</div>
+      <!-- "Connected apps · ● Live" corrected 2026-09-03. Nothing here is
+           connected: openSuiteApp() is window.open() to another URL, and the
+           Sync All button beside it refuses with "Cross-app sync is not enabled
+           for SAIRNmechanical yet". A green Live badge over a control that
+           refuses is a status claim the app cannot support -- and it is the
+           badge, not the button, that a customer reads first. -->
+      <div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Links to your other SAIRN apps</div></div>
+      <div class="suite-live" style="color:var(--g500)">Links only — no data sync</div>
     </div>
     <div class="suite-grid"><div class="suite-tile" onclick="openSuiteApp('sairnbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
 <div class="suite-tile" onclick="openSuiteApp('sairnbuild')"><div class="suite-icon" style="background:#F59E0B">SB</div><div class="suite-tname">SAIRNbuild</div><div class="suite-tdesc">GC Portal</div></div>
@@ -368,7 +381,7 @@ async function callClaude(system, messages, maxTokens) {
 <div class="suite-tile" onclick="openSuiteApp('sairnvet')"><div class="suite-icon" style="background:#7C3AED">SV</div><div class="suite-tname">SAIRNvet</div><div class="suite-tdesc">Vet Clinics</div></div></div>
     <div class="suite-btns">
       <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
-      <button class="suite-btn out">📊 CSV</button>
+      <button class="suite-btn out" onclick="mechNotLive('CSV export','exported')">📊 CSV</button>
       <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync">Last sync: --</span>
     </div>
   </div>
@@ -520,9 +533,9 @@ async function callClaude(system, messages, maxTokens) {
 
 <!-- SAIRN SUITE -->
 <div class="page" id="page-sairn-suite">
-  <div class="ph"><div><div class="ptitle">🔗 SAIRN Suite</div><div class="psub">Connected apps for your business</div></div></div>
+  <div class="ph"><div><div class="ptitle">🔗 SAIRN Suite</div><div class="psub">Quick links to your other SAIRN apps — no data is shared between them yet</div></div></div>
   <div class="suite-wrap">
-    <div class="suite-hdr"><div class="suite-logo">S</div><div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">All connected</div></div><div class="suite-live">● Live</div></div>
+    <div class="suite-hdr"><div class="suite-logo">S</div><div><div class="suite-name">SAIRN Suite</div><div class="suite-sub">Links to your other SAIRN apps</div></div><div class="suite-live" style="color:var(--g500)">Links only — no data sync</div></div>
     <div class="suite-grid" id="suite-grid2"><div class="suite-tile" onclick="openSuiteApp('sairnbiz')"><div class="suite-icon" style="background:#14B8A6">SB</div><div class="suite-tname">SAIRNbiz</div><div class="suite-tdesc">HR & Payroll</div></div>
 <div class="suite-tile" onclick="openSuiteApp('sairnbuild')"><div class="suite-icon" style="background:#F59E0B">SB</div><div class="suite-tname">SAIRNbuild</div><div class="suite-tdesc">GC Portal</div></div>
 <div class="suite-tile" onclick="openSuiteApp('sairndesign')"><div class="suite-icon" style="background:#6366F1">SD</div><div class="suite-tname">SAIRNdesign</div><div class="suite-tdesc">Design Coordination</div></div>
@@ -530,7 +543,7 @@ async function callClaude(system, messages, maxTokens) {
 <div class="suite-tile" onclick="openSuiteApp('sairnvet')"><div class="suite-icon" style="background:#7C3AED">SV</div><div class="suite-tname">SAIRNvet</div><div class="suite-tdesc">Vet Clinics</div></div></div>
     <div class="suite-btns">
       <button class="suite-btn" onclick="syncAll()">🔄 Sync All</button>
-      <button class="suite-btn out">📊 CSV Export</button>
+      <button class="suite-btn out" onclick="mechNotLive('CSV export','exported')">📊 CSV Export</button>
       <span style="font-size:11px;color:#94A3B8;align-self:center" id="last-sync2">Last sync: --</span>
     </div>
   </div>
@@ -540,12 +553,12 @@ async function callClaude(system, messages, maxTokens) {
 <div class="page" id="page-sairnbiz-connector">
   <div class="ph"><div><div class="ptitle">🏢 SAIRNbiz Connector</div></div></div>
   <div class="sbiz">
-    <div class="sbiz-hdr"><div class="sbiz-logo">SB</div><div><div class="sbiz-title">SAIRNbiz -- HR + Accounting</div></div><div style="margin-left:auto;font-size:11px;font-weight:700;color:var(--green)">● Connected</div></div>
+    <div class="sbiz-hdr"><div class="sbiz-logo">SB</div><div><div class="sbiz-title">SAIRNbiz -- HR + Accounting</div></div><div style="margin-left:auto;font-size:11px;font-weight:700;color:var(--g500)">Not connected — no data sync</div></div>
     <div class="sbiz-btns">
       <button class="sbiz-btn" onclick="syncAll()">🔄 Sync All</button>
-      <button class="sbiz-btn out">👤 Sync HR</button>
-      <button class="sbiz-btn out">💳 Sync GL</button>
-      <button class="sbiz-btn out">📊 CSV</button>
+      <button class="sbiz-btn out" onclick="mechNotLive('HR sync','sent')">👤 Sync HR</button>
+      <button class="sbiz-btn out" onclick="mechNotLive('GL sync','sent')">💳 Sync GL</button>
+      <button class="sbiz-btn out" onclick="mechNotLive('CSV export','exported')">📊 CSV</button>
     </div>
   </div>
 </div>
@@ -593,7 +606,7 @@ async function callClaude(system, messages, maxTokens) {
 <div class="page" id="page-jobs">
   <div class="ph">
     <div><div class="ptitle">🔧 Jobs</div><div class="psub">All active and scheduled service calls</div></div>
-    <div class="pacts"><button class="btn bp">+ New Job</button></div>
+    <div class="pacts"><button class="btn bp" onclick="mechNotLive('Job entry','created')">+ New Job</button></div>
   </div>
   <div class="sgrid"><div class="sc"><div class="sl">Jobs Today</div><div class="sv">--</div><div class="sd">-- in progress</div></div><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">This week</div></div><div class="sc"><div class="sl">Pending Estimates</div><div class="sv">--</div><div class="sd">-- open</div></div><div class="sc"><div class="sl">Maintenance Contracts</div><div class="sv">--</div><div class="sd">-- this month</div></div></div>
   <div class="card">
@@ -794,7 +807,7 @@ async function callClaude(system, messages, maxTokens) {
 <div class="page" id="page-maintenance">
   <div class="ph">
     <div><div class="ptitle">🔩 Maintenance Contracts</div><div class="psub">Recurring service agreements — your steady revenue</div></div>
-    <div class="pacts"><button class="btn bp">+ New Contract</button></div>
+    <div class="pacts"><button class="btn bp" onclick="mechNotLive('Maintenance contract entry','created')">+ New Contract</button></div>
   </div>
   <div class="sgrid"><div class="sc"><div class="sl">Active Contracts</div><div class="sv">--</div><div class="sd">-- /yr recurring</div></div><div class="sc"><div class="sl">Renewals Due</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">PM Visits Scheduled</div><div class="sv">--</div><div class="sd">This month</div></div><div class="sc"><div class="sl">Avg Contract Value</div><div class="sv">--</div><div class="sd">Annual</div></div></div>
   <div class="card">
@@ -806,7 +819,7 @@ async function callClaude(system, messages, maxTokens) {
              addresses, equipment and dollar figures presented as a live board.
              This panel has no backend; building one is separate scoped work. -->
         <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
-          Maintenance contracts is not live yet &mdash; nothing recorded.
+          Maintenance contracts are not live yet &mdash; nothing recorded.
         </td></tr>
       </tbody>
     </table></div>
@@ -830,7 +843,7 @@ async function callClaude(system, messages, maxTokens) {
              addresses, equipment and dollar figures presented as a live board.
              This panel has no backend; building one is separate scoped work. -->
         <tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
-          Proposals is not live yet &mdash; nothing recorded.
+          Proposals are not live yet &mdash; nothing recorded.
         </td></tr>
       </tbody>
     </table></div>
@@ -842,7 +855,7 @@ async function callClaude(system, messages, maxTokens) {
     <div><div class="ptitle">💳 Invoices</div><div class="psub">Service invoices and payment tracking</div></div>
     <div class="pacts">
       <button class="btn bo bsm" onclick="window.print()">🖨️ Print</button>
-      <button class="btn bp">+ New Invoice</button>
+      <button class="btn bp" onclick="mechNotLive('Invoice entry','created')">+ New Invoice</button>
     </div>
   </div>
   <div class="sgrid"><div class="sc"><div class="sl">Revenue This Week</div><div class="sv">--</div><div class="sd">-- jobs</div></div><div class="sc"><div class="sl">Outstanding</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Overdue 30+</div><div class="sv">--</div><div class="sd">-- invoices</div></div><div class="sc"><div class="sl">Avg Job Value</div><div class="sv">--</div><div class="sd">This month</div></div></div>
@@ -855,7 +868,7 @@ async function callClaude(system, messages, maxTokens) {
              addresses, equipment and dollar figures presented as a live board.
              This panel has no backend; building one is separate scoped work. -->
         <tr><td colspan="6" style="text-align:center;padding:18px;color:var(--g400)">
-          Invoices is not live yet &mdash; nothing recorded.
+          Invoices are not live yet &mdash; nothing recorded.
         </td></tr>
       </tbody>
     </table></div>
@@ -1114,6 +1127,32 @@ function loadPricing(){
 function syncAll(){
   showToast('Cross-app sync is not enabled for SAIRNmechanical yet -- nothing was sent', 6000);
 }
+
+// EIGHT SILENT CONTROLS, found by clicking every button in the app 2026-09-03.
+// "+ New Job", "+ New Contract", "+ New Invoice", three CSV buttons, "Sync HR"
+// and "Sync GL" carried NO handler at all -- not a broken one, none: no onclick
+// attribute, no .onclick property, no listener. Clicking them did nothing
+// whatsoever. No toast, no error, not a line in the console.
+//
+// Five were reachable from the sidebar. The other three sit on
+// page-sairnbiz-connector, which has NO nav item and no showPage() caller
+// anywhere -- an unreachable panel, reported separately and deliberately not
+// deleted here. They are wired anyway so the defect cannot ship the day
+// somebody adds the missing nav row.
+//
+// That is the worst of the three states a control can be in. A button that
+// errors tells the user something is wrong; a button that is absent tells them
+// the feature does not exist; a primary green CTA that swallows the click is
+// indistinguishable from a slow page, so they click it again, and again.
+//
+// They refuse out loud now, in the same words the panel beneath each one
+// already uses ("Dispatch board is not live yet -- nothing recorded"). NOT
+// wired to a fixture: there is no jobs/contracts/invoices data layer to write
+// to and no records to export, and inventing either is exactly the fabrication
+// this file was cleaned of on 2026-08-27.
+function mechNotLive(subject, verb){
+  showToast(subject + ' is not live yet -- nothing was ' + verb, 6000);
+}
 function loadLastSync(){try{const ts=localStorage.getItem(APP_ID+'_last_sync');if(ts)document.querySelectorAll('[id*="last-sync"]').forEach(el=>el.textContent='Last sync: '+ts);}catch(e){}}
 // exportCSV() deleted 2026-08-27: toast-only body, ZERO callers anywhere in
 // the file. Guardian C2 -- an orphan toast-only function is deleted, not
@@ -1239,6 +1278,28 @@ window.loadWeather=loadWeather;
 document.addEventListener('DOMContentLoaded',function(){
   // (the old 4-digit #pin-in listener is gone with the PIN pad; the new
   // employee-ID/PIN fields carry their own onkeydown)
+
+  // The dashboard subtitle carried the literal string "June 15, 2026" in
+  // markup. It was not a placeholder anyone would notice: it reads as a date,
+  // so the app told every customer the wrong day, every day, and would have
+  // gone on doing so indefinitely. Rendered from the clock now.
+  var dd=document.getElementById('dash-date');
+  if(dd)dd.textContent=new Date().toLocaleDateString(undefined,{year:'numeric',month:'long',day:'numeric'});
+
+  // loadPricing() HAD ZERO CALLERS. savePricing() persisted to
+  // localStorage and loadPricing() read it back into the form, but nothing
+  // ever called the second half -- so Admin & Pricing showed the hardcoded
+  // markup defaults (85/120/30/20) on every visit no matter what was saved.
+  //
+  // That is worse than a display bug. savePricing() reads the FORM, so an
+  // owner who set $175/hr, came back the next day and touched Save for any
+  // reason silently overwrote their own rate back to $85 -- and Field Quote
+  // prices every estimate off getPricing(). Verified live before the fix:
+  // stored {standard:175}, form showed 85 after reload.
+  //
+  // Called at boot rather than on panel-open so the form is correct before
+  // the first Save can fire, which is the path that loses data.
+  try{loadPricing();}catch(e){}
 });
 </script>
 
@@ -1406,12 +1467,22 @@ async function runBlueprintAI(input){
       .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
   }
 
-  function mechCredRenderRows(board, rows) {
+  // MECH_NOT_SHOWN -- the table's own version of the distinction the notes
+  // above already make. Every failure path below (401/403, error, unprovisioned)
+  // called this renderer with no rows, and the renderer answered with "No
+  // technician credentials recorded yet", which is a POSITIVE CLAIM ABOUT THE
+  // REGISTRY that none of those paths is entitled to make. The note said "this
+  // is not an empty registry" while the table directly beneath it said the
+  // registry was empty. Found by clicking through 2026-09-03; the note was
+  // already right, the rows were not.
+  var MECH_NOT_SHOWN = 'Not shown &mdash; the registry could not be read. This is not a statement that it is empty.';
+
+  function mechCredRenderRows(board, rows, emptyMsg) {
     var body = document.getElementById('mech-cred-tbody');
     if (!body) return;
     if (!rows || !rows.length) {
       body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">' +
-        'No technician credentials recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.' +
+        (emptyMsg || 'No technician credentials recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.') +
         '</td></tr>';
       return;
     }
@@ -1440,15 +1511,18 @@ async function runBlueprintAI(input){
         // be taught the same day: "you may not see this" and "there is none of
         // this" must not render identically.
         if (note) note.textContent = 'Sign in to see technician credentials — the server declined without an employee session. This is not an empty registry.';
-        mechCredRenderRows({ rows: [] }, []);
+        mechCredRenderRows({ rows: [] }, [], MECH_NOT_SHOWN);
         return;
       }
       if (!res.body || !res.body.ok) {
         if (note) note.textContent = 'Could not load credentials. Nothing is being shown rather than a partial board.';
-        mechCredRenderRows({ rows: [] }, []);
+        mechCredRenderRows({ rows: [] }, [], MECH_NOT_SHOWN);
         return;
       }
       if (res.body.provisioned === false) {
+        // The one failure path that DOES know the registry is empty: the table
+        // does not exist, so nothing can be recorded in it. Keeps the plain
+        // empty-state wording rather than MECH_NOT_SHOWN.
         if (note) note.textContent = 'Credential storage is not set up yet — run sql/mech_credentials_schema.sql. Nothing is recorded, and nothing is being guessed.';
         mechCredRenderRows({ rows: [] }, []);
         return;
@@ -1547,12 +1621,15 @@ async function runBlueprintAI(input){
     unknown:     'background:#e5e7eb;color:#374151'
   };
 
-  function mechAssetRender(board) {
+  // Same defect and same fix as mechCredRenderRows above -- every failure path
+  // rendered "No site assets recorded yet", a claim about the registry that a
+  // failed read cannot support, directly under a note saying the opposite.
+  function mechAssetRender(board, emptyMsg) {
     var body = document.getElementById('mech-asset-tbody');
     if (!body) return;
     if (!board || !board.rows || !board.rows.length) {
       body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">' +
-        'No site assets recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.' +
+        (emptyMsg || 'No site assets recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.') +
         '</td></tr>';
       return;
     }
@@ -1581,12 +1658,12 @@ async function runBlueprintAI(input){
       if (res.status === 401 || res.status === 403) {
         // A refusal is not an empty registry.
         if (note) note.textContent = 'Sign in to see site assets — the server declined without an employee session. This is not an empty registry.';
-        mechAssetRender(null);
+        mechAssetRender(null, MECH_NOT_SHOWN);
         return;
       }
       if (!res.body || !res.body.ok) {
         if (note) note.textContent = 'Could not load site assets. Nothing is being shown rather than a partial registry.';
-        mechAssetRender(null);
+        mechAssetRender(null, MECH_NOT_SHOWN);
         return;
       }
       if (res.body.provisioned === false) {
