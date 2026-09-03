@@ -269,15 +269,32 @@ test('the dead memory endpoints are GONE from the file, not just commented', () 
   assert.ok(html.indexOf('is DELETED (2026-09-03)') > 0, 'the deletions are unexplained');
 });
 
-test('api/greeting is still called, and is LABELLED as 404ing', () => {
-  // Deliberately NOT deleted with the memory legs: those had a working
-  // replacement, this does not, and removing a product feature because its
-  // backend was never built is not this change's call to make.
+test('the greeting the client asks for now has an endpoint behind it', () => {
+  // This test used to assert the OPPOSITE -- that the 404 was labelled as a
+  // 404 -- and it was correct to, for exactly one commit. api/greeting.js now
+  // exists, so it asserts the new state rather than being deleted: the label
+  // must be gone, because a comment saying the endpoint does not exist beside
+  // an endpoint that does is worse than no comment.
   const at = html.indexOf('async function loadFirstMessage()');
   assert.ok(at > 0, 'loadFirstMessage is gone -- was that deliberate?');
-  const before = html.slice(Math.max(0, at - 800), at);
-  assert.ok(before.indexOf('api/greeting DOES NOT EXIST') !== -1,
-    'the greeting 404 reads as working code');
+  assert.strictEqual(html.indexOf('api/greeting DOES NOT EXIST'), -1,
+    'the file still says api/greeting does not exist, and it does');
+  assert.ok(fs.existsSync(path.join(ROOT, 'api', 'greeting.js')),
+    'the client calls /api/greeting and no endpoint file exists');
+});
+
+test('the greeting is ESCAPED before it reaches innerHTML', () => {
+  // The response is injected with innerHTML inside a template literal, so it is
+  // parsed as HTML. api/greeting is built so it can never echo caller input and
+  // that is the real guard; this is the second one, because a future client
+  // could be pointed at a future endpoint that forgets.
+  const at = html.indexOf('async function loadFirstMessage()');
+  const body = html.slice(at, at + 2200);
+  assert.match(body, /const safeGreeting = String\(greeting\)/,
+    'the greeting goes into innerHTML unescaped');
+  assert.match(body, /\$\{safeGreeting\}/, 'the escaped value is built and then not used');
+  assert.strictEqual(/\$\{greeting\}/.test(body), false,
+    'the raw greeting is still interpolated somewhere');
 });
 
 test('the reassuring catch comment is gone', () => {
@@ -336,12 +353,21 @@ test('the feature card distinguishes signed-in memory from the demo chat', () =>
     'the demo chat limitation is no longer stated');
 });
 
-test('api/greeting is still absent -- if it lands, the comment must go', () => {
-  // memory-cloud.js and memory.js are no longer checked: nothing calls them and
-  // nothing should, so whether they exist is not this file's business any more.
-  // greeting is, because loadFirstMessage still calls it on every page load.
-  assert.ok(!fs.existsSync(path.join(ROOT, 'api', 'greeting.js')),
-    'api/greeting.js now exists -- remove the 404 comment in sairnscape.html');
+test('nothing in this file calls an endpoint that has no file', () => {
+  // The sweep that started all of this, kept as a standing check on one app.
+  // Three paths were dead here: api/memory and api/memory-cloud, both deleted,
+  // and api/greeting, now built.
+  const called = new Set();
+  const re = /sairn\.vercel\.app\/api\/([a-z0-9\-]+)/g;
+  let m;
+  while ((m = re.exec(html)) !== null) {
+    const line = html.slice(html.lastIndexOf('\n', m.index) + 1, html.indexOf('\n', m.index));
+    if (line.trim().indexOf('//') === 0) continue;   // a comment about a dead one
+    called.add(m[1]);
+  }
+  const missing = [...called].filter((p) => !fs.existsSync(path.join(ROOT, 'api', p + '.js')));
+  assert.deepStrictEqual(missing, [],
+    'sairnscape.html calls an API path with no file: ' + missing.join(', '));
 });
 
 run().then(() => {

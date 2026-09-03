@@ -472,14 +472,14 @@ function showUpgradeBar(data) {
 // platform, so it could not have run even if the endpoint had been there. It
 // was also never called. Three independent reasons it was dead; cloudLoadMemory
 // above is the real implementation.
-// ⚠ api/greeting DOES NOT EXIST -- 404 on every page load, swallowed by the
-// catch at the end of this function, so the empty-state welcome shows instead
-// and nobody has ever seen a personalised greeting. LEFT IN PLACE rather than
-// deleted, unlike the two dead memory legs removed in this commit: those had a
-// working replacement, this does not, and quietly deleting a product feature
-// because its backend was never built is a decision for the person who wants
-// the feature, not for the person who found the 404. Recorded in
-// docs/SAIRN-OPEN-WORK-INDEX.md instead.
+// api/greeting NOW EXISTS (2026-09-03). This function had been 404ing on every
+// app open since the feature shipped -- the catch below swallowed it, the
+// static empty-state welcome showed instead, and nobody had ever seen a
+// personalised greeting. The endpoint composes from the hour and weekday THIS
+// CLIENT reports, because the server has no idea what timezone anyone is in,
+// and it calls no model: a greeting is the one string that must render before
+// the user has asked for anything, and it must never state something about
+// their business that nobody checked.
 async function loadFirstMessage() {
   try {
     const now = new Date();
@@ -503,7 +503,15 @@ async function loadFirstMessage() {
     if (empty) empty.remove();
     const div = document.createElement('div');
     div.className = 'msg ai';
-    div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${greeting}</p></div>`;
+    // ESCAPED (2026-09-03). This is innerHTML inside a template literal, so
+    // whatever the endpoint returns is parsed as HTML. api/greeting is built so
+    // it can never echo caller input, and that is the real guard -- this is the
+    // second one, because a future client could be pointed at a future endpoint
+    // that forgets, and one line here costs nothing.
+    const safeGreeting = String(greeting)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+    div.innerHTML = `<div class="msg-avatar">🤖</div><div class="msg-bubble"><p>${safeGreeting}</p></div>`;
     div.style.opacity = '0';
     div.style.transform = 'translateY(10px)';
     area.appendChild(div);
