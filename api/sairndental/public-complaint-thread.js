@@ -46,6 +46,14 @@ module.exports = async (req, res) => {
   try {
     if (reply) {
       const rl = await checkAndIncrementRateLimit(req, 60, 20, 'complaint-reply'); // 20 replies per hour per IP
+      // A store we could not reach is NOT the same answer as a limit that was
+      // exceeded. Saying "too many requests" for an unreachable database is a
+      // wrong reason given confidently, and it hides an outage as user error.
+      if (rl.unavailable) {
+        console.error('SAIRNdental public-complaint-thread: rate-limit store unavailable -- refusing rather than allowing an uncounted request');
+        res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'Temporarily unavailable -- please try again shortly' } });
+        return;
+      }
       if (!rl.allowed) { res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many messages -- please try again later' } }); return; }
     }
 

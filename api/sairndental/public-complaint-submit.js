@@ -41,6 +41,14 @@ module.exports = async (req, res) => {
 
   try {
     const rl = await checkAndIncrementRateLimit(req, 60, 5, 'complaint-submit'); // 5 submissions per hour per IP
+    // A store we could not reach is NOT the same answer as a limit that was
+    // exceeded. Saying "too many requests" for an unreachable database is a
+    // wrong reason given confidently, and it hides an outage as user error.
+    if (rl.unavailable) {
+      console.error('SAIRNdental public-complaint-submit: rate-limit store unavailable -- refusing rather than allowing an uncounted request');
+      res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'Temporarily unavailable -- please call the office or try again shortly' } });
+      return;
+    }
     if (!rl.allowed) { res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many attempts -- please call the office or try again later' } }); return; }
 
     const licenseHash = await resolveSlug(slug);
