@@ -452,6 +452,16 @@
       "claimed_at_epoch": 1788434962.3317852,
       "status": "released",
       "released_at": "2026-09-03T12:44:32Z"
+    },
+    {
+      "id": "hank-1788439734",
+      "session": "hank",
+      "subject": "gitattributes",
+      "task": "line ending normalization repo config",
+      "claimed_at": "2026-09-03T12:48:54Z",
+      "claimed_at_epoch": 1788439734.1060905,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
