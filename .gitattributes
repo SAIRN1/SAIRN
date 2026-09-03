@@ -1,30 +1,140 @@
-# Scoped deliberately: this file governs docs/skill-backups/ ONLY.
+# Line-ending policy for the whole repo. Went repo-wide 2026-09-03 (Hank).
 #
-# A repo-wide .gitattributes was logged as "ready" in commit d837382 but is not
-# on disk. This is NOT that file and does not attempt to be — this repo is
-# mixed on purpose (api/sd-data.js is stored CRLF, sairncare.html LF), so a
-# blanket rule would rewrite real source files. Adding one is still open work
-# for whoever owns that decision.
+# WHY, AND WHY IT WAS DEFERRED THIS LONG
+# --------------------------------------
+# Until now this file governed three narrow paths and said outright that the
+# repo-wide decision was still open, because "a blanket rule would rewrite real
+# source files" and the rewrite had to land in a window where no session was
+# mid-edit. That caution was right. What changed is the measurement: of 1,436
+# tracked files, only 159 blobs were CRLF and only 15 of those sat outside the
+# two byte-exact archives. The rewrite is small and nameable, not repo-wide.
 #
-# WHY THIS RULE EXISTS
+# WHAT THE ABSENCE COST, so nobody re-opens this as a matter of taste:
+#   * api/sd-data.js flipped from pure CRLF (4,653 lines) to pure LF (4,828) in
+#     4886658. That read as +4828/-4653 while `git diff -w` read +175/-0, and a
+#     later 24-line change rebased into a ~9,000-line whole-file conflict.
+#   * A pre-push hook written with CRLF was skipped SILENTLY by git on
+#     2026-09-01 -- the kernel looked for "/bin/sh\r" -- while running correctly
+#     by hand. That is what the .githooks rule below already exists for.
+#   * On 2026-09-03 alone, three separate false alarms in one session came from
+#     comparing an LF blob against a CRLF working tree: the skill-store mirror
+#     diff (12 skills reported as diverged, all identical), the push gate's own
+#     seed-divergence note (all 72 seed files reported as diverged on a clean
+#     checkout), and a deploy-mismatch hook fire. Each looked like drift and was
+#     line endings. That third instance is why this landed.
+#
+# THE SHAPE: explicit per-type rules, NOT `* text=auto`.
+# `text=auto` guesses on unknown extensions, and this repo carries generated
+# artifacts, vendored archives and a .pdf whose name contains an em dash. An
+# explicit list is longer and cannot surprise anyone.
+#
+# `eol=lf` sets BOTH sides -- LF in the blob and LF in the working tree. The
+# working-tree half is the point: a repo whose blobs are LF and whose checkout
+# is CRLF is exactly the mismatch that produced all three false alarms above.
+#
+# THE WORKING-TREE HALF IS NOT RETROACTIVE, and saying otherwise would be the
+# same kind of untrue-but-plausible claim this file exists to stop. Committing
+# these rules changes blobs only. Files already on disk with CRLF keep it until
+# git next writes them, and `git status` stays clean throughout, because the
+# clean filter converts on the way in and the result already matches the blob.
+# To make a clone's working tree match its blobs now:
+#
+#     git rm --cached -r -q . && git reset --hard
+#
+# Do that in a clone with nothing uncommitted. After it, .claude/skills/ is
+# byte-identical to the ~/.claude/skills/ store it mirrors and a plain `diff`
+# between the two stops reporting 12 phantom differences.
+#
+# ORDER MATTERS. The general rules come first; the narrow overrides at the
+# bottom win, which is how the two byte-exact archives stay untouched.
+
+# ── The frozen branch archive ────────────────────────────────────────────────
+# archive/branch-lucid-ptolemy-b73vu0/ is a snapshot of a deleted branch, kept
+# solely so the 901 commits under tag archive/lucid-ptolemy-b73vu0 stay
+# meaningful.
+#
+# THE OBVIOUS RULE HERE IS `-text` AND IT IS WRONG. Verified 2026-09-03 rather
+# than assumed: these blobs are ALREADY pure LF, while core.autocrlf=true means
+# the working tree holds them as CRLF. `-text` tells git to store the working
+# tree verbatim, so a renormalise would have BAKED CRLF INTO 150+ preservation
+# blobs -- rewriting the very bytes the rule was meant to protect. `eol=lf`
+# leaves the LF blobs untouched and fixes the checkout to match them.
+#
+# It is FIRST so the binary and .bat rules below still win inside archive/.
+archive/** text eol=lf
+
+# ── Source, docs and data: normalise ─────────────────────────────────────────
+*.js    text eol=lf
+*.cjs   text eol=lf
+*.mjs   text eol=lf
+*.json  text eol=lf
+*.html  text eol=lf
+*.css   text eol=lf
+*.sql   text eol=lf
+*.py    text eol=lf
+*.sh    text eol=lf
+*.md    text eol=lf
+*.yml   text eol=lf
+*.yaml  text eol=lf
+*.csv   text eol=lf
+*.txt   text eol=lf
+*.svg   text eol=lf
+.gitignore      text eol=lf
+.gitattributes  text eol=lf
+.vercelignore   text eol=lf
+LICENSE         text eol=lf
+.graphify_version text eol=lf
+
+# ── Windows batch files must keep CRLF ───────────────────────────────────────
+# cmd.exe mis-parses a .bat written with LF -- labels and multi-line blocks in
+# particular. This is the one place CRLF is correct rather than incidental.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# ── Binaries: never touched, and marked so git cannot guess wrong ────────────
+*.zip  -text
+*.pdf  -text
+*.png  -text
+*.jpg  -text
+*.jpeg -text
+*.gif  -text
+*.ico  -text
+*.woff  -text
+*.woff2 -text
+
+# ── BYTE-EXACT ARCHIVES -- these override everything above ───────────────────
 # docs/skill-backups/ is a byte-exact disaster-recovery archive of 29 skills
-# that exist nowhere else. This repo runs core.autocrlf=true with no
-# .gitattributes, so Git would convert those files' LF endings to CRLF on
-# checkout. A restored archive would then differ byte-for-byte from what was
-# backed up — silently, and only visible at the moment you most need it to be
-# correct. `-text` disables all end-of-line conversion in both directions, so
-# what is committed is what is restored.
+# that exist nowhere else. `-text` disables end-of-line conversion in both
+# directions, so what is committed is what is restored. A restored archive that
+# differs byte-for-byte from what was backed up fails silently, and only at the
+# moment you most need it to be correct.
 docs/skill-backups/** -text
 
-# Shell scripts must check out with LF. With core.autocrlf=true and no rule,
-# scripts/*.sh would be written with CRLF and the shebang becomes
-# `#!/usr/bin/env bash\r`, which fails with a confusing "bad interpreter" or a
-# stray \r in every compared string. Same narrow scope as the rule above --
-# this is not the repo-wide attributes decision, which is still open.
-scripts/*.sh text eol=lf
+# docs/sources/ holds captured primary-source statute and regulation text -- the
+# evidence behind SAIRNsenior's state survey.
+#
+# `-text` HERE IS NOT THE OBVIOUS CHOICE AND IT IS THE ONLY STABLE ONE.
+# `text eol=lf` was tried first and REJECTED ON EVIDENCE, 2026-09-03: eleven of
+# these files contain CR CR LF sequences from the original HTML-to-text
+# extraction. Git's CRLF->LF clean filter is a single left-to-right pass, so
+# `\r\r\n` becomes `\r\n` -- still CRLF. Running `git add --renormalize .` a
+# SECOND time restaged all eleven again. Verified by doing exactly that: pass
+# one staged 15 files, pass two staged 11 of them over. A rule that never
+# reaches a fixpoint means every future renormalise churns 127,000 lines, which
+# is worse than the non-determinism it was meant to end.
+#
+# Collapsing the double CRs fully would be a real content edit, and MANIFEST.json
+# pins against it: all 32 of its `text_chars` counts match the SINGLE-pass
+# normalised length. The manifest describes these files as they are.
+#
+# So they are frozen exactly as stored -- which is what an evidence capture
+# should be anyway, and the same standard as the archive above. The stored set
+# is mixed (11 CRLF, the rest LF); frozen and mixed beats churning forever.
+docs/sources/** -text
 
-# .githooks/* must stay LF. A CRLF shebang makes the kernel look for "/bin/sh\r",
-# which does not exist, and git then skips the hook SILENTLY -- verified on
-# 2026-09-01, when a pre-push gate that denied correctly when run by hand did
-# not fire at all on a real push because the file had been written with CRLF.
-.githooks/* text eol=lf
+# ── Executable text that MUST check out LF, restated narrowly ────────────────
+# Already covered by *.sh above, kept explicit because the cost of getting these
+# two wrong is a hook or script that fails in a way that does not look like a
+# line-ending problem.
+scripts/*.sh text eol=lf
+.githooks/*  text eol=lf
