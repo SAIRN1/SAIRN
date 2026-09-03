@@ -340,8 +340,8 @@
       "task": "SAIRN Tech LLC and Orrville Wayne County across stonedesk sairnscape and docs/legal, personal name off AI surfaces",
       "claimed_at": "2026-09-03T11:49:49Z",
       "claimed_at_epoch": 1788436189.9276643,
-      "status": "active",
-      "released_at": null,
+      "status": "released",
+      "released_at": "2026-09-03T12:47:41Z",
       "note": "SUBJECT NAMED FOR THE WORK, NOT A FILE -- this spans stonedesk.html, sairnscape.html and docs/legal/. KNOWN OVERLAP, FLAGGED NOT HIDDEN: fourth holds sairnscape for \"memory feature claim vs dead endpoints\". My sairnscape edits are exactly two lines -- the rendered footer (:244) and the SYSTEM prompt const (:292) -- in regions unrelated to memory endpoints. Risk is a merge conflict on two lines, not duplicated work. Doing stonedesk and docs first, sairnscape last and in its own small commit to keep the window short."
     }
   ]
