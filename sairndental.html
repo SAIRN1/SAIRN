@@ -1196,7 +1196,48 @@ var dntSession=null;          // { token, role, employee_id }
 var prole='owner';            // DISPLAY ONLY -- the server is the boundary
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// ── st() NOW REPORTS WHETHER IT ACTUALLY WROTE (2026-09-03) ─────────────
+// It was `try{...}catch(e){}` -- a bare empty catch. A QuotaExceededError was
+// swallowed whole: nothing stored, nothing shown, nothing logged, and the
+// caller carried on as though the write had happened.
+//
+// That is not hypothetical here. Appointments carry base64 PHOTOS, so
+// `dnt_appointments_list` is the key that reaches the ~5MB origin quota first
+// -- and once it does, EVERY subsequent st() in the same sweep fails the same
+// silent way. dntSyncFromServer() then re-rendered from ld(), which returns
+// the OLD data, and dntRefreshPending() reported "Refreshed from server".
+// Real data pulled, silently discarded, success claimed, stale screen.
+//
+// The return value is additive: the 44 existing callers that ignore it behave
+// exactly as before. The ones that matter now check it.
+//
+// dntQuotaHit is the LAST failure's reason, kept so a caller can tell "the disk
+// is full" from "something else went wrong" without re-parsing an exception.
+var dntQuotaHit = false;
+function dntIsQuotaError(e){
+  // Browsers disagree on the name and the code, and Safari's private mode
+  // throws a plain QUOTA_EXCEEDED_ERR with code 22. Checked broadly rather
+  // than on one browser's spelling.
+  if(!e) return false;
+  var n = String(e.name||'');
+  return n === 'QuotaExceededError'
+      || n === 'NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code === 22 || e.code === 1014;
+}
+function st(k,v){
+  try{
+    localStorage.setItem(k,JSON.stringify(v));
+    return true;
+  }catch(e){
+    dntQuotaHit = dntIsQuotaError(e);
+    // Logged, always. A visitor-facing message is the caller's job, but a
+    // write that vanished must never vanish from the console as well -- that
+    // silence is the entire defect this replaces.
+    try{ console.error('SAIRNdental: localStorage write FAILED for "'+k+'"'+
+      (dntQuotaHit?' -- storage is FULL. Nothing was saved.':' -- '+(e&&e.message||e))); }catch(_e){}
+    return false;
+  }
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
@@ -4582,11 +4623,23 @@ var DNT_SYNC_RESOURCES=[
 async function dntSyncFromServer(){
   var changed=false;
   var failureCount=0;
+  // ── STORAGE FAILURES ARE COUNTED SEPARATELY FROM NETWORK ONES ──────────
+  // They are different facts with different fixes and, until 2026-09-03, only
+  // the network kind existed. A resource whose server read SUCCEEDED and whose
+  // local write then failed was indistinguishable from a clean sync.
+  var storageFailures=[];
   for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
     var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
     var serverData=await sdnData('read',resource,{});
     if(Array.isArray(serverData)){
-      if(serverData.length){st(key,dntMergeById(ld(key,[]),serverData));changed=true;}
+      if(serverData.length){
+        // `changed` is set ONLY if the write actually landed. It used to be set
+        // unconditionally, so a failed write still triggered a full re-render
+        // -- from ld(), which returns the OLD data. The screen refreshed itself
+        // back to stale and called it a sync.
+        if(st(key,dntMergeById(ld(key,[]),serverData))) changed=true;
+        else storageFailures.push(key);
+      }
     }else{
       failureCount++;
     }
@@ -4599,7 +4652,10 @@ async function dntSyncFromServer(){
   if(Array.isArray(settingsData)){
     if(settingsData.length){
       var serverSettings=settingsData.find(function(s){return s&&s.id==='default';})||settingsData[0];
-      if(serverSettings){st('dnt_settings_obj',serverSettings);changed=true;}
+      if(serverSettings){
+        if(st('dnt_settings_obj',serverSettings)) changed=true;
+        else storageFailures.push('dnt_settings_obj');
+      }
     }
   }else{
     failureCount++;
@@ -4608,7 +4664,10 @@ async function dntSyncFromServer(){
   // DNT_SYNC_RESOURCES for why a rule row cannot go through dntMergeById().
   var ruleData=await sdnData('read','dnt_cred_rules',{});
   if(Array.isArray(ruleData)){
-    if(ruleData.length){st('dnt_cred_rules_list',ruleData);changed=true;}
+    if(ruleData.length){
+      if(st('dnt_cred_rules_list',ruleData)) changed=true;
+      else storageFailures.push('dnt_cred_rules_list');
+    }
   }else{
     failureCount++;
   }
@@ -4621,7 +4680,27 @@ async function dntSyncFromServer(){
     // panel nobody is looking at.
     if($('panel-credentials')&&$('panel-credentials').classList.contains('on'))refreshCredentialBoard();
   }
-  return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2};
+  return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2,
+          storage_failures:storageFailures, storage_full:dntQuotaHit};
+}
+
+// The honest sentence for a sync that reached the server and could not keep
+// what it found. Separate function so every caller says the same thing --
+// dntRefreshPending is not the only one, and a second wording would be a
+// second chance to under-state it.
+//
+// IT NAMES THE PHOTOS. Appointment photos are base64 and are the bulk of what
+// fills the quota, so "storage is full" without them is a dead end for whoever
+// reads it.
+function dntStorageFailureMessage(result){
+  var n=(result&&result.storage_failures&&result.storage_failures.length)||0;
+  if(!n) return '';
+  return (result.storage_full
+    ? 'This device is OUT OF STORAGE. '
+    : 'This device refused to save. ')
+    + n + ' record set(s) were downloaded but NOT saved, so what is on screen may be out of date. '
+    + 'Appointment photos are usually what fills it -- clear old ones, or use a different device. '
+    + 'Nothing on the server was lost.';
 }
 
 async function dntRefreshPending(){
@@ -4631,6 +4710,12 @@ async function dntRefreshPending(){
     var result=await dntSyncFromServer();
     if(result&&result.failures===result.total){
       toast('Could not refresh from server -- check your connection and try again');
+    }else if(result&&result.storage_failures&&result.storage_failures.length){
+      // THE CASE THAT USED TO READ "Refreshed from server". The server answered,
+      // the data arrived, and it could not be written to this device -- so the
+      // screen is showing what it had before. Reported for longer than a normal
+      // toast because it needs an action, not an acknowledgement.
+      toast(dntStorageFailureMessage(result), 12000);
     }else{
       toast('Refreshed from server');
     }
@@ -5092,7 +5177,15 @@ function init(){
   rDash();
   rComplaintsBadge();
   fillDentalSelects();
-  dntSyncFromServer();
+  // THE BACKGROUND SYNC MUST SPEAK TOO (2026-09-03). This is the sync nobody
+  // presses -- it runs on every page load, so a full-storage device would go on
+  // showing stale data all day with the failure visible only in the console.
+  // A quiet failure that nobody triggered is still a quiet failure.
+  dntSyncFromServer().then(function(result){
+    if(result&&result.storage_failures&&result.storage_failures.length){
+      toast(dntStorageFailureMessage(result), 12000);
+    }
+  });
 }
 </script>
 </body>
