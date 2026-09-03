@@ -241,6 +241,16 @@
       "claimed_at_epoch": 1788403316.4558837,
       "status": "released",
       "released_at": "2026-09-03T02:56:24Z"
+    },
+    {
+      "id": "fourth-1788404291",
+      "session": "fourth",
+      "subject": "sairnbuild",
+      "task": "server side data layer for unsynced business records",
+      "claimed_at": "2026-09-03T02:58:11Z",
+      "claimed_at_epoch": 1788404291.9994957,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
