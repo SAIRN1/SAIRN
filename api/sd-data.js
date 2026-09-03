@@ -78,6 +78,14 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 // ~15 handler-local bindings and serve 11 live apps, and they were never the
 // source of the collisions.
 const { RESOURCES, RESOURCE_LIST_TEXT, EXTRA_ACTIONS } = require('./_resources');
+const { REGISTRY_MODULES } = require('./_resources');
+// Which app ids the `memory` resource will accept. DERIVED from the same
+// registry every resource name comes from, not hand-listed -- a hand-listed
+// copy beside a real one is how api/_resources/index.js's own header says the
+// resource error string drifted from the resource map. 'shared' is dropped
+// because it is a namespace, not an app.
+const MEMORY_APPS = {};
+REGISTRY_MODULES.forEach(function (m) { if (m && m.app && m.app !== 'shared') MEMORY_APPS[m.app] = true; });
 
 // The SAIRNcode resource family, which shares one generic handler below and is
 // the only family with a real 'delete' verb.
@@ -361,9 +369,33 @@ module.exports = async (req, res) => {
     }
 
     // ── MEMORY ───────────────────────────────────────────────────────────
+    // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
+    // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
+    // on license_hash ALONE on read, so `ai_memories` was a single per-licence
+    // bucket with an app column that only ever held one value. That was
+    // harmless while StoneDesk was the only caller and stops being harmless the
+    // moment a second app writes to it: two apps under one licence would read
+    // each other's memories, and every SAIRNscape memory would be stamped
+    // 'stonedesk'.
+    //
+    // BACKWARD COMPATIBLE BY CONSTRUCTION. `app_id` is absent from every
+    // existing caller -- stonedesk.html's sdData() sends only action/resource/
+    // payload -- so it defaults to 'stonedesk', and every row already in the
+    // table carries that value because both writers (here and
+    // api/_lib/sd-store.js) hardcoded it. StoneDesk's read returns exactly the
+    // rows it returned before.
+    //
+    // VALIDATED rather than trusted: an unknown app_id is refused instead of
+    // silently creating an orphan namespace nothing will ever read back.
+    const memApp = String((body && body.app_id) || 'stonedesk');
+    if (resource === 'memory' && !MEMORY_APPS[memApp]) {
+      res.status(400).json({ error: { code: 'UNKNOWN_APP', message: 'app_id "' + memApp + '" is not a known app' } });
+      return;
+    }
     if (resource === 'memory' && action === 'read') {
       const r = await fetch(rest(
         'ai_memories?license_hash=eq.' + enc(licHash) +
+        '&app_id=eq.' + enc(memApp) +
         '&select=data,created_at&order=created_at.desc&limit=10'), { headers });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -376,14 +408,14 @@ module.exports = async (req, res) => {
       try {
         const pr = await fetch(rest(
           'business_profiles?license_hash=eq.' + enc(licHash) +
-          '&app_id=eq.stonedesk&select=shop_id&limit=1'), { headers });
+          '&app_id=eq.' + enc(memApp) + '&select=shop_id&limit=1'), { headers });
         const prows = await pr.json();
         shopId = (Array.isArray(prows) && prows[0]) ? prows[0].shop_id : null;
       } catch (e) { /* non-fatal — memory still saves unlinked */ }
       const r = await fetch(rest('ai_memories'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
-        body: JSON.stringify({ license_hash: licHash, app_id: 'stonedesk', shop_id: shopId, data: payload })
+        body: JSON.stringify({ license_hash: licHash, app_id: memApp, shop_id: shopId, data: payload })
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);

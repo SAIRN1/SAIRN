@@ -165,7 +165,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <div class="section-sub">Every tool in SAIRNscape is powered by Claude — the most capable AI available. Not rules. Not templates. Intelligence.</div>
     <div class="feat-grid">
       <div class="feat-card"><div class="feat-num">01</div><div class="feat-emoji">📸</div><div class="feat-title">Estimate a Job</div><div class="feat-desc">Snap or describe a property and I'll build your estimate</div></div><div class="feat-card"><div class="feat-num">02</div><div class="feat-emoji">🗓️</div><div class="feat-title">Schedule Crews</div><div class="feat-desc">Help me plan and optimize my crew schedule</div></div><div class="feat-card"><div class="feat-num">03</div><div class="feat-emoji">💰</div><div class="feat-title">Job Costing</div><div class="feat-desc">Am I making money on this account?</div></div><div class="feat-card"><div class="feat-num">04</div><div class="feat-emoji">💬</div><div class="feat-title">Client Message</div><div class="feat-desc">Help me write a message to a client</div></div><div class="feat-card"><div class="feat-num">05</div><div class="feat-emoji">📊</div><div class="feat-title">Business Report</div><div class="feat-desc">How is my business doing this week/month?</div></div>
-      <div class="feat-card"><div class="feat-num">06</div><div class="feat-emoji">🧠</div><div class="feat-title">Memory — gets smarter as you use it</div><div class="feat-desc">Claude carries what you told it earlier into your next question — properties, clients, recurring issues. Memory is stored on the device you use it on; it does not yet follow you between devices.</div></div>
+      <div class="feat-card"><div class="feat-num">06</div><div class="feat-emoji">🧠</div><div class="feat-title">Memory — gets smarter as you use it</div><div class="feat-desc">Claude carries what you told it earlier into your next question — properties, clients, recurring issues. Signed in, that memory follows your licence to every device you sign in from. The demo assistant on this page keeps its memory on this device only, because there is no account to attach it to yet.</div></div>
     </div>
   </div>
 
@@ -218,7 +218,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
                the Enterprise tier appears exactly once in this file, in the
                pricing list itself. -->
           <div class="price-feat">Priority support</div>
-          <div class="price-feat">Memory of your properties and clients, on this device</div>
+          <div class="price-feat">Memory of your properties and clients, on every device you sign in from</div>
         </div>
         <button class="btn-price btn-price-grad" onclick="showPage('app')">Start Free Trial</button>
       </div>
@@ -552,7 +552,18 @@ async function cloudSaveMemory(content) {
     existing.unshift({ts: Date.now(), text: content.slice(0, 400)});
     localStorage.setItem(key, JSON.stringify(existing.slice(0, 100)));
   } catch(e) {}
-  // Save to cloud (async, best effort)
+  // THE REAL CLOUD LEG (2026-09-03): the licence + employee session this app
+  // already has, through the already-gated `memory` resource. Silently absent
+  // for the demo chat, which has no licence -- see scpMemoryReady().
+  try {
+    if (typeof scpMemoryWrite === 'function') {
+      var saved = await scpMemoryWrite(content);
+      if (saved) sessionOutcomes.saved++;
+    }
+  } catch(e) { /* the local copy above is already written */ }
+  // The legacy leg below targets api/memory-cloud, WHICH DOES NOT EXIST. Kept
+  // only until the next commit removes it, so the diff that adds the real path
+  // and the diff that deletes the dead one stay separately reviewable.
   try {
     await fetch('https://sairn.vercel.app/api/memory-cloud', {
       method: 'POST',
@@ -574,6 +585,17 @@ async function cloudSaveMemory(content) {
 }
 
 async function cloudLoadMemory() {
+  // REAL CLOUD FIRST (2026-09-03). Signed in, this is the same memory on every
+  // device the customer signs in from. Not signed in -- the demo chat -- it is
+  // skipped entirely and the local store below answers.
+  try {
+    if (typeof scpMemoryRead === 'function') {
+      var server = await scpMemoryRead();
+      if (server && server.length) {
+        return 'Memory from previous sessions:\n' + server.slice(0, 8).join('\n---\n');
+      }
+    }
+  } catch(e) {}
   // ⚠ THE CLOUD LEG IS DEAD AND IS KEPT DELIBERATELY, NOT BY OVERSIGHT.
   // api/memory-cloud DOES NOT EXIST -- probed live 2026-09-03, POST returns
   // 404. The try/catch below is what has been hiding that. It is left in place
@@ -1844,21 +1866,80 @@ function scpToast(m,d){var t=scp$('scp-toast');t.textContent=m;t.classList.add('
 // Same shape as grdData()/sdData()/sbData() elsewhere on the platform.
 // Returns null on any failure so callers fall back to the existing
 // localStorage copy rather than hard-failing a panel.
-async function scpData(action, resource, payload) {
+async function scpData(action, resource, payload, appId) {
   var licKey = scpLd('scp_lic', null);
   if (!licKey) return null;
   try {
     var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
     try { var tok = sessionStorage.getItem(SCP_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
+    // app_id is sent ONLY when a caller asks for it. api/sd-data.js's `memory`
+    // resource is app-scoped and defaults to 'stonedesk' when the field is
+    // absent, which is what every other resource here relies on -- so adding
+    // this parameter changes nothing for the callers that do not pass it.
+    var reqBody = { action: action, resource: resource, payload: payload };
+    if (appId) reqBody.app_id = appId;
     var res = await fetch('https://sairn.vercel.app/api/sd-data', {
       method: 'POST', headers: headers,
-      body: JSON.stringify({ action: action, resource: resource, payload: payload })
+      body: JSON.stringify(reqBody)
     });
     if (!res.ok) return null;
     var j = await res.json();
     return (j && j.ok) ? j : null;
   } catch (e) { return null; }
 }
+
+// -- CLOUD MEMORY, ON THE REAL DATA PATH (2026-09-03) ----------------------
+// Step 2 of the memory work. Step 1 made the LOCAL half real -- memory was
+// being written and never read, while the pricing page sold recall. This gives
+// a signed-in customer the same memory on every device they sign in from.
+//
+// NO NEW ENDPOINT, NO NEW TABLE, NO NEW IDENTITY. It goes through scpData() to
+// api/sd-data.js's already-session-gated `memory` resource and lands in
+// `ai_memories`, the platform's real memory table, scoped by license_hash.
+//
+// THE IDENTITY THAT WAS REJECTED, recorded so it is not re-proposed. The dead
+// api/memory-cloud calls were keyed on SAIRN_USER_ID -- a string this browser
+// mints from Date.now() and Math.random() and keeps in the same localStorage as
+// the memory itself. Building on it would have meant an unauthenticated store
+// where any caller could write under any uid and read anyone else's by
+// supplying it, AND it could never deliver cross-device recall, because a
+// second device mints a different uid. The licence plus the employee session is
+// an identity the server already verifies.
+//
+// THE DEMO CHAT IS DELIBERATELY EXCLUDED. The marketing-page assistant runs
+// before any licence is entered, so scpLd('scp_lic') is null, scpData() returns
+// null, and the local store is used. An anonymous visitor has no account to
+// attach memory to and is not going to be given one to make a feature tidy.
+function scpMemoryReady() {
+  if (!scpLd('scp_lic', null)) return false;
+  try { return !!sessionStorage.getItem(SCP_SESSION_KEY); } catch (e) { return false; }
+}
+window.scpMemoryReady = scpMemoryReady;
+
+// Returns true only if the server actually accepted it. A false here is not an
+// error the customer needs to see -- the local copy is already written -- but it
+// must never be reported as a cloud save that happened.
+async function scpMemoryWrite(text) {
+  if (!scpMemoryReady()) return false;
+  var body = String(text || '').slice(0, 400);
+  if (body.length < 20) return false;
+  var r = await scpData('write', 'memory', { text: body, at: new Date().toISOString() }, SCP_APP_ID);
+  return !!r;
+}
+window.scpMemoryWrite = scpMemoryWrite;
+
+// The ten most recent, newest first, as api/sd-data.js returns them. Returns []
+// on any failure -- including the table not being provisioned -- so the caller
+// falls through to the local store rather than showing a customer nothing.
+async function scpMemoryRead() {
+  if (!scpMemoryReady()) return [];
+  var r = await scpData('read', 'memory', {}, SCP_APP_ID);
+  var rows = (r && r.data) || [];
+  if (!Array.isArray(rows)) return [];
+  return rows.map(function (m) { return (m && (m.text || m.content)) || ''; })
+             .filter(function (t) { return t; });
+}
+window.scpMemoryRead = scpMemoryRead;
 
 function scpShowRealApp(){
   scp$('scp-real-app').classList.add('on');
@@ -3062,12 +3143,24 @@ function scpSendAI(){if(scpAiBusy){scpToast('Please wait for the current respons
 function scpAskAI(q){scp$('scp-ainp').value=q;scpSendAI();}
 function scpClrAI(){scpAiHist=[];scp$('scp-achat').innerHTML='<div style="color:#64748B;text-align:center;padding:40px 0;">Conversation cleared.</div>';}
 function scpAddMsg(t,role){var c=scp$('scp-achat');var d=document.createElement('div');d.className=role==='u'?'scp-amu':'scp-ama';d.textContent=t;c.appendChild(d);c.scrollTop=c.scrollHeight;return d;}
-function scpCallAI(msg){
+// async as of 2026-09-03 so the assistant can read this customer's memory
+// before it builds its prompt. Both callers (scpSendAI, scpAskAI) ignore the
+// return value, so nothing downstream changes.
+async function scpCallAI(msg){
   scpAiBusy=true;
   var custs=scpLd('scp_customers',[]);
   var ctx='You are the AI business assistant for SAIRNscape, used by a residential/small-commercial landscaping company with '+custs.length+' active customers. Be concise, practical, and landscaping-industry-specific. No fluff. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
   var sharedCtx=buildScpSharedCompanyContext();
   if(sharedCtx)ctx+='\n\n'+sharedCtx;
+  // THE IN-APP ASSISTANT NOW READS MEMORY TOO. Before this it was the only
+  // chat that never did -- memory was written solely from the marketing-page
+  // demo chat, so a paying signed-in customer's real conversations contributed
+  // nothing and recalled nothing. Empty for a customer with no history yet, and
+  // for anyone not signed in, in which case scpMemoryRead returns [].
+  try{
+    var mem=await scpMemoryRead();
+    if(mem&&mem.length)ctx+='\n\nWhat this company has told you before:\n'+mem.slice(0,8).map(function(t){return '- '+t;}).join('\n');
+  }catch(e){}
   recordScpSharedTopics(msg);
   scpAiHist.push({role:'user',content:msg});
   var toolDefs=Object.keys(SCP_TOOLS).map(function(k){return SCP_TOOLS[k].definition;});
@@ -3082,6 +3175,10 @@ function scpCallAI(msg){
     if(thinkingEl&&thinkingEl.parentNode)thinkingEl.remove();
     scpAiHist.push({role:'assistant',content:replyText});
     scpAddMsg(replyText,'a');
+    // ...and it WRITES memory. Fire-and-forget: a failed save must never delay
+    // or break the reply the customer is reading. scpMemoryWrite refuses
+    // anything under 20 characters and no-ops entirely when not signed in.
+    try{ scpMemoryWrite(replyText); }catch(e){}
   }
   fetch(SCP_PROXY,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-6',max_tokens:1000,app_id:SCP_APP_ID,is_demo:true,system:ctx,messages:scpAiHist.slice(-10),tools:toolDefs})})
   .then(function(r){return r.json();}).then(function(d){

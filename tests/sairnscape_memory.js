@@ -65,6 +65,7 @@ const memSrc = slice('async function cloudSaveMemory(', '// ── VOICE MODE');
 function harness(opts) {
   opts = opts || {};
   const store = Object.assign({}, opts.store || {});
+  const serverRows = (opts.serverRows || []).slice();
   const posts = [];
   const gets = [];
   const ctx = {
@@ -83,7 +84,12 @@ function harness(opts) {
       if (opts.cloudDead !== false) return Promise.reject(new Error('404 — api/memory-cloud does not exist'));
       return Promise.resolve({ json: () => Promise.resolve(opts.cloudBody || { entries: [] }) });
     },
-    __store: store, __posts: posts, __gets: gets
+    // The real cloud leg, as of step 2. cloudSaveMemory/cloudLoadMemory probe
+    // for these with `typeof ... === 'function'`, so leaving them undefined is
+    // exactly the not-signed-in case and defining them is the signed-in one.
+    scpMemoryWrite: opts.signedIn ? async (t) => { serverRows.unshift(String(t).slice(0, 400)); return true; } : undefined,
+    scpMemoryRead: opts.signedIn ? async () => serverRows.slice() : undefined,
+    __store: store, __posts: posts, __gets: gets, __serverRows: serverRows
   };
   vm.createContext(ctx);
   vm.runInContext(memSrc, ctx);
@@ -153,6 +159,55 @@ test('short scraps are not saved as memory', async () => {
   assert.strictEqual(c.__store['sairn_local_sairnscape'], undefined);
 });
 
+// ── STEP 2: THE REAL CLOUD LEG ─────────────────────────────────────────────
+section('signed in, memory belongs to the licence and follows the customer');
+
+test('a signed-in save goes to the SERVER, not just localStorage', async () => {
+  const c = harness({ signedIn: true });
+  await c.cloudSaveMemory('The Ferreira job needs the retaining wall re-graded before seeding.');
+  assert.strictEqual(c.__serverRows.length, 1, 'nothing reached the server');
+  assert.match(c.__serverRows[0], /Ferreira/);
+  // ...and the local copy is still written, so a later offline session still has it.
+  assert.match(c.__store['sairn_local_sairnscape'], /Ferreira/);
+});
+
+test('a signed-in read PREFERS the server -- this is the cross-device path', async () => {
+  // The device that did not write it still sees it: empty local store, populated
+  // server. That is the whole feature.
+  const c = harness({ signedIn: true, serverRows: ['Okafor wants the beds mulched in April, not March.'] });
+  assert.strictEqual(c.__store['sairn_local_sairnscape'], undefined, 'the fixture has local data');
+  const out = await c.cloudLoadMemory();
+  assert.match(out, /Okafor/);
+  assert.match(out, /previous sessions/);
+});
+
+test('NOT signed in, nothing is sent to the server at all', async () => {
+  // The marketing-page demo chat. An anonymous visitor has no account to attach
+  // memory to and must not be given a server row.
+  const c = harness({ signedIn: false });
+  await c.cloudSaveMemory('A demo question about pricing a mulch job for a 22-acre HOA.');
+  assert.strictEqual(c.__serverRows.length, 0, 'the demo chat wrote to the server');
+  assert.match(c.__store['sairn_local_sairnscape'], /mulch job/, 'the demo chat lost its local memory');
+});
+
+test('not signed in, the read still answers from local', async () => {
+  const c = harness({ signedIn: false });
+  await c.cloudSaveMemory('A demo answer long enough to be stored as a memory entry.');
+  const out = await c.cloudLoadMemory();
+  assert.match(out, /Recent context/);
+  assert.match(out, /demo answer/);
+});
+
+test('a signed-in customer with no history yet falls through to local', async () => {
+  const c = harness({ signedIn: true, serverRows: [] });
+  await c.cloudSaveMemory('First note of the day about the Hartley irrigation zone.');
+  const c2 = harness({ signedIn: true, serverRows: [] });
+  c2.__store['sairn_local_sairnscape'] = c.__store['sairn_local_sairnscape'];
+  const out = await c2.cloudLoadMemory();
+  assert.match(out, /Recent context/, 'an empty server response suppressed the local answer');
+  assert.match(out, /Hartley/);
+});
+
 // ── THE WIRING ─────────────────────────────────────────────────────────────
 section('and it actually reaches the model');
 
@@ -182,11 +237,14 @@ test('an empty memory adds nothing to the prompt, not a stray blank block', () =
 // ── THE CLAIM MATCHES WHAT SHIPS ───────────────────────────────────────────
 section('the copy says what the code does');
 
-test('the pricing line no longer promises cross-device memory', () => {
+test('the original unqualified pricing claim is gone', () => {
+  // Written at step 1, when the honest line was "on this device". Step 2 made
+  // cross-device true for signed-in users, so the SECOND half of this test was
+  // retired rather than left asserting the previous state -- a test that pins
+  // an interim answer becomes the thing blocking the real one. The current
+  // pricing line is asserted below, in the step-2 section.
   assert.strictEqual(html.indexOf('Memory across all properties and clients'), -1,
-    'the pricing table still claims memory across all properties and clients, ' +
-    'which is cross-device and is not what ships');
-  assert.ok(html.indexOf('on this device') > 0, 'the corrected pricing line is missing');
+    'the original unqualified claim is back');
 });
 
 test('the feature card no longer claims it remembers EVERYTHING', () => {
@@ -194,14 +252,12 @@ test('the feature card no longer claims it remembers EVERYTHING', () => {
     'the feature card still makes the original claim');
 });
 
-test('the feature card states the per-device limit out loud', () => {
-  const at = html.indexOf('Memory — gets smarter as you use it');
-  assert.ok(at > 0, 'the corrected feature card is missing');
-  const card = html.slice(at, at + 600);
-  assert.match(card, /stored on the device/i);
-  assert.match(card, /does not yet follow you between devices/i,
-    'the limitation is implied rather than stated');
-});
+// The step-1 version of this test asserted "stored on the device you use it on"
+// and "does not yet follow you between devices". Both were true then and are
+// false now; the replacement lives in the step-2 section and checks the
+// distinction that actually ships -- signed-in memory follows the licence, the
+// demo chat's does not.
+
 
 // ── THE DEAD ENDPOINTS ARE STILL DEAD, AND SAID TO BE ──────────────────────
 section('what is still missing is labelled, not hidden');
@@ -216,6 +272,56 @@ test('the reassuring catch comment is gone', () => {
   assert.strictEqual(html.indexOf('// Cloud save failed — local backup is enough'), -1,
     '"local backup is enough" is still there, and it was only true because ' +
     'nothing read either copy');
+});
+
+test('the IN-APP assistant reads memory into its prompt', () => {
+  // Before step 2 the in-app assistant was the only chat that never touched
+  // memory at all, so a paying signed-in customer's real conversations
+  // contributed nothing and recalled nothing.
+  const at = html.indexOf('async function scpCallAI(');
+  assert.ok(at > 0, 'scpCallAI is not async -- it cannot await the memory read');
+  const body = html.slice(at, at + 2500);
+  assert.match(body, /await scpMemoryRead\(\)/, 'the in-app assistant does not read memory');
+  assert.match(body, /What this company has told you before/, 'memory is read and not put in the prompt');
+});
+
+test('the IN-APP assistant writes memory when a reply lands', () => {
+  const at = html.indexOf('async function scpCallAI(');
+  const body = html.slice(at, at + 2500);
+  assert.match(body, /scpMemoryWrite\(replyText\)/, 'replies are never saved as memory');
+});
+
+test('the server leg requires BOTH a licence and a session', () => {
+  const at = html.indexOf('function scpMemoryReady()');
+  assert.ok(at > 0, 'no scpMemoryReady gate');
+  const body = html.slice(at, at + 300);
+  assert.match(body, /scpLd\('scp_lic'/, 'it does not check the licence');
+  assert.match(body, /SCP_SESSION_KEY/, 'it does not check the employee session');
+});
+
+test('scpData only sends app_id when a caller asks for it', () => {
+  // Every other scpData caller relies on the field being absent so
+  // api/sd-data.js applies its stonedesk default. Sending it always would
+  // change behaviour for resources that never asked.
+  const at = html.indexOf('async function scpData(');
+  const body = html.slice(at, at + 1200);
+  assert.match(body, /if \(appId\) reqBody\.app_id = appId;/);
+});
+
+test('the pricing copy now claims cross-device, which is now true', () => {
+  assert.ok(html.indexOf('on every device you sign in from') > 0,
+    'the pricing line was not updated for step 2');
+  assert.strictEqual(html.indexOf('Memory of your properties and clients, on this device'), -1,
+    'the device-only pricing line is still there');
+});
+
+test('the feature card distinguishes signed-in memory from the demo chat', () => {
+  const at = html.indexOf('Memory — gets smarter as you use it');
+  assert.ok(at > 0);
+  const card = html.slice(at, at + 700);
+  assert.match(card, /follows your licence to/i);
+  assert.match(card, /demo assistant on this page keeps its memory on this/i,
+    'the demo chat limitation is no longer stated');
 });
 
 test('api/memory-cloud, api/memory and api/greeting are still absent', () => {
