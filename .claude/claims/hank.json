@@ -450,8 +450,8 @@
       "task": "refspec scoping and unreachable override",
       "claimed_at": "2026-09-03T11:29:22Z",
       "claimed_at_epoch": 1788434962.3317852,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T12:44:32Z"
     }
   ]
 }
