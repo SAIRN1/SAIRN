@@ -219,8 +219,8 @@
       "task": "open BI warehouse connectors B5",
       "claimed_at": "2026-09-03T00:06:29Z",
       "claimed_at_epoch": 1788393989.4704807,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T00:58:11Z"
     }
   ]
 }
