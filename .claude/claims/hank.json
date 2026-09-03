@@ -392,6 +392,16 @@
       "claimed_at_epoch": 1788396861.2460804,
       "status": "released",
       "released_at": "2026-09-03T01:28:09Z"
+    },
+    {
+      "id": "hank-1788398938",
+      "session": "hank",
+      "subject": "live-verify-tooling",
+      "task": "replace curl with vercel mcp fetch across deploy watchers",
+      "claimed_at": "2026-09-03T01:28:58Z",
+      "claimed_at_epoch": 1788398938.180723,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
