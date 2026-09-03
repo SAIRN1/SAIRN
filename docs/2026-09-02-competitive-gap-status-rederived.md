@@ -163,6 +163,30 @@ permanently declined for G-code**, which is a real distinction and not a
 half-finish; see its row rather than reopening it. 6 is a standing decision, not
 a work item.
 
+> ### ⚠ THIS FILE WENT STALE IN TWO HOURS, AND THE FIRST CASUALTY WAS ITS AUTHOR
+>
+> GAP 2's row above now reads correctly. It said **OPEN** when this file was
+> written, and it was already **BUILT** — `ee51217`, committed *before* this
+> file existed. A session was then dispatched to build it, claimed it, and found
+> the work done. Nothing was lost, because the first step was reading the code
+> rather than the row. (The row was corrected independently by another session
+> before that correction could be pushed, which is the maintenance rule at the
+> bottom of this file working as intended.)
+>
+> **The mis-read is worth more than the miss.** The re-derivation found
+> `stonedesk.html:9074` saying *"It does not emit DXF or G-code to a specific
+> CNC"* and recorded that as evidence of absence. **That comment is scoped and
+> still true**: it belongs to the saw-ticket half and says no *machine-specific*
+> output, which remains correct and deliberate. A generic DXF exporter sits
+> ninety lines below it. That is the same shape as the four catches this file is
+> pleased about — a comment read as a verdict — **run in the other direction**.
+>
+> The lesson is not "check harder". It is that **a status row is worth about as
+> much as the hour it was written in**, which is exactly why the maintenance
+> rule below asks the closing session to update its row in the same commit as
+> the build. When that happens the file survives a night like this one. When it
+> does not, it decays into the document it replaced within a single session.
+
 ---
 
 ## The genuinely open list, everything above collapsed
@@ -213,6 +237,40 @@ column goes stale faster than any other in this file.**
 2. **Three of the 2026-08-26 audit's own hit-COUNTS had already drifted** by its
    2026-09-02 re-verification, and more have drifted since. The counts are
    archaeology. Only the verdicts matter, and only in this file.
+
+## A coverage-disclosure correction, found while checking GAP 2
+
+Six commits in this session reported *"N test files 0 failing"*. **That number
+came from `api/_lib/*.test.js` and nothing else, and no commit said so.**
+
+The repository has **125 test files in four places**: `api/_lib/*.test.js` (93),
+`tests/*.js` (10), `api/<app>/*.test.js`, and `api/*.test.js`.
+`tests/nesting_dxf.js` — the 26-assertion suite behind GAP 2 — is one of the
+files that sweep never ran, which is part of why GAP 2's row said OPEN. The
+figure was not false; it was **undisclosed-scope**, which is the
+coverage-disclosure standard this platform already has a rule for.
+
+Run across all four locations, the real figure is **125 files, 2 failing**:
+
+| File | Failure | Owner |
+|---|---|---|
+| `api/sd-data-appointments-photos.test.js` | expects 400 `TOO_MANY_PHOTOS`, gets **401** | SAIRNdental |
+| `api/sd-data-complaints-readonly.test.js` | expects 400 `READ_ONLY_RESOURCE` and 200, gets **401** both | SAIRNdental |
+
+**Both were already failing at this session's first commit (`001c958`), verified
+in a detached worktree — they are not a regression.** The shape is the same in
+both: `api/sd-data.js` now rejects the request at the auth gate *before* it
+reaches the branch the test exercises, so the expectations predate a tightening
+of that gate.
+
+**Not fixed here, deliberately.** Whether the TEST or the GATE is wrong is a real
+judgment call about intended auth behaviour on another app, and guessing it in
+passing is how a security gate gets loosened to make a test go green. Recorded so
+it is visible instead of invisible.
+
+**The correct sweep, for anyone quoting a number:**
+
+    find . -name "*.test.js" -not -path "./node_modules/*"; ls tests/*.js
 
 ## How to keep this from going stale the same way
 
