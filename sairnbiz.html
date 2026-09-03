@@ -1072,9 +1072,62 @@ sbRegisterTool(
   }
 );
 
+// CAVEAT REASONS CORRECTED 2026-09-03. The two CAVEATS below were and remain
+// TRUE -- this tool checks neither benefits enrolment nor prior cycles. The
+// PARENTHETICAL REASONS attached to them had gone stale and were false:
+//
+//   * "benefits cost is always $0 in this app" -- it never is. sbPayrollTotals()
+//     adds a flat $520 per ACTIVE employee, and that figure reaches the
+//     Benefits Cost KPI, the payroll total, get_payroll_summary,
+//     get_hiring_cost_impact and every persisted payroll-run row. Traced rather
+//     than assumed: it does NOT reach the P&L (expCats.Labor is gross only) and
+//     it is deliberately kept OUT of the ledger (see runPayroll's comment --
+//     an assumption does not belong in a set of books).
+//   * "no enrollment UI exists to write a real value" -- one does.
+//     openBenEnroll()/saveBenEnroll() write a real per-employee employer cost
+//     to e.ben.cost, and the Benefits panel renders it.
+//   * "no payroll-run history is persisted anywhere" -- sb_payruns has held
+//     every run since 2026-09-01, and the Payroll Runs table renders them.
+//
+// WHY THIS MATTERED MORE THAN AN ORDINARY STALE COMMENT: this string is a TOOL
+// DESCRIPTION. It is sent to Claude on every AI call in this app, so the model
+// was being told, as fact, that its user has no benefits enrolment and no
+// payroll history -- and would repeat it. An out-of-date comment misleads a
+// developer who can go and read the code; an out-of-date tool description
+// misleads the customer, who cannot.
+//
+// The same 2026-09-01 pass that shipped sb_payruns DID carefully rewrite the
+// stale justification on checkAttentionItems() (see its header, which says in
+// terms "a stale reason is worse than no reason"). It corrected the comment a
+// developer reads and missed the string a customer's AI reads.
+//
+// THREE REAL DEFECTS SURFACED BY THIS AND DELIBERATELY NOT FIXED HERE, because
+// every one of them turns on a business fact this file cannot settle -- what
+// the pay period actually is -- and guessing it would silently change real
+// payroll figures. All three are reported rather than patched:
+//
+//   1. The enrolment UI records a genuine per-employee employer cost
+//      (e.ben.cost) and sbPayrollTotals() ignores it, applying the flat $520 to
+//      everyone. An owner who types $840 for one employee still sees $520.
+//   2. $520 is documented as a MONTHLY figure -- the enrolment field is
+//      "Employer Cost / Month ($)" and the plan card reads "$520/mo per
+//      employee" -- but it is added once per PAY PERIOD alongside an 80h gross,
+//      i.e. per two weeks. If the period is biweekly the benefits component of
+//      fully-loaded labour cost is overstated by roughly 2.17x.
+//   3. The app is internally inconsistent about the period regardless:
+//      80h full-time implies 26 periods a year, while ytd_payroll extrapolates
+//      gross x 13.
+//
+// MEASURED, not reasoned. Two active full-time employees, one carrying a
+// recorded employer cost of $840: sbPayrollTotals() returns benefits $1,040,
+// i.e. 2 x $520 -- the $840 is not read. At 26 periods that is $13,520 a year
+// per head against the $6,240 the "$520/mo" card implies.
+//
+// Mixing recorded and assumed costs without settling (2) would produce a total
+// that is neither, which is why (1) is not a safe standalone fix.
 sbRegisterTool(
   'get_payroll_anomalies',
-  'Check for problems before payroll runs. IMPORTANT CAVEATS: this tool performs EXACTLY TWO checks and no others -- (1) any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and (2) any active employee who started within the last 14 days (may not have been in a prior payroll cycle). A result of critical_count:0, warning_count:0 means ONLY that these two specific checks found nothing -- it does NOT mean payroll is correct, complete, or ready to run. This tool does NOT verify tax withholding accuracy, does NOT check benefits enrollment (benefits cost is always $0 in this app -- no enrollment UI exists to write a real value), and does NOT compare against any prior payroll cycle (no payroll-run history is persisted anywhere). Never present a zero-finding result as "payroll is clean" or "ready to run" without stating these caveats.',
+  'Check for problems before payroll runs. IMPORTANT CAVEATS: this tool performs EXACTLY TWO checks and no others -- (1) any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and (2) any active employee who started within the last 14 days (may not have been in a prior payroll cycle). A result of critical_count:0, warning_count:0 means ONLY that these two specific checks found nothing -- it does NOT mean payroll is correct, complete, or ready to run. This tool does NOT verify tax withholding accuracy. It does NOT check benefits enrollment -- note that benefits ARE enrolled and costed in this app (the Benefits panel writes a real per-employee employer cost), but payroll totals still apply a flat $520-per-active-employee assumption instead of those recorded costs, so never describe benefits as $0 or as unrecorded. It also does NOT compare against any prior payroll cycle -- prior runs ARE persisted and shown on the Payroll Runs table, this tool simply does not read them, so point the user there rather than telling them no history exists. Never present a zero-finding result as "payroll is clean" or "ready to run" without stating these caveats.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
