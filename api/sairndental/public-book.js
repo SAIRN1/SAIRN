@@ -95,17 +95,25 @@ module.exports = async (req, res) => {
     const patientsRes = await fetch(rest('dnt_patients?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data,patient_id'), { headers });
     const patientsRows = patientsRes.ok ? await patientsRes.json() : [];
     const matched = (patientsRows || []).find((p) => p.data && p.data.name === patient.name && p.data.dob === patient.dob && p.data.phone === patient.phone);
-    let patientId;
-    if (matched) {
-      patientId = matched.patient_id;
-    } else {
-      patientId = newId('PT');
-      const newPatient = { id: patientId, name: patient.name, dob: patient.dob, phone: patient.phone, email: patient.email || '', insurance_payer: '', insurance_member_id: '', insurance_group_number: '', insurance_plan_type: '' };
-      await fetch(rest('dnt_patients?on_conflict=license_hash,patient_id'), {
-        method: 'POST', headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
-        body: JSON.stringify({ license_hash: licenseHash, app_id: 'sairndental', patient_id: patientId, data: newPatient, updated_at: new Date().toISOString() })
-      });
-    }
+    // ── THE PATIENT ROW IS NOT WRITTEN YET (2026-09-03) ──────────────────
+    // It used to be written HERE, before the appointment. That created an
+    // ORPHAN PATIENT RECORD on every booking that then failed -- and the most
+    // common failure is the 409 slot race two people hit on purpose by
+    // clicking the same popular time.
+    //
+    // This is an ANONYMOUS, UNAUTHENTICATED endpoint. Anyone who can load the
+    // booking page could therefore mint an unbounded number of dnt_patients
+    // rows carrying name, date of birth, phone and email, simply by racing a
+    // slot or retrying a failing one. AND THE PRACTICE CANNOT DELETE THEM:
+    // dnt_patients carries no delete grant (revoked platform-wide by
+    // sql/unused_delete_grant_revoke_2026-08-24.sql), so every orphan is
+    // permanent PHI debris in a dental record system.
+    //
+    // Cleaning up afterwards is therefore NOT AVAILABLE as a fix -- there is
+    // no delete to roll back with. The only fix is not to create the row until
+    // the thing that can fail has succeeded, so the order is reversed: claim
+    // the SLOT first, then record the patient.
+    let patientId = matched ? matched.patient_id : newId('PT');
 
     const appointmentId = newId('AP');
     // Self-scheduled bookings are stamped with a location for the same
@@ -117,7 +125,18 @@ module.exports = async (req, res) => {
     const appointmentData = dntLocation.stampLocation({
       id: appointmentId, patient_id: patientId, provider_id: providerId, operatory_id: operatoryId,
       procedure_type_id: procedureTypeId, start_time: startTime, end_time: endTime, status: 'Pending', source: 'self-scheduled',
-      photos: Array.isArray(photos) ? photos : [], patient_notes: patientNotes
+      photos: Array.isArray(photos) ? photos : [], patient_notes: patientNotes,
+      // THE CONTACT DETAILS RIDE ON THE APPOINTMENT TOO, and that is not
+      // duplication for its own sake. The patient row is written AFTER this
+      // one now, so a booking can exist for a moment -- or permanently, if
+      // that second write fails -- whose patient_id resolves to nothing. An
+      // appointment nobody can identify is worse than a duplicated name: the
+      // practice cannot ring the person back. These two fields make the
+      // booking actionable on its own.
+      //
+      // Same tenant, same record class as the patient_notes and photos already
+      // on this row, so it is not a new exposure surface.
+      patient_name: patient.name, patient_phone: patient.phone
     });
     const insertRes = await fetch(rest('dnt_appointments?on_conflict=license_hash,appointment_id'), {
       method: 'POST',
@@ -140,7 +159,43 @@ module.exports = async (req, res) => {
       return;
     }
 
-    res.status(200).json({ ok: true, appointment_id: appointmentId, status: 'Pending' });
+    // ── THE PATIENT ROW, WRITTEN ONLY NOW THAT THE SLOT IS SECURED ───────
+    // Nothing above this line created one, so a 409 or a 502 leaves no trace
+    // at all -- which is the whole point of the reordering.
+    //
+    // AND THIS WRITE IS CHECKED, which it was not before. The old code did a
+    // bare `await fetch(...)` and never looked at the result: if it failed,
+    // patientId still pointed at a row that did not exist and the appointment
+    // was written referencing a phantom patient, reported as a clean success.
+    let patientWritten = true;
+    if (!matched) {
+      const newPatient = { id: patientId, name: patient.name, dob: patient.dob, phone: patient.phone, email: patient.email || '', insurance_payer: '', insurance_member_id: '', insurance_group_number: '', insurance_plan_type: '' };
+      const patientRes = await fetch(rest('dnt_patients?on_conflict=license_hash,patient_id'), {
+        method: 'POST', headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
+        body: JSON.stringify({ license_hash: licenseHash, app_id: 'sairndental', patient_id: patientId, data: newPatient, updated_at: new Date().toISOString() })
+      });
+      patientWritten = patientRes.ok;
+      if (!patientWritten) {
+        // THE BOOKING IS REAL AND IS REPORTED AS REAL. The slot is taken and
+        // the appointment carries the caller's name and phone, so the practice
+        // can act on it -- telling the visitor it failed would send them to
+        // book a second time into a slot they already hold.
+        //
+        // What is NOT true is that a patient record exists, so that is logged
+        // loudly rather than swallowed. Silence here is what let the phantom
+        // patient_id ship in the first place.
+        console.error('SAIRNdental public-book: appointment', appointmentId,
+          'was written but its patient record was NOT -- patient_id', patientId,
+          'resolves to nothing. Contact details are on the appointment row.');
+      }
+    }
+
+    res.status(200).json({
+      ok: true, appointment_id: appointmentId, status: 'Pending',
+      // Reported rather than hidden: a caller that wants to know whether the
+      // record is complete can, and the practice's own tooling can surface it.
+      patient_record: patientWritten ? 'saved' : 'not_saved'
+    });
   } catch (err) {
     console.error('SAIRNdental public-book error:', err.message);
     res.status(502).json({ error: { message: 'Could not complete booking -- try again' } });
