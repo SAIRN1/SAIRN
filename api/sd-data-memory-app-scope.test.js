@@ -106,6 +106,36 @@ test('memory stays session-gated for every app', () => {
   assert.match(table, /'memory':\s*\['read', 'write'\]/);
 });
 
+test('the session gate verifies against the CALLING app, not always stonedesk', () => {
+  // THE BUG THE UNIT TESTS COULD NOT SEE, and the reason the two-device live
+  // check exists. The gate hardcoded expectedApp 'stonedesk', so a SAIRNscape
+  // session -- correctly issued, correctly presented -- failed verification and
+  // every memory call from a second app returned 403 "sign in first". Ten green
+  // assertions above and the feature was dead in production.
+  const at = SRC.indexOf('const gateApp =');
+  assert.ok(at > 0, 'the gate is back to a hardcoded expected app');
+  const line = SRC.slice(at, at + 200);
+  assert.match(line, /resource === 'memory'/, 'memory does not follow the caller');
+  assert.match(SRC.slice(at, at + 300), /verifySessionToken\(tokenFromRequest\(req\), licHash, gateApp\)/);
+});
+
+test('slabs, profile and locations stay pinned to stonedesk', () => {
+  // They ARE StoneDesk's resources. Letting them follow a caller-supplied app
+  // would turn a fix into a hole.
+  const at = SRC.indexOf('const gateApp =');
+  const line = SRC.slice(at, SRC.indexOf(';', at));
+  assert.match(line, /: 'stonedesk'/, 'the non-memory default is no longer stonedesk');
+});
+
+test('the app is validated BEFORE it is used as the expected session app', () => {
+  // Order matters: an unvalidated app string reaching verifySessionToken is
+  // harmless today but is the kind of ordering that stops being harmless.
+  const validate = SRC.indexOf('UNKNOWN_APP');
+  const gate = SRC.indexOf('const gateApp =');
+  assert.ok(validate > 0 && gate > 0);
+  assert.ok(validate < gate, 'the unknown-app refusal runs after the session gate');
+});
+
 test('api/_lib/sd-store.js is deliberately NOT changed', () => {
   // It is StoneDesk's own agent SDK. Hardcoding stonedesk there is correct, and
   // this asserts the change was scoped rather than sprayed.

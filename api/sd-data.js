@@ -331,8 +331,44 @@ module.exports = async (req, res) => {
       // while the slabs in it do is a distinction with no meaning.
       'locations': ['read', 'write']
     };
+    // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
+    // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
+    // on license_hash ALONE on read, so `ai_memories` was a single per-licence
+    // bucket with an app column that only ever held one value. That was
+    // harmless while StoneDesk was the only caller and stops being harmless the
+    // moment a second app writes to it: two apps under one licence would read
+    // each other's memories, and every SAIRNscape memory would be stamped
+    // 'stonedesk'.
+    //
+    // BACKWARD COMPATIBLE BY CONSTRUCTION. `app_id` is absent from every
+    // existing caller -- stonedesk.html's sdData() sends only action/resource/
+    // payload -- so it defaults to 'stonedesk', and every row already in the
+    // table carries that value because both writers (here and
+    // api/_lib/sd-store.js) hardcoded it. StoneDesk's read returns exactly the
+    // rows it returned before.
+    //
+    // VALIDATED rather than trusted: an unknown app_id is refused instead of
+    // silently creating an orphan namespace nothing will ever read back.
+    const memApp = String((body && body.app_id) || 'stonedesk');
+    if (resource === 'memory' && !MEMORY_APPS[memApp]) {
+      res.status(400).json({ error: { code: 'UNKNOWN_APP', message: 'app_id "' + memApp + '" is not a known app' } });
+      return;
+    }
+
     if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) {
-      const gateSession = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      // THE EXPECTED APP IS PER RESOURCE, NOT ALWAYS STONEDESK (2026-09-03).
+      // This gate hardcoded 'stonedesk', which was correct while every gated
+      // resource was StoneDesk's. `memory` is now shared, and a SAIRNscape
+      // session presented against expectedApp 'stonedesk' fails verification --
+      // so a second app's memory calls returned 403 FORBIDDEN with the message
+      // "sign in first" no matter how correctly it was signed in.
+      //
+      // CAUGHT BY THE TWO-DEVICE LIVE CHECK, not by the unit tests, which
+      // stubbed this layer away entirely. slabs/profile/locations stay pinned
+      // to 'stonedesk' because they ARE StoneDesk's resources; only memory
+      // follows the caller.
+      const gateApp = (resource === 'memory') ? memApp : 'stonedesk';
+      const gateSession = verifySessionToken(tokenFromRequest(req), licHash, gateApp);
       if (!gateSession) {
         res.status(403).json({
           error: {
@@ -369,29 +405,6 @@ module.exports = async (req, res) => {
     }
 
     // ── MEMORY ───────────────────────────────────────────────────────────
-    // -- MEMORY IS APP-SCOPED (2026-09-03) --------------------------------
-    // Both legs previously hardcoded app_id 'stonedesk' on write and filtered
-    // on license_hash ALONE on read, so `ai_memories` was a single per-licence
-    // bucket with an app column that only ever held one value. That was
-    // harmless while StoneDesk was the only caller and stops being harmless the
-    // moment a second app writes to it: two apps under one licence would read
-    // each other's memories, and every SAIRNscape memory would be stamped
-    // 'stonedesk'.
-    //
-    // BACKWARD COMPATIBLE BY CONSTRUCTION. `app_id` is absent from every
-    // existing caller -- stonedesk.html's sdData() sends only action/resource/
-    // payload -- so it defaults to 'stonedesk', and every row already in the
-    // table carries that value because both writers (here and
-    // api/_lib/sd-store.js) hardcoded it. StoneDesk's read returns exactly the
-    // rows it returned before.
-    //
-    // VALIDATED rather than trusted: an unknown app_id is refused instead of
-    // silently creating an orphan namespace nothing will ever read back.
-    const memApp = String((body && body.app_id) || 'stonedesk');
-    if (resource === 'memory' && !MEMORY_APPS[memApp]) {
-      res.status(400).json({ error: { code: 'UNKNOWN_APP', message: 'app_id "' + memApp + '" is not a known app' } });
-      return;
-    }
     if (resource === 'memory' && action === 'read') {
       const r = await fetch(rest(
         'ai_memories?license_hash=eq.' + enc(licHash) +
