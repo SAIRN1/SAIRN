@@ -763,14 +763,15 @@ textarea{resize:vertical;min-height:80px;}
   <div class="ph"><div><div class="ptitle">Tax &amp; Compliance</div><div class="psub">Federal, state, and local obligations</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('tax')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
   <div class="krow">
-    <div class="kpi"><div class="klbl">Taxes Paid</div><div class="kval" id="tx-paid">$0</div><div class="kt">Not yet tracked</div></div>
-    <div class="kpi"><div class="klbl">Est. Total Liability</div><div class="kval" id="tx-q3">$0</div><div class="kt">All obligations, est.</div></div>
-    <div class="kpi"><div class="klbl">Sales Tax (Est.)</div><div class="kval" id="tx-sales">$0</div><div class="kt">Ohio rate 6.5%</div></div>
-    <div class="kpi"><div class="klbl">Payroll Tax (Est.)</div><div class="kval" id="tx-payroll">$0</div><div class="kt">Employer share</div></div>
-    <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Mark calendar</div></div>
+    <div class="kpi"><div class="klbl">Taxes Paid</div><div class="kval" id="tx-paid">--</div><div class="kt">Not tracked &mdash; no payment record exists</div></div>
+    <div class="kpi"><div class="klbl">Est. Total Liability</div><div class="kval" id="tx-q3">--</div><div class="kt">Withdrawn &mdash; it summed five invented figures</div></div>
+    <div class="kpi"><div class="klbl">Sales Tax</div><div class="kval" id="tx-sales">--</div><div class="kt">Needs a jurisdiction rate and taxability</div></div>
+    <div class="kpi"><div class="klbl">Employer FICA</div><div class="kval" id="tx-payroll">$0</div><div class="kt">7.65% of your real payroll</div></div>
+    <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Depends on entity type &mdash; see below</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead>
+    <div class="note" id="tx-note" style="margin-bottom:12px"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Amount</th><th>Paid</th><th>Source</th></tr></thead>
     <tbody id="txtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -2666,35 +2667,111 @@ function rBud(){
   $('butbody').innerHTML=b.map(function(x){var u=x.annual>0?Math.round(x.actual/x.annual*100):0;var sc=u>90?'br':u>75?'bw':'bg';return'<tr><td><strong>'+H(x.cat)+'</strong></td><td>'+fmt(x.annual)+'</td><td>'+fmt(x.actual)+'</td><td>'+fmt(x.annual-x.actual)+'</td><td>'+pbar(u,(u>90?'var(--danger)':u>75?'var(--warn)':'var(--p)'))+'<div style="font-size:11px;text-align:right;margin-top:2px">'+u+'%</div></td><td><span class="badge '+sc+'">'+(u>90?'Over Budget':u>75?'Watch':'On Track')+'</span></td></tr>';}).join('');
 }
 
+// -- TAX & COMPLIANCE: FIVE OF SIX FIGURES WERE INVENTED (rewritten 2026-09-03)
+//
+// What this panel used to do, and every line produced a dollar figure next to a
+// due date on a screen headed "Tax & Compliance":
+//
+//   fedIncome    = gross payroll x 10%    labelled "Federal Income Tax"
+//   ohioIncome   = gross payroll x 2.5%   labelled "Ohio State Income Tax"
+//   salesTax     = invoiced revenue x 6.5%
+//   futa         = gross payroll x 0.6%
+//   suta         = gross payroll x 2.7%
+//   estLiability = the sum of all of it, as the headline KPI
+//
+// FEDERAL INCOME TAX IS NOT A PERCENTAGE OF PAYROLL. Payroll is a DEDUCTION
+// against income, not a base for it. No rate makes that formula right, which is
+// why this is a refusal rather than a configurable rate: the SHAPE is wrong,
+// not the number. The state line has the same defect.
+//
+// FUTA AND SUTA HAVE WAGE BASES AND THE OLD MATHS IGNORED THEM. FUTA's 0.6% is
+// the effective rate after the maximum credit and applies only to the first
+// $7,000 of each employee's ANNUAL wages. Ohio's SUTA base is its own figure and
+// the rate is EXPERIENCE-RATED per employer, not a constant. Applying either to
+// per-period gross with no cap overstates both, and this app holds no
+// per-employee year-to-date wage figure to cap against.
+//
+// SALES TAX WAS HARDCODED TO ONE OHIO COUNTY RATE and applied to every invoice
+// whether or not the line was taxable. Ohio's state rate is not 6.5%; 6.5% is a
+// combined county rate, and SAIRNbiz is not an Ohio-only product.
+//
+// THE DUE DATES WERE WRONG IN A WAY THAT COSTS MONEY. The list was
+// Mar 15 / Jun 15 / Sep 15 / Dec 15. Individual and pass-through estimated tax
+// is due Apr 15 / Jun 15 / Sep 15 / Jan 15; a calendar-year C corporation pays
+// Apr 15 / Jun 15 / Sep 15 / Dec 15. Under EITHER schedule the first date is
+// APRIL 15, not March 15 -- March 15 is the S-corp and partnership RETURN
+// deadline, a different obligation entirely. An owner following this panel
+// would have seen no April deadline at all. Which schedule applies depends on
+// entity type, which this app does not record, so it names both and asserts
+// neither.
+//
+// WHAT SURVIVES: employer FICA. Statutory, 7.65%, computed from this shop's own
+// real payroll. Its one caveat is stated ON SCREEN rather than buried here --
+// the 6.2% Social Security half stops at the annual wage base, and the app has
+// no per-employee year-to-date figure to know when someone crosses it.
+//
+// PRECEDENT THIS FOLLOWS RATHER THAN INVENTS: SAIRNroofing refused certified
+// payroll rather than invent a prevailing-wage rate, on the grounds that the
+// consequence is a federal filing. Same call, same grounds.
+var SB_TAX_FICA_RATE = 0.0765;
+
+// Each refusal names what it would take, so this reads as scoped work rather
+// than a feature that quietly vanished.
+var SB_TAX_REFUSALS = [
+  { t: 'Federal income tax', cat: 'Income', why:
+    'Not computable here, and not for want of a rate: federal income tax is charged on taxable INCOME, and payroll is a deduction against it rather than a base for it. The old figure was 10% of gross payroll. Needs an entity type, a real net-income figure, and the owner\'s own situation.' },
+  { t: 'State income tax', cat: 'Income', why:
+    'Same defect as the federal line, and the regime differs by state and by entity -- Ohio, for one, has no general corporate income tax. The old figure was 2.5% of gross payroll and assumed Ohio.' },
+  { t: 'Sales tax', cat: 'Sales', why:
+    'Needs the rate for the jurisdiction the sale happened in, and whether each line is taxable at all. The old figure applied one hardcoded 6.5% Ohio county rate to every invoice.' },
+  { t: 'FUTA (federal unemployment)', cat: 'Payroll', why:
+    'The 0.6% effective rate applies only to the first $7,000 of each employee\'s ANNUAL wages. Capping it needs per-employee year-to-date wages, which this app does not hold. The old figure applied 0.6% to per-period gross with no cap.' },
+  { t: 'SUTA (state unemployment)', cat: 'Payroll', why:
+    'The rate is EXPERIENCE-RATED and assigned to each employer by the state, and it also stops at a wage base. The old figure used a flat 2.7% with no cap, which is neither this employer\'s rate nor correctly bounded.' }
+];
+
 function rTax(){
-  var invs=ld('sb_invs',[]),emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-  var rev=invs.reduce(function(s,i){return s+i.amt;},0);
+  var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var gross=emps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
-  var fica=gross*0.0765,futa=gross*0.006,suta=gross*0.027;
-  var salesTax=rev*0.065,fedIncome=gross*0.10,ohioIncome=gross*0.025;
-  var now=new Date();
-  var deadlines=[[3,15],[6,15],[9,15],[12,15]];
-  var nd=null;
-  for(var i=0;i<deadlines.length;i++){var dl=new Date(now.getFullYear(),deadlines[i][0]-1,deadlines[i][1]);if(dl>=now){nd=dl;break;}}
-  if(!nd)nd=new Date(now.getFullYear()+1,2,15);
-  var taxes=[
-    {t:'Federal Income Tax (Quarterly Est.)',f:'Quarterly',d:nd,e:Math.round(fedIncome),cat:'Income'},
-    {t:'Ohio State Income Tax (Quarterly Est.)',f:'Quarterly',d:nd,e:Math.round(ohioIncome),cat:'Income'},
-    {t:'FICA Payroll Tax (Employer Share)',f:'Per Pay Period',d:null,e:Math.round(fica),cat:'Payroll'},
-    {t:'Ohio Sales Tax (6.5%, Est.)',f:'Monthly',d:null,e:Math.round(salesTax),cat:'Sales'},
-    {t:'FUTA Federal Unemployment (0.6%)',f:'Quarterly',d:nd,e:Math.round(futa),cat:'Payroll'},
-    {t:'SUTA Ohio Unemployment (2.7%)',f:'Quarterly',d:nd,e:Math.round(suta),cat:'Payroll'}
-  ];
-  var payrollTot=Math.round(fica+futa+suta);
-  var estLiability=Math.round(fedIncome+ohioIncome+payrollTot+salesTax);
-  $('tx-paid').textContent='--';$('tx-q3').textContent=fmt(estLiability);$('tx-sales').textContent=fmt(Math.round(salesTax));$('tx-payroll').textContent=fmt(payrollTot);$('tx-next').textContent=nd.toLocaleDateString('en-US',{month:'short',day:'numeric'});
-  $('txtbody').innerHTML=taxes.map(function(x){
-    var due=x.d?x.d.toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'}):'Ongoing';
-    var daysOut=x.d?Math.round((x.d-now)/86400000):null;
-    var status=daysOut===null?'Ongoing':(daysOut<14?'Due Soon':'Upcoming');
-    var sc=status==='Due Soon'?'bw':status==='Ongoing'?'bb':'bg';
-    return'<tr><td><strong>'+H(x.t)+'</strong></td><td>'+H(x.f)+'</td><td>'+due+'</td><td>'+fmt(x.e)+'</td><td>--</td><td><span class="badge '+sc+'">'+status+'</span></td></tr>';
-  }).join('');
+  var fica=gross*SB_TAX_FICA_RATE;
+
+  // The one real figure is the only one that reaches a KPI. "Est. Total
+  // Liability" is BLANKED rather than recomputed: a total over one real line
+  // and five refusals is not a liability, and printing the FICA figure under
+  // that label would be the same overstatement in a different font.
+  $('tx-payroll').textContent=fmt(Math.round(fica));
+  $('tx-paid').textContent='--';
+  $('tx-q3').textContent='--';
+  $('tx-sales').textContent='--';
+  $('tx-next').textContent='--';
+
+  var rows=['<tr>'+
+    '<td><strong>FICA payroll tax (employer share)</strong>'+
+      '<div style="font-size:11px;color:var(--muted,#666)">7.65% of this period\'s gross payroll. The 6.2% Social Security half stops at the annual wage base, and this app holds no per-employee year-to-date wages, so an employee past that base is overstated here.</div></td>'+
+    '<td>Per pay period</td><td>Ongoing</td><td><strong>'+fmt(Math.round(fica))+'</strong></td><td>--</td>'+
+    '<td><span class="badge bb">Computed</span></td></tr>'];
+
+  rows=rows.concat(SB_TAX_REFUSALS.map(function(r){
+    return '<tr><td><strong>'+H(r.t)+'</strong>'+
+      '<div style="font-size:11px;color:var(--muted,#666)">'+H(r.why)+'</div></td>'+
+      '<td>'+H(r.cat)+'</td><td>--</td><td>Not computed</td><td>--</td>'+
+      '<td><span class="badge bx">Needs real inputs</span></td></tr>';
+  }));
+  $('txtbody').innerHTML=rows.join('');
+
+  var note=$('tx-note');
+  if(note){
+    note.innerHTML='<strong>One figure on this panel is computed and five are refused.</strong> '+
+      'Employer FICA is statutory and comes from your own payroll. The rest were previously shown as dollar '+
+      'amounts derived from invented ratios &mdash; federal income tax as 10% of payroll, state income tax as 2.5%, '+
+      'sales tax at a hardcoded Ohio county rate, and FUTA/SUTA with no wage base &mdash; so they have been removed '+
+      'rather than left to look authoritative. <strong>Nothing here is a filing, and none of it is tax advice.</strong><br><br>'+
+      '<strong>Estimated-payment deadlines depend on your entity type, which this app does not record, so it will '+
+      'not name one.</strong> Individuals and pass-throughs pay Apr 15, Jun 15, Sep 15 and Jan 15; a calendar-year '+
+      'C corporation pays Apr 15, Jun 15, Sep 15 and Dec 15. This panel previously showed <strong>Mar 15</strong> as '+
+      'the first quarterly date, which belongs to neither &mdash; it is the S-corp and partnership return deadline. '+
+      'Confirm your own dates with your accountant.';
+  }
 }
 
 function rBenKPIs(){
@@ -3069,7 +3146,12 @@ function genReport(type){
   else if(type==='tax'){
     rTax();
     $('rtitle').textContent='Tax Summary - '+new Date().toLocaleDateString();
-    $('rbody').innerHTML='<table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Est. Amount</th><th>YTD Paid</th><th>Status</th></tr></thead><tbody>'+$('txtbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Est. Total Liability:</strong> '+$('tx-q3').textContent+' &nbsp;&nbsp; <strong>Next Filing Due:</strong> '+$('tx-next').textContent+'</div>';
+    // The footer used to print Est. Total Liability and Next Filing Due, both
+    // of which are now blank on purpose -- one summed five invented figures
+    // and the other named a date that belongs to neither estimated-payment
+    // schedule. Printing '--' twice under bold labels would read as a
+    // rendering failure, so the report carries the reason instead.
+    $('rbody').innerHTML='<table><thead><tr><th>Tax Type</th><th>Frequency</th><th>Next Due</th><th>Amount</th><th>Paid</th><th>Source</th></tr></thead><tbody>'+$('txtbody').innerHTML+'</tbody></table>'+'<div style="margin-top:14px;font-size:12px;color:var(--muted,#666)">'+'<strong>Employer FICA is the only computed figure on this report.</strong> No total liability is stated: the previous one summed five invented ratios. No filing deadline is stated either -- it depends on entity type, which this app does not record. Individuals and pass-throughs pay Apr 15, Jun 15, Sep 15, Jan 15; a calendar-year C corporation pays Apr 15, Jun 15, Sep 15, Dec 15. Not a filing, and not tax advice.'+'</div>';
   }
   else if(type==='ap'){
     var bills=ld('sb_ap',[]);
@@ -3110,19 +3192,29 @@ function csv(type){
   // the same way the panel does -- an outstanding balance is amount less paid,
   // and only unsettled invoices belong on an aging report.
   else if(type==='ar'){rows=[['Invoice','Customer','Date','Due','Amount','Paid','Outstanding','Status']];ld('sb_invs',[]).forEach(function(i){var bal=i.amt-(i.paid||0);if(bal>0)rows.push([i.id,i.cust,i.date,i.due,i.amt,i.paid||0,bal,i.status]);});}
-  // Tax figures are estimates computed from payroll and revenue. The header
-  // says ESTIMATE on the money column for that reason: this is not a filing.
+  // TAX EXPORT REWRITTEN 2026-09-03, ALONGSIDE THE PANEL. It used to export six
+  // rows of which five were invented -- federal income tax as 10% of gross
+  // payroll, state income tax as 2.5%, sales tax at a hardcoded Ohio county
+  // rate, and FUTA/SUTA with no wage base. It carried a `Basis` column naming
+  // each ratio, which made the fabrication LEGIBLE to a reader who already
+  // knows tax and INVISIBLE to one who does not -- and a spreadsheet is exactly
+  // where a disclosed estimate stops being read as an estimate.
+  //
+  // One computed row now, five refusals carried across with their reasons, so
+  // the CSV says the same thing the screen does. A `Source` column replaces
+  // `Basis`: "computed" or "not computed".
   else if(type==='tax'){
-    var txInvs=ld('sb_invs',[]),txEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-    var txRev=txInvs.reduce(function(s,i){return s+i.amt;},0);
+    var txEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
     var txGross=txEmps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
-    rows=[['Tax','Category','Frequency','Estimated Amount','Basis']];
-    rows.push(['Federal Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.10),'10% of gross payroll']);
-    rows.push(['Ohio State Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.025),'2.5% of gross payroll']);
-    rows.push(['FICA Payroll Tax (Employer Share)','Payroll','Per Pay Period',Math.round(txGross*0.0765),'7.65% of gross payroll']);
-    rows.push(['Ohio Sales Tax (6.5%, Est.)','Sales','Monthly',Math.round(txRev*0.065),'6.5% of invoiced revenue']);
-    rows.push(['FUTA Federal Unemployment (0.6%)','Payroll','Quarterly',Math.round(txGross*0.006),'0.6% of gross payroll']);
-    rows.push(['SUTA Ohio Unemployment (2.7%)','Payroll','Quarterly',Math.round(txGross*0.027),'2.7% of gross payroll']);
+    rows=[['Tax','Category','Frequency','Amount','Source','Note']];
+    rows.push(['FICA payroll tax (employer share)','Payroll','Per pay period',
+      Math.round(txGross*SB_TAX_FICA_RATE),'computed',
+      '7.65% of this period\'s real gross payroll. The 6.2% Social Security half stops at the annual wage base and no per-employee year-to-date wages are held, so an employee past that base is overstated.']);
+    SB_TAX_REFUSALS.forEach(function(r){
+      rows.push([r.t,r.cat,'--','','not computed',r.why]);
+    });
+    rows.push(['Estimated-payment deadlines','--','--','','not computed',
+      'Depends on entity type, which this app does not record. Individuals and pass-throughs pay Apr 15, Jun 15, Sep 15, Jan 15; a calendar-year C corporation pays Apr 15, Jun 15, Sep 15, Dec 15. This export previously implied Mar 15, which is the S-corp and partnership return deadline and belongs to neither schedule.']);
   }
   // THE FALLBACK REFUSES AND WRITES NOTHING. Three views legitimately reach it
   // and each is named rather than lumped together:
