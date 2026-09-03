@@ -343,8 +343,8 @@
       "task": "wip accounting shared engine and roofing ui",
       "claimed_at": "2026-09-03T12:43:53Z",
       "claimed_at_epoch": 1788439433.0950475,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T13:02:07Z"
     }
   ]
 }
