@@ -239,8 +239,8 @@
       "task": "credential deactivation ui and live end to end",
       "claimed_at": "2026-09-03T02:41:56Z",
       "claimed_at_epoch": 1788403316.4558837,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T02:56:24Z"
     }
   ]
 }
