@@ -1294,6 +1294,7 @@ if (document.readyState === 'loading') {
       <button class="scp-sb" id="scp-sb-waterfeatures" onclick="scpNav('waterfeatures')"><span class="scp-sico">&#9970;</span>Water Features</button>
       <div class="scp-ss">Business</div>
       <button class="scp-sb" id="scp-sb-vendors" onclick="scpNav('vendors')"><span class="scp-sico">&#128666;</span>Vendors</button>
+      <button class="scp-sb" id="scp-sb-access" onclick="scpNav('access')"><span class="scp-sico">&#128273;</span>Sign-In Access</button>
       <div class="scp-sfoot">SAIRNscape Phase 3 &middot; <span style="color:#22C55E;font-weight:700;">Landscaping Ops</span></div>
     </aside>
     <main id="scp-main">
@@ -1638,6 +1639,30 @@ if (document.readyState === 'loading') {
 <!-- VENDOR PORTAL (item 8, shared with SAIRNgrounds -- see decision note in
      sairngrounds.html's Vendors panel comment: no prior open question was
      actually found on file, decided fresh this session as SHARED.) -->
+<!-- SIGN-IN ACCESS (2026-09-03) -- the deactivation half of the credential
+     lifecycle, and the ninth and last app to get it. Before this a departing
+     crew member's sign-in could only be switched off by a hand-written SQL
+     edit in Supabase, which is what api/sd-auth.js records as having lost
+     three StoneDesk licences.
+
+     CORRECTION TO THIS FILE'S OWN RECORD: the commit that wired
+     api/scp-auth.js said SAIRNscape had "no panel/nav convention to slot a
+     credential screen into". That was wrong, and wrong in a way worth naming
+     -- it came from grepping for `class="panel"` and `function nav(` and
+     concluding from two misses that no convention existed. This app has a
+     complete one; every id is prefixed `scp-`. A negative result from a
+     search is only as good as the search.
+
+     Gated to Owner or Crew Lead, which is exactly who api/scp-auth.js already
+     lets provision a credential. -->
+<div class="scp-panel" id="scp-panel-access">
+  <div class="scp-ph"><div><div class="scp-ptitle">Sign-In Access</div><div class="scp-psub">Turn a sign-in off when somebody leaves, and back on if they return</div></div></div>
+  <div class="scp-card"><div class="scp-cb">
+    <div style="font-size:12px;color:var(--m);margin-bottom:12px">Deactivating deletes nothing &mdash; the person's name still resolves on jobs and records they are already attached to. They simply cannot sign in. <b>Creating</b> a credential has no screen here yet; that is separate work and is not claimed to be done.</div>
+    <div id="scp-access"></div>
+  </div></div>
+</div>
+
 <div class="scp-panel" id="scp-panel-vendors">
   <div class="scp-ph"><div><div class="scp-ptitle">Vendors</div><div class="scp-psub">Irrigation supply, nursery, hardscape, and equipment vendors</div></div>
   <div class="scp-pa"><button class="scp-btn scp-bp scp-bs" onclick="scpOpenVendorModal()">+ Add Vendor</button></div></div>
@@ -1924,6 +1949,98 @@ function scpDoBootstrap(){
 }
 window.scpDoBootstrap=scpDoBootstrap;
 
+// -- SIGN-IN ACCESS (2026-09-03) -------------------------------------------
+// Client half of api/scp-auth.js's roster and set_active, both of which run on
+// the shared api/_lib/employee-lifecycle.js. Read that file's header for the
+// four lockout guards.
+//
+// THE PANEL PREDICTS NONE OF THEM. The button is offered on every row including
+// the caller's own, and the server decides. A client-side copy of "you are the
+// last Owner" or "you cannot deactivate yourself" is a second copy of a
+// security rule in a file where it can silently drift from the one that
+// actually enforces it.
+//
+// Reading the credential list is gated to Owner or Crew Lead -- the same roles
+// api/scp-auth.js already lets provision one. Deliberately NOT a wider
+// management tier: this app has no such concept, and inventing one to serve a
+// credential panel would add an authorisation tier as a side effect of an
+// unrelated change.
+function scpAuthCall(action,payload){
+  var lic=scpLd('scp_lic',null)||'';
+  var tok=null;try{tok=sessionStorage.getItem(SCP_SESSION_KEY);}catch(e){}
+  if(!lic||!tok)return Promise.resolve({ok:false,msg:'Not signed in.',data:null});
+  return fetch(SCP_AUTH_API,{method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic,'X-SD-Auth':tok},
+    body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||''};
+    });})
+    .catch(function(){return {ok:false,status:0,data:null,msg:'Network error - check your connection.'};});
+}
+function scpMyRole(){
+  try{return sessionStorage.getItem(SCP_ROLE_KEY)||'';}catch(e){return '';}
+}
+function scpMyEmployeeId(){
+  try{return sessionStorage.getItem(SCP_EMPLOYEE_KEY)||'';}catch(e){return '';}
+}
+function scpCanManageAccess(){
+  return ['owner','crew_lead'].indexOf(scpMyRole())!==-1;
+}
+function scpRenderAccess(){
+  var el=scp$('scp-access');
+  if(!el)return;
+  if(!scpCanManageAccess()){
+    el.innerHTML='<div style="font-size:13px;color:var(--m)">Only an Owner or Crew Lead can see or change sign-in access.</div>';
+    return;
+  }
+  el.innerHTML='<div style="color:var(--m);font-size:13px">Loading sign-ins&hellip;</div>';
+  scpAuthCall('roster',{}).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.employees)){
+      // A failed read is NOT rendered as "no sign-ins". An empty list here
+      // would tell an owner nobody can sign in to their own account.
+      el.innerHTML='<div style="color:#EF4444;font-size:13px">'+scpH(r.msg||'Could not load sign-ins - this is not the same as having none.')+'</div>';
+      return;
+    }
+    var rows=r.data.employees;
+    if(!rows.length){el.innerHTML='<div style="color:var(--m);font-size:13px">No sign-in credentials yet.</div>';return;}
+    var me=scpMyEmployeeId();
+    el.innerHTML='<div class="scp-tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active=e.active!==false;
+        // &#39; rather than an escaped quote: the browser decodes the entity
+        // before evaluating the attribute, so this needs no backslash.
+        var idArg='&#39;'+scpH(e.employee_id)+'&#39;';
+        return '<tr><td>'+scpH(e.employee_id)+(e.employee_id===me?' <span class="scp-badge">you</span>':'')+'</td>'+
+          '<td>'+scpH(e.display_name||'--')+'</td><td>'+scpH(e.role||'')+'</td>'+
+          '<td>'+(active?'active':'<b>deactivated</b>')+'</td>'+
+          '<td><button class="scp-btn scp-bo scp-bs" onclick="scpSetActive('+idArg+','+(active?'false':'true')+')">'+
+          (active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+window.scpRenderAccess=scpRenderAccess;
+function scpSetActive(employee_id,nextActive){
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for rather than sent blank: the reason is what somebody
+    // reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){scpToast('A reason is required to deactivate a sign-in');return;}
+    payload.reason=reason.slice(0,500);
+  }
+  scpAuthCall('set_active',payload).then(function(r){
+    if(!r.ok){scpToast(r.msg||'Could not change this sign-in - nothing was changed',6000);scpRenderAccess();return;}
+    if(r.data&&r.data.unchanged)scpToast(employee_id+' was already '+(nextActive?'active':'deactivated')+' - nothing changed');
+    else scpToast(employee_id+(nextActive?' can sign in again':' can no longer sign in'));
+    scpRenderAccess();
+  });
+}
+window.scpSetActive=scpSetActive;
+
 function scpDoLogout(){
   scpSt('scp_role',null);
   try{sessionStorage.removeItem(SCP_SESSION_KEY);sessionStorage.removeItem(SCP_ROLE_KEY);sessionStorage.removeItem(SCP_EMPLOYEE_KEY);}catch(e){}
@@ -1957,6 +2074,10 @@ function scpNav(id){
   document.querySelectorAll('.scp-sb').forEach(function(b){b.classList.remove('on');});
   var p=scp$('scp-panel-'+id),b=scp$('scp-sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
+  // Rendered on nav rather than at init: another Owner may have deactivated
+  // somebody from a different machine since this page loaded, and a stale
+  // credential list is precisely the failure this feature exists to remove.
+  if(id==='access')scpRenderAccess();
 }
 
 // Replaces bare scpLocalToday() call sites that meant

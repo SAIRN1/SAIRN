@@ -279,20 +279,28 @@ const UI = [
   { file: 'sairnlaw.html', fn: 'lawSetActive', render: 'lawRenderAccess' },
   { file: 'sairnlegacy.html', fn: 'legSetActive', render: 'legRenderAccess' },
   { file: 'sairnbiz.html', fn: 'sbSetActive', render: 'sbRenderAccess' },
-  { file: 'sairngrounds.html', fn: 'grdSetActive', render: 'grdRenderAccess' }
+  { file: 'sairngrounds.html', fn: 'grdSetActive', render: 'grdRenderAccess' },
+  { file: 'sairnscape.html', fn: 'scpSetActive', render: 'scpRenderAccess' }
 ];
 
-// SAIRNscape's endpoint is wired and its UI is NOT built. Recorded here rather
-// than described in a commit message, so it is a failing-if-forgotten fact
-// instead of a sentence nobody re-reads. sairnscape.html is a
-// marketing-page-plus-app single file driven by showPage(), with no panel/nav
-// convention to slot a credential screen into and no existing
-// credential-management surface at all — a genuinely larger piece of work than
-// the other eight, and not one to improvise at the end of a long change.
-// Until it is built, deactivation on SAIRNscape is reachable only by calling
-// api/scp-auth.js directly, which is still strictly better than the
-// hand-written SQL edit that was the only option before.
-const UI_NOT_BUILT = [{ file: 'sairnscape.html', endpoint: 'scp-auth.js' }];
+// Empty as of 2026-09-03: all nine wired endpoints have a screen.
+//
+// CORRECTION KEPT ON PURPOSE. This list previously held sairnscape.html with
+// the reason "a marketing-page-plus-app single file driven by showPage(), with
+// no panel/nav convention to slot a credential screen into". THAT WAS WRONG.
+// SAIRNscape has a complete panel/nav convention -- `scp-panel`, `scp-sb-*`,
+// `scpNav()` -- and the screen took the same shape as the other eight.
+//
+// The mistake is worth recording because of HOW it was made: the conclusion
+// came from grepping `class="panel"` and `function nav(` and treating two
+// misses as proof of absence. Every id in that file is prefixed `scp-`. A
+// negative search result is only as strong as the search, and "I could not
+// find it" was written down as "it does not exist" -- the same shape as the
+// `sairn-code-guardian` claim CLAUDE.md corrects twice.
+//
+// Kept rather than deleted so a future app that ships credentials without a
+// screen has an obvious place to be recorded instead of being quietly missed.
+const UI_NOT_BUILT = [];
 
 UI.forEach((u) => {
   test(u.file + ' has a ' + u.fn + '() that calls set_active', () => {
