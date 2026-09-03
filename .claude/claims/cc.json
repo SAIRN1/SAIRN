@@ -241,6 +241,16 @@
       "claimed_at_epoch": 1788393209.5393715,
       "status": "released",
       "released_at": "2026-09-03T00:10:29Z"
+    },
+    {
+      "id": "cc-1788394347",
+      "session": "cc",
+      "subject": "platform",
+      "task": "architecture line correction exec context 4.2",
+      "claimed_at": "2026-09-03T00:12:27Z",
+      "claimed_at_epoch": 1788394347.308125,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
