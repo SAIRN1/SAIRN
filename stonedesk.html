@@ -26601,6 +26601,25 @@ document.addEventListener('DOMContentLoaded', function() {
       </tr></thead><tbody id="pc-slabs-tbody"></tbody></table></div>
   </div>
 
+  <!-- REMNANTS ON THE PUBLIC CATALOG (competitive-gap audit GAP 8, 2026-09-02).
+       The publishing machinery arrived with GAP 1 and published slabs only;
+       stonedesk-catalog.html contained the word "remnant" zero times. -->
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
+    <div style="font-weight:700;margin-bottom:4px">Remnants on the public catalog</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">
+      A remnant <strong>does</strong> show its price, and that is deliberately the opposite of the slab rule above. A slab's cost is what <em>you</em> paid; a remnant's price is what you are <em>asking</em> for a piece you are clearing, which is the whole reason a visitor would look. The yard <strong>location is never published</strong> &mdash; that is how your staff find it, not something a visitor needs. Nor is the age figure, because it is a number written down once and never counted up, so publishing it would print something that gets more wrong every day.
+      <br><strong>Only an Available piece reaches the web.</strong> Tick a remnant that is Reserved or Sold and it stays off the catalog until it is Available again &mdash; a page offering a piece that has already gone is how the same slab gets sold twice.
+    </div>
+    <div class="tw"><table style="width:100%;border-collapse:collapse;font-size:13px">
+      <thead><tr style="background:#f8f9fa">
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Remnant</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Size</th>
+        <th style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">Price</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Status</th>
+        <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">On the catalog</th>
+      </tr></thead><tbody id="pc-remnants-tbody"></tbody></table></div>
+  </div>
+
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
     <div style="font-weight:700;margin-bottom:4px">Order tracking links</div>
     <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">A link lets one customer see where their job is &mdash; the stage and nothing else, no pricing and no internal notes. There is no password: <strong>the link itself is the credential</strong>, so treat it like a key and revoke it if it goes astray. It is shown <strong>once, here, when it is created</strong> and never again &mdash; the same rule the PIN hashes follow.</div>
@@ -27416,6 +27435,44 @@ document.addEventListener('DOMContentLoaded', function() {
     var csv=rows.map(function(r){return r.map(function(c){return '"'+String(c).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
     var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
     a.download='remnant-yard-pinnacle-'+sdLocalToday()+'.csv';a.click();
+  };
+
+  // ── SERVER SYNC + PUBLISH (competitive-gap audit GAP 8, 2026-09-02) ─────
+  // Until now this module was localStorage-only, so a remnant existed on
+  // exactly one machine. Nothing could publish it: the public endpoint reads
+  // Supabase and not somebody's laptop.
+  //
+  // `data` is closed over by this IIFE, so the publish UI reaches it through
+  // these three exports rather than through a second copy of the array. A
+  // second copy is how the sd_remnant / sd_remnants duplicate happened in the
+  // first place -- see the deletion note below this block.
+  window.sdRemnantList=function(){return data;};
+  window.sdRemnantSyncOne=async function(r){
+    if(typeof sdData!=='function')return null;
+    try{ return await sdData('write','remnants',r); }catch(e){ return null; }
+  };
+  // Server rows REPLACE the local copy of the same id and local-only rows are
+  // kept. A remnant marked Sold on the counter machine must not stay Available
+  // on the office one -- that is the state that puts a piece on the public
+  // catalog after it has gone.
+  window.sdRemnantHydrate=async function(){
+    if(typeof sdData!=='function')return false;
+    var rows=null;
+    try{ rows=await sdData('read','remnants',null); }catch(e){ return false; }
+    if(!rows||!Array.isArray(rows))return false;
+    var byId={};
+    data.forEach(function(r){if(r&&r.id)byId[r.id]=r;});
+    var changed=false;
+    rows.forEach(function(r){
+      if(!r||!r.id)return;
+      if(JSON.stringify(byId[r.id])!==JSON.stringify(r)){byId[r.id]=r;changed=true;}
+    });
+    if(changed){
+      data=Object.keys(byId).map(function(k){return byId[k];});
+      save(data);
+      if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();
+    }
+    return changed;
   };
 })();
 </script>
@@ -37313,6 +37370,7 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     pcShop=r;
     pcRenderShop();
     pcRenderSlabs();
+    pcRenderRemnants();
   };
 
   function pcSlabPublished(sl){ return !!(sl && sl.published===true); }
@@ -37355,6 +37413,65 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
       notify(ok===false
         ? 'Saved on this device only -- the catalog on the web has NOT changed. Try again with a connection.'
         : (on?'Slab published to the catalog':'Slab taken off the catalog'), ok===false?'err':'ok');
+    }
+  };
+
+  // ── REMNANT PUBLISHING (GAP 8, 2026-09-02) ──────────────────────────────
+  // A remnant reaches the web only if it is ticked AND still Available. Both
+  // conditions are checked ON THE SERVER too (isRemnantPublishable); this
+  // renderer's job is to make the second one VISIBLE, so a ticked box that
+  // produces nothing on the public page is explained rather than mysterious.
+  function pcRemnantOnWeb(r){ return !!(r && r.published===true && r.status==='Available'); }
+
+  function pcRenderRemnants(){
+    var tb=pcEl('pc-remnants-tbody'); if(!tb) return;
+    var list=(typeof sdRemnantList==='function')?(sdRemnantList()||[]):[];
+    var live=!!(pcShop&&pcShop.published&&pcShop.shop_slug);
+    if(!list.length){
+      tb.innerHTML='<tr><td colspan="5" style="padding:14px;color:var(--muted);text-align:center">No remnants on file yet</td></tr>';
+      return;
+    }
+    tb.innerHTML=list.map(function(r){
+      var on=!!(r&&r.published===true);
+      var web=pcRemnantOnWeb(r);
+      // Three states, not two. "Ticked but held back because the piece is not
+      // Available" is the one a shop would otherwise have to work out for
+      // itself from an empty public page.
+      var label=!on?'not published'
+        :(!web?'ticked, but held back &mdash; '+pcHtml(r.status||'not Available')
+          :(live?'on the catalog':'marked, but the catalog is off'));
+      return '<tr>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)"><strong>'+pcHtml(r.stone||r.id)+'</strong></td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(r.size||'')+'</td>'+
+        '<td style="padding:8px;text-align:right;border-bottom:1px solid var(--border)">$'+pcHtml(r.price||0)+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+pcHtml(r.status||'')+'</td>'+
+        '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
+          '<label style="font-size:12px"><input type="checkbox" '+(on?'checked':'')+' style="width:auto;margin-right:6px" '+
+            'onchange="pcToggleRemnant(\''+escAttrJs(String(r.id))+'\',this.checked)">'+label+'</label>'+
+        '</td></tr>';
+    }).join('');
+  }
+
+  window.pcToggleRemnant=async function(remnantId,on){
+    var list=(typeof sdRemnantList==='function')?(sdRemnantList()||[]):[];
+    var r=list.find(function(x){return String(x.id)===String(remnantId);});
+    if(!r){ if(typeof notify==='function') notify('Remnant not found','err'); return; }
+    r.published=!!on;
+    // Written straight through to the server, because the public endpoint reads
+    // sd_remnants there and not from this browser. A publish that only happened
+    // locally would show as ticked here and be invisible to every visitor --
+    // the same failure the slab toggle above exists to avoid.
+    var ok=(typeof sdRemnantSyncOne==='function') ? await sdRemnantSyncOne(r) : null;
+    if(typeof sdRemnantRender==='function') sdRemnantRender();
+    pcRenderRemnants();
+    if(typeof notify==='function'){
+      notify(!ok
+        ? 'Saved on this device only -- the catalog on the web has NOT changed. Try again with a connection.'
+        : (on
+            ? (r.status==='Available' ? 'Remnant published to the catalog'
+               : 'Marked, but held back -- it is '+r.status+', so it stays off the catalog until it is Available')
+            : 'Remnant taken off the catalog'),
+        !ok?'err':'ok');
     }
   };
 
@@ -37510,6 +37627,11 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     pcShop=shop||{shop_slug:'',published:false};
     pcRenderShop();
     pcRenderSlabs();
+    // Hydrated before the table is drawn: a remnant marked Sold on the counter
+    // machine must not still read Available here, because that is the state
+    // that leaves a sold piece ticked for the public catalog.
+    if(typeof sdRemnantHydrate==='function')await sdRemnantHydrate();
+    pcRenderRemnants();
     var reqs=await pcRead('sd_quote_requests');
     pcRequests=Array.isArray(reqs)?reqs:[];
     pcRenderRequests();

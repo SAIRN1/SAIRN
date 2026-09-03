@@ -125,7 +125,55 @@ function isPublished(slab) {
   return !!(slab && slab.published === true);
 }
 
+// ── THE PUBLIC REMNANT SHAPE (GAP 8, 2026-09-02) ──────────────────────────
+// Same builder construction as publicSlabView, for the same reason: a
+// whitelist assembled field by field cannot fail open when someone adds a
+// field to the blob later.
+//
+// THE PRICE IS PUBLISHED HERE, AND THAT IS THE OPPOSITE OF THE SLAB RULE.
+// publicSlabView withholds a slab's cost, correctly -- that is what the SHOP
+// PAID and publishing it would be commercially wrong and misleading about what
+// a customer would be charged. A REMNANT'S `price` is the ASKING price: the
+// piece is being cleared rather than quoted, and the number a visitor needs is
+// the number they would pay. Stated at length because the two rules look
+// contradictory side by side and "fixing the inconsistency" would delete the
+// feature.
+//
+// `age` IS DELIBERATELY NOT PUBLISHED. The remnant record carries it as a
+// STORED DAY COUNT that nothing increments. Internally it is the number
+// somebody last wrote down; published, it is a fact that decays -- a piece
+// shown as "12 days old" still says 12 a year later. Omitted rather than
+// printed getting more wrong every day.
+//
+// NOR IS `location`. The yard row a piece sits in is how staff find it and is
+// of no use to a visitor; publishing it maps the inside of the building to
+// anyone who asks.
+function publicRemnantView(remnant) {
+  const d = remnant || {};
+  return {
+    id: String(d.id || ''),
+    stone: String(d.stone || ''),
+    size: String(d.size || ''),
+    sqft: Number(d.sqft || 0) || null,
+    price: Number(d.price || 0) || null,
+    notes: String(d.notes || ''),
+    photo_base64: typeof d.photo_base64 === 'string' ? d.photo_base64 : ''
+  };
+}
+
+// A remnant reaches the catalog only if the shop published it AND the piece is
+// still Available. A Reserved or Sold remnant with the flag left on is dropped
+// -- a catalog offering a piece that is already gone is the double-sale problem
+// in miniature, which is the failure the slab reservation compare-and-swap
+// exists to stop. The shop's own panel says the piece is being withheld rather
+// than leaving a ticked box that mysteriously produces nothing.
+function isRemnantPublishable(remnant) {
+  return !!(remnant && remnant.published === true &&
+            String(remnant.status || '') === 'Available');
+}
+
 module.exports = {
   resolveShopSlug, checkAndIncrementRateLimit, hashIp, clientIp,
-  supabaseHeaders, rest, publicSlabView, isPublished
+  supabaseHeaders, rest, publicSlabView, isPublished,
+  publicRemnantView, isRemnantPublishable
 };

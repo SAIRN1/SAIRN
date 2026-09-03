@@ -36,14 +36,23 @@
 //    unauthenticated submitter must never write straight into the record the
 //    business runs on.
 //
+// 4. IT WILL NOT SHOW A REMNANT THAT IS ALREADY GONE (GAP 8, 2026-09-02).
+//    Publication is an explicit per-remnant flag AND the piece must still be
+//    Available -- a Reserved or Sold remnant with the flag left on is dropped.
+//    A catalog offering a piece that has been sold is the double-sale problem
+//    in miniature. The remnant PRICE, unlike a slab's cost, IS published: it is
+//    the asking price a customer would pay, not what the shop paid.
+//
 // Actions (POST body { action }):
 //   catalog        { slug }              -> shop details + published slabs
+//                                           and published available remnants
 //   quote_request  { slug, request }     -> creates a pending lead
 // ---------------------------------------------------------------------------
 
 const {
   resolveShopSlug, checkAndIncrementRateLimit,
-  supabaseHeaders, rest, publicSlabView, isPublished
+  supabaseHeaders, rest, publicSlabView, isPublished,
+  publicRemnantView, isRemnantPublishable
 } = require('./_lib/stonedesk-public');
 
 const MAX_TEXT = 2000;
@@ -135,6 +144,21 @@ module.exports = async (req, res) => {
         .map((x) => x && x.data)
         .filter(isPublished)
         .map(publicSlabView);
+      // ── REMNANTS (GAP 8, 2026-09-02) ────────────────────────────────────
+      // A SEPARATE, NON-FATAL FETCH. sd_remnants is a new table and a shop
+      // that has not run the migration yet must still get its slab catalog:
+      // failing the whole page because the remnant table is absent would take
+      // a working public catalog down to add a feature to it. A missing table
+      // yields an empty list and the page renders without the section.
+      let remnants = [];
+      const rr = await fetch(rest('sd_remnants?license_hash=eq.' + encodeURIComponent(shop.licenseHash) + '&select=data'), { headers });
+      if (rr.ok) {
+        const rrows = await rr.json();
+        remnants = (Array.isArray(rrows) ? rrows : [])
+          .map((x) => x && x.data)
+          .filter(isRemnantPublishable)
+          .map(publicRemnantView);
+      }
       const d = shop.data || {};
       res.status(200).json({
         ok: true,
@@ -144,7 +168,9 @@ module.exports = async (req, res) => {
           blurb: String(d.blurb || '')
         },
         slabs: slabs,
-        count: slabs.length
+        count: slabs.length,
+        remnants: remnants,
+        remnant_count: remnants.length
       });
       return;
     }

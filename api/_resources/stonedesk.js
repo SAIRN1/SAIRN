@@ -92,5 +92,17 @@ module.exports = {
   // REQUIRES sql/sd_hr_schema.sql to be run.
     'sd_hr_employees',
     'sd_hr_certs',
+  // Remnant yard (2026-09-02, competitive-gap audit GAP 8) -- see
+  // sql/stonedesk_remnants_schema.sql. Before this the remnant yard read and
+  // wrote `sd_remnant` (SINGULAR) in localStorage and had no server table at
+  // all, so a remnant existed on exactly one machine and nothing could publish
+  // it -- the public endpoint reads Supabase, not somebody's laptop.
+  //
+  // Same gate shape as 'slabs': licence-scoped, no employee session, because a
+  // remnant is yard inventory rather than personnel or financial data. The
+  // PUBLIC catalog reads this table through api/stonedesk-public.js after
+  // resolving a shop_slug, exactly as it does for slabs.
+  // REQUIRES sql/stonedesk_remnants_schema.sql to be run.
+    'remnants',
   ],
 };

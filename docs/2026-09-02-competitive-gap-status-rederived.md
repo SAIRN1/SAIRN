@@ -146,9 +146,10 @@ bottom of this document being followed rather than described.
 | 5 | No customer e-signature, no deposit collection | Absent | **OPEN** | `signedAt`/`signerName` are still only SAIRN's own service agreements. The 3 `stripe` hits are the price-book comment and the agreement text. "Deposit Required %" is a quote **term**, not payment processing |
 | 6 | No QuickBooks integration | **HELD OPEN ON PURPOSE** | **HELD OPEN — UNCHANGED** | Michael's call, 2026-09-02. A known competitive disadvantage StoneDesk is choosing to carry. Reopening is a SAIRNbiz platform decision, not a StoneDesk feature request |
 | 7 | No multi-location support | Absent | **OPEN** | Still 0 hits on `multi-location`, `multiLocation`, `locationId`, `location_id`, `sd_locations` |
-| 8 | No remnant publishing to the public website | Absent | **PARTIAL — AND THIS IS THE USEFUL CORRECTION** | The publishing **mechanism** now exists via GAP 1's public catalog. But `stonedesk-catalog.html` contains **`remnant` zero times** — it publishes slabs and blocks only. The infrastructure landed; the remnant half did not, and remnant sale is margin recovery on material already paid for |
+| 8 | No remnant publishing to the public website | Absent | **BUILT** (was PARTIAL earlier the same day) | `sd_remnants`, `publicRemnantView`, remnant card on `stonedesk-catalog.html`, publish toggle on the shop panel (Hank, 2026-09-02). Only a published **and still Available** piece reaches the web; the price **is** published, unlike a slab's cost. ⚠ SQL pending |
 
-**StoneDesk genuinely open: 2, 4, 5, 7, and the remnant half of 8.** 6 is a
+**StoneDesk genuinely open: 2, 4, 5 and 7.** The remnant half of 8 closed
+2026-09-02, updated in the row above in the same commit as the build. 6 is a
 standing decision, not a work item. **1 is another session's active claim — do
 not touch `stonedesk.html` for it without checking claims first.**
 
@@ -162,7 +163,7 @@ not touch `stonedesk.html` for it without checking claims first.**
 |---|---|---|
 | StoneDesk | GAP 2 — nesting → machine output | Audit calls it the highest operational risk |
 | StoneDesk | GAP 7 — multi-location | Caps StoneDesk at single-yard shops |
-| StoneDesk | GAP 8 (remnant half) | Mechanism exists; wire remnants into the public catalog |
+| ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
 | SAIRNsenior | A2 telephony fallback | Offline half is done |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
 | SAIRNroofing | B6 supplier EDI | Tier B procurement |

@@ -1178,6 +1178,43 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── REMNANTS (sd_remnants — competitive-gap audit GAP 8, 2026-09-02) ──
+    // Mirrors the slab branch above, and deliberately has NO reserve verb: a
+    // remnant is a single cut-off piece cleared over the counter, not a slab a
+    // salesperson holds against a quote for days, so the compare-and-swap the
+    // slab path needs has no workflow to protect here. The public catalog
+    // refusing to show a non-Available remnant is what covers the same ground.
+    if (resource === 'remnants' && action === 'read') {
+      const r = await fetch(rest('sd_remnants?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'remnants' && action === 'write') {
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: 'remnant payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest('sd_remnants?on_conflict=license_hash,remnant_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'stonedesk',
+          remnant_id: String(payload.id), data: payload, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/stonedesk_remnants_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // ── SLAB RESERVATION -- COMPARE-AND-SWAP (2026-09-02) ───────────────────
     // The double-sale. Three places in stonedesk.html did
     // `rs.status='reserved'; rs.reservedFor=customer;` with NO check of what

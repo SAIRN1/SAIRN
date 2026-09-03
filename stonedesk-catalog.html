@@ -96,6 +96,15 @@ textarea{resize:vertical;min-height:84px;}
       <div id="catalog" class="grid"></div>
     </div>
 
+    <!-- REMNANTS (competitive-gap audit GAP 8, 2026-09-02). The card is hidden
+         until there is something in it: an empty "Remnants" heading on every
+         shop's page reads as a broken feature rather than an empty shelf. -->
+    <div class="card hide" id="remnant-card">
+      <div class="ct">Remnants &mdash; ready to go</div>
+      <div class="csub" id="remnant-sub"></div>
+      <div id="remnants" class="grid"></div>
+    </div>
+
     <div class="card" id="quote-card">
       <div class="ct">Ask for a quote</div>
       <div class="csub">No account, no login. Fill this in and the shop will come back to you.</div>
@@ -184,6 +193,41 @@ function renderCatalog(slabs){
       // and attribute-escaped instead.
       '<div class="ask"><button class="btn sm" onclick="pick(\''+A(s.id)+'\',\''+
         A(s.color_name||s.material||'Slab')+'\')">Ask about this slab</button></div>'+
+      '</div></div>';
+  }).join('');
+}
+
+// REMNANTS (GAP 8, 2026-09-02). Same card shape as a slab, one difference that
+// matters: a remnant SHOWS ITS PRICE. A slab's cost is what the shop paid and
+// is withheld; a remnant's price is the asking price for a piece being cleared,
+// which is the whole reason a visitor would look at this section.
+//
+// The endpoint sends only published AND still-Available remnants, so nothing
+// here needs to filter on status -- and nothing here should, because a filter
+// in two places is a filter that can disagree with itself.
+function renderRemnants(rem){
+  var card=$('remnant-card'),box=$('remnants');
+  if(!rem.length){card.className='card hide';box.innerHTML='';return;}
+  card.className='card';
+  $('remnant-sub').textContent=rem.length+' offcut'+(rem.length===1?'':'s')+
+    ' the shop is clearing. These are single pieces — once one is gone it is gone, so ask before you plan around it.';
+  box.innerHTML=rem.map(function(r){
+    var ph=safePhoto(r.photo_base64);
+    var bits=[];
+    if(r.size)bits.push(H(r.size)+'"');
+    if(r.sqft)bits.push(H(r.sqft)+' sqft');
+    var label=r.stone||'Remnant';
+    // A price of null renders as "ask" rather than as "$0". A zero here would
+    // read as free, which is the one wrong answer a price field can give.
+    var price=(r.price===null||r.price===undefined)?'ask':'$'+H(r.price);
+    return '<div class="slab">'+
+      '<div class="ph">'+(ph?'<img alt="'+H(label)+'" src="'+H(ph)+'">':'no photo')+'</div>'+
+      '<div class="bd"><div class="nm">'+H(label)+'</div>'+
+      '<div class="mt">'+(bits.join(' &middot; ')||'&nbsp;')+'</div>'+
+      '<div class="mt"><strong>'+price+'</strong></div>'+
+      (r.notes?'<div class="mt">'+H(r.notes)+'</div>':'')+
+      '<div class="ask"><button class="btn sm" onclick="pick(\''+A(r.id)+'\',\''+
+        A(label+' remnant')+'\')">Ask about this piece</button></div>'+
       '</div></div>';
   }).join('');
 }
@@ -290,8 +334,13 @@ async function initTrack(){
   $('shop-meta').innerHTML=meta.join(' &middot; ');
   $('shop-blurb').textContent=SHOP.blurb||'';
   renderCatalog(r.data.slabs||[]);
-  $('foot').innerHTML='Prices are not listed here on purpose — a slab price depends on the size, the edge and the install, '+
-    'which is what a quote is for. Powered by StoneDesk&trade;.';
+  renderRemnants(r.data.remnants||[]);
+  // The footer used to say "prices are not listed here" flatly. With remnants
+  // on the page that would be false, and a page that contradicts itself is
+  // worse than one that says nothing -- so it now says which is which.
+  $('foot').innerHTML='<strong>Slab</strong> prices are not listed here on purpose &mdash; what a slab costs depends on the size, the edge and the install, '+
+    'which is what a quote is for. <strong>Remnants</strong> are single offcuts sold as they are, so those carry an asking price. '+
+    'Powered by StoneDesk&trade;.';
   $('boot').className='hide';
   $('app').className='';
 })();
