@@ -315,6 +315,16 @@
       "claimed_at_epoch": 1788405670.285318,
       "status": "released",
       "released_at": "2026-09-03T11:04:02Z"
+    },
+    {
+      "id": "cody-1788433521",
+      "session": "cody",
+      "subject": "ai-tool-descriptions",
+      "task": "stale app facts sweep",
+      "claimed_at": "2026-09-03T11:05:21Z",
+      "claimed_at_epoch": 1788433521.5033526,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
