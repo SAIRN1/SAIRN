@@ -189,4 +189,104 @@ test('jobs that could not be computed are LISTED, never silently omitted', () =>
     'a WIP schedule that omits what it could not compute reads as a complete book');
 });
 
+// ── retainage comes back out ──────────────────────────────────────────────
+// Every case here is the defect found 2026-09-03: retainage that accrued and
+// never released, printed under the label "Retainage held" as if it were a
+// current balance.
+
+test('with no release recorded, nothing is released and held is still outstanding', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({ amount: 100000, retainage_pct: 10 }) });
+  assert.strictEqual(s.retainage_held, 10000);
+  assert.strictEqual(s.retainage_released, 0,
+    'absent release means none happened -- unlike an absent percentage, which means unknown');
+  assert.strictEqual(s.retainage_outstanding, 10000);
+});
+
+test('a release REDUCES what is outstanding, which is the whole defect', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({
+    amount: 100000, retainage_pct: 10,
+    retainage_released: 4000, retainage_released_at: '2026-08-20'
+  }) });
+  assert.strictEqual(s.retainage_held, 10000, 'gross keeps its old meaning');
+  assert.strictEqual(s.retainage_released, 4000);
+  assert.strictEqual(s.retainage_outstanding, 6000,
+    'before this fix outstanding did not exist and held never came down');
+  assert.strictEqual(s.problems.length, 0);
+});
+
+test('a fully released draw reports nothing outstanding rather than the gross figure', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({
+    amount: 100000, retainage_pct: 10,
+    retainage_released: 10000, retainage_released_at: '2026-08-20'
+  }) });
+  assert.strictEqual(s.retainage_outstanding, 0);
+  assert.strictEqual(s.retainage_held, 10000);
+});
+
+test('a release with no date is recorded but flagged -- the money really moved', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({ retainage_released: 4000 }) });
+  assert.strictEqual(s.retainage_released, 4000, 'not refused -- refusing would lose a real payment');
+  assert.strictEqual(s.retainage_outstanding, 6000);
+  assert.ok(s.problems.join(' ').indexOf('no release date') !== -1);
+});
+
+test('releasing more than was ever held is SURFACED, never clamped away silently', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({
+    amount: 100000, retainage_pct: 10,
+    retainage_released: 12000, retainage_released_at: '2026-08-20'
+  }) });
+  assert.strictEqual(s.retainage_outstanding, 0);
+  assert.strictEqual(s.retainage_over_released, 2000);
+  assert.ok(s.problems.join(' ').indexOf('more retainage released') !== -1);
+});
+
+test('a negative release is refused and reported, not treated as an increase', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({ retainage_released: -500 }) });
+  assert.strictEqual(s.retainage_released, 0);
+  assert.strictEqual(s.retainage_outstanding, 10000);
+  assert.ok(s.problems.join(' ').indexOf('negative') !== -1);
+});
+
+test('with no usable percentage, outstanding is UNKNOWN rather than the released figure', () => {
+  const s = w.summariseDraw({ today: TODAY, draw: draw({
+    retainage_pct: null, retainage_released: 4000, retainage_released_at: '2026-08-20'
+  }) });
+  assert.strictEqual(s.retainage_held, null);
+  assert.strictEqual(s.retainage_outstanding, null,
+    'reporting only the released figure would imply the rest is settled');
+  assert.ok(s.problems.join(' ').indexOf('what remains held cannot be worked out') !== -1);
+});
+
+test('a job totals all three retainage figures separately', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 500000 }, draws: [
+    draw({ draw_id: 'A', amount: 100000, retainage_pct: 10, retainage_released: 4000, retainage_released_at: '2026-08-20' }),
+    draw({ draw_id: 'B', amount: 200000, retainage_pct: 10 })
+  ] });
+  assert.strictEqual(r.retainage_held, 30000, 'gross, everything ever withheld');
+  assert.strictEqual(r.retainage_released, 4000);
+  assert.strictEqual(r.retainage_outstanding, 26000, 'the figure a screen should show');
+});
+
+test('an undated release is called out at JOB level, not buried in one draw', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 500000 }, draws: [
+    draw({ draw_id: 'A', retainage_released: 4000 })
+  ] });
+  assert.ok(r.problems.join(' ').indexOf('no date recorded') !== -1,
+    'a summary screen never reads the problems list of a single draw');
+});
+
+test('the portfolio carries released and outstanding, not just the gross total', () => {
+  const p = w.portfolio({ today: TODAY, jobs: [
+    { job_id: 'J1', contract_value: 200000 },
+    { job_id: 'J2', contract_value: 200000 }
+  ], draws: [
+    draw({ draw_id: 'A', job_id: 'J1', amount: 100000, retainage_pct: 10, retainage_released: 10000, retainage_released_at: '2026-08-20' }),
+    draw({ draw_id: 'B', job_id: 'J2', amount: 100000, retainage_pct: 10 })
+  ] });
+  assert.strictEqual(p.retainage_held, 20000);
+  assert.strictEqual(p.retainage_released, 10000);
+  assert.strictEqual(p.retainage_outstanding, 10000,
+    'one job paid its retainage out; a lifetime accrual would still say 20000');
+});
+
 console.log(passed + ' passed');

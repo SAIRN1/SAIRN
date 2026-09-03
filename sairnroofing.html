@@ -4012,7 +4012,13 @@ function rfRenderDraws(){
         '<td>'+rfMoney(s.amount)+'</td>'+
         // A null retainage is shown as "not recorded", never as $0 -- "we hold
         // nothing" and "nobody priced it" are different facts about money.
-        '<td>'+(s.retainage_held===null?'<span class="badge bx">not recorded</span>':rfMoney(s.retainage_held)+' <span style="font-size:12px;color:var(--muted)">'+s.retainage_pct+'%</span>')+'</td>'+
+          // Retainage cell shows OUTSTANDING with the release beneath it, for the
+          // same reason the tile above does: the gross figure alone said money was
+          // still withheld on a draw whose retainage had been paid back.
+          '<td>'+(s.retainage_held===null?'<span class="badge bx">not recorded</span>'
+            :rfMoney(s.retainage_outstanding)+' <span style="font-size:12px;color:var(--muted)">'+s.retainage_pct+'%</span>'
+            +(s.retainage_released>0?'<div style="font-size:11px;color:var(--muted)">'+rfMoney(s.retainage_released)+' released'+(s.retainage_released_at?' '+rfEsc(s.retainage_released_at):'')+'</div>':'')
+            +(s.retainage_over_released>0?'<div><span class="badge br">over-released '+rfMoney(s.retainage_over_released)+'</span></div>':''))+'</td>'+
         '<td>'+rfMoney(s.net_requested)+'</td>'+
         '<td>'+rfMoney(s.received)+'</td>'+
         '<td>'+rfMoney(s.outstanding)+(s.overpaid?' <span class="badge bw">over '+rfMoney(s.overpaid)+'</span>':'')+'</td>'+
@@ -4030,7 +4036,14 @@ function rfRenderWip(){
   var W=rfWip;
   if(!W){el.innerHTML='<div class="empty">Not computed.</div>';return;}
   var out=rfFilterBanner(rfWipMeta)+'<div style="display:flex;gap:20px;flex-wrap:wrap;font-size:13px;margin-bottom:12px;">'+
-    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Retainage held</div><strong style="font-size:18px;">'+rfMoney(W.retainage_held)+'</strong></div>'+
+    // RETAINAGE, THREE FIGURES (2026-09-03). This tile used to print the GROSS
+    // lifetime accrual under the words "Retainage held", so a job whose
+    // retainage had actually been paid out still read as money withheld.
+    // Outstanding is the headline now; gross and released are shown beneath it
+    // rather than dropped, because "how much have we got back" is the other
+    // half of the same question.
+    '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Retainage outstanding</div><strong style="font-size:18px;">'+rfMoney(W.retainage_outstanding)+'</strong>'+
+      '<div style="font-size:11px;color:var(--muted)">'+rfMoney(W.retainage_held)+' held, '+rfMoney(W.retainage_released)+' released</div></div>'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Outstanding</div><strong style="font-size:18px;">'+rfMoney(W.outstanding_total)+'</strong></div>'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Over-billed</div><strong style="font-size:18px;color:var(--danger)">'+rfMoney(W.over_billed)+'</strong></div>'+
     '<div><div style="color:var(--muted);font-size:11px;text-transform:uppercase;">Under-billed</div><strong style="font-size:18px;color:var(--danger)">'+rfMoney(W.under_billed)+'</strong></div>'+
@@ -4078,6 +4091,8 @@ function openDrawModal(i){
   $('dw-pct').value=(d&&d.pct_complete!=null)?d.pct_complete:'';
   $('dw-amount').value=(d&&d.amount!=null)?d.amount:'';
   $('dw-ret').value=(d&&d.retainage_pct!=null)?d.retainage_pct:'';
+  $('dw-relamt').value=(d&&d.retainage_released)?d.retainage_released:'';
+  $('dw-reldate').value=(d&&d.retainage_released_at)?d.retainage_released_at:'';
   $('dw-received').value=(d&&d.amount_received!=null)?d.amount_received:'';
   $('dw-status').value=(d&&d.status)||'draft';
   $('dw-requested').value=(d&&d.requested_at)||'';
@@ -4092,15 +4107,21 @@ function saveDraw(){
   var numOrNull=function(v){ v=(v||'').trim(); if(v==='')return null; var n=parseFloat(v); return isFinite(n)?n:'BAD'; };
   var pct=numOrNull($('dw-pct').value), amt=numOrNull($('dw-amount').value),
       ret=numOrNull($('dw-ret').value), rec=numOrNull($('dw-received').value),
-      no=numOrNull($('dw-no').value);
+      no=numOrNull($('dw-no').value), rel=numOrNull($('dw-relamt').value);
   // Refused, not coerced. A garbled retainage silently becoming null would
   // read on the board as "not recorded" when the user believed they set it.
-  if([pct,amt,ret,rec,no].indexOf('BAD')!==-1){ $('dw-err').textContent='Percent, amount, retainage, received and draw number must be numbers, or blank.'; return; }
+  if([pct,amt,ret,rec,no,rel].indexOf('BAD')!==-1){ $('dw-err').textContent='Percent, amount, retainage, released, received and draw number must be numbers, or blank.'; return; }
+  // Refused here rather than silently zeroed, for the same reason a garbled
+  // retainage is: a negative release is a typo, and storing it would make the
+  // board report MORE outstanding than is really held.
+  if(rel!==null&&rel<0){ $('dw-err').textContent='Retainage released cannot be negative.'; return; }
   $('dw-err').textContent='Saving…';
   rfDataRaw('write','rf_draws',{
     draw_id:id, job_id:job, draw_no:no,
     period_end:$('dw-period').value||null,
     pct_complete:pct, amount:amt, retainage_pct:ret,
+    retainage_released:rel===null?0:rel,
+    retainage_released_at:$('dw-reldate').value||null,
     amount_received:rec===null?0:rec,
     status:$('dw-status').value,
     requested_at:$('dw-requested').value||null
@@ -5632,6 +5653,8 @@ function aiSend(){
       <div class="fg"><label>Amount requested</label><input id="dw-amount" placeholder="78000"></div>
       <div class="fg"><label>Retainage %</label><input id="dw-ret" placeholder="10"></div>
       <div class="fg"><label>Amount received</label><input id="dw-received" placeholder="0"></div>
+      <div class="fg"><label>Retainage released ($)</label><input id="dw-relamt" placeholder="0"></div>
+      <div class="fg"><label>Released on</label><input type="date" id="dw-reldate"></div>
       <div class="fg"><label>Status</label><select id="dw-status">
         <option value="draft">Draft</option><option value="requested">Requested</option>
         <option value="approved">Approved</option><option value="received">Received</option>
@@ -5639,7 +5662,12 @@ function aiSend(){
       </select></div>
       <div class="fg"><label>Requested on</label><input type="date" id="dw-requested"></div>
     </div>
-    <div class="note"><strong>Retainage held is worked out from the percentage</strong> &mdash; it is never a second field
+    <div class="note"><strong>Retainage released is what has come back out.</strong> The board shows what is
+      <em>outstanding</em> &mdash; held less released &mdash; because a job whose retainage has been paid should not keep
+      reporting the money as withheld. Leave it at zero if none has been released: unlike the percentage, a blank release
+      genuinely means none happened. A release entered without a date is still recorded, and the board says it cannot be
+      aged or reconciled rather than dropping it.<br><br>
+      <strong>Retainage held is worked out from the percentage</strong> &mdash; it is never a second field
       that can drift away from it. Leave the percentage blank if you have not agreed one: the board will say
       <strong>not recorded</strong> and refuse to state what is collectable, rather than showing $0 held and implying the
       whole amount is yours. Ageing runs from <em>Requested on</em>, not the period end, because that is when the clock an

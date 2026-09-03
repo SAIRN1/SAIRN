@@ -5333,7 +5333,7 @@ module.exports = async (req, res) => {
         let backlog = null, basis = null, wipProvisioned = true;
         const wipLib = require('./_lib/wip-accounting');
         const dr = await fetch(rest('rf_draws?license_hash=eq.' + enc(licHash) +
-          '&select=draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,amount_received,status,requested_at'), { headers });
+          '&select=draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,retainage_released,retainage_released_at,amount_received,status,requested_at'), { headers });
         if (dr.status === 404 || dr.status === 400) { wipProvisioned = false; }
         else if (dr.ok) {
           const draws = await dr.json();
@@ -5586,7 +5586,7 @@ module.exports = async (req, res) => {
         agedDays = ad;
       }
 
-      const drawSelect = 'draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,amount_received,status,requested_at,received_at,notes,data,updated_by';
+      const drawSelect = 'draw_id,job_id,draw_no,period_end,pct_complete,amount,retainage_pct,retainage_released,retainage_released_at,amount_received,status,requested_at,received_at,notes,data,updated_by';
 
       // ENTITY FILTER (2026-09-02, gap B5's panel half). A draw carries no
       // entity and no location -- it carries a job. So the chain is
@@ -5682,7 +5682,7 @@ module.exports = async (req, res) => {
       if (payload.status !== undefined && wip.DRAW_STATUSES.indexOf(payload.status) === -1) {
         res.status(400).json({ error: { code: 'BAD_STATUS', message: 'rf_draws: status must be one of ' + wip.DRAW_STATUSES.join(', ') } }); return;
       }
-      const badDate = ['period_end', 'requested_at', 'received_at'].filter((k) => {
+      const badDate = ['period_end', 'requested_at', 'received_at', 'retainage_released_at'].filter((k) => {
         const v = payload[k];
         return v !== undefined && v !== null && v !== '' && !/^\d{4}-\d{2}-\d{2}$/.test(String(v));
       });
@@ -5701,6 +5701,14 @@ module.exports = async (req, res) => {
           // NOT defaulted. A default here would tell a contractor that a draw
           // nobody has priced holds a percentage back.
           retainage_pct: pctOrNull(payload.retainage_pct),
+          // Retainage coming back OUT (2026-09-03). Defaulted to 0 where
+          // retainage_pct deliberately is not, and the difference is the whole
+          // point: no release recorded really does mean none happened, while no
+          // percentage recorded means nobody agreed one. The engine catches a
+          // release larger than what was ever held -- the database cannot,
+          // because held is derived from a percentage and is not a column.
+          retainage_released: moneyOrNull(payload.retainage_released) || 0,
+          retainage_released_at: payload.retainage_released_at || null,
           amount_received: moneyOrNull(payload.amount_received) || 0,
           status: payload.status || 'draft',
           requested_at: payload.requested_at || null,

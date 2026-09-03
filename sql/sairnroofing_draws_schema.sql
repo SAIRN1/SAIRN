@@ -34,6 +34,30 @@
 -- nobody has priced holds 10% back. Null reads as "unknown" and the engine
 -- refuses to compute what is collectable, which is the honest answer.
 --
+-- == RETAINAGE COMES BACK OUT (added 2026-09-03, BEFORE THIS FILE WAS RUN) ===
+-- The first version of this table modelled retainage going IN and had no way to
+-- record it coming back out, and the engine matched it: `retainage_held` was a
+-- lifetime accrual that only grew, printed on screen under the words
+-- "Retainage held" as though it were a current balance. A job whose retainage
+-- had actually been paid would still have reported the money as withheld --
+-- which is the single question retainage exists to answer.
+--
+-- Caught while writing the 2026-09-03 competitive-gap audit. THIS FILE HAD NOT
+-- BEEN RUN YET, so the two columns below are an edit to an unrun schema rather
+-- than a migration against live rows -- the cheapest possible moment to fix a
+-- data model, and the reason it was worth doing immediately instead of filing.
+--
+-- retainage_released is NOT NULL DEFAULT 0, and the asymmetry with
+-- retainage_pct above is deliberate rather than sloppy. A missing PERCENTAGE
+-- means nobody agreed one, so it must read as unknown. A missing RELEASE means
+-- no release happened -- retainage is held by default and released by an event.
+-- Zero is also the conservative direction: it says the money is still being
+-- withheld, which is the answer that makes somebody go and check.
+--
+-- retainage_released_at is nullable because a release entered without a date is
+-- still a real payment; the engine records it and REPORTS that it cannot be
+-- aged or reconciled, rather than refusing it and losing the fact.
+--
 -- ══ SIZE BOUNDS ARE NUMERIC ON PURPOSE ═════════════════════════════════════
 -- tools/sairn_sql_preflight.py can only compare CHECK constraints where both
 -- sides state a numeric bound. See docs/2026-09-02-constraints-not-comparable.md.
@@ -52,6 +76,10 @@ create table if not exists public.rf_draws (
   pct_complete    numeric(5,2),
   amount          numeric(12,2),
   retainage_pct   numeric(5,2),                  -- nullable, NO default: see above
+  -- Retainage coming back OUT. See the header: default 0 means "none released",
+  -- which is both true and the conservative direction.
+  retainage_released    numeric(12,2) not null default 0,
+  retainage_released_at date,                    -- nullable: an undated release is still a real one
   amount_received numeric(12,2) not null default 0,
   status          text not null default 'draft',
   requested_at    date,                          -- the ageing clock starts here, not at period_end
@@ -67,6 +95,13 @@ create table if not exists public.rf_draws (
   constraint rfdraw_ret_sane check (retainage_pct is null or (retainage_pct >= 0 and retainage_pct <= 100)),
   constraint rfdraw_amount_not_negative check (amount is null or amount >= 0),
   constraint rfdraw_received_not_negative check (amount_received >= 0),
+  -- Negative released is a typo, never a credit -- the same reason
+  -- saveBenEnroll refuses a negative benefit cost rather than storing it.
+  -- NOT constrained against the held amount: held is DERIVED from a percentage
+  -- and is not a column here, so the database cannot see it. Over-release is
+  -- caught and REPORTED by api/_lib/wip-accounting.js instead, which is the
+  -- only layer that knows both numbers.
+  constraint rfdraw_released_not_negative check (retainage_released >= 0),
   constraint rfdraw_data_size check (octet_length(data::text) <= 65536)
 );
 

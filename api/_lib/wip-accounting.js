@@ -35,6 +35,19 @@
 // pass costs and get `basis: 'cost_to_cost'` instead. What it will never do is
 // report one basis while using the other.
 //
+// ── RETAINAGE IS RELEASED, NOT JUST HELD (added 2026-09-03) ─────────────
+// The first version of this engine only ever ACCRUED retainage. `retainage_held`
+// grew and never came back down, and both consumers printed it under the label
+// "Retainage held" as if it were a current balance -- so a job whose retainage
+// had actually been paid out still reported the money as withheld. Three fields
+// now, and the names matter:
+//   retainage_held        GROSS, everything ever withheld. Unchanged meaning,
+//                         so no existing caller silently changes behaviour.
+//   retainage_released    what has been paid back out.
+//   retainage_outstanding held - released. THIS is the number a screen should
+//                         show under the words "retainage held".
+// A caller still rendering the gross figure under that label is now wrong.
+//
 // ── RETAINAGE IS DERIVED, NEVER STORED TWICE ─────────────────────────────
 // held = amount x pct, computed on read. SAIRNbuild's bld_draws stores both
 // `retainage_pct` AND `retainage_held`, which can disagree the moment anyone
@@ -109,6 +122,54 @@ function summariseDraw(input) {
     out.net_requested = money(amount - out.retainage_held);
   }
 
+  // ── RETAINAGE RELEASE (2026-09-03) ──────────────────────────────────────
+  // Retainage accrued and NEVER CAME BACK OUT. `retainage_held` was a lifetime
+  // total that only ever grew, and both consumers rendered it under the label
+  // "Retainage held" as though it were a current balance. On a job whose
+  // retainage had actually been released, the board still said the money was
+  // being withheld -- which is the one question retainage exists to answer.
+  //
+  // Caught while writing the 2026-09-03 competitive-gap audit, in the engine
+  // that audit had just praised for deriving held-from-percentage rather than
+  // storing it. Deriving the right number and then never reducing it is the
+  // same class of wrong, one step further down.
+  //
+  // THE ASYMMETRY WITH retainage_pct IS DELIBERATE. A missing percentage is
+  // NOT zero, because "we hold nothing" and "nobody recorded what is held" are
+  // different facts. A missing RELEASE genuinely is zero: retainage is held by
+  // default and released by an event, so no event recorded means none happened.
+  // That default is also the conservative direction -- it says money is still
+  // being withheld, which is the answer that makes someone go and check.
+  const released = num(d.retainage_released);
+  const releasedOn = isDate(d.retainage_released_at) ? d.retainage_released_at : null;
+  out.retainage_released = money(released === null ? 0 : released);
+  out.retainage_released_at = releasedOn;
+
+  if (released !== null && released < 0) {
+    out.retainage_released = 0;
+    out.problems.push('retainage released "' + d.retainage_released + '" is negative -- treated as nothing released');
+  } else if (out.retainage_released > 0 && !releasedOn) {
+    // Not refused: the money really did move. But a release with no date
+    // cannot be aged, reconciled or defended to a surety, so it is said.
+    out.problems.push('retainage released with no release date recorded');
+  }
+  if (out.retainage_held === null) {
+    // Held is unknowable, so outstanding is too. Reporting the released figure
+    // as the whole picture would imply the rest is settled.
+    out.retainage_outstanding = null;
+    if (out.retainage_released > 0) {
+      out.problems.push('retainage released but no usable retainage percentage -- what remains held cannot be worked out');
+    }
+  } else if (out.retainage_released > out.retainage_held) {
+    // Surfaced rather than clamped away, the same rule overpayment already
+    // follows below.
+    out.retainage_outstanding = 0;
+    out.retainage_over_released = money(out.retainage_released - out.retainage_held);
+    out.problems.push('more retainage released than was ever held on this draw');
+  } else {
+    out.retainage_outstanding = money(out.retainage_held - out.retainage_released);
+  }
+
   const received = num(d.amount_received) || 0;
   out.received = money(received);
   if (out.net_requested === null) {
@@ -165,7 +226,15 @@ function jobWip(input) {
     job_id: str(job.job_id) || null,
     contract_value: contract,
     draw_count: summaries.length,
+    // THREE RETAINAGE FIGURES, AND THE NAMES ARE LOAD-BEARING.
+    // `retainage_held` keeps its original meaning -- GROSS, everything ever
+    // withheld -- so no existing caller silently changes behaviour when this
+    // field appears to still be there. `retainage_outstanding` is the one a
+    // screen should show under the words "retainage held", and any consumer
+    // still rendering the gross figure under that label is now wrong.
     retainage_held: money(summaries.reduce(function (s, d) { return s + (d.retainage_held || 0); }, 0)),
+    retainage_released: money(summaries.reduce(function (s, d) { return s + (d.retainage_released || 0); }, 0)),
+    retainage_outstanding: money(summaries.reduce(function (s, d) { return s + (d.retainage_outstanding || 0); }, 0)),
     requested_total: money(summaries.reduce(function (s, d) { return s + (d.amount || 0); }, 0)),
     received_total: money(summaries.reduce(function (s, d) { return s + (d.received || 0); }, 0)),
     outstanding_total: money(summaries.reduce(function (s, d) { return s + (d.outstanding || 0); }, 0)),
@@ -184,6 +253,21 @@ function jobWip(input) {
   const unpriced = summaries.filter(function (d) { return d.retainage_held === null; });
   if (unpriced.length) {
     out.problems.push(unpriced.length + ' draw(s) have no usable retainage percentage -- the retainage total is an undercount');
+  }
+
+  // A release nobody dated, or one bigger than was ever held, makes the
+  // outstanding figure unreliable in the direction that matters -- it says
+  // less is being withheld than may actually be. Said here rather than left
+  // inside one draw's problems list, which no summary screen reads.
+  const undatedRelease = summaries.filter(function (d) {
+    return d.retainage_released > 0 && !d.retainage_released_at;
+  });
+  if (undatedRelease.length) {
+    out.problems.push(undatedRelease.length + ' retainage release(s) have no date recorded -- they cannot be aged or reconciled');
+  }
+  const overReleased = summaries.filter(function (d) { return d.retainage_over_released > 0; });
+  if (overReleased.length) {
+    out.problems.push(overReleased.length + ' draw(s) released more retainage than was ever held on them');
   }
 
   // ---- percent complete, and where it came from ----
@@ -242,6 +326,8 @@ function portfolio(input) {
     today: today,
     jobs: rows,
     retainage_held: money(rows.reduce(function (s, r) { return s + (r.retainage_held || 0); }, 0)),
+    retainage_released: money(rows.reduce(function (s, r) { return s + (r.retainage_released || 0); }, 0)),
+    retainage_outstanding: money(rows.reduce(function (s, r) { return s + (r.retainage_outstanding || 0); }, 0)),
     outstanding_total: money(rows.reduce(function (s, r) { return s + (r.outstanding_total || 0); }, 0)),
     over_billed: money(computable.filter(function (r) { return r.over_under > 0; })
       .reduce(function (s, r) { return s + r.over_under; }, 0)),

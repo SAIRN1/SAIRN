@@ -732,7 +732,19 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   <div class="krow">
     <div class="kpi"><div class="klbl">Outstanding Requested</div><div class="kval" id="dr-outstanding">$0</div><div class="kt" id="dr-outstanding-sub">Not yet received</div></div>
     <div class="kpi"><div class="klbl">Received to Date</div><div class="kval" id="dr-received">$0</div><div class="kt">All draws</div></div>
-    <div class="kpi"><div class="klbl">Retainage Held</div><div class="kval" id="dr-retainage">$0</div><div class="kt">Across all draws</div></div>
+    <!-- RELABELLED 2026-09-03, NOT re-engineered. This figure is a LIFETIME
+         ACCRUAL: it sums retainage_held across every draw ever entered and has
+         no concept of retainage being released, so on a job whose retainage has
+         been paid out it still counts the money as withheld. The label used to
+         read "Retainage Held / Across all draws", which reads as a current
+         balance and is the specific way this number misleads.
+         The real fix is repointing this panel at api/_lib/wip-accounting.js,
+         which gained held / released / outstanding the same day and is the
+         platform's only server-side progress-billing engine. That repoint is
+         its own task (see the 2026-09-03 competitive-gap audit, SAIRNbuild B2),
+         and a second client-side release model here would be deleted by it.
+         Until then this says what it actually is. -->
+    <div class="kpi"><div class="klbl">Retainage Withheld to Date</div><div class="kval" id="dr-retainage">$0</div><div class="kt">Lifetime total &mdash; releases are not tracked</div></div>
     <div class="kpi"><div class="klbl">Past 30 Days</div><div class="kval" id="dr-overdue">0</div><div class="kt" id="dr-overdue-sub">Requested, unreceived</div></div>
     <div class="kpi"><div class="klbl">Missing Waiver</div><div class="kval" id="dr-nowaiver">0</div><div class="kt" id="dr-nowaiver-sub">Received with no waiver on file</div></div>
   </div>
@@ -4854,6 +4866,7 @@ function rDrawsTbl(){
         '<td>'+(d.period_end?fdate(d.period_end):'--')+'</td>'+
         '<td>'+(d.pct_complete||0)+'%</td>'+
         '<td><strong>'+fmt(d.amount)+'</strong></td>'+
+        // Same caveat as the KPI above: withheld, never reduced by a release.
         '<td>'+fmt(d.retainage_held)+'</td>'+
         '<td>'+(d.status==='received'?fmt(d.amount_received):'--')+(missing?' <span class="badge br" style="margin-left:4px;">No Waiver</span>':'')+'</td>'+
         '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
