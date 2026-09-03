@@ -353,8 +353,8 @@
       "task": "tax center fabricated rates and wrong estimated tax dates",
       "claimed_at": "2026-09-03T18:08:49Z",
       "claimed_at_epoch": 1788458929.1346579,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T18:34:19Z"
     }
   ]
 }
