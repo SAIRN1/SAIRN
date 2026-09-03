@@ -271,6 +271,17 @@
       "claimed_at_epoch": 1788434261.7576058,
       "status": "released",
       "released_at": "2026-09-03T12:44:55Z"
+    },
+    {
+      "id": "fourth-1788462561",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "public endpoint dead key null return and rate limiter fail open",
+      "claimed_at": "2026-09-03T19:09:21Z",
+      "claimed_at_epoch": 1788462561.9743915,
+      "status": "active",
+      "released_at": null,
+      "note": "Written by hand because sairn_claim.py BLOCKED it on a purely lexical overlap. cc holds sairndental 'public availability fabricated calendar fail open reads'; the shared tokens are 'public', 'fail' and 'open'. Different app, different file: mine is api/_lib/stonedesk-public.js, cc's is the sairndental public surface. This is deliberately the SAME defect class applied to a different app at Michael's instruction -- the words overlap because the bug does, not because the work does. Recorded rather than reworded to slip past the matcher, per CLAUDE.md's rule on defect 1 of that tool."
     }
   ]
 }
