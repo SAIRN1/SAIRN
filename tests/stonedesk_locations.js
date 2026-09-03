@@ -260,5 +260,85 @@ check('the resource is registered',
     /slab_count|slabs_at|inventory_value/.test(cols), false);
 }
 
+
+// ── 6. THE RECONCILE INVARIANT (added 2026-09-03) ──────────────────────────
+// Reassigning a slab between yards changes the BUCKETS and must not change the
+// GRAND TOTAL. `totals` cannot test that by itself: it is the SUM OF THE ROWS,
+// so it agrees with the rows by construction and would still agree after a
+// slab had been dropped on the floor. The only check with any force compares
+// against what came IN.
+//
+// Same reason api/_lib/roofing-consolidation.js returns input_total and
+// reconciles on every call.
+{
+  const out = build(world({
+    locations: LOCS,
+    slabs: [SLAB({ id: 'a', location_id: 'L1' }),
+            SLAB({ id: 'b', location_id: 'L2' }),
+            SLAB({ id: 'c' })]
+  })).rollup();
+  check('a healthy rollup reconciles against the slabs it was given',
+    [out.reconciles, out.input_total.slabs, out.totals.slabs], [true, 3, 3]);
+}
+{
+  const out = build(world({ locations: LOCS, slabs: [] })).rollup();
+  check('an empty shop reconciles rather than reading as broken',
+    [out.reconciles, out.input_total.slabs], [true, 0]);
+}
+{
+  // Reassigning moves a slab between buckets and leaves the book alone.
+  const before = build(world({ locations: LOCS,
+    slabs: [SLAB({ id: 'a', location_id: 'L1', cost: 400 }), SLAB({ id: 'b', location_id: 'L1', cost: 200 })] })).rollup();
+  const after = build(world({ locations: LOCS,
+    slabs: [SLAB({ id: 'a', location_id: 'L1', cost: 400 }), SLAB({ id: 'b', location_id: 'L2', cost: 200 })] })).rollup();
+  check('reassigning changes the buckets and not the grand total',
+    [before.totals.slabs === after.totals.slabs,
+     before.totals.value === after.totals.value,
+     before.rows.filter((r) => r.location_id === 'L2')[0].slabs,
+     after.rows.filter((r) => r.location_id === 'L2')[0].slabs,
+     before.reconciles && after.reconciles],
+    [true, true, 0, 1, true]);
+}
+{
+  // NEGATIVE CONTROL, and the first version of it was worthless -- it computed
+  // the comparison in the TEST and asserted on that, so hardcoding
+  // `reconciles: true` in the app scored a clean pass. Exactly the mistake this
+  // harness already records about stubbing sdLocName.
+  //
+  // This drives the REAL extracted source with the loss injected INTO it, and
+  // asserts on the flag the app actually returns.
+  const lossy = new Function('W',
+    'var sdSlabs=W.slabs, sdLocations=W.locations;\n' +
+    'var slabCost=W.slabCost;\n' +
+    'var window={};\n' +
+    fnAssign('window.sdLocActive = function()') + '\n' +
+    fnAssign('window.sdLocName = function(id)') + '\n' +
+    'var sdLocActive=window.sdLocActive, sdLocName=window.sdLocName;\n' +
+    // The injected defect: the rollup drops the first slab on the floor.
+    fn('window.sdLocRollup = function(){').replace('slabs.forEach(function(s){', 'slabs.slice(1).forEach(function(s){') + '\n' +
+    'return window.sdLocRollup();'
+  )(world({ locations: LOCS,
+            slabs: [SLAB({ id: 'a', location_id: 'L1' }), SLAB({ id: 'b', location_id: 'L1' })] }));
+  check('NEGATIVE CONTROL: a rollup that drops a slab returns reconciles:false',
+    [lossy.reconciles, lossy.totals.slabs, lossy.input_total.slabs], [false, 1, 2]);
+}
+
+check('the panel shows the failure in red rather than a total nobody can reconcile',
+  /id="loc-reconcile"/.test(src) && /do not reconcile/i.test(src), true);
+// Asserted on the CONDITION, not on the message. A first draft matched only
+// the refusal string, and disabling the whole condition while leaving the
+// string in place still scored a pass -- the message is not the gate.
+check('the write path is management-gated -- an upsert rename relabels every slab pointing at the yard',
+  /!locSession \|\| !CRM_MANAGEMENT_ROLES\[locSession\.role\]/.test(api) &&
+  /Only an owner or admin can add, rename or close a yard/.test(api), true);
+check('locations is session-gated like slabs, and was licence-scoped before',
+  /'locations':\s*\['read',\s*'write'\]/.test(api), true);
+
+check('a REFUSED yard write is rolled back locally, not left as a device-only ghost',
+  /Only an owner or admin can add a yard -- nothing was saved/.test(src) &&
+  /Only an owner or admin can close or reopen a yard -- nothing was changed/.test(src), true);
+check('and an OUTAGE is still kept locally -- a refusal and a dead network are different answers',
+  /Saved on this device only -- the server has NOT got this yard/.test(src), true);
+
 console.log(fail ? ('FAILED ' + fail + '/' + (pass + fail)) : ('ALL ' + pass + ' YARD ASSERTIONS PASS'));
 process.exit(fail ? 1 : 0);

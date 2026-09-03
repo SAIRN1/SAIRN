@@ -7120,6 +7120,7 @@ function sdInvExport(){
   <div class="kpi"><div class="kpi-val" id="loc-kpi3">0</div><div class="kpi-label">Unassigned</div></div>
   <div class="kpi"><div class="kpi-val" id="loc-kpi4">&mdash;</div><div class="kpi-label">Inventory Value</div></div>
 </div>
+<div id="loc-reconcile" style="display:none;margin-bottom:12px;padding:12px 14px;border-radius:8px;font-size:13px;font-weight:600;background:#FEE2E2;border:1px solid #FCA5A5;color:#991B1B"></div>
 <div id="loc-note" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
 <div id="loc-rollup"></div>
 <div style="margin-top:20px;font-weight:700;color:var(--text);margin-bottom:8px">Yards on file</div>
@@ -7697,7 +7698,24 @@ function sdInvExport(){
       t.slabs+=r.slabs; t.sqft=Math.round((t.sqft+r.sqft)*100)/100;
       t.value=Math.round((t.value+r.value)*100)/100; t.unpriced+=r.unpriced; return t;
     },{slabs:0,sqft:0,value:0,unpriced:0});
-    return { rows: rows, totals: totals };
+    // ── THE INVARIANT, CHECKED AGAINST THE INPUT (2026-09-03) ──────────────
+    // Reassigning a slab between yards changes the BUCKETS and must not change
+    // the GRAND TOTAL. `totals` above cannot test that on its own: it is the
+    // SUM OF THE ROWS, so it agrees with the rows by construction and would
+    // still agree after a slab had been dropped on the floor.
+    //
+    // The only check with any force compares against what came IN. If a future
+    // edit to the bucket() key -- a trim, a case-fold, a filter -- silently
+    // loses or duplicates a slab, this is what notices, and the panel says so
+    // in red rather than showing a total nobody can reconcile.
+    //
+    // Same reason api/_lib/roofing-consolidation.js returns input_total and
+    // reconciles on every call.
+    var input = { slabs: slabs.length };
+    return {
+      rows: rows, totals: totals, input_total: input,
+      reconciles: totals.slabs === input.slabs
+    };
   };
 
   // ── THE YARDS PANEL ────────────────────────────────────────────────────
@@ -7719,6 +7737,20 @@ function sdInvExport(){
     k('loc-kpi2', out.totals.slabs - (unassigned?unassigned.slabs:0));
     k('loc-kpi3', unassigned?unassigned.slabs:0);
     k('loc-kpi4', out.totals.value ? sdLocMoney(out.totals.value) : LOC_DASH);
+
+    // Shown, never swallowed. A roll-up that has lost a slab is exactly the
+    // shape that reads as healthy -- every column still adds up to every other
+    // column, because they were all derived from the same short list.
+    var recon = document.getElementById('loc-reconcile');
+    if(recon){
+      if(out.reconciles){ recon.style.display='none'; }
+      else {
+        recon.style.display='block';
+        recon.textContent = 'These figures do not reconcile: ' + out.totals.slabs +
+          ' slab(s) are shown across the yards but this shop has ' + out.input_total.slabs +
+          '. Do not rely on the table below, and report this.';
+      }
+    }
 
     var note = document.getElementById('loc-note');
     if(note){
@@ -7802,6 +7834,19 @@ function sdInvExport(){
     // remnant publish toggles were built to avoid.
     var ok = null;
     if(typeof sdData==='function'){ try{ ok = await sdData('write','locations',rec); }catch(e){ ok = null; } }
+    // A REFUSAL AND AN OUTAGE ARE NOT THE SAME ANSWER (2026-09-03, added with
+    // the management gate on this write). "Saved on this device only" is right
+    // for a dead network -- try again later and it lands. It is WRONG for a
+    // 403: nothing will ever make that write land, and leaving the local copy
+    // in place would show this person a yard nobody else can see, for good.
+    // So a refusal is rolled back. Same rule as sdReserveSlab, which never
+    // falls back to writing locally when the server said no.
+    if(!ok && typeof sdAuthWasRefused==='function' && sdAuthWasRefused('locations')){
+      sdLocations = sdLocations.filter(function(x){ return String(x.id)!==String(rec.id); });
+      sdLocSave(); sdLocPaint();
+      if(typeof notify==='function') notify('Only an owner or admin can add a yard -- nothing was saved.','err');
+      return;
+    }
     if(typeof notify==='function') notify(ok ? 'Yard saved'
       : 'Saved on this device only -- the server has NOT got this yard. Try again with a connection.', ok?'ok':'err');
   };
@@ -7816,6 +7861,14 @@ function sdInvExport(){
     sdLocSave(); sdLocPaint();
     var ok = null;
     if(typeof sdData==='function'){ try{ ok = await sdData('write','locations',l); }catch(e){ ok = null; } }
+    // Rolled back on a refusal, kept on an outage -- see sdLocAdd above for
+    // why those are different answers.
+    if(!ok && typeof sdAuthWasRefused==='function' && sdAuthWasRefused('locations')){
+      l.active = (l.active===false);
+      sdLocSave(); sdLocPaint();
+      if(typeof notify==='function') notify('Only an owner or admin can close or reopen a yard -- nothing was changed.','err');
+      return;
+    }
     if(typeof notify==='function') notify(ok ? (l.active?'Yard reopened':'Yard closed')
       : 'Saved on this device only -- the server has NOT got this change.', ok?'ok':'err');
   };

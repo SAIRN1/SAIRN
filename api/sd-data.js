@@ -313,7 +313,15 @@ module.exports = async (req, res) => {
     const SD_SESSION_GATED = {
       'slabs':   ['read', 'write', 'reserve'],
       'profile': ['read', 'write'],
-      'memory':  ['read', 'write']
+      'memory':  ['read', 'write'],
+      // Yards, added 2026-09-03. The GAP 7 branch below described itself as
+      // carrying "the same licence-scoped gate as 'slabs'" -- and 'slabs' is
+      // in THIS table, so it was never licence-scoped. Locations was: the
+      // licence key alone, with no employee session at all, could rename or
+      // close a yard. Read is gated to match slabs, since the two are read
+      // together on every slab screen and a yard list that needs no session
+      // while the slabs in it do is a distinction with no meaning.
+      'locations': ['read', 'write']
     };
     if (SD_SESSION_GATED[resource] && SD_SESSION_GATED[resource].indexOf(action) !== -1) {
       const gateSession = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
@@ -1322,6 +1330,20 @@ module.exports = async (req, res) => {
       return;
     }
     if (resource === 'locations' && action === 'write') {
+      // MANAGEMENT ONLY, added 2026-09-03 alongside the session gate above.
+      // Reading a yard and CHANGING one are not the same act. A templater has
+      // to know which yard a slab is in to go and find it, so the read stays
+      // open to every employee -- but this branch is an UPSERT on
+      // (license_hash, location_id), so renaming a yard silently relabels
+      // every slab ever attributed to it, on every screen, with no record that
+      // anything changed. Closing one does the same to its whole history.
+      // That is a management act, and it was previously available to anyone
+      // holding the licence key.
+      const locSession = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      if (!locSession || !CRM_MANAGEMENT_ROLES[locSession.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an owner or admin can add, rename or close a yard' } });
+        return;
+      }
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: 'location payload.id is required' } });
         return;

@@ -119,14 +119,27 @@ async function main() {
       'profile/read is exempt again -- if that is deliberate, say why in the table');
   });
 
-  await test('the gate is a table, not scattered checks -- and lists exactly seven pairs', () => {
+  await test('the gate is a table, not scattered checks -- and the pair count is COUNTED, not claimed', () => {
+    // This assertion used to be titled "lists exactly seven pairs" and counted
+    // nothing -- it matched three entries and stopped. Adding 'locations' on
+    // 2026-09-03 took the table to nine pairs and the title stayed green while
+    // becoming false, which is the whole failure mode a count is supposed to
+    // catch. It is now derived from the table rather than asserted about it.
     const fs = require('fs');
     const src = fs.readFileSync(require.resolve('./sd-data.js'), 'utf8');
-    const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\};/);
+    const m = src.match(/const SD_SESSION_GATED = \{[\s\S]*?\n    \};/);
     assert.ok(m, 'the gate table is gone');
     assert.match(m[0], /'slabs':\s*\['read', 'write', 'reserve'\]/);
     assert.match(m[0], /'profile':\s*\['read', 'write'\]/);
     assert.match(m[0], /'memory':\s*\['read', 'write'\]/);
+    // Yards, 2026-09-03. The GAP 7 branch described itself as carrying "the
+    // same licence-scoped gate as 'slabs'" -- and slabs is in THIS table, so
+    // locations had no session requirement at all and a licence key alone
+    // could rename or close a yard.
+    assert.match(m[0], /'locations':\s*\['read', 'write'\]/);
+    const pairs = (m[0].match(/'(read|write|reserve)'/g) || []).length;
+    assert.strictEqual(pairs, 9,
+      'the gate table changed size to ' + pairs + ' pairs -- add the new resource to this test and say why it is gated');
   });
 
   await test('an ungated resource is untouched by the table', async () => {
