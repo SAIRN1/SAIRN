@@ -548,14 +548,18 @@ textarea{resize:vertical;min-height:80px;}
   <div id="payroll-anomaly-banner"></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Gross Payroll</div><div class="kval" id="py-gross">$0</div><div class="kt">This period</div></div>
-    <div class="kpi"><div class="klbl">Employer Taxes</div><div class="kval" id="py-tax">$0</div><div class="kt">FICA + FUTA</div></div>
+    <!-- The sub-label said "FICA + FUTA" and the value was FICA alone. FUTA is
+         not computed anywhere in this app -- it needs per-employee year-to-date
+         wages to cap at the $7,000 base, which is why the Tax panel refuses it
+         too. Claiming it here made the employer's tax burden look complete. -->
+    <div class="kpi"><div class="klbl">Employer FICA</div><div class="kval" id="py-tax">$0</div><div class="kt">7.65% &mdash; FUTA and SUTA are not computed</div></div>
     <div class="kpi"><div class="klbl">Benefits Cost</div><div class="kval" id="py-ben">$0</div><div class="kt">Employer share</div></div>
-    <div class="kpi"><div class="klbl">Total Labor Cost</div><div class="kval" id="py-total">$0</div><div class="kt">Fully loaded</div></div>
+    <div class="kpi"><div class="klbl">Total Labor Cost</div><div class="kval" id="py-total">$0</div><div class="kt">Gross + employer FICA + benefits &mdash; not fully loaded</div></div>
     <div class="kpi"><div class="klbl">YTD Payroll</div><div class="kval" id="py-ytd">$0</div><div class="kt">All periods</div></div>
   </div>
   <div class="card"><div class="cb">
     <div id="py-basis" style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;"></div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Employee FICA</th><th>Fed / state withholding</th><th>Net pay</th><th>Status</th></tr></thead>
     <tbody id="pytbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Payroll Run History</span></div><div class="cb">
@@ -1007,7 +1011,7 @@ function sbReadKpiNumber(elId) {
 
 sbRegisterTool(
   'get_payroll_summary',
-  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and annualized payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay. IMPORTANT CAVEATS: taxes_fica is the employer-side 7.65% FICA component only -- it does NOT include federal (22%) or state (3.99%) employee withholding, which is computed per-employee but never totaled into any KPI. total_labor_cost = gross_payroll + taxes_fica + benefits -- it excludes FUTA, SUTA, and workers\' comp, so despite the fully-loaded label it is not a complete employer cost figure. BENEFITS ARE A MIX, and you must say which: each employee\'s recorded monthly employer cost from the Benefits panel, prorated to their own pay cycle, and a $520/month assumption only for those with none recorded -- employees_on_assumed_benefit_cost says how many. PAY FREQUENCY IS PER EMPLOYEE (weekly / biweekly / semi-monthly / monthly); pay_frequencies gives the mix and employees_on_default_frequency counts those with none on file, who are treated as biweekly. Because of that, gross_payroll and benefits are the sum of each employee\'s OWN pay-period amount -- on a mixed-frequency roster that is NOT a single-date cash figure and must never be described as this month\'s payroll or the next cheque run. ytd_payroll is the sum of each employee\'s ANNUALIZED gross (rate x weekly hours x 52); it is frequency-independent and safe to compare, but it is still a projection from today\'s roster and rates, NOT a sum of historical payroll records -- the Payroll Runs table holds those. Treat it as an annual run-rate, not an authoritative year-to-date total.',
+  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and annualized payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay. IMPORTANT CAVEATS: taxes_fica is the employer-side 7.65% FICA component only. FEDERAL AND STATE WITHHOLDING ARE NOT COMPUTED ANYWHERE IN THIS APP and neither is net pay -- they depend on each employee\'s W-4, filing status and dependants, none of which is recorded. The payroll panel previously showed a flat 22% federal and 3.99% state withholding per employee and a net pay derived from them; those were removed on 2026-09-03 as invented. Never state, estimate or imply an employee\'s withholding or take-home pay. total_labor_cost = gross_payroll + taxes_fica + benefits -- it excludes FUTA, SUTA, and workers\' comp, so despite the fully-loaded label it is not a complete employer cost figure. BENEFITS ARE A MIX, and you must say which: each employee\'s recorded monthly employer cost from the Benefits panel, prorated to their own pay cycle, and a $520/month assumption only for those with none recorded -- employees_on_assumed_benefit_cost says how many. PAY FREQUENCY IS PER EMPLOYEE (weekly / biweekly / semi-monthly / monthly); pay_frequencies gives the mix and employees_on_default_frequency counts those with none on file, who are treated as biweekly. Because of that, gross_payroll and benefits are the sum of each employee\'s OWN pay-period amount -- on a mixed-frequency roster that is NOT a single-date cash figure and must never be described as this month\'s payroll or the next cheque run. ytd_payroll is the sum of each employee\'s ANNUALIZED gross (rate x weekly hours x 52); it is frequency-independent and safe to compare, but it is still a projection from today\'s roster and rates, NOT a sum of historical payroll records -- the Payroll Runs table holds those. Treat it as an annual run-rate, not an authoritative year-to-date total.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -2299,14 +2303,44 @@ function rPay(){
   var gross=0,taxes=0,bens=0;
   var annual=0;
   $('pytbody').innerHTML=emps.map(function(e){
-    var hrs=sbHoursPerPeriod(e);var g=sbGrossPerPeriod(e);var ft=g*0.22;var st2=g*0.0399;var fi=g*0.0765;var net=g-ft-st2-fi;
+    // ── PER-EMPLOYEE WITHHOLDING WAS INVENTED, AND IT PRODUCED A NET PAY ──
+    // This row used to compute ft = gross x 22% and st2 = gross x 3.99% and
+    // then hand back net = gross - ft - st2 - fica, rendered in a column headed
+    // "Net Pay" with a green "Ready" badge beside it. It reads exactly like a
+    // paystub, and it is the figure somebody would actually pay a person.
+    //
+    // NEITHER RATE IS A WITHHOLDING RATE. 22% is the IRS flat rate for
+    // SUPPLEMENTAL wages (a bonus), not regular wages -- real withholding comes
+    // off the employee\'s W-4, filing status and dependants through the
+    // percentage-method tables, and for a lower-paid employee it can be near
+    // zero. 3.99% was Ohio\'s TOP MARGINAL individual rate, applied flat to
+    // everyone; Ohio withholding is graduated and that headline rate has since
+    // been cut. The app holds no W-4, no filing status and no dependants, so
+    // neither number is knowable here.
+    //
+    // The error runs the same direction for everyone: it OVERSTATES withholding
+    // and therefore UNDERSTATES net pay, so an owner reading this pays someone
+    // too little and finds out at the year end.
+    //
+    // FICA SURVIVES because it genuinely is flat -- 6.2% Social Security plus
+    // 1.45% Medicare, statutory, no W-4 involved. Its one caveat is on screen:
+    // the Social Security half stops at the annual wage base and this app has
+    // no per-employee year-to-date wages to know when someone crosses it.
+    //
+    // Same call as the Tax & Compliance panel the same day, and the same reason
+    // it is a refusal rather than a settings field: a configurable "federal
+    // rate" would still be one flat rate applied to every employee, which is
+    // not how withholding works for any of them.
+    var hrs=sbHoursPerPeriod(e);var g=sbGrossPerPeriod(e);var fi=g*SB_EMPLOYEE_FICA_RATE;
     var b=sbBenefitPerPeriod(e);
     gross+=g;taxes+=fi;bens+=b;annual+=sbAnnualGross(e);
     // The frequency is shown on the row, and shown as assumed when it is
     // assumed. Hours and gross are meaningless without it once a roster runs
     // more than one cycle.
     var fl=sbPayFreq(e)+(sbPayFreqIsDefault(e)?' <span style="color:var(--muted)">(default)</span>':'');
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+fl+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(ft)+'</td><td>'+fmt(st2)+'</td><td>'+fmt(fi)+'</td><td><strong>'+fmt(net)+'</strong></td><td><span class="badge bg">Ready</span></td></tr>';
+    // The "Ready" badge went with the net-pay figure. It asserted this row was
+    // ready to pay, which is precisely what the app cannot know without a W-4.
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+fl+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(fi)+'</td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span style="color:var(--muted,#666)">needs a W-4</span></td><td><span class="badge bx">Gross only</span></td></tr>';
   }).join('');
   $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens);
   // YTD was gross x 13, which contradicted the 26 periods 80h implied and broke
@@ -2321,6 +2355,10 @@ function rPay(){
       ? 'Per-pay-period figures sum each employee on their OWN cycle ('+parts.join(', ')+
         '), so on a mixed roster this is not a single-date cash total — YTD Payroll is the annualised figure and is safe to compare. '+
         'Benefits use each employee\'s recorded monthly employer cost, prorated to their cycle; '+
+        // The withholding refusal is stated on the same line as the other
+        // assumption counts, because a reader scanning this note is exactly
+        // the reader who would otherwise take Net pay at face value.
+        'FEDERAL AND STATE WITHHOLDING ARE NOT COMPUTED and neither is net pay \u2014 both need each employee\'s W-4, filing status and dependants, none of which this app records. Employee FICA is shown because it is flat and statutory. '+
         t.employees_on_assumed_benefit_cost+' of '+emps.length+' fall back to the $520/month assumption, and '+
         t.employees_on_default_frequency+' have no pay frequency recorded and are treated as biweekly.'
       : 'No active employees — nothing is being assumed.';
@@ -2714,6 +2752,11 @@ function rBud(){
 // payroll rather than invent a prevailing-wage rate, on the grounds that the
 // consequence is a federal filing. Same call, same grounds.
 var SB_TAX_FICA_RATE = 0.0765;
+// The EMPLOYEE half. Numerically the same 7.65% -- 6.2% Social Security plus
+// 1.45% Medicare -- but it is different money from the employer share above,
+// withheld from the worker rather than paid by the shop, and naming it
+// separately stops the two being read as one figure counted twice.
+var SB_EMPLOYEE_FICA_RATE = 0.0765;
 
 // Each refusal names what it would take, so this reads as scoped work rather
 // than a feature that quietly vanished.
@@ -3141,7 +3184,7 @@ function genReport(type){
     var payrollReportWarning='';
     var payrollReportAnomalies=checkPayrollAnomalies().filter(function(f){return f.severity==='critical';});
     if(payrollReportAnomalies.length){payrollReportWarning='<div style="background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:var(--danger);">This report includes '+payrollReportAnomalies.length+' unresolved payroll issue(s) -- see Payroll panel before relying on these figures.</div>';}
-    $('rbody').innerHTML=payrollReportWarning+'<table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
+    $('rbody').innerHTML=payrollReportWarning+'<table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Employee FICA</th><th>Fed / state withholding</th><th>Net pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>'+'<div style="margin-top:10px;font-size:12px;color:var(--muted,#666)"><strong>This report states gross pay and employee FICA only.</strong> Federal and state withholding are not computed and neither is net pay: they depend on each employee\'s W-4, filing status and dependants, which this app does not record. Total Labor Cost is gross plus employer FICA plus benefits \u2014 it excludes FUTA, SUTA and workers\' compensation, so it is not a fully-loaded figure. Not a payroll filing.</div>';
   }
   else if(type==='tax'){
     rTax();
