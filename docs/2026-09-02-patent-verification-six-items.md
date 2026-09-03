@@ -7,6 +7,20 @@
  line against `git log` before relying on any item.** Every claim names its
  file so that re-check is cheap.
 
+**Item 2 has since been corrected to BUILT** (2026-09-02, later the same day),
+by the same mechanism §4 used and for the same reason. **Item 4's caveat is now
+the document's rule, not its exception:** two of six items changed status
+within hours of being verified. Re-check both against the tree.
+
+> **NO MEASURED PROMPT SIZE EXISTS YET, and no number in this document should
+> be read as one.** Every token figure here and in the code is `chars ÷ 4`.
+> `api/claude.js` now *reads* Anthropic's `usage` block and
+> `sql/sairn_ai_usage_columns_2026-09-02.sql` adds the two columns that would
+> store it — but **that migration has not been confirmed as run in Supabase**,
+> and 99 `/api/claude` calls in the last 24 hours carry no size in any log
+> this session could reach. The instrumentation is in place; the measurement
+> is not. See item 5, which is the same gap seen from the metering side.
+
 **Standard applied:** accuracy over completeness. "Not built" is recorded as
 "not built" wherever that is what the code says. Every claim below names the
 file and, where it matters, the line, so counsel can verify it independently
@@ -55,6 +69,75 @@ half a given feature uses is a per-feature fact, not a platform-wide one.
 ---
 
 ## 2. "Composite Inference Context"
+
+> **CORRECTED 2026-09-02, later the same day — this item is now BUILT.** It
+> read "Not built" and that was accurate when written. It was then built
+> deliberately, as `[0039]`, rather than discovered. The original finding is
+> kept below the correction rather than deleted, for the same reason §4's is:
+> *when* a thing was built is itself a fact counsel may need, and the gap this
+> closed is the clearest statement of what the construct is for.
+
+### Built, as of `sdBuildInferenceContext()` in `stonedesk.html`
+
+There is now a named construct that assembles inference context as a
+**structured object**, and the string that goes over the wire is one field of
+it (`.system`) rather than the whole of it. Verified against the code:
+
+- **Named fields.** `sdCtxProfileFields()` returns business-profile data as a
+  list of `{key, label, value, pos, drop, tokens}` — `company_name`, `ein`,
+  `city`, `state`, `headcount`, `revenue_range`, `owner_name`, `ai_notes` —
+  replacing eight chained `+` operators. Absent values yield absent fields.
+- **Scored, ranked selection.** `sdCtxScoreMemories()` scores every candidate
+  memory on two axes and ranks them: **relevance** to the message actually
+  being answered (term overlap, normalised by the square root of the query's
+  term count) at weight **0.65**, and **recency** (exponential decay,
+  **30-day half-life**) at weight **0.35**. Selection is best-first, not
+  `slice(0, 10)`. **With no query the ranking degenerates to pure recency**,
+  which is exactly the previous order — asserted in the test suite so the old
+  behaviour is a floor rather than something that changed silently.
+- **A token budget.** `SD_CONTEXT_BUDGET_TOKENS = 3000` bounds the assembled
+  system prompt, which was previously unbounded. The bound is measured off the
+  rendered string and re-measured after every drop, not summed from per-part
+  estimates.
+- **A defined merge/drop policy.** Inferred is cut before declared and
+  machine-written before human-written: memories lowest-scored first, then
+  observed style directives, then profile fields in a declared rank order
+  (shop notes → revenue → EIN → owner → headcount → city/state). The base
+  prompt, the shop's name and the declared style note are never droppable;
+  when even that core will not fit, the object reports `over: true` rather
+  than sending an oversized request quietly.
+- **Withholding is disclosed.** When memories are held back — by the budget or
+  by the ten-memory cap — the prompt says so and tells the model not to treat
+  the list as complete. The previous `slice(0, 10)` withheld memories 11–20
+  from a twenty-memory shop and said nothing.
+- **Tested:** `tests/composite_context.js`, **63 assertions**, extracted from
+  the real `stonedesk.html` rather than restated. **Mutation-tested against
+  seven separate mutations** (drop the date guard, reorder the drop policy,
+  remove the disclosure, remove the future-clamp, restore the hardcoded city
+  default, make the shop name droppable, zero the relevance weight) — **each
+  one fails at least one assertion.**
+
+**Two fabricated facts were removed in the course of this, and counsel should
+know they existed**, because they were in the prompt of every AI call the app
+made:
+
+- `'City: ' + (p.city || 'Westlake') + ', Ohio'` — **both halves hardcoded**.
+  A shop that had not filled in a city was described to the model as being in
+  Westlake; a shop that *had* filled one in was still stamped Ohio. The model
+  was then asked for advice on pricing, labour and permitting for the wrong
+  state.
+- `'Headcount: ' + (p.headcount || 1)` — asserted a one-person shop whenever
+  headcount was unset.
+
+Both are now absent-when-unknown.
+
+**What this does not do**, so counsel is not left to infer it: the construct is
+StoneDesk's. Other apps still have their own separate prompt builders, and
+nothing here is shared across them yet. **The token figures are estimates**
+(chars ÷ 4) and are labelled as such in the code — see item 5 and the note
+below on why no measured figure exists yet.
+
+### Original finding, accurate until `[0039]`
 
 **Not built. No construct of that name exists, and no abstraction plays that
 role.**
@@ -260,7 +343,7 @@ user or stored.
 | # | Item | Status |
 |---|---|---|
 | 1 | Database / storage structure | **Built** — hybrid: Postgres/jsonb via per-app API, plus substantial browser `localStorage` |
-| 2 | Composite Inference Context | **Not built** — no such construct; a per-app string concatenation exists instead |
+| 2 | Composite Inference Context | **Built as of `[0039]` (2026-09-02)** — `sdBuildInferenceContext()`: named profile fields, memories scored on relevance (0.65) + recency (0.35, 30-day half-life) instead of `slice(0,10)`, a 3,000-token bound on the assembled system prompt, and a declared drop order with disclosure. 63 assertions, 7 mutations. **Was "not built" earlier the same day** — see the correction in §2. StoneDesk only; other apps still concatenate |
 | 3 | Intelligence-extraction pipeline | **Half built** — server endpoint and table real and verified; the client write path is unreachable and has produced zero data |
 | 4 | User style profiles | **Built as of `e634c8d` (2026-09-02)** — observed from the user's own messages, gated at 5 samples, persisted per `(license_hash, employee_id)`, applied to the prompt, client/server parity tested. **Was "not built" earlier the same day** — see the correction in §4 |
 | 5 | Token-deduction concurrency | **Not built** — no balance, no deduction; the counter that exists is non-atomic and ships non-blocking |

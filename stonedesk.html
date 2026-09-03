@@ -3793,8 +3793,19 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     //
     // The guardrail goes LAST, deliberately: it is the nearest instruction to
     // the user's message and must not be diluted by profile text above it.
+    //
+    // [0039] `msg` is passed so the composite inference context can rank this
+    // shop's memories against the question actually being asked, instead of
+    // taking the ten most recently written. With no argument it falls back to
+    // recency order, which is what this call did before.
     var _sdBase = '';
-    try { if (typeof buildSDSystemPrompt === 'function') _sdBase = buildSDSystemPrompt(); } catch(e) { _sdBase = ''; }
+    var _sdCtx = null;
+    try {
+      if (typeof buildSDSystemPrompt === 'function') {
+        _sdBase = buildSDSystemPrompt(msg);
+        _sdCtx = buildSDSystemPrompt.lastContext || null;
+      }
+    } catch(e) { _sdBase = ''; _sdCtx = null; }
     var _sdGuard='You are the AI assistant for StoneDesk, a stone fabrication shop management platform. Be concise, practical, and industry-specific. Never provide your own estimate, guess, or general-knowledge substitute for any fact a tool would have provided -- if a tool errors, is denied, or a question calls for data you have not actually retrieved via a tool this turn, say so plainly and stop.';
     var sys = _sdBase ? (_sdBase + '\n\n' + _sdGuard) : _sdGuard;
     // Fire the extraction trigger from the path that actually runs. The
@@ -3817,6 +3828,22 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     // number shown without a warning -- the answer changes and nobody knows why.
     if(_plan.dropped&&typeof notify==='function')notify('Chat is long — the oldest '+_plan.dropped+' message'+(_plan.dropped===1?'':'s')+' were left out of this request to stay inside the model’s budget.','warn');
     if(_plan.over&&typeof notify==='function')notify('This request is still over budget even after trimming — the reply may be truncated.','warn');
+    // [0039] The system half has its own budget and its own drop policy, so
+    // it gets its own disclosure. Losing a shop's own profile fields or its
+    // past-session notes changes the answer at least as much as losing old
+    // chat turns does, and it is the half that was previously unbounded.
+    if(_sdCtx&&_sdCtx.dropped&&_sdCtx.dropped.length&&typeof notify==='function'){
+      // Collapsed, because the drop loop cuts memories one at a time and a
+      // raw join reads "memory, memory, memory, memory".
+      var _memCut=0,_other=[];
+      _sdCtx.dropped.forEach(function(d){
+        if(d.kind==='memory')_memCut++; else _other.push(d.label);
+      });
+      var _parts=[];
+      if(_memCut)_parts.push(_memCut+' past-session note'+(_memCut===1?'':'s'));
+      _parts=_parts.concat(_other);
+      notify('Shop context was trimmed to fit this request — left out: '+_parts.join(', ')+'.','warn');
+    }
     fetch('https://sairn.vercel.app/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},
       body:JSON.stringify({app_id:'stonedesk',is_demo:true,system:sys,messages:_plan.messages,tools:toolDefs})
     }).then(function(r){return r.json();}).then(function(r){
@@ -26254,29 +26281,338 @@ async function writeSDMemory() {
   } catch(e) {}
 }
 
+// ── [0039] COMPOSITE INFERENCE CONTEXT (2026-09-02) ─────────────────────────
+// WHAT THIS REPLACES, stated plainly because the gap was structural rather
+// than a bug: buildSDSystemPrompt() concatenated four blocks with `+` and
+// returned a string. There was no object, no field any caller could inspect,
+// no relevance selection -- memory choice was `_sdMemories.slice(0, 10)`,
+// which is insertion order and nothing else -- and no bound of any kind on
+// the result. The [0039] budget shipped earlier the same day bounds
+// `messages`; the `system` half it measures itself against was unbounded.
+//
+// FOUR THINGS ARE ADDED HERE AND NOTHING ELSE:
+//   1. NAMED FIELDS. Business-profile data is a list of {key, label, value,
+//      drop rank}, not eight `+` operators.
+//   2. SCORED SELECTION. Memories are ranked on relevance to the message
+//      actually being answered and on recency, then taken best-first.
+//   3. A TOKEN BUDGET on the assembled system prompt.
+//   4. A DEFINED DROP POLICY for what is cut, in what order, when it does
+//      not fit -- and the caller is told, rather than the prompt quietly
+//      losing a fact the answer then depends on.
+//
+// Network intelligence is deliberately NOT a field here. It reaches the
+// prompt only on the legacy mode-context path, wiring it into the live one
+// would be a behaviour change nobody asked for, and adding an always-empty
+// field to satisfy symmetry is exactly the dormant code this project's own
+// rules forbid.
+//
+// THE TOKEN FIGURES ARE ESTIMATES AND SAY SO, for the same reason the
+// message budget's are: nothing on this platform records a real assembled
+// prompt size yet. api/claude.js now READS Anthropic's `usage` block and
+// sql/sairn_ai_usage_columns_2026-09-02.sql adds the two columns that would
+// hold it -- but until that migration is actually run in Supabase there is
+// still nothing to calibrate against, and this comment must not be read as
+// saying there is. chars/4 is the standard English-prose approximation and
+// errs high rather than pretending to precision.
+
+// Same 4 as the message budget's SD_TOK_CHARS, and deliberately a SECOND
+// copy rather than a shared one: that constant lives inside the chat IIFE
+// several thousand lines above, and reaching into another scope to save four
+// characters is how a later edit to one silently changes the other.
+var SD_CTX_TOK_CHARS = 4;
+
+// The SYSTEM prompt's share of a request. The shape of this is measured from
+// the real file, not guessed: the base prompt is 2,086 chars (522 est
+// tokens) and the guardrail sendMsg appends afterwards is 383 (96), so ~618
+// of this is fixed and cannot be dropped. 3,000 leaves roughly 2,400 for
+// profile + memories + style, which no ordinary shop comes near.
+//
+// It bites on the one genuinely unbounded input on this path, which is
+// memory TEXT. writeSDMemory() ASKS the model for 120 characters and asking
+// is all it does; a memory synced back from Supabase is bounded only by that
+// table's 64KB row check, and twenty of those would be ~320,000 chars in the
+// system prompt of every single turn.
+var SD_CONTEXT_BUDGET_TOKENS = 3000;
+
+// Best ten by score, not the newest ten. The COUNT is deliberately unchanged
+// from the slice(0, 10) this replaces, so that this change is about WHICH
+// memories are chosen and not a quiet increase in how many are sent. The
+// budget can still cut it below ten.
+var SD_CTX_MAX_MEMORIES = 10;
+
+// Relevance outweighs recency but not overwhelmingly: a memory about the
+// exact subject being asked about should beat a newer unrelated one, while a
+// shop whose history has no strong term match still gets its recent context.
+//
+// WITH NO QUERY -- buildSDSystemPrompt() called with no argument, which is
+// what the legacy mode-context call site still does -- relevance is 0 for
+// every memory and the ranking degenerates to pure recency, which is exactly
+// the order slice(0, 10) produced. That degeneration is deliberate and is
+// asserted in tests/composite_context.js: the old behaviour is the floor,
+// never a silent change.
+var SD_CTX_W_RELEVANCE = 0.65;
+var SD_CTX_W_RECENCY   = 0.35;
+var SD_CTX_RECENCY_HALFLIFE_DAYS = 30;
+
+var SD_CTX_STOPWORDS = (function(){
+  var o = {}, w = ('the and for are but not you your our with that this from have has had was were will would can could should about into out over under more most any all some what when which who whom how why then than they them their there here been being does did done get got make made take taken need needs want wants use used using just also very much many'.split(' '));
+  for (var i = 0; i < w.length; i++) o[w[i]] = 1;
+  return o;
+})();
+
+function sdCtxEstTokens(v){
+  if (v == null) return 0;
+  var s = (typeof v === 'string') ? v : JSON.stringify(v);
+  return Math.ceil(s.length / SD_CTX_TOK_CHARS);
+}
+
+function sdCtxTerms(text){
+  if (text == null) return [];
+  var out = [], seen = {};
+  String(text).toLowerCase().split(/[^a-z0-9]+/).forEach(function(w){
+    if (w.length < 3 || SD_CTX_STOPWORDS[w] || seen[w]) return;
+    seen[w] = 1; out.push(w);
+  });
+  return out;
+}
+
+// Overlap normalised by the square root of the QUERY's term count, not by the
+// union. Two reasons, both about not lying with a ratio: a long memory should
+// not be penalised for containing more than was asked about, which is what
+// Jaccard would do; and a one-word question should not score a perfect 1.0
+// off one incidental match, which is what plain hits/queryTerms would do.
+// sqrt gives 1-of-1 a 1.0 only when the query genuinely is one term, and
+// lets 3-of-9 reach 1.0 rather than 0.33.
+function sdCtxRelevance(memTerms, queryTerms){
+  if (!queryTerms.length || !memTerms.length) return 0;
+  var set = {}, hits = 0;
+  memTerms.forEach(function(t){ set[t] = 1; });
+  queryTerms.forEach(function(t){ if (set[t]) hits++; });
+  if (!hits) return 0;
+  var r = hits / Math.sqrt(queryTerms.length);
+  return r > 1 ? 1 : r;
+}
+
+// NULL is a real answer here and is deliberately not rounded into a number.
+// A memory with no usable created_at is not "now" (which would rank it
+// first) and not the epoch (which would rank it last). It scores 0 on this
+// axis, stays fully eligible on relevance, and the composite object records
+// that it was undated so the reason is inspectable rather than inferred.
+//
+// THE GUARD IS Number.isFinite ON THE PARSED TIME, NOT A TRUTHINESS CHECK.
+// new Date('').getTime() is NaN, but new Date(null).getTime() is 0 -- the
+// empty-value-becomes-a-number trap this codebase has been bitten by more
+// than once, and 0 here would confidently mean "January 1970".
+function sdCtxRecency(createdAt, nowMs){
+  if (createdAt == null || createdAt === '') return null;
+  var t = new Date(createdAt).getTime();
+  if (!Number.isFinite(t)) return null;
+  var ageDays = (nowMs - t) / 86400000;
+  // A clock-skewed future stamp is treated as now, never as extra-recent --
+  // otherwise a wrong clock buys a memory a permanent top ranking.
+  if (ageDays < 0) ageDays = 0;
+  return Math.pow(0.5, ageDays / SD_CTX_RECENCY_HALFLIFE_DAYS);
+}
+
+function sdCtxScoreMemories(memories, query, nowMs){
+  var qTerms = sdCtxTerms(query);
+  var scored = [];
+  (memories || []).forEach(function(m, i){
+    var text = (m && m.memory_text) ? String(m.memory_text) : '';
+    if (!text.trim()) return;
+    var rel = sdCtxRelevance(sdCtxTerms(text), qTerms);
+    var rec = sdCtxRecency(m && m.created_at, nowMs);
+    scored.push({
+      memory: m,
+      text: text,
+      order: i,
+      relevance: rel,
+      recency: rec,
+      dated: rec !== null,
+      score: (SD_CTX_W_RELEVANCE * rel) + (SD_CTX_W_RECENCY * (rec === null ? 0 : rec)),
+      tokens: sdCtxEstTokens(text)
+    });
+  });
+  // Equal scores keep insertion order, which for this store is newest-first.
+  // Array.prototype.sort is not guaranteed stable on every engine this ships
+  // to, so the tie-break is written out rather than assumed.
+  scored.sort(function(a, b){
+    if (b.score !== a.score) return b.score - a.score;
+    return a.order - b.order;
+  });
+  return scored;
+}
+
+// NAMED FIELDS. Each carries the label the model sees, the value, and the
+// order it is dropped in -- `drop` ascending is cut first, `drop: null` is
+// never cut.
+//
+// TWO FABRICATED FACTS ARE REMOVED HERE RATHER THAN CARRIED ACROSS, and they
+// are called out because a rewrite is exactly where this kind of thing gets
+// silently preserved:
+//
+//   * The old line was `'City: ' + (p.city || 'Westlake') + ', Ohio\n'`.
+//     BOTH halves were hardcoded. A shop that had not filled in a city was
+//     telling the model it is in Westlake; a shop in Dallas that HAD filled
+//     one in was still stamped Ohio. The model was then asked for advice on
+//     permitting, labour rates and pricing for the wrong state. City is now
+//     a field that is simply absent when unknown, and state is its own field
+//     with no default at all.
+//   * `'Headcount: ' + (p.headcount || 1)` asserted a one-person shop
+//     whenever headcount was unset. Unknown is now unknown.
+//
+// Neither is a behaviour I could preserve while claiming these are named
+// fields carrying real profile data, so neither survived.
+function sdCtxProfileFields(p){
+  if (!p || !p.company_name) return [];
+  var pref = p.preferences || {};
+  var raw = [
+    { key:'company_name',  label:'Shop',           value:p.company_name,  pos:1, drop:null },
+    { key:'ein',           label:'EIN',            value:p.ein,           pos:2, drop:3 },
+    { key:'city',          label:'City',           value:p.city,          pos:3, drop:6 },
+    { key:'state',         label:'State',          value:p.state,         pos:4, drop:6 },
+    { key:'headcount',     label:'Headcount',      value:(p.headcount == null || p.headcount === '' ? '' : p.headcount + ' employees'), pos:5, drop:5 },
+    { key:'revenue_range', label:'Annual Revenue', value:(p.revenue_range ? String(p.revenue_range).replace(/_/g,' ') : ''), pos:6, drop:2 },
+    { key:'owner_name',    label:'Owner',          value:pref.owner_name, pos:7, drop:4 },
+    { key:'ai_notes',      label:'Shop Notes',     value:pref.ai_notes,   pos:8, drop:1 }
+  ];
+  var out = [];
+  raw.forEach(function(f){
+    if (f.value == null || String(f.value).trim() === '') return;
+    f.value = String(f.value);
+    f.tokens = sdCtxEstTokens(f.label + ': ' + f.value + '\n');
+    out.push(f);
+  });
+  return out;
+}
+
+function sdCtxRenderProfile(fields){
+  if (!fields.length) return '';
+  var ordered = fields.slice().sort(function(a, b){ return a.pos - b.pos; });
+  return '\n\nBUSINESS PROFILE:\n' + ordered.map(function(f){
+    return f.label + ': ' + f.value;
+  }).join('\n') + '\n';
+}
+
+function sdCtxRenderMemories(selected, withheld){
+  if (!selected.length) return '';
+  var s = '\n\nWHAT YOU KNOW ABOUT THIS SHOP (from past sessions):\n' +
+    selected.map(function(m, i){ return (i+1) + '. ' + m.text; }).join('\n');
+  // Same discipline as the truncated tool result on the message side: if the
+  // model is seeing part of something, it is told so. The old slice(0, 10)
+  // withheld memories 11-20 from a twenty-memory shop and said nothing.
+  if (withheld > 0) {
+    var one = (withheld === 1);
+    s += '\n[' + withheld + ' further note' + (one ? '' : 's') +
+         ' about this shop ' + (one ? 'exists' : 'exist') +
+         ' and ' + (one ? 'was' : 'were') + ' left out of this request for size. ' +
+         'Do not treat the list above as everything you know about them.]';
+  }
+  return s;
+}
+
+// THE DROP POLICY, in one place so it can be read and argued with.
+//
+// Cut inferred before declared, and machine-written before human-written:
+//   1. memories, LOWEST-SCORED FIRST -- model-summarised text, and the
+//      ranking above has already said which matter least here.
+//   2. observed style directives -- inferred from behaviour, and they shape
+//      tone rather than carrying any fact.
+//   3. profile fields by ascending drop rank: shop notes (free text, the
+//      largest and least structured of the declared facts), then revenue,
+//      then EIN, then owner, then headcount, then city/state.
+// Never cut: the base prompt, the shop's name, and the declared style note.
+//
+// Shop notes are dropped WHOLE rather than truncated. A half-sentence of a
+// shop's own operating notes read as a complete instruction is worse than
+// their absence, and unlike a tool result there is no natural unit to cut to.
+function sdBuildInferenceContext(input){
+  input = input || {};
+  var budget   = (input.budgetTokens != null) ? input.budgetTokens : SD_CONTEXT_BUDGET_TOKENS;
+  var reserved = input.reservedTokens || 0;
+  var nowMs    = (input.nowMs != null) ? input.nowMs : Date.now();
+
+  var base       = input.base || '';
+  var styleNote  = input.styleNote || '';
+  var directives = input.styleDirectives || '';
+
+  var profileFields = sdCtxProfileFields(input.profile);
+  var ranked        = sdCtxScoreMemories(input.memories, input.query, nowMs);
+  var considered    = ranked.length;
+  var selected      = ranked.slice(0, SD_CTX_MAX_MEMORIES);
+  var cappedOut     = considered - selected.length;
+
+  var dropped = [];
+  var keepDirectives = directives !== '';
+
+  function render(){
+    var withheld = cappedOut + dropped.filter(function(d){ return d.kind === 'memory'; }).length;
+    return base +
+      sdCtxRenderProfile(profileFields) +
+      sdCtxRenderMemories(selected, withheld) +
+      styleNote +
+      (keepDirectives ? directives : '');
+  }
+
+  // Measure the RENDERED string and re-measure after every drop, rather than
+  // summing per-part estimates. Headings, separators and the withheld-notes
+  // line all cost tokens, and a total assembled from parts would quietly
+  // disagree with the thing actually sent.
+  var system = render();
+  var total  = sdCtxEstTokens(system) + reserved;
+
+  while (total > budget) {
+    var cut = null;
+    if (selected.length) {
+      cut = { kind: 'memory', label: 'memory', tokens: selected[selected.length - 1].tokens };
+      selected.pop();
+    } else if (keepDirectives) {
+      cut = { kind: 'style_directives', label: 'observed style directives', tokens: sdCtxEstTokens(directives) };
+      keepDirectives = false;
+    } else {
+      var droppable = profileFields.filter(function(f){ return f.drop != null; });
+      if (!droppable.length) break;
+      droppable.sort(function(a, b){ return a.drop - b.drop; });
+      var victim = droppable[0];
+      cut = { kind: 'profile_field', label: victim.label, key: victim.key, tokens: victim.tokens };
+      profileFields = profileFields.filter(function(f){ return f !== victim; });
+    }
+    dropped.push(cut);
+    system = render();
+    total  = sdCtxEstTokens(system) + reserved;
+  }
+
+  return {
+    system: system,
+    tokens: total,
+    budget: budget,
+    reserved: reserved,
+    // `over` means even the undroppable core exceeds the budget. Reported
+    // rather than swallowed, exactly as sdBudgetMessages does it.
+    over: total > budget,
+    dropped: dropped,
+    fields: {
+      base:             { tokens: sdCtxEstTokens(base), required: true },
+      profile:          { entries: profileFields, count: profileFields.length },
+      memories:         { selected: selected, considered: considered,
+                          capped_out: cappedOut,
+                          undated: ranked.filter(function(m){ return !m.dated; }).length,
+                          ranked: ranked },
+      style_note:       { text: styleNote, required: true },
+      style_directives: { text: keepDirectives ? directives : '', present: keepDirectives }
+    }
+  };
+}
+
 // === SYSTEM PROMPT BUILDER — injects profile + memories into every AI call ===
-function buildSDSystemPrompt() {
+// `query` is the message being answered, and it is what turns memory
+// selection from an ordering into a choice. Omitting it is supported and
+// falls back to recency order -- see SD_CTX_W_RELEVANCE above.
+function buildSDSystemPrompt(query) {
   // Base StoneDesk system prompt (preserved from original)
   const base = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO. SAIRNBIZ ROUTING: payroll, paystubs, HR, employee benefits, and accounting/bookkeeping are handled by SAIRNbiz, included free with this subscription. If asked about these, say it's handled in SAIRNbiz (not QuickBooks/Gusto/ADP) and point them to the SAIRNbiz tile in the SAIRN Suite launcher.";
 
-  let profileBlock = '';
   const p = _sdBizProfile;
-  if (p && p.company_name) {
-    profileBlock = '\n\nBUSINESS PROFILE:\n' +
-      'Shop: ' + p.company_name + '\n' +
-      (p.ein ? 'EIN: ' + p.ein + '\n' : '') +
-      'City: ' + (p.city || 'Westlake') + ', Ohio\n' +
-      'Headcount: ' + (p.headcount || 1) + ' employees\n' +
-      (p.revenue_range ? 'Annual Revenue: ' + (p.revenue_range+'').replace(/_/g,' ') + '\n' : '') +
-      (p.preferences && p.preferences.owner_name ? 'Owner: ' + p.preferences.owner_name + '\n' : '') +
-      (p.preferences && p.preferences.ai_notes ? 'Shop Notes: ' + p.preferences.ai_notes + '\n' : '');
-  }
-
-  let memBlock = '';
-  if (_sdMemories && _sdMemories.length > 0) {
-    memBlock = '\n\nWHAT YOU KNOW ABOUT THIS SHOP (from past sessions):\n' +
-      _sdMemories.slice(0, 10).map(function(m, i) { return (i+1) + '. ' + m.memory_text; }).join('\n');
-  }
 
   // NEXUS STYLE PROFILE (2026-09-02). The block below was, until now, the ONLY
   // per-person signal in this prompt -- and it is one word, set by hand, on the
@@ -26303,7 +26639,28 @@ function buildSDSystemPrompt() {
     }
   } catch (e) { styleDirectives = ''; }
 
-  return base + profileBlock + memBlock + styleNote + styleDirectives;
+  // [0039] The four blocks above are no longer concatenated here. They are
+  // handed to the composite context, which names them, ranks the memories
+  // against `query`, bounds the result and reports what it had to cut.
+  //
+  // `reservedTokens` is the guardrail sendMsg appends AFTER this returns
+  // (383 chars, 96 est tokens). Leaving it out would let this function fill
+  // the budget exactly and then have 96 tokens added behind its back, which
+  // is a budget that is wrong by construction rather than by measurement.
+  var _ctx = sdBuildInferenceContext({
+    base: base,
+    profile: p,
+    memories: _sdMemories,
+    styleNote: styleNote,
+    styleDirectives: styleDirectives,
+    query: query,
+    reservedTokens: 96
+  });
+  // Exposed for the caller and for live inspection. This is the composite
+  // object itself, not a copy of the string -- the point of [0039] is that
+  // there IS one.
+  buildSDSystemPrompt.lastContext = _ctx;
+  return _ctx.system;
 }
 
 // === SAIRN INTELLIGENCE NETWORK WIRING (added June 16 2026) ===
