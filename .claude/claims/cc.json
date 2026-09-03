@@ -351,8 +351,8 @@
       "task": "literal duplication full sweep and platform tos venue",
       "claimed_at": "2026-09-03T12:57:56Z",
       "claimed_at_epoch": 1788440276.4345906,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T18:06:52Z"
     }
   ]
 }
