@@ -390,8 +390,8 @@
       "task": "nesting machine output dxf GAP2",
       "claimed_at": "2026-09-03T00:54:21Z",
       "claimed_at_epoch": 1788396861.2460804,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T01:28:09Z"
     }
   ]
 }
