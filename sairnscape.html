@@ -466,10 +466,20 @@ function showUpgradeBar(data) {
   bar.innerHTML = `<span>Monthly token limit reached</span><a href="mailto:support@sairntechnologies.com" style="background:linear-gradient(135deg,#F43F5E,#E11D48);color:#fff;padding:6px 16px;border-radius:100px;font-size:12px;font-weight:700;text-decoration:none">Add Tokens</a><button onclick="document.getElementById('sairn-upgrade-bar').remove()" style="background:none;border:none;color:#404060;cursor:pointer;font-size:16px">×</button>`;
   document.body.appendChild(bar);
 }
-async function loadUserMemory() {
-  const token=localStorage.getItem('sairn_token'); if(!token) return '';
-  try { const res=await fetch('https://sairn.vercel.app/api/memory',{headers:{'Authorization':'Bearer '+token}}); const {memory}=await res.json(); if(!memory?.facts?.length) return ''; return '\n\nClient and property history you have on record:\n'+memory.facts.slice(-20).map(f=>'- '+f.fact).join('\n'); } catch(e) { return ''; }
-}
+// loadUserMemory() lived here and is DELETED (2026-09-03). It fetched
+// https://sairn.vercel.app/api/memory -- an endpoint that does not exist -- and
+// was gated on `sairn_token`, which is read in this file and SET NOWHERE on the
+// platform, so it could not have run even if the endpoint had been there. It
+// was also never called. Three independent reasons it was dead; cloudLoadMemory
+// above is the real implementation.
+// ⚠ api/greeting DOES NOT EXIST -- 404 on every page load, swallowed by the
+// catch at the end of this function, so the empty-state welcome shows instead
+// and nobody has ever seen a personalised greeting. LEFT IN PLACE rather than
+// deleted, unlike the two dead memory legs removed in this commit: those had a
+// working replacement, this does not, and quietly deleting a product feature
+// because its backend was never built is a decision for the person who wants
+// the feature, not for the person who found the 404. Recorded in
+// docs/SAIRN-OPEN-WORK-INDEX.md instead.
 async function loadFirstMessage() {
   try {
     const now = new Date();
@@ -514,10 +524,12 @@ async function loadFirstMessage() {
 // shareResponse() -- none of which are defined anywhere in this file, so
 // even if it had been reachable, Save and Share would have thrown. No
 // working behavior was lost by removing it.
-window.addEventListener('beforeunload',()=>{
-  const token=localStorage.getItem('sairn_token');
-  if(token&&messages.length>=2){try{fetch('https://sairn.vercel.app/api/memory',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({action:'extract',messages:messages.slice(-10),app_id:APP_ID})});}catch(e){}}
-});
+// A beforeunload handler lived here and is DELETED (2026-09-03). It POSTed the
+// last ten messages to https://sairn.vercel.app/api/memory -- an endpoint that
+// does not exist, 404 on every page close -- gated on `sairn_token`, which
+// nothing on this platform sets, fire-and-forget inside a try/catch so the
+// failure could never surface. Memory extraction is now cloudSaveMemory(),
+// which runs on every reply rather than on unload and lands in a real table.
 
 // ============================================================
 // SAIRN Universal Intelligence Layer v6.2
@@ -561,27 +573,6 @@ async function cloudSaveMemory(content) {
       if (saved) sessionOutcomes.saved++;
     }
   } catch(e) { /* the local copy above is already written */ }
-  // The legacy leg below targets api/memory-cloud, WHICH DOES NOT EXIST. Kept
-  // only until the next commit removes it, so the diff that adds the real path
-  // and the diff that deletes the dead one stay separately reviewable.
-  try {
-    await fetch('https://sairn.vercel.app/api/memory-cloud', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'X-User-ID': SAIRN_USER_ID,
-        'X-App-ID': APP_ID,
-      },
-      body: JSON.stringify({content: content.slice(0, 400), user_id: SAIRN_USER_ID, app_id: APP_ID}),
-    });
-    sessionOutcomes.saved++;
-  } catch(e) {
-    // ⚠ "local backup is enough" was TRUE ONLY BECAUSE NOTHING READ EITHER ONE.
-    // api/memory-cloud does not exist (404, probed live 2026-09-03), so this
-    // catch has swallowed every save since the feature shipped. The local write
-    // above is now genuinely read back by cloudLoadMemory(), which is what
-    // makes this sentence honest rather than reassuring.
-  }
 }
 
 async function cloudLoadMemory() {
@@ -596,25 +587,10 @@ async function cloudLoadMemory() {
       }
     }
   } catch(e) {}
-  // ⚠ THE CLOUD LEG IS DEAD AND IS KEPT DELIBERATELY, NOT BY OVERSIGHT.
-  // api/memory-cloud DOES NOT EXIST -- probed live 2026-09-03, POST returns
-  // 404. The try/catch below is what has been hiding that. It is left in place
-  // rather than deleted because the endpoint is the next piece of work and the
-  // shape of the request is the specification for it; removing it would throw
-  // away the only written record of what the client expects to receive.
-  //
-  // What is NOT left in place is the pretence: the marketing and pricing copy
-  // now says per-device, because per-device is what the local fallback below
-  // actually delivers.
-  try {
-    const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
-      headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
-    });
-    const data = await res.json();
-    if(data.entries && data.entries.length) {
-      return 'Memory from previous sessions:\n' + data.entries.slice(0, 8).map(function(e) { return e.content; }).join('\n---\n');
-    }
-  } catch(e) {}
+  // The api/memory-cloud read leg lived here and is gone as of this commit --
+  // the endpoint never existed and the real path above replaces it. What
+  // remains below is the local store, which is now a genuine FALLBACK (offline,
+  // or the demo chat) rather than the only thing that ever ran.
   // Fall back to local
   try {
     const key = 'sairn_local_' + APP_ID;

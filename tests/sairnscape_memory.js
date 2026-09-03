@@ -142,15 +142,11 @@ test('a dead cloud endpoint does NOT suppress the local answer', async () => {
   assert.match(out, /Whitfield/, 'a 404 on the cloud leg swallowed the local memory');
 });
 
-test('a live cloud endpoint would be preferred over local', async () => {
-  // Proves the fallback is a fallback and not the only path -- which is what
-  // step 2 of this work depends on.
-  const c = harness({ cloudDead: false, cloudBody: { entries: [{ content: 'from the server' }] } });
-  await c.cloudSaveMemory('a local note about a property that is long enough');
-  const out = await c.cloudLoadMemory();
-  assert.match(out, /from the server/);
-  assert.match(out, /previous sessions/);
-});
+// The step-1 version of this test drove the api/memory-cloud fetch, which is no
+// longer in the file -- the real server leg replaced it and the dead one is
+// deleted. The property it checked, that a live server answer beats the local
+// store, is now covered by "a signed-in read PREFERS the server" against the
+// path that actually ships.
 
 test('short scraps are not saved as memory', async () => {
   const c = harness();
@@ -262,10 +258,26 @@ test('the feature card no longer claims it remembers EVERYTHING', () => {
 // ── THE DEAD ENDPOINTS ARE STILL DEAD, AND SAID TO BE ──────────────────────
 section('what is still missing is labelled, not hidden');
 
-test('the dead cloud endpoint is named as dead in the code', () => {
-  const at = html.indexOf('async function cloudLoadMemory()');
-  const head = html.slice(at, at + 900);
-  assert.match(head, /DOES NOT EXIST/, 'the dead cloud leg reads as working code');
+test('the dead memory endpoints are GONE from the file, not just commented', () => {
+  // Both api/memory-cloud legs and the beforeunload api/memory extract are
+  // deleted now that a real path exists. What is left is a comment saying where
+  // they were and why, so a reader does not conclude they were never attempted.
+  const live = html.split('\n').filter(function (l) {
+    return l.indexOf('sairn.vercel.app/api/memory') !== -1 && l.trim().indexOf('//') !== 0;
+  });
+  assert.deepStrictEqual(live, [], 'a live call to a nonexistent memory endpoint remains');
+  assert.ok(html.indexOf('is DELETED (2026-09-03)') > 0, 'the deletions are unexplained');
+});
+
+test('api/greeting is still called, and is LABELLED as 404ing', () => {
+  // Deliberately NOT deleted with the memory legs: those had a working
+  // replacement, this does not, and removing a product feature because its
+  // backend was never built is not this change's call to make.
+  const at = html.indexOf('async function loadFirstMessage()');
+  assert.ok(at > 0, 'loadFirstMessage is gone -- was that deliberate?');
+  const before = html.slice(Math.max(0, at - 800), at);
+  assert.ok(before.indexOf('api/greeting DOES NOT EXIST') !== -1,
+    'the greeting 404 reads as working code');
 });
 
 test('the reassuring catch comment is gone', () => {
@@ -324,14 +336,12 @@ test('the feature card distinguishes signed-in memory from the demo chat', () =>
     'the demo chat limitation is no longer stated');
 });
 
-test('api/memory-cloud, api/memory and api/greeting are still absent', () => {
-  // Recorded so that when one of them is built, this fails and the comments
-  // above get revisited rather than going stale.
-  ['memory-cloud.js', 'memory.js', 'greeting.js'].forEach((f) => {
-    assert.ok(!fs.existsSync(path.join(ROOT, 'api', f)),
-      'api/' + f + ' now exists -- update the "dead endpoint" comments in ' +
-      'sairnscape.html and this test');
-  });
+test('api/greeting is still absent -- if it lands, the comment must go', () => {
+  // memory-cloud.js and memory.js are no longer checked: nothing calls them and
+  // nothing should, so whether they exist is not this file's business any more.
+  // greeting is, because loadFirstMessage still calls it on every page load.
+  assert.ok(!fs.existsSync(path.join(ROOT, 'api', 'greeting.js')),
+    'api/greeting.js now exists -- remove the 404 comment in sairnscape.html');
 });
 
 run().then(() => {
