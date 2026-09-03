@@ -273,8 +273,8 @@
       "task": "click through pass every panel",
       "claimed_at": "2026-09-02T23:59:55Z",
       "claimed_at_epoch": 1788393595.9920993,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T00:17:07Z"
     }
   ]
 }
