@@ -311,6 +311,26 @@ arrived here through this file rather than a trigger word:
 - Use `python`, not `python3`, on this machine — python3 resolves to the
   Microsoft Store stub, not the real install at C:\Python314\python.exe.
 
+### Line endings — ONE-TIME step per clone, added 2026-09-03
+
+`.gitattributes` went repo-wide in `2e31819`, so the stored blobs are now LF
+and `git check-attr` reports zero unspecified paths. **The working-tree half is
+not retroactive.** Files already on disk keep CRLF until git next writes them,
+and `git status` stays clean the whole time, because the clean filter converts
+on the way in and the result already matches the blob — so nothing will ever
+prompt you to do this.
+
+**Run once per clone, with nothing uncommitted:**
+
+    git rm --cached -r -q . && git reset --hard
+
+Until you do, a byte comparison between this repo and anything outside it still
+reports phantom differences — that is what produced three separate false alarms
+in one session on 2026-09-03 (a skill-store mirror diff naming 12 identical
+skills, the push gate's seed-divergence note naming all 72 seed files on a
+clean checkout, and the standing deploy-mismatch hook fires). **A CRLF-vs-LF
+difference is not drift.** Compare after `tr -d '\r'` before reporting one.
+
 ## Response Style
 - No narration before or after actions — act, then report only the result
 - No "let me check / good news / confirmed" commentary
