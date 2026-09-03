@@ -310,8 +310,8 @@
       "task": "duplicate base system prompt drawing advisor",
       "claimed_at": "2026-09-03T03:07:16Z",
       "claimed_at_epoch": 1788404836.0455549,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T03:16:38Z"
     }
   ]
 }
