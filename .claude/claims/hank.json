@@ -432,6 +432,16 @@
       "claimed_at_epoch": 1788405924.1000473,
       "status": "released",
       "released_at": "2026-09-03T10:49:04Z"
+    },
+    {
+      "id": "hank-1788433477",
+      "session": "hank",
+      "subject": "sairndental",
+      "task": "realsync localstorage quota exhaustion",
+      "claimed_at": "2026-09-03T11:04:37Z",
+      "claimed_at_epoch": 1788433477.4199154,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
