@@ -365,6 +365,16 @@
       "claimed_at_epoch": 1788461035.452222,
       "status": "released",
       "released_at": "2026-09-03T18:52:00Z"
+    },
+    {
+      "id": "cody-1788462519",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "system settings write only never read",
+      "claimed_at": "2026-09-03T19:08:39Z",
+      "claimed_at_epoch": 1788462519.0896845,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
