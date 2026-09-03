@@ -115,6 +115,18 @@ DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/legal-deadlines"
 REFERENCE_ENDPOINT = "https://sairn.vercel.app/api/reference-fingerprint"
 SQL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql")
 
+# ── WHY SQL_DIR IS OVERRIDABLE -- added 2026-09-03 ───────────────────────────
+# Read from the working tree by default, which is right for a person asking
+# "does live match what I have?". It is NOT right for the push gate, which asks
+# a different question: "does live match what this push will SHIP?" Those two
+# diverge whenever a seed commit sits in HEAD but is not in the range being
+# pushed, and on 2026-09-01 that divergence DENIED an engine-only commit for 13
+# New Hampshire rules it did not contain.
+#
+# So tools/sairn_push_gate_hook.py exports sql/ at the pushed tip and points
+# --sql-dir at it. Same comparison, same exit codes, a different notion of
+# "the repo" -- which is the only part that was ever wrong.
+
 # ── THE OTHER APPS ───────────────────────────────────────────────────────────
 # SAIRNlaw keeps all rule content in one `data` blob and has its own endpoint.
 # Every other app's reference tables carry PROMOTED COLUMNS holding
@@ -487,7 +499,21 @@ def main():
     ap.add_argument("--endpoint", default="")
     ap.add_argument("--expect-stale", action="store_true",
                     help="licence is knowingly behind (e.g. LAW-TEST-2026); report drift but exit 0")
+    ap.add_argument("--sql-dir", default="",
+                    help="read seed files from this directory instead of the working tree's sql/. "
+                         "Used by the push gate to compare live against the PUSHED commit rather "
+                         "than against whatever happens to be checked out.")
     args = ap.parse_args()
+
+    if args.sql_dir:
+        global SQL_DIR
+        if not os.path.isdir(args.sql_dir):
+            raise SystemExit("--sql-dir is not a directory: %s" % args.sql_dir)
+        SQL_DIR = args.sql_dir
+        # Said out loud rather than applied silently: every MISSING/STALE line
+        # below is now about that directory, and a reader who assumes the
+        # working tree would draw the wrong conclusion from identical output.
+        print("Seed files read from: %s (not the working tree)" % os.path.abspath(SQL_DIR))
 
     if args.app != "sairnlaw":
         key = args.key or os.environ.get(REFERENCE_APPS[args.app]["env"], "")

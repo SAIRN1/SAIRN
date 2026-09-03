@@ -97,6 +97,39 @@ FAILS OPEN on any exception, same standard as git_push_master_guard.py and
 redaction_check.py: never let a hook bug block a legitimate command. That is a
 deliberate trade -- a hook that crashes closed gets disabled, and then it
 protects nothing at all.
+
+WHAT "THE COMMITS BEING PUSHED" MEANS -- CORRECTED 2026-09-03
+------------------------------------------------------------
+It used to mean `origin/main..HEAD`, unconditionally, in both modes. That is
+right only when the push sends HEAD, and two failures followed from it:
+
+  * `git push origin <sha>:main` was checked as though it pushed HEAD. On
+    2026-09-01 an engine-only commit touching zero seed files was DENIED for 13
+    New Hampshire rules living in a LATER seed commit that the push was not
+    sending. The gate refused the deploy-then-load-then-push ordering that this
+    file's own documentation prescribes.
+  * check 1 then read sql/*.json off DISK, so even a correctly-scoped push was
+    compared against whatever happened to be checked out.
+
+Both are fixed by asking a narrower question: which commit does this push
+actually send, and what did the seed files look like AT THAT COMMIT. prepush
+mode reads the local sha git supplies on stdin; pretooluse mode parses the
+refspec out of the command text (see pushed_tip). Check 1 exports sql/ at that
+tip (see export_sql_at) and points the checker at it with --sql-dir. If the
+export fails, the working tree is used and the deny message SAYS which reading
+it got -- the old behaviour is still available, it is just no longer silent.
+
+THE OVERRIDE IS REACHABLE NOW, AND WAS NOT BEFORE
+-------------------------------------------------
+`SAIRN_SEED_GATE=off` was read from os.environ only. That works in prepush mode
+(git runs the hook as a child of the shell) and CANNOT work in pretooluse mode:
+the hook runs inside Claude Code's process and inherits Claude Code's
+environment, not the environment of the command it is inspecting. An inline
+`SAIRN_SEED_GATE=off git push ...` set the variable in a child shell the hook
+never saw, and the push was denied identically -- while eight deny messages
+told the reader to do exactly that. Pretooluse mode now reads the assignment
+out of the command text, ignoring quoted mentions so that a commit message
+quoting the string cannot disable the gate.
 """
 import json
 import os
@@ -174,7 +207,57 @@ def git(repo, *args):
     return out.stdout if out.returncode == 0 else ''
 
 
-def outgoing_files(repo, base=None):
+def pushed_tip(repo, cmd):
+    """The LOCAL commit a pretooluse-mode push would actually send.
+
+    ADDED 2026-09-03, because every check below used to diff against HEAD no
+    matter what the command said. `git push origin <sha>:main` therefore got
+    checked as if it were pushing HEAD, and on 2026-09-01 an engine-only commit
+    was DENIED naming 13 New Hampshire rules that lived in a LATER seed commit
+    sitting in HEAD -- a commit the push was not sending. The gate was refusing
+    the exact load-then-push ordering its own documentation prescribes.
+
+    Parsed from the command text because that is the only description of the
+    push a PreToolUse hook gets. Handles the shapes that actually occur:
+
+        git push                      -> HEAD
+        git push origin main          -> main
+        git push origin HEAD:main     -> HEAD
+        git push origin abc123:main   -> abc123
+        git push -u origin feature    -> feature
+        git push --dry-run origin x:main -> x
+
+    Anything unparseable falls back to HEAD, which is what this always did --
+    so a refspec shape not handled here is no worse than before, never worse.
+    """
+    tail = re.split(r'\bgit\s+push\b', cmd, maxsplit=1)
+    if len(tail) < 2:
+        return 'HEAD'
+    words = []
+    for w in tail[1].split():
+        if w in (';', '&&', '||', '|'):
+            break
+        if w.startswith('-'):
+            # --dry-run, -u, --force, --set-upstream ... none name a ref.
+            continue
+        words.append(w)
+    if not words:
+        return 'HEAD'
+    # First word after the flags is the remote; the second, if any, is the
+    # refspec. `git push` with a lone argument is a remote, not a ref.
+    spec = words[1] if len(words) > 1 else None
+    if not spec:
+        return 'HEAD'
+    local = spec.split(':', 1)[0].lstrip('+')
+    if not local:
+        # `git push origin :branch` DELETES a remote branch and ships nothing.
+        return None
+    if not git(repo, 'rev-parse', '--verify', '--quiet', local + '^{commit}').strip():
+        return 'HEAD'
+    return local
+
+
+def outgoing_files(repo, base=None, tip='HEAD'):
     """Files changed by the commits this push would actually send.
 
     Falls back through three references rather than assuming an upstream is
@@ -187,10 +270,13 @@ def outgoing_files(repo, base=None):
     better than origin/main when present, because it is what the REMOTE has
     right now rather than what this clone last fetched -- the same stale-ref
     trap that made the deploy-drift hook false-alarm three times in one night.
+
+    `tip` is the LOCAL end of the range and was hardcoded to HEAD until
+    2026-09-03. See pushed_tip() for what that cost.
     """
     refs = ([base] if base else []) + ['@{u}', 'origin/main']
     for ref in refs:
-        out = git(repo, 'log', ref + '..HEAD', '--name-only', '--pretty=format:')
+        out = git(repo, 'log', ref + '..' + tip, '--name-only', '--pretty=format:')
         if out.strip():
             return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
     return []
@@ -211,20 +297,152 @@ def prepush_base():
     deletion blocked, which is a pure false positive: deleting a remote ref
     cannot ship a migration.
 
-    Returns (base_sha_or_None, is_delete_only).
+    Returns (base_sha_or_None, is_delete_only, local_sha_or_None).
+
+    The LOCAL sha was added 2026-09-03. git states outright which commit is
+    being sent, so prepush mode never has to guess it from HEAD -- and pushing
+    a ref that is not HEAD is precisely the case the gate got wrong.
     """
     try:
         data = sys.stdin.read()
     except Exception:
-        return None, False
+        return None, False, None
     lines = [l.split() for l in data.splitlines() if l.split()]
     refs = [p for p in lines if len(p) == 4]
     if refs and all(set(p[1]) == {'0'} for p in refs):
-        return None, True
+        return None, True, None
+    local = next((p[1] for p in refs if set(p[1]) != {'0'}), None)
     for parts in refs:
         if set(parts[3]) != {'0'}:
-            return parts[3], False
-    return None, False
+            return parts[3], False, local
+    return None, False, local
+
+
+# The override line every deny message ends with. It is a single constant
+# because it was WRONG in eight places at once between 2026-09-01 and
+# 2026-09-03: it told the reader to set an environment variable the PreToolUse
+# hook could not see, so the documented escape hatch did nothing and eight
+# copies of the instruction all had to be believed to find that out.
+OVERRIDE_HINT = ("Override by putting SAIRN_SEED_GATE=off at the FRONT of the push command "
+                 "itself (SAIRN_SEED_GATE=off git push ...), not in a separate export. "
+                 "Say so out loud if you do.")
+
+OVERRIDE_RE = re.compile(
+    r"""(?:^|[;&|\n]|\bexport\s+)\s*SAIRN_SEED_GATE\s*=\s*(['"]?)off\1(?=\s|$|[;&|])""",
+    re.IGNORECASE)
+
+
+def override_in_command(cmd):
+    """Is `SAIRN_SEED_GATE=off` set as a real shell assignment in this command?
+
+    WHY THIS EXISTS -- found 2026-09-01, fixed 2026-09-03. The override was
+    read from os.environ only. In PREPUSH mode that is correct: git runs the
+    hook as a child of the shell, so `SAIRN_SEED_GATE=off git push` reaches it.
+    In PRETOOLUSE mode it is unreachable -- the hook runs inside Claude Code's
+    own process and inherits Claude Code's environment, not the environment of
+    the command it is inspecting. The inline prefix sets the variable in a child
+    shell the hook never sees, so the documented escape hatch did nothing and
+    the push was denied identically. Every deny message in this file told the
+    reader to do something that could not work.
+
+    So the assignment is read out of the command TEXT, which is the same payload
+    already parsed for the push refspec.
+
+    QUOTED MENTIONS DO NOT COUNT, and that matters here more than it usually
+    would: this repo's commit messages and this very file quote the string
+    "SAIRN_SEED_GATE=off" in prose. `git commit -m "... SAIRN_SEED_GATE=off"
+    && git push` must NOT disable the gate. A match is honoured only when it is
+    anchored at a command boundary AND falls outside every quoted span.
+    """
+    for m in OVERRIDE_RE.finditer(cmd):
+        head = cmd[:m.start()]
+        # An odd count of either quote means the match sits inside a string.
+        # Escaped quotes are removed first so \" does not open a span.
+        plain = head.replace('\\"', '').replace("\\'", '')
+        if plain.count('"') % 2 == 0 and plain.count("'") % 2 == 0:
+            return True
+    return False
+
+
+def _nl(b):
+    """Normalise line endings before comparing two versions of a text file."""
+    return b.replace(b'\r\n', b'\n')
+
+
+def export_sql_at(repo, tip):
+    """Write sql/ as it exists at `tip` to a temp dir. Returns (dir, note).
+
+    ADDED 2026-09-03 alongside pushed_tip(). Deriving the seed FILE LIST from
+    the pushed range fixed which apps get checked; this fixes what their content
+    is compared against. Both were the same bug seen from two ends: the gate
+    asked "does live match the repo" when the only question that matters at push
+    time is "does live match what this push will SHIP".
+
+    Returns (None, note) on any failure. The caller then falls back to the
+    working tree, which is what this always did -- an export that cannot be made
+    must not turn a working gate into a denied push.
+
+    `note` is non-empty only when the exported seeds DIFFER from the working
+    tree, because that is the one case where a reader who assumes the old
+    behaviour would misread identical output. Reconciling the two readings
+    rather than silently replacing one with the other.
+    """
+    import atexit
+    import shutil
+    import tempfile
+    try:
+        out = subprocess.run(['git', '-C', repo, 'ls-tree', '-r', '--name-only', tip, 'sql/'],
+                             capture_output=True, text=True, timeout=20)
+        if out.returncode != 0:
+            return None, 'sql/ could not be listed at %s' % tip
+        names = [n.strip() for n in out.stdout.splitlines()
+                 if n.strip().endswith('.json')]
+        if not names:
+            return None, ''
+        dest = tempfile.mkdtemp(prefix='sairn-seed-')
+        # atexit rather than a try/finally: every deny path below calls
+        # sys.exit() from inside the caller, so a finally here would never run
+        # on the branches that matter and the dirs would accumulate one per
+        # blocked push.
+        atexit.register(shutil.rmtree, dest, True)
+        differs = []
+        for name in names:
+            blob = subprocess.run(['git', '-C', repo, 'show', '%s:%s' % (tip, name)],
+                                  capture_output=True, timeout=20)
+            if blob.returncode != 0:
+                return None, 'could not read %s at %s' % (name, tip)
+            data = blob.stdout
+            with open(os.path.join(dest, os.path.basename(name)), 'wb') as f:
+                f.write(data)
+            disk = os.path.join(repo, name)
+            if os.path.isfile(disk):
+                with open(disk, 'rb') as f:
+                    # LINE ENDINGS ARE NOT A CONTENT DIFFERENCE, and comparing
+                    # raw bytes said they were. `git show` hands back the blob
+                    # with LF; core.autocrlf leaves CRLF in the working tree, so
+                    # the first version of this reported ALL 72 seed files as
+                    # diverged on a clean checkout -- caught by this change's own
+                    # probe before it shipped. A note that fires on every push is
+                    # a note nobody reads, and it would have buried the real
+                    # divergence it exists to surface. Same false-alarm class as
+                    # the skill-store mirror diff and the deploy-drift hook.
+                    if _nl(f.read()) != _nl(data):
+                        differs.append(os.path.basename(name))
+            else:
+                differs.append(os.path.basename(name) + ' (absent from the working tree)')
+        note = ''
+        if differs:
+            shown = ', '.join(differs[:8])
+            if len(differs) > 8:
+                shown += ' and %d more' % (len(differs) - 8)
+            note = ("Seeds were read from the PUSHED commit %s, which differs from the working "
+                    "tree for: %s. The working tree is not what gets deployed, so the pushed "
+                    "content is the honest comparison -- but the loader you run reads the "
+                    "WORKING TREE, so loading and then pushing these will not agree."
+                    % (tip, shown))
+        return dest, note
+    except Exception as e:
+        return None, '%s: %s' % (type(e).__name__, e)
 
 
 def main():
@@ -238,11 +456,12 @@ def main():
     # bypass fixes landed within minutes of each other and the second disabled
     # the first; neither test would have caught it alone.
     cmd = ''
+    tip = 'HEAD'
     if MODE == 'prepush':
         # git already decided a push is happening. There is no command text to
         # match and nothing to opt out of -- that is the entire point of this
         # entry point existing.
-        base, delete_only = prepush_base()
+        base, delete_only, local = prepush_base()
         if delete_only:
             sys.exit(0)
     else:
@@ -250,10 +469,25 @@ def main():
         cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
         if not re.search(r'\bgit\s+push\b', cmd):
             sys.exit(0)
+        # The override, read where it is actually reachable from a Bash call.
+        # Checked BEFORE any work so an override costs nothing and behaves
+        # exactly like the env var does in prepush mode.
+        if override_in_command(cmd):
+            sys.exit(0)
+        local = None
 
     repo = git(os.getcwd(), 'rev-parse', '--show-toplevel').strip()
     if not repo or not os.path.isdir(os.path.join(repo, 'sql')):
         sys.exit(0)
+
+    if MODE == 'prepush':
+        tip = local or 'HEAD'
+    else:
+        tip = pushed_tip(repo, cmd)
+        if tip is None:
+            # `git push origin :branch` -- a deletion, which ships nothing.
+            # Same exemption prepush mode already had for an all-zero local sha.
+            sys.exit(0)
 
     # ── COMMIT-AND-PUSH IN ONE CALL: A REAL HOLE, FOUND BY FALLING INTO IT ──
     # This is a PreToolUse hook. It runs BEFORE a single character of the
@@ -301,7 +535,7 @@ def main():
                 "Run the commit and the push as TWO separate commands. The gate then sees",
                 "the real commit and checks it.",
                 "",
-                "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                OVERRIDE_HINT,
             ]))
 
     checker = os.path.join(repo, 'tools', 'sairn_load_state_check.py')
@@ -309,7 +543,7 @@ def main():
         sys.exit(0)
 
     # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
-    changed = outgoing_files(repo, base)
+    changed = outgoing_files(repo, base, tip)
     sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
     if sql_changed:
         gcheck = os.path.join(repo, 'tools', 'employee_auth_guard_check.py')
@@ -333,7 +567,7 @@ def main():
                     "provisioner, so it cannot get there. That is why the guard belongs in",
                     "the file rather than in the app.",
                     "",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]
                 deny(chr(10).join(msg))
 
@@ -380,7 +614,7 @@ def main():
                     "checker used to allow the push silently; that is the failure mode this",
                     "gate exists to prevent, so it now denies instead.",
                     "",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]))
             if p.returncode == 4:
                 deny(chr(10).join([
@@ -395,7 +629,7 @@ def main():
                     "",
                     "Point it somewhere else with SAIRN_SCHEMA_SNAPSHOT=<path> if the snapshot",
                     "lives outside the clone.",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]))
             if p.returncode == 1:
                 msg = [
@@ -416,7 +650,7 @@ def main():
                     "snapshot rather than overriding the gate.",
                     "",
                     "Full detail:  python tools/sairn_sql_preflight.py --live %s <file>" % snapshot,
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]
                 deny(chr(10).join(msg))
 
@@ -447,7 +681,7 @@ def main():
                     "  %s: %s" % (type(e).__name__, e),
                     "",
                     "A checker that cannot be run has not passed anything.",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]))
             if s.returncode == 1:
                 deny(chr(10).join([
@@ -466,7 +700,7 @@ def main():
                     "    // seam-check: server-supplied <field> [<field>...]",
                     "",
                     "Full detail:  python tools/sairn_seam_check.py",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]))
             if s.returncode == 2:
                 # A seam this tool cannot parse is not a pass and does not
@@ -534,7 +768,7 @@ def main():
                         "it belongs in SAIRN-BACKLOG.md -- the exemption file is for the checker",
                         "being wrong, not for work being deferred.",
                         "",
-                        "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                        OVERRIDE_HINT,
                     ]))
                 if rr.returncode == 2:
                     # The checker itself could not run -- a broken exemption file,
@@ -545,7 +779,7 @@ def main():
                         "",
                         rr.stdout.strip(),
                         "",
-                        "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                        OVERRIDE_HINT,
                     ]))
             except Exception as e:
                 deny(chr(10).join([
@@ -556,7 +790,7 @@ def main():
                     "This check became blocking on 2026-09-02. An unrunnable checker used to be",
                     "ignored here; that is the failure mode the whole gate exists to prevent.",
                     "",
-                    "Override with SAIRN_SEED_GATE=off, and say so out loud if you do.",
+                    OVERRIDE_HINT,
                 ]))
 
     # ── CHECK 1: seed load state ──────────────────────────────
@@ -568,13 +802,22 @@ def main():
     if not apps:
         sys.exit(0)
 
+    # ── COMPARE LIVE AGAINST THE PUSHED COMMIT, NOT THE WORKING TREE ────────
+    # Added 2026-09-03. The checker reads sql/*.json off disk, so the drift it
+    # reported described whatever was checked out rather than what the push
+    # would ship. Export sql/ at the tip instead. If the export fails for any
+    # reason the working tree is used, which is exactly the old behaviour --
+    # degraded, never worse, and said out loud below when the two differ.
+    seed_dir, seed_note = export_sql_at(repo, tip)
+
     drifted, untold = [], []
     for app in apps:
         env_name, default_key = APP_KEYS[app]
         key = os.environ.get(env_name) or default_key
         try:
             r = subprocess.run(
-                [sys.executable, checker, '--app', app, '--key', key],
+                [sys.executable, checker, '--app', app, '--key', key]
+                + (['--sql-dir', seed_dir] if seed_dir else []),
                 capture_output=True, text=True, timeout=60, cwd=repo)
         except Exception:
             untold.append((app, 'the check could not be run'))
@@ -604,8 +847,19 @@ def main():
             "Load first, then push. For SAIRNlaw:  python tools/load_deadline_seed.py <jurisdiction>",
             "Then verify by a CHANGED result on identical inputs -- a loader's exit code is not evidence.",
             "",
-            "If the drift is deliberate and unrelated to this push, re-run with SAIRN_SEED_GATE=off in the",
-            "environment. Say so out loud when you do; an override nobody mentions is how this gets hollowed out.",
+        ]
+        lines.append("Seeds compared as of the pushed commit %s, not the working tree." % tip
+                     if seed_dir else
+                     "Seeds compared from the WORKING TREE -- the pushed commit could not be read"
+                     + ((" (%s)" % seed_note) if seed_note else "")
+                     + ". That is the pre-2026-09-03 behaviour and can name rules this push does"
+                       " not contain; check the range before trusting the list above.")
+        if seed_dir and seed_note:
+            lines += ["", seed_note]
+        lines += [
+            "",
+            "If the drift is deliberate and unrelated to this push, " + OVERRIDE_HINT[0].lower() + OVERRIDE_HINT[1:],
+            "An override nobody mentions is how this gets hollowed out.",
         ]
         deny("\n".join(lines))
 

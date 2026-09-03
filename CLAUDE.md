@@ -381,6 +381,26 @@ Neither step is optional, going forward, regardless of how small the change look
    OPEN on any internal error, same standard as the other hooks, because one
    that crashes closed gets disabled and then protects nothing.
 
+   **Put it at the FRONT of the push command itself** —
+   `SAIRN_SEED_GATE=off git push ...` — not in a separate `export` line.
+   Corrected 2026-09-03, because between 2026-09-01 and that date **this
+   override did not work at all from a Bash tool call** and this line said it
+   did. The hook read the variable from `os.environ`; as a PreToolUse hook it
+   runs inside Claude Code's process and inherits Claude Code's environment,
+   not the environment of the command it is inspecting, so an inline prefix
+   set the variable in a child shell the hook never saw and the push was
+   denied identically. It now reads the assignment out of the command text.
+   A mention inside a quoted string — a commit message quoting the flag, which
+   this repo's messages really do — deliberately does **not** count.
+
+   Also corrected 2026-09-03: the gate used to check `origin/main..HEAD`
+   regardless of what the push actually sent, so `git push origin <sha>:main`
+   could be **denied for seed rules in a later commit it was not pushing**.
+   It now scopes to the ref being pushed and reads seed files as of that
+   commit rather than off disk. The workaround the old index row recommended
+   (checking out the engine commit detached and pushing from there) is no
+   longer needed.
+
 4. **If the push adds or changes a SQL file that writes credential rows, it
    must carry the recoverability guard.** Added 2026-08-29. A licence with
    `*_employee_auth` rows and ZERO rows that are both `active` and in that
