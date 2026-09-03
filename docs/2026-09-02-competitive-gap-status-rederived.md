@@ -155,10 +155,10 @@ bottom of this document being followed rather than described.
 | 4 | No slab-scanner integration | Absent | **OPEN** | 3 `slabsmith` hits: one comment, two AI system prompts. No SideShot / Iride / Mapascan interface |
 | 5 | No customer e-signature, no deposit collection | Absent | **OPEN** | `signedAt`/`signerName` are still only SAIRN's own service agreements. The 3 `stripe` hits are the price-book comment and the agreement text. "Deposit Required %" is a quote **term**, not payment processing |
 | 6 | No QuickBooks integration | **HELD OPEN ON PURPOSE** | **HELD OPEN — UNCHANGED** | Michael's call, 2026-09-02. A known competitive disadvantage StoneDesk is choosing to carry. Reopening is a SAIRNbiz platform decision, not a StoneDesk feature request |
-| 7 | No multi-location support | Absent | **OPEN** | Still 0 hits on `multi-location`, `multiLocation`, `locationId`, `location_id`, `sd_locations` |
+| 7 | No multi-location support | Absent | **BUILT — ATTRIBUTION, NOT ACCESS PARTITIONING** | `sd_locations`, `panel-locations` (Yards), `location_id` on the slab, per-yard rollup with Unassigned always its own row, yard filter on the Slabs panel; `tests/stonedesk_locations.js` 54/54 (Hank, 2026-09-03). **The panel states in terms that this does NOT scope any employee to a yard** — that is an authorisation change reaching every panel and the roster, and implying it were done would let a shop believe its yards were separated when they are not. ⚠ SQL pending |
 | 8 | No remnant publishing to the public website | Absent | **BUILT** (was PARTIAL earlier the same day) | `sd_remnants`, `publicRemnantView`, remnant card on `stonedesk-catalog.html`, publish toggle on the shop panel (Hank, 2026-09-02). Only a published **and still Available** piece reaches the web; the price **is** published, unlike a slab's cost. ⚠ SQL pending |
 
-**StoneDesk genuinely open: 4, 5 and 7.** GAP 1 (public catalog and order
+**StoneDesk genuinely open: 4 and 5, both vendor-gated.** GAP 7 closed 2026-09-03. GAP 1 (public catalog and order
 tracking), GAP 2 (DXF machine output) and the remnant half of GAP 8 all closed
 2026-09-02 -- 1 and 2 by Fourth, 8 by Hank. **GAP 2 is closed for DXF and
 permanently declined for G-code**, which is a real distinction and not a
@@ -197,7 +197,7 @@ a work item.
 
 | App | Item | Note |
 |---|---|---|
-| StoneDesk | GAP 7 — multi-location | Caps StoneDesk at single-yard shops |
+| ~~StoneDesk~~ | ~~GAP 7 — multi-location~~ | **Closed 2026-09-03** |
 | ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
 | ~~SAIRNsenior~~ | ~~A2 telephony fallback~~ | **Moved to vendor-blocked 2026-09-03** — needs an inbound DID/IVR provider |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |

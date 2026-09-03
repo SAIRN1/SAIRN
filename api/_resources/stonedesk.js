@@ -104,5 +104,17 @@ module.exports = {
   // resolving a shop_slug, exactly as it does for slabs.
   // REQUIRES sql/stonedesk_remnants_schema.sql to be run.
     'remnants',
+  // Multi-location / yards (2026-09-03, competitive-gap audit GAP 7) -- see
+  // sql/stonedesk_locations_schema.sql. A yard the shop operates. The SLAB is
+  // the only record that carries a location_id; quotes, jobs, POs and remnants
+  // derive theirs from the slab and store none of their own, because stamping a
+  // location onto a job at creation freezes it -- move the work and the history
+  // stays with the old yard forever.
+  //
+  // ATTRIBUTION, NOT ACCESS CONTROL. This does not scope any employee to any
+  // yard; every employee still reads every yard. Same licence-scoped gate as
+  // 'slabs' -- a yard's name and address is operational data.
+  // REQUIRES sql/stonedesk_locations_schema.sql to be run.
+    'locations',
   ],
 };

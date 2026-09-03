@@ -1306,6 +1306,51 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // ── LOCATIONS (sd_locations — competitive-gap audit GAP 7, 2026-09-03) ─
+    // Yards. Same licence-scoped gate as 'slabs' and 'remnants': a yard's name
+    // and address is operational data, not personnel or financial data.
+    //
+    // NO DELETE VERB, and none is coming. A closed yard is active:false and
+    // keeps its history; deleting one would leave every slab ever held there
+    // pointing at an id that resolves to nothing.
+    if (resource === 'locations' && action === 'read') {
+      const r = await fetch(rest('sd_locations?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (resource === 'locations' && action === 'write') {
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: 'location payload.id is required' } });
+        return;
+      }
+      // A yard with no name renders as a raw id everywhere it is shown, and a
+      // slab attributed to "LOC1759..." is attributed to nothing a human can
+      // read. Refused here rather than papered over at render time.
+      if (!String(payload.name || '').trim()) {
+        res.status(400).json({ error: { code: 'INVALID_LOCATION', message: 'location name is required -- an unnamed yard renders as a raw id on every screen that shows it' } });
+        return;
+      }
+      const r = await fetch(rest('sd_locations?on_conflict=license_hash,location_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash, app_id: 'stonedesk',
+          location_id: String(payload.id), data: payload, updated_at: nowISO()
+        })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/stonedesk_locations_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // ── REMNANTS (sd_remnants — competitive-gap audit GAP 8, 2026-09-02) ──
     // Mirrors the slab branch above, and deliberately has NO reserve verb: a
     // remnant is a single cut-off piece cleared over the counter, not a slab a

@@ -3408,6 +3408,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       </button>
       <div class="sb-section-body" id="sbsb-materials">
         <button class="sb-btn" id="sb-slabs"     onclick="sbNav('slabs')">    <span class="sb-icon">&#129521;</span><span class="sb-text">Slabs</span></button>
+        <button class="sb-btn" id="sb-locations" onclick="sbNav('locations')"><span class="sb-icon">&#127970;</span><span class="sb-text">Yards</span></button>
         <button class="sb-btn" id="sb-remnant"   onclick="sbNav('remnant')">  <span class="sb-icon">&#9643;</span><span class="sb-text">Remnant Yard</span></button>
         <button class="sb-btn" id="sb-inventory" onclick="sbNav('inventory')"><span class="sb-icon">&#128230;</span><span class="sb-text">Shop Supplies</span></button>
         <button class="sb-btn" id="sb-vendors"   onclick="sbNav('vendors')">  <span class="sb-icon">&#128666;</span><span class="sb-text">Vendors</span></button>
@@ -7094,6 +7095,38 @@ function sdInvExport(){
 </div>
 
   <!-- == SLAB INVENTORY == -->
+<!-- PANEL: YARDS / LOCATIONS (competitive-gap audit GAP 7, 2026-09-03).
+     The audit: "no multi-location support ... caps StoneDesk at single-yard
+     shops and excludes exactly the consolidating multi-branch fabricator that
+     has the budget." Verified absent word-boundary first: location_id 0,
+     locationId 0, sd_locations 0, multiLocation 0. -->
+<div class="panel" id="panel-locations">
+<div style="padding:20px;max-width:1100px;margin:0 auto">
+<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
+  <div><h2 style="font-size:20px;font-weight:800;color:var(--text);margin:0">&#127970; Yards</h2>
+  <div style="font-size:13px;color:var(--muted);margin-top:2px">Where your stone actually is &mdash; counted from the slabs, never stored</div></div>
+  <div style="display:flex;gap:8px;flex-wrap:wrap">
+    <button class="q-btn primary" onclick="sdLocAdd()">+ Add Yard</button>
+  </div>
+</div>
+<div style="background:#fff7ed;border:1px solid #fed7aa;border-radius:8px;padding:12px 16px;margin-bottom:14px;font-size:13px;color:#9a3412;line-height:1.7">
+  <b>This attributes inventory to a yard. It does NOT partition access.</b>
+  Every employee still sees every yard and every slab. Scoping a salesperson to their own yard is an authorisation change reaching every panel and the employee roster, and it is not this &mdash; saying otherwise would let a shop believe its yards were separated when they are not.
+  <div style="margin-top:6px"><b>A yard is not a bay.</b> The <i>Bay/location</i> already on each slab ("Rack B, row 2") is a position <i>inside</i> a yard and is untouched; the yard is which building the stone is in.</div>
+</div>
+<div class="kpi-row" style="margin-bottom:16px">
+  <div class="kpi"><div class="kpi-val" id="loc-kpi1">0</div><div class="kpi-label">Open Yards</div></div>
+  <div class="kpi"><div class="kpi-val" id="loc-kpi2">0</div><div class="kpi-label">Slabs Attributed</div></div>
+  <div class="kpi"><div class="kpi-val" id="loc-kpi3">0</div><div class="kpi-label">Unassigned</div></div>
+  <div class="kpi"><div class="kpi-val" id="loc-kpi4">&mdash;</div><div class="kpi-label">Inventory Value</div></div>
+</div>
+<div id="loc-note" style="font-size:12px;color:var(--muted);margin-bottom:12px"></div>
+<div id="loc-rollup"></div>
+<div style="margin-top:20px;font-weight:700;color:var(--text);margin-bottom:8px">Yards on file</div>
+<div id="loc-list"></div>
+</div>
+</div>
+
   <div class="panel" id="panel-slabs">
 <div style="padding:20px;max-width:1100px;margin:0 auto">
 <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px">
@@ -7351,6 +7384,9 @@ function sdInvExport(){
     <option value="Cut">Cut</option>
     <option value="Remnant">Remnant</option>
   </select>
+  <!-- GAP 7, 2026-09-03. Populated from sd_locations; hidden entirely until
+       a second yard exists, because a filter with one option is furniture. -->
+  <select id="slabs-location-filter" style="display:none;padding:8px 12px;border:1px solid var(--border);border-radius:6px;font-size:13px" onchange="sdSlabsRender()"></select>
 </div>
 <div id="slabs-list"></div>
 <div id="slabs-ai-out" style="display:none;margin-top:16px;background:#f0fdf4;border:1px solid #bbf7d0;border-radius:8px;padding:14px;font-size:13px;color:var(--text);white-space:pre-wrap"></div>
@@ -7487,7 +7523,12 @@ function sdInvExport(){
       var hay=((s.colorName||'')+(s.supplier||s.vendor||'')+(s.yardLocation||'')+(s.reservedFor||'')).toLowerCase();
       var match=hay.includes(q);
       var st=!sf||(sf==='Remnant'?isRem(s):dispStatus(s)===sf);
-      return match&&st;
+      // GAP 7. '' is every yard; '__none' is the Unassigned bucket, which has
+      // to be selectable or the slabs with no yard are the one group nobody can
+      // list -- and they are the group that needs attention.
+      var lf=(document.getElementById('slabs-location-filter')||{value:''}).value;
+      var loc=!lf||(lf==='__none'?!s.location_id:String(s.location_id||'')===lf);
+      return match&&st&&loc;
     });
 
     // KPIs from REAL data only. Inventory value sums only slabs that actually
@@ -7572,12 +7613,242 @@ function sdInvExport(){
     host.innerHTML=banner+'<div class="tw">'+html+'</div>';
   };
 
+  // ── LOCATIONS / YARDS (competitive-gap audit GAP 7, 2026-09-03) ─────────
+  // The SLAB is the only record that carries a location. Quotes, jobs, POs and
+  // remnants derive theirs from the slab and store none of their own -- stamping
+  // a yard onto a job at creation FREEZES it, so moving the work would leave the
+  // history attributed to the old yard forever.
+  //
+  // `location_id` IS THE YARD. `yardLocation` IS THE BAY INSIDE IT. The slab
+  // already carried yardLocation as free text ("Bay 3", "Rack B row 2") and that
+  // is untouched. The two are easy to conflate and the conflation is exactly why
+  // grepping "location" in this file suggested the feature was partly there when
+  // a word-boundary search for location_id returned zero.
+  //
+  // THIS IS ATTRIBUTION, NOT ACCESS CONTROL, and the panel says so in those
+  // words. Every employee still sees every yard.
+  var sdLocations = [];
+  function sdLocLoad(){
+    try{ sdLocations = JSON.parse(localStorage.getItem('sd_locations')||'[]'); }
+    catch(e){ sdLocations = []; }
+    return sdLocations;
+  }
+  function sdLocSave(){ try{ localStorage.setItem('sd_locations', JSON.stringify(sdLocations)); }catch(e){} }
+  window.sdLocList = function(){ return sdLocations; };
+  window.sdLocActive = function(){ return sdLocations.filter(function(l){ return l.active!==false; }); };
+  // A yard this device does not hold still had slabs in it. Saying so beats
+  // rendering a raw id, and beats relabelling them Unassigned -- they were
+  // assigned, to something not here. Same rule as SAIRNsenior brName().
+  window.sdLocName = function(id){
+    if(!id) return 'Unassigned';
+    var l = sdLocations.find(function(x){ return String(x.id)===String(id); });
+    return l ? l.name : '(yard not on this device)';
+  };
+  window.sdLocHydrate = async function(){
+    if(typeof sdData!=='function') return false;
+    var rows=null;
+    try{ rows = await sdData('read','locations',null); }catch(e){ return false; }
+    if(!rows||!Array.isArray(rows)) return false;
+    var byId={}; sdLocations.forEach(function(l){ if(l&&l.id) byId[l.id]=l; });
+    var changed=false;
+    rows.forEach(function(l){
+      if(!l||!l.id) return;
+      if(JSON.stringify(byId[l.id])!==JSON.stringify(l)){ byId[l.id]=l; changed=true; }
+    });
+    if(changed){ sdLocations=Object.keys(byId).map(function(k){return byId[k];}); sdLocSave(); }
+    return changed;
+  };
+  // COMPUTED FROM THE SLABS EVERY TIME, never stored. A stored per-yard count
+  // drifts the moment a slab moves, and nothing afterwards can say whether the
+  // counter or the slabs are right.
+  //
+  // UNASSIGNED IS ALWAYS ITS OWN ROW when anything lands in it. Every slab that
+  // exists today has no yard, because the field is new -- folding those into the
+  // first yard would attribute real inventory to a place it is not.
+  window.sdLocRollup = function(){
+    var slabs = (typeof sdSlabs!=='undefined'&&Array.isArray(sdSlabs)) ? sdSlabs : [];
+    var acc = {};
+    var bucket = function(id){
+      var k = id||'';
+      if(!acc[k]) acc[k] = { location_id:k, name:sdLocName(k), slabs:0, sqft:0, value:0, unpriced:0 };
+      return acc[k];
+    };
+    // Seed every open yard so one with nothing in it reads zero rather than
+    // vanishing from the table.
+    sdLocActive().forEach(function(l){ bucket(l.id); });
+    slabs.forEach(function(s){
+      var r = bucket(s.location_id||'');
+      r.slabs++;
+      r.sqft += Number(s.usableSqft||s.totalSqft||0)||0;
+      var c = (typeof slabCost==='function') ? slabCost(s) : null;
+      // A slab with no cost is COUNTED as unpriced, never summed as $0 -- the
+      // same rule the Slabs KPI row already follows.
+      if(c===null) r.unpriced++; else r.value += c;
+    });
+    var rows = Object.keys(acc).map(function(k){
+      var r=acc[k]; r.sqft=Math.round(r.sqft*100)/100; r.value=Math.round(r.value*100)/100; return r;
+    });
+    rows.sort(function(a,b){
+      if(!a.location_id) return 1;   // Unassigned last -- a gap to close, not a yard to rank
+      if(!b.location_id) return -1;
+      return (b.slabs-a.slabs) || String(a.name).localeCompare(String(b.name));
+    });
+    var totals = rows.reduce(function(t,r){
+      t.slabs+=r.slabs; t.sqft=Math.round((t.sqft+r.sqft)*100)/100;
+      t.value=Math.round((t.value+r.value)*100)/100; t.unpriced+=r.unpriced; return t;
+    },{slabs:0,sqft:0,value:0,unpriced:0});
+    return { rows: rows, totals: totals };
+  };
+
+  // ── THE YARDS PANEL ────────────────────────────────────────────────────
+  window.sdLocRender = function(){
+    // Painted from what is on the device first so the panel is never blank
+    // while the network is slow, then again once the server has answered.
+    sdLocPaint();
+    if(typeof sdLocHydrate==='function') sdLocHydrate().then(function(changed){ if(changed) sdLocPaint(); });
+  };
+  function sdLocE(v){ return (typeof escHtml==='function') ? escHtml(String(v==null?'':v)) : String(v==null?'':v); }
+  function sdLocMoney(v){ return (typeof fmtMoney==='function') ? fmtMoney(v) : ('$'+v); }
+  var LOC_DASH = String.fromCharCode(8212);
+
+  function sdLocPaint(){
+    var out = sdLocRollup();
+    var unassigned = out.rows.filter(function(r){ return !r.location_id; })[0];
+    var k = function(id,v){ var e=document.getElementById(id); if(e) e.textContent=v; };
+    k('loc-kpi1', sdLocActive().length);
+    k('loc-kpi2', out.totals.slabs - (unassigned?unassigned.slabs:0));
+    k('loc-kpi3', unassigned?unassigned.slabs:0);
+    k('loc-kpi4', out.totals.value ? sdLocMoney(out.totals.value) : LOC_DASH);
+
+    var note = document.getElementById('loc-note');
+    if(note){
+      var bits = [];
+      // The unpriced count is DISCLOSED rather than the value being presented as
+      // complete -- the same rule the Slabs KPI row already follows.
+      if(out.totals.unpriced) bits.push('<b>'+out.totals.unpriced+' slab(s) have no cost recorded</b> and are in no value below.');
+      if(unassigned && unassigned.slabs) bits.push('<b>'+unassigned.slabs+' slab(s) are attributed to no yard.</b> They are their own row and are never folded into a yard they are not in.');
+      if(!sdLocActive().length) bits.push('No yards on file, so every slab reads Unassigned. That is the correct answer, not an error.');
+      note.innerHTML = bits.join(' ');
+    }
+
+    var host = document.getElementById('loc-rollup');
+    if(host){
+      if(!out.rows.length){
+        host.innerHTML = '<div style="border:1px dashed var(--border);border-radius:10px;padding:24px;text-align:center;color:var(--muted)">No yards and no slabs yet.</div>';
+      } else {
+        var h = '<div class="tw"><table style="width:100%;border-collapse:collapse;font-size:13px"><thead><tr style="background:#f8fafc">'
+          + '<th style="padding:10px 12px;text-align:left;border-bottom:2px solid var(--border)">Yard</th>'
+          + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Slabs</th>'
+          + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Sq Ft</th>'
+          + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">Value</th>'
+          + '<th style="padding:10px 12px;text-align:right;border-bottom:2px solid var(--border)">No cost</th>'
+          + '</tr></thead><tbody>';
+        out.rows.forEach(function(r,i){
+          var bg = (i%2===0) ? '#fff' : '#f8fafc';
+          var nm = r.location_id ? sdLocE(r.name) : '<i>Unassigned</i>';
+          h += '<tr style="background:'+bg+'">'
+             + '<td style="padding:9px 12px;border-bottom:1px solid var(--border)">'+nm+'</td>'
+             + '<td style="padding:9px 12px;text-align:right;border-bottom:1px solid var(--border)">'+r.slabs+'</td>'
+             + '<td style="padding:9px 12px;text-align:right;border-bottom:1px solid var(--border)">'+r.sqft+'</td>'
+             + '<td style="padding:9px 12px;text-align:right;border-bottom:1px solid var(--border)">'+(r.value?sdLocMoney(r.value):LOC_DASH)+'</td>'
+             + '<td style="padding:9px 12px;text-align:right;border-bottom:1px solid var(--border);color:var(--muted)">'+(r.unpriced||LOC_DASH)+'</td>'
+             + '</tr>';
+        });
+        host.innerHTML = h + '</tbody></table></div>';
+      }
+    }
+
+    var list = document.getElementById('loc-list');
+    if(list){
+      var ls = sdLocList();
+      list.innerHTML = ls.length ? ls.map(function(l){
+        var closed = (l.active===false);
+        return '<div style="border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap">'
+          + '<div><b>'+sdLocE(l.name)+'</b>'+(closed?' <span style="font-size:11px;color:var(--muted)">(closed)</span>':'')
+          + '<div style="font-size:12px;color:var(--muted)">'+sdLocE(l.address||'no address')+'</div></div>'
+          + '<button class="q-btn" onclick="sdLocToggle('+JSON.stringify(String(l.id))+')">'+(closed?'Reopen':'Close')+'</button>'
+          + '</div>';
+      }).join('') : '<div style="color:var(--muted);font-size:13px">No yards yet. Add one and slabs can be attributed to it.</div>';
+    }
+
+    sdLocFillFilter();
+  }
+
+  // The Slabs panel filter. Hidden entirely below two yards -- a filter with one
+  // option is furniture, and it would imply a capability the shop has not set up.
+  function sdLocFillFilter(){
+    var sel = document.getElementById('slabs-location-filter');
+    if(!sel) return;
+    var ls = sdLocActive();
+    if(ls.length < 2){ sel.style.display='none'; sel.innerHTML=''; return; }
+    var cur = sel.value;
+    sel.style.display = '';
+    sel.innerHTML = '<option value="">All Yards</option>'
+      + ls.map(function(l){ return '<option value="'+sdLocE(l.id)+'">'+sdLocE(l.name)+'</option>'; }).join('')
+      + '<option value="__none">Unassigned</option>';
+    sel.value = cur;
+  }
+
+  window.sdLocAdd = async function(){
+    var name = prompt('Yard name (e.g. Cleveland):');
+    if(!name || !name.trim()) return;
+    var address = prompt('Address (optional):','') || '';
+    var rec = { id:'LOC'+Date.now(), name:name.trim(), address:address.trim(),
+                active:true, created_at:new Date().toISOString() };
+    sdLocations.push(rec); sdLocSave(); sdLocPaint();
+    // Written straight through, because the rollup on another machine reads the
+    // server and not this browser. A yard that only exists locally would show
+    // here and be invisible to everyone else -- the same failure the slab and
+    // remnant publish toggles were built to avoid.
+    var ok = null;
+    if(typeof sdData==='function'){ try{ ok = await sdData('write','locations',rec); }catch(e){ ok = null; } }
+    if(typeof notify==='function') notify(ok ? 'Yard saved'
+      : 'Saved on this device only -- the server has NOT got this yard. Try again with a connection.', ok?'ok':'err');
+  };
+
+  // CLOSED, NOT DELETED. A closed yard keeps its history; deleting one would
+  // leave every slab ever held there pointing at an id that resolves to nothing,
+  // which is why there is no delete verb on the server either.
+  window.sdLocToggle = async function(id){
+    var l = sdLocations.find(function(x){ return String(x.id)===String(id); });
+    if(!l){ if(typeof notify==='function') notify('Yard not found','err'); return; }
+    l.active = (l.active===false);
+    sdLocSave(); sdLocPaint();
+    var ok = null;
+    if(typeof sdData==='function'){ try{ ok = await sdData('write','locations',l); }catch(e){ ok = null; } }
+    if(typeof notify==='function') notify(ok ? (l.active?'Yard reopened':'Yard closed')
+      : 'Saved on this device only -- the server has NOT got this change.', ok?'ok':'err');
+  };
+
+  sdLocLoad();
+
   window.sdSlabsAdd=function(){
     var name=prompt('Stone / colour name:');
     if(!name)return;
     var vendor=prompt('Supplier:','')||'';
     var size=prompt('Size (e.g. 120x60):','120x60')||'';
     var location=prompt('Bay/location:','')||'';
+    // GAP 7. Asked ONLY when a second yard exists. On a single-yard shop
+    // there is no decision to make and a prompt would be a question with one
+    // answer; the slab then lands Unassigned, which is honest -- the shop has
+    // not told us its yards yet.
+    var locId='';
+    var locs=(typeof sdLocActive==='function')?sdLocActive():[];
+    if(locs.length>1){
+      // NL via fromCharCode: a literal newline inside these string literals
+      // is what a byte-level patch produced the first time, and it broke the
+      // whole script block rather than merely rendering oddly.
+      var NL=String.fromCharCode(10);
+      var menu=locs.map(function(l,i){return (i+1)+'. '+l.name;}).join(NL);
+      var pick=prompt('Which yard is this slab at?'+NL+menu+NL+NL+'Enter a number, or leave blank for unassigned:','');
+      var n=parseInt(pick,10);
+      // An out-of-range or unreadable answer leaves it UNASSIGNED rather than
+      // defaulting to the first yard. Guessing a location puts real stone in
+      // the wrong place on every screen that reads it.
+      if(n>=1&&n<=locs.length) locId=locs[n-1].id;
+    } else if(locs.length===1){
+      locId=locs[0].id;
+    }
     var costRaw=prompt('Slab cost ($, leave blank if unknown):','');
     var dims=String(size).split(/[xX]/);
     var L=parseFloat(dims[0])||0, W=parseFloat(dims[1])||0;
@@ -7588,7 +7859,7 @@ function sdInvExport(){
       totalSqft:(typeof slabSqft==='function'?slabSqft(L,W):0),
       usableSqft:(typeof slabSqft==='function'?slabSqft(L,W):0),
       cost:(cost!==null&&!isNaN(cost))?cost:null,
-      yardLocation:location, notes:'', reservedFor:'',
+      yardLocation:location, location_id:locId, notes:'', reservedFor:'',
       status:'in-stock', addedAt:new Date().toISOString()
     };
     if(typeof sdSlabs!=='undefined') sdSlabs.push(slab);
@@ -34821,6 +35092,7 @@ function sbNav(id) {
     if(id==='jobcost'&&typeof window.sdJCRender==='function')window.sdJCRender();
     if(id==='timesheet'&&typeof window.sdTSRender==='function')window.sdTSRender();
     if(id==='remnant'){if(typeof window.sdRemnantRender==='function')window.sdRemnantRender();}
+    if(id==='locations'&&typeof window.sdLocRender==='function')window.sdLocRender();
     if(id==='inventory'&&typeof renderInventory==='function')renderInventory();
     if(id==='receiving'&&typeof rcvRender==='function')rcvRender();
     if(id==='sms'&&typeof window.sdSMSRender==='function')window.sdSMSRender();
