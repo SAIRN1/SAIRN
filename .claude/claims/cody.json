@@ -285,6 +285,16 @@
       "claimed_at_epoch": 1788395466.6922922,
       "status": "released",
       "released_at": "2026-09-03T00:46:29Z"
+    },
+    {
+      "id": "cody-1788398596",
+      "session": "cody",
+      "subject": "sairnmechanical",
+      "task": "click through pass every panel",
+      "claimed_at": "2026-09-03T01:23:16Z",
+      "claimed_at_epoch": 1788398596.589097,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
