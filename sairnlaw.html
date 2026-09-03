@@ -1113,6 +1113,17 @@ label.chk input{width:auto;}
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
   </div></div>
 
+  <!-- SIGN-IN ACCESS (2026-09-03) -- the deactivation half of the credential
+       lifecycle. Until this shipped, a departing attorney or paralegal's sign-in could only be
+       switched off by a hand-written SQL edit in Supabase, which is what
+       api/sd-auth.js records as having lost three StoneDesk licences.
+       Owner-only here; api/law-auth.js refuses every other role regardless. -->
+  <div class="card" id="sec-access-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Sign-In Access</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn a sign-in off when someone leaves, and back on if they return. Deactivating deletes nothing &mdash; their name still resolves on matters and filings they are already attached to, and every audit-log entry they made stays exactly as written. They simply cannot sign in.</div>
+    <div id="sec-access" style="font-size:13px"></div>
+  </div></div>
+
   <div class="card"><div class="cb">
     <div style="font-weight:700;margin-bottom:4px">Audit Trail</div>
     <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Append-only. Nothing in this application can edit or delete an audit entry &mdash; there is no such code path.</div>
@@ -3763,6 +3774,9 @@ function rSecurity(){
   var s=lawSession||{};
   $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
   $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  var acc=$('sec-access-card');
+  if(acc)acc.style.display=(s.role==='owner'?'block':'none');
+  if(s.role==='owner')lawRenderAccess();
   rSecMfaState();
   rSecEncryption();
   if(s.role==='owner')secLoadAudit();
@@ -3801,6 +3815,81 @@ function secMfaEnable(){
     rSecMfaState();
     toast('Two-factor authentication is on');
     secLoadAudit();
+  });
+}
+
+// -- SIGN-IN ACCESS (2026-09-03) -------------------------------------------
+// Client half of api/law-auth.js's set_active, which runs on the shared
+// api/_lib/employee-lifecycle.js. Read that file's header for the four lockout
+// guards; the only thing this panel needs to know is that it PREDICTS NONE OF
+// THEM. The button is offered on every row including the caller's own and the
+// server decides -- a client-side copy of "you are the last owner" is a second
+// copy of a security rule in a file where it can silently drift from the one
+// that enforces it.
+// This app DOES record credential changes: api/law-auth.js passes an audit function to
+// the shared helper, so a deactivation, a reactivation and every REFUSAL land
+// in the same log the Security panel already reads back. The response carries
+// `audited`, and the panel reports it rather than assuming -- an audit claimed
+// and not written is worse than none.
+function lawRenderAccess(){
+  var el=$('sec-access');
+  if(!el)return;
+  el.innerHTML='<span style="color:var(--muted)">Loading sign-ins&hellip;</span>';
+  lawAuth('roster',{},true).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.employees)){
+      // A failed read is NOT rendered as "no sign-ins". An empty list here
+      // would tell an owner nobody can sign in to their own account.
+      el.innerHTML='<span style="color:var(--danger)">'+H(r.msg||'Could not load sign-ins - this is not the same as having none.')+'</span>';
+      return;
+    }
+    var rows=r.data.employees;
+    if(!rows.length){el.innerHTML='<span style="color:var(--muted)">No sign-in credentials yet.</span>';return;}
+    var me=(lawSession||{}).employee_id;
+    el.innerHTML='<div class="tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active=e.active!==false;
+        // &#39; rather than an escaped quote: the browser decodes the entity
+        // before evaluating the attribute, so this needs no backslash.
+        var idArg='&#39;'+H(e.employee_id)+'&#39;';
+        return '<tr><td>'+H(e.employee_id)+(e.employee_id===me?' <span class="badge bx">you</span>':'')+'</td>'+
+          '<td>'+H(e.display_name||'--')+'</td><td>'+H(e.role||'')+'</td>'+
+          '<td>'+(active?'<span class="badge bg">active</span>':'<span class="badge br">inactive</span>')+'</td>'+
+          '<td><button class="btn bo bs" onclick="lawSetActive('+idArg+','+(active?'false':'true')+')">'+
+          (active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+function lawSetActive(employee_id,nextActive){
+  var m=$('sec-admin-msg');
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for rather than sent blank: the reason is what somebody
+    // reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){if(m){m.style.color='var(--danger)';m.textContent='A reason is required to deactivate a sign-in.';}return;}
+    payload.reason=reason.slice(0,500);
+  }
+  lawAuth('set_active',payload,true).then(function(r){
+    if(!r.ok){
+      if(m){m.style.color='var(--danger)';m.textContent=r.msg||'Could not change this sign-in - nothing was changed.';}
+      lawRenderAccess();
+      return;
+    }
+    if(m){
+      m.style.color='var(--muted)';
+      var note=(r.data&&r.data.unchanged)
+        ?(employee_id+' was already '+(nextActive?'active':'deactivated')+' - nothing changed.')
+        :(employee_id+(nextActive?' can sign in again.':' can no longer sign in.'));
+      // `audited` is only present when this app actually has an audit log, so
+      // the sentence is added only when something was really written.
+      if(r.data&&r.data.audited===true)note+=' Recorded in the audit log.';
+      if(r.data&&r.data.audited===false)note+=' NOTE: the audit-log write FAILED.';
+      m.textContent=note;
+    }
+    lawRenderAccess();
   });
 }
 

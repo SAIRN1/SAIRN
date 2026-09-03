@@ -63,6 +63,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
   ROLES_BY_APP
@@ -70,10 +71,16 @@ const {
 
 const APP = 'sairnlegacy';
 const TABLE = 'sairnlegacy_employee_auth';
+// READ OFF THIS APP'S OWN `setup` GATE below, not assumed, and asserted against
+// it by api/_lib/employee-lifecycle-wiring.test.js. Note this is NARROWER than
+// MANAGEMENT_ROLES: a director may see shared knowledge, but only an owner
+// provisions credentials, and deactivation is a provisioning power.
+const PROVISIONING_ROLES = ['owner'];
+const PROVISIONING_LABEL = 'an Owner';
 const LEG_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
-const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'grant_shared_knowledge_access'];
+const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'grant_shared_knowledge_access', 'roster', 'set_active'];
 const MANAGEMENT_ROLES = { owner: true, director: true };
 
 module.exports = async (req, res) => {
@@ -279,6 +286,45 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, employee_id, role });
+      return;
+    }
+
+    // -- ROSTER AND DEACTIVATION (2026-09-03) ------------------------------
+    // Both new. Before this, SAIRNlegacy had NO WAY to switch a credential
+    // off: the `active` column existed and login honoured it, but nothing
+    // could set it except a hand-written SQL edit in Supabase -- which is what
+    // api/sd-auth.js:304-308 records as having lost three StoneDesk licences.
+    // The rules live once in api/_lib/employee-lifecycle.js.
+    //
+    // Roster viewing is PROVISIONING_ROLES (owner), NOT MANAGEMENT_ROLES
+    // (owner, director). A director may grant shared-knowledge access; that is
+    // a content permission. Reading the credential list and switching sign-ins
+    // off is a provisioning power, and widening it here to match the nearest
+    // existing constant would be an authorisation change smuggled in as a
+    // convenience.
+    if (action === 'roster') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && PROVISIONING_ROLES.indexOf(caller.role) !== -1),
+        viewLabel: PROVISIONING_LABEL
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
+      return;
+    }
+
+    if (action === 'set_active') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        rest: rest, headers: headers
+        // No `audit`: this app has no audit-log table (api/_lib/audit.js's
+        // allow-list is sairnlaw / sairncode / stonedesk only).
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
 

@@ -35,11 +35,19 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest, ROLES_BY_APP } = require('./_lib/auth');
 
 const APP = 'sairnscape';
 const ROLES = ROLES_BY_APP[APP];
 const TABLE = 'scp_employee_auth';
+// READ OFF THIS APP'S OWN `setup` GATE below, not assumed, and asserted against
+// it by api/_lib/employee-lifecycle-wiring.test.js. CLAUDE.md records a platform
+// guard that hardcoded `owner` and therefore checked nothing on SAIRNcode
+// forever -- this app is one of the three whose provisioning list is NOT
+// owner-only, so that mistake would have been silent here too.
+const PROVISIONING_ROLES = ['owner', 'crew_lead'];
+const PROVISIONING_LABEL = 'Owner or Crew Lead';
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -62,8 +70,8 @@ module.exports = async (req, res) => {
     }
   }
   const action = body && body.action;
-  if (['bootstrap', 'login', 'setup'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', or 'setup'" } });
+  if (['bootstrap', 'login', 'setup', 'roster', 'set_active'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'roster', or 'set_active'" } });
     return;
   }
 
@@ -221,6 +229,51 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, employee_id, role });
+      return;
+    }
+
+    // -- ROSTER AND DEACTIVATION (2026-09-03) ------------------------------
+    // Both new here. Before this, SAIRNscape had NO WAY to switch a credential off:
+    // the `active` column existed and login honoured it, but nothing could set
+    // it except a hand-written SQL edit in Supabase -- which is what
+    // api/sd-auth.js:304-308 records as having lost three StoneDesk licences.
+    // The rules live once in api/_lib/employee-lifecycle.js; read its header
+    // for the four lockout guards.
+    //
+    // WHO MAY VIEW THE ROSTER IS THE PROVISIONING ROLES, deliberately, and not
+    // a broader management tier. This app has no MANAGEMENT_ROLES concept, and
+    // inventing one to serve a credential panel would be a new authorisation
+    // tier introduced as a side effect of an unrelated change. The people who
+    // can create a credential are exactly the people who need to see the list
+    // of them; anything wider is a decision for its own pass.
+    //
+    // No existing client reads `roster` in this app, so unlike SAIRNsenior /
+    // SAIRNcare / SAIRNbuild / SAIRNdesign there is no assignee picker here to
+    // break by returning inactive rows -- verified by grepping the app file for
+    // 'roster' before writing this.
+    if (action === 'roster') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && PROVISIONING_ROLES.indexOf(caller.role) !== -1),
+        viewLabel: PROVISIONING_LABEL
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
+      return;
+    }
+
+    if (action === 'set_active') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        rest: rest, headers: headers
+        // No `audit`: this app has no audit-log table (api/_lib/audit.js's
+        // allow-list is sairnlaw / sairncode / stonedesk only).
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
   } catch (err) {

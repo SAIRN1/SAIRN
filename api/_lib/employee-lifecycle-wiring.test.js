@@ -44,7 +44,12 @@ const WIRED = [
   { file: 'sen-auth.js', app: 'sairnsenior', table: 'sairnsenior_employee_auth' },
   { file: 'alf-auth.js', app: 'sairncare', table: 'sairncare_employee_auth' },
   { file: 'bld-auth.js', app: 'sairnbuild', table: 'sairnbuild_employee_auth' },
-  { file: 'sdn-auth.js', app: 'sairndesign', table: 'sairndesign_employee_auth' }
+  { file: 'sdn-auth.js', app: 'sairndesign', table: 'sairndesign_employee_auth' },
+  { file: 'grd-auth.js', app: 'sairngrounds', table: 'grd_employee_auth' },
+  { file: 'sb-auth.js', app: 'sairnbiz', table: 'sb_employee_auth' },
+  { file: 'scp-auth.js', app: 'sairnscape', table: 'scp_employee_auth' },
+  { file: 'law-auth.js', app: 'sairnlaw', table: 'sairnlaw_employee_auth' },
+  { file: 'leg-auth.js', app: 'sairnlegacy', table: 'sairnlegacy_employee_auth' }
 ];
 
 // The five that already had their own hand-written set_active before the shared
@@ -57,7 +62,11 @@ const PRE_EXISTING = ['sd-auth.js', 'sc-auth.js', 'dnt-auth.js', 'mech-auth.js',
 // Endpoints that still have no way to deactivate a credential at all. This list
 // is the remaining work, written down rather than described, so it can only
 // shrink deliberately.
-const STILL_OPEN = ['grd-auth.js', 'sb-auth.js', 'scp-auth.js', 'law-auth.js', 'leg-auth.js'];
+// Empty as of 2026-09-03: all nine are wired. Kept rather than deleted so the
+// accounting assertion below still has three lists to cover every endpoint, and
+// so a NEW app that ships credentials without a deactivation path has an
+// obvious place to be recorded instead of being quietly missed.
+const STILL_OPEN = [];
 
 // Pull the roles a `setup` gate actually enforces, out of its own source.
 // Handles both shapes in the repo: `caller.role !== 'owner'` and
@@ -89,12 +98,41 @@ WIRED.forEach((e) => {
     assert.match(read(e.file), /require\('\.\/_lib\/employee-lifecycle'\)/);
   });
 
-  test(e.file + ' declares set_active as an accepted action', () => {
+  test(e.file + ' declares set_active AND roster as accepted actions', () => {
+    // Two shapes exist in this repo and both are real: a `const ACTIONS = [...]`
+    // list (the later endpoints) and an inline
+    // `['bootstrap','login','setup'].indexOf(action) === -1` guard (the earlier
+    // ones). Either is fine; what is NOT fine is a handler the validator
+    // refuses before it is ever reached, which is a gate that exists and
+    // enforces nothing — the exact failure this whole file is here to catch.
     const src = read(e.file);
-    const m = /const ACTIONS = \[([^\]]*)\]/.exec(src);
-    assert.ok(m, 'no ACTIONS list');
-    assert.match(m[1], /'set_active'/,
-      'set_active is handled but not accepted — the action validator refuses it first');
+    const m = /const ACTIONS = \[([\s\S]*?)\]/.exec(src) ||
+              /if \(\[([^\]]*)\]\.indexOf\(action\) === -1\)/.exec(src);
+    assert.ok(m, 'no action allow-list of either known shape');
+    ["'set_active'", "'roster'"].forEach((a) => {
+      assert.ok(m[1].indexOf(a) !== -1,
+        a + ' is handled but not accepted — the action validator refuses it first');
+    });
+  });
+
+  test(e.file + ' does not hand-write a 400 message that omits an accepted action', () => {
+    // Some endpoints GENERATE the message from the list ("one of: " +
+    // ACTIONS.join) and can never drift. The older ones hand-write it, and a
+    // hand-written list beside a real one is exactly how `employee_profile`
+    // ended up a valid resource missing from api/sd-data.js's own error string.
+    // Only the hand-written shape is checked; the generated one has nothing to
+    // check.
+    const src = read(e.file);
+    const m = /message: "action must be ([^"]*)"/.exec(src);
+    if (!m) return;
+    const list = /const ACTIONS = \[([\s\S]*?)\]/.exec(src) ||
+                 /if \(\[([^\]]*)\]\.indexOf\(action\) === -1\)/.exec(src);
+    const names = (list[1].match(/'([a-z_]+)'/g) || []).map((x) => x.replace(/'/g, ''));
+    names.forEach((n) => {
+      assert.ok(m[1].indexOf(n) !== -1,
+        'the 400 message does not mention "' + n + '", which the validator accepts — ' +
+        'a caller reading it would not know the action exists');
+    });
   });
 
   test(e.file + ' has a set_active handler that CALLS the shared helper', () => {
@@ -224,6 +262,102 @@ CLIENTS.forEach((c) => {
 });
 
 // ── THE REMAINING WORK IS WRITTEN DOWN, NOT DESCRIBED ──────────────────────
+
+// ── EVERY WIRED ENDPOINT HAS A CLIENT THAT CALLS IT ────────────────────────
+// A set_active endpoint nobody can reach from the app is dormant code: the
+// customer still cannot deactivate anyone, and the gap looks closed in a
+// tracking table. Each entry names the function that must exist.
+const UI = [
+  { file: 'sairnsenior.html', fn: 'senSetActive', render: 'senRenderAccess' },
+  // SAIRNcare is the one that does NOT get its own render function: its
+  // Security panel already had an accounts table listing `active`, built
+  // before set_active existed. Only the button was missing, so rSecurity()
+  // stayed the renderer rather than growing a near-duplicate beside it.
+  { file: 'sairncare.html', fn: 'alfSetActive', render: 'rSecurity' },
+  { file: 'sairnbuild.html', fn: 'bldSetActive', render: 'bldRenderAccess' },
+  { file: 'sairndesign.html', fn: 'sdnSetActive', render: 'sdnRenderAccess' },
+  { file: 'sairnlaw.html', fn: 'lawSetActive', render: 'lawRenderAccess' },
+  { file: 'sairnlegacy.html', fn: 'legSetActive', render: 'legRenderAccess' },
+  { file: 'sairnbiz.html', fn: 'sbSetActive', render: 'sbRenderAccess' },
+  { file: 'sairngrounds.html', fn: 'grdSetActive', render: 'grdRenderAccess' }
+];
+
+// SAIRNscape's endpoint is wired and its UI is NOT built. Recorded here rather
+// than described in a commit message, so it is a failing-if-forgotten fact
+// instead of a sentence nobody re-reads. sairnscape.html is a
+// marketing-page-plus-app single file driven by showPage(), with no panel/nav
+// convention to slot a credential screen into and no existing
+// credential-management surface at all — a genuinely larger piece of work than
+// the other eight, and not one to improvise at the end of a long change.
+// Until it is built, deactivation on SAIRNscape is reachable only by calling
+// api/scp-auth.js directly, which is still strictly better than the
+// hand-written SQL edit that was the only option before.
+const UI_NOT_BUILT = [{ file: 'sairnscape.html', endpoint: 'scp-auth.js' }];
+
+UI.forEach((u) => {
+  test(u.file + ' has a ' + u.fn + '() that calls set_active', () => {
+    const src = fs.readFileSync(path.join(API, '..', u.file), 'utf8');
+    assert.ok(src.indexOf('function ' + u.fn + '(') !== -1, 'no ' + u.fn + '()');
+    assert.match(src, /'set_active'/, 'nothing in this file posts set_active');
+    assert.match(src, /'roster'/, 'nothing in this file reads the roster');
+  });
+
+  test(u.file + ' actually CALLS its render function -- a defined panel is not a shown one', () => {
+    // Nearly shipped for real: sairnbiz.html got its access card and its
+    // sbRenderAccess() and nothing invoked it, so the card would have rendered
+    // empty forever. Defined-but-never-called is the same dormant-code failure
+    // as an endpoint with no client, one layer down, and neither the DOM-target
+    // check nor a syntax check can see it.
+    const src = fs.readFileSync(path.join(API, '..', u.file), 'utf8');
+    const render = u.render;
+    const defs = src.split('function ' + render + '(').length - 1;
+    const uses = src.split(render + '(').length - 1;
+    assert.ok(defs >= 1, 'no ' + render + '() at all');
+    assert.ok(uses > defs,
+      render + '() is defined ' + defs + ' time(s) and called ' + (uses - defs) +
+      ' — nothing renders the panel, so it stays empty');
+  });
+
+  test(u.file + ' asks for a reason before deactivating', () => {
+    // The server refuses 400 without one. A client that does not ask produces a
+    // button that always fails, which reads as a broken feature.
+    const src = fs.readFileSync(path.join(API, '..', u.file), 'utf8');
+    const at = src.indexOf('function ' + u.fn + '(');
+    const body = src.slice(at, at + 1400);
+    assert.match(body, /window\.prompt\(/, 'never asks for a reason');
+    assert.match(body, /reason/, 'never sends a reason');
+  });
+
+  test(u.file + ' does not second-guess the server about who may be deactivated', () => {
+    // A client-side copy of "last owner" or "not yourself" is a second copy of
+    // a security rule, free to drift from the one that enforces it.
+    const src = fs.readFileSync(path.join(API, '..', u.file), 'utf8');
+    const at = src.indexOf('function ' + u.fn + '(');
+    const body = src.slice(at, at + 1400);
+    assert.strictEqual(/LAST_ADMIN|last owner|lastOwner|activeOwners/.test(body), false,
+      'the client re-implements a lockout guard');
+  });
+});
+
+test('the not-built UI list is accurate', () => {
+  UI_NOT_BUILT.forEach((u) => {
+    const src = fs.readFileSync(path.join(API, '..', u.file), 'utf8');
+    assert.strictEqual(/function \w+SetActive\(/.test(src), false,
+      u.file + ' now HAS a deactivation UI but is still listed as not built — ' +
+      'move it to UI and delete the excuse');
+  });
+});
+
+test('every wired endpoint has either a UI or a written-down reason it does not', () => {
+  const uiApps = UI.map((u) => u.file.replace('.html', ''));
+  const noUiApps = UI_NOT_BUILT.map((u) => u.file.replace('.html', ''));
+  WIRED.forEach((e) => {
+    const covered = uiApps.indexOf(e.app) !== -1 || noUiApps.indexOf(e.app) !== -1;
+    assert.ok(covered,
+      e.app + ' has a set_active endpoint and appears in neither the UI list nor ' +
+      'the not-built list — it is dormant code nobody has accounted for');
+  });
+});
 
 test('the five pre-existing implementations still have their own set_active', () => {
   PRE_EXISTING.forEach((f) => {

@@ -255,9 +255,24 @@ textarea{resize:vertical;min-height:80px;}
       <button class="sb" id="sb-barcompliance" onclick="nav('barcompliance')"><span class="sico">&#127866;</span>Bar &amp; Compliance</button>
       <button class="sb" id="sb-bottlescan" onclick="nav('bottlescan')"><span class="sico">&#128247;</span>Bottle Scanner</button>
       <button class="sb" id="sb-foodinv" onclick="nav('foodinv')"><span class="sico">&#127831;</span>Food Inventory</button>
+      <button class="sb" id="sb-access" onclick="nav('access')"><span class="sico">&#128273;</span>Sign-In Access</button>
       <div class="sfoot">SAIRNgrounds Phase 4 &middot; <span style="color:var(--p);font-weight:700;">Course &amp; Property Ops</span></div>
     </aside>
     <main>
+
+<!-- SIGN-IN ACCESS (2026-09-03) -- the deactivation half of the credential
+     lifecycle. Before this, a departing crew member's sign-in could only be
+     switched off by a hand-written SQL edit in Supabase, which is what
+     api/sd-auth.js records as having lost three StoneDesk licences.
+     Gated to Owner or Superintendent, which is exactly who api/grd-auth.js
+     already lets provision a credential. -->
+<div class="panel" id="panel-access">
+  <div class="ph"><div><div class="ptitle">Sign-In Access</div><div class="psub">Turn a sign-in off when somebody leaves, and back on if they return</div></div></div>
+  <div class="card"><div class="cb">
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Deactivating deletes nothing &mdash; the person's name still resolves on jobs and records they are already attached to. They simply cannot sign in. <b>Creating</b> a credential has no UI here yet; that is separate work and is not claimed to be done.</div>
+    <div id="grd-access"></div>
+  </div></div>
+</div>
 
 <!-- DASHBOARD -->
 <div class="panel on" id="panel-dashboard">
@@ -1344,6 +1359,97 @@ function toast(m,d){var t=$('toast');t.textContent=m;t.classList.add('on');setTi
 // hard-failing a panel -- see SAIRNGROUNDS-SCOPE.md's honest note that
 // Phase 1's localStorage layer stays as the offline/fallback path, not
 // something Phase 2 deletes.
+
+// -- SIGN-IN ACCESS (2026-09-03) -------------------------------------------
+// Client half of api/grd-auth.js's set_active and roster, both of which run on the shared
+// api/_lib/employee-lifecycle.js. Before this, SAIRNgrounds had NO WAY to switch a
+// credential off: the `active` column existed and login honoured it, but
+// nothing could set it except a hand-written SQL edit in Supabase -- which is
+// what api/sd-auth.js:304-308 records as having lost three StoneDesk licences.
+//
+// THE PANEL PREDICTS NOTHING. The button is offered on every row including the
+// caller's own, and the server decides. A client-side copy of "you are the last
+// an Owner or Superintendent" or "you cannot deactivate yourself" is a second copy of a security
+// rule in a file where it can silently drift from the one that enforces it.
+//
+// Reading the credential list is gated to an Owner or Superintendent -- the same roles that can
+// create one. That is deliberately NOT a wider management tier: this app has no
+// such concept, and inventing one to serve a credential panel would add an
+// authorisation tier as a side effect of an unrelated change.
+function grdAuthCall(action,payload){
+  var lic=ld('grd_lic',null)||'';
+  var tok=null;try{tok=sessionStorage.getItem(GRD_SESSION_KEY);}catch(e){}
+  if(!lic||!tok)return Promise.resolve({ok:false,msg:'Not signed in.',data:null});
+  return fetch(GRD_AUTH_API,{method:'POST',
+    headers:{'Content-Type':'application/json',Authorization:'Bearer '+lic,'X-SD-Auth':tok},
+    body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok,status:r.status,data:d,
+              msg:(d&&d.error&&d.error.message)||''};
+    });})
+    .catch(function(){return {ok:false,status:0,data:null,msg:'Network error - check your connection.'};});
+}
+function grdMyRole(){
+  try{return sessionStorage.getItem(GRD_ROLE_KEY)||'';}catch(e){return '';}
+}
+function grdMyEmployeeId(){
+  try{return sessionStorage.getItem(GRD_EMPLOYEE_KEY)||'';}catch(e){return '';}
+}
+function grdCanManageAccess(){
+  return ['owner','superintendent'].indexOf(grdMyRole())!==-1;
+}
+function grdRenderAccess(){
+  var el=$('grd-access');
+  if(!el)return;
+  if(!grdCanManageAccess()){
+    el.innerHTML='<div style="font-size:13px;color:var(--muted)">Only an Owner or Superintendent can see or change sign-in access.</div>';
+    return;
+  }
+  el.innerHTML='<span style="color:var(--muted)">Loading sign-ins&hellip;</span>';
+  grdAuthCall('roster',{}).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.employees)){
+      // A failed read is NOT rendered as "no sign-ins". An empty list here
+      // would tell an owner nobody can sign in to their own account.
+      el.innerHTML='<div style="color:var(--danger);font-size:13px">'+H(r.msg||'Could not load sign-ins - this is not the same as having none.')+'</div>';
+      return;
+    }
+    var rows=r.data.employees;
+    if(!rows.length){el.innerHTML='<div style="color:var(--muted);font-size:13px">No sign-in credentials yet.</div>';return;}
+    var me=grdMyEmployeeId();
+    el.innerHTML='<table style="width:100%;font-size:13px"><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active=e.active!==false;
+        // &#39; rather than an escaped quote: the browser decodes the entity
+        // before evaluating the attribute, so this needs no backslash.
+        var idArg='&#39;'+H(e.employee_id)+'&#39;';
+        return '<tr><td>'+H(e.employee_id)+(e.employee_id===me?' <span class="badge bx">you</span>':'')+'</td>'+
+          '<td>'+H(e.display_name||'--')+'</td><td>'+H(e.role||'')+'</td>'+
+          '<td>'+(active?'<span class="badge bg">active</span>':'<span class="badge br">inactive</span>')+'</td>'+
+          '<td><button class="btn bo bs" onclick="grdSetActive('+idArg+','+(active?'false':'true')+')">'+
+          (active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('')+'</tbody></table><div id="grd-access-msg" style="font-size:12px;margin-top:10px;color:var(--muted)"></div>';
+  });
+}
+function grdSetActive(employee_id,nextActive){
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for rather than sent blank: the reason is what somebody
+    // reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){toast('A reason is required to deactivate a sign-in');return;}
+    payload.reason=reason.slice(0,500);
+  }
+  grdAuthCall('set_active',payload).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not change this sign-in - nothing was changed',6000);grdRenderAccess();return;}
+    if(r.data&&r.data.unchanged)toast(employee_id+' was already '+(nextActive?'active':'deactivated')+' - nothing changed');
+    else toast(employee_id+(nextActive?' can sign in again':' can no longer sign in'));
+    grdRenderAccess();
+  });
+}
+
 async function grdData(action, resource, payload) {
   var licKey = ld('grd_lic', null);
   if (!licKey) return null;
@@ -1516,6 +1622,7 @@ function nav(id){
   document.querySelectorAll('.sb').forEach(function(b){b.classList.remove('on');});
   var p=$('panel-'+id),b=$('sb-'+id);
   if(p)p.classList.add('on');if(b)b.classList.add('on');
+  if(id==='access')grdRenderAccess();
 }
 
 // === SEED DATA -- guarded, only seeds when the key is absent (not just
