@@ -279,8 +279,8 @@
       "task": "species patient panels fabricated kpi shells",
       "claimed_at": "2026-09-03T01:16:15Z",
       "claimed_at_epoch": 1788398175.6266854,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T01:19:38Z"
     }
   ]
 }
