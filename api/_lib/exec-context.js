@@ -18,19 +18,18 @@
 // or admin -- the same check showPanel() enforces, now enforced server-side
 // where it cannot be edited out of the page.
 //
-// -- KNOWN DEFECT, RELOCATED VERBATIM AND DELIBERATELY NOT FIXED HERE -------
-// The `cto` context describes "React 18 + TypeScript frontend, Express backend,
+// -- FINDING 4.2, NOW CLOSED IN TWO STAGES ---------------------------------
+// When these prompts were relocated here they carried a known defect: the
+// `cto` context described "React 18 + TypeScript frontend, Express backend,
 // Drizzle ORM, PostgreSQL on Railway" and "all 21 apps share one Railway
-// PostgreSQL instance". That is FABRICOR, which CLAUDE.md records as an
-// abandoned duplicate codebase. StoneDesk is vanilla JS on Vercel with
-// Supabase. It also claims "QuickBooks Online (UI built, OAuth pending)" when
-// no such UI exists -- sdIntegQuickAdd() adds a row to an integrations
-// catalogue, not a connector.
+// PostgreSQL instance" -- that is FABRICOR, which CLAUDE.md records as an
+// abandoned duplicate codebase -- and claimed "QuickBooks Online (UI built,
+// OAuth pending)" when no such UI exists.
 //
-// This is recorded in the 2026-09-02 competitive-gap audit as finding 4.2 and
-// is still open. It is carried across unchanged ON PURPOSE: this commit moves
-// text, and correcting the text in the same change would make the diff
-// impossible to review as a relocation. Fix it as its own change.
+// It was carried across unchanged on purpose, because correcting text inside a
+// commit that moves text makes the diff unreviewable as a relocation. Both
+// halves have since been fixed as their own changes; the two notes below record
+// what each found.
 //
 // -- THE INTEGRATIONS HALF IS NOW FIXED, 2026-09-02 -------------------------
 // That "own change" is this one. The `Current integrations` line and the CFO
@@ -38,13 +37,26 @@
 // found MORE than the header above knew: four of the five claimed integrations
 // were false, not just QuickBooks. Only Resend was real.
 //
-// THE FABRICOR HALF IS STILL OPEN AND STILL DELIBERATE. The React/Railway/
-// Drizzle stack description and "all 21 apps share one Railway PostgreSQL
-// instance" remain wrong and remain untouched, because verifying what the real
-// architecture line should say across 21 apps is its own piece of work and not
-// a rider on an integrations fix. Do not read this note as the file being
-// clean -- it is half clean, and this sentence exists so nobody has to
-// rediscover which half.
+// -- THE FABRICOR HALF IS NOW FIXED TOO, 2026-09-02 -------------------------
+// That "own piece of work" is this one, and finding 4.2 is closed. The stack,
+// architecture and security lines were rewritten from what this repo actually
+// contains rather than from CLAUDE.md's summary of it:
+//
+//   * ZERO live railway.app URLs anywhere outside comments;
+//   * ZERO React / Drizzle / Express references anywhere live -- the grep hits
+//     are the words "expressly" and "express" in legal text;
+//   * exactly ONE real Supabase project host across the whole codebase;
+//   * 18 app HTML files at the repo root plus 3 sub-pages, and 20 distinct
+//     app_ids in the Claude proxy, three of which (sairnfuneral, sairnhr,
+//     sairnacc) have no app file here at all. "All 21 apps" was wrong in both
+//     directions, which is why the line now says which thing it counts.
+//
+// WORTH RECORDING, because it nearly went the other way: a first pass at that
+// count matched app_id strings INSIDE COMMENTS and reported a duplicate
+// 'sairnsenior' entry in the allowlist. There is no duplicate. The "fix" was
+// one edit away from being made, and reading the file instead of trusting the
+// grep is what stopped it -- the same mistake this whole finding exists to
+// correct, made once more while correcting it.
 //
 // -- NOT FIXED HERE, AND NOT MINE TO FIX ------------------------------------
 // stonedesk.html:25406 has the cto GREETING saying "QuickBooks OAuth is the
@@ -90,10 +102,30 @@ const EXEC_CONTEXT = {
   ].join(' '),
   cto:[
     'You are the personal AI executive assistant for the CTO of SAIRN Technologies™ — a fast-growing AI SaaS company built by Michael L. Dibert in Columbus, Ohio.',
-    'Current tech stack: React 18 + TypeScript frontend, Express backend, Drizzle ORM, PostgreSQL on Railway, Vercel hosting, Supabase (SAIRNcomm), Anthropic Claude API via sairn.vercel.app/api/claude proxy, Stripe payments, Resend email, Twilio SMS.',
-    'Architecture: HONEY COMB cellular platform — each app is a standalone HTML file deployed to Vercel, authenticated against Railway backend, firewalled to allowlisted domains only. All 21 apps share one Railway PostgreSQL instance.',
+    // CORRECTED 2026-09-02 -- finding 4.2's other half, and the last of it.
+    // The previous line described FABRICOR: "React 18 + TypeScript frontend,
+    // Express backend, Drizzle ORM, PostgreSQL on Railway". CLAUDE.md records
+    // Fabricor as an abandoned duplicate codebase. Every claim below was
+    // verified against this repo rather than restated from CLAUDE.md:
+    //   * zero live railway.app URLs anywhere outside comments;
+    //   * zero React / Drizzle / Express references anywhere live (the grep
+    //     hits are the words "expressly" and "express" in legal text);
+    //   * exactly ONE real Supabase project host across the codebase.
+    'Current tech stack: vanilla JavaScript, no framework and no build step -- each app is ONE self-contained HTML file. Vercel hosts the static files and the serverless functions in api/. One Supabase Postgres project behind all of it, reached server-side through PostgREST with the service role; the browser holds only a publishable anon key that cannot read those tables. Anthropic Claude through the shared sairn.vercel.app/api/claude proxy. Railway is DECOMMISSIONED and has no live references.',
+    // COUNT CORRECTED 2026-09-02. The old line said "All 21 apps share one
+    // Railway PostgreSQL instance". Counted rather than repeated: 18 app HTML
+    // files at the repo root plus 3 sub-pages (sairndental-book,
+    // sairndental-complaint, stonedesk-hr) = the 21 files somebody once
+    // counted as apps. The Claude proxy allowlists 20 DISTINCT app_ids, three
+    // of which (sairnfuneral, sairnhr, sairnacc) have no app file in this repo
+    // at all. So no single number is right without saying which thing it
+    // counts, and this line now says.
+    'Architecture: HONEY COMB cellular platform -- each app is a standalone HTML file on Vercel, authenticated per employee against its own api/*-auth.js (licence key as bearer, PIN login, signed session token from the shared api/_lib/auth.js), firewalled to allowlisted domains. 18 app files and 3 sub-pages in the repo; the Claude proxy allowlists 20 distinct app_ids, three of which have no app file here. They share one Supabase Postgres project, not a Railway one.',
     'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
-    'Security: SAIRN Firewall blocks all non-allowlisted fetch calls. Claude proxy prevents direct API key exposure. Cookie auth: sameSite:none + secure:true for cross-origin Railway-Vercel auth.',
+    // CORRECTED 2026-09-02: the cookie/cross-origin Railway-Vercel clause
+    // described an auth model this platform no longer uses. Sessions are
+    // signed tokens carried in an X-SD-Auth header, not cross-origin cookies.
+    'Security: SAIRN Firewall blocks all non-allowlisted fetch calls. The Claude proxy keeps the Anthropic key server-side. Employee sessions are signed tokens sent in an X-SD-Auth header alongside the licence bearer -- two secrets, two headers, the licence identifying the company and the session the person. api/sd-data.js requires the session for every sensitive resource.',
     // CORRECTED 2026-09-02. This line previously read "QuickBooks Online (UI
     // built, OAuth pending), Google Directions API (route optimization), xlsx
     // library (import/export), Resend (email), node-cron (weekly reports)."

@@ -29,6 +29,17 @@ function mockReq(body) {
   return { method: 'POST', headers: { authorization: 'Bearer SD-TEST-KEY', 'x-sd-auth': 'tok' }, body: body };
 }
 
+
+// Comment lines stripped before any source is searched. A first pass at the
+// app_id count matched strings inside comments and reported a duplicate that
+// does not exist -- one edit from "fixing" a non-bug.
+function stripCommentLines(src) {
+  return src
+    .split(String.fromCharCode(10))
+    .filter(function (l) { return !/^\s*(\/\/|--|\*)/.test(l); })
+    .join(String.fromCharCode(10));
+}
+
 let passed = 0;
 async function test(name, fn) {
   try { await fn(); passed++; console.log('  ok - ' + name); }
@@ -89,6 +100,71 @@ async function main() {
     assert.match(mod.getExecContext('cfo'), /Chart of Accounts: Assets 1000s/);
     assert.match(mod.getExecContext('cfo'), /Stripe price IDs on file/);
     assert.match(mod.getExecContext('cto'), /May 21 2027/);
+  });
+
+  // ---- finding 4.2: the advisor describes THIS platform, not Fabricor ----
+  await test('FINDING 4.2: the CTO advisor no longer describes Fabricor', () => {
+    // It said "React 18 + TypeScript frontend, Express backend, Drizzle ORM,
+    // PostgreSQL on Railway" -- an abandoned duplicate codebase. An executive
+    // advisor confidently describing the wrong architecture gives confidently
+    // wrong architectural advice.
+    const cto = mod.getExecContext('cto');
+    [/React 18/, /Drizzle/, /Express backend/, /PostgreSQL on Railway/,
+     /authenticated against Railway backend/, /Railway PostgreSQL instance/,
+     /Railway-Vercel/].forEach(function (re) {
+      assert.ok(!re.test(cto), 'the Fabricor stack description is back: ' + re);
+    });
+  });
+
+  await test('...and describes what this repo actually contains', () => {
+    const cto = mod.getExecContext('cto');
+    assert.match(cto, /vanilla JavaScript/);
+    assert.match(cto, /no build step/);
+    assert.match(cto, /One Supabase Postgres project/);
+    assert.match(cto, /Railway is DECOMMISSIONED/);
+  });
+
+  await test('the claim is TRUE of the repo -- checked, not asserted', () => {
+    // The point of the correction is that it is verifiable. If somebody
+    // reintroduces React or a live Railway URL, the advisor's description
+    // stops matching the platform and this fails.
+    const fs = require('fs');
+    const path = require('path');
+    const root = path.join(__dirname, '..');
+    const files = fs.readdirSync(root).filter(f => f.endsWith('.html'));
+    files.forEach(function (f) {
+      const src = fs.readFileSync(path.join(root, f), 'utf8');
+      const code = stripCommentLines(src);
+      assert.ok(!/railway\.app/.test(code), f + ' has a live railway.app reference');
+    });
+  });
+
+  await test('the app COUNT in the advisor is the one this repo has', () => {
+    // "All 21 apps" was wrong in both directions. 18 app files + 3 sub-pages
+    // is the 21 somebody once counted; the proxy allowlists 20 distinct ids.
+    const fs = require('fs');
+    const path = require('path');
+    const root = path.join(__dirname, '..');
+    const sub = ['sairndental-book.html', 'sairndental-complaint.html', 'stonedesk-hr.html'];
+    const apps = fs.readdirSync(root).filter(f => f.endsWith('.html') && sub.indexOf(f) === -1);
+    assert.strictEqual(apps.length, 18, 'app file count moved -- update the cto architecture line');
+
+    const proxy = fs.readFileSync(path.join(root, 'api', 'claude.js'), 'utf8');
+    const block = proxy.slice(
+      proxy.indexOf('const KNOWN_APP_IDS = ['),
+      proxy.indexOf('];', proxy.indexOf('const KNOWN_APP_IDS = [')) + 2
+    );
+    // COMMENTS STRIPPED FIRST. A first pass at this count matched app_id
+    // strings inside comments and reported a duplicate 'sairnsenior' entry
+    // that does not exist -- one edit away from "fixing" a non-bug.
+    const code = stripCommentLines(block);
+    const ids = (code.match(/'[a-z0-9]+'/g) || []).map(x => x.slice(1, -1));
+    assert.strictEqual(ids.length, 20, 'proxy app_id count moved');
+    assert.strictEqual(new Set(ids).size, 20, 'the allowlist has a real duplicate now');
+
+    const cto = mod.getExecContext('cto');
+    assert.match(cto, /18 app files and 3 sub-pages/);
+    assert.match(cto, /20 distinct app_ids/);
   });
 
   // ---- and NOT in the page ----------------------------------------------

@@ -259,7 +259,30 @@ deadline (May 21 2027)**.
 A paying shop owner can read SAIRN's pricing tiers and IP calendar out of the
 product they bought. Worth a decision.
 
-### 4.2 The CTO advisor describes the wrong codebase.
+### 4.2 The CTO advisor describes the wrong codebase. **CLOSED 2026-09-02.**
+
+> **Fixed in two stages, and the correction found more than the finding did.**
+> The integrations half went first (four of the five claimed integrations were
+> false, not just QuickBooks — only Resend was real). The stack half is now
+> closed too, rewritten from what this repo actually contains rather than from
+> CLAUDE.md's summary of it: **zero live `railway.app` URLs outside comments,
+> zero React/Drizzle/Express references anywhere live** (the grep hits are the
+> words "expressly" and "express" in legal text), **exactly one real Supabase
+> project host**, and — the part nobody had counted — **18 app HTML files plus
+> 3 sub-pages, against 20 distinct `app_id`s in the Claude proxy, three of
+> which (`sairnfuneral`, `sairnhr`, `sairnacc`) have no app file in this repo
+> at all.** "All 21 apps" was wrong in both directions.
+>
+> **And the correction nearly introduced its own error.** A first pass at the
+> app_id count matched strings inside *comments* and reported a duplicate
+> `sairnsenior` entry in the allowlist. There is no duplicate; the "fix" was
+> one edit away from being made. Reading the file instead of trusting the grep
+> is what stopped it — the same mistake this finding exists to correct, made
+> once more while correcting it. The test now strips comment lines before
+> counting, and asserts the counts against the repo so the advisor's
+> description fails if the platform moves under it.
+
+**Original finding, as recorded 2026-09-02:**
 
 `stonedesk.html:24788` states the stack as *"React 18 + TypeScript frontend,
 Express backend, Drizzle ORM, PostgreSQL on Railway"* and `:24790` as *"each app

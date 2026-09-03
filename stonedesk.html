@@ -25611,14 +25611,14 @@ function execAiWelcome(role){
     // two were fixed the same day in api/_lib/exec-context.js (the cto and cfo
     // contexts) and sairnscape.html (a paid pricing tier).
     //
-    // The stack line beside it is ALSO WRONG and is deliberately left alone:
-    // "React/Railway/PostgreSQL" is FABRICOR, which CLAUDE.md records as an
-    // abandoned duplicate codebase — StoneDesk is vanilla JS on Vercel with
-    // Supabase. That is finding 4.2's other half, tracked in
-    // api/_lib/exec-context.js's header, and correcting it means verifying the
-    // real architecture line across 21 apps rather than guessing at one
-    // greeting. Fixing the false roadmap claim here and quietly leaving the
-    // false stack claim would be the worse outcome, so it is named instead.
+    // The stack line beside it was ALSO WRONG and was named here rather than
+    // quietly left: "React/Railway/PostgreSQL" is FABRICOR, an abandoned
+    // duplicate codebase. FIXED 2026-09-02 in api/_lib/exec-context.js, from
+    // what this repo actually contains rather than from a summary of it --
+    // zero live railway.app URLs, zero React/Drizzle/Express anywhere live,
+    // one Supabase project, and 18 app files plus 3 sub-pages against 20
+    // distinct proxy app_ids. Finding 4.2 is closed; this greeting is
+    // consistent with it and no longer names a stack at all.
     cto:'Good morning. Patents filed. There is no accounting integration on this platform — no QuickBooks, no Gusto, no Xero — and a read-only connector is in progress but not connected to anything. What technical decision are we working through today?'
   };
   EAI_HISTORY[role]=[{role:'assistant',content:welcomes[role]}];
