@@ -261,6 +261,16 @@
       "claimed_at_epoch": 1788430551.1435032,
       "status": "released",
       "released_at": "2026-09-03T11:04:55Z"
+    },
+    {
+      "id": "fourth-1788434261",
+      "session": "fourth",
+      "subject": "sairnscape",
+      "task": "memory feature claim vs dead endpoints",
+      "claimed_at": "2026-09-03T11:17:41Z",
+      "claimed_at_epoch": 1788434261.7576058,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
