@@ -71,7 +71,11 @@ const literal = JSON.parse(html.slice(q, e));
 // calculator agreed with them) and a pointer to the shop's own configured
 // rates went in. Update this deliberately, with the reason, never to make a
 // red test green.
-eq(literal.length, 2194, 'the surviving copy is the current one');
+eq(literal.length, 2168, 'the surviving copy is the current one');
+ok(!/Michael L\. Dibert/.test(literal),
+   'the personal name is OUT of the prompt -- the model states the ENTITY that built it, not a natural person');
+ok(/built by SAIRN Tech LLC/.test(literal),
+   'and names the real legal entity: SAIRN Tech LLC, not "SAIRN Technologies LLC"');
 ok(!/Granite 4hr per 50sqft/.test(literal),
    'the hardcoded THH benchmark figures are OUT of the prompt -- they belonged in a setting, not a string');
 ok(/SHOP THH BENCHMARKS/.test(literal),

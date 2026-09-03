@@ -17,7 +17,7 @@ Effective Date: [DATE] · Amends the SAIRN Data Processing Addendum dated [DATE]
 
 ## 1. Purpose
 
-This Amendment No. 1 ("Amendment") amends the SAIRN Data Processing Addendum ("DPA") between Customer ("Controller") and SAIRN Technologies LLC ("Processor," "SAIRN"). Capitalized terms not defined here have the meaning given in the DPA.
+This Amendment No. 1 ("Amendment") amends the SAIRN Data Processing Addendum ("DPA") between Customer ("Controller") and SAIRN Tech LLC ("Processor," "SAIRN"). Capitalized terms not defined here have the meaning given in the DPA.
 
 The DPA's health-data provisions currently name SAIRNcare and SAIRNvet only.
 
@@ -47,7 +47,7 @@ For the avoidance of doubt, this Amendment does not constitute, create, or subst
 
 ## 5. Contact
 
-SAIRN Technologies LLC — michael@sairn.com — Westlake, Ohio
+SAIRN Tech LLC — michael@sairn.com — Orrville, Ohio
 
 ---
 
@@ -61,13 +61,13 @@ Printed Name: _______________________________
 
 Business Name: _______________________________
 
-For SAIRN Technologies LLC:  _______________________________     Date: ____________
+For SAIRN Tech LLC:  _______________________________     Date: ____________
 
-Michael L. Dibert, Owner
+Michael L. Dibert, Founder & CEO
 
 ---
 
-This document was prepared as a template by SAIRN Technologies LLC. It is not legal advice. SAIRN Technologies LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
+This document was prepared as a template by SAIRN Tech LLC. It is not legal advice. SAIRN Tech LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
 
 ---
 

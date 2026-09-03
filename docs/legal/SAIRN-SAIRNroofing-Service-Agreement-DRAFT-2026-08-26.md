@@ -72,13 +72,13 @@ Printed Name: _______________________________
 
 Company/Entity Name: _______________________________
 
-For SAIRN Technologies LLC:  _______________________________     Date: ____________
+For SAIRN Tech LLC:  _______________________________     Date: ____________
 
-Michael L. Dibert, Owner
+Michael L. Dibert, Founder & CEO
 
 ---
 
-This document was prepared as a template by SAIRN Technologies LLC. It is not legal advice. SAIRN Technologies LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
+This document was prepared as a template by SAIRN Tech LLC. It is not legal advice. SAIRN Tech LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
 
 ---
 

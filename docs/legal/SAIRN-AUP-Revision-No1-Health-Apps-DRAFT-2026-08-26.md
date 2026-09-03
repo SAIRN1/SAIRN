@@ -54,7 +54,7 @@ To report suspected abuse or a security concern related to the Platform, contact
 
 ---
 
-This document was prepared as a template by SAIRN Technologies LLC. It is not legal advice. SAIRN Technologies LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
+This document was prepared as a template by SAIRN Tech LLC. It is not legal advice. SAIRN Tech LLC recommends having any binding agreement reviewed by a licensed attorney in your jurisdiction before execution.
 
 ---
 

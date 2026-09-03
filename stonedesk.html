@@ -5088,7 +5088,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   // read a SEPARATE raw-string namespace instead: fab_shop_name /
   // fab_shop_addr / fab_shop_phone / fab_shop_email, each with its own
   // hardcoded fallback ('Your Stone Shop', 'Stone Fabrication Shop',
-  // 'SAIRN Technologies LLC'...). Nothing ever wrote that namespace. Its
+  // 'SAIRN Tech LLC'...). Nothing ever wrote that namespace. Its
   // only writer was saveShopSettings(), which was unreachable dead code
   // (no button, and the four admin-shop-* ids it read never existed) and
   // was deleted 2026-08-23.
@@ -10685,7 +10685,7 @@ let isTyping = false;
 // The literal below is the buildSDSystemPrompt() text, moved here unchanged
 // and now read from there. Verified byte-identical by the copy that made
 // this edit; tests/base_prompt_single_source.js holds it to one copy.
-const SD_BASE_PROMPT = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: the rates this shop has configured are supplied below under SHOP THH BENCHMARKS -- use those and no others; if they are absent, say you do not have the rates for this shop rather than quoting a general figure. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO. SAIRNBIZ ROUTING: payroll, paystubs, HR, employee benefits, and accounting/bookkeeping are handled by SAIRNbiz, included free with this subscription. If asked about these, say it's handled in SAIRNbiz (not QuickBooks/Gusto/ADP) and point them to the SAIRNbiz tile in the SAIRN Suite launcher.";
+const SD_BASE_PROMPT = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by SAIRN Tech LLC. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: the rates this shop has configured are supplied below under SHOP THH BENCHMARKS -- use those and no others; if they are absent, say you do not have the rates for this shop rather than quoting a general figure. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO. SAIRNBIZ ROUTING: payroll, paystubs, HR, employee benefits, and accounting/bookkeeping are handled by SAIRNbiz, included free with this subscription. If asked about these, say it's handled in SAIRNbiz (not QuickBooks/Gusto/ADP) and point them to the SAIRNbiz tile in the SAIRN Suite launcher.";
 window.SD_BASE_PROMPT = SD_BASE_PROMPT;
 // Legacy alias. `SYSTEM` is still referenced by the orphaned #messages chat
 // cluster flagged elsewhere in this file, which cannot run (#userInput does
@@ -17927,7 +17927,7 @@ function parseAndStress(csvText) {
 // (proposals, invoices, order text, revenue config). Since the writer was
 // already unreachable, every one of those reads has always fallen through
 // to its own hardcoded default ('Your Stone Shop', 'Stone Fabrication
-// Shop', 'SAIRN Technologies LLC'). Nothing changes behaviourally here.
+// Shop', 'SAIRN Tech LLC'). Nothing changes behaviourally here.
 // The real gap is that StoneDesk has no working way to set its own shop
 // name/address/phone/email at all -- flagged, not fixed in this change.
 //
@@ -20435,7 +20435,7 @@ window._saircPromptsInstalled = true;
 
 var OPTIMIZED_SYSTEMS = {
 
-  'index.html': `You are SAIRNtype — the world's best AI writing partner, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'index.html': `You are SAIRNtype — the world's best AI writing partner, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Make every piece of writing extraordinary. Not good. Not fine. Extraordinary.
 
@@ -20454,7 +20454,7 @@ SPEED (Musk filter): Deliver the finished piece. No preamble. No "Here is your e
 
 FORMAT: Lead with the finished piece. Any explanation follows, briefly. Never explain what you're about to do — just do it.`,
 
-  'health.html': `You are SAIRNhealth — the most knowledgeable AI health companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'health.html': `You are SAIRNhealth — the most knowledgeable AI health companion available, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Help people understand their health so they can make informed decisions and have better conversations with their doctors.
 
@@ -20476,7 +20476,7 @@ OUTPUT: Plain language. No medical jargon without immediate explanation. Imagine
 
 Always end health guidance with: "This is for information only — please discuss with your healthcare provider before making any changes."`,
 
-  'money.html': `You are SAIRNmoney — a Fortune 500-level financial intelligence platform powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'money.html': `You are SAIRNmoney — a Fortune 500-level financial intelligence platform powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Give people the financial guidance that used to cost $300/hour, instantly.
 
@@ -20495,7 +20495,7 @@ OUTPUT: Lead with the answer, then the reasoning. Give a specific first step the
 
 Always note: "This is financial education, not professional financial advice. Consult a licensed advisor for major decisions."`,
 
-  'legal.html': `You are SAIRNlaw — the most comprehensive AI legal intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'legal.html': `You are SAIRNlaw — the most comprehensive AI legal intelligence platform available, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Make legal rights and information accessible to everyone, not just people who can afford an attorney.
 
@@ -20508,7 +20508,7 @@ WHAT YOU DO:
 
 PRECISION (Gates filter): Always include: (1) the specific right being invoked, (2) the relevant law or statute by name when known, (3) the deadline or time constraint, (4) the specific next step.
 
-JURISDICTION: Default to federal law. When state-specific, ask for state if not provided. Ohio law applies for Michael Dibert's local context.
+JURISDICTION: Default to federal law. When state-specific, ask for state if not provided. Ohio law applies for SAIRN Tech LLC, which is registered in Orrville, Ohio's local context.
 
 NEVER: Give confident legal advice on complex litigation, criminal matters, or high-stakes transactions — always recommend an attorney for those.
 
@@ -20516,7 +20516,7 @@ OUTPUT: Plain language. Legal terms get immediately explained. Every response en
 
 Always state: "This is general legal information, not legal advice. For your specific situation, consult a licensed attorney."`,
 
-  'study.html': `You are SAIRNstudy — the world's most effective AI tutor, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'study.html': `You are SAIRNstudy — the world's most effective AI tutor, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Make the student actually understand — not just get the answer, but genuinely understand why.
 
@@ -20536,7 +20536,7 @@ ADAPTABILITY: Match language and complexity exactly to the student's level. A 10
 
 NEVER: Give the answer to homework without explanation. Make the student work through the reasoning.`,
 
-  'lingual.html': `You are SAIRNlingual — the most effective AI language learning companion available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'lingual.html': `You are SAIRNlingual — the most effective AI language learning companion available, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Get people actually speaking another language — not just drilling vocabulary forever.
 
@@ -20556,7 +20556,7 @@ IMMERSION: When the learner is B1+, respond partially in the target language. Pu
 
 NEVER: Let a session end without the learner having practiced producing language, not just receiving it.`,
 
-  'senior.html': `You are SAIRNsenior — the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'senior.html': `You are SAIRNsenior — the most compassionate and knowledgeable AI companion for adults 60 and older, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Be the patient, knowledgeable friend every older adult deserves — someone who explains everything clearly, never makes them feel rushed, and actually helps.
 
@@ -20575,7 +20575,7 @@ NEVER: Use jargon without explaining it. Rush to the answer without making sure 
 
 ALWAYS: End with a clear summary: "In simple terms: [one sentence]." And the next step: "What to do: [one action]."`,
 
-  'home.html': `You are SAIRNhome — the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by Michael L. Dibert of SAIRN Technologies™.
+  'home.html': `You are SAIRNhome — the most comprehensive AI homeownership intelligence platform available, powered by Claude. Built by SAIRN Tech LLC.
 
 YOUR ONE PURPOSE: Help people navigate the biggest financial decision of their lives with confidence.
 
@@ -33267,13 +33267,13 @@ function agPrint(id) {
   if (!ag) return;
   // DELIBERATELY UNUSED, do not "fix" this by wiring it into the document
   // below. This renders the StoneDesk SERVICE AGREEMENT -- the contract
-  // between SAIRN Technologies LLC (the software vendor) and the customer
+  // between SAIRN Tech LLC (the software vendor) and the customer
   // shop -- so every party/footer/signature name in it is SAIRN's own and
   // is correctly hardcoded. Substituting the shop's own name would
   // misstate who the agreement is with. Kept only because removing a
   // variable is a behaviour-neutral edit nobody has approved; audited and
   // confirmed correct-by-design 2026-08-23.
-  var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Technologies LLC';
+  var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Tech LLC';
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>' + ag.num + ' — StoneDesk Service Agreement</title>');
   win.document.write('<style>');
@@ -33305,7 +33305,7 @@ function agPrint(id) {
   win.document.write('</style><scr'+'ipt></scr'+'ipt></head><body>');
 
   // Header
-  win.document.write('<div class="header"><div><div class="logo">SAIRN Technologies LLC</div><div class="tagline">sairn.vercel.app &nbsp;|&nbsp; michael@sairn.com &nbsp;|&nbsp; (220) 228-3890</div></div>');
+  win.document.write('<div class="header"><div><div class="logo">SAIRN Tech LLC</div><div class="tagline">sairn.vercel.app &nbsp;|&nbsp; michael@sairn.com &nbsp;|&nbsp; (220) 228-3890</div></div>');
   win.document.write('<div class="doc-num"><strong>' + ag.num + '</strong><br>' + new Date(ag.date+'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '</div></div>');
 
   // Title
@@ -33320,12 +33320,12 @@ function agPrint(id) {
   }
   win.document.write('<li>Cancel anytime with 30 days written notice. No long-term contract.</li>');
   win.document.write('<li>You own your data. SAIRN never sells it.</li>');
-  win.document.write('<li>Governed by Ohio law. Disputes in Cuyahoga County, Ohio.</li>');
+  win.document.write('<li>Governed by Ohio law. Disputes in Wayne County, Ohio.</li>');
   win.document.write('</ul></div>');
 
   // Parties
   win.document.write('<div class="parties">');
-  win.document.write('<div class="party"><div class="party-title">Service Provider</div><div class="party-name">SAIRN Technologies LLC</div><div class="party-detail">Westlake, Ohio</div><div class="party-detail">michael@sairn.com | (220) 228-3890</div></div>');
+  win.document.write('<div class="party"><div class="party-title">Service Provider</div><div class="party-name">SAIRN Tech LLC</div><div class="party-detail">Orrville, Ohio</div><div class="party-detail">michael@sairn.com | (220) 228-3890</div></div>');
   win.document.write('<div class="party" style="background:#F0FEF6;border-color:#BBF7D0"><div class="party-title">Customer (Shop)</div><div class="party-name">' + escHtml(ag.shop) + '</div>');
   if (ag.contact) win.document.write('<div class="party-detail">' + escHtml(ag.contact) + '</div>');
   if (ag.email) win.document.write('<div class="party-detail">' + escHtml(ag.email) + '</div>');
@@ -33338,13 +33338,13 @@ function agPrint(id) {
 
   // Sections
   var sections = [
-    ['1. SERVICES', 'SAIRN Technologies LLC agrees to provide Customer with access to StoneDesk, an AI-powered business management platform for stone fabrication shops, hosted at sairn.vercel.app/stonedesk. The Platform includes all 49 panels available at time of subscription plus all future updates. Intelligence features are powered by Claude AI (Anthropic, Inc.). AI-generated outputs are advisory and should be verified before reliance on business-critical decisions.'],
+    ['1. SERVICES', 'SAIRN Tech LLC agrees to provide Customer with access to StoneDesk, an AI-powered business management platform for stone fabrication shops, hosted at sairn.vercel.app/stonedesk. The Platform includes all 49 panels available at time of subscription plus all future updates. Intelligence features are powered by Claude AI (Anthropic, Inc.). AI-generated outputs are advisory and should be verified before reliance on business-critical decisions.'],
     ['2. PAYMENT TERMS', 'Billing is monthly, charged automatically via credit card through Stripe. Customer authorizes SAIRN to charge the payment method on file each month on the same calendar date as subscription start. Failed payments result in a 7-day grace period before access may be suspended. All fees are non-refundable except as required by law.'],
     ['3. CANCELLATION', 'Customer may cancel at any time by providing 30 days written notice to michael@sairn.com. Access continues through the end of the current billing period. No partial-month refunds. Customer may export all data in CSV format before account closure.'],
     ['4. PERMITTED USE', 'SAIRN grants Customer a non-exclusive, non-transferable license to use the Platform for internal business operations at one (1) shop location. Customer may not reverse-engineer, resell, or use Platform outputs to develop competing software.'],
     ['5. DATA OWNERSHIP', 'Customer owns all data entered into the Platform. SAIRN processes data solely to provide the service and will not sell Customer data. Sub-processors: Anthropic (AI), Supabase (database), Vercel (hosting), Stripe (payments).'],
     ['6. LIMITATION OF LIABILITY', "SAIRN's total liability for any claim shall not exceed fees paid in the prior 3 months. SAIRN is not liable for indirect, incidental, or consequential damages including lost profits."],
-    ['7. GOVERNING LAW', 'This Agreement is governed by the laws of the State of Ohio. Disputes shall be resolved in Cuyahoga County, Ohio courts.'],
+    ['7. GOVERNING LAW', 'This Agreement is governed by the laws of the State of Ohio. Disputes shall be resolved in Wayne County, Ohio courts.'],
   ];
 
   if (ag.plan === 'founding') {
@@ -33360,16 +33360,16 @@ function agPrint(id) {
   });
 
   // Disclaimer
-  win.document.write('<div class="disclaimer">This document was prepared as a template by SAIRN Technologies LLC. It is not legal advice. SAIRN Technologies LLC recommends having any binding agreement reviewed by a licensed attorney before execution.</div>');
+  win.document.write('<div class="disclaimer">This document was prepared as a template by SAIRN Tech LLC. It is not legal advice. SAIRN Tech LLC recommends having any binding agreement reviewed by a licensed attorney before execution.</div>');
 
   // Signatures
   win.document.write('<div class="sig-grid">');
-  win.document.write('<div class="sig-block"><strong>SAIRN Technologies LLC</strong><div class="sig-line"></div><div class="sig-label">Signature</div><div style="margin-top:8px">Michael L. Dibert — Founder &amp; CEO</div><div class="sig-line" style="margin-top:12px"></div><div class="sig-label">Date</div></div>');
+  win.document.write('<div class="sig-block"><strong>SAIRN Tech LLC</strong><div class="sig-line"></div><div class="sig-label">Signature</div><div style="margin-top:8px">Michael L. Dibert — Founder &amp; CEO</div><div class="sig-line" style="margin-top:12px"></div><div class="sig-label">Date</div></div>');
   win.document.write('<div class="sig-block"><strong>' + escHtml(ag.shop) + '</strong><div class="sig-line"></div><div class="sig-label">Authorized Signature</div><div class="sig-line" style="margin-top:12px"></div><div class="sig-label">Print Name &amp; Title</div><div class="sig-line" style="margin-top:12px"></div><div class="sig-label">Date</div></div>');
   win.document.write('</div>');
 
   // Footer
-  win.document.write('<div class="footer"><span>' + ag.num + ' — StoneDesk Service Agreement</span><span>SAIRN Technologies LLC — Confidential</span></div>');
+  win.document.write('<div class="footer"><span>' + ag.num + ' — StoneDesk Service Agreement</span><span>SAIRN Tech LLC — Confidential</span></div>');
   win.document.write('<scr'+'ipt>window.onload=function(){window.print();}<\/script></body></html>');
   win.document.close();
 }
@@ -33441,7 +33441,7 @@ function agEsigOpen(id) {
     '<strong>Date:</strong> ' + new Date(ag.date+'T00:00:00').toLocaleDateString('en-US', {year:'numeric',month:'long',day:'numeric'}) + '<br>' +
     '<strong>Plan:</strong> ' + ag.planLabel + ' — <strong style="color:var(--brand2)">$' + ag.price + '/month</strong>' + (ag.plan === 'founding' ? ' (locked for life)' : '') + '<br>' +
     '<strong>Customer:</strong> ' + escHtml(ag.shop) + (ag.contact ? ' / ' + escHtml(ag.contact) : '') + '<br>' +
-    '<strong>Provider:</strong> SAIRN Technologies LLC, Westlake OH<br>' +
+    '<strong>Provider:</strong> SAIRN Tech LLC, Orrville OH<br>' +
     '<strong>Terms:</strong> Month-to-month. Cancel with 30 days written notice. Governed by Ohio law.';
   // Reset fields
   var nameEl = document.getElementById('ag-esig-name');
@@ -33524,13 +33524,13 @@ function agViewSigned(id) {
   if (!ag) return;
   // DELIBERATELY UNUSED, do not "fix" this by wiring it into the document
   // below. This renders the StoneDesk SERVICE AGREEMENT -- the contract
-  // between SAIRN Technologies LLC (the software vendor) and the customer
+  // between SAIRN Tech LLC (the software vendor) and the customer
   // shop -- so every party/footer/signature name in it is SAIRN's own and
   // is correctly hardcoded. Substituting the shop's own name would
   // misstate who the agreement is with. Kept only because removing a
   // variable is a behaviour-neutral edit nobody has approved; audited and
   // confirmed correct-by-design 2026-08-23.
-  var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Technologies LLC';
+  var shopName = localStorage.getItem('fab_shop_name') || 'SAIRN Tech LLC';
   var win = window.open('', '_blank');
   win.document.write('<!DOCTYPE html><html><head><title>' + ag.num + ' — Executed Agreement</title>');
   win.document.write('<style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;padding:36px;max-width:780px;margin:0 auto;color:#111;font-size:13px;line-height:1.7}');
@@ -33538,14 +33538,14 @@ function agViewSigned(id) {
   win.document.write('.logo{font-size:22px;font-weight:800;color:#0A3D1F}.sig-img{max-width:300px;border:1px solid #ddd;border-radius:6px;padding:8px;background:#fff}');
   win.document.write('.executed-banner{background:#F0FEF6;border:2px solid '+sdThemeColor('--brand2','#16C762')+';border-radius:8px;padding:14px 18px;margin:16px 0;text-align:center}');
   win.document.write('@media print{body{padding:20px}}</style><scr'+'ipt></scr'+'ipt></head><body>');
-  win.document.write('<div class="hdr"><div class="logo">SAIRN Technologies LLC — StoneDesk</div><div style="font-size:11px;color:#555">' + ag.num + ' | Executed Agreement</div></div>');
+  win.document.write('<div class="hdr"><div class="logo">SAIRN Tech LLC — StoneDesk</div><div style="font-size:11px;color:#555">' + ag.num + ' | Executed Agreement</div></div>');
   win.document.write('<div class="executed-banner"><div style="font-size:20px;font-weight:800;color:#0A3D1F">&#9989; EXECUTED SERVICE AGREEMENT</div><div style="font-size:13px;color:#166534;margin-top:4px">Signed by <strong>' + escHtml(ag.signerName || '') + '</strong>' + (ag.signerTitle ? ', ' + escHtml(ag.signerTitle) : '') + ' on ' + new Date(ag.signedAt).toLocaleDateString('en-US', {year:"numeric",month:"long",day:"numeric"}) + '</div></div>');
   win.document.write('<table style="width:100%;border-collapse:collapse;margin-bottom:16px"><tr><td style="padding:6px 0;font-weight:700;width:140px">Shop:</td><td>' + escHtml(ag.shop) + '</td></tr>');
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Contact:</td><td>' + escHtml(ag.contact || '') + '</td></tr>');
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Plan:</td><td>' + escHtml(ag.planLabel || '') + '</td></tr>');
   win.document.write('<tr><td style="padding:6px 0;font-weight:700">Monthly Rate:</td><td><strong>$' + ag.price + '/month</strong>' + (ag.plan === 'founding' ? ' (founding rate — locked for life)' : '') + '</td></tr></table>');
   if (ag.sigDataUrl) win.document.write('<div style="margin-top:20px"><div style="font-size:11px;font-weight:700;color:#374151;margin-bottom:6px;text-transform:uppercase;letter-spacing:.05em">Customer Signature:</div><img class="sig-img" src="' + escHtml(ag.sigDataUrl) + '" alt="Signature"></div>');
-  win.document.write('<div style="margin-top:24px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#999">StoneDesk Service Agreement ' + ag.num + ' | Executed ' + new Date(ag.signedAt).toLocaleString() + ' | SAIRN Technologies LLC</div>');
+  win.document.write('<div style="margin-top:24px;padding-top:10px;border-top:1px solid #eee;font-size:10px;color:#999">StoneDesk Service Agreement ' + ag.num + ' | Executed ' + new Date(ag.signedAt).toLocaleString() + ' | SAIRN Tech LLC</div>');
   win.document.write('</body></html>');
   win.document.close();
   win.print();

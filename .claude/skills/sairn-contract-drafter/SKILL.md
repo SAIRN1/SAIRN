@@ -121,15 +121,15 @@ By signing below, the parties agree to be bound by this Agreement.
 Customer Signature: _______________________________     Date: ____________
 Printed Name: _______________________________
 Company/Entity Name: _______________________________
-For SAIRN Technologies LLC:  _______________________________     Date: ____________
-Michael L. Dibert, Owner
+For SAIRN Tech LLC:  _______________________________     Date: ____________
+Michael L. Dibert, Founder & CEO
 ```
 
 **Standing disclaimer** — identical verbatim in all six documents, always last
 before (or after) the summary. Never reword:
 
-> This document was prepared as a template by SAIRN Technologies LLC. It is not
-> legal advice. SAIRN Technologies LLC recommends having any binding agreement
+> This document was prepared as a template by SAIRN Tech LLC. It is not
+> legal advice. SAIRN Tech LLC recommends having any binding agreement
 > reviewed by a licensed attorney in your jurisdiction before execution.
 
 ## 4. Cross-reference discipline — cite, never restate
