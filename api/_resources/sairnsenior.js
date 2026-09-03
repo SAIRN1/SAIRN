@@ -137,6 +137,16 @@ module.exports = {
   // scheduling capacity. Keyed on employee_id because that is what a visit
   // actually carries. Bespoke branch below.
     'sen_pay_rates',
+  // SAIRNsenior franchise agreements (2026-09-02, competitive-gap audit B3) --
+  // see sql/sairnsenior_franchise_schema.sql. The commercial terms between the
+  // franchisor and ONE unit: royalty percentage, what it is charged on, and the
+  // ad-fund percentage. The unit IS the sen_branches row; no parallel unit
+  // table exists, because two copies of an office drift. Gate is
+  // MANAGEMENT-ONLY for read AND write, matching sen_payer_contracts and
+  // sen_pay_rates: a royalty rate is a commercial contract term, not scheduling
+  // data. Royalty amounts are NOT stored and are recomputed from sen_claims.
+  // Bespoke branch below.
+    'sen_franchise_agreements',
   ],
   // 'readiness' is COMPUTE-ONLY and owned by sen_visits alone -- same carve-out
   // shape as SAIRNcare's 'route'/'evaluate'/'derive_charges', and narrow for the

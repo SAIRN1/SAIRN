@@ -237,6 +237,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-contracts" onclick="nav('contracts')"><span class="sico">&#128220;</span>Payer Contracts</button>
       <button class="sb" id="sb-authorizations" onclick="nav('authorizations')"><span class="sico">&#9989;</span>Authorisations</button>
       <button class="sb" id="sb-payrates" onclick="nav('payrates')"><span class="sico">&#128176;</span>Pay Rates</button>
+      <button class="sb" id="sb-franchise" onclick="nav('franchise')"><span class="sico">&#127970;</span>Franchise Royalties</button>
       <button class="sb" id="sb-compliance" onclick="nav('compliance')"><span class="sico">&#128737;&#65039;</span>Compliance</button>
       <div class="ss">Company</div>
       <button class="sb" id="sb-reports" onclick="nav('reports')"><span class="sico">&#128202;</span>Reports</button>
@@ -826,6 +827,65 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div></div>
 
+<!-- FRANCHISE ROYALTIES (competitive-gap audit B3, 2026-09-02)
+     THE UNIT IS THE BRANCH. A parallel "unit" table would drift from the
+     branch the moment either was edited.
+
+     NOTHING IS STORED. What a unit owes is recomputed from the claims every
+     time the statement is drawn -- a stored amount stops reconciling the
+     moment a claim is re-billed, denied, appealed or paid. -->
+<div class="panel" id="panel-franchise">
+  <div class="ph"><div><div class="ptitle">Franchise Royalties</div><div class="psub">What each unit owes for a stated period, computed from real claims &mdash; with what was left out, and why, printed beside it</div></div>
+    <div class="pa"><button class="btn bp bs" id="fr-add-btn" onclick="openFrModal()">+ Agreement</button></div>
+  </div>
+  <div class="card" id="fr-denied" style="display:none"><div class="cb" style="text-align:center;color:var(--muted);padding:24px;">Franchise agreements and royalty statements are limited to management.</div></div>
+  <div id="fr-content">
+    <div class="card"><div class="ch"><span class="ct">Royalty statement</span></div><div class="cb">
+      <div class="fr">
+        <div class="fg"><label>Period from</label><input id="fr-from" type="date" onchange="frPaint()"></div>
+        <div class="fg"><label>Period to</label><input id="fr-to" type="date" onchange="frPaint()"></div>
+      </div>
+      <!-- The three-way split is the point. A franchisee handed one number has
+           nothing to reconcile against; a franchisee handed included, in
+           dispute and denied can check it against their own records. -->
+      <div class="note" style="margin-bottom:12px"><strong>A denied claim is not revenue.</strong> The Branches rollup counts every non-draft claim as billed, which is right for an operational view &mdash; it was billed. It is wrong as a royalty base: charging a percentage of a claim the payer refused takes real cash for work nobody was paid for. Denied claims are shown here and charged to no one. <strong>A claim under appeal is in neither bucket</strong> &mdash; it was billed, then denied, and the outcome is undecided, so it is printed as its own <em>in dispute</em> figure rather than quietly counted or quietly dropped.</div>
+      <div class="note" style="margin-bottom:12px">The <strong>royalty base</strong> is whatever each agreement says &mdash; <strong>billed</strong> or <strong>collected</strong>. There is no default: the two differ by months of cash and the difference favours one side of the agreement, so it is chosen per unit and printed on every row. The <strong>ad fund</strong> is computed on the same base and shown on its own line, never folded into the royalty.</div>
+      <div id="fr-warnings" style="margin-bottom:14px"></div>
+      <div class="tw"><table><thead><tr><th>Unit</th><th>Franchisee</th><th>Base</th><th>Revenue in base</th><th>In dispute</th><th>Denied</th><th>Royalty</th><th>Ad fund</th><th>Total due</th></tr></thead>
+      <tbody id="fr-tbody"></tbody></table></div>
+    </div></div>
+    <div class="card"><div class="ch"><span class="ct">Agreements on file</span></div><div class="cb">
+      <div class="tw"><table><thead><tr><th>Unit</th><th>Code</th><th>Franchisee</th><th>Royalty</th><th>Ad fund</th><th>Base</th><th>Period</th><th>Actions</th></tr></thead>
+      <tbody id="fr-agreements"></tbody></table></div>
+    </div></div>
+  </div>
+</div>
+<div class="modal" id="frmodal"><div class="mbox">
+  <div class="mtitle" id="fr-modal-title">Add Agreement</div>
+  <div class="fr">
+    <div class="fg"><label>Unit (branch)</label><select id="fr-branch"></select></div>
+    <div class="fg"><label>Unit code</label><input id="fr-unit" placeholder="As the network numbers it"></div>
+  </div>
+  <div class="fg"><label>Franchisee</label><input id="fr-franchisee" placeholder="Who holds this unit"></div>
+  <div class="fr">
+    <div class="fg"><label>Royalty %</label><input id="fr-royalty" type="number" step="0.01" min="0" max="99.99" placeholder="5"></div>
+    <div class="fg"><label>Ad fund %</label><input id="fr-adfund" type="number" step="0.01" min="0" max="99.99" placeholder="0"></div>
+  </div>
+  <!-- Opens BLANK on purpose. A default here would pick a side of a contract
+       this software has not read, and the two bases differ by months of cash. -->
+  <div class="fg"><label>Royalty is charged on</label><select id="fr-base"><option value="">-- choose, there is no default --</option><option value="billed">Billed revenue</option><option value="collected">Collected revenue</option></select></div>
+  <div class="fr">
+    <div class="fg"><label>Effective from</label><input id="fr-effective" type="date"></div>
+    <div class="fg"><label>Ends (blank = open)</label><input id="fr-term" type="date"></div>
+  </div>
+  <div class="fg"><label>Notes</label><input id="fr-notes" maxlength="300" placeholder="Anything that explains these terms"></div>
+  <div class="note" style="margin:0 0 12px">A <strong>zero royalty is allowed</strong> &mdash; a corporate-owned unit inside the same network legitimately pays none, and refusing it would force a fake percentage onto the one record that should read zero. To supersede an agreement, give the old one an <strong>end date</strong> and add a new one: nothing is deleted, because a statement already issued would then have nothing on file justifying the percentage it charged.</div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button class="btn bo" onclick="closeFrModal()">Cancel</button>
+    <button class="btn bp" onclick="saveFranchiseAgreement()">Save</button>
+  </div>
+</div></div>
+
 <!-- HIRING FUNNEL (competitive-gap audit A5, 2026-09-02)
      The audit records A5 as BASELINE in this vertical rather than an
      enterprise extra -- applicant tracking is native in both AxisCare and
@@ -1304,6 +1364,7 @@ function nav(id){
   if(id==='contracts')pcRender();
   if(id==='authorizations')azRender();
   if(id==='payrates')prRender();
+  if(id==='franchise')frRender();
   if(id==='compliance')cpRender();
   if(id==='reports')rpRender();
   // Settings reads from the server every time the panel is opened rather than
@@ -3097,7 +3158,14 @@ function confirmClaimAction(){
   closeClaimActionModal();
 }
 function blSubmitClaim(id){blUpdateClaim(id,{status:'submitted',submitted_date:senLocalToday()});}
-function blMarkPaid(id){blUpdateClaim(id,{status:'paid'});}
+// paid_date ADDED 2026-09-02 for the franchise royalty (B3). A
+// collected-revenue royalty is owed on money that arrived in a period, and
+// before this the app recorded THAT it arrived and never WHEN. Claims marked
+// paid before today have no paid_date and are NOT back-filled with a guess --
+// the royalty engine counts them separately as "paid, date not recorded" and
+// puts them in no period at all, because assigning them to one would invent the
+// month a payment landed and change what a franchisee owes.
+function blMarkPaid(id){blUpdateClaim(id,{status:'paid',paid_date:senLocalToday()});}
 
 // ── PAYER CONTRACTS (competitive-gap audit B4, 2026-09-02) ───────────────
 // THE PROBLEM, IN THE CODE THIS CHANGES: generateClaim() created every claim
@@ -3289,6 +3357,176 @@ function pcPaint(){
     : '';
 }
 
+// ── FRANCHISE ROYALTIES (competitive-gap audit B3, 2026-09-02) ───────────
+// THE UNIT IS THE BRANCH. A franchise unit is an office with its own
+// territory, which is exactly what sen_branches already models. A parallel
+// "unit" table would drift from the branch the moment either was edited, and
+// every royalty would then be computed against whichever copy was open.
+//
+// NOTHING IS STORED. What a unit owes is recomputed from sen_claims every time
+// the statement is drawn. A stored amount is a number nobody can reconcile the
+// moment a claim is re-billed, denied, appealed or paid -- and a royalty
+// statement that disagrees with the claims behind it is the one thing a
+// franchisee will certainly notice.
+function franchiseAgreements(){return ld('sen_franchise_agreements',[]);}
+
+function senHydrateFranchise(){
+  if(!senLicenseKey()||!senIsManagement())return Promise.resolve(false);
+  return senData('read','sen_franchise_agreements',null,true).then(function(serverRows){
+    if(!serverRows||!Array.isArray(serverRows))return false;
+    var byId={};
+    franchiseAgreements().forEach(function(a){if(a&&a.id)byId[a.id]=a;});
+    var changed=false;
+    serverRows.forEach(function(a){
+      if(!a||!a.id)return;
+      if(JSON.stringify(byId[a.id])!==JSON.stringify(a)){byId[a.id]=a;changed=true;}
+    });
+    if(changed)st('sen_franchise_agreements',Object.keys(byId).map(function(k){return byId[k];}));
+    return changed;
+  }).catch(function(){return false;});
+}
+
+function frInForce(a,onDate){
+  if(!a||!hrIsDate(onDate))return false;
+  if(!hrIsDate(a.effective_on)||a.effective_on>onDate)return false;
+  if(a.term_on&&!hrIsDate(a.term_on))return false;
+  if(a.term_on&&a.term_on<onDate)return false;
+  return true;
+}
+// applied | none | ambiguous, matching every other resolver in this app.
+// Resolved against the PERIOD END rather than today: a statement for March is
+// computed under the agreement that governed March, and re-running it in
+// December must produce the same number it did in April.
+function frResolveAgreement(branchId,periodEnd){
+  if(!hrIsDate(periodEnd))return {status:'none',reason:'No period end date, so no agreement period can be checked.'};
+  if(!branchId)return {status:'none',reason:'Royalty is owed by a unit. A claim from a client with no branch belongs to no unit and is reported separately, never charged to another one.'};
+  var live=franchiseAgreements().filter(function(a){return a.branch_id===branchId&&frInForce(a,periodEnd);});
+  if(!live.length){
+    var any=franchiseAgreements().filter(function(a){return a.branch_id===branchId;});
+    return {status:'none',reason:any.length
+      ? 'This unit has '+any.length+' agreement(s) on file but none in force on '+periodEnd+'.'
+      : 'No franchise agreement is on file for this unit, so no royalty is computed. That is not the same as a royalty of zero.'};
+  }
+  if(live.length>1){
+    return {status:'ambiguous',candidates:live.map(function(a){return {id:a.id,royalty_pct:a.royalty_pct};}),
+      reason:live.length+' agreements for this unit are in force on '+periodEnd+
+        '. None is applied: a royalty charged under terms nobody chose is money taken on a contract this software guessed at. End one of them.'};
+  }
+  var a=live[0];
+  return {status:'applied',agreement_id:a.id,royalty_pct:Number(a.royalty_pct)||0,
+    ad_fund_pct:Number(a.ad_fund_pct)||0,royalty_base:a.royalty_base,
+    unit_code:a.unit_code||'',franchisee_name:a.franchisee_name||'',
+    reason:'Agreement in force on '+periodEnd+', royalty on '+a.royalty_base+' revenue.'};
+}
+
+// THE THREE-WAY SPLIT IS THE WHOLE POINT. Every claim in the period lands in
+// exactly one of INCLUDED, IN DISPUTE or EXCLUDED, and the statement prints all
+// three so a franchisee can reconcile it against their own records instead of
+// being handed a single number to trust.
+//
+// A DENIED CLAIM IS NOT REVENUE. The branch rollup counts every non-draft claim
+// as billed, which is fine for an operational view -- it WAS billed. It is not
+// fine as a royalty base: charging a percentage of a claim the payer refused
+// takes real cash for work nobody was paid for.
+function frRevenueBase(branchId,base,from,to){
+  var byClient={};clients().forEach(function(c){byClient[c.id]=c;});
+  var included=0,disputed=0,denied=0,drafted=0,undated=0;
+  var nIncluded=0,nDisputed=0,nDenied=0,nDraft=0,nUndated=0;
+  claims().forEach(function(x){
+    if(!x)return;
+    var c=byClient[x.client_id];
+    // NORMALISED TO '' RATHER THAN COMPARED RAW. A client record with no
+    // branch_id key at all yields undefined, and `undefined !== ''` dropped it
+    // from the unattached bucket too -- so its revenue vanished from every
+    // total on the screen, charged to nobody and reported to nobody. A claim
+    // whose client is not on this device lands here for the same reason: it
+    // belongs to no KNOWN unit, which is not the same as belonging to none.
+    if(((c&&c.branch_id)||'')!==branchId)return;
+    var amt=Number(x.amount)||0;
+    if(x.status==='draft'){
+      // Not billed to anyone yet, so not revenue on either basis.
+      if(hrIsDate(x.service_date)&&x.service_date>=from&&x.service_date<=to){drafted+=amt;nDraft++;}
+      return;
+    }
+    if(x.status==='denied'||x.status==='appeal_denied'){
+      if(hrIsDate(x.service_date)&&x.service_date>=from&&x.service_date<=to){denied+=amt;nDenied++;}
+      return;
+    }
+    if(x.status==='appealed'){
+      // Billed, then denied, outcome undecided. Counting it overstates what is
+      // owed; dropping it silently lets a statement fail to reconcile.
+      if(hrIsDate(x.service_date)&&x.service_date>=from&&x.service_date<=to){disputed+=amt;nDisputed++;}
+      return;
+    }
+    if(base==='collected'){
+      if(x.status!=='paid')return;
+      // A claim marked paid before 2026-09-02 carries no paid_date. It goes in
+      // NO period rather than being assigned to one -- back-filling it would
+      // invent the month the money arrived and change what a unit owes.
+      if(!hrIsDate(x.paid_date)){undated+=amt;nUndated++;return;}
+      if(x.paid_date>=from&&x.paid_date<=to){included+=amt;nIncluded++;}
+      return;
+    }
+    // 'billed': submitted or paid, keyed by the date the work was done.
+    if(x.status!=='submitted'&&x.status!=='paid')return;
+    if(!hrIsDate(x.service_date)||x.service_date<from||x.service_date>to)return;
+    included+=amt;nIncluded++;
+  });
+  var r2=function(n){return Math.round(n*100)/100;};
+  return {base:base,from:from,to:to,
+    included:r2(included),disputed:r2(disputed),denied:r2(denied),draft:r2(drafted),undated_paid:r2(undated),
+    n_included:nIncluded,n_disputed:nDisputed,n_denied:nDenied,n_draft:nDraft,n_undated_paid:nUndated};
+}
+
+// The statement for one unit. Returns the agreement status alongside the
+// numbers so a caller can tell "owes nothing" from "cannot be computed" --
+// collapsing those two is how a unit with no agreement on file silently
+// disappears from a network total.
+function frStatement(branchId,from,to){
+  var res=frResolveAgreement(branchId,to);
+  if(res.status!=='applied'){
+    return {status:res.status,reason:res.reason,branch_id:branchId,name:brName(branchId)};
+  }
+  var rev=frRevenueBase(branchId,res.royalty_base,from,to);
+  var royalty=Math.round(rev.included*res.royalty_pct)/100;
+  var adFund=Math.round(rev.included*res.ad_fund_pct)/100;
+  return {status:'applied',branch_id:branchId,name:brName(branchId),
+    unit_code:res.unit_code,franchisee_name:res.franchisee_name,
+    royalty_pct:res.royalty_pct,ad_fund_pct:res.ad_fund_pct,royalty_base:res.royalty_base,
+    revenue:rev,royalty:royalty,ad_fund:adFund,
+    total_due:Math.round((royalty+adFund)*100)/100};
+}
+
+// Network roll-up. Units that cannot be computed are carried as their own list
+// rather than dropped, because a network total that quietly omits three units
+// is wrong in a way nothing on the screen would reveal.
+function frNetwork(from,to){
+  var seen={},rows=[],uncomputable=[];
+  branches().forEach(function(b){
+    seen[b.id]=true;
+    var s=frStatement(b.id,from,to);
+    if(s.status==='applied')rows.push(s);else uncomputable.push(s);
+  });
+  // Clients with no branch belong to no unit. Their revenue is reported on its
+  // own line and charged to nobody -- attributing it to a unit would invoice a
+  // franchisee for work outside their territory.
+  var unattached=frRevenueBase('','billed',from,to);
+  var totals=rows.reduce(function(t,r){
+    t.included=Math.round((t.included+r.revenue.included)*100)/100;
+    t.disputed=Math.round((t.disputed+r.revenue.disputed)*100)/100;
+    t.royalty=Math.round((t.royalty+r.royalty)*100)/100;
+    t.ad_fund=Math.round((t.ad_fund+r.ad_fund)*100)/100;
+    t.total_due=Math.round((t.total_due+r.total_due)*100)/100;
+    return t;
+  },{included:0,disputed:0,royalty:0,ad_fund:0,total_due:0});
+  // MIXED BASES ARE FLAGGED, NOT SUMMED SILENTLY. A network total adding a
+  // billed-basis unit to a collected-basis one is not a quantity that means
+  // anything, and the statement says so rather than printing it plain.
+  var bases={};rows.forEach(function(r){bases[r.royalty_base]=true;});
+  return {from:from,to:to,rows:rows,uncomputable:uncomputable,unattached:unattached,
+    totals:totals,bases:Object.keys(bases),mixed_bases:Object.keys(bases).length>1};
+}
+
 // ── CAREGIVER PAY RATES (competitive-gap audit B5, 2026-09-02) ───────────
 // THIS CLOSES A GAP THIS APP DECLARED ON ITSELF. The Branches panel shipped
 // earlier today printing: "No cost, overhead or payroll data is held by this
@@ -3369,6 +3607,142 @@ function visitLabourCost(v){
   var cost=hours*res.rate_per_hour*(1+res.burden_pct/100);
   return {status:'applied',cost:Math.round(cost*100)/100,hours:hours,
     rate_per_hour:res.rate_per_hour,burden_pct:res.burden_pct,rate_id:res.rate_id};
+}
+
+var frEditId=null;
+function openFrModal(id){
+  frEditId=id||null;
+  var a=id?franchiseAgreements().find(function(x){return x.id===id;}):null;
+  var sel=$('fr-branch');
+  sel.innerHTML=branches().map(function(b){return '<option value="'+H(b.id)+'">'+H(b.name)+(b.state?' ('+H(b.state)+')':'')+'</option>';}).join('')
+    ||'<option value="">(no branches on file -- add one first)</option>';
+  sel.value=(a&&a.branch_id)||'';
+  $('fr-unit').value=(a&&a.unit_code)||'';
+  $('fr-franchisee').value=(a&&a.franchisee_name)||'';
+  $('fr-royalty').value=(a&&a.royalty_pct!==undefined)?a.royalty_pct:'';
+  $('fr-adfund').value=(a&&a.ad_fund_pct!==undefined)?a.ad_fund_pct:0;
+  // No preselected base. The select opens on the blank option so a base is
+  // CHOSEN rather than accepted -- defaulting it would pick a side of the
+  // agreement on the operator's behalf.
+  $('fr-base').value=(a&&a.royalty_base)||'';
+  $('fr-effective').value=(a&&a.effective_on)||'';
+  $('fr-term').value=(a&&a.term_on)||'';
+  $('fr-notes').value=(a&&a.notes)||'';
+  $('fr-modal-title').textContent=a?'Edit Agreement':'Add Agreement';
+  $('frmodal').classList.add('on');
+}
+function closeFrModal(){$('frmodal').classList.remove('on');frEditId=null;}
+async function saveFranchiseAgreement(){
+  var bid=$('fr-branch').value;
+  if(!bid){toast('Pick the unit this agreement covers -- the unit is a branch');return;}
+  var base=$('fr-base').value;
+  if(base!=='billed'&&base!=='collected'){toast('Choose whether royalty is charged on BILLED or COLLECTED revenue -- there is no default, because guessing picks a side of the agreement');return;}
+  var royaltyRaw=$('fr-royalty').value,adRaw=$('fr-adfund').value;
+  var royalty=royaltyRaw===''?0:Number(royaltyRaw);
+  var adFund=adRaw===''?0:Number(adRaw);
+  // Zero royalty is allowed: a corporate-owned unit inside the same network
+  // legitimately pays none, and refusing it would force a fake percentage onto
+  // the one record that should read zero.
+  if(!isFinite(royalty)||royalty<0||royalty>=100){toast('Royalty must be between 0 and 99.99 percent');return;}
+  if(!isFinite(adFund)||adFund<0||adFund>=100){toast('Ad fund must be between 0 and 99.99 percent');return;}
+  var eff=$('fr-effective').value;
+  if(!eff){toast('An effective date is required -- an agreement with no start cannot govern a period');return;}
+  var term=$('fr-term').value||'';
+  if(term&&term<eff){toast('The end date is before the start date');return;}
+  var b=branches().find(function(x){return x.id===bid;});
+  var rec={id:frEditId||newId('FR'),branch_id:bid,branch_name:(b&&b.name)||'',
+    unit_code:$('fr-unit').value.trim(),franchisee_name:$('fr-franchisee').value.trim(),
+    royalty_pct:royalty,ad_fund_pct:adFund,royalty_base:base,
+    effective_on:eff,term_on:term,notes:$('fr-notes').value.trim().slice(0,300),
+    created_at:(frEditId&&(franchiseAgreements().find(function(x){return x.id===frEditId;})||{}).created_at)||senLocalToday()};
+  var list=franchiseAgreements();
+  var i=list.findIndex(function(x){return x.id===rec.id;});
+  if(i>=0)list[i]=rec;else list.push(rec);
+  st('sen_franchise_agreements',list);
+  closeFrModal();frPaint();
+  var saved=await senData('write','sen_franchise_agreements',rec,true);
+  toast(saved?'Agreement saved':'Saved on this device only -- server sync failed, try again with a connection');
+}
+
+function frDefaultPeriod(){
+  // Last complete calendar month, which is the period a royalty statement is
+  // normally cut for. Derived, never stored.
+  var t=senLocalToday().split('-');
+  var y=Number(t[0]),m=Number(t[1]);
+  m-=1;if(m<1){m=12;y-=1;}
+  var last=new Date(y,m,0).getDate();
+  var p=function(n){return String(n).padStart(2,'0');};
+  return {from:y+'-'+p(m)+'-01',to:y+'-'+p(m)+'-'+p(last)};
+}
+function frRender(){
+  var ok=senIsManagement();
+  var denied=$('fr-denied'),content=$('fr-content');
+  if(denied)denied.style.display=ok?'none':'block';
+  if(content)content.style.display=ok?'block':'none';
+  if(!ok)return;
+  if(!$('fr-from').value||!$('fr-to').value){
+    var d=frDefaultPeriod();
+    $('fr-from').value=d.from;$('fr-to').value=d.to;
+  }
+  frPaint();
+  Promise.all([senHydrateFranchise(),senHydrateClaims()]).then(frPaint);
+}
+function frPaint(){
+  if(!senIsManagement())return;
+  var from=$('fr-from')?$('fr-from').value:'',to=$('fr-to')?$('fr-to').value:'';
+  var tb=$('fr-tbody'),warn=$('fr-warnings');
+  if(!hrIsDate(from)||!hrIsDate(to)||to<from){
+    if(tb)tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">Pick a period &mdash; a royalty statement is always for a stated one</td></tr>';
+    if(warn)warn.innerHTML='';
+    return;
+  }
+  var net=frNetwork(from,to);
+  if(tb)tb.innerHTML=net.rows.length?net.rows.map(function(r){
+    return '<tr><td>'+H(r.name)+(r.unit_code?' <span class="badge bx">'+H(r.unit_code)+'</span>':'')+'</td>'+
+      '<td>'+H(r.franchisee_name||'--')+'</td>'+
+      '<td><span class="badge bb">'+H(r.royalty_base)+'</span></td>'+
+      '<td>'+fmt(r.revenue.included)+' <span style="color:var(--muted)">('+r.revenue.n_included+')</span></td>'+
+      '<td>'+(r.revenue.disputed?'<span class="badge bw">'+fmt(r.revenue.disputed)+' ('+r.revenue.n_disputed+')</span>':'--')+'</td>'+
+      '<td>'+(r.revenue.denied?fmt(r.revenue.denied)+' <span style="color:var(--muted)">('+r.revenue.n_denied+')</span>':'--')+'</td>'+
+      '<td>'+r.royalty_pct+'% &rarr; '+fmt(r.royalty)+'</td>'+
+      '<td>'+(r.ad_fund_pct?r.ad_fund_pct+'% &rarr; '+fmt(r.ad_fund):'--')+'</td>'+
+      '<td><strong>'+fmt(r.total_due)+'</strong></td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No unit has an agreement in force for this period</td></tr>';
+
+  var bits=[];
+  // MIXED BASES ARE NOT SUMMED SILENTLY. Adding a billed-basis unit to a
+  // collected-basis one produces a number that is not a quantity.
+  if(net.mixed_bases){
+    bits.push('<strong>Units in this network are on different royalty bases ('+net.bases.map(H).join(' and ')+').</strong> The per-unit figures are each correct on their own terms; the network total below adds them anyway and <strong>is not a like-for-like figure</strong>. It is printed because omitting it would hide the same problem.');
+  }
+  // A UNIT THAT CANNOT BE COMPUTED IS NAMED, NOT DROPPED. A network total that
+  // quietly omits three units is wrong in a way nothing on screen reveals.
+  if(net.uncomputable.length){
+    bits.push('<strong>'+net.uncomputable.length+' unit(s) produced no statement</strong> and are NOT in the total below: '+
+      net.uncomputable.map(function(u){return H(u.name)+' &mdash; '+H(u.reason);}).join('<br>'));
+  }
+  if(net.unattached.included){
+    bits.push('<strong>'+fmt(net.unattached.included)+' of billed revenue ('+net.unattached.n_included+' claim(s)) belongs to clients with no branch</strong>, so it belongs to no unit and is charged to nobody. Attributing it would invoice a franchisee for work outside their territory.');
+  }
+  var undated=net.rows.reduce(function(s,r){return s+r.revenue.n_undated_paid;},0);
+  if(undated){
+    bits.push('<strong>'+undated+' paid claim(s) carry no payment date</strong> and are in NO period on a collected basis. Claims marked paid before 2026-09-02 predate that field; they are not back-filled, because inventing the month money arrived changes what a unit owes.');
+  }
+  bits.push('Network total &mdash; <strong>'+fmt(net.totals.included)+'</strong> revenue in base, '+fmt(net.totals.royalty)+' royalty, '+fmt(net.totals.ad_fund)+' ad fund, <strong>'+fmt(net.totals.total_due)+'</strong> due'+
+    (net.totals.disputed?', with '+fmt(net.totals.disputed)+' under appeal and charged to nobody yet':'')+'.');
+  if(warn)warn.innerHTML='<div class="note" style="margin:0">'+bits.join('<br><br>')+'</div>';
+
+  var ab=$('fr-agreements');
+  var list=franchiseAgreements();
+  if(ab)ab.innerHTML=list.length?list.slice().sort(function(a,b){
+    return (a.branch_name||'').localeCompare(b.branch_name||'')||(b.effective_on||'').localeCompare(a.effective_on||'');
+  }).map(function(a){
+    return '<tr><td>'+H(a.branch_name||brName(a.branch_id))+'</td><td>'+H(a.unit_code||'--')+'</td>'+
+      '<td>'+H(a.franchisee_name||'--')+'</td><td>'+a.royalty_pct+'%</td><td>'+(a.ad_fund_pct||0)+'%</td>'+
+      '<td><span class="badge bb">'+H(a.royalty_base)+'</span></td>'+
+      '<td>'+fdate(a.effective_on)+' &ndash; '+(a.term_on?fdate(a.term_on):'open')+'</td>'+
+      '<td><button class="btn bo bs" onclick="openFrModal(\''+H(a.id)+'\')">Edit</button></td></tr>';
+  }).join(''):'<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No agreements on file &mdash; no royalty is computed for any unit, which is not the same as a royalty of zero</td></tr>';
 }
 
 var prEditId=null;

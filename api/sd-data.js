@@ -3618,6 +3618,83 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, prBody) });
       return;
     }
+    // ── SAIRNSENIOR: sen_franchise_agreements (2026-09-02, audit B3) ───────
+    // MANAGEMENT-ONLY ON BOTH VERBS, matching the pay-rate and contract gates
+    // above rather than the authorisation gate: a royalty percentage is a
+    // commercial contract term, not scheduling capacity.
+    //
+    // NO royalty_amount COLUMN AND NO royalty_amount FIELD. What a unit owes is
+    // recomputed from sen_claims every time the statement is drawn. A stored
+    // amount would be a number nobody can reconcile the moment a claim is
+    // re-billed, denied, appealed or paid -- and a royalty statement that
+    // disagrees with the claims behind it is the one thing a franchisee will
+    // certainly notice.
+    if (resource === 'sen_franchise_agreements' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!senAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only management can view or manage franchise agreements' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest('sen_franchise_agreements?license_hash=eq.' + enc(licHash) + '&select=agreement_id,data'), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => Object.assign({ id: x.agreement_id }, x.data)), provisioned: true });
+        return;
+      }
+      if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sen_franchise_agreements payload.id is required' } }); return; }
+      const frProblems = [];
+      if (!String(payload.branch_id || '').trim()) frProblems.push('branch_id is required -- the unit IS a branch');
+      // Zero royalty is ALLOWED: a corporate-owned unit inside the same network
+      // legitimately pays none, and refusing it would force a fake percentage
+      // onto the one record that should read zero. Negative is not a rebate and
+      // anything at or above 100% is a typo.
+      const frRoyalty = payload.royalty_pct === undefined || payload.royalty_pct === '' ? 0 : Number(payload.royalty_pct);
+      const frAdFund = payload.ad_fund_pct === undefined || payload.ad_fund_pct === '' ? 0 : Number(payload.ad_fund_pct);
+      if (!isFinite(frRoyalty) || frRoyalty < 0 || frRoyalty >= 100) frProblems.push('royalty_pct must be between 0 and 99.99');
+      if (!isFinite(frAdFund) || frAdFund < 0 || frAdFund >= 100) frProblems.push('ad_fund_pct must be between 0 and 99.99');
+      // THE BASE IS REQUIRED AND HAS NO DEFAULT. Billed and collected differ by
+      // months of cash and the difference favours one side of the agreement.
+      // Guessing it would be picking a side of a contract this software has not
+      // read.
+      if (['billed', 'collected'].indexOf(String(payload.royalty_base || '')) < 0) {
+        frProblems.push("royalty_base must be 'billed' or 'collected' -- there is no default, because guessing picks a side of the agreement");
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(payload.effective_on || ''))) frProblems.push('effective_on must be YYYY-MM-DD');
+      if (payload.term_on && !/^\d{4}-\d{2}-\d{2}$/.test(String(payload.term_on))) frProblems.push('term_on, when present, must be YYYY-MM-DD');
+      if (payload.term_on && String(payload.term_on) < String(payload.effective_on)) frProblems.push('term_on is before effective_on');
+      if (frProblems.length) {
+        res.status(400).json({ error: { code: 'INVALID_AGREEMENT', message: 'sen_franchise_agreements: ' + frProblems.join('; ') } });
+        return;
+      }
+      const frBody = Object.assign({}, payload, {
+        branch_id: String(payload.branch_id).trim(),
+        royalty_pct: frRoyalty,
+        ad_fund_pct: frAdFund,
+        royalty_base: String(payload.royalty_base)
+      });
+      delete frBody.id;
+      // Stripped rather than ignored, same reason as sen_authorizations'
+      // units_used: stored, it would be read back by the next device looking
+      // exactly like a figure the server computed, and it is the one number
+      // that must always come from the claims.
+      delete frBody.royalty_amount;
+      const r = await fetch(rest('sen_franchise_agreements?on_conflict=license_hash,agreement_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnsenior', agreement_id: String(payload.id), data: frBody, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'That table is not set up yet — run sql/sairnsenior_franchise_schema.sql in Supabase first.' } });
+        return;
+      }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, frBody) });
+      return;
+    }
 
     if (resource === 'sen_settings' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnsenior');

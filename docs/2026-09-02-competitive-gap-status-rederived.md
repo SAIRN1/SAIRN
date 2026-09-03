@@ -116,16 +116,19 @@ recommended.
 | A7 | Referral-source CRM | Zero occurrences | **BUILT** | `sen_referral_sources`, `sen_referrals`, `panel-referrals` (Hank) |
 | B1 | Multi-branch / multi-state operation | Absent | **BUILT** | `sen_branches`, `panel-branches` (Hank) |
 | B2 | Denials management and appeals | `appeal` zero | **BUILT** | Appeals lifecycle on the Billing panel (Hank) |
-| B3 | Franchise-network reporting and royalty | Absent | **OPEN** | 0 hits on `franchise`, `royalt`. Buildable in-house |
+| B3 | Franchise-network reporting and royalty | Absent | **BUILT** | `sen_franchise_agreements`, `panel-franchise` (Hank, 2026-09-02). The unit is the branch; a denied claim is excluded from the royalty base and an appealed one is reported in dispute. ⚠ SQL pending |
 | B4 | Payer contract management + MCO authorisation | Absent | **BUILT** | `sen_payer_contracts`, `panel-contracts` (Hank, `517c47b`). ⚠ SQL pending |
 | B5 | Consolidated + per-branch P&L | Absent | **BUILT — GROSS MARGIN ONLY, STATED** | `sen_pay_rates`, `panel-payrates`, margin columns on `panel-branches` (Hank, `e3f840e`). Direct labour only; the panel refuses the word *profit* and lists what is excluded. ⚠ SQL pending |
 
-**SAIRNsenior genuinely open and buildable in-house: A2's telephony half, B3.**
-A1 and A4 are vendor-gated.
+**SAIRNsenior genuinely open and buildable in-house: A2's telephony half.** A1
+and A4 are vendor-gated. **B3 closed 2026-09-02, after this file was
+written, and updated in the row above in the same commit as the build** — which is the maintenance rule at the
+bottom of this document being followed rather than described.
 
-> ⚠ **Three SAIRNsenior SQL files are written, committed and NOT YET RUN in
+> ⚠ **Four SAIRNsenior SQL files are written, committed and NOT YET RUN in
 > Supabase**: `sairnsenior_payer_contracts_schema.sql`,
-> `sairnsenior_authorizations_schema.sql`, `sairnsenior_pay_rates_schema.sql`.
+> `sairnsenior_authorizations_schema.sql`, `sairnsenior_pay_rates_schema.sql`,
+> `sairnsenior_franchise_schema.sql`.
 > Until each runs, that resource's write refuses with `NOT_PROVISIONED` naming
 > the exact file; the panels otherwise work from local storage. **A panel that
 > works locally is not a shipped feature.**
@@ -161,7 +164,7 @@ not touch `stonedesk.html` for it without checking claims first.**
 | StoneDesk | GAP 7 — multi-location | Caps StoneDesk at single-yard shops |
 | StoneDesk | GAP 8 (remnant half) | Mechanism exists; wire remnants into the public catalog |
 | SAIRNsenior | A2 telephony fallback | Offline half is done |
-| SAIRNsenior | B3 franchise royalty | Tier-B, narrow buyer |
+| ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
 | SAIRNroofing | B6 supplier EDI | Tier B procurement |
 | SAIRNdental | B5 BI / warehouse connectors | CSV export only today |
 
