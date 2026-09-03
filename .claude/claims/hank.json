@@ -410,8 +410,8 @@
       "task": "multi location yard scoping GAP7",
       "claimed_at": "2026-09-03T01:53:10Z",
       "claimed_at_epoch": 1788400390.1685426,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T02:23:24Z"
     }
   ]
 }
