@@ -271,6 +271,16 @@
       "claimed_at_epoch": 1788396941.3917518,
       "status": "released",
       "released_at": "2026-09-03T01:15:54Z"
+    },
+    {
+      "id": "cc-1788398175",
+      "session": "cc",
+      "subject": "sairnvet",
+      "task": "species patient panels fabricated kpi shells",
+      "claimed_at": "2026-09-03T01:16:15Z",
+      "claimed_at_epoch": 1788398175.6266854,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
