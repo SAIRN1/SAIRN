@@ -211,6 +211,16 @@
       "claimed_at_epoch": 1788392038.4037964,
       "status": "released",
       "released_at": "2026-09-03T00:06:22Z"
+    },
+    {
+      "id": "fourth-1788393989",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "open BI warehouse connectors B5",
+      "claimed_at": "2026-09-03T00:06:29Z",
+      "claimed_at_epoch": 1788393989.4704807,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
