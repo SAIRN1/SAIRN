@@ -382,6 +382,16 @@
       "claimed_at_epoch": 1788394444.4491587,
       "status": "released",
       "released_at": "2026-09-03T00:51:06Z"
+    },
+    {
+      "id": "hank-1788396861",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "nesting machine output dxf GAP2",
+      "claimed_at": "2026-09-03T00:54:21Z",
+      "claimed_at_epoch": 1788396861.2460804,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
