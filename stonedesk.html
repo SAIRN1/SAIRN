@@ -15651,8 +15651,14 @@ function calcDrawing() {
     {n:splashSqFt>0?splashSqFt.toFixed(2)+' sqft':'None',l:'Backsplash',s:splLen>0?splLen+'" x '+splHt+'" = '+splashSqFt.toFixed(2)+' sqft':'Not specified'},
     {n:wfSqFt>0?wfSqFt.toFixed(2)+' sqft':'None',l:'Waterfall Panel(s)',s:wfCount>0?wfCount+' leg(s) at '+wfHt+'" height':'No waterfall ends'},
     {n:totalMat.toFixed(2)+' sqft',l:'Order Qty +15%',s:'All pieces including waste allowance'},
-    {n:slabs,l:'Slabs Needed',s:'Estimated at 50 sqft per slab'},
-    {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft'},
+    // The caption used to read a hardcoded "50" while the number above it was
+    // computed from sairn-unit-slab_sqft. The 2026-08-13 fix moved the
+    // COMPUTATION to that admin field and left the CAPTION behind, so a shop
+    // that set 55 saw a slab count derived from 55 explained as 50. A caption
+    // that describes a different number than the one beside it is worse than
+    // no caption -- it is checked, and it agrees with nothing.
+    {n:slabs,l:'Slabs Needed',s:'Estimated at '+slabSqFt+' sqft per slab'},
+    {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft — not adjusted for material'},
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
     {n:chamferInfo.count>0?'+$'+chamferEdgeCost.toFixed(0):'None',l:'Chamfered Corners',s:chamferInfo.count>0?chamferInfo.count+' corner(s), '+chamferInfo.totalDiagLF.toFixed(2)+' LF diagonal edge':'No corners chamfered'},
@@ -16038,6 +16044,28 @@ function printDrawCutSheet() {
   if(splashSqFt>0) win.document.write('<div class="row"><span class="rl">Backsplash</span><span class="rv">'+splLen+'" \xd7 '+splHt+'" = '+splashSqFt.toFixed(2)+' sqft</span></div>');
   if(wfCount>0) win.document.write('<div class="row"><span class="rl">Waterfall</span><span class="rv">'+wfCount+' leg(s) \xd7 '+wfHt+'" = '+wfSqFt.toFixed(2)+' sqft</span></div>');
   win.document.write('<div class="row"><span class="rl">Est. Labor (THH)</span><span class="rv">'+thh+' hours</span></div></div>');
+  // ── THE BASIS TRAVELS WITH THE NUMBERS (2026-09-03) ─────────────────────
+  // Three figures on this sheet -- ORDER QTY, Slabs Est. and Est. Labor --
+  // carry assumptions that the on-screen calculator states underneath each of
+  // them and that this printed copy stated nowhere. This is the copy that
+  // leaves the building: it goes to the saw and, on some jobs, to the
+  // customer.
+  //
+  // The labour one is the sharpest, because this sheet prints the real
+  // Material a few rows above and then a labour figure computed at GRANITE's
+  // 4hr/50sqft regardless of what that material is. A reader with no caveat in
+  // front of them has every reason to read it as material-specific. Marble
+  // benchmarks at 4.2 and quartz at 3.5, so the same silent number is low on
+  // one job and high on another.
+  //
+  // The numbers are UNCHANGED here on purpose. Making THH material-aware alters
+  // labour on live quotes and is a product decision, not a disclosure fix; it
+  // is raised separately rather than slipped in behind a caption.
+  win.document.write('<div class="sec" style="grid-column:1/-1"><div class="sec-t">How these figures were calculated</div>' +
+    '<div class="row"><span class="rl">Order Qty</span><span class="rv">Net + splash + waterfall + bar, plus a flat 15% waste allowance</span></div>' +
+    '<div class="row"><span class="rl">Slabs Est.</span><span class="rv">' + slabSqFt + ' sqft per slab (set in pricing settings)</span></div>' +
+    '<div class="row"><span class="rl">Est. Labor (THH)</span><span class="rv">Granite benchmark 4hr per 50 sqft — NOT adjusted for the material above</span></div>' +
+    '</div>');
 
   win.document.write('<div class="sec"><div class="sec-t">Holes and Extras</div>');
   if(holes.length>0) {
