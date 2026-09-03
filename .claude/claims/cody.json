@@ -363,8 +363,8 @@
       "task": "payroll per employee withholding and net pay fabricated",
       "claimed_at": "2026-09-03T18:43:55Z",
       "claimed_at_epoch": 1788461035.452222,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T18:52:00Z"
     }
   ]
 }
