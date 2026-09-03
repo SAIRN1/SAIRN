@@ -377,7 +377,7 @@ textarea{resize:vertical;min-height:80px;}
       <input id="esrch" placeholder="Search by name, role, department..." oninput="filterEmps()">
       <select id="edept" onchange="filterEmps()" style="width:180px;"><option value="">All Departments</option><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select>
     </div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Type</th><th>Rate/Hr</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Name</th><th>Role</th><th>Department</th><th>Type</th><th>Pay Frequency</th><th>Rate/Hr</th><th>Start Date</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="etbody"></tbody></table></div>
   </div></div>
 </div>
@@ -387,6 +387,12 @@ textarea{resize:vertical;min-height:80px;}
     <div class="fr"><div class="fg"><label>First Name</label><input id="efn" placeholder="John"></div><div class="fg"><label>Last Name</label><input id="eln" placeholder="Smith"></div></div>
     <div class="fr"><div class="fg"><label>Role / Title</label><input id="erole" placeholder="Fabricator"></div><div class="fg"><label>Department</label><select id="edept2"><option>Fabrication</option><option>Installation</option><option>Sales</option><option>Administration</option><option>Management</option></select></div></div>
     <div class="fr"><div class="fg"><label>Employment Type</label><select id="etype"><option>Full Time</option><option>Part Time</option><option>Contract</option></select></div><div class="fg"><label>Hourly Rate ($)</label><input id="ehr" type="number" placeholder="22.00"></div></div>
+    <!-- Pay frequency is per EMPLOYEE, not per company: one shop routinely runs
+         hourly and salaried staff biweekly, sales monthly, and semi-monthly
+         only by explicit agreement. Biweekly is preselected because it is the
+         most common, and the employee table marks it "(default)" until it is
+         set, so an assumption is never invisible. -->
+    <div class="fr"><div class="fg"><label>Pay Frequency</label><select id="efreq"><option>Weekly</option><option>Biweekly</option><option>Semi-monthly</option><option>Monthly</option></select></div><div class="fg"><label></label><div style="font-size:11px;color:var(--muted,#666);padding-top:8px;">Sets hours per pay period and prorates the monthly benefit cost. It never changes annual pay.</div></div></div>
     <div class="fr"><div class="fg"><label>Start Date</label><input id="estart" type="date"></div><div class="fg"><label>Phone</label><input id="ephone" placeholder="(440) 555-0100"></div></div>
     <div class="fg"><label>Email</label><input id="eemail" type="email" placeholder="john@pinnaclesd.com"></div>
     <div class="fr"><div class="fg"><label>Status</label><select id="estatus"><option>Active</option><option>On Leave</option><option>Terminated</option></select></div><div class="fg"><label>Emergency Contact</label><input id="eec" placeholder="Jane Smith (440) 555-0101"></div></div>
@@ -548,12 +554,13 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">YTD Payroll</div><div class="kval" id="py-ytd">$0</div><div class="kt">All periods</div></div>
   </div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
+    <div id="py-basis" style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;"></div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead>
     <tbody id="pytbody"></tbody></table></div>
   </div></div>
   <div class="card"><div class="ch"><span class="ct">Payroll Run History</span></div><div class="cb">
     <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">Each row records that a payroll calculation was performed on that date, with the figures it produced. <strong>No payment is sent from this app</strong> &mdash; process the run through your bank or payroll provider.</div>
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Run Date</th><th>Employees</th><th>Gross</th><th>Employer FICA</th><th>Benefits (assumed)</th><th>Total</th><th>What this is</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Run Date</th><th>Employees</th><th>Gross</th><th>Employer FICA</th><th>Benefits</th><th>Total</th><th>What this is</th></tr></thead>
     <tbody id="prtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -574,7 +581,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="srow"><span class="slbl">Provider</span><span class="sval">Medical Mutual of Ohio</span></div>
       <div class="srow"><span class="slbl">Plan Type</span><span class="sval">PPO Gold</span></div>
       <div class="srow"><span class="slbl">Employee Premium</span><span class="sval">$180/mo</span></div>
-      <div class="srow"><span class="slbl">Employer Pays</span><span class="sval">$520/mo per employee</span></div>
+      <div class="srow"><span class="slbl">Employer Pays</span><span class="sval">$520/mo per employee <span style="font-size:11px;color:var(--muted,#666)">(default &mdash; the recorded cost per employee is used where one is entered)</span></span></div>
       <div class="srow"><span class="slbl">Renewal Date</span><span class="sval">January 1, 2027</span></div>
     </div></div>
     <div class="card"><div class="ch"><span class="ct">401(k) Plan</span></div><div class="cb">
@@ -999,7 +1006,7 @@ function sbReadKpiNumber(elId) {
 
 sbRegisterTool(
   'get_payroll_summary',
-  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and year-to-date payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay. IMPORTANT CAVEATS: taxes_fica is the employer-side 7.65% FICA component only -- it does NOT include federal (22%) or state (3.99%) employee withholding, which is computed per-employee but never totaled into any KPI. benefits is a flat $520-per-active-employee assumption, not a figure from a real benefits ledger. total_labor_cost = gross_payroll + taxes_fica + benefits -- it excludes FUTA, SUTA, and workers\' comp, so despite the "fully-loaded" label it is not a complete employer cost figure. ytd_payroll is an extrapolation (current period\'s gross payroll x 13), not a sum of actual historical payroll records -- treat it as an estimate, not an authoritative year-to-date total.',
+  'Get the current payroll summary: gross payroll, employer taxes, benefits cost, total fully-loaded labor cost, and annualized payroll, for active employees. Aggregate totals only -- does not include any individual employee\'s pay. IMPORTANT CAVEATS: taxes_fica is the employer-side 7.65% FICA component only -- it does NOT include federal (22%) or state (3.99%) employee withholding, which is computed per-employee but never totaled into any KPI. total_labor_cost = gross_payroll + taxes_fica + benefits -- it excludes FUTA, SUTA, and workers\' comp, so despite the fully-loaded label it is not a complete employer cost figure. BENEFITS ARE A MIX, and you must say which: each employee\'s recorded monthly employer cost from the Benefits panel, prorated to their own pay cycle, and a $520/month assumption only for those with none recorded -- employees_on_assumed_benefit_cost says how many. PAY FREQUENCY IS PER EMPLOYEE (weekly / biweekly / semi-monthly / monthly); pay_frequencies gives the mix and employees_on_default_frequency counts those with none on file, who are treated as biweekly. Because of that, gross_payroll and benefits are the sum of each employee\'s OWN pay-period amount -- on a mixed-frequency roster that is NOT a single-date cash figure and must never be described as this month\'s payroll or the next cheque run. ytd_payroll is the sum of each employee\'s ANNUALIZED gross (rate x weekly hours x 52); it is frequency-independent and safe to compare, but it is still a projection from today\'s roster and rates, NOT a sum of historical payroll records -- the Payroll Runs table holds those. Treat it as an annual run-rate, not an authoritative year-to-date total.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1010,12 +1017,21 @@ sbRegisterTool(
     // the Payroll panel was never opened this session, and this would
     // return a plausible-looking but completely wrong zero.
     rPay();
+    // The four money figures still come from the rendered KPIs, so the tool and
+    // the screen cannot disagree. The composition fields come from
+    // sbPayrollTotals() directly -- they are counts and labels, not money, and
+    // there is no KPI element to read them back from.
+    var t = sbPayrollTotals();
     return {
       gross_payroll: sbReadKpiNumber('py-gross'),
       taxes_fica: sbReadKpiNumber('py-tax'),
       benefits: sbReadKpiNumber('py-ben'),
       total_labor_cost: sbReadKpiNumber('py-total'),
-      ytd_payroll: sbReadKpiNumber('py-ytd')
+      ytd_payroll: sbReadKpiNumber('py-ytd'),
+      pay_frequencies: t.frequencies,
+      employees_on_default_frequency: t.employees_on_default_frequency,
+      employees_on_assumed_benefit_cost: t.employees_on_assumed_benefit_cost,
+      active_employees: t.employees
     };
   }
 );
@@ -1072,62 +1088,47 @@ sbRegisterTool(
   }
 );
 
-// CAVEAT REASONS CORRECTED 2026-09-03. The two CAVEATS below were and remain
-// TRUE -- this tool checks neither benefits enrolment nor prior cycles. The
-// PARENTHETICAL REASONS attached to them had gone stale and were false:
+// CAVEAT REASONS CORRECTED 2026-09-03, then the defects behind them CLOSED the
+// same day. Both halves are kept, because the second half is only legible if
+// you can see what the first half found.
 //
-//   * "benefits cost is always $0 in this app" -- it never is. sbPayrollTotals()
-//     adds a flat $520 per ACTIVE employee, and that figure reaches the
-//     Benefits Cost KPI, the payroll total, get_payroll_summary,
-//     get_hiring_cost_impact and every persisted payroll-run row. Traced rather
-//     than assumed: it does NOT reach the P&L (expCats.Labor is gross only) and
-//     it is deliberately kept OUT of the ledger (see runPayroll's comment --
-//     an assumption does not belong in a set of books).
-//   * "no enrollment UI exists to write a real value" -- one does.
-//     openBenEnroll()/saveBenEnroll() write a real per-employee employer cost
-//     to e.ben.cost, and the Benefits panel renders it.
-//   * "no payroll-run history is persisted anywhere" -- sb_payruns has held
-//     every run since 2026-09-01, and the Payroll Runs table renders them.
-//
-// WHY THIS MATTERED MORE THAN AN ORDINARY STALE COMMENT: this string is a TOOL
-// DESCRIPTION. It is sent to Claude on every AI call in this app, so the model
-// was being told, as fact, that its user has no benefits enrolment and no
-// payroll history -- and would repeat it. An out-of-date comment misleads a
-// developer who can go and read the code; an out-of-date tool description
-// misleads the customer, who cannot.
+// WHAT THE DESCRIPTION USED TO SAY, and why it mattered. Its two CAVEATS were
+// and remain TRUE -- this tool checks neither benefits enrolment nor prior
+// cycles -- but the parenthetical REASONS attached to them had gone stale:
+// "benefits cost is always $0 in this app", "no enrollment UI exists to write a
+// real value", "no payroll-run history is persisted anywhere". All three were
+// false by then. This string is a TOOL DESCRIPTION -- it is sent to Claude on
+// every AI call in this app, so the model was being told, as fact, that its
+// user has no benefits enrolment and no payroll history, and would repeat it.
+// An out-of-date comment misleads a developer who can go and read the code; an
+// out-of-date tool description misleads the customer, who cannot.
 //
 // The same 2026-09-01 pass that shipped sb_payruns DID carefully rewrite the
-// stale justification on checkAttentionItems() (see its header, which says in
-// terms "a stale reason is worse than no reason"). It corrected the comment a
-// developer reads and missed the string a customer's AI reads.
+// stale justification on checkAttentionItems() -- its header says in terms "a
+// stale reason is worse than no reason". It corrected the comment a developer
+// reads and missed the string a customer's AI reads. That is the pattern worth
+// keeping: the discipline existed and was applied to the cheaper surface.
 //
-// THREE REAL DEFECTS SURFACED BY THIS AND DELIBERATELY NOT FIXED HERE, because
-// every one of them turns on a business fact this file cannot settle -- what
-// the pay period actually is -- and guessing it would silently change real
-// payroll figures. All three are reported rather than patched:
+// WHAT THAT SURFACED, and it was a live wrong number rather than stale prose:
+// the enrolment UI recorded a genuine per-employee employer cost that payroll
+// ignored entirely, the $520 was documented monthly but charged once per pay
+// period, and the app contradicted itself about how many periods a year there
+// are (80h implied 26, ytd_payroll extrapolated x 13). Measured at the time:
+// two active full-timers, one carrying a recorded $840, and payroll returned
+// $1,040 -- 2 x $520.
 //
-//   1. The enrolment UI records a genuine per-employee employer cost
-//      (e.ben.cost) and sbPayrollTotals() ignores it, applying the flat $520 to
-//      everyone. An owner who types $840 for one employee still sees $520.
-//   2. $520 is documented as a MONTHLY figure -- the enrolment field is
-//      "Employer Cost / Month ($)" and the plan card reads "$520/mo per
-//      employee" -- but it is added once per PAY PERIOD alongside an 80h gross,
-//      i.e. per two weeks. If the period is biweekly the benefits component of
-//      fully-loaded labour cost is overstated by roughly 2.17x.
-//   3. The app is internally inconsistent about the period regardless:
-//      80h full-time implies 26 periods a year, while ytd_payroll extrapolates
-//      gross x 13.
+// ALL THREE ARE NOW FIXED, and the fix was blocked on one thing this file could
+// not settle: what the pay period is. The answer was that there is no single
+// answer -- frequency varies by employee within one company -- so pay_freq is a
+// per-employee field and every figure derives from it. See the block above
+// sbPayrollTotals() for the mechanics.
 //
-// MEASURED, not reasoned. Two active full-time employees, one carrying a
-// recorded employer cost of $840: sbPayrollTotals() returns benefits $1,040,
-// i.e. 2 x $520 -- the $840 is not read. At 26 periods that is $13,520 a year
-// per head against the $6,240 the "$520/mo" card implies.
-//
-// Mixing recorded and assumed costs without settling (2) would produce a total
-// that is neither, which is why (1) is not a safe standalone fix.
+// The description below is therefore in its THIRD state today, and the thing to
+// carry forward is that a tool description is code: it needs re-reading
+// whenever the behaviour it describes changes, in the same pass, not later.
 sbRegisterTool(
   'get_payroll_anomalies',
-  'Check for problems before payroll runs. IMPORTANT CAVEATS: this tool performs EXACTLY TWO checks and no others -- (1) any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and (2) any active employee who started within the last 14 days (may not have been in a prior payroll cycle). A result of critical_count:0, warning_count:0 means ONLY that these two specific checks found nothing -- it does NOT mean payroll is correct, complete, or ready to run. This tool does NOT verify tax withholding accuracy. It does NOT check benefits enrollment -- note that benefits ARE enrolled and costed in this app (the Benefits panel writes a real per-employee employer cost), but payroll totals still apply a flat $520-per-active-employee assumption instead of those recorded costs, so never describe benefits as $0 or as unrecorded. It also does NOT compare against any prior payroll cycle -- prior runs ARE persisted and shown on the Payroll Runs table, this tool simply does not read them, so point the user there rather than telling them no history exists. Never present a zero-finding result as "payroll is clean" or "ready to run" without stating these caveats.',
+  'Check for problems before payroll runs. IMPORTANT CAVEATS: this tool performs EXACTLY TWO checks and no others -- (1) any active employee with a missing or $0 pay rate (payroll would silently compute as $0 for them), and (2) any active employee who started within the last 14 days (may not have been in a prior payroll cycle). A result of critical_count:0, warning_count:0 means ONLY that these two specific checks found nothing -- it does NOT mean payroll is correct, complete, or ready to run. This tool does NOT verify tax withholding accuracy. It does NOT check benefits enrollment -- note that benefits ARE enrolled and costed in this app, and payroll now uses each employee\'s recorded monthly employer cost prorated to their own pay cycle, falling back to $520/month only where none is recorded, so never describe benefits as $0 or as unrecorded. This tool does not check whether anyone is MISSING an enrolment; get_payroll_summary\'s employees_on_assumed_benefit_cost is where that count lives. It also does NOT compare against any prior payroll cycle -- prior runs ARE persisted and shown on the Payroll Runs table, this tool simply does not read them, so point the user there rather than telling them no history exists. Never present a zero-finding result as "payroll is clean" or "ready to run" without stating these caveats.',
   { type: 'object', properties: {}, required: [] },
   true,
   function (input) {
@@ -1157,13 +1158,14 @@ sbRegisterTool(
 
 sbRegisterTool(
   'get_hiring_cost_impact',
-  'Calculate the real cost impact of filling an open position: if hired at a given hourly rate, what happens to total labor cost and net margin. Optionally name a real open position (matching the Hiring pipeline) to include its department, stage, and posted pay range as reference context -- the math itself always uses the hourly_rate argument you provide, never the position\'s free-text posted range (which cannot be reliably parsed -- e.g. "$18-22/hr"). IMPORTANT CAVEATS: this is a "nothing else changes" projection -- it assumes ZERO revenue increase from the hire (a real hire may of course grow revenue; this tool cannot predict that), applies the same simplified FICA-only tax (7.65%) and flat $520 benefit assumptions get_payroll_summary already uses and discloses as incomplete, and excludes one-time hiring costs entirely (recruiting, onboarding, ramp-up time to full productivity). Present the result as an estimate of ongoing fully-loaded cost, not a complete hiring-decision analysis.',
+  'Calculate the real cost impact of filling an open position: if hired at a given hourly rate, what happens to total labor cost and net margin. Optionally name a real open position (matching the Hiring pipeline) to include its department, stage, and posted pay range as reference context -- the math itself always uses the hourly_rate argument you provide, never the position\'s free-text posted range (which cannot be reliably parsed -- e.g. "$18-22/hr"). IMPORTANT CAVEATS: this is a "nothing else changes" projection -- it assumes ZERO revenue increase from the hire (a real hire may of course grow revenue; this tool cannot predict that), applies the same simplified FICA-only tax (7.65%) get_payroll_summary already uses and discloses as incomplete, costs the new role\'s benefit at the $520/month default prorated to the pay frequency you give it (a new hire has no enrolment on file yet, so there is nothing recorded to use), and excludes one-time hiring costs entirely (recruiting, onboarding, ramp-up time to full productivity). new_role_gross is a PER-PAY-PERIOD figure on the frequency chosen -- new_role_annual_gross is the comparable one, and changing the frequency changes the per-period numbers without changing the annual cost at all. Present the result as an estimate of ongoing fully-loaded cost, not a complete hiring-decision analysis.',
   {
     type: 'object',
     properties: {
       position: { type: 'string', description: 'Optional: an open position title from the Hiring pipeline, e.g. "Senior Fabricator", to include as reference context.' },
       hourly_rate: { type: 'number', description: 'The hourly pay rate to model, in dollars.' },
-      employment_type: { type: 'string', enum: ['Full Time', 'Part Time'], description: 'Full Time computes 80 hours/period, Part Time computes 32 hours/period, matching this app\'s existing payroll convention.' }
+      employment_type: { type: 'string', enum: ['Full Time', 'Part Time'], description: 'Full Time computes 40 hours/week, Part Time 16 hours/week. Hours per PAY PERIOD derive from that and pay_frequency -- biweekly full time is 80 hours, matching this app\'s long-standing convention.' },
+      pay_frequency: { type: 'string', enum: ['Weekly', 'Biweekly', 'Semi-monthly', 'Monthly'], description: 'Optional. How often this role would be paid. Omit it and the app default (Biweekly) is used -- the same fallback an employee with no frequency on file gets. Frequency changes hours per period and the prorated benefit, never the annual cost.' }
     },
     required: ['hourly_rate', 'employment_type']
   },
@@ -1201,12 +1203,18 @@ sbRegisterTool(
         typeof plSummary.net_margin_pct !== 'number' || !isFinite(plSummary.net_margin_pct)) {
       throw new Error('get_payroll_summary/get_pl_summary returned an unexpected shape.');
     }
-    var result = computeHiringCostImpact(input.hourly_rate, input.employment_type, payrollSummary, plSummary);
-    // Echo validated inputs + derived hours back so the tool's output is
-    // self-describing (Finding 2).
+    // pay_frequency is optional and falls back to the app default inside the
+    // helpers -- the same fallback an existing employee gets -- so an omitted
+    // argument produces the biweekly answer rather than an error.
+    var result = computeHiringCostImpact(input.hourly_rate, input.employment_type, payrollSummary, plSummary, input.pay_frequency);
+    // Echo validated inputs back so the tool's output is self-describing
+    // (Finding 2). new_role_hours is NOT re-derived here from a second
+    // hard-coded 80/32 pair any more -- that duplicate is exactly how this
+    // projection and the payroll panel would drift apart. It comes from the
+    // result, which came from the shared helpers.
     result.hourly_rate = input.hourly_rate;
     result.employment_type = input.employment_type;
-    result.new_role_hours = input.employment_type === 'Full Time' ? 80 : 32;
+    result.new_role_hours = result.new_role_hours_per_period;
     if (input.position) {
       var match = ld('sb_hire', []).find(function (h) { return h.pos === input.position; });
       if (match) {
@@ -1614,15 +1622,25 @@ function checkAttentionItems() {
 // already-fetched payroll/P&L data as arguments (no SB_TOOLS/rPay()/DOM
 // dependency), fully Node-testable in isolation. "Nothing else changes"
 // projection: assumes zero revenue increase from the hire, applies the
-// same FICA-only-tax (7.65%)/flat-$520-benefit assumptions
-// get_payroll_summary already uses and discloses as incomplete, and
-// excludes one-time hiring costs (recruiting, onboarding, ramp-up).
+// same FICA-only-tax (7.65%) assumption get_payroll_summary already uses and
+// discloses as incomplete, and excludes one-time hiring costs (recruiting,
+// onboarding, ramp-up).
 // See docs/superpowers/specs/2026-08-10-sairnbiz-hiring-cost-impact-design.md
-function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plSummary) {
-  var newRoleHours = employmentType === 'Full Time' ? 80 : 32;
-  var newRoleGross = hourlyRate * newRoleHours;
+//
+// PAY FREQUENCY ADDED 2026-09-03. This used to hard-code 80/32 hours and a
+// flat $520 benefit per period -- the same two errors payroll carried, and it
+// mattered more here, because the whole output is a comparison against the
+// CURRENT fully-loaded labour cost. Once payroll prorated and this did not,
+// the projection would have added a per-period benefit 2.17x the one every
+// existing employee contributes and called the difference "the cost of the
+// hire". Both sides now come from the same helpers, driven by a synthetic
+// employee record, so the two can no longer drift apart.
+function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plSummary, payFrequency) {
+  var candidate = { type: employmentType, pay_freq: payFrequency, rate: hourlyRate };
+  var newRoleHours = sbHoursPerPeriod(candidate);
+  var newRoleGross = sbGrossPerPeriod(candidate);
   var newRoleFica = newRoleGross * 0.0765;
-  var newRoleBenefit = 520;
+  var newRoleBenefit = sbBenefitPerPeriod(candidate);
   var newRoleFullyLoadedCost = newRoleGross + newRoleFica + newRoleBenefit;
 
   var projectedTotalLaborCost = payrollSummary.total_labor_cost + newRoleFullyLoadedCost;
@@ -1630,6 +1648,11 @@ function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plS
   var projectedNetMarginPct = plSummary.revenue > 0 ? Math.round(projectedNetIncome / plSummary.revenue * 100) : 0;
 
   return {
+    new_role_pay_frequency: sbPayFreq(candidate),
+    new_role_pay_frequency_assumed: sbPayFreqIsDefault(candidate),
+    new_role_periods_per_year: sbPeriodsPerYear(candidate),
+    new_role_hours_per_period: newRoleHours,
+    new_role_annual_gross: sbAnnualGross(candidate),
     new_role_gross: newRoleGross,
     new_role_fica: newRoleFica,
     new_role_benefit: newRoleBenefit,
@@ -1646,7 +1669,7 @@ function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plS
 function rDash(){
   var emps=ld('sb_emps',[]),invs=ld('sb_invs',[]),exps=ld('sb_exps',[]),bills=ld('sb_ap',[]),tr=ld('sb_train',[]),h=ld('sb_hire',[]),pf=ld('sb_perf',[]);
   var rev=invs.reduce(function(s,i){return s+(i.paid||0);},0);
-  var pay=emps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+  var pay=emps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
   var oinv=invs.filter(function(i){return i.status!=='Paid';});
   var oamt=oinv.reduce(function(s,i){return s+(i.amt-(i.paid||0));},0);
   var tot=exps.reduce(function(s,e){return s+e.amt;},0)+pay;
@@ -1695,26 +1718,33 @@ function rEmps(){
   rEmpTbl(emps);
 }
 function rEmpTbl(emps){
-  var tb=$('etbody');if(!emps.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--muted);padding:24px;">No employees found</td></tr>';return;}
-  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
+  var tb=$('etbody');if(!emps.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--muted);padding:24px;">No employees found</td></tr>';return;}
+  // The frequency column reads "default" for anyone with none recorded --
+  // the point of making this a real field is that the assumption stops being
+  // invisible. Every existing roster lands there until someone sets it.
+  tb.innerHTML=emps.map(function(e){var sc=e.status==='Active'?'bg':e.status==='On Leave'?'bw':'br';var fl=H(sbPayFreq(e))+(sbPayFreqIsDefault(e)?'<div style="font-size:11px;color:var(--muted)">default</div>':'');return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong><div style="font-size:11px;color:var(--muted)">'+H(e.id||'')+'</div></td><td>'+H(e.role||'')+'</td><td>'+H(e.dept||'')+'</td><td>'+H(e.type||'')+'</td><td>'+fl+'</td><td><strong>$'+Number(e.rate||0).toFixed(2)+'</strong></td><td>'+fdate(e.start)+'</td><td><span class="badge '+sc+'">'+H(e.status||'')+'</span></td><td><button class="btn bo bs" onclick="editEmp(\''+H(e.id||'')+'\')">Edit</button></td></tr>';}).join('');
 }
 function filterEmps(){
   var q=($('esrch').value||'').toLowerCase(),dept=$('edept').value;
   rEmpTbl(ld('sb_emps',[]).filter(function(e){return(!q||(e.fn+' '+e.ln+' '+e.role+' '+e.dept).toLowerCase().includes(q))&&(!dept||e.dept===dept);}));
 }
-function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes'].forEach(function(f){var el=$(f);if(el)el.value='';});$('empmodal').classList.add('on');}
+function openEmpModal(){eid=null;['efn','eln','erole','ehr','estart','ephone','eemail','eec','enotes'].forEach(function(f){var el=$(f);if(el)el.value='';});var ef=$('efreq');if(ef)ef.value=SB_PAY_FREQ_DEFAULT;$('empmodal').classList.add('on');}
 function closeEmpModal(){$('empmodal').classList.remove('on');}
 function editEmp(id){
   var e=ld('sb_emps',[]).find(function(x){return x.id===id;});if(!e)return;eid=id;
   $('efn').value=e.fn||'';$('eln').value=e.ln||'';$('erole').value=e.role||'';$('edept2').value=e.dept||'';
   $('etype').value=e.type||'Full Time';$('ehr').value=e.rate||'';$('estart').value=e.start||'';
+  // sbPayFreq() rather than e.pay_freq directly, so the box shows the value
+  // the payroll math will actually use -- including for an unrecognised stored
+  // string, which would otherwise display blank and then be saved back blank.
+  var ef=$('efreq');if(ef)ef.value=sbPayFreq(e);
   $('ephone').value=e.phone||'';$('eemail').value=e.email||'';$('estatus').value=e.status||'Active';
   $('eec').value=e.ec||'';$('enotes').value=e.notes||'';$('empmodal').classList.add('on');
 }
 function saveEmp(){
   var emps=ld('sb_emps',[]);
   var existing=eid?emps.find(function(x){return x.id===eid;}):null;
-  var r={id:eid||('E'+String(Date.now()).slice(-4)),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
+  var r={id:eid||('E'+String(Date.now()).slice(-4)),fn:$('efn').value.trim(),ln:$('eln').value.trim(),role:$('erole').value.trim(),dept:$('edept2').value,type:$('etype').value,rate:parseFloat($('ehr').value)||0,pay_freq:(($('efreq')||{}).value)||SB_PAY_FREQ_DEFAULT,start:$('estart').value,phone:$('ephone').value.trim(),email:$('eemail').value.trim(),status:$('estatus').value,ec:$('eec').value.trim(),notes:$('enotes').value.trim()};
   if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
@@ -2039,35 +2069,147 @@ function checkPayrollAnomalies() {
 // record: computing the same totals twice in two functions is how a saved
 // record ends up disagreeing with the screen it was saved from.
 //
-// The assumptions are the ones the panel already made, unchanged and now
-// stated in one place rather than buried in a render loop: 80 hours for full
-// time and 32 otherwise, employer-side FICA at 7.65%, and a FLAT $520 per
-// active employee for benefits. That $520 is an assumption, not a figure from
-// any benefits ledger -- the per-employee `ben.cost` on sb_emps is real and
-// differs (610, 480, ...). They disagree today and this does not change that;
-// it is recorded here and in the saved record so the number cannot be read as
-// something it is not.
+// ── PAY FREQUENCY IS PER EMPLOYEE (2026-09-03) ────────────────────────────
+//
+// The old note that stood here said the assumptions were "80 hours for full
+// time and 32 otherwise ... and a FLAT $520 per active employee for benefits",
+// and admitted the flat $520 disagreed with the real per-employee `ben.cost`.
+// Three things were wrong underneath that, and they compounded:
+//
+//   1. 80h/32h is BIWEEKLY hard-coded as if it were universal. One company
+//      routinely runs several frequencies at once -- hourly and salaried staff
+//      commonly biweekly, sales sometimes monthly, occasionally weekly, and
+//      semi-monthly rarely and usually only by explicit agreement. Frequency
+//      is an EMPLOYEE fact, not an app setting, so it lives on the employee.
+//   2. $520 is a MONTHLY figure -- the enrolment field says "Employer Cost /
+//      Month ($)" and the plan card says "$520/mo per employee" -- and it was
+//      added once per PAY PERIOD regardless of how long that period is. On a
+//      biweekly cycle that charged $13,520 a year per head for a $6,240
+//      benefit, ~2.17x. It now prorates: monthly x 12 / periods-per-year.
+//   3. The real recorded `ben.cost` was never read at all. It is now the
+//      figure used whenever one exists, and $520/month is only the fallback
+//      for an employee with no enrolment on file.
+//
+// And the app contradicted itself about the year: 80h implies 26 periods while
+// ytd_payroll extrapolated gross x 13. Both now derive from the same place.
+// YTD is computed as the sum of each employee's ANNUALISED gross
+// (rate x weekly hours x 52), which is frequency-independent by construction,
+// so a company that pays one person weekly and another monthly gets one
+// correct annual figure instead of two incompatible extrapolations.
+//
+// BACKWARDS COMPATIBILITY IS EXACT, NOT APPROXIMATE. Biweekly is the default
+// for any employee with no frequency recorded, because it is the most common,
+// and 40 x 52 / 26 = 80 and 16 x 52 / 26 = 32 reproduce the previous hours to
+// the hour. Nothing shifts for an existing roster except the benefits figure,
+// which was wrong. The default is DISPLAYED as "Biweekly (default)" in the
+// employee table rather than silently applied -- an assumption nobody can see
+// is the thing this whole change is about.
+var SB_PAY_FREQ = {
+  'Weekly':       { periods: 52 },
+  'Biweekly':     { periods: 26 },
+  'Semi-monthly': { periods: 24 },
+  'Monthly':      { periods: 12 }
+};
+var SB_PAY_FREQ_DEFAULT = 'Biweekly';
+var SB_BENEFIT_DEFAULT_MONTHLY = 520;
+
+// Returns the recorded frequency, or the default. An unrecognised stored value
+// falls back rather than throwing: a bad string must not make payroll NaN.
+function sbPayFreq(e){
+  var f = e && e.pay_freq;
+  return (f && SB_PAY_FREQ[f]) ? f : SB_PAY_FREQ_DEFAULT;
+}
+// True only when the employee has no usable frequency of their own, so the UI
+// can mark the figure as assumed rather than entered.
+function sbPayFreqIsDefault(e){ return !(e && e.pay_freq && SB_PAY_FREQ[e.pay_freq]); }
+function sbPeriodsPerYear(e){ return SB_PAY_FREQ[sbPayFreq(e)].periods; }
+// 40h/week full time, 16h/week otherwise -- the same ratio the old 80/32 pair
+// encoded, restated per week so it can be divided into any cycle.
+function sbWeeklyHours(e){ return (e && e.type === 'Full Time') ? 40 : 16; }
+// Two hour functions on purpose, and the split matters. sbHoursPerPeriod() is
+// ROUNDED for display -- a semi-monthly employee reads 86.67, not
+// 86.66666666666667. sbHoursPerPeriodExact() is what the money uses, because
+// rounding first and multiplying second does not reconcile: at 86.67 x 24 a
+// $30/hr employee annualises to $62,402.40 against a true $62,400. Two dollars
+// forty a year is nothing to a payslip and everything to a test that asserts
+// annual pay is frequency-independent, which is the property the whole model
+// rests on. Caught by tests/sairnbiz_pay_frequency.js before it shipped.
+function sbHoursPerPeriodExact(e){ return sbWeeklyHours(e) * 52 / sbPeriodsPerYear(e); }
+function sbHoursPerPeriod(e){
+  return Math.round(sbHoursPerPeriodExact(e) * 100) / 100;
+}
+function sbGrossPerPeriod(e){ return (Number(e && e.rate) || 0) * sbHoursPerPeriodExact(e); }
+function sbAnnualGross(e){ return (Number(e && e.rate) || 0) * sbWeeklyHours(e) * 52; }
+// The employer's real recorded monthly share if one was entered, else the
+// stated $520 assumption. A zero or negative stored cost is treated as "not
+// recorded" rather than as a real $0 -- saveBenEnroll() already refuses a
+// negative, and it writes 0 for a blank field.
+function sbBenefitMonthly(e){
+  var c = e && e.ben && Number(e.ben.cost);
+  return (isFinite(c) && c > 0) ? c : SB_BENEFIT_DEFAULT_MONTHLY;
+}
+function sbBenefitIsAssumed(e){
+  var c = e && e.ben && Number(e.ben.cost);
+  return !(isFinite(c) && c > 0);
+}
+function sbBenefitPerPeriod(e){
+  return sbBenefitMonthly(e) * 12 / sbPeriodsPerYear(e);
+}
+
 function sbPayrollTotals(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-  var gross=0,taxes=0,bens=0;
+  var gross=0,taxes=0,bens=0,annual=0,assumedFreq=0,assumedBen=0;
+  var freqs={};
   emps.forEach(function(e){
-    var hrs=e.type==='Full Time'?80:32;
-    var g=e.rate*hrs;
-    gross+=g; taxes+=g*0.0765; bens+=520;
+    var g=sbGrossPerPeriod(e);
+    gross+=g; taxes+=g*0.0765; bens+=sbBenefitPerPeriod(e);
+    annual+=sbAnnualGross(e);
+    freqs[sbPayFreq(e)]=(freqs[sbPayFreq(e)]||0)+1;
+    if(sbPayFreqIsDefault(e))assumedFreq++;
+    if(sbBenefitIsAssumed(e))assumedBen++;
   });
-  return {employees:emps.length,gross:gross,taxes_fica:taxes,benefits:bens,total:gross+taxes+bens};
+  return {employees:emps.length,gross:gross,taxes_fica:taxes,benefits:bens,
+    total:gross+taxes+bens,
+    // Annualised gross is the only figure here that is safe to compare across a
+    // mixed-frequency roster; the per-period sums are not a single-date cash
+    // number when people are paid on different cycles, and the panel says so.
+    annual_gross:annual,
+    frequencies:freqs,
+    employees_on_default_frequency:assumedFreq,
+    employees_on_assumed_benefit_cost:assumedBen};
 }
 
 function rPay(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var gross=0,taxes=0,bens=0;
+  var annual=0;
   $('pytbody').innerHTML=emps.map(function(e){
-    var hrs=e.type==='Full Time'?80:32;var g=e.rate*hrs;var ft=g*0.22;var st2=g*0.0399;var fi=g*0.0765;var net=g-ft-st2-fi;
-    gross+=g;taxes+=fi;bens+=520;
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(ft)+'</td><td>'+fmt(st2)+'</td><td>'+fmt(fi)+'</td><td><strong>'+fmt(net)+'</strong></td><td><span class="badge bg">Ready</span></td></tr>';
+    var hrs=sbHoursPerPeriod(e);var g=sbGrossPerPeriod(e);var ft=g*0.22;var st2=g*0.0399;var fi=g*0.0765;var net=g-ft-st2-fi;
+    var b=sbBenefitPerPeriod(e);
+    gross+=g;taxes+=fi;bens+=b;annual+=sbAnnualGross(e);
+    // The frequency is shown on the row, and shown as assumed when it is
+    // assumed. Hours and gross are meaningless without it once a roster runs
+    // more than one cycle.
+    var fl=sbPayFreq(e)+(sbPayFreqIsDefault(e)?' <span style="color:var(--muted)">(default)</span>':'');
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td><td>'+H(e.role||'')+'</td><td>'+fl+'</td><td style="text-align:center;">'+hrs+'</td><td>$'+Number(e.rate).toFixed(2)+'</td><td><strong>'+fmt(g)+'</strong></td><td>'+fmt(ft)+'</td><td>'+fmt(st2)+'</td><td>'+fmt(fi)+'</td><td><strong>'+fmt(net)+'</strong></td><td><span class="badge bg">Ready</span></td></tr>';
   }).join('');
   $('py-gross').textContent=fmt(gross);$('py-tax').textContent=fmt(taxes);$('py-ben').textContent=fmt(bens);
-  $('py-total').textContent=fmt(gross+taxes+bens);$('py-ytd').textContent=fmt(gross*13);
+  // YTD was gross x 13, which contradicted the 26 periods 80h implied and broke
+  // outright on a mixed-frequency roster. It is now the sum of each employee's
+  // annualised gross, which needs no period multiplier at all.
+  $('py-total').textContent=fmt(gross+taxes+bens);$('py-ytd').textContent=fmt(annual);
+  var pn=$('py-basis');
+  if(pn){
+    var t=sbPayrollTotals();
+    var parts=Object.keys(t.frequencies).map(function(k){return t.frequencies[k]+' '+k.toLowerCase();});
+    pn.textContent=emps.length
+      ? 'Per-pay-period figures sum each employee on their OWN cycle ('+parts.join(', ')+
+        '), so on a mixed roster this is not a single-date cash total — YTD Payroll is the annualised figure and is safe to compare. '+
+        'Benefits use each employee\'s recorded monthly employer cost, prorated to their cycle; '+
+        t.employees_on_assumed_benefit_cost+' of '+emps.length+' fall back to the $520/month assumption, and '+
+        t.employees_on_default_frequency+' have no pay frequency recorded and are treated as biweekly.'
+      : 'No active employees — nothing is being assumed.';
+  }
   var invs=ld('sb_invs',[]),exps=ld('sb_exps',[]);
   var rev=invs.reduce(function(s,i){return s+i.amt;},0);
   var cogs=exps.filter(function(e){return e.cat==='Materials';}).reduce(function(s,e){return s+e.amt;},0);
@@ -2110,6 +2252,19 @@ function renderPayrollAnomalyBanner(findings) {
   }
   el.innerHTML = html;
 }
+// One sentence describing exactly how a given set of totals was produced,
+// derived from those totals rather than restated by hand. Used by the saved
+// run record; if the maths changes again, this changes with it.
+function sbPayrollBasisText(t){
+  var parts=Object.keys(t.frequencies||{}).map(function(k){return t.frequencies[k]+' '+k.toLowerCase();});
+  return '40h/week full time, 16h/week otherwise, divided into each employee\'s own pay cycle ('+
+    (parts.length?parts.join(', '):'no active employees')+'); employer FICA 7.65%; '+
+    'benefits are each employee\'s recorded monthly employer cost prorated to their cycle, with $'+
+    SB_BENEFIT_DEFAULT_MONTHLY+'/month assumed for the '+(t.employees_on_assumed_benefit_cost||0)+
+    ' with none recorded; '+(t.employees_on_default_frequency||0)+' had no pay frequency on file and were treated as '+
+    SB_PAY_FREQ_DEFAULT.toLowerCase()+'.';
+}
+
 function runPayroll() {
   var findings = checkPayrollAnomalies();
   renderPayrollAnomalyBanner(findings);
@@ -2137,7 +2292,17 @@ function runPayroll() {
     taxes_fica:t.taxes_fica,
     benefits:t.benefits,
     total:t.total,
-    basis:'80h full time / 32h otherwise, employer FICA 7.65%, benefits assumed flat $520 per active employee',
+    // The basis is written from the CURRENT roster, not from a fixed sentence.
+    // The old one said "80h full time / 32h otherwise ... flat $520" and would
+    // have kept saying it after the maths changed underneath -- a saved record
+    // whose stated basis is wrong is worse than one with no basis at all,
+    // because it is the only thing a later reader has to check the figures
+    // against.
+    basis:sbPayrollBasisText(t),
+    pay_frequencies:t.frequencies,
+    employees_on_default_frequency:t.employees_on_default_frequency,
+    employees_on_assumed_benefit_cost:t.employees_on_assumed_benefit_cost,
+    annual_gross:t.annual_gross,
     note:'Calculation only -- no payment was sent from this app.'
   });
   st('sb_payruns',runs);
@@ -2147,9 +2312,13 @@ function runPayroll() {
   // 2100 Accrued Wages and 2130 FICA Payable rather than to cash. The app is
   // explicit that no money moved; the ledger has to say the same thing, and
   // crediting cash here would assert a payment that did not happen.
-  // Benefits are deliberately NOT posted: the $520 per head is a stated flat
-  // ASSUMPTION in sbPayrollTotals(), not a real cost, and an assumption does
-  // not belong in a set of books.
+  // Benefits are STILL deliberately not posted, and the reason narrowed on
+  // 2026-09-03 rather than disappearing. Benefits are now a MIX: a real
+  // recorded employer cost where the Benefits panel has one, and the $520/month
+  // assumption where it does not. A ledger entry cannot be part evidence and
+  // part guess, and the run record already carries
+  // employees_on_assumed_benefit_cost so the split is visible. Post benefits
+  // only once every active employee has a recorded cost.
   var pr=runs[0];
   sbGlPost({entry_date:pr.run_on,memo:'Payroll accrual — '+pr.employees+' employees (calculation only, no payment sent)',
     source_app:'sairnbiz',source_kind:'payroll_run',source_id:pr.id,
@@ -2386,7 +2555,7 @@ function rBud(){
 function rTax(){
   var invs=ld('sb_invs',[]),emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var rev=invs.reduce(function(s,i){return s+i.amt;},0);
-  var gross=emps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+  var gross=emps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
   var fica=gross*0.0765,futa=gross*0.006,suta=gross*0.027;
   var salesTax=rev*0.065,fedIncome=gross*0.10,ohioIncome=gross*0.025;
   var now=new Date();
@@ -2781,7 +2950,7 @@ function genReport(type){
     var payrollReportWarning='';
     var payrollReportAnomalies=checkPayrollAnomalies().filter(function(f){return f.severity==='critical';});
     if(payrollReportAnomalies.length){payrollReportWarning='<div style="background:rgba(239,68,68,0.08);border:1px solid var(--danger);border-radius:8px;padding:10px 14px;margin-bottom:12px;font-weight:700;color:var(--danger);">This report includes '+payrollReportAnomalies.length+' unresolved payroll issue(s) -- see Payroll panel before relying on these figures.</div>';}
-    $('rbody').innerHTML=payrollReportWarning+'<table><thead><tr><th>Employee</th><th>Role</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
+    $('rbody').innerHTML=payrollReportWarning+'<table><thead><tr><th>Employee</th><th>Role</th><th>Pay Frequency</th><th>Hours</th><th>Rate</th><th>Gross</th><th>Fed Tax</th><th>State Tax</th><th>FICA</th><th>Net Pay</th><th>Status</th></tr></thead><tbody>'+$('pytbody').innerHTML+'</tbody></table><div style="margin-top:14px;font-size:13px;color:var(--text)"><strong>Gross Payroll:</strong> '+$('py-gross').textContent+' &nbsp;&nbsp; <strong>Total Labor Cost:</strong> '+$('py-total').textContent+' &nbsp;&nbsp; <strong>YTD Payroll:</strong> '+$('py-ytd').textContent+'</div>';
   }
   else if(type==='tax'){
     rTax();
@@ -2808,7 +2977,7 @@ function csv(type){
   // are separate columns so the exported figure can be reconciled rather than
   // taken on trust.
   else if(type==='budget'){rows=[['Category','Budget','Opening Baseline','Recorded Since','Actual','Remaining','% Used']];sbBudgetActuals().rows.forEach(function(b){rows.push([b.cat,b.annual,b.baseline,b.recorded,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
-  else if(type==='payroll'){rows=[['Employee','Role','Type','Rate','Hours','Gross']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){var h=e.type==='Full Time'?80:32;rows.push([e.fn+' '+e.ln,e.role,e.type,e.rate,h,(e.rate*h).toFixed(2)]);});}
+  else if(type==='payroll'){rows=[['Employee','Role','Type','Pay Frequency','Frequency Source','Rate','Hours/Period','Gross/Period','Annualised Gross','Benefits/Period','Benefits Source']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){rows.push([e.fn+' '+e.ln,e.role,e.type,sbPayFreq(e),sbPayFreqIsDefault(e)?'assumed (default)':'recorded',e.rate,sbHoursPerPeriod(e),sbGrossPerPeriod(e).toFixed(2),sbAnnualGross(e).toFixed(2),sbBenefitPerPeriod(e).toFixed(2),sbBenefitIsAssumed(e)?'assumed $520/mo':'recorded']);});}
   // ── EXPORTS ADDED 2026-09-02, AND THE FALLBACK NOW REFUSES ──────────────
   // Found by a live click-through on SB-TEST-2026: of FIFTEEN "Export CSV"
   // buttons, TEN fell through to the stub below and downloaded a file
@@ -2832,7 +3001,7 @@ function csv(type){
   else if(type==='tax'){
     var txInvs=ld('sb_invs',[]),txEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
     var txRev=txInvs.reduce(function(s,i){return s+i.amt;},0);
-    var txGross=txEmps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+    var txGross=txEmps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
     rows=[['Tax','Category','Frequency','Estimated Amount','Basis']];
     rows.push(['Federal Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.10),'10% of gross payroll']);
     rows.push(['Ohio State Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.025),'2.5% of gross payroll']);
