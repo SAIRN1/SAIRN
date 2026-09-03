@@ -45,6 +45,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
   ROLES_BY_APP
@@ -55,7 +56,15 @@ const TABLE = 'sairnsenior_employee_auth';
 const SEN_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
-const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster'];
+const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster', 'set_active'];
+// READ OFF THIS APP'S OWN `setup` GATE below, not assumed. CLAUDE.md records a
+// platform guard that hardcoded `owner` and therefore checked nothing on
+// SAIRNcode forever; three apps' provisioning lists are not owner-only
+// (SAIRNgrounds superintendent, SAIRNbiz hr, SAIRNscape crew_lead). SAIRNsenior
+// IS owner-only, and this constant exists so that stays a checked fact rather
+// than an assumption baked into a shared helper.
+const PROVISIONING_ROLES = ['owner'];
+const PROVISIONING_LABEL = 'an Owner';
 // 'billing' is this app's back-office/claims tier (no separate 'admin'/
 // 'manager' role exists here) -- needs the same broad client visibility
 // 'owner' has for multi-payer billing, same reasoning as every other
@@ -258,16 +267,43 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- ROSTER AND DEACTIVATION (2026-09-03) ------------------------------
+    // Both run through api/_lib/employee-lifecycle.js -- read that file's
+    // header for why this app had no way to switch a credential off at all,
+    // and for the four lockout guards it applies.
+    //
+    // THE ROSTER NOW RETURNS INACTIVE ROWS. It used to filter
+    // `active=eq.true`. Reactivating somebody requires seeing them first, so an
+    // access panel cannot work without the change -- but any client that builds
+    // an assignee picker from this list must now filter `active !== false`
+    // itself, or a deactivated caregiver becomes assignable again.
+    // sairnsenior.html's senPopulateAssigneeControls was updated in the same
+    // commit; that is the whole consumer set for this app, found by grepping
+    // `_senRoster`.
     if (action === 'roster') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || !MANAGEMENT_ROLES[caller.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Billing can view the employee roster' } });
-        return;
-      }
-      const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&active=eq.true&select=employee_id,display_name,role'), { headers });
-      const rows = await r.json();
-      if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, employees: rows || [] });
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && MANAGEMENT_ROLES[caller.role]),
+        viewLabel: 'Owner or Billing'
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
+      return;
+    }
+
+    if (action === 'set_active') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        rest: rest, headers: headers
+        // No `audit`: SAIRNsenior has no audit-log table. Omitted rather than
+        // passed a no-op, so the response carries no `audited` field at all --
+        // `audited:false` would read as an audit that was attempted and failed.
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
   } catch (err) {

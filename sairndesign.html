@@ -917,6 +917,16 @@ label.chk input{width:auto;}
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
   </div></div>
+  <!-- SIGN-IN ACCESS (2026-09-03) -- the deactivation half of the credential
+       lifecycle. Until this shipped, a departing team member's sign-in could only be
+       switched off by a hand-written SQL edit in Supabase, which is what
+       api/sd-auth.js records as having lost three StoneDesk licences.
+       Owner-only here; api/sdn-auth.js refuses every other role regardless. -->
+  <div class="card" id="sec-access-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Sign-In Access</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn a sign-in off when someone leaves, and back on if they return. Deactivating deletes nothing &mdash; their name still resolves on past records, they simply cannot sign in and stop appearing in Assign-To lists.</div>
+    <div id="sec-access" style="font-size:13px"></div>
+  </div></div>
 </div>
 
     </main>
@@ -2046,6 +2056,17 @@ function rProposals(){
 // regardless of what this cache holds) -- same shape as StoneDesk's sd_crm
 // roster cache built 2026-08-19 for the identical reason.
 var _sdnRoster=null;
+// ASSIGNABLE vs KNOWN, split 2026-09-03 when set_active shipped. api/sdn-auth.js's
+// `roster` action used to filter active=eq.true server-side; it now returns
+// deactivated rows too, so a departed employee can be seen and reactivated on
+// the Security panel. _sdnRoster therefore still resolves a departed person's NAME on
+// historical records -- which is correct -- but every PICKER must go through
+// this, or that same change quietly puts them back in the Assign-To list on a
+// dropdown that looks completely normal. One helper rather than a filter at
+// each call site, so it cannot be half-applied.
+function sdnAssignable(){
+  return (_sdnRoster||[]).filter(function(e){return e.active!==false;});
+}
 function sdnRefreshRoster(cb){
   if(!sdnIsManagement())return;
   sdnAuth('roster',{},true).then(function(r){
@@ -2062,7 +2083,7 @@ function sdnPopulateAssigneeControls(){
   var sel=$('classignee');
   if(!sel||!_sdnRoster)return;
   var cur=sel.value;
-  sel.innerHTML='<option value="">Unassigned</option>'+_sdnRoster.map(function(e){
+  sel.innerHTML='<option value="">Unassigned</option>'+sdnAssignable().map(function(e){
     return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(e.role)+')</option>';
   }).join('');
   sel.value=cur;
@@ -2179,7 +2200,7 @@ function rClients(){
     var assignedCell=isMgmt
       ? '<select onchange="sdnReassignClient(\''+c.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
         +'<option value="">Unassigned</option>'
-        +(_sdnRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +sdnAssignable().map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
         +'</select>'
       : H(sdnEmployeeName(c.assigned_employee_id));
     return '<tr><td>'+H(c.name)+'</td><td>'+H(c.company||'--')+'</td><td>'+H(c.phone||'--')+'</td><td>'+H(c.email||'--')+'</td>'+
@@ -3214,7 +3235,81 @@ function rSettings(){
 function rSecurity(){
   var s=sdnSession||{};
   $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
-  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  var isOwner=(s.role==='owner');
+  $('sec-admin-card').style.display=isOwner?'block':'none';
+  var ac=$('sec-access-card');
+  if(ac)ac.style.display=isOwner?'block':'none';
+  if(isOwner)sdnRenderAccess();
+}
+
+// -- SIGN-IN ACCESS (2026-09-03) -------------------------------------------
+// Client half of api/sdn-auth.js's set_active, which runs on the shared
+// api/_lib/employee-lifecycle.js. Read that file's header for the four lockout
+// guards; the only thing this panel needs to know is that it PREDICTS NONE OF
+// THEM. The button is offered for every row, including the caller's own, and
+// the server decides. Pre-empting "you are the last owner" or "you cannot
+// deactivate yourself" here would put a second copy of a security rule in a
+// file where it can silently drift from the one that enforces it, and a client
+// that guesses wrong either blocks a legal action or offers an illegal one.
+function sdnRenderAccess(){
+  var el=$('sec-access');
+  if(!el)return;
+  el.innerHTML='<span style="color:var(--muted)">Loading sign-ins&hellip;</span>';
+  sdnAuth('roster',{},true).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.employees)){
+      // A failed read is NOT rendered as "no sign-ins". An empty list here
+      // would tell an owner nobody can sign in to their own account.
+      el.innerHTML='<span style="color:var(--danger)">'+H(r.msg||'Could not load sign-ins — this is not the same as having none.')+'</span>';
+      return;
+    }
+    var rows=r.data.employees;
+    if(!rows.length){el.innerHTML='<span style="color:var(--muted)">No sign-in credentials yet.</span>';return;}
+    var me=(sdnSession||{}).employee_id;
+    el.innerHTML='<div class="tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active=e.active!==false;
+        // &#39; rather than an escaped quote: the browser decodes the entity
+        // before evaluating the attribute, so this needs no backslash.
+        var idArg='&#39;'+H(e.employee_id)+'&#39;';
+        return '<tr><td>'+H(e.employee_id)+(e.employee_id===me?' <span class="badge bx">you</span>':'')+'</td>'+
+          '<td>'+H(e.display_name||'--')+'</td><td>'+H(e.role||'')+'</td>'+
+          '<td>'+(active?'<span class="badge bg">active</span>':'<span class="badge br">inactive</span>')+'</td>'+
+          '<td><button class="btn bo bs" onclick="sdnSetActive('+idArg+','+(active?'false':'true')+')">'+
+          (active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+function sdnSetActive(employee_id,nextActive){
+  var m=$('sec-admin-msg');
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for rather than sent blank: the reason is what somebody
+    // reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){if(m){m.style.color='var(--danger)';m.textContent='A reason is required to deactivate a sign-in.';}return;}
+    payload.reason=reason.slice(0,500);
+  }
+  sdnAuth('set_active',payload,true).then(function(r){
+    if(!r.ok){
+      if(m){m.style.color='var(--danger)';m.textContent=r.msg||'Could not change this sign-in — nothing was changed.';}
+      sdnRenderAccess();
+      return;
+    }
+    if(m){
+      m.style.color='var(--muted)';
+      m.textContent=(r.data&&r.data.unchanged)
+        ?(employee_id+' was already '+(nextActive?'active':'deactivated')+' — nothing changed.')
+        :(employee_id+(nextActive?' can sign in again.':' can no longer sign in.'));
+    }
+    sdnRenderAccess();
+    // The Assign-To pickers are built from the cached roster, so a
+    // deactivation has to reach them too or the departed person stays
+    // selectable on whatever screen is already open.
+    sdnRefreshRoster();
+  });
 }
 function secProvision(){
   var m=$('sec-admin-msg');

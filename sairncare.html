@@ -1305,6 +1305,16 @@ function alfIsBroadRead(){return alfIsBroadEdit()||alfIsReadOnlyBroad();}
 // (api/alf-auth.js's 'roster' action refuses non-management server-side
 // regardless of what this cache holds).
 var _alfRoster=null;
+// ASSIGNABLE vs KNOWN, split 2026-09-03 when set_active shipped.
+// api/alf-auth.js's `roster` used to filter active=eq.true server-side; it now
+// returns deactivated rows too so an owner can see and reactivate somebody on
+// the Security panel. alfEmployeeName() must still resolve a departed person's
+// NAME on historical records -- but every PICKER goes through this. That
+// includes the CONTROLLED-SUBSTANCE WITNESS selector: a second signature from
+// somebody who no longer works here is not a witness.
+function alfAssignable(){
+  return (_alfRoster||[]).filter(function(e){return e.active!==false;});
+}
 function alfRefreshRoster(cb){
   if(!alfIsManagement())return;
   alfAuth('roster',{},true).then(function(r){
@@ -1321,7 +1331,12 @@ function alfPopulateAssigneeControls(){
   var sel=$('resassignee');
   if(!sel||!_alfRoster)return;
   var cur=sel.value;
-  sel.innerHTML='<option value="">Unassigned</option>'+_alfRoster.map(function(e){
+  // active!==false, ADDED 2026-09-03 WITH set_active. The roster action used to
+  // filter active=eq.true server-side and now returns deactivated rows too, so
+  // a departed employee can be seen and reactivated on the Security panel.
+  // Without this filter that same change would put them straight back into the
+  // Assign-To list -- a silent regression on a picker that looks normal.
+  sel.innerHTML='<option value="">Unassigned</option>'+alfAssignable().map(function(e){
     return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(alfRoleLabel(e.role))+')</option>';
   }).join('');
   sel.value=cur;
@@ -1342,7 +1357,7 @@ function rSecurity(){
   if(!box)return;
   if(!_alfRoster){box.innerHTML='<span style="color:var(--muted)">Loading accounts…</span>';return;}
   if(!_alfRoster.length){box.innerHTML='<span style="color:var(--muted)">No employee accounts exist yet. Create the first one below.</span>';return;}
-  box.innerHTML='<div class="tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th></tr></thead><tbody>'+
+  box.innerHTML='<div class="tw"><table><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
     _alfRoster.map(function(e){
       var isSelf=e.employee_id===s.employee_id;
       // active is reported only when the roster actually carries the field --
@@ -1350,10 +1365,60 @@ function rSecurity(){
       var status=(e.active===false)
         ?'<span class="badge br">inactive</span>'
         :(e.active===true?'<span class="badge bg">active</span>':'<span class="badge bx">--</span>');
+      // The button is offered for every row INCLUDING the caller's own, and the
+      // SERVER decides. Pre-empting "you cannot deactivate yourself" or "you
+      // are the last owner" here would put a second copy of a security rule in
+      // a file where it can drift from the one that enforces it.
+      // &#39; rather than an escaped quote: the browser decodes the entity
+      // before evaluating the attribute, so the JS string here needs no
+      // backslash and cannot be broken by one being lost in an edit.
+      var idArg='&#39;'+H(e.employee_id)+'&#39;';
+      var act=(e.active===false)
+        ?'<button class="btn bo bs" onclick="alfSetActive('+idArg+',true)">Reactivate</button>'
+        :'<button class="btn bo bs" onclick="alfSetActive('+idArg+',false)">Deactivate</button>';
       return '<tr><td>'+H(e.employee_id)+(isSelf?' <span class="badge bx">you</span>':'')+'</td>'+
-        '<td>'+H(e.display_name||'--')+'</td><td>'+H(alfRoleLabel(e.role))+'</td><td>'+status+'</td></tr>';
+        '<td>'+H(e.display_name||'--')+'</td><td>'+H(alfRoleLabel(e.role))+'</td><td>'+status+'</td>'+
+        '<td>'+act+'</td></tr>';
     }).join('')+'</tbody></table></div>';
 }
+// -- SIGN-IN DEACTIVATION (2026-09-03) -------------------------------------
+// Client half of api/alf-auth.js's set_active, which runs on the shared
+// api/_lib/employee-lifecycle.js. Until this shipped, a departing staff
+// member's sign-in could only be switched off by a hand-written SQL edit in
+// Supabase -- what api/sd-auth.js records as having lost three StoneDesk
+// licences. The accounts table above already showed `active`; there was simply
+// no way to change it.
+function alfSetActive(employee_id,nextActive){
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for rather than sent blank: the reason is what somebody
+    // reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){alert('A reason is required to deactivate a sign-in.');return;}
+    payload.reason=reason.slice(0,500);
+  }
+  alfAuth('set_active',payload,true).then(function(r){
+    var m=$('sec-admin-msg');
+    if(!r.ok){
+      if(m){m.style.color='var(--danger)';m.textContent=r.msg||'Could not change this sign-in — nothing was changed.';}
+      return;
+    }
+    if(m){
+      m.style.color='var(--muted)';
+      m.textContent=(r.data&&r.data.unchanged)
+        ?(employee_id+' was already '+(nextActive?'active':'deactivated')+' — nothing changed.')
+        :(employee_id+(nextActive?' can sign in again.':' can no longer sign in.'));
+    }
+    // Re-read rather than patch the cached row: the server is the only thing
+    // that knows what actually happened, and it also refreshes the Assign-To
+    // pickers so a departed employee stops being selectable.
+    alfRefreshRoster(rSecurity);
+  });
+}
+
 function secProvision(){
   var m=$('sec-admin-msg');
   var eid=($('sec-new-eid').value||'').trim(),nm=($('sec-new-name').value||'').trim();
@@ -1566,7 +1631,7 @@ function rResidents(){
     var assignedCell=isMgmt
       ? '<select onchange="alfReassignResident(\''+r.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
         +'<option value="">Unassigned</option>'
-        +(_alfRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===r.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +alfAssignable().map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===r.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
         +'</select>'
       : H(alfEmployeeName(r.assigned_employee_id));
     return '<tr><td>'+H(r.name)+'</td><td>'+H(r.room||'--')+'</td>'+
@@ -2186,7 +2251,7 @@ function openCsCountModal(){
   var sel=$('cs-medication');
   sel.innerHTML=meds.map(function(m){return '<option value="'+H(m.id)+'">'+H(m.name)+' '+H(m.dose||'')+'</option>';}).join('');
   var witnessSel=$('cs-witness');
-  witnessSel.innerHTML='<option value="">Select witness…</option>'+(_alfRoster||[]).map(function(e){
+  witnessSel.innerHTML='<option value="">Select witness…</option>'+alfAssignable().map(function(e){
     return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';
   }).join('');
   $('cs-date').value=alfLocalToday();
@@ -2195,7 +2260,7 @@ function openCsCountModal(){
   $('cs-policy-note').textContent='Active policy: '+csPolicyLabel(facility().cs_policy)+'. A second signature (witness) is required regardless of which policy is active -- the one converged best practice found in research.';
   $('csCountModal').classList.add('on');
   if(alfIsManagement()&&!_alfRoster)alfRefreshRoster(function(){
-    witnessSel.innerHTML='<option value="">Select witness…</option>'+(_alfRoster||[]).map(function(e){
+    witnessSel.innerHTML='<option value="">Select witness…</option>'+alfAssignable().map(function(e){
       return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';
     }).join('');
   });

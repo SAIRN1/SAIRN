@@ -49,6 +49,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
   ROLES_BY_APP
@@ -59,7 +60,15 @@ const TABLE = 'sairnbuild_employee_auth';
 const BLD_ROLES = ROLES_BY_APP[APP];
 const LOCKOUT_THRESHOLD = 5;
 const LOCKOUT_MINUTES = 15;
-const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster'];
+const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster', 'set_active'];
+// READ OFF THIS APP'S OWN `setup` GATE below, not assumed. CLAUDE.md records a
+// platform guard that hardcoded `owner` and therefore checked nothing on
+// SAIRNcode forever; three apps' provisioning lists are NOT owner-only
+// (SAIRNgrounds superintendent, SAIRNbiz hr, SAIRNscape crew_lead). This one is,
+// and this constant exists so that stays a checked fact rather than an
+// assumption baked into a shared helper.
+const PROVISIONING_ROLES = ['owner'];
+const PROVISIONING_LABEL = 'an Owner';
 // 'office' is this app's back-office/coordinator tier (no separate
 // 'admin'/'manager' role exists here) -- needs the same broad bid
 // visibility 'owner' has, same reasoning as SAIRNdesign's
@@ -262,16 +271,42 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- ROSTER AND DEACTIVATION (2026-09-03) ------------------------------
+    // Both run through api/_lib/employee-lifecycle.js. Read that file's header
+    // for why this app had no way to switch a credential off at all, and for
+    // the four lockout guards it applies.
+    //
+    // THE ROSTER NOW RETURNS INACTIVE ROWS. It used to filter `active=eq.true`.
+    // Reactivating somebody requires seeing them first, so an access panel
+    // cannot work without the change -- but any client that builds a picker
+    // from this list must now filter `active !== false` itself, or a departed
+    // employee becomes selectable again. sairnbuild.html's consumers were updated in the
+    // same commit; `_bldRoster` is the grep that finds them.
     if (action === 'roster') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || !MANAGEMENT_ROLES[caller.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Office can view the employee roster' } });
-        return;
-      }
-      const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&active=eq.true&select=employee_id,display_name,role'), { headers });
-      const rows = await r.json();
-      if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, employees: rows || [] });
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && MANAGEMENT_ROLES[caller.role]),
+        viewLabel: 'Owner or Office'
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
+      return;
+    }
+
+    if (action === 'set_active') {
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        rest: rest, headers: headers
+        // No `audit`: this app has no audit-log table (api/_lib/audit.js's
+        // allow-list is sairnlaw / sairncode / stonedesk only). Omitted rather
+        // than passed a no-op, so the response carries no `audited` field --
+        // `audited:false` would read as an audit that ran and failed.
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
   } catch (err) {

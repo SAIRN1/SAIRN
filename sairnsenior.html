@@ -1128,6 +1128,16 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <button class="btn bp" onclick="secProvision()">Save Employee</button>
     <div id="sec-admin-msg" style="font-size:12px;margin-top:10px"></div>
   </div></div>
+  <!-- SIGN-IN ACCESS (2026-09-03) -- the deactivation half of the credential
+       lifecycle. Until this shipped, a departing caregiver's sign-in could
+       only be switched off by a hand-written SQL edit in Supabase, which is
+       what api/sd-auth.js records as having lost three StoneDesk licences.
+       Owner-only here; api/sen-auth.js refuses every other role regardless. -->
+  <div class="card" id="sec-access-card" style="display:none"><div class="cb">
+    <div style="font-weight:700;margin-bottom:4px">Sign-In Access</div>
+    <div style="font-size:12px;color:var(--muted);margin-bottom:12px">Turn a sign-in off when someone leaves, and back on if they return. Deactivating does not delete anything &mdash; their name still resolves on past visits and notes, they simply cannot sign in.</div>
+    <div id="sec-access" style="font-size:13px"></div>
+  </div></div>
 </div>
 
 <!-- SETTINGS -->
@@ -1387,6 +1397,17 @@ function senIsManagement(){return prole==='owner'||prole==='billing';}
 // management-only, matching api/sd-data.js's sen_clients gate exactly.
 function senIsBroadRead(){return senIsManagement()||prole==='coordinator'||prole==='scheduler';}
 var _senRoster=null;
+// ASSIGNABLE vs KNOWN, split 2026-09-03 when set_active shipped.
+// api/sen-auth.js's `roster` used to filter active=eq.true server-side; it now
+// returns deactivated rows too so an owner can see and reactivate somebody.
+// senEmployeeName() must therefore still resolve a departed caregiver's NAME on
+// historical visits -- but every PICKER has to go through this, or that same
+// change quietly puts them back in the Assign-To list on a dropdown that looks
+// completely normal. One helper rather than a filter at each call site, so it
+// cannot be half-applied.
+function senAssignable(){
+  return (_senRoster||[]).filter(function(e){return e.active!==false;});
+}
 function senRefreshRoster(cb){
   if(!senIsManagement())return;
   senAuth('roster',{},true).then(function(r){
@@ -1403,7 +1424,12 @@ function senPopulateAssigneeControls(){
   var sel=$('classignee');
   if(!sel||!_senRoster)return;
   var cur=sel.value;
-  sel.innerHTML='<option value="">Unassigned</option>'+_senRoster.map(function(e){
+  // active!==false, ADDED 2026-09-03 WITH set_active. The roster action used to
+  // filter active=eq.true server-side and now returns deactivated rows too, so
+  // that a departed employee can be seen and reactivated. Without this filter
+  // that same change would put them straight back into the Assign-To list --
+  // the regression is silent and the picker would look completely normal.
+  sel.innerHTML='<option value="">Unassigned</option>'+senAssignable().map(function(e){
     return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+' ('+H(e.role)+')</option>';
   }).join('');
   sel.value=cur;
@@ -1413,7 +1439,69 @@ function senPopulateAssigneeControls(){
 function rSecurity(){
   var s=senSession||{};
   $('sec-account').innerHTML='Signed in as <strong>'+H(s.employee_id||'--')+'</strong> &middot; role <strong>'+H(s.role||'--')+'</strong>';
-  $('sec-admin-card').style.display=(s.role==='owner'?'block':'none');
+  var isOwner=(s.role==='owner');
+  $('sec-admin-card').style.display=isOwner?'block':'none';
+  $('sec-access-card').style.display=isOwner?'block':'none';
+  if(isOwner)senRenderAccess();
+}
+
+// -- SIGN-IN ACCESS (2026-09-03) -------------------------------------------
+// Client half of api/sen-auth.js's set_active, which runs on the shared
+// api/_lib/employee-lifecycle.js. Read that file's header for the four
+// lockout guards; the only thing this panel needs to know is that it must
+// PREDICT NONE OF THEM.
+//
+// The button is offered for every row and the SERVER decides. Pre-empting
+// "you are the last owner" or "you cannot deactivate yourself" client-side
+// would put a second copy of a security rule in a file where it can silently
+// drift from the one that actually enforces it -- and a client that guesses
+// wrong either blocks a legal action or offers an illegal one. Same judgment
+// SAIRNdental's access panel records.
+function senRenderAccess(){
+  var el=$('sec-access');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--muted)">Loading&hellip;</div>';
+  senAuth('roster',{},true).then(function(r){
+    if(!r.ok||!r.data||!Array.isArray(r.data.employees)){
+      // A failed read is NOT rendered as "no employees". An empty list here
+      // would tell an owner their agency has no sign-ins.
+      el.innerHTML='<div style="color:var(--danger)">'+H(r.msg||'Could not load sign-ins &mdash; this is not the same as having none.')+'</div>';
+      return;
+    }
+    var rows=r.data.employees;
+    if(!rows.length){el.innerHTML='<div style="color:var(--muted)">No sign-in credentials yet.</div>';return;}
+    el.innerHTML='<table style="width:100%"><thead><tr><th>Employee</th><th>Role</th><th>Status</th><th></th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active=e.active!==false;
+        return '<tr><td>'+H(e.display_name||e.employee_id)+'<div style="color:var(--muted);font-size:11px">'+H(e.employee_id)+'</div></td>'+
+          '<td>'+H(e.role||'')+'</td>'+
+          '<td>'+(active?'<span class="badge bg">Active</span>':'<span class="badge bw">Deactivated</span>')+'</td>'+
+          '<td><button class="btn bo bs" onclick="senSetActive(\'' + H(e.employee_id) + '\',' + (active ? 'false' : 'true') + ')">'+
+          (active?'Deactivate':'Reactivate')+'</button></td></tr>';
+      }).join('')+'</tbody></table>';
+  });
+}
+function senSetActive(employee_id,nextActive){
+  var payload={employee_id:employee_id,active:nextActive};
+  if(!nextActive){
+    // The server REQUIRES a reason to deactivate and refuses 400 without one.
+    // Asked for here rather than sent blank, because the reason is the thing
+    // somebody reconstructs months later.
+    var reason=window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null)return;
+    reason=String(reason).trim();
+    if(!reason){toast('A reason is required to deactivate a sign-in');return;}
+    payload.reason=reason.slice(0,500);
+  }
+  senAuth('set_active',payload,true).then(function(r){
+    if(!r.ok){toast(r.msg||'Could not change this sign-in — nothing was changed',6000);senRenderAccess();return;}
+    if(r.data&&r.data.unchanged){toast('Already '+(nextActive?'active':'deactivated')+' — nothing changed');}
+    else{toast(employee_id+(nextActive?' can sign in again':' can no longer sign in'));}
+    senRenderAccess();
+    // The assignee pickers are built from the roster, so a deactivation has to
+    // reach them or a departed caregiver stays assignable on this screen.
+    senRefreshRoster();
+  });
 }
 function secProvision(){
   var m=$('sec-admin-msg');
@@ -1633,7 +1721,7 @@ function rClients(){
     var assignedCell=isMgmt
       ? '<select onchange="senReassignClient(\''+c.id+'\',this.value)" style="font-size:11px;padding:2px 4px;border:1px solid var(--border);border-radius:4px;background:var(--bg);color:var(--text)">'
         +'<option value="">Unassigned</option>'
-        +(_senRoster||[]).map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
+        +senAssignable().map(function(e){return '<option value="'+H(e.employee_id)+'"'+(e.employee_id===c.assigned_employee_id?' selected':'')+'>'+H(e.display_name||e.employee_id)+'</option>';}).join('')
         +'</select>'
       : H(senEmployeeName(c.assigned_employee_id));
     return '<tr><td>'+H(c.name)+'</td><td>'+H(c.address||'--')+'</td>'+
@@ -2190,7 +2278,7 @@ function openVisitModal(){
   var cl=clients();
   $('vs-client').innerHTML=cl.map(function(c){return '<option value="'+H(c.id)+'">'+H(c.name)+'</option>';}).join('')||'<option value="">No clients on file</option>';
   var sel=$('vs-caregiver');
-  if(_senRoster){sel.innerHTML='<option value="">Unassigned</option>'+_senRoster.map(function(e){return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';}).join('');}
+  if(_senRoster){sel.innerHTML='<option value="">Unassigned</option>'+senAssignable().map(function(e){return '<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+'</option>';}).join('');}
   $('vs-date').value='';$('vs-start').value='';$('vs-end').value='';
   $('visitmodal').classList.add('on');
 }
