@@ -422,6 +422,16 @@
       "claimed_at_epoch": 1788402917.837665,
       "status": "released",
       "released_at": "2026-09-03T03:08:46Z"
+    },
+    {
+      "id": "hank-1788405924",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "frcp 6d service extension on rule 4 answer deadline",
+      "claimed_at": "2026-09-03T03:25:24Z",
+      "claimed_at_epoch": 1788405924.1000473,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
