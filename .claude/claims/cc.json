@@ -363,6 +363,16 @@
       "claimed_at_epoch": 1788461168.8828864,
       "status": "released",
       "released_at": "2026-09-03T18:56:54Z"
+    },
+    {
+      "id": "cc-1788462532",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "public availability fabricated calendar fail open reads",
+      "claimed_at": "2026-09-03T19:08:52Z",
+      "claimed_at_epoch": 1788462532.7811613,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
