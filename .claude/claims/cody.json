@@ -275,6 +275,16 @@
       "claimed_at_epoch": 1788393595.9920993,
       "status": "released",
       "released_at": "2026-09-03T00:17:07Z"
+    },
+    {
+      "id": "cody-1788395466",
+      "session": "cody",
+      "subject": "ledger",
+      "task": "double entry general ledger for sairnbiz",
+      "claimed_at": "2026-09-03T00:31:06Z",
+      "claimed_at_epoch": 1788395466.6922922,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
