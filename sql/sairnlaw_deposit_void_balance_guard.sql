@@ -21,6 +21,21 @@ $$;
 revoke all on function public.law_client_balance from public;
 grant execute on function public.law_client_balance to service_role;
 
+-- SUPERSEDED (2026-09-03): the law_check_and_insert_disbursement() definition
+-- below is now STALE -- sql/sairnlaw_trusttx_cross_client_collision_2026-09-03.sql
+-- redefines it to close a CROSS-CLIENT TRUST-ACCOUNT LEAK. The version below
+-- looks up retry-idempotency on (license_hash, trusttx_id) with NO client
+-- predicate, so a colliding id returns ANOTHER CLIENT'S ROW; and its
+-- `on conflict do nothing returning *` can return NULL, which the API then
+-- turned into HTTP 200 with the caller's own payload echoed back as the stored
+-- row -- a disbursement that reported success and posted nothing.
+--
+-- RE-RUNNING THIS FILE WOULD SILENTLY RESTORE BOTH, with no error anywhere --
+-- the same trap this file's own header warns about for step 2. If this file
+-- must be re-run for the law_client_balance() helper or the void guard,
+-- RE-RUN sql/sairnlaw_trusttx_cross_client_collision_2026-09-03.sql
+-- IMMEDIATELY AFTER.
+--
 -- law_check_and_insert_disbursement() now calls the shared helper instead
 -- of its own inline balance query -- same live behavior, single source of
 -- truth. Every other line (advisory lock, retry-idempotency check,

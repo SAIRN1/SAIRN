@@ -9252,6 +9252,23 @@ module.exports = async (req, res) => {
             res.status(409).json({ error: { code: 'INSUFFICIENT_TRUST_BALANCE', message: 'Disbursement of $' + reqAmount.toFixed(2) + ' exceeds this client\'s real trust balance of $' + realBalance.toFixed(2), real_balance: realBalance } });
             return;
           }
+          // ── CROSS-CLIENT ID COLLISION (2026-09-03) ────────────────────
+          // 409, not 502: the caller can fix this by resubmitting with a new
+          // id, which is a conflict rather than a store failure. The detail
+          // deliberately does NOT name the other client -- the caller is
+          // entitled to know their id is taken, not who else in the firm holds
+          // it, and this message reaches a user-facing screen.
+          if (/TRUSTTX_ID_COLLISION/.test(msg)) {
+            res.status(409).json({ error: { code: 'TRUSTTX_ID_COLLISION', message: 'That transaction id is already used by a different client on this licence. Nothing was posted. Save again to generate a new id.' } });
+            return;
+          }
+          // The function can no longer return null, but if a future edit ever
+          // reintroduces that path it now raises instead, and this maps it to a
+          // real failure rather than a success.
+          if (/DISBURSEMENT_NOT_WRITTEN/.test(msg)) {
+            res.status(502).json({ error: { code: 'DISBURSEMENT_NOT_WRITTEN', message: 'The disbursement was NOT posted. Nothing was written -- check the trust ledger before retrying.' } });
+            return;
+          }
           console.error('law_check_and_insert_disbursement error (status 400):', msg);
           res.status(502).json({ error: { message: 'Data store error — try again', detail: msg } });
           return;
@@ -9259,7 +9276,26 @@ module.exports = async (req, res) => {
         if (!r.ok) { const rows = await r.json().catch(() => null); return upstream(res, rows); }
         const rpcResult = await r.json();
         const row = Array.isArray(rpcResult) ? rpcResult[0] : rpcResult;
-        res.status(200).json({ ok: true, data: row ? row.data : payload });
+        // ── THE PHANTOM DISBURSEMENT, CLOSED (2026-09-03) ────────────────
+        // This line used to be:
+        //     res.status(200).json({ ok: true, data: row ? row.data : payload });
+        // On a null row -- which `on conflict do nothing returning *` produced
+        // on any id collision -- it echoed THE CALLER'S OWN PAYLOAD back as
+        // though it were the stored row, with ok:true. The lawyer's screen
+        // showed the disbursement posted, the database had no such row, and
+        // the trust balance on screen disagreed with the ledger in the
+        // client's favour. A silent success on a trust account.
+        //
+        // The SQL no longer returns null on any path, so this is belt and
+        // braces -- and it is exactly the kind of belt that should have been
+        // there, because the fallback was doing the lying, not the database.
+        // A missing row is now a REFUSAL, never the request reflected back.
+        if (!row || !row.data) {
+          console.error('law_check_and_insert_disbursement returned no row for', String(payload.id));
+          res.status(502).json({ error: { code: 'DISBURSEMENT_NOT_WRITTEN', message: 'The disbursement was NOT posted -- the server returned no stored row. Nothing was written; check the trust ledger before retrying.' } });
+          return;
+        }
+        res.status(200).json({ ok: true, data: row.data });
         return;
       }
       const r = await fetch(rest('law_trusttx?on_conflict=license_hash,trusttx_id'), {
