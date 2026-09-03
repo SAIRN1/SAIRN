@@ -353,6 +353,16 @@
       "claimed_at_epoch": 1788440276.4345906,
       "status": "released",
       "released_at": "2026-09-03T18:06:52Z"
+    },
+    {
+      "id": "cc-1788461168",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "public endpoint rate limiter fail open and slug resolve",
+      "claimed_at": "2026-09-03T18:46:08Z",
+      "claimed_at_epoch": 1788461168.8828864,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
