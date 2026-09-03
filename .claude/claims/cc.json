@@ -269,8 +269,8 @@
       "task": "material and regional code coverage read only",
       "claimed_at": "2026-09-03T00:55:41Z",
       "claimed_at_epoch": 1788396941.3917518,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T01:15:54Z"
     }
   ]
 }
