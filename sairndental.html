@@ -252,6 +252,8 @@ label.chk input{width:auto;}
       <div class="ss">Supplies</div>
       <button class="sb" id="sb-supplies" onclick="nav('supplies')"><span class="sico">&#128230;</span>Supplies</button>
       <button class="sb" id="sb-vendorcat" onclick="nav('vendorcat')"><span class="sico">&#128722;</span>Vendor Catalog</button>
+      <div class="ss">Reporting</div>
+      <button class="sb" id="sb-bi" onclick="nav('bi')"><span class="sico">&#128200;</span>BI &amp; Data Warehouse</button>
       <div class="sfoot">SAIRNdental &copy; 2026</div>
     </aside>
     <main>
@@ -1070,6 +1072,63 @@ label.chk input{width:auto;}
         </div></div>
       </div>
 
+      <!-- BI / DATA WAREHOUSE FEED (2026-09-02, competitive-gap audit B5) -->
+      <div class="panel" id="panel-bi">
+        <div class="ph"><div><div class="ptitle">BI &amp; Data Warehouse</div><div class="psub">A read-only feed Power BI, Tableau or Looker Studio can connect to directly &mdash; instead of somebody exporting a CSV every Monday</div></div></div>
+
+        <!-- Owner-only, and the server agrees: api/dnt-bi.js refuses mint,
+             list and revoke from any role but owner regardless of this. -->
+        <div id="bi-not-owner" style="display:none" class="card"><div class="cb">
+          <div style="font-weight:600;margin-bottom:4px">Reporting feeds are set up by the practice owner</div>
+          <div style="color:var(--muted);font-size:13px">A feed sends this practice's data to an outside tool, so only the owner can create or revoke one.</div>
+        </div></div>
+
+        <div id="bi-owner-tools">
+          <div class="card"><div class="ch"><div class="ct">Create a feed</div></div><div class="cb">
+            <div class="fr">
+              <div class="fg"><label>Name it</label><input type="text" id="bi-label" placeholder="Owner Power BI" maxlength="80"></div>
+              <div class="fg"><label>Whose access it uses</label><select id="bi-employee"></select></div>
+            </div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:12px">
+              A feed can never show more than the person it belongs to can see in this app. A provider's feed carries only their own patients and no financial data; an owner's or front desk's carries the practice. If that person is deactivated or has their role changed, the feed follows within one refresh.
+            </div>
+            <label style="display:flex;gap:8px;align-items:flex-start;margin-bottom:12px;cursor:pointer">
+              <input type="checkbox" id="bi-identifiers" style="margin-top:3px">
+              <span style="font-size:12px;color:var(--muted)">
+                <b style="color:var(--text)">Include patient names, dates of birth and contact details.</b>
+                Off by default. Every row already carries a stable anonymous key, so charts, joins and trends work exactly the same with this off &mdash; turn it on only if a report has to name a patient, and remember the tool at the other end will store what it receives.
+              </span>
+            </label>
+            <button class="btn bp" onclick="biMint()">Create feed</button>
+          </div></div>
+
+          <!-- Shown once, then never again. Only a hash is stored. -->
+          <div class="card" id="bi-new-card" style="display:none"><div class="ch"><div class="ct">Copy this now &mdash; it is not shown again</div></div><div class="cb">
+            <div class="fg"><label>Feed URL (paste into Power BI &rarr; Get Data &rarr; Web)</label>
+              <input type="text" id="bi-new-url" readonly onclick="this.select()"></div>
+            <div style="font-size:12px;color:var(--muted);margin-bottom:10px">
+              Only a fingerprint of this token was saved, so there is no way to show it to you again. If you lose it, revoke the feed below and create another. Anyone holding this URL can read what it returns &mdash; treat it like a password, and prefer sending it as an <code>Authorization: Bearer</code> header where your tool supports one, since URLs end up in logs and shared workbook files.
+            </div>
+            <button class="btn bo bs" onclick="biCopyNew()">Copy URL</button>
+            <button class="btn bo bs" onclick="$('bi-new-card').style.display='none'">Done</button>
+          </div></div>
+
+          <div class="card"><div class="ch"><div class="ct">Live feeds</div></div><div class="cb" style="padding:0">
+            <table><thead><tr><th>Name</th><th>Access</th><th>Identifiers</th><th>Created</th><th>Last used</th><th></th></tr></thead><tbody id="bi-tbody"></tbody></table>
+          </div></div>
+        </div>
+
+        <div class="card"><div class="ch"><div class="ct">Connecting a tool</div></div><div class="cb">
+          <div style="font-size:13px;line-height:1.7;color:var(--muted)">
+            <div style="margin-bottom:8px"><b style="color:var(--text)">Power BI Desktop</b> &mdash; Get Data &rarr; Web &rarr; paste the feed URL. Set <i>Anonymous</i> authentication (the token is already in the URL), or use Advanced and send it as an <code>Authorization: Bearer</code> header instead.</div>
+            <div style="margin-bottom:8px"><b style="color:var(--text)">Tableau</b> &mdash; Connect &rarr; Web Data Connector, or Desktop's JSON connector against the same URL.</div>
+            <div style="margin-bottom:8px"><b style="color:var(--text)">Looker Studio</b> &mdash; a JSON/community connector pointed at the URL.</div>
+            <div style="margin-bottom:8px">Swap <code>dataset=_catalog</code> for any dataset name to pull it. The catalog lists every dataset that feed can reach, with its columns and types. Paging is <code>&amp;limit=</code> and <code>&amp;offset=</code>; each response carries <code>total</code> and <code>has_more</code>.</div>
+            <div style="color:var(--text)"><b>The feed carries stored facts, not this app's calculations.</b> Appeal deadlines, good-faith-estimate due dates, recall standing and insurance estimates are computed here and are deliberately not duplicated in the feed &mdash; two copies of one rule drift apart, and you would find out when a dashboard and this app disagreed about a federal deadline. Build those measures in your BI tool from the columns the feed does carry.</div>
+          </div>
+        </div></div>
+      </div>
+
       <div class="modal" id="completeVisitModal">
         <div class="mbox">
           <div class="mtitle">Complete Visit</div>
@@ -1338,6 +1397,7 @@ function nav(id){
   if(id==='complaints')rComplaints();
   if(id==='vendorcat')rVendorCat();
   if(id==='supplies')rSupplies();
+  if(id==='bi')rBiFeeds();
   // Renders from local records immediately, then replaces that with the real
   // server-computed board when it arrives -- the panel is never blank, and
   // never shows a status it computed itself.
@@ -1638,8 +1698,137 @@ async function dntLoadRoster(){
   if(r&&r.status===200&&r.body&&Array.isArray(r.body.employees)){
     dntRoster=r.body.employees;
     if($('pv-add-login'))$('pv-add-login').innerHTML=dntLoginOptions('');
+    if($('bi-employee'))$('bi-employee').innerHTML=biEmployeeOptions();
     dntRenderAccess();
   }
+}
+
+// ── BI / DATA WAREHOUSE FEED (2026-09-02, competitive-gap audit B5) ────────
+// Client half of api/dnt-bi.js. Read that file's header for the design; the
+// only things worth repeating here are the two that shape this UI:
+//
+//   1. A FEED CANNOT SEE MORE THAN THE PERSON IT BELONGS TO. The role is not
+//      stored on the token -- the server re-reads it every poll. So this panel
+//      never displays a role next to a feed as if it were fixed; it shows WHOSE
+//      access the feed uses, which is the thing that is actually true.
+//   2. THE TOKEN IS SHOWN ONCE. Only its hash is stored, so there is no
+//      "reveal" button to write and no way to add one later.
+//
+// This panel is owner-only in the UI, and api/dnt-bi.js refuses mint/list/
+// revoke from every other role regardless -- the same belt-and-braces the
+// Providers panel uses, for the same reason: prole is DISPLAY ONLY.
+var BI_API='https://sairn.vercel.app/api/dnt-bi';
+var biTokens=[];
+var biNewUrl='';
+
+function biEmployeeOptions(){
+  var opts='';
+  dntRoster.forEach(function(e){
+    if(e.active===false)return;
+    opts+='<option value="'+H(e.employee_id)+'">'+H(e.display_name||e.employee_id)+
+      ' ('+H(e.role)+')</option>';
+  });
+  return opts||'<option value="">No active sign-ins yet</option>';
+}
+
+function biManage(body){
+  return fetch(BI_API,{method:'POST',headers:dntHeaders(),body:JSON.stringify(body)})
+    .then(function(r){return r.json().catch(function(){return{};}).then(function(d){return {status:r.status,body:d};});});
+}
+
+function biFeedUrl(token){
+  // _catalog rather than a dataset, deliberately: it is the one URL that works
+  // for every feed regardless of whose access it uses, and it tells the person
+  // setting the tool up which datasets they can actually reach. Swapping the
+  // dataset name is the documented next step, in the panel.
+  return BI_API+'?dataset=_catalog&token='+encodeURIComponent(token);
+}
+
+async function rBiFeeds(){
+  var isOwner=prole==='owner';
+  if($('bi-not-owner'))$('bi-not-owner').style.display=isOwner?'none':'';
+  if($('bi-owner-tools'))$('bi-owner-tools').style.display=isOwner?'':'none';
+  if(!isOwner)return;
+  if(!dntRoster.length)await dntLoadRoster();
+  if($('bi-employee')&&!$('bi-employee').innerHTML)$('bi-employee').innerHTML=biEmployeeOptions();
+
+  var tbody=$('bi-tbody');
+  if(!tbody)return;
+  var r=await biManage({action:'list'});
+  if(!(r&&r.status===200&&r.body&&r.body.ok)){
+    // A failed read is NOT rendered as "no feeds". An empty table here would
+    // tell an owner nobody is pulling their patient data when somebody may be.
+    tbody.innerHTML='<tr><td colspan="6" style="color:var(--danger);text-align:center;padding:18px">'+
+      H((r&&r.body&&r.body.error&&r.body.error.message)||'Could not load the feed list — this is not the same as having none.')+
+      '</td></tr>';
+    return;
+  }
+  if(r.body.provisioned===false){
+    tbody.innerHTML='<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:18px">'+
+      'Reporting feeds are not set up on this deployment yet.</td></tr>';
+    return;
+  }
+  biTokens=r.body.tokens||[];
+  var live=biTokens.filter(function(t){return !t.revoked_at;});
+  tbody.innerHTML=live.map(function(t){
+    return '<tr><td>'+H(t.label||'(unnamed)')+'</td>'+
+      '<td>'+H(t.employee_id)+'</td>'+
+      '<td>'+(t.include_identifiers?'<span class="badge br">Names included</span>':'Anonymous')+'</td>'+
+      '<td>'+H(String(t.created_at||'').slice(0,10))+'</td>'+
+      // "Never" is a real answer and a useful one -- a feed nobody has polled
+      // is one nobody will miss being revoked.
+      '<td>'+H(t.last_used_at?String(t.last_used_at).slice(0,10):'Never')+'</td>'+
+      '<td><button class="btn bo bs" onclick="biRevoke(\''+H(t.id)+'\')">Revoke</button></td></tr>';
+  }).join('')||'<tr><td colspan="6" style="color:var(--muted);text-align:center;padding:18px">No live feeds</td></tr>';
+}
+
+async function biMint(){
+  var employeeId=($('bi-employee').value||'').trim();
+  if(!employeeId){toast('Pick whose access the feed should use');return;}
+  var includeIds=!!$('bi-identifiers').checked;
+  var r=await biManage({
+    action:'mint',
+    label:($('bi-label').value||'').trim(),
+    employee_id:employeeId,
+    include_identifiers:includeIds
+  });
+  if(!(r&&r.status===200&&r.body&&r.body.token)){
+    toast((r&&r.body&&r.body.error&&r.body.error.message)||'Could not create the feed — nothing was changed',5000);
+    return;
+  }
+  biNewUrl=biFeedUrl(r.body.token);
+  $('bi-new-url').value=biNewUrl;
+  $('bi-new-card').style.display='';
+  $('bi-label').value='';
+  $('bi-identifiers').checked=false;
+  rBiFeeds();
+  toast(includeIds
+    ? 'Feed created — it carries patient names. Copy the URL now; it is not shown again.'
+    : 'Feed created — copy the URL now, it is not shown again.',6000);
+}
+
+function biCopyNew(){
+  var el=$('bi-new-url');
+  el.select();
+  // The clipboard API is not available on every browser or over plain http.
+  // Say when it did not work rather than claim a copy that never happened.
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(biNewUrl)
+      .then(function(){toast('Feed URL copied');})
+      .catch(function(){toast('Could not copy automatically — the URL is selected, copy it manually',5000);});
+    return;
+  }
+  toast('Copying is not available here — the URL is selected, copy it manually',5000);
+}
+
+async function biRevoke(id){
+  var r=await biManage({action:'revoke',id:id});
+  if(!(r&&r.status===200&&r.body&&r.body.ok)){
+    toast((r&&r.body&&r.body.error&&r.body.error.message)||'Could not revoke — nothing was changed',5000);
+    return;
+  }
+  toast('Feed revoked — it stops working at the next refresh');
+  rBiFeeds();
 }
 
 // ── SIGN-IN ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ────────────────────
