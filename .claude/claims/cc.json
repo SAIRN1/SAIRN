@@ -322,6 +322,16 @@
       "claimed_at_epoch": 1788405764.0381422,
       "status": "released",
       "released_at": "2026-09-03T10:55:21Z"
+    },
+    {
+      "id": "cc-1788433585",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "thh material aware benchmark rates",
+      "claimed_at": "2026-09-03T11:06:25Z",
+      "claimed_at_epoch": 1788433585.5172272,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
