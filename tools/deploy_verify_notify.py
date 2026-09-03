@@ -3,8 +3,9 @@ PostToolUse hook for Bash, filtered (via the hooks-config "if" field) to
 git push commands only. Runs async so it never blocks the pushing turn.
 
 After a push, waits ~60s for a normal deploy to land, then fetches and
-compares origin/main:stonedesk.html against a fresh curl of the live
-sairn.vercel.app/stonedesk content.
+compares origin/main:stonedesk.html against a fresh fetch of the live
+sairn.vercel.app/stonedesk content, made through tools/sairn_http so it is
+not answered with Vercel's bot-mitigation challenge (see that module).
 
 BASELINE CORRECTED 2026-09-01: it used to compare against local HEAD, which
 is the wrong question in a four-clone repo and false-alarmed three times in
@@ -30,7 +31,13 @@ standard as the other hooks in this file (git_push_master_guard.py,
 redaction_check.py): never let a hook bug block or falsely alarm on a
 legitimate push.
 """
-import sys, json, subprocess, hashlib, time, urllib.request
+import os, sys, json, subprocess, hashlib, time
+
+# Imported by path rather than by package: this file is invoked as a hook
+# from an arbitrary cwd, so a bare `import sairn_http` would depend on where
+# Claude happened to be standing.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import sairn_http  # noqa: E402
 
 LIVE_URL = "https://sairn.vercel.app/stonedesk"
 WAIT_SECONDS = 60
@@ -126,15 +133,52 @@ def main():
         sys.exit(0)
     base_hash = sha256(base_bytes)
 
+    # ── THE FETCH, AND THE SILENT SKIP THAT USED TO HIDE ITS OWN ABSENCE ──
+    # CORRECTED 2026-09-02. This used to be a bare urllib call whose `except`
+    # ran `sys.exit(0)` on ANY failure, described as "network hiccup -- stay
+    # silent rather than false-alarm."
+    #
+    # That reasoning is right for a hiccup and wrong for everything else, and on
+    # 2026-09-02 it cost the whole check. Four sessions live-verifying with curl
+    # and urllib tripped Vercel's bot mitigation, which answers an
+    # automated-looking User-Agent with 403 + `X-Vercel-Mitigated: challenge`.
+    # Every push that night got a deploy check that DID NOT RUN and SAID
+    # NOTHING -- indistinguishable, from the outside, from a clean pass. A
+    # verification that quietly stops verifying is worse than none, because it
+    # is trusted.
+    #
+    # Two changes. The request now goes out browser-shaped via tools/sairn_http
+    # (measured: default UA 403, browser UA 200, same second, same URL). And a
+    # CHALLENGE is now reported rather than swallowed -- it is not a deploy
+    # problem, but "I could not look" is a different answer from "I looked and
+    # it was fine", and only one of them may be silent.
     try:
-        req = urllib.request.Request(
-            LIVE_URL, headers={"Cache-Control": "no-cache", "Pragma": "no-cache"}
-        )
-        with urllib.request.urlopen(req, timeout=FETCH_TIMEOUT) as resp:
-            remote_bytes = resp.read()
-    except Exception as e:
-        # Network hiccup on our end -- not evidence of a real deploy
-        # problem, so stay silent rather than false-alarm.
+        _, remote_bytes = sairn_http.fetch(LIVE_URL, timeout=FETCH_TIMEOUT, no_cache=True)
+    except sairn_http.Challenged as c:
+        print(json.dumps({
+            "systemMessage": "Deploy check could NOT RUN: Vercel served its bot-mitigation challenge. This is not a failed deploy -- and it is not a pass either.",
+            "hookSpecificOutput": {
+                "hookEventName": "PostToolUse",
+                "additionalContext": (
+                    "The post-push deploy check was unable to fetch " + LIVE_URL +
+                    " because Vercel answered with its bot-mitigation challenge "
+                    "(" + str(c.status) + ", X-Vercel-Mitigated: challenge). "
+                    "REAL BROWSERS ARE UNAFFECTED and deployment protection is off "
+                    "for this project -- this is Vercel judging the CLIENT, not an "
+                    "outage and not a settings change. THE DEPLOY IS UNVERIFIED, "
+                    "which is not the same as verified-good. To check it properly "
+                    "from this turn, use mcp__claude_ai_Vercel__web_fetch_vercel_url "
+                    "on the same URL; it authenticates past the challenge. Reported "
+                    "rather than skipped because a check that silently stops "
+                    "running is the failure this hook was rewritten to remove."
+                ),
+            },
+        }))
+        sys.exit(2)
+    except Exception:
+        # A genuine network hiccup on our end really is not evidence of a deploy
+        # problem, and this path stays quiet on purpose. It is now narrow: the
+        # one failure mode that used to hide here has its own branch above.
         sys.exit(0)
 
     remote_hash = sha256(remote_bytes)

@@ -164,21 +164,31 @@ state. Two of the three collisions above were also invisible to a
 pre-dispatch check by the receiving session — the other session's claim
 appeared *after* its check came back clear.
 
-**Two real defects in `sairn_claim.py`, both found the same night, neither
-fixed — know them before you trust its output:**
+**Two real defects in `sairn_claim.py`, both found the same night. ONE IS NOW
+FIXED and one is not — know which before you trust its output:**
 
-1. **The overlap matcher fires on any shared word, not on real subject or
-   file overlap.** `sairnvet ... audit` was BLOCKED against `stonedesk
-   safehtml audit, session lock auth` — different subject, different file,
-   sole overlap the word "audit". Earlier the same night, `sairnfreedom
-   phase 2` was blocked by `sairnfreedom phase 3` on "phase" — same subject
-   there, so that one was arguably fair, but it blocked on the wrong reason.
-   **A block is a claim to verify, not a fact.** Read the named session's
-   actual task and file. If it is lexical, say so out loud and proceed —
-   **do not reword your task string to slip past the matcher.** That is
-   trivially easy and is exactly how a gate gets hollowed out; write the
-   claim directly with a note recording why, the same standard as saying so
-   when you use `SAIRN_SEED_GATE=off`.
+1. ~~**The overlap matcher fires on any shared word.**~~ **FIXED 2026-09-02 in
+   `3f9d50a`** (Cody) — a generic token can no longer block on its own, and
+   `tests/claims/run_matcher_probe.py` holds it. Verified, not assumed: the
+   exact task string that was blocked on the preposition *"per"* earlier that
+   night now returns CLEAR, and the probe passes with 0 failures.
+
+   **The history is kept because the DISCIPLINE it produced still stands and is
+   still needed.** The matcher was blocking `sairnvet ... audit` against
+   `stonedesk safehtml audit` on the word "audit", and `sairnfreedom phase 2`
+   against `phase 3` on "phase". Three sessions hit it in one night.
+
+   **A block is still a claim to verify, not a fact**, and false positives are
+   narrower now rather than impossible — a SUBJECT-level block still fires on
+   the namespace (`platform`, `accounting`) even when the files do not overlap
+   at all, which happened twice more on 2026-09-02/03. Read the named session's
+   actual task and file. If it is lexical, say so out loud and proceed — **do
+   not reword your task string to slip past the matcher.** That is trivially
+   easy and is exactly how a gate gets hollowed out; write the claim directly
+   with a note recording why, the same standard as saying so when you use
+   `SAIRN_SEED_GATE=off`. **Naming the subject accurately** (`live-verify-tooling`
+   rather than `platform`) is the honest fix for a namespace collision and is
+   not the same thing as gaming the matcher — say which one you did.
 
 2. **`list` and `check` DESTROY an uncommitted claim.** Both run
    `git checkout origin/main -- .claude/claims` (lines ~198-202, ~292-293)
@@ -305,9 +315,26 @@ arrived here through this file rather than a trigger word:
    locally against the changed file(s). Do not push on a partial check or
    on "syntax passed" alone — syntax-clean is necessary, not sufficient.
 2. **After pushing:** live-verify the specific fix against
-   `sairn.vercel.app/stonedesk` directly (real `curl` or equivalent), never
-   assumed from the push itself succeeding. A clean `git push` output is
-   not proof the live app reflects the change.
+   `sairn.vercel.app/stonedesk` directly, never assumed from the push itself
+   succeeding. A clean `git push` output is not proof the live app reflects
+   the change.
+
+   **NOT with bare `curl` — corrected 2026-09-03.** Vercel's platform bot
+   mitigation answers an automated-looking User-Agent with **403 +
+   `X-Vercel-Mitigated: challenge`**, and on 2026-09-02 four sessions
+   live-verifying at once tripped it. **That is not an outage and not a failed
+   deploy** — real browsers were unaffected and the project's deployment
+   protection is off. Measured, same second, same URL: `python-urllib` default
+   UA → 403; a browser UA → 200. Two consequences:
+   - **From a script**, fetch through `tools/sairn_http.py`, which sends
+     browser-shaped headers and raises a distinct `Challenged` rather than
+     letting a block look like an answer.
+   - **From a Claude turn**, `mcp__claude_ai_Vercel__web_fetch_vercel_url`
+     authenticates past it and is the reliable check.
+
+   **A 403 here means UNVERIFIED, which is not the same as verified-good.** The
+   post-push watcher used to swallow it and exit silently, so every push during
+   that window got a check that did not run and said nothing.
 Neither step is optional, going forward, regardless of how small the change looks.
 
 3. **If the push touches a reference SEED file, the live licence must already

@@ -46,6 +46,10 @@ import subprocess
 import sys
 import urllib.error
 import urllib.request
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import sairn_http  # noqa: E402
+
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SKILL = os.path.join(REPO, '.claude', 'skills', 'sairn-guardian-v2', 'SKILL.md')
@@ -129,8 +133,13 @@ def live(path):
     """Source 3: does the route actually serve? Returns an int status, or a
     string describing why we could not tell -- NEVER a silent False, because
     'could not check' and 'returned 404' are different findings."""
+    # 'sairn-app-map-check' was an honest User-Agent and Vercel's bot mitigation
+    # reads it as exactly what it says -- an automated client. On 2026-09-02 that
+    # meant --live returned 403 for every route and the map read as an outage.
+    # Browser-shaped now, via the one module that knows why.
     req = urllib.request.Request(BASE + path, method='GET',
-                                 headers={'User-Agent': 'sairn-app-map-check'})
+                                 headers=sairn_http.with_browser_ua(
+                                     {'X-SAIRN-Check': 'app-map'}))
     try:
         with urllib.request.urlopen(req, timeout=TIMEOUT) as r:
             return r.status

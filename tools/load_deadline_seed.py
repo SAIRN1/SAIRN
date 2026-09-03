@@ -50,6 +50,10 @@ import os
 import sys
 import urllib.error
 import urllib.request
+import os as _os, sys as _sys
+_sys.path.insert(0, _os.path.dirname(_os.path.abspath(__file__)))
+import sairn_http  # noqa: E402  -- browser-shaped fetch; see that module
+
 
 DEFAULT_ENDPOINT = "https://sairn.vercel.app/api/legal-deadlines"
 SQL_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "sql")
@@ -59,12 +63,17 @@ def post(endpoint, key, payload, timeout=30):
     body = json.dumps(payload).encode("utf-8")
     req = urllib.request.Request(
         endpoint, data=body, method="POST",
-        headers={"Content-Type": "application/json",
-                 "Authorization": "Bearer " + key})
+        headers=sairn_http.with_browser_ua(
+            {"Content-Type": "application/json", "Authorization": "Bearer " + key}))
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return r.status, json.loads(r.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
+        # A Vercel bot-mitigation challenge is NOT an answer from the app, and a
+        # gate that parses it as one reports "could not tell" when the truth is
+        # "was blocked". CLAUDE.md already says could-not-tell is not a pass;
+        # this makes the two distinguishable instead of identical.
+        sairn_http.raise_if_challenge(e)
         raw = e.read().decode("utf-8", "replace")
         try:
             return e.code, json.loads(raw)

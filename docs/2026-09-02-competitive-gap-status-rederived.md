@@ -41,7 +41,8 @@ That caution earned its keep four times in this pass:
   a **Good Faith Estimate** under the No Surprises Act. Nothing to do with
   real-time payer eligibility. **Still open.**
 - **SAIRNsenior A2** telephony showed 2 hits. Both are a comment *saying
-  telephony is the half that was not built.*
+  telephony is the half that was not built.* (Correct as far as it went — but
+  this pass then filed it as buildable in-house, which it is not. See its row.)
 - **SAIRNroofing B3** certified payroll showed 1 hit. It is the panel comment
   saying certified payroll **is deliberately not there.**
 - **StoneDesk GAP 2** showed 20 hits for `dxf`. They are the Template/DXF file
@@ -116,7 +117,7 @@ recommended. B5 closed 2026-09-02.
 |---|---|---|---|---|
 | 5.1 | EVV config device-local | *The sharpest finding — a defect* | **CLOSED** | `sen_settings` is real and server-first; already annotated closed in the audit itself |
 | A1 | Actual EVV transmission to a state aggregator | Named in a dropdown, no transmission | **OPEN — VENDOR-BLOCKED** | 0 hits on any submission path. Aggregator onboarding is the gate. Recorded as decision-gated by Fourth |
-| A2 | Telephony EVV fallback **+ offline capture** | Zero occurrences of either | **PARTIAL** | **Offline capture BUILT** (`6ff2bc8`, Hank) — queue, real clock time, FIFO replay, refuse-at-cap. **Telephony still open**; the only 2 `telephony` hits are the comment saying so |
+| A2 | Telephony EVV fallback **+ offline capture** | Zero occurrences of either | **OFFLINE BUILT; TELEPHONY OPEN — VENDOR-BLOCKED** | **Offline capture BUILT** (`6ff2bc8`, Hank) — queue, real clock time, FIFO replay, refuse-at-cap. **The telephony half is NOT buildable in-house** (corrected 2026-09-03 on Cody's finding, having been listed as in-house since this file was written): a caregiver clocking in from a client's landline requires a real inbound DID and an IVR provider to receive the call and hand back caller-ID. No provider, no calls to answer — the same gate as A1 and A4, not a smaller version of it |
 | A3 | Payer authorisation tracking with unit burn-down | Absent, `units` zero | **BUILT** | `sen_authorizations`, `panel-authorizations` (Hank, `c7613ec`). ⚠ SQL pending |
 | A4 | Claims transmission (837) / clearinghouse | Absent | **OPEN — VENDOR-BLOCKED** | 0 hits. Same gate as SAIRNdental A2/A3 |
 | A5 | Caregiver recruiting funnel / ATS | Zero occurrences | **BUILT** | `sen_applicants`, `panel-hiring` (Hank) |
@@ -128,8 +129,9 @@ recommended. B5 closed 2026-09-02.
 | B4 | Payer contract management + MCO authorisation | Absent | **BUILT** | `sen_payer_contracts`, `panel-contracts` (Hank, `517c47b`). ⚠ SQL pending |
 | B5 | Consolidated + per-branch P&L | Absent | **BUILT — GROSS MARGIN ONLY, STATED** | `sen_pay_rates`, `panel-payrates`, margin columns on `panel-branches` (Hank, `e3f840e`). Direct labour only; the panel refuses the word *profit* and lists what is excluded. ⚠ SQL pending |
 
-**SAIRNsenior genuinely open and buildable in-house: A2's telephony half.** A1
-and A4 are vendor-gated. **B3 closed 2026-09-02, after this file was
+**SAIRNsenior has NOTHING left that is open and buildable in-house.** A1, A4 and **A2's telephony half** are all vendor-gated; everything else on this list is built.
+
+> **A2 was listed as in-house until 2026-09-03 and that was wrong** (Cody's finding). The mistake is instructive: the offline half genuinely was in-house, so the row inherited that judgement for the telephony half sitting beside it in the same audit item. **A compound item can have halves on opposite sides of a vendor gate**, and one built half is not evidence about the other. **B3 closed 2026-09-02, after this file was
 written, and updated in the row above in the same commit as the build** — which is the maintenance rule at the
 bottom of this document being followed rather than described.
 
@@ -197,7 +199,7 @@ a work item.
 |---|---|---|
 | StoneDesk | GAP 7 — multi-location | Caps StoneDesk at single-yard shops |
 | ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
-| SAIRNsenior | A2 telephony fallback | Offline half is done |
+| ~~SAIRNsenior~~ | ~~A2 telephony fallback~~ | **Moved to vendor-blocked 2026-09-03** — needs an inbound DID/IVR provider |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
 | SAIRNroofing | B6 supplier EDI -- **transport half only**; the three-way match shipped 2026-09-02 | Tier B procurement |
 | ~~SAIRNdental~~ | ~~B5 BI / warehouse connectors~~ | **Closed 2026-09-02** |
@@ -205,7 +207,7 @@ a work item.
 **Blocked on a vendor contract, an integration partner, or a federal
 certification — engineering is not the constraint:**
 
-SAIRNdental A2, A3, A5, A6; SAIRNsenior A1, A4; StoneDesk GAP 4 (scanner
+SAIRNdental A2, A3, A5, A6; SAIRNsenior A1, A4 and **A2's telephony half**; StoneDesk GAP 4 (scanner
 vendor), GAP 5 (payment processor). SAIRNdental A1 is partly here too.
 
 **Standing decisions, not work items:** StoneDesk GAP 6 (QuickBooks, held open
