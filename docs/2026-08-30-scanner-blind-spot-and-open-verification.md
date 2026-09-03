@@ -1,5 +1,38 @@
 # Two queue items, one answer: the scanner blind spot and the open browser verifications
 
+> ## ⚠ THE BLOCKER IN THIS FILE IS GONE. THE SEED HAS BEEN RUN.
+>
+> This document says `sql/stonedesk_recovery_admin_seed.sql` **"has never been
+> run"** and treats that as the thing blocking three verifications. **That was
+> true on 2026-08-30 and stopped being true within a day.** Re-verified against
+> the live API on 2026-09-03, not inferred from any document:
+>
+> ```
+> POST /api/sd-auth  Bearer SD-AUDIT-2026  {"action":"login","employee_id":"sd-recovery-admin","pin":"40318627"}
+>   -> 200 {"ok":true,"role":"admin","employee_id":"sd-recovery-admin"}
+> ```
+>
+> Three controls, because one success proves less than a success plus refusals:
+> a bogus licence returns `INVALID_LICENSE`; the **wrong PIN** on the same real
+> employee returns `INVALID_CREDENTIALS`, so the PIN is genuinely being verified
+> rather than the endpoint accepting anything; an unknown employee id returns the
+> **same generic** message, so there is no user enumeration. The roster read shows
+> `sd-recovery-admin`, role `admin`, `active: true`, alongside `audit-owner` and
+> three others.
+>
+> **The three items this file said were blocked were closed on 2026-08-31** — see
+> `docs/2026-08-31-stonedesk-authenticated-verification.md`, which used exactly
+> this credential.
+>
+> **And the question the seed's own step 3 existed to settle is answered:**
+> `{"action":"read","resource":"sd_hr_employees"}` returns
+> `{"ok":true,"data":[],"provisioned":true}` — **`sql/sd_hr_schema.sql` is live.**
+>
+> Left as written below rather than edited. The reasoning about the blind spot is
+> still the reference and is unaffected; only the *"is it run yet"* claim went
+> stale, and rewriting the sentence would delete the evidence that a
+> committed-but-never-loaded artefact is a real and recurring failure shape.
+
 Both questions resolve to the same action, so they are written up together.
 
 ---
