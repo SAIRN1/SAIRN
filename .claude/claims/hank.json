@@ -402,6 +402,16 @@
       "claimed_at_epoch": 1788398938.180723,
       "status": "released",
       "released_at": "2026-09-03T01:51:22Z"
+    },
+    {
+      "id": "hank-1788400390",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "multi location yard scoping GAP7",
+      "claimed_at": "2026-09-03T01:53:10Z",
+      "claimed_at_epoch": 1788400390.1685426,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
