@@ -34967,19 +34967,95 @@ function intakeBuildLink() {
   lf.value = url;
 }
 
+// INTAKE_FORM_URL IS STILL A 404 AND THE TOAST USED TO SAY OTHERWISE.
+// A banner was added above these buttons on 2026-09-02 saying the form is not
+// live. That helps someone reading the panel; it does not help the person who
+// clicks Copy and is told "Intake link copied!" -- an unqualified success
+// message at the exact moment they are about to send a dead link to a paying
+// customer's customer. The banner and the toast disagreed, and the toast is
+// the one attached to the action.
+//
+// The copy still happens. Nothing here blocks a shop that has some other
+// reason to want the URL. What changed is that it no longer reports plain
+// success for something known to be broken.
+var INTAKE_FORM_LIVE = false;   // flip to true in the same commit that ships the form
+
 function intakeCopyLink() {
   var lf = document.getElementById('intake-link-field');
   if (!lf) return;
-  navigator.clipboard.writeText(lf.value).catch(function(){});
-  if (typeof showToast === 'function') showToast('Intake link copied!');
+  navigator.clipboard.writeText(lf.value).catch(function(e){
+    console.error('[intake] clipboard write failed:', e);
+    if (typeof showToast === 'function') showToast('Could not copy — select the link and copy it manually.');
+  });
+  if (typeof showToast === 'function') {
+    showToast(INTAKE_FORM_LIVE
+      ? 'Intake link copied!'
+      : 'Copied — but this link is not live yet and opens a 404. Do not send it to a client.');
+  }
 }
 
 function intakeShareLink() {
   var lf = document.getElementById('intake-link-field');
   if (!lf) return;
+  // The share TEXT is addressed to the client and asks them to fill the form
+  // in. Sending that while the destination 404s is the single most damaging
+  // thing this panel can do, and unlike Copy it leaves the building in one
+  // tap, so it asks first rather than warning afterwards.
+  if (!INTAKE_FORM_LIVE) {
+    if (!confirm('This intake form is not live yet — the link opens a 404.\n\nThe message you are about to send asks your client to fill it in.\n\nSend anyway?')) return;
+  }
   var text = "Hi! Before your appointment, please take 2 minutes to fill out this quick project form so we can arrive fully prepared: " + lf.value;
-  if (navigator.share) navigator.share({ title: 'Project Intake', text: text });
+  if (navigator.share) navigator.share({ title: 'Project Intake', text: text }).catch(function(e){
+    console.error('[intake] share failed:', e);
+  });
   else { navigator.clipboard.writeText(text); if (typeof showToast === 'function') showToast('Share text copied!'); }
+}
+
+// ── THE INTAKE PANEL USED TO CLAIM SERVER TRUTH WHILE SERVING THIS DEVICE ──
+// Added 2026-09-03. Every Supabase call in this panel was wrapped in a bare
+// `try{...}catch(e){}`. The reads return 42501 permission denied -- `anon` has
+// never been granted anything on intake_submissions, verified live with the
+// real shipped key -- and the writes fail the same way. Nothing was shown.
+//
+// The read then fell back to localStorage and rendered it, on the line
+// directly below a comment reading "Supabase is the real source of truth
+// here", which was exactly backwards in practice. The writes were worse than
+// cosmetic: intakeAccept() creates a Customer and a Job locally and marks the
+// submission accepted, and the server update that is supposed to make that
+// stick silently did nothing -- so the shop believes an intake is handled and
+// the record says otherwise.
+//
+// This does NOT grant anon anything and does not route the panel through
+// api/sd-data.js. Both are the real repair and both need a schema migration
+// and a decision that is not mine to make (see the open-work row). What it
+// does is stop the panel claiming success it did not have, which needs
+// neither. A failure that announces itself is survivable; this one was not
+// found by anyone using the feature -- it surfaced from an unrelated failing
+// pre-assertion, which is the property that makes the class expensive.
+var _intakeServerReachable = null;   // null = not tried yet, true/false after
+var _intakeServerError = '';
+
+function intakeServerNote() {
+  // One reason string, phrased for a shop owner rather than a developer, and
+  // never claiming more than is known. `code` is kept because 42501 is the
+  // difference between "not permitted" and "not reachable" and the two need
+  // different fixes.
+  if (_intakeServerReachable !== false) return '';
+  return '<div style="background:#FEF2F2;border:1px solid #dc2626;border-radius:8px;padding:10px 12px;margin-bottom:12px;font-size:12px;color:#7f1d1d">' +
+    '<strong>Not connected to the server.</strong> Anything listed below is the last copy saved on THIS device and may be out of date or incomplete — ' +
+    'submissions sent from another device or browser will not appear. Accepting or removing an intake here will not stick.' +
+    (_intakeServerError ? '<div style="margin-top:6px;font-size:11px;opacity:.85">' + escHtml(_intakeServerError) + '</div>' : '') +
+    '</div>';
+}
+
+function intakeDescribeError(e) {
+  if (!e) return 'The server did not answer.';
+  var code = e.code || (e.details && e.details.code) || '';
+  var msg = e.message || String(e);
+  if (code === '42501' || /permission denied/i.test(msg)) {
+    return 'The server refused the request (permission denied on intake_submissions). This is a setup gap, not something you did.';
+  }
+  return msg.slice(0, 200);
 }
 
 async function intakeRefresh() {
@@ -34987,6 +35063,9 @@ async function intakeRefresh() {
   if (listEl) listEl.innerHTML = '<div style="color:var(--muted);font-size:13px;padding:20px 0">Loading submissions...</div>';
   var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
   if (!sb) {
+    _intakeServerReachable = false;
+    _intakeServerError = 'No server connection is configured in this browser.';
+    console.warn('[intake] no Supabase client -- showing this device\'s cached submissions only');
     intakeSubmissions = JSON.parse(localStorage.getItem('sd_intake') || '[]');
     intakeRender(); return;
   }
@@ -34994,11 +35073,42 @@ async function intakeRefresh() {
     var res = await sb.from(INTAKE_TABLE).select('*').order('created_at', { ascending: false }).limit(100);
     if (res.error) throw res.error;
     intakeSubmissions = res.data || [];
-    st('sd_intake', intakeSubmissions); // best-effort local cache -- Supabase is the real source of truth here
+    _intakeServerReachable = true;
+    _intakeServerError = '';
+    st('sd_intake', intakeSubmissions); // local cache of a read that really happened
   } catch(e) {
+    // ALWAYS LOGGED. A read that vanishes must not vanish from the console too.
+    console.error('[intake] read of ' + INTAKE_TABLE + ' failed:', e);
+    _intakeServerReachable = false;
+    _intakeServerError = intakeDescribeError(e);
     intakeSubmissions = JSON.parse(localStorage.getItem('sd_intake') || '[]');
   }
   intakeRender();
+}
+
+// Runs a write against intake_submissions and says whether it actually
+// happened. Returns true only on a real success -- a missing client, a thrown
+// error and a PostgREST error object all return false, and all three log.
+async function intakeServerWrite(label, fn) {
+  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
+  if (!sb) {
+    console.warn('[intake] ' + label + ': no Supabase client, nothing was saved to the server');
+    _intakeServerReachable = false;
+    _intakeServerError = 'No server connection is configured in this browser.';
+    return false;
+  }
+  try {
+    var res = await fn(sb);
+    if (res && res.error) throw res.error;
+    _intakeServerReachable = true;
+    _intakeServerError = '';
+    return true;
+  } catch (e) {
+    console.error('[intake] ' + label + ' failed:', e);
+    _intakeServerReachable = false;
+    _intakeServerError = intakeDescribeError(e);
+    return false;
+  }
 }
 
 function intakeSetTab(tab, el) {
@@ -35025,13 +35135,21 @@ function intakeRender() {
 
   var el = document.getElementById('intake-list');
   if (!el) return;
+  // The connection banner renders ABOVE the list and on the empty state too.
+  // "No pending submissions yet" is the most misleading thing this panel can
+  // say while the server is unreachable -- an empty list and a list that could
+  // not be fetched look identical, and only one of them means there is nothing
+  // to do.
+  var note = intakeServerNote();
   if (!filtered.length) {
-    el.innerHTML = '<div style="text-align:center;color:var(--muted);padding:40px">' +
-      (intakeCurrentTab==='pending' ? 'No pending submissions yet. Share the intake link with your next client.' : 'No submissions here yet.') +
+    el.innerHTML = note + '<div style="text-align:center;color:var(--muted);padding:40px">' +
+      (_intakeServerReachable === false
+        ? 'Nothing is cached on this device for this tab. That is not the same as there being no submissions.'
+        : (intakeCurrentTab==='pending' ? 'No pending submissions yet. Share the intake link with your next client.' : 'No submissions here yet.')) +
       '</div>';
     return;
   }
-  el.innerHTML = filtered.map(intakeCardHtml).join('');
+  el.innerHTML = note + filtered.map(intakeCardHtml).join('');
 }
 
 function intakeCardHtml(s) {
@@ -35123,23 +35241,37 @@ async function intakeAccept(id) {
     if (typeof saveSD4 === 'function') saveSD4();
   }
 
-  // Mark accepted in Supabase
+  // Mark accepted on the server -- and say so when that does not happen.
+  // The Customer and the Job above are real and local; this status write is
+  // what stops the same intake being worked twice, from another device or
+  // after a refresh. Reporting it as done when it failed is the whole defect.
   s.status = 'accepted';
-  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
-  if (sb) { try { await sb.from(INTAKE_TABLE).update({status:'accepted'}).eq('id', id); } catch(e){} }
-  st('sd_intake', intakeSubmissions); // local cache; Supabase update above is the real record
+  var saved = await intakeServerWrite('accept ' + id, function(sb) {
+    return sb.from(INTAKE_TABLE).update({status:'accepted'}).eq('id', id);
+  });
+  st('sd_intake', intakeSubmissions);
 
   intakeRender();
-  if (typeof showToast === 'function') showToast('Customer + Job created from intake!');
+  if (typeof showToast === 'function') {
+    showToast(saved
+      ? 'Customer + Job created from intake!'
+      : 'Customer + Job created — but the server was NOT updated, so this intake stays pending elsewhere and may be worked twice.');
+  }
 }
 
 async function intakeDismiss(id) {
   if (!confirm('Remove this submission?')) return;
   intakeSubmissions = intakeSubmissions.filter(function(x){ return x.id !== id; });
-  var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
-  if (sb) { try { await sb.from(INTAKE_TABLE).delete().eq('id', id); } catch(e){} }
-  st('sd_intake', intakeSubmissions); // local cache; Supabase delete above is the real record
+  var removed = await intakeServerWrite('delete ' + id, function(sb) {
+    return sb.from(INTAKE_TABLE).delete().eq('id', id);
+  });
+  st('sd_intake', intakeSubmissions);
   intakeRender();
+  // A delete that only happened on this device comes back on the next
+  // successful refresh, which reads as the app undoing the user's action.
+  if (!removed && typeof showToast === 'function') {
+    showToast('Removed from this device only — the server was not updated, so it will reappear.');
+  }
 }
 
 async function intakeAnalyzePhoto(id) {
@@ -35183,11 +35315,18 @@ async function intakeAnalyzePhoto(id) {
     raw = raw.replace(/```json|```/g,'').trim();
     var analysis = JSON.parse(raw);
 
-    // Save analysis back to submission
+    // Save analysis back to submission. A lost analysis is billable work
+    // thrown away -- the photo goes to Claude again next time and the shop
+    // pays for it again -- so a failure here is worth saying out loud even
+    // though the result is on screen either way.
     s.claude_analysis = analysis;
-    var sb = typeof getSDSupabase === 'function' ? getSDSupabase() : null;
-    if (sb) { try { await sb.from(INTAKE_TABLE).update({claude_analysis: analysis}).eq('id', id); } catch(e){} }
-    st('sd_intake', intakeSubmissions); // local cache; Supabase update above is the real record
+    var analysisSaved = await intakeServerWrite('save analysis ' + id, function(sb) {
+      return sb.from(INTAKE_TABLE).update({claude_analysis: analysis}).eq('id', id);
+    });
+    st('sd_intake', intakeSubmissions);
+    if (!analysisSaved && typeof showToast === 'function') {
+      showToast('Analysis shown below but NOT saved to the server — it will need re-running elsewhere.');
+    }
 
     resultEl.innerHTML =
       '<img src="'+escHtml(s.photo_base64)+'" style="width:100%;border-radius:10px;margin-bottom:12px">'+
