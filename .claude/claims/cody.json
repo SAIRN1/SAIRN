@@ -333,8 +333,8 @@
       "task": "sairnbuild sairnvet sairnbiz sairngrounds sairncash write up",
       "claimed_at": "2026-09-03T11:35:59Z",
       "claimed_at_epoch": 1788435359.3877275,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T11:51:43Z"
     }
   ]
 }
