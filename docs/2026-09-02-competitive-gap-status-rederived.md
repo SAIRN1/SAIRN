@@ -47,6 +47,11 @@ That caution earned its keep four times in this pass:
 - **StoneDesk GAP 2** showed 20 hits for `dxf`. They are the Template/DXF file
   **manager** — customers' DXFs coming *in*. Line 9073 states in terms: *"It
   does not emit DXF or G-code to a specific CNC."*
+  **That was true when this pass ran and stopped being true the same
+  evening** -- DXF out shipped in `ee51217`; G-code remains declined on
+  purpose. Left as written rather than edited, because the point of the
+  paragraph is that 20 hits meant nothing, and that lesson survives the
+  status change.
 
 The reverse also held: **zero hits is strong evidence of open, and was not
 treated as conclusive on its own** — panel ids, `api/_resources/*` registrations
@@ -96,12 +101,12 @@ in flight; B3 is complete except for the half refused on purpose.
 | B2 | Cross-location roll-up reporting | Write-side done, reporting deferred | **PARTIAL — DELIBERATELY DEFERRED** | `api/_lib/dnt-location.js` is real and server-side; reporting is in `SAIRN-BACKLOG.md` by decision, not by oversight |
 | B3 | Consolidated RCM / denials & appeals | `dnt_denial` + `dnt_ar` exist, no appeals lifecycle | **BUILT** | `panel-denials` with the appeals workflow and receivable ageing (Fourth, `f856b38`) |
 | B4 | Central call centre / missed-call leakage | *"recorded as a category, not a recommendation"* | **OPEN — NOT RECOMMENDED** | 0 hits. The audit itself declined to recommend it; it is not a backlog item |
-| B5 | Open BI / data-warehouse connectors | Absent, CSV export only | **OPEN** | 0 hits on `tableau`, `power bi`, `looker` |
+| B5 | Open BI / data-warehouse connectors | Absent, CSV export only | **BUILT** | `api/dnt-bi.js`, `api/_lib/dental-bi.js`, `panel-bi`, `sql/sairndental_bi_tokens_schema.sql` (Fourth, `08bf7e0`). A generic pollable read-only JSON feed rather than a Power BI-specific `.mez` connector — all three named tools read a URL, so one feed serves all three. Eleven datasets of **stored facts**; derived measures (appeal deadlines, GFE due dates, recall standing, insurance estimates) are deliberately NOT duplicated out of the browser engines that own them. Inherits the minting employee's role, re-read live per poll; patient identifiers off by default behind a stable pseudonym. ⚠ SQL pending a run |
 
-**SAIRNdental genuinely open and buildable in-house: A1 (partly — the local half
-without a vendor feed is limited), B5.** A2/A3/A5/A6 are all gated on a vendor
+**SAIRNdental genuinely open and buildable in-house: A1 only (partly — the local
+half without a vendor feed is limited).** A2/A3/A5/A6 are all gated on a vendor
 contract or a federal certification, not on engineering. B4 was never
-recommended.
+recommended. B5 closed 2026-09-02.
 
 ---
 
@@ -142,8 +147,8 @@ bottom of this document being followed rather than described.
 
 | # | Item | 2026-09-02 audit said | **Verified 2026-09-02, later same day** | Evidence |
 |---|---|---|---|---|
-| 1 | Customer-facing portal | *Structural, and the largest* | **BUILT / IN FLIGHT** | `panel-publiccatalog`, `sd_public_shop`, `sd_quote_requests`, `stonedesk-catalog.html`, `stonedesk_public_surface_schema.sql`. **Fourth holds an active claim** extending it with order-tracking links |
-| 2 | Nesting produces no machine output | *Highest operational risk* | **OPEN** | The 20 `dxf` hits are the inbound Template/DXF manager. `stonedesk.html:9073` states it does not emit DXF or G-code to a CNC |
+| 1 | Customer-facing portal | *Structural, and the largest* | **BUILT** | `panel-publiccatalog`, `sd_public_shop`, `sd_quote_requests`, `stonedesk-catalog.html`, `stonedesk_public_surface_schema.sql` (Fourth, `987b679`), plus revocable order-tracking links (`fb94a0e`). Served from a SEPARATE file so an anonymous visitor cannot reach the chart of accounts, price book or patent deadlines. ⚠ `stonedesk_public_surface_schema.sql` is still pending a run in Supabase |
+| 2 | Nesting produces no machine output | *Highest operational risk* | **BUILT — DXF ONLY, AND G-CODE IS REFUSED ON PURPOSE** | `nestingExportDXF` / `nestBuildDXF` on `panel-nesting`, `tests/nesting_dxf.js` (Fourth, `ee51217`). R12 ASCII, closed POLYLINE contours, inches, origin bottom-left, Y converted from the canvas convention. Kerf is deliberately NOT in the geometry — it is a CAM toolpath offset, and baking it in would change every part's finished size. **G-code is not emitted and will not be**: it needs feeds, speeds, tool numbers and a machine origin this app has never seen, which is fabrication with a saw on the other end. The paper half (saw/pick tickets, `tests/nesting_saw_ticket.js`) shipped the same day |
 | 3 | No barcode / scanner support | Absent (`barcode` zero) | **BUILT** | `stonedesk.html:7087` — SCAN / FIND, USB barcode path, `externalBarcode` bound to slabs, duplicate external barcodes **reported not resolved** |
 | 4 | No slab-scanner integration | Absent | **OPEN** | 3 `slabsmith` hits: one comment, two AI system prompts. No SideShot / Iride / Mapascan interface |
 | 5 | No customer e-signature, no deposit collection | Absent | **OPEN** | `signedAt`/`signerName` are still only SAIRN's own service agreements. The 3 `stripe` hits are the price-book comment and the agreement text. "Deposit Required %" is a quote **term**, not payment processing |
@@ -151,10 +156,12 @@ bottom of this document being followed rather than described.
 | 7 | No multi-location support | Absent | **OPEN** | Still 0 hits on `multi-location`, `multiLocation`, `locationId`, `location_id`, `sd_locations` |
 | 8 | No remnant publishing to the public website | Absent | **BUILT** (was PARTIAL earlier the same day) | `sd_remnants`, `publicRemnantView`, remnant card on `stonedesk-catalog.html`, publish toggle on the shop panel (Hank, 2026-09-02). Only a published **and still Available** piece reaches the web; the price **is** published, unlike a slab's cost. ⚠ SQL pending |
 
-**StoneDesk genuinely open: 2, 4, 5 and 7.** The remnant half of 8 closed
-2026-09-02, updated in the row above in the same commit as the build. 6 is a
-standing decision, not a work item. **1 is another session's active claim — do
-not touch `stonedesk.html` for it without checking claims first.**
+**StoneDesk genuinely open: 4, 5 and 7.** GAP 1 (public catalog and order
+tracking), GAP 2 (DXF machine output) and the remnant half of GAP 8 all closed
+2026-09-02 -- 1 and 2 by Fourth, 8 by Hank. **GAP 2 is closed for DXF and
+permanently declined for G-code**, which is a real distinction and not a
+half-finish; see its row rather than reopening it. 6 is a standing decision, not
+a work item.
 
 ---
 
@@ -164,13 +171,12 @@ not touch `stonedesk.html` for it without checking claims first.**
 
 | App | Item | Note |
 |---|---|---|
-| StoneDesk | GAP 2 — nesting → machine output | Audit calls it the highest operational risk |
 | StoneDesk | GAP 7 — multi-location | Caps StoneDesk at single-yard shops |
 | ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
 | SAIRNsenior | A2 telephony fallback | Offline half is done |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
-| SAIRNroofing | B6 supplier EDI — **transport half only**; the three-way match shipped 2026-09-02 | Tier B procurement |
-| SAIRNdental | B5 BI / warehouse connectors | CSV export only today |
+| SAIRNroofing | B6 supplier EDI -- **transport half only**; the three-way match shipped 2026-09-02 | Tier B procurement |
+| ~~SAIRNdental~~ | ~~B5 BI / warehouse connectors~~ | **Closed 2026-09-02** |
 
 **Blocked on a vendor contract, an integration partner, or a federal
 certification — engineering is not the constraint:**
@@ -184,7 +190,12 @@ A4/B2 (positioning findings), SAIRNroofing B3 certified payroll (refused to
 avoid a fabricated federal filing), SAIRNdental B2 reporting half (deferred to
 `SAIRN-BACKLOG.md`).
 
-**In flight right now:** SAIRNroofing A5 (Cody), StoneDesk GAP 1 (Fourth).
+**In flight right now:** nothing. `python tools/sairn_claim.py list` is the live
+source and this line is a snapshot -- at 2026-09-02 the only active claim was
+Fourth's own SAIRNdental B5, released on this commit. StoneDesk GAP 1, StoneDesk
+GAP 2 and SAIRNdental B5 closed that day (Fourth); StoneDesk GAP 8 remnant half
+and SAIRNsenior B3 closed the same day (Hank); SAIRNroofing B6's three-way match
+half closed the same day (CC).
 **Check `python tools/sairn_claim.py list` before starting anything — this
 column goes stale faster than any other in this file.**
 
