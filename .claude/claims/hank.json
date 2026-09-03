@@ -370,8 +370,8 @@
       "task": "franchise network royalty reporting B3",
       "claimed_at": "2026-09-02T23:49:06Z",
       "claimed_at_epoch": 1788392946.2450597,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T00:09:46Z"
     }
   ]
 }
