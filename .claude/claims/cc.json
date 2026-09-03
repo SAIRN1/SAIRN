@@ -343,6 +343,16 @@
       "status": "released",
       "released_at": "2026-09-03T12:47:41Z",
       "note": "SUBJECT NAMED FOR THE WORK, NOT A FILE -- this spans stonedesk.html, sairnscape.html and docs/legal/. KNOWN OVERLAP, FLAGGED NOT HIDDEN: fourth holds sairnscape for \"memory feature claim vs dead endpoints\". My sairnscape edits are exactly two lines -- the rendered footer (:244) and the SYSTEM prompt const (:292) -- in regions unrelated to memory endpoints. Risk is a merge conflict on two lines, not duplicated work. Doing stonedesk and docs first, sairnscape last and in its own small commit to keep the window short."
+    },
+    {
+      "id": "cc-1788440276",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "literal duplication full sweep and platform tos venue",
+      "claimed_at": "2026-09-03T12:57:56Z",
+      "claimed_at_epoch": 1788440276.4345906,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
