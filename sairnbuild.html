@@ -1930,17 +1930,43 @@ window.bldLocalToday=bldLocalToday;
 // Client-side prefix allowlist. FORMAT CHECK ONLY -- this is NOT auth. Real
 // validation is server-side in api/_lib/license.js against the license_keys
 // table (existence, status==='active', trial/Stripe entitlement). A key can
-// pass this gate and still be rejected by the server, which is exactly what
-// happens today: no BLD- row is provisioned yet, so every /api/sd-data call
-// returns 401 INVALID_LICENSE. That is correct, expected behaviour -- see
-// SAIRNBUILD-SCOPE.md SS4a. Never treat passing this list as authenticated.
+// pass this gate and still be rejected by the server. Never treat passing
+// this list as authenticated.
+//
+// CORRECTED 2026-09-03. This comment said "no BLD- row is provisioned yet, so
+// every /api/sd-data call returns 401 INVALID_LICENSE", and cited
+// SAIRNBUILD-SCOPE.md SS4a. That is no longer true and had not been for some
+// time: BLD-PINNACLE-2026 answers, measured against the deployed endpoint
+// rather than assumed --
+//   POST /api/sd-data  Bearer BLD-PINNACLE-2026  {read, bld_bids}
+//     -> 401 NO_SESSION   (past licence validation, needs an employee session)
+//   the same call with a made-up key -> 401 INVALID_LICENSE
+// Two different refusals; only the second means the licence is unknown. A
+// comment asserting the app CANNOT sync is worse than no comment, because it
+// is the reason nobody tried.
 var VALID=['BLD-','DEMO-','SAIRN-'];
 
 var prole='owner',jeid=null,ceid=null,coeid=null;
 var bldSession=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+function st(k,v){
+  // Server backup hook (2026-09-03). Reads the PREVIOUS value first so only
+  // records that actually changed are pushed -- see bldSyncCollection below
+  // for why this lives here and not at 100+ save call sites. Guarded with
+  // typeof because st() is defined before bldSyncCollection and is called
+  // during early boot.
+  var prev=null;
+  if(typeof _bldSyncOn!=='undefined'&&_bldSyncOn[k]){prev=ld(k,null);}
+  var okWrite;
+  try{localStorage.setItem(k,JSON.stringify(v));okWrite=true;}catch(e){okWrite=false;}
+  // Only after the local write succeeded. A failed localStorage write must not
+  // push a value the device does not itself hold.
+  if(okWrite&&typeof bldSyncCollection==='function'){
+    try{bldSyncCollection(k,v,prev);}catch(e){}
+  }
+  return okWrite;
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -1977,6 +2003,118 @@ function bldData(action,resource,payload,withSession){
       return d.data;
     });
   }).catch(function(e){console.warn('bldData network error:',e.message);return null;});
+}
+
+
+// -- SERVER BACKUP FOR THE BUSINESS RECORD (2026-09-03) --------------------
+// Closes the largest unassigned item in docs/SAIRN-OPEN-WORK-INDEX.md: "Zero
+// server-side backup for any real business data".
+//
+// MEASURED BEFORE ANYTHING WAS WRITTEN: this file wrote 37 localStorage
+// collections and had server sync for exactly TWO of them (bld_bids,
+// bld_tna). Jobs, job costs, change orders, the draw schedule, LIEN WAIVERS,
+// safety incidents, daily logs, RFIs, submittals and timesheets existed in one
+// browser and nowhere else. Clearing it lost the company's records with no
+// copy on any server.
+//
+// -- WHY THIS HOOKS st() INSTEAD OF EDITING EVERY SAVE PATH --
+// These thirty collections are written from well over a hundred call sites.
+// Adding a sync line to each one is a change that WILL be half-applied, and
+// the half that gets missed is invisible -- the app looks identical and the
+// records quietly stop being backed up. Tonight's SAIRNsenior/SAIRNcare
+// roster work is the evidence: a filter that had to be repeated at each
+// picker was applied to one per app and missed five, including a
+// controlled-substance witness selector. One hook, at the single function
+// every write already goes through, cannot be half-applied.
+//
+// -- WHAT THIS IS AND IS NOT, stated rather than implied --
+// It is a BACKUP with per-record last-write-wins, not two-way sync:
+//   * only records whose JSON actually CHANGED are pushed, so a render that
+//     rewrites an unchanged array costs nothing;
+//   * DELETIONS DO NOT PROPAGATE. Removing a row locally leaves the server
+//     copy in place, and hydration will bring it back. That is not an
+//     oversight: api/sd-data.js has no delete path for any resource outside
+//     the sc_* family, platform-wide and deliberately, so there is nothing to
+//     call. A deleted record reappearing is the honest behaviour of a backup
+//     that cannot delete, and it is better than the alternative this replaces,
+//     which was losing everything;
+//   * there is no conflict resolution. Two devices editing the same record
+//     end with whichever wrote last. Same disclosed limitation as
+//     bldHydrateBids() above and sairndesign.html's sdnHydrateAll().
+//
+// A failed push is NOT reported as success and NOT reported as failure to the
+// user either -- bldData() already console.warns and returns null. The local
+// write has always happened by then, so the app is never worse off than it was
+// before this existed.
+var BLD_SYNCED = [
+  'bld_jobs','bld_costs','bld_change_orders','bld_draws','bld_lien_waivers',
+  'bld_daily_logs','bld_incidents','bld_inspections','bld_toolbox_talks','bld_rfis',
+  'bld_submittals','bld_punchlist','bld_warranty','bld_subs','bld_sub_bids','bld_suppliers',
+  'bld_pos','bld_deliveries','bld_checks','bld_timesheet','bld_tasks',
+  'bld_schedule_entries','bld_selections','bld_documents','bld_equipment','bld_comm_log',
+  'bld_referrals','bld_reviews','bld_price_points','bld_photo_analyses'
+];
+var _bldSyncOn = {};
+BLD_SYNCED.forEach(function(k){_bldSyncOn[k]=true;});
+// Set while seed() runs. Seeding writes ~30 arrays of demo rows in one pass;
+// pushing several hundred records to the server on first paint would be a
+// self-inflicted burst, and demo data is not the customer's business record.
+var bldSeeding = false;
+
+function bldSyncCollection(key, next, prev) {
+  if (!_bldSyncOn[key] || bldSeeding) return;
+  if (!bldLicenseKey()) return;
+  if (!Array.isArray(next)) return;
+  var before = {};
+  (Array.isArray(prev) ? prev : []).forEach(function (r) {
+    if (r && r.id !== undefined && r.id !== null) {
+      try { before[String(r.id)] = JSON.stringify(r); } catch (e) {}
+    }
+  });
+  next.forEach(function (r) {
+    if (!r || r.id === undefined || r.id === null || r.id === '') return;
+    var now;
+    try { now = JSON.stringify(r); } catch (e) { return; }
+    if (before[String(r.id)] === now) return;   // unchanged -- nothing to push
+    bldData('write', key, r);
+  });
+}
+
+// -- HYDRATION ------------------------------------------------------------
+// Additive-only merge by id: server records not already present locally are
+// appended; a locally present id is NEVER overwritten. Deliberately not full
+// conflict resolution, and the same shape bldHydrateBids() already uses -- so
+// a second device sees the first device's records, and neither clobbers the
+// other's in-progress edits.
+//
+// provisioned:false (the schema has not been run) comes back as null from
+// bldData(), which is why a failed read leaves local data untouched rather
+// than emptying anything.
+function bldHydrateAll() {
+  if (!bldLicenseKey()) return Promise.resolve(0);
+  var merged = 0;
+  return Promise.all(BLD_SYNCED.map(function (key) {
+    return bldData('read', key, null).then(function (rows) {
+      if (!rows || !Array.isArray(rows) || !rows.length) return;
+      var local = ld(key, []);
+      if (!Array.isArray(local)) return;
+      var have = {};
+      local.forEach(function (r) { if (r && r.id != null) have[String(r.id)] = true; });
+      var added = 0;
+      rows.forEach(function (r) {
+        if (r && r.id != null && !have[String(r.id)]) { local.push(r); added++; }
+      });
+      if (added) {
+        merged += added;
+        // Written through st(), which would normally push straight back to the
+        // server. Suppressed for the duration: every one of these rows CAME
+        // from the server, so echoing them back is pure noise.
+        bldSeeding = true;
+        st(key, local);
+        bldSeeding = false;
+      }
+    });
+  })).then(function () { return merged; });
 }
 
 // ── BID HYDRATION (2026-08-20) ───────────────────────────────────────────
@@ -2106,6 +2244,12 @@ function bldEnterApp(d){
   var p=$('l-pin');if(p)p.value='';
   init();
   bldHydrateBids().then(function(merged){if(merged)rBids();});
+  // The other thirty collections. Runs once per login, after init() has
+  // painted from local data, so a slow or unprovisioned server never delays
+  // first paint -- the panel is never blank waiting on a network call.
+  bldHydrateAll().then(function(n){
+    if(n){toast(n+' record'+(n===1?'':'s')+' restored from your server backup',5000);init();}
+  });
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -2215,6 +2359,13 @@ function nav(id){
 // module. Guarded additionally by bld_seeded.
 function seed(){
   if(ld('bld_seeded',false))return;
+  // Demo rows are not the customer's business record, and seeding writes ~30
+  // arrays in one pass. Pushing several hundred rows to the server on first
+  // paint would be a self-inflicted burst for data nobody wants backed up.
+  bldSeeding=true;
+  try{ return bldSeedRows(); } finally { bldSeeding=false; }
+}
+function bldSeedRows(){
   st('bld_jobs',[
     {id:'J-2601',address:'1420 Center Ridge Rd, Westlake OH',client:'Hartley Residence',phone:'(440) 555-0142',value:186500,stage:'in_progress',start:'2026-05-04',target:'2026-08-14',permit:'WL-26-0412',blocked:'',notes:'Full kitchen + primary bath remodel'},
     {id:'J-2602',address:'88 Lake Rd, Rocky River OH',client:'Delgado Property Group',phone:'(440) 555-0188',value:242000,stage:'in_progress',start:'2026-04-18',target:'2026-09-02',permit:'RR-26-0233',blocked:'',notes:'Two-unit interior rebuild'},

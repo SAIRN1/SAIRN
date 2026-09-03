@@ -8338,6 +8338,77 @@ module.exports = async (req, res) => {
     // SDN_RESOURCES above (one pair covering all 36, not 36 copy-pasted blocks) -- see that
     // block's own comment for why. See sql/sairnlegacy_data_schema.sql for the id-column naming
     // rule (mechanical singularization, not a bespoke name per table -- also logged there).
+    // -- SAIRNBUILD: THE BUSINESS RECORD (2026-09-03) --------------------------
+    // Closes docs/SAIRN-OPEN-WORK-INDEX.md's "Zero server-side backup for any
+    // real business data", which was the largest unassigned item in that file.
+    //
+    // MEASURED, NOT ESTIMATED: sairnbuild.html wrote 37 localStorage
+    // collections and had server sync for exactly TWO of them (bld_bids,
+    // bld_tna, both bespoke branches above). Jobs, job costs, change orders,
+    // the draw schedule, LIEN WAIVERS, safety incidents, daily logs, RFIs,
+    // submittals and timesheets lived in one browser and nowhere else --
+    // clearing it lost the company's records with no copy on any server.
+    //
+    // One generic read/write pair covering all 30, not 30 copy-pasted blocks --
+    // same shape and same reasoning as LEG_RESOURCES and SDN_RESOURCES below.
+    // See sql/sairnbuild_data_schema.sql for the tables, the id-column naming
+    // rule, and the eight collections deliberately left OUT with the reason for
+    // each.
+    //
+    // NO SESSION GATE HERE, and that is a decision rather than an omission.
+    // bld_bids and bld_tna each carry one because each has a real per-person
+    // visibility rule (a PM sees their own bids; TNA is subject-scoped). These
+    // thirty are the shared job record -- every role in a building company
+    // reads the schedule, the punch list and the daily log, and gating them
+    // per employee would break the app for the people it is for. The boundary
+    // that matters is the LICENCE, which every branch below enforces, and
+    // SAIRNbuild's own auth still decides who may sign in at all. If a future
+    // per-role rule is wanted on one of these, it needs its own bespoke branch
+    // like bld_bids has, not a gate bolted onto this loop.
+    const BLD_RESOURCES = {
+      bld_jobs: 'job_id', bld_costs: 'cost_id', bld_change_orders: 'change_order_id',
+      bld_draws: 'draw_id', bld_lien_waivers: 'lien_waiver_id', bld_daily_logs: 'daily_log_id',
+      bld_incidents: 'incident_id', bld_inspections: 'inspection_id',
+      bld_toolbox_talks: 'toolbox_talk_id', bld_rfis: 'rfi_id', bld_submittals: 'submittal_id',
+      bld_punchlist: 'punchlist_id', bld_warranty: 'warranty_id', bld_subs: 'sub_id',
+      bld_sub_bids: 'sub_bid_id', bld_suppliers: 'supplier_id', bld_pos: 'po_id',
+      bld_deliveries: 'delivery_id', bld_checks: 'check_id', bld_timesheet: 'timesheet_id',
+      bld_tasks: 'task_id', bld_schedule_entries: 'schedule_entry_id',
+      bld_selections: 'selection_id', bld_documents: 'document_id',
+      bld_equipment: 'equipment_id', bld_comm_log: 'comm_log_id', bld_referrals: 'referral_id',
+      bld_reviews: 'review_id', bld_price_points: 'price_point_id',
+      bld_photo_analyses: 'photo_analysis_id'
+    };
+    if (BLD_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // 404/400 means the table does not exist yet. Reported as an honest
+      // empty WITH provisioned:false rather than as rows, so the client can
+      // tell "nothing saved yet" apart from "this was never migrated" -- the
+      // distinction dnt_referrals needed and the reason its gap was visible.
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (BLD_RESOURCES[resource] && action === 'write') {
+      const idCol = BLD_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbuild', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNbuild data tables are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     const LEG_RESOURCES = {
       leg_aftercare: 'aftercare_id', leg_bookings: 'booking_id', leg_cases: 'case_id',
       leg_catererorders: 'catererorder_id', leg_caterers: 'caterer_id', leg_certs: 'cert_id',
