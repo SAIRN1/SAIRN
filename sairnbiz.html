@@ -2544,7 +2544,51 @@ function csv(type){
   // taken on trust.
   else if(type==='budget'){rows=[['Category','Budget','Opening Baseline','Recorded Since','Actual','Remaining','% Used']];sbBudgetActuals().rows.forEach(function(b){rows.push([b.cat,b.annual,b.baseline,b.recorded,b.actual,b.annual-b.actual,b.annual?Math.round(b.actual/b.annual*100)+'%':'0%']);});}
   else if(type==='payroll'){rows=[['Employee','Role','Type','Rate','Hours','Gross']];ld('sb_emps',[]).filter(function(e){return e.status==='Active';}).forEach(function(e){var h=e.type==='Full Time'?80:32;rows.push([e.fn+' '+e.ln,e.role,e.type,e.rate,h,(e.rate*h).toFixed(2)]);});}
-  else{rows=[['SAIRNbiz',type,new Date().toLocaleDateString()]];}
+  // ── EXPORTS ADDED 2026-09-02, AND THE FALLBACK NOW REFUSES ──────────────
+  // Found by a live click-through on SB-TEST-2026: of FIFTEEN "Export CSV"
+  // buttons, TEN fell through to the stub below and downloaded a file
+  // containing one row -- "SAIRNbiz","<type>","<today>" -- and no data, while
+  // the button reported success and the toast said "Exported". A file that
+  // downloads, opens, and is empty is worse than a button that says it is not
+  // built: the user has no reason to look again.
+  //
+  // Implemented here are the seven whose rows genuinely exist in a store.
+  else if(type==='performance'){rows=[['Employee','Type','Due','Reviewer','Score','Raise','PIP','Status']];ld('sb_perf',[]).forEach(function(r){rows.push([r.emp,r.type,r.due,r.rev,r.score,r.raise?'Yes':'No',r.pip?'Yes':'No',r.status]);});}
+  else if(type==='training'){rows=[['Employee','Certification','Completed','Expires','Provider','Cost','Hours','Status']];ld('sb_train',[]).forEach(function(r){rows.push([r.emp,r.cert,r.done,r.exp,r.prov,r.cost,r.hrs,r.status]);});}
+  else if(type==='hiring'){rows=[['Position','Department','Applicants','Stage','Posted','Rate','Status']];ld('sb_hire',[]).forEach(function(r){rows.push([r.pos,r.dept,r.apps,r.stage,r.posted,r.rate,r.status]);});}
+  else if(type==='ap'){rows=[['Vendor','Invoice','Date','Due','Amount','Balance','Status']];ld('sb_ap',[]).forEach(function(r){rows.push([r.vendor,r.inv,r.date,r.due,r.amt,r.bal,r.status]);});}
+  else if(type==='expenses'){rows=[['Date','Description','Category','Vendor','Amount','Deductible','Receipt','Status']];ld('sb_exps',[]).forEach(function(r){rows.push([r.date,r.desc,r.cat,r.vendor,r.amt,r.ded,r.receipt,r.status]);});}
+  // AR is DERIVED from invoices rather than stored, so the export derives it
+  // the same way the panel does -- an outstanding balance is amount less paid,
+  // and only unsettled invoices belong on an aging report.
+  else if(type==='ar'){rows=[['Invoice','Customer','Date','Due','Amount','Paid','Outstanding','Status']];ld('sb_invs',[]).forEach(function(i){var bal=i.amt-(i.paid||0);if(bal>0)rows.push([i.id,i.cust,i.date,i.due,i.amt,i.paid||0,bal,i.status]);});}
+  // Tax figures are estimates computed from payroll and revenue. The header
+  // says ESTIMATE on the money column for that reason: this is not a filing.
+  else if(type==='tax'){
+    var txInvs=ld('sb_invs',[]),txEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+    var txRev=txInvs.reduce(function(s,i){return s+i.amt;},0);
+    var txGross=txEmps.reduce(function(s,e){return s+(e.type==='Full Time'?e.rate*80:e.rate*32);},0);
+    rows=[['Tax','Category','Frequency','Estimated Amount','Basis']];
+    rows.push(['Federal Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.10),'10% of gross payroll']);
+    rows.push(['Ohio State Income Tax (Quarterly Est.)','Income','Quarterly',Math.round(txGross*0.025),'2.5% of gross payroll']);
+    rows.push(['FICA Payroll Tax (Employer Share)','Payroll','Per Pay Period',Math.round(txGross*0.0765),'7.65% of gross payroll']);
+    rows.push(['Ohio Sales Tax (6.5%, Est.)','Sales','Monthly',Math.round(txRev*0.065),'6.5% of invoiced revenue']);
+    rows.push(['FUTA Federal Unemployment (0.6%)','Payroll','Quarterly',Math.round(txGross*0.006),'0.6% of gross payroll']);
+    rows.push(['SUTA Ohio Unemployment (2.7%)','Payroll','Quarterly',Math.round(txGross*0.027),'2.7% of gross payroll']);
+  }
+  // THE FALLBACK REFUSES AND WRITES NOTHING. Three views legitimately reach it
+  // and each is named rather than lumped together:
+  //   timesheet -- rTS() drives its hours from a HARDCODED array in the source
+  //     (`td`), not from a store. Exporting it would launder demo figures into
+  //     a spreadsheet somebody costs a week against. Flagged separately.
+  //   pl        -- no row set exists; the panel is computed totals.
+  //   report    -- "report" is not a data set, it is the panel name.
+  // Any future button passing an unhandled key now fails LOUDLY here instead
+  // of silently shipping a one-line file.
+  else{
+    toast('No CSV export is built for "'+type+'" yet — nothing was downloaded.',5000);
+    return;
+  }
   var c=rows.map(function(r){return r.map(function(x){return'"'+String(x||'').replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var bl=new Blob([c],{type:'text/csv'});var a=document.createElement('a');a.href=URL.createObjectURL(bl);a.download=fn;a.click();
   // Export is never blocked (final-review Finding 2, 2026-08-10) -- a
