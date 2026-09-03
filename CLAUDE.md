@@ -215,9 +215,21 @@ reasoning, and the template.
 
 **Precedence when several skills cover one job: see
 `docs/2026-08-30-skill-precedence.md`.** A 2026-08-30 audit found 52 skills on
-disk (23 SAIRN, mirrored in this repo and verified byte-identical to the user
-store; 29 general and user-level only) with four apparently-overlapping groups.
-Three of the four turned out to be correctly-separated tools that a
+disk (23 SAIRN; 29 general and user-level only) with four apparently-overlapping
+groups. **Re-counted 2026-09-03 (Hank): 60 on disk — 32 SAIRN, mirrored in this
+repo and verified content-identical to the user store, plus 28 general and
+user-level only.** Nine SAIRN skills were added after that audit and are not in
+its count: `sairn-build-lifecycle`, `sairn-contract-drafter`,
+`sairn-differential-review`, `sairn-employee-auth-scaffold`,
+`sairn-grant-sweep`, `sairn-minimalism`, `sairn-perf-profiler`,
+`sairn-portfolio-triage`, `sairn-precommit-gate`. **Re-count rather than trust
+either number** — this line has now been wrong once.
+Twelve of the 32 mirrors differ from the user store by CRLF-vs-LF **only**; a
+bare `diff` reports them as changed and that is a false alarm, not drift —
+compare after `tr -d '\r'` before reporting a mirror as diverged.
+`grill-me` is on disk but carries `disable-model-invocation: true`, so it is
+absent from the model-facing skill list by design and is not missing.
+Three of the four overlapping groups turned out to be correctly-separated tools that a
 name-and-size scan made look like duplicates — notably `perf-profiler`, which is
 the only **server-side** profiling skill in the store and the one most SAIRN
 performance questions actually want. The short version:
@@ -229,9 +241,11 @@ performance questions actually want. The short version:
 - **Performance** — pick by layer: `perf-profiler` (backend/queries),
   `performance` (frontend broad), `core-web-vitals` (a named metric).
 - **Security** — `sairn-guardian-v2` and `sairn-code-scrubber` run first;
-  `owasp-security` is the canonical general layer. `security-auditor` is
-  superseded **and stale** (its Top 10 is the 2017 list) — flagged for removal,
-  not removed.
+  `owasp-security` is the canonical general layer. `security-auditor` was
+  flagged here as superseded and stale (its Top 10 was the 2017 list); it has
+  since been **removed** — verified 2026-09-03 as absent from both
+  `~/.claude/skills/` and this repo's `.claude/skills/`. Nothing to do; do not
+  reinstate it.
 - **Skill management** — not duplicates, a pipeline:
   `self-improving-agent` harvests → `skill-creator` authors → `skill-vetter`
   admits third-party skills.
