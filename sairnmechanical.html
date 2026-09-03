@@ -709,21 +709,85 @@ async function callClaude(system, messages, maxTokens) {
 </div>
 <div class="page" id="page-equipment">
   <div class="ph">
-    <div><div class="ptitle">🌡️ Equipment</div><div class="psub">Installed units and service history</div></div>
-    <div class="pacts"><button class="btn bp">+ Add Equipment</button></div>
+    <div><div class="ptitle">🌡️ Site Assets</div><div class="psub">Customer &rarr; site &rarr; unit: make, model, serial, warranty and refrigerant charge</div></div>
+    <div class="pacts"><button class="btn bo bsm" onclick="mechAssetRefresh()">↻ Refresh</button></div>
   </div>
+
+  <!-- LIVE AS OF 2026-09-02. The 2026-08-27 pass removed three invented
+       customers, addresses and units presented as a live board and left an
+       honest empty state saying "this panel has no backend; building one is
+       separate scoped work". This is that work: capability #2 on the
+       2026-08-27 competitive research (sql/mech_site_assets_schema.sql,
+       api/_lib/mech-assets.js).
+
+       Renamed from "Equipment" to "Site Assets" because the research's shape
+       is customer -> site -> asset, and the site is the part that was missing:
+       a unit with no site cannot be dispatched to, scheduled against, or put
+       on a maintenance agreement. "Last Service" and "Next PM" are NOT in this
+       table -- the service-history chain is genuinely append-only and is not
+       built yet, and columns that would always read "—" are how a panel starts
+       looking populated when it is not. -->
+  <div class="card">
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:12px">
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Customer *</label>
+        <input id="ma-customer" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Site</label>
+        <input id="ma-site" placeholder="Plant 1" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Address</label>
+        <input id="ma-address" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Type *</label>
+        <select id="ma-type" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Choose…</option><option value="rtu">RTU</option><option value="split_system">Split system</option>
+          <option value="chiller">Chiller</option><option value="boiler">Boiler</option><option value="furnace">Furnace</option>
+          <option value="heat_pump">Heat pump</option><option value="ahu">AHU</option><option value="vrf">VRF</option>
+          <option value="cooling_tower">Cooling tower</option><option value="water_heater">Water heater</option>
+          <option value="pump">Pump</option><option value="exhaust_fan">Exhaust fan</option>
+          <option value="controls">Controls</option><option value="other">Other</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Make</label>
+        <input id="ma-make" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Model</label>
+        <input id="ma-model" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Serial</label>
+        <input id="ma-serial" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Location on site</label>
+        <input id="ma-location" placeholder="Roof, north bay" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Installed</label>
+        <input id="ma-installed" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Under warranty?</label>
+        <select id="ma-has-warranty" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Not checked</option><option value="true">Yes</option><option value="false">No</option>
+        </select></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Warranty ends</label>
+        <input id="ma-warranty-expires" type="date" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Refrigerant</label>
+        <select id="ma-refrigerant" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box">
+          <option value="">Not recorded</option><option value="none">None (boiler, pump…)</option>
+          <option value="r22">R-22</option><option value="r410a">R-410A</option><option value="r454b">R-454B</option>
+          <option value="r32">R-32</option><option value="r407c">R-407C</option><option value="r134a">R-134a</option>
+          <option value="r513a">R-513A</option><option value="r717">R-717 (ammonia)</option>
+          <option value="r744">R-744 (CO2)</option><option value="other">Other</option>
+        </select></div>
+      <!-- LEAVE BLANK IF NOBODY HAS WEIGHED IT. Blank is stored as NULL and
+           reported as NEVER WEIGHED; typing 0 records a measured zero and the
+           unit will read as below the threshold. The two are different facts
+           and the placeholder says so. -->
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Full charge (lb)</label>
+        <input id="ma-charge" type="number" step="0.1" min="0" placeholder="blank if never weighed" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+      <div><label style="font-size:11px;font-weight:700;color:var(--g400);display:block">Asset ID</label>
+        <input id="ma-id" placeholder="blank = new" style="width:100%;padding:7px;border:1px solid var(--g200);border-radius:6px;box-sizing:border-box"></div>
+    </div>
+    <button class="btn bp" onclick="mechAssetAdd()">+ Record Asset</button>
+    <div id="mech-asset-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+    <div id="mech-asset-note" style="font-size:12px;color:var(--g400);margin-top:8px"></div>
+  </div>
+
   <div class="card">
     <div class="tw"><table>
-      <thead><tr><th>Customer</th><th>Unit Type</th><th>Brand/Model</th><th>Serial #</th><th>Installed</th><th>Last Service</th><th>Next PM</th><th>Status</th></tr></thead>
-      <tbody>
-        <!-- 3 hardcoded demo row(s) removed 2026-08-27. Same fabrication as
-             the commissions and certifications panels: invented customers,
-             addresses, equipment and dollar figures presented as a live board.
-             This panel has no backend; building one is separate scoped work. -->
-        <tr><td colspan="8" style="text-align:center;padding:18px;color:var(--g400)">
-          Equipment records is not live yet &mdash; nothing recorded.
-        </td></tr>
-      </tbody>
+      <thead><tr><th>Customer / site</th><th>Type</th><th>Make &amp; model</th><th>Serial</th><th>Installed</th><th>Warranty</th><th>Refrigerant</th></tr></thead>
+      <tbody id="mech-asset-tbody"><tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">
+        Loading&hellip;
+      </td></tr></tbody>
     </table></div>
   </div>
 </div>
@@ -1268,6 +1332,9 @@ async function runBlueprintAI(input){
     if (id === 'technicians' && typeof mechCredRefresh === 'function') {
       try { mechCredRefresh(); } catch (e) {}
     }
+    if (id === 'equipment' && typeof mechAssetRefresh === 'function') {
+      try { mechAssetRefresh(); } catch (e) {}
+    }
   }
   window.showPage = showPage;
   window.openFQ   = function() { showPage('field-quote'); };
@@ -1299,12 +1366,16 @@ async function runBlueprintAI(input){
   // nobody records their own licence.
   var MECH_DATA_API = 'https://sairn.vercel.app/api/sd-data';
 
-  function mechData(action, payload) {
+  // The resource is a PARAMETER as of the site asset registry (2026-09-02). It
+  // was hardcoded to mech_credentials when that was the app's only resource;
+  // leaving it and adding a second near-identical helper is how two call paths
+  // drift apart on headers or error handling.
+  function mechData(action, resource, payload) {
     if (!mechLic()) return Promise.resolve({ status: 0, body: null });
     return fetch(MECH_DATA_API, {
       method: 'POST',
       headers: mechHeaders(true),
-      body: JSON.stringify({ action: action, resource: 'mech_credentials', payload: payload || {} })
+      body: JSON.stringify({ action: action, resource: resource, payload: payload || {} })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, body: d }; });
     }).catch(function () { return { status: 0, body: null }; });
@@ -1363,7 +1434,7 @@ async function runBlueprintAI(input){
 
   function mechCredRefresh() {
     var note = document.getElementById('mech-cred-note');
-    return mechData('read', {}).then(function (res) {
+    return mechData('read', 'mech_credentials', {}).then(function (res) {
       if (res.status === 401 || res.status === 403) {
         // A refusal is not an empty registry. Same distinction StoneDesk had to
         // be taught the same day: "you may not see this" and "there is none of
@@ -1427,7 +1498,7 @@ async function runBlueprintAI(input){
       has_expiry: hasExp === 'true',
       expires_on: hasExp === 'true' ? g('mc-expires') : null
     };
-    mechData('write', payload).then(function (res) {
+    mechData('write', 'mech_credentials', payload).then(function (res) {
       if (res.body && res.body.ok) {
         ['mc-tech', 'mc-number', 'mc-issuer', 'mc-issued', 'mc-expires', 'mc-jurisdiction'].forEach(function (id) {
           var el = document.getElementById(id); if (el) el.value = '';
@@ -1437,6 +1508,149 @@ async function runBlueprintAI(input){
       }
       // The SERVER's message, not a generic one -- it names which rule was
       // broken, and those messages exist precisely to be shown.
+      var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
+      if (err) err.textContent = msg;
+    });
+  };
+
+
+  // ── SITE ASSET REGISTRY (2026-09-02) ──────────────────────────────────────
+  // Capability #2 on the 2026-08-27 research list. The Equipment page was an
+  // honest empty state with a "+ Add Equipment" button that had no handler.
+  //
+  // The refrigerant column is the one with legal weight, and it is rendered in
+  // FOUR states, not two: at/above the 40 CFR 82.157 threshold, below it,
+  // not applicable (a boiler holds none), and UNKNOWN. An unknown charge is
+  // styled as a warning, never as a pass -- a unit nobody has weighed must not
+  // look like a unit that came in under threshold.
+  var MECH_ASSET_LABELS = {
+    rtu: 'RTU', split_system: 'Split system', chiller: 'Chiller', boiler: 'Boiler',
+    furnace: 'Furnace', heat_pump: 'Heat pump', ahu: 'AHU', vrf: 'VRF',
+    cooling_tower: 'Cooling tower', water_heater: 'Water heater', pump: 'Pump',
+    exhaust_fan: 'Exhaust fan', controls: 'Controls', other: 'Other'
+  };
+  var MECH_SCOPE_STYLE = {
+    at_or_above:    'background:#fef3c7;color:#92400e',
+    below:          'background:#dcfce7;color:#166534',
+    not_applicable: 'background:#e5e7eb;color:#374151',
+    unknown_charge: 'background:#fee2e2;color:#991b1b'
+  };
+  var MECH_SCOPE_LABEL = {
+    at_or_above: 'at/above threshold', below: 'below threshold',
+    not_applicable: 'no refrigerant', unknown_charge: 'NEVER WEIGHED'
+  };
+  var MECH_WARRANTY_STYLE = {
+    in_warranty: 'background:#dcfce7;color:#166534',
+    expiring:    'background:#fef3c7;color:#92400e',
+    expired:     'background:#fee2e2;color:#991b1b',
+    none:        'background:#e5e7eb;color:#374151',
+    unknown:     'background:#e5e7eb;color:#374151'
+  };
+
+  function mechAssetRender(board) {
+    var body = document.getElementById('mech-asset-tbody');
+    if (!body) return;
+    if (!board || !board.rows || !board.rows.length) {
+      body.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:18px;color:var(--g400)">' +
+        'No site assets recorded yet. Nothing is inferred &mdash; this stays empty until one is entered.' +
+        '</td></tr>';
+      return;
+    }
+    body.innerHTML = board.rows.map(function (r) {
+      var ss = MECH_SCOPE_STYLE[r.refrigerant_scope] || MECH_SCOPE_STYLE.unknown_charge;
+      var ws = MECH_WARRANTY_STYLE[r.warranty_status] || MECH_WARRANTY_STYLE.unknown;
+      var charge = (r.refrigerant_charge_lb === null || r.refrigerant_charge_lb === undefined)
+        ? 'not recorded' : (r.refrigerant_charge_lb + ' lb');
+      return '<tr>' +
+        '<td>' + mechEsc(r.customer_name || '—') + (r.site_name ? '<div style="font-size:11px;color:var(--g400)">' + mechEsc(r.site_name) + '</div>' : '') + '</td>' +
+        '<td>' + mechEsc(MECH_ASSET_LABELS[r.asset_type] || r.asset_type || '—') + '</td>' +
+        '<td>' + mechEsc([r.make, r.model].filter(Boolean).join(' ') || '—') + '</td>' +
+        '<td>' + mechEsc(r.serial_no || '—') + '</td>' +
+        '<td>' + mechEsc(r.installed_on || '—') + '</td>' +
+        '<td><span style="' + ws + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' + mechEsc(r.warranty_status) + '</span></td>' +
+        '<td><span style="' + ss + ';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700">' +
+          mechEsc(MECH_SCOPE_LABEL[r.refrigerant_scope] || r.refrigerant_scope) + '</span>' +
+          '<div style="font-size:11px;color:var(--g400)">' + mechEsc((r.refrigerant_type || '—') + ' · ' + charge) + '</div></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  function mechAssetRefresh() {
+    var note = document.getElementById('mech-asset-note');
+    return mechData('read', 'mech_site_assets', {}).then(function (res) {
+      if (res.status === 401 || res.status === 403) {
+        // A refusal is not an empty registry.
+        if (note) note.textContent = 'Sign in to see site assets — the server declined without an employee session. This is not an empty registry.';
+        mechAssetRender(null);
+        return;
+      }
+      if (!res.body || !res.body.ok) {
+        if (note) note.textContent = 'Could not load site assets. Nothing is being shown rather than a partial registry.';
+        mechAssetRender(null);
+        return;
+      }
+      if (res.body.provisioned === false) {
+        if (note) note.textContent = 'The site asset registry is not set up yet — run sql/mech_site_assets_schema.sql. Nothing is recorded, and nothing is being guessed.';
+        mechAssetRender(null);
+        return;
+      }
+      var b = res.body.board;
+      if (note && b) {
+        note.textContent = b.counts.assets + ' asset(s) across ' + b.counts.sites + ' site(s). ' +
+          'Refrigerant: ' + b.refrigerant.at_or_above + ' at/above the ' + b.threshold_lb + ' lb threshold (' + b.citation + '), ' +
+          b.refrigerant.below + ' below, ' + b.refrigerant.not_applicable + ' hold none' +
+          // Surfaced beside the totals, not under them.
+          (b.unknown_charge_count
+            ? ', and ' + b.unknown_charge_count + ' NEVER WEIGHED — those are not below threshold, they are unmeasured.'
+            : '.') +
+          ' This app does not decide whether leak-repair rules apply; confirm against the current rule.';
+      }
+      mechAssetRender(b);
+    });
+  }
+  window.mechAssetRefresh = mechAssetRefresh;
+
+  window.mechAssetAdd = function () {
+    var g = function (id) { var el = document.getElementById(id); return el ? el.value.trim() : ''; };
+    var err = document.getElementById('mech-asset-err');
+    if (err) err.textContent = '';
+    if (!g('ma-customer')) { if (err) err.textContent = 'Customer is required.'; return; }
+    if (!g('ma-type')) { if (err) err.textContent = 'Choose an asset type.'; return; }
+    var hw = g('ma-has-warranty');
+    if (hw === 'true' && !g('ma-warranty-expires')) {
+      if (err) err.textContent = 'A warranty expiry date is required when the unit is under warranty.';
+      return;
+    }
+    var payload = {
+      asset_id: g('ma-id') || ('AST-' + Date.now() + '-' + Math.floor(Math.random() * 1000)),
+      customer_name: g('ma-customer'),
+      site_name: g('ma-site') || null,
+      site_address: g('ma-address') || null,
+      asset_type: g('ma-type'),
+      make: g('ma-make') || null,
+      model: g('ma-model') || null,
+      serial_no: g('ma-serial') || null,
+      location_on_site: g('ma-location') || null,
+      installed_on: g('ma-installed') || null,
+      // Three states, not two: true, false, or unstated. The endpoint stores
+      // null for unstated, because "nobody checked" and "checked, it is out"
+      // are different facts.
+      has_warranty: hw === 'true' ? true : (hw === 'false' ? false : null),
+      warranty_expires_on: hw === 'true' ? g('ma-warranty-expires') : null,
+      refrigerant_type: g('ma-refrigerant') || null,
+      // LEFT EMPTY MEANS NEVER WEIGHED. It is passed through as an empty
+      // string and the endpoint stores NULL -- deliberately not coerced to 0
+      // here, because Number('') is 0 and that would turn an un-surveyed unit
+      // into one reported as below the threshold.
+      refrigerant_charge_lb: g('ma-charge') === '' ? null : g('ma-charge')
+    };
+    mechData('write', 'mech_site_assets', payload).then(function (res) {
+      if (res.body && res.body.ok) {
+        ['ma-id', 'ma-serial', 'ma-make', 'ma-model', 'ma-location', 'ma-installed', 'ma-charge', 'ma-warranty-expires']
+          .forEach(function (id) { var el = document.getElementById(id); if (el) el.value = ''; });
+        mechAssetRefresh();
+        return;
+      }
       var msg = (res.body && res.body.error && res.body.error.message) || ('Could not save (HTTP ' + res.status + ').');
       if (err) err.textContent = msg;
     });

@@ -23,6 +23,15 @@ module.exports = {
   // this technician hold on the day we dispatched them" is the question the
   // records exist to answer, and editing a licence row in place destroys it.
     'mech_credentials',
+  // Site asset registry (2026-09-02) -- see sql/mech_site_assets_schema.sql and
+  // api/_lib/mech-assets.js. Capability #2 on the same research list:
+  // "Prerequisite for A3, A5, A7, B8, G13. Table stakes."
+  //
+  // NOT append-only, unlike mech_credentials above, and the difference is
+  // deliberate: a credential is evidence and must not be overwritten, an asset
+  // is a description of a physical thing whose serial gets corrected and whose
+  // location changes. It carries an UPDATE grant; it still carries no DELETE.
+    'mech_site_assets',
   ],
   // 'eligibility' (mech_credentials, 2026-09-02) answers "who may be dispatched
   // to THIS job", against the credentials the job actually requires. It is

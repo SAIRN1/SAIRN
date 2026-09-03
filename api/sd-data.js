@@ -33,6 +33,7 @@ const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
 const mechCred = require('./_lib/mech-credentials');
+const mechAssets = require('./_lib/mech-assets');
 const dntLocation = require('./_lib/dnt-location');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -597,6 +598,126 @@ module.exports = async (req, res) => {
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
       res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(wRows) && wRows[0]) || body, observed_days: row.observed_days });
+      return;
+    }
+
+    // ── SAIRNMECHANICAL SITE ASSET REGISTRY (2026-09-02) ────────────────────
+    // sql/mech_site_assets_schema.sql and api/_lib/mech-assets.js. Capability
+    // #2 on the 2026-08-27 research list -- "Prerequisite for A3, A5, A7, B8,
+    // G13. Table stakes -- every incumbent has it."
+    //
+    // UPSERT, NOT APPEND-ONLY, and that differs from mech_credentials above on
+    // purpose: a credential is evidence and a renewal must not overwrite it,
+    // an asset is a description of a physical thing whose serial gets
+    // corrected and whose location changes. Hence merge-duplicates here and a
+    // plain INSERT there. Still no delete anywhere.
+    //
+    // WRITE IS NOT MANAGEMENT-ONLY, also on purpose. mech_credentials is,
+    // because nobody should record their own licence; that reasoning does not
+    // transfer to describing a machine, and copying it would block the primary
+    // workflow -- a technician recording the unit in front of them.
+    if (resource === 'mech_site_assets' && (action === 'read' || action === 'write')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnmechanical');
+      if (!session) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } });
+        return;
+      }
+      const cols = 'asset_id,customer_name,site_name,site_address,asset_type,make,model,serial_no,' +
+        'location_on_site,installed_on,has_warranty,warranty_expires_on,refrigerant_type,' +
+        'refrigerant_charge_lb,status,notes,recorded_by,created_at,updated_at';
+
+      if (action === 'read') {
+        const r = await fetch(rest('mech_site_assets?license_hash=eq.' + enc(licHash) +
+          '&select=' + cols + '&order=created_at.desc'), { headers });
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const board = mechAssets.evaluateRegistry(rows || [], (payload && payload.today) || nowISO().slice(0, 10), {
+          warn_days: payload && payload.warn_days,
+          threshold_lb: payload && payload.threshold_lb
+        });
+        res.status(200).json({ ok: true, provisioned: true, data: rows || [], board: board });
+        return;
+      }
+
+      const p = payload || {};
+      if (!p.asset_id || !String(p.asset_id).trim()) {
+        res.status(400).json({ error: { code: 'NO_ASSET_ID', message: 'asset_id is required' } });
+        return;
+      }
+      if (!p.customer_name || !String(p.customer_name).trim()) {
+        res.status(400).json({ error: { code: 'NO_CUSTOMER', message: 'customer_name is required -- an asset at nobody\'s site is not a record' } });
+        return;
+      }
+      if (!mechAssets.ASSET_TYPES[p.asset_type]) {
+        res.status(400).json({ error: { code: 'UNKNOWN_ASSET_TYPE', message: 'asset_type must be one of: ' + Object.keys(mechAssets.ASSET_TYPES).join(', ') } });
+        return;
+      }
+      if (p.refrigerant_type != null && p.refrigerant_type !== '' && !mechAssets.REFRIGERANTS[p.refrigerant_type]) {
+        res.status(400).json({ error: { code: 'UNKNOWN_REFRIGERANT', message: 'refrigerant_type must be one of: ' + Object.keys(mechAssets.REFRIGERANTS).join(', ') } });
+        return;
+      }
+      // THE ONE THAT MATTERS. An empty or absent charge is stored as NULL --
+      // never coerced to 0 -- because Number('') is 0 in JavaScript and that
+      // would silently turn every un-surveyed unit into a measured zero, i.e.
+      // a unit reported as below the 40 CFR 82.157 threshold that nobody has
+      // ever weighed. Same class as the EPA 608 section rule above: an answer
+      // that reads as clearance.
+      let chargeLb = null;
+      if (p.refrigerant_charge_lb !== null && p.refrigerant_charge_lb !== undefined &&
+          String(p.refrigerant_charge_lb).trim() !== '') {
+        const n = Number(p.refrigerant_charge_lb);
+        if (!Number.isFinite(n) || n < 0) {
+          res.status(400).json({ error: { code: 'BAD_CHARGE', message: 'refrigerant_charge_lb must be a non-negative number, or left empty if the unit has never been weighed. Do not enter 0 to mean unknown.' } });
+          return;
+        }
+        chargeLb = n;
+      }
+      const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+      if (p.has_warranty === true && !DATE_RE.test(String(p.warranty_expires_on || ''))) {
+        res.status(400).json({ error: { code: 'NO_WARRANTY_DATE', message: 'warranty_expires_on (YYYY-MM-DD) is required when has_warranty is true' } });
+        return;
+      }
+      const status = p.status === 'retired' ? 'retired' : 'active';
+
+      const r = await fetch(rest('mech_site_assets?on_conflict=license_hash,asset_id'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          asset_id: String(p.asset_id),
+          customer_name: String(p.customer_name),
+          site_name: p.site_name == null ? null : String(p.site_name),
+          site_address: p.site_address == null ? null : String(p.site_address),
+          asset_type: String(p.asset_type),
+          make: p.make == null ? null : String(p.make),
+          model: p.model == null ? null : String(p.model),
+          serial_no: p.serial_no == null ? null : String(p.serial_no),
+          location_on_site: p.location_on_site == null ? null : String(p.location_on_site),
+          installed_on: DATE_RE.test(String(p.installed_on || '')) ? p.installed_on : null,
+          // null is a real state here: nobody has checked the warranty. It must
+          // not collapse into false, which means "checked, and it is out".
+          has_warranty: typeof p.has_warranty === 'boolean' ? p.has_warranty : null,
+          warranty_expires_on: p.has_warranty === true ? p.warranty_expires_on : null,
+          refrigerant_type: p.refrigerant_type ? String(p.refrigerant_type) : null,
+          refrigerant_charge_lb: chargeLb,
+          status: status,
+          notes: p.notes == null ? null : String(p.notes),
+          // From the verified session, never the body.
+          recorded_by: session.employee_id || null,
+          updated_at: nowISO()
+        })
+      });
+      const rows = await r.json();
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The site asset registry is not set up — run sql/mech_site_assets_schema.sql' } });
+        return;
+      }
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
       return;
     }
 
