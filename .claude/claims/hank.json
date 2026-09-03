@@ -372,6 +372,16 @@
       "claimed_at_epoch": 1788392946.2450597,
       "status": "released",
       "released_at": "2026-09-03T00:09:46Z"
+    },
+    {
+      "id": "hank-1788394444",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "remnant publishing to the public catalog GAP8",
+      "claimed_at": "2026-09-03T00:14:04Z",
+      "claimed_at_epoch": 1788394444.4491587,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
