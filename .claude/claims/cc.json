@@ -292,6 +292,16 @@
       "status": "released",
       "released_at": "2026-09-03T01:49:19Z",
       "note": "HAND-WRITTEN, BYPASSING sairn_claim.py check ON PURPOSE AND SAYING SO. The matcher BLOCKED this against hank/stonedesk/\"nesting machine output dxf GAP2\". That overlap is REAL, not lexical -- same file, stonedesk.html. Proceeding anyway because Michael assigned [0039] explicitly as top priority after telling Hank directly that GAP2 was already shipped by Fourth in ee51217. The task string is NOT reworded to slip the matcher; it still says stonedesk. RISK CARRIED KNOWINGLY: if Hank is still editing stonedesk.html, this will conflict. My edits are confined to buildSDSystemPrompt and the [0039] budget block (~3688, ~25429); nesting lives elsewhere in the file."
+    },
+    {
+      "id": "cc-1788400388",
+      "session": "cc",
+      "subject": "stonedesk",
+      "task": "multi location yards GAP7",
+      "claimed_at": "2026-09-03T01:53:08Z",
+      "claimed_at_epoch": 1788400388.998468,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
