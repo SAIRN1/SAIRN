@@ -229,8 +229,8 @@
       "task": "employee deactivation set_active nine remaining apps",
       "claimed_at": "2026-09-03T01:27:13Z",
       "claimed_at_epoch": 1788398833.0818183,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T02:31:27Z"
     }
   ]
 }
