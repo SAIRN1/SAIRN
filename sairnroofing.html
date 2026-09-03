@@ -168,6 +168,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
       <button class="sb" id="sb-safety" onclick="nav('safety')">Safety<span class="badge" id="safety-badge" style="display:none"></span></button>
       <button class="sb" id="sb-prequal" onclick="nav('prequal')">Prequalification<span class="badge" id="prequal-badge" style="display:none"></span></button>
       <button class="sb" id="sb-entities" onclick="nav('entities')">Entities<span class="badge" id="entities-badge" style="display:none"></span></button>
+      <button class="sb" id="sb-supplier" onclick="nav('supplier')">Supplier</button>
       <button class="sb" id="sb-reports" onclick="nav('reports')">Reports</button>
       <button class="sb" id="sb-access" onclick="nav('access')" style="display:none">Access</button>
       <button class="sb" id="sb-assistant" onclick="nav('assistant')">AI Assistant</button>
@@ -728,6 +729,84 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
            grand total does not change. The server returns `reconciles` on
            every call and this panel prints it, because an invariant nobody
            checks is a comment. -->
+      <!-- SUPPLIER DOCUMENTS AND THE THREE-WAY MATCH (2026-09-02, B6).
+           The only genuinely open SAIRNroofing item on the re-derived status
+           list. Re-verified absent before building: `supplier` and `vendor`
+           each appeared ZERO times in this file.
+
+           The banner below is not decoration. This is NOT an EDI connection,
+           and a screen that implied one would be a claim with nothing behind
+           it -- an X12 850/856/810 exchange needs a trading-partner agreement
+           and a per-partner certification cycle. What is built is the
+           reconciliation those documents exist to enable, which is identical
+           whether the paperwork arrives over EDI, as a PDF, or typed off a
+           packing slip. -->
+      <div class="panel" id="panel-supplier">
+        <h2 style="margin:0 0 4px">Supplier Orders, Receipts &amp; Invoices</h2>
+        <div style="font-size:13px;color:#64748b;margin-bottom:12px">Three-way match: what was ordered, what arrived, what was billed.</div>
+
+        <div style="background:#e0e7ff;border:1px solid #6366f1;border-radius:8px;padding:10px 12px;font-size:12px;color:#3730a3;margin-bottom:12px">
+          <strong>This is not an EDI connection.</strong> Trading with ABC Supply, Beacon or SRS over X12 850/856/810 needs a partner agreement and a certification cycle with each supplier — that is an integration, not a screen. What this does is the match those documents exist for, and it works the same whether you receive them by EDI, PDF or paper.
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">Record a document</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px">
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">PO number *</label>
+              <input id="rf-sup-po" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Type *</label>
+              <select id="rf-sup-type" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box">
+                <option value="">Choose…</option><option value="order">Purchase order</option>
+                <option value="receipt">Receipt / packing slip</option><option value="invoice">Supplier invoice</option>
+              </select></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Supplier</label>
+              <input id="rf-sup-supplier" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Their ref</label>
+              <input id="rf-sup-ref" placeholder="invoice / slip no." style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Date</label>
+              <input id="rf-sup-date" type="date" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Item code *</label>
+              <input id="rf-sup-item" placeholder="SH-30" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Description</label>
+              <input id="rf-sup-desc" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <!-- LEAVE BLANK IF NOBODY WROTE IT DOWN. Blank is stored as unknown
+                 and the match says "not verified"; typing 0 records that none
+                 arrived and the line reads as a short delivery. Two different
+                 facts, and the placeholder says which is which. -->
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Quantity</label>
+              <input id="rf-sup-qty" type="number" step="0.01" placeholder="blank if not counted" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Unit price</label>
+              <input id="rf-sup-price" type="number" step="0.01" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+          </div>
+          <button class="btn" style="margin-top:10px" onclick="rfSupplierAdd()">+ Record document</button>
+          <div id="rf-sup-err" style="color:#b91c1c;font-size:12px;margin-top:8px"></div>
+        </div>
+
+        <div class="card" style="margin-bottom:12px">
+          <div style="font-weight:700;font-size:13px;margin-bottom:8px">Run the three-way match</div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:flex-end">
+            <div style="flex:1;min-width:140px"><label style="font-size:11px;font-weight:700;color:#64748b;display:block">PO number</label>
+              <input id="rf-sup-match-po" style="width:100%;padding:7px;border:1px solid #cbd5e1;border-radius:6px;box-sizing:border-box"></div>
+            <!-- Tolerances default to EXACT. There is no silent forgiveness,
+                 and whatever is used is echoed back in the result. -->
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Qty tol.</label>
+              <input id="rf-sup-tol-qty" type="number" step="0.01" placeholder="0" style="width:90px;padding:7px;border:1px solid #cbd5e1;border-radius:6px"></div>
+            <div><label style="font-size:11px;font-weight:700;color:#64748b;display:block">Price tol.</label>
+              <input id="rf-sup-tol-price" type="number" step="0.01" placeholder="0" style="width:90px;padding:7px;border:1px solid #cbd5e1;border-radius:6px"></div>
+            <button class="btn" onclick="rfSupplierMatch()">Match</button>
+          </div>
+          <div id="rf-sup-match-out" style="margin-top:12px"></div>
+        </div>
+
+        <div class="card">
+          <div id="rf-sup-note" style="font-size:12px;color:#64748b;margin-bottom:8px"></div>
+          <div class="tw"><table>
+            <thead><tr><th>PO</th><th>Type</th><th>Supplier</th><th>Their ref</th><th>Date</th><th>Lines</th></tr></thead>
+            <tbody id="rf-sup-tbody"><tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">Loading&hellip;</td></tr></tbody>
+          </table></div>
+        </div>
+      </div>
+
       <div class="panel" id="panel-entities">
         <div class="ph">
           <div>
@@ -1102,6 +1181,9 @@ function nav(id){
   // api/_lib/roofing-warranties.js so the screen and the tests cannot drift.
   if(id==='warranties'){ rfLoadWarranties(); }
   if(id==='assets'){ rfLoadAssets(); }
+  // Same rule again: every finding is computed server-side by
+  // api/_lib/roofing-supplier-match.js, so the screen cannot drift from the tests.
+  if(id==='supplier'){ rfLoadSupplierDocs(); }
   if(id==='draws'){ rfLoadDraws(); }
   if(id==='safety'){ rfLoadSafety(); }
   if(id==='prequal'){ rfLoadPrequal(); }
@@ -1190,6 +1272,176 @@ var pendingPhotoBase64=null, pendingPhotoMediaType=null, pendingAiRawText='';
 // Actions like agreement_status and evaluate return their payload at the TOP
 // level with no `data` key at all, which is the other half of why this must be
 // the full body -- see rfEvaluateCerts's own note about d.data throwing it away.
+
+// ── SUPPLIER DOCUMENTS AND THE THREE-WAY MATCH (2026-09-02, B6) ──────────────
+// The only genuinely open SAIRNroofing item on the re-derived status list.
+// Re-verified absent before building: `supplier` and `vendor` each appeared
+// ZERO times in this file.
+//
+// NOT EDI. An X12 850/856/810 exchange needs a trading-partner agreement and a
+// per-partner certification cycle; the panel says so on screen rather than
+// implying a connection that does not exist. What it does is the three-way
+// match those documents exist to enable -- ordered vs received vs invoiced --
+// which is identical whether the paperwork arrives over EDI, as a PDF, or
+// typed off a packing slip.
+//
+// The panel never decides anything itself: api/_lib/roofing-supplier-match.js
+// computes every finding server-side, same rule as the certification board and
+// the warranty clock, so the screen and the tests cannot drift apart.
+var RF_FINDING_LABEL = {
+  not_ordered: 'INVOICED, NEVER ORDERED',
+  over_invoiced_qty: 'INVOICED MORE THAN RECEIVED',
+  short_received: 'short delivery',
+  over_received: 'over delivery',
+  price_variance: 'price differs from the order',
+  receipt_unknown: 'NOT VERIFIED — no receipt recorded',
+  price_unknown: 'no price comparison possible',
+  unbilled: 'ordered, not yet invoiced'
+};
+// Unknown is styled as a WARNING, never as a pass. A line nobody checked must
+// not look like a line that reconciled.
+var RF_FINDING_STYLE = {
+  not_ordered: 'background:#fee2e2;color:#991b1b',
+  over_invoiced_qty: 'background:#fee2e2;color:#991b1b',
+  short_received: 'background:#fef3c7;color:#92400e',
+  over_received: 'background:#fef3c7;color:#92400e',
+  price_variance: 'background:#fef3c7;color:#92400e',
+  receipt_unknown: 'background:#e0e7ff;color:#3730a3',
+  price_unknown: 'background:#e0e7ff;color:#3730a3',
+  unbilled: 'background:#e5e7eb;color:#374151'
+};
+
+function rfSupEsc(s){
+  return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function rfLoadSupplierDocs(){
+  var note=$('rf-sup-note'), body=$('rf-sup-tbody');
+  if(!body) return;
+  return rfDataRaw('read','rf_supplier_documents',{}).then(function(r){
+    if(!r.ok){
+      // A refusal is not an empty ledger, and neither is an unrun migration.
+      if(note) note.textContent = r.code==='NOT_PROVISIONED'
+        ? 'Supplier documents are not set up yet — run sql/sairnroofing_supplier_documents_schema.sql. Nothing is recorded and nothing is being guessed.'
+        : (r.msg||'Could not load supplier documents.');
+      body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">Nothing shown — see the message above.</td></tr>';
+      return;
+    }
+    var d=(r.data&&r.data.data)||[];
+    if(r.data&&r.data.provisioned===false){
+      if(note) note.textContent='Supplier documents are not set up yet — run sql/sairnroofing_supplier_documents_schema.sql.';
+    } else if(note){
+      var byType={order:0,receipt:0,invoice:0};
+      d.forEach(function(x){byType[x.doc_type]=(byType[x.doc_type]||0)+1;});
+      var pos={}; d.forEach(function(x){pos[x.po_number]=1;});
+      note.textContent=d.length+' document(s) across '+Object.keys(pos).length+' purchase order(s): '+
+        byType.order+' orders, '+byType.receipt+' receipts, '+byType.invoice+' invoices.';
+    }
+    if(!d.length){
+      body.innerHTML='<tr><td colspan="6" style="text-align:center;padding:18px;color:#64748b">No supplier documents recorded yet. Nothing is inferred — this stays empty until one is entered.</td></tr>';
+      return;
+    }
+    body.innerHTML=d.map(function(x){
+      var lines=Array.isArray(x.lines)?x.lines.length:0;
+      return '<tr>'+
+        '<td>'+rfSupEsc(x.po_number)+'</td>'+
+        '<td>'+rfSupEsc(x.doc_type)+'</td>'+
+        '<td>'+rfSupEsc(x.supplier||'—')+'</td>'+
+        '<td>'+rfSupEsc(x.supplier_ref||'—')+'</td>'+
+        '<td>'+rfSupEsc(x.doc_date||'—')+'</td>'+
+        '<td>'+lines+'</td>'+
+      '</tr>';
+    }).join('');
+  });
+}
+
+function rfSupplierMatch(){
+  var po=($('rf-sup-match-po')||{}).value||'';
+  var out=$('rf-sup-match-out');
+  if(!out) return;
+  if(!po.trim()){ out.innerHTML='<div style="color:#b91c1c;font-size:13px">Enter a purchase order number. A match is per PO — running it across every order at once would compare unrelated documents.</div>'; return; }
+  var tolQ=parseFloat(($('rf-sup-tol-qty')||{}).value);
+  var tolP=parseFloat(($('rf-sup-tol-price')||{}).value);
+  var payload={po_number:po.trim()};
+  if(isFinite(tolQ)) payload.qty_tolerance=tolQ;
+  if(isFinite(tolP)) payload.price_tolerance=tolP;
+  out.innerHTML='<div style="font-size:13px;color:#64748b">Matching…</div>';
+  rfDataRaw('match','rf_supplier_documents',payload).then(function(r){
+    if(!r.ok){
+      // The server's own message, which names the real finding -- an invoice
+      // with no order behind it is an unordered charge, not a match failure.
+      out.innerHTML='<div style="padding:10px 12px;border-radius:8px;background:#fee2e2;border:1px solid #ef4444;font-size:13px">'+
+        rfSupEsc(r.msg||'Could not run the match.')+'</div>';
+      return;
+    }
+    var m=r.data.match;
+    var head='<div style="font-size:13px;margin-bottom:8px">'+
+      '<strong>'+rfSupEsc(m.po_number)+'</strong>'+(m.supplier?' · '+rfSupEsc(m.supplier):'')+
+      ' · '+m.documents.orders+' order / '+m.documents.receipts+' receipt(s) / '+m.documents.invoices+' invoice(s)'+
+      ' · tolerance '+m.qty_tolerance+' qty, '+m.price_tolerance+' price'+
+      '</div>'+
+      '<div style="font-size:12px;color:#64748b;margin-bottom:8px">'+
+        m.clean_lines+' line(s) reconciled cleanly. '+
+        // Surfaced beside the clean count, never folded into it.
+        '<strong>'+m.unverified_lines+' unverified</strong> — an unverified line is not a cleared line. '+
+        rfSupEsc(m.note)+
+      '</div>';
+    var rows=m.lines.map(function(l){
+      var chips=l.findings.map(function(f){
+        var st=RF_FINDING_STYLE[f.code]||RF_FINDING_STYLE.receipt_unknown;
+        return '<div style="'+st+';padding:2px 8px;border-radius:100px;font-size:11px;font-weight:700;display:inline-block;margin:1px 2px" title="'+rfSupEsc(f.detail)+'">'+
+          rfSupEsc(RF_FINDING_LABEL[f.code]||f.code)+(f.variance!==undefined?' ('+f.variance+')':'')+'</div>';
+      }).join('')||'<span style="color:#166534;font-size:11px;font-weight:700">clean</span>';
+      var n=function(v){return (v===null||v===undefined)?'—':v;};
+      return '<tr>'+
+        '<td>'+rfSupEsc(l.item_code||l.description||l.key)+'</td>'+
+        '<td style="text-align:right">'+n(l.ordered_qty)+'</td>'+
+        '<td style="text-align:right">'+n(l.received_qty)+'</td>'+
+        '<td style="text-align:right">'+n(l.invoiced_qty)+'</td>'+
+        '<td>'+chips+'</td>'+
+      '</tr>';
+    }).join('');
+    out.innerHTML=head+'<div class="tw"><table><thead><tr><th>Item</th><th style="text-align:right">Ordered</th><th style="text-align:right">Received</th><th style="text-align:right">Invoiced</th><th>Findings</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+  });
+}
+
+function rfSupplierAdd(){
+  var g=function(id){var el=$(id);return el?String(el.value||'').trim():'';};
+  var err=$('rf-sup-err');
+  if(err) err.textContent='';
+  var qtyField={order:'qty_ordered',receipt:'qty_received',invoice:'qty_invoiced'}[g('rf-sup-type')];
+  if(!g('rf-sup-type')||!qtyField){ if(err) err.textContent='Choose a document type.'; return; }
+  if(!g('rf-sup-po')){ if(err) err.textContent='A purchase order number is required — it is the key all three documents share.'; return; }
+  if(!g('rf-sup-item')){ if(err) err.textContent='An item code or description is required, or the line cannot be matched.'; return; }
+  var line={item_code:g('rf-sup-item'),description:g('rf-sup-desc')||null};
+  // BLANK STAYS BLANK. The engine treats a missing quantity as UNKNOWN and
+  // never as zero, because "nobody wrote down what arrived" and "nothing
+  // arrived" are different facts. Sending 0 here would turn every unscanned
+  // delivery into a short shipment.
+  var q=g('rf-sup-qty');
+  if(q!=='') line[qtyField]=Number(q);
+  var up=g('rf-sup-price');
+  if(up!=='') line.unit_price=Number(up);
+  var payload={
+    document_id:'RFD-'+Date.now()+'-'+Math.floor(Math.random()*1000),
+    doc_type:g('rf-sup-type'),
+    po_number:g('rf-sup-po'),
+    supplier:g('rf-sup-supplier')||null,
+    supplier_ref:g('rf-sup-ref')||null,
+    doc_date:g('rf-sup-date')||null,
+    lines:[line]
+  };
+  rfDataRaw('write','rf_supplier_documents',payload).then(function(r){
+    if(r.ok){
+      ['rf-sup-item','rf-sup-desc','rf-sup-qty','rf-sup-price','rf-sup-ref'].forEach(function(id){var el=$(id);if(el)el.value='';});
+      rfLoadSupplierDocs();
+      return;
+    }
+    if(err) err.textContent=r.msg||('Could not save (HTTP '+r.status+').');
+  });
+}
+
 function rfDataRaw(action,resource,payload){
   var lic=rfLicenseKey();
   if(!lic||!rfSession||!rfSession.token)return Promise.resolve({ok:false,msg:'Not signed in'});

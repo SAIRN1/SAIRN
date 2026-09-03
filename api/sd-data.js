@@ -34,6 +34,7 @@ const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
 const mechCred = require('./_lib/mech-credentials');
 const mechAssets = require('./_lib/mech-assets');
+const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -598,6 +599,133 @@ module.exports = async (req, res) => {
       const wRows = await w.json();
       if (!w.ok) return upstream(res, wRows);
       res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(wRows) && wRows[0]) || body, observed_days: row.observed_days });
+      return;
+    }
+
+    // ── SUPPLIER DOCUMENTS AND THE THREE-WAY MATCH (2026-09-02, B6) ─────────
+    // sql/sairnroofing_supplier_documents_schema.sql and
+    // api/_lib/roofing-supplier-match.js. The only genuinely open SAIRNroofing
+    // item on the 2026-09-02 re-derived status list, re-verified absent before
+    // building: `supplier` and `vendor` each appear ZERO times in
+    // sairnroofing.html.
+    //
+    // NOT EDI TRANSPORT. An X12 850/856/810 exchange needs a trading-partner
+    // agreement and a per-partner certification cycle. The reconciliation
+    // those documents exist to enable is identical whether they arrive over
+    // EDI, as a PDF, or typed off a paper packing slip, and that is this.
+    //
+    // APPEND ONLY -- plain INSERT, never merge-duplicates, and no UPDATE or
+    // DELETE grant. These rows are what a contractor argues from when an
+    // invoice is wrong; a receipt edited after the fact is worth nothing in
+    // that argument. A corrected invoice is a NEW document.
+    //
+    // READ is broad (an estimator needs to see material cost). WRITE is
+    // MANAGEMENT ONLY -- these rows decide whether an invoice gets paid.
+    if (resource === 'rf_supplier_documents' &&
+        (action === 'read' || action === 'write' || action === 'match')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Supplier orders and invoices are management-level information' } });
+        return;
+      }
+      const cols = 'document_id,doc_type,po_number,supplier,supplier_ref,job_id,doc_date,lines,notes,recorded_by,created_at';
+
+      if (action === 'read' || action === 'match') {
+        let q = 'rf_supplier_documents?license_hash=eq.' + enc(licHash) + '&select=' + cols + '&order=created_at.desc';
+        if (action === 'match') {
+          const po = String((payload && payload.po_number) || '').trim();
+          if (!po) {
+            res.status(400).json({ error: { code: 'NO_PO_NUMBER', message: 'po_number is required -- a three-way match is per purchase order, and matching across all of them at once would compare unrelated documents' } });
+            return;
+          }
+          q += '&po_number=eq.' + enc(po);
+        }
+        const r = await fetch(rest(q), { headers });
+        if (r.status === 404 || r.status === 400) {
+          res.status(200).json({ ok: true, data: [], provisioned: false });
+          return;
+        }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        if (action === 'read') {
+          res.status(200).json({ ok: true, provisioned: true, data: rows || [] });
+          return;
+        }
+        // match -- compute only, writes nothing. Tolerances come from the
+        // CALLER and default to exact matching; there is no silent forgiveness
+        // and the value used is echoed back in the result.
+        const out = rfSupplier.matchOrder(rows || [], {
+          qty_tolerance: payload && payload.qty_tolerance,
+          price_tolerance: payload && payload.price_tolerance
+        });
+        if (!out.ok) { res.status(400).json({ error: out.error }); return; }
+        res.status(200).json({ ok: true, provisioned: true, match: out });
+        return;
+      }
+
+      // ---- write ----
+      if (!rfAuth.MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Manager can record a supplier order, receipt or invoice' } });
+        return;
+      }
+      const p = payload || {};
+      if (!p.document_id || !String(p.document_id).trim()) {
+        res.status(400).json({ error: { code: 'NO_DOCUMENT_ID', message: 'document_id is required' } });
+        return;
+      }
+      if (!rfSupplier.DOC_TYPES[p.doc_type]) {
+        res.status(400).json({ error: { code: 'UNKNOWN_DOC_TYPE', message: 'doc_type must be one of: ' + Object.keys(rfSupplier.DOC_TYPES).join(', ') } });
+        return;
+      }
+      if (!p.po_number || !String(p.po_number).trim()) {
+        // Without it the document cannot be matched to anything, which is the
+        // only reason to store it.
+        res.status(400).json({ error: { code: 'NO_PO_NUMBER', message: 'po_number is required -- it is the key all three documents share, and a document that matches nothing has nowhere to go' } });
+        return;
+      }
+      if (!Array.isArray(p.lines) || !p.lines.length) {
+        res.status(400).json({ error: { code: 'NO_LINES', message: 'At least one line is required. A document with no lines cannot be reconciled against anything.' } });
+        return;
+      }
+      // Quantities are NOT coerced here. A blank quantity stays blank all the
+      // way through, because api/_lib/roofing-supplier-match.js treats missing
+      // as UNKNOWN and never as zero -- "nobody wrote down what arrived" and
+      // "nothing arrived" are different facts and only one of them is the
+      // supplier's problem. Coercing to 0 anywhere in this pipeline would turn
+      // every unscanned delivery into a short shipment.
+      const DATE_RE = /^[0-9]{4}-[0-9]{2}-[0-9]{2}$/;
+
+      const r = await fetch(rest('rf_supplier_documents'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          document_id: String(p.document_id),
+          doc_type: String(p.doc_type),
+          po_number: String(p.po_number).trim(),
+          supplier: p.supplier == null ? null : String(p.supplier),
+          supplier_ref: p.supplier_ref == null ? null : String(p.supplier_ref),
+          job_id: p.job_id == null ? null : String(p.job_id),
+          doc_date: DATE_RE.test(String(p.doc_date || '')) ? p.doc_date : null,
+          lines: p.lines,
+          notes: p.notes == null ? null : String(p.notes),
+          // From the verified session, never the body -- who recorded a
+          // billing document is not a field the client gets to assert.
+          recorded_by: session.employee_id || null
+        })
+      });
+      const rows = await r.json();
+      if (r.status === 404 || r.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Supplier documents are not set up — run sql/sairnroofing_supplier_documents_schema.sql' } });
+        return;
+      }
+      if (r.status === 409) {
+        res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'That document id already exists. A corrected invoice is a NEW document, not an edit — the match will show both.' } });
+        return;
+      }
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, provisioned: true, data: (Array.isArray(rows) && rows[0]) || null });
       return;
     }
 

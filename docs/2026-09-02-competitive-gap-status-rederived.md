@@ -68,11 +68,14 @@ and `sql/` schema files were checked for every item regardless of hit count.
 | B3 | WIP / POC, retainage, certified payroll | 1 keyword hit, not modelled | **PARTIAL — DELIBERATELY** | Draws, retainage and over/under billing built (`rf_draws`, `panel-draws`). **Certified payroll explicitly refused** and said so on the panel: it needs external prevailing-wage determinations and *"inventing a rate would put a fabricated number in a federal filing."* |
 | B4 | Safety / OSHA programme at scale | Only a credential type | **BUILT** | `rf_safety_equipment`, `rf_job_hazard_assessments`, `panel-safety` (Cody) |
 | B5 | Multi-entity financial consolidation | `rf_locations` attribution-only | **BUILT** | `rf_entities`, `panel-entities`, `sairnroofing_entities_schema.sql` (Cody) |
-| B6 | Supplier EDI (PO / ASN / invoice) | Absent | **OPEN** | 0 hits word-boundary on `edi`, `asn`, `punchout`. *(The audit's own note: a naive `grep -i edi` returns 16 hits, all `edit`.)* |
+| B6 | Supplier EDI (PO / ASN / invoice) | Absent | **PARTIAL — DELIBERATELY (CC, 2026-09-02)** | The three-way match is BUILT: `rf_supplier_documents`, `panel-supplier`, `api/_lib/roofing-supplier-match.js`, `sairnroofing_supplier_documents_schema.sql`. **EDI TRANSPORT IS NOT, and is refused as engineering** — an X12 850/856/810 exchange needs a trading-partner agreement and a per-partner certification cycle with ABC Supply / Beacon / SRS. The reconciliation those documents exist to enable is identical whether they arrive by EDI, PDF or paper, and the panel says so on screen rather than implying a connection. Re-verified absent before building: `supplier` and `vendor` each appeared **0 times** in `sairnroofing.html`. |
 | B7 | Prequalification / bonding | Absent | **BUILT** | `rf_prequal_documents`, `rf_bonding`, `panel-prequal` (Cody) |
 
-**SAIRNroofing genuinely open: B6 only.** A5 is in flight. B3 is complete except
-for a half that was refused on purpose.
+**SAIRNroofing genuinely open: nothing that is not vendor-gated.** B6's buildable
+half shipped 2026-09-02; its EDI-transport half is refused for the same reason
+B3's certified payroll was — it needs something outside this codebase, and
+inventing it would put a number nobody verified into a supplier dispute. A5 is
+in flight; B3 is complete except for the half refused on purpose.
 
 ---
 
@@ -166,7 +169,7 @@ not touch `stonedesk.html` for it without checking claims first.**
 | ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
 | SAIRNsenior | A2 telephony fallback | Offline half is done |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
-| SAIRNroofing | B6 supplier EDI | Tier B procurement |
+| SAIRNroofing | B6 supplier EDI — **transport half only**; the three-way match shipped 2026-09-02 | Tier B procurement |
 | SAIRNdental | B5 BI / warehouse connectors | CSV export only today |
 
 **Blocked on a vendor contract, an integration partner, or a federal

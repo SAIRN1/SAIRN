@@ -144,6 +144,19 @@ module.exports = {
   //
   // Registered on day one for the reason rf_settings' note gives.
     'rf_entities',
+  // Supplier purchase orders, receipts and invoices (2026-09-02, B6) -- see
+  // sql/sairnroofing_supplier_documents_schema.sql and
+  // api/_lib/roofing-supplier-match.js. ONE table, three doc_types, keyed by
+  // the PO number the paperwork already shares.
+  //
+  // APPEND ONLY, and here that is not a style choice: these documents are what
+  // a contractor argues from when an invoice is wrong, and a receipt edited
+  // after the fact is worth nothing in that argument. No UPDATE grant, no
+  // DELETE grant. A corrected invoice is a NEW document and the match shows
+  // both. Same reasoning as mech_credentials, and the opposite of
+  // mech_site_assets -- the difference is whether the row is evidence or a
+  // description.
+    'rf_supplier_documents',
   ],
   // 'evaluate' computes the expiry board from stored records and seeded rules.
   // Reads only, writes nothing -- looking at who is about to lapse must never
@@ -223,5 +236,18 @@ module.exports = {
     // entry server-side. 'reconcile_claim' compares the invoice against the
     // linked claim and writes nothing to either.
     rf_invoices: ['issue', 'add_payment', 'reconcile_claim'],
+    // 'match' (rf_supplier_documents, 2026-09-02, B6) runs the three-way
+    // reconciliation for one purchase order: what was ORDERED against what was
+    // RECEIVED against what was INVOICED. Reads every document under that PO
+    // and writes nothing -- asking whether an invoice is right must never
+    // itself approve it, and the engine deliberately returns no pay/hold
+    // verdict at all.
+    //
+    // It is NOT EDI transport. An X12 850/856/810 exchange needs a
+    // trading-partner agreement and a per-partner certification cycle; the
+    // reconciliation those documents exist to enable is identical whether they
+    // arrive over EDI, as a PDF, or typed off a paper packing slip, and that
+    // is the half this builds.
+    rf_supplier_documents: ['match'],
   },
 };
