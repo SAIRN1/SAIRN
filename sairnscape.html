@@ -165,7 +165,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
     <div class="section-sub">Every tool in SAIRNscape is powered by Claude — the most capable AI available. Not rules. Not templates. Intelligence.</div>
     <div class="feat-grid">
       <div class="feat-card"><div class="feat-num">01</div><div class="feat-emoji">📸</div><div class="feat-title">Estimate a Job</div><div class="feat-desc">Snap or describe a property and I'll build your estimate</div></div><div class="feat-card"><div class="feat-num">02</div><div class="feat-emoji">🗓️</div><div class="feat-title">Schedule Crews</div><div class="feat-desc">Help me plan and optimize my crew schedule</div></div><div class="feat-card"><div class="feat-num">03</div><div class="feat-emoji">💰</div><div class="feat-title">Job Costing</div><div class="feat-desc">Am I making money on this account?</div></div><div class="feat-card"><div class="feat-num">04</div><div class="feat-emoji">💬</div><div class="feat-title">Client Message</div><div class="feat-desc">Help me write a message to a client</div></div><div class="feat-card"><div class="feat-num">05</div><div class="feat-emoji">📊</div><div class="feat-title">Business Report</div><div class="feat-desc">How is my business doing this week/month?</div></div>
-      <div class="feat-card"><div class="feat-num">06</div><div class="feat-emoji">🧠</div><div class="feat-title">Memory — gets smarter every job</div><div class="feat-desc">Claude remembers every property, every client, every issue. The longer you use SAIRNscape, the more it knows — and the better it serves you.</div></div>
+      <div class="feat-card"><div class="feat-num">06</div><div class="feat-emoji">🧠</div><div class="feat-title">Memory — gets smarter as you use it</div><div class="feat-desc">Claude carries what you told it earlier into your next question — properties, clients, recurring issues. Memory is stored on the device you use it on; it does not yet follow you between devices.</div></div>
     </div>
   </div>
 
@@ -218,7 +218,7 @@ footer{padding:60px 24px;border-top:1px solid rgba(255,255,255,0.06);text-align:
                the Enterprise tier appears exactly once in this file, in the
                pricing list itself. -->
           <div class="price-feat">Priority support</div>
-          <div class="price-feat">Memory across all properties and clients</div>
+          <div class="price-feat">Memory of your properties and clients, on this device</div>
         </div>
         <button class="btn-price btn-price-grad" onclick="showPage('app')">Start Free Trial</button>
       </div>
@@ -394,12 +394,25 @@ async function sendMessage() {
     // the OIL "Connect" modal, so this is a pure addition with zero effect
     // on the single-location/no-org case.
     const orgContext = await getOrgIntelligence(text);
+    // MEMORY IS NOW READ (2026-09-03). cloudLoadMemory() existed, had a working
+    // local fallback, and NOTHING CALLED IT -- zero call sites, verified by
+    // grep. cloudSaveMemory() has been writing to localStorage on every reply
+    // for months and no code path ever read it back, so the assistant has never
+    // seen a single remembered fact while the marketing page said "Claude
+    // remembers every property, every client, every issue."
+    //
+    // This is the honest half of that claim, made true: per-device recall from
+    // this browser's own store. The cloud half is still absent -- see the
+    // comment on cloudLoadMemory below -- and the customer-facing copy has been
+    // corrected in the same commit to say per-device rather than
+    // "across all properties and clients".
+    const memoryContext = await cloudLoadMemory();
     const res = await fetch(SAIRN_API, {
       method:'POST',
       headers:{'Content-Type':'application/json'},
       body: JSON.stringify({
         max_tokens:1000,
-        system: SYSTEM + orgContext,
+        system: SYSTEM + orgContext + (memoryContext ? '\n\n' + memoryContext : ''),
         messages: messages.slice(-20),
         app_id: APP_ID,
         is_demo: true
@@ -552,12 +565,25 @@ async function cloudSaveMemory(content) {
     });
     sessionOutcomes.saved++;
   } catch(e) {
-    // Cloud save failed — local backup is enough
+    // ⚠ "local backup is enough" was TRUE ONLY BECAUSE NOTHING READ EITHER ONE.
+    // api/memory-cloud does not exist (404, probed live 2026-09-03), so this
+    // catch has swallowed every save since the feature shipped. The local write
+    // above is now genuinely read back by cloudLoadMemory(), which is what
+    // makes this sentence honest rather than reassuring.
   }
 }
 
 async function cloudLoadMemory() {
-  // Try cloud first, fall back to local
+  // ⚠ THE CLOUD LEG IS DEAD AND IS KEPT DELIBERATELY, NOT BY OVERSIGHT.
+  // api/memory-cloud DOES NOT EXIST -- probed live 2026-09-03, POST returns
+  // 404. The try/catch below is what has been hiding that. It is left in place
+  // rather than deleted because the endpoint is the next piece of work and the
+  // shape of the request is the specification for it; removing it would throw
+  // away the only written record of what the client expects to receive.
+  //
+  // What is NOT left in place is the pretence: the marketing and pricing copy
+  // now says per-device, because per-device is what the local fallback below
+  // actually delivers.
   try {
     const res = await fetch('https://sairn.vercel.app/api/memory-cloud?uid=' + SAIRN_USER_ID, {
       headers: {'X-User-ID': SAIRN_USER_ID, 'X-App-ID': APP_ID}
