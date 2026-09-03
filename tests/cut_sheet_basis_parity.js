@@ -3,32 +3,28 @@
 // Run:  node tests/cut_sheet_basis_parity.js
 //
 // THE BUG CLASS: two copies of one calculation, and the copy that leaves the
-// building lost the caveats. Found by the 2026-09-03 duplicated/diverged sweep
-// that followed the base-system-prompt find.
+// building diverges from the one on screen.
 //
-// calcDrawing() renders the Drawing Tool's figures ON SCREEN with a sub-label
-// under each one stating its basis. printDrawCutSheet() recomputes the SAME
-// figures for the Fabrication Cut Sheet -- the copy that goes to the saw and,
-// on some jobs, to the customer -- and stated none of them.
+// 2026-09-03, first pass. calcDrawing() rendered three figures each with a
+// sub-label stating its basis. printDrawCutSheet() recomputed the same three
+// for the Fabrication Cut Sheet -- the copy that goes to the saw and, on some
+// jobs, to the customer -- and stated none of them. ORDER QTY silently
+// included a 15% waste allowance, Slabs Est. silently assumed the configured
+// slab size, and Est. Labor was computed at GRANITE's rate regardless of the
+// material printed a few rows above it.
 //
-// The labour figure is the sharpest. The sheet prints the real Material a few
-// rows above, then a THH figure computed at GRANITE's 4hr/50sqft regardless of
-// what that material is. A reader with no caveat in front of them has every
-// reason to read it as material-specific. The app's own base prompt tells the
-// AI marble benchmarks at 4.2 and quartz at 3.5, so the same silent number is
-// low on one job and high on another.
+// 2026-09-03, second pass, on Michael's decision. THH is now material-aware
+// and the rates are shop-configurable (sairn-unit-thh_*) instead of stranded
+// inside a prompt string where nothing in the app could read them. Two copies
+// of the arithmetic became one shared helper, which is the property this file
+// now holds: not "both compute the same expression" but "there is only one
+// expression".
 //
-// AND A STALE CAPTION ON SCREEN. "Estimated at 50 sqft per slab" was a
-// hardcoded literal sitting under a slab count computed from the
-// admin-editable sairn-unit-slab_sqft field. A 2026-08-13 fix moved the
-// COMPUTATION to that field and left the CAPTION behind, so a shop that set 55
-// saw a count derived from 55 explained as 50. A caption that describes a
-// different number than the one beside it is worse than no caption, because it
-// gets read and it agrees with nothing.
-//
-// WHAT THIS FILE DOES NOT ASSERT: that the THH number is right. It is not
-// material-aware, and making it so changes labour on live quotes -- a product
-// decision raised separately, not a disclosure fix. This holds the DISCLOSURE.
+// A THIRD THING WAS WRONG AND IS FIXED: the old formula divided by
+// `slabSqFt`, the admin-editable SLAB SIZE. The benchmark is defined per 50
+// SF, so a shop that set slab size to 55 silently rescaled every labour
+// estimate -- buying bigger slabs made jobs take fewer hours. The benchmark
+// denominator is now its own constant.
 
 'use strict';
 const fs = require('fs');
@@ -36,89 +32,114 @@ const path = require('path');
 const assert = require('assert');
 
 const ROOT = path.join(__dirname, '..');
-// Newlines normalised before anything looks for one. The working tree is
-// checked out CRLF on Windows and LF elsewhere, so a boundary marker written as
-// '\n}\n' matches on one machine and silently finds nothing on the other --
-// which reads as "function not found" rather than as a line-ending problem.
+// Newlines normalised before anything looks for one. This tree is checked out
+// CRLF on Windows and LF elsewhere, so a boundary marker written as '\n}\n'
+// matches on one machine and silently finds nothing on the other -- which
+// reads as "function not found" rather than as a line-ending problem.
 const html = fs.readFileSync(path.join(ROOT, 'stonedesk.html'), 'utf8').replace(/\r\n/g, '\n');
 
-function fnBody(decl, endMarker) {
-  const s = html.indexOf(decl);
-  assert.ok(s > 0, 'not found in stonedesk.html: ' + decl);
-  const e = html.indexOf(endMarker, s);
-  assert.ok(e > s, 'unterminated: ' + decl);
+function slice(startMarker, endMarker, from) {
+  const s = html.indexOf(startMarker, from || 0);
+  assert.ok(s > 0, 'not found in stonedesk.html: ' + startMarker);
+  const e = html.indexOf(endMarker, s + 100);
+  assert.ok(e > s, 'unterminated: ' + startMarker);
   return html.slice(s, e);
 }
 
-const calc = fnBody('function calcDrawing() {', 'function dcSyncLiveToQuoteEngine');
-// Bounded by the next top-level declaration rather than a bare "\n}\n": the
-// function's own body contains lines ending in `}` at column 0 inside template
-// strings, and a marker that loose finds the wrong one.
-const print = (function () {
-  const s = html.indexOf('function printDrawCutSheet() {');
-  assert.ok(s > 0, 'printDrawCutSheet not found');
-  const e = html.indexOf('\n}\n', s + 100);
-  assert.ok(e > s, 'printDrawCutSheet unterminated');
-  return html.slice(s, e);
-})();
+const helper = slice('function sdThhFor(materialText, totalMatSqFt){', '\n}');
+const classify = slice('function sdThhClassify(materialText){', '\n}');
+const calc = slice('function calcDrawing() {', 'function dcSyncLiveToQuoteEngine');
+const print = slice('function printDrawCutSheet() {', '\n}\n');
 
 let n = 0;
 function ok(cond, label) { assert.ok(cond, label); n++; }
 
-// ── 1. Both copies still exist and still compute the same three figures ────
-ok(/const slabSqFt = parseFloat\(\(document\.getElementById\('sairn-unit-slab_sqft'\)/.test(calc),
-   'calcDrawing reads the admin-editable slab size');
-ok(/const slabSqFt = parseFloat\(\(document\.getElementById\('sairn-unit-slab_sqft'\)/.test(print),
-   'printDrawCutSheet reads the same admin-editable slab size');
-ok(/const thh=\(totalMat\/slabSqFt\*4\)\.toFixed\(1\)/.test(calc), 'calcDrawing computes THH');
-ok(/const thh=\(totalMat\/slabSqFt\*4\)\.toFixed\(1\)/.test(print), 'printDrawCutSheet computes THH the same way');
-ok(/\*1\.15/.test(calc) && /\*1\.15/.test(print),
-   'both apply the same flat 15% waste allowance');
+// ── 1. ONE expression, not two ─────────────────────────────────────────────
+// Checked against the CODE, not the whole file: the helper's header quotes the
+// old expression verbatim to explain what it replaced, and a file-wide match
+// would hit that explanation. Comment lines are stripped first. (Scrubber item
+// 16 shape A -- the same trap tests/stonedesk_locations.js already records.)
+const codeOnly = html.split('\n').filter(function (l) { return !/^\s*(\/\/|\*|\/\*)/.test(l); }).join('\n');
+ok(!/totalMat\/slabSqFt\*4/.test(codeOnly),
+   'the hardcoded granite-rate formula is gone from the code, not just from one copy of it');
+ok(/sdThhFor\(\(document\.getElementById\('draw-material'\)\|\|\{\}\)\.value, totalMat\)/.test(calc),
+   'calcDrawing computes THH through the shared helper');
+ok(/sdThhFor\(\(document\.getElementById\('draw-material'\)\|\|\{\}\)\.value, totalMat\)/.test(print),
+   'printDrawCutSheet computes THH through the SAME shared helper');
+ok(/thhInfo\.basis/.test(calc) && /thhInfo\.basis/.test(print),
+   'and both render the basis the helper returns, so they cannot state different ones');
 
-// ── 2. THE STALE CAPTION IS GONE ───────────────────────────────────────────
-ok(!/Estimated at 50 sqft per slab/.test(html),
-   'the hardcoded "50" caption is gone -- it described a number the code no longer used');
-ok(/'Estimated at '\+slabSqFt\+' sqft per slab'/.test(calc),
-   'and the caption is now built from the value actually used');
+// ── 2. The benchmark denominator is not the slab size ──────────────────────
+ok(/var SD_THH_BENCH_SQFT = 50;/.test(html),
+   'the per-50-sqft benchmark denominator is its own named constant');
+ok(/totalMatSqFt \/ SD_THH_BENCH_SQFT\) \* rate/.test(helper),
+   'labour divides by the benchmark, not by the admin-editable slab size');
+ok(!/slabSqFt/.test(helper),
+   'the helper does not see the slab size at all -- buying bigger slabs cannot change labour hours');
 
-// ── 3. THE PRINTED SHEET NOW CARRIES ITS BASIS ─────────────────────────────
-ok(/How these figures were calculated/.test(print),
-   'the cut sheet has a basis section');
-ok(/flat 15% waste allowance/.test(print),
-   'ORDER QTY discloses the 15% waste allowance it includes');
-ok(/'\s*\+\s*slabSqFt\s*\+\s*' sqft per slab/.test(print),
-   'Slabs Est. discloses the slab size actually used, from the live field not a literal');
-ok(/Granite benchmark 4hr per 50 sqft/.test(print),
-   'Est. Labor discloses the granite benchmark');
-ok(/NOT adjusted for the material above/.test(print),
-   'and says plainly that it is not adjusted for the material printed on the same sheet');
-
-// ── 4. Screen and paper say the same thing about the same figure ───────────
-// Not byte-identical wording -- one is a sub-label and one is a table row --
-// but neither may be silent about a basis the other discloses.
-[
-  ['waste allowance', /15%/, /15% waste allowance/],
-  ['slab size',       /slabSqFt\+' sqft per slab'/, /slabSqFt\s*\+\s*' sqft per slab/],
-  ['THH benchmark',   /Granite benchmark 4hr per 50sqft/, /Granite benchmark 4hr per 50 sqft/]
-].forEach(function (row) {
-  ok(row[1].test(calc), 'screen discloses the ' + row[0]);
-  ok(row[2].test(print), 'and the printed sheet discloses the ' + row[0] + ' too');
+// ── 3. The rates are shop-configurable ─────────────────────────────────────
+['granite', 'quartz', 'quartzite', 'marble'].forEach(function (k) {
+  ok(new RegExp('id="sairn-unit-thh_' + k + '"').test(html),
+     k + ' has a rate field on the pricing panel');
 });
+ok(/document\.getElementById\('sairn-unit-thh_' \+ k\)/.test(html),
+   'and the helper reads those fields rather than a constant');
 
-// ── 5. The material really is printed on that sheet ────────────────────────
-// This is what makes an undisclosed granite-rate labour figure misleading
-// rather than merely terse. If the sheet ever stops printing the material,
-// this finding changes shape and someone should re-read it.
+// ── 4. A blank or zero rate does not make labour free ──────────────────────
+// Number('') is 0 and finite. A zero here would print "0.0 hours" as though
+// the job took no work, which is the fabricated-zero shape this platform has
+// been bitten by repeatedly.
+ok(/isFinite\(v\) && v > 0\) \? v : SD_THH_DEFAULTS\[k\]/.test(html),
+   'a blank, zero or unparseable rate falls back to the published benchmark, never to 0');
+
+// ── 5. Quartzite is tested before quartz ───────────────────────────────────
+// "quartzite" contains "quartz". Get the order wrong and every quartzite job
+// silently bills at the quartz rate -- 3.5 against 4.6, a 24% understatement.
+const qzi = classify.indexOf("indexOf('quartzite')");
+const qz = classify.indexOf("indexOf('quartz')");
+ok(qzi > 0 && qz > 0 && qzi < qz,
+   'quartzite is matched before quartz, or every quartzite job bills at the quartz rate');
+
+// ── 6. An unrecognised material is disclosed, not guessed ──────────────────
+ok(/return null;/.test(classify),
+   'an unrecognised material returns null rather than being assigned a guess');
+ok(/Material not recognised/.test(helper),
+   'and the basis line says so, instead of naming a benchmark as if it had been chosen');
+
+// ── 7. The printed sheet still carries all three bases ─────────────────────
+ok(/How these figures were calculated/.test(print), 'the cut sheet has a basis section');
+ok(/flat 15% waste allowance/.test(print), 'ORDER QTY discloses the 15% waste allowance');
+ok(/' sqft per slab \(set in pricing settings\)/.test(print),
+   'Slabs Est. discloses the slab size actually used, from the live field not a literal');
 ok(/Material<\/span>/.test(print) || /rl">Material/.test(print),
-   'the cut sheet prints the job material, a few rows above the labour figure');
+   'and the sheet still prints the job material, which is what makes the labour basis matter');
 
-// ── 6. Negative controls ───────────────────────────────────────────────────
-ok(!/Estimated at '\+50\+'/.test(calc), 'the caption is not a re-hardcoded 50 in disguise');
-(function () {
-  // If the basis section were removed, section 3 must fail. Proven, not assumed.
-  const stripped = print.replace('How these figures were calculated', 'Notes');
-  ok(!/How these figures were calculated/.test(stripped),
-     'NEGATIVE CONTROL: removing the basis heading is detectable, so assertion 3 is load-bearing');
-})();
+// ── 8. The stale caption stays gone ────────────────────────────────────────
+ok(!/Estimated at 50 sqft per slab/.test(html),
+   'the hardcoded "50" caption is still gone');
+ok(/'Estimated at '\+slabSqFt\+' sqft per slab'/.test(calc),
+   'and the caption is still built from the value actually used');
+
+// ── 9. The prompt no longer carries its own copy of the rates ──────────────
+ok(!/Granite 4hr per 50sqft, Quartz 3\.5hr per 50sqft/.test(html),
+   'the base prompt no longer hardcodes benchmarks nothing in the app agreed with');
+ok(!/Granite: 4hr\/50sqft\./.test(html),
+   'and neither does MODE_PROMPTS.thh');
+ok(/SHOP THH BENCHMARKS \(hours per ' \+ SD_THH_BENCH_SQFT/.test(html),
+   'the assembled prompt supplies the shop-configured rates at send time');
+
+// ── 10. The pricing fields actually persist ────────────────────────────────
+// They never did. sairnSavePricing() carried unitPricing forward from storage
+// and never read the form, and nothing loaded them back -- so a shop could
+// edit a rate, press "Save Pricing", get a success toast and lose it on
+// reload, while seven live consumers used the edited value until then.
+ok(/unitPricing:Object\.assign\(\{\}, sairnGetPricing\(\)\.unitPricing, sdUnitFieldsRead\(\)\)/.test(html),
+   'save reads the form instead of re-storing what was already there');
+ok(/sdUnitFieldsApply\(p\.unitPricing\)/.test(html),
+   'opening the pricing panel restores the saved rates');
+ok(/DOMContentLoaded[\s\S]{0,200}sdUnitFieldsApply\(sairnGetPricing\(\)\.unitPricing\)/.test(html),
+   'and so does page load -- the consumers read these inputs whether the modal was opened or not');
+ok(/if \(isFinite\(v\)\) out\[id\.replace\('sairn-unit-',''\)\] = v;/.test(html),
+   'a blank box is left out of the saved set rather than stored as a real 0');
 
 console.log('cut_sheet_basis_parity: ' + n + '/' + n + ' assertions passed');

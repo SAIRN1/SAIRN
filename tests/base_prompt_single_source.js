@@ -65,7 +65,19 @@ const a = html.indexOf('const SD_BASE_PROMPT = "');
 const q = html.indexOf('"', a);
 const e = html.indexOf('";', q) + 1;
 const literal = JSON.parse(html.slice(q, e));
-eq(literal.length, 2086, 'the surviving copy is the LONGER, corrected one');
+// Pinned to a length rather than a hash so a real edit shows up as a number a
+// reader can reason about. It moved 2086 -> 2194 on 2026-09-03 when the four
+// hardcoded THH benchmark figures came OUT (no shop could reach them and no
+// calculator agreed with them) and a pointer to the shop's own configured
+// rates went in. Update this deliberately, with the reason, never to make a
+// red test green.
+eq(literal.length, 2194, 'the surviving copy is the current one');
+ok(!/Granite 4hr per 50sqft/.test(literal),
+   'the hardcoded THH benchmark figures are OUT of the prompt -- they belonged in a setting, not a string');
+ok(/SHOP THH BENCHMARKS/.test(literal),
+   'and the prompt points at the rates the shop actually configured');
+ok(/say you do not have the rates for this shop rather than quoting a general figure/.test(literal),
+   'with an instruction to refuse rather than invent a benchmark when they are absent');
 ok(/SAIRNBIZ ROUTING:/.test(literal),
    'and it carries the SAIRNbiz routing paragraph the stale copy lacked');
 ok(/not QuickBooks\/Gusto\/ADP/.test(literal),

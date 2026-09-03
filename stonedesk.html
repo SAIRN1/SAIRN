@@ -10685,7 +10685,7 @@ let isTyping = false;
 // The literal below is the buildSDSystemPrompt() text, moved here unchanged
 // and now read from there. Verified byte-identical by the copy that made
 // this edit; tests/base_prompt_single_source.js holds it to one copy.
-const SD_BASE_PROMPT = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: Granite 4hr per 50sqft, Quartz 3.5hr per 50sqft, Quartzite 4.6hr per 50sqft, Marble 4.2hr per 50sqft. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO. SAIRNBIZ ROUTING: payroll, paystubs, HR, employee benefits, and accounting/bookkeeping are handled by SAIRNbiz, included free with this subscription. If asked about these, say it's handled in SAIRNbiz (not QuickBooks/Gusto/ADP) and point them to the SAIRNbiz tile in the SAIRN Suite launcher.";
+const SD_BASE_PROMPT = "You are StoneDesk™ AI, the world's most advanced AI platform built exclusively for stone fabrication shops — granite, marble, quartz, and quartzite countertop fabricators. You were built by Michael L. Dibert of SAIRN Technologies™. You have deep expertise in every aspect of running a stone fabrication shop: THH (Total Hand Work Hours) capacity planning by material type, slab inventory management, vein matching and bookmatching, waste reduction strategies, edge profile labor rates, pricing strategy, customer profitability analysis, production scheduling, shop SOPs, OSHA silica compliance, Slabsmith and Horace integration, CNC programming, DXF export, template-to-install workflow, QuickBooks integration, stone industry HR, and competitive pricing intelligence. MATERIAL EXPERTISE: Granite — Brazilian, Indian, domestic, level 1-5 grading, ideal for kitchens and high-traffic surfaces. Quartzite — harder than granite, natural stone not to be confused with quartz, premium pricing justified. Marble — Calacatta, Carrara, Statuario, Arabescato — etching risks must be communicated. Engineered quartz — Cambria, Silestone, MSI Q Premium, Caesarstone — consistent thickness and color. THH BENCHMARKS: the rates this shop has configured are supplied below under SHOP THH BENCHMARKS -- use those and no others; if they are absent, say you do not have the rates for this shop rather than quoting a general figure. Edge profiles: Eased 0.5hr/LF, Bullnose 1hr/LF, Ogee 1.5hr/LF, Mitered 2.5hr/LF. WASTE STANDARDS: Kitchens 15-20%, Bathrooms 20-25%, Complex jobs with waterfall or bookmatching 25-35%. PRICING: Standard market rates $60-160/sqft installed depending on material and complexity. Always provide specific, actionable recommendations based on the shop owner's specific situation. You have the knowledge of a 25-year veteran fabricator combined with the analytical power of a Fortune 500 CFO. SAIRNBIZ ROUTING: payroll, paystubs, HR, employee benefits, and accounting/bookkeeping are handled by SAIRNbiz, included free with this subscription. If asked about these, say it's handled in SAIRNbiz (not QuickBooks/Gusto/ADP) and point them to the SAIRNbiz tile in the SAIRN Suite launcher.";
 window.SD_BASE_PROMPT = SD_BASE_PROMPT;
 // Legacy alias. `SYSTEM` is still referenced by the orphaned #messages chat
 // cluster flagged elsewhere in this file, which cannot run (#userInput does
@@ -11382,7 +11382,7 @@ function showPanel(id) {
 // == MODE ======================================================
 const MODE_PROMPTS = {
   general:   'You are in general AI Shop mode. Answer any stone shop question with full expertise.',
-  thh:       'You are in THH Capacity Planning mode. Focus on Total Hand Work Hours calculations, material benchmarks, daily and weekly capacity, and scheduling optimization. Granite: 4hr/50sqft. Quartz: 3.5hr/50sqft. Quartzite: 4.6hr/50sqft. Marble: 4.2hr/50sqft.',
+  thh:       'You are in THH Capacity Planning mode. Focus on Total Hand Work Hours calculations, material benchmarks, daily and weekly capacity, and scheduling optimization. Use only the SHOP THH BENCHMARKS supplied in the system prompt -- those are the rates this shop has configured.',
   waste:     'You are in Waste AI mode. Focus on material waste reduction, cut optimization, remnant value, slab layout strategies, and waste benchmarks by job type. Typical waste: kitchen 15-20%, bath 20-25%, waterfall/bookmatched 25-35%.',
   slabs:     'You are in Slab Layout mode. Focus on slab inventory management, vein matching, bookmatching, bundle management, remnant tracking, and layout optimization for complex jobs.',
   schedule:  'You are in Production Scheduling mode. Focus on job routing from template through fabrication through installation, crew capacity, deadline management, and shop workflow optimization.',
@@ -15558,6 +15558,115 @@ function dcSinkAreaDeductionSqIn() {
 }
 
 // Calculate drawing
+// ══ THH, MATERIAL-AWARE (2026-09-03) ═══════════════════════════════════════
+// WHAT THIS REPLACES. Two calculators each did `totalMat/slabSqFt*4` -- a
+// hardcoded GRANITE rate applied to every job -- while the AI's base prompt
+// and MODE_PROMPTS.thh both stated four different rates. Same shop, same
+// question, two answers: the assistant said marble benchmarks at 4.2 and the
+// cut sheet quietly billed it at 4.0.
+//
+// THE RATES NOW LIVE WHERE A SHOP CAN REACH THEM. They were inside a prompt
+// string, which is not a setting -- nobody outside this repo could change
+// them, and nothing in the app read them. They are now sairn-unit-thh_* on the
+// pricing panel, the same place slab size and edge rate already live.
+//
+// ── THE DENOMINATOR WAS ALSO WRONG, AND IT IS FIXED HERE ──────────────────
+// The old formula divided by `slabSqFt`, the ADMIN-EDITABLE SLAB SIZE. The
+// benchmark is defined per 50 SF, so a shop that set slab size to 55 silently
+// rescaled every labour estimate -- buying bigger slabs made jobs take fewer
+// hours, which is not a thing. Slab size determines how many slabs you buy,
+// not how long fabrication takes per square foot. The benchmark denominator is
+// its own named constant and is not the slab size.
+//
+// This changes no shipped number today: sairn-unit-slab_sqft has never
+// persisted (see sdUnitFieldsSave), so every shop is at the 50 default. It is
+// fixed BEFORE those fields start persisting, not after.
+var SD_THH_BENCH_SQFT = 50;
+
+// Free text, not an enum: #draw-material is a text input placeholdered
+// "e.g. Calacatta Gold Quartz 3cm". The ordering below matters and mirrors the
+// classifier already in this file at the quote-engine handoff -- QUARTZITE
+// MUST BE TESTED BEFORE QUARTZ, because "quartzite" contains "quartz" and the
+// two benchmark 1.1 hours apart.
+//
+// AN UNRECOGNISED MATERIAL RETURNS null AND IS NOT GUESSED. The caller falls
+// back to the granite rate and SAYS SO on screen and on the cut sheet, which
+// is what the old code did for every job without ever mentioning it.
+// THE ORDER HERE IS THE WHOLE FUNCTION, and it took a failing test to get it
+// right. Three rules, most specific first:
+//
+//   1. QUARTZITE BEFORE QUARTZ. "quartzite" contains "quartz", and they
+//      benchmark 1.1 hours apart. Reversed, every quartzite job -- the most
+//      expensive natural stone this app handles -- bills at the quartz rate.
+//   2. AN EXPLICIT MATERIAL WORD BEATS A VARIETAL NAME. This app's own
+//      Material placeholder is "e.g. Calacatta Gold Quartz 3cm": an ENGINEERED
+//      QUARTZ product named after a marble. Testing varietals first calls that
+//      job marble and overstates its labour by 20%. My first draft did exactly
+//      that and the test below caught it.
+//   3. A BRAND BEATS A VARIETAL. "Cambria Calacatta" is Cambria's quartz, not
+//      marble -- the manufacturer is the stronger signal than the colour name
+//      they chose.
+//
+// NOTE, NOT CHANGED HERE: the quote-engine classifier further up this file
+// resolves "Calacatta ... Quartz" to a MARBLE price grade, because it checks
+// calacatta first. That is a pricing-grade decision on a different scale and
+// changing it would move quoted dollars, so it is left alone and recorded
+// rather than quietly aligned.
+//
+// AN UNRECOGNISED MATERIAL RETURNS null AND IS NOT GUESSED. The caller falls
+// back to the granite rate and SAYS SO on screen and on the cut sheet, which
+// is what the old code did for every job without ever mentioning it.
+function sdThhClassify(materialText){
+  var m = String(materialText || '').toLowerCase();
+  if (!m.trim()) return null;
+  // 1-2: explicit material words.
+  if (m.indexOf('quartzite') !== -1) return 'quartzite';
+  if (m.indexOf('quartz') !== -1) return 'quartz';
+  if (m.indexOf('granite') !== -1) return 'granite';
+  if (m.indexOf('marble') !== -1) return 'marble';
+  // 3: brands, which name a manufacturer and therefore a material.
+  if (m.indexOf('cambria') !== -1 || m.indexOf('silestone') !== -1 ||
+      m.indexOf('caesarstone') !== -1) return 'quartz';
+  // 4: marble varietals, only when nothing above said otherwise.
+  if (m.indexOf('calacatta') !== -1 || m.indexOf('carrara') !== -1 ||
+      m.indexOf('statuario') !== -1 || m.indexOf('arabescato') !== -1) return 'marble';
+  return null;
+}
+
+var SD_THH_DEFAULTS = { granite:4, quartz:3.5, quartzite:4.6, marble:4.2 };
+
+// Reads the shop's own rate. A blank or non-numeric field falls back to the
+// published benchmark rather than to 0 -- Number('') is 0 and finite, and a
+// zero here would print "0.0 hours" as though the job were free.
+function sdThhRate(kind){
+  var k = SD_THH_DEFAULTS.hasOwnProperty(kind) ? kind : 'granite';
+  var el = document.getElementById('sairn-unit-thh_' + k);
+  var v = el ? parseFloat(el.value) : NaN;
+  return (isFinite(v) && v > 0) ? v : SD_THH_DEFAULTS[k];
+}
+
+// The one place that turns a job into labour hours. Returns the number AND the
+// sentence explaining it, so the screen and the printed sheet cannot disagree
+// about the basis the way they did before 2026-09-03.
+function sdThhFor(materialText, totalMatSqFt){
+  var kind = sdThhClassify(materialText);
+  var matched = (kind !== null);
+  var use = matched ? kind : 'granite';
+  var rate = sdThhRate(use);
+  var hours = (totalMatSqFt / SD_THH_BENCH_SQFT) * rate;
+  var label = use.charAt(0).toUpperCase() + use.slice(1);
+  return {
+    hours: hours,
+    rate: rate,
+    kind: use,
+    matched: matched,
+    basis: matched
+      ? (label + ' benchmark ' + rate + 'hr per ' + SD_THH_BENCH_SQFT + ' sqft')
+      : ('Material not recognised — ' + label + ' benchmark ' + rate + 'hr per ' +
+         SD_THH_BENCH_SQFT + ' sqft used')
+  };
+}
+
 function calcDrawing() {
   const aL=gN('da-len'),aD=gN('da-dep'),bL=gN('db-len'),bD=gN('db-dep'),cL=gN('dc-len'),cD=gN('dc-dep'),dL=gN('dd-len'),dD=gN('dd-dep');
   let gross=0;
@@ -15628,7 +15737,9 @@ function calcDrawing() {
   // sairn-unit-* field -- moved to match that same pattern.
   const slabSqFt = parseFloat((document.getElementById('sairn-unit-slab_sqft')||{}).value) || 50;
   const slabs=Math.ceil(totalMat/slabSqFt);
-  const thh=(totalMat/slabSqFt*4).toFixed(1);
+  // [2026-09-03] Material-aware, and no longer divided by the slab size.
+  const thhInfo=sdThhFor((document.getElementById('draw-material')||{}).value, totalMat);
+  const thh=thhInfo.hours.toFixed(1);
 
   // Seams: each one adds a fabrication piece (more labor/handling) and its full length is
   // finished/polished edge on both sides of the cut, priced at the same edge_lf rate used
@@ -15658,7 +15769,7 @@ function calcDrawing() {
     // that describes a different number than the one beside it is worse than
     // no caption -- it is checked, and it agrees with nothing.
     {n:slabs,l:'Slabs Needed',s:'Estimated at '+slabSqFt+' sqft per slab'},
-    {n:thh+' hr',l:'Est. Labor (THH)',s:'Granite benchmark 4hr per 50sqft — not adjusted for material'},
+    {n:thh+' hr',l:'Est. Labor (THH)',s:thhInfo.basis},
     {n:holes.length>0?holes.length+' item(s)':'None',l:'Holes and Extras',s:holes.length>0?holes.join(' · '):'No extras selected'},
     {n:seamInfo.seamCount>0?seamInfo.pieceCount+' pieces':'1 piece',l:'Seams',s:seamInfo.seamCount>0?seamInfo.seamCount+' seam(s), '+seamInfo.totalSeamLF.toFixed(1)+' LF, +$'+seamEdgeCost.toFixed(0)+' polished edge':'No seams placed'},
     {n:chamferInfo.count>0?'+$'+chamferEdgeCost.toFixed(0):'None',l:'Chamfered Corners',s:chamferInfo.count>0?chamferInfo.count+' corner(s), '+chamferInfo.totalDiagLF.toFixed(2)+' LF diagonal edge':'No corners chamfered'},
@@ -15983,7 +16094,10 @@ function printDrawCutSheet() {
   // cut sheet's slab/labor estimate can't silently disagree with the calculator's.
   const slabSqFt = parseFloat((document.getElementById('sairn-unit-slab_sqft')||{}).value) || 50;
   const slabs=Math.ceil(totalMat/slabSqFt);
-  const thh=(totalMat/slabSqFt*4).toFixed(1);
+  // [2026-09-03] Same helper as calcDrawing(), so the sheet and the screen
+  // cannot drift apart on either the number or its basis.
+  const thhInfo=sdThhFor((document.getElementById('draw-material')||{}).value, totalMat);
+  const thh=thhInfo.hours.toFixed(1);
 
   const holes=[];
   if(getCBV('dh-faucet1')) holes.push('1 Faucet hole'); if(getCBV('dh-faucet3')) holes.push('3 Faucet holes');
@@ -16064,7 +16178,7 @@ function printDrawCutSheet() {
   win.document.write('<div class="sec" style="grid-column:1/-1"><div class="sec-t">How these figures were calculated</div>' +
     '<div class="row"><span class="rl">Order Qty</span><span class="rv">Net + splash + waterfall + bar, plus a flat 15% waste allowance</span></div>' +
     '<div class="row"><span class="rl">Slabs Est.</span><span class="rv">' + slabSqFt + ' sqft per slab (set in pricing settings)</span></div>' +
-    '<div class="row"><span class="rl">Est. Labor (THH)</span><span class="rv">Granite benchmark 4hr per 50 sqft — NOT adjusted for the material above</span></div>' +
+    '<div class="row"><span class="rl">Est. Labor (THH)</span><span class="rv">' + thhInfo.basis + '</span></div>' +
     '</div>');
 
   win.document.write('<div class="sec"><div class="sec-t">Holes and Extras</div>');
@@ -17032,6 +17146,23 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
   <label class="sairn-form-lbl">Slab size, drawing tool cut sheet (SF per slab)</label>
   <input class="sairn-form-inp" id="sairn-unit-slab_sqft" value="50" type="number" step="1">
 </div><div class="sairn-form-grp">
+  <!-- THH BENCHMARKS (2026-09-03). These were hardcoded as a single granite
+       rate in two calculators and stated as four different rates inside a
+       prompt string, where no shop could reach them. They are labour hours
+       per 50 SF of fabricated material and they belong here, next to every
+       other rate a shop sets. -->
+  <label class="sairn-form-lbl">THH — Granite (hours per 50 SF)</label>
+  <input class="sairn-form-inp" id="sairn-unit-thh_granite" value="4" type="number" step="0.1" min="0">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">THH — Quartz (hours per 50 SF)</label>
+  <input class="sairn-form-inp" id="sairn-unit-thh_quartz" value="3.5" type="number" step="0.1" min="0">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">THH — Quartzite (hours per 50 SF)</label>
+  <input class="sairn-form-inp" id="sairn-unit-thh_quartzite" value="4.6" type="number" step="0.1" min="0">
+</div><div class="sairn-form-grp">
+  <label class="sairn-form-lbl">THH — Marble (hours per 50 SF)</label>
+  <input class="sairn-form-inp" id="sairn-unit-thh_marble" value="4.2" type="number" step="0.1" min="0">
+</div><div class="sairn-form-grp">
   <label class="sairn-form-lbl">Sink cutout (each)</label>
   <input class="sairn-form-inp" id="sairn-unit-sink_cutout" value="150" type="number" step="0.01">
 </div><div class="sairn-form-grp">
@@ -17086,6 +17217,18 @@ window.sairnOpenPricing = function() {
   sairnLoadPricingIntoForm();
   document.getElementById('sairn-pricing-modal').classList.add('open');
 };
+
+// APPLIED AT LOAD, NOT ONLY WHEN THE MODAL OPENS (2026-09-03). The pricing
+// inputs live inside a modal, but seven consumers -- the drawing calculator,
+// the cut sheet, the visualizer -- read those inputs DIRECTLY, whether the
+// modal has ever been opened or not. Restoring the saved rates only in
+// sairnOpenPricing() would mean a shop's own rates applied to a quote only if
+// somebody happened to open the pricing screen first in that session, and the
+// markup defaults applied otherwise. That is a worse bug than the one being
+// fixed, because it is intermittent.
+document.addEventListener('DOMContentLoaded', function(){
+  try { sdUnitFieldsApply(sairnGetPricing().unitPricing); } catch(e) {}
+});
 
 // ---- FIELD QUOTE FLOW ----
 
@@ -17165,9 +17308,58 @@ function sairnDefaultPricing() {
     unitPricing:{"granite_sqft":65,"quartz_sqft":75,"quartzite_sqft":95,"marble_sqft":110,"edge_lf":18,"sink_cutout":150,"cooktop_cutout":125}
   };
 }
+// ══ THE UNIT FIELDS NEVER PERSISTED (found and fixed 2026-09-03) ══════════
+// Every `sairn-unit-*` input on the pricing panel was a MARKUP DEFAULT that
+// nothing ever saved and nothing ever restored. sairnSavePricing() carried
+// `unitPricing: sairnGetPricing().unitPricing` forward -- it re-stored whatever
+// was already there and never read the form -- and sairnLoadPricingIntoForm()
+// populated the seven fields above and none of the unit ones.
+//
+// So a shop could edit its edge rate, its cutout prices or its slab size,
+// press a button labelled "Save Pricing — All Field Quotes Use These Rates",
+// get a toast saying "Pricing saved", and lose the change on reload without a
+// word. Meanwhile SEVEN live consumers read those fields, so within a session
+// the edits DID affect quotes -- which is the worst shape: it works until you
+// refresh, so it looks like the app forgot rather than never stored.
+//
+// This was found while adding the THH rates, and it had to be fixed to deliver
+// them: a rate a shop cannot keep is not shop-adjustable. Fixed generically,
+// driven off the DOM, so a field added later is covered without anyone
+// remembering to add it here.
+function sdUnitFieldIds(){
+  return Array.prototype.map.call(
+    document.querySelectorAll('input[id^="sairn-unit-"]'),
+    function(el){ return el.id; }
+  );
+}
+function sdUnitFieldsRead(){
+  var out = {};
+  sdUnitFieldIds().forEach(function(id){
+    var el = document.getElementById(id);
+    var v = parseFloat(el.value);
+    // A blank or unparseable box is left OUT of the saved set rather than
+    // stored as 0. Number('') is 0 and finite, and a zero here is a real
+    // price -- it would make a cutout free and an edge free, silently.
+    if (isFinite(v)) out[id.replace('sairn-unit-','')] = v;
+  });
+  return out;
+}
+function sdUnitFieldsApply(unitPricing){
+  if (!unitPricing) return;
+  Object.keys(unitPricing).forEach(function(k){
+    var el = document.getElementById('sairn-unit-' + k);
+    var v = unitPricing[k];
+    // Only a real stored number overwrites the markup default. A stored null,
+    // a stored '' or a key for a field that no longer exists is ignored, so a
+    // half-written record cannot blank out a live rate.
+    if (el && v !== null && v !== undefined && isFinite(parseFloat(v))) el.value = v;
+  });
+}
+
 function sairnLoadPricingIntoForm() {
   const p = sairnGetPricing();
   const s = (id,v) => { const el=document.getElementById(id); if(el) el.value=v; };
+  sdUnitFieldsApply(p.unitPricing);
   s('sairn-company-name', p.company||'StoneDesk');
   s('sairn-rate-std',     p.laborRates?.standard||85);
   s('sairn-rate-lead',    p.laborRates?.lead||120);
@@ -17186,7 +17378,10 @@ window.sairnSavePricing = function() {
     overheadPercent:g('sairn-overhead',15)/100,
     quoteValidDays: g('sairn-quote-days',30),
     minimumJob:500, depositPct:0.33,
-    unitPricing:sairnGetPricing().unitPricing
+    // Read from the FORM, not carried forward from storage. The previous line
+    // was `sairnGetPricing().unitPricing`, which re-saved what was already
+    // there and discarded whatever the shop had just typed.
+    unitPricing:Object.assign({}, sairnGetPricing().unitPricing, sdUnitFieldsRead())
   };
   if(st(SAIRN_APP_ID+'_pricing', p)){
     sairnToast('Pricing saved -- Field Quote will use your rates');
@@ -27024,8 +27219,30 @@ function buildSDSystemPrompt(query) {
   // (383 chars, 96 est tokens). Leaving it out would let this function fill
   // the budget exactly and then have 96 tokens added behind its back, which
   // is a budget that is wrong by construction rather than by measurement.
+  // [2026-09-03] THE SHOP'S OWN THH RATES, READ LIVE.
+  // The base prompt used to hardcode four benchmark numbers that no shop could
+  // change and that no calculator in this app agreed with. It now points at
+  // this block instead. Appended to `base` rather than passed as a field
+  // because it is part of what the assistant knows about the trade, not
+  // droppable context: dropping it would leave the prompt telling the model to
+  // use rates that are not there, and the base text handles that case by
+  // instructing it to say so rather than invent one.
+  //
+  // A static const cannot read a DOM field, which is exactly why the numbers
+  // were stranded in a string. This function runs at send time, so it can.
+  var _thhBlock = '';
+  try {
+    if (typeof sdThhRate === 'function') {
+      _thhBlock = '\n\nSHOP THH BENCHMARKS (hours per ' + SD_THH_BENCH_SQFT + ' sqft, as configured by this shop): ' +
+        'Granite ' + sdThhRate('granite') + ', Quartz ' + sdThhRate('quartz') +
+        ', Quartzite ' + sdThhRate('quartzite') + ', Marble ' + sdThhRate('marble') + '. ' +
+        'The Drawing Tool and the printed cut sheet compute labour from these same numbers, ' +
+        'so an estimate you give from them will match what the app prints.';
+    }
+  } catch (e) { _thhBlock = ''; }
+
   var _ctx = sdBuildInferenceContext({
-    base: base,
+    base: base + _thhBlock,
     profile: p,
     memories: _sdMemories,
     styleNote: styleNote,
