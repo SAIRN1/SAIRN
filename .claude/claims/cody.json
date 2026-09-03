@@ -313,8 +313,8 @@
       "task": "payroll pay frequency benefits proration",
       "claimed_at": "2026-09-03T03:21:10Z",
       "claimed_at_epoch": 1788405670.285318,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T11:04:02Z"
     }
   ]
 }
