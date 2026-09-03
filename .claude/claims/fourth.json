@@ -38,8 +38,8 @@
       "task": "stripe billing scope and sairnvet panel audit",
       "claimed_at": "2026-09-01T18:46:04Z",
       "claimed_at_epoch": 1788288364.5132751,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T19:08:56Z"
     },
     {
       "id": "fourth-1788291411",
