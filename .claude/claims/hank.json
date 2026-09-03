@@ -470,8 +470,8 @@
       "task": "intake link dead 404 and panel anon read fallback",
       "claimed_at": "2026-09-03T18:32:21Z",
       "claimed_at_epoch": 1788460341.1567078,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T18:52:48Z"
     }
   ]
 }
