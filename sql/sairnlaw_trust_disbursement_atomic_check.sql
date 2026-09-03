@@ -5,16 +5,26 @@
 -- Safe to re-run -- every statement is idempotent, and the backfill only
 -- touches rows where the new columns are still null.
 
--- SUPERSEDED (2026-08-17): law_check_and_insert_disbursement()'s definition
--- below is now STALE -- sql/sairnlaw_deposit_void_balance_guard.sql
--- redefines this same function to call the shared law_client_balance()
--- helper instead of this file's inline balance query. Re-running THIS file
--- would silently revert that function back to its old, non-shared-helper
--- version (harmless today since the math is identical, but it would defeat
--- the single-source-of-truth purpose of the newer file with no error
--- anywhere). If this file ever needs to be re-run for its table/constraint
--- DDL, re-run sql/sairnlaw_deposit_void_balance_guard.sql immediately
--- after it to restore the correct function version.
+-- ═══════════════════════════════════════════════════════════════════════
+-- FUNCTION DEFINITIONS REMOVED 2026-09-03 -- they now live in ONE file:
+--
+--     sql/sairnlaw_trusttx_functions.sql
+--
+-- They were removed rather than left here with a warning. Three files had
+-- come to define law_check_and_insert_disbursement() with plain
+-- `create or replace`, so re-running an older one for its OTHER contents
+-- SILENTLY REVERTED the function to that file's version -- no error, no
+-- warning, no diff. Two of the three already carried a prose warning about
+-- the file before them; a comment does not stop a `\i` in a SQL editor.
+--
+-- The most recent revert would have restored a disbursement function that
+-- returns ONE CLIENT'S TRUST ROW to ANOTHER CLIENT'S REQUEST. The trap is
+-- gone now because the duplicate text is gone.
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- THIS FILE IS NOW DDL ONLY: the columns, constraints and index below are
+-- still live and this file is still the place to re-run them. Doing so no
+-- longer touches any function.
 
 alter table public.law_trusttx add column if not exists amount numeric;
 alter table public.law_trusttx add column if not exists type text;
@@ -45,85 +55,3 @@ alter table public.law_trusttx add constraint lawtrusttx_amount_positive
 
 create index if not exists idx_lawtrusttx_client_status
   on public.law_trusttx(license_hash, client_id, status);
-
--- The atomic check-and-write. SECURITY INVOKER (the default) -- runs as
--- whichever role PostgREST authenticates the caller as (service_role, via
--- api/sd-data.js's service-role key), so it passes the same RLS policies
--- (`svc only law_trusttx`) a direct service_role insert already would.
--- pg_advisory_xact_lock is keyed on (license_hash, client_id) -- serializes
--- concurrent disbursement attempts for the SAME client only; different
--- clients' calls never block each other. PostgREST wraps each RPC call in
--- one transaction, so the lock + balance read + insert are genuinely
--- atomic: a second concurrent call for the same client blocks until the
--- first commits, then re-checks against the now-current balance.
-create or replace function public.law_check_and_insert_disbursement(
-  p_license_hash text, p_trusttx_id text, p_matter_id text, p_client_id text,
-  p_amount numeric, p_method text, p_reference_number text,
-  p_description text, p_tx_date text, p_created_at text
-) returns public.law_trusttx
-language plpgsql
-as $$
-declare
-  v_balance numeric;
-  v_row public.law_trusttx;
-  v_existing public.law_trusttx;
-  v_existing_found boolean;
-begin
-  perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_client_id));
-  -- Retry-idempotency: a genuine retry of an already-committed disbursement
-  -- (e.g. client response lost to a network blip) must return the existing
-  -- row, not re-run the balance check -- the balance sum below would already
-  -- include this disbursement, wrongly rejecting an already-valid,
-  -- already-committed transaction. Closes a real retry-rejection bug found
-  -- in final review (2026-08-17).
-  --
-  -- Unified single-return-point follow-up (2026-08-17): the retry-lookup
-  -- used to `return v_row;` early from inside this `if`, while the
-  -- fresh-insert case reached a second, textually separate `return v_row;`
-  -- at the end of the function. That worked for money-safety (retries no
-  -- longer got wrongly re-validated against a balance that already
-  -- included them) but the retry's HTTP response came back with a null
-  -- `data` payload even though the stored row's `data` column was intact.
-  -- Root cause not fully confirmed with DB access unavailable in this
-  -- environment, but both return sites being byte-for-byte identical
-  -- eliminates the split return path as a possible source of divergence
-  -- regardless of the exact mechanism, so both cases now flow through one
-  -- `return v_row;` at the end of the function instead.
-  select * into v_existing
-    from public.law_trusttx
-    where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
-  v_existing_found := found;
-  if v_existing_found then
-    v_row := v_existing;
-  else
-    select coalesce(sum(case when type = 'Deposit' then amount else -amount end), 0)
-      into v_balance
-      from public.law_trusttx
-      where license_hash = p_license_hash and client_id = p_client_id
-        and status = 'Posted';
-    if p_amount is null or p_amount <= 0 then
-      raise exception 'INVALID_AMOUNT: disbursement amount must be a positive number'
-        using errcode = 'P0001';
-    end if;
-    if p_amount > v_balance then
-      raise exception 'INSUFFICIENT_TRUST_BALANCE: disbursement % exceeds balance %', p_amount, v_balance
-        using errcode = 'P0001';
-    end if;
-    insert into public.law_trusttx (license_hash, app_id, trusttx_id, matter_id, client_id,
-      amount, type, status, data, created_at, updated_at)
-    values (p_license_hash, 'sairnlaw', p_trusttx_id, p_matter_id, p_client_id,
-      p_amount, 'Disbursement', 'Posted',
-      jsonb_build_object('id', p_trusttx_id, 'matter_id', p_matter_id, 'client_id', p_client_id,
-        'type', 'Disbursement', 'amount', p_amount, 'method', p_method,
-        'reference_number', p_reference_number, 'description', p_description,
-        'date', p_tx_date, 'status', 'Posted', 'created_at', p_created_at),
-      now(), now())
-    on conflict (license_hash, trusttx_id) do nothing
-    returning * into v_row;
-  end if;
-  return v_row;
-end;
-$$;
-
-revoke all on function public.law_check_and_insert_disbursement from public;
-grant execute on function public.law_check_and_insert_disbursement to service_role;

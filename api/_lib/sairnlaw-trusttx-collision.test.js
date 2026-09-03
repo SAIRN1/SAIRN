@@ -46,9 +46,17 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..', '..');
-const SQL = fs.readFileSync(path.join(ROOT, 'sql', 'sairnlaw_trusttx_cross_client_collision_2026-09-03.sql'), 'utf8');
+// CONSOLIDATED 2026-09-03: all three law_trusttx functions now live in ONE
+// file. The three that used to define them are gutted -- the duplicate text is
+// gone, which is what actually removes the silent-revert trap. Assertions
+// below therefore read the consolidated file, and separate ones assert the
+// three old files define NOTHING.
+const SQL = fs.readFileSync(path.join(ROOT, 'sql', 'sairnlaw_trusttx_functions.sql'), 'utf8');
+const OLD_FILES = ['sairnlaw_trust_disbursement_atomic_check.sql',
+                   'sairnlaw_deposit_void_balance_guard.sql',
+                   'sairnlaw_trusttx_cross_client_collision_2026-09-03.sql']
+  .map((f) => [f, fs.readFileSync(path.join(ROOT, 'sql', f), 'utf8')]);
 const API = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
-const STEP3A = fs.readFileSync(path.join(ROOT, 'sql', 'sairnlaw_deposit_void_balance_guard.sql'), 'utf8');
 const HTML = fs.readFileSync(path.join(ROOT, 'sairnlaw.html'), 'utf8');
 
 let pass = 0, fail = 0;
@@ -127,11 +135,40 @@ check('the advisory lock is still per-client, not widened to the licence',
 // Re-running step 3a restores the vulnerable body with no error anywhere.
 // Step 3a already carried that warning about step 2; it now carries it about
 // this file too.
-check('step 3a warns that re-running it would restore the vulnerable version',
-  /SUPERSEDED \(2026-09-03\)/.test(STEP3A) &&
-  /sairnlaw_trusttx_cross_client_collision_2026-09-03\.sql/.test(STEP3A), true);
-check('and says what the restored version would do, not merely that it is old',
-  /CROSS-CLIENT TRUST-ACCOUNT LEAK/.test(STEP3A), true);
+// THE TRAP IS GONE BECAUSE THE DUPLICATE TEXT IS GONE, not because a third
+// warning was added. Two of the three files already carried a prose warning
+// about the file before them -- the trap was known twice and answered twice
+// with a comment, and a comment does not stop a `\i` in a SQL editor.
+OLD_FILES.forEach(function (pair) {
+  check(pair[0] + ' defines no function at all any more',
+    (pair[1].match(/create or replace function/g) || []).length, 0);
+  check(pair[0] + ' points at the one file that does',
+    /sql\/sairnlaw_trusttx_functions\.sql/.test(pair[1]), true);
+});
+check('exactly one file defines the three trusttx functions',
+  (SQL.match(/create or replace function/g) || []).length, 3);
+// Step 2 still owns the table DDL -- gutting it must not have taken that with
+// it, or re-running it for a column would silently do nothing.
+check('step 2 kept its DDL, so it is still the place to re-run the columns',
+  /alter table public\.law_trusttx add column if not exists amount numeric;/.test(OLD_FILES[0][1]) &&
+  /create index if not exists idx_lawtrusttx_client_status/.test(OLD_FILES[0][1]), true);
+// The incident analysis is the reason the consolidated file's refusals are
+// worded as they are; deleting it would leave them looking like taste.
+// Matched on phrases that do NOT wrap. "CROSS-CLIENT TRUST-ACCOUNT LEAK"
+// breaks across two `--` lines in that file's header, so the contiguous string
+// is not there -- the wrapped-quote variant of scrubber item 16 shape A, which
+// has now caught this same test file three times.
+check('the incident record survives in the file that found it',
+  /A PHANTOM DISBURSEMENT THAT REPORTS SUCCESS/.test(OLD_FILES[2][1]) &&
+  /THE LOCK AND THE UNIQUENESS KEY DISAGREED/.test(OLD_FILES[2][1]), true);
+check('and the consolidated file says a fourth file would rebuild the trap',
+  /IF YOU ADD A FOURTH FILE THAT REDEFINES ANY FUNCTION BELOW/.test(SQL) &&
+  /REBUILT THE TRAP/.test(SQL), true);
+// The void guard's lookups are NOT client-scoped, and that is correct -- it
+// learns client_id from the stored row and takes no caller-asserted client.
+// Said out loud so a future reader does not "fix" them by analogy.
+check('the consolidated file explains why the void guard is not client-scoped',
+  /accepts no caller-asserted client at all/.test(SQL), true);
 
 // ── (a) STRUCTURAL: the API no longer lies on a missing row ────────────
 // ASSERTED ON THE CODE, NOT THE FILE. The first version required

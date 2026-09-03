@@ -88,143 +88,24 @@
 -- a collision that is rare -- the correct fix is to make the rare case LOUD,
 -- not to make the common case slow.
 
-create or replace function public.law_check_and_insert_disbursement(
-  p_license_hash text, p_trusttx_id text, p_matter_id text, p_client_id text,
-  p_amount numeric, p_method text, p_reference_number text,
-  p_description text, p_tx_date text, p_created_at text
-) returns public.law_trusttx
-language plpgsql
-as $$
-declare
-  v_balance numeric;
-  v_row public.law_trusttx;
-  v_existing public.law_trusttx;
-  v_existing_found boolean;
-  v_other_client text;
-begin
-  perform pg_advisory_xact_lock(hashtext(p_license_hash || ':' || p_client_id));
-
-  -- RETRY-IDEMPOTENCY, NOW CLIENT-SCOPED. Same id AND same client is a genuine
-  -- retry of an already-committed disbursement (e.g. the response was lost to
-  -- a network blip) and must return the existing row rather than re-running
-  -- the balance check -- the balance sum already includes this disbursement,
-  -- so re-checking would wrongly reject an already-valid transaction. That
-  -- behaviour is unchanged; only the client predicate is new.
-  select * into v_existing
-    from public.law_trusttx
-    where license_hash = p_license_hash
-      and trusttx_id = p_trusttx_id
-      and client_id = p_client_id;
-  v_existing_found := found;
-
-  if v_existing_found then
-    v_row := v_existing;
-  else
-    -- SAME ID, DIFFERENT CLIENT. Checked BEFORE the balance arithmetic so the
-    -- caller is told what is actually wrong rather than being handed an
-    -- INSUFFICIENT_TRUST_BALANCE about a balance that was never the problem.
-    select client_id into v_other_client
-      from public.law_trusttx
-      where license_hash = p_license_hash and trusttx_id = p_trusttx_id;
-    if found then
-      -- The other client's id is NOT included in the message. The caller is
-      -- entitled to know their id is taken; they are not entitled to learn
-      -- which other client of the firm holds it, and this error crosses back
-      -- to a user-facing screen.
-      raise exception
-        'TRUSTTX_ID_COLLISION: transaction id % already exists under a different client for this license -- resubmit with a new id',
-        p_trusttx_id
-        using errcode = 'P0001';
-    end if;
-
-    v_balance := public.law_client_balance(p_license_hash, p_client_id);
-    if p_amount is null or p_amount <= 0 then
-      raise exception 'INVALID_AMOUNT: disbursement amount must be a positive number'
-        using errcode = 'P0001';
-    end if;
-    if p_amount > v_balance then
-      raise exception 'INSUFFICIENT_TRUST_BALANCE: disbursement % exceeds balance %', p_amount, v_balance
-        using errcode = 'P0001';
-    end if;
-
-    insert into public.law_trusttx (license_hash, app_id, trusttx_id, matter_id, client_id,
-      amount, type, status, data, created_at, updated_at)
-    values (p_license_hash, 'sairnlaw', p_trusttx_id, p_matter_id, p_client_id,
-      p_amount, 'Disbursement', 'Posted',
-      jsonb_build_object('id', p_trusttx_id, 'matter_id', p_matter_id, 'client_id', p_client_id,
-        'type', 'Disbursement', 'amount', p_amount, 'method', p_method,
-        'reference_number', p_reference_number, 'description', p_description,
-        'date', p_tx_date, 'status', 'Posted', 'created_at', p_created_at),
-      now(), now())
-    on conflict (license_hash, trusttx_id) do nothing
-    returning * into v_row;
-
-    -- THE NULL PATH, CLOSED. `do nothing` returns no row, so a conflict here
-    -- left v_row NULL and the function returned a null composite -- which
-    -- api/sd-data.js turned into HTTP 200 with the caller's own payload echoed
-    -- back as the stored row. A phantom disbursement that reports success.
-    --
-    -- Reaching here means a concurrent transaction committed this exact id
-    -- between the lookup above and this insert. Re-select to find out which
-    -- case it was.
-    if v_row.trusttx_id is null then
-      select * into v_existing
-        from public.law_trusttx
-        where license_hash = p_license_hash
-          and trusttx_id = p_trusttx_id
-          and client_id = p_client_id;
-      if found then
-        -- Same client committed it a moment ago: a true retry, and returning
-        -- it is the correct, idempotent answer.
-        v_row := v_existing;
-      else
-        -- It exists under a DIFFERENT client -- the same collision as above,
-        -- reached through the race rather than the lookup. Same refusal.
-        raise exception
-          'TRUSTTX_ID_COLLISION: transaction id % was taken by a different client while this disbursement was being written -- resubmit with a new id',
-          p_trusttx_id
-          using errcode = 'P0001';
-      end if;
-    end if;
-  end if;
-
-  -- NO PATH BELOW THIS LINE CAN RETURN NULL. Asserted rather than assumed: if
-  -- a future edit reintroduces one, this raises instead of handing the caller
-  -- a success it did not earn.
-  if v_row.trusttx_id is null then
-    raise exception
-      'DISBURSEMENT_NOT_WRITTEN: no trust transaction row was produced for % -- nothing was posted',
-      p_trusttx_id
-      using errcode = 'P0001';
-  end if;
-
-  return v_row;
-end;
-$$;
-
-revoke all on function public.law_check_and_insert_disbursement from public;
-grant execute on function public.law_check_and_insert_disbursement to service_role;
-
--- ── Verify after running ────────────────────────────────────────────────
--- The function's definition should now contain the client predicate and the
--- collision refusal (expect 2 and 1):
+-- ═══════════════════════════════════════════════════════════════════════
+-- FUNCTION DEFINITIONS REMOVED 2026-09-03 -- they now live in ONE file:
 --
---   select
---     (select count(*) from regexp_matches(prosrc, 'client_id = p_client_id', 'g')) as client_scoped,
---     (select count(*) from regexp_matches(prosrc, 'TRUSTTX_ID_COLLISION', 'g')) as collision_raises
---   from pg_proc where proname = 'law_check_and_insert_disbursement';
+--     sql/sairnlaw_trusttx_functions.sql
 --
--- Reproduce the leak against a scratch licence to confirm it is closed --
--- expect the second call to RAISE, where before it returned the first row:
+-- They were removed rather than left here with a warning. Three files had
+-- come to define law_check_and_insert_disbursement() with plain
+-- `create or replace`, so re-running an older one for its OTHER contents
+-- SILENTLY REVERTED the function to that file's version -- no error, no
+-- warning, no diff. Two of the three already carried a prose warning about
+-- the file before them; a comment does not stop a `\i` in a SQL editor.
 --
---   select public.law_check_and_insert_disbursement(
---     'SCRATCH-HASH','TX-COLLIDE-1','M1','CLIENT-A',10,'Check',null,'a',null,null);
---   -- (fund CLIENT-B first with a Deposit, then:)
---   select public.law_check_and_insert_disbursement(
---     'SCRATCH-HASH','TX-COLLIDE-1','M1','CLIENT-B',10,'Check',null,'b',null,null);
---   -- expected: ERROR TRUSTTX_ID_COLLISION, not CLIENT-A's row
---
--- Then delete the scratch rows. law_trusttx carries no delete grant, so that
--- cleanup is a SQL-editor statement -- the same constraint every other
--- live-write verification on this platform has, and the reason
--- SAIRN-OPEN-WORK-INDEX.md tracks hand-written cleanup files.
+-- The most recent revert would have restored a disbursement function that
+-- returns ONE CLIENT'S TRUST ROW to ANOTHER CLIENT'S REQUEST. The trap is
+-- gone now because the duplicate text is gone.
+-- ═══════════════════════════════════════════════════════════════════════
+
+-- The analysis above is kept as the INCIDENT RECORD -- it is why the
+-- guarantees in sairnlaw_trusttx_functions.sql are worded the way they are,
+-- and deleting it would leave that file's refusals looking like taste.
+-- This file no longer executes anything.
