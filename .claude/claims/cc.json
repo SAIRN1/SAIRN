@@ -300,8 +300,8 @@
       "task": "multi location yards GAP7",
       "claimed_at": "2026-09-03T01:53:08Z",
       "claimed_at_epoch": 1788400388.998468,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T02:56:25Z"
     }
   ]
 }
