@@ -261,6 +261,16 @@
       "claimed_at_epoch": 1788395645.1831522,
       "status": "released",
       "released_at": "2026-09-03T00:51:41Z"
+    },
+    {
+      "id": "cc-1788396941",
+      "session": "cc",
+      "subject": "sairnroofing",
+      "task": "material and regional code coverage read only",
+      "claimed_at": "2026-09-03T00:55:41Z",
+      "claimed_at_epoch": 1788396941.3917518,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
