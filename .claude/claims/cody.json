@@ -345,6 +345,16 @@
       "claimed_at_epoch": 1788439433.0950475,
       "status": "released",
       "released_at": "2026-09-03T13:02:07Z"
+    },
+    {
+      "id": "cody-1788458929",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "tax center fabricated rates and wrong estimated tax dates",
+      "claimed_at": "2026-09-03T18:08:49Z",
+      "claimed_at_epoch": 1788458929.1346579,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
