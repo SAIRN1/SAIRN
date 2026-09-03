@@ -295,6 +295,16 @@
       "claimed_at_epoch": 1788398596.589097,
       "status": "released",
       "released_at": "2026-09-03T02:31:42Z"
+    },
+    {
+      "id": "cody-1788403710",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "ai tool description stale claims",
+      "claimed_at": "2026-09-03T02:48:30Z",
+      "claimed_at_epoch": 1788403710.7017152,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
