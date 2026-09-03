@@ -259,8 +259,8 @@
       "task": "license rekey cross tenant local data isolation",
       "claimed_at": "2026-09-03T10:15:51Z",
       "claimed_at_epoch": 1788430551.1435032,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T11:04:55Z"
     }
   ]
 }
