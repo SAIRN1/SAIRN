@@ -440,8 +440,8 @@
       "task": "realsync localstorage quota exhaustion",
       "claimed_at": "2026-09-03T11:04:37Z",
       "claimed_at_epoch": 1788433477.4199154,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-03T11:20:50Z"
     }
   ]
 }
