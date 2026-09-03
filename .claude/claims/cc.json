@@ -251,6 +251,16 @@
       "claimed_at_epoch": 1788394347.308125,
       "status": "released",
       "released_at": "2026-09-03T00:31:52Z"
+    },
+    {
+      "id": "cc-1788395645",
+      "session": "cc",
+      "subject": "sairnroofing",
+      "task": "supplier purchase order receiving invoice match B6",
+      "claimed_at": "2026-09-03T00:34:05Z",
+      "claimed_at_epoch": 1788395645.1831522,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
