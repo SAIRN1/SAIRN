@@ -442,6 +442,16 @@
       "claimed_at_epoch": 1788433477.4199154,
       "status": "released",
       "released_at": "2026-09-03T11:20:50Z"
+    },
+    {
+      "id": "hank-1788434962",
+      "session": "hank",
+      "subject": "seed-push-gate",
+      "task": "refspec scoping and unreachable override",
+      "claimed_at": "2026-09-03T11:29:22Z",
+      "claimed_at_epoch": 1788434962.3317852,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
