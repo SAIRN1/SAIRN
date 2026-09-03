@@ -221,6 +221,16 @@
       "claimed_at_epoch": 1788393989.4704807,
       "status": "released",
       "released_at": "2026-09-03T00:58:11Z"
+    },
+    {
+      "id": "fourth-1788398833",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "employee deactivation set_active nine remaining apps",
+      "claimed_at": "2026-09-03T01:27:13Z",
+      "claimed_at_epoch": 1788398833.0818183,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
