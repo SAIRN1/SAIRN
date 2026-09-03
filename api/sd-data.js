@@ -28,7 +28,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
-const { verifySessionToken, tokenFromRequest } = require('./_lib/auth');
+const { verifySessionToken, tokenFromRequest, ROLES_BY_APP } = require('./_lib/auth');
 const { validatePhotosPayload } = require('./_lib/dental-photo-validation');
 const { getExecContext } = require('./_lib/exec-context');
 const mechAuth = require('./mech-auth');
@@ -78,14 +78,27 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 // ~15 handler-local bindings and serve 11 live apps, and they were never the
 // source of the collisions.
 const { RESOURCES, RESOURCE_LIST_TEXT, EXTRA_ACTIONS } = require('./_resources');
-const { REGISTRY_MODULES } = require('./_resources');
-// Which app ids the `memory` resource will accept. DERIVED from the same
-// registry every resource name comes from, not hand-listed -- a hand-listed
-// copy beside a real one is how api/_resources/index.js's own header says the
-// resource error string drifted from the resource map. 'shared' is dropped
-// because it is a namespace, not an app.
+// Which app ids the `memory` resource will accept. DERIVED, not hand-listed --
+// a hand-written copy beside a real one is how api/_resources/index.js's own
+// header records the resource error string drifting from the resource map.
+//
+// DERIVED FROM ROLES_BY_APP, NOT FROM THE RESOURCE REGISTRY, and the first
+// version got that wrong. It used REGISTRY_MODULES, which lists apps that own a
+// *_resources file -- and SAIRNbiz has no such file, so a legitimate SAIRNbiz
+// memory call was refused with `app_id "sairnbiz" is not a known app`. Caught
+// by the two-device live check, not by the tests.
+//
+// ROLES_BY_APP is the right source because it is the list of apps that HAVE
+// EMPLOYEE SESSIONS, and a session is exactly what this resource requires. The
+// set of apps that can pass the gate and the set the gate accepts are then the
+// same set by construction rather than by coincidence.
+//
+// stonedesk_sub is excluded deliberately: it is the subcontractor portal, a
+// separate actor class with its own app namespace precisely so a sub token is
+// never mistaken for an employee one (see api/_lib/auth.js's own note). Subs do
+// not get the shop's AI memory.
 const MEMORY_APPS = {};
-REGISTRY_MODULES.forEach(function (m) { if (m && m.app && m.app !== 'shared') MEMORY_APPS[m.app] = true; });
+Object.keys(ROLES_BY_APP).forEach(function (a) { if (a !== 'stonedesk_sub') MEMORY_APPS[a] = true; });
 
 // The SAIRNcode resource family, which shares one generic handler below and is
 // the only family with a real 'delete' verb.

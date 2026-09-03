@@ -32,23 +32,53 @@ function memoryBlock(kind) {
   return SRC.slice(at, at + 1400);
 }
 
-test('the accepted app list is DERIVED from the registry, not hand-written', () => {
+test('the accepted app list is DERIVED, not hand-written', () => {
   // A hand-listed copy beside a real one is how api/_resources/index.js's own
   // header records the resource error string drifting from the resource map.
   assert.match(SRC, /const MEMORY_APPS = \{\};/);
-  assert.match(SRC, /REGISTRY_MODULES\.forEach/);
   assert.strictEqual(/MEMORY_APPS = \{\s*stonedesk:/.test(SRC), false,
     'the app list is hand-written');
 });
 
-test('every registered app is accepted, and `shared` is not an app', () => {
+test('it is derived from ROLES_BY_APP, which is the set that can pass the gate', () => {
+  // THE FIRST VERSION DERIVED IT FROM THE RESOURCE REGISTRY AND WAS WRONG.
+  // REGISTRY_MODULES lists apps that own a *_resources file; SAIRNbiz has none,
+  // so a legitimate SAIRNbiz memory call was refused with
+  // `app_id "sairnbiz" is not a known app`. Caught by the two-device live
+  // check, not by these tests.
+  //
+  // ROLES_BY_APP is the set of apps that have employee SESSIONS, and a session
+  // is exactly what this resource requires -- so the set the gate accepts and
+  // the set that can pass it are the same set by construction.
+  assert.match(SRC, /Object\.keys\(ROLES_BY_APP\)\.forEach/);
+  assert.match(SRC, /ROLES_BY_APP \} = require\('\.\/_lib\/auth'\)/);
+});
+
+test('every app with a session is accepted -- including the one that was refused', () => {
+  const { ROLES_BY_APP } = require('./_lib/auth');
+  const apps = Object.keys(ROLES_BY_APP);
+  ['stonedesk', 'sairnbiz', 'sairnscape'].forEach((a) => {
+    assert.ok(apps.indexOf(a) !== -1, a + ' is not in ROLES_BY_APP');
+  });
+});
+
+test('stonedesk_sub is EXCLUDED -- subs are not employees', () => {
+  // A separate actor class with its own app namespace precisely so a sub token
+  // is never mistaken for an employee one. Subs do not get the shop's memory.
+  assert.match(SRC, /a !== 'stonedesk_sub'/);
+  const { ROLES_BY_APP } = require('./_lib/auth');
+  assert.ok(Object.keys(ROLES_BY_APP).indexOf('stonedesk_sub') !== -1,
+    'the fixture assumption changed -- stonedesk_sub is no longer a role app');
+});
+
+test('the resource registry is NOT the source, and here is why', () => {
+  // Kept as a live demonstration rather than a comment: the registry genuinely
+  // does not know about SAIRNbiz, so anything derived from it would refuse a
+  // real app again.
   const { REGISTRY_MODULES } = require('./_resources');
   const apps = REGISTRY_MODULES.map((m) => m && m.app).filter(Boolean);
-  assert.ok(apps.indexOf('stonedesk') !== -1);
-  assert.ok(apps.indexOf('sairnscape') !== -1, 'sairnscape is not a registered app');
-  assert.ok(apps.indexOf('shared') !== -1, 'the fixture assumption changed');
-  // ...and the code drops it.
-  assert.match(SRC, /m\.app !== 'shared'/);
+  assert.strictEqual(apps.indexOf('sairnbiz'), -1,
+    'the resource registry now knows sairnbiz -- the reasoning above needs revisiting');
 });
 
 test('an unknown app_id is REFUSED, not silently accepted', () => {
