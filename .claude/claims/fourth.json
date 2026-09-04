@@ -282,6 +282,16 @@
       "status": "released",
       "released_at": "2026-09-04T11:03:15Z",
       "note": "Written by hand because sairn_claim.py BLOCKED it on a purely lexical overlap. cc holds sairndental 'public availability fabricated calendar fail open reads'; the shared tokens are 'public', 'fail' and 'open'. Different app, different file: mine is api/_lib/stonedesk-public.js, cc's is the sairndental public surface. This is deliberately the SAME defect class applied to a different app at Michael's instruction -- the words overlap because the bug does, not because the work does. Recorded rather than reworded to slip past the matcher, per CLAUDE.md's rule on defect 1 of that tool."
+    },
+    {
+      "id": "fourth-1788520102",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "public catalog panel read failures render as empty state",
+      "claimed_at": "2026-09-04T11:08:22Z",
+      "claimed_at_epoch": 1788520102.950756,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
