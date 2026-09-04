@@ -1839,7 +1839,20 @@ scpRegisterTool(
 );
 
 function scpH(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function scpSt(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// Honest-failure localStorage wrapper. SAME MISS AS SAIRNGROUNDS: the
+// 2026-08-18 platform audit added this to StoneDesk, SAIRNbuild, SAIRNvet and
+// SAIRNdental and did not reach this file, which kept a bare `catch(e){}`
+// until 2026-09-04 -- a full or unavailable store failed silently at every
+// call site, none of which could check a return value that did not exist.
+// See sairngrounds.html's copy of this comment for why the message is raised
+// here rather than at each caller.
+function scpSt(k,v){
+  try{localStorage.setItem(k,JSON.stringify(v));return true;}
+  catch(e){
+    if(typeof scpToast==='function')scpToast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
+    return false;
+  }
+}
 function scpLd(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
 function scp$(s){return document.getElementById(s);}
 function scpFmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}

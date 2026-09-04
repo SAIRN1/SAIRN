@@ -142,6 +142,27 @@ tr:hover td{background:var(--t)}
    the page (main block uses const; const-after-var always throws).
    ============================================================ */
 
+/* Honest-failure localStorage write. THIS APP HAS NO STORAGE WRAPPER AT ALL
+   -- the 2026-08-18 platform audit gave StoneDesk, SAIRNbuild, SAIRNvet and
+   SAIRNdental an st() that reports, and this file writes localStorage raw.
+   Three of those writes carry NO try/catch whatever and are immediately
+   followed by a success toast: saveQuote(), saveCheck() and savePricing().
+   On a full or unavailable store each one THROWS, so the toast never runs and
+   the function abandons the rest of its work -- the user is told nothing at
+   all and, having clicked Save and seen no error, has every reason to think
+   it worked. saveCheck() is the worst of the three: it increments crNum
+   before it writes, so a throw between the two setItem calls can leave the
+   check saved and its number unpersisted, and the next check reuses it.
+   Added 2026-09-04. Deliberately NOT a repo-wide retrofit of every raw
+   setItem in this file -- only the writes that claim an outcome. */
+function mechSt(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); return true; }
+  catch (e) {
+    showToast('NOT saved — this browser storage is full or unavailable. Nothing was written; try again.', 8000);
+    return false;
+  }
+}
+
 /* showToast — safe to call anywhere */
 function showToast(msg, dur) {
   var t = document.getElementById('_sairn_toast');
@@ -1035,8 +1056,12 @@ async function fqGenQuote(){
   }catch(e){el.textContent='Quote generation failed. Check connection.';}
 }
 function fqShare(){if(navigator.share)navigator.share({title:'SAIRNmechanical Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
-function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});localStorage.setItem(APP_ID+'_quotes',JSON.stringify(q));showToast('Quote saved');}
-function fqClose(){saveQuote();showToast('Signed quote saved');fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';const ta=document.getElementById('fq-answers');if(ta)ta.value='';clearSig();}
+function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});var ok=mechSt(APP_ID+'_quotes',q);if(ok)showToast('Quote saved');return ok;}
+// fqClose() said 'Signed quote saved' unconditionally. It now defers to
+// saveQuote(): on a failed write mechSt() has already said what happened, and
+// the step is NOT reset, so the signature and the quote text are still on
+// screen to retry rather than cleared behind a message that was not true.
+function fqClose(){if(!saveQuote())return;showToast('Signed quote saved');fqStep(1);fqImg64=null;fqConvo=[];fqQuoteTxt='';const ta=document.getElementById('fq-answers');if(ta)ta.value='';clearSig();}
 function sendDeposit(){const amt=document.getElementById('fq-deposit')?.value||'';const txt='Your SAIRNmechanical project deposit of '+amt+' is ready.';if(navigator.share)navigator.share({title:'Deposit',text:txt});else{navigator.clipboard.writeText(txt);showToast('Deposit text copied!');}}
 function initSig(){
   const canvas=document.getElementById('sig-canvas');if(!canvas||sigCtx)return;
@@ -1075,8 +1100,19 @@ function saveCheck(){
     payee:document.getElementById('cr-payee')?.value||'',amount:document.getElementById('cr-amount')?.value||'0',
     memo:document.getElementById('cr-memo')?.value||''};
   const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
-  checks.unshift(entry);localStorage.setItem(APP_ID+'_checks',JSON.stringify(checks));
-  localStorage.setItem(APP_ID+'_crnum',crNum);renderCR(checks);
+  checks.unshift(entry);
+  // THE NUMBER IS PUT BACK IF THE WRITE FAILS. crNum was already incremented
+  // when `entry` was built above; leaving it advanced over a check that was
+  // never stored is how two checks end up sharing a number.
+  if(!mechSt(APP_ID+'_checks',checks)){crNum=entry.num;return;}
+  if(!mechSt(APP_ID+'_crnum',crNum)){
+    // The check IS saved; only the counter is not, so the next one would
+    // reuse this number. Say exactly that rather than reporting a clean save.
+    renderCR(checks);
+    showToast('Check #'+entry.num+' saved, but the check NUMBER could not be stored — set the next number by hand or the number will repeat.',9000);
+    return;
+  }
+  renderCR(checks);
   const n=document.getElementById('cr-num');if(n)n.textContent=crNum;
   showToast('Check #'+entry.num+' saved');
 }
@@ -1098,7 +1134,11 @@ function savePricing(){
     materialMarkup:(parseFloat(document.getElementById('r-markup')?.value||30))/100,
     profitPercent:(parseFloat(document.getElementById('r-profit')?.value||20))/100,
   };
-  localStorage.setItem(APP_ID+'_pricing',JSON.stringify(p));showToast('Pricing saved -- Field Quote will use your rates');
+  // "Field Quote will use your rates" is a claim about a write. getPricing()
+  // reads this key back, so on a failed write Field Quote goes on using the
+  // OLD rates -- which is the opposite of what the message said.
+  if(!mechSt(APP_ID+'_pricing',p))return;
+  showToast('Pricing saved -- Field Quote will use your rates');
 }
 function loadPricing(){
   const p=getPricing();

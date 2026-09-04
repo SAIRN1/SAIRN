@@ -1344,7 +1344,28 @@ grdRegisterTool(
 );
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// Honest-failure localStorage wrapper. THIS APP WAS MISSED BY THE 2026-08-18
+// PLATFORM AUDIT that added exactly this to StoneDesk, SAIRNbuild, SAIRNvet
+// and SAIRNdental -- sairnvet.html:1725 names the other three and this file
+// was not among them. It sat as a bare `catch(e){}` until 2026-09-04: a
+// quota-exceeded or private-browsing failure was swallowed whole across all
+// 56 write sites, none of which check a return value that did not exist.
+//
+// The symptom was not a false "Saved!" -- almost no caller here toasts
+// immediately, they close a modal and re-render, and the renders read back
+// through ld(), so the screen already showed the truth. What was missing was
+// any EXPLANATION: the row simply was not there and nothing said why. The
+// message is raised here rather than at 56 call sites for the reason this
+// codebase keeps rediscovering -- a change spread over that many sites gets
+// half-applied, and the half that is missed looks exactly like the half that
+// is not.
+function st(k,v){
+  try{localStorage.setItem(k,JSON.stringify(v));return true;}
+  catch(e){
+    if(typeof toast==='function')toast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
+    return false;
+  }
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:0,maximumFractionDigits:0});}
@@ -2744,8 +2765,19 @@ async function gcdMarkOrderDelivered(id){
   rec.status='Delivered'; rec.delivered_at=new Date().toISOString();
   st('grd_cart_orders', list);
   rCaddie();
-  await grdData('write','grd_cart_orders',rec);
+  // gcdPlaceOrder() above already says so when a cart order does not reach
+  // the shop; marking it delivered had the same failure and said nothing, so
+  // the shop's copy could sit on Open for ever with this device showing
+  // Delivered. Same message shape, same reason (2026-09-04).
+  var syncResult = await grdData('write','grd_cart_orders',rec);
+  if(!syncResult)toast('Marked delivered on this device only -- server sync failed, so the Pro Shop may still show this order as open.',8000);
 }
+// ACCEPTED, NOT FIXED, and recorded here rather than left unexplained:
+// gcdSaveRound() pushes with no check on purpose. It is called on every shot
+// and every hole arrival, so a per-call failure toast would fire continuously
+// while the server is unreachable and would drown the two messages above,
+// which are the ones that matter. The round log is pace-of-play telemetry;
+// the order is the thing a person is waiting for.
 
 function rCaddie(){
   fillPropertySelects();
