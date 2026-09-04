@@ -10169,10 +10169,40 @@ function tmMigrateLegacyRecords(){
       });
       added++;
     });
-    if(added)tmSave();
+    // ── THE FLAG IS SET ONLY IF THE SAVE LANDED (2026-09-04) ────────────────
+    // This was `if(added)tmSave(); stRaw(FLAG,'1');` -- the save's return value
+    // ignored, the flag set unconditionally. st() returns false on a
+    // localStorage quota failure, which is not theoretical here: the mapping a
+    // few lines up embeds each legacy PHOTO as a data URL in the migrated
+    // record, so this write is the largest one this module ever makes.
+    //
+    // The consequence was permanent. A failed save set the done-flag anyway,
+    // so the migration never ran again, and the legacy rows sat in
+    // sd_template_records -- which this function deliberately never deletes --
+    // with nothing left in the app that would ever move them. The panel showed
+    // an empty template list and said nothing. That is the exact
+    // "silently orphans real user data" outcome the open-work row warned about,
+    // reached from a direction the row did not consider.
+    //
+    // Failing WITHOUT the flag is the safe direction: the next load retries,
+    // and the guard on already-present ids makes the retry harmless.
+    if(added&&!tmSave()){
+      if(typeof notify==='function'){
+        notify('Could not migrate '+added+' template record'+(added===1?'':'s')+
+               ' from the retired DXF manager -- local storage is full. Nothing was lost; '+
+               'free some space and reopen the panel to try again.','err');
+      }
+      console.error('tmMigrateLegacyRecords: tmSave() failed, flag deliberately NOT set');
+      return;
+    }
     stRaw(FLAG,'1');
     if(added&&typeof notify==='function')notify(added+' template record'+(added===1?'':'s')+' migrated from the retired DXF manager','');
-  }catch(e){}
+  }catch(e){
+    // Was a bare `catch(e){}`. A migration of real customer records that fails
+    // must not do so without a trace: the flag is not set, so it retries, and
+    // the failure is at least visible to anyone who looks.
+    console.error('tmMigrateLegacyRecords failed:', e && e.message);
+  }
 }
 function tmSave(){return st(TM_KEY,tmRecords);}
 tmLoad();
