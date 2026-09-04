@@ -138,15 +138,22 @@ APPS.forEach((app) => {
   test('the silent one-liner is gone from the source, not merely bypassed', () => {
     const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8')
       .replace(/\/\/[^\n]*/g, '');   // the new comment quotes the old code
-    assert.ok(!/function st\(k,v\)\{try\{localStorage\.setItem\(k,JSON\.stringify\(v\)\);\}catch\(e\)\{\}\}/.test(src),
-      'the swallowing one-liner is back');
     // BOTH pre-fix spellings, because they were not the same across the apps.
-    // Three had the empty catch above; SAIRNcare and SAIRNfreedom returned
-    // FALSE and logged nothing, which is why they were never on the
-    // swallowing-catch list at all. Asserting only the first spelling passes
-    // those two VACUOUSLY -- it would go green whether or not anything was
-    // fixed, which is exactly the trap the ld() suite hit with SAIRNbiz.
-    assert.ok(!/function st\(k,\s*v\)\s*\{\s*try\{\s*localStorage\.setItem\(k,\s*JSON\.stringify\(v\)\);\s*return true;\s*\}catch\(e\)\{\s*return false;\s*\}\s*\}/.test(src),
+    // Three had an empty catch; SAIRNcare and SAIRNfreedom returned FALSE and
+    // logged nothing, which is why they were never on the swallowing-catch
+    // list at all. Asserting only the first spelling passes those two
+    // VACUOUSLY -- it would go green whether or not anything was fixed.
+    //
+    // WHITESPACE IS STRIPPED FIRST, and that is not tidiness. The ld() suite
+    // learned this the expensive way: it added a second literal for the second
+    // spelling, and then a THIRD app passed that one vacuously too, because
+    // its copy of the identical line simply carried spaces. Literals cannot
+    // keep up with formatting; a reformatted return of the defect is still the
+    // defect.
+    const squashed = src.replace(/\s+/g, '');
+    assert.ok(!/functionst\(k,v\)\{try\{localStorage\.setItem\(k,JSON\.stringify\(v\)\);\}catch\(e\)\{\}\}/.test(squashed),
+      'the swallowing one-liner is back');
+    assert.ok(!/functionst\(k,v\)\{try\{localStorage\.setItem\(k,JSON\.stringify\(v\)\);returntrue;\}catch\(e\)\{returnfalse;\}\}/.test(squashed),
       'the silent return-false one-liner is back: false to nobody, and nothing logged');
     const bare = src.match(/catch\s*\([A-Za-z_$][\w$]*\)\s*\{\s*\}/g) || [];
     // `catch(_e){}` around the console.error itself is deliberate and is the

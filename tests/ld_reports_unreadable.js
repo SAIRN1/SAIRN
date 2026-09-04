@@ -14,7 +14,7 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. FOUR are fixed here, two at a time, deliberately: sweeping thirteen
+// pass. FIVE are fixed here, one or two at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
 //
 // THE REAL FUNCTIONS ARE DRIVEN against a fake localStorage. The whole point is
@@ -33,6 +33,7 @@ const APPS = [
   { file: 'sairnlegacy.html', name: 'SAIRNlegacy' },
   { file: 'sairnbiz.html', name: 'SAIRNbiz' },
   { file: 'sairncare.html', name: 'SAIRNcare' },
+  { file: 'sairnfreedom.html', name: 'SAIRNfreedom' },
 ];
 
 let pass = 0, fail = 0;
@@ -145,21 +146,30 @@ APPS.forEach((app) => {
   test('the silent one-liner is gone from the source, not merely bypassed', () => {
     const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8')
       .replace(/\/\/[^\n]*/g, '');   // the new comment quotes the old code
-    // BOTH shapes, because they were not identical across the apps: eleven
-    // wrote `r === null ? d : JSON.parse(r)` and SAIRNbiz wrote
-    // `r ? JSON.parse(r) : d`. A regex for only the first passes SAIRNbiz
-    // vacuously -- it would have gone green whether or not anything was fixed.
-    assert.ok(!/function ld\(k,d\)\{try\{var r=localStorage\.getItem\(k\);return r===null\?d:JSON\.parse\(r\);\}catch\(e\)\{return d;\}\}/.test(src),
+    // WHITESPACE IS STRIPPED FIRST, and that is not tidiness. This assertion
+    // has now been vacuous TWICE for exactly the reason it is written to
+    // catch. First it tested only `r === null ? d : JSON.parse(r)`, so
+    // SAIRNbiz -- which wrote `r ? JSON.parse(r) : d` -- passed it whether or
+    // not anything was fixed. Then the truthiness spelling was added as a
+    // second literal, and SAIRNfreedom passed THAT vacuously too, because its
+    // copy of the same line carried spaces:
+    //
+    //     function ld(k,d){ try{ var r=localStorage.getItem(k); ... } }
+    //
+    // Two literals cannot keep up with formatting. Normalising kills the whole
+    // class -- a reformatted return of the defect is still the defect.
+    const bare = src.replace(/\s+/g, '');
+    assert.ok(!/functionld\(k,d\)\{try\{varr=localStorage\.getItem\(k\);returnr===null\?d:JSON\.parse\(r\);\}catch\(e\)\{returnd;\}\}/.test(bare),
       'the swallowing one-liner is back');
-    assert.ok(!/function ld\(k,d\)\{try\{var r=localStorage\.getItem\(k\);return r\?JSON\.parse\(r\):d;\}catch\(e\)\{return d;\}\}/.test(src),
+    assert.ok(!/functionld\(k,d\)\{try\{varr=localStorage\.getItem\(k\);returnr\?JSON\.parse\(r\):d;\}catch\(e\)\{returnd;\}\}/.test(bare),
       'the swallowing one-liner is back, in its truthiness spelling');
   });
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these four are done');
+section('the checker agrees these five are done');
 
-const REMAINING = 10;   // of the original 14
+const REMAINING = 9;   // of the original 14
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -181,7 +191,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other ten are still on the list, not quietly dropped', () => {
+test('...and the other nine are still on the list, not quietly dropped', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,
