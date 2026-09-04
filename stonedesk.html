@@ -1873,7 +1873,56 @@ window.sdLoad=sdLoad;
 // exact `JSON.parse('[]')||SEED` trap flagged in SAIRNBUILD-SCOPE.md never
 // gets a chance to fire, because the flag is checked before any
 // truthiness test on the loaded data, not after.
-function sdDemoCleared(){try{return localStorage.getItem('sd_demo_cleared')==='1';}catch(e){return false;}}
+//
+// ══ NOW ALSO SCOPED TO THE DEMO LICENCE (2026-09-04, Michael's decision) ═══
+// The audit in docs/2026-09-04-stonedesk-seed-fallback-audit.md counted 32
+// seed-fallback sites. Thirty of them are purely local and mask nothing, so
+// they are not the sd_crm/Slabs defect -- but a REAL PAYING CUSTOMER whose
+// account happens to look untouched was still shown fabricated figures as its
+// own business. `sd_ap` alone computed open payables, due-this-week, OVERDUE
+// and month-to-date-paid, plus a full aging table, off six invented vendor
+// bills DATED 2024. `sd_equipment` carried ~$471,000, `sd_bids` ~$293,000.
+//
+// The decision was NOT a blanket delete: the demo account has to keep looking
+// like a populated shop for real sales use. So the seeds are scoped to the one
+// licence that is the sales demo, and every other licence gets the honest
+// empty state -- the same answer Slabs got in `501d15b`.
+//
+// ── THREE THINGS TO KNOW BEFORE EDITING THIS ──
+//
+// 1. THE NAME IS NOW NARROWER THAN WHAT IT DOES. This answers "should demo
+//    seed data be suppressed?", of which "the user cleared it" is one of two
+//    reasons. It was NOT renamed: 59 call sites across a 2MB file, and
+//    CLAUDE.md's syntax rule forbids bulk find-replace precisely because that
+//    has broken this file before. One gate widened beats 32 sites edited.
+//    sdDemoClearedByUser() below is the original meaning, for the one caller
+//    that genuinely needs it (the Admin toggle's checked state).
+//
+// 2. AN UNLICENSED INSTALL NOW GETS EMPTY STATES TOO, and that is a real
+//    behaviour change to the "fresh sales-demo install" case described three
+//    paragraphs up. It follows from scoping to a named licence rather than to
+//    "demo-ish": a sales demo signs in with SD-PINNACLE-2026, and anything
+//    that cannot prove it is that licence is treated as somebody's real shop.
+//    Failing toward an empty state is the safe direction -- an empty panel is
+//    a missing feature, an invented payables total is a wrong number.
+//
+// 3. IT READS THE LICENCE THROUGH sdLicenseKey(), never localStorage directly.
+//    That resolver is the single source of truth for which key names count
+//    (see its own header on the six-place, three-spelling drift it replaced).
+//    Comparison is trimmed and case-insensitive so a hand-typed key with a
+//    stray space or lowercase still demos.
+var SD_DEMO_LICENSE='SD-PINNACLE-2026';
+function sdIsDemoLicense(){
+  try{
+    var k=(typeof sdLicenseKey==='function')?sdLicenseKey():'';
+    return String(k||'').trim().toUpperCase()===SD_DEMO_LICENSE;
+  }catch(e){ return false; }
+}
+window.sdIsDemoLicense=sdIsDemoLicense;
+// The original meaning, unchanged: did the user press Clear Demo Data.
+function sdDemoClearedByUser(){try{return localStorage.getItem('sd_demo_cleared')==='1';}catch(e){return false;}}
+window.sdDemoClearedByUser=sdDemoClearedByUser;
+function sdDemoCleared(){ return sdDemoClearedByUser()||!sdIsDemoLicense(); }
 window.sdDemoCleared=sdDemoCleared;
 // renderCustomers() is defined once, for real, at its Tier-3 definition
 // later in the file -- this early stub (which dispatched to sdCustRender,
@@ -5157,7 +5206,13 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   var lkEl=document.getElementById('adm-lic-status');
   if(lkEl)lkEl.textContent=lk||'Not Set';
   var demoEl=document.getElementById('adm-demo');
-  if(demoEl)demoEl.checked=!sdDemoCleared();
+  // sdDemoClearedByUser(), not sdDemoCleared(): this checkbox reports whether
+  // the user has pressed Clear Demo Data, which is a fact about their action.
+  // Since 2026-09-04 sdDemoCleared() also answers true for any licence that is
+  // not the demo one, and reading it here would show the box already unticked
+  // to every real customer -- telling them they had cleared demo data they
+  // never had.
+  if(demoEl)demoEl.checked=!sdDemoClearedByUser();
   window.sdAdminSave=function(){
     var s={company:document.getElementById('adm-co').value,owner:document.getElementById('adm-owner').value,
       phone:document.getElementById('adm-phone').value,addr:document.getElementById('adm-addr').value,
@@ -5203,7 +5258,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     if(cb.checked){
       stRaw('sd_demo_cleared','0');
       document.getElementById('adm-demo-confirm').style.display='none';
-      showToast('Demo mode re-enabled.');
+      // Since 2026-09-04 the seeds are scoped to SD-PINNACLE-2026, so on any
+      // other licence this flag now changes nothing. Saying "Demo mode
+      // re-enabled" there would be an unqualified success for an action that
+      // did not happen -- the same false-success class as the intake panel's
+      // "Customer + Job created from intake!".
+      showToast((typeof sdIsDemoLicense==='function'&&!sdIsDemoLicense())
+        ? 'Setting saved, but demo data only loads on the demo licence (SD-PINNACLE-2026). Nothing was added to this account.'
+        : 'Demo mode re-enabled.');
       return;
     }
     cb.checked=true; // revert until the explicit confirm below is clicked
@@ -5227,9 +5289,16 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     'sd_manifest','sd_sintered','sd_reviews','sd_contractors','sd_referrals','sd_priceintel',
     'sd_equipment','sd_employees','sd_stoneyard','sd_subs','sd_bids','sd_damage','sd_training',
     'sd_bulletins','sd_waste','sd_nps','sd_ap','sd_quote_history',
-    'sd_fieldmap' /* added 2026-08-04, found during Field Map's audit -- see the
+    'sd_fieldmap', /* added 2026-08-04, found during Field Map's audit -- see the
       load() fix note at its ||DISPATCH fallback for why this was missed
-      the first time (differently-named fallback variable, not ||SEED). */];
+      the first time (differently-named fallback variable, not ||SEED). */
+    /* sd_it_tickets and sd_it_licenses added 2026-09-04, found by diffing this
+       list against every seeded key rather than by reading it. Same omission as
+       sd_fieldmap above and the same cause: their fallback variables are named
+       TICKETS and LICENSES, not SEED, so every scan that looked for ||SEED
+       missed them. Before this, "Clear Demo Data" left the IT panel seeded --
+       it reported success and two of the lists it names stayed populated. */
+    'sd_it_tickets','sd_it_licenses'];
   function sdClearSafeDemoData(){
     stRaw('sd_demo_cleared','1');
     SAFE_DEMO_KEYS.forEach(function(k){st(k,[]);});

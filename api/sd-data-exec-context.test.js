@@ -158,8 +158,31 @@ async function main() {
     // rather than discovering it as a surprise.
     const sub = ['sairndental-book.html', 'sairndental-complaint.html', 'stonedesk-hr.html',
                  'stonedesk-intake.html'];
-    const apps = fs.readdirSync(root).filter(f => f.endsWith('.html') && sub.indexOf(f) === -1);
-    assert.strictEqual(apps.length, 18, 'app file count moved -- update the cto architecture line');
+    // ── DERIVED FROM GIT, NOT FROM THE WORKING DIRECTORY (2026-09-04) ──────
+    // This used fs.readdirSync(root), which counts whatever happens to be
+    // sitting on disk. An untracked scratch .html file in one clone made the
+    // count 19 and failed this assertion there and nowhere else -- a test that
+    // fails on a developer's private file trains people to ignore it, which is
+    // the same "a permanently-failing check hides the next real one" argument
+    // the div-balance row made about itself.
+    //
+    // The claim is about THE REPO, so the list must come from the repo. Falls
+    // back to readdirSync only if git is unavailable, and says so rather than
+    // silently reverting to the behaviour being fixed.
+    const { execFileSync } = require('child_process');
+    let tracked = null;
+    try {
+      tracked = execFileSync('git', ['ls-files', '*.html'], { cwd: root, encoding: 'utf8' })
+        .split('\n').filter(f => f && f.indexOf('/') === -1);
+    } catch (e) {
+      console.log('       note: git ls-files unavailable (' + e.message.split('\n')[0] +
+                  '), falling back to a working-directory listing');
+      tracked = fs.readdirSync(root).filter(f => f.endsWith('.html'));
+    }
+    const apps = tracked.filter(f => sub.indexOf(f) === -1);
+    assert.strictEqual(apps.length, 18,
+      'app file count moved -- update the cto architecture line. Tracked root .html: ' +
+      tracked.length + ' (' + apps.join(', ') + ')');
 
     const proxy = fs.readFileSync(path.join(root, 'api', 'claude.js'), 'utf8');
     const block = proxy.slice(

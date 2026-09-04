@@ -145,7 +145,58 @@ rank the sites, not to be quoted.
 
 ---
 
-## What is left open, and it is a decision rather than a defect
+## DECIDED, same day — the seeds are scoped to the demo licence
+
+**Michael's call, 2026-09-04, after reading the numbers below:** not a blanket
+delete. The demo account has to keep looking like a populated shop for real
+sales use, but a real paying customer whose account happens to look untouched
+must never see fabricated numbers presented as their own business.
+
+So the seeds render for **`SD-PINNACLE-2026`** and every other licence gets the
+honest empty state — the same answer Slabs got in `501d15b`.
+
+**Implemented as one widened gate, not 32 edits.** Every seed site already calls
+`sdDemoCleared()`; it now returns true for any licence that is not the demo one,
+which reaches all of them at once. Rewriting 59 call sites in a 2MB file is
+exactly the bulk find-replace CLAUDE.md's syntax rule forbids, and that rule
+exists because it has broken this file before.
+
+Three consequences worth knowing:
+
+1. **The name is now narrower than the behaviour.** `sdDemoCleared()` answers
+   *"should demo seed data be suppressed?"*, of which "the user cleared it" is
+   one of two reasons. It was not renamed, for the reason above.
+   `sdDemoClearedByUser()` carries the original meaning for the one caller that
+   needs it — the Admin toggle's checked state, which reports a user action and
+   would otherwise show every real customer as having cleared demo data they
+   never had.
+2. **An unlicensed install now gets empty states too.** That is a real change to
+   the "fresh sales-demo install" case the old comment described. It follows
+   from scoping to a named licence rather than to "demo-ish", and failing toward
+   empty is the deliberate direction: an empty panel is a missing feature, an
+   invented payables total is a wrong number.
+3. **Re-enabling demo mode off the demo licence no longer claims it worked.**
+   The flag still flips, nothing seeds, and the toast says so — a success
+   message for an action that did nothing is the same class as the intake
+   panel's *"Customer + Job created from intake!"*.
+
+**A separate omission found while doing it, by deriving the list rather than
+reading it:** `SAFE_DEMO_KEYS` — the single source of truth for what "Clear Demo
+Data" wipes — was missing `sd_it_tickets` and `sd_it_licenses`. Their fallback
+variables are named `TICKETS` and `LICENSES`, so every scan looking for `||SEED`
+walked past them. Identical omission and identical cause to `sd_fieldmap` in
+2026-08-04. Before this, Clear Demo Data reported success and left the IT panel
+seeded. Both added.
+
+Held by `tests/demo_seed_licence_scope.js`, 15 assertions — including that a
+near-miss licence (`SD-PINNACLE-2027`, `SD-PINNACLE-2026-B`) is not the demo
+licence, that a missing `sdLicenseKey` resolver fails toward empty rather than
+toward seeded, and that `SAFE_DEMO_KEYS` covers every seeded key **by deriving
+both sides** rather than by comparing two hand-written lists.
+
+---
+
+## The numbers the decision was made on
 
 The 30 local sites are the demo. Nothing real is hidden behind any of them. But
 a first-run shop that never clears demo data still sees, presented as its own
@@ -160,16 +211,17 @@ business:
 - **`sd_pos`**, **`sd_receiving`**, **`sd_stoneyard`**, **`sd_referrals`** —
   five-figure invented totals each.
 
-**The Slabs precedent says delete the fallback and render an honest empty
-state.** Doing that to 30 panels removes the demo experience from the product,
-which is Michael's call and not a code fix. **Recorded here with the numbers so
-the decision can be made on the numbers rather than on "~28 unaudited sites".**
+**All of the above is now suppressed on every licence except
+`SD-PINNACLE-2026`** — see the decision section higher up. The numbers are kept
+here because they are what the decision was made on, and because they are the
+right list to re-check if the gate is ever changed.
 
-A middle option exists and is worth naming: a demo shop could be seeded on
-first run as *real local records* the user can see and delete, rather than as a
-fallback that silently answers when a store is empty. That converts an
-invisible fabrication into visible sample data. It is a larger change than
-either alternative and is not proposed here, only recorded.
+A middle option was considered and not taken, recorded so it is not
+re-discovered as new: a demo shop could be seeded on first run as *real local
+records* the user can see and delete, rather than as a fallback that silently
+answers when a store is empty. That converts an invisible fabrication into
+visible sample data. It is a larger change than licence-scoping and buys little
+once the seeds only ever reach the demo account.
 
 ## The second half of Guardian's task — other apps
 
