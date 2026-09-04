@@ -45,48 +45,94 @@ const rel = html.slice(s).search(/\r?\n\}/);
 assert.ok(rel > 0, 'intakeBuildLink is not terminated');
 const src = html.slice(s, s + rel) + '\n}';
 
+// UPDATED 2026-09-03. The builder now resolves the PUBLIC SHOP SLUG from
+// sd_public_shop instead of pasting a company display name, so it is async and
+// this harness awaits it. The parameter is still `?shop=` -- the same spelling
+// /stonedesk-catalog has used since 2026-09-02 -- but it now carries the value
+// that spelling means everywhere else in the app.
+//
+// `opts.slug === null` models a shop that has not claimed an address;
+// `opts.readFails` models the read itself failing, which must not produce a URL.
 function build(opts) {
   opts = opts || {};
-  const field = { value: '' };
+  const field = { value: '', placeholder: '' };
   const ctx = {
-    console,
+    console: { log() {}, warn() {}, error() {} },
     INTAKE_FORM_URL: 'https://sairn.vercel.app/stonedesk-intake',
-    // `in` rather than `||`, so a deliberately-null profile is not replaced by
-    // the default and the fallback branch actually gets exercised.
+    // Still supplied, and still must not appear in the URL.
     _sdBizProfile: ('profile' in opts) ? opts.profile : { company_name: 'Pinnacle Stone & Design' },
     slabLicKey: () => 'SD-PINNACLE-2026-SECRET',
+    sdData: opts.noSdData ? undefined : (() => (opts.readFails
+      ? Promise.reject(new Error('read failed'))
+      : Promise.resolve(('slug' in opts) ? (opts.slug === null ? {} : { shop_slug: opts.slug })
+                                         : { shop_slug: 'pinnacle-stone' }))),
     document: { getElementById: (id) => (id === 'intake-link-field' ? field : null) }
   };
   vm.createContext(ctx);
   vm.runInContext(src + '\nintakeBuildLink();', ctx);
-  return field.value;
+  // One turn is enough: the builder awaits a single already-resolved promise.
+  return Promise.resolve().then(() => Promise.resolve()).then(() => field);
 }
+
+async function atest(name, fn) {
+  try { await fn(); console.log('  ok   ' + name); pass++; }
+  catch (e) { console.log('  FAIL ' + name + '\n       ' + e.message); fail++; }
+}
+
+(async function () {
 
 // ---------------------------------------------------------------------------
 section('the link no longer carries a credential');
 
-test('THE ONE THAT MATTERS: the licence key is not in the URL', () => {
-  const url = build();
+await atest('THE ONE THAT MATTERS: the licence key is not in the URL', async () => {
+  const url = (await build()).value;
   assert.ok(!url.includes('SD-PINNACLE-2026-SECRET'),
     'the licence key is in a link the shop sends to customers: ' + url);
   assert.ok(!/[?&]lic=/.test(url), 'a lic parameter is back: ' + url);
 });
 
-test('...and not merely renamed or encoded around', () => {
-  const url = build();
+await atest('...and not merely renamed or encoded around', async () => {
+  const url = (await build()).value;
   assert.ok(!/SD-PINNACLE/i.test(decodeURIComponent(url)),
     'the key survives decoding: ' + decodeURIComponent(url));
 });
 
-test('the shop name still travels, so the link is still useful', () => {
-  const url = build();
-  assert.match(url, /\?shop=Pinnacle%20Stone%20%26%20Design/);
+// ---------------------------------------------------------------------------
+section('?shop= carries the PUBLIC SLUG, the same meaning /stonedesk-catalog gives it');
+
+await atest('the slug travels, so the link can actually identify the shop', async () => {
+  const url = (await build({ slug: 'pinnacle-stone' })).value;
+  assert.match(url, /\?shop=pinnacle-stone$/);
 });
 
-test('a shop with no profile falls back to a name, not to a key', () => {
-  const url = build({ profile: null });
-  assert.match(url, /\?shop=StoneDesk$/);
-  assert.ok(!url.includes('SECRET'));
+await atest('THE OLD BEHAVIOUR IS GONE: a company display name is not the slug', async () => {
+  // This used to emit ?shop=Pinnacle%20Stone%20%26%20Design. A display name
+  // cannot identify a shop to api/stonedesk-public.js, so the link could never
+  // have submitted anything even once the page existed.
+  const url = (await build({ slug: 'pinnacle-stone' })).value;
+  assert.ok(!/Pinnacle%20Stone/.test(url), 'the display name is back in the URL: ' + url);
+  assert.ok(!/shop=StoneDesk/.test(url), 'the display-name fallback is back: ' + url);
+});
+
+await atest('a shop with NO public address gets no link and is told why', async () => {
+  const f = await build({ slug: null });
+  assert.strictEqual(f.value, '', 'a URL was emitted for a shop with no slug: ' + f.value);
+  assert.match(f.placeholder, /Public Catalog panel/,
+    'the field does not say how to fix it: ' + f.placeholder);
+});
+
+await atest('a FAILED read produces no link either, and says so', async () => {
+  // Emitting a URL built from a failed read is the same shape as everything
+  // else this panel was doing wrong: an unusable thing presented as ready.
+  const f = await build({ readFails: true });
+  assert.strictEqual(f.value, '');
+  assert.match(f.placeholder, /Could not check/);
+});
+
+await atest('no sdData at all is handled without throwing', async () => {
+  const f = await build({ noSdData: true });
+  assert.strictEqual(f.value, '');
+  assert.match(f.placeholder, /reload/i);
 });
 
 test('the builder never calls slabLicKey() at all any more', () => {
@@ -115,3 +161,5 @@ console.log('\n' + (fail === 0
   ? 'ALL ' + pass + ' INTAKE-LINK ASSERTIONS PASS'
   : pass + ' passed, ' + fail + ' FAILED'));
 process.exit(fail === 0 ? 0 : 1);
+
+})();

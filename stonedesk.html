@@ -34940,8 +34940,10 @@ function intakeInit() {
 function intakeBuildLink() {
   var lf = document.getElementById('intake-link-field');
   if (!lf) return;
-  var shop = (typeof _sdBizProfile !== 'undefined' && _sdBizProfile && _sdBizProfile.company_name)
-    ? _sdBizProfile.company_name : 'StoneDesk';
+  // The company display name used to be read here and pasted into the URL.
+  // It is gone rather than left unused: a dead read of _sdBizProfile next to a
+  // link builder is exactly what a later reader would wire back in.
+  //
   // THE LICENCE KEY IS NO LONGER PUT IN THIS URL (2026-09-02).
   //
   // It used to read `...&lic=' + encodeURIComponent(slabLicKey())`, and the
@@ -34963,8 +34965,40 @@ function intakeBuildLink() {
   // INTAKE_FORM_URL is a 404 (verified), so the form has never existed and no
   // page consumes `lic`. If the intake form is ever built it needs a
   // purpose-made public token, never this key.
-  var url = INTAKE_FORM_URL + '?shop=' + encodeURIComponent(shop);
-  lf.value = url;
+  // ── ?shop= MUST BE THE PUBLIC SLUG, NOT THE COMPANY NAME (2026-09-03) ────
+  // This built `?shop=<company display name>` while /stonedesk-catalog has used
+  // `?shop=<shop_slug>` since 2026-09-02 -- the same parameter meaning two
+  // different things in one app. A display name cannot identify a shop to
+  // api/stonedesk-public.js, so the link could never have submitted anything
+  // even once the page existed.
+  //
+  // The slug comes from sd_public_shop, the same record the Public Catalog
+  // panel edits. Read here rather than borrowed from that panel's `pcShop`:
+  // that variable lives inside its own IIFE and is not reachable from this
+  // script block, so referencing it would have silently evaluated to undefined
+  // and shown every shop the "no address set" message forever.
+  //
+  // A shop that has not claimed a slug has no usable intake link, and the field
+  // SAYS SO rather than emitting a URL that will be refused -- the whole defect
+  // being repaired here was a link that looked ready and was not.
+  lf.value = '';
+  lf.placeholder = 'Checking your public address…';
+  if (typeof sdData !== 'function') {
+    lf.placeholder = 'Cannot check your public address right now — reload the page.';
+    return;
+  }
+  sdData('read', 'sd_public_shop', {}).then(function (rec) {
+    var slug = (rec && rec.shop_slug) || '';
+    if (!slug) {
+      lf.placeholder = 'Set a public address in the Public Catalog panel first — an intake link needs one.';
+      return;
+    }
+    lf.placeholder = '';
+    lf.value = INTAKE_FORM_URL + '?shop=' + encodeURIComponent(slug);
+  }, function (e) {
+    console.error('[intake] could not read sd_public_shop for the link:', e);
+    lf.placeholder = 'Could not check your public address — reload the page.';
+  });
 }
 
 // INTAKE_FORM_URL IS STILL A 404 AND THE TOAST USED TO SAY OTHERWISE.

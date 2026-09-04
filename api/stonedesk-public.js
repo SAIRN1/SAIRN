@@ -57,6 +57,18 @@ const {
 
 const MAX_TEXT = 2000;
 const MAX_SHORT = 200;
+// Photo limits (2026-09-03). Three slots matches what the legacy
+// intake_submissions table carried (photo_base64, _2, _3), so nothing a shop
+// could previously receive is now refused.
+//
+// MAX_PHOTO_CHARS is the base64 STRING length, not the decoded byte count,
+// because that is what actually gets stored: sd_quote_request_photos caps a row
+// at 1,572,864 bytes of jsonb and the data URI is most of it. 1.4 MB of base64
+// is roughly a 1 MB image, comfortably inside the row cap with the slot and
+// key overhead, and larger than any phone photo that has been through the
+// client-side downscale in stonedesk-intake.html.
+const MAX_PHOTOS = 3;
+const MAX_PHOTO_CHARS = 1400000;
 
 function newId(prefix) {
   return prefix + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
@@ -76,6 +88,11 @@ function validateRequest(r) {
   const sqftRaw = r.sqft;
   const sqft = (sqftRaw === '' || sqftRaw == null) ? null : Number(sqftRaw);
   if (sqft !== null && (!isFinite(sqft) || sqft < 0)) return { ok: false, message: 'Square footage must be a number' };
+  // Intake dimensions, checked BEFORE the value object is built so a bad one
+  // is a 400 naming the field rather than a null quietly stored as an answer.
+  for (const f of ['run_a_ft', 'run_b_ft', 'sink_count']) {
+    if (num(r[f]) === undefined) return { ok: false, message: 'Measurements must be numbers' };
+  }
   return {
     ok: true,
     value: {
@@ -87,9 +104,42 @@ function validateRequest(r) {
       timeline: clean(r.timeline, MAX_SHORT),
       message: clean(r.message, MAX_TEXT),
       slab_id: clean(r.slab_id, MAX_SHORT),
-      slab_label: clean(r.slab_label, MAX_SHORT)
+      slab_label: clean(r.slab_label, MAX_SHORT),
+      // ── PROJECT INTAKE FIELDS (2026-09-03) ──────────────────────────────
+      // stonedesk-intake.html posts the same `quote_request` action with a few
+      // more fields rather than getting an endpoint of its own. The catalog's
+      // quote form and the intake form are the same thing asked in two levels
+      // of detail; a second public surface would have meant a second slug
+      // column, a second rate-limit table and a second set of failure paths to
+      // keep honest.
+      //
+      // All optional. A catalog quote request posts none of them and behaves
+      // exactly as before, which is what keeps this additive.
+      contact_role: clean(r.contact_role, MAX_SHORT),
+      shape: clean(r.shape, MAX_SHORT),
+      run_a_ft: num(r.run_a_ft),
+      run_b_ft: num(r.run_b_ft),
+      sink_count: num(r.sink_count),
+      contact_time: clean(r.contact_time, MAX_SHORT),
+      contact_method: clean(r.contact_method, MAX_SHORT),
+      // The COUNT is recorded on the request; the bytes are not.
+      // sd_quote_requests.data is capped at 64 KB by sdqr_data_size and one
+      // phone photo base64-encodes well past that -- PostgREST would 400 and
+      // this endpoint maps 400 to NOT_PROVISIONED, telling a customer the shop
+      // cannot take requests because their photo was too big. Photos go to
+      // sd_quote_request_photos; see sql/stonedesk_intake_photos_2026-09-03.sql.
+      photo_count: 0
     }
   };
+}
+
+// Shared by the intake dimensions. An empty field is absent, not zero. A
+// non-numeric one returns undefined so the caller can reject it rather than
+// storing NaN, which JSON.stringify would silently write as null.
+function num(v) {
+  if (v === '' || v == null) return null;
+  const n = Number(v);
+  return (isFinite(n) && n >= 0) ? n : undefined;
 }
 
 module.exports = async (req, res) => {
@@ -210,8 +260,29 @@ module.exports = async (req, res) => {
     const v = validateRequest(body.request || {});
     if (!v.ok) { res.status(400).json({ error: { code: 'INVALID', message: v.message } }); return; }
 
+    // ── PHOTOS ARE VALIDATED BEFORE THE REQUEST IS WRITTEN ────────────────
+    // Rejecting an oversized photo AFTER the request row exists would leave a
+    // quote request the shop can see with a photo the customer thinks they
+    // sent. Same orphan shape as the SAIRNdental booking that created a
+    // patient record and then failed -- fixed there on 2026-09-03, and not
+    // worth reproducing here a day later.
+    const photos = Array.isArray(body.photos) ? body.photos.slice(0, MAX_PHOTOS) : [];
+    for (const p of photos) {
+      if (typeof p !== 'string' || !/^data:image\/(jpeg|png|webp);base64,/.test(p)) {
+        res.status(400).json({ error: { code: 'INVALID_PHOTO', message: 'Photos must be JPEG, PNG or WebP images' } });
+        return;
+      }
+      if (p.length > MAX_PHOTO_CHARS) {
+        res.status(400).json({ error: { code: 'PHOTO_TOO_LARGE', message: 'One of those photos is too large -- please send a smaller one, or fewer of them' } });
+        return;
+      }
+    }
+
     const requestId = newId('QR');
-    const payload = Object.assign({}, v.value, { submitted_at: new Date().toISOString() });
+    const payload = Object.assign({}, v.value, {
+      submitted_at: new Date().toISOString(),
+      photo_count: photos.length
+    });
     const w = await fetch(rest('sd_quote_requests'), {
       method: 'POST',
       headers: Object.assign({}, headers, { Prefer: 'return=minimal' }),
@@ -226,11 +297,46 @@ module.exports = async (req, res) => {
     }
     if (!w.ok) { res.status(502).json({ error: { message: 'Could not send your request -- please try again, or call the shop' } }); return; }
 
+    // ── THE PHOTO WRITE REPORTS WHETHER IT HAPPENED ───────────────────────
+    // The request row is already saved and the shop can act on it, so a failed
+    // photo must NOT fail the whole submission -- that would throw away a
+    // usable lead over an attachment. But it must not be silent either: the
+    // customer took the photo because they were asked to, and the panel's
+    // whole intake workflow (Claude reads the kitchen, dimensions load into
+    // the Drawing Tool) depends on it being there.
+    //
+    // So the response says photos_saved plainly and the page tells the
+    // customer. This is the exact shape the intake PANEL was getting wrong on
+    // the other side of the same feature until 2026-09-03.
+    let photosSaved = 0;
+    if (photos.length) {
+      const rows = photos.map((p, i) => ({
+        license_hash: shop.licenseHash, request_id: requestId,
+        data: { photo_base64: p, slot: i + 1 }
+      }));
+      const pw = await fetch(rest('sd_quote_request_photos'), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=minimal' }),
+        body: JSON.stringify(rows)
+      });
+      if (pw.ok) {
+        photosSaved = photos.length;
+      } else {
+        // Logged with the reference, so a shop asking "where is the photo?"
+        // can be answered from the logs rather than guessed at.
+        const detail = await pw.text().catch(() => '');
+        console.error('stonedesk-public: photos rejected for ' + requestId + ' (' + pw.status + '):', detail.slice(0, 300));
+      }
+    }
+
     // The reference is returned so a caller has something to quote on the
     // phone. It is NOT a tracking token and grants nothing -- knowing it does
     // not let anyone read the request back, because there is no read action for
     // a quote request on this endpoint at all.
-    res.status(200).json({ ok: true, reference: requestId });
+    res.status(200).json({
+      ok: true, reference: requestId,
+      photos_sent: photos.length, photos_saved: photosSaved
+    });
   } catch (err) {
     console.error('stonedesk-public error:', err);
     res.status(502).json({ error: { message: 'Something went wrong -- please try again, or call the shop directly' } });

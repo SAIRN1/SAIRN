@@ -120,7 +120,7 @@ const EXEC_CONTEXT = {
     // of which (sairnfuneral, sairnhr, sairnacc) have no app file in this repo
     // at all. So no single number is right without saying which thing it
     // counts, and this line now says.
-    'Architecture: HONEY COMB cellular platform -- each app is a standalone HTML file on Vercel, authenticated per employee against its own api/*-auth.js (licence key as bearer, PIN login, signed session token from the shared api/_lib/auth.js), firewalled to allowlisted domains. 18 app files and 3 sub-pages in the repo; the Claude proxy allowlists 20 distinct app_ids, three of which have no app file here. They share one Supabase Postgres project, not a Railway one.',
+    'Architecture: HONEY COMB cellular platform -- each app is a standalone HTML file on Vercel, authenticated per employee against its own api/*-auth.js (licence key as bearer, PIN login, signed session token from the shared api/_lib/auth.js), firewalled to allowlisted domains. 18 app files and 4 sub-pages in the repo; the Claude proxy allowlists 20 distinct app_ids, three of which have no app file here. They share one Supabase Postgres project, not a Railway one.',
     'IP: HONEY COMB architecture and 6-Layer AI Keyboard Privacy Firewall both have provisional patents filed May 21 2026. Non-provisional deadline May 21 2027.',
     // CORRECTED 2026-09-02: the cookie/cross-origin Railway-Vercel clause
     // described an auth model this platform no longer uses. Sessions are

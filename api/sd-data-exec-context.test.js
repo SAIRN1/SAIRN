@@ -145,7 +145,19 @@ async function main() {
     const fs = require('fs');
     const path = require('path');
     const root = path.join(__dirname, '..');
-    const sub = ['sairndental-book.html', 'sairndental-complaint.html', 'stonedesk-hr.html'];
+    // stonedesk-intake.html joined this list on 2026-09-03. It is a public
+    // customer form, the same category as the two sairndental-* pages, not an
+    // app a shop logs into -- so the APP count is unchanged and the sub-page
+    // count moves 3 -> 4.
+    //
+    // NOTED, NOT CHANGED: stonedesk-catalog.html is also a public sub-page by
+    // that definition and is still counted as an APP here, which is why the
+    // app total went 17 -> 18 when it landed on 2026-09-02. Reclassifying it
+    // would move two numbers in a line nobody asked me to touch; it is flagged
+    // here so the next person to edit this count knows the boundary is fuzzy
+    // rather than discovering it as a surprise.
+    const sub = ['sairndental-book.html', 'sairndental-complaint.html', 'stonedesk-hr.html',
+                 'stonedesk-intake.html'];
     const apps = fs.readdirSync(root).filter(f => f.endsWith('.html') && sub.indexOf(f) === -1);
     assert.strictEqual(apps.length, 18, 'app file count moved -- update the cto architecture line');
 
@@ -163,7 +175,7 @@ async function main() {
     assert.strictEqual(new Set(ids).size, 20, 'the allowlist has a real duplicate now');
 
     const cto = mod.getExecContext('cto');
-    assert.match(cto, /18 app files and 3 sub-pages/);
+    assert.match(cto, /18 app files and 4 sub-pages/);
     assert.match(cto, /20 distinct app_ids/);
   });
 
