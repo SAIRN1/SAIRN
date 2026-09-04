@@ -551,8 +551,8 @@
       "task": "detector for computed refusals nobody reads",
       "claimed_at": "2026-09-04T13:46:45Z",
       "claimed_at_epoch": 1788529605.737531,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:54:26Z"
     }
   ]
 }
