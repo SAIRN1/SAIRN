@@ -383,8 +383,8 @@
       "task": "company profile write only and entity driven tax deadlines",
       "claimed_at": "2026-09-04T10:47:50Z",
       "claimed_at_epoch": 1788518870.7747228,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T10:59:05Z"
     }
   ]
 }
