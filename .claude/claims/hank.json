@@ -492,6 +492,16 @@
       "claimed_at_epoch": 1788521011.8517756,
       "status": "released",
       "released_at": "2026-09-04T11:39:19Z"
+    },
+    {
+      "id": "hank-1788523056",
+      "session": "hank",
+      "subject": "sairnroofing",
+      "task": "live round trip verification claim photos reconcile",
+      "claimed_at": "2026-09-04T11:57:36Z",
+      "claimed_at_epoch": 1788523056.8052776,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
