@@ -22,8 +22,42 @@ function mockRes() {
   res.json = function (payload) { res.body = payload; return res; };
   return res;
 }
-function mockReq(body, authz) {
-  return { method: 'POST', headers: authz ? { authorization: authz } : {}, body: body };
+// ── THE SESSION THIS HARNESS NEVER SENT (repaired 2026-09-04) ──────────────
+// All three assertions had been answering 401, not the status they name. The
+// harness sent only `Authorization: Bearer`, and every dnt_* branch of
+// api/sd-data.js has required an `x-sd-auth` session since employee auth
+// landed -- so a file whose whole purpose is to prove a stored-XSS payload is
+// refused was proving only that an unauthenticated caller is refused, which is
+// a different guarantee and one nobody was worried about.
+//
+// sairn-api-tester rule 1, and the same shape that skill records for
+// api/_lib/dental-credentials-endpoint.test.js: fifteen 401s and one test that
+// passed for the wrong reason.
+//
+// SIGNED FOR THE HASH THE HANDLER ACTUALLY DERIVES -- this file stubs
+// api/_lib/license to return license_hash 'test-hash'. Signing for a hash of
+// the bearer key verifies fine in isolation and is rejected by the handler with
+// an indistinguishable NO_SESSION (rule 2). SD_AUTH_SECRET is set before
+// api/_lib/auth is required, because signer and verifier both read it at call
+// time.
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET || 'test-secret-for-sd-data-harnesses';
+const { signSessionToken } = require('./_lib/auth');
+const TEST_LICENSE_HASH = 'test-hash';
+function dntSession(role) {
+  return signSessionToken({
+    app: 'sairndental',
+    employee_id: 'EMP-' + String(role || 'owner').toUpperCase(),
+    role: role || 'owner',
+    license_hash: TEST_LICENSE_HASH
+  });
+}
+
+// `role: null` sends NO session, so the no-session rung of the ladder stays
+// testable rather than being made unreachable by the fix.
+function mockReq(body, authz, role) {
+  const headers = authz ? { authorization: authz } : {};
+  if (role !== null) headers['x-sd-auth'] = dntSession(role || 'owner');
+  return { method: 'POST', headers: headers, body: body };
 }
 
 let passed = 0;

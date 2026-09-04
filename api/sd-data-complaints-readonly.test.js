@@ -9,14 +9,47 @@
 
 const assert = require('assert');
 
+// ── THE SESSION THIS HARNESS NEVER SENT (repaired 2026-09-04) ──────────────
+// Every assertion below had been answering 401, not the status it names. The
+// harness sent only `Authorization: Bearer`, and every dnt_* branch of
+// api/sd-data.js has required an `x-sd-auth` session since employee auth
+// landed. So both tests named a real guarantee and never reached it --
+// sairn-api-tester rule 1, and the same shape that skill records happening to
+// api/_lib/dental-credentials-endpoint.test.js.
+//
+// SIGNED FOR THE HASH THE HANDLER ACTUALLY DERIVES. This file stubs
+// api/_lib/license to return license_hash 'test-hash', so that is what
+// verifySessionToken() compares against. Signing for a hash of the bearer key
+// instead verifies fine in isolation and is rejected by the handler with an
+// indistinguishable NO_SESSION -- rule 2 of the same file.
+//
+// SD_AUTH_SECRET is set BEFORE api/_lib/auth is required: signer and verifier
+// both read it at call time, and an unset secret makes every session silently
+// unverifiable.
+process.env.SD_AUTH_SECRET = process.env.SD_AUTH_SECRET || 'test-secret-for-sd-data-harnesses';
+const { signSessionToken } = require('./_lib/auth');
+const TEST_LICENSE_HASH = 'test-hash';
+function dntSession(role) {
+  return signSessionToken({
+    app: 'sairndental',
+    employee_id: 'EMP-' + String(role || 'owner').toUpperCase(),
+    role: role || 'owner',
+    license_hash: TEST_LICENSE_HASH
+  });
+}
+
 function mockRes() {
   var res = { statusCode: null, body: null };
   res.status = function (code) { res.statusCode = code; return res; };
   res.json = function (payload) { res.body = payload; return res; };
   return res;
 }
-function mockReq(body, authz) {
-  return { method: 'POST', headers: authz ? { authorization: authz } : {}, body: body };
+// `role: null` sends NO session, so the no-session rung of the ladder stays
+// testable rather than being made unreachable by the fix.
+function mockReq(body, authz, role) {
+  const headers = authz ? { authorization: authz } : {};
+  if (role !== null) headers['x-sd-auth'] = dntSession(role || 'owner');
+  return { method: 'POST', headers: headers, body: body };
 }
 
 let passed = 0;

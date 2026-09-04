@@ -561,8 +561,8 @@
       "task": "the four standing red tests in the suite",
       "claimed_at": "2026-09-04T13:57:17Z",
       "claimed_at_epoch": 1788530237.7132955,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T14:07:35Z"
     }
   ]
 }

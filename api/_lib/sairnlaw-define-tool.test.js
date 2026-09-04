@@ -51,14 +51,27 @@ function extractFn(sig) {
   if (start < 0) throw new Error('not found: ' + sig);
   return balanced(start, '{', '}');
 }
-function extractCall(marker) {
-  const start = src.indexOf(marker);
-  if (start < 0) throw new Error('not found: ' + marker);
-  return balanced(start, '(', ')') + ';';
+// ── THE MARKER MUST NOT DEPEND ON LINE ENDINGS (repaired 2026-09-04) ───────
+// This took a REGEX rather than a literal because the literal was
+// "lawRegisterTool(\r\n  'define_legal_term'" -- a hardcoded CRLF pair. It
+// matched while sairnlaw.html was stored and checked out CRLF, and stopped the
+// moment .gitattributes normalised the working tree to LF, at which point the
+// whole file threw `not found:` before a single assertion ran.
+//
+// A repo-wide scan found this is the ONLY site of its kind: eleven other files
+// contain \r\n, and every one of them is either `.replace(/\r\n/g, '\n')`
+// (correct defensive normalisation) or a `[\r\n]+` character class (matches
+// either). So this was one line, not a class -- worth saying, because "a test
+// broke on line endings" invites a sweep that is not needed here.
+function extractCall(re, label) {
+  const m = re.exec(src);
+  if (!m) throw new Error('not found: ' + (label || re));
+  return balanced(m.index, '(', ')') + ';';
 }
 const REGISTER = extractFn('function lawRegisterTool(');
 const EXECUTE = extractFn('async function lawExecuteTool(');
-const DEFINE_TOOL = extractCall("lawRegisterTool(\r\n  'define_legal_term'");
+const DEFINE_TOOL = extractCall(/lawRegisterTool\(\s*'define_legal_term'/,
+  "lawRegisterTool( 'define_legal_term'");
 
 check('lawExecuteTool is async in the real file', /^async function/.test(EXECUTE), true);
 check('and its call site in sendAI awaits it',

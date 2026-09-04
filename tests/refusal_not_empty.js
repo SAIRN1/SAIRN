@@ -50,18 +50,39 @@ function stripComments(s) {
     .join(String.fromCharCode(10));
 }
 
-// sdAuthWasRefused is a one-liner, so it is taken to its own closing brace on
-// the same line rather than to a blank line.
-const oneLiner = (() => {
-  const i = html.indexOf('function sdAuthWasRefused(resource)');
-  assert.ok(i > 0, 'sdAuthWasRefused not found');
-  const end = html.indexOf('\n', i);
-  return html.slice(i, end);
-})();
+// sdAuthWasRefused and sdReadFailed are one-liners, so each is taken to its own
+// closing brace on the same line rather than to a blank line.
+function oneLinerFn(sig) {
+  const i = html.indexOf(sig);
+  assert.ok(i > 0, sig + ' not found');
+  return html.slice(i, html.indexOf('\n', i));
+}
+const oneLiner = oneLinerFn('function sdAuthWasRefused(resource)') + '\n'
+               + oneLinerFn('function sdReadFailed(resource)');
 
+// ── THE HARNESS WAS ONE DECLARATION BEHIND THE CODE (repaired 2026-09-04) ──
+// Six of these fourteen assertions had been failing with
+// `_sdReadFailed is not defined`, and the open-work row asked the right
+// question: was the symbol RENAMED, or was the refusal-tracking REMOVED --
+// because those need opposite fixes.
+//
+// NEITHER. sdData() grew a THIRD state. `_sdAuthRefused` answers "you may not
+// have this"; `_sdReadFailed` was added later to answer "we could not ask",
+// which a 404 or a 502 makes a different fact again from both "refused" and
+// "empty". Every path in sdData() touches it, this harness declared only the
+// first variable, and so every one of those paths threw before it could assert
+// anything.
+//
+// So the fix is here, not in stonedesk.html: the app was right and the test was
+// stale. Declared alongside the accessors it needs, and the third state now has
+// assertions of its own -- a test whose header says two facts must not render
+// the same, against code that distinguishes three, was under-covering the thing
+// it exists to protect.
 const src =
   'var _sdAuthRefused = {};\n' +
+  'var _sdReadFailed = {};\n' +
   oneLiner + '\n' +
+  grab('function sdReadFailedNote(what)', /\r?\n\}/) + '\n}\n' +
   grab('function sdAuthRefusedNote(what)', /\r?\n\}/) + '\n}\n' +
   grab('async function sdData(action, resource, payload) {', /\r?\n\}/) + '\n}\n';
 
@@ -128,6 +149,78 @@ function harness(opts) {
     assert.strictEqual(await c.sdData('read', 'slabs', {}), null);
     assert.strictEqual(c.sdAuthWasRefused('slabs'), false);
   });
+
+  section('...and from a third fact: we could not ask');
+
+  await atest('a 500 marks the read FAILED, which a refusal does not', () => {
+    // The header of this file says two facts must not render the same. The code
+    // now distinguishes THREE, and this section is the half that was missing:
+    // "you may not have this", "there is none of this", and "the request did
+    // not come back". A 500 is the third.
+    const c = harness({ status: 500 });
+    return c.sdData('read', 'slabs', {}).then(() => {
+      assert.strictEqual(c.sdReadFailed('slabs'), true, 'a 500 did not mark the read failed');
+      assert.strictEqual(c.sdAuthWasRefused('slabs'), false, 'a 500 was recorded as a refusal');
+    });
+  });
+
+  await atest('a 403 marks BOTH -- refused is also a read that did not come back', async () => {
+    const c = harness({ status: 403 });
+    await c.sdData('read', 'slabs', {});
+    assert.strictEqual(c.sdAuthWasRefused('slabs'), true);
+    assert.strictEqual(c.sdReadFailed('slabs'), true,
+      'a refusal left readFailed false, so an empty state could still claim the yard is empty');
+  });
+
+  await atest('A 200 CARRYING ok:false IS A FAILURE, not an empty resource', async () => {
+    // This one is the reason the flag exists: it used to return the same null
+    // as a genuinely empty resource.
+    const c = harness({ status: 200, body: { ok: false, error: { message: 'nope' } } });
+    assert.strictEqual(await c.sdData('read', 'slabs', {}), null);
+    assert.strictEqual(c.sdReadFailed('slabs'), true, 'ok:false read as empty');
+  });
+
+  await atest('a thrown fetch marks the read failed, and does not claim a refusal', async () => {
+    const c = harness({ throws: true });
+    await c.sdData('read', 'slabs', {});
+    assert.strictEqual(c.sdReadFailed('slabs'), true);
+    assert.strictEqual(c.sdAuthWasRefused('slabs'), false);
+  });
+
+  await atest('a SUCCESSFUL read clears a previous failure', async () => {
+    // Without this, one bad response would make a resource look broken forever.
+    const bad = harness({ status: 500 });
+    await bad.sdData('read', 'slabs', {});
+    assert.strictEqual(bad.sdReadFailed('slabs'), true);
+    const good = harness({ status: 200, body: { ok: true, data: [1] } });
+    await good.sdData('read', 'slabs', {});
+    assert.strictEqual(good.sdReadFailed('slabs'), false, 'a good read did not clear the failure');
+  });
+
+  await atest('failure is tracked PER RESOURCE, not globally', async () => {
+    const c = harness({ status: 500 });
+    await c.sdData('read', 'slabs', {});
+    assert.strictEqual(c.sdReadFailed('slabs'), true);
+    assert.strictEqual(c.sdReadFailed('profile'), false,
+      'one failed resource marked every other resource failed');
+  });
+
+  test('the could-not-ask note says so, and never claims to know what is there', () => {
+    const c = harness({});
+    const note = c.sdReadFailedNote('slabs');
+    assert.match(note, /This is not empty/);
+    assert.match(note, /the request did not come back/);
+    assert.match(note, /Nothing has been changed or lost/);
+    assert.ok(!/none|no slabs/i.test(note), 'the note claims to know the resource is empty');
+  });
+
+  test('...and it escapes what it is given, like its sibling', () => {
+    const c = harness({});
+    assert.ok(c.sdReadFailedNote('<img src=x>').indexOf('<img') === -1,
+      'sdReadFailedNote renders unescaped input');
+  });
+
+  section('the refusal note');
 
   test('the note says it is not empty, in as many words', () => {
     const c = harness({});
