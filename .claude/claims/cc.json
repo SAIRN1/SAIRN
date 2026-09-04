@@ -493,6 +493,16 @@
       "claimed_at_epoch": 1788554499.4037337,
       "status": "released",
       "released_at": "2026-09-04T20:49:02Z"
+    },
+    {
+      "id": "cc-1788555314",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "duplicate coverage rule conflict refusal",
+      "claimed_at": "2026-09-04T20:55:14Z",
+      "claimed_at_epoch": 1788555314.4121199,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
