@@ -440,8 +440,8 @@
       "task": "storage key sweep close out unresolved writes",
       "claimed_at": "2026-09-04T20:59:02Z",
       "claimed_at_epoch": 1788555542.0910037,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:03:00Z"
     }
   ]
 }
