@@ -4376,6 +4376,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <span style="font-size:12px;color:var(--muted)">Drawing Tools:</span>
   <button class="q-btn" onclick="sdDrawPrint()" style="font-size:12px;padding:5px 12px">🖨️ Print Drawing</button>
   <button class="q-btn primary" onclick="sdDrawSave()" style="font-size:12px;padding:5px 12px">💾 Save Drawing</button>
+  <button class="q-btn" onclick="sdDrawingsOpen()" style="font-size:12px;padding:5px 12px">📁 Saved Drawings</button>
   <span id="draw-save-status" style="font-size:11px;color:var(--brand2)"></span>
   <button class="q-btn" id="dc-collapse-btn" onclick="toggleDCLeftPanel()" style="font-size:12px;padding:5px 12px;margin-left:auto">◀ Hide Panel</button>
 </div>
@@ -4393,12 +4394,85 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     w.document.write('</body></html>');
     w.document.close();w.print();
   };
+  // ── SAVED DRAWINGS LIST (2026-09-04) ────────────────────────────────────
+  // Reads what sdDrawSave() writes. Every entry shows its own snapshot, so a
+  // rep recognises the drawing rather than picking a date out of a list.
+  function sdDrawingsAll(){
+    var d=[]; try{d=JSON.parse(localStorage.getItem('sd_drawings')||'[]');}catch(e){}
+    return Array.isArray(d)?d:[];
+  }
+  window.sdDrawingsOpen=function(){
+    sdDrawingsRender();
+    document.getElementById('sd-drawings-modal').classList.add('open');
+  };
+  function sdDrawingsRender(){
+    var body=document.getElementById('sd-drawings-body');
+    if(!body)return;
+    var d=sdDrawingsAll();
+    if(!d.length){
+      // An empty state that says what to do, not just that there is nothing.
+      body.innerHTML='<div style="padding:28px 8px;text-align:center;color:var(--muted);font-size:13px">'+
+        'No saved drawings yet.<br><span style="font-size:12px">Use <strong>Save Drawing</strong> '+
+        'on the toolbar to keep a snapshot of the current canvas.</span></div>';
+      return;
+    }
+    body.innerHTML=d.map(function(x){
+      // An entry saved before 2026-09-04 has a picture and no state, so it can
+      // be LOOKED AT and not reloaded. Saying which, per row, beats a button
+      // that silently does nothing -- and beats hiding the older entries,
+      // which would look like data loss.
+      var reloadable = !!(x.drawingState && x.drawingState.schemaVersion===1);
+      var img = x.dataUrl
+        ? '<img src="'+escHtml(x.dataUrl)+'" style="width:132px;height:99px;object-fit:contain;background:#EEF3F9;border:1px solid var(--border);border-radius:6px;flex-shrink:0">'
+        : '<div style="width:132px;height:99px;border:1px dashed var(--border);border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:11px">No image</div>';
+      return '<div style="display:flex;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--border)">'+
+        img+
+        '<div style="flex:1;min-width:0">'+
+          '<div style="font-weight:600;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(x.name||'Drawing')+'</div>'+
+          '<div style="font-size:12px;color:var(--muted);margin-top:2px">'+escHtml(x.date||'')+'</div>'+
+          (reloadable?'':'<div style="font-size:11px;color:var(--muted);margin-top:6px">Saved before drawings kept their measurements &mdash; this one can be viewed but not reloaded.</div>')+
+        '</div>'+
+        (reloadable
+          ? '<button class="sairn-btn sairn-btn-primary" style="flex-shrink:0" onclick="sdDrawingsLoad(\''+escHtml(String(x.id))+'\')">Load onto Canvas</button>'
+          : '<button class="sairn-btn" style="flex-shrink:0" disabled title="No measurements were stored with this drawing">Load onto Canvas</button>')+
+        '</div>';
+    }).join('');
+  }
+  window.sdDrawingsLoad=function(id){
+    var x=sdDrawingsAll().find(function(e){return String(e.id)===String(id);});
+    if(!x||!x.drawingState||x.drawingState.schemaVersion!==1){
+      showToast('That drawing has no stored measurements and cannot be reloaded.');
+      return;
+    }
+    // Same guard the quote-history loader uses, from the same function --
+    // loading over unsaved work must warn identically wherever it happens.
+    if(typeof dcHasUnsavedWork==='function' && dcHasUnsavedWork()
+       && !confirm('Loading this drawing will replace your current drawing — continue?')) return;
+    document.getElementById('sd-drawings-modal').classList.remove('open');
+    if(typeof sbNav==='function') sbNav('draw');
+    var ok = typeof dcLoadDrawingState==='function' && dcLoadDrawingState(x.drawingState);
+    // dcLoadDrawingState returns false on a malformed snapshot. Reporting that
+    // is the difference between a failed load and a load that looks like the
+    // rep clicked nothing.
+    showToast(ok ? ('Loaded: '+(x.name||'Drawing')) : 'Could not load that drawing — try again or contact support.');
+  };
   window.sdDrawSave=function(){
     var canvas=document.getElementById('ct-canvas');
     var jobName=(document.getElementById('draw-job-name')||{value:'Drawing'}).value||'Drawing';
     var drawings=[];
     try{drawings=JSON.parse(localStorage.getItem('sd_drawings')||'[]');}catch(e){}
     var entry={id:'DRW-'+Date.now(),date:sdLocalToday(),name:jobName};
+    // THE STATE, NOT ONLY THE PICTURE (2026-09-04). Until today this saved a
+    // raster and nothing else, so "reload a saved drawing" could only ever
+    // have meant painting an image onto a canvas whose model said something
+    // different -- the shape, the dimensions and the cutouts would all still
+    // be whatever the rep had on screen. That is the displayed-versus-wired
+    // trap, and it is why the Saved Drawings list stores what the quote
+    // history already stores: the real snapshot dcLoadDrawingState() reads.
+    // Same function, same schemaVersion check on the way back in.
+    if (typeof dcSnapshotDrawingState === 'function') {
+      try{ entry.drawingState = dcSnapshotDrawingState(); }catch(e){}
+    }
     // JPEG q0.70 ON THE CANVAS'S OWN BACKGROUND, not a bare toDataURL (2026-09-04).
     //
     // MEASURED FIRST, against the deployed app: the procedural stone texture takes a
@@ -4975,19 +5049,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var d = load();
     var x = d.find(function(q){return String(q.id)===String(id);});
     if (!x || !x.drawingState || x.drawingState.schemaVersion !== 1) return;
-    var hasUnsaved = (typeof dcPoly !== 'undefined' && dcPoly.length > 0)
-      || (typeof dcCutouts !== 'undefined' && dcCutouts.length > 0)
-      || (typeof dcSeams !== 'undefined' && dcSeams.length > 0)
-      || (typeof dcRaisedBar !== 'undefined' && dcRaisedBar)
-      || (typeof dcChamferedCorners !== 'undefined' && Object.keys(dcChamferedCorners).length > 0)
-      // WAS `gN('da-len') > 0 || gN('da-dep') > 0`, which is true the moment
-      // the Drawing Tool panel opens -- selectDrawShape('straight') writes 96
-      // and 25.5 into those boxes before the rep touches anything, so the
-      // confirm fired with nothing to lose (2026-09-04). dcDimsEdited()
-      // compares against the values the CURRENT shape actually wrote, so a
-      // rep who typed real dimensions on a preset with no polygon is still
-      // warned -- which is the case the old test was reaching for.
-      || (typeof dcDimsEdited === 'function' && dcDimsEdited());
+    // The guard moved into dcHasUnsavedWork() so the Saved Drawings loader
+    // uses the SAME test rather than a second copy of it. Its own comment
+    // records why `gN('da-len') > 0` was wrong here: that is true the moment
+    // the Drawing Tool panel opens, because selectDrawShape('straight')
+    // writes 96 and 25.5 into those boxes before the rep touches anything.
+    var hasUnsaved = (typeof dcHasUnsavedWork === 'function') && dcHasUnsavedWork();
     if (hasUnsaved && !confirm('Loading this quote will replace your current drawing — continue?')) return;
     document.getElementById('sd-history-detail-modal').classList.remove('open');
     if (typeof sbNav === 'function') sbNav('draw');
@@ -12546,6 +12613,20 @@ function dcDimsEdited() {
   }
   return false;
 }
+// "Would loading something over the canvas destroy work the rep has not
+// saved?" -- ONE definition (2026-09-04). This expression was written inline
+// in sdHistoryLoadIntoDrawingTool(), and the Saved Drawings loader added the
+// same day needed exactly the same test. Two copies of a guard drift, and the
+// half that drifts is the half that stops warning; this repo has the
+// four-ways-across-one-file version of that story already.
+function dcHasUnsavedWork() {
+  return !!((typeof dcPoly !== 'undefined' && dcPoly.length > 0)
+    || (typeof dcCutouts !== 'undefined' && dcCutouts.length > 0)
+    || (typeof dcSeams !== 'undefined' && dcSeams.length > 0)
+    || (typeof dcRaisedBar !== 'undefined' && dcRaisedBar)
+    || (typeof dcChamferedCorners !== 'undefined' && Object.keys(dcChamferedCorners).length > 0)
+    || (typeof dcDimsEdited === 'function' && dcDimsEdited()));
+}
 var dcPoly = [];              // [{x,y}, ...] polygon points in inches, local coordinate space (not pixels)
 var dcPolyClosed = false;     // true once the rep has closed the loop back to the start point
 var dcPendingFrom = null;     // {x,y} the point we're drawing the NEXT segment from, while mid-draw
@@ -17316,6 +17397,25 @@ if(typeof switchCamTab === 'undefined') window.switchCamTab = function(t){  };
 
 
 <!-- ===== QUOTE HISTORY DETAIL MODAL (2026-08-13) ===== -->
+<!-- ===== SAVED DRAWINGS ===== -->
+<!-- The missing half of sdDrawSave() (2026-09-04). It had written up to fifty
+     snapshots to sd_drawings since 2026-08-13 and NOTHING in the repo read
+     them back -- no list, no viewer, no consumer. A rep could save a drawing
+     and never see it again. Michael's call: build the list.
+     Styling reuses the existing sairn-modal / q-btn classes rather than
+     introducing a parallel look; the brand green appears once, on the row
+     action that is the point of the panel, and everything structural is the
+     neutral scale the rest of the app already uses. -->
+<div class="sairn-modal-overlay" id="sd-drawings-modal">
+<div class="sairn-modal" style="max-width:720px">
+  <div class="sairn-modal-hdr">
+    <div class="sairn-modal-title">📁 Saved Drawings</div>
+    <button class="sairn-modal-close" onclick="document.getElementById('sd-drawings-modal').classList.remove('open')">✕</button>
+  </div>
+  <div id="sd-drawings-body"></div>
+</div>
+</div>
+
 <div class="sairn-modal-overlay" id="sd-history-detail-modal">
 <div class="sairn-modal">
   <div class="sairn-modal-hdr">

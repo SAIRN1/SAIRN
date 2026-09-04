@@ -94,18 +94,27 @@ function loader(opts) {
   const els = {
     'sd-history-detail-modal': { classList: { remove() {}, add() {} } }
   };
+  // The REAL shared guard, built from source with the drawing globals
+  // injected -- so this drives dcHasUnsavedWork() rather than a stand-in for
+  // it. That matters more since 2026-09-04, when the guard moved out of this
+  // handler so the Saved Drawings loader could use the same one.
+  const dcHasUnsavedWork = new Function(
+    'dcPoly', 'dcCutouts', 'dcSeams', 'dcRaisedBar', 'dcChamferedCorners', 'dcDimsEdited',
+    fn('function dcHasUnsavedWork() {') + '\nreturn dcHasUnsavedWork;'
+  )(
+    opts.dcPoly || [], opts.dcCutouts || [], opts.dcSeams || [],
+    opts.dcRaisedBar || null, opts.dcChamferedCorners || {},
+    () => !!opts.dimsEdited
+  );
+
   const api = new Function(
-    'sdHistoryDetailOpenId', 'load', 'dcPoly', 'dcCutouts', 'dcSeams',
-    'dcRaisedBar', 'dcChamferedCorners', 'dcDimsEdited', 'confirm',
+    'sdHistoryDetailOpenId', 'load', 'dcHasUnsavedWork', 'confirm',
     'document', 'sbNav', 'dcLoadDrawingState', 'showToast', 'window',
-    'var window_ = {};\n' +
     fn('window.sdHistoryLoadIntoDrawingTool=function(){').replace(/^/, 'var __h = ') + ';\n' +
     'return __h;'
   )(
     'q1', () => [quote],
-    opts.dcPoly || [], opts.dcCutouts || [], opts.dcSeams || [],
-    opts.dcRaisedBar || null, opts.dcChamferedCorners || {},
-    () => !!opts.dimsEdited,
+    dcHasUnsavedWork,
     () => { calls.confirm++; return !!opts.userSaysYes; },
     { getElementById: (id) => els[id] || null },
     () => {},
@@ -158,8 +167,19 @@ check('so does a chamfered corner',
     .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
   check('the confirm gate no longer reads the raw boxes',
     /gN\('da-len'\) > 0 \|\| gN\('da-dep'\) > 0/.test(gate), false);
-  check('it asks whether the dimensions were EDITED instead',
-    /dcDimsEdited\(\)/.test(gate), true);
+  check('it defers to the shared guard instead of inlining the test',
+    /dcHasUnsavedWork\(\)/.test(gate), true);
+  // ONE definition, used by both loaders. Two copies of a guard drift, and
+  // the half that drifts is the half that stops warning.
+  const guard = fn('function dcHasUnsavedWork() {');
+  check('the shared guard is the thing that asks about edited dimensions',
+    /dcDimsEdited\(\)/.test(guard), true);
+  const drawingsLoad = fn('window.sdDrawingsLoad=function(id){')
+    .split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+  check('and the Saved Drawings loader calls the SAME guard, not a copy',
+    /dcHasUnsavedWork\(\)/.test(drawingsLoad), true);
+  check('there is exactly one definition of it in the file',
+    (src.match(/function dcHasUnsavedWork\(\)/g) || []).length, 1);
 }
 
 console.log((fail ? 'FAILED' : 'ok') + '  stonedesk-quote-load-state: ' +
