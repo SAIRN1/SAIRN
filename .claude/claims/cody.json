@@ -393,8 +393,8 @@
       "task": "confirm session token supersedes stored role",
       "claimed_at": "2026-09-04T11:00:44Z",
       "claimed_at_epoch": 1788519644.1858253,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T11:11:43Z"
     }
   ]
 }
