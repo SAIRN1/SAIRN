@@ -632,8 +632,8 @@
       "task": "truthiness spelling corrupt record indistinguishable from absent",
       "claimed_at": "2026-09-04T21:35:27Z",
       "claimed_at_epoch": 1788557727.0610802,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:40:53Z"
     }
   ]
 }
