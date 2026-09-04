@@ -4942,7 +4942,14 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       || (typeof dcSeams !== 'undefined' && dcSeams.length > 0)
       || (typeof dcRaisedBar !== 'undefined' && dcRaisedBar)
       || (typeof dcChamferedCorners !== 'undefined' && Object.keys(dcChamferedCorners).length > 0)
-      || (typeof gN === 'function' && (gN('da-len') > 0 || gN('da-dep') > 0));
+      // WAS `gN('da-len') > 0 || gN('da-dep') > 0`, which is true the moment
+      // the Drawing Tool panel opens -- selectDrawShape('straight') writes 96
+      // and 25.5 into those boxes before the rep touches anything, so the
+      // confirm fired with nothing to lose (2026-09-04). dcDimsEdited()
+      // compares against the values the CURRENT shape actually wrote, so a
+      // rep who typed real dimensions on a preset with no polygon is still
+      // warned -- which is the case the old test was reaching for.
+      || (typeof dcDimsEdited === 'function' && dcDimsEdited());
     if (hasUnsaved && !confirm('Loading this quote will replace your current drawing — continue?')) return;
     document.getElementById('sd-history-detail-modal').classList.remove('open');
     if (typeof sbNav === 'function') sbNav('draw');
@@ -12472,6 +12479,35 @@ var dcCanvas = null, dcCtx = null;
 var dcZoomLevel = 1;          // 1.0 = fit (today's unzoomed behavior); range [DC_ZOOM_MIN, DC_ZOOM_MAX]
 var DC_ZOOM_MIN = 1, DC_ZOOM_MAX = 3, DC_ZOOM_STEP = 1.25;
 var dcMode = 'preset';        // 'preset' = show the active preset's rectangle math (legacy renderer) | 'draw' = polygon mode active
+// {fieldId: default} for the dimension boxes the CURRENT shape filled in.
+// Rewritten by selectDrawShape() every time the shape changes, so it can
+// never describe a shape that is no longer selected.
+var dcPresetDefaults = {};
+// "Has the rep actually entered a dimension?" -- which is NOT the same
+// question as "is there a number in the box", and confusing the two is the
+// bug this exists to fix (2026-09-04).
+//
+// initDrawPanel() calls selectDrawShape('straight'), which writes 96 and 25.5
+// into da-len/da-dep. So `gN('da-len') > 0` is true the instant the Drawing
+// Tool panel renders, before the rep has touched anything -- and the
+// quote-Load overwrite confirm, which used exactly that test, fired on a
+// merely-opened tab. A confirm that appears when there is nothing to lose is
+// how a rep learns to dismiss confirms without reading them, which is the
+// real cost.
+//
+// Compared against the values THIS shape wrote rather than against a
+// re-listed copy of them: the defaults live inline in selectDrawShape()'s
+// if/else chain, and a second list would drift the first time one changed.
+function dcDimsEdited() {
+  if (typeof gN !== 'function') return false;
+  var ids = Object.keys(dcPresetDefaults);
+  // No shape built yet -- nothing was filled in, so nothing can be edited.
+  if (!ids.length) return false;
+  for (var i = 0; i < ids.length; i++) {
+    if (gN(ids[i]) !== dcPresetDefaults[ids[i]]) return true;
+  }
+  return false;
+}
 var dcPoly = [];              // [{x,y}, ...] polygon points in inches, local coordinate space (not pixels)
 var dcPolyClosed = false;     // true once the rep has closed the loop back to the start point
 var dcPendingFrom = null;     // {x,y} the point we're drawing the NEXT segment from, while mid-draw
@@ -13546,12 +13582,20 @@ function selectDrawShape(id) {
   const card = document.getElementById('dim-card-main');
   if (!card) return;
   while (card.children.length > 1) card.removeChild(card.lastChild);
+  // THE DEFAULTS THIS SHAPE JUST PUT IN THE BOXES, captured as they are
+  // written (2026-09-04). Nothing else knew what they were: they live inline
+  // in the if/else chain below, one set per shape, so any consumer that
+  // needed them would have had to re-list them and could then drift from
+  // them. See dcDimsEdited() for the one thing that needs them -- telling a
+  // dimension the REP typed apart from one the app filled in for them.
+  dcPresetDefaults = {};
 
   const addNF = (id, label, def) => {
     const w = document.createElement('div'); w.className='dm-field';
     const l = document.createElement('label'); l.textContent=label;
     const i = document.createElement('input'); i.type='number'; i.id=id; i.placeholder='0';
     if(def) i.value=def;
+    dcPresetDefaults[id] = def || 0;
     i.onchange=i.oninput=()=>drawCTPreview();
     w.appendChild(l); w.appendChild(i); card.appendChild(w);
   };
@@ -13569,6 +13613,7 @@ function selectDrawShape(id) {
     presetRow.style.cssText='display:flex;gap:6px;margin-bottom:5px';
     const i = document.createElement('input'); i.type='number'; i.id=id; i.placeholder='0'; i.step='0.5';
     if(def) i.value=def;
+    dcPresetDefaults[id] = def || 0;
     i.onchange=i.oninput=()=>drawCTPreview();
     DEPTH_PRESETS.forEach(p => {
       const btn = document.createElement('button');
@@ -16265,7 +16310,15 @@ function dcLoadDrawingState(state) {
     if (typeof dcSetStoneType === 'function') dcSetStoneType(state.stoneType || null);
     if (typeof dcSetColorTone === 'function') dcSetColorTone(state.colorTone || null);
 
-    if (state.dcMode === 'draw' && typeof setDCMode === 'function') setDCMode('draw');
+    // RESTORED IN BOTH DIRECTIONS (2026-09-04). This used to set 'draw' and
+    // do nothing otherwise, so loading a PRESET quote while the session was
+    // in draw mode left dcMode === 'draw' with the freshly-restored dcPoly
+    // empty. drawCTPreview() dispatches on dcMode, so the canvas rendered the
+    // polygon view -- of nothing -- instead of the preset's rectangle, and
+    // the rep saw a blank drawing for a quote that has dimensions. Pricing
+    // was unaffected (isCustom also requires dcPolyClosed, which was false),
+    // which is why it read as a display glitch rather than a state bug.
+    if (typeof setDCMode === 'function') setDCMode(state.dcMode || 'preset');
 
     if (typeof buildEdgeAssignmentArea === 'function') buildEdgeAssignmentArea();
     if (typeof buildRaisedBarArea === 'function') buildRaisedBarArea();
