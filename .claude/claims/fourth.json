@@ -500,8 +500,8 @@
       "task": "session start hook stages claims directory",
       "claimed_at": "2026-09-04T21:54:36Z",
       "claimed_at_epoch": 1788558876.4996111,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T22:03:40Z"
     }
   ]
 }
