@@ -581,8 +581,8 @@
       "task": "st swallow in sairndesign sairnlaw sairnlegacy",
       "claimed_at": "2026-09-04T20:09:55Z",
       "claimed_at_epoch": 1788552595.016658,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:30:31Z"
     }
   ]
 }
