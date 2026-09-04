@@ -451,8 +451,8 @@
       "task": "server side persistence for records the ledger derives from",
       "claimed_at": "2026-09-04T13:24:52Z",
       "claimed_at_epoch": 1788528292.7106943,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:59:36Z"
     }
   ]
 }
