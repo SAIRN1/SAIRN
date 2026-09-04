@@ -533,6 +533,16 @@
       "claimed_at_epoch": 1788528372.019132,
       "status": "released",
       "released_at": "2026-09-04T13:35:49Z"
+    },
+    {
+      "id": "hank-1788529115",
+      "session": "hank",
+      "subject": "sairndental",
+      "task": "gfe issued status enforced only in the browser",
+      "claimed_at": "2026-09-04T13:38:35Z",
+      "claimed_at_epoch": 1788529115.7541952,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
