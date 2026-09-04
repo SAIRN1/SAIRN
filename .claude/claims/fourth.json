@@ -442,6 +442,16 @@
       "claimed_at_epoch": 1788555542.0910037,
       "status": "released",
       "released_at": "2026-09-04T21:03:00Z"
+    },
+    {
+      "id": "fourth-1788555949",
+      "session": "fourth",
+      "subject": "sairnvet",
+      "task": "mechanical guardian sweep of the unaudited app",
+      "claimed_at": "2026-09-04T21:05:49Z",
+      "claimed_at_epoch": 1788555949.0361626,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
