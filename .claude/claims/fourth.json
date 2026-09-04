@@ -512,6 +512,16 @@
       "claimed_at_epoch": 1788559506.8206446,
       "status": "released",
       "released_at": "2026-09-04T22:21:41Z"
+    },
+    {
+      "id": "fourth-1788560631",
+      "session": "fourth",
+      "subject": "sd-data-auth-ordering",
+      "task": "resource name disclosure before license validation",
+      "claimed_at": "2026-09-04T22:23:51Z",
+      "claimed_at_epoch": 1788560631.93901,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
