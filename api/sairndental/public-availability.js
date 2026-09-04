@@ -11,7 +11,7 @@
 // is the Postgres EXCLUDE constraints (sql/sairndental_availability_booking_schema.sql),
 // enforced at write time by public-book.js's insert, not by anything here.
 
-const { resolveSlug, checkAndIncrementRateLimit } = require('../_lib/dental-public');
+const { resolveSlug, checkAndIncrementRateLimit, readRows } = require('../_lib/dental-public');
 
 const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
 
@@ -62,16 +62,16 @@ module.exports = async (req, res) => {
     // only (never anything from dnt_patients or dnt_appointments here).
     if (!providerId || !procedureTypeId || !dateFrom || !dateTo) {
       const settingsRes = await fetch(rest('dnt_settings?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data&limit=1'), { headers });
-      const settingsRows = settingsRes.ok ? await settingsRes.json() : [];
+      const settingsRows = await readRows(settingsRes, 'dnt_settings');
       const settings = (settingsRows && settingsRows[0] && settingsRows[0].data) || {};
       const bookableIds = settings.publicly_bookable_procedure_type_ids || [];
 
       const provRes = await fetch(rest('dnt_providers?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
-      const provRows = provRes.ok ? await provRes.json() : [];
+      const provRows = await readRows(provRes, 'dnt_providers');
       const providersOut = (provRows || []).map((x) => x.data).map((p) => ({ id: p.id, name: p.name, role: p.role }));
 
       const allProcRes = await fetch(rest('dnt_procedure_types?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
-      const allProcRows = allProcRes.ok ? await allProcRes.json() : [];
+      const allProcRows = await readRows(allProcRes, 'dnt_procedure_types');
       const proceduresOut = (allProcRows || []).map((x) => x.data)
         .filter((p) => bookableIds.indexOf(p.id) !== -1)
         .map((p) => ({ id: p.id, code: p.cdt_code, description: p.description, default_length_minutes: p.default_length_minutes }));
@@ -89,11 +89,11 @@ module.exports = async (req, res) => {
     // provider hours -- found live during the end-to-end booking test.
     // Fetch all hours for this license and filter client-side instead.
     const hoursRes = await fetch(rest('dnt_provider_hours?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data'), { headers });
-    const hoursRows = hoursRes.ok ? await hoursRes.json() : [];
+    const hoursRows = await readRows(hoursRes, 'dnt_provider_hours');
     const providerHours = (hoursRows || []).map((x) => x.data).filter((h) => h.provider_id === providerId);
 
     const procRes = await fetch(rest('dnt_procedure_types?license_hash=eq.' + encodeURIComponent(licenseHash) + '&procedure_type_id=eq.' + encodeURIComponent(procedureTypeId) + '&select=data'), { headers });
-    const procRows = procRes.ok ? await procRes.json() : [];
+    const procRows = await readRows(procRes, 'dnt_procedure_types');
     const proc = procRows && procRows[0] && procRows[0].data;
     if (!proc) { res.status(404).json({ error: { code: 'UNKNOWN_PROCEDURE', message: 'Procedure type not found' } }); return; }
     const lengthMin = Number(proc.default_length_minutes) || 30;
@@ -109,7 +109,7 @@ module.exports = async (req, res) => {
       '&start_time=lte.' + encodeURIComponent(dateTo) +
       '&select=start_time,end_time'
     ), { headers });
-    const existing = apptRes.ok ? await apptRes.json() : [];
+    const existing = await readRows(apptRes, 'dnt_appointments');
 
     function overlaps(startA, endA) {
       return existing.some((e) => {

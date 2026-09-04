@@ -191,6 +191,48 @@ async function main() {
       });
   });
 
+  // ── readRows: a failed read is not an empty table ───────────────────────
+  await test('readRows returns the rows on a good read', async () => {
+    const lib = load(async () => res(200, []));
+    assert.deepStrictEqual(await lib.readRows(res(200, [{ a: 1 }]), 'x'), [{ a: 1 }]);
+  });
+
+  await test('a genuinely EMPTY table is still [] -- only could-not-ask changed', async () => {
+    const lib = load(async () => res(200, []));
+    assert.deepStrictEqual(await lib.readRows(res(200, []), 'x'), []);
+  });
+
+  for (const status of [400, 401, 403, 500, 503]) {
+    await test('readRows THROWS on HTTP ' + status + ' -- it must not fabricate a calendar', async () => {
+      const lib = load(async () => res(200, []));
+      await assert.rejects(() => lib.readRows(res(status, { message: 'no' }), 'dnt_provider_hours'), (e) => {
+        assert.strictEqual(e.code, 'UPSTREAM');
+        assert.match(e.message, /dnt_provider_hours/, 'the message must name WHICH read failed');
+        return true;
+      });
+    });
+  }
+
+  await test('readRows throws when the body is not an array', async () => {
+    const lib = load(async () => res(200, []));
+    await assert.rejects(() => lib.readRows(res(200, { oops: true }), 'x'), (e) => e.code === 'UPSTREAM');
+  });
+
+  await test('the nine fail-open reads are gone from the two public endpoints', async () => {
+    // The calendar fabricated in BOTH directions: a failed provider-hours read
+    // showed a practice as fully booked, a failed appointments read showed
+    // every slot as free. Neither said anything to anyone.
+    // public-availability.js still carries the comment recording that this
+    // exact shape already shipped once and was found live.
+    const fs = require('fs');
+    ['public-availability.js', 'public-book.js'].forEach(function (f) {
+      const src = fs.readFileSync(path.join(__dirname, '..', 'sairndental', f), 'utf8');
+      assert.ok(!/\.ok \? await [A-Za-z]+\.json\(\) : \[\]/.test(src),
+        f + ' still turns a failed read into an empty table');
+      assert.match(src, /await readRows\(/, f + ' does not use the checked reader');
+    });
+  });
+
   console.log('\n' + passed + ' assertions passed');
 }
 

@@ -12,7 +12,7 @@
 // must never be able to permanently lock a real slot without staff
 // review).
 
-const { resolveSlug, checkAndIncrementRateLimit } = require('../_lib/dental-public');
+const { resolveSlug, checkAndIncrementRateLimit, readRows } = require('../_lib/dental-public');
 const { validatePhotosPayload, validatePatientNotes } = require('../_lib/dental-photo-validation');
 const dntLocation = require('../_lib/dnt-location');
 
@@ -85,14 +85,14 @@ module.exports = async (req, res) => {
     const headers = supabaseHeaders();
 
     const procRes = await fetch(rest('dnt_procedure_types?license_hash=eq.' + encodeURIComponent(licenseHash) + '&procedure_type_id=eq.' + encodeURIComponent(procedureTypeId) + '&select=data'), { headers });
-    const procRows = procRes.ok ? await procRes.json() : [];
+    const procRows = await readRows(procRes, 'dnt_procedure_types');
     const proc = procRows && procRows[0] && procRows[0].data;
     if (!proc) { res.status(404).json({ error: { code: 'UNKNOWN_PROCEDURE', message: 'Procedure type not found' } }); return; }
     const lengthMin = Number(proc.default_length_minutes) || 30;
     const endTime = new Date(new Date(startTime).getTime() + lengthMin * 60000).toISOString();
 
     const providerRes = await fetch(rest('dnt_providers?license_hash=eq.' + encodeURIComponent(licenseHash) + '&provider_id=eq.' + encodeURIComponent(providerId) + '&select=data'), { headers });
-    const providerRows = providerRes.ok ? await providerRes.json() : [];
+    const providerRows = await readRows(providerRes, 'dnt_providers');
     const provider = providerRows && providerRows[0] && providerRows[0].data;
     if (!provider) { res.status(404).json({ error: { code: 'UNKNOWN_PROVIDER', message: 'Provider not found' } }); return; }
     const operatoryId = provider.operatory_id || '';
@@ -101,7 +101,7 @@ module.exports = async (req, res) => {
     // fuzzy -- to avoid accidentally attaching a stranger's booking to
     // the wrong patient's record. No match -> create a new patient.
     const patientsRes = await fetch(rest('dnt_patients?license_hash=eq.' + encodeURIComponent(licenseHash) + '&select=data,patient_id'), { headers });
-    const patientsRows = patientsRes.ok ? await patientsRes.json() : [];
+    const patientsRows = await readRows(patientsRes, 'dnt_patients');
     const matched = (patientsRows || []).find((p) => p.data && p.data.name === patient.name && p.data.dob === patient.dob && p.data.phone === patient.phone);
     // ── THE PATIENT ROW IS NOT WRITTEN YET (2026-09-03) ──────────────────
     // It used to be written HERE, before the appointment. That created an

@@ -151,4 +151,39 @@ async function checkAndIncrementRateLimit(req, windowMinutes, maxCount, bucket) 
   return { allowed: true, count: currentCount + 1 };
 }
 
-module.exports = { resolveSlug, checkAndIncrementRateLimit, hashIp, clientIp };
+// ── A FAILED READ IS NOT AN EMPTY TABLE (2026-09-03) ──────────────────────
+// The public booking endpoints did `const rows = r.ok ? await r.json() : []`
+// nine times between them. Every one of those turns "we could not ask" into
+// "the answer is none", and on a calendar that fabricates in BOTH directions:
+//
+//   * the provider-hours read failing shows a practice as fully booked, and
+//   * the appointments read failing shows every slot as free.
+//
+// Neither says anything to anyone. THIS HAS ALREADY HAPPENED ONCE IN
+// PRODUCTION: public-availability.js still carries the comment recording that
+// a query filtering on a column that does not exist "failed the query silently
+// (hoursRes.ok was false, defaulted to []), which made every availability
+// request return zero slots regardless of real provider hours -- found live
+// during the end-to-end booking test." The malformed query was fixed. The
+// fail-open that hid it was left in place.
+//
+// Throws for the same reason resolveSlug() does: every consumer already
+// catches and answers a logged 502, so there is no sentinel for a future
+// caller to forget.
+async function readRows(r, what) {
+  if (!r.ok) {
+    const e = new Error('dental public read failed (' + what + '): HTTP ' + r.status);
+    e.code = 'UPSTREAM';
+    throw e;
+  }
+  const rows = await r.json().catch(function () { return null; });
+  if (!Array.isArray(rows)) {
+    const e = new Error('dental public read returned a non-array (' + what + ')');
+    e.code = 'UPSTREAM';
+    throw e;
+  }
+  // A genuinely empty table is still []. Only the could-not-ask case changed.
+  return rows;
+}
+
+module.exports = { resolveSlug, checkAndIncrementRateLimit, readRows, hashIp, clientIp };
