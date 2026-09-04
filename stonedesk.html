@@ -27739,8 +27739,31 @@ document.addEventListener('DOMContentLoaded', function() {
   // the source of truth -- refresh() (below) is what actually syncs. Kept
   // synchronous so render() can still paint instantly from cache (same
   // optimistic-local pattern every other resource in this file already
-  // uses), sdDemoCleared() fallback unchanged from before.
-  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
+  // uses).
+  //
+  // ── THE SEED FALLBACK IS NO LONGER REACHED AFTER A FAILED READ (2026-09-04)
+  // This is the Slabs defect (`501d15b`) in the one other place a full audit of
+  // all 31 `sdDemoCleared() ? [] : SEED` sites found it: sd_crm is the ONLY one
+  // of the 31 with a real server resource behind it, which is what makes the
+  // fallback dangerous here and merely a demo everywhere else.
+  //
+  // The shape: with no local cache and a FAILED server read, load() returned 13
+  // invented leads, and render() computed five KPIs off them -- including a
+  // **$35,900 pipeline** and a conversion rate. A shop whose sync had failed was
+  // shown somebody's demo pipeline as its own, with nothing saying so.
+  //
+  // It is left in place for the case it was written for -- a genuine first run,
+  // before any sync -- and skipped for the case it was never meant to cover.
+  // Note how narrow that first case now is: a SUCCESSFUL read returning [] gets
+  // saved as [], which is truthy, so the seed never returns after one good sync.
+  // Deleting it outright would have been the Slabs fix; here it would also
+  // delete the demo, which is a product decision and not one to take silently.
+  var _crmReadFailed=false;
+  function crmSeed(){
+    // Never invent a pipeline for a shop whose leads could not be read.
+    return (_crmReadFailed||sdDemoCleared())?[]:SEED;
+  }
+  function load(){try{return JSON.parse(localStorage.getItem('sd_crm')||'null')||crmSeed();}catch(e){return crmSeed();}}
   function save(d){return st('sd_crm',d);}
 
   // Roster cache for the Assign-To/reassign controls -- management only
@@ -27779,7 +27802,15 @@ document.addEventListener('DOMContentLoaded', function() {
   function refresh(){
     if(typeof sdData!=='function')return;
     sdData('read','sd_crm',{}).then(function(d){
-      if(Array.isArray(d)){save(d);render();}
+      if(Array.isArray(d)){_crmReadFailed=false;save(d);render();return;}
+      // A null is "no session / network failure / dead table", not "zero
+      // leads". The local cache is still left untouched -- that part was
+      // already right -- but if there is NO cache to leave untouched, the seed
+      // must not step in and answer for the server. sdReadFailed() distinguishes
+      // a failure from a genuine empty; without it, a first-run user with no
+      // session looks identical to one whose database is unreachable.
+      _crmReadFailed=(typeof sdReadFailed!=='function')||sdReadFailed('sd_crm');
+      if(_crmReadFailed)render();
     });
   }
 
@@ -27789,6 +27820,25 @@ document.addEventListener('DOMContentLoaded', function() {
     var assigneeSel=document.getElementById('crm-assignee');
     if(assigneeSel)assigneeSel.style.display=isMgmt?'block':'none';
     if(isMgmt&&!_roster)refreshRoster();
+    // The KPIs below are real arithmetic on whatever `d` holds, so when `d` is
+    // empty ONLY because the read failed they would print a confident $0
+    // pipeline and a 0% conversion rate. Zero leads and an unreachable server
+    // are different facts; "--" is the honest answer for the second, and the
+    // table says which it is.
+    var unread=_crmReadFailed&&!d.length;
+    if(unread){
+      ['crm-leads','crm-pipeline','crm-hot','crm-conv','crm-avg'].forEach(function(id){
+        var e=document.getElementById(id); if(e) e.textContent='--';
+      });
+      var kb=document.getElementById('crm-kanban'); if(kb) kb.innerHTML='';
+      var tb=document.getElementById('crm-tbody');
+      if(tb) tb.innerHTML='<tr><td colspan="6">'+
+        (typeof sdReadFailedNote==='function'
+          ? sdReadFailedNote('your leads')
+          : '<div style="padding:14px;text-align:center;color:var(--muted)">Could not load your leads</div>')+
+        '</td></tr>';
+      return;
+    }
     var active=d.filter(function(x){return !x.won&&!x.lost;});
     document.getElementById('crm-leads').textContent=active.length;
     document.getElementById('crm-pipeline').textContent='$'+active.reduce(function(a,x){return a+(x.val||0);},0).toLocaleString();
