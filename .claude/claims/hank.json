@@ -642,8 +642,8 @@
       "task": "storage layer honesty svLoad and st corrupt store machinery",
       "claimed_at": "2026-09-04T21:42:41Z",
       "claimed_at_epoch": 1788558161.3385572,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:51:29Z"
     }
   ]
 }
