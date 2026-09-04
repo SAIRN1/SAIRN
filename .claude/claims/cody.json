@@ -425,6 +425,16 @@
       "claimed_at_epoch": 1788524462.4497805,
       "status": "released",
       "released_at": "2026-09-04T12:38:14Z"
+    },
+    {
+      "id": "cody-1788525956",
+      "session": "cody",
+      "subject": "push-master-guard",
+      "task": "refspec anchoring false positive",
+      "claimed_at": "2026-09-04T12:45:56Z",
+      "claimed_at_epoch": 1788525956.5381763,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
