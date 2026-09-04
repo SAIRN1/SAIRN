@@ -474,8 +474,8 @@
       "task": "ai budget early warning independent review and live verification",
       "claimed_at": "2026-09-04T20:05:00Z",
       "claimed_at_epoch": 1788552300.4577823,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:13:45Z"
     }
   ]
 }
