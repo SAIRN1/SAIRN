@@ -37,6 +37,7 @@ const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
+const { paymentProblem: dntPaymentProblem } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -9044,6 +9045,32 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_patients') {
         const gp = dntGuardianProblem(payload);
         if (gp) { res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED', message: gp } }); return; }
+      }
+      // ── THE MONEY LEDGER, ONE RESOURCE AT A TIME (2026-09-04) ────────────
+      // docs/SAIRN-OPEN-WORK-INDEX.md's row on this handler says explicitly:
+      // do NOT bolt validation onto all fifteen resources in one pass, take
+      // them one at a time, highest stakes first. dnt_payments is the first,
+      // and it was chosen by measuring what a bad row does to the numbers a
+      // practice reads rather than by which table sounds worst. See
+      // api/_lib/dental-ledger.js for all three failure shapes traced to their
+      // lines in sairndental.html; the short version is that a NEGATIVE
+      // payment makes dnAging() report MORE outstanding than the charge it is
+      // paying, because the charge side clamps at zero and the payment side
+      // does not.
+      //
+      // NO LEGACY-ROW COST HERE, unlike the guardian rule above, and that was
+      // checked rather than assumed: dnt_payments is append-only in fact --
+      // sdnData('write','dnt_payments',...) appears once in sairndental.html,
+      // in addPaymentEntry(), which only creates, and dntSyncFromServer()
+      // reads without ever writing back. Nothing re-sends an existing payment,
+      // so nothing existing can be blocked by this.
+      //
+      // dnt_charges is the deliberate NEXT one, not an oversight: a bad charge
+      // amount is clamped by `if (owed < 0) owed = 0` and so corrupts less,
+      // which is exactly why it is second rather than first.
+      if (resource === 'dnt_payments') {
+        const pp = dntPaymentProblem(payload);
+        if (pp) { res.status(400).json({ error: { code: 'INVALID_PAYMENT', message: pp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate
