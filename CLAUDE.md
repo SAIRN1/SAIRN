@@ -234,6 +234,36 @@ FIXED and one is not — know which before you trust its output:**
 See the `sairn-session-handoff` skill for the full convention, the
 reasoning, and the template.
 
+### Never edit an index row by splitting on `|` — added 2026-09-04
+
+`docs/SAIRN-OPEN-WORK-INDEX.md` is the file every session reads to choose work
+and edits to record the outcome. Rows get updated by splitting the line on
+`|`, replacing a cell by index, and joining it back. **That is only safe while
+every pipe in the row is a column separator, and it is not.** A cell whose
+prose contains one — a hook matcher written `Write|Edit`, a `||` inside a code
+span, a regex alternation — adds separators nobody intended. Two consequences,
+both real:
+
+- **markdown renders extra columns**, so the trailing cells fall off the end.
+  On both rows found on 2026-09-04 the **Sz** column was gone and narrative
+  text was rendering where a column value belongs;
+- **an edit by cell index writes into the wrong cell.** CC hit exactly this.
+  A status can land where an owner belongs, silently, in the file every
+  session trusts to say who is doing what.
+
+**The rule: rebuild a row whole. Do not split and rejoin by index.** Anchor on
+a unique substring of the row, assert the anchor appears exactly once, and
+replace it.
+
+**The mechanism, because a rule that depends on remembering is the failure
+mode this file keeps recording:** `python tools/md_table_check.py` checks
+every table in the standing docs, per table rather than per file (that
+document holds three tables of different widths), honouring `\|` as content
+the way markdown does. It **reports and never writes** — its first version had
+a `--fix` and its own probe caught that fixer escaping the *real* separator
+and merging two genuine columns, so the repair is by hand and the tool only
+tells you where. Held by `tests/run_md_table_check_probe.py`.
+
 ## Known resolved issues (don't rediscover these)
 - `sairn-app-scaffold` was falsely claimed built in an earlier session's
   handoff (before 2026-07-30); it was actually created 2026-07-30 and is
