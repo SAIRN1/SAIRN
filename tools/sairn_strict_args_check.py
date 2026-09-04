@@ -36,10 +36,17 @@ KNOWN LIMITS, stated because a checker that over-reports gets ignored:
     (`param = {...param}`, `param.body = x` -- the latter is NOT this bug, since
     mutating in place does reach the callee) are not detected.
 """
+import os
 import re
 import sys
 import glob
 import io
+
+# The one shared comment stripper. Four tools in tools/ were found blind on
+# 2026-09-04; see the measured table in jscomments.py's docstring.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jscomments as _jscomments
+
 
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
 
@@ -55,7 +62,29 @@ BLOCK_COMMENT = re.compile(r'/\*.*?\*/', re.S)
 
 
 def strip_comments(text):
-    return LINE_COMMENT.sub('', BLOCK_COMMENT.sub('', text))
+    """── DELEGATED TO tools/jscomments.py, 2026-09-04 ────────────────────────
+    This was `LINE_COMMENT.sub('', BLOCK_COMMENT.sub('', text))` -- two naive
+    regexes, and the block one is the landmine `sairn_dead_function_sweep.py`
+    documents: the `/*` inside `<input accept="image/*">` opens a comment that
+    runs to the next `*/` anywhere in the file.
+
+    THIS IS GUARDIAN CHECK 31'S SCANNER AND IT RUNS BEFORE EVERY PUSH, which
+    makes it the worst of the four found blind on 2026-09-04. Measured:
+
+        sairnvet.html    10.0% of the file survived   350 of 362 declarations gone
+        sairncare.html    9.6%                        201 of 213 gone
+        stonedesk.html   51.7%                        405 of 1003 gone
+
+    Every "N site(s) found" it has reported was reached against that fraction
+    of the file. A push gate reading half a file and reporting a count is not a
+    weak gate, it is a false one.
+
+    Found while re-checking my own claim that only three tools were affected --
+    this one had failed to import in the first probe (it wraps sys.stdout at
+    module load) and was recorded as unmeasured rather than as clean, which is
+    the only reason it did not stay missed.
+    """
+    return _jscomments.strip_comments(text)
 
 
 def scan(path):
