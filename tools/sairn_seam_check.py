@@ -198,6 +198,26 @@ def engine_reads(lib_src, fn, _depth=0):
     for m in re.finditer(
             r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*\{\s*\.\.\.\s*' + re.escape(pname) + r'\b', body):
         aliases.add(m.group(1))
+    # AND THE OR-DEFAULT ALIAS, which is this codebase's most common defensive
+    # spelling and was not followed until 2026-09-04:
+    #     const r = record || {};   ... r.dob, r.guardian
+    # api/_lib/dental-guardian.js's guardianProblem() is written that way, and
+    # the tool reported CANNOT TELL on it the moment the file was added --
+    # a standing note on every push, which is the noise class that gets
+    # scrolled past until a real finding hides in it.
+    #
+    # This can only ever ADD reads, so it can turn a CANNOT TELL into a real
+    # verdict and can never turn a not-forwarded finding into a pass: more
+    # reads means more inputs the endpoint is required to forward, not fewer.
+    #
+    # Fixed here rather than by rewriting guardianProblem() into a shape the
+    # scanner likes -- the same rule this file already states about not
+    # rewording a claim to slip past the overlap matcher: the fix belongs in
+    # the tool, not in code bent around the tool.
+    for m in re.finditer(
+            r'(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*' + re.escape(pname)
+            + r'\s*\|\|\s*(?:\{\s*\}|\[\s*\])', body):
+        aliases.add(m.group(1))
     for a in aliases:
         reads |= set(re.findall(r'(?<![.\w])' + re.escape(a) + r'\.([A-Za-z_$][\w$]*)', body))
 
