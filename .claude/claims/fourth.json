@@ -290,8 +290,8 @@
       "task": "public catalog panel read failures render as empty state",
       "claimed_at": "2026-09-04T11:08:22Z",
       "claimed_at_epoch": 1788520102.950756,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T11:23:42Z"
     }
   ]
 }
