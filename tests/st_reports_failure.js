@@ -138,8 +138,13 @@ APPS.forEach((app) => {
     // `catch(_e){}` around the console.error itself is deliberate and is the
     // only one allowed inside st(): a logger that throws must not turn a failed
     // save into an exception.
-    const i = src.indexOf('function st(k,v){');
-    const stBody = src.slice(i, i + 700);
+    // Bound this to st() ITSELF, not to a fixed character window. It used to
+    // be `slice(i, i + 700)`, which reached past st()'s closing brace into
+    // whatever happened to follow it -- and when ld() was given its own
+    // logger guards directly below st() in sairnlaw/sairnlegacy, this test
+    // went red while st() was untouched. A fixture that fails on a NEIGHBOUR's
+    // correct code is worse than no fixture: it trains you to edit the test.
+    const stBody = grab(src, 'function st(k,v){');
     const bareInSt = stBody.match(/catch\s*\([A-Za-z_$][\w$]*\)\s*\{\s*\}/g) || [];
     assert.strictEqual(bareInSt.length, 1,
       'expected exactly one bare catch in st() -- the one guarding console.error -- got ' + bareInSt.length);
