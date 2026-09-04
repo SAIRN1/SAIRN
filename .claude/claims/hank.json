@@ -563,6 +563,16 @@
       "claimed_at_epoch": 1788530237.7132955,
       "status": "released",
       "released_at": "2026-09-04T14:07:35Z"
+    },
+    {
+      "id": "hank-1788531019",
+      "session": "hank",
+      "subject": "seam-check",
+      "task": "or-default alias following",
+      "claimed_at": "2026-09-04T14:10:19Z",
+      "claimed_at_epoch": 1788531019.4724164,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
