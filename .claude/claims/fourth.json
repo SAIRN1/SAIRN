@@ -422,6 +422,16 @@
       "claimed_at_epoch": 1788554148.7309122,
       "status": "released",
       "released_at": "2026-09-04T20:47:39Z"
+    },
+    {
+      "id": "fourth-1788554882",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "remaining two storage key collisions memories and profile",
+      "claimed_at": "2026-09-04T20:48:02Z",
+      "claimed_at_epoch": 1788554882.5306118,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
