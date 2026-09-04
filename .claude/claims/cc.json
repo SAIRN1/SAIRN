@@ -441,8 +441,8 @@
       "task": "redaction scan on outgoing commits",
       "claimed_at": "2026-09-04T13:05:17Z",
       "claimed_at_epoch": 1788527117.7491498,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:16:08Z"
     }
   ]
 }
