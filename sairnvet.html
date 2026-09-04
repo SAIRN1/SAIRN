@@ -1729,7 +1729,104 @@ function escHtml(s){
 // inside its own bare try{}catch(e){}, with zero signal back to the caller -- a
 // quota-exceeded or private-browsing failure was silently swallowed while callers still
 // showed a success toast. This returns true/false so callers can show an honest message.
-function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){return false;}}
+// ── UNREADABLE-STORE GUARD (2026-09-04) ──────────────────────────────────
+// THE DEFECT THIS CLOSES, and it is the worst-consequence one found in the
+// silent-failure sweep even though it is the least likely to fire. All 39
+// get*() collections in this file share one shape:
+//
+//     try { var stored = localStorage.getItem('sv_x');
+//           if(stored) return JSON.parse(stored); } catch(e){}
+//     var seed = [ ...three rows of demo data... ];
+//     saveX(seed);
+//     return seed;
+//
+// A JSON.parse throw lands in an EMPTY catch and control falls straight
+// through to the seed -- which is then WRITTEN OVER the unreadable value and
+// returned to the panel. For sv_controlled that means a clinic's DEA
+// Schedule II-IV log is replaced by three demo rows, presented as the real
+// register, with nothing shown and nothing logged.
+//
+// TWO HALVES, because either alone still fails:
+//   * st() below REFUSES to write to a key whose stored value is present and
+//     unreadable, so the corrupted value is preserved rather than destroyed.
+//     The check is cached per key -- one parse of the existing value the
+//     first time a key is written in a session, not on every save, since the
+//     only writer of these keys is this file and it always writes valid JSON.
+//   * svIntegrityScan() runs at boot, BEFORE any render, and if any sv_ key
+//     is unreadable the app refuses to open at all. Blocking is the point:
+//     a getter that has already fallen through to its seed cannot be stopped
+//     from returning demo data, and demo data presented as a controlled-drug
+//     register is worse than a clinic that cannot start.
+//
+// Deliberately NOT 39 edits to the getters. This is the global guard, in the
+// two places every one of them must pass through.
+var _svKeyVerified = {};
+var _svUnreadable = {};
+function st(key,data){
+  try{
+    if(_svUnreadable[key])return false;
+    if(!_svKeyVerified[key]){
+      var raw=localStorage.getItem(key);
+      if(raw!==null&&raw!==''){
+        try{JSON.parse(raw);}
+        catch(err){_svUnreadable[key]=true;svBlockForCorruptStore([key]);return false;}
+      }
+      _svKeyVerified[key]=true;
+    }
+    localStorage.setItem(key,JSON.stringify(data));return true;
+  }catch(e){return false;}
+}
+// Every value under an sv_ key is written by st()/svStore() through
+// JSON.stringify, or by the three direct String(n) counters (sv_trial_start,
+// sv_speciesref_lookups, sv_analytics_scans) whose values are bare numbers
+// and therefore valid JSON too. Checked before writing this, not assumed --
+// so anything here that does not parse is genuinely corrupt, not a format
+// this scan does not know about.
+function svIntegrityScan(){
+  var bad=[];
+  try{
+    for(var i=0;i<localStorage.length;i++){
+      var k=localStorage.key(i);
+      if(!k||k.indexOf('sv_')!==0)continue;
+      var raw=localStorage.getItem(k);
+      if(raw===null||raw==='')continue;
+      try{JSON.parse(raw);}catch(e){bad.push(k);}
+    }
+  }catch(e){
+    // Storage entirely unavailable (private browsing, blocked cookies). That
+    // is a different failure with nothing corrupt to protect, and st()
+    // already reports it per write. Not a reason to block the app.
+    return [];
+  }
+  return bad;
+}
+// NO "CLEAR IT AND CARRY ON" BUTTON, ON PURPOSE. The unreadable value is the
+// only copy of that record left; offering a one-click wipe would turn a
+// recoverable state into the data loss this guard exists to prevent.
+function svBlockForCorruptStore(keys){
+  try{
+    keys.forEach(function(k){_svUnreadable[k]=true;});
+    var names=keys.map(function(k){return String(k);}).join(', ');
+    document.body.innerHTML =
+      '<div style="max-width:640px;margin:12vh auto;padding:28px 32px;font-family:system-ui,-apple-system,Segoe UI,sans-serif;'+
+      'border:2px solid #DC2626;border-radius:12px;background:#fff;color:#111827">'+
+      '<div style="font-size:20px;font-weight:800;color:#DC2626;margin-bottom:12px">Stored data could not be read — SAIRNvet has not started</div>'+
+      '<p style="line-height:1.55;margin:0 0 12px">This browser holds saved SAIRNvet data that is no longer readable. '+
+      'The app has <strong>refused to open</strong> rather than start from sample data, because sample data shown in place of a real '+
+      'record — a controlled-substance log, a patient list — is worse than not opening.</p>'+
+      '<p style="line-height:1.55;margin:0 0 12px"><strong>Nothing has been deleted or overwritten.</strong> The unreadable value is '+
+      'still exactly as it was, and writes to it are blocked so it stays that way while it can still be recovered.</p>'+
+      '<p style="line-height:1.55;margin:0 0 4px">Affected storage '+(keys.length===1?'key':'keys')+':</p>'+
+      '<pre style="background:#F3F4F6;padding:10px 12px;border-radius:8px;overflow-x:auto;margin:0 0 12px">'+escHtml(names)+'</pre>'+
+      '<p style="line-height:1.55;margin:0;color:#374151">Contact SAIRN support with the '+(keys.length===1?'name':'names')+' above. '+
+      'Do not clear this browser\'s storage first — that is what destroys the record.</p>'+
+      '</div>';
+  }catch(e){
+    // If even the DOM write fails there is nothing else to try, and going on
+    // to render panels from seed data is the outcome being prevented.
+    try{document.title='SAIRNvet — stored data unreadable';}catch(e2){}
+  }
+}
 function svStore(k,v){return st('sv_'+k,v);}
 function svLoad(k,d){try{var r=localStorage.getItem('sv_'+k);return r?JSON.parse(r):d;}catch(e){return d;}}
 
@@ -8130,6 +8227,15 @@ loadSvSharedKnowledge();
 window.buildSvSharedCompanyContext = buildSvSharedCompanyContext;
 window.recordSvSharedTopics = recordSvSharedTopics;
 
+// BOOT INTEGRITY GATE (2026-09-04) -- runs before setupPinPad() and before
+// any render*() call, because by the time a panel renders its get*() has
+// already fallen through to seed data and the demo rows are on screen. See
+// svIntegrityScan() for the shape being caught. The whole boot below is
+// inside this else; its closing brace is at the end of the block.
+var _svCorruptAtBoot = svIntegrityScan();
+if(_svCorruptAtBoot.length){
+  svBlockForCorruptStore(_svCorruptAtBoot);
+}else{
 setupPinPad();
 var auth=svLoad('auth');
 // checkTrialGate() re-checked here too, not just in gateSubmit() -- this
@@ -8188,6 +8294,7 @@ if(auth&&checkTrialGate()){
 } else {
   updatePinDisplay();
 }
+}   // end of the boot integrity gate's else -- see svIntegrityScan() above
 </script>
 
 
