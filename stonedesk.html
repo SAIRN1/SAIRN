@@ -4399,9 +4399,47 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var drawings=[];
     try{drawings=JSON.parse(localStorage.getItem('sd_drawings')||'[]');}catch(e){}
     var entry={id:'DRW-'+Date.now(),date:sdLocalToday(),name:jobName};
-    if(canvas){try{entry.dataUrl=canvas.toDataURL('image/png');}catch(e){}}
+    // JPEG q0.70 ON THE CANVAS'S OWN BACKGROUND, not a bare toDataURL (2026-09-04).
+    //
+    // MEASURED FIRST, against the deployed app: the procedural stone texture takes a
+    // 640x480 snapshot from 18.4 KB (flat placeholder) to 49.9 KB (U-shape,
+    // granite/dark) -- 2.7x. localStorage counts UTF-16, so that worst case is 133 KB
+    // of quota per entry, and the old 50-entry cap therefore asked for ~6.5 MB of a
+    // ~5 MB budget. sairn.vercel.app is ONE origin shared by every SAIRN app (199
+    // keys, 1.25 MB already in use), so a rep filling this history does not degrade
+    // StoneDesk -- it starves every other app on the origin, and their save failures
+    // read as their own.
+    //
+    // THE BACKGROUND COMPOSITE IS NOT COSMETIC AND IS WHY THIS WAS LOOKED AT RATHER
+    // THAN SHIPPED ON THE ARITHMETIC. ct-canvas is transparent -- the pale field is
+    // CSS, not pixels -- and JPEG has no alpha, so a bare toDataURL('image/jpeg')
+    // flattens it to BLACK. Verified in the browser: the grid lines vanish entirely
+    // (dark grey on black) and the drawing comes back as something the rep never
+    // drew. Painting the canvas's own computed background first restores it exactly;
+    // the side-by-side at q0.70 keeps the edge colour-coding, the texture and the
+    // label legible, and is if anything closer to what is on screen than the PNG.
+    //
+    // Worst case measured after this change: 29,123 chars, 58 KB of quota -- 0.43x.
+    if(canvas){
+      try{
+        var snap=document.createElement('canvas');
+        snap.width=canvas.width; snap.height=canvas.height;
+        var sctx=snap.getContext('2d');
+        var bg='';
+        try{ bg=window.getComputedStyle(canvas).backgroundColor||''; }catch(e){}
+        // A transparent or unreadable computed background would put us straight back
+        // to the black-field bug, so it falls through to white rather than to none.
+        if(!bg||bg==='transparent'||/rgba\(\s*0\s*,\s*0\s*,\s*0\s*,\s*0\s*\)/.test(bg))bg='#FFFFFF';
+        sctx.fillStyle=bg; sctx.fillRect(0,0,snap.width,snap.height);
+        sctx.drawImage(canvas,0,0);
+        entry.dataUrl=snap.toDataURL('image/jpeg',0.70);
+      }catch(e){}
+    }
     drawings.unshift(entry);
-    if(drawings.length>50)drawings=drawings.slice(0,50);
+    // 50 -> 20. At the measured worst case this is ~1.2 MB rather than ~6.5 MB, which
+    // is a bound that actually holds on a shared origin. Costs history depth and no
+    // fidelity, which is why it is the lever pulled alongside the compression.
+    if(drawings.length>20)drawings=drawings.slice(0,20);
     var drawingSaved = st('sd_drawings',drawings);
     var status=document.getElementById('draw-save-status');
     if(status){
