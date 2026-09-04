@@ -6,12 +6,20 @@
 // FIFTEEN resources". Each was chosen by measuring what a bad row does to the
 // numbers a practice reads, rather than by which table sounds worst:
 //
-//   dnt_payments  (first)   -- a NEGATIVE payment makes dnAging() report more
-//                              outstanding than the charge it is paying.
-//   dnt_charges   (second)  -- a NEGATIVE charge reduces balanceDue in
-//                              patientBalance(), which has NO clamp, while
-//                              dnAging() floors at zero and does not move. The
-//                              two views then disagree about one patient.
+//   dnt_payments       (first)  -- a NEGATIVE payment makes dnAging() report
+//                                  more outstanding than the charge it pays.
+//   dnt_charges        (second) -- a NEGATIVE charge reduces balanceDue in
+//                                  patientBalance(), which has NO clamp, while
+//                                  dnAging() floors at zero and does not move.
+//                                  The two views then disagree about one
+//                                  patient.
+//   dnt_coverage_rules (third)  -- the ROOT CAUSE the charge pass deliberately
+//                                  deferred to. A percent over 100 makes the
+//                                  estimate exceed the charge; the browser
+//                                  already refuses it and the server did not.
+//                                  Estimates are LOCKED onto a charge and never
+//                                  recomputed, so a bad rule keeps its effect
+//                                  on every charge written while it stood.
 //
 // RENAMED FROM sd-data-dental-payment-validation.test.js when dnt_charges
 // joined it, rather than starting a second file with a copy of the harness.
@@ -27,9 +35,9 @@
 //   3. THE RESOURCES NOT YET REACHED ARE PROVEN UNTOUCHED. The index row is
 //      explicit that these must go one at a time; a change that quietly swept
 //      the rest in would be the large-regression-surface pass it warns
-//      against. That boundary assertion lives in section 5b and has already
-//      MOVED once, from dnt_charges to dnt_coverage_rules -- said out loud
-//      there rather than quietly edited.
+//      against. That boundary assertion has now MOVED TWICE -- dnt_charges ->
+//      dnt_coverage_rules -> dnt_txplans -- and each move is stated where it
+//      happened rather than quietly edited. It currently lives in section 5c.
 //   4. THE ENDPOINT WIRING IS MUTATION-CHECKED IN PROCESS. With the validator
 //      module stubbed to return null, the same bad payloads reach the network
 //      -- so these tests are known to be red against the pre-fix behaviour
@@ -76,7 +84,7 @@ function loadHandler(fetchImpl, noValidator) {
   delete require.cache[require.resolve('./_lib/dental-ledger')];
   if (noValidator) {
     require.cache[require.resolve('./_lib/dental-ledger')] = {
-      exports: { paymentProblem: function () { return null; }, chargeProblem: function () { return null; }, isPositiveMoney: function () { return true; }, isNonNegativeMoney: function () { return true; } }
+      exports: { paymentProblem: function () { return null; }, chargeProblem: function () { return null; }, coverageRuleProblem: function () { return null; }, isPositiveMoney: function () { return true; }, isNonNegativeMoney: function () { return true; } }
     };
   }
   global.fetch = fetchImpl;
@@ -139,7 +147,7 @@ async function test(name, fn) {
 }
 
 async function main() {
-  console.log('api/sd-data.js -- SAIRNdental ledger write validation (dnt_payments, dnt_charges)');
+  console.log('api/sd-data.js -- SAIRNdental ledger write validation (dnt_payments, dnt_charges, dnt_coverage_rules)');
 
   process.env.SUPABASE_URL = 'https://test.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
@@ -332,17 +340,106 @@ async function main() {
     assert.strictEqual(wrote.license_hash, LIC_HASH);
   });
 
-  // ── 5b. THE BOUNDARY, MOVED ONE RESOURCE ALONG ──────────────────────────
-  await test('dnt_coverage_rules with coverage_percent 150 still goes through -- it is the recorded THIRD one', async () => {
-    // The browser caps this at 0-100 and the server does not, which is the
-    // actual root cause of an over-estimate. If this test ever fails, either
-    // the scope grew again -- fine, say so here as this file did -- or the
-    // rule was added without updating the reasoning that sends it here.
+  // ── 5b. dnt_coverage_rules, THE THIRD RESOURCE ──────────────────────────
+  //
+  // THE BOUNDARY ASSERTION MOVED AGAIN, AND AGAIN IT IS SAID OUT LOUD. This
+  // section held "dnt_coverage_rules with coverage_percent 150 still goes
+  // through -- it is the recorded THIRD one", pinning the edge of the charges
+  // pass. It is now inverted: 150 is exactly what this resource refuses, and
+  // it is the root cause the charge branch deliberately deferred to. The
+  // boundary has moved on to dnt_txplans, asserted at the end of this section.
+  //
+  // NOT AN INVENTED RULE. addCoverageRule() in sairndental.html already
+  // refuses `isNaN(pct) || pct < 0 || pct > 100`; that was browser JavaScript
+  // and nothing else.
+  for (const [pct, why] of [
+    [150, 'over 100 -- THE deferred root cause: the estimate exceeds the charge, so patientBalance() reports a credit while dnAging() floors at zero'],
+    [100.01, 'just over the boundary -- the check is inclusive at 100, not approximate'],
+    [-5, 'negative -- the estimate goes negative, so patientBalance() ADDS it to what the patient owes'],
+    ['abc', 'unparseable -- read as 0%, so the patient is billed in full for a covered procedure, while rCoverage() renders "abc%" in the table'],
+    [true, 'boolean -- Number(true) is 1, so a bare Number() check would store it as 1% coverage'],
+    [Infinity, 'Infinity'],
+    [undefined, 'absent'],
+    [null, 'null'],
+  ]) {
+    await test('coverage_percent ' + label(pct) + ' -> 400 INVALID_COVERAGE_RULE, never reaches the network  (' + why + ')', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      const payload = { id: 'CV-1', payer: 'Delta Dental', procedure_type_id: 'PR-1' };
+      if (pct !== undefined) payload.coverage_percent = pct;
+      await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: payload }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, 'expected 400, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'INVALID_COVERAGE_RULE');
+    });
+  }
+
+  for (const [pct, why] of [
+    [0, 'zero is legitimate -- a payer that covers nothing for this procedure'],
+    [100, 'one hundred is legitimate and INCLUSIVE -- full coverage'],
+    [80, 'the ordinary case'],
+    ['80', 'a numeric string, same reasoning as the other two resources'],
+    [62.5, 'a fraction of a per cent is real'],
+  ]) {
+    await test('coverage_percent ' + label(pct) + ' -> 200  (' + why + ')', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: { id: 'CV-2', payer: 'Delta Dental', procedure_type_id: 'PR-1', coverage_percent: pct } }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, 'expected 200, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.ok(wrote);
+    });
+  }
+
+  for (const [missing, why] of [
+    ['payer', 'lookupCoverage() matches on payer AND procedure_type_id, so a rule with neither can ever match -- configuration the practice believes is in place'],
+    ['procedure_type_id', 'same, on the other half of the match'],
+  ]) {
+    await test('a coverage rule with no ' + missing + ' -> 400 INVALID_COVERAGE_RULE  (' + why + ')', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      const payload = { id: 'CV-1', payer: 'Delta Dental', procedure_type_id: 'PR-1', coverage_percent: 80 };
+      delete payload[missing];
+      await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: payload }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400);
+      assert.strictEqual(res.body.error.code, 'INVALID_COVERAGE_RULE');
+      assert.match(res.body.error.message, new RegExp(missing === 'payer' ? 'payer name' : 'procedure type'));
+    });
+  }
+
+  await test('a whitespace-only payer is refused -- it is trimmed before the check', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: { id: 'CV-1', payer: '   ', procedure_type_id: 'PR-1', coverage_percent: 80 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_COVERAGE_RULE');
+  });
+
+  await test('the percent refusal carries the CONSEQUENCE, not just the range', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 150 } }, tokenFor('owner')), res);
+    const msg = res.body.error.message;
+    assert.match(msg, /0 to 100/);
+    assert.match(msg, /locked onto a charge/i, 'a reader needs to know a bad rule keeps its effect on charges already written');
+  });
+
+  // ── 5c. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
+  await test('dnt_txplans with an absurd amount still goes through -- ten resources remain', async () => {
+    // The current edge of the change, and dnt_txplans is a REPRESENTATIVE
+    // unvalidated resource here, not a claim that it is next -- nothing has
+    // been measured about it yet. Ten of the fifteen still have no domain
+    // check: dnt_providers, dnt_operatories, dnt_provider_hours,
+    // dnt_procedure_types, dnt_denial, dnt_ar, dnt_revenue, dnt_referrals,
+    // dnt_recall_outreach and this one. Counted off DNT_RESOURCES rather than
+    // tracked in prose, because a prose tally in the index row was already
+    // wrong once by one.
+    // If this ever fails, either the scope grew -- fine, say so here as the
+    // previous two boundaries did -- or a rule leaked across resources.
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 150 } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the ledger rules leaked onto dnt_coverage_rules');
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: { id: 'TX-1', patient_id: 'PT-1', amount: -9999 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the ledger rules leaked onto dnt_txplans');
     assert.ok(wrote);
   });
 
@@ -394,6 +491,9 @@ async function main() {
     ['dnt_charges', { id: 'CH-1', patient_id: 'PT-1', amount: -500 }],
     ['dnt_charges', { id: 'CH-1', patient_id: 'PT-1', amount: 400, estimated_insurance_portion: -50 }],
     ['dnt_charges', { id: 'CH-1', amount: 400 }],
+    ['dnt_coverage_rules', { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 150 }],
+    ['dnt_coverage_rules', { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 'abc' }],
+    ['dnt_coverage_rules', { id: 'CV-1', procedure_type_id: 'PR-1', coverage_percent: 80 }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

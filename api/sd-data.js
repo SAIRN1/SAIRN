@@ -37,7 +37,11 @@ const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
-const { paymentProblem: dntPaymentProblem, chargeProblem: dntChargeProblem } = require('./_lib/dental-ledger');
+const {
+  paymentProblem: dntPaymentProblem,
+  chargeProblem: dntChargeProblem,
+  coverageRuleProblem: dntCoverageRuleProblem,
+} = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -9087,6 +9091,20 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_charges') {
         const cp = dntChargeProblem(payload);
         if (cp) { res.status(400).json({ error: { code: 'INVALID_CHARGE', message: cp } }); return; }
+      }
+      // dnt_coverage_rules, the third -- and the one the charge branch above
+      // deliberately deferred to. THIS IS NOT AN INVENTED RULE: it is the check
+      // sairndental.html's addCoverageRule() already makes and refuses on,
+      // `isNaN(pct) || pct < 0 || pct > 100`, which was browser JavaScript and
+      // nothing else. Same shape as the guardian rule and 45 CFR 149.610(c)(1),
+      // both moved server-side the same day.
+      //
+      // A bad rule does not surface as a bad rule. computeEstimatedInsurance()
+      // LOCKS its result onto the charge and the app never recomputes it, so
+      // the damage appears later as wrong numbers on charges already written.
+      if (resource === 'dnt_coverage_rules') {
+        const crp = dntCoverageRuleProblem(payload);
+        if (crp) { res.status(400).json({ error: { code: 'INVALID_COVERAGE_RULE', message: crp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

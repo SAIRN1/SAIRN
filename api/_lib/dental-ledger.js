@@ -175,4 +175,100 @@ function chargeProblem(record) {
   return null;
 }
 
-module.exports = { paymentProblem, chargeProblem, isPositiveMoney, isNonNegativeMoney };
+// ── dnt_coverage_rules, THE THIRD OF THE FIFTEEN (2026-09-04) ─────────────
+// It is here rather than in its own module because it is not really a third
+// subject: a coverage rule is the INPUT to the estimate that charges carry,
+// and the reason it is being validated at all was written down while doing
+// charges. Keeping the three together puts the reasoning where the next
+// reader will look for it.
+//
+// THIS ONE IS NOT A RULE I INVENTED. sairndental.html's addCoverageRule()
+// already refuses a percent outside 0-100:
+//
+//     if (isNaN(pct) || pct < 0 || pct > 100) { toast('Coverage percent must
+//     be 0-100'); return; }
+//
+// in browser JavaScript, and the generic write accepted 150 regardless. Same
+// shape as the guardian rule and 45 CFR 149.610(c)(1), both of which were
+// enforced in the browser and nowhere else until 2026-09-04. This moves the
+// app's own stated rule to the server; it does not add a new policy.
+//
+// WHAT A BAD RULE DOES, traced rather than imagined. lookupCoverage() returns
+// Number(match.coverage_percent) || 0 and computeEstimatedInsurance()
+// multiplies the charge by pct/100, LOCKING THE RESULT ONTO THE CHARGE
+// PERMANENTLY -- the app never recomputes an existing charge's estimate. So a
+// bad rule does not show up as a bad rule; it shows up later as a wrong number
+// on charges that have already been written:
+//
+//   * OVER 100 -- the estimate exceeds the charge, so patientBalance() reports
+//     a CREDIT while dnAging() floors at zero. This is the defect that was
+//     deliberately not fixed on the charge side, because refusing the charge
+//     would punish the correct record; this is where it belongs.
+//   * NEGATIVE -- the estimate is negative, so patientBalance() ADDS it to
+//     what the patient owes and dnAging()'s `owed = amount - est` grows. The
+//     patient is billed for more than the charge.
+//   * NON-NUMERIC -- `|| 0` makes it zero per cent, so the patient is billed
+//     the full amount on a procedure their plan covers. Meanwhile rCoverage()
+//     renders H(c.coverage_percent) + '%' verbatim, so the rules table shows
+//     "abc%" while every estimate computed from it uses 0. The table and the
+//     arithmetic disagree, and only the table is visible.
+//   * NO payer OR NO procedure_type_id -- lookupCoverage() matches on both,
+//     case-insensitively and exactly, so such a rule can never match anything.
+//     It is configuration the practice believes is in place and that can never
+//     apply. The app's "no coverage rule on file" message is honest, which is
+//     exactly what makes this invisible.
+//
+// APPEND-ONLY IN FACT, re-checked for THIS resource rather than carried over:
+// sdnData('write','dnt_coverage_rules',...) appears exactly once, in
+// addCoverageRule(), which only creates. removeCoverageRule() is local-only
+// and says so. No legacy rule can be blocked by this.
+//
+// DELIBERATELY NOT DONE HERE: a duplicate check on (payer, procedure_type_id).
+// lookupCoverage() uses .find(), so with two matching rules the applied
+// percentage is decided by ROW ORDER -- the same defect the dnt_providers
+// branch refuses explicitly for linked_employee_id, and it has the same
+// ready-made fix shape. It is left out because it is a different kind of
+// change: it needs a read before the write and a 409, where everything in this
+// module is a pure function of the payload. Recorded as its own row instead of
+// bundled in.
+// One message, used by both percent branches below, because they are one rule
+// -- and because a reader who hits it needs the CONSEQUENCE, not just the
+// range. It says what the number does rather than only what it must be.
+const COVERAGE_PERCENT_MESSAGE =
+  'Coverage percent must be a number from 0 to 100. Over 100 makes the '
+  + 'estimated insurance exceed the charge, so the billing panel shows the '
+  + 'patient in credit while the ageing report shows nothing owed; a negative '
+  + 'value bills the patient for more than the charge; and a value that is not '
+  + 'a number is read as zero per cent, so the patient is billed in full for a '
+  + 'procedure their plan covers. Estimates are locked onto a charge when it is '
+  + 'created and never recomputed, so a wrong rule keeps its effect on every '
+  + 'charge written while it was in place.';
+
+function coverageRuleProblem(record) {
+  const r = record || {};
+  const payer = String(r.payer == null ? '' : r.payer).trim();
+  if (!payer) {
+    return 'A coverage rule needs the payer name it applies to. Without one it '
+         + 'can never match a patient, so it would sit in the rules table '
+         + 'looking like configured coverage while every estimate ignored it.';
+  }
+  const procedure = String(r.procedure_type_id == null ? '' : r.procedure_type_id).trim();
+  if (!procedure) {
+    return 'A coverage rule needs the procedure type it applies to. Without one '
+         + 'it can never match, so it would sit in the rules table looking like '
+         + 'configured coverage while every estimate ignored it.';
+  }
+  if (typeof r.coverage_percent !== 'number' && typeof r.coverage_percent !== 'string') {
+    return COVERAGE_PERCENT_MESSAGE;
+  }
+  const pct = Number(r.coverage_percent);
+  if (!Number.isFinite(pct) || pct < 0 || pct > 100) {
+    return COVERAGE_PERCENT_MESSAGE;
+  }
+  return null;
+}
+
+module.exports = {
+  paymentProblem, chargeProblem, coverageRuleProblem,
+  isPositiveMoney, isNonNegativeMoney,
+};
