@@ -431,8 +431,8 @@
       "task": "duplicate signature pad and sibling key field names",
       "claimed_at": "2026-09-04T12:48:19Z",
       "claimed_at_epoch": 1788526099.495629,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:01:47Z"
     }
   ]
 }
