@@ -674,6 +674,16 @@
       "claimed_at_epoch": 1788560587.7377994,
       "status": "released",
       "released_at": "2026-09-04T22:29:43Z"
+    },
+    {
+      "id": "hank-1788561147",
+      "session": "hank",
+      "subject": "stonedesk-timesheet-pay-est",
+      "task": "fabricated hourly rate in exported spreadsheet column",
+      "claimed_at": "2026-09-04T22:32:27Z",
+      "claimed_at_epoch": 1788561147.8169792,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
