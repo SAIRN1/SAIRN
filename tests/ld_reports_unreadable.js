@@ -14,15 +14,18 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. SEVEN are fixed, one or two at a time, deliberately: sweeping thirteen
+// pass. NINE are fixed, one or two at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
 //
-// SIX OF THE SEVEN ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
+// EIGHT OF THE NINE ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
 // omission: it has a different contract. That file carries a deliberate
 // two-place unreadable-store guard, so a corrupt record there must BLOCK the
 // app rather than return the default -- the opposite of what every assertion
 // below requires. It has its own suite, tests/sv_storage_guard.js. Bending
 // these assertions to cover both would have made them true of neither.
+// The REMAINING count below is what keeps this suite honest about anything
+// fixed elsewhere: it drops when anyone fixes one, whether or not it is
+// driven here. SAIRNscape arrived that way and is now driven here too.
 //
 // THE REAL FUNCTIONS ARE DRIVEN against a fake localStorage. The whole point is
 // that the RETURN VALUE is unchanged and only the silence is fixed, and a
@@ -35,10 +38,18 @@ const assert = require('assert');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
-// `fn` is the loader's real name in that file. FIVE of the six are spelled
-// `ld`; SAIRNscape's is `scpLd`, and hardcoding `ld` here is what would have
-// let it join the list without ever being driven -- the sixth app would have
-// shown five green sections and no sixth, which reads as progress.
+// `fn` is the loader's real name in that file. All but one are spelled `ld`;
+// SAIRNscape's is `scpLd`, and hardcoding `ld` here is what would have let it
+// join the list without ever being driven -- the app would have shown one
+// fewer green section than there are entries, which reads as progress.
+//
+// ADDING AN ENTRY IS NOT THE SAME AS BEING COVERED, and that was learned here
+// on 2026-09-04: a scripted edit inserted SAIRNdesign and SAIRNgrounds after
+// an anchor that no longer existed, `String.replace` returned the string
+// unchanged, and the suite went green at a HIGHER assertion count because
+// another session had just added SAIRNscape. The count went up, the two new
+// apps were never driven, and only a negative control caught it. Assert the
+// anchor matched, and read the section headings in the output.
 const APPS = [
   { file: 'sairnlaw.html', name: 'SAIRNlaw', fn: 'ld' },
   { file: 'sairnlegacy.html', name: 'SAIRNlegacy', fn: 'ld' },
@@ -46,6 +57,8 @@ const APPS = [
   { file: 'sairncare.html', name: 'SAIRNcare', fn: 'ld' },
   { file: 'sairnfreedom.html', name: 'SAIRNfreedom', fn: 'ld' },
   { file: 'sairnscape.html', name: 'SAIRNscape', fn: 'scpLd' },
+  { file: 'sairndesign.html', name: 'SAIRNdesign', fn: 'ld' },
+  { file: 'sairngrounds.html', name: 'SAIRNgrounds', fn: 'ld' },
 ];
 
 let pass = 0, fail = 0;
@@ -192,9 +205,9 @@ APPS.forEach((app) => {
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these six are done');
+section('the checker agrees these eight are done -- nine of fourteen overall');
 
-const REMAINING = 7;   // of the original 14
+const REMAINING = 5;   // of the original 14
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -216,7 +229,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other seven are still on the list, not quietly dropped', () => {
+test('...and the other five are still on the list, not quietly dropped', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,
