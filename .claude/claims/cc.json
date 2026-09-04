@@ -473,6 +473,16 @@
       "claimed_at_epoch": 1788553085.6128795,
       "status": "released",
       "released_at": "2026-09-04T20:28:12Z"
+    },
+    {
+      "id": "cc-1788553820",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "dnt charges write validation the recorded next resource",
+      "claimed_at": "2026-09-04T20:30:20Z",
+      "claimed_at_epoch": 1788553820.4093785,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
