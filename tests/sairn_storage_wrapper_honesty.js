@@ -178,11 +178,19 @@ function workingStore() {
 
   // Known and NOT fixed by the 2026-09-04 sweep, which was dispatched for
   // SAIRNbuild, SAIRNvet, SAIRNmechanical, SAIRNgrounds and SAIRNscape only.
-  // These four are the same defect in apps that were out of scope; they are
+  // These are the same defect in apps that were out of scope; they are
   // reported, not fixed, and this list is meant to shrink.
-  const KNOWN_UNFIXED = ['sairnbiz.html', 'sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html'];
+  //
+  // SHRANK 2026-09-04 (CC): sairnbiz.html removed. Its st() now returns a
+  // boolean and says "THIS DID NOT SAVE" on a refused write, latched per key.
+  // Fixed as part of the SAIRNbiz server-backup work rather than by this
+  // sweep -- st() was the hook that change needed, and a hook that pushes to a
+  // server on the strength of a write it never confirmed is the same defect
+  // wearing a worse disguise. Held by tests/sairnbiz_server_backup.js, which
+  // carries its own mutation probe restoring the empty catch.
+  const KNOWN_UNFIXED = ['sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html'];
 
-  check('the swallowing wrappers are exactly the four still on the list',
+  check('the swallowing wrappers are exactly the ones still on the list',
     swallowing, KNOWN_UNFIXED);
   check('SAIRNgrounds is no longer among them', swallowing.indexOf('sairngrounds.html'), -1);
   check('SAIRNscape is no longer among them', swallowing.indexOf('sairnscape.html'), -1);
