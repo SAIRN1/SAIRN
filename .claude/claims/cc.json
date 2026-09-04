@@ -533,6 +533,16 @@
       "claimed_at_epoch": 1788558221.0128245,
       "status": "released",
       "released_at": "2026-09-04T21:53:42Z"
+    },
+    {
+      "id": "cc-1788558997",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "false sync disabled message swallows real refusals",
+      "claimed_at": "2026-09-04T21:56:37Z",
+      "claimed_at_epoch": 1788558997.4179528,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
