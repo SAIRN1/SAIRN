@@ -511,8 +511,8 @@
       "task": "dnt settings obj four writers two backing variables",
       "claimed_at": "2026-09-04T21:12:56Z",
       "claimed_at_epoch": 1788556376.8218136,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:25:16Z"
     }
   ]
 }
