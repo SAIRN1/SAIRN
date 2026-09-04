@@ -120,7 +120,22 @@ module.exports = async (req, res) => {
       // in the map below) -- no caregiver identity is selected or returned
       // anywhere in this response.
       const visitsR = await fetch(rest('sen_visits?license_hash=eq.' + enc(link.license_hash) + '&select=data'), { headers });
-      const visitsRows = visitsR.ok ? await visitsR.json() : [];
+      // "NO VISITS SCHEDULED" IS A CLAIM MADE TO A FAMILY MEMBER (2026-09-04).
+      // This fell back to [], so an unreadable store told whoever holds a care
+      // recipient's portal link that nobody is coming -- about a person whose
+      // care they are checking on. Refusing is the kinder answer and the true
+      // one.
+      if (!visitsR.ok) {
+        console.error('sen-portal: sen_visits read failed, HTTP', visitsR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not load the visit schedule just now. This does not mean there are no visits -- please try again shortly.' } });
+        return;
+      }
+      const visitsRows = await visitsR.json().catch(function () { return null; });
+      if (!Array.isArray(visitsRows)) {
+        console.error('sen-portal: sen_visits read returned a non-array');
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not load the visit schedule just now. This does not mean there are no visits -- please try again shortly.' } });
+        return;
+      }
       const clientVisits = (Array.isArray(visitsRows) ? visitsRows : [])
         .filter((v) => v.data && v.data.client_id === link.client_id)
         .map((v) => ({

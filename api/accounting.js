@@ -132,14 +132,24 @@ module.exports = async (req, res) => {
       '&provider=eq.' + enc(provider) +
       '&select=consent_id,provider,granted_by,granted_on,scopes,revoked_on,revoked_by&order=granted_on.desc'), { headers });
     if (cr.status === 404 || cr.status === 400) return { provisioned: false };
-    const consents = cr.ok ? await cr.json() : [];
-    const live = (Array.isArray(consents) ? consents : []).filter((c) => !c.revoked_on)[0] || null;
+    // AN UNREADABLE CONSENT TABLE IS NOT AN ABSENT CONSENT (2026-09-04).
+    // These fell back to [], so `live` became null and `status` reported the
+    // customer as NOT CONSENTED and NOT CONNECTED -- a statement about a legal
+    // artifact, made because a read failed. The 404/400 branch above already
+    // distinguishes not-provisioned; unreadable needs its own answer rather
+    // than borrowing "no consent".
+    if (!cr.ok) return { unreadable: true, detail: 'accounting_consents HTTP ' + cr.status };
+    const consents = await cr.json().catch(() => null);
+    if (!Array.isArray(consents)) return { unreadable: true, detail: 'accounting_consents returned a non-array' };
+    const live = consents.filter((c) => !c.revoked_on)[0] || null;
     const nr = await fetch(rest('accounting_connections?license_hash=eq.' + enc(licHash) +
       '&provider=eq.' + enc(provider) +
       '&select=provider,consent_id,realm_id,status,expires_on,last_read_at,last_error,refresh_token_enc&limit=1'), { headers });
-    const conns = nr.ok ? await nr.json() : [];
-    const conn = (Array.isArray(conns) && conns[0]) || null;
-    return { provisioned: true, consents: consents || [], live: live, conn: conn };
+    if (!nr.ok) return { unreadable: true, detail: 'accounting_connections HTTP ' + nr.status };
+    const conns = await nr.json().catch(() => null);
+    if (!Array.isArray(conns)) return { unreadable: true, detail: 'accounting_connections returned a non-array' };
+    const conn = conns[0] || null;
+    return { provisioned: true, consents: consents, live: live, conn: conn };
   }
 
   try {
@@ -150,6 +160,14 @@ module.exports = async (req, res) => {
     // this customer consented.
     if (action === 'status') {
       const st = await loadState();
+      // `unreadable` must be checked BEFORE `provisioned`: an unreadable state
+      // has no `provisioned` field, so falling through would report "the tables
+      // are not set up" -- swapping one false reason for another.
+      if (st.unreadable) {
+        console.error('accounting: consent/connection state unreadable --', st.detail);
+        res.status(502).json({ error: { code: 'STATE_UNREADABLE', message: 'Could not read the consent and connection records, so no connection status is being reported. This is not a statement that consent is absent.' } });
+        return;
+      }
       if (!st.provisioned) {
         res.status(200).json({ ok: true, provisioned: false,
           message: 'The accounting connector tables are not set up — run sql/accounting_connector_schema.sql in Supabase first.' });
@@ -278,6 +296,14 @@ module.exports = async (req, res) => {
     // answers and only one of them is about them.
     if (action === 'read') {
       const st = await loadState();
+      // `unreadable` must be checked BEFORE `provisioned`: an unreadable state
+      // has no `provisioned` field, so falling through would report "the tables
+      // are not set up" -- swapping one false reason for another.
+      if (st.unreadable) {
+        console.error('accounting: consent/connection state unreadable --', st.detail);
+        res.status(502).json({ error: { code: 'STATE_UNREADABLE', message: 'Could not read the consent and connection records, so no connection status is being reported. This is not a statement that consent is absent.' } });
+        return;
+      }
       if (!st.provisioned) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The accounting connector tables are not set up.' } }); return; }
       const gate = connector.authoriseRead({
         today: today,

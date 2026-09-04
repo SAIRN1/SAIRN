@@ -22,7 +22,11 @@ const MAX_MESSAGE_LEN = 4000;
 
 async function fetchByComplaintId(licenseHash, complaintId) {
   const r = await fetch(rest('dnt_complaints?license_hash=eq.' + encodeURIComponent(licenseHash) + '&complaint_id=eq.' + encodeURIComponent(complaintId) + '&select=complaint_id,access_token,data'), { headers: supabaseHeaders() });
-  if (!r.ok) return null;
+  if (!r.ok) {
+    const e = new Error('dnt_complaints lookup read failed: HTTP ' + r.status);
+    e.code = 'UPSTREAM';
+    throw e;
+  }
   const rows = await r.json();
   return (Array.isArray(rows) && rows[0]) || null;
 }

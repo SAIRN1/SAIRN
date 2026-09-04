@@ -1867,8 +1867,18 @@ module.exports = async (req, res) => {
       const qrStatus = String(payload.status || '');
       if (!ALLOWED_QR[qrStatus]) { res.status(400).json({ error: { message: "status must be 'pending', 'promoted' or 'declined'" } }); return; }
       const cur = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
-      const curRows = cur.ok ? await cur.json() : [];
-      if (!Array.isArray(curRows) || !curRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That quote request no longer exists' } }); return; }
+      // A FAILED READ IS NOT A DELETED REQUEST (2026-09-04). This fell back to
+      // [], so staff were told the quote request "no longer exists" when the
+      // store simply would not answer -- and the next thing they do is stop
+      // looking for it.
+      if (!cur.ok) {
+        console.error('sd-data: sd_quote_requests read failed, HTTP', cur.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that quote request, so nothing was changed. It has not been deleted -- try again.' } });
+        return;
+      }
+      const curRows = await cur.json().catch(function () { return null; });
+      if (!Array.isArray(curRows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that quote request, so nothing was changed.' } }); return; }
+      if (!curRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That quote request no longer exists' } }); return; }
       const curData = curRows[0].data || {};
       const merged = Object.assign({}, curData, {
         promoted_at: qrStatus === 'promoted' ? nowISO() : (curData.promoted_at || ''),
@@ -5350,7 +5360,14 @@ module.exports = async (req, res) => {
         else if (dr.ok) {
           const draws = await dr.json();
           const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,data'), { headers });
-          const jrows = jr.ok ? await jr.json() : [];
+          // WIP IS A FINANCIAL STATEMENT (2026-09-04). This fell back to [],
+          // so an unreadable rf_jobs left every job without a contract value --
+          // or dropped jobs out of the book entirely -- and the WIP total was
+          // reported as a real figure computed from a partial read. Same class
+          // as api/ledger.js's balanced-and-empty trial balance.
+          if (!jr.ok) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read jobs, so no WIP figures were computed.' } }); return; }
+          const jrows = await jr.json().catch(function () { return null; });
+          if (!Array.isArray(jrows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read jobs, so no WIP figures were computed.' } }); return; }
           const jobs = (Array.isArray(jrows) ? jrows : []).map((j) => {
             const d = j.data || {};
             const v = [d.contract_value, d.total, d.amount, d.quote_total]
@@ -5617,7 +5634,13 @@ module.exports = async (req, res) => {
         if (!lr.ok) return { unavailable: true };
         const locs = await lr.json();
         const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,location_id'), { headers });
-        const jrows = jr.ok ? await jr.json() : [];
+        // The rf_locations read one line above already answers `unavailable`
+        // on failure. This one did not, so a failed job read left every job
+        // unattributed and the entity filter QUIETLY DROPPED THEM from a
+        // consolidation -- an understated total with nothing to say so.
+        if (!jr.ok) return { unavailable: true };
+        const jrows = await jr.json().catch(function () { return null; });
+        if (!Array.isArray(jrows)) return { unavailable: true };
         const jobLoc = Object.create(null);
         (Array.isArray(jrows) ? jrows : []).forEach((j) => { jobLoc[j.job_id] = j.location_id; });
         const match = consol.entityMatcher({ locations: locs || [], entity_id: want });
@@ -5661,7 +5684,11 @@ module.exports = async (req, res) => {
         // other roofing job field lives. Pulled out here rather than asking the
         // browser to join two lists and re-implement the WIP maths client-side.
         const jr = await fetch(rest('rf_jobs?license_hash=eq.' + enc(licHash) + '&select=job_id,data'), { headers });
-        const jrows = jr.ok ? await jr.json() : [];
+        // Same as the WIP read above: a partial job list silently understates
+        // the book rather than refusing to state it.
+        if (!jr.ok) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read jobs, so no WIP figures were computed.' } }); return; }
+        const jrows = await jr.json().catch(function () { return null; });
+        if (!Array.isArray(jrows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read jobs, so no WIP figures were computed.' } }); return; }
         const jobs = (Array.isArray(jrows) ? jrows : []).map((j) => {
           const d = j.data || {};
           const v = [d.contract_value, d.total, d.amount, d.quote_total]
@@ -5827,14 +5854,20 @@ module.exports = async (req, res) => {
           else {
             const locs2 = await lr2.json();
             const br2 = await fetch(rest('rf_buildings?license_hash=eq.' + enc(licHash) + '&select=building_id,location_id'), { headers });
-            const brows2 = br2.ok ? await br2.json() : [];
-            const bldLoc = Object.create(null);
-            (Array.isArray(brows2) ? brows2 : []).forEach((b) => { bldLoc[b.building_id] = b.location_id; });
-            const m2 = consol2.entityMatcher({ locations: locs2 || [], entity_id: wantEnt });
-            const before = live.length;
-            live = live.filter((s) => m2(bldLoc[s.building_id]));
-            secFilteredOut = before - live.length;
-            secFilter = wantEnt;
+            // As above: lr2 already sets secFilter='unavailable' on failure and
+            // this did not, so a failed buildings read silently filtered
+            // sections out and reported a secFilteredOut count that was wrong.
+            const brows2 = br2.ok ? await br2.json().catch(function () { return null; }) : null;
+            if (!Array.isArray(brows2)) { secFilter = 'unavailable'; }
+            else {
+              const bldLoc = Object.create(null);
+              brows2.forEach((b) => { bldLoc[b.building_id] = b.location_id; });
+              const m2 = consol2.entityMatcher({ locations: locs2 || [], entity_id: wantEnt });
+              const before = live.length;
+              live = live.filter((s) => m2(bldLoc[s.building_id]));
+              secFilteredOut = before - live.length;
+              secFilter = wantEnt;
+            }
           }
         }
 
@@ -5971,8 +6004,17 @@ module.exports = async (req, res) => {
         // re-implement the gate client-side.
         const pr = await fetch(rest('rf_company_programs?license_hash=eq.' + enc(licHash) +
           '&select=program_id,program_name,status,expires_on,has_expiry'), { headers });
-        const programs = pr.ok ? await pr.json() : [];
-        const ev = warr.tierAvailability({ today: wToday, tiers: rows || [], programs: programs || [], warn_days: wWarn });
+        // THE FILE'S OWN NEXT COMMENT SAYS "the UI cannot quietly present a
+        // gate that never ran" -- and this read fell back to [] (2026-09-04),
+        // so an unreadable programs table made every tier evaluate as though
+        // the company held NO certifications, with `ev.ok` still true and
+        // `availability_error` still null. The gate ran on nothing and said
+        // nothing. Certifications absent and certifications unreadable are not
+        // the same answer.
+        if (!pr.ok) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the certification programs, so no tier availability was evaluated.' } }); return; }
+        const programs = await pr.json().catch(function () { return null; });
+        if (!Array.isArray(programs)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the certification programs, so no tier availability was evaluated.' } }); return; }
+        const ev = warr.tierAvailability({ today: wToday, tiers: rows || [], programs: programs, warn_days: wWarn });
         res.status(200).json({
           ok: true, provisioned: true, today: wToday,
           data: rows || [],
@@ -6711,7 +6753,13 @@ module.exports = async (req, res) => {
         entityColumn = false;
         lr = await fetch(rest('rf_locations?license_hash=eq.' + enc(licHash) + '&select=location_id,name,active'), { headers });
       }
-      const locs = lr.ok ? await lr.json() : [];
+      // An unreadable location list leaves every invoice unattributed, and the
+      // consolidation then reports buckets that do not add up to the book --
+      // the failure roofing-consolidation.js's `reconciles` flag exists to
+      // catch. Refuse rather than publish an attribution built on nothing.
+      if (!lr.ok) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read locations, so no consolidation was computed.' } }); return; }
+      const locs = await lr.json().catch(function () { return null; });
+      if (!Array.isArray(locs)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read locations, so no consolidation was computed.' } }); return; }
 
       // THE MONEY IS NOT COMPUTED HERE. Invoices are summarised by
       // api/_lib/roofing-billing.js's summarizeInvoice(), the one invoice

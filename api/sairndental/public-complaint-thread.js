@@ -21,7 +21,18 @@ const MAX_MESSAGE_LEN = 4000;
 
 async function fetchByToken(token) {
   const r = await fetch(rest('dnt_complaints?access_token=eq.' + encodeURIComponent(token) + '&select=license_hash,complaint_id,data'), { headers: supabaseHeaders() });
-  if (!r.ok) return null;
+  // A STORE THAT WOULD NOT ANSWER IS NOT AN INVALID LINK (2026-09-04).
+  // `return null` here becomes 404 "This link isn't valid -- check that you
+  // copied it correctly", told to a patient holding a perfectly good link.
+  // Identical shape to resolveSlug() in api/_lib/dental-public.js, fixed the
+  // same way: throw, because this handler already catches and answers a
+  // logged 502, so there is no sentinel for a future caller to forget.
+  // A genuine miss still returns null and still means 404.
+  if (!r.ok) {
+    const e = new Error('dnt_complaints token lookup read failed: HTTP ' + r.status);
+    e.code = 'UPSTREAM';
+    throw e;
+  }
   const rows = await r.json();
   return (Array.isArray(rows) && rows[0]) || null;
 }

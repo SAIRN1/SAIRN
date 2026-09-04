@@ -25,7 +25,21 @@ function enc(s) { return encodeURIComponent(s); }
 
 async function fetchOne(resource, idCol, licenseHash, id) {
   var r = await fetch(rest(resource + '?license_hash=eq.' + enc(licenseHash) + '&' + idCol + '=eq.' + enc(id) + '&select=data'), { headers: supabaseHeaders() });
-  if (!r.ok) return null;
+  // "NO EMAIL ON FILE" IS A CLAIM ABOUT THE PATIENT (2026-09-04). This
+  // returned null on a failed read, and the caller counts that as
+  // `skippedNoEmail` -- so an unreachable store is reported in the run summary
+  // as patients having no address, which is a false statement about real
+  // people in the record of why they were not contacted. The settings and
+  // provider reads have the same shape and would silently blank the practice
+  // name and phone in an email that still went out.
+  //
+  // This file already carries the scar: its env-var guard failed on EVERY
+  // hourly firing since it shipped and it never sent a single reminder.
+  if (!r.ok) {
+    var e = new Error(resource + ' read failed: HTTP ' + r.status);
+    e.code = 'UPSTREAM';
+    throw e;
+  }
   var rows = await r.json();
   return (Array.isArray(rows) && rows[0]) ? rows[0].data : null;
 }

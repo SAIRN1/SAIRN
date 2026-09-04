@@ -88,11 +88,37 @@ LOOKAHEAD = 14
 
 
 def load_accepted():
+    """Load the acceptance list, and NEVER fail silently doing it.
+
+    The first version was `except Exception: return {}`. A single entry without
+    a `file` key -- the human-readable `_note` at the top of the file -- raised
+    KeyError, the bare except swallowed it, and EVERY acceptance was silently
+    discarded while the checker reported "accepted 0" as though the file were
+    empty. A malformed acceptance file quietly disabling all acceptances is the
+    same swallow-and-carry-on this whole tool exists to find, in the tool.
+    """
+    if not os.path.exists(ACCEPTED_PATH):
+        return {}
     try:
         with io.open(ACCEPTED_PATH, encoding='utf-8') as f:
-            return {(e['file'], e['var']): e.get('reason', '') for e in json.load(f)}
-    except Exception:
+            entries = json.load(f)
+    except Exception as err:
+        print('WARNING: %s could not be parsed (%s). NO acceptances are in '
+              'effect, so every site below is listed as untriaged.'
+              % (os.path.basename(ACCEPTED_PATH), err))
         return {}
+    out = {}
+    for e in entries:
+        if not isinstance(e, dict):
+            continue
+        # Entries without file+var are prose (the `_note` header), not defects.
+        if 'file' not in e or 'var' not in e:
+            continue
+        if not e.get('reason'):
+            print('WARNING: acceptance for %s %s has no reason -- an acceptance '
+                  'nobody justified is not one.' % (e['file'], e['var']))
+        out[(e['file'], e['var'])] = e.get('reason', '')
+    return out
 
 
 def scan(path, accepted):

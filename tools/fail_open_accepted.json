@@ -1,6 +1,35 @@
 [
   {
-    "_note": "Sites triaged as acceptable fail-open reads, each with a reason a reader can check against the source -- the same convention as tools/reachability_exemptions.json. Keyed on (file, var) rather than line: line numbers shift on every edit and a stale line silently un-accepts an entry. The cost is that two variables of the same name in one file are accepted together, so check that before adding one. An entry that matches nothing is reported as STALE by the checker rather than ignored: the first entry in this file was resolved within the hour it was written, and nothing would otherwise have said so.",
-    "_resolved_2026-09-04": "api/sd-data.js facRows (food-temperature thresholds) was listed here as KNOWN-OPEN and is now FIXED, not accepted: the reading is always recorded and the verdict withheld as facility_threshold_unavailable rather than graded against a substituted FDA default. Removed rather than left, because an acceptance file that accumulates resolved entries stops being read."
+    "_note": "Sites triaged as acceptable fail-open reads, each with a reason a reader can check against the source -- the same convention as tools/reachability_exemptions.json. Keyed on (file, var) rather than line: line numbers shift on every edit and a stale line silently un-accepts an entry. The cost is that two variables of the same name in one file are accepted together, so check that before adding one. An entry that matches nothing is reported as STALE by the checker rather than ignored -- the first entry ever written here was resolved within the hour and nothing would otherwise have said so."
+  },
+  {
+    "file": "api/_lib/ai-rate-limit.js",
+    "var": "wRows",
+    "reason": "ACCEPTED. The failure is already surfaced, not swallowed: `console.error` fires on !w.ok and the function returns `counted: w.ok`, so a caller is told in the return value whether this call was actually recorded. The fallback only affects rowId, which is a best-effort handle for the later usage measurement -- a statistic, never a control."
+  },
+  {
+    "file": "api/alf-alerts.js",
+    "var": "r",
+    "reason": "ACCEPTED. loadMar() already distinguishes all three states properly: 404/400 is {provisioned:false}, any other !r.ok returns null, and the caller answers UPSTREAM 'Could not read the MAR.' The `.catch(() => [])` this matches is on the BODY PARSE of an already-ok response, downstream of that guard. loadFacility() in the same file was the one that conflated them and was fixed 2026-09-04."
+  },
+  {
+    "file": "api/sd-data.js",
+    "var": "brows2",
+    "reason": "ACCEPTED as of the 2026-09-04 fix. The read is now `br2.ok ? await br2.json().catch(...) : null` and a non-array sets secFilter='unavailable', so the caller reports that the entity filter could not run instead of silently dropping sections. The checker still matches the ternary shape; the fallback is `null` into an explicit guard, not `[]` into a filter."
+  },
+  {
+    "file": "api/sd-data.js",
+    "var": "ar",
+    "reason": "ACCEPTED. dntPatientIdsForProvider() already returns null on !ar.ok AND on a non-array body, so the caller distinguishes 'could not read' from 'no patients'. This is the shape the rest of this sweep was converting things TO."
+  },
+  {
+    "file": "api/sd-webauthn.js",
+    "var": "existingRows",
+    "reason": "ACCEPTED, with the consequence stated. The value feeds excludeCredentials, the WebAuthn list telling an authenticator not to enrol a passkey it already holds. A failed read means the list is empty, so a user could register a SECOND passkey on the same authenticator. That is a duplicate credential row, not an access grant: no new person gains entry, nothing is overwritten, and multiple passkeys per employee are a normal and wanted state anyway. Refusing registration because a read failed would be the worse trade."
+  },
+  {
+    "file": "api/stonedesk-track.js",
+    "var": "srows",
+    "reason": "ACCEPTED, and already deliberately handled. The file carries its own comment: a bare ternary made a failing read indistinguishable from an unpublished profile, so a console.error was added on !sr.ok. The value is the shop's optional contact block on a public order-tracking page; its absence degrades the page rather than asserting anything false, and the failure is now in the log where an operator can see it."
   }
 ]

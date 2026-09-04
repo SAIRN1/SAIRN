@@ -53,9 +53,14 @@ function bad(res, status, code, message) { res.status(status).json({ error: { co
 // in a medication-administration exception report.
 const ALERT_ROLES = { owner: true, nursing: true, med_aide: true };
 
+// `null` from here reaches a NO_WINDOW_POLICY refusal telling the facility to
+// "Set one in Settings" -- which, on a failed read, is an instruction to
+// configure something they already configured (2026-09-04). loadMar() below
+// already distinguishes an unreadable store with its own UPSTREAM answer; this
+// one did not, so it borrows the same shape via a distinct sentinel.
 async function loadFacility(licHash) {
   const r = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=facility_id,data'), { headers: supabaseHeaders() });
-  if (!r.ok) return null;
+  if (!r.ok) return 'UNREADABLE';
   const rows = await r.json().catch(() => []);
   return (Array.isArray(rows) && rows[0] && rows[0].data) || null;
 }
@@ -136,6 +141,9 @@ async function computeForFacility(licHash, nowDate) {
   // invents. No ALF regulation surveyed sets a universal window, so with no
   // policy recorded the engine refuses rather than assuming one -- a guessed
   // window would generate false "late" findings against real nurses.
+  if (facility === 'UNREADABLE') {
+    return { ok: false, error: { code: 'UPSTREAM', message: 'Could not read the facility profile, so no administration window could be applied. This is not a missing policy.' } };
+  }
   const grace = facility && facility.med_window_minutes;
   if (grace === undefined || grace === null || grace === '') {
     return {
