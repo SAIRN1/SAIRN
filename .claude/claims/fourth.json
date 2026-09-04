@@ -342,6 +342,16 @@
       "claimed_at_epoch": 1788527168.5318196,
       "status": "released",
       "released_at": "2026-09-04T13:15:56Z"
+    },
+    {
+      "id": "fourth-1788527770",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "inventory stock counters and remaining wired dead readers",
+      "claimed_at": "2026-09-04T13:16:10Z",
+      "claimed_at_epoch": 1788527770.7874072,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
