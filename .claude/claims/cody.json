@@ -546,6 +546,16 @@
       "claimed_at_epoch": 1788557560.5789075,
       "status": "released",
       "released_at": "2026-09-04T21:43:01Z"
+    },
+    {
+      "id": "cody-1788558300",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "saved drawings list and reload viewer",
+      "claimed_at": "2026-09-04T21:45:00Z",
+      "claimed_at_epoch": 1788558300.279207,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
