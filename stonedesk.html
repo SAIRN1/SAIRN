@@ -11622,6 +11622,22 @@ function formatMessage(text) {
 
 async function sendMessage() {
   const input = document.getElementById('userInput');
+  // #userInput WAS REMOVED FROM THIS FILE. Only its CSS rule survives, so a
+  // grep for "userInput" still finds something and the element still does not
+  // exist. This line used to be `input.value.trim()` unguarded, which threw a
+  // TypeError into the console for any caller that reached it -- and every
+  // caller that did NOT reach it had its own `if(input)` guard, so it did
+  // nothing at all instead. Both are silent to the user.
+  //
+  // The live callers have been retargeted to sdAIQuick(). This guard exists so
+  // the NEXT one fails visibly rather than either way round.
+  if (!input) {
+    console.error('sendMessage: #userInput no longer exists -- use sdAIQuick(prompt) instead');
+    if (typeof showToast === 'function') {
+      showToast('That AI shortcut is not wired to the chat any more — type the question in the AI panel.');
+    }
+    return;
+  }
   const text = input.value.trim();
   if (!text || isTyping) return;
 
@@ -24856,8 +24872,13 @@ function safetyAIRootCause() {
   safetySetTab('incidents',document.getElementById('stab-incidents'));
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){input.value='Perform a 5-Why root cause analysis for this stone fabrication shop incident. Type: '+type+'. Description: '+desc+'. Provide: (1) 5-Why analysis, (2) Root cause, (3) Corrective actions to prevent recurrence, (4) Any OSHA reporting requirements, (5) Documentation needed.';sendMessage();}
+    // Retargeted 2026-09-04 from the dead #userInput/sendMessage() legacy chat
+    // to sdAIQuick(), the widget that actually fills #ai-input and sends via
+    // #ai-chat. The same fix was applied to four other call sites earlier
+    // (custFollowUpAI, vendorSpendAI, getAIQuoteAdvice, warrAskClaude) and
+    // these were missed. The `if(input)` guard is why nobody noticed: the
+    // button navigated to the AI panel and then silently did nothing at all.
+    if(typeof sdAIQuick==='function')sdAIQuick('Perform a 5-Why root cause analysis for this stone fabrication shop incident. Type: '+type+'. Description: '+desc+'. Provide: (1) 5-Why analysis, (2) Root cause, (3) Corrective actions to prevent recurrence, (4) Any OSHA reporting requirements, (5) Documentation needed.');
   },400);
 }
 
@@ -24938,11 +24959,8 @@ function ecpGenerate() {
   var shop=(document.getElementById('ecp-shop')||{}).value||localStorage.getItem('sd_shop_name')||'Stone Fabrication Shop';
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){
-      input.value='Generate a complete OSHA-compliant Written Exposure Control Plan for a stone countertop fabrication shop named "'+shop+'". Include: (1) Purpose and scope, (2) Identification of tasks with silica exposure, (3) Engineering controls — wet methods, HEPA vacuums, enclosed CNC, (4) Work practice controls, (5) Respiratory protection program, (6) Housekeeping, (7) Medical surveillance, (8) Employee training requirements, (9) Recordkeeping. Format as a professional document with clear section headers. Reference OSHA 29 CFR 1910.1053.';
-      sendMessage();
-    }
+    // Retargeted 2026-09-04 -- see the note in safetyAIRootCause above.
+    if(typeof sdAIQuick==='function')sdAIQuick('Generate a complete OSHA-compliant Written Exposure Control Plan for a stone countertop fabrication shop named "'+shop+'". Include: (1) Purpose and scope, (2) Identification of tasks with silica exposure, (3) Engineering controls — wet methods, HEPA vacuums, enclosed CNC, (4) Work practice controls, (5) Respiratory protection program, (6) Housekeeping, (7) Medical surveillance, (8) Employee training requirements, (9) Recordkeeping. Format as a professional document with clear section headers. Reference OSHA 29 CFR 1910.1053.');
   },400);
 }
 
@@ -24953,11 +24971,8 @@ function safetyGenerateAttestation() {
   var owner=(document.getElementById('ecp-owner')||{}).value||'[OWNER NAME]';
   sbNav('ai');
   setTimeout(function(){
-    var input=document.getElementById('userInput');
-    if(input){
-      input.value='Generate a California STOP Act annual attestation document for a stone fabrication shop. Shop: "'+shop+'", Owner/Operator: "'+owner+'", Date: '+new Date().toLocaleDateString()+'. The attestation must confirm that all employees performing high-exposure trigger tasks (cutting, grinding, polishing engineered stone) have received mandated silica safety training per California Labor Code Section 6717 (STOP Act). Format as a formal signed document ready for electronic submission to Cal/OSHA.';
-      sendMessage();
-    }
+    // Retargeted 2026-09-04 -- see the note in safetyAIRootCause above.
+    if(typeof sdAIQuick==='function')sdAIQuick('Generate a California STOP Act annual attestation document for a stone fabrication shop. Shop: "'+shop+'", Owner/Operator: "'+owner+'", Date: '+new Date().toLocaleDateString()+'. The attestation must confirm that all employees performing high-exposure trigger tasks (cutting, grinding, polishing engineered stone) have received mandated silica safety training per California Labor Code Section 6717 (STOP Act). Format as a formal signed document ready for electronic submission to Cal/OSHA.');
   },400);
 }
 

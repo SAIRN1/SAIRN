@@ -162,9 +162,22 @@ inner HTML itself — so the fix is the container, marked
    nowhere. **Now the most likely next one**, and the Invoices result above is
    the reason to expect it is real: same shape, same cause, same panel-rebuild
    history.
-3. **`sendMessage()` / `analyzeDocument()`** — wired to the legacy chat the file
-   already documents as dead. The retarget-to-`sdAIQuick()` fix is established
-   at four other call sites; these two were missed.
+3. ~~**`sendMessage()` / `analyzeDocument()`**~~ — **DONE 2026-09-04, and it was
+   three live buttons rather than the one this line implied.**
+   `safetyAIRootCause()`, `ecpGenerate()` and `safetyGenerateAttestation()` were
+   all still routing through the dead chat, all wired, and **two of the three
+   generate OSHA and Cal/OSHA compliance documents a shop is legally required to
+   hold.** Each did `sbNav('ai')` and then `if(input){…sendMessage();}` against
+   an element that no longer exists — so the panel opened and nothing happened.
+   No request, no error, no message: an empty chat, which reads as *the AI had
+   nothing to say* rather than *this button is not connected*. Retargeted to
+   `sdAIQuick()`, matching the four earlier migrations. `sendMessage()` itself
+   had the other half — `input.value.trim()` unguarded, throwing a TypeError for
+   any caller that did reach it — and now reports instead of failing either way
+   round. `tests/ai_shortcuts_reach_the_chat.js`, 17 assertions.
+   `analyzeDocument()` targets `#messages`, part of the same removed chat, and
+   is left for the deletion pass — it is the one remaining wired caller, and its
+   fix is deletion rather than retargeting.
 4. **The `s()` / `sv()` KPI clusters** — 24 ids across five panels (comms,
    inventory-2, safety, damage, NPS). Each needs its panel checked: a KPI
    element that was removed from the markup and left in the render is cosmetic;
