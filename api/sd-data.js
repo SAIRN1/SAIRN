@@ -37,7 +37,7 @@ const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
-const { paymentProblem: dntPaymentProblem } = require('./_lib/dental-ledger');
+const { paymentProblem: dntPaymentProblem, chargeProblem: dntChargeProblem } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
@@ -9065,12 +9065,28 @@ module.exports = async (req, res) => {
       // reads without ever writing back. Nothing re-sends an existing payment,
       // so nothing existing can be blocked by this.
       //
-      // dnt_charges is the deliberate NEXT one, not an oversight: a bad charge
-      // amount is clamped by `if (owed < 0) owed = 0` and so corrupts less,
-      // which is exactly why it is second rather than first.
       if (resource === 'dnt_payments') {
         const pp = dntPaymentProblem(payload);
         if (pp) { res.status(400).json({ error: { code: 'INVALID_PAYMENT', message: pp } }); return; }
+      }
+      // dnt_charges, the second of the fifteen. It was recorded as next on the
+      // grounds that a bad charge is clamped by dnAging()'s
+      // `if (owed < 0) owed = 0` and so corrupts less -- and that sentence was
+      // RE-MEASURED here rather than carried over. THE CLAMP COVERS HALF THE
+      // APP: patientBalance() has no floor at all, so a negative charge
+      // reduces what the patient owes on the billing panel while the ageing
+      // report ignores it. The two views then disagree about one patient.
+      //
+      // The estimate is checked for type and sign but NOT against the amount,
+      // and that is a decision rather than an omission -- an over-estimate is
+      // reachable from a coverage_percent above 100, which the browser refuses
+      // and this handler still accepts, so the rule belongs to
+      // dnt_coverage_rules. It is the recorded THIRD resource. Full reasoning
+      // in api/_lib/dental-ledger.js so nobody adds the check here thinking it
+      // was forgotten.
+      if (resource === 'dnt_charges') {
+        const cp = dntChargeProblem(payload);
+        if (cp) { res.status(400).json({ error: { code: 'INVALID_CHARGE', message: cp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

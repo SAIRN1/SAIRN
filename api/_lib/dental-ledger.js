@@ -95,4 +95,84 @@ function paymentProblem(record) {
   return null;
 }
 
-module.exports = { paymentProblem, isPositiveMoney };
+// Same test as isPositiveMoney but zero is legitimate: a charge with no
+// insurance coverage carries estimated_insurance_portion 0, which is what
+// computeEstimatedInsurance() returns when lookupCoverage() finds no rule.
+function isNonNegativeMoney(v) {
+  if (typeof v !== 'number' && typeof v !== 'string') return false;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0;
+}
+
+// ── dnt_charges, THE SECOND OF THE FIFTEEN (2026-09-04) ───────────────────
+// Recorded as the next one when dnt_payments shipped, with the reason: a bad
+// charge is clamped by dnAging()'s `if (owed < 0) owed = 0`, so it corrupts
+// less than a bad payment. MEASURED AGAIN HERE RATHER THAN ASSUMED FROM THAT
+// SENTENCE, and the clamp turns out to cover only half the app:
+//
+//   * dnAging() clamps, per charge.
+//   * patientBalance() DOES NOT. It is
+//         balanceDue = (totalCharges - totalEstInsurance) - totalPayments
+//     with no floor anywhere, so a negative amount reduces what the patient
+//     owes directly, and can drive Balance Due below zero -- which the billing
+//     panel renders in the OK colour, as though the patient were in credit.
+//
+//   So the two views DISAGREE on the same charge: the billing KPI moves and
+//   the ageing report does not. Two numbers about one patient, one of them
+//   lying, which is the shape sairn-silent-failure-sweep names explicitly.
+//
+// A NON-NUMERIC amount is worse than it looks for the same reason. Every total
+// reads Number(x) || 0, so the charge contributes nothing -- while the charges
+// TABLE right beside the total renders fmt(c.amount) and shows it. A row
+// visible in the list and absent from the sum next to it, on one screen.
+//
+// APPEND-ONLY IN FACT, re-checked for THIS resource rather than carried over
+// from the payments case: sdnData('write','dnt_charges',...) appears exactly
+// once in sairndental.html, in addChargeEntry(), which only creates. Nothing
+// re-sends an existing charge, so no legacy row can be blocked by this.
+//
+// ── WHAT IS DELIBERATELY NOT VALIDATED, AND THE INTERESTING ONE IS WHY ────
+// estimated_insurance_portion is checked for TYPE and SIGN and NOT against the
+// charge amount. An estimate larger than the charge is a real defect -- it
+// makes patientBalance() report a credit while dnAging() floors at zero -- but
+// it is reachable from the app itself WITHOUT a bad charge:
+// computeEstimatedInsurance() multiplies the amount by a dnt_coverage_rules
+// row's coverage_percent, and that resource is on the same unvalidated generic
+// write. The browser caps the percent at 0-100 in addCoverageRule(); the
+// server does not. So a 150% rule produces an over-estimate on a perfectly
+// correct charge, and refusing the CHARGE would punish the wrong record and
+// block work the practice cannot fix from the charge screen.
+//
+// The relation belongs to the coverage rule. dnt_coverage_rules is therefore
+// the recorded THIRD resource, and this is the reason -- written down here so
+// the next reader does not have to re-derive it, and so nobody adds an
+// `est <= amount` check to this function believing it was simply forgotten.
+function chargeProblem(record) {
+  const r = record || {};
+  const patientId = String(r.patient_id == null ? '' : r.patient_id).trim();
+  if (!patientId) {
+    return 'This charge is not attached to a patient, so no balance or ageing '
+         + 'report can count it. Send patient_id with the charge.';
+  }
+  if (!isPositiveMoney(r.amount)) {
+    return 'A charge amount must be a number greater than zero. A negative '
+         + 'amount reduces what the patient owes on the billing panel while '
+         + 'the ageing report ignores it, so the two disagree, and a value '
+         + 'that is not a number is read as zero -- the charge then shows in '
+         + 'the charges table and counts for nothing in the total beside it. '
+         + 'To write off or reverse a charge, record the correction as its own '
+         + 'entry rather than a negative one.';
+  }
+  if (r.estimated_insurance_portion !== undefined
+      && r.estimated_insurance_portion !== null
+      && !isNonNegativeMoney(r.estimated_insurance_portion)) {
+    return 'The estimated insurance portion must be a number of zero or more. '
+         + 'A negative value increases what the patient appears to owe, and a '
+         + 'value that is not a number is read as zero, which overstates the '
+         + 'patient responsibility shown on their charge line. Leave the field '
+         + 'out entirely if there is no estimate.';
+  }
+  return null;
+}
+
+module.exports = { paymentProblem, chargeProblem, isPositiveMoney, isNonNegativeMoney };
