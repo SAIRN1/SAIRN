@@ -370,8 +370,8 @@
       "task": "legacy chat callers never retargeted to sdAIQuick",
       "claimed_at": "2026-09-04T13:38:58Z",
       "claimed_at_epoch": 1788529138.4978745,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:50:10Z"
     }
   ]
 }
