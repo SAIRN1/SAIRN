@@ -526,6 +526,16 @@
       "claimed_at_epoch": 1788556110.554244,
       "status": "released",
       "released_at": "2026-09-04T21:19:21Z"
+    },
+    {
+      "id": "cody-1788556909",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "textured canvas snapshot byte size against storage quota",
+      "claimed_at": "2026-09-04T21:21:49Z",
+      "claimed_at_epoch": 1788556909.5657744,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
