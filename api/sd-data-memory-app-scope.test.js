@@ -72,13 +72,65 @@ test('stonedesk_sub is EXCLUDED -- subs are not employees', () => {
 });
 
 test('the resource registry is NOT the source, and here is why', () => {
-  // Kept as a live demonstration rather than a comment: the registry genuinely
-  // does not know about SAIRNbiz, so anything derived from it would refuse a
-  // real app again.
+  // TRIPWIRE FIRED AND WAS RESOLVED 2026-09-04 (CC). It read:
+  //
+  //   assert.strictEqual(apps.indexOf('sairnbiz'), -1,
+  //     'the resource registry now knows sairnbiz -- the reasoning above
+  //      needs revisiting')
+  //
+  // and it was RIGHT to fire. api/_resources/sairnbiz.js was added the same
+  // day with SAIRNbiz's server backup, so the sentence this test existed to
+  // demonstrate -- "the registry genuinely does not know about SAIRNbiz" --
+  // stopped being true. Said plainly rather than quietly rewritten: the
+  // original stated reason is now FALSE.
+  //
+  // MEASURED BEFORE DECIDING, not assumed. ROLES_BY_APP holds 15 entries and
+  // the registry holds 15; the only differences are:
+  //
+  //   in ROLES but not the registry : stonedesk_sub
+  //   in the registry but not ROLES : shared
+  //
+  // THE CONCLUSION DID NOT CHANGE, AND THE REASON GOT SHARPER. Deriving the
+  // accepted app_id set from the registry is still wrong, now for three
+  // reasons that do not depend on any one app being absent:
+  //
+  //   1. `shared` is not an app. It is api/_resources/shared.js, the module
+  //      that owns cross-app resources. Deriving from the registry would
+  //      accept app_id 'shared' -- an orphan namespace that writes succeed
+  //      into and no read ever returns, which is precisely what the
+  //      UNKNOWN_APP test below exists to prevent.
+  //   2. stonedesk_sub is absent from the registry, so the registry cannot
+  //      express the deliberate EXCLUSION the test above asserts. Subs are a
+  //      separate actor class, not an app without resources.
+  //   3. The two sets answer different questions -- "which apps own a
+  //      resources file" versus "which apps have employee sessions" -- and
+  //      they demonstrably drift. SAIRNmechanical had complete per-employee
+  //      auth and no registry module at all until 2026-09-02.
+  //
+  // So this stays a live demonstration; only the instance changed. It is
+  // pinned to the two STRUCTURAL differences rather than to a passing fact
+  // about one app, which is why the previous version went stale in a day.
   const { REGISTRY_MODULES } = require('./_resources');
-  const apps = REGISTRY_MODULES.map((m) => m && m.app).filter(Boolean);
-  assert.strictEqual(apps.indexOf('sairnbiz'), -1,
-    'the resource registry now knows sairnbiz -- the reasoning above needs revisiting');
+  const { ROLES_BY_APP } = require('./_lib/auth');
+  const registryApps = REGISTRY_MODULES.map((m) => m && m.app).filter(Boolean);
+  const roleApps = Object.keys(ROLES_BY_APP);
+
+  assert.ok(registryApps.indexOf('shared') !== -1,
+    'the registry no longer carries a non-app entry -- reason 1 above needs revisiting');
+  assert.strictEqual(roleApps.indexOf('shared'), -1,
+    'ROLES_BY_APP now contains "shared", which would make it accepted as an app_id');
+  assert.strictEqual(registryApps.indexOf('stonedesk_sub'), -1,
+    'the registry now knows stonedesk_sub -- reason 2 above needs revisiting');
+
+  // The general form of what the sairnbiz assertion was standing in for: the
+  // two sets are not interchangeable. If this ever fails, reasons 1 and 2 have
+  // both gone away and the whole decision is worth re-reading rather than
+  // patching.
+  const onlyInOne = registryApps.filter((a) => roleApps.indexOf(a) === -1)
+    .concat(roleApps.filter((a) => registryApps.indexOf(a) === -1));
+  assert.ok(onlyInOne.length > 0,
+    'the registry and ROLES_BY_APP now hold exactly the same names -- re-read the '
+    + 'reasoning above and decide deliberately which is the source');
 });
 
 test('an unknown app_id is REFUSED, not silently accepted', () => {
