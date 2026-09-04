@@ -14,8 +14,8 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. TWO are fixed here, deliberately: sweeping thirteen apps mechanically
-// in one pass is what that backlog row warns against.
+// pass. FOUR are fixed here, two at a time, deliberately: sweeping thirteen
+// apps mechanically in one pass is what that backlog row warns against.
 //
 // THE REAL FUNCTIONS ARE DRIVEN against a fake localStorage. The whole point is
 // that the RETURN VALUE is unchanged and only the silence is fixed, and a
@@ -31,6 +31,8 @@ const ROOT = path.join(__dirname, '..');
 const APPS = [
   { file: 'sairnlaw.html', name: 'SAIRNlaw' },
   { file: 'sairnlegacy.html', name: 'SAIRNlegacy' },
+  { file: 'sairnbiz.html', name: 'SAIRNbiz' },
+  { file: 'sairncare.html', name: 'SAIRNcare' },
 ];
 
 let pass = 0, fail = 0;
@@ -128,46 +130,62 @@ APPS.forEach((app) => {
     });
   });
 
+  test('AN EMPTY STRING IS AN UNREADABLE RECORD, NOT AN ABSENT ONE', () => {
+    // st() JSON.stringify()s and can never write '', so an empty string in the
+    // store did not come from the app. SAIRNbiz is the reason this assertion
+    // exists: its loader tested `r ? ... : d` -- truthiness, not `r === null`
+    // like every other copy -- so '' took the absent branch SILENTLY. Same
+    // return either way; only the silence changed.
+    const { ctx, errs } = load(app, 'ok', '');
+    assert.deepStrictEqual(ctx.ld('k', []), []);
+    assert.strictEqual(errs.length, 1, 'an empty stored value was not reported');
+    assert.match(errs[0], /UNREADABLE/);
+  });
+
   test('the silent one-liner is gone from the source, not merely bypassed', () => {
     const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8')
       .replace(/\/\/[^\n]*/g, '');   // the new comment quotes the old code
+    // BOTH shapes, because they were not identical across the apps: eleven
+    // wrote `r === null ? d : JSON.parse(r)` and SAIRNbiz wrote
+    // `r ? JSON.parse(r) : d`. A regex for only the first passes SAIRNbiz
+    // vacuously -- it would have gone green whether or not anything was fixed.
     assert.ok(!/function ld\(k,d\)\{try\{var r=localStorage\.getItem\(k\);return r===null\?d:JSON\.parse\(r\);\}catch\(e\)\{return d;\}\}/.test(src),
       'the swallowing one-liner is back');
+    assert.ok(!/function ld\(k,d\)\{try\{var r=localStorage\.getItem\(k\);return r\?JSON\.parse\(r\):d;\}catch\(e\)\{return d;\}\}/.test(src),
+      'the swallowing one-liner is back, in its truthiness spelling');
   });
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these two are done');
+section('the checker agrees these four are done');
 
-test('fail_open_check no longer lists either of them', () => {
+const REMAINING = 10;   // of the original 14
+
+function checkerOutput() {
   const { execFileSync } = require('child_process');
-  let out;
   try {
-    out = execFileSync('python', [path.join(ROOT, 'tools', 'fail_open_check.py')],
+    return execFileSync('python', [path.join(ROOT, 'tools', 'fail_open_check.py')],
       { cwd: ROOT, encoding: 'utf8' });
   } catch (e) {
-    out = e.stdout || '';
+    return e.stdout || '';
   }
+}
+
+test('fail_open_check no longer lists any of them', () => {
+  const out = checkerOutput();
   const start = out.indexOf('BROWSER-SIDE');
   assert.ok(start > 0, 'the browser-side section is missing from the tool output');
-  const section = out.slice(start);
-  assert.ok(section.indexOf('sairnlaw.html') === -1, 'SAIRNlaw is still listed as silent');
-  assert.ok(section.indexOf('sairnlegacy.html') === -1, 'SAIRNlegacy is still listed as silent');
+  const listed = out.slice(start);
+  APPS.forEach((app) => {
+    assert.ok(listed.indexOf(app.file) === -1, app.name + ' is still listed as silent');
+  });
 });
 
-test('...and the other twelve are still on the list, not quietly dropped', () => {
-  const { execFileSync } = require('child_process');
-  let out;
-  try {
-    out = execFileSync('python', [path.join(ROOT, 'tools', 'fail_open_check.py')],
-      { cwd: ROOT, encoding: 'utf8' });
-  } catch (e) {
-    out = e.stdout || '';
-  }
-  const m = /\((\d+) storage loader\(s\)/.exec(out);
+test('...and the other ten are still on the list, not quietly dropped', () => {
+  const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
-  assert.strictEqual(Number(m[1]), 12,
-    'expected 12 remaining of the original 14 -- got ' + m[1] +
+  assert.strictEqual(Number(m[1]), REMAINING,
+    'expected ' + REMAINING + ' remaining of the original 14 -- got ' + m[1] +
     '. If others were fixed, update this number; if it grew, a new app copied the shape.');
 });
 
