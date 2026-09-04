@@ -1,4 +1,4 @@
-"""Pre-push checks that must not depend on memory. FIVE of them as of 2026-09-01.
+"""Pre-push checks that must not depend on memory. SIX of them as of 2026-09-04.
 
 DO NOT TRUST THAT NUMBER -- count the `CHECK n:` markers in this file. A count
 in a header is exactly the kind of claim that goes stale the day someone adds
@@ -47,6 +47,14 @@ TWO ENTRY POINTS, and the difference matters more than the checks do:
      confirmed against the RENDERED DOM rather than inferred, so switching this
      to a deny today would refuse every StoneDesk push. Promote it once that
      file is clean.
+  6. REDACTION (added 2026-09-04) -- blocks a push whose ADDED LINES match a
+     credential-shaped pattern, read from a diff over the outgoing range rather
+     than from the working tree or the tip. tools/redaction_check.py already
+     guards Write|Edit, but that only sees what an AGENT writes; a secret
+     pasted in, created outside a session, or `git add`ed from disk reached
+     origin unread. Ships BLOCKING because it was run across all 1,468 tracked
+     files first and found zero -- unlike check 5, which had standing findings
+     and shipped report-only. The deny never prints the match.
 
 None of them run unless the commits being pushed actually touch the relevant
 files, so an ordinary push costs nothing.
@@ -792,6 +800,111 @@ def main():
                     "",
                     OVERRIDE_HINT,
                 ]))
+
+    # ── CHECK 6: REDACTION ON WHAT THIS PUSH SHIPS (added 2026-09-04) ──────
+    # tools/redaction_check.py already runs as a PreToolUse Write|Edit hook, and
+    # the open-work row saying "no hook exists" was STALE -- it is wired in both
+    # .claude/settings.json and the user store. But that hook only sees what an
+    # AGENT is about to write. A secret that arrives any other way -- a file
+    # created outside a session, a paste into an editor, a `git add` of
+    # something already on disk -- reaches origin unread.
+    #
+    # That is not hypothetical. On 2026-09-04 two "SAIRN Skills Master"
+    # documents in Drive were found carrying a live GitHub PAT, both Supabase
+    # keys including the secret, and a full Postgres connection string with its
+    # password, in plain text. Nothing in this repo put them there and nothing
+    # in this repo would have stopped them arriving.
+    #
+    # IT SCANS THE ADDED LINES OF THE OUTGOING RANGE -- not the working tree,
+    # and not the tip snapshot either.
+    #
+    # THE TIP SNAPSHOT WAS THE FIRST IMPLEMENTATION AND IT WAS WRONG. Proved by
+    # driving it rather than by reasoning: a probe branch committed a fake PAT
+    # (blocked correctly), then DELETED the file in a second commit -- and the
+    # gate went quiet, because `git show tip:path` fails on a deleted file. The
+    # blob is still in the outgoing history and still reaches origin. Committing
+    # a secret and removing it in the next commit is the single most likely way
+    # this actually happens, and the first version was blind to exactly that.
+    #
+    # A diff over the range sees every line any commit in this push introduces,
+    # whatever later commits do to it. What it deliberately does NOT see is a
+    # secret already on origin -- that one is exposed regardless, and is a
+    # rotation problem rather than a gate problem.
+    #
+    # IT SHIPS BLOCKING, WHICH IS ONLY DEFENSIBLE BECAUSE IT IS CLEAN. Check 5
+    # went in report-only on purpose, because a gate switched on before its
+    # findings are cleared is a gate someone disables within the hour. This one
+    # was run across all 1,468 tracked files first and found ZERO. Measured, not
+    # assumed -- and if that stops being true, the honest move is to fix the
+    # finding, not to soften the check.
+    #
+    # THE DENY MESSAGE NEVER PRINTS THE MATCH. A gate that echoes the secret it
+    # caught has copied it into a terminal, a scrollback and probably a log.
+    try:
+        import importlib.util as _ilu
+        _spec = _ilu.spec_from_file_location(
+            'sairn_redaction', os.path.join(repo, 'tools', 'redaction_check.py'))
+        _rc = _ilu.module_from_spec(_spec)
+        _spec.loader.exec_module(_rc)
+
+        _secret_hits = []
+        _base = base or 'origin/main'
+        # `git log -p`, NOT `git diff base..tip`. A range DIFF compares the two
+        # endpoints, so a file added by one commit and deleted by the next shows
+        # NO NET CHANGE and the secret disappears from the scan while its blob
+        # still ships. That was the SECOND wrong implementation here, caught the
+        # same way as the first -- by driving the probe branch rather than
+        # reasoning about it. Per-commit patches see every line every commit
+        # introduced, which is the only view that matches what a push sends.
+        _dr = subprocess.run(
+            ['git', '-C', repo, 'log', '--unified=0', '--no-color', '-p',
+             '--pretty=format:', _base + '..' + tip],
+            capture_output=True, timeout=60)
+        if _dr.returncode != 0:
+            raise RuntimeError('git log -p %s..%s failed' % (_base, tip))
+        _diff = _dr.stdout.decode('utf-8', 'replace')
+        _cur = '(unknown file)'
+        for _line in _diff.split(chr(10)):
+            if _line.startswith('+++ b/'):
+                _cur = _line[6:].strip()
+                continue
+            # ADDED lines only. A '-' line is what this push REMOVES, and
+            # blocking on a removal would refuse the very commit that cleans a
+            # secret up.
+            if not _line.startswith('+') or _line.startswith('+++'):
+                continue
+            for _kind, _ in _rc.find_hits(_line[1:]):
+                _secret_hits.append((_cur, _kind))
+
+        if _secret_hits:
+            _lines = ["Blocked: this push ships content matching credential-shaped pattern(s).",
+                      "",
+                      "THE MATCH ITSELF IS NOT PRINTED -- echoing it would copy the secret into",
+                      "your terminal, your scrollback and probably a log. Open the file and look.",
+                      ""]
+            _seen = []
+            for _path, _kind in _secret_hits:
+                if (_path, _kind) in _seen:
+                    continue
+                _seen.append((_path, _kind))
+                _lines.append("  %-16s %s" % (_kind, _path))
+            _lines += [
+                "",
+                "Read from the ADDED LINES of every commit this push would send, so deleting",
+                "the file in a later commit does not clear it -- the blob still ships. Amend or",
+                "rewrite the commits that introduced it, then rotate the credential regardless:",
+                "anything that reached a commit should be treated as exposed even if it never",
+                "reached origin.",
+                "",
+                OVERRIDE_HINT,
+            ]
+            deny(chr(10).join(_lines))
+    except Exception as _e:
+        # Fails OPEN, the same standard as every other hook here: one that
+        # crashes closed gets disabled and then protects nothing. Loudly,
+        # though -- an unchecked push must not read as a clean one.
+        print("NOTE: the redaction scan could not run (%s: %s), so this push is "
+              "UNCHECKED for credentials." % (type(_e).__name__, _e))
 
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
