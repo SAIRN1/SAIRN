@@ -400,20 +400,21 @@ ACKNOWLEDGED = {
     'dnt_settings_obj': (
         {'rec', 'serverSettings'},
         "TRACED BY HAND 2026-09-04 (CC), after Fourth reported it and left it "
-        "because sairndental was claimed at the time. The three 'rec' writers -- "
-        "saveBookingSettings(), dnPersistWindows() and saveGfeIdentity() -- are "
-        "one shape, not three: each does Object.assign({}, <base>, {only its own "
-        "keys}), so no two of them write a different schema into this key. That "
-        "is the discipline, added after the earlier lost-update, and it is "
-        "correct. dntSyncFromServer() writes 'serverSettings', the server's row, "
-        "replacing wholesale -- which every one of the three relies on and says "
-        "so in a comment. "
-        "THE REAL DEFECT FOUND IN THE SAME TRACE WAS NOT A COLLISION, exactly as "
-        "the stonedesk:ai_memories entry above records for its own key: the merge "
-        "BASE was this device's cached copy, so a workstation working from a "
-        "stale copy erased fields another workstation had set. Fixed -- the base "
-        "is now a fresh server read, and all three write server-first. The "
-        "residual true race is in docs/SAIRN-OPEN-WORK-INDEX.md."),
+        "because sairndental was claimed at the time. REASON REWRITTEN LATER THE "
+        "SAME DAY, because the shape it described stopped existing: it named "
+        "three 'rec' writers (saveBookingSettings, dnPersistWindows, "
+        "saveGfeIdentity), and those three now build a `patch` of their own keys "
+        "and never touch this store directly. There is ONE 'rec' writer now -- "
+        "dntSettingsCache() -- which applies a saved patch to this device's "
+        "copy, preferring the server's merged record. 'serverSettings' is "
+        "dntSyncFromServer() caching the server row wholesale. One owner, one "
+        "shape, server-wins-on-sync by design. "
+        "THE REAL DEFECT FOUND IN THE ORIGINAL TRACE WAS NOT A COLLISION, "
+        "exactly as the stonedesk:ai_memories entry above records for its own "
+        "key: the merge BASE was this device's cached copy, so a workstation "
+        "working from a stale copy erased fields another workstation had set. "
+        "Fixed -- api/sd-data.js's dnt_settings write is now a PATCH that merges "
+        "server-side, held by api/sd-data-dental-settings-patch.test.js."),
     'sd_quote_history': (
         {'h', 'hist'},
         "window.sdQuoteSaveHistory() appends a new quote ('h'); the History "

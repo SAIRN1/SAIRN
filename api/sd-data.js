@@ -9256,19 +9256,72 @@ module.exports = async (req, res) => {
       // config and, today, one row per license.
       const locCheck = dntLocation.validateLocations(payload.locations);
       if (!locCheck.ok) { res.status(400).json({ error: { code: locCheck.code, message: locCheck.message } }); return; }
+      // ── PATCH, NOT PUT (2026-09-04, Michael's decision) ──────────────────
+      // This stored `data: payload`, replacing the whole blob, so whatever a
+      // panel sent WAS the row. Three panels write it -- Booking Settings, the
+      // GFE practice identity, the denials panel's appeal windows -- and each
+      // had to send the entire record to avoid erasing the others' keys, which
+      // made every save a whole-record overwrite:
+      //
+      //   workstation B saves an appeal window   -> row holds [X, Y]
+      //   workstation A saves the practice identity from a copy read before
+      //     that -> sends [X] -> Y is gone
+      //
+      // Merging here instead means a panel sends ONLY ITS OWN KEYS and cannot
+      // erase a key it never mentions. Two workstations saving DIFFERENT keys
+      // in the same round trip now both survive; the client-side fresh-read
+      // base added earlier today is superseded by this and has been removed.
+      //
+      // THE TRADE, decided rather than discovered: a key can no longer be
+      // REMOVED from the record, only overwritten. Checked before shipping --
+      // no caller deletes a settings key, validateLocations(undefined) already
+      // returns ok so a patch without `locations` passes, and the only other
+      // readers (public-availability.js, send-reminder.js) never write. A real
+      // delete need later is a small separate addition, not something this
+      // forecloses.
+      //
+      // FAIL-CLOSED on an unreadable current row, same standard as the GFE
+      // check and the coverage-rule uniqueness read: merging onto a base that
+      // could not be read is exactly the clobber this exists to prevent, and a
+      // check that silently did not run is indistinguishable from one that
+      // passed. 404/400 is NOT a failure -- the table does not exist, so there
+      // is nothing to merge onto and the write below answers NOT_PROVISIONED.
+      const dntCurR = await fetch(rest('dnt_settings?license_hash=eq.' + enc(licHash)
+        + '&settings_id=eq.' + enc(String(payload.id)) + '&select=data'), { headers });
+      let dntBase = {};
+      if (dntCurR.status !== 404 && dntCurR.status !== 400) {
+        if (!dntCurR.ok) {
+          res.status(503).json({ error: { code: 'SETTINGS_READ_UNAVAILABLE', message: 'The current practice settings could not be read, so nothing was saved -- writing without them could erase a setting another workstation just changed. Try again.' } });
+          return;
+        }
+        const dntCurRows = await dntCurR.json();
+        if (Array.isArray(dntCurRows) && dntCurRows[0] && dntCurRows[0].data && typeof dntCurRows[0].data === 'object') {
+          dntBase = dntCurRows[0].data;
+        }
+      }
+      const dntMerged = Object.assign({}, dntBase, payload);
       const r = await fetch(rest('dnt_settings?on_conflict=license_hash,settings_id'), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({
-          license_hash: licHash, app_id: 'sairndental', settings_id: String(payload.id), data: payload,
-          booking_slug: payload.booking_slug || null, updated_at: nowISO()
+          license_hash: licHash, app_id: 'sairndental', settings_id: String(payload.id), data: dntMerged,
+          // FROM THE MERGED RECORD, not the payload. booking_slug is a promoted
+          // column with a unique index that the public booking endpoints
+          // resolve against; taking it from a patch that does not mention it
+          // would NULL the column while data.booking_slug still held the slug,
+          // and the practice's booking link would stop resolving.
+          booking_slug: dntMerged.booking_slug || null, updated_at: nowISO()
         })
       });
       if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental data tables are not set up yet — run sql/sairndental_data_schema.sql and sql/sairndental_availability_booking_schema.sql in Supabase first.' } }); return; }
       if (r.status === 409) { res.status(409).json({ error: { code: 'SLUG_TAKEN', message: 'This booking link is already in use by another practice — choose a different one.' } }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      // The MERGED record on the fallback path, not the payload. The client
+      // caches this response as its local copy, and a patch is not the record
+      // -- returning it would hand back a settings object missing every key the
+      // caller did not send, which is the same wipe from the other direction.
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : dntMerged });
       return;
     }
 

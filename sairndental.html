@@ -2748,38 +2748,50 @@ function rBookingSettings(){
 // from an hour-old copy. The residual is recorded in
 // docs/SAIRN-OPEN-WORK-INDEX.md rather than left implied.
 //
-// Returns null when the server row could not be READ. Callers must refuse:
-// saving on top of a base we could not verify is exactly the clobber above.
-// A device with NO licence key is a different case -- it is not talking to a
-// server, so there is nothing to clobber -- and keeps its local-only save.
-async function dntSettingsMergeBase(){
-  if(!dntLicenseKey())return{base:settings(),local:true};
-  var server=await sdnData('read','dnt_settings',{});
-  if(!Array.isArray(server))return null;
-  if(!server.length)return{base:settings(),local:false};
-  var row=server.find(function(s){return s&&s.id==='default';})||server[0];
-  return{base:row||settings(),local:false};
-}
-
+// ── EACH PANEL SENDS ONLY ITS OWN KEYS (2026-09-04, Michael's decision) ──
+// api/sd-data.js's dnt_settings write is now a PATCH: it reads the current row
+// and merges the payload onto it. So a panel that never mentions
+// appeal_windows cannot erase them, and two workstations saving DIFFERENT keys
+// in the same round trip both survive.
+//
+// THE FRESH-READ MERGE BASE ADDED EARLIER TODAY IS GONE, SUPERSEDED RATHER
+// THAN ABANDONED. It read the server row so the client could merge onto
+// something current; the server merging is strictly better -- one round trip
+// instead of two, and no window at all between the read and the write. What it
+// leaves behind is this: the panel's local copy must come from the SERVER'S
+// RESPONSE, which is the merged record, not from the patch it sent. Caching
+// the patch would leave the device holding a settings object missing every key
+// that panel does not own.
+//
 // One writer, so all three panels handle a refusal the same way. Before this
-// only saveBookingSettings() knew about 409 SLUG_TAKEN; the other two sent the
+// only saveBookingSettings() knew about 409 SLUG_TAKEN; the other two send the
 // same booking_slug and would have reported it as a generic failure.
 //
 // THE OLD MESSAGES SAID "server sync not yet enabled for this app" ON EVERY
 // FAILURE. Sync is enabled and has been; the string was stale and it hid the
 // real reason behind a reassuring one -- the same wording removed from
 // addCoverageRule() earlier today.
-async function dntSettingsWrite(rec){
+async function dntSettingsWrite(patch){
   try{
     var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
-      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
+      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:patch})});
     var d=await r.json().catch(function(){return null;});
     if(r.status===409&&d&&d.error&&d.error.code==='SLUG_TAKEN')return{ok:false,message:d.error.message};
-    if(r.ok&&d&&d.ok)return{ok:true};
+    if(r.ok&&d&&d.ok)return{ok:true,data:(d.data&&typeof d.data==='object')?d.data:null};
     return{ok:false,message:'Nothing was saved -- the server refused it'+((d&&d.error&&d.error.message)?': '+d.error.message:'.')+' Try again.'};
   }catch(e){
     return{ok:false,message:'Nothing was saved -- could not reach the server. Try again with a connection.'};
   }
+}
+
+// Applies a saved patch to this device's copy. The server's merged record is
+// preferred and the local merge is only a fallback for the response shape
+// changing under us -- a device that quietly cached its own patch would drop
+// every key the panel does not own, which is the wipe this change removes.
+function dntSettingsCache(patch,serverData){
+  var rec=(serverData&&typeof serverData==='object')?serverData:Object.assign({},settings(),patch);
+  st('dnt_settings_obj',rec);
+  return rec;
 }
 
 async function saveBookingSettings(){
@@ -2787,22 +2799,23 @@ async function saveBookingSettings(){
   var timezone=$('bs-timezone').value.trim();
   if(!slug){toast('Booking slug required');return;}
   var checkedIds=Array.from(document.querySelectorAll('#bs-procedure-checks input[type=checkbox]:checked')).map(function(el){return el.getAttribute('data-proc-id');});
-  var b=await dntSettingsMergeBase();
-  if(!b){toast('The practice settings could not be read from the server, so nothing was saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
-  var rec=Object.assign({},b.base,{id:'default',booking_slug:slug,timezone:timezone,
+  // ONLY THIS PANEL'S KEYS. Everything else on the record -- the GFE practice
+  // identity, the appeal windows, the locations registry -- is not mentioned,
+  // so the server's merge leaves it exactly as it found it.
+  var patch={id:'default',booking_slug:slug,timezone:timezone,
     publicly_bookable_procedure_type_ids:checkedIds,
     practice_name:$('bs-practice-name').value.trim(),practice_phone:$('bs-practice-phone').value.trim(),
-    practice_address:$('bs-practice-address').value.trim()});
-  if(b.local){st('dnt_settings_obj',rec);rBookingSettings();toast('Saved on this device only -- there is no license key on this install, so it is not on the server',7000);return;}
+    practice_address:$('bs-practice-address').value.trim()};
+  if(!dntLicenseKey()){dntSettingsCache(patch,null);rBookingSettings();toast('Saved on this device only -- there is no license key on this install, so it is not on the server',7000);return;}
   // SERVER FIRST, LOCAL SECOND. This write can be REFUSED with 409 SLUG_TAKEN,
-  // and until now the device kept the rejected slug: it was written to
+  // and until 2026-09-04 the device kept the rejected slug: it was written to
   // localStorage before the request, and the 409 branch only toasted and
   // returned. The Booking Settings form and the patient-feedback link preview
   // then advertised a booking slug belonging to ANOTHER PRACTICE. Same shape as
   // addProvider() and addCoverageRule() in this file, and the same fix.
-  var w=await dntSettingsWrite(rec);
+  var w=await dntSettingsWrite(patch);
   if(!w.ok){toast(w.message,7000);return;}
-  st('dnt_settings_obj',rec);
+  dntSettingsCache(patch,w.data);
   rBookingSettings();
   toast('Booking settings saved');
 }
@@ -3154,17 +3167,18 @@ function removePayerTerm(i){
 // this is a write-through rather than a local save with a promise to sync
 // later.
 async function dnPersistWindows(list){
-  var b=await dntSettingsMergeBase();
-  if(!b){toast('The practice settings could not be read from the server, so the appeal window was not saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
-  var rec=Object.assign({},b.base,{appeal_windows:list});
-  if(b.local){st('dnt_settings_obj',rec);rPayerTerms();rDenials();toast('Saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
+  // ONLY appeal_windows. This panel owns nothing else on the record, and the
+  // whole array is sent because a removal has to be expressible -- removePayerTerm()
+  // hands in the shortened list, and a patch that mentions the key replaces it.
+  var patch={id:'default',appeal_windows:list};
+  if(!dntLicenseKey()){dntSettingsCache(patch,null);rPayerTerms();rDenials();toast('Saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
   // SERVER FIRST. This used to write locally, render, and only then attempt the
   // server -- so a failed write left the payer term on screen with a message
   // saying the next sync would erase it. A row that is going to be erased was
   // never saved; showing it as saved is the part that misleads.
-  var w=await dntSettingsWrite(rec);
+  var w=await dntSettingsWrite(patch);
   if(!w.ok){toast(w.message,7000);return;}
-  st('dnt_settings_obj',rec);
+  dntSettingsCache(patch,w.data);
   rPayerTerms();rDenials();
   toast('Appeal window saved');
 }
@@ -4083,14 +4097,12 @@ async function saveGfeIdentity(){
   // Re-reads the settings record and patches ONLY its own four keys, leaving
   // whatever Booking Settings wrote intact -- the same discipline the merge in
   // saveBookingSettings() now uses from the other side.
-  var b=await dntSettingsMergeBase();
-  if(!b){toast('The practice settings could not be read from the server, so the practice identity was not saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
-  var rec=Object.assign({},b.base,{
+  var patch={id:'default',
     gfe_legal_name:$('gfe-legal-name').value.trim(),
     gfe_npi:$('gfe-npi').value.trim(),
     gfe_tin:$('gfe-tin').value.trim(),
-    gfe_state:$('gfe-state').value.trim()});
-  if(b.local){st('dnt_settings_obj',rec);rGfe();toast('Practice identity saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
+    gfe_state:$('gfe-state').value.trim()};
+  if(!dntLicenseKey()){dntSettingsCache(patch,null);rGfe();toast('Practice identity saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
   // WRITTEN TO THE SERVER FIRST, not left for a later Booking Settings save and
   // no longer written locally before the server has taken it.
   // dntSyncFromServer() REPLACES dnt_settings_obj wholesale with the server's
@@ -4100,9 +4112,9 @@ async function saveGfeIdentity(){
   // worse half of that. dnt_settings' write handler needs only payload.id;
   // booking_slug is nullable there, so a practice that has never set a slug can
   // still save this.
-  var w=await dntSettingsWrite(rec);
+  var w=await dntSettingsWrite(patch);
   if(!w.ok){toast(w.message,7000);return;}
-  st('dnt_settings_obj',rec);
+  dntSettingsCache(patch,w.data);
   rGfe();
   toast('Practice identity saved');
 }
