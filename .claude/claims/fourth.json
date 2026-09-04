@@ -492,6 +492,16 @@
       "claimed_at_epoch": 1788558337.2144349,
       "status": "released",
       "released_at": "2026-09-04T21:49:15Z"
+    },
+    {
+      "id": "fourth-1788558876",
+      "session": "fourth",
+      "subject": "claim-hook",
+      "task": "session start hook stages claims directory",
+      "claimed_at": "2026-09-04T21:54:36Z",
+      "claimed_at_epoch": 1788558876.4996111,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
