@@ -213,7 +213,7 @@ alter table public.sb_bud enable row level security;
 revoke all on public.sb_bud from service_role;
 grant select, insert, update on public.sb_bud to service_role;
 
--- Verify after running. Expect exactly 10 rows -- the nine below plus the
+-- Verify after running. Expect exactly 10 rows -- the nine above plus the
 -- pre-existing sb_employee_auth -- each with INSERT / SELECT / UPDATE and
 -- nothing else:
 --
@@ -231,7 +231,11 @@ grant select, insert, update on public.sb_bud to service_role;
 -- call answers 401 NO_SESSION whether or not this file has been run, and is
 -- NOT a test of provisioning:
 --
---   curl -s -X POST https://sairn.vercel.app/api/sd-data --     -H 'Content-Type: application/json' --     -H 'Authorization: Bearer SD-PINNACLE-2026' --     -H 'X-SD-Auth: <session token from api/sb-auth.js login>' --     -d '{"action":"read","resource":"sb_payruns"}'
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SD-PINNACLE-2026' \
+--     -H 'X-SD-Auth: <session token from api/sb-auth.js login>' \
+--     -d '{"action":"read","resource":"sb_payruns"}'
 --
 --   {"ok":true,"data":[],"provisioned":true}   -> this file has been run
 --   503 NOT_PROVISIONED (on a write)           -> it has not
