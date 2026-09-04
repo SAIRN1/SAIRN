@@ -1286,7 +1286,47 @@ function st(k,v){
     return false;
   }
 }
-function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
+// ── AN UNREADABLE RECORD USED TO LOOK LIKE AN EMPTY ONE (2026-09-04) ──────
+// This was `catch(e){return d;}` and nothing else. A record that will not
+// parse returned exactly what a key that was never written returns, so
+// "your data is corrupt" and "you have none yet" rendered identically and
+// neither the user nor the console was told which had happened.
+//
+// Where `d` is `[]` that reads as an empty list. Where `d` is a seeded
+// default it reads as invented content -- the StoneDesk SEED-fallback shape
+// Guardian's lesson 6 records.
+//
+// THE RETURN IS UNCHANGED. `d` still comes back either way, so all
+// 23 call sites in this file behave exactly as before and none of
+// them can break. Only the silence is fixed. ld() also still never throws.
+//
+// A richer return was considered and rejected: st() could hand back a boolean
+// because its callers ignore it, but every ld() caller uses the value, so a
+// third answer would have to be threaded through every site -- and a wrong
+// default at one of them is worse than the defect being repaired.
+//
+// Two of fourteen such loaders, deliberately. See the open-work row: sweeping
+// all thirteen apps in one mechanical pass is what that row warns against.
+function ld(k,d){
+  var r=null;
+  try{ r=localStorage.getItem(k); }catch(e){
+    // getItem itself can throw -- a disabled or partitioned store. Distinct
+    // from a parse failure and said so, because the fixes differ.
+    try{ console.error('SAIRNlaw: localStorage is unavailable, so "'+k+
+      '" could not be read -- showing the default, which is NOT the same as empty.'); }catch(_e){}
+    return d;
+  }
+  if(r===null) return d;                 // genuinely absent: the honest empty case
+  try{
+    return JSON.parse(r);
+  }catch(e){
+    try{ console.error('SAIRNlaw: stored record "'+k+
+      '" is UNREADABLE and was skipped -- showing the default. This is NOT an empty '+
+      'record; the saved data is still in localStorage and has not been overwritten. '+
+      ((e&&e.message)||e)); }catch(_e){}
+    return d;
+  }
+}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}
 function fdate(d){if(!d)return'--';try{return new Date(d+'T00:00:00').toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});}catch(e){return d;}}
