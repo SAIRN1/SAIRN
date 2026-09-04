@@ -480,8 +480,8 @@
       "task": "dead function sweep stripper migration",
       "claimed_at": "2026-09-04T21:40:29Z",
       "claimed_at_epoch": 1788558029.9899778,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:44:26Z"
     }
   ]
 }
