@@ -169,8 +169,23 @@ def main():
         for h in acc:
             print('  %s:%d  %s -- %s' % (h['file'], h['line'], h['var'], h['accepted']))
 
+    # ── AN ACCEPTANCE THAT MATCHES NOTHING IS A LIE WAITING TO BE READ ──────
+    # The first entry in this file was resolved within the hour it was written
+    # (api/sd-data.js facRows, the food-temperature thresholds). Nothing would
+    # have said so: an unmatched key is silently ignored, so the file would keep
+    # asserting a known-open defect that no longer exists, and the next reader
+    # would triage around a ghost. Same staleness this project has been bitten
+    # by in CLAUDE.md and in three status docs.
+    matched = set((h['file'], h['var']) for h in hits)
+    stale = [k for k in accepted if k not in matched]
+    if stale:
+        print('\n=== STALE ACCEPTANCES -- these match nothing any more ===')
+        for f, v in stale:
+            print('  %s  %s  -- the site is gone or was renamed. Remove the entry or' % (f, v))
+            print('       re-triage it; leaving it asserts a defect that is not there.')
+
     # Exit 1 only on decision-shaped hits, so this can gate a push later
-    # without failing on the long tail of display reads.
+    # without failing on the long tail of untriaged reads.
     return 1 if dec else 0
 
 

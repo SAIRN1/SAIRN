@@ -8344,16 +8344,50 @@ module.exports = async (req, res) => {
         // trusting a client-supplied pass/fail -- the threshold is the point of the record.
         let passed = null;
         if (payload.record_type === 'food_temp' && payload.holding_kind && payload.temperature_f !== undefined) {
+          // ── AN UNREADABLE THRESHOLD IS NOT THE NATIONAL DEFAULT (2026-09-04) ──
+          // This read used to fall back to {}, and evaluateFoodTemp() then falls
+          // back to the FDA Food Code figures. So a facility with a STRICTER
+          // local limit was silently graded against the LOOSER national one --
+          // a cold-holding reading that should fail at their 40F passing at 41F,
+          // recorded as a pass, in the compliance log.
+          //
+          // THE READING IS STILL ALWAYS RECORDED. Refusing the write would mean
+          // refusing to store a real observation somebody physically performed,
+          // and that observation IS the compliance artifact -- losing it is
+          // worse than not grading it. So the temperature lands and the verdict
+          // is withheld: `passed` stays null and the evaluation says why, the
+          // same shape as mech-assets' `unknown_charge` and the roofing
+          // registry's `no_service_life_recorded`. Never a substituted number.
+          //
+          // A facility that has simply NOT CONFIGURED thresholds is a different
+          // case and is unchanged: the FDA figures are a real, disclosed default
+          // there, and evaluateFoodTemp already records `usedOverride` so the
+          // record says which applied. Could-not-configure and could-not-read
+          // are not the same answer.
           const facR = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-          const facRows = facR.ok ? await facR.json().catch(() => []) : [];
-          const fac = (Array.isArray(facRows) && facRows[0] && facRows[0].data) || {};
-          const evalRes = opAudit.evaluateFoodTemp({
-            holding_kind: payload.holding_kind, temperature_f: payload.temperature_f,
-            thresholds: fac.food_thresholds || {}
-          });
-          if (!evalRes.ok) { res.status(400).json({ error: evalRes.error }); return; }
-          passed = evalRes.passed;
-          opData.evaluation = evalRes;
+          let facRows = null;
+          if (facR.ok) facRows = await facR.json().catch(function () { return null; });
+          if (!Array.isArray(facRows)) {
+            console.error('sd-data: alf_facility food-threshold read failed, HTTP', facR.status, '-- recording the reading UNEVALUATED');
+            passed = null;
+            opData.evaluation = {
+              ok: true,
+              evaluated: false,
+              state: 'facility_threshold_unavailable',
+              holding_kind: payload.holding_kind,
+              temperature_f: Number(payload.temperature_f),
+              note: 'The reading was recorded. It was NOT graded: the thresholds this facility set could not be read, and grading against the FDA default would substitute a limit nobody set here.'
+            };
+          } else {
+            const fac = (facRows[0] && facRows[0].data) || {};
+            const evalRes = opAudit.evaluateFoodTemp({
+              holding_kind: payload.holding_kind, temperature_f: payload.temperature_f,
+              thresholds: fac.food_thresholds || {}
+            });
+            if (!evalRes.ok) { res.status(400).json({ error: evalRes.error }); return; }
+            passed = evalRes.passed;
+            opData.evaluation = evalRes;
+          }
         } else if (payload.passed !== undefined) {
           passed = !!payload.passed;
         }

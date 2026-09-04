@@ -1,10 +1,6 @@
 [
   {
-    "file": "api/sd-data.js",
-    "var": "facRows",
-    "line_at_triage": 8347,
-    "status": "KNOWN-OPEN, needs a decision -- NOT cleared",
-    "reason": "An unreadable alf_facility read yields {}, so evaluateFoodTemp() falls back to the FDA Food Code defaults instead of this facility's own thresholds. A facility with a STRICTER local limit is graded against the looser national one, and a cold-holding record that should fail at their 40F can pass at the FDA 41F. NOT FIXED because the fix is a real trade-off, not an oversight: refusing the write would mean REFUSING TO RECORD A FOOD TEMPERATURE because a rate card was unreadable, and the record is itself the compliance artifact -- losing it may be worse than grading it against the FDA floor. The evaluation does store usedOverride:{}, so the record discloses that no override was applied. Michael's call. Listed here so it is not silently re-triaged as clean.",
-    "key_note": "Keyed on (file, var) rather than line, because line numbers shift on every edit and a stale line silently un-accepts an entry. The cost is that a SECOND `facRows` in this file would be accepted too -- there is exactly one today (the billing-preview rate-card read was fixed 2026-09-04), and if another appears it must be triaged before this entry is trusted."
+    "_note": "Sites triaged as acceptable fail-open reads, each with a reason a reader can check against the source -- the same convention as tools/reachability_exemptions.json. Keyed on (file, var) rather than line: line numbers shift on every edit and a stale line silently un-accepts an entry. The cost is that two variables of the same name in one file are accepted together, so check that before adding one. An entry that matches nothing is reported as STALE by the checker rather than ignored: the first entry in this file was resolved within the hour it was written, and nothing would otherwise have said so.",
+    "_resolved_2026-09-04": "api/sd-data.js facRows (food-temperature thresholds) was listed here as KNOWN-OPEN and is now FIXED, not accepted: the reading is always recorded and the verdict withheld as facility_threshold_unavailable rather than graded against a substituted FDA default. Removed rather than left, because an acceptance file that accumulates resolved entries stops being read."
   }
 ]
