@@ -567,6 +567,17 @@
       "status": "released",
       "released_at": "2026-09-04T22:25:41Z",
       "note": "OVERRIDE, stated out loud. sairn_claim.py check BLOCKED this against cc \"sairndental: false sync disabled message swallows real refusals\" -- the tool's own reason is \"overlap on: false\". Different subject, different app, different files: cc is in sairndental's sync-disabled messaging, this is sairnbuild.html/sairnsenior.html/stonedesk.html st() wrappers named by an existing open-work row. Sole shared token is the English word \"false\". Task string NOT reworded to slip the matcher -- I did run a reworded probe to CONFIRM 'false' was the only colliding token, then wrote the original string here with the reason attached, per CLAUDE.md."
+    },
+    {
+      "id": "cody-1788561052",
+      "session": "cody",
+      "subject": "claim-matcher",
+      "task": "require a shared phrase or a real name not one english word",
+      "claimed_at": "2026-09-04T22:30:52Z",
+      "claimed_at_epoch": 1788561052.7202332,
+      "status": "active",
+      "released_at": null,
+      "note": "OVERRIDE, stated out loud, and the block is the bug being fixed. sairn_claim.py check BLOCKED this against fourth \"sd-data-auth-ordering: resource name disclosure before license validation\" -- reason \"overlap on: name\". Sole shared token is the English word \"name\", from my own task string which literally describes fixing this defect. Sixth confirmed instance tonight. Assigned by Michael; task string NOT reworded."
     }
   ]
 }
