@@ -461,8 +461,8 @@
       "task": "unfetched remote sha makes the outgoing range scan skip",
       "claimed_at": "2026-09-04T14:07:18Z",
       "claimed_at_epoch": 1788530838.584095,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:06:48Z"
     }
   ]
 }
