@@ -531,8 +531,8 @@
       "task": "validation public write endpoints versus in-app rules",
       "claimed_at": "2026-09-04T13:26:12Z",
       "claimed_at_epoch": 1788528372.019132,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:35:49Z"
     }
   ]
 }
