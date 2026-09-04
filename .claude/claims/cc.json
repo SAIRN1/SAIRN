@@ -471,8 +471,8 @@
       "task": "generic write validation on the highest stakes dnt money resource",
       "claimed_at": "2026-09-04T20:18:05Z",
       "claimed_at_epoch": 1788553085.6128795,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:28:12Z"
     }
   ]
 }
