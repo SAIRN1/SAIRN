@@ -372,6 +372,16 @@
       "claimed_at_epoch": 1788529138.4978745,
       "status": "released",
       "released_at": "2026-09-04T13:50:10Z"
+    },
+    {
+      "id": "fourth-1788529998",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "remnant double render two modules two stores",
+      "claimed_at": "2026-09-04T13:53:18Z",
+      "claimed_at_epoch": 1788529998.262779,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
