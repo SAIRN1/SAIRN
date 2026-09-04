@@ -491,8 +491,8 @@
       "task": "dnt coverage rules write validation the recorded third resource",
       "claimed_at": "2026-09-04T20:41:39Z",
       "claimed_at_epoch": 1788554499.4037337,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:49:02Z"
     }
   ]
 }
