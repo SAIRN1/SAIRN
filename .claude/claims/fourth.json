@@ -392,6 +392,16 @@
       "claimed_at_epoch": 1788530840.8530495,
       "status": "released",
       "released_at": "2026-09-04T14:14:54Z"
+    },
+    {
+      "id": "fourth-1788552453",
+      "session": "fourth",
+      "subject": "index-reconcile",
+      "task": "open work index against the orphaned module register",
+      "claimed_at": "2026-09-04T20:07:33Z",
+      "claimed_at_epoch": 1788552453.7494268,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
