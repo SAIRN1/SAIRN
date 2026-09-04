@@ -243,9 +243,31 @@ module.exports = async (req, res) => {
         if (!process.env.COURTLISTENER_API_TOKEN) {
           misses.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'CourtListener API token is not configured, so citations cannot be checked.' }; });
         } else {
+          // ── A FAILED BUDGET READ USED TO MEAN "SPEND FREELY" ──────────────
+          // This was `catch (e) { budget = null; }` followed by
+          // `if (budget && ...)`. A null budget fails that test, so an
+          // UNREACHABLE COUNTER fell through to the else branch and made the
+          // upstream call — the one shape a rate limiter must never have.
+          // Nothing was logged and the response looked identical to a healthy
+          // one.
+          //
+          // It now refuses, for the same reason api/_lib/courtlistener.js
+          // throws rather than allowing: this budget belongs to a third party
+          // and the token is shared by every firm, so "I could not ask" is not
+          // "there is room". The message distinguishes the two states, because
+          // telling a lawyer a citation is unavailable for the wrong reason is
+          // its own small lie.
           let budget = null;
-          try { budget = await cl.remainingBudget(); } catch (e) { budget = null; }
-          if (budget && (budget.minute <= 0 || budget.hour <= 0 || budget.day <= 0)) {
+          let budgetReadFailed = false;
+          try {
+            budget = await cl.remainingBudget();
+          } catch (e) {
+            budgetReadFailed = true;
+            console.error('legal-citator: CourtListener budget read failed, refusing rather than spending:', e && e.message);
+          }
+          if (budgetReadFailed) {
+            misses.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'The CourtListener request budget could not be checked, so no lookup was attempted. This is a service problem on our side, not a finding about the citation.' }; });
+          } else if (budget && (budget.minute <= 0 || budget.hour <= 0 || budget.day <= 0)) {
             misses.forEach((c) => { out[c] = { citation: c, state: 'unavailable', reason: 'CourtListener rate limit reached; try again shortly. This is a limit, not a finding about the citation.' }; });
           } else {
             try {
