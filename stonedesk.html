@@ -8896,12 +8896,22 @@ window.sdRMExport=function(){
     <button class="q-btn" onclick="sdCommsPrint()">🖨️ Print Log</button>
   </div>
 </div>
-<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:18px">
+<!-- "AI Drafted" REMOVED 2026-09-04. It was a fifth tile here, showing the
+     hardcoded 0 from its own markup, and NOTHING in the file ever wrote it --
+     `comms-ai-gen` appeared exactly once, in this line. The only function that
+     could have fed it, commsAIDraft(), has zero callers and reads msg-* form
+     ids that do not exist, so the count could never have become anything but
+     zero. Guardian Check 0b: a KPI with no function behind it, next to four
+     that are computed live, which is what made it read as real.
+     REMOVED RATHER THAN FED, per 0b's own rule -- feeding it would mean
+     building the AI-drafting feature, and inventing a number for it would be
+     the fabrication the check exists to stop. If AI drafting is built, the
+     tile comes back with it. Grid drops 5 columns to 4. -->
+<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px">
   <div class="kpi"><div class="kpi-val" id="comms-sent">0</div><div class="kpi-label">Total Sent</div></div>
   <div class="kpi"><div class="kpi-val" id="comms-today">0</div><div class="kpi-label">Today</div></div>
   <div class="kpi"><div class="kpi-val" id="comms-customers">0</div><div class="kpi-label">Unique Recipients</div></div>
   <div class="kpi"><div class="kpi-val" id="comms-templates">0</div><div class="kpi-label">Templates</div></div>
-  <div class="kpi"><div class="kpi-val" style="color:var(--brand2)" id="comms-ai-gen">0</div><div class="kpi-label">AI Drafted</div></div>
   <span id="comms-unread" style="display:none"></span>
 </div>
 <script>
@@ -23769,7 +23779,15 @@ function renderInventory(){
   var oos=all.filter(i=>(i.qty||0)<=0).length;
   var stockValue=all.reduce((s,i)=>s+(i.qty||0)*(i.cost||0),0);
   var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
-  sv('inv-low',low);sv('inv-warn',warn);sv('inv-ok',ok);
+  // inv-low / inv-warn / inv-ok removed 2026-09-04: three writes to ids that
+  // exist nowhere in the file, left behind when this panel's KPI row was
+  // rebuilt as inv-kpi1..4. `low` is still used by inv-kpi2 below, so nothing
+  // is lost. Checked before deleting rather than assumed -- unlike the Invoices
+  // panel, where the SAME shape meant the four visible tiles were never written
+  // at all, here the visible tiles are fed correctly and only these three
+  // no-ops were stale. A prediction that this would be the same defect was
+  // wrong, and the difference is the whole reason to check the markup rather
+  // than the missing-id list.
   sv('inv-kpi1',all.length);sv('inv-kpi2',low);sv('inv-kpi3','$'+stockValue.toLocaleString());sv('inv-kpi4',oos);
   // Best-value cross-vendor analysis
   renderBestValueAlerts();

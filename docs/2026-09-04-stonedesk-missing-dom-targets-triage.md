@@ -180,3 +180,65 @@ constructed*, and report those in a separate section rather than as MISSING.
 That alone removes 8 findings and, more importantly, removes the reason to
 distrust the other 154. Not done here because changing a Guardian tool's output
 mid-audit would make this triage unreproducible.
+
+---
+
+## Follow-up pass, same day: the `s()` / `sv()` KPI clusters
+
+Priority items 2 and 4 above, worked and **mostly closed as NOT the Invoices
+defect.** Recording the negative result, because a prediction was made in the
+previous commit and it was wrong.
+
+**`renderInventory()` was predicted to be the same shape. It is not.** Its four
+visible tiles (`inv-kpi1..4`: SKUs Tracked, Low Stock Items, Stock Value, Out of
+Stock) are all written correctly on every render. `inv-low` / `inv-warn` /
+`inv-ok` were three extra no-op writes left behind when that KPI row was
+rebuilt, each appearing exactly once in the whole file. Removed; nothing else
+changed. **The difference between this and Invoices is only visible in the
+markup, not in the missing-id list** — which is the argument for checking the
+panel rather than the report.
+
+Same answer for **safety** (`safe-kpi1..5` all fed), **damage** (`dmg-open`,
+`dmg-total-cost`, `dmg-recovered`, `dmg-ytd` all fed) and **NPS** (`nps-score`,
+`nps-promoters`, `nps-passives`, `nps-detractors` all fed). The 24 ids in those
+clusters are leftovers sitting beside live writes, not fabrication.
+
+### One real finding: `comms-ai-gen`
+
+A fifth visible tile in the Communications panel, labelled **"AI Drafted"**,
+showing the hardcoded `0` from its own markup. **Nothing in the file ever wrote
+it** — the id appeared exactly once, in that line. The only function that could
+have fed it, `commsAIDraft()`, has zero callers and reads `msg-*` form ids that
+do not exist, so the count could never have become anything but zero.
+
+Guardian Check 0b, and the reason it read as real is that it sat beside four
+tiles that *are* computed live. Removed rather than fed, per 0b's own rule:
+feeding it means building the AI-drafting feature, and inventing a number for it
+is the fabrication the check exists to stop.
+
+### New, undocumented: a second complete DAMAGE module
+
+Found while checking which function owned `dmg-kpi-*`. There are **two entire
+damage-claim systems** in this file:
+
+| | live module | orphan |
+|---|---|---|
+| storage key | `sd_damage` | `sd_damage_claims` |
+| KPIs | `dmg-open`, `dmg-total-cost`, `dmg-recovered`, `dmg-ytd` | `dmg-kpi-*` (absent) |
+| list target | `dmg-list` | **`dmg-list` — the same element** |
+| entry point | `window.sdDmgAdd` | `dmgSave()` — zero callers |
+| render | `render()` in its own IIFE | `dmgRender()` — reachable only from `dmgSave`, `dmgSetFilter`, `dmgUpdateStatus`, `dmgDelete`, **all of which have zero callers** |
+
+**This is the same shape a previous session already found and documented for
+NPS** at `:35905` — *"an orphaned parallel NPS-feedback system"*, whose dispatch
+call that session removed. The damage twin was never written down.
+
+**Nothing is broken today**, because every entry point into the orphan is
+unreachable. The hazard is specific and worth stating: **both modules write
+`dmg-list`.** Wiring up any one of those five functions — `dmgSetFilter()` looks
+most like something a future session would connect to the panel's filter tabs —
+makes the orphan's render overwrite the live claim list with its own empty
+store. A shop would watch its damage claims vanish on a filter click.
+
+Quarantined here by name per Check 0d. Deleting both orphans (damage and NPS) is
+a sized cleanup, not a bug fix, and belongs with the 98-id deletion pass.
