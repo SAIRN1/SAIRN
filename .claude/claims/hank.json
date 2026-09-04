@@ -500,8 +500,8 @@
       "task": "live round trip verification claim photos reconcile",
       "claimed_at": "2026-09-04T11:57:36Z",
       "claimed_at_epoch": 1788523056.8052776,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T12:06:47Z"
     }
   ]
 }
