@@ -53,6 +53,7 @@ can see it.
   content is public, the project has no protection enabled, and the requests are
   the shop's own tooling checking the shop's own deploy.
 """
+import collections
 import json
 import urllib.request
 import urllib.error
@@ -67,6 +68,49 @@ DEFAULT_HEADERS = {
     "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
     "Accept-Language": "en-US,en;q=0.9",
 }
+
+
+class Response(collections.namedtuple("Response", "status body")):
+    """What fetch() and fetch_json() return: `(status, body)`, plus `.status`
+    and `.body`.
+
+    IT IS STILL A TUPLE. Unpacking, indexing, `len()`, and equality against a
+    plain `(status, body)` all behave exactly as before, because every existing
+    caller unpacks it. Exactly ONE thing changes, and it is the one that fails
+    silently.
+
+    ── WHY (2026-09-04) ──────────────────────────────────────────────────
+    A live-verify of a just-pushed fix wrote
+
+        if 'marker-from-the-fix' in sairn_http.fetch(url):
+
+    and reported the fix ABSENT for seven minutes across 20 polls. `in` against
+    a 2-tuple is a MEMBERSHIP test: it asked "is this string one of these two
+    elements", correctly answered False, and never looked at the body at all.
+    The deploy had been READY the entire time.
+
+    **Every other spelling of that mistake already raises.** `.find(...)` and
+    `.decode(...)` both AttributeError on a tuple -- which is how the same bug
+    was caught on the second attempt, seconds instead of minutes. `in` was the
+    only silent one, so `in` is the only thing guarded here. A guard that also
+    reworked the return shape would have broken two working callers to fix a
+    mistake neither of them made.
+
+    This is the failure class the module's own docstring is about, arriving
+    inside the module: a check that stopped checking and said nothing.
+    """
+
+    __slots__ = ()
+
+    def __contains__(self, item):
+        if isinstance(item, (str, bytes, bytearray)):
+            raise TypeError(
+                "%r in <sairn_http response> is a tuple-membership test and is "
+                "ALWAYS False -- it never looks at the body. This returns "
+                "(status, body): use `%r in response.body` (bytes for fetch(), "
+                "parsed JSON for fetch_json()), or unpack it: "
+                "`status, body = sairn_http.fetch(url)`." % (item, item))
+        return tuple.__contains__(self, item)
 
 
 class Challenged(Exception):
@@ -129,7 +173,8 @@ def _is_challenge(headers):
 def fetch(url, timeout=25, method="GET", data=None, headers=None, no_cache=False):
     """Fetch a URL as ordinary browser-shaped traffic.
 
-    Returns (status:int, body:bytes).
+    Returns Response(status:int, body:bytes) -- a tuple, so `status, body = ...`
+    is unchanged. See Response for the one thing it refuses to do quietly.
     Raises Challenged if Vercel served its bot challenge.
     Raises urllib.error.HTTPError for a real HTTP error, so callers that read
     an error body (every gate in tools/ does) keep working unchanged.
@@ -145,7 +190,7 @@ def fetch(url, timeout=25, method="GET", data=None, headers=None, no_cache=False
     req = urllib.request.Request(url, data=data, method=method, headers=h)
     try:
         with urllib.request.urlopen(req, timeout=timeout) as r:
-            return r.status, r.read()
+            return Response(r.status, r.read())
     except urllib.error.HTTPError as e:
         challenged, token = _is_challenge(getattr(e, "headers", None))
         if challenged:
@@ -154,7 +199,7 @@ def fetch(url, timeout=25, method="GET", data=None, headers=None, no_cache=False
 
 
 def fetch_json(url, timeout=60, method="POST", payload=None, key=None, headers=None):
-    """POST JSON and parse the reply, returning (status, parsed_or_raw_text).
+    """POST JSON and parse the reply, returning Response(status, parsed_or_raw_text).
 
     Mirrors the shape every gate in tools/ already uses -- an HTTP error still
     returns its parsed body rather than raising -- so wiring a gate to this is a
@@ -170,10 +215,10 @@ def fetch_json(url, timeout=60, method="POST", payload=None, key=None, headers=N
     body = json.dumps(payload or {}).encode("utf-8")
     try:
         status, raw = fetch(url, timeout=timeout, method=method, data=body, headers=h)
-        return status, json.loads(raw.decode("utf-8"))
+        return Response(status, json.loads(raw.decode("utf-8")))
     except urllib.error.HTTPError as e:
         raw = e.read().decode("utf-8", "replace")
         try:
-            return e.code, json.loads(raw)
+            return Response(e.code, json.loads(raw))
         except ValueError:
-            return e.code, {"error": {"message": raw[:400]}}
+            return Response(e.code, {"error": {"message": raw[:400]}})
