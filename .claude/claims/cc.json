@@ -463,6 +463,16 @@
       "claimed_at_epoch": 1788530838.584095,
       "status": "released",
       "released_at": "2026-09-04T20:06:48Z"
+    },
+    {
+      "id": "cc-1788553085",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "generic write validation on the highest stakes dnt money resource",
+      "claimed_at": "2026-09-04T20:18:05Z",
+      "claimed_at_epoch": 1788553085.6128795,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
