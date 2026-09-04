@@ -4857,8 +4857,7 @@ module.exports = async (req, res) => {
     if (resource === 'rf_claims' && action === 'write') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnroofing');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
-      const isManagement = !!rfAuth.MANAGEMENT_ROLES[session.role];
-      const isBroad = !!rfAuth.BROAD_READ_ROLES[session.role];
+      const seesAll = rfAuth.seesAllRows(session);
       const problems = roofingClaims.validateClaim(payload);
       if (problems.length) { res.status(400).json({ error: { message: 'rf_claims: ' + problems.join('; ') } }); return; }
       // A narrow role may only write a claim already assigned to them -- never
@@ -4868,15 +4867,17 @@ module.exports = async (req, res) => {
       if (existingR.status === 404 || existingR.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Claims are not set up yet — run sql/sairnroofing_claims_schema.sql in Supabase first.' } }); return; }
       const existingRows = await existingR.json();
       const existing = Array.isArray(existingRows) && existingRows[0];
-      if (!isManagement && !isBroad) {
-        if (!existing || existing.assigned_employee_id !== session.employee_id) {
-          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only update a claim assigned to you' } });
-          return;
-        }
+      // Same predicate as every other claim gate. ownsRow() returns false for a
+      // missing row, which preserves this branch's "never touch an unassigned
+      // one" rule exactly -- the nested `!existing ||` test it replaces was
+      // doing that job by hand.
+      if (!rfAuth.ownsRow(session, existing)) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only update a claim assigned to you' } });
+        return;
       }
       // Assignment is a management/broad-read decision. A narrow role's write
       // keeps whatever assignee is already stored; it cannot set or change it.
-      const assignee = (isManagement || isBroad)
+      const assignee = seesAll
         ? (payload.assigned_employee_id || null)
         : (existing ? existing.assigned_employee_id : null);
       const norm = roofingClaims.normalizeMoney(payload);
@@ -4924,7 +4925,7 @@ module.exports = async (req, res) => {
       const claimRows = await claimR.json();
       const claim = Array.isArray(claimRows) && claimRows[0];
       if (!claim) { res.status(200).json({ ok: true, data: [] }); return; }
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, claim)) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only see evidence for a claim assigned to you' } });
         return;
       }
@@ -4946,7 +4947,7 @@ module.exports = async (req, res) => {
       const claimRows = await claimR.json();
       const claim = Array.isArray(claimRows) && claimRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim — create the claim before attaching evidence to it' } }); return; }
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, claim)) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only attach evidence to a claim assigned to you' } });
         return;
       }
@@ -6097,7 +6098,7 @@ module.exports = async (req, res) => {
       const claim = Array.isArray(cRows) && cRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
       // Same assignment gate as reading the claim: you must be able to see it.
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, claim)) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only assess a claim assigned to you' } });
         return;
       }
@@ -6176,7 +6177,7 @@ module.exports = async (req, res) => {
       const claim = Array.isArray(cRows) && cRows[0];
       if (!claim) { res.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } }); return; }
       // Same assignment gate as reading the claim: you must be able to see it.
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, claim)) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only reconcile a claim assigned to you' } });
         return;
       }
@@ -6222,7 +6223,7 @@ module.exports = async (req, res) => {
       const rows = await jr.json();
       const job = Array.isArray(rows) && rows[0];
       if (!job) { response.status(404).json({ error: { code: 'NO_JOB', message: 'No such job' } }); return { ok: false }; }
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && job.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, job)) {
         response.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only work on a job assigned to you' } });
         return { ok: false };
       }
@@ -7041,7 +7042,7 @@ module.exports = async (req, res) => {
         response.status(404).json({ error: { code: 'NO_CLAIM', message: 'No such claim' } });
         return { ok: false };
       }
-      if (!rfAuth.MANAGEMENT_ROLES[session.role] && !rfAuth.BROAD_READ_ROLES[session.role] && claim.assigned_employee_id !== session.employee_id) {
+      if (!rfAuth.ownsRow(session, claim)) {
         response.status(403).json({ error: { code: 'FORBIDDEN', message: 'You can only work on a claim assigned to you' } });
         return { ok: false };
       }

@@ -515,6 +515,48 @@ module.exports = async (req, res) => {
 module.exports.MANAGEMENT_ROLES = MANAGEMENT_ROLES;
 module.exports.BROAD_READ_ROLES = BROAD_READ_ROLES;
 
+// ── THE ROW-VISIBILITY PREDICATE, IN ONE PLACE (2026-09-04) ─────────────────
+// api/sd-data.js hand-wrote
+//
+//     !rfAuth.MANAGEMENT_ROLES[s.role] && !rfAuth.BROAD_READ_ROLES[s.role]
+//        && row.assigned_employee_id !== s.employee_id
+//
+// at SIX separate SAIRNroofing branches -- claim photo read, claim photo write,
+// assess, reconcile, the job gate, and rfClaimGate itself -- and the role half
+// of it alone at fifteen more. This file's own header already names duplicated
+// role logic as SAIRNsenior's root cause, and the count had grown to 21 before
+// anyone counted it.
+//
+// IT LIVES HERE, NOT IN sd-data.js, because this is where the role sets are.
+// A future change to who counts as management lands in this file, and the
+// predicate that depends on it should not be a scroll away in another one.
+//
+// WORTH KNOWING BEFORE EDITING: MANAGEMENT_ROLES is currently a SUBSET of
+// BROAD_READ_ROLES ({owner, admin} vs {owner, admin, estimator}), so today the
+// MANAGEMENT half of that expression is redundant -- `!BROAD` alone gives the
+// same answer at all 21 sites. Both terms are kept deliberately. The day a
+// management role is added that is NOT a broad reader, the redundant form
+// silently changes meaning everywhere at once; keeping both makes that
+// addition behave the way each call site's comment says it should.
+
+// Can this session see rows it is not personally assigned?
+function seesAllRows(session) {
+  if (!session) return false;
+  return !!(MANAGEMENT_ROLES[session.role] || BROAD_READ_ROLES[session.role]);
+}
+
+// May this session act on THIS row? True for anyone who sees everything, and
+// for the assignee. `row` is the stored record read server-side -- never the
+// caller's payload, which is the whole point of the gate.
+function ownsRow(session, row) {
+  if (!session) return false;
+  if (seesAllRows(session)) return true;
+  return !!(row && row.assigned_employee_id === session.employee_id);
+}
+
+module.exports.seesAllRows = seesAllRows;
+module.exports.ownsRow = ownsRow;
+
 function isMissingTable(detail) {
   const s = JSON.stringify(detail || '');
   return s.indexOf('PGRST205') !== -1 || s.indexOf('does not exist') !== -1;
