@@ -433,8 +433,8 @@
       "task": "refspec anchoring false positive",
       "claimed_at": "2026-09-04T12:45:56Z",
       "claimed_at_epoch": 1788525956.5381763,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:02:08Z"
     }
   ]
 }
