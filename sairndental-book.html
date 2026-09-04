@@ -52,9 +52,24 @@ input:focus,select:focus{border-color:var(--p);}
   <div id="step-details" class="step">
     <div class="card">
       <div class="fg"><label>Full Name</label><input type="text" id="bk-name"></div>
-      <div class="fg"><label>Date of Birth</label><input type="date" id="bk-dob"></div>
+      <div class="fg"><label>Date of Birth</label><input type="date" id="bk-dob" onchange="onBkDobChange()"></div>
       <div class="fg"><label>Phone</label><input type="text" id="bk-phone" placeholder="(555) 555-5555"></div>
       <div class="fg"><label>Email (optional)</label><input type="email" id="bk-email"></div>
+      <!-- Shown only for a patient under 18. The server refuses the booking
+           without these (api/sairndental/public-book.js), matching the rule
+           sairndental.html's Add Patient form has always enforced -- this page
+           was the way around it. -->
+      <div id="bk-guardian-group" style="display:none">
+        <div class="hint" style="margin:4px 0 12px;font-size:12px;color:var(--muted)">This patient is under 18, so we need a parent or guardian we can reach.</div>
+        <div class="fg"><label>Parent / Guardian Name</label><input type="text" id="bk-guardian-name"></div>
+        <div class="fg"><label>Relationship</label>
+          <select id="bk-guardian-relationship">
+            <option>Mother</option><option>Father</option><option>Legal Guardian</option><option>Other</option>
+          </select>
+        </div>
+        <div class="fg"><label>Guardian Phone</label><input type="text" id="bk-guardian-phone" placeholder="(555) 555-5555"></div>
+        <div class="fg"><label>Guardian Email</label><input type="email" id="bk-guardian-email"></div>
+      </div>
       <button class="btn" id="bk-details-continue-btn" onclick="continueToPhotoStep()">Continue</button>
       <div class="msg" id="bk-details-msg"></div>
     </div>
@@ -117,12 +132,47 @@ async function init(){
 
 var bkPhotos=[]; // array of compressed data-URL strings, max 3
 
+// Under 18 by the same arithmetic the app and the endpoint use. This copy is
+// for SHOWING the fields and giving an early message; the server decides.
+function bkIsMinor(dob){
+  var p=String(dob||'').split('-');
+  if(p.length!==3)return false;
+  var b=new Date(+p[0],+p[1]-1,+p[2]);
+  if(isNaN(b.getTime()))return false;
+  var t=new Date(),age=t.getFullYear()-b.getFullYear(),m=t.getMonth()-b.getMonth();
+  if(m<0||(m===0&&t.getDate()<b.getDate()))age--;
+  return age<18;
+}
+
+// Called on change AND at load. The in-app version of this is called only on
+// change, which is its own open row: a browser that restores a minor's date of
+// birth into the field leaves the guardian inputs hidden while the save still
+// demands them, so the user is told a field is required with nothing on screen
+// to type it into. Calling it at init costs one line and closes that here.
+function onBkDobChange(){
+  var g=document.getElementById('bk-guardian-group');
+  if(!g)return;
+  g.style.display=bkIsMinor(document.getElementById('bk-dob').value)?'block':'none';
+}
+
 function continueToPhotoStep(){
   var name=document.getElementById('bk-name').value.trim();
   var dob=document.getElementById('bk-dob').value;
   var phone=document.getElementById('bk-phone').value.trim();
   var msgEl=document.getElementById('bk-details-msg');
   if(!name||!dob||!phone){msgEl.textContent='Name, date of birth, and phone are required.';msgEl.className='msg err';return;}
+  // Checked here so a parent is not walked through photos and a slot pick
+  // before being told. The server checks again and is the one that decides.
+  if(bkIsMinor(dob)){
+    onBkDobChange();
+    var gName=document.getElementById('bk-guardian-name').value.trim();
+    var gPhone=document.getElementById('bk-guardian-phone').value.trim();
+    var gEmail=document.getElementById('bk-guardian-email').value.trim();
+    if(!gName||(!gPhone&&!gEmail)){
+      msgEl.textContent='This patient is under 18, so we need a parent or guardian name and either a phone number or an email address.';
+      msgEl.className='msg err';return;
+    }
+  }
   msgEl.textContent='';
   showStep('photo');
 }
@@ -220,6 +270,11 @@ function pickSlot(i){
   document.querySelectorAll('.slot').forEach(function(el){el.classList.remove('picked');});
   document.querySelector('.slot[data-idx="'+i+'"]').classList.add('picked');
   showStep('details');
+  // Re-evaluated every time the step is shown, not only on change. A browser
+  // that restored a date of birth -- back-navigation, autofill, bfcache --
+  // never fires onchange, and the guardian fields would stay hidden while both
+  // this page and the server still require them.
+  onBkDobChange();
 }
 
 async function submitBooking(){
@@ -236,6 +291,12 @@ async function submitBooking(){
   try{
     var res=await fetch(BOOK_API,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({
       slug:slug,patient:{name:name,dob:dob,phone:phone,email:email},
+      guardian:{
+        name:document.getElementById('bk-guardian-name').value.trim(),
+        relationship:document.getElementById('bk-guardian-relationship').value,
+        phone:document.getElementById('bk-guardian-phone').value.trim(),
+        email:document.getElementById('bk-guardian-email').value.trim()
+      },
       provider_id:pickedProvider,procedure_type_id:pickedProcedure,start_time:pickedSlot.start_time,
       photos:bkPhotos,patient_notes:notes
     })});

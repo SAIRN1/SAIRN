@@ -23,6 +23,28 @@ function supabaseHeaders(extra) {
 function rest(path) {
   return process.env.SUPABASE_URL + '/rest/v1/' + path;
 }
+// Same rule as sairndental.html's isMinorPatient(), deliberately reimplemented
+// here rather than shared: that one runs in a browser against the visitor's
+// clock, this one runs on the server. Keeping them separate means a client with
+// a wrong date cannot talk this side out of asking for a guardian.
+//
+// UNPARSEABLE OR ABSENT IS NOT "ADULT". The browser copy returns false when it
+// cannot read the date, which is right there -- the field is required and the
+// form has already checked it. Here the input is untrusted, so an unreadable
+// DOB is treated as a minor: the caller is asked for a guardian rather than
+// waved through, and the ordinary case (a real date) is unaffected.
+function isMinorDob(dob) {
+  const p = String(dob || '').split('-');
+  if (p.length !== 3) return true;
+  const b = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
+  if (isNaN(b.getTime())) return true;
+  const today = new Date();
+  let age = today.getFullYear() - b.getFullYear();
+  const m = today.getMonth() - b.getMonth();
+  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--;
+  return age < 18;
+}
+
 function newId(prefix) {
   return prefix + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 }
@@ -60,6 +82,40 @@ module.exports = async (req, res) => {
     if (!slug || !patient.name || !patient.dob || !patient.phone || !providerId || !procedureTypeId || !startTime) {
       res.status(400).json({ error: { message: 'slug, patient (name/dob/phone), provider_id, procedure_type_id, start_time are required' } });
       return;
+    }
+
+    // ── A MINOR NEEDS A GUARDIAN HERE TOO (2026-09-04) ────────────────────
+    // sairndental.html's Add Patient form has always refused to save a minor
+    // without a guardian name and at least one guardian contact method, and a
+    // comment at rcReachable() asserted it as a property of the system:
+    // "this form already enforces that -- a minor cannot be saved without a
+    // guardian phone or email."
+    //
+    // TRUE OF THAT FORM, FALSE OF THE SYSTEM. This endpoint is the other way
+    // in -- public, unauthenticated, and the one a parent actually uses -- and
+    // it created the patient row with no guardian fields at all. The record
+    // did not merely lack them; the object written at the bottom of this file
+    // did not contain the keys.
+    //
+    // Two consequences, neither visible from the response. A paediatric
+    // patient existed with no guardian contact, so rcReachable() fell back to
+    // whatever phone number was typed into a public form -- possibly the
+    // child's. And the practice believed the rule was enforced, because the
+    // form they look at every day does enforce it.
+    //
+    // Refusing matches the in-app rule exactly rather than inventing a second,
+    // looser one for the public path. A parent booking for their child is the
+    // ordinary case here, so asking is expected rather than an obstacle.
+    const guardian = body.guardian || {};
+    if (isMinorDob(patient.dob)) {
+      const gName = typeof guardian.name === 'string' ? guardian.name.trim() : '';
+      const gPhone = typeof guardian.phone === 'string' ? guardian.phone.trim() : '';
+      const gEmail = typeof guardian.email === 'string' ? guardian.email.trim() : '';
+      if (!gName || (!gPhone && !gEmail)) {
+        res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED',
+          message: 'This patient is under 18, so we need a parent or guardian name and either a phone number or an email address before booking.' } });
+        return;
+      }
     }
 
     const photosCheck = validatePhotosPayload(photos);
@@ -177,7 +233,16 @@ module.exports = async (req, res) => {
     // was written referencing a phantom patient, reported as a clean success.
     let patientWritten = true;
     if (!matched) {
-      const newPatient = { id: patientId, name: patient.name, dob: patient.dob, phone: patient.phone, email: patient.email || '', insurance_payer: '', insurance_member_id: '', insurance_group_number: '', insurance_plan_type: '' };
+      // The guardian keys are written for EVERY patient, not only minors, and
+      // that is deliberate: the in-app record carries them unconditionally, so
+      // omitting them here would produce two shapes of dnt_patients row and a
+      // reader would have to know which door the record came through.
+      const isMinor = isMinorDob(patient.dob);
+      const newPatient = { id: patientId, name: patient.name, dob: patient.dob, phone: patient.phone, email: patient.email || '', insurance_payer: '', insurance_member_id: '', insurance_group_number: '', insurance_plan_type: '',
+        guardian_name: isMinor ? String(guardian.name || '').trim() : '',
+        guardian_relationship: isMinor ? String(guardian.relationship || '').trim() : '',
+        guardian_phone: isMinor ? String(guardian.phone || '').trim() : '',
+        guardian_email: isMinor ? String(guardian.email || '').trim() : '' };
       const patientRes = await fetch(rest('dnt_patients?on_conflict=license_hash,patient_id'), {
         method: 'POST', headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
         body: JSON.stringify({ license_hash: licenseHash, app_id: 'sairndental', patient_id: patientId, data: newPatient, updated_at: new Date().toISOString() })

@@ -1757,6 +1757,14 @@ function rPatients(){
       '<td><button class="btn bo bs" onclick="removePatient(\''+p.id+'\')">Remove</button></td></tr>';
   }).join('')||dntEmptyRow('dnt_patients',7,'No patients on file yet');
   fillDentalSelects();
+  // GUARDIAN FIELDS RE-EVALUATED EVERY TIME THE PANEL RENDERS, not only on a
+  // change event (open-work row, 2026-09-04). A browser that restores a date of
+  // birth into pt-add-dob -- back-navigation, autofill, bfcache -- never fires
+  // onchange, so the guardian inputs stayed hidden while addPatient() still
+  // refused to save without them. The user was told a field was required with
+  // nothing on screen to type it into: a dead end, not a data hole, because the
+  // save itself correctly refuses either way.
+  if(typeof onPtDobChange==='function')onPtDobChange();
 }
 // Pediatric fields (2026-08-13): single source of truth for minor status,
 // used by both the Add Patient form's live guardian-field toggle and
@@ -3621,11 +3629,21 @@ function rcLastOutreach(patientId,procId){
   });
   return best;
 }
-// A MINOR'S CONTACT DETAILS LIVE ON THE GUARDIAN, and this form already
-// enforces that -- a minor cannot be saved without a guardian phone or email.
-// Checking only the patient's own fields would report every paediatric patient
-// as unreachable when the practice can in fact ring them, which is the reverse
-// of the honest failure this column exists for.
+// A MINOR'S CONTACT DETAILS LIVE ON THE GUARDIAN. Checking only the patient's
+// own fields would report every paediatric patient as unreachable when the
+// practice can in fact ring them, which is the reverse of the honest failure
+// this column exists for.
+//
+// THIS COMMENT USED TO SAY "a minor cannot be saved without a guardian phone or
+// email", and that was TRUE OF THIS FORM AND FALSE OF THE SYSTEM until
+// 2026-09-04. api/sairndental/public-book.js is the other way in -- public,
+// unauthenticated, and the one a parent actually uses -- and it created the
+// patient row with no guardian fields at all: the object it wrote did not
+// contain the keys. So a paediatric record could exist here with no guardian
+// contact, and this function would then fall back to whatever phone number was
+// typed into a public form, possibly the child's. Both paths now enforce the
+// same rule. The claim is kept in the past tense as a reminder that "this form
+// enforces it" is not the same sentence as "the system enforces it".
 function rcReachable(pt){
   return !!((pt.phone&&pt.phone.trim())||(pt.email&&pt.email.trim())||
             (pt.guardian_phone&&pt.guardian_phone.trim())||(pt.guardian_email&&pt.guardian_email.trim()));
