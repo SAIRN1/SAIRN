@@ -502,6 +502,16 @@
       "claimed_at_epoch": 1788558876.4996111,
       "status": "released",
       "released_at": "2026-09-04T22:03:40Z"
+    },
+    {
+      "id": "fourth-1788559506",
+      "session": "fourth",
+      "subject": "sairnscape-loader-honesty",
+      "task": "scpLd corrupt record indistinguishable from absent",
+      "claimed_at": "2026-09-04T22:05:06Z",
+      "claimed_at_epoch": 1788559506.8206446,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
