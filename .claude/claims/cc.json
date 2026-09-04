@@ -483,6 +483,16 @@
       "claimed_at_epoch": 1788553820.4093785,
       "status": "released",
       "released_at": "2026-09-04T20:38:41Z"
+    },
+    {
+      "id": "cc-1788554499",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "dnt coverage rules write validation the recorded third resource",
+      "claimed_at": "2026-09-04T20:41:39Z",
+      "claimed_at_epoch": 1788554499.4037337,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
