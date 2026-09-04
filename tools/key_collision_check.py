@@ -353,6 +353,47 @@ def scan_block(content, base_line, SETITEM_RE):
     return results
 
 
+# ── ACKNOWLEDGED COLLISIONS (added 2026-09-04) ─────────────────────────────
+# Two distinct backing variables writing one key is a POINTER, not a verdict.
+# Some of them are correct by design, and without a record every session that
+# runs this re-traces the same ones by hand -- which is what happened on
+# 2026-09-04, when four collisions were reported and three turned out benign.
+#
+# An entry here needs the key, the two variable names it is acknowledged FOR,
+# and a reason. Naming the variables matters: if a THIRD writer appears, or one
+# of these is renamed, the acknowledgement stops applying and the collision is
+# reported again. An allowlist that silences a key forever would be worse than
+# no allowlist -- it is exactly how sd_referrals hid until 2026-08-07.
+ACKNOWLEDGED = {
+    'stonedesk:ai_memories': (
+        {'_sdMemories', 'data'},
+        "syncSDMemoriesFromSupabase() caches the server's list ('data'); "
+        "writeSDMemory() writes the locally-extended list ('_sdMemories'). One "
+        "owner, one shape, server-wins-on-sync by design. Traced by hand "
+        "2026-09-04; the real defect found there was that BOTH writes were "
+        "unchecked, which is fixed, and is not a collision."),
+    'stonedesk:business_profile': (
+        {'data', 'profile'},
+        "syncSDProfileFromSupabase() caches the server copy ('data'); "
+        "saveSDProfile() writes the edited copy ('profile'). Same shape as the "
+        "memories pair. NOTE saveSDProfile() has ZERO CALLERS and is "
+        "quarantined in stonedesk.html with its own unchecked-write defect "
+        "documented -- fix that before wiring it up."),
+    'sd_quote_history': (
+        {'h', 'hist'},
+        "window.sdQuoteSaveHistory() appends a new quote ('h'); the History "
+        "panel's save() writes back the rows it owns ('hist'). Two writers is "
+        "what the 2026-09-04 fix INTRODUCED on purpose: save() now partitions a "
+        "merged array and routes each half to its own store. Held by "
+        "tests/quote_history_duplication.js."),
+    'sd_aiquotes': (
+        {'ai', 'd'},
+        "The other half of the same 2026-09-04 fix: the History panel's save() "
+        "routes AI-quote rows back here ('ai'), and the AI quote builder writes "
+        "its own list ('d'). Same suite."),
+}
+
+
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else 'stonedesk.html'
     with open(path, encoding='utf-8', errors='replace') as f:
@@ -381,13 +422,30 @@ def main():
     print("DETECTED_STORAGE_WRAPPERS:%s" % (sorted(wrappers) if wrappers else "none"))
     print("TOTAL_KEY_WRITES:%d" % len(all_writes))
     print("DISTINCT_KEYS:%d" % len(by_key_all))
-    print("COLLISIONS:%d" % len(collisions))
-    for key in sorted(collisions):
-        print("COLLISION: %s -> distinct backing variables: %s" % (key, sorted(collisions[key])))
+    # An acknowledgement applies only while the variable pair is EXACTLY the one
+    # recorded. A third writer, or a rename, and it is reported again.
+    known, unknown = {}, {}
+    for key, vars_ in collisions.items():
+        ack = ACKNOWLEDGED.get(key)
+        (known if ack and ack[0] == vars_ else unknown)[key] = vars_
+
+    print("COLLISIONS:%d  (unacknowledged: %d)" % (len(collisions), len(unknown)))
+    for key in sorted(unknown):
+        print("COLLISION: %s -> distinct backing variables: %s" % (key, sorted(unknown[key])))
         for fn, label, line in by_key_all[key]:
             print("    %s() writes %s @ line %d" % (fn, label, line))
+        if key in ACKNOWLEDGED:
+            print("    NOTE: this key IS acknowledged, but for %s -- the writers "
+                  "have changed, so the acknowledgement does not apply."
+                  % sorted(ACKNOWLEDGED[key][0]))
+    for key in sorted(known):
+        print("ACKNOWLEDGED: %s %s -- %s"
+              % (key, sorted(known[key]), ACKNOWLEDGED[key][1]))
 
-    sys.exit(1 if collisions else 0)
+    if not unknown:
+        print("RESULT:CLEAN -- every collision is one somebody traced by hand and "
+              "wrote down. A key with two writers is a pointer, not a verdict.")
+    sys.exit(1 if unknown else 0)
 
 
 if __name__ == '__main__':

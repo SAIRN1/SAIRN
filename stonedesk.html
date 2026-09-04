@@ -26926,6 +26926,21 @@ async function syncSDProfileFromSupabase() {
   }
 }
 
+// ⚠ DORMANT AND TRAPPED -- ZERO CALLERS as of 2026-09-04, verified by grep.
+// Quarantined by name here per Guardian Check 0d rather than deleted, because
+// it is the only write path this profile has and something will want it back.
+//
+// WHOEVER WIRES IT UP MUST FIX IT FIRST. Both writes are fire-and-forget: st()
+// returns false on a quota failure and sdData() returns null on any failure,
+// and neither result is read. Since syncSDProfileFromSupabase() replaces the
+// local cache wholesale with the server's copy, a failed server save leaves the
+// user's edit in localStorage looking saved until the next sync silently
+// reverts it -- and this function's own comment calls that server write "the
+// real save", so the local one cannot be relied on to hold it.
+//
+// The same defect was live in writeSDMemory() above and is fixed there; this
+// one is left as-is deliberately, so the shape stays visible next to the note
+// rather than being half-fixed in dead code nobody reviews.
 async function saveSDProfile(profile) {
   _sdBizProfile = profile;
   st('stonedesk:business_profile', profile); // local cache; server write below is the real save
@@ -27138,10 +27153,38 @@ async function writeSDMemory() {
     const mem = { memory_text: memText, source: 'stonedesk', created_at: new Date().toISOString() };
     _sdMemories.unshift(mem);
     if (_sdMemories.length > 20) _sdMemories = _sdMemories.slice(0, 20);
-    st('stonedesk:ai_memories', _sdMemories);
+    // ── BOTH WRITES ARE CHECKED NOW (2026-09-04) ─────────────────────────────
+    // Both used to be fire-and-forget. st() returns false on a quota failure
+    // and sdData() returns null on any failure, and neither result was read.
+    //
+    // The server one is the one that matters. syncSDMemoriesFromSupabase()
+    // replaces the local cache wholesale with whatever the server returns, so a
+    // memory whose server write failed sat in localStorage looking remembered
+    // until the next sync silently erased it. "The AI stops forgetting what it
+    // told you two questions ago" is a sold claim; it failing quietly is the
+    // same shape as the six window.fetch patches that had been doing nothing
+    // since they shipped.
+    //
+    // DELIBERATELY LOGGED AND NOT TOASTED. This runs unprompted every fifth
+    // assistant reply -- the user did not ask for it and is mid-conversation.
+    // A toast here would interrupt them to report a background housekeeping
+    // failure they cannot act on. The console line is for whoever is looking.
+    if (!st('stonedesk:ai_memories', _sdMemories)) {
+      console.error('writeSDMemory: local cache write failed (storage full) -- ' +
+                    'the memory may not survive this session');
+    }
     // Endpoint stamps shop_id (from the profile) and license_hash server-side.
-    await sdData('write', 'memory', mem);
-  } catch(e) {}
+    var wrote = await sdData('write', 'memory', mem);
+    if (!wrote) {
+      console.error('writeSDMemory: server write failed -- this memory will be ' +
+                    'lost when syncSDMemoriesFromSupabase() next replaces the cache');
+    }
+  } catch(e) {
+    // Was a bare catch(e){}. Nothing above this is fatal to the conversation,
+    // which is why it swallows -- but swallowing without a trace is how a
+    // feature stays broken for months.
+    console.error('writeSDMemory failed:', e && e.message);
+  }
 }
 
 // ── [0039] COMPOSITE INFERENCE CONTEXT (2026-09-02) ─────────────────────────
