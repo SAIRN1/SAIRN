@@ -494,8 +494,8 @@
       "task": "expense ledger source id points at no record",
       "claimed_at": "2026-09-04T20:28:47Z",
       "claimed_at_epoch": 1788553727.2640116,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:38:24Z"
     }
   ]
 }
