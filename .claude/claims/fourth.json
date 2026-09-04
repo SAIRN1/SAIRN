@@ -490,8 +490,8 @@
       "task": "verify whether the data schema was run",
       "claimed_at": "2026-09-04T21:45:37Z",
       "claimed_at_epoch": 1788558337.2144349,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:49:15Z"
     }
   ]
 }
