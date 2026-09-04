@@ -375,6 +375,16 @@
       "claimed_at_epoch": 1788462519.0896845,
       "status": "released",
       "released_at": "2026-09-04T10:41:00Z"
+    },
+    {
+      "id": "cody-1788518870",
+      "session": "cody",
+      "subject": "sairnbiz",
+      "task": "company profile write only and entity driven tax deadlines",
+      "claimed_at": "2026-09-04T10:47:50Z",
+      "claimed_at_epoch": 1788518870.7747228,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
