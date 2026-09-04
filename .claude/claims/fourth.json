@@ -382,6 +382,16 @@
       "claimed_at_epoch": 1788529998.262779,
       "status": "released",
       "released_at": "2026-09-04T14:04:57Z"
+    },
+    {
+      "id": "fourth-1788530840",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "duplicate modules and cross-feature storage key collisions",
+      "claimed_at": "2026-09-04T14:07:20Z",
+      "claimed_at_epoch": 1788530840.8530495,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
