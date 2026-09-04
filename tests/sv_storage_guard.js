@@ -60,13 +60,18 @@ function load(opts) {
   const errs = [];
   const blocked = [];
   const store = Object.assign({}, opts.store);
+  const toastEl = { textContent: '', className: '', classList: { remove: () => {} } };
   const ctx = {
     JSON: JSON, String: String, Object: Object, Array: Array,
-    _svUnreadable: {}, _svKeyVerified: {},
+    _svUnreadable: {}, _svKeyVerified: {}, _svWriteFailed: null,
+    setTimeout: () => 0, clearTimeout: () => {},
     escHtml: (s) => String(s),
     // svBlockForCorruptStore is the REAL one unless a caller asks for a stub;
     // the real one writes document.body.innerHTML, so a fake DOM is enough.
-    document: { body: { innerHTML: '' }, title: '' },
+    document: {
+      body: { innerHTML: '' }, title: '',
+      getElementById: (id) => (id === 'sv-toast' ? toastEl : null),
+    },
     localStorage: {
       getItem(k) {
         if (opts.getThrows) { const e = new Error('storage disabled'); e.name = 'SecurityError'; throw e; }
@@ -91,7 +96,8 @@ function load(opts) {
   vm.runInContext(grab(src, 'function svIsQuotaError(e){'), ctx);
   vm.runInContext(grab(src, 'function st(key,data){'), ctx);
   vm.runInContext(grab(src, 'function svLoad(k,d){'), ctx);
-  return { ctx, errs, blocked, store };
+  vm.runInContext(grab(src, 'function showToast(msg, type, dur) {'), ctx);
+  return { ctx, errs, blocked, store, toastEl };
 }
 
 const quota = () => { const e = new Error('exceeded'); e.name = 'QuotaExceededError'; return e; };
@@ -221,6 +227,71 @@ test('svLoad() still never throws, including when the block itself fails', () =>
   const { ctx } = load({ store: { 'sv_x': '{bad' } });
   ctx.document = null;
   assert.doesNotThrow(() => ctx.svLoad('x', null), 'a missing DOM turned a bad read into a throw');
+});
+
+// ── the toast rule ─────────────────────────────────────────────────────
+section('a success toast must not follow a refused write');
+
+test('an ordinary success toast is untouched when nothing failed', () => {
+  const { ctx, toastEl } = load({});
+  ctx.st('sv_whiteboard', [1]);
+  ctx.showToast('Updated Rex', 'success');
+  assert.strictEqual(toastEl.textContent, 'Updated Rex');
+  assert.strictEqual(toastEl.className, 'toast show success');
+});
+
+test('A SUCCESS TOAST AFTER A REFUSED WRITE IS REPLACED -- the whole finding', () => {
+  // 29 call sites in this file fire "Updated X" on the line after a save whose
+  // boolean they discard. st() logs the refusal to the console; the clinician
+  // is looking at the screen.
+  const { ctx, toastEl } = load({ setThrows: quota });
+  assert.strictEqual(ctx.st('sv_controlled', [1]), false);
+  ctx.showToast('Updated Rex', 'success');
+  assert.match(toastEl.textContent, /NOT SAVED/);
+  assert.match(toastEl.textContent, /sv_controlled/, 'the message does not name the key that failed');
+  assert.strictEqual(toastEl.className, 'toast show error', 'it still rendered as a success');
+});
+
+test('the latch is CONSUMED, so the next honest success reports normally', () => {
+  const { ctx, toastEl } = load({ setThrows: quota });
+  ctx.st('sv_x', [1]);
+  ctx.showToast('Updated Rex', 'success');
+  ctx.showToast('Updated Milo', 'success');
+  assert.strictEqual(toastEl.textContent, 'Updated Milo',
+    'one failure suppressed every later success message');
+});
+
+test('A LATER SUCCESSFUL WRITE CLEARS IT, so a recovered save is not slandered', () => {
+  const { ctx, toastEl } = load({});
+  ctx._svWriteFailed = 'sv_old';
+  ctx.st('sv_x', [1]);
+  ctx.showToast('Updated Rex', 'success');
+  assert.strictEqual(toastEl.textContent, 'Updated Rex');
+});
+
+test('the BLOCKED-KEY path latches too, because the block screen can itself fail', () => {
+  // svBlockForCorruptStore() replaces the DOM, but its own catch admits that
+  // write can fail. An app still running after that must not go on saying
+  // "Updated".
+  const { ctx, toastEl } = load({ store: { 'sv_controlled': '{not json' } });
+  ctx.st('sv_controlled', [1]);          // first call: detects and blocks
+  ctx.showToast('Updated', 'success');
+  assert.match(toastEl.textContent, /NOT SAVED/);
+  ctx.st('sv_controlled', [1]);          // second call: the early _svUnreadable return
+  ctx.showToast('Updated', 'success');
+  assert.match(toastEl.textContent, /NOT SAVED/, 'the already-blocked path does not latch');
+});
+
+test('error and info toasts are never rewritten -- only success claims are', () => {
+  const { ctx, toastEl } = load({ setThrows: quota });
+  ctx.st('sv_x', [1]);
+  ctx.showToast('Something else went wrong', 'error');
+  assert.strictEqual(toastEl.textContent, 'Something else went wrong');
+  ctx.showToast('Heads up', 'info');
+  assert.strictEqual(toastEl.textContent, 'Heads up');
+  // ...and the latch survives both, so the success claim is still corrected.
+  ctx.showToast('Updated Rex', 'success');
+  assert.match(toastEl.textContent, /NOT SAVED/);
 });
 
 // ── source ─────────────────────────────────────────────────────────────
