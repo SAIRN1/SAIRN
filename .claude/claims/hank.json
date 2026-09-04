@@ -612,8 +612,8 @@
       "task": "a corrupt record and an absent one return the same value",
       "claimed_at": "2026-09-04T21:18:11Z",
       "claimed_at_epoch": 1788556691.734958,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:24:17Z"
     }
   ]
 }
