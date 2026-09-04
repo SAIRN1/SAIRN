@@ -390,8 +390,8 @@
       "task": "duplicate modules and cross-feature storage key collisions",
       "claimed_at": "2026-09-04T14:07:20Z",
       "claimed_at_epoch": 1788530840.8530495,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T14:14:54Z"
     }
   ]
 }
