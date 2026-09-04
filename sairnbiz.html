@@ -771,7 +771,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Est. Total Liability</div><div class="kval" id="tx-q3">--</div><div class="kt">Withdrawn &mdash; it summed five invented figures</div></div>
     <div class="kpi"><div class="klbl">Sales Tax</div><div class="kval" id="tx-sales">--</div><div class="kt">Needs a jurisdiction rate and taxability</div></div>
     <div class="kpi"><div class="klbl">Employer FICA</div><div class="kval" id="tx-payroll">$0</div><div class="kt">7.65% of your real payroll</div></div>
-    <div class="kpi"><div class="klbl">Next Filing Due</div><div class="kval" id="tx-next">--</div><div class="kt">Depends on entity type &mdash; see below</div></div>
+    <div class="kpi"><div class="klbl">Estimated-payment dates</div><div class="kval" id="tx-next" style="font-size:15px;line-height:1.3">--</div><div class="kt" id="tx-next-sub">Depends on entity type &mdash; see below</div></div>
   </div>
   <div class="card"><div class="cb">
     <div class="note" id="tx-note" style="margin-bottom:12px"></div>
@@ -1658,6 +1658,9 @@ function init(){
   // reload, which is how a write-only setting stays invisible: it looks like
   // it never saved rather than like nothing reads it.
   loadSettings();
+  // Without this the Company panel silently reverts a customer's real details
+  // to the seeded demo values on every reload.
+  loadCo();
   $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   renderSyncStatus();
   var lastSync=ld('sb_sync',null);if(lastSync)$('co-sync').textContent=lastSync;
@@ -2796,6 +2799,46 @@ var SB_TAX_REFUSALS = [
     'The rate is EXPERIENCE-RATED and assigned to each employer by the state, and it also stops at a wage base. The old figure used a flat 2.7% with no cap, which is neither this employer\'s rate nor correctly bounded.' }
 ];
 
+// ESTIMATED-PAYMENT DEADLINES, NOW ANSWERED WHERE THE APP ACTUALLY KNOWS
+//
+// Yesterday this panel refused to name a filing deadline on the grounds that
+// "entity type depends on something this app does not record". That was true of
+// what the app READ and false of what it COLLECTED: the Company panel has had
+// an Entity Type selector all along, writing it to sb_co -- which nothing read
+// back until today. So the refusal was correct in effect and wrong in its
+// reason, and fixing the write-only profile is what makes this answerable.
+//
+// LLC IS STILL REFUSED, and that is not a gap. An LLC is a LEGAL form, not a
+// tax classification: a single-member LLC is disregarded, a multi-member one
+// defaults to a partnership, and either can elect S- or C-corp treatment. The
+// schedule follows the CLASSIFICATION, so naming one off "LLC" would be a
+// guess with a missed payment behind it.
+var SB_FILING_SCHEDULES = {
+  'Sole Prop': {
+    label: 'Sole proprietor',
+    dates: 'Apr 15, Jun 15, Sep 15, and Jan 15 of the following year',
+    note: 'Individual estimated tax, paid by you rather than by the business.'
+  },
+  'S-Corp': {
+    label: 'S corporation',
+    dates: 'Apr 15, Jun 15, Sep 15, and Jan 15 of the following year',
+    note: 'Those are the SHAREHOLDER\'s individual estimated-tax dates. The company\'s own Form 1120-S return is due Mar 15 -- a return deadline, not a payment one, and the two are easy to confuse.'
+  },
+  'C-Corp': {
+    label: 'C corporation',
+    dates: 'Apr 15, Jun 15, Sep 15, and Dec 15',
+    note: 'Corporate estimated tax for a calendar-year filer -- the 15th day of the 4th, 6th, 9th and 12th months.'
+  }
+};
+
+function sbFilingSchedule(){
+  var c=sbCo();
+  var e=c && c.entity;
+  if(!e) return { known:false, why:'No entity type is recorded. Set it on the Company panel and this will name your schedule.' };
+  if(!SB_FILING_SCHEDULES[e]) return { known:false, entity:e, why:'"'+e+'" is a legal form rather than a tax classification, so it does not by itself determine a schedule -- a single-member LLC is disregarded, a multi-member one defaults to a partnership, and either can elect S- or C-corp treatment. Record the classification you elected and this will name the dates.' };
+  return Object.assign({ known:true, entity:e }, SB_FILING_SCHEDULES[e]);
+}
+
 function rTax(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
   var gross=emps.reduce(function(s,e){return s+sbGrossPerPeriod(e);},0);
@@ -2805,11 +2848,23 @@ function rTax(){
   // Liability" is BLANKED rather than recomputed: a total over one real line
   // and five refusals is not a liability, and printing the FICA figure under
   // that label would be the same overstatement in a different font.
+  var sch=sbFilingSchedule();
   $('tx-payroll').textContent=fmt(Math.round(fica));
   $('tx-paid').textContent='--';
   $('tx-q3').textContent='--';
   $('tx-sales').textContent='--';
-  $('tx-next').textContent='--';
+  // The KPI shows the SCHEDULE, never a computed "next" date. Picking the next
+  // one needs a clock and a year boundary, and the old code got exactly that
+  // wrong -- its fallback rolled to Mar 15 of the following year, a date on
+  // neither schedule.
+  $('tx-next').textContent = sch.known ? sch.dates.replace(' of the following year','') : '--';
+  var nk=$('tx-next-sub');
+  // Three states, not two. "LLC is not a tax classification" and "no entity
+  // recorded at all" need different sub-labels: telling someone to set a field
+  // they have already set reads as the app not having saved it.
+  if(nk) nk.textContent = sch.known ? (sch.label+' schedule')
+    : (sch.entity ? H(sch.entity)+' does not determine a schedule on its own'
+                  : 'Set an entity type on the Company panel');
 
   var rows=['<tr>'+
     '<td><strong>FICA payroll tax (employer share)</strong>'+
@@ -2832,11 +2887,16 @@ function rTax(){
       'amounts derived from invented ratios &mdash; federal income tax as 10% of payroll, state income tax as 2.5%, '+
       'sales tax at a hardcoded Ohio county rate, and FUTA/SUTA with no wage base &mdash; so they have been removed '+
       'rather than left to look authoritative. <strong>Nothing here is a filing, and none of it is tax advice.</strong><br><br>'+
-      '<strong>Estimated-payment deadlines depend on your entity type, which this app does not record, so it will '+
-      'not name one.</strong> Individuals and pass-throughs pay Apr 15, Jun 15, Sep 15 and Jan 15; a calendar-year '+
-      'C corporation pays Apr 15, Jun 15, Sep 15 and Dec 15. This panel previously showed <strong>Mar 15</strong> as '+
-      'the first quarterly date, which belongs to neither &mdash; it is the S-corp and partnership return deadline. '+
-      'Confirm your own dates with your accountant.';
+      (sch.known
+        ? '<strong>Your entity type is recorded as ' + H(sch.entity) + ', so the estimated-payment dates are ' +
+          H(sch.dates) + '.</strong> ' + H(sch.note) + ' This panel previously showed <strong>Mar 15</strong> as the ' +
+          'first quarterly date, which is not an estimated-payment date under any schedule. Confirm your own dates ' +
+          'with your accountant.'
+        : '<strong>No estimated-payment schedule is named here.</strong> ' + H(sch.why) + ' For reference, individuals ' +
+          'and pass-throughs pay Apr 15, Jun 15, Sep 15 and Jan 15; a calendar-year C corporation pays Apr 15, Jun 15, ' +
+          'Sep 15 and Dec 15. This panel previously showed <strong>Mar 15</strong> as the first quarterly date, which ' +
+          'belongs to neither &mdash; it is the S-corp and partnership return deadline. Confirm your own dates with ' +
+          'your accountant.');
   }
 }
 
@@ -3125,9 +3185,41 @@ function callAI(msg){
   });
 }
 
+// sb_co WAS WRITE-ONLY, and it is the worse of the two found today. saveCo()
+// wrote the whole business profile -- legal name, DBA, ENTITY TYPE, state of
+// formation, EIN, address, officers -- toasted "Company profile saved", and
+// NOTHING EVER READ IT BACK. The inputs carry hardcoded values in markup, so on
+// the next reload a customer's real EIN and legal name were replaced by ANOTHER
+// SHOP'S demo details, silently. Same class as sb_cfg, found by the same sweep,
+// but this one discards identity documents rather than preferences.
+var SB_CO_FIELDS = ['name','dba','entity','state','ein','founded','industry','addr',
+                    'city','st2','zip','phone','email','web','owner','hr','ctrl'];
+// The markup id does not match the key for two of them, so the mapping is
+// stated once here instead of being re-derived at each call site.
+var SB_CO_IDS = {st2:'co-st'};
+function sbCoId(k){ return SB_CO_IDS[k] || ('co-'+k); }
+
+function sbCo(){ try{ return ld('sb_co',null) || null; }catch(e){ return null; } }
+
+function loadCo(){
+  var c=sbCo(); if(!c) return;
+  SB_CO_FIELDS.forEach(function(k){
+    var el=$(sbCoId(k));
+    // Only overwrite from a value that was actually recorded. A blank stored
+    // field must not wipe the seeded default and leave an empty form looking
+    // like the save failed.
+    if(el && c[k] !== undefined && c[k] !== null && c[k] !== '') el.value=c[k];
+  });
+}
+
 function saveCo(){
-  st('sb_co',{name:$('co-name').value,dba:$('co-dba').value,entity:$('co-entity').value,state:$('co-state').value,ein:$('co-ein').value,founded:$('co-founded').value,industry:$('co-industry').value,addr:$('co-addr').value,city:$('co-city').value,st2:$('co-st').value,zip:$('co-zip').value,phone:$('co-phone').value,email:$('co-email').value,web:$('co-web').value,owner:$('co-owner').value,hr:$('co-hr').value,ctrl:$('co-ctrl').value});
-  toast('Company profile saved');
+  var rec={};
+  SB_CO_FIELDS.forEach(function(k){ var el=$(sbCoId(k)); rec[k]=el?el.value:''; });
+  st('sb_co',rec);
+  // Names the entity type back, because that is the field with a consequence
+  // beyond this panel -- the Tax panel reads it to pick an estimated-payment
+  // schedule, and a wrong one there is a missed deadline.
+  toast('Company profile saved'+(rec.entity?' \u2014 entity type '+rec.entity+', used by the Tax panel for filing deadlines':''),5000);
 }
 function renderSyncStatus(){
   var el=$('co-sd-status');if(!el)return;
