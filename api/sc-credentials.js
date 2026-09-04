@@ -143,14 +143,18 @@ module.exports = async (req, res) => {
   const enc = encodeURIComponent;
 
   try {
-    const readR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&credential_id=eq.' + enc(CREDENTIAL_ID) + '&select=data'), { headers });
+    // `updated_at` is selected because it is the concurrency token for the
+    // conditional write below -- see the lost-update note there. Reading it
+    // costs nothing and the status path ignores it.
+    const readR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&credential_id=eq.' + enc(CREDENTIAL_ID) + '&select=data,updated_at'), { headers });
     if (readR.status === 404 || readR.status === 400) {
       res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Credential storage is not set up yet -- run sql/sairncode_credentials_schema.sql in Supabase first.' } });
       return;
     }
     const readRows = await readR.json();
     if (!readR.ok) return upstream(res, readRows);
-    const current = (Array.isArray(readRows) && readRows[0] && readRows[0].data) || {};
+    const currentRow = (Array.isArray(readRows) && readRows[0]) || null;
+    const current = (currentRow && currentRow.data) || {};
 
     if (action === 'status') {
       res.status(200).json({ ok: true, credentials: publicStatus(current) });
@@ -172,6 +176,7 @@ module.exports = async (req, res) => {
     }
 
     const next = Object.assign({}, current);
+    let nextEntry = null;
 
     if (action === 'set') {
       const value = String(body.value == null ? '' : body.value).trim();
@@ -180,32 +185,116 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: 'value exceeds ' + MAX_CREDENTIAL_LENGTH + ' characters' } });
         return;
       }
-      next[service] = {
+      // Held in its own binding so the conflict retry can re-apply exactly
+      // this change to a freshly-read blob instead of re-sending a stale merge.
+      nextEntry = {
         enc: encryptSecret(value),
         last4: value.slice(-4),
         updated_at: new Date().toISOString(),
         updated_by: caller.employee_id
       };
+      next[service] = nextEntry;
     } else {
       delete next[service];
     }
 
-    const writeR = await fetch(rest(TABLE + '?on_conflict=license_hash,credential_id'), {
-      method: 'POST',
-      headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
-      body: JSON.stringify({
-        license_hash: licHash,
-        app_id: APP,
-        credential_id: CREDENTIAL_ID,
-        data: next,
-        updated_at: new Date().toISOString()
-      })
-    });
+    // ── LOST UPDATE, FIXED 2026-09-04 ──────────────────────────────────────
+    // Every service credential for the practice lives in ONE jsonb blob keyed
+    // (license_hash, credential_id='default'). This handler read that blob,
+    // changed one service inside it, and upserted the WHOLE THING back with
+    // resolution=merge-duplicates, which replaces `data` wholesale.
+    //
+    // Two admins configuring DIFFERENT services in the same window both read
+    // the same `current`; each wrote current + their own service; the second
+    // write silently dropped the first's credential. No error, nothing in the
+    // UI, and the missing key only surfaces later as an eligibility check that
+    // reports NOT_CONFIGURED for a service somebody knows they set up.
+    //
+    // Fixed with optimistic concurrency rather than a schema change: the write
+    // is now conditional on the `updated_at` we actually read. PostgREST
+    // returns the affected rows, so ZERO rows back means somebody else wrote
+    // in between -- the row is still there, our precondition simply no longer
+    // holds.
+    //
+    // ONE AUTOMATIC RETRY, AND ONLY ONE, because a retry here is genuinely
+    // safe rather than a way of hiding the race: we re-read the blob and
+    // re-apply the SAME single-service change to it. If the other admin
+    // touched a different service, both survive, which is the correct outcome.
+    // If they touched the SAME service, last-write-wins was always the answer.
+    // A second conflict is reported as 409 rather than retried forever.
+    async function writeBlob(blob, expectedUpdatedAt) {
+      const stamp = new Date().toISOString();
+      if (expectedUpdatedAt) {
+        // Conditional UPDATE. The updated_at filter is the precondition.
+        return fetch(rest(TABLE +
+          '?license_hash=eq.' + enc(licHash) +
+          '&credential_id=eq.' + enc(CREDENTIAL_ID) +
+          '&updated_at=eq.' + enc(expectedUpdatedAt)), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: blob, updated_at: stamp })
+        });
+      }
+      // No row existed when we read. A plain INSERT rather than an upsert, so
+      // that a concurrent first-write loses the insert race LOUDLY (unique
+      // violation) instead of silently overwriting the row that just landed.
+      return fetch(rest(TABLE), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({
+          license_hash: licHash,
+          app_id: APP,
+          credential_id: CREDENTIAL_ID,
+          data: blob,
+          updated_at: stamp
+        })
+      });
+    }
+
+    // Applies this request's single change to whatever blob it is handed, so
+    // the retry re-applies the change rather than re-sending a stale merge.
+    function applyChange(base) {
+      const out = Object.assign({}, base || {});
+      if (action === 'set') { out[service] = nextEntry; } else { delete out[service]; }
+      return out;
+    }
+
+    let writeR = await writeBlob(next, currentRow && currentRow.updated_at);
+    let writeRows = null;
+
+    if (writeR.ok || writeR.status === 409) {
+      const firstRows = writeR.status === 409 ? null : await writeR.json().catch(function () { return null; });
+      const noRowsMatched = writeR.status === 409 ||
+        (Array.isArray(firstRows) && firstRows.length === 0);
+      if (noRowsMatched) {
+        console.warn('sc-credentials: concurrent write detected on ' + service + ' -- re-reading and retrying once');
+        const reR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&credential_id=eq.' + enc(CREDENTIAL_ID) + '&select=data,updated_at'), { headers });
+        const reRows = reR.ok ? await reR.json().catch(function () { return null; }) : null;
+        const reRow = (Array.isArray(reRows) && reRows[0]) || null;
+        if (!reRow) {
+          res.status(409).json({ error: { code: 'WRITE_CONFLICT', message: 'Another administrator changed service credentials while this change was being saved, and the record could not be re-read. Nothing was saved -- reopen the panel and try again.' } });
+          return;
+        }
+        writeR = await writeBlob(applyChange(reRow.data), reRow.updated_at);
+        const secondRows = writeR.ok ? await writeR.json().catch(function () { return null; }) : null;
+        if (!writeR.ok || (Array.isArray(secondRows) && secondRows.length === 0)) {
+          res.status(409).json({ error: { code: 'WRITE_CONFLICT', message: 'Another administrator is changing service credentials right now. Nothing was saved -- reopen the panel and try again.' } });
+          return;
+        }
+        // The retry succeeded against a blob we re-read, so the response must
+        // describe THAT blob, not the stale `next` computed from the first read.
+        const savedRow = Array.isArray(secondRows) ? secondRows[0] : null;
+        res.status(200).json({ ok: true, credentials: publicStatus((savedRow && savedRow.data) || applyChange(reRow.data)), retried: true });
+        return;
+      }
+      writeRows = firstRows;
+    }
+
     if (writeR.status === 404 || writeR.status === 400) {
       res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Credential storage is not set up yet -- run sql/sairncode_credentials_schema.sql in Supabase first.' } });
       return;
     }
-    const writeRows = await writeR.json();
+    if (writeRows === null) writeRows = await writeR.json().catch(function () { return null; });
     if (!writeR.ok) return upstream(res, writeRows);
 
     // Deliberately re-derives from `next` rather than echoing the stored row

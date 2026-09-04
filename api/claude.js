@@ -179,6 +179,8 @@ async function claudeProxyHandler(req, res) {
   // The rate-limit log row this request creates, if any. Declared here so the
   // usage recorder below can see it after the is_demo block has closed.
   let usageRowId = null;
+  let rateLimitDegraded = false;
+  let rateLimitDegradedReason = null;
 
   if (!app_id || !KNOWN_APP_IDS.includes(app_id)) {
     res.status(400).json({ error: { message: 'Missing or unrecognized app_id' } });
@@ -217,12 +219,34 @@ async function claudeProxyHandler(req, res) {
       return;
     }
     usageRowId = rl.rowId;
+    // The limiter fails OPEN by design -- it is a cost control, not a security
+    // control -- but until 2026-09-04 it did so silently, so an unreachable
+    // counter and a healthy one produced identical responses. `degraded` says
+    // the allow was the ABSENCE of a decision rather than one. Recorded on the
+    // response the same way api/sc-ai.js reports `audited`.
+    rateLimitDegraded = !!rl.degraded;
+    rateLimitDegradedReason = rl.degraded_reason || null;
+    if (rateLimitDegraded) {
+      console.error('api/claude: AI rate limit NOT ENFORCED for app_id=' + app_id +
+        ' (' + rateLimitDegradedReason + ') -- request allowed');
+    }
   }
 
   const result = await callAnthropic({ system, messages, max_tokens, tools });
   if (!result.ok) {
     res.status(result.status).json({ error: result.error });
     return;
+  }
+  // Added to result.data IN PLACE rather than to a copy, deliberately. Two
+  // guarantees downstream are asserted against this exact source shape:
+  // api/_lib/ai-usage.test.js checks that `res.status(200).json(result.data);`
+  // appears BEFORE `recordAiUsage(usageRowId`, which is how the platform
+  // guarantees a statistic can never delay a customer's reply. Responding with
+  // a different object would have quietly broken that check, and the two extra
+  // keys do not affect result.data.usage, which is all the recorder reads.
+  if (rateLimitDegraded && result.data && typeof result.data === 'object') {
+    result.data.rate_limit_degraded = true;
+    result.data.rate_limit_degraded_reason = rateLimitDegradedReason || 'unknown';
   }
   res.status(200).json(result.data);
 

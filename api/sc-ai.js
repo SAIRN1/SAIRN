@@ -271,11 +271,21 @@ module.exports = async (req, res) => {
     messages: body.messages.length,
     flagged: screen.flagged.length ? screen.flagged : undefined,
     tools: Array.isArray(body.tools) ? body.tools.length : 0,
-    rate_limit: { count: rl.count, limit: rl.limit, mode: rl.mode }
+    rate_limit: { count: rl.count, limit: rl.limit, mode: rl.mode,
+                  degraded: !!rl.degraded, degraded_reason: rl.degraded_reason || undefined }
   });
 
   const payload = Object.assign({}, result.data);
   payload.audited = logged;
+  // Same honesty rule as `audited` immediately above: the rate limiter fails
+  // OPEN by design, so a call can be allowed because nothing could be counted
+  // rather than because the practice is under its limit. Saying so costs one
+  // boolean; not saying so makes an unenforced day look identical to an
+  // enforced one. (2026-09-04)
+  if (rl.degraded) {
+    payload.rate_limit_degraded = true;
+    payload.rate_limit_degraded_reason = rl.degraded_reason || 'unknown';
+  }
   if (screen.flagged.length) payload.injection_flagged = true;
   res.status(200).json(payload);
 };

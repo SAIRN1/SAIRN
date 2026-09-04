@@ -188,20 +188,47 @@ async function consumeRacy(client, appId, limit) {
 async function checkAiRateLimit(appId) {
   const limit = dailyLimit();
   const enforcing = isEnforcing();
+  // FAILING OPEN IS THE RIGHT CALL AND IT STAYS. This is a COST control, not a
+  // security control -- blocking every AI request in a practice because a
+  // counter table is unreachable is worse for the customer than letting the
+  // calls through. What was wrong was that it failed open SILENTLY: the only
+  // signal was a console.error nobody has open, so an unreachable counter and
+  // a healthy one produced byte-identical responses.
+  //
+  // `degraded` is now part of the answer. It means "this allow is not a
+  // decision, it is the absence of one" -- callers surface it the same way
+  // api/sc-ai.js already surfaces audited:false rather than implying a log
+  // record exists when it does not. Added 2026-09-04.
   const base = {
     limited: false, count: null, limit: limit,
     mode: enforcing ? 'enforce' : 'observe',
-    counted: false, allowed: true, atomic: false, rowId: null
+    counted: false, allowed: true, atomic: false, rowId: null,
+    degraded: true, degraded_reason: 'unknown'
   };
 
   const client = sb();
-  if (!client || !appId) return base;
+  if (!client || !appId) {
+    // No Supabase client configured, or no app id to count against. Nothing was
+    // counted and nothing could have been.
+    console.error('ai rate limit: NOT ENFORCED -- ' +
+      (!client ? 'no storage client configured' : 'no app_id supplied') +
+      ' (failing open, degraded)');
+    return Object.assign({}, base, {
+      degraded_reason: !client ? 'no_storage_client' : 'no_app_id'
+    });
+  }
 
   try {
     let atomic = true;
     let res = await consumeAtomic(client, appId, limit);
     if (!res) { atomic = false; res = await consumeRacy(client, appId, limit); }
-    if (!res) return base;
+    if (!res) {
+      // Both the atomic and the racy path failed to produce a count. The call
+      // is allowed, and the caller is told the allow was uncounted.
+      console.error('ai rate limit: NOT ENFORCED -- counter unreadable for app_id=' +
+        appId + ' (failing open, degraded)');
+      return Object.assign({}, base, { degraded_reason: 'counter_unavailable' });
+    }
 
     const mode = (enforcing ? 'enforce' : 'observe') + (atomic ? '' : '-racy');
 
@@ -220,13 +247,16 @@ async function checkAiRateLimit(appId) {
       mode: mode,
       counted: res.counted,
       atomic: atomic,
+      // A real count happened, so this allow (or block) IS a decision.
+      degraded: false,
+      degraded_reason: null,
       // The log row this call created. api/claude.js fills its token columns
       // in after Anthropic answers; null means there is nothing to fill.
       rowId: (res.rowId == null ? null : res.rowId)
     };
   } catch (e) {
-    console.error('ai rate limit: check errored (failing open):', e && e.message);
-    return base;
+    console.error('ai rate limit: NOT ENFORCED -- check errored (failing open, degraded):', e && e.message);
+    return Object.assign({}, base, { degraded_reason: 'check_errored' });
   }
 }
 
