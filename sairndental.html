@@ -1277,6 +1277,24 @@ function sdnData(action,resource,payload){
 var dntLastErr={};
 function dntLastErrCode(resource){return dntLastErr[resource]?dntLastErr[resource].code:'';}
 function dntLastErrText(resource){return dntLastErr[resource]?dntLastErr[resource].message:'';}
+// ── WHAT TO SAY WHEN A WRITE DID NOT LAND (2026-09-04) ────────────────────
+// Seventeen save paths in this file reported EVERY failure as
+//   "Saved on this device only -- server sync not yet enabled for this app"
+// and that sentence is FALSE. Sync is enabled: DNT_SYNC_RESOURCES lists
+// sixteen resources and dntSyncFromServer() reads all of them. It is not a
+// stale message about a feature that is coming; it is a wrong reason shown
+// instead of the real one.
+//
+// IT GOT WORSE TODAY, AND BY MY OWN HAND. api/sd-data.js now REFUSES a bad
+// dnt_payments, dnt_charges or dnt_coverage_rules write with a 400 that says
+// exactly what to fix -- "A payment amount must be a number greater than
+// zero... To reverse a payment, record the correction as its own entry". Every
+// one of those messages was being thrown away and replaced with a claim about
+// a disabled feature. sdnData() already records the server's own words per
+// resource in dntLastErr; nothing was reading them outside the provider paths.
+function dntWriteFailText(resource,fallback){
+  return dntLastErrText(resource)||fallback||'Nothing was saved -- the server did not accept it. Try again.';
+}
 
 
 // -- LICENCE RE-KEY ISOLATION (2026-09-03) ---------------------------------
@@ -1814,7 +1832,7 @@ async function addPatient(){
   $('pt-add-guardian-relationship').selectedIndex=0;
   onPtDobChange();
   var syncResult=await sdnData('write','dnt_patients',rec);
-  toast(syncResult?'Patient added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Patient added':dntWriteFailText('dnt_patients','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function removePatient(id){
   // Local-only, matching this platform's real convention for every
@@ -2257,7 +2275,7 @@ async function addCredential(){
   var list=credentials();list.push(rec);st('dnt_credentials_list',list);
   rCredentials();
   var syncResult=await sdnData('write','dnt_credentials',rec);
-  toast(syncResult?'Credential record added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Credential record added':dntWriteFailText('dnt_credentials','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
   if(syncResult)refreshCredentialBoard();
 }
 
@@ -2444,7 +2462,7 @@ async function addOperatory(){
   rOperatories();
   $('op-add-name').value='';
   var syncResult=await sdnData('write','dnt_operatories',rec);
-  toast(syncResult?'Operatory added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Operatory added':dntWriteFailText('dnt_operatories','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function removeOperatory(id){
   // Local-only -- see removePatient()'s comment for why.
@@ -2473,7 +2491,7 @@ async function addProviderHours(){
   rHours();
   $('ph-add-start').value='';$('ph-add-end').value='';
   var syncResult=await sdnData('write','dnt_provider_hours',rec);
-  toast(syncResult?'Hours block added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Hours block added':dntWriteFailText('dnt_provider_hours','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function removeProviderHours(id){
   // Local-only -- see removePatient()'s comment for why.
@@ -2648,7 +2666,7 @@ async function addProcedureType(){
   rProcedures();
   ['pc-add-code','pc-add-desc','pc-add-fee','pc-add-length','pc-add-version','pc-add-efffrom','pc-add-effto','pc-add-superseded','pc-add-recall'].forEach(function(id){$(id).value='';});
   var syncResult=await sdnData('write','dnt_procedure_types',rec);
-  toast(syncResult?'Procedure type added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Procedure type added':dntWriteFailText('dnt_procedure_types','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function removeProcedureType(id){
   // Local-only -- see removePatient()'s comment for why.
@@ -2927,7 +2945,7 @@ async function setAppointmentStatus(id,status){
   st('dnt_appointments_list',list);rPending();
   if($('panel-appointments'))rAppointments();
   var syncResult=await sdnData('write','dnt_appointments',a);
-  toast(syncResult?('Appointment '+status.toLowerCase()):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?('Appointment '+status.toLowerCase()):dntWriteFailText('dnt_appointments','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
   return a;
 }
 function confirmAppointment(id){setAppointmentStatus(id,'Confirmed');}
@@ -2988,9 +3006,15 @@ async function submitCompleteVisit(){
   var amount=Number($('cv-amount').value);
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addChargeEntry(a.patient_id, a.id, a.procedure_type_id, amount);
+  // THE VISIT IS NOT MARKED COMPLETED IF ITS CHARGE WAS REFUSED, and the modal
+  // stays open. The two are one action to the person using it -- the button
+  // says "Visit completed, charge added" -- and completing the appointment
+  // while the charge went nowhere is a visit that looks billed and is not.
+  // Keeping the modal open leaves the amount in the box to correct.
+  if(!result.syncResult){toast(dntWriteFailText('dnt_charges','The charge was not saved, so the visit was not marked completed.'),9000);return;}
   closeCompleteVisitModal();
   await setAppointmentStatus(a.id,'Completed');
-  toast(result.syncResult?'Visit completed, charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3500:5500);
+  toast('Visit completed, charge added');
 }
 
 // -- DENIALS, APPEALS AND RECEIVABLE AGEING (audit B3, 2026-09-02) --
@@ -3188,7 +3212,7 @@ async function saveDenial(){
   st('dnt_denial_list',list);
   closeDenialModal();rDenials();
   var syncResult=await sdnData('write','dnt_denial',rec);
-  toast(syncResult?'Denial saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Denial saved':dntWriteFailText('dnt_denial','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 function openPayerTermsModal(){
@@ -3576,7 +3600,7 @@ async function saveTxPlan(){
   st('dnt_txplans_list',list);
   closeTxPlanModal();rTxPlans();
   var syncResult=await sdnData('write','dnt_txplans',rec);
-  toast(syncResult?'Treatment plan saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Treatment plan saved':dntWriteFailText('dnt_txplans','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 function openTxPlanDetail(id){
@@ -3849,7 +3873,7 @@ async function saveRecallOutreach(){
   var list=recallOutreach();list.push(rec);st('dnt_recall_outreach_list',list);
   closeRecallOutreachModal();rRecall();
   var syncResult=await sdnData('write','dnt_recall_outreach',rec);
-  toast(syncResult?'Outreach logged':'Logged on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Outreach logged':dntWriteFailText('dnt_recall_outreach','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 function rRecall(){
@@ -4203,7 +4227,7 @@ async function saveGfe(){
   gfeLines=[];rGfeLines();
   rGfe();
   var syncResult=await sdnData('write','dnt_gfe',rec);
-  toast(syncResult?'Draft estimate saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Draft estimate saved':dntWriteFailText('dnt_gfe','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 async function issueGfe(id){
@@ -4223,7 +4247,7 @@ async function issueGfe(id){
   st('dnt_gfe_list',list);
   rGfe();
   var syncResult=await sdnData('write','dnt_gfe',rec);
-  toast(syncResult?'Marked as issued to the patient':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Marked as issued to the patient':dntWriteFailText('dnt_gfe','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 function openGfeDoc(id){
@@ -4424,7 +4448,8 @@ async function submitCharge(){
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addChargeEntry(patientId,'',procId,amount);
   rBilling();
-  toast(result.syncResult?'Charge added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3000:5000);
+  if(!result.syncResult){toast(dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.'),8000);return;}
+  toast('Charge added');
 }
 async function submitPayment(){
   var patientId=$('bill-patient').value;
@@ -4433,9 +4458,12 @@ async function submitPayment(){
   if(!patientId){toast('Select a patient first');return;}
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addPaymentEntry(patientId,amount,method);
-  $('pm-add-amount').value='';
   rBilling();
-  toast(result.syncResult?'Payment added':'Saved on this device only -- server sync not yet enabled for this app',result.syncResult?3000:5000);
+  if(!result.syncResult){toast(dntWriteFailText('dnt_payments','The payment was not saved -- nothing was recorded on this device or the server.'),8000);return;}
+  // Cleared only after it really landed, so a refused amount is still in the
+  // box to correct rather than gone with the message.
+  $('pm-add-amount').value='';
+  toast('Payment added');
 }
 
 // ── INSURANCE CAPTURE (mandatory sairn-app-scaffold requirement) ────
@@ -4520,7 +4548,7 @@ async function icapSaveToPatient(){
   $('icap-review').style.display='none';
   $('icap-status').textContent='Saved to '+p.name+'\'s record.';
   var syncResult=await sdnData('write','dnt_patients',p);
-  toast(syncResult?'Insurance info saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Insurance info saved':dntWriteFailText('dnt_patients','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 
 // ── FEE SCHEDULE / COVERAGE LOOKUP (2026-08-11) ──────────────────────
@@ -4596,7 +4624,7 @@ async function addReferral(){
   ['rf-add-patient-name','rf-add-external','rf-add-date','rf-add-reason'].forEach(function(id){$(id).value='';});
   $('rf-add-patient').value='';$('rf-add-provider').value='';
   var syncResult=await sdnData('write','dnt_referrals',rec);
-  toast(syncResult?'Referral added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Referral added':dntWriteFailText('dnt_referrals','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 async function setReferralStatus(id,status){
   var list=referrals();
@@ -4605,7 +4633,7 @@ async function setReferralStatus(id,status){
   r.status=status;
   st('dnt_referrals_list',list);rReferrals();
   var syncResult=await sdnData('write','dnt_referrals',r);
-  toast(syncResult?('Referral marked '+status):'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?('Referral marked '+status):dntWriteFailText('dnt_referrals','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
 function rReferrals(){
   var list=referrals(),pats=patients(),provs=providers();
@@ -4698,19 +4726,31 @@ function patientBalance(patientId){
 // would have (design spec §4, confirmed not assumed: two staff each
 // adding their own charge/payment never conflicts, both land, balance
 // is a sum computed at display time).
+// SERVER FIRST FOR BOTH LEDGER WRITES, changed 2026-09-04 BECAUSE I MADE THEM
+// REFUSABLE EARLIER THE SAME DAY. api/sd-data.js now returns 400
+// INVALID_CHARGE / INVALID_PAYMENT for a negative or non-numeric amount or a
+// missing patient_id. These functions pushed to localStorage BEFORE the write,
+// so a refused row stayed in this device's ledger and every figure computed
+// from it -- patientBalance(), dnAging(), the billing KPIs -- included a charge
+// or payment the server does not have. Adding a refusal without moving the
+// local write would have been a worse state than no refusal at all.
+//
+// The row is returned either way so the caller can name it; syncResult is null
+// when nothing was stored anywhere, and the caller says why using
+// dntWriteFailText(), which carries the server's own words.
 async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount){
   var pt=patients().find(function(p){return p.id===patientId;});
   var est=computeEstimatedInsurance(amount, pt?pt.insurance_payer:'', procedureTypeId);
   var rec={id:newId('CH'), patient_id:patientId, appointment_id:appointmentId||'', procedure_type_id:procedureTypeId,
     amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday()};
-  var list=charges();list.push(rec);st('dnt_charges_list',list);
   var syncResult=await sdnData('write','dnt_charges',rec);
+  if(syncResult){var list=charges();list.push(rec);st('dnt_charges_list',list);}
   return {rec:rec, coverageFound:est.found, syncResult:syncResult};
 }
 async function addPaymentEntry(patientId, amount, method){
   var rec={id:newId('PM'), patient_id:patientId, amount:Number(amount)||0, method:method, date:dntLocalToday()};
-  var list=payments();list.push(rec);st('dnt_payments_list',list);
   var syncResult=await sdnData('write','dnt_payments',rec);
+  if(syncResult){var list=payments();list.push(rec);st('dnt_payments_list',list);}
   return {rec:rec, syncResult:syncResult};
 }
 
