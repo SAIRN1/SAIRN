@@ -36,6 +36,7 @@ const mechCred = require('./_lib/mech-credentials');
 const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
+const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
@@ -8928,6 +8929,37 @@ module.exports = async (req, res) => {
       if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
+      }
+      // ── THE GUARDIAN RULE, ON THE LAST PATH THAT DID NOT HAVE IT ──────────
+      // Added 2026-09-04, completing the fix that started at
+      // api/sairndental/public-book.js. The rule -- a patient under 18 needs a
+      // guardian name and either a phone or an email -- was enforced in THREE
+      // places by intent and ONE by implementation:
+      //
+      //   sairndental.html addPatient()   enforced, but it is browser JavaScript
+      //   public-book.js                  enforced server-side (2026-09-04)
+      //   HERE, the generic write         nothing at all
+      //
+      // This block validates payload.id and, until now, absolutely nothing else
+      // for any of its fifteen resources. So the authenticated path -- a licence
+      // key plus any role's session -- could store a paediatric record with no
+      // guardian contact, and every future code path that writes dnt_patients
+      // without going through addPatient() would do the same silently.
+      //
+      // DELIBERATE, AND IT HAS A COST WORTH KNOWING: this refuses on EVERY
+      // write, not only on creation. A patient record that predates the rule --
+      // a minor with no guardian already on file -- becomes unwritable until a
+      // guardian is added, so an unrelated edit (the insurance-card capture at
+      // sairndental.html's icapSaveToPatient() re-saves the whole record) will
+      // fail on that patient. The alternative was a read-before-write to tell a
+      // create from an update, which costs a round trip on every patient write
+      // to keep a non-compliant record editable. Refusing loudly, with a message
+      // that says what to fix, was judged better than quietly persisting a
+      // record the practice's own rule forbids. Flagged for Michael rather than
+      // buried here.
+      if (resource === 'dnt_patients') {
+        const gp = dntGuardianProblem(payload);
+        if (gp) { res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED', message: gp } }); return; }
       }
       // Multi-location write-side capture (2026-08-24). Stamped here rather
       // than trusted from the client so a row can never be written without

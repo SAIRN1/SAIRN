@@ -52,9 +52,18 @@ function grab(src, sig, term) {
   assert.ok(rel > 0, sig + ' is not terminated');
   return src.slice(i, i + rel) + term;
 }
-const serverFn = grab(ep, 'function isMinorDob(dob) {', '\n}');
+// The SERVER rule now lives in one place, shared by both server write paths --
+// api/_lib/dental-guardian.js. It used to be a private copy inside
+// public-book.js, which is precisely how the rule ended up enforced on one
+// server path and not the other, so it is required here rather than scraped
+// out of a file.
+const guardianLib = require(path.join(ROOT, 'api', '_lib', 'dental-guardian.js'));
+const isMinorDob = guardianLib.isMinorDob;
+const guardianProblem = guardianLib.guardianProblem;
+
+// The BROWSER copy stays separate and is still scraped, because it is
+// deliberately a different answer on unreadable input -- see the arm below.
 const clientFn = grab(page, 'function bkIsMinor(dob){', '\n}');
-const appFn = grab(app, 'function isMinorPatient(', '\n}');
 
 function make(src, name) {
   const ctx = { Date: Date, String: String, Number: Number, isNaN: isNaN, console: console };
@@ -62,7 +71,6 @@ function make(src, name) {
   vm.runInContext(src, ctx);
   return ctx[name];
 }
-const isMinorDob = make(serverFn, 'isMinorDob');
 const bkIsMinor = make(clientFn, 'bkIsMinor');
 
 function isoYearsAgo(years, offsetDays) {
@@ -109,27 +117,65 @@ section('the endpoint refuses, and refuses before it writes anything');
 
 test('a minor without a guardian is a 400 GUARDIAN_REQUIRED', () => {
   assert.match(ep, /code: 'GUARDIAN_REQUIRED'/);
-  assert.match(ep, /under 18, so we need a parent or guardian name and either a phone number or an email address/);
+  // The message now comes from the shared module, so assert it there.
+  assert.match(guardianProblem({ dob: '2015-01-01' }) || '',
+    /under 18, so the record needs a parent or guardian name and either a phone number or an email address/);
 });
 
-test('THE CHECK IS REACHABLE -- it is guarded by isMinorDob, not by a constant', () => {
-  // The strings above survive a `if (false)` around the whole block, so a
-  // negative control that disabled the check passed every arm. Asserting the
-  // presence of an error message is not asserting that anything can produce it.
+test('THE CHECK IS REACHABLE -- the refusal is driven by the rule, not a constant', () => {
+  // Asserting the presence of an error string is not asserting that anything
+  // can produce it: an earlier version of this arm survived an `if (false)`
+  // wrapped around the whole block. Now the predicate itself is exercised.
+  assert.ok(guardianProblem({ dob: '2015-01-01' }), 'a minor with no guardian is not refused');
+  assert.strictEqual(guardianProblem({ dob: '1980-01-01' }), null, 'an adult is refused');
   const code = ep.replace(/\/\/[^\n]*/g, '');
-  assert.match(code, /if \(isMinorDob\(patient\.dob\)\) \{/,
-    'the guardian block is no longer gated on the patient actually being a minor');
-  const iGate = code.indexOf('if (isMinorDob(patient.dob)) {');
-  const iErr = code.indexOf("code: 'GUARDIAN_REQUIRED'");
-  assert.ok(iGate > 0 && iErr > iGate && iErr - iGate < 900,
-    'the refusal is not inside the isMinorDob block any more');
+  assert.match(code, /const guardianGap = guardianProblem\(/,
+    'the endpoint no longer consults the shared rule');
+  assert.match(code, /if \(guardianGap\) \{/,
+    'the endpoint computes the verdict and does not act on it');
 });
 
 test('the rule is name AND (phone OR email) -- the same one the app uses', () => {
-  assert.match(ep, /if \(!gName \|\| \(!gPhone && !gEmail\)\) \{/);
+  // Behavioural now, not a regex over one spelling of it.
+  const dob = '2015-01-01';
+  assert.ok(guardianProblem({ dob: dob }), 'no guardian at all is allowed');
+  assert.ok(guardianProblem({ dob: dob, guardian: { name: 'A Parent' } }),
+    'a name with no contact method is allowed');
+  assert.ok(guardianProblem({ dob: dob, guardian: { phone: '5555555555' } }),
+    'a phone with no name is allowed');
+  assert.strictEqual(guardianProblem({ dob: dob, guardian: { name: 'A Parent', phone: '5555555555' } }), null);
+  assert.strictEqual(guardianProblem({ dob: dob, guardian: { name: 'A Parent', email: 'p@example.com' } }), null);
+  // The app's stored field names must satisfy it too -- that is the shape
+  // api/sd-data.js receives from sairndental.html.
+  assert.strictEqual(guardianProblem({ dob: dob, guardian_name: 'A Parent', guardian_phone: '5555555555' }), null,
+    'the stored field names are not accepted, so the in-app write would be refused wrongly');
   const appRule = app.replace(/\/\/[^\n]*/g, '');
   assert.match(appRule, /if\(isMinor&&\(!gName\|\|\(!gPhone&&!gEmail\)\)\)/,
-    'the in-app rule changed shape -- the two paths would now disagree');
+    'the in-app browser rule changed shape -- the paths would now disagree');
+});
+
+test('BOTH SERVER PATHS USE THE SAME MODULE -- neither keeps a private copy', () => {
+  // The whole defect was one rule with two implementations, one of which did
+  // not exist. A second inline copy is the way back to that.
+  const data = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
+  assert.match(ep, /require\('\.\.\/_lib\/dental-guardian'\)/);
+  assert.match(data, /require\('\.\/_lib\/dental-guardian'\)/);
+  assert.ok(!/function isMinorDob\(/.test(ep),
+    'public-book.js has grown its own copy of the age rule again');
+  assert.ok(!/function isMinorDob\(/.test(data),
+    'sd-data.js has grown its own copy of the age rule');
+});
+
+test('the AUTHENTICATED write path enforces it too, which it did not before', () => {
+  const data = fs.readFileSync(path.join(ROOT, 'api', 'sd-data.js'), 'utf8');
+  const code = data.replace(/\/\/[^\n]*/g, '');
+  const i = code.indexOf("if (DNT_RESOURCES[resource] && action === 'write')");
+  assert.ok(i > 0, 'the generic dnt write block moved');
+  const block = code.slice(i, i + 4000);
+  assert.match(block, /if \(resource === 'dnt_patients'\) \{/,
+    'the generic write no longer special-cases dnt_patients for the guardian rule');
+  assert.match(block, /dntGuardianProblem\(payload\)/);
+  assert.match(block, /code: 'GUARDIAN_REQUIRED'/);
 });
 
 test('THE REFUSAL COMES BEFORE THE PATIENT ROW IS WRITTEN', () => {
@@ -179,10 +225,18 @@ test('...they start hidden, and are posted to the endpoint', () => {
 test('it refuses at the DETAILS step, before photos and the slot pick', () => {
   // Walking a parent through photo upload and then refusing is a worse
   // experience than asking on the form that is already open.
+  //
+  // THE GATE IS ASSERTED, NOT JUST THE MESSAGE. An earlier version checked
+  // only that the words "under 18" appeared before showStep('photo'), and a
+  // negative control replacing `if(bkIsMinor(dob))` with `if(false)` sailed
+  // past it -- the message was still there, unreachable. Same class as the
+  // endpoint arm two sections up.
   const i = page.indexOf('function continueToPhotoStep()');
-  const block = page.slice(i, i + 1200);
+  const block = page.slice(i, i + 1400);
+  assert.match(block, /if\(bkIsMinor\(dob\)\)\{/,
+    'the page-side guardian check is no longer gated on the patient being a minor');
   assert.match(block, /under 18/);
-  assert.ok(block.indexOf("showStep('photo')") > block.indexOf('under 18'),
+  assert.ok(block.indexOf("showStep('photo')") > block.indexOf('if(bkIsMinor(dob)){'),
     'the step advances before the guardian check');
 });
 

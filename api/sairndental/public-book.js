@@ -14,6 +14,10 @@
 
 const { resolveSlug, checkAndIncrementRateLimit, readRows } = require('../_lib/dental-public');
 const { validatePhotosPayload, validatePatientNotes } = require('../_lib/dental-photo-validation');
+// One implementation of the minor/guardian rule, shared with api/sd-data.js's
+// generic dnt_patients write. It used to live in this file alone, which is how
+// the rule ended up enforced on one server path and not the other.
+const { guardianProblem, isMinorDob } = require('../_lib/dental-guardian');
 const dntLocation = require('../_lib/dnt-location');
 
 function supabaseHeaders(extra) {
@@ -23,28 +27,6 @@ function supabaseHeaders(extra) {
 function rest(path) {
   return process.env.SUPABASE_URL + '/rest/v1/' + path;
 }
-// Same rule as sairndental.html's isMinorPatient(), deliberately reimplemented
-// here rather than shared: that one runs in a browser against the visitor's
-// clock, this one runs on the server. Keeping them separate means a client with
-// a wrong date cannot talk this side out of asking for a guardian.
-//
-// UNPARSEABLE OR ABSENT IS NOT "ADULT". The browser copy returns false when it
-// cannot read the date, which is right there -- the field is required and the
-// form has already checked it. Here the input is untrusted, so an unreadable
-// DOB is treated as a minor: the caller is asked for a guardian rather than
-// waved through, and the ordinary case (a real date) is unaffected.
-function isMinorDob(dob) {
-  const p = String(dob || '').split('-');
-  if (p.length !== 3) return true;
-  const b = new Date(Number(p[0]), Number(p[1]) - 1, Number(p[2]));
-  if (isNaN(b.getTime())) return true;
-  const today = new Date();
-  let age = today.getFullYear() - b.getFullYear();
-  const m = today.getMonth() - b.getMonth();
-  if (m < 0 || (m === 0 && today.getDate() < b.getDate())) age--;
-  return age < 18;
-}
-
 function newId(prefix) {
   return prefix + '-' + Date.now() + '-' + Math.floor(Math.random() * 1000);
 }
@@ -107,15 +89,10 @@ module.exports = async (req, res) => {
     // looser one for the public path. A parent booking for their child is the
     // ordinary case here, so asking is expected rather than an obstacle.
     const guardian = body.guardian || {};
-    if (isMinorDob(patient.dob)) {
-      const gName = typeof guardian.name === 'string' ? guardian.name.trim() : '';
-      const gPhone = typeof guardian.phone === 'string' ? guardian.phone.trim() : '';
-      const gEmail = typeof guardian.email === 'string' ? guardian.email.trim() : '';
-      if (!gName || (!gPhone && !gEmail)) {
-        res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED',
-          message: 'This patient is under 18, so we need a parent or guardian name and either a phone number or an email address before booking.' } });
-        return;
-      }
+    const guardianGap = guardianProblem({ dob: patient.dob, guardian: guardian });
+    if (guardianGap) {
+      res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED', message: guardianGap } });
+      return;
     }
 
     const photosCheck = validatePhotosPayload(photos);
