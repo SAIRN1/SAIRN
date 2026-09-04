@@ -385,6 +385,16 @@
       "claimed_at_epoch": 1788518870.7747228,
       "status": "released",
       "released_at": "2026-09-04T10:59:05Z"
+    },
+    {
+      "id": "cody-1788519644",
+      "session": "cody",
+      "subject": "role-keys",
+      "task": "confirm session token supersedes stored role",
+      "claimed_at": "2026-09-04T11:00:44Z",
+      "claimed_at_epoch": 1788519644.1858253,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
