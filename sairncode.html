@@ -12204,12 +12204,45 @@ How to answer:
             // check sees the whole practice's deliveries, not one device's.
             sc_dme: 'sc_dme'
         };
+        // A FAILED READ USED TO MEAN "THE SERVER HAS NOTHING", AND THE RESPONSE
+        // TO THAT WAS TO OVERWRITE THE SERVER. Fixed 2026-09-04.
+        //
+        // scData() returns null on EVERY failure -- HTTP error, 401, 403, 500,
+        // or a transport failure -- and resets _scLastProvisioned to null on
+        // each call. The old guards here were `serverList.length > 0` and
+        // `scLastProvisioned() === false`. On a failed read serverList is null
+        // and scLastProvisioned() is null, so NEITHER fired, and control fell
+        // straight through to the local-migration branch, which pushes every
+        // local row up with an on_conflict merge-duplicates upsert.
+        //
+        // So one flaky moment on login -- and this runs Promise.all across all
+        // 28 resources at once -- made a device's local cache authoritative.
+        // A device that had been offline with stale rows would push them over
+        // good server data, silently, with no error surfaced anywhere.
+        //
+        // THREE OUTCOMES, AND ONLY ONE OF THEM MAY WRITE:
+        //   rows returned            -> server is authoritative, cache it
+        //   provisioned:false        -> table does not exist, keep local, push nothing
+        //   provisioned:true, empty  -> the real first-sync migration, push local up
+        //   read FAILED              -> we know nothing; push NOTHING
+        // The last case is the fix. "I could not ask" and "the answer is none"
+        // are different facts, and only one of them justifies a write.
         async function scSyncOneResource(resource) {
             var storageKey = SC_RESOURCE_STORAGE_KEYS[resource];
             var serverList = await scData('read', resource, {});
             if (Array.isArray(serverList) && serverList.length > 0) {
                 try { localStorage.setItem(storageKey, JSON.stringify(serverList)); } catch (e) {}
                 return;
+            }
+            // Read failed. scData() signals this by returning null; an empty
+            // table returns [] instead, which is why the array check below is
+            // the discriminator rather than a truthiness test.
+            if (!Array.isArray(serverList)) {
+                var e = scLastDataError();
+                console.warn('scSync ' + resource + ': read FAILED (' +
+                    ((e && e.code) || 'unknown') + ') -- local rows kept, NOTHING pushed. ' +
+                    'A failed read is not an empty server.');
+                return { failed: true, resource: resource, error: e };
             }
             // The server told us this table does not exist yet. Pushing local
             // rows up would be one 503 per row with nothing to show for it, and
@@ -12222,14 +12255,48 @@ How to answer:
             var local = [];
             try { var s = localStorage.getItem(storageKey); if (s) local = JSON.parse(s); } catch (e) {}
             if (Array.isArray(local) && local.length > 0) {
+                // THE MIGRATION WRITES WERE THE ONLY UNCHECKED scData CALLS IN
+                // THE FILE -- 31 of 33 write sites already test their result.
+                // A failed push left the row on this device only, with the
+                // operator believing the one-time migration had happened; the
+                // next login sees a still-empty server and tries again, so the
+                // failure is invisible and self-repeating rather than loud.
+                var pushed = 0, failedRows = 0;
                 for (var i = 0; i < local.length; i++) {
-                    await scData('write', resource, local[i]);
+                    var w = await scData('write', resource, local[i]);
+                    if (w) { pushed++; } else { failedRows++; }
+                }
+                if (failedRows) {
+                    var we = scLastDataError();
+                    console.warn('scSync ' + resource + ': ' + failedRows + ' of ' + local.length +
+                        ' local rows FAILED to upload (' + ((we && we.code) || 'unknown') + ')');
+                    return { failed: true, resource: resource, error: we, phase: 'migrate',
+                             pushed: pushed, failedRows: failedRows };
                 }
             }
         }
         async function scSyncAllResources() {
             var resources = Object.keys(SC_RESOURCE_STORAGE_KEYS);
-            await Promise.all(resources.map(function (r) { return scSyncOneResource(r); }));
+            var results = await Promise.all(resources.map(function (r) { return scSyncOneResource(r); }));
+            // A sync that could not read is reported. Previously the only
+            // signal was a console.warn nobody has open, and the panels then
+            // rendered local data indistinguishable from synced data.
+            var failed = results.filter(function (x) { return x && x.failed; });
+            if (failed.length && typeof showToast === 'function') {
+                var first = failed[0].error || {};
+                // Two different failures share this toast: a read that could
+                // not be made, and a migration upload that did not land. The
+                // wording covers both without claiming which, because the
+                // operator's next action is the same either way -- do not
+                // trust what is on screen as the practice's full record.
+                var migrated = failed.filter(function (x) { return x.phase === 'migrate'; }).length;
+                // showToast() takes a message only and auto-dismisses at 3s -- no
+                // duration argument exists, so none is passed rather than one that
+                // would be accepted and silently ignored.
+                showToast(failed.length + ' of ' + resources.length +
+                    ' record sets did not sync' + (migrated ? ' (' + migrated + ' failed to upload)' : ' (read failed)') + ' (' + (first.code || 'unknown') +
+                    '). You are seeing this device\u2019s copy, and nothing was uploaded.');
+            }
             // Re-render every panel now that local caches may have just been
             // overwritten (server-authoritative) or migrated (local-first-sync).
             renderClaims(); renderRevenue(); renderDenial(); renderCompliance(); renderFraud();
