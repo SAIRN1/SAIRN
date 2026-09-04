@@ -430,8 +430,8 @@
       "task": "remaining two storage key collisions memories and profile",
       "claimed_at": "2026-09-04T20:48:02Z",
       "claimed_at_epoch": 1788554882.5306118,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:57:20Z"
     }
   ]
 }
