@@ -421,8 +421,8 @@
       "task": "nineteen untriaged sites",
       "claimed_at": "2026-09-04T12:21:45Z",
       "claimed_at_epoch": 1788524505.3814497,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T12:40:30Z"
     }
   ]
 }
