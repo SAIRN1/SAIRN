@@ -371,8 +371,8 @@
       "task": "public availability fabricated calendar fail open reads",
       "claimed_at": "2026-09-03T19:08:52Z",
       "claimed_at_epoch": 1788462532.7811613,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T10:41:20Z"
     }
   ]
 }
