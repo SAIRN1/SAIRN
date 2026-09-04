@@ -380,8 +380,8 @@
       "task": "remnant double render two modules two stores",
       "claimed_at": "2026-09-04T13:53:18Z",
       "claimed_at_epoch": 1788529998.262779,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T14:04:57Z"
     }
   ]
 }
