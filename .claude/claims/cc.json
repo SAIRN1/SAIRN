@@ -523,6 +523,16 @@
       "claimed_at_epoch": 1788557358.168639,
       "status": "released",
       "released_at": "2026-09-04T21:41:25Z"
+    },
+    {
+      "id": "cc-1788558221",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "coverage rule edit path so a wrong percentage can be corrected",
+      "claimed_at": "2026-09-04T21:43:41Z",
+      "claimed_at_epoch": 1788558221.0128245,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
