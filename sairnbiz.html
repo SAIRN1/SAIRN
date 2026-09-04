@@ -2019,7 +2019,16 @@ function saveEmp(){
   if(existing&&existing.ben)r.ben=existing.ben;
   if(!r.fn||!r.ln){toast('Name required');return;}
   if(eid){var i=emps.findIndex(function(x){return x.id===eid;});if(i>-1)emps[i]=r;else emps.push(r);}else emps.push(r);
-  st('sb_emps',emps);closeEmpModal();rEmps();syncEmps(emps);
+  // The promise used to be DISCARDED here, so a failed sync left the "Synced"
+  // badge green and said nothing -- see sbRecordSyncResult() above. The local
+  // save has already happened and is safe either way; what is being reported
+  // is only whether the SERVER copy kept up.
+  st('sb_emps',emps);closeEmpModal();rEmps();
+  syncEmps(emps).then(function(ok){
+    if(!sbRecordSyncResult(ok)){
+      toast('Saved on this device — but the sync to the server FAILED, so StoneDesk is still reading the previous roster. Use Sync on the Company panel to retry.',8000);
+    }
+  });
   // Clear the payroll-anomaly banner -- the user hasn't re-attempted Run
   // Payroll yet, so leaving a stale finding asserted by name (possibly
   // now fixed) is worse than showing nothing until they click Run
@@ -3381,21 +3390,56 @@ function saveCo(){
   // schedule, and a wrong one there is a missed deadline.
   toast('Company profile saved'+(rec.entity?' \u2014 entity type '+rec.entity+', used by the Tax panel for filing deadlines':''),5000);
 }
+// ── THE "SYNCED" BADGE SURVIVED A FAILED SYNC (2026-09-04) ────────────────
+// `sb_sync` holds the last SUCCESSFUL sync time and was the badge's only
+// input, so the badge could only ever answer "has this install EVER synced",
+// while reading as "the server has the current roster". Two callers, both
+// wrong, in opposite ways:
+//
+//   * syncSupabase() -- the manual Sync button -- toasted "Sync failed" and
+//     LEFT THE BADGE GREEN, because the failure branch touched nothing.
+//   * saveEmp() -- every employee add/edit -- called syncEmps() and DISCARDED
+//     the promise entirely. A failed sync there produced a console.warn and
+//     nothing else: no toast, no badge change, and the timestamp still
+//     showing the old successful time. The user is told StoneDesk can read
+//     the roster while StoneDesk is reading a roster missing the employee
+//     they just entered.
+//
+// `sb_sync_stale` is added rather than clearing `sb_sync`, deliberately.
+// Clearing it would show "Never" for an install that HAS synced, which is a
+// different false statement -- when a sync fails, the honest reading is
+// "last succeeded at T, and the server is behind as of now", and that needs
+// both facts. The badge is the one that must go red; the timestamp is still
+// true and still useful.
+//
+// One helper, because the divergence between these two callers IS the defect.
+function sbRecordSyncResult(ok){
+  if(ok){
+    var now=new Date().toLocaleString();
+    st('sb_sync',now);
+    st('sb_sync_stale',false);
+    var el=$('co-sync');if(el)el.textContent=now;
+  }else{
+    // Only meaningful once something has synced; on a never-synced install
+    // the badge is already red and this just records why it stays that way.
+    st('sb_sync_stale',true);
+  }
+  renderSyncStatus();
+  return ok;
+}
 function renderSyncStatus(){
   var el=$('co-sd-status');if(!el)return;
-  var synced=!!ld('sb_sync',null);
+  // "Synced" now means BOTH: this install has synced at least once, AND no
+  // write has failed since. Either one alone is what made the badge lie.
+  var synced=!!ld('sb_sync',null)&&!ld('sb_sync_stale',false);
   el.className='badge '+(synced?'bg':'bx');
   el.textContent=synced?'Synced':'Not Synced';
 }
 function syncSupabase(){
   syncEmps(ld('sb_emps',[])).then(function(ok){
-    if(ok){
-      var now=new Date().toLocaleString();st('sb_sync',now);$('co-sync').textContent=now;
-      renderSyncStatus();
-      toast('Synced to Supabase - StoneDesk can now read employee and company data');
-    }else{
-      toast('Sync failed - check connection and try again');
-    }
+    sbRecordSyncResult(ok);
+    toast(ok?'Synced to Supabase - StoneDesk can now read employee and company data'
+            :'Sync failed - check connection and try again');
   });
 }
 // Employee sync now routes through the server-side /api/sd-data endpoint
