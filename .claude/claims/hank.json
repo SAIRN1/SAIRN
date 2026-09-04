@@ -482,6 +482,16 @@
       "claimed_at_epoch": 1788462616.6020129,
       "status": "active",
       "note": "WRITTEN BY HAND, DELIBERATELY, AND SAYING SO. sairn_claim.py refused this with BLOCKED -- overlap on: public -- against cc's 'sairndental public availability fabricated calendar fail open reads'. That is the documented SUBJECT-level lexical false positive: different app, different files (api/sairndental/* and api/_lib/dental-public.js for cc; stonedesk.html, a new stonedesk-intake.html and a new api/stonedesk/ endpoint for me). The word 'public' is the only thing in common and it is load-bearing in neither task. Per CLAUDE.md I did NOT reword the task string to slip past the matcher -- 'public' is still in it -- and named the subject more accurately instead (stonedesk-intake-form, not stonedesk). REAL, NON-CONFLICTING OVERLAP WORTH RECORDING: I am copying cc's dental public-form pattern, including the resolveSlug fail-open fix they landed in 93ae561, so their work is an input to mine rather than a collision."
+    },
+    {
+      "id": "hank-1788521011",
+      "session": "hank",
+      "subject": "sairnroofing",
+      "task": "claim assignment gate four implementations in sd-data",
+      "claimed_at": "2026-09-04T11:23:31Z",
+      "claimed_at_epoch": 1788521011.8517756,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
