@@ -474,8 +474,17 @@
 <button class="btn btn-secondary btn-sm" onclick="window.print()">Print</button>
 </div>
 <div class="kpi-row" id="soap-kpis"></div>
+<!-- Added 2026-09-04 with the authorship correction. A reader of this table
+     cannot otherwise tell that "Recorded by" is a self-selected label. -->
+<div class="card" style="padding:12px 16px;font-size:12px;color:var(--text-muted,#666);line-height:1.6">
+  <strong>These entries identify a role, not a person, and none of them is an electronic signature.</strong>
+  SAIRNvet has no per-employee sign-in &mdash; the role beside your name is chosen from a dropdown and is never
+  verified, so &ldquo;Recorded by&rdquo; says which role was selected at the time and nothing about who was at the
+  keyboard. &ldquo;Reviewed&rdquo; records that the confirmation box was ticked; it is an attestation, not a signature,
+  and it will not satisfy any requirement that a named licensed individual sign a record.
+</div>
 <div class="card"><div class="sv-tw"><table id="panel-soap-table">
-<thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Author</th><th>Status</th></tr></thead>
+<thead><tr><th>Date</th><th>Patient</th><th>Complaint</th><th>Recorded by (role)</th><th>Status</th></tr></thead>
 <tbody id="soap-tbody"></tbody></table></div></div>
 <div class="card"><h3>Generate SOAP Note with Claude</h3><label>Patient / Species</label><input type="text" id="soap-patient" placeholder="e.g., Max, canine" style="width:100%;margin:8px 0;"><label>Subjective (owner-reported)</label><textarea id="soap-subj" placeholder="e.g., limping on left hind for 2 days"></textarea><label>Objective findings</label><textarea id="soap-obj" placeholder="e.g., T 101.9F, mild swelling left stifle, pain on flexion"></textarea><button class="btn" onclick="generateSOAP()" style="margin-top:10px;">Generate SOAP Note</button><div id="soap-result" style="display:none;margin:15px 0;padding:15px;background:var(--bg);border-radius:8px;white-space:pre-wrap;"></div><div id="soap-signoff" style="display:none;margin-top:15px;padding-top:15px;border-top:1px solid #E5E7EB;"><label style="display:flex;align-items:center;gap:8px;cursor:pointer;"><input type="checkbox" id="soap-vet-accepted" onchange="onSoapSignoff()"> I have reviewed and edited this note and confirm it as accurate for this patient</label></div></div>
 </div>
@@ -6949,7 +6958,13 @@ function renderSoap(){
     tbody.innerHTML = '';
     list.slice().reverse().forEach(function(n){
       var tr = document.createElement('tr');
-      tr.innerHTML = '<td>'+escHtml(n.date)+'</td><td>'+escHtml(n.patient)+'</td><td>'+escHtml(n.complaint)+'</td><td>'+escHtml(n.author)+'</td><td>'+escHtml(n.status)+'</td>';
+      // Rows written before 2026-09-04 carry `author` and status 'Signed';
+      // both are read here rather than migrated, so an existing note keeps
+      // showing what it actually recorded instead of being relabelled after
+      // the fact.
+      var byRole = n.recorded_by_role || n.author || 'unspecified';
+      var st = n.status==='Signed' ? 'Reviewed (recorded as Signed)' : n.status;
+      tr.innerHTML = '<td>'+escHtml(n.date)+'</td><td>'+escHtml(n.patient)+'</td><td>'+escHtml(n.complaint)+'</td><td>'+escHtml(byRole)+'</td><td>'+escHtml(st)+'</td>';
       tbody.appendChild(tr);
     });
   }
@@ -6957,7 +6972,10 @@ function renderSoap(){
   var now = new Date();
   var weekAgo = new Date(now.getTime()-7*86400000);
   var thisWeek = list.filter(function(n){ return new Date(n.date) >= weekAgo; }).length;
-  var signed = list.filter(function(n){ return n.status==='Signed'; });
+  // Both values counted: 'Signed' is what pre-2026-09-04 rows stored for the
+  // same action, and dropping them would make the figure fall overnight for a
+  // reason that has nothing to do with the practice.
+  var signed = list.filter(function(n){ return n.status==='Reviewed' || n.status==='Signed'; });
   var times = signed.map(function(n){ return n.completionMin; }).filter(function(t){ return typeof t==='number'; });
   var avgTime = times.length ? (times.reduce(function(a,b){return a+b;},0)/times.length).toFixed(1)+' min' : '--';
   var signedPct = list.length ? Math.round(signed.length/list.length*100) : 0;
@@ -6968,7 +6986,7 @@ function renderSoap(){
       '<div class="kpi"><div class="kpi-label">Notes This Week</div><div class="kpi-value">'+thisWeek+'</div></div>'+
       '<div class="kpi"><div class="kpi-label">Avg Completion Time</div><div class="kpi-value">'+avgTime+'</div><div class="kpi-change">Generate to sign-off</div></div>'+
       '<div class="kpi"><div class="kpi-label">Total Notes Logged</div><div class="kpi-value">'+list.length+'</div><div class="kpi-change">All time</div></div>'+
-      '<div class="kpi"><div class="kpi-label">Signed</div><div class="kpi-value">'+signedPct+'%</div><div class="kpi-change">Of notes logged</div></div>';
+      '<div class="kpi"><div class="kpi-label">Reviewed</div><div class="kpi-value">'+signedPct+'%</div><div class="kpi-change">Of notes logged &mdash; not a signature</div></div>';
   }
 }
 
@@ -7141,7 +7159,21 @@ function onSoapSignoff(){
       var list = getSoapNotes();
       var n = list.find(function(x){ return x.id===soapPendingNote.id; });
       if(n){
-        n.status = 'Signed';
+        // STATUS WAS 'Signed' AND NOTHING ABOUT THE SIGNER WAS RECORDED --
+        // not a name, not a role, not a time. On a clinical record "signed"
+        // means a specific licensed person attested to it, and this app has no
+        // verified identity to put in one. It recorded the WORD and not the
+        // person, and a KPI then reported what percentage of notes were
+        // "Signed" as if that were a compliance figure.
+        //
+        // The checkbox beside it already says the honest thing -- "I have
+        // reviewed and edited this note and confirm it as accurate" -- so the
+        // stored status now matches the attestation actually given. Renaming it
+        // is the fix; producing a real signature needs per-employee auth this
+        // app does not have.
+        n.status = 'Reviewed';
+        n.reviewed_by_role = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'').trim()||'unspecified';
+        n.reviewed_at = new Date().toISOString();
         n.completionMin = Math.round(((Date.now()-soapPendingNote.genStart)/60000)*10)/10;
         saveSoapNotes(list);
         renderSoap();
@@ -7180,8 +7212,20 @@ function generateSOAP(){
     document.getElementById('soap-signoff').style.display='block';
     var list = getSoapNotes();
     var id = 'sn'+Date.now();
-    var author = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'')||'Doctor';
-    list.push({id:id, date:localToday(), patient:patient, complaint:subj.slice(0,60), author:author, status:'Draft'});
+    // WHAT THIS FIELD ACTUALLY IS, corrected 2026-09-04. It was called `author`
+    // and shown in a column headed "Author", which a reader takes to mean WHO
+    // WROTE THIS. It is not a person: it is the self-selected ROLE label from
+    // the sidebar (`#userRole`), read out of the DOM. SAIRNvet has no
+    // per-employee authentication -- the role is a dropdown at login, never
+    // server-verified, which the AI dispatcher's own header already says is
+    // why it carries no role gate. So every note is "authored" by "Doctor" or
+    // "Technician", identifying nobody.
+    //
+    // Not fixed by inventing an identity the app does not have. The value is
+    // stored under a name that says what it is, and the column is relabelled.
+    var recordedRole = (document.getElementById('userRole')?document.getElementById('userRole').textContent:'').trim()||'unspecified';
+    list.push({id:id, date:localToday(), patient:patient, complaint:subj.slice(0,60),
+               recorded_by_role:recordedRole, author:recordedRole, status:'Draft'});
     saveSoapNotes(list);
     soapPendingNote = {id:id, genStart:genStart};
     renderSoap();
