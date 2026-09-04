@@ -848,7 +848,41 @@ def main():
         _spec.loader.exec_module(_rc)
 
         _secret_hits = []
-        _base = base or 'origin/main'
+        # ── THE BASE HAS TO BE ONE THIS CLONE ACTUALLY HAS (fixed 2026-09-04) ──
+        # git hands a PRE-PUSH hook the sha the REMOTE has RIGHT NOW, which by
+        # definition can be a commit this clone has never fetched. With four
+        # clones pushing concurrently that is the ORDINARY case, not an edge
+        # one -- it happens every time you lose a race.
+        #
+        # `git log <unfetched-sha>..<tip>` exits 128 "Invalid revision range".
+        # This block turned that into a bare RuntimeError, the handler below
+        # turned that into "UNCHECKED for credentials", and the push went out
+        # scanned by nothing. THE THIRD WRONG IMPLEMENTATION HERE, and the
+        # first one that failed in the ordinary case rather than a contrived
+        # one.
+        #
+        # NOT REASONED -- READ OUT OF THE REFLOG on 2026-09-04. The hook was
+        # handed 55a408a5 while this clone's origin/main was still ae89eea5,
+        # and `git reflog show origin/main` records 55a408a5 arriving on the
+        # NEXT fetch, after that push. Reproduced directly: exit 128, "Invalid
+        # revision range".
+        #
+        # Falling back to a base this clone DOES hold WIDENS the range -- it
+        # can include commits that are already on origin -- so the scan does
+        # MORE work, never less, and cannot miss a commit that is being sent.
+        # That is the only safe direction, and the only one available: fetching
+        # from inside a pre-push hook would be slow and surprising, and would
+        # make the gate depend on the network it is trying not to leak to.
+        _tried = ([base] if base else []) + ['@{u}', 'origin/main']
+        _base = None
+        for _cand in _tried:
+            if subprocess.run(
+                    ['git', '-C', repo, 'rev-parse', '--verify', '--quiet', _cand + '^{commit}'],
+                    capture_output=True).returncode == 0:
+                _base = _cand
+                break
+        if _base is None:
+            raise RuntimeError('no diff base this clone can resolve -- tried ' + ', '.join(_tried))
         # `git log -p`, NOT `git diff base..tip`. A range DIFF compares the two
         # endpoints, so a file added by one commit and deleted by the next shows
         # NO NET CHANGE and the secret disappears from the scan while its blob
@@ -861,7 +895,21 @@ def main():
              '--pretty=format:', _base + '..' + tip],
             capture_output=True, timeout=60)
         if _dr.returncode != 0:
-            raise RuntimeError('git log -p %s..%s failed' % (_base, tip))
+            # git's own stderr, not a generic sentence. The version of this line
+            # that said only "failed" cost a diagnosis: the message named the
+            # two shas and gave no way to tell an unfetched base apart from a
+            # broken repo, a lock, or a bad tip.
+            raise RuntimeError('git log -p %s..%s exited %d: %s' % (
+                _base, tip, _dr.returncode,
+                (_dr.stderr.decode('utf-8', 'replace').strip() or '(no stderr)')[:300]))
+        if base and _base != base:
+            # Said out loud, because a scan over a range that is not exactly
+            # what ships should not read as one that was. It is a SUPERSET, so
+            # this is information rather than a warning.
+            print("NOTE: the credential scan used %s as its base -- the sha git named (%s) is "
+                  "not in this clone, which means another clone pushed while this one was "
+                  "working. The range scanned is WIDER than what this push sends, never "
+                  "narrower." % (_base, base[:12]))
         _diff = _dr.stdout.decode('utf-8', 'replace')
         _cur = '(unknown file)'
         for _line in _diff.split(chr(10)):
