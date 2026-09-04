@@ -662,8 +662,8 @@
       "task": "twenty clinical panels never audited fabricated kpi and dead control sweep",
       "claimed_at": "2026-09-04T22:05:27Z",
       "claimed_at_epoch": 1788559527.7583535,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T22:18:19Z"
     }
   ]
 }
