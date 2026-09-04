@@ -31,5 +31,10 @@
     "file": "api/stonedesk-track.js",
     "var": "srows",
     "reason": "ACCEPTED, and already deliberately handled. The file carries its own comment: a bare ternary made a failing read indistinguishable from an unpublished profile, so a console.error was added on !sr.ok. The value is the shop's optional contact block on a public order-tracking page; its absence degrades the page rather than asserting anything false, and the failure is now in the log where an operator can see it."
+  },
+  {
+    "file": "sairncode.html",
+    "var": "r",
+    "reason": "ACCEPTED, and the direction is why. findIcd10Match() does `if (!r.ok) return null` on a public NLM ICD-10 lookup. Surfaced 2026-09-04 the first time this tool's default walk included app HTML. Both consumers were read, not assumed. sairncode.html:6598 turns a null into `{source:'none'}` -- a VERIFICATION source, so an unreachable API reports the code as UNVERIFIED rather than verified: it under-claims, which is the safe direction for a coding tool. sairncode.html:11774 falls through to a web-search tier whose own prompt says 'never invent a plausible-sounding code number'. Neither consumer reads null as 'no such code exists'. The function's comment states the rule it is keeping -- 'never invents a code if the API returns nothing' -- and the code keeps it. NOT accepted as a general licence for `if (!r.ok) return null` in this file: this is one function whose two call sites were both checked."
   }
 ]

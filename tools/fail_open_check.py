@@ -121,6 +121,72 @@ def load_accepted():
     return out
 
 
+# ── THE BROWSER-SIDE CLASS (2026-09-04) ────────────────────────────────────
+# The three patterns above are all `res.ok ? await res.json() : []` -- an
+# api/*.js fetch. Pointing this tool at an app's HTML and getting zero was
+# therefore meaningless, and it was reported as a clean sweep of SAIRNlegacy and
+# SAIRNdesign until a planted browser-side fixture was scanned and NOT flagged.
+#
+# The client's version of the same defect is the storage loader every SAIRN app
+# has:
+#
+#     function ld(k,d){try{var r=localStorage.getItem(k);
+#                          return r===null?d:JSON.parse(r);}catch(e){return d;}}
+#
+# ABSENT AND CORRUPT RETURN THE SAME VALUE, and nothing says which happened.
+# A record that will not parse renders as "you have none" -- and where `d` is a
+# seeded default rather than `[]`, it renders as invented content instead, which
+# is the StoneDesk SEED-fallback shape Guardian's lesson 6 records.
+#
+# ONE FINDING PER WRAPPER, NOT PER CALL SITE, and that is the whole reason this
+# is usable. Flagging every `ld('x',[])` whose result meets a `.length` test
+# would produce hundreds of hits across thirteen apps and the tool would be
+# ignored -- which this file's own header says is how a check dies. The
+# wrapper is where the two facts are collapsed, so the wrapper is the finding.
+#
+# It is REPORTED, never gating: fourteen live wrappers on the day this shipped,
+# and turning that into a blocking exit would have made the gate the problem.
+# THE CATCH BODY IS ALLOWED TO DO THINGS BEFORE RETURNING, and that is not a
+# detail. A first version required the catch to be exactly `{return d;}`, which
+# made the `console.` exclusion below UNREACHABLE -- a loader that logged could
+# never match the pattern in the first place, so a branch that looked like a
+# safeguard was dead code. A fixture proved it: removing the exclusion entirely
+# changed nothing. Widened so the exclusion is real, and so a loader that does
+# other work before returning the default is still seen.
+LOADER = re.compile(
+    r'function\s+(\w+)\s*\(\s*(\w+)\s*,\s*(\w+)\s*\)\s*\{'
+    r'(?:(?!function\s).){0,300}?localStorage\.getItem'
+    r'(?:(?!function\s).){0,300}?catch\s*\(\s*\w+\s*\)\s*\{'
+    r'(?:(?!function\s)[^{}]){0,200}?return\s+(\w+)\s*;?\s*\}',
+    re.S)
+
+
+def scan_loaders(path, accepted):
+    """Storage loaders where a parse failure is indistinguishable from absence.
+
+    A loader that LOGS on the catch is not reported: the two facts are still
+    returned identically, but a reader can now tell them apart, which is the
+    same bar st() was held to.
+    """
+    rel = os.path.relpath(path, ROOT).replace('\\', '/')
+    raw = io.open(path, encoding='utf-8', errors='replace').read().replace('\r\n', '\n')
+    out = []
+    for m in LOADER.finditer(raw):
+        name, default_param, catch_returns = m.group(1), m.group(3), m.group(4)
+        if catch_returns != default_param:
+            continue                      # returns something else -- not this shape
+        body = m.group(0)
+        if 'console.' in body:
+            continue                      # says which happened; not silent
+        out.append({
+            'file': rel,
+            'line': raw[:m.start()].count('\n') + 1,
+            'var': name,
+            'accepted': accepted.get((rel, name)),
+        })
+    return out
+
+
 def scan(path, accepted):
     rel = os.path.relpath(path, ROOT).replace('\\', '/')
     src = io.open(path, encoding='utf-8', errors='replace').read().replace('\r\n', '\n')
@@ -161,10 +227,18 @@ def main():
             dirs[:] = [d for d in dirs if d not in ('node_modules', '__pycache__')]
             files += [os.path.join(base, n) for n in names
                       if n.endswith('.js') and not n.endswith('.test.js')]
+        # THE APP HTML IS NOW IN THE DEFAULT WALK. It was api/ only, so the
+        # browser-side pass below would never have run unless someone named a
+        # file -- a check that only fires when asked for is one nobody runs.
+        files += [os.path.join(ROOT, n) for n in os.listdir(ROOT) if n.endswith('.html')]
 
     hits = []
+    loaders = []
     for f in sorted(files):
+        if not os.path.isfile(f):
+            continue
         hits += scan(f, accepted)
+        loaders += scan_loaders(f, accepted)
 
     dec = [h for h in hits if h['decision'] and not h['accepted']]
     dis = [h for h in hits if not h['decision'] and not h['accepted']]
@@ -194,6 +268,21 @@ def main():
         print('\n=== accepted (triaged, with a reason on file) ===')
         for h in acc:
             print('  %s:%d  %s -- %s' % (h['file'], h['line'], h['var'], h['accepted']))
+
+    live_loaders = [l for l in loaders if not l['accepted']]
+    acc_loaders = [l for l in loaders if l['accepted']]
+    print('\n=== BROWSER-SIDE: a corrupt record and an absent one return the same thing ===')
+    print('    (%d storage loader(s); REPORTED, never gating -- see the LOADER note.' % len(live_loaders))
+    print('     A loader that LOGS on the catch is not listed: the values are still')
+    print('     identical, but a reader can tell which happened.)')
+    if not live_loaders:
+        print('  none')
+    for l in live_loaders:
+        print('  %s:%d  %s()' % (l['file'], l['line'], l['var']))
+    if acc_loaders:
+        print('  -- accepted --')
+        for l in acc_loaders:
+            print('  %s:%d  %s() -- %s' % (l['file'], l['line'], l['var'], l['accepted']))
 
     # ── AN ACCEPTANCE THAT MATCHES NOTHING IS A LIE WAITING TO BE READ ──────
     # The first entry in this file was resolved within the hour it was written
