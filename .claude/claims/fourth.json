@@ -460,8 +460,8 @@
       "task": "shared comment stripper for every scanner",
       "claimed_at": "2026-09-04T21:17:49Z",
       "claimed_at_epoch": 1788556669.742423,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:31:18Z"
     }
   ]
 }
