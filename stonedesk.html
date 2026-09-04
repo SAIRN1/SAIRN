@@ -8280,6 +8280,37 @@ function sdInvExport(){
   <div id="slab-action-modal-body" style="background:var(--card);border-radius:12px;max-width:480px;width:92%;max-height:85vh;overflow-y:auto;padding:20px 24px;"></div>
 </div>
 
+<!-- == VENDOR SPEND REPORT MODAL — ADDED 2026-09-04 ==========================
+     A DEAD BUTTON THAT EVERY EXISTING TOOL PASSED. The "Spend Report" button in
+     the Vendors panel calls vendorSpendReport(), which computes the whole
+     report and then writes it with `if(content) content.innerHTML = ...` into
+     a container that DID NOT EXIST. Null-guarded, so nothing threw: a user
+     clicked and nothing happened, with no error anywhere.
+
+     sairn_dead_button_audit.py reports A=0 for this file because the handler is
+     defined and is not toast-only. It does not check whether the handler's DOM
+     TARGET exists. missing_dom_target_check.py knows the targets are absent but
+     does not know a button is wired to them. Neither tool is wrong; the defect
+     sits in the gap between them, and `if(el)` is what turns the crash that
+     would have exposed it into silence.
+
+     vendorSpendAI(), the button inside this report, then does an UNGUARDED
+     `document.getElementById('vendor-spend-modal').style.display='none'` — so
+     that one threw a TypeError, after the AI hand-off had already happened.
+
+     Only the container was missing; vendorSpendReport() builds every byte of
+     the inner HTML itself. Styling mirrors slab-action-modal directly above.
+     data-auto-container marks it the same way photo-ai-modal (:6425) was
+     marked when the same class of gap was closed there. -->
+<div id="vendor-spend-modal" data-auto-container="missing-dom-fix" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,.5);z-index:9998;align-items:center;justify-content:center;">
+  <div style="background:var(--card);border-radius:12px;max-width:720px;width:92%;max-height:85vh;overflow-y:auto;padding:20px 24px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div style="font-weight:800;font-size:15px">Vendor Spend Report</div>
+      <button class="q-btn" onclick="document.getElementById('vendor-spend-modal').style.display='none'">Close</button>
+    </div>
+    <div id="spend-report-content"></div>
+  </div>
+</div>
 
   <!-- == VENDORS PANEL == -->
   <div class="panel" id="panel-vendors">
