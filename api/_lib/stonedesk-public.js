@@ -29,6 +29,15 @@
 // undercount by a request or two inside a window. Acceptable for abuse
 // deterrence on a public form and self-correcting every new window. NOT
 // acceptable anywhere a hard security or financial boundary is needed.
+//
+// ── THE SIBLING RELATIONSHIP CUTS BOTH WAYS (2026-09-03) ───────────────────
+// The header above says this file is a deliberate sibling of dental-public.js
+// rather than a generalisation of it, and that stands. What it did NOT say is
+// that a defect found in one is a defect in the other until checked. Both
+// carried the same two silent failures, written the same day from the same
+// template, and dental's were fixed first; this file's were found by looking
+// for them here on the strength of that. The duplication is still the cheaper
+// mistake, but it comes with an obligation: FIX BOTH, OR NEITHER IS FIXED.
 
 const crypto = require('crypto');
 
@@ -60,38 +69,126 @@ function rest(path) {
   return process.env.SUPABASE_URL + '/rest/v1/' + path;
 }
 
+// ── A DEAD STORE MUST NOT LOOK LIKE AN UNCLAIMED SLUG (2026-09-03) ─────────
+// `if (!r.ok) return null;` collapsed a Supabase failure into "no such shop",
+// and the sole caller renders null as a 404 "No published catalog at this
+// address". So with a revoked service_role key, an unreachable database or a
+// missing GRANT, a customer following a shop's own advertised catalog link was
+// told the shop does not exist -- no error, no 502, no log line, on the one
+// StoneDesk surface reached without signing in.
+//
+// The header two paragraphs up explains why an unknown slug and an unpublished
+// shop deliberately give the SAME answer: distinguishing them would let anyone
+// enumerate which shops exist. That reasoning covers two states a visitor is
+// not entitled to tell apart. It never covered a third state where the server
+// could not ask the question at all, and that third state was silently folded
+// into the other two.
+//
+// It THROWS rather than returning a sentinel, deliberately, and for the same
+// reason dental-public.js does: the caller already wraps its whole handler in
+// try/catch and answers a logged 502, so throwing gives the right answer at
+// the existing call site without changing it, and a future consumer that
+// forgets to check a sentinel cannot reintroduce the 404.
 async function resolveShopSlug(slug) {
   if (!slug) return null;
   const r = await fetch(
     rest('sd_public_shop?shop_slug=eq.' + encodeURIComponent(slug) +
          '&published=eq.true&select=license_hash,shop_slug,data&limit=1'),
     { headers: supabaseHeaders() });
-  if (!r.ok) return null;
+  if (!r.ok) {
+    const e = new Error('sd_public_shop slug lookup failed: HTTP ' + r.status);
+    e.code = 'UPSTREAM';
+    throw e;
+  }
   const rows = await r.json();
+  // A genuine miss -- and an unpublished shop -- still return null, and still
+  // mean 404. Only the could-not-ask case changed.
   if (!Array.isArray(rows) || !rows[0] || !rows[0].license_hash) return null;
   return { licenseHash: rows[0].license_hash, slug: rows[0].shop_slug, data: rows[0].data || {} };
 }
 
+// windowMinutes: fixed-window size. maxCount: allowed requests per window per
+// ip_hash.
+//
+// Returns one of THREE states, not two:
+//   { allowed: true,  count }                 -- under the limit, and counted
+//   { allowed: false, count, limited: true }  -- genuinely over the limit
+//   { allowed: false, unavailable: true }     -- the counter could not be read
+//                                                or could not be written
+//
+// ── WHY THREE AND NOT TWO (2026-09-03) ────────────────────────────────────
+// This failed OPEN in two separate places, both silently:
+//
+//   1. `existing.ok ? await existing.json() : []` -- an unreachable store read
+//      as count 0, so every request was allowed and none was ever refused.
+//   2. The increment was `await fetch(...)` with NO `.ok` CHECK AT ALL. If the
+//      write failed the counter never rose, so the read kept returning 0 and
+//      the limit could never engage again for that window. This is the worse
+//      of the two: the read succeeds, so nothing anywhere looks wrong.
+//
+// Together those meant the limiter guarding 120 catalog reads per 10 minutes
+// and 5 quote requests per hour could be entirely absent while reporting
+// nothing. The quote bucket guards an unauthenticated WRITE into a shop's
+// lead table; with the limiter disengaged that is an open door for anyone who
+// knows a shop's public slug, not a degraded feature.
+//
+// FAILING CLOSED HERE COSTS ALMOST NOTHING, which is why it is the right
+// answer: resolveShopSlug() hits the same database a few lines later in the
+// caller and now throws, so a request refused here was going to 502 anyway.
+//
+// AND IT IS A SEPARATE STATE RATHER THAN A 429. Telling a customer "too many
+// requests" when the real cause is an unreachable database is a wrong reason
+// given confidently -- the same class of thing as a fabricated number, and on
+// this surface it also reads as the shop's own fault. The caller answers 503.
 async function checkAndIncrementRateLimit(req, windowMinutes, maxCount, bucket) {
   const ipHash = hashIp(clientIp(req) + (bucket ? '|' + bucket : ''));
   const windowMs = windowMinutes * 60 * 1000;
   const windowStart = new Date(Math.floor(Date.now() / windowMs) * windowMs).toISOString();
   const headers = supabaseHeaders();
 
-  const existing = await fetch(
-    rest('sd_public_rate_limits?ip_hash=eq.' + encodeURIComponent(ipHash) +
-         '&window_start=eq.' + encodeURIComponent(windowStart) + '&select=count'),
-    { headers });
-  const existingRows = existing.ok ? await existing.json() : [];
-  const currentCount = (Array.isArray(existingRows) && existingRows[0] && existingRows[0].count) || 0;
+  let existing;
+  try {
+    existing = await fetch(
+      rest('sd_public_rate_limits?ip_hash=eq.' + encodeURIComponent(ipHash) +
+           '&window_start=eq.' + encodeURIComponent(windowStart) + '&select=count'),
+      { headers });
+  } catch (err) {
+    console.error('stonedesk rate limit: counter unreachable on read:', err && err.message);
+    return { allowed: false, unavailable: true };
+  }
+  if (!existing.ok) {
+    console.error('stonedesk rate limit: counter read failed, HTTP', existing.status);
+    return { allowed: false, unavailable: true };
+  }
+  const existingRows = await existing.json().catch(function () { return null; });
+  if (!Array.isArray(existingRows)) {
+    console.error('stonedesk rate limit: counter read returned a non-array');
+    return { allowed: false, unavailable: true };
+  }
+  const currentCount = (existingRows[0] && existingRows[0].count) || 0;
 
-  if (currentCount >= maxCount) return { allowed: false, count: currentCount };
+  if (currentCount >= maxCount) {
+    return { allowed: false, count: currentCount, limited: true };
+  }
 
-  await fetch(rest('sd_public_rate_limits?on_conflict=ip_hash,window_start'), {
-    method: 'POST',
-    headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
-    body: JSON.stringify({ ip_hash: ipHash, window_start: windowStart, count: currentCount + 1 })
-  });
+  let wrote;
+  try {
+    wrote = await fetch(rest('sd_public_rate_limits?on_conflict=ip_hash,window_start'), {
+      method: 'POST',
+      headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates' }),
+      body: JSON.stringify({ ip_hash: ipHash, window_start: windowStart, count: currentCount + 1 })
+    });
+  } catch (err) {
+    console.error('stonedesk rate limit: counter unreachable on increment:', err && err.message);
+    return { allowed: false, unavailable: true };
+  }
+  // An increment that did not land means THIS request was never counted.
+  // Allowing it would let the limit stay disengaged for as long as the write
+  // keeps failing, which is exactly the state defect 2 above created.
+  if (!wrote.ok) {
+    console.error('stonedesk rate limit: counter increment failed, HTTP', wrote.status);
+    return { allowed: false, unavailable: true };
+  }
 
   return { allowed: true, count: currentCount + 1 };
 }

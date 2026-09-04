@@ -90,14 +90,39 @@ module.exports = async (req, res) => {
         res.status(404).json({ error: { code: 'NOT_FOUND', message: 'This tracking link is not valid. Ask the shop for a new one.' } });
         return;
       }
+      // ── A DEAD STORE IS NOT A BAD LINK (2026-09-03) ──────────────────────
+      // Three reads on this action folded an upstream failure into a
+      // customer-facing "your link is not valid" or "your job is not on file".
+      // Both are lies with an accusation in them: the customer is told THEIR
+      // link is wrong when the truth is the shop's database could not be
+      // reached, on the one StoneDesk surface a customer sees without signing
+      // in. Same defect and same day as api/_lib/stonedesk-public.js's slug
+      // lookup and SAIRNdental's before it.
+      //
+      // 404 and 400 keep their existing meaning -- PostgREST answers those for
+      // a table that is not in the schema cache, which is a shop that has not
+      // run the migration, and that already had an honest answer of its own.
+      // Every OTHER non-ok status is an outage and now says so.
       const lr = await fetch(rest('sd_order_links?link_token=eq.' + enc(token) +
         '&select=id,license_hash,job_id,label,active&limit=1'), { headers });
       if (lr.status === 404 || lr.status === 400) {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Order tracking is not set up yet - please call the shop.' } });
         return;
       }
+      if (!lr.ok) {
+        console.error('stonedesk-track: sd_order_links read failed, HTTP', lr.status);
+        res.status(502).json({ error: { code: 'UPSTREAM', message: 'Order tracking is temporarily unavailable - please try again shortly, or call the shop.' } });
+        return;
+      }
       const lrows = await lr.json();
-      const link = (Array.isArray(lrows) && lrows[0]) || null;
+      // A non-array from a 200 is a malformed answer, not an absent link. It
+      // must not read as "no such token" either.
+      if (!Array.isArray(lrows)) {
+        console.error('stonedesk-track: sd_order_links read returned a non-array');
+        res.status(502).json({ error: { code: 'UPSTREAM', message: 'Order tracking is temporarily unavailable - please try again shortly, or call the shop.' } });
+        return;
+      }
+      const link = lrows[0] || null;
       // A revoked link and a link that never existed answer the SAME way, so a
       // revoked link cannot be distinguished from a guess.
       if (!link || link.active !== true) {
@@ -106,7 +131,16 @@ module.exports = async (req, res) => {
       }
       const cr = await fetch(rest('sd_customers?license_hash=eq.' + enc(link.license_hash) +
         '&customer_id=eq.' + enc(link.job_id) + '&select=data&limit=1'), { headers });
-      const crows = cr.ok ? await cr.json() : [];
+      // `cr.ok ? await cr.json() : []` told a customer holding a VALID,
+      // ACTIVE link that their job was no longer on file, whenever the read
+      // failed. A deleted job and an unreachable database are not the same
+      // fact, and only one of them is the customer's problem.
+      if (!cr.ok) {
+        console.error('stonedesk-track: sd_customers read failed, HTTP', cr.status);
+        res.status(502).json({ error: { code: 'UPSTREAM', message: 'Order tracking is temporarily unavailable - please try again shortly, or call the shop.' } });
+        return;
+      }
+      const crows = await cr.json();
       const cust = (Array.isArray(crows) && crows[0] && crows[0].data) || null;
       if (!cust) {
         res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That job is no longer on file. Please call the shop.' } });
@@ -124,6 +158,17 @@ module.exports = async (req, res) => {
       // tell a customer who to call. It is the same published row the catalog
       // uses -- nothing internal is read here.
       const sr = await fetch(rest('sd_public_shop?license_hash=eq.' + enc(link.license_hash) + '&select=data&limit=1'), { headers });
+      // DELIBERATELY STILL NON-FATAL, unlike the two reads above it, and the
+      // difference is what the customer came for. The stage is the answer; the
+      // shop's name and phone are a courtesy beside it, and a shop that has
+      // never filled in a public profile legitimately has neither. Refusing to
+      // show a customer their order status because a decorative field could not
+      // be read would be the opposite mistake.
+      //
+      // But it is LOGGED now. It was previously a bare ternary, so a genuinely
+      // failing read was indistinguishable from an unpublished profile in
+      // every record anyone could look at afterwards.
+      if (!sr.ok) console.error('stonedesk-track: sd_public_shop read failed, HTTP', sr.status, '-- serving the stage without shop contact details');
       const srows = sr.ok ? await sr.json() : [];
       const shop = (Array.isArray(srows) && srows[0] && srows[0].data) || {};
 

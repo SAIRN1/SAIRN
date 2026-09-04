@@ -123,6 +123,18 @@ module.exports = async (req, res) => {
     const rl = (action === 'catalog')
       ? await checkAndIncrementRateLimit(req, 10, 120, 'catalog')
       : await checkAndIncrementRateLimit(req, 60, 5, 'quote');
+    // ORDER MATTERS AND IS TESTED. The unavailable branch must be read BEFORE
+    // the generic !rl.allowed branch: an unreachable counter also reports
+    // allowed:false, so checking !rl.allowed first would tell a customer they
+    // had made too many requests when the real cause was an outage -- a wrong
+    // reason given confidently, on the shop's public storefront. Swapping these
+    // two blocks is caught by api/_lib/stonedesk-public.test.js, which compiles
+    // a deliberately-swapped mutant of this file and asserts it answers 429.
+    if (rl.unavailable) {
+      console.error('stonedesk-public: rate-limit store unavailable, refusing rather than failing open');
+      res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'The shop catalog is temporarily unavailable -- please try again shortly, or call the shop directly' } });
+      return;
+    }
     if (!rl.allowed) {
       res.status(429).json({ error: { code: 'RATE_LIMITED', message: 'Too many requests -- please try again shortly, or call the shop directly' } });
       return;
@@ -145,11 +157,22 @@ module.exports = async (req, res) => {
         .filter(isPublished)
         .map(publicSlabView);
       // ── REMNANTS (GAP 8, 2026-09-02) ────────────────────────────────────
-      // A SEPARATE, NON-FATAL FETCH. sd_remnants is a new table and a shop
-      // that has not run the migration yet must still get its slab catalog:
-      // failing the whole page because the remnant table is absent would take
-      // a working public catalog down to add a feature to it. A missing table
-      // yields an empty list and the page renders without the section.
+      // A SEPARATE, NON-FATAL FETCH -- BUT ONLY FOR THE ONE FAILURE IT WAS
+      // MEANT TO TOLERATE. sd_remnants is a new table and a shop that has not
+      // run the migration yet must still get its slab catalog: failing the
+      // whole page because the remnant table is absent would take a working
+      // public catalog down to add a feature to it. PostgREST answers 404 for
+      // a relation that is not in the schema cache, so that is the shape of
+      // "not provisioned", and it yields an empty list.
+      //
+      // NARROWED 2026-09-03. `if (rr.ok)` swallowed every other status too, so
+      // a revoked key, a missing GRANT or a 500 rendered the page with the
+      // remnant section simply gone -- a published, for-sale inventory silently
+      // absent from the storefront, with no error to the visitor and no log
+      // line for the shop. That is the same defect class as the slug lookup
+      // above it: an operational failure wearing the costume of an empty
+      // result. The slab fetch on the line above already 502s for exactly
+      // these statuses; there is no reason the remnant fetch should not.
       let remnants = [];
       const rr = await fetch(rest('sd_remnants?license_hash=eq.' + encodeURIComponent(shop.licenseHash) + '&select=data'), { headers });
       if (rr.ok) {
@@ -158,6 +181,10 @@ module.exports = async (req, res) => {
           .map((x) => x && x.data)
           .filter(isRemnantPublishable)
           .map(publicRemnantView);
+      } else if (rr.status !== 404) {
+        console.error('stonedesk-public: sd_remnants read failed, HTTP', rr.status);
+        res.status(502).json({ error: { message: 'Could not load the catalog -- try again shortly' } });
+        return;
       }
       const d = shop.data || {};
       res.status(200).json({
