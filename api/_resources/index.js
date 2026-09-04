@@ -55,6 +55,11 @@ const REGISTRY_MODULES = [
   // SAIRNmechanical joined 2026-09-02 with its first data resource. It had
   // complete per-employee auth and no registry module at all until then.
   require('./sairnmechanical'),
+  // SAIRNbiz joined 2026-09-04 with the business record. It was the one app
+  // with a live server integration and no registry module -- it reached
+  // sd-data.js only through `employees` and `shared_knowledge`, both owned by
+  // shared.js.
+  require('./sairnbiz'),
 ];
 
 // Fail loudly at load rather than silently letting one app shadow another's

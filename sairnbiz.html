@@ -950,7 +950,51 @@ var eid=null,prole='',aiHist=[];
 var sbAiBusy=false;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// Keys whose save has already been reported as failed this session. A write
+// that fails on a RENDER path (sbNormalizeBills and sbNormalizeTrain both
+// persist from inside a render) would otherwise raise the same alarm on every
+// repaint, and an alarm that fires forty times is one nobody reads.
+var _sbSaveFailed={};
+function st(k,v){
+  // Server backup hook (2026-09-04). Reads the PREVIOUS value first so only
+  // records that actually changed get pushed -- see sbSyncCollection near the
+  // bottom of this file for why the hook lives here and not at the individual
+  // save sites. Guarded with typeof because st() is defined well before that
+  // block and is called during early boot.
+  var prev=null;
+  if(typeof _sbSyncOn!=='undefined'&&_sbSyncOn&&_sbSyncOn[k]){prev=ld(k,null);}
+  var okWrite;
+  try{localStorage.setItem(k,JSON.stringify(v));okWrite=true;}
+  catch(e){
+    okWrite=false;
+    // THIS WAS `catch(e){}` AND st() RETURNED NOTHING, until 2026-09-04. Every
+    // caller -- saveExp, saveBill, saveInvoice, runPayroll, saveCertRenewal --
+    // shows its success toast unconditionally on the next statement, so a
+    // browser that could not store the record told the user it had. A payroll
+    // run reported as recorded and absent after a reload is the single most
+    // damaging shape this app has, because the LEDGER half of the same action
+    // does reach Postgres: the journal entry survives and the record it was
+    // derived from does not.
+    console.warn('SAIRNbiz: localStorage write failed for '+k+': '+(e&&e.message));
+    if(!_sbSaveFailed[k]){
+      _sbSaveFailed[k]=true;
+      // Guarded on the element, not on typeof toast: toast() is a hoisted
+      // declaration and always exists, but it dereferences $('toast') and
+      // would throw if a write ever failed before the DOM was up.
+      if(typeof document!=='undefined'&&document.getElementById&&document.getElementById('toast')){
+        toast('THIS DID NOT SAVE — your browser refused to store the record (storage full or blocked). Copy anything you just entered before reloading this page.',9000);
+      }
+    }
+  }
+  // Only after the local write SUCCEEDED. A failed localStorage write must not
+  // push a value the device does not itself hold -- the server would then
+  // carry a record the app cannot show, and hydration would reintroduce it
+  // later as if it had always been there.
+  if(okWrite&&typeof sbSyncCollection==='function'){
+    try{sbSyncCollection(k,v,prev);}catch(e){console.warn('SAIRNbiz backup hook error for '+k+': '+(e&&e.message));}
+  }
+  return okWrite;
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r?JSON.parse(r):d;}catch(e){return d;}}
 
 // AI tool-calling dispatcher (2026-08-09) -- registry of read-only tools
@@ -1417,7 +1461,44 @@ function sbApplyLoggedIn(role){
   if(!checkTrialGate())return;
   $('pin').classList.remove('on');$('app').classList.add('on');
   $('huser').textContent=prole.charAt(0).toUpperCase()+prole.slice(1);
-  init();
+  // TWO PATHS, and the split is the whole reason this is not one line.
+  //
+  // A device that already holds data paints from it IMMEDIATELY and merges the
+  // server copy afterwards, so first paint is never delayed by a slow or
+  // unreachable backup -- the panel is never blank waiting on a network call.
+  //
+  // A device that has NEVER seeded has nothing to paint, so waiting costs
+  // nothing visible, and it is the only point at which the demo data can still
+  // be prevented. init() calls seed(), which writes eight synced arrays of Pinnacle
+  // sample rows; run it first on a licence that already has real records and
+  // those sample invoices land in a real company's books, mixed in by id with
+  // no way to tell them apart afterwards.
+  if(ld('sb_seeded',false)){
+    init();
+    sbHydrateAll().then(function(r){sbReportHydrate(r,true);});
+    return;
+  }
+  sbFirstDeviceHydrate();
+}
+
+// Bounded, because this is the one path that blocks first paint. If the server
+// does not answer, the app opens on local data exactly as it did before any of
+// this existed rather than sitting on an empty screen -- a backup that can
+// hang must not be able to take the app down with it.
+function sbFirstDeviceHydrate(){
+  var settled=false;
+  var timeout=new Promise(function(resolve){
+    setTimeout(function(){resolve({merged:0,failed:0,notProvisioned:0,timedOut:true});},6000);
+  });
+  Promise.race([sbHydrateAll(),timeout]).then(function(r){
+    if(settled)return;
+    settled=true;
+    // Restoring anything means this licence is already in use, so the seed
+    // marker is set BEFORE init() runs and seed() returns without writing.
+    if(r.merged)st('sb_seeded',true);
+    init();
+    sbReportHydrate(r,false);
+  });
 }
 
 function sbDoLogin(){
@@ -1578,6 +1659,13 @@ function nav(id){
 
 function seed(){
   if(ld('sb_seeded',false))return;
+  // Demo rows are not the customer's business record, and seeding writes eight
+  // of the nine synced arrays in one pass. Pushing them to the server would
+  // fill a real company's tables with Pinnacle Stone & Design's sample data.
+  sbSyncPaused=true;
+  try{ return sbSeedRows(); } finally { sbSyncPaused=false; }
+}
+function sbSeedRows(){
   st('sb_emps',[
     {id:'E001',fn:'Marcus',ln:'Thompson',role:'Shop Foreman',dept:'Fabrication',type:'Full Time',rate:28.50,start:'2019-03-15',phone:'(440) 555-0101',email:'mthompson@pinnaclesd.com',status:'Active',ec:'Linda Thompson (440) 555-0102',notes:'OSHA 30 certified',ben:{health:true,dental:true,k401:true,cost:640}},
     {id:'E002',fn:'Jose',ln:'Ramirez',role:'Lead Fabricator',dept:'Fabrication',type:'Full Time',rate:24.00,start:'2020-07-01',phone:'(440) 555-0103',email:'jramirez@pinnaclesd.com',status:'Active',ec:'Maria Ramirez (440) 555-0104',notes:'',ben:{health:true,dental:true,k401:true,cost:610}},
@@ -3691,6 +3779,240 @@ function buildSbSharedCompanyContext() {
 loadSbSharedKnowledge();
 window.buildSbSharedCompanyContext = buildSbSharedCompanyContext;
 window.recordSbSharedTopics = recordSbSharedTopics;
+
+// ── SERVER BACKUP FOR THE BUSINESS RECORD (2026-09-04) ────────────────────
+// Closes docs/SAIRN-OPEN-WORK-INDEX.md's "No server-side persistence for
+// anything except the employee roster -- and the ledger implies more data
+// integrity than actually exists", size L, unassigned.
+//
+// MEASURED BEFORE ANYTHING WAS WRITTEN: this file writes SEVENTEEN
+// localStorage collections through st(), and exactly ONE of them reached a
+// server -- sb_emps, via syncEmps() and the bespoke `employees` branch.
+// Invoices, expenses, AP bills, vendors, PAYROLL RUNS, training
+// certifications, performance reviews, the hiring pipeline and the budget
+// existed in one browser and nowhere else.
+//
+// WHY THAT IS SHARPER HERE THAN IN A PLAIN LOCAL-ONLY APP: this app posts real
+// double-entry journal entries to Postgres through sbGlPost(), and those are
+// durable. A ledger row saying a bill was paid survives a browser-data clear;
+// the bill does not. The books stay intact while the records that justify them
+// are gone -- and the surviving half is the one that looks authoritative.
+// sbGlPost() already refuses to claim a post it did not get ("SAVED HERE, NOT
+// IN THE LEDGER"). The reverse case had no voice at all: a source record that
+// never left the browser said nothing.
+//
+// ── WHY THIS HOOKS st() INSTEAD OF EDITING EVERY SAVE PATH ──
+// The nine collections below are written from every add, edit, pay, renew and
+// normalise path in the file. Adding a sync line to each is a change that WILL
+// be half-applied, and the half that gets missed is invisible: the app looks
+// identical and those records quietly stop being backed up. One hook, at the
+// single function every write already goes through, cannot be half-applied.
+// Same reasoning and same shape as sairnbuild.html's equivalent (1f1705e).
+//
+// ── WHAT THIS IS AND IS NOT, stated rather than implied ──
+// It is a BACKUP with per-record last-write-wins, not two-way sync:
+//   * only records whose JSON actually CHANGED are pushed, so a render that
+//     rewrites an unchanged array costs nothing;
+//   * DELETIONS DO NOT PROPAGATE. Removing a row locally leaves the server
+//     copy in place, and hydration will bring it back. That is not an
+//     oversight: api/sd-data.js has no delete path for any resource outside
+//     the sc_* family, platform-wide and deliberately, so there is nothing to
+//     call. A deleted record reappearing is the honest behaviour of a backup
+//     that cannot delete, and it beats losing everything;
+//   * there is no conflict resolution. Two devices editing the same record end
+//     with whichever wrote last.
+// NOTHING IN THE UI CLAIMS A BACKUP EXISTS. Until sql/sairnbiz_data_schema.sql
+// is run the writes answer 503 NOT_PROVISIONED and this code goes quiet after
+// the first one -- deliberately, because a badge saying "Backed up" that is
+// wrong would be worse than the gap it replaced. (The Settings panel's
+// existing "Synced / Not Synced" badge is about syncEmps(), not this.)
+var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud'];
+var _sbSyncOn={};
+SB_SYNCED.forEach(function(k){_sbSyncOn[k]=true;});
+// Set while seed() runs and while hydration writes merged rows back. Seeding
+// writes eight of the nine synced arrays in one pass (sb_payruns is the one it
+// does not seed), and every hydrated row CAME
+// from the server -- pushing either back is noise at best.
+var sbSyncPaused=false;
+// Latched once the server says the tables do not exist. Nine collections times
+// every record would otherwise be a burst of identical failures for one cause.
+var sbBackupUnavailable=false;
+
+// A dedicated reader/writer rather than sbData() above, which collapses every
+// outcome to null and so cannot tell "the tables were never created" apart
+// from "the read failed" apart from "there is genuinely nothing there". That
+// distinction is the whole point of the provisioned flag api/sd-data.js
+// returns, and losing it here would rebuild the silent failure upstream.
+function sbBackupFetch(action,resource,payload){
+  var lic=ld('sb_lic',null);
+  if(!lic)return Promise.resolve({ok:false,reason:'no_license'});
+  var tok=null;
+  try{tok=sessionStorage.getItem(SB_SESSION_KEY);}catch(e){}
+  // These resources require a signed-in employee session server-side (see the
+  // SB_RESOURCES block in api/sd-data.js for why payroll and review records
+  // are not gated on the licence key alone). A request with no token is
+  // certain to 401, so it is not sent.
+  if(!tok)return Promise.resolve({ok:false,reason:'no_session'});
+  var headers={'Content-Type':'application/json','Authorization':'Bearer '+lic,'X-SD-Auth':tok};
+  return fetch(DATA_API,{method:'POST',headers:headers,
+    body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
+  }).then(function(r){
+    return r.json().catch(function(){return null;}).then(function(d){
+      if(r.status===503&&d&&d.error&&d.error.code==='NOT_PROVISIONED')return{ok:false,reason:'not_provisioned'};
+      if(!r.ok||!d||!d.ok)return{ok:false,reason:'error',status:r.status,message:(d&&d.error&&(d.error.code||d.error.message))||('HTTP '+r.status)};
+      return{ok:true,provisioned:d.provisioned!==false,data:d.data};
+    });
+  }).catch(function(e){return{ok:false,reason:'network',message:e&&e.message};});
+}
+
+// Four of the nine store records with no identifier of any kind -- they were
+// rendered straight off array order. A record with no id is SKIPPED by the
+// push below, which would mean four collections silently backing up nothing
+// while the other five worked: precisely the half-applied failure the st()
+// hook exists to prevent, reintroduced through the data instead of the code.
+// Ids are minted on first sync and written back, so existing rows migrate in
+// place -- the same derive-then-persist shape sbNormalizeBills() and
+// sbNormalizeTrain() already use in this file for sb_ap and sb_train.
+//
+// ONLY THESE FOUR MINT. sb_invs, sb_vends, sb_payruns, sb_ap and sb_train all
+// assign ids at creation or in their normaliser, and their id is USER-VISIBLE
+// (an invoice number, a vendor code, the handle a Pay button names a row by).
+// Minting one there would put a generated string in front of a customer, so a
+// missing id is reported instead and left alone.
+var SB_ID_PREFIX={sb_exps:'EX',sb_perf:'PF',sb_hire:'HR',sb_bud:'BD'};
+// Latched per key. Unlike a failed write, which is an EVENT worth recording
+// every time, a record with no id is a STANDING condition -- it would repeat
+// on every repaint for the life of the session and bury everything else.
+var _sbNoIdWarned={};
+function sbEnsureIds(key,arr){
+  var prefix=SB_ID_PREFIX[key];
+  if(!Array.isArray(arr))return false;
+  if(!prefix){
+    if(!_sbNoIdWarned[key]&&arr.some(function(r){return r&&typeof r==='object'&&(r.id===undefined||r.id===null||r.id==='');})){
+      _sbNoIdWarned[key]=true;
+      console.warn('SAIRNbiz: a '+key+' record has no id and cannot be backed up. It is stored on this device only.');
+    }
+    return false;
+  }
+  var seen={},changed=false;
+  arr.forEach(function(r){if(r&&r.id)seen[String(r.id)]=true;});
+  arr.forEach(function(r,i){
+    if(!r||typeof r!=='object'||r.id)return;
+    // Collision-checked rather than assumed unique: two passes in the same
+    // millisecond could otherwise mint the same id. Same loop as
+    // sbNormalizeBills().
+    var id,n=0;
+    do{id=prefix+Date.now().toString(36)+'-'+(i+n);n++;}while(seen[id]);
+    seen[id]=true;r.id=id;changed=true;
+  });
+  if(changed){
+    // Written DIRECTLY, not through st(), because st() is what called this --
+    // going back through it would recurse into this same hook.
+    try{localStorage.setItem(key,JSON.stringify(arr));}catch(e){
+      console.warn('SAIRNbiz: could not persist generated ids for '+key+'; records may be backed up twice.');
+    }
+  }
+  return changed;
+}
+
+function sbSyncCollection(key,next,prev){
+  // _sbSyncOn is a hoisted var and is undefined until this block runs, so the
+  // falsy check here (not a property access) is what keeps an early-boot st()
+  // from throwing inside the hook.
+  if(!_sbSyncOn||!_sbSyncOn[key])return;
+  if(sbSyncPaused||sbBackupUnavailable)return;
+  if(!Array.isArray(next))return;
+  if(!ld('sb_lic',null))return;
+  sbEnsureIds(key,next);
+  var before={};
+  (Array.isArray(prev)?prev:[]).forEach(function(r){
+    if(r&&r.id!==undefined&&r.id!==null){try{before[String(r.id)]=JSON.stringify(r);}catch(e){}}
+  });
+  next.forEach(function(r){
+    if(!r||r.id===undefined||r.id===null||r.id==='')return;
+    var now;
+    try{now=JSON.stringify(r);}catch(e){return;}
+    if(before[String(r.id)]===now)return;   // unchanged -- nothing to push
+    sbBackupFetch('write',key,r).then(function(res){
+      if(res.ok)return;
+      if(res.reason==='not_provisioned'){
+        if(!sbBackupUnavailable){
+          sbBackupUnavailable=true;
+          console.warn('SAIRNbiz server backup is unavailable: the data tables do not exist. Run sql/sairnbiz_data_schema.sql in Supabase. Records are being kept on this device only.');
+        }
+        return;
+      }
+      console.warn('SAIRNbiz backup write failed for '+key+' '+r.id+': '+(res.message||res.reason));
+    });
+  });
+}
+
+// ── HYDRATION ────────────────────────────────────────────────────────────
+// Additive-only merge by id: server records not already present locally are
+// appended; a locally present id is NEVER overwritten. Deliberately not full
+// conflict resolution -- so a second device sees the first device's records,
+// and neither clobbers the other's in-progress edits.
+//
+// A failed read leaves local data completely untouched. It does NOT empty
+// anything and is NOT reported as an empty backup: the caller distinguishes
+// merged / not-provisioned / failed and says which.
+function sbHydrateAll(){
+  if(!ld('sb_lic',null))return Promise.resolve({merged:0,failed:0,notProvisioned:0});
+  var merged=0,failed=0,notProvisioned=0;
+  return Promise.all(SB_SYNCED.map(function(key){
+    return sbBackupFetch('read',key,null).then(function(res){
+      if(!res.ok){
+        if(res.reason==='not_provisioned')notProvisioned++;else failed++;
+        return;
+      }
+      if(res.provisioned===false){notProvisioned++;return;}
+      var rows=res.data;
+      if(!Array.isArray(rows)||!rows.length)return;
+      var local=ld(key,[]);
+      if(!Array.isArray(local))return;
+      var have={};
+      local.forEach(function(r){if(r&&r.id!=null)have[String(r.id)]=true;});
+      var added=0;
+      rows.forEach(function(r){if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);added++;}});
+      if(added){
+        merged+=added;
+        sbSyncPaused=true;
+        st(key,local);
+        sbSyncPaused=false;
+      }
+    });
+  })).then(function(){return{merged:merged,failed:failed,notProvisioned:notProvisioned};});
+}
+
+// The voice on the read side. Three outcomes and they are NOT the same thing:
+// records came back, the tables were never created, or the read failed. The
+// third is the one that must never render as "you have nothing" -- that is the
+// exact shape this session fixed in sairnroofing.html, where a failed read
+// told a contractor "No jobs yet".
+function sbReportHydrate(r,appAlreadyPainted){
+  if(r.timedOut){
+    console.warn('SAIRNbiz: the server backup did not answer in time; opened on local data.');
+    return;
+  }
+  if(r.merged){
+    toast(r.merged+' record'+(r.merged===1?'':'s')+' restored from your server backup',5000);
+    if(appAlreadyPainted)init();
+  }
+  if(r.notProvisioned){
+    // Latched here as well as on the write path, so a session that only reads
+    // does not then spend the rest of its life retrying writes.
+    sbBackupUnavailable=true;
+    // Console, not a toast. The person using this app cannot run a SQL file,
+    // and telling them their records are unprotected while offering no action
+    // is alarm without remedy. The gap is in the index row and in this file's
+    // header; the operator is the audience for it, not the shop owner.
+    console.warn('SAIRNbiz server backup is not set up: run sql/sairnbiz_data_schema.sql in Supabase. Records are being kept on this device only.');
+  }
+  if(r.failed){
+    toast('Could not read your server backup ('+r.failed+' of '+SB_SYNCED.length+' record types). Anything on this device is still here — but records saved on another device are not being shown.',8000);
+  }
+}
+window.sbHydrateAll=sbHydrateAll;
 
 (function(){
   var k=ld('sb_lic',null);if(k){$('gate').style.display='none';$('pin').classList.add('on');}

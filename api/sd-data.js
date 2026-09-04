@@ -8600,6 +8600,89 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- SAIRNBIZ: THE BUSINESS RECORD (2026-09-04) ---------------------------
+    // Closes docs/SAIRN-OPEN-WORK-INDEX.md's "No server-side persistence for
+    // anything except the employee roster -- and the ledger implies more data
+    // integrity than actually exists", size L.
+    //
+    // MEASURED, NOT ESTIMATED: sairnbiz.html writes 17 localStorage
+    // collections and exactly ONE of them reached a server (sb_emps, via the
+    // `employees` branch above). Invoices, expenses, AP bills, vendors,
+    // PAYROLL RUNS, training certifications, performance reviews, the hiring
+    // pipeline and the budget lived in one browser and nowhere else.
+    //
+    // The sharp edge specific to this app: SAIRNbiz posts real double-entry
+    // journal entries to Postgres through /api/ledger, and those are durable.
+    // A ledger row saying a bill was paid survives a browser-data clear; the
+    // bill does not. The books stay intact while the records that justify them
+    // are gone, and the surviving half is the one that looks authoritative.
+    //
+    // One generic read/write pair covering all nine, same shape and same
+    // reasoning as BLD_RESOURCES above and LEG_RESOURCES below. See
+    // sql/sairnbiz_data_schema.sql for the tables and the id-column rule, and
+    // api/_resources/sairnbiz.js for the eight collections deliberately left
+    // out with the reason for each.
+    //
+    // A SESSION GATE, WHICH IS A DELIBERATE DIVERGENCE FROM THE BLD BLOCK
+    // ABOVE RATHER THAN A COPY THAT DRIFTED. BLD_RESOURCES gates on the
+    // licence alone, and its comment argues that correctly: those are the
+    // shared job record and every role in a building company reads them.
+    // These nine are not that. They are payroll history, performance scores
+    // and PIP flags, employee training records, and the company's payables --
+    // and the licence key here is a string the app itself documents as NOT
+    // auth ("Never treat this list as auth", sairnbiz.html), typed into a gate
+    // screen and left in localStorage on every device that has ever opened the
+    // app. Licence-only is the right boundary for a job schedule and the wrong
+    // one for a payroll run.
+    //
+    // It is a SESSION gate, not a ROLE gate, and that is also deliberate:
+    // accounting legitimately reads AP/AR, HR legitimately reads training and
+    // reviews, and the owner reads everything. A per-resource role map would
+    // break the app for roles that are supposed to read. The boundary enforced
+    // here is "a signed-in employee of this licence"; which panels each role
+    // may open is decided by sairnbiz.html's own access layer, and who may
+    // sign in at all by api/sb-auth.js.
+    const SB_RESOURCES = {
+      sb_invs: 'inv_id', sb_exps: 'exp_id', sb_ap: 'ap_id', sb_vends: 'vend_id',
+      sb_payruns: 'payrun_id', sb_train: 'train_id', sb_perf: 'perf_id',
+      sb_hire: 'hire_id', sb_bud: 'bud_id'
+    };
+    if (SB_RESOURCES[resource]) {
+      const sbBizSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');
+      if (!sbBizSession) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'SAIRNbiz business records require a signed-in employee session' } });
+        return;
+      }
+      if (action === 'read') {
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+        // 404/400 means the table does not exist yet. Reported as an honest
+        // empty WITH provisioned:false rather than as rows, so the client can
+        // tell "nothing saved yet" apart from "this was never migrated".
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+        return;
+      }
+      if (action === 'write') {
+        const idCol = SB_RESOURCES[resource];
+        if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+          res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+          return;
+        }
+        const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+          method: 'POST',
+          headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+          body: JSON.stringify({ license_hash: licHash, app_id: 'sairnbiz', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+        });
+        if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNbiz data tables are not set up yet — run sql/sairnbiz_data_schema.sql in Supabase first.' } }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+        return;
+      }
+    }
+
     const LEG_RESOURCES = {
       leg_aftercare: 'aftercare_id', leg_bookings: 'booking_id', leg_cases: 'case_id',
       leg_catererorders: 'catererorder_id', leg_caterers: 'caterer_id', leg_certs: 'cert_id',
