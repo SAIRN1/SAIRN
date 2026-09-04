@@ -68,6 +68,11 @@ before action, not confidence in the tool.
 """
 import re, sys, glob, os
 
+# The one shared comment stripper. Four tools in tools/ were found blind on
+# 2026-09-04; see the measured table in jscomments.py's docstring.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jscomments as _jscomments
+
 DEF_PATTERNS = [
     re.compile(r'\bfunction\s+([A-Za-z_$][\w$]*)\s*\('),
     re.compile(r'(?:window\.|var\s+|let\s+|const\s+)([A-Za-z_$][\w$]*)\s*=\s*(?:async\s+)?function\b'),
@@ -104,17 +109,26 @@ def strip_comments(s):
 
     Inside a script the same hazard is smaller but not zero -- a regex literal
     can still contain `/*` -- which is what the size guard in sweep() is for.
+
+    ── AND "SMALLER BUT NOT ZERO" WAS 218 OF 1003 (2026-09-04) ───────────────
+    Measured rather than estimated: the in-script `/\\*.*?\\*/` was still losing
+    218 of stonedesk.html's 1003 function declarations -- 21.7% of the largest
+    app on the platform -- while losing 0 on sairnvet and sairncare. Good on
+    two apps and materially blind on the one that matters most, which is why a
+    per-app spot check would have missed it.
+
+    The JS half now goes through tools/jscomments.py, which walks the source
+    with a real lexer and skips strings, template literals and regex literals,
+    so a `/*` inside any of them cannot open a comment. Everything above still
+    holds and is why it is applied PER SCRIPT BLOCK rather than to the whole
+    document: jscomments knows JS, not HTML, so letting it near markup text
+    would strip a bare `//` outside quotes. The scoping this tool learned the
+    hard way is kept; only the blunt instrument inside it is replaced.
     """
     s = re.sub(r'<!--.*?-->', _blank, s, flags=re.S)
 
     def scrub(m):
-        js = m.group(2)
-        js = re.sub(r'/\*.*?\*/', _blank, js, flags=re.S)
-        # Require the // to start a line or follow whitespace/;/{/} so that
-        # http:// and protocol-relative URLs inside strings survive.
-        js = re.sub(r'(?m)(?<=[\s;{}])//[^\n]*', _blank, js)
-        js = re.sub(r'(?m)^//[^\n]*', _blank, js)
-        return m.group(1) + js + m.group(3)
+        return m.group(1) + _jscomments.strip_comments(m.group(2)) + m.group(3)
 
     return SCRIPT_BLOCK.sub(scrub, s)
 
