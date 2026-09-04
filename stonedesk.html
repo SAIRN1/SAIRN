@@ -26577,9 +26577,40 @@ function getSDSupabase() {
 // The RETURN CONTRACT IS UNCHANGED -- still `data` or `null` -- deliberately.
 // Roughly thirty call sites do `if (data)`, and changing what they receive to
 // fix a message would be a far larger change than the problem warrants.
+// A FAILURE IS NOT AN EMPTY RESULT EITHER (2026-09-04).
+//
+// The block above fixed one half of this and named only one cause. `_sdAuthRefused`
+// records 401 and 403, so a pre-login read says "sign in" instead of "you have
+// none". EVERY OTHER FAILURE STILL RENDERED AS EMPTY: a 404 from a table that
+// was never created, a 500, a `j.ok` of false, a network throw. All four set
+// `_sdAuthRefused` to false (or, in the catch, left it alone) and returned the
+// same `null` an empty resource returns.
+//
+// That is not hypothetical on this app right now. `sql/stonedesk_public_surface_schema.sql`
+// has never been run -- proven from production on 2026-09-04 -- so `sd_public_shop`
+// and `sd_quote_requests` DO NOT EXIST, and every read of them 404s. A shop
+// opening the Public Catalog panel is told "No public address set yet, so
+// nothing is reachable", which is a confident statement about their settings
+// made from a request that never reached a table.
+//
+// Two maps rather than one, because "sign in" and "we could not reach the
+// server" are different sentences and must not collapse into each other -- the
+// same reason the public endpoints answer 503 for an outage instead of 429.
 var _sdAuthRefused = {};   // resource -> true, most recent state
+var _sdReadFailed  = {};   // resource -> true if the LAST call did not return data
 
 function sdAuthWasRefused(resource) { return !!_sdAuthRefused[resource]; }
+function sdReadFailed(resource) { return !!_sdReadFailed[resource]; }
+
+// The line an empty state should show when the call failed for a reason that is
+// NOT an auth refusal. Kept beside sdAuthRefusedNote() so the two cannot drift
+// apart, and worded so it never claims to know what is or is not on the server.
+function sdReadFailedNote(what) {
+  return '<div style="padding:14px;text-align:center;font-size:13px;color:var(--muted)">' +
+    '<div style="font-weight:700;color:var(--text);margin-bottom:2px">Could not load ' + escHtml(what) + '</div>' +
+    'This is not empty &mdash; the request did not come back. Nothing has been changed or lost; try again shortly.' +
+    '</div>';
+}
 
 // The one line every empty state should show instead of "none yet" when the
 // server refused the read. Kept in one place so the wording cannot drift.
@@ -26608,12 +26639,25 @@ async function sdData(action, resource, payload) {
       // 401/403 is "you may not have this", which is a different fact from
       // "there is none of this", and the two must not render the same.
       _sdAuthRefused[resource] = (res.status === 401 || res.status === 403);
+      // ...and a 404, a 500 or a 502 is "we could not ask", which is a third
+      // fact again. Recorded here rather than only at the two auth statuses,
+      // because the failure that is live on this app today is a 404.
+      _sdReadFailed[resource] = true;
       return null;
     }
     _sdAuthRefused[resource] = false;
     const j = await res.json();
-    return (j && j.ok) ? j.data : null;
-  } catch (e) { return null; }
+    // An HTTP 200 carrying `ok:false` is still a failure. It used to return the
+    // same null as an empty resource.
+    if (!(j && j.ok)) { _sdReadFailed[resource] = true; return null; }
+    _sdReadFailed[resource] = false;
+    return j.data;
+  } catch (e) {
+    // A network throw left the previous state in place, so a read that failed
+    // after one that succeeded looked like a success that returned nothing.
+    _sdReadFailed[resource] = true;
+    return null;
+  }
 }
 
 // === BUSINESS PROFILE ===
@@ -27535,7 +27579,7 @@ document.addEventListener('DOMContentLoaded', function() {
     <div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">Address</label><input id="pc-address" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box"></div>
     <div style="margin-bottom:12px"><label style="display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:5px">A line about the shop</label><textarea id="pc-blurb" rows="2" style="width:100%;padding:10px;border:1px solid var(--border);border-radius:8px;background:var(--bg);color:var(--text);box-sizing:border-box;font-family:inherit"></textarea></div>
     <div style="margin-bottom:12px"><label style="font-size:13px"><input type="checkbox" id="pc-published" style="width:auto;margin-right:7px">Publish the catalog</label></div>
-    <button class="q-btn primary" onclick="pcSaveShop()">Save</button>
+    <button class="q-btn primary" id="pc-save-shop" onclick="pcSaveShop()">Save</button>
     <div id="pc-shop-status" style="margin-top:12px;font-size:13px;line-height:1.7"></div>
   </div>
 
@@ -38434,6 +38478,24 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 //      plainly when a slab is marked for a catalog that is switched off.
 (function(){
   var pcShop=null, pcRequests=[];
+  // ── A READ THAT FAILED IS NOT A SHOP WITH NO SETTINGS (2026-09-04) ────────
+  // Every read in this panel turned a failure into a confident empty answer:
+  // the shop record became {shop_slug:'',published:false} and the panel said
+  // "No public address set yet, so nothing is reachable"; the quote requests
+  // became [] and the panel said "No quote requests yet"; the tracking links
+  // became [] and the panel said "No tracking links issued yet".
+  //
+  // THE SHOP ONE COULD DESTROY DATA, not just mislead. pcRenderShop() writes
+  // that fabricated blank record into the form -- every field cleared, the
+  // Publish box unticked -- and pcSaveShop() sends whatever the form holds. So
+  // a shop whose read failed, who then pressed Save, would have overwritten
+  // their real record with blanks AND TAKEN THEIR LIVE PUBLIC CATALOG DARK,
+  // having been shown a screen that said they had never set one up. That is why
+  // the flag disables the form rather than only changing the wording.
+  //
+  // Not hypothetical: sql/stonedesk_public_surface_schema.sql has never been
+  // run, so sd_public_shop does not exist and this read 404s for everyone.
+  var pcShopLoadFailed=false, pcRequestsLoadFailed=false, pcLinksLoadFailed=false;
 
   function pcEl(id){return document.getElementById(id);}
   function pcHtml(v){return String(v==null?'':v).replace(/&/g,'&amp;').replace(/</g,'&lt;')
@@ -38447,13 +38509,40 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     if(typeof sdData!=='function') return null;
     try{ return await sdData('read',resource,{}); }catch(e){ return null; }
   }
+  // TRUE only when the last call for this resource failed -- not when it
+  // succeeded and there was nothing there. sdData() records both an auth
+  // refusal and any other failure; either one means this panel does not know
+  // what the server holds and must not claim to.
+  function pcReadFailed(resource){
+    return (typeof sdReadFailed==='function' && sdReadFailed(resource)) ||
+           (typeof sdAuthWasRefused==='function' && sdAuthWasRefused(resource));
+  }
+  // Disabled, not merely annotated. See the note on pcShopLoadFailed above:
+  // the danger is a Save pressed against a form the panel filled in itself.
+  function pcSetShopFormEnabled(on){
+    ['pc-slug','pc-name','pc-phone','pc-email','pc-address','pc-blurb','pc-published','pc-save-shop']
+      .forEach(function(id){ var e=pcEl(id); if(e) e.disabled=!on; });
+  }
   async function pcWrite(resource,payload){
     if(typeof sdData!=='function') return null;
     try{ return await sdData('write',resource,payload); }catch(e){ return null; }
   }
 
   function pcRenderShop(){
-    if(!pcShop)return;
+    if(pcShopLoadFailed){
+      // Nothing is written into the form. Whatever is on screen is left alone
+      // rather than replaced with blanks that would look like real settings.
+      pcSetShopFormEnabled(false);
+      pcNote('<strong>Could not load your public settings.</strong> This is not the same as having none &mdash; '+
+             'the request did not come back, so this panel does not know what your public page is currently doing. '+
+             'Your catalog is still exactly as it was. Saving is disabled until this loads, so a blank form cannot '+
+             'overwrite it or take it offline. Try again shortly.','err');
+      return;
+    }
+    pcSetShopFormEnabled(true);
+    // A successful read with no record is a real state: this shop has never
+    // set up a public page. Only now is it safe to say so.
+    if(!pcShop) pcShop={shop_slug:'',published:false};
     pcEl('pc-slug').value=pcShop.shop_slug||'';
     pcEl('pc-name').value=pcShop.shop_name||'';
     pcEl('pc-phone').value=pcShop.phone||'';
@@ -38474,6 +38563,14 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
   }
 
   window.pcSaveShop=async function(){
+    // Belt and braces with the disabled button above: a save that runs while
+    // the panel does not know the current record would write the form's own
+    // placeholder values over it.
+    if(pcShopLoadFailed){
+      pcNote('Not saving &mdash; your current public settings could not be loaded, so this form does not '+
+             'reflect them. Saving now would overwrite them with whatever is on screen.','err');
+      return;
+    }
     var payload={
       shop_slug:pcEl('pc-slug').value,
       shop_name:pcEl('pc-name').value.trim(),
@@ -38602,6 +38699,16 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 
   function pcRenderRequests(){
     var tb=pcEl('pc-requests-tbody'); if(!tb) return;
+    if(pcRequestsLoadFailed){
+      // "No quote requests yet" is a claim about inbound business. Said wrongly
+      // it tells a shop nobody is asking for a quote.
+      tb.innerHTML='<tr><td colspan="7">'+
+        (typeof sdReadFailedNote==='function'
+          ? sdReadFailedNote('your quote requests')
+          : '<div style="padding:14px;text-align:center;color:var(--muted)">Could not load your quote requests</div>')+
+        '</td></tr>';
+      return;
+    }
     if(!pcRequests.length){
       tb.innerHTML='<tr><td colspan="7" style="padding:14px;color:var(--muted);text-align:center">No quote requests yet</td></tr>';
       return;
@@ -38685,6 +38792,17 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 
   function pcRenderLinks(){
     var tb = pcEl('pc-track-tbody'); if(!tb) return;
+    if(pcLinksLoadFailed){
+      // A shop that believes it has issued no links may reissue one that is
+      // already live, and will not see the revoke button for a link it wants
+      // dead. Both are worse than saying the list did not load.
+      tb.innerHTML = '<tr><td colspan="6">'+
+        (typeof sdReadFailedNote==='function'
+          ? sdReadFailedNote('your tracking links')
+          : '<div style="padding:14px;text-align:center;color:var(--muted)">Could not load your tracking links</div>')+
+        '</td></tr>';
+      return;
+    }
     if(!pcLinks.length){
       tb.innerHTML = '<tr><td colspan="6" style="padding:14px;color:var(--muted);text-align:center">No tracking links issued yet</td></tr>';
       return;
@@ -38743,13 +38861,20 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 
   async function pcLoadLinks(){
     var r = await pcTrackCall({action:'list'});
-    pcLinks = (r && Array.isArray(r.data)) ? r.data : [];
+    // pcTrackCall returns null for every failure and a {ok:true,data:[]} for a
+    // real empty list, so the two are already distinguishable here -- they were
+    // simply both being written into pcLinks as [].
+    pcLinksLoadFailed = !(r && Array.isArray(r.data));
+    pcLinks = pcLinksLoadFailed ? [] : r.data;
     pcRenderLinks();
   }
 
   window.pcRenderPublicCatalog=async function(){
     var shop=await pcRead('sd_public_shop');
-    pcShop=shop||{shop_slug:'',published:false};
+    // A null here is ambiguous on its own -- no record, or no answer -- so the
+    // failure flag is what decides, not the falsiness of the value.
+    pcShopLoadFailed = !shop && pcReadFailed('sd_public_shop');
+    pcShop = shop || null;
     pcRenderShop();
     pcRenderSlabs();
     // Hydrated before the table is drawn: a remnant marked Sold on the counter
@@ -38758,6 +38883,7 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     if(typeof sdRemnantHydrate==='function')await sdRemnantHydrate();
     pcRenderRemnants();
     var reqs=await pcRead('sd_quote_requests');
+    pcRequestsLoadFailed = !Array.isArray(reqs) && pcReadFailed('sd_quote_requests');
     pcRequests=Array.isArray(reqs)?reqs:[];
     pcRenderRequests();
     pcFillCustomerSelect();
