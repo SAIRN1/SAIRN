@@ -312,6 +312,16 @@
       "claimed_at_epoch": 1788522568.2084706,
       "status": "released",
       "released_at": "2026-09-04T12:20:54Z"
+    },
+    {
+      "id": "fourth-1788524683",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "demo seed license scoping to the demo licence only",
+      "claimed_at": "2026-09-04T12:24:43Z",
+      "claimed_at_epoch": 1788524683.9050467,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
