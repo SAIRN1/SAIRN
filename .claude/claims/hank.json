@@ -553,6 +553,16 @@
       "claimed_at_epoch": 1788529605.737531,
       "status": "released",
       "released_at": "2026-09-04T13:54:26Z"
+    },
+    {
+      "id": "hank-1788530237",
+      "session": "hank",
+      "subject": "failing-test-triage",
+      "task": "the four standing red tests in the suite",
+      "claimed_at": "2026-09-04T13:57:17Z",
+      "claimed_at_epoch": 1788530237.7132955,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
