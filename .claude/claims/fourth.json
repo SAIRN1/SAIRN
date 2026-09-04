@@ -432,6 +432,16 @@
       "claimed_at_epoch": 1788554882.5306118,
       "status": "released",
       "released_at": "2026-09-04T20:57:20Z"
+    },
+    {
+      "id": "fourth-1788555542",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "storage key sweep close out unresolved writes",
+      "claimed_at": "2026-09-04T20:59:02Z",
+      "claimed_at_epoch": 1788555542.0910037,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
