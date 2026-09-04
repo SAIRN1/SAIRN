@@ -405,6 +405,16 @@
       "claimed_at_epoch": 1788520703.943979,
       "status": "released",
       "released_at": "2026-09-04T11:34:51Z"
+    },
+    {
+      "id": "cody-1788522105",
+      "session": "cody",
+      "subject": "sairncode",
+      "task": "fail open silent failure sweep and ai knowledge retest",
+      "claimed_at": "2026-09-04T11:41:45Z",
+      "claimed_at_epoch": 1788522105.8498752,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
