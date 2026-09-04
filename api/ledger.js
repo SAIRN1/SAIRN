@@ -91,6 +91,36 @@ module.exports = async (req, res) => {
   const today = (payload && typeof payload.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(payload.today)) ? payload.today : null;
   if (!today) { res.status(400).json({ error: { code: 'NO_TODAY', message: 'payload.today (YYYY-MM-DD) is required' } }); return; }
 
+  // ── A FAILED READ IS NOT AN EMPTY LEDGER (2026-09-04) ────────────────────
+  // Four reads in this file did `x.ok ? await x.json() : []`, and on a set of
+  // BOOKS that is not a degraded display, it is a fabricated financial
+  // statement:
+  //   * trial_balance computed `posted` and `all` this way, so a failed
+  //     ledger_lines read produced a BALANCED, EMPTY TRIAL BALANCE -- the books
+  //     reported as containing nothing, and balancing, when they simply could
+  //     not be read;
+  //   * reverse built `srcLines` this way, so a failed read produced a
+  //     reversal entry with NO LINES -- a reversal that reverses nothing,
+  //     posted as though it had;
+  //   * list attached no lines to any entry.
+  // Every one of them answers "the answer is none" to "I could not ask".
+  // Found by the test written for the duplicate check three lines below, which
+  // asserted the SHAPE was gone from the whole file rather than from one line.
+  const rowsOrFail = async (r, what) => {
+    if (!r.ok) {
+      console.error('ledger: read failed (' + what + '), HTTP', r.status);
+      res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the ledger (' + what + '). Nothing was computed from a partial read.' } });
+      return null;
+    }
+    const rows = await r.json().catch(() => null);
+    if (!Array.isArray(rows)) {
+      console.error('ledger: read returned a non-array (' + what + ')');
+      res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the ledger (' + what + '). Nothing was computed from a partial read.' } });
+      return null;
+    }
+    return rows;
+  };
+
   const notProvisioned = () => res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The ledger is not set up yet — run sql/ledger_schema.sql in Supabase first.' } });
 
   try {
@@ -149,7 +179,33 @@ module.exports = async (req, res) => {
           '&app_id=eq.' + enc(appId) + '&source_kind=eq.' + enc(sk) + '&source_id=eq.' + enc(si) +
           '&status=eq.posted&select=entry_id&limit=1'), { headers });
         if (dup.status === 404 || dup.status === 400) { notProvisioned(); return; }
-        const drows = dup.ok ? await dup.json() : [];
+        // A DUPLICATE CHECK THAT COULD NOT RUN IS NOT A CLEAN BILL (2026-09-04).
+        // `dup.ok ? await dup.json() : []` meant a 401, 403, 500 or 503 -- a
+        // revoked key, a missing grant, an unreachable store -- read as "no
+        // existing entry found", and the code posted the entry anyway. This
+        // check exists precisely so a double-clicked "Record payment" cannot
+        // post revenue twice, and the failure mode of the check was to allow
+        // exactly that, silently, into a double-entry general ledger.
+        //
+        // Refusing costs a retry. Allowing costs a second posted entry against
+        // the same business event, which someone then has to find and reverse.
+        if (!dup.ok) {
+          console.error('ledger: idempotence check failed, HTTP', dup.status, '-- refusing rather than posting unchecked');
+          res.status(502).json({ error: {
+            code: 'DUPLICATE_CHECK_FAILED',
+            message: 'Could not confirm whether this transaction is already in the ledger, so nothing was posted. Try again.'
+          } });
+          return;
+        }
+        const drows = await dup.json().catch(function () { return null; });
+        if (!Array.isArray(drows)) {
+          console.error('ledger: idempotence check returned a non-array -- refusing rather than posting unchecked');
+          res.status(502).json({ error: {
+            code: 'DUPLICATE_CHECK_FAILED',
+            message: 'Could not confirm whether this transaction is already in the ledger, so nothing was posted. Try again.'
+          } });
+          return;
+        }
         if (Array.isArray(drows) && drows[0]) {
           res.status(409).json({
             error: {
@@ -226,7 +282,7 @@ module.exports = async (req, res) => {
       if (!r.ok) { res.status(502).json({ error: { message: 'Data store error' } }); return; }
       const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
         '&select=entry_id,line_no,account_code,debit,credit,memo&order=entry_id.asc,line_no.asc'), { headers });
-      const lines = lr.ok ? await lr.json() : [];
+      const lines = await rowsOrFail(lr, 'ledger_lines'); if (!lines) return;
       const byEntry = Object.create(null);
       (Array.isArray(lines) ? lines : []).forEach((l) => { (byEntry[l.entry_id] = byEntry[l.entry_id] || []).push(l); });
       res.status(200).json({
@@ -244,11 +300,11 @@ module.exports = async (req, res) => {
       const er = await fetch(rest('ledger_entries?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
         '&status=eq.posted&select=entry_id'), { headers });
       if (er.status === 404 || er.status === 400) { res.status(200).json({ ok: true, provisioned: false, trial_balance: null }); return; }
-      const posted = er.ok ? await er.json() : [];
+      const posted = await rowsOrFail(er, 'ledger_entries'); if (!posted) return;
       const ids = new Set((Array.isArray(posted) ? posted : []).map((x) => x.entry_id));
       const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
         '&select=entry_id,account_code,debit,credit'), { headers });
-      const all = lr.ok ? await lr.json() : [];
+      const all = await rowsOrFail(lr, 'ledger_lines'); if (!all) return;
       const lines = (Array.isArray(all) ? all : []).filter((l) => ids.has(l.entry_id))
         .map((l) => ({ account_code: l.account_code, debit: Number(l.debit), credit: Number(l.credit) }));
       const tb = ledger.trialBalance({ today: today, lines: lines });
@@ -270,7 +326,10 @@ module.exports = async (req, res) => {
       if (!src) { res.status(404).json({ error: { code: 'NO_ENTRY', message: 'No entry with that id on this licence' } }); return; }
       const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(entryId) +
         '&select=account_code,debit,credit,memo&order=line_no.asc'), { headers });
-      const srcLines = (lr.ok ? await lr.json() : []).map((l) => ({
+      const srcRows = await rowsOrFail(lr, 'ledger_lines'); if (!srcRows) return;
+      // A reversal built from zero lines reverses nothing while claiming to.
+      if (!srcRows.length) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'That entry has no lines to reverse -- nothing was posted.' } }); return; }
+      const srcLines = srcRows.map((l) => ({
         account_code: l.account_code, debit: Number(l.debit), credit: Number(l.credit), memo: l.memo
       }));
       const rev = ledger.reversalOf({ today: today, entry: Object.assign({}, src, { entry_id: entryId, lines: srcLines }),

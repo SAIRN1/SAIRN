@@ -130,7 +130,27 @@ module.exports = async (req, res) => {
   // it rather than generated, so a duplicate POST resolves to the same row.
   const entryId = 'RXIN-' + String(o.pharmacy_order_id);
   const dupe = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(entryId) + '&select=entry_id,data'), { headers: supabaseHeaders() });
-  const dupeRows = dupe.ok ? await dupe.json().catch(() => []) : [];
+  // A DUPLICATE CHECK THAT COULD NOT RUN IS NOT A CLEAN BILL (2026-09-04).
+  // This one does NOT create a second row -- entry_id is derived from the
+  // pharmacy's own order id and the write below merges on it, so the database
+  // is the real idempotence guarantee. What a failed read costs is different
+  // and easy to miss: the code falls through to that merge, which overwrites
+  // `data` with a freshly built record whose pharmacy_status is
+  // 'pending_review'. So a re-delivered order that staff had ALREADY REVIEWED
+  // is silently reverted to unreviewed, and the pharmacy is told "received"
+  // rather than "already received". On a medication administration record,
+  // quietly un-reviewing a reviewed order is the wrong direction to fail.
+  if (!dupe.ok) {
+    console.error('alf-pharmacy: duplicate check failed, HTTP', dupe.status, '-- refusing rather than re-receiving unchecked');
+    bad(res, 502, 'DUPLICATE_CHECK_FAILED', 'Could not confirm whether this order was already received, so nothing was changed. Try again.');
+    return;
+  }
+  const dupeRows = await dupe.json().catch(() => null);
+  if (!Array.isArray(dupeRows)) {
+    console.error('alf-pharmacy: duplicate check returned a non-array -- refusing rather than re-receiving unchecked');
+    bad(res, 502, 'DUPLICATE_CHECK_FAILED', 'Could not confirm whether this order was already received, so nothing was changed. Try again.');
+    return;
+  }
   if (Array.isArray(dupeRows) && dupeRows.length) {
     const existing = dupeRows[0].data || {};
     res.status(200).json({
