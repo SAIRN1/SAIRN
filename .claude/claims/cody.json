@@ -556,6 +556,17 @@
       "claimed_at_epoch": 1788558300.279207,
       "status": "released",
       "released_at": "2026-09-04T22:00:13Z"
+    },
+    {
+      "id": "cody-1788559404",
+      "session": "cody",
+      "subject": "storage-write-wrappers",
+      "task": "four remaining wrappers return false to nobody",
+      "claimed_at": "2026-09-04T22:03:24Z",
+      "claimed_at_epoch": 1788559404.2963831,
+      "status": "active",
+      "released_at": null,
+      "note": "OVERRIDE, stated out loud. sairn_claim.py check BLOCKED this against cc \"sairndental: false sync disabled message swallows real refusals\" -- the tool's own reason is \"overlap on: false\". Different subject, different app, different files: cc is in sairndental's sync-disabled messaging, this is sairnbuild.html/sairnsenior.html/stonedesk.html st() wrappers named by an existing open-work row. Sole shared token is the English word \"false\". Task string NOT reworded to slip the matcher -- I did run a reworded probe to CONFIRM 'false' was the only colliding token, then wrote the original string here with the reason attached, per CLAUDE.md."
     }
   ]
 }
