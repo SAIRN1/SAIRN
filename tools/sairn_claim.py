@@ -100,21 +100,132 @@ GENERIC_TOKENS = {
     'gap', 'audit', 'fix', 'update', 'panel', 'check', 'phase', 'wiring',
     'schema', 'engine', 'layer', 'seed', 'build', 'add', 'review',
 }
+# ── THE BLOCKLIST APPROACH WAS RETIRED 2026-09-04, AFTER IT LOST SIX TIMES ──
+# GENERIC_TOKENS above is kept only as the record of what was tried. Nothing
+# reads it any more, and it must not be added to -- see below for why adding
+# to it was never going to work.
+#
+# The rule was "one shared SPECIFIC token blocks", where specific meant "not
+# on this hand-maintained list of English words". That is a blocklist against
+# the whole language, and the language kept winning. Confirmed false blocks:
+#
+#   2026-09-01  "audit"    sairnvet vs stonedesk
+#   2026-09-02  "gap"      sairnroofing vs sairnsenior, and vs sairndental
+#   2026-09-02  "platform" a NAMESPACE used as a subject, twice
+#   2026-09-04  "triage"   sairnbuild/sairnvet vs stonedesk
+#   2026-09-04  "false"    storage-write-wrappers vs sairndental
+#   2026-09-04  "name"     THIS change, blocked on its own task string while
+#                          on its way to fix this
+#
+# Every one cost a session an override and a disclosure note, and the sixth
+# was a task literally describing the fix. A gate that must be talked past
+# routinely is a gate people learn to talk past.
+#
+# THE NEW RULE, per Michael 2026-09-04: a block needs a shared MULTI-WORD
+# PHRASE or a shared REAL NAME -- an app, a file, a resource -- never a single
+# shared English word. Four ways to block, and each one is a thing that cannot
+# be a coincidence of vocabulary:
+#
+#   1. THE SAME SUBJECT. Equal token sets, or one a subset of the other with
+#      at least two tokens. Two sessions that named the same subject are
+#      claiming the same namespace, whatever their task wording. The >= 2
+#      floor is what keeps a bare namespace like `platform` from blocking
+#      `platform-schema-constraints` -- the 2026-09-02 case.
+#   2. THE SAME APP. Discovered from the repo's own *.html files, so it cannot
+#      drift from reality. This is STRONGER than before, not weaker: an app
+#      name inside a compound subject now matches, so `sairnbuild-sairnvet`
+#      collides with a claim on `sairnvet`, which the old rule missed.
+#   3. THE SAME FILE OR RESOURCE. A token carrying a separator -- `sd_data`,
+#      `api/sd-data.js`, `bld_bids`, `dnt_referrals`. English words do not
+#      contain underscores or slashes; identifiers do.
+#   4. A SHARED TWO-WORD PHRASE, in order. "audit fix" on both sides is worth
+#      a read; "audit" on one and "fix" on the other is not.
+#
+# WHAT THIS GIVES UP, said plainly rather than discovered later: two different
+# apps working on a similarly-named feature no longer block on the feature
+# word alone -- `sairnroofing warranty registration` vs `sairnbuild warranty
+# tracking` is now a NOTE. That was a deliberate MUST-BLOCK case in the probe
+# and it is deliberately flipped, because it is the same shape as every false
+# block above: different app, different file, one shared noun. It is still
+# printed, and the tool's whole premise is that a human reads the other
+# session's actual task rather than trusting a token match either way.
+
+IDENT_RE = re.compile(r'[a-z][a-z0-9]*(?:[_./\-][a-z0-9]+)+')
+
+_APP_NAMES = None
 
 
-def blocks_alone(shared):
-    """Is this shared-token set strong enough to BLOCK, or only to note?
+def app_names():
+    """App names taken from the repo's own *.html files, not a hardcoded list.
 
-    A block needs one shared SPECIFIC token (an app name, a feature name, a
-    file name), or at least TWO shared generic ones. One generic word on its
-    own is a coincidence of English, not evidence of duplicated work.
-
-    Note this can never weaken a same-subject block: an app name is never
-    generic, so `sairnroofing` on both sides still blocks -- which is the case
-    the tool exists for.
+    A hardcoded list is one more thing to drift; this one is wrong only if the
+    repo is. Cached because check() calls the matcher once per active claim.
     """
-    specific = shared - GENERIC_TOKENS
-    return bool(specific) or len(shared) >= 2
+    global _APP_NAMES
+    if _APP_NAMES is None:
+        try:
+            _APP_NAMES = {os.path.splitext(f)[0].lower()
+                          for f in os.listdir(REPO) if f.lower().endswith('.html')}
+        except OSError:
+            _APP_NAMES = set()
+    return _APP_NAMES
+
+
+def word_seq(text):
+    """Significant words IN ORDER -- phrase matching needs the order that
+    tokens() throws away."""
+    return [t for t in re.split(r'[^a-z0-9]+', (text or '').lower())
+            if len(t) >= 3 and t not in STOPWORDS]
+
+
+def bigrams(*parts):
+    out = set()
+    for p in parts:
+        w = word_seq(p)
+        for i in range(len(w) - 1):
+            out.add(w[i] + ' ' + w[i + 1])
+    return out
+
+
+def idents(*parts):
+    out = set()
+    for p in parts:
+        out |= set(IDENT_RE.findall((p or '').lower()))
+    return out
+
+
+def apps_in(*parts):
+    words = set()
+    for p in parts:
+        words |= set(re.split(r'[^a-z0-9]+', (p or '').lower()))
+    return words & app_names()
+
+
+def block_reason(mine_subj, mine_task, their_subj, their_task):
+    """Why these two claims collide, or None if they only share vocabulary.
+
+    Returns a human-readable reason so the printed block names the EVIDENCE
+    rather than a bare token -- "same app: sairnvet" is actionable, "overlap
+    on: name" is what six sessions had to argue with.
+    """
+    ms, ts = set(word_seq(mine_subj)), set(word_seq(their_subj))
+    if ms and ts:
+        if ms == ts:
+            return 'same subject'
+        if ms < ts and len(ms) >= 2:
+            return 'subject "%s" is inside theirs' % ' '.join(sorted(ms))
+        if ts < ms and len(ts) >= 2:
+            return 'their subject "%s" is inside yours' % ' '.join(sorted(ts))
+    shared_apps = apps_in(mine_subj, mine_task) & apps_in(their_subj, their_task)
+    if shared_apps:
+        return 'same app: ' + ', '.join(sorted(shared_apps))
+    shared_ids = idents(mine_subj, mine_task) & idents(their_subj, their_task)
+    if shared_ids:
+        return 'same file or resource: ' + ', '.join(sorted(shared_ids))
+    shared_phrase = bigrams(mine_subj, mine_task) & bigrams(their_subj, their_task)
+    if shared_phrase:
+        return 'shared phrase: "%s"' % sorted(shared_phrase)[0]
+    return None
 
 
 def sh(args, check=True):
@@ -393,20 +504,25 @@ def cmd_check(args, quiet=False):
         shared = overlaps(c, subj, task)
         if not shared:
             continue
-        # A single shared GENERIC word is reported, never blocked. It is still
-        # printed -- dropping it silently would be the other failure, and the
-        # whole point of this tool is that a human reads the other session's
-        # actual task rather than trusting a token match either way.
-        (blocking if blocks_alone(shared) else weak).append((c, shared))
+        # Shared vocabulary is REPORTED, never blocked on its own -- dropping
+        # it silently would be the other failure, and the whole point of this
+        # tool is that a human reads the other session's actual task rather
+        # than trusting a token match either way.
+        reason = block_reason(subj, task, c.get('subject'), c.get('task'))
+        (blocking if reason else weak).append((c, shared, reason))
     if blocking:
         if not quiet:
             print('BLOCKED -- another session already claimed overlapping work:\n')
-            for c, shared in blocking:
+            for c, shared, reason in blocking:
                 print('  session   : %s' % c.get('session'))
                 print('  subject   : %s' % c.get('subject'))
                 print('  task      : %s' % c.get('task'))
                 print('  claimed   : %s (%s)' % (c.get('claimed_at'), age_str(c)))
-                print('  overlap on: %s' % ', '.join(sorted(shared)))
+                # The EVIDENCE, not a bare token. "same app: sairnvet" tells
+                # you what to check; "overlap on: name" is what six sessions
+                # had to argue with.
+                print('  blocked by: %s' % reason)
+                print('  also share: %s' % ', '.join(sorted(shared)))
                 print()
             print('DO NOT start this. Flag it back to the coordinating chat '
                   'session and let it decide who runs it.')
@@ -417,10 +533,11 @@ def cmd_check(args, quiet=False):
     if not quiet:
         print('CLEAR -- no active overlapping claim from another session.')
         if weak:
-            print('\nNote: %d active claim(s) share ONE generic word with this '
-                  'task and are NOT blocking. Shown so you can judge, not '
-                  'because the tool thinks they overlap:' % len(weak))
-            for c, shared in weak:
+            print('\nNote: %d active claim(s) share WORDS with this task but no '
+                  'app, file, subject or phrase, so they are NOT blocking. '
+                  'Shown so you can judge, not because the tool thinks they '
+                  'overlap:' % len(weak))
+            for c, shared, _reason in weak:
                 print('  %s: %s -- %s  (shares only: %s)'
                       % (c.get('session'), c.get('subject'), c.get('task'),
                          ', '.join(sorted(shared))))
