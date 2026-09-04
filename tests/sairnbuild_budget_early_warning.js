@@ -19,19 +19,26 @@
 // CRITICAL RED. Colour and number, same row, saying opposite things. Fixed
 // 2026-09-04 and pinned below.
 //
-// TWO FURTHER FINDINGS ARE REPORTED, NOT FIXED, because both change what a
-// customer-facing number MEANS and that is a decision, not a patch. They are
-// asserted here as the CURRENT behaviour so the decision is visible rather
-// than lost:
-//   * the roll-up computes its tier from committed ONLY (`actual:0`), while
+// TWO FURTHER FINDINGS WERE RAISED FOR A DECISION AND THEN FIXED TOGETHER on
+// Michael's call, 2026-09-04, because they were one root cause -- `actual`
+// being dropped -- wearing two faces:
+//   * the roll-up computed its tier from committed ONLY (`actual:0`), while
 //     costLineTier's own contract and every other panel use committed+actual.
-//     So the same underlying data can be green in the roll-up and critical on
-//     its own row -- which is exactly what f072765's "unified tier colours
-//     across panels" claim says cannot happen.
-//   * the Variance column is budget-committed and ignores `actual` entirely,
-//     so a line with budget 100 / committed 0 / actual 100 shows a healthy
-//     +100 variance in the cell directly beside a Critical tier badge.
-//     Pre-dates f072765; adjacent cells contradicting each other all the same.
+//     The same data could read green in the roll-up and critical on its own
+//     row -- exactly what f072765's "unified tier colours across panels"
+//     claim says cannot happen.
+//   * Variance was budget-committed and ignored `actual` entirely, so a line
+//     with budget 100 / committed 0 / actual 100 showed a healthy +100 in the
+//     cell directly beside a Critical badge. It now reads 0.
+//
+// FOUR sites carried the old arithmetic, not the two the review named: the
+// panel KPI, the per-row cell, the roll-up, and the CSV export -- the last of
+// which takes the number off the screen entirely, into a spreadsheet where no
+// badge sits beside it to contradict. Every one is pinned below.
+//
+// THIS MAKES A REPORTED NUMBER WORSE wherever `actual` is non-zero. That is
+// the correction, not a regression, and it is why the KPI sub-label now names
+// its basis and the export column was renamed rather than quietly recomputed.
 
 'use strict';
 const fs = require('fs');
@@ -168,19 +175,51 @@ check('actual alone still tiers', costLineTier(line(1000, 0, 950)), 'critical');
     /barPct=hasBudget\?Math\.min\(100,pct\):\(cm>0\?100:0\)/.test(body), true);
 }
 
-// ── REPORTED, NOT FIXED: pinned so the decision stays visible ─────────────
+// ── ONE BASIS FOR SPEND, EVERYWHERE (fixed 2026-09-04) ────────────────────
+//
+// These four assertions replaced two that pinned the OLD, inconsistent
+// behaviour as a known gap. Both gaps had the same root cause -- `actual` was
+// dropped -- so they were closed together.
+//
+// The worked case, which is the whole point: a line with budget 100,
+// committed 0, actual 100 is CRITICAL on its own row. Under the old
+// arithmetic the Variance cell beside that badge read a healthy +100. It now
+// reads 0. Two numbers describing one line, agreeing.
 {
-  check('KNOWN GAP -- the roll-up still computes its tier from committed '
-    + 'only, so it can read green where the line reads critical',
-    /costLineTier\(\{budget:b,committed:cm,actual:0\}\)/.test(fn('function rCostTbl(){')), true);
-  check('KNOWN GAP -- Variance is budget-committed and ignores actual, so it '
-    + 'can show healthy in the cell beside a Critical badge',
-    /var v=\(c\.budget\|\|0\)-\(c\.committed\|\|0\);/.test(fn('function rCostTbl(){')), true);
-  // The arithmetic those two gaps describe, stated as numbers rather than prose.
-  check('a line spent entirely through `actual` is critical on its own row',
-    costLineTier(line(1000, 0, 1000)), 'critical');
-  check('...while the roll-up, fed committed only, calls the same data safe',
-    costLineTier({ budget: 1000, committed: 0, actual: 0 }), null);
+  const tbl = fn('function rCostTbl(){');
+  check('the line spent entirely through `actual` is critical',
+    costLineTier(line(100, 0, 100)), 'critical');
+  check('the panel Variance KPI subtracts committed AND actual',
+    /var variance=budget-\(committed\+actual\);/.test(tbl), true);
+  check('so does the per-row Variance cell, beside the badge it must agree with',
+    /var v=\(c\.budget\|\|0\)-\(\(c\.committed\|\|0\)\+\(c\.actual\|\|0\)\);/.test(tbl), true);
+  check('the roll-up now ACCUMULATES actual instead of dropping it',
+    /if\(!byCode\[k\]\)byCode\[k\]=\{budget:0,committed:0,actual:0\};/.test(tbl), true);
+  check('and tiers on the real committed+actual, not on committed with a '
+    + 'hardcoded actual:0',
+    /costLineTier\(\{budget:b,committed:byCode\[k\]\.committed,actual:byCode\[k\]\.actual\}\)/.test(tbl), true);
+  check('the number the roll-up PRINTS moved with the colour, so the bar and '
+    + 'its label are still describing the same quantity',
+    /var b=byCode\[k\]\.budget,cm=byCode\[k\]\.committed\+byCode\[k\]\.actual;/.test(tbl), true);
+  check('no committed-only variance survives anywhere in the panel',
+    /\(c\.budget\|\|0\)-\(c\.committed\|\|0\)/.test(tbl), false);
+  // The label is part of the fix: this makes a reported number WORSE wherever
+  // actual is non-zero, and a reader who assumes the old basis would think
+  // the figure had broken rather than changed.
+  check('the KPI sub-label names the basis, in both its states',
+    (src.match(/Budget less committed\+actual/g) || []).length, 2);
+  check('and the old wording is gone', /Budget less committed</.test(src), false);
+}
+
+// ── the CSV export carries the same arithmetic off the screen ─────────────
+// It is the one place the number reaches a customer's spreadsheet, where no
+// badge sits beside it to contradict.
+{
+  const exp = src.slice(src.indexOf("rows=[['Job','Cost Code','Kind'"), src.indexOf("} else if(type==='changeorders')"));
+  check('the export subtracts committed AND actual',
+    /\(c\.budget\|\|0\)-\(\(c\.committed\|\|0\)\+\(c\.actual\|\|0\)\)/.test(exp), true);
+  check('and its header says which quantity the column now holds',
+    /'Variance \(budget less committed\+actual\)'/.test(exp), true);
 }
 
 console.log((fail ? 'FAILED' : 'ok') + '  sairnbuild-budget-early-warning: ' +

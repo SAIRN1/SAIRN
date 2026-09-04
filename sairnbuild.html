@@ -698,7 +698,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
     <div class="kpi"><div class="klbl">Budget</div><div class="kval" id="c-budget">$0</div><div class="kt" id="c-budget-sub">Selected scope</div></div>
     <div class="kpi"><div class="klbl">Committed</div><div class="kval" id="c-committed">$0</div><div class="kt" id="c-committed-sub">PO'd or contracted</div></div>
     <div class="kpi"><div class="klbl">Actual</div><div class="kval" id="c-actual">$0</div><div class="kt" id="c-actual-sub">Invoiced to date</div></div>
-    <div class="kpi"><div class="klbl">Variance</div><div class="kval" id="c-variance">$0</div><div class="kt" id="c-variance-sub">Budget less committed</div></div>
+    <div class="kpi"><div class="klbl">Variance</div><div class="kval" id="c-variance">$0</div><div class="kt" id="c-variance-sub">Budget less committed+actual</div></div>
     <div class="kpi"><div class="klbl">Critical Lines</div><div class="kval" id="c-over">0</div><div class="kt" id="c-over-sub">At or above 90% of budget</div></div>
   </div>
   <div class="card"><div class="cb">
@@ -4668,7 +4668,20 @@ function rCostTbl(){
   var budget=list.reduce(function(s,c){return s+(c.budget||0);},0);
   var committed=list.reduce(function(s,c){return s+(c.committed||0);},0);
   var actual=list.reduce(function(s,c){return s+(c.actual||0);},0);
-  var variance=budget-committed;
+  // ONE BASIS FOR SPEND, EVERYWHERE IN THIS PANEL (2026-09-04). Variance was
+  // budget-committed and ignored `actual` entirely, so a line whose money had
+  // already MOVED showed a healthy remaining balance in the cell directly
+  // beside its own Critical badge -- two adjacent numbers describing the same
+  // line and disagreeing about it. costLineTier() has always used
+  // committed+actual ("early means before the money moves, not after"), and
+  // the Critical Lines KPI beside this one already says
+  // "Committed+actual at or above 90% of budget". Variance is now the same
+  // arithmetic, here, on every row, in the roll-up and in the CSV export.
+  //
+  // THIS MAKES A REPORTED NUMBER WORSE, ON PURPOSE, wherever `actual` is
+  // non-zero -- that is the point, and it is why the sub-label says which
+  // basis it is rather than leaving the reader to assume the old one.
+  var variance=budget-(committed+actual);
   var over=list.filter(function(c){return costLineTier(c)==='critical';});
   $('c-budget').textContent=fmt(budget);
   $('c-committed').textContent=fmt(committed);
@@ -4678,7 +4691,7 @@ function rCostTbl(){
   // Conditional severity, same rule as the Dashboard: a bad number must never
   // render in the "good" colour.
   $('c-variance-sub').className='kt'+(variance<0?' d':'');
-  $('c-variance-sub').textContent=variance<0?'Over budget by '+fmt(Math.abs(variance)):'Budget less committed';
+  $('c-variance-sub').textContent=variance<0?'Over budget by '+fmt(Math.abs(variance)):'Budget less committed+actual';
   $('c-over-sub').className='kt'+(over.length?' d':'');
   $('c-over-sub').textContent=over.length?'Committed+actual at or above 90% of budget':'No lines at critical tier';
   $('c-committed-sub').className='kt'+(committed>budget?' d':'');
@@ -4689,7 +4702,9 @@ function rCostTbl(){
   else{
     var allCostsForTier=costs();
     tb.innerHTML=list.map(function(c){
-      var v=(c.budget||0)-(c.committed||0);
+      // Same basis as the tier badge two cells to the right -- see the note
+      // on `variance` above for why these had to be the same arithmetic.
+      var v=(c.budget||0)-((c.committed||0)+(c.actual||0));
       var col=v<0?'var(--danger)':'var(--ok)';
       var tier=costLineTier(c);
       var tierCell=tier?('<span class="badge '+TIER_BADGE[tier]+'">'+TIER_LABEL[tier]+'</span>'):'<span style="color:var(--muted)">--</span>';
@@ -4711,13 +4726,20 @@ function rCostTbl(){
   var byCode={};
   list.forEach(function(c){
     var k=c.cost_code||'(uncoded)';
-    if(!byCode[k])byCode[k]={budget:0,committed:0};
-    byCode[k].budget+=(c.budget||0);byCode[k].committed+=(c.committed||0);
+    if(!byCode[k])byCode[k]={budget:0,committed:0,actual:0};
+    byCode[k].budget+=(c.budget||0);byCode[k].committed+=(c.committed||0);byCode[k].actual+=(c.actual||0);
   });
   var keys=Object.keys(byCode).sort();
   $('c-rollup').innerHTML=keys.length?keys.map(function(k){
-    var b=byCode[k].budget,cm=byCode[k].committed;
-    var tier=costLineTier({budget:b,committed:cm,actual:0});
+    // `actual` was not accumulated here at all and `actual:0` was passed to
+    // costLineTier, so this card tiered on COMMITTED ALONE while every other
+    // panel tiered on committed+actual -- the same cost code could read green
+    // here and critical on its own row. f072765 claimed to have unified tier
+    // colours across panels; this is the panel it did not reach. The
+    // displayed numerator moves with it, because a bar coloured by one
+    // quantity and labelled with another is the defect fixed directly below.
+    var b=byCode[k].budget,cm=byCode[k].committed+byCode[k].actual;
+    var tier=costLineTier({budget:b,committed:byCode[k].committed,actual:byCode[k].actual});
     var col=tier?TIER_COLOR[tier]:'var(--ok)';
     // A cost code with spend and NO budget cannot be expressed as a
     // percentage. `pct` was hardcoded to 0 for that case, and since
@@ -7576,8 +7598,14 @@ function csv(type){
     // different dataset wearing the same button label.
     var list=costScope();
     if(!list.length){toast('No cost lines in scope to export');return;}
-    rows=[['Job','Cost Code','Kind','Vendor / Crew','Budget','Committed','Actual','Variance']];
-    list.forEach(function(c){rows.push([jobLabel(c.job_id),c.cost_code,KIND[c.kind]||c.kind,c.vendor,c.budget,c.committed,c.actual,(c.budget||0)-(c.committed||0)]);});
+    // The Variance column left the building with the old committed-only
+    // basis, so a customer opening this in Excel got a remaining balance that
+    // ignored every invoice already paid. Same arithmetic as the screen now,
+    // and the header says which arithmetic it is -- it is a different
+    // quantity from the one this column used to hold, so renaming it is the
+    // honest move rather than a cosmetic one.
+    rows=[['Job','Cost Code','Kind','Vendor / Crew','Budget','Committed','Actual','Variance (budget less committed+actual)']];
+    list.forEach(function(c){rows.push([jobLabel(c.job_id),c.cost_code,KIND[c.kind]||c.kind,c.vendor,c.budget,c.committed,c.actual,(c.budget||0)-((c.committed||0)+(c.actual||0))]);});
   } else if(type==='changeorders'){
     var colist=coScope();
     if(!colist.length){toast('No change orders in scope to export');return;}
