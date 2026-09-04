@@ -410,8 +410,8 @@
       "task": "structured orphan register lines and checker",
       "claimed_at": "2026-09-04T20:22:27Z",
       "claimed_at_epoch": 1788553347.7691045,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:35:26Z"
     }
   ]
 }
