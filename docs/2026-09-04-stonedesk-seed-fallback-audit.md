@@ -45,6 +45,43 @@ is indistinguishable from a real answer.
 Mechanically: for each site, the storage key, then
 `html.indexOf("sdData('read','" + key + "'")`. One hit.
 
+> ### ⚠ CORRECTED LATER THE SAME DAY — THAT ANSWER WAS WRONG, AND THE METHOD IS WHY
+>
+> **Three seed stores reach the server, not one.** The check above searched for
+> the literal `sdData('read','<storage key>'`, which silently assumes the
+> RESOURCE is named the same as the KEY. Two are not:
+>
+> | key | how it reaches the server | what the seed can do there |
+> |---|---|---|
+> | `sd_crm` | `sdData('read','sd_crm')` | mask real leads — fixed by `crmSeed()` |
+> | **`sd_remnant`** | **`sdData('read','remnants')` and a WRITE via `sdRemnantSyncOne()`** | **mask real remnants AND be published to a real storefront** |
+> | `sd_employees` | `sdData('read','employee_profile',{all:true})` — a different resource, used to enrich the roster | nothing: no roster row is ever written back, so a seeded employee cannot leave the device |
+>
+> **`sd_remnant` is the sharper of the two real ones, and it is the one this
+> audit's method could never have found.** `sdRemnantHydrate()` is a MERGE that
+> keeps local-only rows and then `save()`s the result — so on a device with an
+> empty cache the six seed remnants were not merely rendered, they were WRITTEN
+> INTO localStorage alongside the shop's real ones and became indistinguishable
+> from them. From there one click of the publish toggle calls
+> `sdRemnantSyncOne()`, which writes to Supabase, and the public catalog
+> publishes anything `published` and `Available`. **Three of the six seed rows
+> are Available**, with invented stone, invented dimensions and an invented
+> price.
+>
+> Fixed by tagging seed rows `_demo` at load and refusing to sync a tagged row
+> unless the licence is the demo one — the same gate the seeds themselves now
+> use. The refusal returns a distinct value rather than null, so the caller says
+> *"that is demo inventory"* instead of blaming the connection.
+>
+> **The method lesson, which is the transferable part:** matching a literal
+> string is testing EXISTENCE where the requirement is USE — `sairn-code-scrubber`
+> item 16, Shape B — and it produced a confident "exactly one" for an audit that
+> had missed two. The corrected check asks whether the seed's own script block
+> talks to the server AT ALL, and deliberately over-flags: `sd_employees` is
+> listed with its exposure written out rather than filtered away, because
+> narrowing the check is how it would go back to passing for the wrong reason.
+> Held by `tests/crm_seed_not_a_pipeline.js`.
+
 ## The one real finding — `sd_crm`
 
 `load()` is a documented local cache of the last real server read. With **no

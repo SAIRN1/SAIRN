@@ -28562,7 +28562,25 @@ document.addEventListener('DOMContentLoaded', function() {
     {id:'R-005',stone:'White Macaubas',size:'44x16',sqft:4.9,status:'Sold',location:'—',price:110,age:34,origin:'J-2024-062',notes:'Sold to walk-in 6/10'},
     {id:'R-006',stone:'Dekton Sirius',size:'60x12',sqft:5.0,status:'Available',location:'Yard-B Row 4',price:95,age:15,origin:'J-2024-083',notes:'Matte finish'}
   ];
-  function load(){try{return JSON.parse(localStorage.getItem('sd_remnant')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
+  // ── SEED ROWS ARE TAGGED, BECAUSE THIS MODULE CAN PUSH TO THE SERVER ──────
+  // Added 2026-09-04. Unlike the other demo seeds in this file, a remnant does
+  // not stay on the device: sdRemnantSyncOne() writes it to Supabase, and the
+  // public catalog publishes any remnant that is `published` and `Available`.
+  // Three of the six seed rows below are Available.
+  //
+  // sdRemnantHydrate() is a MERGE that keeps local-only rows and then save()s
+  // the result, so on a device whose cache was empty the seed did not merely
+  // render -- it was written into localStorage alongside the shop's real
+  // remnants and became indistinguishable from them. From there one click of
+  // the publish toggle put invented stone, invented dimensions and an invented
+  // price on a real shop's customer-facing storefront.
+  //
+  // The tag rides along through save() on purpose: it has to survive the merge
+  // to still be protecting anything.
+  function seedRows(){
+    return SEED.map(function(r){ var c={}; for(var k in r) c[k]=r[k]; c._demo=true; return c; });
+  }
+  function load(){try{return JSON.parse(localStorage.getItem('sd_remnant')||'null')||(sdDemoCleared()?[]:seedRows());}catch(e){return sdDemoCleared()?[]:seedRows();}}
   function save(d){return st('sd_remnant',d);}
   var data=load();
   var STATUS_COLOR={Available:'var(--brand2)',Reserved:'#f59e0b',Sold:'#6b7280'};
@@ -28669,6 +28687,14 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdRemnantList=function(){return data;};
   window.sdRemnantSyncOne=async function(r){
     if(typeof sdData!=='function')return null;
+    // A demo row must not reach a real shop's server, and therefore must not
+    // reach the public catalog. Allowed on the demo licence itself, where a
+    // populated storefront is the point -- same gate as the seeds themselves.
+    // Returns a distinct value rather than null so the caller can say WHY,
+    // instead of blaming the connection for a refusal.
+    if(r&&r._demo&&!(typeof sdIsDemoLicense==='function'&&sdIsDemoLicense())){
+      return {refused:'demo'};
+    }
     try{ return await sdData('write','remnants',r); }catch(e){ return null; }
   };
   // Server rows REPLACE the local copy of the same id and local-only rows are
@@ -39007,6 +39033,20 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
     // locally would show as ticked here and be invisible to every visitor --
     // the same failure the slab toggle above exists to avoid.
     var ok=(typeof sdRemnantSyncOne==='function') ? await sdRemnantSyncOne(r) : null;
+    // A refusal is not an outage. Telling a shop to "try again with a
+    // connection" when the real answer is "this is demo inventory and will
+    // never publish" is a wrong reason given confidently -- and it would send
+    // them round the loop for as long as they kept trying.
+    if(ok&&ok.refused==='demo'){
+      r.published=false;
+      if(typeof sdRemnantRender==='function') sdRemnantRender();
+      pcRenderRemnants();
+      if(typeof notify==='function'){
+        notify('That is demo inventory, so it will not publish to your public catalog. '+
+               'Add the real remnant and publish that one.','err');
+      }
+      return;
+    }
     if(typeof sdRemnantRender==='function') sdRemnantRender();
     pcRenderRemnants();
     if(typeof notify==='function'){

@@ -249,25 +249,86 @@ async function main() {
 
   section('the audit that found this, recorded so it is not repeated blind');
 
-  await test('sd_crm is still the only one of the 31 seed sites with a server read', async () => {
-    // If a second resource gains a server read while keeping its seed fallback,
-    // it inherits this defect and this assertion is how anyone finds out.
+  await test('every seed site that can reach the server is a known one', async () => {
+    // ── THIS ASSERTION WAS WRONG AND PASSED ANYWAY (corrected 2026-09-04) ────
+    // It used to be "sd_crm is the only seed site with a server read", and it
+    // checked that by searching for the literal `sdData('read','<key>'`. That
+    // is Scrubber item 16 Shape B -- asserting EXISTENCE of a string where the
+    // requirement is USE of a mechanism -- and it certified a false claim:
+    //
+    //   sd_remnant IS server-backed. Its module calls sdData('read','remnants')
+    //   -- the RESOURCE is named differently from the STORAGE KEY, so the old
+    //   search could never have found it, and reported "exactly one" for an
+    //   audit that had missed a second one.
+    //
+    // The fix is to ask whether the seed's own module talks to the server at
+    // all, rather than whether one literal string appears.
     const sites = html.split('\n').filter(l => l.indexOf('sdDemoCleared()') !== -1 && l.indexOf('?[]:') !== -1);
+    // 31 here, not the 32 demo_seed_licence_scope.js counts: that suite also
+    // includes the one site written as `(d.length||sdDemoCleared())?d:SEED`,
+    // which this filter's `?[]:` does not match. Two filters, two counts, both
+    // correct -- said out loud because a bare mismatched number between two
+    // suites is exactly what sends someone hunting a defect that is not there.
     assert.strictEqual(sites.length, 31, 'the seed-site count moved: ' + sites.length);
-    // Keys come from the cache READS that fall back to a seed -- directly, or
-    // through crmSeed(), which is how sd_crm reads since the fix. Taking them
-    // off the seed lines alone silently drops sd_crm and makes this assertion
-    // pass by finding nothing, which is exactly what it did on first run.
-    const keys = html.split('\n')
-      .filter(l => /localStorage\.getItem\('sd_[a-z_]+'\)/.test(l) &&
-                   (l.indexOf('sdDemoCleared()') !== -1 || l.indexOf('crmSeed()') !== -1))
-      .map(l => l.match(/localStorage\.getItem\('(sd_[a-z_]+)'\)/)[1]);
-    assert.ok(keys.indexOf('sd_crm') !== -1,
-      'sd_crm dropped out of the seed-site list -- this assertion would pass while checking nothing');
-    const backed = keys.filter(k => html.indexOf("sdData('read','" + k + "'") !== -1);
-    assert.deepStrictEqual(backed, ['sd_crm'],
-      'a seed-backed resource gained a server read: ' + backed.join(', ') +
-      ' -- it now has the sd_crm defect and needs the same guard');
+
+    const lines = html.split('\n');
+    const seedLines = [];
+    lines.forEach((l, i) => {
+      if (/localStorage\.getItem\('sd_[a-z_]+'\)/.test(l) &&
+          (l.indexOf('sdDemoCleared()') !== -1 || l.indexOf('crmSeed()') !== -1 ||
+           l.indexOf('seedRows()') !== -1)) {
+        seedLines.push({ key: l.match(/localStorage\.getItem\('(sd_[a-z_]+)'\)/)[1], at: i });
+      }
+    });
+    ['sd_crm', 'sd_remnant'].forEach(k => assert.ok(seedLines.some(s => s.key === k),
+      k + ' dropped out of the seed-site list -- this assertion would pass while checking nothing'));
+
+    // "Can reach the server" = its own script block calls sdData at all. Scoped
+    // to the block rather than the file, because every block is in the same
+    // file and a file-wide search would say yes for all of them.
+    const backed = seedLines.filter(s => {
+      const end = html.indexOf('</script>', lines.slice(0, s.at).join('\n').length);
+      const block = html.slice(lines.slice(0, s.at).join('\n').length,
+                              end === -1 ? html.length : end);
+      return /sdData\s*\(/.test(block);
+    }).map(s => s.key);
+
+    // THREE, not the one the 2026-09-04 audit reported. Each is listed with
+    // what it can actually do, because "reaches the server" is not one risk:
+    //
+    //   sd_crm       reads its OWN rows back (sdData('read','sd_crm')). The
+    //                seed can MASK real leads -- fixed by crmSeed().
+    //   sd_remnant   reads sdData('read','remnants') AND writes through
+    //                sdRemnantSyncOne(). The seed can mask AND be PUBLISHED to
+    //                a real storefront -- fixed by the _demo tag.
+    //   sd_employees reaches the server only for a DIFFERENT resource
+    //                (employee_profile, read with {all:true} to enrich the
+    //                roster). Nothing writes a roster row back, so a seeded
+    //                employee cannot leave the device. Listed anyway: this
+    //                check deliberately over-flags, on the same reasoning the
+    //                claim matcher uses -- a five-second read costs less than a
+    //                missed one, and narrowing it is how it would go back to
+    //                passing for the wrong reason.
+    assert.deepStrictEqual([...new Set(backed)].sort(),
+      ['sd_crm', 'sd_employees', 'sd_remnant'],
+      'a seed store gained a path to the server: ' + backed.join(', ') +
+      ' -- read what it can actually do there before adding it to this list');
+  });
+
+  await test('sd_remnant seed rows are tagged and cannot be pushed to a real server', async () => {
+    // The remnant seed is the sharper case of the two: sd_crm's seed only
+    // misleads the shop, but a remnant SYNCS OUTWARD -- sdRemnantSyncOne()
+    // writes to Supabase and the public catalog publishes anything that is
+    // published and Available. Three of the six seed rows are Available.
+    assert.match(html, /function seedRows\(\)/, 'the seed is no longer tagged');
+    assert.match(html, /c\._demo\s*=\s*true/);
+    const sync = html.slice(html.indexOf('window.sdRemnantSyncOne=async function(r){'));
+    const body = sync.slice(0, sync.indexOf('\n  };') + 5);
+    assert.match(body, /r\._demo/, 'sdRemnantSyncOne no longer checks the tag');
+    assert.match(body, /sdIsDemoLicense/,
+      'the refusal is not scoped to the demo licence, so the demo cannot publish either');
+    assert.match(body, /refused:\s*'demo'/,
+      'a refusal must be distinguishable from a failed write, or the caller blames the connection');
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
