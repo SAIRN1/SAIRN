@@ -212,6 +212,78 @@ function workingStore() {
   check('SAIRNlegacy is no longer among them', swallowing.indexOf('sairnlegacy.html'), -1);
 }
 
+// ── PART 3: the shape PART 2 CANNOT SEE -- added 2026-09-04 ────────────────
+//
+// Part 2 matches `catch(e){}` and its own header says an app whose wrapper is
+// spelled differently is not checked and its absence means nothing. That limit
+// was disclosed, and it was also hiding real defects:
+//
+//     function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));
+//                          return true;}catch(e){return false;}}
+//
+// returns a boolean, so it is NOT a swallowing catch and never appeared on the
+// Part 2 list. But MEASURED per file: every one of SAIRNcare's 28 and
+// SAIRNfreedom's 78 st() call sites ignored that boolean, and the catch logged
+// nothing. A refused write produced a `false` that no code read and no console
+// recorded -- indistinguishable, from the outside, from the empty catch Part 2
+// exists to find. A boolean nobody reads is not a report.
+//
+// So this scans for a write wrapper whose catch NEITHER logs NOR tells the
+// user, whatever it returns.
+//
+// SCOPE, again said rather than discovered: it brace-matches the function body
+// from `function NAME(a, b) {`, so it sees multi-line wrappers Part 2 misses --
+// but only two-argument functions containing `localStorage.setItem`. A wrapper
+// taking one argument or three is invisible here. A wrapper that TOASTS is
+// deliberately NOT listed: SAIRNgrounds, SAIRNmechanical and SAIRNscape tell
+// the user directly, which is the louder half, not the missing one.
+{
+  const mute = [];
+  fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
+    const src = read(f);
+    const re = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
+    let m;
+    while ((m = re.exec(src)) !== null) {
+      const open = src.indexOf('{', m.index);
+      let depth = 0, j = open;
+      for (; j < src.length && j - open < 4000; j++) {
+        if (src[j] === '{') depth++;
+        else if (src[j] === '}' && --depth === 0) break;
+      }
+      const body = src.slice(m.index, j + 1);
+      if (body.indexOf('localStorage.setItem') === -1) continue;
+      const speaks = /console\.|toast|Toast|alert\(/.test(body);
+      if (!speaks) mute.push(f + ':' + m[1]);
+    }
+  });
+
+  // Reported, NOT fixed. Written out by name for the same reason Part 2's list
+  // was: a count cannot tell you which one moved. This list is meant to shrink,
+  // and adding to it is the wrong direction.
+  //
+  // stonedesk.html and sairnvet.html were claimed by other sessions at the time
+  // this was written, so they were measured and listed rather than touched.
+  // sairnbuild.html's st() is a different animal -- it carries a server-backup
+  // hook and its own okWrite flag -- and needs reading before it is changed.
+  const KNOWN_MUTE = [
+    'sairnbuild.html:st',
+    'sairnsenior.html:st',
+    'sairnvet.html:st',
+    'stonedesk.html:st',
+    'stonedesk.html:stRaw',
+  ];
+
+  check('no NEW app writes to localStorage with a catch that says nothing',
+    mute, KNOWN_MUTE);
+  // The five fixed ones, named individually so a regression points at the app
+  // rather than at a list diff.
+  ['sairndental.html', 'sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html',
+   'sairncare.html', 'sairnfreedom.html', 'sairnbiz.html'].forEach((f) => {
+    check(f + ' speaks when a write is refused',
+      mute.filter((x) => x.indexOf(f + ':') === 0).length, 0);
+  });
+}
+
 console.log((fail ? 'FAILED' : 'ok') + '  sairn-storage-wrapper-honesty: ' +
   pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);

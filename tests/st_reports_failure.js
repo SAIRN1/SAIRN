@@ -28,6 +28,12 @@ const APPS = [
   { file: 'sairndesign.html', name: 'SAIRNdesign', prefix: 'dsn' },
   { file: 'sairnlaw.html', name: 'SAIRNlaw', prefix: 'law' },
   { file: 'sairnlegacy.html', name: 'SAIRNlegacy', prefix: 'lgy' },
+  // Added 2026-09-04. These two already RETURNED a boolean, so they were never
+  // on the swallowing-catch list -- and all 28 / 78 call sites respectively
+  // ignore that boolean, and the catch logged nothing. A refused write
+  // produced a `false` no code read and no console recorded.
+  { file: 'sairncare.html', name: 'SAIRNcare', prefix: 'care' },
+  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free' },
 ];
 
 let pass = 0, fail = 0;
@@ -129,11 +135,19 @@ APPS.forEach((app) => {
     assert.strictEqual(c2.st('k', cyc), false, 'an unserialisable value reported success');
   });
 
-  test('the empty catch is gone from the source, not merely bypassed', () => {
+  test('the silent one-liner is gone from the source, not merely bypassed', () => {
     const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8')
       .replace(/\/\/[^\n]*/g, '');   // the new comment quotes the old code
     assert.ok(!/function st\(k,v\)\{try\{localStorage\.setItem\(k,JSON\.stringify\(v\)\);\}catch\(e\)\{\}\}/.test(src),
       'the swallowing one-liner is back');
+    // BOTH pre-fix spellings, because they were not the same across the apps.
+    // Three had the empty catch above; SAIRNcare and SAIRNfreedom returned
+    // FALSE and logged nothing, which is why they were never on the
+    // swallowing-catch list at all. Asserting only the first spelling passes
+    // those two VACUOUSLY -- it would go green whether or not anything was
+    // fixed, which is exactly the trap the ld() suite hit with SAIRNbiz.
+    assert.ok(!/function st\(k,\s*v\)\s*\{\s*try\{\s*localStorage\.setItem\(k,\s*JSON\.stringify\(v\)\);\s*return true;\s*\}catch\(e\)\{\s*return false;\s*\}\s*\}/.test(src),
+      'the silent return-false one-liner is back: false to nobody, and nothing logged');
     const bare = src.match(/catch\s*\([A-Za-z_$][\w$]*\)\s*\{\s*\}/g) || [];
     // `catch(_e){}` around the console.error itself is deliberate and is the
     // only one allowed inside st(): a logger that throws must not turn a failed
@@ -156,7 +170,7 @@ APPS.forEach((app) => {
 // ---------------------------------------------------------------------------
 section('the fix is the same one across the platform');
 
-test('all three log in the same shape, so a reader learns it once', () => {
+test('all of them log in the same shape, so a reader learns it once', () => {
   APPS.forEach((app) => {
     const src = fs.readFileSync(path.join(ROOT, app.file), 'utf8');
     assert.ok(src.indexOf(app.name + ': localStorage write FAILED for "') !== -1,

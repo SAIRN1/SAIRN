@@ -1404,7 +1404,47 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 function $(id){ return document.getElementById(id); }
 function H(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
   .replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;'); }
-function st(k,v){ try{ localStorage.setItem(k, JSON.stringify(v)); return true; }catch(e){ return false; } }
+// ── A REFUSED WRITE RETURNED false TO NOBODY (2026-09-04) ─────────────────
+// This already returned a boolean, which is why it passed the swallowing-
+// catch tripwire in tests/sairn_storage_wrapper_honesty.js -- that check
+// matches `catch(e){}` and says so in its own header. But MEASURED: all 78
+// st() call sites in this file ignore the return, and the catch logged
+// nothing. So a QuotaExceededError produced a `false` that no code read and
+// no console recorded. The save appeared to succeed, the screen kept
+// rendering whatever ld() returned, and nothing said otherwise.
+//
+// A boolean nobody reads is not a report. Same fix as SAIRNdental's st()
+// (75b9c07), SAIRNdesign's, SAIRNlaw's and SAIRNlegacy's.
+//
+// THE RETURN IS UNCHANGED -- still true/false, still never throws -- so all
+// 78 call sites behave exactly as before. Only the silence is fixed.
+//
+// A USER-FACING MESSAGE IS DELIBERATELY NOT ADDED HERE, even though this file
+// HAS a toast(). Deciding which of 78 saves is worth interrupting someone for
+// is a per-app judgement, not a mechanical one, and firing a toast from a
+// wrapper called during boot would interrupt before the element exists. The
+// console line is the half that is unambiguously right.
+function freeIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on the name and the code, so all three spellings are
+  // checked rather than the one this machine happens to produce.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
+}
+function st(k,v){
+  try{
+    localStorage.setItem(k, JSON.stringify(v));
+    return true;
+  }catch(e){
+    // A non-quota failure must NOT be blamed on the quota: sending someone to
+    // delete their records over a SecurityError is its own damage.
+    try{ console.error('SAIRNfreedom: localStorage write FAILED for "'+k+'"'+
+      (freeIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                          :' -- '+((e&&e.message)||e))); }catch(_e){}
+    return false;
+  }
+}
 function ld(k,d){ try{ var r=localStorage.getItem(k); return r?JSON.parse(r):d; }catch(e){ return d; } }
 function toast(msg,kind){ var t=$('toast'); if(!t) return; t.textContent=msg;
   t.className = 'on' + (kind==='err'?' err':''); setTimeout(function(){ t.className=''; }, 2600); }
