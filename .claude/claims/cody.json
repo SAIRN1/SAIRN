@@ -504,8 +504,8 @@
       "task": "unescaped pipes corrupt table rows and there is no structural check",
       "claimed_at": "2026-09-04T20:43:56Z",
       "claimed_at_epoch": 1788554636.1544726,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:53:27Z"
     }
   ]
 }
