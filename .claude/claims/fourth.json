@@ -340,8 +340,8 @@
       "task": "invoice builder reading fields that do not exist",
       "claimed_at": "2026-09-04T13:06:08Z",
       "claimed_at_epoch": 1788527168.5318196,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:15:56Z"
     }
   ]
 }
