@@ -472,6 +472,16 @@
       "claimed_at_epoch": 1788557695.784947,
       "status": "released",
       "released_at": "2026-09-04T21:38:36Z"
+    },
+    {
+      "id": "fourth-1788558029",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "dead function sweep stripper migration",
+      "claimed_at": "2026-09-04T21:40:29Z",
+      "claimed_at_epoch": 1788558029.9899778,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
