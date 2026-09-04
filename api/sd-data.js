@@ -37,6 +37,7 @@ const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
+const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
 const complianceRules = require('./_lib/compliance-rules');
 const careCharges = require('./_lib/care-charges');
@@ -8960,6 +8961,43 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_patients') {
         const gp = dntGuardianProblem(payload);
         if (gp) { res.status(400).json({ error: { code: 'GUARDIAN_REQUIRED', message: gp } }); return; }
+      }
+      // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
+      // sairndental.html's issueGfe() has always refused to mark an estimate
+      // Issued while a federally required element is missing, and said why:
+      // "a non-compliant document that looks compliant... the practice believes
+      // it has met the obligation and has not." That refusal was browser
+      // JavaScript, and this handler stored status:'Issued' regardless.
+      //
+      // ONLY ON ISSUE, AND ONLY THEN ARE THE TWO EXTRA READS PAID FOR. A Draft
+      // is allowed to be incomplete -- that is what a draft is -- so the common
+      // write costs nothing. Issuing is rare and is the moment a document
+      // becomes a representation to a patient.
+      //
+      // THE PATIENT AND THE PRACTICE DETAILS ARE READ SERVER-SIDE, never taken
+      // from the payload. Half the required elements live on records the caller
+      // is not sending, and trusting a caller's copy of the practice's own NPI
+      // would make the check theatre.
+      if (resource === 'dnt_gfe' && String((payload.status || '')).trim().toLowerCase() === 'issued') {
+        const [ptR, stR] = await Promise.all([
+          fetch(rest('dnt_patients?license_hash=eq.' + enc(licHash) + '&patient_id=eq.' + enc(String(payload.patient_id || '')) + '&select=data'), { headers }),
+          fetch(rest('dnt_settings?license_hash=eq.' + enc(licHash) + '&select=data'), { headers })
+        ]);
+        // A read that could not answer must not be read as "nothing missing".
+        // Refusing here is the same trade the app makes: an estimate that goes
+        // out incomplete cannot be recalled, and a failed save can be retried.
+        if (!ptR.ok || !stR.ok) {
+          console.error('dnt_gfe issue check: could not read patient/settings (', ptR.status, stR.status, ')');
+          res.status(503).json({ error: { code: 'GFE_CHECK_UNAVAILABLE', message: 'The estimate could not be checked for the elements 45 CFR 149.610(c)(1) requires, so it was not issued. Try again.' } });
+          return;
+        }
+        const ptRows = await ptR.json();
+        const stRows = await stR.json();
+        const problem = dntGfe.issuedWithoutRequiredElements(
+          payload,
+          (Array.isArray(ptRows) && ptRows[0] && ptRows[0].data) || null,
+          (Array.isArray(stRows) && stRows[0] && stRows[0].data) || {});
+        if (problem) { res.status(400).json({ error: { code: 'GFE_INCOMPLETE', message: problem } }); return; }
       }
       // Multi-location write-side capture (2026-08-24). Stamped here rather
       // than trusted from the client so a row can never be written without
