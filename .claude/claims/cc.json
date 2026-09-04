@@ -481,8 +481,8 @@
       "task": "dnt charges write validation the recorded next resource",
       "claimed_at": "2026-09-04T20:30:20Z",
       "claimed_at_epoch": 1788553820.4093785,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:38:41Z"
     }
   ]
 }
