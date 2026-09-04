@@ -132,7 +132,11 @@ module.exports = async (req, res) => {
     // a deliberately-swapped mutant of this file and asserts it answers 429.
     if (rl.unavailable) {
       console.error('stonedesk-public: rate-limit store unavailable, refusing rather than failing open');
-      res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'The shop catalog is temporarily unavailable -- please try again shortly, or call the shop directly' } });
+      // Wording is action-NEUTRAL on purpose: this branch serves both the
+      // catalog read and the quote-request write, and "the shop catalog is
+      // unavailable" is the wrong sentence to show somebody who was trying to
+      // send a message.
+      res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'This shop page is temporarily unavailable -- please try again shortly, or call the shop directly' } });
       return;
     }
     if (!rl.allowed) {
