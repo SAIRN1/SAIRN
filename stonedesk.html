@@ -4791,13 +4791,55 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     {id:10,customer:'Patricia Lane',project:'Bathroom Remodel x3 — Thassos White',amount:9200,status:'Pending',date:'2026-04-10'},
   ];
   var sdHistoryDetailOpenId = null; // 2026-08-13: which entry's id the detail modal currently shows -- lets the Load button (no id param) know what to load
+  // ── TWO STORES IN, ONE STORE OUT (fixed 2026-09-04) ───────────────────────
+  // load() MERGES two stores -- sd_quote_history and sd_aiquotes -- so the panel
+  // can show both. save() then wrote the whole merged array back into
+  // sd_quote_history alone.
+  //
+  // There is exactly one mutator, sdHistoryUpdateStatus(), and it does
+  // `var d=load(); ...; save(d)`. So EVERY STATUS CHANGE COPIED EVERY AI QUOTE
+  // INTO THE HISTORY STORE -- and because load() concatenates sd_aiquotes again
+  // on the next call, the copies accumulate:
+  //
+  //     history [H], ai [A]
+  //     change a status -> save([H,A])     -> history is now [H,A]
+  //     next load       -> [H,A] + [A]     -> [H,A,A]
+  //     change again    -> history [H,A,A] -> next load [H,A,A,A]
+  //
+  // One duplicate per AI quote per status change, permanently, and the panel's
+  // Total Quotes, Total Value, Win Rate and Average are all computed from that
+  // array -- so a shop's quoted value climbed on its own every time anyone
+  // touched a status. Found by tools/key_collision_check.py, which flags
+  // sd_quote_history as written by two distinct backing variables: the same way
+  // the referral tracker's duplicate was found on 2026-08-07.
+  //
+  // The fix ROUTES each row back to the store it came from rather than
+  // stripping the AI rows out on save. A status change on an AI quote is a real
+  // edit; dropping it would trade a duplication bug for a data-loss one.
   function load(){
     var d=[];
     try{d=JSON.parse(localStorage.getItem('sd_quote_history')||'null')||[];}catch(e){}
-    try{var q=JSON.parse(localStorage.getItem('sd_aiquotes')||'[]');d=d.concat(q);}catch(e){}
+    try{
+      var q=JSON.parse(localStorage.getItem('sd_aiquotes')||'[]');
+      if(Array.isArray(q))q.forEach(function(x){if(x&&typeof x==='object')x._src='ai';});
+      d=d.concat(q);
+    }catch(e){}
     return (d.length||sdDemoCleared())?d:SEED;
   }
-  function save(d){return st('sd_quote_history',d);}
+  function save(d){
+    var hist=[],ai=[];
+    (d||[]).forEach(function(x){
+      if(!x||typeof x!=='object'){hist.push(x);return;}
+      var c={};for(var k in x){if(k!=='_src')c[k]=x[k];}   // the tag never persists
+      (x._src==='ai'?ai:hist).push(c);
+    });
+    var okHist=st('sd_quote_history',hist);
+    // Only touch sd_aiquotes if this array actually carries rows from it --
+    // writing [] would erase that store on a save made from a state where it
+    // happened to hold nothing.
+    var okAi=ai.length?st('sd_aiquotes',ai):true;
+    return okHist&&okAi;
+  }
   function updateKPIs(d){
     var total=d.length;
     var val=d.reduce(function(a,x){return a+(x.amount||0);},0);
