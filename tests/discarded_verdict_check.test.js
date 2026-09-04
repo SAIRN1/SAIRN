@@ -166,6 +166,54 @@ test('THE DEFECT INSIDE A COMMENT IS NOT A FINDING', () => {
   });
 });
 
+test('...and a COMMENTED-OUT return does not make a function a verdict-returner', () => {
+  // The two halves of strip_comments() do different jobs, which a negative
+  // control made obvious: BARE_AWAIT is line-anchored, so a `// await f();`
+  // can never match it and the `//` pass looks dead. It is not -- it matters
+  // HERE, where returns_verdict() scans a body. Without it, a function whose
+  // only verdict-shaped return is commented out would be treated as one, and
+  // every bare call to it reported.
+  const src = [
+    'async function notAVerdict() {',
+    '  // return { allowed: false };   <- removed, kept for context',
+    '  return 1;',
+    '}',
+    'async function go() { await notAVerdict(); }',
+    'module.exports = { go };',
+  ].join('\n');
+  withFixture('zz_dv_retcomment.js', src, (rel) => {
+    assert.strictEqual(found(check([rel]).out).live, 0,
+      'a commented-out return was read as a verdict');
+  });
+});
+
+test('LINE NUMBERS SURVIVE A BLOCK COMMENT', () => {
+  // Block comments used to be deleted whole, newlines and all, so every line
+  // reported after one was short by however many lines it spanned. Found
+  // 2026-09-04 by reading a reported line in sairnlegacy.html and finding a
+  // comment two hundred lines from the hit.
+  const src = [
+    '/*',
+    ' * padding',
+    ' * padding',
+    ' * padding',
+    ' */',
+    'async function mayI() { return { allowed: false }; }',
+    'async function go() {',
+    '  await mayI();',
+    '}',
+    'module.exports = { go };',
+  ].join('\n');
+  const realLine = src.split('\n').indexOf('  await mayI();') + 1;
+  withFixture('zz_dv_lines.js', src, (rel) => {
+    const r = check([rel]);
+    const m = /zz_dv_lines\.js:(\d+)/.exec(r.out);
+    assert.ok(m, 'no hit reported:\n' + r.out);
+    assert.strictEqual(Number(m[1]), realLine,
+      'reported line ' + m[1] + ', the await is really on ' + realLine);
+  });
+});
+
 // ---------------------------------------------------------------------------
 section('the tool is honest about its own limits');
 

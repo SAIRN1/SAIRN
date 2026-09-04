@@ -1251,7 +1251,41 @@ function safeDocUrl(u){
 // a function argument. jsEscape() is the correct escaping for that case --
 // real backslash-escaping of a JS string literal, not HTML entities.
 function jsEscape(s){return String(s||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));}catch(e){}}
+// ── A FULL DISK USED TO BE SILENT HERE (2026-09-04) ────────────────────────
+// This was `try{localStorage.setItem(...)}catch(e){}` -- a bare empty catch, so
+// a QuotaExceededError was swallowed whole. The save appeared to succeed, the
+// screen kept rendering whatever ld() returned, and nothing said otherwise.
+// Same defect and same fix as SAIRNdental's st() (75b9c07), SAIRNbuild's and
+// SAIRNbiz's.
+//
+// THE RETURN IS ADDITIVE. All 178 call sites in this file ignore it and
+// behave exactly as before, and st() still never throws -- so nothing that
+// worked can stop working. What changes is that a failure is now knowable.
+//
+// A USER-FACING MESSAGE IS DELIBERATELY NOT ADDED HERE. There is no single
+// place in this file that owns "tell the user", and deciding which of 178
+// saves is worth interrupting someone for is a per-app judgement, not a
+// mechanical one. The console line is the half that is unambiguously right:
+// a write that vanished must not vanish from the console as well.
+function lawIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on the name and the code, so all three spellings are
+  // checked rather than the one this machine happens to produce.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
+}
+function st(k,v){
+  try{
+    localStorage.setItem(k,JSON.stringify(v));
+    return true;
+  }catch(e){
+    try{ console.error('SAIRNlaw: localStorage write FAILED for "'+k+'"'+
+      (lawIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                              :' -- '+((e&&e.message)||e))); }catch(_e){}
+    return false;
+  }
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 function fmt(n){return '$'+Number(n||0).toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});}

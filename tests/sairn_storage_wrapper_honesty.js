@@ -188,12 +188,28 @@ function workingStore() {
   // server on the strength of a write it never confirmed is the same defect
   // wearing a worse disguise. Held by tests/sairnbiz_server_backup.js, which
   // carries its own mutation probe restoring the empty catch.
-  const KNOWN_UNFIXED = ['sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html'];
+  // EMPTIED 2026-09-04 (Hank): sairndesign.html, sairnlaw.html and
+  // sairnlegacy.html were the last three, and all three now return whether the
+  // write happened and ALWAYS log when it did not -- the same shape as
+  // SAIRNdental's st() (75b9c07), which is where the defect was first found the
+  // hard way. Held by tests/st_reports_failure.js, which drives the real
+  // functions against a fake localStorage that can be told to be full, and
+  // carries seven negative controls including one that restores the empty
+  // catch.
+  //
+  // THE LIST STAYING EMPTY IS NOW THE ASSERTION. It shrank from a
+  // report-what-is-broken list to a regression guard, and that is a different
+  // job: a NEW app copying the swallowing one-liner fails here on the day it
+  // lands rather than being added to a list and waiting for a sweep.
+  const KNOWN_UNFIXED = [];
 
-  check('the swallowing wrappers are exactly the ones still on the list',
+  check('NO app swallows a failed localStorage write any more',
     swallowing, KNOWN_UNFIXED);
   check('SAIRNgrounds is no longer among them', swallowing.indexOf('sairngrounds.html'), -1);
   check('SAIRNscape is no longer among them', swallowing.indexOf('sairnscape.html'), -1);
+  check('SAIRNdesign is no longer among them', swallowing.indexOf('sairndesign.html'), -1);
+  check('SAIRNlaw is no longer among them', swallowing.indexOf('sairnlaw.html'), -1);
+  check('SAIRNlegacy is no longer among them', swallowing.indexOf('sairnlegacy.html'), -1);
 }
 
 console.log((fail ? 'FAILED' : 'ok') + '  sairn-storage-wrapper-honesty: ' +

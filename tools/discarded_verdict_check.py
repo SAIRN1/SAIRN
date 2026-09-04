@@ -104,7 +104,20 @@ def load_accepted():
 
 
 def strip_comments(src):
-    src = re.sub(r'/\*[\s\S]*?\*/', '', src)
+    """Remove comment TEXT while preserving every newline.
+
+    A block comment used to be deleted whole, newlines and all, so every line
+    number reported after one was short by however many lines the comment
+    spanned. In an HTML file with CSS blocks that is a large drift -- the first
+    real check of this tool against sairnlegacy.html pointed at a comment line
+    two hundred lines from the hit. Found 2026-09-04, in my own tool, by
+    reading a reported line and finding the wrong thing there.
+
+    Line-preserving is also why the `//` pass keeps its newline: it strips to
+    end-of-line and no further.
+    """
+    src = re.sub(r'/\*[\s\S]*?\*/',
+                 lambda m: '\n' * m.group(0).count('\n'), src)
     return re.sub(r'(^|[^:])//[^\n]*', r'\1', src)
 
 

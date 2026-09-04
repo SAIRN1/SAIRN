@@ -202,13 +202,30 @@ def main():
     # asserting a known-open defect that no longer exists, and the next reader
     # would triage around a ghost. Same staleness this project has been bitten
     # by in CLAUDE.md and in three status docs.
+    # ── ONLY ON A FULL RUN (2026-09-04) ──────────────────────────────────────
+    # This used to compare every acceptance against whatever subset had just
+    # been scanned, so ANY targeted run reported every acceptance outside that
+    # subset as stale -- and the message tells the reader to delete it.
+    #
+    # Reproduced, not theorised: `fail_open_check.py sairnlegacy.html
+    # sairndesign.html` reported api/_lib/ai-rate-limit.js's `wRows` acceptance
+    # as matching nothing. That site is alive at line 172 and its reasoning is
+    # intact; following the advice would have deleted a correct, reasoned
+    # acceptance because it was not in the two files being looked at.
+    #
+    # A tool that tells you to throw away right answers is worse than one that
+    # stays quiet, so staleness is now only computed when the whole tree was
+    # scanned -- which is the only run that can actually know.
     matched = set((h['file'], h['var']) for h in hits)
-    stale = [k for k in accepted if k not in matched]
+    stale = [k for k in accepted if k not in matched] if not targets else []
     if stale:
         print('\n=== STALE ACCEPTANCES -- these match nothing any more ===')
         for f, v in stale:
             print('  %s  %s  -- the site is gone or was renamed. Remove the entry or' % (f, v))
             print('       re-triage it; leaving it asserts a defect that is not there.')
+    elif targets and accepted:
+        print('\n(stale-acceptance check skipped: only a full run can tell, and this')
+        print(' run was scoped to %d file(s).)' % len(targets))
 
     # Exit 1 only on decision-shaped hits, so this can gate a push later
     # without failing on the long tail of untriaged reads.
