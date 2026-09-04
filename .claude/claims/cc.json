@@ -381,8 +381,8 @@
       "task": "booking slug seed and ledger pharmacy dup checks",
       "claimed_at": "2026-09-04T10:47:56Z",
       "claimed_at_epoch": 1788518876.904885,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T11:02:59Z"
     }
   ]
 }
