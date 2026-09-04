@@ -2676,11 +2676,26 @@ async function addCoverageRule(){
   if(!procedureTypeId){toast('Add a procedure type first');return;}
   if(isNaN(pct)||pct<0||pct>100){toast('Coverage percent must be 0-100');return;}
   var rec={id:newId('CV'),payer:payer,procedure_type_id:procedureTypeId,coverage_percent:pct,created_at:dntLocalToday()};
+  var syncResult=await sdnData('write','dnt_coverage_rules',rec);
+  // SERVER FIRST, LOCAL SECOND, changed 2026-09-04 -- the same reordering
+  // addProvider() above already carries, and for the same reason. As of today
+  // this write can be REFUSED: 409 COVERAGE_RULE_EXISTS when another rule
+  // already covers this payer and procedure (two of them would mean
+  // lookupCoverage()'s .find() decides by row order), 400 INVALID_COVERAGE_RULE
+  // when the percent is outside 0-100 -- the check this function has always made
+  // in the browser and the server did not until now -- or 503 if the existing
+  // rules could not be read. Writing to localStorage before knowing that would
+  // leave this device applying a rule the server rejected, and every estimate
+  // computed here would differ from one computed anywhere else.
+  //
+  // THE OLD MESSAGE WAS ALSO WRONG. It blamed a sync feature that is not
+  // disabled, on every failure, which hid the real reason behind a reassuring
+  // one. dntLastErrText() already carries the server's own words.
+  if(!syncResult){toast(dntLastErrText('dnt_coverage_rules')||'Could not save the coverage rule -- nothing was changed',7000);return;}
   var list=coverageRules();list.push(rec);st('dnt_coverage_list',list);
   rCoverage();
   $('cv-add-payer').value='';$('cv-add-percent').value='';
-  var syncResult=await sdnData('write','dnt_coverage_rules',rec);
-  toast(syncResult?'Coverage rule added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast('Coverage rule added');
 }
 function removeCoverageRule(id){
   // Local-only -- see removePatient()'s comment for why.

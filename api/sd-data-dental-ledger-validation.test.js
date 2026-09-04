@@ -423,6 +423,186 @@ async function main() {
     assert.match(msg, /locked onto a charge/i, 'a reader needs to know a bad rule keeps its effect on charges already written');
   });
 
+  // ── 5b-ii. NO TWO RULES MAY MATCH THE SAME LOOKUP ───────────────────────
+  //
+  // lookupCoverage() uses .find(), so two matching rules mean the applied
+  // percentage is decided by ROW ORDER. Same defect the dnt_providers branch
+  // already refuses for linked_employee_id, in the same handler.
+  //
+  // The comparison must MIRROR lookupCoverage() exactly -- payer trimmed and
+  // lower-cased, procedure_type_id strict -- and that is what most of these
+  // arms are for. A check looser than the reader refuses distinct rules; a
+  // check tighter than the reader certifies "no conflict" while the reader
+  // still collides. Both are worse than no check.
+  //
+  // `cvHandler` splits the two calls the handler makes: the uniqueness READ
+  // and the actual WRITE. Counting them is the only way to prove a 409 stored
+  // nothing -- the response alone cannot say.
+  function cvHandler(existing, opts) {
+    opts = opts || {};
+    const calls = { reads: 0, writes: 0 };
+    const handler = loadHandler(async function (url, init) {
+      const isWrite = init && init.method === 'POST';
+      if (isWrite) {
+        calls.writes++;
+        return OK_WRITE();
+      }
+      calls.reads++;
+      if (opts.readStatus && opts.readStatus !== 200) {
+        return { ok: false, status: opts.readStatus, json: async () => ({ message: 'boom' }) };
+      }
+      return { ok: true, status: 200, json: async () => existing };
+    });
+    return { handler: handler, calls: calls };
+  }
+  const CV_EXISTING = [{ coverage_rule_id: 'CV-OLD', data: { id: 'CV-OLD', payer: 'Delta Dental', procedure_type_id: 'PR-1', coverage_percent: 50 } }];
+  const cvNew = (over) => Object.assign({ id: 'CV-NEW', payer: 'Delta Dental', procedure_type_id: 'PR-1', coverage_percent: 80 }, over || {});
+
+  await test('a second rule for the same payer and procedure -> 409 COVERAGE_RULE_EXISTS, and NOTHING is written', async () => {
+    const c = cvHandler(CV_EXISTING);
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew() }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 409, 'expected 409, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'COVERAGE_RULE_EXISTS');
+    assert.strictEqual(c.calls.writes, 0, 'a refused rule still reached the store');
+    assert.strictEqual(c.calls.reads, 1);
+  });
+
+  await test('the refusal names the EXISTING percentage, so it is checkable against the rules table', async () => {
+    const c = cvHandler(CV_EXISTING);
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew() }, tokenFor('owner')), res);
+    assert.match(res.body.error.message, /50%/);
+    // The app's removeCoverageRule() is local-only and says so. A refusal that
+    // told the practice to "remove the existing rule first" would be advice
+    // that does not work.
+    assert.match(res.body.error.message, /local to that device/i);
+  });
+
+  for (const [payer, why] of [
+    ['delta dental', 'lower-cased -- lookupCoverage() lower-cases both sides'],
+    ['  Delta Dental  ', 'padded -- lookupCoverage() trims both sides'],
+    ['DELTA DENTAL', 'upper-cased'],
+    [' dElTa DeNtAl ', 'both at once'],
+  ]) {
+    await test('payer ' + JSON.stringify(payer) + ' still clashes -> 409  (' + why + ')', async () => {
+      const c = cvHandler(CV_EXISTING);
+      const res = mockRes();
+      await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew({ payer: payer }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 409, 'a payer the READER would match was not caught -- the check is tighter than lookupCoverage()');
+      assert.strictEqual(c.calls.writes, 0);
+    });
+  }
+
+  for (const [over, why] of [
+    [{ procedure_type_id: 'PR-2' }, 'same payer, different procedure -- a real, distinct rule'],
+    [{ payer: 'Cigna' }, 'different payer, same procedure'],
+    [{ id: 'CV-OLD' }, 'the SAME rule id -- an upsert of itself must not clash with itself'],
+    [{ procedure_type_id: 1 }, 'a NUMERIC procedure_type_id: lookupCoverage() compares strictly, so it would not match the string form either -- refusing it would be tighter than the reader'],
+  ]) {
+    await test('accepted: ' + JSON.stringify(over) + '  (' + why + ')', async () => {
+      const c = cvHandler(CV_EXISTING);
+      const res = mockRes();
+      await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew(over) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, 'expected 200, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(c.calls.writes, 1, 'the rule was accepted but never stored');
+    });
+  }
+
+  await test('CONTROL: the identical payload is accepted when no rule exists -- the 409 is driven by the DATA', async () => {
+    // Without this, every 409 above could be a payload the handler simply
+    // refuses, and the uniqueness check would be proving nothing.
+    const c = cvHandler([]);
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew() }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'expected 200, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.strictEqual(c.calls.writes, 1);
+  });
+
+  await test('the check FAILS CLOSED: an unreadable rules table -> 503, and nothing is written', async () => {
+    // A deliberate divergence from the dnt_providers precedent in the same
+    // handler, which wraps its read in `if (dupR.ok)` and lets the write
+    // through. A uniqueness check that silently does not run is
+    // indistinguishable from one that passed.
+    const c = cvHandler([], { readStatus: 500 });
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew() }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 503, 'expected 503, got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'COVERAGE_CHECK_UNAVAILABLE');
+    assert.strictEqual(c.calls.writes, 0);
+    assert.match(res.body.error.message, /row order/i, 'the refusal should say what the unrun check protects against');
+  });
+
+  await test('an UNPROVISIONED table is not a check failure -- the write proceeds and answers NOT_PROVISIONED', async () => {
+    // 404/400 means the table does not exist, so there is nothing to
+    // duplicate. Treating it as a failed check would mask the real state
+    // behind a retry message that would never come good.
+    const calls = { reads: 0, writes: 0 };
+    const handler = loadHandler(async function (url, init) {
+      if (init && init.method === 'POST') { calls.writes++; return { ok: false, status: 404, json: async () => ({}) }; }
+      calls.reads++;
+      return { ok: false, status: 404, json: async () => ({}) };
+    });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew() }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 503);
+    assert.strictEqual(res.body.error.code, 'NOT_PROVISIONED', 'got ' + JSON.stringify(res.body));
+    assert.strictEqual(calls.writes, 1, 'the write should have been attempted');
+  });
+
+  await test('an INVALID payload is refused before the uniqueness read is paid for', async () => {
+    const c = cvHandler(CV_EXISTING);
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_coverage_rules', payload: cvNew({ coverage_percent: 150 }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_COVERAGE_RULE');
+    assert.strictEqual(c.calls.reads, 0, 'a round trip was spent on a payload that could never be stored');
+  });
+
+  await test('the uniqueness check is scoped to dnt_coverage_rules -- dnt_procedure_types is unaffected', async () => {
+    const c = cvHandler(CV_EXISTING);
+    const res = mockRes();
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: { id: 'PR-9', code: 'D2740', description: 'Crown' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(c.calls.reads, 0, 'a uniqueness read ran for a resource that does not have the rule');
+  });
+
+  // ── 5b-iii. THE CLIENT HAD TO MOVE WITH THE SERVER ──────────────────────
+  //
+  // A refusal nobody can see is not much better than no refusal. addCoverageRule()
+  // wrote to localStorage BEFORE calling the server and then toasted "Saved on
+  // this device only -- server sync not yet enabled for this app" on any
+  // failure. With a 409 now possible, that would leave the device applying a
+  // rule the server rejected, and every estimate computed here would differ
+  // from one computed anywhere else -- while the message blamed a sync feature
+  // that has been enabled for weeks.
+  //
+  // Asserted against the source because this is an ordering property, and an
+  // ordering property is exactly what a later edit reverts without noticing.
+  await test('addCoverageRule() calls the server BEFORE writing locally, and surfaces the real reason', () => {
+    const fs = require('fs');
+    const path = require('path');
+    const html = fs.readFileSync(path.join(__dirname, '..', 'sairndental.html'), 'utf8').replace(/\r\n/g, '\n');
+    const a = html.indexOf('async function addCoverageRule()');
+    assert.ok(a > 0, 'addCoverageRule not found');
+    const fn = html.slice(a, html.indexOf('\n}\n', a));
+    const server = fn.indexOf("sdnData('write','dnt_coverage_rules'");
+    const local = fn.indexOf("st('dnt_coverage_list'");
+    assert.ok(server > 0 && local > 0, 'both calls should still be present');
+    assert.ok(server < local,
+      'the local write happens before the server call again -- a refused rule would be applied on this device only');
+    assert.match(fn, /if\(!syncResult\)\{toast\(dntLastErrText\('dnt_coverage_rules'\)/,
+      'the real refusal message is not surfaced');
+    // COMMENTS STRIPPED FIRST, and this arm failed without it. The fix's own
+    // comment QUOTES the stale string it replaced -- which is exactly the
+    // false positive sairn-guardian-v2 records against its strict-args
+    // scanner, where a fix commit's explanatory comment quoted the old line
+    // and the re-scan flagged it. Match code, not prose.
+    const code = fn.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    assert.strictEqual(code.indexOf('server sync not yet enabled'), -1,
+      'the stale "sync not enabled" message came back -- sync IS enabled, and that string hid the real reason');
+  });
+
   // ── 5c. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
   await test('dnt_txplans with an absurd amount still goes through -- ten resources remain', async () => {
     // The current edge of the change, and dnt_txplans is a REPRESENTATIVE

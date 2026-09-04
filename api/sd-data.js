@@ -9105,6 +9105,75 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_coverage_rules') {
         const crp = dntCoverageRuleProblem(payload);
         if (crp) { res.status(400).json({ error: { code: 'INVALID_COVERAGE_RULE', message: crp } }); return; }
+        // ── AND NO TWO RULES MAY MATCH THE SAME LOOKUP (2026-09-04) ────────
+        // lookupCoverage() in sairndental.html is
+        //     rules.find(r => (r.payer||'').trim().toLowerCase() === payerNorm
+        //                     && r.procedure_type_id === procedureTypeId)
+        // so with two matching rules the applied percentage is whichever
+        // sorted first -- after dntMergeById(), insertion order. That is the
+        // same defect the dnt_providers branch above refuses explicitly for
+        // linked_employee_id, in this same handler: "a scoping decision made
+        // by row order".
+        //
+        // IT COMPOUNDS WITH THE RULE VALIDATED ABOVE. computeEstimatedInsurance()
+        // LOCKS its result onto the charge and the app never recomputes it, so
+        // a duplicate that wins by row order keeps its effect on every charge
+        // written while it stood, and correcting it later fixes nothing already
+        // recorded.
+        //
+        // THE COMPARISON MIRRORS lookupCoverage() EXACTLY, and that is the
+        // whole point rather than a detail: payer trimmed and lower-cased,
+        // procedure_type_id compared STRICTLY, with no String() coercion. A
+        // check that matched more loosely than the reader would refuse pairs
+        // the app treats as distinct; one that matched more tightly would
+        // certify "no conflict" while the reader still collided. A numeric
+        // procedure_type_id therefore does not clash with the string form --
+        // correct, because lookupCoverage() would not match them either.
+        //
+        // FAIL-CLOSED, WHICH IS A DELIBERATE DIVERGENCE FROM THE dnt_providers
+        // PRECEDENT ABOVE. That one wraps its read in `if (dupR.ok)` and lets
+        // the write through when the check cannot run. This follows the newer
+        // and more considered precedent in the same file instead -- the GFE
+        // block's 503 GFE_CHECK_UNAVAILABLE -- because a uniqueness check that
+        // silently does not run is indistinguishable from one that passed, and
+        // the cost of being wrong here is a wrong estimate locked onto future
+        // charges. A coverage rule is practice configuration written rarely,
+        // so a retry costs the practice a second attempt and not a workflow.
+        //
+        // 404/400 is NOT a check failure: it means the table does not exist,
+        // so there is nothing to duplicate. The write proceeds and answers the
+        // standard 503 NOT_PROVISIONED on its own.
+        const cvDupR = await fetch(rest('dnt_coverage_rules?license_hash=eq.' + enc(licHash) + '&select=coverage_rule_id,data'), { headers });
+        if (cvDupR.status !== 404 && cvDupR.status !== 400) {
+          if (!cvDupR.ok) {
+            res.status(503).json({ error: { code: 'COVERAGE_CHECK_UNAVAILABLE', message: 'The existing coverage rules could not be read, so this one was not saved -- saving it without that check could leave two rules for the same payer and procedure, and which one applies would be decided by row order. Try again.' } });
+            return;
+          }
+          const cvRows = await cvDupR.json();
+          const cvPayer = String(payload.payer == null ? '' : payload.payer).trim().toLowerCase();
+          const cvClash = (Array.isArray(cvRows) ? cvRows : []).filter((x) =>
+            x && x.data
+            && String(x.data.payer == null ? '' : x.data.payer).trim().toLowerCase() === cvPayer
+            && x.data.procedure_type_id === payload.procedure_type_id
+            && String(x.coverage_rule_id) !== String(payload.id))[0];
+          if (cvClash) {
+            // The existing percentage is named so the refusal is checkable
+            // against the rules table rather than being a bare "already
+            // exists". It is the practice's own configuration, read under
+            // their own licence and session.
+            res.status(409).json({
+              error: {
+                code: 'COVERAGE_RULE_EXISTS',
+                message: 'A coverage rule already covers this payer and procedure, at '
+                       + String(cvClash.data.coverage_percent) + '%. Adding a second one would not '
+                       + 'replace it -- the app applies whichever rule it finds first, so the new '
+                       + 'percentage might never be used. Note that removing a rule in the app is '
+                       + 'local to that device and does not remove it here.'
+              }
+            });
+            return;
+          }
+        }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate
