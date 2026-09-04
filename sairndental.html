@@ -2725,36 +2725,86 @@ function rBookingSettings(){
     return '<label class="chk"><input type="checkbox" data-proc-id="'+p.id+'" '+(isChecked?'checked':'')+'> '+H(p.cdt_code)+' -- '+H(p.description)+'</label>';
   }).join('<br>'):'<span style="color:var(--muted)">Add procedure types first</span>';
 }
+// ── ONE MERGE BASE AND ONE WRITER FOR dnt_settings (2026-09-04) ──────────
+// Three panels write this single record -- Booking Settings, the Good Faith
+// Estimates practice identity, and the denials panel's appeal windows -- and
+// each patches only its own keys onto the rest. Each already merged rather
+// than rebuilding, which stopped one panel wiping another's fields ON THIS
+// DEVICE. It did nothing across devices, and this row is explicitly
+// practice-wide configuration a second workstation must see.
+//
+// THE DEFECT, traced rather than supposed. The merge base was settings() --
+// THIS DEVICE'S cached copy. api/sd-data.js's dnt_settings write stores
+// `data: payload`, replacing the whole blob. So:
+//
+//   workstation B saves an appeal window   -> server has windows [X, Y]
+//   workstation A, last synced before that, saves the practice identity
+//     -> merges onto its stale local copy, sends windows [X]
+//     -> Y is erased on the server, silently, and B's next sync loses it
+//
+// The base is now the SERVER'S current row. That does not remove a true
+// simultaneous race -- two saves inside one round trip still end
+// last-write-wins -- but it removes the dominant case, a workstation working
+// from an hour-old copy. The residual is recorded in
+// docs/SAIRN-OPEN-WORK-INDEX.md rather than left implied.
+//
+// Returns null when the server row could not be READ. Callers must refuse:
+// saving on top of a base we could not verify is exactly the clobber above.
+// A device with NO licence key is a different case -- it is not talking to a
+// server, so there is nothing to clobber -- and keeps its local-only save.
+async function dntSettingsMergeBase(){
+  if(!dntLicenseKey())return{base:settings(),local:true};
+  var server=await sdnData('read','dnt_settings',{});
+  if(!Array.isArray(server))return null;
+  if(!server.length)return{base:settings(),local:false};
+  var row=server.find(function(s){return s&&s.id==='default';})||server[0];
+  return{base:row||settings(),local:false};
+}
+
+// One writer, so all three panels handle a refusal the same way. Before this
+// only saveBookingSettings() knew about 409 SLUG_TAKEN; the other two sent the
+// same booking_slug and would have reported it as a generic failure.
+//
+// THE OLD MESSAGES SAID "server sync not yet enabled for this app" ON EVERY
+// FAILURE. Sync is enabled and has been; the string was stale and it hid the
+// real reason behind a reassuring one -- the same wording removed from
+// addCoverageRule() earlier today.
+async function dntSettingsWrite(rec){
+  try{
+    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
+      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
+    var d=await r.json().catch(function(){return null;});
+    if(r.status===409&&d&&d.error&&d.error.code==='SLUG_TAKEN')return{ok:false,message:d.error.message};
+    if(r.ok&&d&&d.ok)return{ok:true};
+    return{ok:false,message:'Nothing was saved -- the server refused it'+((d&&d.error&&d.error.message)?': '+d.error.message:'.')+' Try again.'};
+  }catch(e){
+    return{ok:false,message:'Nothing was saved -- could not reach the server. Try again with a connection.'};
+  }
+}
+
 async function saveBookingSettings(){
   var slug=$('bs-slug').value.trim();
   var timezone=$('bs-timezone').value.trim();
   if(!slug){toast('Booking slug required');return;}
   var checkedIds=Array.from(document.querySelectorAll('#bs-procedure-checks input[type=checkbox]:checked')).map(function(el){return el.getAttribute('data-proc-id');});
-  // MERGED ONTO THE EXISTING RECORD, not built from scratch. This row is now
-  // written by two panels -- Booking Settings and the Good Faith Estimates
-  // panel's practice-identity card -- and rebuilding it from only this form's
-  // fields would silently wipe the NPI/TIN the other one saved. That is the
-  // lost-update shape this platform has now found in three apps.
-  var rec=Object.assign({},settings(),{id:'default',booking_slug:slug,timezone:timezone,
+  var b=await dntSettingsMergeBase();
+  if(!b){toast('The practice settings could not be read from the server, so nothing was saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
+  var rec=Object.assign({},b.base,{id:'default',booking_slug:slug,timezone:timezone,
     publicly_bookable_procedure_type_ids:checkedIds,
     practice_name:$('bs-practice-name').value.trim(),practice_phone:$('bs-practice-phone').value.trim(),
     practice_address:$('bs-practice-address').value.trim()});
+  if(b.local){st('dnt_settings_obj',rec);rBookingSettings();toast('Saved on this device only -- there is no license key on this install, so it is not on the server',7000);return;}
+  // SERVER FIRST, LOCAL SECOND. This write can be REFUSED with 409 SLUG_TAKEN,
+  // and until now the device kept the rejected slug: it was written to
+  // localStorage before the request, and the 409 branch only toasted and
+  // returned. The Booking Settings form and the patient-feedback link preview
+  // then advertised a booking slug belonging to ANOTHER PRACTICE. Same shape as
+  // addProvider() and addCoverageRule() in this file, and the same fix.
+  var w=await dntSettingsWrite(rec);
+  if(!w.ok){toast(w.message,7000);return;}
   st('dnt_settings_obj',rec);
-  var lic=dntLicenseKey();
-  if(!lic){toast('Saved on this device only -- server sync not yet enabled for this app',5000);return;}
-  try{
-    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
-      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
-    var d=await r.json().catch(function(){return null;});
-    if(r.status===409&&d&&d.error&&d.error.code==='SLUG_TAKEN'){
-      toast(d.error.message,6000);
-      return;
-    }
-    toast((r.ok&&d&&d.ok)?'Booking settings saved':'Saved on this device only -- server sync not yet enabled for this app',(r.ok&&d&&d.ok)?3000:5000);
-    rBookingSettings();
-  }catch(e){
-    toast('Saved on this device only -- server sync not yet enabled for this app',5000);
-  }
+  rBookingSettings();
+  toast('Booking settings saved');
 }
 
 // ── PENDING REQUESTS ──────────────────────────────────────────────
@@ -3104,21 +3154,19 @@ function removePayerTerm(i){
 // this is a write-through rather than a local save with a promise to sync
 // later.
 async function dnPersistWindows(list){
-  var rec=Object.assign({},settings(),{appeal_windows:list});
+  var b=await dntSettingsMergeBase();
+  if(!b){toast('The practice settings could not be read from the server, so the appeal window was not saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
+  var rec=Object.assign({},b.base,{appeal_windows:list});
+  if(b.local){st('dnt_settings_obj',rec);rPayerTerms();rDenials();toast('Saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
+  // SERVER FIRST. This used to write locally, render, and only then attempt the
+  // server -- so a failed write left the payer term on screen with a message
+  // saying the next sync would erase it. A row that is going to be erased was
+  // never saved; showing it as saved is the part that misleads.
+  var w=await dntSettingsWrite(rec);
+  if(!w.ok){toast(w.message,7000);return;}
   st('dnt_settings_obj',rec);
   rPayerTerms();rDenials();
-  var lic=dntLicenseKey();
-  if(!lic){toast('Saved on this device only -- no license key, so the next sync will overwrite it',7000);return;}
-  try{
-    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
-      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
-    var d=await r.json().catch(function(){return null;});
-    toast((r.ok&&d&&d.ok)?'Appeal window saved'
-      :'Saved on this device only -- the server write failed, so the next sync will overwrite it',
-      (r.ok&&d&&d.ok)?3000:7000);
-  }catch(e){
-    toast('Saved on this device only -- could not reach the server, so the next sync will overwrite it',7000);
-  }
+  toast('Appeal window saved');
 }
 
 // -- RECEIVABLE AGEING -------------------------------------------------------
@@ -4035,33 +4083,28 @@ async function saveGfeIdentity(){
   // Re-reads the settings record and patches ONLY its own four keys, leaving
   // whatever Booking Settings wrote intact -- the same discipline the merge in
   // saveBookingSettings() now uses from the other side.
-  var rec=Object.assign({},settings(),{
+  var b=await dntSettingsMergeBase();
+  if(!b){toast('The practice settings could not be read from the server, so the practice identity was not saved -- saving on top of a copy we could not check could erase a setting another workstation just changed. Try again.',8000);return;}
+  var rec=Object.assign({},b.base,{
     gfe_legal_name:$('gfe-legal-name').value.trim(),
     gfe_npi:$('gfe-npi').value.trim(),
     gfe_tin:$('gfe-tin').value.trim(),
     gfe_state:$('gfe-state').value.trim()});
+  if(b.local){st('dnt_settings_obj',rec);rGfe();toast('Practice identity saved on this device only -- there is no license key on this install, so the next sync will overwrite it',7000);return;}
+  // WRITTEN TO THE SERVER FIRST, not left for a later Booking Settings save and
+  // no longer written locally before the server has taken it.
+  // dntSyncFromServer() REPLACES dnt_settings_obj wholesale with the server's
+  // row -- so an identity saved only on this device is erased by the next sync,
+  // and the practice would find out when an estimate it thought was compliant
+  // reported a missing NPI. Telling them it saved and then losing it is the
+  // worse half of that. dnt_settings' write handler needs only payload.id;
+  // booking_slug is nullable there, so a practice that has never set a slug can
+  // still save this.
+  var w=await dntSettingsWrite(rec);
+  if(!w.ok){toast(w.message,7000);return;}
   st('dnt_settings_obj',rec);
   rGfe();
-  // WRITTEN TO THE SERVER HERE, not left for a later Booking Settings save.
-  // dntSyncFromServer() REPLACES dnt_settings_obj wholesale with the server's
-  // row -- so an identity saved only on this device would be silently erased by
-  // the next sync, and the practice would find out when an estimate it thought
-  // was compliant reported a missing NPI. dnt_settings' write handler needs
-  // only payload.id; booking_slug is nullable there, so a practice that has
-  // never set a slug can still save this.
-  var lic=dntLicenseKey();
-  if(!lic){toast('Practice identity saved on this device only -- no license key, so it is not on the server and the next sync will overwrite it',7000);return;}
-  try{
-    var r=await fetch(DATA_API,{method:'POST',headers:dntHeaders(),
-      body:JSON.stringify({action:'write',resource:'dnt_settings',app_id:APP_ID,payload:rec})});
-    var d=await r.json().catch(function(){return null;});
-    toast((r.ok&&d&&d.ok)
-      ? 'Practice identity saved'
-      : 'Saved on this device only -- the server write failed, so the next sync will overwrite it. Try again with a connection.',
-      (r.ok&&d&&d.ok)?3000:7000);
-  }catch(e){
-    toast('Saved on this device only -- could not reach the server, so the next sync will overwrite it',7000);
-  }
+  toast('Practice identity saved');
 }
 
 async function saveGfe(){

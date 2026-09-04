@@ -397,6 +397,23 @@ ACKNOWLEDGED = {
         "memories pair. NOTE saveSDProfile() has ZERO CALLERS and is "
         "quarantined in stonedesk.html with its own unchecked-write defect "
         "documented -- fix that before wiring it up."),
+    'dnt_settings_obj': (
+        {'rec', 'serverSettings'},
+        "TRACED BY HAND 2026-09-04 (CC), after Fourth reported it and left it "
+        "because sairndental was claimed at the time. The three 'rec' writers -- "
+        "saveBookingSettings(), dnPersistWindows() and saveGfeIdentity() -- are "
+        "one shape, not three: each does Object.assign({}, <base>, {only its own "
+        "keys}), so no two of them write a different schema into this key. That "
+        "is the discipline, added after the earlier lost-update, and it is "
+        "correct. dntSyncFromServer() writes 'serverSettings', the server's row, "
+        "replacing wholesale -- which every one of the three relies on and says "
+        "so in a comment. "
+        "THE REAL DEFECT FOUND IN THE SAME TRACE WAS NOT A COLLISION, exactly as "
+        "the stonedesk:ai_memories entry above records for its own key: the merge "
+        "BASE was this device's cached copy, so a workstation working from a "
+        "stale copy erased fields another workstation had set. Fixed -- the base "
+        "is now a fresh server read, and all three write server-first. The "
+        "residual true race is in docs/SAIRN-OPEN-WORK-INDEX.md."),
     'sd_quote_history': (
         {'h', 'hist'},
         "window.sdQuoteSaveHistory() appends a new quote ('h'); the History "
