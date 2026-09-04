@@ -218,19 +218,23 @@ function chargeProblem(record) {
 //     apply. The app's "no coverage rule on file" message is honest, which is
 //     exactly what makes this invisible.
 //
-// APPEND-ONLY IN FACT, re-checked for THIS resource rather than carried over:
-// sdnData('write','dnt_coverage_rules',...) appears exactly once, in
-// addCoverageRule(), which only creates. removeCoverageRule() is local-only
-// and says so. No legacy rule can be blocked by this.
+// NO LONGER APPEND-ONLY, AND THIS PARAGRAPH IS CORRECTED RATHER THAN LEFT.
+// It read: "APPEND-ONLY IN FACT ... sdnData('write','dnt_coverage_rules',...)
+// appears exactly once, in addCoverageRule(), which only creates." That was
+// true when written and stopped being true hours later, when the same session
+// added an EDIT path -- saveCoverageRule() re-uses an existing rule's id so the
+// upsert updates the row in place. The reasoning it supported still holds, for
+// a different reason: an edit is refused only if the percent it is being
+// changed TO is out of range, so a legacy rule with a bad percent is not locked
+// in -- correcting it is exactly the operation the validator permits.
 //
-// DELIBERATELY NOT DONE HERE: a duplicate check on (payer, procedure_type_id).
-// lookupCoverage() uses .find(), so with two matching rules the applied
-// percentage is decided by ROW ORDER -- the same defect the dnt_providers
-// branch refuses explicitly for linked_employee_id, and it has the same
-// ready-made fix shape. It is left out because it is a different kind of
-// change: it needs a read before the write and a 409, where everything in this
-// module is a pure function of the payload. Recorded as its own row instead of
-// bundled in.
+// DUPLICATE RULES ARE NOW REFUSED, in api/sd-data.js rather than here.
+// lookupCoverage() uses .find(), so two matching rules meant the applied
+// percentage was decided by ROW ORDER -- the same defect the dnt_providers
+// branch refuses for linked_employee_id. It is not in this module because it
+// needs a READ before the write and a 409, where everything here is a pure
+// function of the payload; the handler owns it, and it excludes the row being
+// edited by id so an edit does not clash with itself.
 // One message, used by both percent branches below, because they are one rule
 // -- and because a reader who hits it needs the CONSEQUENCE, not just the
 // range. It says what the number does rather than only what it must be.

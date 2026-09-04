@@ -579,12 +579,17 @@ async function main() {
   //
   // Asserted against the source because this is an ordering property, and an
   // ordering property is exactly what a later edit reverts without noticing.
-  await test('addCoverageRule() calls the server BEFORE writing locally, and surfaces the real reason', () => {
+  await test('saveCoverageRule() calls the server BEFORE writing locally, and surfaces the real reason', () => {
+    // ANCHOR MOVED 2026-09-04: addCoverageRule() became saveCoverageRule() when
+    // it stopped only adding -- it now re-uses an existing rule's id so an edit
+    // updates the row in place. A function called add that also updates is the
+    // stale-name class this repo keeps correcting, and a test left anchored on
+    // the old name would have gone green by absence.
     const fs = require('fs');
     const path = require('path');
     const html = fs.readFileSync(path.join(__dirname, '..', 'sairndental.html'), 'utf8').replace(/\r\n/g, '\n');
-    const a = html.indexOf('async function addCoverageRule()');
-    assert.ok(a > 0, 'addCoverageRule not found');
+    const a = html.indexOf('async function saveCoverageRule()');
+    assert.ok(a > 0, 'saveCoverageRule not found -- if it was renamed again, MOVE this anchor rather than deleting the test');
     const fn = html.slice(a, html.indexOf('\n}\n', a));
     const server = fn.indexOf("sdnData('write','dnt_coverage_rules'");
     const local = fn.indexOf("st('dnt_coverage_list'");

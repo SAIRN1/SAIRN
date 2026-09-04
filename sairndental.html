@@ -612,7 +612,8 @@ label.chk input{width:auto;}
             <div class="fg"><label>Procedure Type</label><select id="cv-add-procedure"></select></div>
           </div>
           <div class="fg"><label>Coverage Percent</label><input type="number" id="cv-add-percent" placeholder="80" min="0" max="100"></div>
-          <button class="btn bp" onclick="addCoverageRule()">Add Coverage Rule</button>
+          <button class="btn bp" id="cv-save-btn" onclick="saveCoverageRule()">Add Coverage Rule</button>
+          <button class="btn bo" id="cv-cancel-btn" style="display:none" onclick="cancelCoverageEdit()">Cancel</button>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
           <table id="coverage-table"><thead><tr><th>Payer</th><th>Procedure Type</th><th>Coverage %</th><th></th></tr></thead><tbody id="coverage-tbody"></tbody></table>
@@ -2664,18 +2665,69 @@ function rCoverage(){
   var tbody=$('coverage-tbody');
   tbody.innerHTML=list.map(function(c){
     var pc=procs.find(function(p){return p.id===c.procedure_type_id;});
+    // Only the generated id goes into the onclick. The payer is free text a
+    // practice types, and H() makes a string safe as HTML, not as a JS string
+    // literal inside an attribute -- the browser decodes the entities back
+    // before the JS parser sees them, so a payer named O'Brien Dental would
+    // break the handler. sairn-code-scrubber item 8.
     return '<tr><td>'+H(c.payer)+'</td><td>'+H(pc?(pc.code+' -- '+pc.description):'(unknown procedure)')+'</td><td>'+H(c.coverage_percent)+'%</td>'+
-      '<td><button class="btn bo bs" onclick="removeCoverageRule(\''+c.id+'\')">Remove</button></td></tr>';
+      '<td><button class="btn bo bs" onclick="editCoverageRule(\''+c.id+'\')">Edit</button> '+
+      '<button class="btn bo bs" onclick="removeCoverageRule(\''+c.id+'\')">Remove</button></td></tr>';
   }).join('')||'<tr><td colspan="4" style="color:var(--muted);text-align:center">No coverage rules defined yet</td></tr>';
 }
-async function addCoverageRule(){
+
+// ── EDITING A RULE (2026-09-04) ───────────────────────────────────────────
+// Until this, a coverage rule could only ever be CREATED: this function minted
+// a fresh newId('CV') every time, and removeCoverageRule() is local-only. So
+// changing Delta/D2740 from 50% to 80% had no path at all.
+//
+// IT USED TO LOOK LIKE IT WORKED, WHICH IS WHY IT WENT UNNOTICED. Adding a
+// second rule for the same payer and procedure saved fine, and lookupCoverage()
+// -- a .find() -- silently kept using the first one. The practice believed it
+// had changed a rule it had not. The duplicate refusal added earlier today
+// (409 COVERAGE_RULE_EXISTS) makes the attempt visible, and this makes it
+// possible: the edit re-uses the existing rule's id, so the write upserts on
+// (license_hash, coverage_rule_id) and updates the row in place. The 409's
+// own self-exclusion already ignores a clash with the row being edited.
+//
+// REMOVAL IS STILL NOT A DELETE, and 0% is the honest substitute: a payer that
+// covers nothing for a procedure is exactly what a 0% rule says, and
+// computeEstimatedInsurance() already returns zero for it.
+var cvEditId=null;
+function editCoverageRule(id){
+  var rule=coverageRules().find(function(c){return c.id===id;});
+  if(!rule){toast('That coverage rule is no longer on file -- refresh and try again',4000);return;}
+  cvEditId=id;
+  $('cv-add-payer').value=rule.payer||'';
+  $('cv-add-procedure').value=rule.procedure_type_id||'';
+  $('cv-add-percent').value=(rule.coverage_percent===undefined||rule.coverage_percent===null)?'':rule.coverage_percent;
+  $('cv-save-btn').textContent='Save Changes';
+  $('cv-cancel-btn').style.display='';
+  toast('Editing '+rule.payer+' -- change the percent and save, or Cancel',5000);
+}
+function cancelCoverageEdit(){
+  cvEditId=null;
+  $('cv-add-payer').value='';$('cv-add-percent').value='';
+  $('cv-save-btn').textContent='Add Coverage Rule';
+  $('cv-cancel-btn').style.display='none';
+}
+// RENAMED from addCoverageRule() 2026-09-04, because it no longer only adds. A
+// function called add that also updates is the kind of stale name this file has
+// had to correct before; the onclick and every test anchor moved with it.
+async function saveCoverageRule(){
   var payer=$('cv-add-payer').value.trim();
   var procedureTypeId=$('cv-add-procedure').value;
   var pct=parseFloat($('cv-add-percent').value);
   if(!payer){toast('Payer required');return;}
   if(!procedureTypeId){toast('Add a procedure type first');return;}
   if(isNaN(pct)||pct<0||pct>100){toast('Coverage percent must be 0-100');return;}
-  var rec={id:newId('CV'),payer:payer,procedure_type_id:procedureTypeId,coverage_percent:pct,created_at:dntLocalToday()};
+  // AN EDIT KEEPS THE ID, which is what makes the server upsert an UPDATE
+  // rather than an insert, and keeps created_at as the date the rule was really
+  // first written rather than stamping today onto an old rule.
+  var existing=cvEditId?coverageRules().find(function(c){return c.id===cvEditId;}):null;
+  if(cvEditId&&!existing){toast('That coverage rule is no longer on file -- refresh and try again',4000);cancelCoverageEdit();rCoverage();return;}
+  var rec={id:cvEditId||newId('CV'),payer:payer,procedure_type_id:procedureTypeId,coverage_percent:pct,
+    created_at:(existing&&existing.created_at)||dntLocalToday()};
   var syncResult=await sdnData('write','dnt_coverage_rules',rec);
   // SERVER FIRST, LOCAL SECOND, changed 2026-09-04 -- the same reordering
   // addProvider() above already carries, and for the same reason. As of today
@@ -2692,16 +2744,31 @@ async function addCoverageRule(){
   // disabled, on every failure, which hid the real reason behind a reassuring
   // one. dntLastErrText() already carries the server's own words.
   if(!syncResult){toast(dntLastErrText('dnt_coverage_rules')||'Could not save the coverage rule -- nothing was changed',7000);return;}
-  var list=coverageRules();list.push(rec);st('dnt_coverage_list',list);
+  var list=coverageRules();
+  var at=-1;
+  for(var i=0;i<list.length;i++){if(list[i].id===rec.id){at=i;break;}}
+  if(at>=0)list[at]=rec;else list.push(rec);
+  st('dnt_coverage_list',list);
+  var wasEdit=!!cvEditId;
+  cancelCoverageEdit();
   rCoverage();
-  $('cv-add-payer').value='';$('cv-add-percent').value='';
-  toast('Coverage rule added');
+  toast(wasEdit?'Coverage rule updated':'Coverage rule added');
 }
 function removeCoverageRule(id){
-  // Local-only -- see removePatient()'s comment for why.
+  // LOCAL-ONLY, AND THE MESSAGE NOW SAYS SO PROPERLY (2026-09-04). It filtered
+  // the local list and said "removed on this device" -- true, and misleading,
+  // because dntSyncFromServer() reads the server's rules back and the row
+  // REAPPEARS. A user who removed a rule and saw it return would reasonably
+  // read that as a bug. There is no delete path for this resource
+  // (api/sd-data.js has none outside the sc_* family, platform-wide and
+  // deliberately), so the honest answer is to name the substitute: a 0% rule
+  // says exactly what "this payer covers nothing for this procedure" means, and
+  // computeEstimatedInsurance() already returns zero for it.
   var list=coverageRules().filter(function(c){return c.id!==id;});
-  st('dnt_coverage_list',list);rCoverage();
-  toast('Coverage rule removed on this device');
+  st('dnt_coverage_list',list);
+  if(cvEditId===id)cancelCoverageEdit();
+  rCoverage();
+  toast('Removed from this device only -- it is still on the server and will come back on the next sync. To stop a rule applying, Edit it and set the percent to 0.',9000);
 }
 
 // ── BOOKING SETTINGS ──────────────────────────────────────────────
