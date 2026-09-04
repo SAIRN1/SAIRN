@@ -531,8 +531,8 @@
       "task": "coverage rule edit path so a wrong percentage can be corrected",
       "claimed_at": "2026-09-04T21:43:41Z",
       "claimed_at_epoch": 1788558221.0128245,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:53:42Z"
     }
   ]
 }
