@@ -7337,7 +7337,7 @@ module.exports = async (req, res) => {
       // (edit/discontinue), same upsert shape as alf_clients itself.
       if (payload.entry_type !== 'medication_order') {
         const existingR = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
-        const existingRows = existingR.ok ? await existingR.json() : [];
+        const existingRows = await appendOnlyExisting(res, existingR, 'alf_mar'); if (!existingRows) return;
         if (Array.isArray(existingRows) && existingRows.length > 0) {
           res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This entry has already been recorded and cannot be overwritten' } });
           return;
@@ -7566,7 +7566,7 @@ module.exports = async (req, res) => {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Incident tracking is not set up yet — run sql/sairncare_incidents_schema.sql in Supabase first.' } });
         return;
       }
-      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existingRows = await appendOnlyExisting(res, existingR, 'alf_incidents'); if (!existingRows) return;
       const alreadyExists = Array.isArray(existingRows) && existingRows.length > 0;
       // Any authenticated employee may file a brand-new report. Once it exists, only
       // management/nursing/billing may update it (follow-up notes, status, state-reported
@@ -7774,7 +7774,7 @@ module.exports = async (req, res) => {
         return;
       }
       const existingR = await fetch(rest('alf_signals?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
-      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existingRows = await appendOnlyExisting(res, existingR, 'alf_signals'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This signal has already been recorded and cannot be overwritten' } });
         return;
@@ -7994,7 +7994,7 @@ module.exports = async (req, res) => {
       // determination changes, that is a NEW decision with its own timestamp, not an edit
       // erasing what was previously believed and acted upon. Same rule as alf_mar events.
       const existingR = await fetch(rest('alf_claim_routes?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
-      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existingRows = await appendOnlyExisting(res, existingR, 'alf_claim_routes'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This routing decision has already been recorded and cannot be overwritten' } });
         return;
@@ -8180,7 +8180,7 @@ module.exports = async (req, res) => {
       // Append-only: a completed-training assertion is exactly the class of record that must
       // not be quietly edited later. A correction is a NEW entry, never an overwrite.
       const existingR = await fetch(rest('alf_staff_credentials?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(String(payload.id)) + '&select=id'), { headers });
-      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existingRows = await appendOnlyExisting(res, existingR, 'alf_staff_credentials'); if (!existingRows) return;
       if (Array.isArray(existingRows) && existingRows.length > 0) {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This credential record has already been recorded and cannot be overwritten' } });
         return;
@@ -8270,7 +8270,7 @@ module.exports = async (req, res) => {
         res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The operational audit log is not set up yet — run sql/sairncare_op_audit_schema.sql in Supabase first.' } });
         return;
       }
-      const existingRows = existingR.ok ? await existingR.json() : [];
+      const existingRows = await appendOnlyExisting(res, existingR, 'alf_op_audits'); if (!existingRows) return;
       const existing = Array.isArray(existingRows) && existingRows[0];
       if (existing && !isReview) {
         res.status(409).json({ error: { code: 'ALREADY_RECORDED', message: 'This observation has already been recorded and cannot be overwritten. Record a new entry instead.' } });
@@ -9622,4 +9622,45 @@ function flat(data, extra) {
 function upstream(res, detail) {
   console.error('sd-data upstream error:', detail);
   res.status(502).json({ error: { message: 'Data store error — try again' } });
+}
+
+// ── AN APPEND-ONLY CHECK THAT COULD NOT RUN IS NOT A CLEAN BILL (2026-09-04) ─
+// Six SAIRNcare branches read a table to see whether an entry_id already
+// exists, and answer 409 ALREADY_RECORDED if it does. Each protects a record
+// the code's own comments say must never be quietly rewritten: a past
+// medication administration, an incident report, a resident signal, how a real
+// claim was billed, a completed-training assertion, an audit observation.
+//
+// All six read it as `existingR.ok ? await existingR.json() : []`, so a 401,
+// 403, 500 or 503 -- a revoked key, a missing grant, an unreachable store --
+// answered "no existing record" and the write proceeded.
+//
+// THE COST SPLITS IN TWO AND THE HALVES ARE NOT THE SAME:
+//   * alf_mar, alf_incidents and alf_op_audits write with
+//     `on_conflict=...merge-duplicates`, so on a failed check the prior record
+//     is SILENTLY OVERWRITTEN. For those three the append-only guarantee is
+//     enforced by this application check ALONE, and its failure mode was to
+//     permit the overwrite.
+//   * alf_signals, alf_claim_routes and alf_staff_credentials use a plain
+//     INSERT, and every one of these tables carries
+//     `unique (license_hash, entry_id)`. There the database refuses the
+//     duplicate regardless, so a failed check costs a confusing upstream error
+//     instead of a clean 409 -- wrong, not corrupting.
+// Verified against the six write sites and the four schema files rather than
+// assumed from the shared shape.
+//
+// Returns the rows, or null having ALREADY answered. Callers `if (!rows) return;`.
+async function appendOnlyExisting(res, r, what) {
+  if (!r.ok) {
+    console.error('sd-data: append-only check failed (' + what + '), HTTP', r.status);
+    res.status(502).json({ error: { code: 'INTEGRITY_CHECK_FAILED', message: 'Could not confirm whether this record already exists, so nothing was written. Try again.' } });
+    return null;
+  }
+  const rows = await r.json().catch(function () { return null; });
+  if (!Array.isArray(rows)) {
+    console.error('sd-data: append-only check returned a non-array (' + what + ')');
+    res.status(502).json({ error: { code: 'INTEGRITY_CHECK_FAILED', message: 'Could not confirm whether this record already exists, so nothing was written. Try again.' } });
+    return null;
+  }
+  return rows;
 }
