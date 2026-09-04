@@ -14,10 +14,10 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. SIX are fixed, one or two at a time, deliberately: sweeping thirteen
+// pass. SEVEN are fixed, one or two at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
 //
-// FIVE OF THE SIX ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
+// SIX OF THE SEVEN ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
 // omission: it has a different contract. That file carries a deliberate
 // two-place unreadable-store guard, so a corrupt record there must BLOCK the
 // app rather than return the default -- the opposite of what every assertion
@@ -35,12 +35,17 @@ const assert = require('assert');
 const vm = require('vm');
 
 const ROOT = path.join(__dirname, '..');
+// `fn` is the loader's real name in that file. FIVE of the six are spelled
+// `ld`; SAIRNscape's is `scpLd`, and hardcoding `ld` here is what would have
+// let it join the list without ever being driven -- the sixth app would have
+// shown five green sections and no sixth, which reads as progress.
 const APPS = [
-  { file: 'sairnlaw.html', name: 'SAIRNlaw' },
-  { file: 'sairnlegacy.html', name: 'SAIRNlegacy' },
-  { file: 'sairnbiz.html', name: 'SAIRNbiz' },
-  { file: 'sairncare.html', name: 'SAIRNcare' },
-  { file: 'sairnfreedom.html', name: 'SAIRNfreedom' },
+  { file: 'sairnlaw.html', name: 'SAIRNlaw', fn: 'ld' },
+  { file: 'sairnlegacy.html', name: 'SAIRNlegacy', fn: 'ld' },
+  { file: 'sairnbiz.html', name: 'SAIRNbiz', fn: 'ld' },
+  { file: 'sairncare.html', name: 'SAIRNcare', fn: 'ld' },
+  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', fn: 'ld' },
+  { file: 'sairnscape.html', name: 'SAIRNscape', fn: 'scpLd' },
 ];
 
 let pass = 0, fail = 0;
@@ -75,36 +80,38 @@ function load(app, mode, stored) {
     console: { error: (...a) => errs.push(a.join(' ')), warn: () => {}, log: () => {} },
   };
   vm.createContext(ctx);
-  vm.runInContext(grab(src, 'function ld(k,d){'), ctx);
-  return { ctx, errs };
+  vm.runInContext(grab(src, 'function ' + app.fn + '(k,d){'), ctx);
+  const ld = ctx[app.fn];
+  assert.strictEqual(typeof ld, 'function', app.fn + ' did not define a function');
+  return { ctx, errs, ld };
 }
 
 APPS.forEach((app) => {
   section(app.name);
 
   test('a healthy read returns the parsed value and says nothing', () => {
-    const { ctx, errs } = load(app, 'ok');
-    assert.deepStrictEqual(ctx.ld('k', []), [1, 2]);
+    const { errs, ld } = load(app, 'ok');
+    assert.deepStrictEqual(ld('k', []), [1, 2]);
     assert.strictEqual(errs.length, 0, 'a working read logged an error');
   });
 
   test('a GENUINELY ABSENT key returns the default, silently -- that is not a defect', () => {
     // The honest empty case. Logging here would make the console useless on
     // first run, when every key is absent.
-    const { ctx, errs } = load(app, 'absent');
-    assert.deepStrictEqual(ctx.ld('k', []), []);
+    const { errs, ld } = load(app, 'absent');
+    assert.deepStrictEqual(ld('k', []), []);
     assert.strictEqual(errs.length, 0, 'a first-run read logged an error');
   });
 
   test('AN UNREADABLE RECORD STILL RETURNS THE DEFAULT -- no caller can break', () => {
-    const { ctx } = load(app, 'corrupt');
-    assert.deepStrictEqual(ctx.ld('k', []), [], 'the return contract changed');
-    assert.deepStrictEqual(ctx.ld('k', { a: 1 }), { a: 1 }, 'a non-array default changed');
+    const { ld } = load(app, 'corrupt');
+    assert.deepStrictEqual(ld('k', []), [], 'the return contract changed');
+    assert.deepStrictEqual(ld('k', { a: 1 }), { a: 1 }, 'a non-array default changed');
   });
 
   test('...but it is now LOGGED, and says it is not the same as empty', () => {
-    const { ctx, errs } = load(app, 'corrupt');
-    ctx.ld('law_matters', []);
+    const { errs, ld } = load(app, 'corrupt');
+    ld('law_matters', []);
     assert.strictEqual(errs.length, 1, 'the unreadable record was not logged exactly once');
     assert.match(errs[0], new RegExp(app.name + ': stored record'));
     assert.match(errs[0], /law_matters/, 'the log does not name the key');
@@ -114,8 +121,8 @@ APPS.forEach((app) => {
   });
 
   test('THE LOG SAYS THE DATA IS STILL THERE, because the next question is "did I lose it"', () => {
-    const { ctx, errs } = load(app, 'corrupt');
-    ctx.ld('k', []);
+    const { errs, ld } = load(app, 'corrupt');
+    ld('k', []);
     assert.match(errs[0], /has not been overwritten/,
       'the log does not say the stored data survived, which invites a panic or a wipe');
   });
@@ -124,8 +131,8 @@ APPS.forEach((app) => {
     // A disabled or partitioned store and an unparseable value need different
     // fixes, so they must not read the same -- the same distinction the st()
     // fix makes between a quota error and everything else.
-    const { ctx, errs } = load(app, 'throws');
-    assert.deepStrictEqual(ctx.ld('k', []), []);
+    const { errs, ld } = load(app, 'throws');
+    assert.deepStrictEqual(ld('k', []), []);
     assert.strictEqual(errs.length, 1);
     assert.match(errs[0], /localStorage is unavailable/);
     assert.ok(!/UNREADABLE/.test(errs[0]), 'an unavailable store was reported as a corrupt record');
@@ -133,8 +140,8 @@ APPS.forEach((app) => {
 
   test('ld() still never throws', () => {
     ['ok', 'absent', 'corrupt', 'throws'].forEach((mode) => {
-      const { ctx } = load(app, mode);
-      assert.doesNotThrow(() => ctx.ld('k', []), mode + ' threw');
+      const { ld } = load(app, mode);
+      assert.doesNotThrow(() => ld('k', []), mode + ' threw');
     });
   });
 
@@ -144,8 +151,8 @@ APPS.forEach((app) => {
     // exists: its loader tested `r ? ... : d` -- truthiness, not `r === null`
     // like every other copy -- so '' took the absent branch SILENTLY. Same
     // return either way; only the silence changed.
-    const { ctx, errs } = load(app, 'ok', '');
-    assert.deepStrictEqual(ctx.ld('k', []), []);
+    const { errs, ld } = load(app, 'ok', '');
+    assert.deepStrictEqual(ld('k', []), []);
     assert.strictEqual(errs.length, 1, 'an empty stored value was not reported');
     assert.match(errs[0], /UNREADABLE/);
   });
@@ -165,18 +172,29 @@ APPS.forEach((app) => {
     //
     // Two literals cannot keep up with formatting. Normalising kills the whole
     // class -- a reformatted return of the defect is still the defect.
+    //
+    // THE NAME IS PARAMETERISED for the same reason the whitespace is stripped.
+    // A pattern hardcoding `functionld` is vacuously true of SAIRNscape, whose
+    // loader is `scpLd` -- it would have passed with the defect fully intact.
+    // A third literal is not the fix; deriving it from app.fn is.
     const bare = src.replace(/\s+/g, '');
-    assert.ok(!/functionld\(k,d\)\{try\{varr=localStorage\.getItem\(k\);returnr===null\?d:JSON\.parse\(r\);\}catch\(e\)\{returnd;\}\}/.test(bare),
+    const head = 'function' + app.fn + '\\(k,d\\)\\{try\\{varr=localStorage\\.getItem\\(k\\);';
+    assert.ok(!new RegExp(head + 'returnr===null\\?d:JSON\\.parse\\(r\\);\\}catch\\(e\\)\\{returnd;\\}\\}').test(bare),
       'the swallowing one-liner is back');
-    assert.ok(!/functionld\(k,d\)\{try\{varr=localStorage\.getItem\(k\);returnr\?JSON\.parse\(r\):d;\}catch\(e\)\{returnd;\}\}/.test(bare),
+    assert.ok(!new RegExp(head + 'returnr\\?JSON\\.parse\\(r\\):d;\\}catch\\(e\\)\\{returnd;\\}\\}').test(bare),
       'the swallowing one-liner is back, in its truthiness spelling');
+    // ...and the pattern is not vacuous: it must match the defect it names.
+    assert.ok(new RegExp(head + 'returnr\\?JSON\\.parse\\(r\\):d;\\}catch\\(e\\)\\{returnd;\\}\\}')
+      .test(('function ' + app.fn + '(k,d){try{var r=localStorage.getItem(k);' +
+             'return r?JSON.parse(r):d;}catch(e){return d;}}').replace(/\s+/g, '')),
+      'the negative control does not match, so the assertion above proves nothing');
   });
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these five are done');
+section('the checker agrees these six are done');
 
-const REMAINING = 8;   // of the original 14
+const REMAINING = 7;   // of the original 14
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -198,7 +216,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other eight are still on the list, not quietly dropped', () => {
+test('...and the other seven are still on the list, not quietly dropped', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,
