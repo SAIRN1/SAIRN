@@ -300,8 +300,8 @@
       "task": "pricing tiers in service agreement generator and AI price book",
       "claimed_at": "2026-09-04T11:25:53Z",
       "claimed_at_epoch": 1788521153.2661994,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T11:49:09Z"
     }
   ]
 }
