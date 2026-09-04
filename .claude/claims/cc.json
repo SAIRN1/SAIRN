@@ -521,8 +521,8 @@
       "task": "settings patch semantics merge server side",
       "claimed_at": "2026-09-04T21:29:18Z",
       "claimed_at_epoch": 1788557358.168639,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:41:25Z"
     }
   ]
 }
