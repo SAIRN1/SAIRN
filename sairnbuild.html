@@ -4717,11 +4717,22 @@ function rCostTbl(){
   var keys=Object.keys(byCode).sort();
   $('c-rollup').innerHTML=keys.length?keys.map(function(k){
     var b=byCode[k].budget,cm=byCode[k].committed;
-    var pct=b>0?Math.round(cm/b*100):0;
     var tier=costLineTier({budget:b,committed:cm,actual:0});
     var col=tier?TIER_COLOR[tier]:'var(--ok)';
-    return '<div class="srow"><span class="slbl">'+H(k)+'</span><span class="sval" style="color:'+col+'">'+fmt(cm)+' / '+fmt(b)+' &middot; '+pct+'%</span></div>'+
-      '<div class="pbar"><div class="pfill" style="width:'+Math.min(100,pct)+'%;background:'+col+'"></div></div>';
+    // A cost code with spend and NO budget cannot be expressed as a
+    // percentage. `pct` was hardcoded to 0 for that case, and since
+    // f072765 taught costLineTier() to call budget<=0 with real spend
+    // CRITICAL, the row printed "0%" and a zero-width bar in
+    // critical red -- the colour and the number saying opposite things
+    // in the same row. Found 2026-09-04 re-reviewing that commit: it
+    // changed the function's contract and this consumer was not
+    // revisited. Say which case it is instead of implying zero.
+    var hasBudget=b>0;
+    var pct=hasBudget?Math.round(cm/b*100):0;
+    var pctText=hasBudget?(pct+'%'):(cm>0?'no budget set':'--');
+    var barPct=hasBudget?Math.min(100,pct):(cm>0?100:0);
+    return '<div class="srow"><span class="slbl">'+H(k)+'</span><span class="sval" style="color:'+col+'">'+fmt(cm)+' / '+fmt(b)+' &middot; '+pctText+'</span></div>'+
+      '<div class="pbar"><div class="pfill" style="width:'+barPct+'%;background:'+col+'"></div></div>';
   }).join(''):'<div style="color:var(--muted);text-align:center;padding:12px;">No cost lines in scope</div>';
 }
 
