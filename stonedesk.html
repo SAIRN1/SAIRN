@@ -37378,6 +37378,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 3. TIMESHEETS — orphaned duplicate removed (canonical is the manual
+// @REGISTER module=timesheets canonical=sdTSLog,sdTSRender canonical_key=sd_timesheets deleted=tsClockIn,tsClockOut,tsConfirmClockIn,tsExportCSV orphan_keys=sd_ts_entries,sd_ts_active
 // hours-logging panel below -- sdTSLog/sdTSRender, ts-emp/ts-date/ts-in/
 // ts-out/ts-job/ts-rate/ts-tbody ids, key sd_timesheets, nav-dispatched).
 // This block never had a host panel -- ts-clockin-form/ts-active/ts-log/
@@ -37391,6 +37392,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 4. REMNANT YARD -- orphaned duplicate module removed (2026-07-30).
+// @REGISTER module=remnant-yard removed=2026-07-30 canonical=sdRemnantAdd,sdRemnantAI,sdRemnantPrint canonical_key=sd_remnant deleted=remAddRemnant,remSave,remDelete,remMarkSold,remRender,remAIMatch,remExport orphan_keys=sd_remnants
 // Canonical is the sdRemnant* IIFE inside panel-remnant (#rem-list, storage
 // key sd_remnant), which owns that panel's only working action buttons
 // (sdRemnantAdd/sdRemnantAI/sdRemnantPrint) and has real seed data.
@@ -37413,6 +37415,19 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 5. PURCHASE ORDERS — orphaned duplicate removed (canonical is panel-po /
+// @REGISTER module=purchase-orders canonical=sdPOCreate canonical_key=sd_pos deleted=poCreate,poSave
+// CORRECTION 2026-09-04: the prose below names "sdPOCreate/sdPORender" as the
+// canonical survivors. sdPORender() DOES NOT EXIST and there is no sign it ever
+// did -- this module exposes only sdPOCreate/sdPOAI/sdPOPrint/sdPOExport, and
+// its renderer is a plain `function render()` local to the IIFE, so it cannot
+// be named from outside. Found on the first run of the structured @REGISTER
+// check, which is what that line is for: the prose had carried the wrong name
+// since the entry was written and nothing could see it.
+// NOTED, NOT CHANGED, because it is a different question: that local render()
+// runs once at IIFE load and again after sdPOCreate, and is NOT called on nav,
+// unlike every other panel's renderer. Harmless today -- the data is local and
+// the only mutation path re-renders -- but it means the panel shows whatever it
+// had at page load if anything else ever writes sd_pos.
 // sdPOCreate/sdPORender below; this block never had a host panel, po-list/
 // po-form/etc never existed, poCreate/poSave had zero callers, and its
 // line-item schema {supplier,deliveryDate,shipTo,terms,lines,total} was
@@ -37426,6 +37441,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 6. RECEIVING — orphaned duplicate removed (canonical is
+// @REGISTER module=receiving canonical=sdRecvLog canonical_key=sd_receiving deleted=recReceive,recSave,recAddItem orphan_keys=sd_rec_log
 // panel-receiving / sdRecvLog below, recv- prefixed ids, key
 // sd_receiving). This block never had a host panel, rec-form/
 // rec-supplier/rec-po/rec-log/rec-items-container never existed,
@@ -37440,6 +37456,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 7. DELIVERY MANIFEST — orphaned duplicate removed (canonical is
+// @REGISTER module=delivery-manifest canonical=sdManifestAdd,sdManifestAI,sdManifestExport,sdManifestPrint canonical_key=sd_manifest deleted=mfCreateManifest,mfSaveStop,mfPrintToday orphan_keys=sd_manifest_stops
 // panel-manifest / sdManifestAdd/sdManifestAI/sdManifestExport/
 // sdManifestPrint below, mfst- prefixed ids, key sd_manifest). This block
 // never had a host panel, mf-form/mf-cust/mf-date-filter/mf-manifest-list/
@@ -37451,6 +37468,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 8. SMS NOTIFICATIONS — orphaned duplicate removed (canonical is
+// @REGISTER module=sms-notifications deleted=smsSend,smsRenderLog
 // panel-sms / sdSMS* below; this block never had a host panel, its
 // smsRenderLog() clobbered the real #sms-log render on every boot,
 // and smsSend() had zero callers). See STONEDESK-SESSION72-HANDOFF.md.
@@ -37458,6 +37476,7 @@ async function jcAIAnalyze(){
 
 // ================================================================
 // 9. AI INSTANT QUOTE — orphaned duplicate removed (canonical is
+// @REGISTER module=ai-instant-quote canonical=sdAIQGenerate deleted=aiqGenerate,aiqRenderHistory
 // panel-aiquote's real, wired sdAIQGenerate() below, reformed in this
 // same commit to use real calc()/TIERS/PROJECTS/MATERIALS math). This
 // block (aiqGenerate/aiqHistory/aiqRenderHistory) had zero callers --
@@ -37523,6 +37542,7 @@ async function sintAIAdvisor(){
 
 // ================================================================
 // 11. CARE GUIDE AI — orphaned duplicate removed (canonical is
+// @REGISTER module=care-guide-ai canonical=sdCareGenerate,sdCarePrint,sdCareEmail canonical_key=sd_care_guides deleted=cgGenerate,cgPrint orphan_keys=sd_cg_history
 // panel-careguide / sdCareGenerate/sdCarePrint/sdCareEmail below; this
 // block never had a host panel, cg-mat/cg-result/cg-history/etc never
 // existed, cgGenerate/cgPrint had zero callers). Unlike the SMS/CP/PO/CRM
@@ -37667,6 +37687,7 @@ function revRenderLog(){
 
 // ================================================================
 // 15. CONTRACTOR PORTAL — orphaned duplicate removed (canonical is
+// @REGISTER module=contractor-portal canonical=sdConRender,sdConAdd deleted=cpSave
 // panel-contractor / sdConRender/sdConAdd below; this block never had a
 // host panel, cp-list/cp-form/etc never existed, cpSave had zero callers).
 // Note: this block's PIN-based login-invite concept (SMS/email invite,
@@ -37676,6 +37697,7 @@ function revRenderLog(){
 
 // ================================================================
 // 16. REFERRAL TRACKER — orphaned duplicate removed (canonical is
+// @REGISTER module=referral-tracker canonical=sdRefAdd canonical_key=sd_referrals deleted=rfSave,rfAddReferral,rfAIBriefing,rfRender
 // panel-referral / sdRefAdd()+save()+render() above, wired to the real
 // "Log Referral" button). rf-form/rf-cust/rf-date/rf-referred-by/
 // rf-source-type/rf-value/rf-status/rf-ai-briefing never existed
@@ -37943,6 +37965,19 @@ function bltnRender(){
 // system existed anywhere in the file (no button called wstLog() at all).
 // ================================================================
 // TEMPLATE / DXF FILE MANAGER (tmpl* module) -- RETIRED 2026-07-30.
+// @REGISTER module=template-dxf-manager removed=2026-07-30 canonical=tmSave,tmExport,tmMigrateLegacyRecords canonical_key=sd_templates deleted=tmplAdd,tmplExport,tmplSave,tmplUpdateCNC,tmplDelete,tmplRender retired_keys=sd_template_records
+// The @REGISTER line was added 2026-09-04 and this entry is WHY the format
+// exists at all. It is not numbered and it says "RETIRED" rather than
+// "orphaned duplicate removed", so every scan looking for the register's usual
+// phrasing walked straight past it -- including the first version of
+// tools/orphan_register_check.py. The stale index row that prompted that tool
+// ("Two parallel template modules with different storage keys") was about THIS
+// entry, and the tool could not see it.
+// retired_keys, not orphan_keys: sd_template_records is deliberately still
+// READ, by tmMigrateLegacyRecords(), and deliberately never written. The
+// checker asserts exactly that -- no writer, at least one reader -- because
+// "dead" and "read-only legacy" are different states and collapsing them would
+// either raise a false alarm here or hide a real one elsewhere.
 // Canonical is the tm* module (panel-template, key sd_templates), which is
 // materially richer: statusLog[] audit trail, a 5-state workflow
 // (received/reviewed/sent_cnc/issues/remeasure), measuring-device tracking,
