@@ -57,6 +57,13 @@ import os
 import re
 import sys
 
+# The one shared comment stripper. Seven near-copies existed in tools/ on
+# 2026-09-04 and three were destroying most of their input -- see the
+# measured table in jscomments.py's docstring.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jscomments as _jscomments
+
+
 UTC_CAL = re.compile(r"new Date\(\)\.toISOString\(\)\.slice\(\s*0\s*,\s*(?:10|7)\s*\)")
 UTC_INSTANT = re.compile(r"new Date\(\)\.toISOString\(\)(?!\s*\.slice)")
 LOCAL_HELPER = re.compile(r"function\s+\w*[Ll]ocal(?:Today|Date)\w*\s*\(")
@@ -90,15 +97,31 @@ def strip_comments(js):
     was the text of a comment DESCRIBING the helper which had already replaced
     those call sites -- a fix being reported as the bug it fixed.
 
-    Block comments go entirely. Line comments are only stripped when `//`
-    starts the line (after whitespace), which is deliberately conservative:
-    stripping every `//` would eat the one inside a URL string and silently
-    change what the rest of the scan sees. Comment text is replaced with blank
-    lines rather than deleted, so reported line numbers stay true to the file.
+    ── DELEGATED TO tools/jscomments.py, 2026-09-04 ─────────────────────────
+    The line-comment half of this was deliberately conservative and said so:
+    it only stripped `//` at the start of a line, because "stripping every `//`
+    would eat the one inside a URL string". That reasoning was right and the
+    caution is no longer needed -- the shared state machine skips over strings,
+    template literals and regex literals, so it can strip every real `//`
+    without touching a URL.
+
+    THE BLOCK-COMMENT HALF WAS THE PROBLEM, and it was severe. `/\\*.*?\\*/`
+    with DOTALL treats the `/*` inside `accept="image/*"` as an opening
+    delimiter and runs to the next `*/` anywhere in the file -- the exact
+    landmine `sairn_dead_function_sweep.py` documents, where it blanked 80.5%
+    of sairncare.html. Measured 2026-09-04, this scan was seeing:
+
+        sairnvet.html      10-11% of the file    350 of 362 declarations gone
+        sairncare.html     11%                   200 of 212 gone
+        stonedesk.html     53%                   405 of 1003 gone
+
+    A scan reading a tenth of a file and reporting "none" is not a weak check,
+    it is a false one. Its previous clean results on these apps meant nothing.
+
+    Line numbers still stay true to the file: the shared stripper blanks
+    comments to spaces and preserves every newline.
     """
-    js = re.sub(r"/\*.*?\*/", lambda m: "\n" * m.group(0).count("\n"), js, flags=re.S)
-    js = re.sub(r"^[ \t]*//[^\n]*$", "", js, flags=re.M)
-    return js
+    return _jscomments.strip_comments(js)
 
 
 def scan_utc(js):

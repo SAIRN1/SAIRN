@@ -73,6 +73,13 @@ import sys
 import glob
 import json
 
+# The one shared comment stripper. Seven near-copies existed in tools/ on
+# 2026-09-04 and three were destroying most of their input -- see the
+# measured table in jscomments.py's docstring.
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jscomments as _jscomments
+
+
 SEP = chr(92)
 
 
@@ -89,10 +96,23 @@ def strip_comments(s):
 
     Same reason sairn_strict_args_check.py strips them: a comment quoting the
     old code is the false positive that bit the re-scan of a fix.
+
+    ── DELEGATED TO tools/jscomments.py, 2026-09-04 ─────────────────────────
+    This was two regexes, `/\\*[\\s\\S]*?\\*/` and `^\\s*//.*$`. The first one is
+    the landmine `sairn_dead_function_sweep.py` documents: a `/*` inside a
+    STRING or a REGEX opens a comment that runs to the next `*/` anywhere in
+    the file. Measured across 80 `api/**.js` files it over-stripped two of
+    them, worst case `api/_lib/ai-rate-limit.test.js` at 37% surviving against
+    78% for the shared state machine, and `api/law-auth.js` -- a live auth
+    endpoint this tool covers -- at 62% against 71%.
+
+    Nine points of a live auth endpoint invisible to a seam check is a check
+    reporting clean about code it never saw. Seven separate strip_comments()
+    implementations existed in tools/ on this date and three were destroying
+    most of their input; this is one of them, now pointed at the one that
+    measured best.
     """
-    s = re.sub(r'/\*[\s\S]*?\*/', '', s)
-    s = re.sub(r'^\s*//.*$', '', s, flags=re.M)
-    return s
+    return _jscomments.strip_comments(s)
 
 
 def discover_pairs(root='.'):

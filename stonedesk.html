@@ -25922,7 +25922,32 @@ function renderRemakes(){
   sv('rm-approved',open.filter(r=>r.approvedExtension).length);
   var today=new Date().toDateString();
   sv('rm-complete',sdRemakes.filter(r=>r.status==='complete'&&r.completedAt&&new Date(r.completedAt).toDateString()===today).length);
-  sv('rm-mtd',sdRemakes.filter(r=>(r.createdAt||'').slice(0,7)===new Date().toISOString().slice(0,7)).length);
+  // ── MONTH-TO-DATE WAS COMPUTED IN UTC (fixed 2026-09-04) ────────────────
+  // Was: (r.createdAt||'').slice(0,7) === new Date().toISOString().slice(0,7).
+  // Both sides were UTC, so it was internally consistent -- and consistently
+  // wrong for a US shop in the evening. createdAt is an ISO INSTANT, and
+  // slicing it takes the UTC calendar month; on the last evening of every
+  // month UTC has already rolled over, so this KPI dropped to the handful of
+  // records stamped in the new UTC month and read as ~0 for the final four to
+  // eight hours of every month.
+  //
+  // The line directly above already does the right thing for "completed
+  // today" -- new Date(r.completedAt).toDateString() converts the instant to
+  // the viewer's LOCAL calendar. These two KPIs were disagreeing about what
+  // month it was, two lines apart.
+  //
+  // Found only because tools/sairn_stale_snapshot_scan.py started seeing the
+  // file: its comment stripper had been blanking 47% of stonedesk.html and
+  // reporting "UTC calendar derivations: none".
+  var mtdMonth=(typeof sdLocalToday==='function')
+    ? sdLocalToday().slice(0,7)
+    : (new Date().getFullYear()+'-'+String(new Date().getMonth()+1).padStart(2,'0'));
+  sv('rm-mtd',sdRemakes.filter(function(r){
+    if(!r.createdAt) return false;
+    var d=new Date(r.createdAt);
+    if(isNaN(d)) return false;
+    return (d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'))===mtdMonth;
+  }).length);
   var reasonCounts={};
   sdRemakes.forEach(r=>{if(r.reason)reasonCounts[r.reason]=(reasonCounts[r.reason]||0)+1;});
   var topReason=Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1])[0];
