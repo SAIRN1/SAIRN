@@ -204,7 +204,25 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, facilities_checked: 0, note: 'No facility profiles are provisioned yet.' });
       return;
     }
-    const facilities = fr.ok ? await fr.json().catch(() => []) : [];
+    // A SWEEP THAT CHECKED NOTHING MUST NOT REPORT ZERO EXCEPTIONS (2026-09-04).
+    // This read used to fall back to [], so an unreachable store produced an
+    // empty facility list, no facility was checked, and the response said
+    // `facilities_checked: 0` -- which reads as "nothing to flag" rather than
+    // "I could not look". This is the medication-exception alert sweep: the
+    // alerts simply would not fire, and nothing anywhere would say so.
+    // The 404/400 branch above already distinguishes "not provisioned"; this
+    // is the case where the table exists and would not answer.
+    if (!fr.ok) {
+      console.error('alf-alerts: facility sweep read failed, HTTP', fr.status);
+      res.status(502).json({ error: { code: 'SWEEP_READ_FAILED', message: 'Could not read the facility list, so no facility was checked. No exceptions were computed.' } });
+      return;
+    }
+    const facilities = await fr.json().catch(() => null);
+    if (!Array.isArray(facilities)) {
+      console.error('alf-alerts: facility sweep read returned a non-array');
+      res.status(502).json({ error: { code: 'SWEEP_READ_FAILED', message: 'Could not read the facility list, so no facility was checked. No exceptions were computed.' } });
+      return;
+    }
     const now = new Date();
     const out = [];
     for (const f of (facilities || [])) {

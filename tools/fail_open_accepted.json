@@ -1,0 +1,10 @@
+[
+  {
+    "file": "api/sd-data.js",
+    "var": "facRows",
+    "line_at_triage": 8347,
+    "status": "KNOWN-OPEN, needs a decision -- NOT cleared",
+    "reason": "An unreadable alf_facility read yields {}, so evaluateFoodTemp() falls back to the FDA Food Code defaults instead of this facility's own thresholds. A facility with a STRICTER local limit is graded against the looser national one, and a cold-holding record that should fail at their 40F can pass at the FDA 41F. NOT FIXED because the fix is a real trade-off, not an oversight: refusing the write would mean REFUSING TO RECORD A FOOD TEMPERATURE because a rate card was unreadable, and the record is itself the compliance artifact -- losing it may be worse than grading it against the FDA floor. The evaluation does store usedOverride:{}, so the record discloses that no override was applied. Michael's call. Listed here so it is not silently re-triaged as clean.",
+    "key_note": "Keyed on (file, var) rather than line, because line numbers shift on every edit and a stale line silently un-accepts an entry. The cost is that a SECOND `facRows` in this file would be accepted too -- there is exactly one today (the billing-preview rate-card read was fixed 2026-09-04), and if another appears it must be triaged before this entry is trusted."
+  }
+]

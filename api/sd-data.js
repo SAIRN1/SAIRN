@@ -5202,7 +5202,18 @@ module.exports = async (req, res) => {
         if (required.length) {
           const sr = await fetch(rest('subcontractors?license_hash=eq.' + enc(licHash) +
             '&app_id=eq.' + enc(APP) + '&sub_id=eq.' + enc(subId) + '&select=*&limit=1'), { headers });
-          const srows = sr.ok ? await sr.json() : null;
+          // THIS ONE ALREADY FAILED CLOSED, and only the REASON was wrong
+          // (2026-09-04). A failed read produced null, so the gate refused with
+          // "no subcontractor with that sub_id" -- correct outcome, false
+          // explanation, and the operator goes looking for a missing record
+          // that is right there. Refusing for a reason that is not true is its
+          // own defect even when the refusal is right.
+          if (!sr.ok) {
+            console.error('sd-data: subcontractor gate read failed, HTTP', sr.status);
+            res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that subcontractor, so the assignment was not created. This is not a missing record -- try again.' } });
+            return;
+          }
+          const srows = await sr.json().catch(() => null);
           const theSub = Array.isArray(srows) && srows[0];
           if (!theSub) { res.status(400).json({ error: { code: 'NO_SUCH_SUB', message: 'sub_assignments: no subcontractor with that sub_id' } }); return; }
           const gate = subs.canAssign({ subcontractor: theSub, today: today, required: required, warn_days: gateWarn });
@@ -7481,8 +7492,22 @@ module.exports = async (req, res) => {
         });
       }
       const facR = await fetch(rest('alf_facility?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
-      const facRows = facR.ok ? await facR.json().catch(() => []) : [];
-      const rateCard = (Array.isArray(facRows) && facRows[0] && facRows[0].data) || {};
+      // AN UNREADABLE RATE CARD IS NOT AN EMPTY ONE (2026-09-04). This fell
+      // back to {}, so charges were derived against NO RATES and returned as a
+      // real figure. A billing preview computed from a rate card that could not
+      // be read is a fabricated number on the screen a person bills from.
+      if (!facR.ok) {
+        console.error('sd-data: alf_facility rate-card read failed, HTTP', facR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the facility rate card, so no charges were derived.' } });
+        return;
+      }
+      const facRows = await facR.json().catch(() => null);
+      if (!Array.isArray(facRows)) {
+        console.error('sd-data: alf_facility rate-card read returned a non-array');
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the facility rate card, so no charges were derived.' } });
+        return;
+      }
+      const rateCard = (facRows[0] && facRows[0].data) || {};
       const derived = careCharges.deriveCharges({
         month: payload.month, resident_id: String(payload.resident_id), rate_card: rateCard, events: events
       });
@@ -7491,8 +7516,23 @@ module.exports = async (req, res) => {
       // change -- the audit trail that replaces the manual reconciliation.
       const invId = 'INV-' + payload.resident_id + '-' + payload.month;
       const invR = await fetch(rest('alf_billing?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(invId) + '&select=data'), { headers });
-      const invRows = invR.ok ? await invR.json().catch(() => []) : [];
-      const priorLines = (Array.isArray(invRows) && invRows[0] && invRows[0].data && invRows[0].data.charge_lines) || [];
+      // AND AN UNREADABLE PRIOR INVOICE IS NOT AN ABSENT ONE. This fell back to
+      // [], so the reconciliation reported EVERY derived line as new and
+      // `invoice_exists: false` -- on the screen whose own comment calls it
+      // "the audit trail that replaces the manual reconciliation". Somebody
+      // regenerates on the strength of that.
+      if (!invR.ok) {
+        console.error('sd-data: alf_billing prior-invoice read failed, HTTP', invR.status);
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the existing invoice, so no reconciliation is shown.' } });
+        return;
+      }
+      const invRows = await invR.json().catch(() => null);
+      if (!Array.isArray(invRows)) {
+        console.error('sd-data: alf_billing prior-invoice read returned a non-array');
+        res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the existing invoice, so no reconciliation is shown.' } });
+        return;
+      }
+      const priorLines = (invRows[0] && invRows[0].data && invRows[0].data.charge_lines) || [];
       derived.reconciliation_vs_invoice = careCharges.reconcileAgainstInvoice(derived, priorLines);
       derived.invoice_exists = !!(Array.isArray(invRows) && invRows.length);
       res.status(200).json(derived);
