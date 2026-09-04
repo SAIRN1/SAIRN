@@ -393,6 +393,16 @@
       "claimed_at_epoch": 1788520056.6890666,
       "status": "released",
       "released_at": "2026-09-04T11:18:22Z"
+    },
+    {
+      "id": "cc-1788521053",
+      "session": "cc",
+      "subject": "fail-open-sweep",
+      "task": "classifier tool and alf alerts facility read",
+      "claimed_at": "2026-09-04T11:24:13Z",
+      "claimed_at_epoch": 1788521053.3895268,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
