@@ -8,12 +8,25 @@
 // api/sd-data.js and into each app's own registry file, merged here into
 // EXTRA_ACTIONS.
 //
-// The gate itself is exercised through the REAL exported api/sd-data.js
-// handler with a mock req/res, not a reimplementation of its logic -- a test
-// that re-derives the condition it is checking would pass against a broken
-// gate. No env vars are set, so anything that passes the gate lands on the
-// SUPABASE_URL check and returns 500; that 500 IS the positive signal, and a
-// 400 is the negative one. Neither path reaches Supabase or any real data.
+// The gate itself is exercised through the REAL api/sd-data.js code, not a
+// reimplementation of its logic -- a test that re-derives the condition it is
+// checking would pass against a broken gate.
+//
+// ── HOW IT REACHES THE GATE CHANGED 2026-09-04, AND WHY ──────────────────
+// It used to call the exported handler with a junk bearer token and read
+// whether it got a 400 (refused) or fell through to the missing-env 500
+// (allowed). THAT ONLY WORKED BECAUSE THE GATE RAN BEFORE LICENCE VALIDATION
+// -- which is exactly the disclosure defect fixed that day: an unauthenticated
+// caller could enumerate all 171 resource names. With validation first, every
+// such call now returns 500 CONFIG and allow is indistinguishable from refuse.
+//
+// So the gate is now driven directly as sd-data.js's exported checkEnvelope --
+// the same function the handler calls, one call earlier in the same file. The
+// guarantee is unchanged: this is the real gate, not a copy of it.
+//
+// The ordering itself is asserted separately, at the bottom, THROUGH the real
+// handler -- because a seam that lets the test skip auth would be worthless if
+// nothing checked that the handler does not skip it too.
 
 const assert = require('assert');
 const fs = require('fs');
@@ -46,8 +59,18 @@ async function atest(name, fn) {
   }
 }
 
-// Drive the real handler and report only what the gate decides.
-async function gate(action, resource) {
+// Drive the real gate and report only what it decides.
+function gate(action, resource) {
+  const r = handler.checkEnvelope(action, resource);
+  return r ? { code: r.status, body: r.body } : { code: PASSED_GATE, body: null };
+}
+const PASSED_GATE = 'ALLOWED';   // checkEnvelope returned null => allowed through
+const REJECTED = 400;            // the gate refused the verb
+
+// Drive the real EXPORTED HANDLER with a mock req/res. Used only by the
+// ordering assertions at the bottom; no env vars are set, so nothing here can
+// reach Supabase or any real data.
+async function callHandler(action, resource, key) {
   const out = { code: null, body: null };
   const res = {
     status(c) { out.code = c; return res; },
@@ -55,13 +78,11 @@ async function gate(action, resource) {
   };
   await handler({
     method: 'POST',
-    headers: { authorization: 'Bearer extra-actions-test-not-a-real-key' },
+    headers: { authorization: 'Bearer ' + (key || 'extra-actions-test-not-a-real-key') },
     body: { action, resource, payload: {} }
   }, res);
   return out;
 }
-const PASSED_GATE = 500;   // reached the env check => the gate allowed it
-const REJECTED = 400;      // the gate refused the verb
 
 (async () => {
   console.log('EXTRA_ACTIONS merge:');
@@ -321,6 +342,112 @@ const REJECTED = 400;      // the gate refused the verb
     const r = await gate('delete', '__no_such_resource__');
     assert.strictEqual(r.code, REJECTED);
     assert.strictEqual(r.body.error.message, "action must be 'read' or 'write'");
+  });
+
+  // ── ORDERING: NO RESOURCE NAME LEAVES THE ENDPOINT WITHOUT A VALID LICENCE ──
+  //
+  // Fixed 2026-09-04. Before it, `POST /api/sd-data` with
+  // `Authorization: Bearer not-a-real-key` and an unknown resource answered
+  // 400 naming all 171 registered resources, to a caller holding no credential
+  // -- verified live on 2026-08-24 with no credential used. Names only, never
+  // data, but it enumerated the whole platform's surface and let an anonymous
+  // caller tell a real resource from an invented one by which refusal came
+  // back.
+  //
+  // These go through the REAL EXPORTED HANDLER on purpose. Everything above
+  // drives checkEnvelope directly, which is only safe while the handler is
+  // known to run validation first -- so that is what these assert. No env vars
+  // are set, so validateLicenseKey() throws CONFIG and the handler answers 500
+  // before any Supabase call.
+  console.log('\nOrdering — an unauthenticated caller learns nothing:');
+
+  await atest('the gate is exported for the tests above, and is the real one', () => {
+    assert.strictEqual(typeof handler.checkEnvelope, 'function',
+      'sd-data.js no longer exports checkEnvelope -- every gate assertion above is dead');
+    assert.strictEqual(handler.checkEnvelope('read', '__no_such_resource__').status, 400);
+  });
+
+  await atest('a junk token NEVER sees the resource list', async () => {
+    const r = await callHandler('read', '__no_such_resource__');
+    const text = JSON.stringify(r.body);
+    assert.ok(!/resource must be one of/.test(text),
+      'the resource list is still disclosed to an unauthenticated caller: ' + text);
+    for (const name of reg.RESOURCE_NAMES) {
+      assert.ok(text.indexOf(name) === -1,
+        'the refusal names the registered resource "' + name + '": ' + text);
+    }
+  });
+
+  await atest('...and cannot tell a REAL resource from an invented one', async () => {
+    // The oracle, not just the list. If these two differ in any way, an
+    // anonymous caller can probe for a resource's existence one guess at a time.
+    const real = await callHandler('read', 'profile');
+    const fake = await callHandler('read', '__no_such_resource__');
+    assert.strictEqual(real.code, fake.code);
+    assert.deepStrictEqual(real.body, fake.body);
+  });
+
+  await atest('...nor an allowed verb from a refused one', async () => {
+    const allowed = await callHandler('delete', 'sc_denial');
+    const refused = await callHandler('delete', 'profile');
+    assert.strictEqual(allowed.code, refused.code);
+    assert.deepStrictEqual(allowed.body, refused.body);
+  });
+
+  await atest('...nor whether the sc_ family exists', async () => {
+    // The action-gate message appends "or 'delete'" only for sc_ resources,
+    // which was a second, smaller oracle on the same unauthenticated path.
+    const sc = await callHandler('bogus_verb', 'sc_denial');
+    const plain = await callHandler('bogus_verb', 'profile');
+    assert.deepStrictEqual(sc.body, plain.body);
+    assert.ok(!/delete/.test(JSON.stringify(sc.body)), JSON.stringify(sc.body));
+  });
+
+  await atest('THE PRODUCTION PATH: a configured server answers 401, still naming nothing', async () => {
+    // Everything above proves it on the missing-env 500. That is the shape a
+    // developer's machine happens to be in, NOT the one a customer hits, and a
+    // fix proved only in the accidental configuration is not proved. So this
+    // one runs with env set and the licence lookup stubbed to "no such key",
+    // which is the real 401 INVALID_LICENSE branch.
+    const envURL = process.env.SUPABASE_URL;
+    const envKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const realFetch = global.fetch;
+    process.env.SUPABASE_URL = 'https://stub.invalid';
+    process.env.SUPABASE_SERVICE_ROLE_KEY = 'stub-service-key';
+    // Returns zero rows: license_keys has no such key. No network is involved.
+    global.fetch = async () => ({ ok: true, status: 200, json: async () => [] });
+    try {
+      const fake = await callHandler('read', '__no_such_resource__');
+      const real = await callHandler('read', 'profile');
+      assert.strictEqual(fake.code, 401, JSON.stringify(fake.body));
+      assert.strictEqual(fake.body.error.code, 'INVALID_LICENSE');
+      assert.deepStrictEqual(real.body, fake.body,
+        'a configured server still distinguishes a real resource from an invented one');
+      const text = JSON.stringify(fake.body);
+      assert.ok(!/resource must be one of/.test(text), text);
+      for (const name of reg.RESOURCE_NAMES) {
+        assert.ok(text.indexOf(name) === -1, 'the 401 names "' + name + '": ' + text);
+      }
+    } finally {
+      global.fetch = realFetch;
+      if (envURL === undefined) delete process.env.SUPABASE_URL; else process.env.SUPABASE_URL = envURL;
+      if (envKey === undefined) delete process.env.SUPABASE_SERVICE_ROLE_KEY; else process.env.SUPABASE_SERVICE_ROLE_KEY = envKey;
+    }
+  });
+
+  test('the handler validates the licence BEFORE it calls the gate', () => {
+    // A source assertion, because every runtime check above would still pass if
+    // the two were swapped back and the tests kept driving checkEnvelope
+    // directly -- the gate would answer correctly and the handler would leak.
+    const src = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+    const body = src.slice(src.indexOf('module.exports = async (req, res) =>'));
+    const validate = body.indexOf('await validateLicenseKey(licenseKey)');
+    const envelope = body.indexOf('checkEnvelope(action, resource)');
+    assert.ok(validate > 0, 'validateLicenseKey call not found in the handler');
+    assert.ok(envelope > 0, 'checkEnvelope call not found in the handler');
+    assert.ok(validate < envelope,
+      'THE ENVELOPE GATE RUNS BEFORE LICENCE VALIDATION AGAIN -- an unauthenticated ' +
+      'caller can enumerate every registered resource. See sd-data.js, 2026-09-04.');
   });
 
   console.log('\n' + passed + ' passed, ' + failed + ' failed');

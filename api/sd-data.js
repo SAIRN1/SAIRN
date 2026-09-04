@@ -188,6 +188,61 @@ const SCP_QC_AUTHORITY_ROLES = ['owner', 'crew_lead'];
 // well under this ceiling before it's ever sent.
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
 
+// Single source for "is this one of the 28 SAIRNcode resources". Used by the
+// envelope gate below and by the handler (the delete branch reads it too), so
+// the two cannot answer differently.
+function isSc(resource) {
+  return SC_RESOURCES.indexOf(resource) !== -1;
+}
+
+// ── ENVELOPE GATE: is this verb allowed on this resource ─────────────────
+// Returns null to allow, or { status, body } to refuse. Pure -- it decides
+// from the envelope alone and touches neither req nor res.
+//
+// EXTRACTED 2026-09-04, and the reason is a test seam, not tidiness.
+// api/_resources/extra-actions.test.js drives this gate for ~20 assertions.
+// It used to reach it through the real exported handler with a junk bearer
+// token, because the gate ran BEFORE license validation -- which is precisely
+// the disclosure defect that ordering has now been changed to fix. That route
+// is gone. Rather than have the test reimplement the condition it checks
+// (which its own header warns "would pass against a broken gate"), it now
+// calls THIS function: the same code the handler runs, one call earlier.
+//
+// Verbs beyond the universal read/write are declared per resource in
+// api/_resources/<app>.js and merged into EXTRA_ACTIONS. Today that is
+// 'delete' for the 28-resource SAIRNcode family, plus compute-only verbs owned
+// by one resource each: 'route' (alf_payer_rules), 'evaluate'
+// (alf_compliance_rules) and 'derive_charges' (alf_billing).
+//
+// REPLACED three hand-written `action === 'x' && resource === 'y'` flags that
+// lived in the handler (2026-08-24). Those were a third place to edit when
+// adding a resource, separate from both the registry and the handler branch,
+// and the note this block used to carry recorded what missing it costs:
+// "registering a resource and adding a handler branch is NOT enough, this
+// gate must allow the verb too, or the branch is unreachable and returns a
+// confusing 400 (found exactly that way here)." The verb now lives next to
+// the resource that owns it, so the two cannot be added apart.
+//
+// Deliberately still narrow: a verb reaches exactly the resources whose own
+// app granted it. Nothing here widens a verb to all 171 resources.
+function checkEnvelope(action, resource) {
+  const extraAllowed = EXTRA_ACTIONS[resource] || [];
+  const isExtraAction = extraAllowed.indexOf(action) !== -1;
+  if (action !== 'read' && action !== 'write' && !isExtraAction) {
+    // Message text unchanged from the flag-based version on purpose: 'delete'
+    // is the only extra verb it has ever named, and a resource-accurate list
+    // here would change real response bodies. Worth doing separately, on its
+    // own evidence, not as a side effect of this refactor.
+    return { status: 400, body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } } };
+  }
+  if (!RESOURCES[resource]) {
+    // NAMES EVERY REGISTERED RESOURCE. That is why this gate now runs only
+    // after the caller's licence has been validated -- see the handler.
+    return { status: 400, body: { error: { message: 'resource must be one of: ' + RESOURCE_LIST_TEXT } } };
+  }
+  return null;
+}
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -202,74 +257,33 @@ module.exports = async (req, res) => {
     return;
   }
 
-  // ── parse + validate the request envelope ──
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) {
-      res.status(400).json({ error: { message: 'Invalid JSON body' } });
-      return;
-    }
-  }
-  const action = body && body.action;
-  const resource = body && body.resource;
-  const payload = (body && body.payload) || {};
-  const isScResource = SC_RESOURCES.indexOf(resource) !== -1;
-  // Verbs beyond the universal read/write are declared per resource in
-  // api/_resources/<app>.js and merged into EXTRA_ACTIONS. Today that is
-  // 'delete' for the 28-resource SAIRNcode family, plus three compute-only
-  // verbs owned by one resource each: 'route' (alf_payer_rules), 'evaluate'
-  // (alf_compliance_rules) and 'derive_charges' (alf_billing).
-  //
-  // REPLACES three hand-written `action === 'x' && resource === 'y'` flags
-  // that lived here (2026-08-24). Those were a third place to edit when adding
-  // a resource, separate from both the registry and the handler branch, and
-  // the note this block used to carry recorded what missing it costs:
-  // "registering a resource and adding a handler branch is NOT enough, this
-  // gate must allow the verb too, or the branch is unreachable and returns a
-  // confusing 400 (found exactly that way here)." The verb now lives next to
-  // the resource that owns it, so the two cannot be added apart.
-  //
-  // Deliberately still narrow: a verb reaches exactly the resources whose own
-  // app granted it. Nothing here widens a verb to all 171 resources.
-  const extraAllowed = EXTRA_ACTIONS[resource] || [];
-  const isExtraAction = extraAllowed.indexOf(action) !== -1;
-  if (action !== 'read' && action !== 'write' && !isExtraAction) {
-    // Message text unchanged from the flag-based version on purpose: 'delete'
-    // is the only extra verb it has ever named, and a resource-accurate list
-    // here would change real response bodies. Worth doing separately, on its
-    // own evidence, not as a side effect of this refactor.
-    res.status(400).json({ error: { message: "action must be 'read' or 'write'" + (isScResource ? " or 'delete'" : '') } });
-    return;
-  }
-  if (!RESOURCES[resource]) {
-    res.status(400).json({ error: { message: 'resource must be one of: ' + RESOURCE_LIST_TEXT } });
-    return;
-  }
-
-  // ── 64KB payload cap on writes (reject early, before any DB call) — see MAX_PAYLOAD_BYTES
-  // above for why this is uniform across every resource, including slabs ──
-  if (action === 'write') {
-    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
-    if (payloadBytes > MAX_PAYLOAD_BYTES) {
-      res.status(413).json({
-        error: {
-          code: 'PAYLOAD_TOO_LARGE',
-          message: 'Payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)'
-        }
-      });
-      return;
-    }
-  }
-
-  const SUPABASE_URL = process.env.SUPABASE_URL;
-  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
-    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
-    return;
-  }
-
   // ── LICENSE VALIDATION (shared with Pattern 13's entitlement gate — D4) ──
+  //
+  // ── WHY THIS RUNS FIRST, MOVED 2026-09-04 ────────────────────────────────
+  // It used to sit BELOW the envelope gate, so `POST /api/sd-data` with
+  // `Authorization: Bearer not-a-real-key` and an unknown resource answered
+  // 400 listing EVERY registered resource name -- 171 of them across every app
+  // on the platform -- to a caller holding no credential at all. Verified live
+  // that way on 2026-08-24 with no credential used. Names only, never data,
+  // and every path past the gate still 401'd; but an unauthenticated caller
+  // could enumerate the whole platform's surface, and could tell a real
+  // resource from a made-up one by which refusal came back.
+  //
+  // Nothing below this point can be reached without a valid, active licence,
+  // so an invalid token now learns exactly one thing: that its token is not
+  // valid. It cannot distinguish a real resource from an invented one, a
+  // permitted verb from a refused one, or an oversized payload from a legal
+  // one -- all of those return the same 401.
+  //
+  // THE COST IS REAL AND IS NOT HIDDEN. The envelope checks were cheap and
+  // local; validateLicenseKey() is a Supabase round trip. Every junk-token
+  // request now costs one lookup that it previously did not, and the
+  // first-failure response changed for EVERY app: a malformed request from a
+  // bad licence reports the licence, not the malformation. That is the point,
+  // but it is also the thing to remember when a client reports a "wrong" 401.
+  //
+  // The 405 method check above deliberately stays first: it discloses nothing
+  // about what exists.
   let lic;
   try {
     lic = await validateLicenseKey(licenseKey);
@@ -306,6 +320,47 @@ module.exports = async (req, res) => {
 
   // license_hash is what the StoneDesk-owned tables are keyed by (never the raw key).
   const licHash = lic.license_hash;
+
+  // ── parse + validate the request envelope ──
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {
+      res.status(400).json({ error: { message: 'Invalid JSON body' } });
+      return;
+    }
+  }
+  const action = body && body.action;
+  const resource = body && body.resource;
+  const payload = (body && body.payload) || {};
+  const isScResource = isSc(resource);
+  const envelopeRefusal = checkEnvelope(action, resource);
+  if (envelopeRefusal) {
+    res.status(envelopeRefusal.status).json(envelopeRefusal.body);
+    return;
+  }
+
+  // ── 64KB payload cap on writes (reject early, before any DB call) — see MAX_PAYLOAD_BYTES
+  // above for why this is uniform across every resource, including slabs ──
+  if (action === 'write') {
+    const payloadBytes = Buffer.byteLength(JSON.stringify(payload), 'utf8');
+    if (payloadBytes > MAX_PAYLOAD_BYTES) {
+      res.status(413).json({
+        error: {
+          code: 'PAYLOAD_TOO_LARGE',
+          message: 'Payload is ' + payloadBytes + ' bytes; the limit is ' + MAX_PAYLOAD_BYTES + ' (64KB)'
+        }
+      });
+      return;
+    }
+  }
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+  if (!SUPABASE_URL || !SERVICE_KEY) {
+    console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
+    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+    return;
+  }
 
   const headers = {
     apikey: SERVICE_KEY,
@@ -10123,3 +10178,18 @@ async function appendOnlyExisting(res, r, what) {
   }
   return rows;
 }
+
+// ── TEST SEAM, and the honest reason it exists ───────────────────────────
+// api/_resources/extra-actions.test.js asserts ~20 properties of the envelope
+// gate. It used to reach that gate by calling the exported handler with a junk
+// bearer token and reading whether it got a 400 (refused) or fell through to
+// the missing-env 500 (allowed). That worked only because the gate ran BEFORE
+// licence validation -- the disclosure defect fixed on 2026-09-04. With
+// validation first, every one of those calls now returns 500 CONFIG and the
+// test could no longer tell allow from refuse.
+//
+// So the gate is exported and driven directly. This is NOT a reimplementation
+// and NOT an auth bypass: it is the same function the handler calls, one call
+// earlier in the same file, and it can neither read data nor skip a licence
+// check -- the handler still runs validation before it ever reaches this.
+module.exports.checkEnvelope = checkEnvelope;
