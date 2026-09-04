@@ -302,6 +302,16 @@
       "claimed_at_epoch": 1788521153.2661994,
       "status": "released",
       "released_at": "2026-09-04T11:49:09Z"
+    },
+    {
+      "id": "fourth-1788522568",
+      "session": "fourth",
+      "subject": "stonedesk",
+      "task": "demo seed fallback sites that render invented records as real stock",
+      "claimed_at": "2026-09-04T11:49:28Z",
+      "claimed_at_epoch": 1788522568.2084706,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
