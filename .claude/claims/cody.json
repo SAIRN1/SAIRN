@@ -484,8 +484,8 @@
       "task": "unify tier and variance basis to committed plus actual",
       "claimed_at": "2026-09-04T20:18:40Z",
       "claimed_at_epoch": 1788553120.934302,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:26:58Z"
     }
   ]
 }
