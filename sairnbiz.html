@@ -2191,13 +2191,30 @@ function saveExp(){
   var desc=$('exdesc').value.trim(),amt=parseFloat($('examt').value)||0;
   if(!desc||!amt){toast('Description and amount required');return;}
   var exps=ld('sb_exps',[]);
-  exps.push({date:$('exdate').value||sbLocalToday(),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
+  // THE ID IS MINTED HERE, ONTO THE RECORD, AND USED AS THE LEDGER'S
+  // source_id (2026-09-04). It used to be minted below as
+  // 'EX-'+Date.now().slice(-6) purely to fill source_id and was never written
+  // onto the expense, so every expense journal entry pointed at a string that
+  // matched nothing in sb_exps and no entry could be traced back to the
+  // expense it came from. Every other posting in this file already uses the
+  // record's own id (r.id, pr.id, b.id).
+  //
+  // NOT left to sbEnsureIds(), which also mints an 'EX' id: that helper runs
+  // inside the backup hook, behind a licence check and two availability
+  // flags, so on an unlicensed or offline device the record would have no id
+  // at all -- and offline is exactly when the ledger is most likely to be the
+  // only copy. Same format as sbEnsureIds so the two schemes cannot diverge,
+  // and the collision loop is the same one, for the same reason: two saves in
+  // the same millisecond must not share an id.
+  var exSeen={};exps.forEach(function(r){if(r&&r.id)exSeen[String(r.id)]=true;});
+  var exId,exN=0;
+  do{exId='EX'+Date.now().toString(36)+'-'+exN;exN++;}while(exSeen[exId]);
+  exps.push({id:exId,date:$('exdate').value||sbLocalToday(),desc:desc,cat:$('excat').value,vendor:$('exvendor').value.trim(),amt:amt,ded:$('exded').value,receipt:$('exreceipt').value,status:$('exstatus').value});
   st('sb_exps',exps);closeExpModal();rExps();rDash();rPay();toast('Expense recorded - '+fmt(amt));
   // An unmapped category REFUSES rather than posting to a nearby account. A
   // wrong account code is harder to find later than a missing entry, because
   // a wrong one still balances.
   var exCat=$('excat').value, exAcct=SB_GL_EXPENSE_ACCOUNTS[exCat];
-  var exId='EX-'+String(Date.now()).slice(-6);
   if(!exAcct){
     toast('Recorded here, NOT posted to the ledger: no account is mapped for the category "'+exCat+'"',8000);
   }else{
@@ -2220,13 +2237,28 @@ function saveBill(){
   if(!vendor||!amt){toast('Vendor and amount required');return;}
   var status=$('blstatus').value;
   var bills=ld('sb_ap',[]);
-  bills.push({vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
+  // SAME FIX AS saveExp() ABOVE, and it is here rather than in a follow-up
+  // because leaving one of two identical sites is how this codebase keeps
+  // rediscovering the same defect. `blId` below fell back to a minted
+  // 'BILL-...' whenever the invoice number was blank, and that string was
+  // never written onto the bill -- so the bill_received entry pointed at
+  // nothing, while the bill_paid entry for the SAME bill uses `b.id` (the
+  // real one sbNormalizeBills assigns on the next render). Two entries for
+  // one bill, carrying two different source ids, neither linkable to the
+  // other. The id is now minted at creation in sbNormalizeBills' own format,
+  // so both postings name the same record.
+  var apSeen={};bills.forEach(function(b){if(b&&b.id)apSeen[String(b.id)]=true;});
+  var blId,apN=0;
+  do{blId='AP'+Date.now().toString(36)+'-'+apN;apN++;}while(apSeen[blId]);
+  bills.push({id:blId,vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
   st('sb_ap',bills);closeBillModal();rAP();rDash();toast('Bill added - '+vendor);
   // A supplier bill has no category field in this app, so it posts to 5010
   // COGS. THAT IS AN ASSUMPTION, and it is written into the entry memo rather
   // than hidden in code -- a bill that is really rent or software is corrected
   // by a reversing entry, which is exactly what reversals are for.
-  var blId=($('blinv').value.trim()||('BILL-'+String(Date.now()).slice(-6)));
+  // `blId` is now the bill's own id, minted above. The invoice number is
+  // still on the record as `inv` and is the human handle; it is not the key,
+  // because it is optional and two vendors can issue the same one.
   sbGlPost({entry_date:$('bldate').value||sbLocalToday(),
     memo:'Bill from '+vendor+' — posted to COGS (assumed; reverse and re-post if another account is right)',
     source_app:'sairnbiz',source_kind:'bill_received',source_id:blId,
