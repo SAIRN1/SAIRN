@@ -510,8 +510,9 @@
       "task": "atomic count-then-insert under an advisory lock, fail-closed",
       "claimed_at": "2026-09-04T12:30:39Z",
       "claimed_at_epoch": 1788525039.2177722,
-      "status": "active",
-      "note": "WRITTEN BY HAND AFTER AN EXPLICIT CLEARANCE, AND SAYING SO. sairn_claim.py blocked on the word 'rate' against cody's 'sairncode: credential lost update and rate limit loud failure'. I did NOT treat that as a lexical false positive -- unlike the earlier 'public' collision, cody's task IS rate-limiter work and the platform has one shared limiter library, so I stopped and flagged it to the coordinating session per CLAUDE.md rather than rewording the task to slip past the matcher. Michael has visibility into both and cleared it: cody is making api/_lib/ai-rate-limit.js's existing fail-OPEN behaviour loud and fixing sc-credentials.js's lost update; this is a NEW, separate, fail-CLOSED limiter scoped to api/_lib/courtlistener.js and a new SQL file, deliberately not touching ai-rate-limit.js. The task string still contains 'rate' -- it was not reworded."
+      "status": "released",
+      "note": "WRITTEN BY HAND AFTER AN EXPLICIT CLEARANCE, AND SAYING SO. sairn_claim.py blocked on the word 'rate' against cody's 'sairncode: credential lost update and rate limit loud failure'. I did NOT treat that as a lexical false positive -- unlike the earlier 'public' collision, cody's task IS rate-limiter work and the platform has one shared limiter library, so I stopped and flagged it to the coordinating session per CLAUDE.md rather than rewording the task to slip past the matcher. Michael has visibility into both and cleared it: cody is making api/_lib/ai-rate-limit.js's existing fail-OPEN behaviour loud and fixing sc-credentials.js's lost update; this is a NEW, separate, fail-CLOSED limiter scoped to api/_lib/courtlistener.js and a new SQL file, deliberately not touching ai-rate-limit.js. The task string still contains 'rate' -- it was not reworded.",
+      "released_at": "2026-09-04T12:43:42Z"
     }
   ]
 }
