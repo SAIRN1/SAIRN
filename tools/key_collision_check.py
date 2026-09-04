@@ -207,8 +207,26 @@ def detect_storage_wrappers(html):
 
 
 def make_setitem_re(wrapper_names):
-    names = ['localStorage\\.setItem'] + [re.escape(n) for n in sorted(wrapper_names)]
-    alt = '|'.join(names)
+    """── LEFT WORD BOUNDARY, ADDED 2026-09-04 ────────────────────────────────
+    This alternation had no left boundary, so the wrapper name `st` matched
+    ANY identifier ending in those letters. `showToast('Brand colors saved for
+    this shop')` was being counted as a storage write with that sentence as the
+    key -- four toast messages were in the key list, and the reported totals
+    (96 writes / 82 distinct keys) were inflated by them.
+
+    It could not HIDE a real collision, only add noise. But noise in a collision
+    detector is precisely what gets a collision detector ignored, and a toast
+    string that happened to equal a real key would have manufactured a false
+    one.
+
+    Two boundaries, not one, because the two halves differ: `localStorage` may
+    legitimately be preceded by a dot (`window.localStorage.setItem`), while a
+    bare helper never should be -- `x.st(...)` is somebody's method, not this
+    file's storage wrapper.
+    """
+    parts = [r'(?<![\w$])localStorage\.setItem']
+    parts += [r'(?<![\w$.])' + re.escape(n) for n in sorted(wrapper_names)]
+    alt = '|'.join(parts)
     return re.compile(
         r'(?:' + alt + r')\s*\(\s*[\'"]([^\'"]+)[\'"]\s*,\s*'
         r'(?:JSON\.stringify\s*\(\s*([A-Za-z_$][\w$.]*)|([A-Za-z_$][\w$.]*)|(\{|\[|[\'"]))'
