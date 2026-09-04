@@ -190,13 +190,46 @@ FIXED and one is not — know which before you trust its output:**
    rather than `platform`) is the honest fix for a namespace collision and is
    not the same thing as gaming the matcher — say which one you did.
 
-2. **`list` and `check` DESTROY an uncommitted claim.** Both run
-   `git checkout origin/main -- .claude/claims` (lines ~198-202, ~292-293)
-   to read claims as they exist on origin. That overwrites the working tree.
-   A claim written but not yet committed is **silently gone**, with no error
-   and no diff — a read-only-sounding command that mutates. **Commit and
-   push the claim first, then run `list` to confirm it.** The tool's own
-   `claim` path does this correctly; only hand-written claims are exposed.
+2. ~~**`list` and `check` DESTROY an uncommitted claim.**~~ **FIXED 2026-09-04
+   (Fourth), and it was worse than this entry said.** Both ran
+   `git checkout origin/main -- .claude/claims` to read claims as they exist on
+   origin. That overwrites the working tree, so a claim written but not yet
+   committed was **silently gone** — a read-only-sounding command that mutates.
+   **The half this entry missed: `git checkout <ref> -- path` also STAGES what
+   it writes.** Observed in the real repo that day — running `list` left
+   `M .claude/claims/fourth.json` staged, holding origin's *older* copy, i.e. a
+   staged revert of a claim this clone had already committed. Any later
+   `git commit` sweeping the index would have deleted the record of a claim.
+   Both commands now read the same bytes with `git show origin/main:<path>`,
+   which cannot write anything. Held by
+   `tests/claims/run_push_verify_probe.py`, which asserts an uncommitted
+   hand-written claim survives `list` and `check` and that neither stages
+   anything.
+
+3. **A claim whose push failed was still reported as CLAIMED.** Fixed the same
+   day, same commit; recorded because the shape recurs. `save_mine()` printed a
+   failure line and returned `None`, and both callers printed `CLAIMED.`
+   regardless — so a non-fast-forward, which is the *ordinary* case when two of
+   the four clones claim within seconds of each other, left the claim committed
+   locally and **invisible to every other clone while the tool said it was
+   claimed.** The collision this tool exists to prevent, happening inside the
+   tool. Reproduced live: `error: failed to push some refs` immediately
+   followed by `CLAIMED.`
+
+   It now retries the fetch→rebase→push (a race is normal, not exceptional —
+   one file per clone means there is nothing to conflict over), aborts a failed
+   rebase instead of leaving the tree mid-rebase, and **verifies the commit is
+   an ancestor of `origin/main` before reporting success**. `claim` and
+   `release` exit non-zero and say `NOT CLAIMED` / `NOT RELEASED` otherwise.
+   A second, quieter instance was found by its own probe: after a release whose
+   push failed, the local file already said *released*, so re-running `release`
+   matched nothing, exited 0, and never pushed the waiting commit. That path
+   now publishes pending commits too.
+
+   **The standing lesson, which is not about this tool:** the expensive part of
+   a false success is never the error — it is the confident line printed after
+   it. Same shape as the post-push watcher that swallowed a 403 and said
+   nothing.
 
 See the `sairn-session-handoff` skill for the full convention, the
 reasoning, and the template.

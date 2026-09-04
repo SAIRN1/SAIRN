@@ -150,22 +150,80 @@ def tokens(*parts):
     return out
 
 
-def load_all():
+def read_origin_claims():
+    """Every session's claim file AS IT EXISTS ON origin/main, read without
+    touching the working tree. Returns {name: text} or None if unavailable.
+
+    ── WHY NOT `git checkout origin/main -- .claude/claims` (2026-09-04) ──────
+    That is what check and list used to do, and CLAUDE.md already documents
+    half of the damage: it OVERWRITES the working tree, so a hand-written claim
+    that had not been committed was silently gone, from a command that sounds
+    read-only.
+
+    The other half was not documented and is worse. `git checkout <ref> -- path`
+    also STAGES what it wrote. Observed on 2026-09-04: running `list` left
+    `M .claude/claims/fourth.json` staged, holding origin's OLDER copy -- a
+    staged revert of a claim this clone had already committed. Any later
+    `git commit` sweeping the index would have undone it, and the tool that
+    exists to stop sessions colliding would have deleted the record of one.
+
+    `git show` reads the same bytes and cannot write anything.
+    """
+    out = {}
+    ls = subprocess.run(['git', 'ls-tree', '--name-only', 'origin/main',
+                         '.claude/claims/'], cwd=REPO, capture_output=True, text=True)
+    if ls.returncode != 0:
+        return None
+    for path in ls.stdout.split('\n'):
+        path = path.strip()
+        if not path.endswith('.json'):
+            continue
+        r = subprocess.run(['git', 'show', 'origin/main:' + path],
+                           cwd=REPO, capture_output=True, text=True)
+        if r.returncode == 0:
+            out[os.path.basename(path)] = r.stdout
+    return out
+
+
+def load_all(from_origin=False):
     """Every claim from every session's file. A malformed file is reported and
     skipped rather than crashing the check -- a broken claims file must never be
-    the reason somebody starts duplicate work."""
+    the reason somebody starts duplicate work.
+
+    from_origin reads origin/main's copies instead of the working tree, which is
+    the view that matters: a claim another session pushed is only a fact once it
+    is there. Falls back to the working tree if origin cannot be read, and SAYS
+    SO, because a check that quietly narrowed its own scope is how a collision
+    gets missed.
+    """
+    sources = []
+    if from_origin:
+        blobs = read_origin_claims()
+        if blobs is None:
+            sys.stderr.write('WARNING: could not read .claude/claims from '
+                             'origin/main -- falling back to this clone\'s copy, '
+                             'which may be stale. This check is WEAKER than usual.\n')
+        else:
+            sources = [(name, text) for name, text in sorted(blobs.items())]
+    if not sources:
+        for path in sorted(glob.glob(os.path.join(CLAIM_DIR, '*.json'))):
+            try:
+                with open(path, encoding='utf-8') as f:
+                    sources.append((os.path.basename(path), f.read()))
+            except OSError as e:
+                sys.stderr.write('WARNING: unreadable claims file %s (%s) -- '
+                                 'skipped, so this check is INCOMPLETE\n'
+                                 % (os.path.basename(path), e))
     claims = []
-    for path in sorted(glob.glob(os.path.join(CLAIM_DIR, '*.json'))):
+    for name, text in sources:
         try:
-            with open(path, encoding='utf-8') as f:
-                doc = json.load(f)
-        except (ValueError, OSError) as e:
+            doc = json.loads(text)
+        except ValueError as e:
             sys.stderr.write('WARNING: unreadable claims file %s (%s) -- '
-                             'skipped, so this check is INCOMPLETE\n'
-                             % (os.path.basename(path), e))
+                             'skipped, so this check is INCOMPLETE\n' % (name, e))
             continue
         for c in doc.get('claims', []):
-            c['_file'] = path
+            c['_file'] = os.path.join(CLAIM_DIR, name)
             claims.append(c)
     return claims
 
@@ -206,7 +264,48 @@ def load_mine():
     return {'session': session_name(), 'claims': []}
 
 
+def on_origin(sha):
+    """Is this commit actually reachable from origin/main RIGHT NOW.
+
+    'Pushed' is a claim about a command; 'present on the remote' is a fact.
+    CLAUDE.md's push protocol says to query the remote rather than trust the
+    exit code, and this is that query. Fetches first, because the local
+    origin/main ref is only as fresh as the last fetch.
+    """
+    sh(['git', 'fetch', 'origin'], check=False)
+    r = subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'origin/main'],
+                       cwd=REPO, capture_output=True, text=True)
+    return r.returncode == 0
+
+
 def save_mine(doc, message, push):
+    """Returns True only when the claim is PRESENT ON THE REMOTE.
+
+    ── WHY THIS RETURNS A VALUE (2026-09-04) ─────────────────────────────────
+    It used to return None and print on failure, and both callers printed
+    'CLAIMED.' / released-cleanly regardless. So a push that failed with a
+    non-fast-forward -- the ordinary case when two of the four clones claim
+    within the same few seconds -- left the claim COMMITTED LOCALLY AND
+    INVISIBLE to every other clone, while the tool said it was claimed.
+
+    That is the exact failure this whole tool exists to prevent, happening
+    inside the tool, and it is the same false-success shape as a deploy
+    watcher that swallows a 403: the expensive part is not the error, it is
+    the confident line printed after it. Reproduced live on 2026-09-04 --
+    'error: failed to push some refs' immediately followed by 'CLAIMED.'
+
+    Three changes, and the third is the one that matters:
+      1. RETRY. A non-fast-forward here is normal, not exceptional: another
+         session pushed its own claim file between the fetch and the push.
+         The files cannot conflict (one per clone), so rebasing and pushing
+         again is the correct response, not an error to hand to a human.
+      2. ABORT A FAILED REBASE. `git rebase` was run with check=False and its
+         result ignored, so a rebase that stopped left the repo mid-rebase and
+         the next push failed for a second, unrelated reason.
+      3. VERIFY AGAINST THE REMOTE. Even a zero exit is only evidence. The
+         commit must be an ancestor of origin/main afterwards, checked by
+         asking git, before this returns True.
+    """
     os.makedirs(CLAIM_DIR, exist_ok=True)
     path = my_file()
     with open(path, 'w', encoding='utf-8') as f:
@@ -216,23 +315,61 @@ def save_mine(doc, message, push):
     sh(['git', 'add', rel])
     if not sh(['git', 'diff', '--cached', '--name-only']):
         print('  (no change to commit)')
-        return
+        # Nothing to publish, so nothing can be invisible.
+        return True
     sh(['git', 'commit', '-q', '-m', message])
     print('  committed: %s' % message.split('\n')[0])
-    if push:
+    if not push:
+        print('  --no-push: committed locally only. Other clones cannot see this '
+              'until you push it.')
+        return False
+
+    return push_verified()
+
+
+def push_verified():
+    """Rebase-and-push until HEAD is genuinely on origin/main. Returns bool.
+
+    Extracted from save_mine() on 2026-09-04 so cmd_release() can also use it.
+    Its own probe found the reason: after a release whose push failed, the LOCAL
+    file already said 'released', so re-running release matched no active claim,
+    printed nothing wrong, exited 0 -- and never pushed the commit that was
+    still sitting there. A second false success, one layer behind the first.
+    """
+    sha = sh(['git', 'rev-parse', 'HEAD'])
+    last_err = ''
+    for attempt in range(1, 4):
+        sh(['git', 'fetch', 'origin'], check=False)
         # Rebase first: another session may have pushed its own claim file.
         # Different files, so this cannot conflict -- that is the whole point
-        # of one-file-per-session.
-        sh(['git', 'fetch', 'origin'], check=False)
-        sh(['git', 'rebase', 'origin/main'], check=False)
+        # of one-file-per-session. If it stops anyway, abort rather than
+        # leaving the tree mid-rebase for whatever runs next.
+        rb = subprocess.run(['git', 'rebase', 'origin/main'],
+                            cwd=REPO, capture_output=True, text=True)
+        if rb.returncode != 0:
+            subprocess.run(['git', 'rebase', '--abort'], cwd=REPO,
+                           capture_output=True, text=True)
+            last_err = (rb.stderr or rb.stdout or '').strip().split('\n')[-1]
+            continue
+        sha = sh(['git', 'rev-parse', 'HEAD'])   # rebase rewrites it
         r = subprocess.run(['git', 'push', 'origin', 'HEAD:main'],
                            cwd=REPO, capture_output=True, text=True)
-        if r.returncode == 0:
-            print('  pushed -- other clones can see this after they fetch')
-        else:
-            print('  PUSH FAILED. The claim is committed locally and therefore '
-                  'INVISIBLE to every other clone. Push it yourself:')
-            print('  ' + (r.stderr or '').strip().split('\n')[-1])
+        if r.returncode != 0:
+            last_err = (r.stderr or '').strip().split('\n')[-1]
+            continue
+        if on_origin(sha):
+            print('  pushed and verified on origin/main -- other clones can see '
+                  'this after they fetch')
+            return True
+        last_err = ('push reported success but %s is not an ancestor of '
+                    'origin/main' % sha[:8])
+
+    print('  PUSH FAILED after 3 attempts. The claim is committed locally and is '
+          'therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED.')
+    if last_err:
+        print('  last error: ' + last_err)
+    print('  Push it yourself, then confirm with: python tools/sairn_claim.py list')
+    return False
 
 
 def cmd_check(args, quiet=False):
@@ -241,12 +378,14 @@ def cmd_check(args, quiet=False):
         # Read claims as they exist on origin/main, not just locally -- a claim
         # another session pushed is only visible here after a fetch, and this is
         # the whole reason the check can be trusted at all.
-        sh(['git', 'checkout', 'origin/main', '--', '.claude/claims'], check=False)
+        # NO `git checkout origin/main -- .claude/claims` here. It overwrites AND
+        # STAGES the working tree; read_origin_claims() reads the same bytes
+        # with `git show` and cannot write anything. See its docstring.
     subj, task = args.subject, ' '.join(args.task)
     me = session_name()
     blocking = []
     weak = []
-    for c in load_all():
+    for c in load_all(from_origin=not args.no_fetch):
         if c.get('session') == me:
             continue
         if not is_active(c):
@@ -285,7 +424,7 @@ def cmd_check(args, quiet=False):
                 print('  %s: %s -- %s  (shares only: %s)'
                       % (c.get('session'), c.get('subject'), c.get('task'),
                          ', '.join(sorted(shared))))
-        stale = [c for c in load_all()
+        stale = [c for c in load_all(from_origin=not args.no_fetch)
                  if c.get('session') != me and c.get('status') == 'active'
                  and not is_active(c) and overlaps(c, subj, task)]
         if stale:
@@ -317,8 +456,15 @@ def cmd_claim(args):
         'status': 'active',
         'released_at': None,
     })
-    save_mine(doc, 'chore(claims): %s claims %s -- %s' % (session_name(), subj, task),
-              push=not args.no_push)
+    ok = save_mine(doc, 'chore(claims): %s claims %s -- %s' % (session_name(), subj, task),
+                   push=not args.no_push)
+    if not ok:
+        # A claim nobody else can see is not a claim. Saying so, and exiting
+        # non-zero so a script cannot read this as success either.
+        print('\nNOT CLAIMED -- the claim did not reach origin/main, so every other')
+        print('clone still sees this work as unclaimed and can start it.')
+        print('Fix the push and re-run, or write the claim by hand and push it.')
+        return 3
     print('\nCLAIMED. Release it when the work closes:')
     print('  python tools/sairn_claim.py release %s' % subj)
     return 0
@@ -331,6 +477,17 @@ def cmd_release(args):
            if c['status'] == 'active' and (c['id'] == subj or c['subject'] == subj)]
     if not hit:
         print('No active claim of yours matches %r.' % subj)
+        # ...but a PREVIOUS release may have been written and committed here and
+        # failed to push, which is exactly why nothing matches now: the local
+        # file already says released while origin still says active. Publish it
+        # rather than exiting 0 over a commit nobody else can see.
+        if not args.no_push and not on_origin(sh(['git', 'rev-parse', 'HEAD'])):
+            print('  There are local commits not on origin/main -- publishing them,')
+            print('  in case an earlier release was committed here and never landed.')
+            if not push_verified():
+                print('\nSTILL NOT ON origin/main. Other clones may still see one of your')
+                print('claims as active. Push by hand, then confirm with: list')
+                return 3
         return 0
     for c in hit:
         c['status'] = 'released'
@@ -338,16 +495,27 @@ def cmd_release(args):
         print('  releasing: %s -- %s' % (c['subject'], c['task']))
     # Released claims are kept, not deleted: "who ran this gate and when" is the
     # question the next session asks, and a deleted row cannot answer it.
-    save_mine(doc, 'chore(claims): %s releases %s' % (session_name(), subj),
-              push=not args.no_push)
+    ok = save_mine(doc, 'chore(claims): %s releases %s' % (session_name(), subj),
+                   push=not args.no_push)
+    if not ok:
+        # A release that does not land is the opposite failure to an unlanded
+        # claim and is milder -- the work stays blocked rather than duplicated,
+        # and the claim expires after 4 hours anyway. Still reported, and still
+        # non-zero, because "released" should not be printed for something that
+        # is still active everywhere else.
+        print('\nNOT RELEASED on origin/main -- other clones still see this claim as')
+        print('active until the push lands (or until it expires 4h after it was made).')
+        return 3
     return 0
 
 
 def cmd_list(args):
     if not args.no_fetch:
         sh(['git', 'fetch', 'origin'], check=False)
-        sh(['git', 'checkout', 'origin/main', '--', '.claude/claims'], check=False)
-    rows = load_all()
+        # NO `git checkout origin/main -- .claude/claims` here. It overwrites AND
+        # STAGES the working tree; read_origin_claims() reads the same bytes
+        # with `git show` and cannot write anything. See its docstring.
+    rows = load_all(from_origin=not args.no_fetch)
     if not args.all:
         rows = [c for c in rows if is_active(c)]
     if not rows:
