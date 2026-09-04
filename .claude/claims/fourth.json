@@ -482,6 +482,16 @@
       "claimed_at_epoch": 1788558029.9899778,
       "status": "released",
       "released_at": "2026-09-04T21:44:26Z"
+    },
+    {
+      "id": "fourth-1788558337",
+      "session": "fourth",
+      "subject": "sairnbuild",
+      "task": "verify whether the data schema was run",
+      "claimed_at": "2026-09-04T21:45:37Z",
+      "claimed_at_epoch": 1788558337.2144349,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
