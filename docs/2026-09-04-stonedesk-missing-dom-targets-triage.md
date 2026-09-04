@@ -7,7 +7,8 @@ real is worse than the row implied** — it includes at least one button a
 customer can click that silently does nothing.
 
 Counts are as of this commit: `missing_dom_target_check.py` reported **162**
-before it, **160** after.
+before this pass and **152** after it (160 after the Spend Report container,
+152 after the Invoices retargeting below).
 
 ---
 
@@ -142,13 +143,25 @@ inner HTML itself — so the fix is the container, marked
 
 ## What is left, in the order worth doing it
 
-1. **`esigCreateInvoice()`** — wired, and it creates an INVOICE from three
-   fields that do not exist. Highest stakes of what remains; needs a read of
-   what it actually writes before deciding whether the fields or the function
-   are wrong.
+1. ~~**`esigCreateInvoice()`**~~ — **DONE 2026-09-04.** The fields were wrong,
+   not the function: the panel was rebuilt as `inv2-*` and this was still
+   writing to the old form. Retargeted, and it now opens the form (pre-filling
+   one still behind `display:none` would have been the same no-op in a
+   different disguise) and reports failure instead of toasting *"Invoice
+   pre-filled with deposit amount"* over three blank fields. Two more defects
+   in the same panel fell out of the same read: `invUpdateKPIs()` wrote all
+   five of its figures to retired ids, so **Total Outstanding / Overdue / Open
+   Invoices / Collected MTD had shown their hardcoded `$0 / $0 / 0 / $0` since
+   the panel shipped** — a shop with real unpaid invoices was told it was owed
+   nothing; and `invMarkPaid()` zeroed the balance *before* recording the
+   payment, so every manual payment record said the customer paid **0**, which
+   would also have held Collected MTD at zero forever. All three in
+   `tests/invoice_panel_kpis.js`, 16 assertions.
 2. **`renderInventory()`** — wired, 10 callers, and `inv-low` / `inv-ok` /
    `inv-warn` are stock-level counters. A live panel with three counters going
-   nowhere.
+   nowhere. **Now the most likely next one**, and the Invoices result above is
+   the reason to expect it is real: same shape, same cause, same panel-rebuild
+   history.
 3. **`sendMessage()` / `analyzeDocument()`** — wired to the legacy chat the file
    already documents as dead. The retarget-to-`sdAIQuick()` fix is established
    at four other call sites; these two were missed.

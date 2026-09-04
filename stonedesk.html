@@ -10510,10 +10510,16 @@ function invSaveAndPrint() {
 function invMarkPaid(id) {
   var inv = sd_invoices.find(function(i) { return i.id === id; });
   if (!inv) return;
+  // THE BALANCE IS CAPTURED BEFORE IT IS ZEROED (fixed 2026-09-04). The two
+  // lines below used to run in the other order, so every "Marked paid" payment
+  // record was written with `amount: 0` -- the payment history said a customer
+  // had paid nothing, and Collected MTD, which sums those records, would have
+  // been permanently zero for every manually-paid invoice.
+  var settled = Number(inv.balance) || 0;
   inv.status = 'Paid';
   inv.balance = 0;
   inv.payments = inv.payments || [];
-  inv.payments.push({ amount: inv.balance, date: sdLocalToday(), method: 'Manual', note: 'Marked paid' });
+  inv.payments.push({ amount: settled, date: sdLocalToday(), method: 'Manual', note: 'Marked paid' });
   invSaveStore();
   document.getElementById('inv2-print-modal').style.display = 'none';
   notify('Invoice marked as Paid', '');
@@ -10638,18 +10644,53 @@ function invRender() {
   }).join('');
 }
 
+// ── FOUR KPIs THAT HAD NEVER BEEN WRITTEN (fixed 2026-09-04) ───────────────
+// This computed five real figures and wrote every one of them into an id that
+// does not exist -- inv2-total, inv2-unpaid, inv2-partial, inv2-paid, inv2-ar
+// are the OLD invoice panel's elements. The panel was rebuilt with four
+// differently-named and differently-MEANING KPIs (inv2-kpi1..4) and this
+// function was never retargeted.
+//
+// So the four KPI tiles a shop actually sees -- Total Outstanding, Overdue,
+// Open Invoices, Collected MTD -- have been showing the hardcoded `$0`, `$0`,
+// `0`, `$0` from their own markup since the panel shipped. A shop with real
+// unpaid invoices was told it was owed nothing. That is Guardian Check 0b in
+// its purest form: KPI elements with no function behind them, and the local
+// `s()` helper's `if (el)` is what kept it silent.
+//
+// NOT A RENAME. The old ids counted invoices by STATUS; the new tiles are
+// labelled with money and with "open". Mapping inv2-total onto inv2-kpi1 would
+// have put a count of invoices under a heading reading "Total Outstanding".
+// Each tile is now computed from what its own label claims.
+//
+// Collected MTD is real, not derived from a status: every payment already
+// carries {amount, date, method}, written by invSave()'s deposit and by
+// invMarkPaid(). It sums the payments dated inside the current month.
 function invUpdateKPIs() {
   var today = sdLocalToday();
-  var total = sd_invoices.length;
-  var unpaid = sd_invoices.filter(function(i) { return i.status === 'Unpaid'; }).length;
-  var partial = sd_invoices.filter(function(i) { return i.status === 'Partial'; }).length;
-  var paid = sd_invoices.filter(function(i) { return i.status === 'Paid'; }).length;
-  var ar = sd_invoices.filter(function(i) { return i.status !== 'Paid'; }).reduce(function(s, i) { return s + (i.balance || 0); }, 0);
+  var month = today.slice(0, 7);
+  var open = sd_invoices.filter(function(i) { return i.status !== 'Paid'; });
+  // Total Outstanding -- what is still owed, not how many invoices exist.
+  var outstanding = open.reduce(function(s, i) { return s + (i.balance || 0); }, 0);
+  // Overdue -- the outstanding balance whose due date has passed. `today` was
+  // already being computed here and was never used by anything.
+  var overdue = open.filter(function(i) { return i.due && i.due < today; })
+                    .reduce(function(s, i) { return s + (i.balance || 0); }, 0);
+  // Collected MTD -- summed from the payment records themselves. An invoice's
+  // own `date` is when it was RAISED, so it cannot answer this.
+  var collected = sd_invoices.reduce(function(s, i) {
+    return s + (i.payments || []).reduce(function(t, p) {
+      return t + ((p.date || '').slice(0, 7) === month ? (Number(p.amount) || 0) : 0);
+    }, 0);
+  }, 0);
   function s(id, v) { var el = document.getElementById(id); if (el) el.textContent = v; }
-  s('inv2-total', total); s('inv2-unpaid', unpaid); s('inv2-partial', partial); s('inv2-paid', paid);
-  s('inv2-ar', '$' + ar.toFixed(2));
-  // Update AI dash KPI
-  s('ai-kpi-unpaid', unpaid || '0');
+  function money(n) { return '$' + Number(n || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  s('inv2-kpi1', money(outstanding));
+  s('inv2-kpi2', money(overdue));
+  s('inv2-kpi3', open.length);
+  s('inv2-kpi4', money(collected));
+  // Update AI dash KPI -- unchanged, and this id does exist.
+  s('ai-kpi-unpaid', sd_invoices.filter(function(i) { return i.status === 'Unpaid'; }).length || '0');
 }
 
 function invExportCSV() {
@@ -36564,20 +36605,58 @@ function esigPrintApproval(){
   win.document.close();
 }
 
+// ── "CREATE INVOICE IN STONEDESK" PRE-FILLED NOTHING (fixed 2026-09-04) ────
+// The button under a signed approval called this, and it wrote into inv-client,
+// inv-amount and inv-desc -- the OLD invoice form's fields. The panel was
+// rebuilt as inv2-*, and none of those three ids exists any more. Its local
+// setV() is `if(el)el.value=v`, so nothing threw: the panel opened, every field
+// was blank, and the toast said "Invoice pre-filled with deposit amount --
+// review and save".
+//
+// A CONFIDENT SUCCESS MESSAGE FOR A THING THAT DID NOT HAPPEN, on the step
+// between a signed approval and getting paid. Same class as the intake panel's
+// "Customer + Job created from intake!" in c2ac74c.
+//
+// Retargeted, and the intent is preserved rather than reinterpreted: this
+// raises an invoice FOR THE DEPOSIT, which is what the old code's amount and
+// description both said. Deposit is left blank because nothing has been paid
+// yet, so invSave() computes balance = the deposit owed and status Unpaid.
+//
+// It also OPENS the form. Pre-filling a form still hidden behind
+// `display:none` would have been the same silent no-op wearing a different
+// disguise -- invFromQuote() sets that display, and this now follows it.
+// Navigation goes through sbNav(), which is what the sidebar and every other
+// cross-panel jump in this file use; showPanel() is a different, later
+// mechanism and 'invoices' was never one of its ids.
 function esigCreateInvoice(clientName){
-  // Push to invoice panel if it exists
   var totalEl=document.getElementById('est-total');
   var totalStr=totalEl?totalEl.textContent.replace(/[^0-9.]/g,''):'0';
   var totalAmt=parseFloat(totalStr)||0;
   var depositAmt=Math.round(totalAmt*0.5);
   var quoteNum=(document.getElementById('est-quote-out')||{}).textContent||'';
-  // Pre-fill invoice form fields if they exist
-  var setV=function(id,v){var el=document.getElementById(id);if(el)el.value=v;};
-  setV('inv-client',clientName);
-  setV('inv-amount',depositAmt);
-  setV('inv-desc','50% Deposit — '+quoteNum);
-  if(typeof showPanel==='function')showPanel('invoices');
-  showToast('Invoice pre-filled with deposit amount — review and save');
+  if(typeof sbNav==='function')sbNav('invoices');
+  var form=document.getElementById('inv2-form');
+  var cust=document.getElementById('inv2-cust');
+  var amt=document.getElementById('inv2-amount');
+  var desc=document.getElementById('inv2-desc');
+  // If the invoice panel is not present, say so instead of reporting a
+  // pre-fill that did not happen. This is the branch whose absence was the bug.
+  if(!form||!cust||!amt||!desc){
+    showToast('Could not open the invoice form — nothing was pre-filled. Open Invoices and enter it manually.');
+    return;
+  }
+  form.style.display='block';
+  var num=document.getElementById('inv2-num');
+  if(num&&!num.value&&typeof invGenNum==='function')num.value=invGenNum();
+  var dateEl=document.getElementById('inv2-date');
+  if(dateEl&&!dateEl.value&&typeof sdLocalToday==='function')dateEl.value=sdLocalToday();
+  cust.value=clientName||'';
+  amt.value=depositAmt;
+  desc.value='50% Deposit — '+quoteNum;
+  form.scrollIntoView({behavior:'smooth'});
+  showToast(depositAmt>0
+    ? 'Invoice pre-filled with the 50% deposit — review and save'
+    : 'Invoice form opened, but the quote total read as $0 — check the amount before saving');
 }
 (function(){var orig=window.showPanel;window.showPanel=function(id){if(orig)orig(id);if(id==='client')setTimeout(esigInit,150);};})();
 
