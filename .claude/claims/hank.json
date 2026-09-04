@@ -664,6 +664,16 @@
       "claimed_at_epoch": 1788559527.7583535,
       "status": "released",
       "released_at": "2026-09-04T22:18:19Z"
+    },
+    {
+      "id": "hank-1788560587",
+      "session": "hank",
+      "subject": "ld-loader-sairndesign-sairngrounds",
+      "task": "corrupt record indistinguishable from absent",
+      "claimed_at": "2026-09-04T22:23:07Z",
+      "claimed_at_epoch": 1788560587.7377994,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
