@@ -360,8 +360,8 @@
       "task": "sairn_claim push verification and retry",
       "claimed_at": "2026-09-04T13:29:57Z",
       "claimed_at_epoch": 1788528597.6079118,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T13:38:38Z"
     }
   ]
 }
