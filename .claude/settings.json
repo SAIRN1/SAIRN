@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/html_script_check.py",
+            "command": "python tools/html_script_check.py",
             "timeout": 30
           }
         ]
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/deploy_verify_notify.py",
+            "command": "python tools/deploy_verify_notify.py",
             "if": "Bash(git push*)",
             "timeout": 90,
             "statusMessage": "Verifying live deploy...",
@@ -64,12 +64,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/git_push_master_guard.py",
+            "command": "python tools/git_push_master_guard.py",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/sairn_push_gate_hook.py",
+            "command": "python tools/sairn_push_gate_hook.py",
             "timeout": 150,
             "statusMessage": "Checking seed load state and credential guards..."
           }
@@ -80,7 +80,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/redaction_check.py",
+            "command": "python tools/redaction_check.py",
             "timeout": 10
           }
         ]
@@ -103,12 +103,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/session_lock_check.py start",
+            "command": "python tools/session_lock_check.py start",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/sairn_claim_hook.py",
+            "command": "python tools/sairn_claim_hook.py",
             "timeout": 12
           }
         ]
@@ -119,7 +119,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python C:/SAIRN/tools/session_lock_check.py heartbeat",
+            "command": "python tools/session_lock_check.py heartbeat",
             "timeout": 5
           }
         ]
