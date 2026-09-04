@@ -317,6 +317,28 @@ SlabWise is **$99–799/mo**. StoneDesk's own tiers (from `:24781`) are
 **$199 / $299 / $599**. StoneDesk is priced at or below the market's floor while
 carrying more surface area than anything above it — which is a positioning
 problem in *both* directions and is worth a deliberate decision rather than a
+
+> **RESOLVED 2026-09-04 — the deliberate decision this paragraph asked for was
+> made, and it went the other way. StoneDesk's tiers are now **Business
+> $299/mo, Professional $599/mo, Enterprise $799/mo**, plus custom pricing for
+> larger shops, and **there is no entry-level tier at all**. The `$199 / $299 /
+> $599` above is the pre-decision price book and is left in place as the input
+> to the decision, not as current fact.
+>
+> **The conclusion in this paragraph is now false and that is the point.**
+> StoneDesk no longer sits "at or below the market's floor": at a $299 floor it
+> starts inside Moraware's $200-400/mo band rather than under it, its top tier
+> at $799 is above iBlocky's €299-399 and level with SlabWise's ceiling, and it
+> is still well below the ~$1,350/month a five-user Moraware stack costs. The
+> positioning problem this paragraph named in *both* directions is now a
+> problem in one direction only.
+>
+> Both places the old numbers actually lived were corrected the same day:
+> `api/_lib/exec-context.js` (the ceo and cfo advisor price book) and the
+> service-agreement generator in `stonedesk.html`, **which was carrying a
+> different wrong list again** — Founding $199 / Solo $299 / Pro $499 / Shop
+> $799 — and is the one a customer signs. `tests/pricing_single_source.js`
+> now fails if the two lists drift apart again.
 default.
 
 ---

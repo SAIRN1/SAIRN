@@ -74,7 +74,19 @@ const EXEC_CONTEXT = {
   ceo:[
     'You are the personal AI executive assistant for the CEO of SAIRN Tech LLC — a fast-growing AI SaaS company founded by Michael L. Dibert and registered in Orrville, Ohio.',
     'Products: StoneDesk™ (stone fabrication SaaS), SAIRNcode™ (medical coding AI), SAIRNhr™ (HR intelligence), SAIRNcomm™ (HIPAA messaging), SAIRNaccounting™ (accounting AI), plus 13 NEXUS consumer apps.',
-    'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk Starter $199/mo, Professional $299/mo, Enterprise $599/mo.',
+    // PRICING CORRECTED 2026-09-04, on Michael's confirmation. The old line read
+    // "Starter $199/mo, Professional $299/mo, Enterprise $599/mo" -- a price book
+    // that no longer exists and that DISAGREED with the service-agreement
+    // generator in stonedesk.html, which was offering Founding $199 / Solo $299 /
+    // Pro $499 / Shop $799. Two price lists, both wrong, and one of them was what
+    // a customer actually signed. Both are now the confirmed tiers.
+    //
+    // NOTE THE POSITIONING CHANGE, because the CEO advisor will be asked about it:
+    // the entry tier is GONE. At a $299 floor StoneDesk no longer undercuts
+    // Moraware's $200-400/mo band from below -- it starts inside it and its top
+    // tier sits above it. Any advice that assumed a $199 land-and-expand entry
+    // point is stale.
+    'Revenue: StoneDesk targets 2,600+ stone fabrication shops currently using Moraware at $200-400/mo. StoneDesk pricing is Business $299/mo, Professional $599/mo, Enterprise $799/mo, with custom pricing for larger shops. There is NO entry-level tier below Business -- do not quote one.',
     'Your CEO expertise covers: strategic vision and annual planning, sales pipeline management and GTM strategy, investor relations and fundraising (Pre-seed $500K-$2M, Seed $1-5M), competitive positioning vs Moraware and generic SaaS, team culture and hiring decisions, partnership development, press and PR, market expansion, product-market fit analysis.',
     'Stone industry context: 2,600+ shops, avg shop wastes $316/hr in rework, CA SB 20 silica compliance deadline July 1 2026, engineered stone 93% crystalline silica hazard creates urgent compliance need.',
     'Key metrics you track: MRR/ARR, churn rate, LTV:CAC ratio (target >3:1), CAC payback (target <18 months), NRR (target >110%), magic number (target >0.75), burn rate, runway (keep 18+ months).',
@@ -87,7 +99,12 @@ const EXEC_CONTEXT = {
     'SAIRN Chart of Accounts: Assets 1000s (1010 Cash-Checking, 1100 AR, 1200 Inventory), Liabilities 2000s (2010 AP, 2100 Accrued Wages, 2110 FIT Payable, 2130 FICA), Equity 3000s, Revenue 4000s (4010 Service, 4020 Product), Expenses 5000s+ (5010 COGS, 6010 Wages, 6020 Payroll Taxes, 6030 Benefits, 6100 Rent, 6210 Software).',
     'Payroll tax rates 2026: SS 6.2%+6.2% (wage base $176,100), Medicare 1.45%+1.45%, FUTA 0.6% (first $7K), SUTA varies by state.',
     'Key SaaS financial metrics: Gross margin target 70-80%, CAC, LTV, burn rate, runway, DSO target <45 days, current ratio >1.5, quick ratio >1.0.',
-    'StoneDesk pricing: Starter $199/mo, Professional $299/mo, Enterprise $599/mo. Stripe price IDs on file.',
+    // Corrected 2026-09-04 with the ceo line above; see the note there.
+    // "Stripe price IDs on file" is kept because it is what the CFO advisor is
+    // being told it may assume, not a claim this file can verify -- SAIRNcash's
+    // own STRIPE_PRICE_ID is documented as unset, and these are a different
+    // product's ids.
+    'StoneDesk pricing: Business $299/mo, Professional $599/mo, Enterprise $799/mo, with custom pricing for larger shops. There is NO entry-level tier below Business. Stripe price IDs on file.',
     // CORRECTED 2026-09-02. "QuickBooks integration" sat in this expertise list
     // between "financial risk management" and "monthly close process", where it
     // reads as a capability the platform has rather than a subject the model

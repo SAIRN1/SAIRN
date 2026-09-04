@@ -26156,7 +26156,8 @@ var EAI_ACTIVE_TAB='ceo';
 // owner/admin-gated read (api/sd-data.js, resource 'exec_context').
 //
 // WHY THEY MOVED, 2026-09-02. They carry SAIRN Technologies' own chart of
-// accounts, the StoneDesk price book ($199/$299/$599 and the Stripe price
+// accounts, the StoneDesk price book (then $199/$299/$599, corrected to
+// $299/$599/$799 on 2026-09-04, and the Stripe price
 // IDs), and the provisional-patent filing dates with the non-provisional
 // deadline. This file is served WHOLE to every customer of the product, so
 // all of it was readable with View Source. The role gate added to
@@ -33168,14 +33169,25 @@ document.addEventListener('DOMContentLoaded', function() {
       <div class="fg"><label>Email</label><input id="ag-email" type="email" placeholder="jim@shopname.com"></div>
       <div class="fg"><label>Phone</label><input id="ag-phone" type="tel" placeholder="(216) 555-0100"></div>
       <div class="fg"><label>Shop Address</label><input id="ag-address" placeholder="123 Main St, Cleveland OH 44101"></div>
+      <!-- PRICING CORRECTED 2026-09-04 on Michael's confirmation. This select
+           previously offered Founding $199 / Solo $299 / Pro $499 / Shop $799,
+           none of which is a real tier any more, and it DISAGREED with the
+           price book the AI advisors were quoting ($199/$299/$599). Two price
+           lists, both wrong, and THIS is the one a customer signed.
+           There is deliberately no entry-level tier below Business. -->
       <div class="fg"><label>Plan</label>
-        <select id="ag-plan">
-          <option value="founding">Founding Member — $199/mo (locked forever)</option>
-          <option value="solo">Solo — $299/mo</option>
-          <option value="pro">Pro — $499/mo</option>
-          <option value="shop">Shop — $799/mo</option>
+        <select id="ag-plan" onchange="agPlanChanged()">
+          <option value="business">Business — $299/mo</option>
+          <option value="professional">Professional — $599/mo</option>
+          <option value="enterprise">Enterprise — $799/mo</option>
+          <option value="custom">Custom — larger shops (enter the agreed rate)</option>
         </select>
       </div>
+      <!-- Shown only for Custom. Without it a larger shop on negotiated pricing
+           could not be given an agreement at all, which is the shape of deal
+           the tier exists for. -->
+      <div class="fg" id="ag-custom-wrap" style="display:none"><label>Agreed monthly rate (USD)</label>
+        <input id="ag-custom-price" type="number" min="1" step="1" placeholder="1200"></div>
       <div class="fg"><label>Agreement Date</label><input id="ag-date" type="date"></div>
       <div class="fg"><label>Status</label>
         <select id="ag-status">
@@ -33252,17 +33264,62 @@ function agNewAgreement() {
   form.style.display = 'block';
   var d = document.getElementById('ag-date');
   if (d) d.value = sdLocalToday();
-  ['ag-shop','ag-contact','ag-email','ag-phone','ag-address','ag-notes'].forEach(function(id) {
+  ['ag-shop','ag-contact','ag-email','ag-phone','ag-address','ag-notes','ag-custom-price'].forEach(function(id) {
     var el = document.getElementById(id); if (el) el.value = '';
   });
+  // The Custom rate field follows the select rather than being left showing a
+  // previous agreement's state on a form that is supposed to be blank.
+  if (typeof agPlanChanged === 'function') agPlanChanged();
   form.scrollIntoView({ behavior: 'smooth' });
+}
+
+// ── THE CURRENT PRICE BOOK, IN ONE PLACE (corrected 2026-09-04) ────────────
+// One object rather than a label map and a price map that have to agree, which
+// is how the old four-tier list drifted from the AI advisors' three-tier one.
+// `custom` carries no price here on purpose -- it is read from the form.
+var AG_PLANS = {
+  business:     { label: 'Business — $299/mo',     price: 299 },
+  professional: { label: 'Professional — $599/mo', price: 599 },
+  enterprise:   { label: 'Enterprise — $799/mo',   price: 799 },
+  custom:       { label: 'Custom',                 price: null }
+};
+
+// RETIRED TIERS. Not offered, and NOT deleted: agreements signed under them are
+// in sd_agreements already, and each stored record carries its own planLabel and
+// price, so a reprint reproduces what was actually signed. The founding branches
+// further down (the rate-lock section, the "LOCKED FOR LIFE" rate box) exist for
+// exactly those records and must not be removed while any of them can be
+// reprinted -- deleting them would silently reprint a signed contract without
+// the clause the customer agreed to.
+var AG_RETIRED_PLANS = { founding: true, solo: true, pro: true, shop: true };
+
+function agPlanChanged() {
+  var wrap = document.getElementById('ag-custom-wrap');
+  if (wrap) wrap.style.display = (document.getElementById('ag-plan').value === 'custom') ? '' : 'none';
 }
 
 function agSave(andPrint) {
   var shop = (document.getElementById('ag-shop').value || '').trim();
   if (!shop) { showToast('Shop name required'); return; }
   var plan = document.getElementById('ag-plan').value;
-  var planLabel = { founding: 'Founding Member — $199/mo', solo: 'Solo — $299/mo', pro: 'Pro — $499/mo', shop: 'Shop — $799/mo' };
+  var spec = AG_PLANS[plan];
+  if (!spec) { showToast('Pick a plan'); return; }
+  var customPrice = null;
+  if (plan === 'custom') {
+    customPrice = Number((document.getElementById('ag-custom-price') || {}).value);
+    // A custom agreement with no rate would print "$0.00 / month" as though it
+    // were a real term. Refused rather than defaulted.
+    if (!isFinite(customPrice) || customPrice <= 0) {
+      showToast('Enter the agreed monthly rate for a Custom agreement');
+      return;
+    }
+  }
+  var planLabel = {
+    business: AG_PLANS.business.label,
+    professional: AG_PLANS.professional.label,
+    enterprise: AG_PLANS.enterprise.label,
+    custom: 'Custom — $' + customPrice + '/mo'
+  };
   var ag = {
     id: 'AG' + Date.now(),
     num: 'SA-' + String(agAgreements.length + 1).padStart(4, '0'),
@@ -33273,7 +33330,7 @@ function agSave(andPrint) {
     address: (document.getElementById('ag-address').value || '').trim(),
     plan: plan,
     planLabel: planLabel[plan],
-    price: { founding: 199, solo: 299, pro: 499, shop: 799 }[plan],
+    price: (plan === 'custom') ? customPrice : spec.price,
     date: document.getElementById('ag-date').value || sdLocalToday(),
     status: document.getElementById('ag-status').value || 'pending',
     notes: (document.getElementById('ag-notes').value || '').trim(),
@@ -33359,6 +33416,9 @@ function agPrint(id) {
   // Summary box
   win.document.write('<div class="summary-box"><h4>&#128203; QUICK SUMMARY — READ THIS FIRST</h4><ul>');
   win.document.write('<li>You get StoneDesk — 49 panels of AI-powered stone shop management.</li>');
+  // LEGACY ONLY -- 'founding' has not been an offerable tier since 2026-09-04.
+  // See AG_RETIRED_PLANS: this branch reprints a clause a real customer signed
+  // and must survive until no founding agreement can be reprinted.
   if (ag.plan === 'founding') {
     win.document.write('<li><strong>Your Founding Member rate of $199/month is locked forever</strong> — it never increases as long as your subscription stays active.</li>');
   }
@@ -33391,6 +33451,7 @@ function agPrint(id) {
     ['7. GOVERNING LAW', 'This Agreement is governed by the laws of the State of Ohio. Disputes shall be resolved in Wayne County, Ohio courts.'],
   ];
 
+  // LEGACY ONLY, same reason as the summary-box branch above.
   if (ag.plan === 'founding') {
     sections.splice(1, 0, ['2. FOUNDING MEMBER RATE LOCK', 'Customer\'s rate of $199/month is guaranteed to never increase for the life of the account, provided the subscription remains continuously active and Customer does not materially violate this Agreement. If the subscription lapses, the Founding Rate is forfeited and re-subscription will be at the then-current published rate. Founding Members receive priority access to all new features, direct founder support, and permanent recognition as a SAIRN Founding Member.']);
     // Re-number remaining sections
