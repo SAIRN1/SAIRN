@@ -873,11 +873,28 @@ textarea{resize:vertical;min-height:80px;}
       <div id="sb-access"></div>
     </div></div>
     <div class="card"><div class="ch"><span class="ct">System Settings</span></div><div class="cb">
-      <div class="fg"><label>Fiscal Year Start</label><select id="ss-fy"><option>January</option><option>April</option><option>July</option><option>October</option></select></div>
-      <div class="fg"><label>Pay Period</label><select id="ss-pay"><option>Bi-Weekly</option><option>Weekly</option><option>Semi-Monthly</option><option>Monthly</option></select></div>
-      <div class="fg"><label>Overtime Threshold (hrs/week)</label><input id="ss-ot" type="number" value="40"></div>
-      <div class="fg"><label>Default Invoice Terms</label><select id="ss-terms"><option>Net 30</option><option>Net 15</option><option>Net 45</option><option>Due on Receipt</option></select></div>
-      <div class="fg"><label>State Tax Rate (%)</label><input id="ss-tax" type="number" step="0.01" value="3.99"></div>
+      <!-- ALL FIVE OF THESE WERE WRITE-ONLY (found 2026-09-03). saveSettings()
+           wrote sb_cfg and NOTHING IN THE APP EVER READ IT: not one of the five
+           had a consumer. A user set them, got "Settings saved", and nothing
+           changed anywhere. Two of the five were removed rather than wired,
+           because wiring them would have been wrong:
+
+           * "Pay Period" was company-wide and pay frequency became a PER-EMPLOYEE
+             field the same day. Setting it to Monthly would reasonably have been
+             expected to change payroll; the real driver is now on the employee.
+           * "State Tax Rate (3.99%)" configured a state-withholding calculation
+             that was REMOVED the same day as invented. Offering a rate box for it
+             implies the computation exists and merely needs a number.
+
+           Of the three kept, one is now real (invoice terms, below) and two say
+           on screen that they are recorded and not yet used. Saying so beats
+           deleting a setting a customer may already have set. -->
+      <div class="fg"><label>Fiscal Year Start</label><select id="ss-fy"><option>January</option><option>April</option><option>July</option><option>October</option></select>
+        <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Recorded, not yet used &mdash; no report in this app is period-bounded by fiscal year.</div></div>
+      <div class="fg"><label>Overtime Threshold (hrs/week)</label><input id="ss-ot" type="number" value="40">
+        <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Recorded, not yet used. The Timesheets panel still applies a fixed 40 &mdash; and its hours are demo figures, not a real store, so wiring this would make that look more authoritative than it is.</div></div>
+      <div class="fg"><label>Default Invoice Terms</label><select id="ss-terms"><option>Net 30</option><option>Net 15</option><option>Net 45</option><option>Due on Receipt</option></select>
+        <div style="font-size:11px;color:var(--muted,#666);margin-top:4px">Used &mdash; pre-fills the due date on a new invoice. You can still change it per invoice.</div></div>
     </div></div>
   </div>
 </div>
@@ -1637,6 +1654,10 @@ function seed(){
 
 function init(){
   seed();rDash();rEmps();rTS();rPay();rPayRuns();rInvs();rExps();rAP();rAR();rVends();rBud();rTax();rHire();rTrain();rPerf();rBenKPIs();rBenTable();
+  // Without this the Settings fields reset to their markup defaults on every
+  // reload, which is how a write-only setting stays invisible: it looks like
+  // it never saved rather than like nothing reads it.
+  loadSettings();
   $('tsweek').textContent=new Date().toLocaleDateString('en-US',{month:'short',day:'numeric',year:'numeric'});
   renderSyncStatus();
   var lastSync=ld('sb_sync',null);if(lastSync)$('co-sync').textContent=lastSync;
@@ -1903,7 +1924,9 @@ function saveReview(){
   st('sb_perf',p);closeReviewModal();rPerf();rDash();toast('Review scheduled - '+emp);
 }
 
-function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=sbLocalToday();$('ivdue2').value='';$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
+// Due date pre-filled from the Default Invoice Terms setting, which is what
+// makes that setting real rather than recorded. Still editable per invoice.
+function openInvModal(){['ivcust','ivamt','ivpaidamt'].forEach(function(f){$(f).value='';});$('ivdate').value=sbLocalToday();$('ivdue2').value=sbDueFromTerms(sbLocalToday());$('ivstat2').value='Draft';$('ivcat').value='Kitchen Countertops';$('invmodal').classList.add('on');}
 function closeInvModal(){$('invmodal').classList.remove('on');}
 // ── GENERAL LEDGER POSTING (2026-09-02) ────────────────────────────────────
 // SAIRNbiz's business records live in localStorage; the ledger lives on the
@@ -3290,9 +3313,39 @@ function csv(type){
 // anymore (see api/sb-auth.js). Function removed rather than left as a
 // silent no-op; sb_cfg.pins may still exist in old localStorage from
 // before this change but is never read.
+// sb_cfg was WRITE-ONLY: saveSettings() wrote it and nothing read it back, so
+// the fields also reset to their markup defaults on every reload. Same shape as
+// loadPricing() having no callers, found the same week. It is read now, and the
+// two settings that no longer have a defensible meaning are gone from the shape
+// rather than left in it to be silently ignored -- `pay` because frequency
+// moved to the employee record, `tax` because the state-withholding calculation
+// it configured was removed as invented.
+function sbCfg(){
+  var d={fy:'January',ot:40,terms:'Net 30'};
+  try{ var c=ld('sb_cfg',null); return c?{fy:c.fy||d.fy,ot:c.ot||d.ot,terms:c.terms||d.terms}:d; }catch(e){ return d; }
+}
+function loadSettings(){
+  var c=sbCfg();
+  var set=function(id,v){var el=$(id);if(el)el.value=v;};
+  set('ss-fy',c.fy);set('ss-ot',c.ot);set('ss-terms',c.terms);
+}
 function saveSettings(){
-  st('sb_cfg',{fy:$('ss-fy').value,pay:$('ss-pay').value,ot:$('ss-ot').value,terms:$('ss-terms').value,tax:$('ss-tax').value});
-  toast('Settings saved');
+  st('sb_cfg',{fy:$('ss-fy').value,ot:$('ss-ot').value,terms:$('ss-terms').value});
+  // Names what actually takes effect. A bare "Settings saved" was true and
+  // useless: it was equally true when nothing read any of them.
+  toast('Settings saved. Invoice terms ('+$('ss-terms').value+') will pre-fill new invoices; fiscal year and overtime threshold are recorded but not yet used.',6000);
+}
+
+// Days a term is worth, for pre-filling a due date. "Due on Receipt" is 0 --
+// the same day, not a missing value.
+var SB_TERM_DAYS={'Net 15':15,'Net 30':30,'Net 45':45,'Due on Receipt':0};
+function sbDueFromTerms(startISO){
+  var days=SB_TERM_DAYS[sbCfg().terms];
+  if(days===undefined)return '';
+  var d=new Date(startISO+'T00:00:00');
+  if(isNaN(d))return '';
+  d.setDate(d.getDate()+days);
+  return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 
 // ================================================================
