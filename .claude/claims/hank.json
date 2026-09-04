@@ -624,6 +624,16 @@
       "claimed_at_epoch": 1788557096.3508575,
       "status": "released",
       "released_at": "2026-09-04T21:33:44Z"
+    },
+    {
+      "id": "hank-1788557727",
+      "session": "hank",
+      "subject": "ld-loader-sairnfreedom",
+      "task": "truthiness spelling corrupt record indistinguishable from absent",
+      "claimed_at": "2026-09-04T21:35:27Z",
+      "claimed_at_epoch": 1788557727.0610802,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
