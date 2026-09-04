@@ -501,8 +501,8 @@
       "task": "duplicate coverage rule conflict refusal",
       "claimed_at": "2026-09-04T20:55:14Z",
       "claimed_at_epoch": 1788555314.4121199,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:09:30Z"
     }
   ]
 }
