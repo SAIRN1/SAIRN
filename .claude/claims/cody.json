@@ -554,8 +554,8 @@
       "task": "saved drawings list and reload viewer",
       "claimed_at": "2026-09-04T21:45:00Z",
       "claimed_at_epoch": 1788558300.279207,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T22:00:13Z"
     }
   ]
 }
