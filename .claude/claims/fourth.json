@@ -400,8 +400,8 @@
       "task": "open work index against the orphaned module register",
       "claimed_at": "2026-09-04T20:07:33Z",
       "claimed_at_epoch": 1788552453.7494268,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:21:00Z"
     }
   ]
 }
