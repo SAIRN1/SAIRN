@@ -420,8 +420,8 @@
       "task": "storage key two-system collision sweep",
       "claimed_at": "2026-09-04T20:35:48Z",
       "claimed_at_epoch": 1788554148.7309122,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T20:47:39Z"
     }
   ]
 }
