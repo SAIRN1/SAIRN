@@ -524,8 +524,8 @@
       "task": "saved quote load restores drawing tool state",
       "claimed_at": "2026-09-04T21:08:30Z",
       "claimed_at_epoch": 1788556110.554244,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:19:21Z"
     }
   ]
 }
