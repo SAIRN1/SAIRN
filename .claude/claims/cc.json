@@ -411,8 +411,8 @@
       "task": "food temp threshold unavailable not evaluated",
       "claimed_at": "2026-09-04T12:00:50Z",
       "claimed_at_epoch": 1788523250.3574839,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T12:17:41Z"
     }
   ]
 }
