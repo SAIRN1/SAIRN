@@ -544,8 +544,8 @@
       "task": "drawing snapshot jpeg compression and lower retention cap",
       "claimed_at": "2026-09-04T21:32:40Z",
       "claimed_at_epoch": 1788557560.5789075,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T21:43:01Z"
     }
   ]
 }
