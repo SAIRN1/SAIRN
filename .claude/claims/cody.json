@@ -403,8 +403,8 @@
       "task": "guards present in one app missing in siblings",
       "claimed_at": "2026-09-04T11:18:23Z",
       "claimed_at_epoch": 1788520703.943979,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T11:34:51Z"
     }
   ]
 }
