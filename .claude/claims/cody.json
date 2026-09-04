@@ -395,6 +395,16 @@
       "claimed_at_epoch": 1788519644.1858253,
       "status": "released",
       "released_at": "2026-09-04T11:11:43Z"
+    },
+    {
+      "id": "cody-1788520703",
+      "session": "cody",
+      "subject": "login-shell-divergence",
+      "task": "guards present in one app missing in siblings",
+      "claimed_at": "2026-09-04T11:18:23Z",
+      "claimed_at_epoch": 1788520703.943979,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
