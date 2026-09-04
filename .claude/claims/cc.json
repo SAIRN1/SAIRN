@@ -433,6 +433,16 @@
       "claimed_at_epoch": 1788526099.495629,
       "status": "released",
       "released_at": "2026-09-04T13:01:47Z"
+    },
+    {
+      "id": "cc-1788527117",
+      "session": "cc",
+      "subject": "push-gate",
+      "task": "redaction scan on outgoing commits",
+      "claimed_at": "2026-09-04T13:05:17Z",
+      "claimed_at_epoch": 1788527117.7491498,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
