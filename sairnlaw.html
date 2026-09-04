@@ -1357,12 +1357,39 @@ function sdnData(action,resource,payload){
         if(d&&d.error&&(d.error.code==='INSUFFICIENT_TRUST_BALANCE'||d.error.code==='VOID_WOULD_NEGATIVE_BALANCE'||d.error.code==='ALREADY_VOIDED')){
           return {rejected:true,code:d.error.code,message:d.error.message};
         }
-        console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
+        // REMEMBER WHY, PER RESOURCE (2026-09-04). sdnData() returned null on
+        // every failure and this file had no memory of the reason at all, so
+        // 29 save paths reported a real server refusal as "server sync not yet
+        // enabled for this app". That sentence was hiding something much worse
+        // than a wrong reason: FIFTEEN of the twenty resources this app writes
+        // are not registered in api/_resources/sairnlaw.js, so they never
+        // reached the server and answered
+        //   400 "resource must be one of: ..."
+        // every time. Proven live against the deployed endpoint with a control
+        // -- law_matters answers 401 INVALID_LICENSE on a bogus key while
+        // law_invoices answers 400 at the resource gate, same request shape.
+        lawLastErr[resource]={code:(d&&d.error&&(d.error.code||''))||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+        console.warn('sdnData '+resource+' failed ('+r.status+'):',lawLastErr[resource].code||lawLastErr[resource].message);
         return null;
       }
+      delete lawLastErr[resource];
       return d.data;
     });
-  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+  }).catch(function(e){lawLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
+}
+var lawLastErr={};
+function lawLastErrText(resource){return lawLastErr[resource]?lawLastErr[resource].message:'';}
+function lawLastErrCode(resource){return lawLastErr[resource]?lawLastErr[resource].code:'';}
+// What to say when a write did not land. The fallback matters as much as the
+// server's own words: an UNREGISTERED resource answers "resource must be one
+// of: ..." with the whole allowlist, which is a developer message, so the
+// caller gets a sentence a firm can act on instead.
+function lawWriteFailText(resource,fallback){
+  var code=lawLastErrCode(resource),msg=lawLastErrText(resource);
+  if(/resource must be one of/.test(msg)||code==='HTTP_400'&&/must be one of/.test(msg)){
+    return 'NOT SAVED TO THE SERVER. This record type is not set up on the server yet, so it exists only on this computer and no one else can see it. Report this -- it is a gap in the app, not something you did.';
+  }
+  return msg||fallback||'Nothing was saved to the server -- it is on this computer only. Try again.';
 }
 
 // ── AUTH CLIENT (2026-08-08) ────────────────────────────────────────────
@@ -1657,6 +1684,14 @@ function lawEnterApp(d){
   lawLoginErr('');
   var p=$('l-pin');if(p)p.value='';
   init();
+  // After init() has painted from local data, so a slow or unreachable server
+  // never delays first paint -- the panel is never blank waiting on a network
+  // call. A FAILED read is reported: it is not the same as having no records,
+  // and rendering it as "none" is the defect this whole change exists to end.
+  lawHydrateAll().then(function(r){
+    if(r.merged){toast(r.merged+' record'+(r.merged===1?'':'s')+' restored from the server copy for this firm',6000);init();}
+    if(r.failed){toast('Could not read '+r.failed+' of '+LAW_SYNC_RESOURCES.length+' record types from the server. What is on this computer is still here -- records saved on another computer are not being shown.',9000);}
+  });
 }
 
 // Restores a still-valid session on reload. The token's expiry is enforced
@@ -2606,7 +2641,7 @@ async function saveClient(){
   var list=clients();list.push(rec);st('law_clients',list);
   closeClientModal();rIntake();fillMatterSelects();
   var syncResult=await sdnData('write','law_clients',rec);
-  toast(syncResult?'Client saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Client saved':lawWriteFailText('law_clients','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function nextMatterNumber(){
   var year=new Date().getFullYear();
@@ -2643,7 +2678,7 @@ async function saveMatter(){
   var list=matters();list.push(rec);st('law_matters',list);
   closeMatterModal();rIntake();rDash();fillMatterSelects();
   var syncResult=await sdnData('write','law_matters',rec);
-  toast(syncResult?'Matter opened':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Matter opened':lawWriteFailText('law_matters','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rIntake(){
   fillMatterSelects();
@@ -2679,14 +2714,14 @@ async function saveTask(){
   var list=matterTasks();list.push(rec);st('law_mattertasks',list);
   closeTaskModal();rMatterDetail();
   var syncResult=await sdnData('write','law_mattertasks',rec);
-  toast(syncResult?'Task added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Task added':lawWriteFailText('law_mattertasks','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function completeTask(id){
   var list=matterTasks();
   var t=list.find(function(x){return x.id===id;});if(!t)return;
   t.status='Complete';st('law_mattertasks',list);rMatterDetail();
   var syncResult=await sdnData('write','law_mattertasks',t);
-  toast(syncResult?'Task completed':'Completed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Task completed':lawWriteFailText('law_mattertasks','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openMilestoneModal(){['msttitle','mstdate','mstnotes'].forEach(function(f){$(f).value='';});$('milestonemodal').classList.add('on');}
 function closeMilestoneModal(){$('milestonemodal').classList.remove('on');}
@@ -2698,7 +2733,7 @@ async function saveMilestone(){
   var list=matterMilestones();list.push(rec);st('law_mattermilestones',list);
   closeMilestoneModal();rMatterDetail();
   var syncResult=await sdnData('write','law_mattermilestones',rec);
-  toast(syncResult?'Milestone added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Milestone added':lawWriteFailText('law_mattermilestones','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 // matterDocContextSelectId lets this one modal serve both Matter/Case
 // Management's "mmatter" selector (Phase 1) and Document Management's own
@@ -2721,7 +2756,7 @@ async function saveMatterDoc(){
   closeMatterDocModal();rMatterDetail();
   if(document.querySelector('#panel-docs.on'))rDocs();
   var syncResult=await sdnData('write','law_matterdocs',rec);
-  toast(syncResult?'Document linked':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Document linked':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function setMatterStatus(status){
   var matterId=$('mmatter').value;
@@ -2730,7 +2765,7 @@ async function setMatterStatus(status){
   m.status=status;if(status==='Closed')m.closed_date=lawLocalToday();
   st('law_matters',list);rMatterDetail();rIntake();rDash();fillMatterSelects();
   var syncResult=await sdnData('write','law_matters',m);
-  toast(syncResult?'Matter marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Matter marked '+status:'Marked '+status+lawWriteFailText('law_matters','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rMattersPanel(){fillMatterSelects();rMatterDetail();}
 function rMatterDetail(){
@@ -2801,14 +2836,14 @@ async function saveDeadline(){
   var list=deadlines();list.push(rec);st('law_deadlines',list);
   closeDeadlineModal();rCalendar();rDash();
   var syncResult=await sdnData('write','law_deadlines',rec);
-  toast(syncResult?'Deadline saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Deadline saved':lawWriteFailText('law_deadlines','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function completeDeadline(id){
   var list=deadlines();
   var d=list.find(function(x){return x.id===id;});if(!d)return;
   d.status='Complete';st('law_deadlines',list);rCalendar();rDash();
   var syncResult=await sdnData('write','law_deadlines',d);
-  toast(syncResult?'Marked complete':'Marked complete on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked complete':lawWriteFailText('law_deadlines','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCalendar(){
   fillMatterSelects();
@@ -2910,7 +2945,7 @@ async function saveTrustTransaction(){
     toast(syncResult.message||'Disbursement rejected -- exceeds this client\'s real trust balance',7000);
     return;
   }
-  toast(syncResult?'Transaction recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Transaction recorded':lawWriteFailText('law_trusttx','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 var voidTxId=null;
 function openVoidModal(id){
@@ -2984,7 +3019,7 @@ async function confirmVoid(){
     }
     return;
   }
-  toast(syncResult?'Transaction voided':'Voided on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Transaction voided':lawWriteFailText('law_trusttx','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openBankStatementModal(){
   $('bsdate').value=lawLocalToday();$('bsbalance').value='';
@@ -2998,7 +3033,7 @@ async function saveBankStatement(){
   var list=bankStatements();list.push(rec);st('law_bankstatements',list);
   closeBankStatementModal();rTrust();
   var syncResult=await sdnData('write','law_bankstatements',rec);
-  toast(syncResult?'Bank statement recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Bank statement recorded':lawWriteFailText('law_bankstatements','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function explainReconciliation(){
   var r=reconcileTrust();
@@ -3087,7 +3122,7 @@ async function saveTime(){
   var list=timeEntries();list.push(rec);st('law_timeentries',list);
   closeTimeModal();rBilling();rDash();
   var syncResult=await sdnData('write','law_timeentries',rec);
-  toast(syncResult?'Time entry saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Time entry saved':lawWriteFailText('law_timeentries','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rInvoiceEntryPicker(){
   var matterId=$('ivmatter').value;
@@ -3140,14 +3175,14 @@ async function saveInvoice(){
   st('law_timeentries',teList);
   closeInvoiceModal();rBilling();rDash();
   var syncResult=await sdnData('write','law_invoices',rec);
-  toast(syncResult?'Invoice created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Invoice created':lawWriteFailText('law_invoices','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function setInvoiceStatus(id,status){
   var list=invoices();
   var i=list.find(function(x){return x.id===id;});if(!i)return;
   i.status=status;st('law_invoices',list);rBilling();
   var syncResult=await sdnData('write','law_invoices',i);
-  toast(syncResult?'Invoice marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Invoice marked '+status:'Marked '+status+lawWriteFailText('law_invoices','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rBilling(){
   fillMatterSelects();fillBillingCodeSelect();
@@ -3227,7 +3262,7 @@ async function saveOcrDocument(){
   var list=matterDocs();list.push(rec);st('law_matterdocs',list);
   closeOcrModal();rDocs();
   var syncResult=await sdnData('write','law_matterdocs',rec);
-  toast(syncResult?'Document saved from OCR':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Document saved from OCR':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openEmailFileModal(){
   ['efrom','eto','esubject','ebody'].forEach(function(f){$(f).value='';});
@@ -3247,7 +3282,7 @@ async function saveEmailFile(){
   var list=matterDocs();list.push(rec);st('law_matterdocs',list);
   closeEmailFileModal();rDocs();
   var syncResult=await sdnData('write','law_matterdocs',rec);
-  toast(syncResult?'Email filed':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Email filed':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 var docVersionTargetId=null;
 function openDocVersionModal(id){
@@ -3277,7 +3312,7 @@ async function saveDocVersion(){
   st('law_matterdocs',list);
   closeDocVersionModal();rDocs();
   var syncResult=await sdnData('write','law_matterdocs',d);
-  toast(syncResult?'New version saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'New version saved':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openDocHistoryModal(id){
   var d=matterDocs().find(function(x){return x.id===id;});if(!d)return;
@@ -3372,7 +3407,7 @@ async function saveDraftAsDocument(){
   var list=matterDocs();list.push(rec);st('law_matterdocs',list);
   rDocs();
   var syncResult=await sdnData('write','law_matterdocs',rec);
-  toast(syncResult?'Saved as document':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Saved as document':lawWriteFailText('law_matterdocs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openReviewPicker(){
   var matterId=$('draftmatter').value;
@@ -3453,7 +3488,7 @@ async function sendPortalMessage(){
   $('pmmessage').value='';
   rPortalMatterChange();
   var syncResult=await sdnData('write','law_portalmessages',rec);
-  toast(syncResult?'Message logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?2500:4500);
+  toast(syncResult?'Message logged':lawWriteFailText('law_portalmessages','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?2500:4500);
 }
 async function toggleDocShare(id){
   var list=matterDocs();
@@ -3489,7 +3524,7 @@ async function confirmEsign(){
   var list=ld('law_portalesign',[]);list.push(rec);st('law_portalesign',list);
   closeEsignModal();rPortalMatterChange();
   var syncResult=await sdnData('write','law_portalesign',rec);
-  toast(syncResult?'Signature recorded':'Recorded on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Signature recorded':lawWriteFailText('law_portalesign','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rPortalEsignList(matterId){
   var esigns=ld('law_portalesign',[]).filter(function(e){return e.matter_id===matterId;});
@@ -3529,7 +3564,7 @@ async function saveBar(){
   st('law_barcerts',list);
   closeBarModal();rCerts();
   var syncResult=await sdnData('write','law_barcerts',rec);
-  toast(syncResult?'Bar admission saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Bar admission saved':lawWriteFailText('law_barcerts','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openCleModal(){
   ['clname2','cljurisdiction','clcourse','clcategory','clhours'].forEach(function(f){$(f).value='';});
@@ -3546,7 +3581,7 @@ async function saveCle(){
   var list=cleCredits();list.push(rec);st('law_clecredits',list);
   closeCleModal();rCerts();
   var syncResult=await sdnData('write','law_clecredits',rec);
-  toast(syncResult?'CLE credit logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'CLE credit logged':lawWriteFailText('law_clecredits','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function saveCleRequirement(){
   var jurisdiction=$('clrjurisdiction').value.trim(),hours=Number($('clrhours').value)||0;
@@ -3558,7 +3593,7 @@ async function saveCleRequirement(){
   ['clrjurisdiction','clrhours'].forEach(function(f){$(f).value='';});$('clrperiod').value=2;
   rCerts();
   var syncResult=await sdnData('write','law_clerequirements',rec);
-  toast(syncResult?'Requirement saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Requirement saved':lawWriteFailText('law_clerequirements','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 // Real shortfall check: sums CLE hours per staff+jurisdiction pair logged
 // (all time -- a full period-window check would need each entry's
@@ -3633,7 +3668,7 @@ async function saveOpAccount(){
   var list=opAccounts();list.push(rec);st('law_opaccounts',list);
   closeOpAccountModal();rOpAccounting();
   var syncResult=await sdnData('write','law_opaccounts',rec);
-  toast(syncResult?'Account added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Account added':lawWriteFailText('law_opaccounts','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openOpTxModal(){
   $('optxaccount').innerHTML=opAccounts().map(function(a){return '<option value="'+a.id+'">'+H(a.name)+'</option>';}).join('');
@@ -3652,7 +3687,7 @@ async function saveOpTx(){
   var list=opTransactions();list.push(rec);st('law_optx',list);
   closeOpTxModal();rOpAccounting();
   var syncResult=await sdnData('write','law_optx',rec);
-  toast(syncResult?'Transaction recorded':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Transaction recorded':lawWriteFailText('law_optx','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rOpAccounting(){
   var accounts=opAccounts(),tx=opTransactions();
@@ -3719,7 +3754,7 @@ async function savePiCase(){
   st('law_picases',list);
   closePiCaseModal();rPiMatterChange();
   var syncResult=await sdnData('write','law_picases',rec);
-  toast(syncResult?'Case detail saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Case detail saved':lawWriteFailText('law_picases','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 var piMedCaseId=null;
 function openPiMedModal(caseId){
@@ -3738,7 +3773,7 @@ async function savePiMed(){
   var list=piMedical();list.push(rec);st('law_pimedical',list);
   closePiMedModal();rPiMatterChange();
   var syncResult=await sdnData('write','law_pimedical',rec);
-  toast(syncResult?'Medical record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Medical record saved':lawWriteFailText('law_pimedical','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function savePiSettlement(){
   var caseId=$('pisettle-caseid').value;
@@ -3750,7 +3785,7 @@ async function savePiSettlement(){
   st('law_picases',list);
   rPiMatterChange();
   var syncResult=await sdnData('write','law_picases',pc);
-  toast(syncResult?'Settlement figures saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Settlement figures saved':lawWriteFailText('law_picases','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rPiMatterChange(){
   var matterId=$('pimatter').value;
@@ -4326,6 +4361,60 @@ if (document.readyState === 'loading') {
 })();
 
 // ── INIT ──────────────────────────────────────────────────────────────────
+// ── READ-BACK HYDRATE (2026-09-04) ────────────────────────────────────────
+// SAIRNlaw wrote to the server and NEVER read anything back. Measured before
+// writing this: twenty distinct resources written across 31 call sites, and
+// exactly ONE read in the whole file -- shared_knowledge. There was no
+// hydrate, merge or sync function of any name; grepped for the names and for
+// every fetch() target, and the only DATA_API call site is inside sdnData().
+//
+// Hank's own work log recorded the same thing from the other side while
+// building the deadline engine: "Every deadline in SAIRNlaw had been living on
+// exactly one browser, never hydrated back, lost with the profile." The write
+// path was fixed then; the read path was not added.
+//
+// SO THE FIRM'S RECORDS WERE ON THE SERVER AND UNREACHABLE. A second
+// workstation, or the same one after a browser data clear, opened an empty app
+// while the clients, matters, deadlines and trust ledger sat in Postgres.
+//
+// FOUR RESOURCES, NOT TWENTY, AND THAT IS THE UNCOMFORTABLE HALF. Only
+// law_clients, law_matters, law_trusttx and law_deadlines are registered in
+// api/_resources/sairnlaw.js. The other fifteen are refused by the resource
+// allowlist and have never reached the server at all -- proven live with a
+// control: on a bogus licence key law_matters answers 401 INVALID_LICENSE
+// (past the resource gate) while law_invoices answers 400 "resource must be
+// one of", same request shape, only the name different. Hydrating four while
+// fifteen still go nowhere would LOOK like sync works, so this ships together
+// with the failure messages that make those fifteen fail loudly, and the
+// remaining fifteen are their own tracked piece.
+//
+// ADDITIVE MERGE BY id, the same shape as sairnlegacy's sdnHydrateAll() and
+// sairndesign's before it: a server record whose id is not held locally is
+// appended, and a locally present id is NEVER overwritten. Two devices editing
+// the SAME record between hydrations is not resolved here and is not claimed
+// to be. A read that FAILS leaves local data untouched -- sdnData() returns
+// null for a failure, a missing licence and an unprovisioned table alike, and
+// none of those may be rendered as "you have none".
+var LAW_SYNC_RESOURCES=['law_clients','law_matters','law_deadlines','law_trusttx'];
+async function lawHydrateAll(){
+  if(!lawLicenseKey())return{merged:0,failed:0};
+  var results=await Promise.all(LAW_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
+  var merged=0,failed=0;
+  for(var i=0;i<LAW_SYNC_RESOURCES.length;i++){
+    var key=LAW_SYNC_RESOURCES[i],rows=results[i];
+    if(!Array.isArray(rows)){failed++;continue;}
+    if(!rows.length)continue;
+    var local=ld(key,[]);
+    if(!Array.isArray(local))continue;
+    var have={};
+    local.forEach(function(r){if(r&&r.id!=null)have[String(r.id)]=true;});
+    var added=0;
+    rows.forEach(function(r){if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);have[String(r.id)]=true;added++;}});
+    if(added){st(key,local);merged+=added;}
+  }
+  return{merged:merged,failed:failed};
+}
+
 function init(){
   seed();
   fillMatterSelects();
