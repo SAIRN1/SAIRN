@@ -373,6 +373,16 @@
       "claimed_at_epoch": 1788462532.7811613,
       "status": "released",
       "released_at": "2026-09-04T10:41:20Z"
+    },
+    {
+      "id": "cc-1788518876",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "booking slug seed and ledger pharmacy dup checks",
+      "claimed_at": "2026-09-04T10:47:56Z",
+      "claimed_at_epoch": 1788518876.904885,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
