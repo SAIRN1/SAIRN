@@ -413,6 +413,16 @@
       "claimed_at_epoch": 1788523250.3574839,
       "status": "released",
       "released_at": "2026-09-04T12:17:41Z"
+    },
+    {
+      "id": "cc-1788524505",
+      "session": "cc",
+      "subject": "fail-open-triage",
+      "task": "nineteen untriaged sites",
+      "claimed_at": "2026-09-04T12:21:45Z",
+      "claimed_at_epoch": 1788524505.3814497,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
