@@ -423,6 +423,16 @@
       "claimed_at_epoch": 1788524505.3814497,
       "status": "released",
       "released_at": "2026-09-04T12:40:30Z"
+    },
+    {
+      "id": "cc-1788526099",
+      "session": "cc",
+      "subject": "sairnroofing",
+      "task": "duplicate signature pad and sibling key field names",
+      "claimed_at": "2026-09-04T12:48:19Z",
+      "claimed_at_epoch": 1788526099.495629,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
