@@ -413,8 +413,8 @@
       "task": "fail open silent failure sweep and ai knowledge retest",
       "claimed_at": "2026-09-04T11:41:45Z",
       "claimed_at_epoch": 1788522105.8498752,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T12:16:44Z"
     }
   ]
 }
