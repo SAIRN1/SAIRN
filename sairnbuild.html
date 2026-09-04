@@ -2010,6 +2010,12 @@ function bldLicenseKey(){ return localStorage.getItem('bld_license_key') || ''; 
 // calls actually need it (the privacy gate lives server-side in
 // api/sd-data.js's bld_bids branch), every other resource call in this
 // file keeps working exactly as before, unauthenticated.
+// Live state of the server backup, as the SERVER last reported it -- not an
+// assumption. null means "not asked yet", which is deliberately distinct from
+// false. See bldBackupNotice() for what is done with it; before 2026-09-04
+// nothing was, and api/sd-data.js's NOT_PROVISIONED answer reached a
+// console.warn and stopped there.
+var _bldBackup={provisioned:null};
 function bldData(action,resource,payload,withSession){
   var lic=bldLicenseKey();
   if(!lic)return Promise.resolve(null);
@@ -2021,7 +2027,19 @@ function bldData(action,resource,payload,withSession){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('bldData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        // NOT_PROVISIONED is not a transient failure. It means the tables this
+        // backup writes into were never created, so EVERY push fails and will
+        // keep failing -- a different thing from a network blip and the one
+        // state the operator has to be told about.
+        if(d&&d.error&&d.error.code==='NOT_PROVISIONED')_bldBackup.provisioned=false;
+        console.warn('bldData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;
+      }
+      // Read branches answer with provisioned:true|false. Writes and the two
+      // bespoke branches (bld_bids, bld_tna) answer without the key at all,
+      // which is why this tests the TYPE -- `d.provisioned` being absent must
+      // not read as false.
+      if(typeof d.provisioned==='boolean')_bldBackup.provisioned=d.provisioned;
       return d.data;
     });
   }).catch(function(e){console.warn('bldData network error:',e.message);return null;});
@@ -2098,8 +2116,103 @@ function bldSyncCollection(key, next, prev) {
     var now;
     try { now = JSON.stringify(r); } catch (e) { return; }
     if (before[String(r.id)] === now) return;   // unchanged -- nothing to push
-    bldData('write', key, r);
+    var rid = String(r.id);
+    bldData('write', key, r).then(function (saved) {
+      if (saved === null) bldPendingMark(key, rid); else bldPendingClear(key, rid);
+    });
   });
+}
+
+// -- WHAT FAILED TO REACH THE SERVER (2026-09-04) -------------------------
+// bldSyncCollection() above pushes only records whose JSON actually CHANGED.
+// That is what makes hooking st() cheap, and it is also what made a failed
+// push PERMANENT: the next write of the same collection sees that record
+// unchanged and skips it, so the record stays on this device and nowhere
+// else, for good. The only signal was a console.warn.
+//
+// FOUND BY MEASURING THE LIVE SERVER, NOT BY READING THIS FILE. On
+// 2026-09-04 api/sd-data.js answered `provisioned:false` for all thirty
+// bld_* resources -- sql/sairnbuild_data_schema.sql had never been run --
+// so every push this feature has ever attempted failed, and the app said
+// nothing to anyone. Without the list below, running that migration would
+// NOT have back-filled anything: only records edited afterwards would ever
+// be pushed, and the existing business record would stay unbacked while the
+// app looked healthy.
+//
+// Ids only, so the list stays small. The record itself is read out of local
+// storage at retry time, so what gets pushed is always the current version
+// rather than a stale copy captured at failure time.
+var BLD_PENDING_KEY='bld_sync_pending';
+var BLD_PENDING_MAX=500;
+function bldPendingAll(){
+  try{var o=JSON.parse(localStorage.getItem(BLD_PENDING_KEY)||'{}');return (o&&typeof o==='object'&&!Array.isArray(o))?o:{};}catch(e){return {};}
+}
+function bldPendingWrite(o){
+  // Deliberately NOT through st(): this key is not a synced collection, and
+  // routing it through the sync hook would mean a bookkeeping write could
+  // itself queue a push.
+  try{localStorage.setItem(BLD_PENDING_KEY,JSON.stringify(o));return true;}catch(e){return false;}
+}
+function bldPendingMark(key,id){
+  var o=bldPendingAll();var l=o[key]||[];
+  if(l.indexOf(id)!==-1)return;
+  // The cap exists so a long outage cannot grow this without bound. Hitting
+  // it is RECORDED rather than swallowed -- a list that silently stops
+  // accepting entries would under-report exactly the damage it exists to
+  // measure, which is the shape this whole change is about.
+  if(l.length>=BLD_PENDING_MAX){o.__overflow=true;bldPendingWrite(o);return;}
+  l.push(id);o[key]=l;bldPendingWrite(o);
+}
+function bldPendingClear(key,id){
+  var o=bldPendingAll();var l=o[key];if(!Array.isArray(l))return;
+  var i=l.indexOf(id);if(i===-1)return;
+  l.splice(i,1);if(l.length)o[key]=l;else delete o[key];bldPendingWrite(o);
+}
+function bldPendingCount(){
+  var o=bldPendingAll(),n=0;
+  for(var k in o){if(Object.prototype.hasOwnProperty.call(o,k)&&Array.isArray(o[k]))n+=o[k].length;}
+  return n;
+}
+// Retried once per sign-in, after hydration. Skipped entirely while the
+// server reports the tables do not exist: firing hundreds of writes that are
+// all certain to 503 is a burst with no possible benefit, and the records
+// stay on the list for the sign-in after the migration is run.
+function bldRetryPending(){
+  if(!bldLicenseKey())return Promise.resolve(0);
+  if(_bldBackup.provisioned===false)return Promise.resolve(0);
+  var o=bldPendingAll();var jobs=[];
+  Object.keys(o).forEach(function(key){
+    if(!_bldSyncOn[key]||!Array.isArray(o[key]))return;
+    var local=ld(key,[]);if(!Array.isArray(local))return;
+    var byId={};
+    local.forEach(function(r){if(r&&r.id!=null)byId[String(r.id)]=r;});
+    o[key].forEach(function(id){
+      var rec=byId[id];
+      // Deleted locally since it failed. There is nothing left to push and
+      // nothing to recover, so drop it rather than retrying it forever.
+      if(!rec){bldPendingClear(key,id);return;}
+      jobs.push(bldData('write',key,rec).then(function(saved){
+        if(saved===null)return 0;
+        bldPendingClear(key,id);return 1;
+      }));
+    });
+  });
+  if(!jobs.length)return Promise.resolve(0);
+  return Promise.all(jobs).then(function(rs){return rs.reduce(function(a,b){return a+b;},0);});
+}
+// One message, not three -- there is a single toast element and three calls
+// would overwrite each other, which is its own small way of not telling
+// somebody something.
+function bldBackupNotice(pushed){
+  if(_bldBackup.provisioned===false){
+    toast('Server backup is NOT active — these records exist on this device only. The SAIRNbuild data tables have not been created on the server yet.',9000);
+    return;
+  }
+  var n=bldPendingCount();
+  var parts=[];
+  if(pushed)parts.push(pushed+' record'+(pushed===1?'':'s')+' that had failed to back up reached the server');
+  if(n)parts.push(n+(bldPendingAll().__overflow?'+':'')+' record'+(n===1?'':'s')+' still could not be backed up and exist on this device only — retried at next sign-in');
+  if(parts.length)toast(parts.join('. ')+'.',9000);
 }
 
 // -- HYDRATION ------------------------------------------------------------
@@ -2385,7 +2498,11 @@ function bldEnterApp(d){
   // first paint -- the panel is never blank waiting on a network call.
   bldHydrateAll().then(function(n){
     if(n){toast(n+' record'+(n===1?'':'s')+' restored from your server backup',5000);init();}
-  });
+    // Push side, after the pull. Anything that failed to reach the server
+    // previously is retried here; whatever is still stranded is then said
+    // out loud rather than left in console.warn.
+    return bldRetryPending();
+  }).then(function(pushed){bldBackupNotice(pushed);});
   if(typeof rSecurity==='function')rSecurity();
 }
 

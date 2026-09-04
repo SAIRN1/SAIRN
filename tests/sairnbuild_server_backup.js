@@ -20,6 +20,10 @@
 //
 // The functions are lifted out of the real file rather than reimplemented, so
 // a change to sairnbuild.html that breaks them fails here.
+//
+// COMPANION: tests/sairnbuild_backup_pending.js covers what happens when a
+// push FAILS -- the queue of stranded records, the retry at sign-in, and the
+// message the operator gets. Neither file is complete without the other.
 
 'use strict';
 const fs = require('fs');
