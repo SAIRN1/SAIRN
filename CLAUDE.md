@@ -206,6 +206,28 @@ FIXED and one is not — know which before you trust its output:**
    hand-written claim survives `list` and `check` and that neither stages
    anything.
 
+   **And it was worse AGAIN. The same fix did not reach the hook — closed
+   later on 2026-09-04 (Fourth).** `tools/sairn_claim_hook.py` carried its own
+   copy of the identical `git checkout origin/main -- .claude/claims` line. So
+   the pass above fixed the tool a session runs *by hand* and left the one that
+   runs **unattended at every session start, in every clone** — meaning the
+   danger this entry describes was never actually closed, only closed in the
+   copy you are less likely to hit. Found the next session by a plain
+   `git status` showing `M .claude/claims/hank.json` staged, which nobody had
+   staged. The hook now fetches and reads with `git show`, and probe section 8
+   runs the **hook binary itself**, asserting it stages nothing, leaves an
+   uncommitted edit to a *tracked* claim file intact, and still reports a claim
+   that exists only on origin. All six of those checks fail against the old
+   hook — verified by running the probe against it, not assumed.
+
+   **The standing lesson, which outlives this tool: a fix verified on the copy
+   a human invokes is not verified if a second copy runs unattended.** When you
+   fix a defect, `grep` the whole repo for the defective line before calling it
+   closed. Related: `C:/SAIRN/tools/` holds byte-identical stale mirrors of
+   several hooks, and **no settings file points at any of them** — every hook
+   command in `.claude/settings.json` is a relative `tools/...` path resolving
+   inside the clone. Editing a mirror there changes nothing.
+
 3. **A claim whose push failed was still reported as CLAIMED.** Fixed the same
    day, same commit; recorded because the shape recurs. `save_mine()` printed a
    failure line and returned `None`, and both callers printed `CLAIMED.`

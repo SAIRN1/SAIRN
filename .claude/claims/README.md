@@ -40,8 +40,14 @@ the question the next session actually asks.
 ## Automatic half — SessionStart hook
 
 `tools/sairn_claim_hook.py` runs at session start (registered in
-`.claude/settings.json`, resolved from `C:/SAIRN/tools/`). It lists every OTHER
-session's active claims, then gets out of the way.
+`.claude/settings.json`). It lists every OTHER session's active claims, then
+gets out of the way.
+
+**The path is relative, so THE COPY THAT RUNS IS THIS CLONE'S** — corrected
+2026-09-04, this line previously said it resolved from `C:/SAIRN/tools/`. A
+byte-identical stale mirror does sit there, and no hook in any settings file
+points at it; editing that copy changes nothing, which is the same shape as the
+defect below.
 
 It is **advisory and never blocks**. It cannot do a subject-specific overlap
 test, because at session start nobody knows yet what the session will be asked
@@ -59,3 +65,16 @@ sees the other three.
 - **Silent outside this system.** It only fires in a repo that actually has
   `.claude/claims/`. The home directory is itself a git repo on this machine,
   so without that guard the hook would fire in every unrelated project.
+- **Read-only on the repo — fixed 2026-09-04, and it was not before.** It
+  fetches, then reads origin/main's claim files with `git show`. It used to run
+  `git checkout origin/main -- .claude/claims`, which **overwrites the working
+  tree and stages what it wrote**. `sairn_claim.py` was fixed for exactly this
+  earlier the same day and **the hook was missed** — so the danger was never
+  actually closed, only closed in the copy a session is *less* likely to run.
+  This one runs unattended at every single session start, in every clone.
+
+  Caught by a plain `git status` in SAIRN-fourth showing `M
+  .claude/claims/hank.json` staged, which nobody had staged. The general
+  lesson: **a fix verified on the copy a human invokes, when a second copy runs
+  unattended, is not verified.** `tests/claims/run_push_verify_probe.py`
+  section 8 now runs the hook binary itself.

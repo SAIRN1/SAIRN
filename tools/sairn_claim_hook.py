@@ -23,6 +23,11 @@ session that never runs the tool still sees the other three.
    On timeout it does NOT silently fall back to stale local data pretending to
    be current -- it reports what it has AND says the fetch failed, because a
    confidently wrong "nobody else is working" is worse than no check at all.
+4. READ-ONLY ON THE REPO, and not merely by intention. It fetches and then
+   reads origin/main's claim files with `git show`. It must never write the
+   working tree or the index -- see read_origin_claims() for the version of
+   this hook that did, and what that cost. Held by
+   tests/claims/run_push_verify_probe.py section 8.
 
 Silent when there is nothing to say: no other session holding a claim means no
 output, so this costs a session that is alone exactly one line of noise: none.
@@ -68,24 +73,68 @@ def session_name(repo):
     return base[6:].lower() if base.lower().startswith('sairn-') else base.lower()
 
 
-def try_refresh(repo):
-    """Best-effort. Returns True if claims were refreshed from origin."""
+def try_fetch(repo):
+    """Best-effort `git fetch`. Returns True if origin/main is now current.
+
+    Fetch ONLY. It updates a remote-tracking ref and writes nothing into the
+    working tree or the index.
+    """
     try:
         r = subprocess.run(['git', 'fetch', 'origin'], cwd=repo,
                            capture_output=True, timeout=FETCH_TIMEOUT)
-        if r.returncode != 0:
-            return False
-        # Read the claims as they exist on origin/main. Another session's claim
-        # is only visible here after this step; without it the hook reports on
-        # whatever this clone last happened to pull.
-        subprocess.run(['git', 'checkout', 'origin/main', '--', '.claude/claims'],
-                       cwd=repo, capture_output=True, timeout=FETCH_TIMEOUT)
-        return True
+        return r.returncode == 0
     except (OSError, subprocess.SubprocessError):
         return False
 
 
-def read_claims(repo):
+def read_origin_claims(repo):
+    """Every session's claim file AS IT EXISTS ON origin/main, read without
+    touching the working tree. Returns a list of claims, or None if unreadable.
+
+    ── WHY NOT `git checkout origin/main -- .claude/claims` (2026-09-04) ──────
+    This hook used to do exactly that, and it is the same defect
+    tools/sairn_claim.py was fixed for earlier the same day -- fixed there and
+    NOT here, which meant the danger was never actually closed, only closed in
+    the copy a session is LESS likely to run. This one runs automatically at
+    every single session start.
+
+    `git checkout <ref> -- path` OVERWRITES the working tree, so a claim written
+    but not yet committed was silently gone. It also STAGES what it wrote:
+    observed live on 2026-09-04 in SAIRN-fourth, where a plain session start
+    left `M .claude/claims/hank.json` staged. Any later `git commit` sweeping
+    the index would have committed whatever origin happened to hold at that
+    moment -- including, in the general case, a revert of a claim this clone
+    had already made. The tool that exists to stop sessions colliding, deleting
+    the record of one, from a step that reads as read-only.
+
+    `git show` reads the same bytes and cannot write anything.
+    """
+    ls = subprocess.run(['git', 'ls-tree', '--name-only', 'origin/main',
+                         '.claude/claims/'], cwd=repo,
+                        capture_output=True, text=True, timeout=FETCH_TIMEOUT)
+    if ls.returncode != 0:
+        return None
+    out = []
+    for path in ls.stdout.split('\n'):
+        path = path.strip()
+        if not path.endswith('.json'):
+            continue
+        r = subprocess.run(['git', 'show', 'origin/main:' + path], cwd=repo,
+                           capture_output=True, text=True, timeout=FETCH_TIMEOUT)
+        if r.returncode != 0:
+            continue
+        try:
+            doc = json.loads(r.stdout)
+        except ValueError:
+            continue        # a broken file must never break session start
+        out.extend(doc.get('claims', []))
+    return out
+
+
+def read_local_claims(repo):
+    """This clone's own copies. The fallback when origin cannot be read -- and
+    a weaker answer, because another session's claim is only a fact once it is
+    on origin. The caller says so rather than presenting it as current."""
     out = []
     for path in sorted(glob.glob(os.path.join(repo, '.claude', 'claims', '*.json'))):
         try:
@@ -93,9 +142,23 @@ def read_claims(repo):
                 doc = json.load(f)
         except (ValueError, OSError):
             continue        # a broken file must never break session start
-        for c in doc.get('claims', []):
-            out.append(c)
+        out.extend(doc.get('claims', []))
     return out
+
+
+def read_claims(repo, fresh):
+    """Claims as origin/main holds them, falling back to disk. Returns
+    (claims, fresh) -- fresh goes False if the origin read failed, so a
+    fallback answer is never reported as a current one."""
+    if fresh:
+        try:
+            claims = read_origin_claims(repo)
+        except (OSError, subprocess.SubprocessError):
+            claims = None
+        if claims is not None:
+            return claims, True
+        fresh = False
+    return read_local_claims(repo), fresh
 
 
 def emit(text):
@@ -113,11 +176,11 @@ def main():
     if not repo:
         return 0
     me = session_name(repo)
-    fresh = try_refresh(repo)
+    claims, fresh = read_claims(repo, try_fetch(repo))
 
     now = time.time()
     active = []
-    for c in read_claims(repo):
+    for c in claims:
         if c.get('session') == me or c.get('status') != 'active':
             continue
         age_h = (now - c.get('claimed_at_epoch', 0)) / 3600.0
@@ -149,10 +212,12 @@ def main():
     if not fresh:
         if lines:
             lines.append('')
-        lines.append('NOTE: `git fetch` failed or timed out (%ds), so the claim '
-                     'list above is only as current as this clone\'s last '
-                     'fetch and MAY BE INCOMPLETE. Treat "no claims" as '
-                     '"unknown", not as "nobody is working".' % FETCH_TIMEOUT)
+        lines.append('NOTE: could not read .claude/claims from origin/main '
+                     '(`git fetch` failed or timed out at %ds, or the ref was '
+                     'unreadable), so the list above came from THIS CLONE\'S '
+                     'copy and is only as current as its last fetch. It MAY BE '
+                     'INCOMPLETE. Treat "no claims" as "unknown", not as '
+                     '"nobody is working".' % FETCH_TIMEOUT)
 
     emit('\n'.join(lines))
     return 0

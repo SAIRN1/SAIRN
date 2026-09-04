@@ -2,8 +2,16 @@
 
 Run:  python tests/claims/run_push_verify_probe.py
 
-Holds the 2026-09-04 fix to sairn_claim.py: a claim that does not reach
-origin/main must never be reported as CLAIMED.
+Holds the 2026-09-04 fixes to the claim system:
+
+  * sairn_claim.py -- a claim that does not reach origin/main must never be
+    reported as CLAIMED (sections 1-5, 7);
+  * neither sairn_claim.py NOR tools/sairn_claim_hook.py may write the working
+    tree or the index while reading claims (sections 6 and 8).
+
+Section 8 was added after the first pass fixed the library and left the HOOK
+untouched -- and the hook is the copy that runs unattended at every session
+start, so the defect was still firing everywhere while the probe read green.
 
 ── THE DEFECT ────────────────────────────────────────────────────────────────
 save_mine() printed a failure line and returned None, and both callers printed
@@ -35,9 +43,11 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 TOOL = os.path.join(ROOT, 'tools', 'sairn_claim.py')
+HOOK = os.path.join(ROOT, 'tools', 'sairn_claim_hook.py')
 
 passed = 0
 failed = 0
@@ -220,6 +230,107 @@ def main():
               "'--is-ancestor'" in src, 'on_origin/merge-base not found')
         check('cmd_claim acts on the result instead of printing regardless',
               re.search(r'ok\s*=\s*save_mine\(', src) and 'NOT CLAIMED' in src)
+
+        # ── 8. THE HOOK, which is the copy that actually runs every time ──────
+        # Section 6 covers sairn_claim.py. On 2026-09-04 that fix was applied
+        # there and NOT to tools/sairn_claim_hook.py, which is registered as a
+        # SessionStart hook and therefore runs automatically at EVERY session
+        # start -- so the destructive `git checkout origin/main --
+        # .claude/claims` was still firing on every session in every clone,
+        # while the probe and CLAUDE.md both read as if the defect were closed.
+        # Caught only because a plain `git status` at session start showed
+        # `M .claude/claims/hank.json` staged, which nobody had staged.
+        #
+        # The lesson generalises past this tool: a fix verified on the copy a
+        # human invokes, when a second copy runs unattended, is not verified.
+        # These assertions therefore run the HOOK BINARY, not the library.
+        os.makedirs(os.path.join(clone, 'tools'), exist_ok=True)
+        shutil.copy(HOOK, os.path.join(clone, 'tools', 'sairn_claim_hook.py'))
+
+        # Another session's claim, pushed to origin and never pulled by this
+        # clone. Only a hook that really reads origin/main can see it.
+        git(seed, 'pull', '--rebase', '-q', 'origin', 'main')
+        with open(os.path.join(seed, '.claude', 'claims', 'otherclone.json'),
+                  'w', encoding='utf-8') as f:
+            json.dump({'session': 'otherclone', 'claims': [
+                {'id': 'otherclone-1', 'session': 'otherclone',
+                 'subject': 'somethingelse', 'task': 'work only origin knows about',
+                 'claimed_at': '2026-09-04T00:00:00Z',
+                 'claimed_at_epoch': time.time() - 600,
+                 'status': 'active', 'released_at': None}]}, f)
+        git(seed, 'add', '-A')
+        git(seed, 'commit', '-q', '-m', 'another clone claims something')
+        git(seed, 'push', '-q', 'origin', 'main')
+
+        # ...and a claim this clone wrote by hand and has NOT committed. It must
+        # survive the hook, and it must not be mistaken for a fact on origin.
+        with open(handwritten, 'w', encoding='utf-8') as f:
+            json.dump(payload, f)
+        before = open(handwritten, encoding='utf-8').read()
+
+        # ...and an UNCOMMITTED EDIT to a file that DOES exist on origin. This
+        # is the destruction case, and the one a new file does not cover:
+        # `git checkout <ref> -- path` only writes paths present in the ref, so
+        # a brand-new local file survives it while an edit to a tracked one is
+        # silently replaced by origin's copy. That is precisely what happened to
+        # .claude/claims/hank.json in SAIRN-fourth on 2026-09-04.
+        mine = os.path.join(clone, '.claude', 'claims', 'probe.json')
+        minedoc = json.load(open(mine, encoding='utf-8'))
+        minedoc['claims'].append(
+            {'id': 'probe-uncommitted', 'session': 'probe',
+             'subject': 'notyetpushed', 'task': 'edited locally, not committed',
+             'claimed_at': '2026-09-04T00:00:00Z',
+             'claimed_at_epoch': time.time(),
+             'status': 'active', 'released_at': None})
+        with open(mine, 'w', encoding='utf-8') as f:
+            json.dump(minedoc, f)
+        mine_before = open(mine, encoding='utf-8').read()
+
+        r = subprocess.run([sys.executable,
+                            os.path.join(clone, 'tools', 'sairn_claim_hook.py')],
+                           cwd=clone, capture_output=True, text=True)
+        check('the hook exits 0', r.returncode == 0, r.stderr)
+        try:
+            ctx = json.loads(r.stdout)['hookSpecificOutput']['additionalContext']
+        except (ValueError, KeyError):
+            ctx = ''
+            check('the hook emits parseable SessionStart output', False, r.stdout)
+        else:
+            check('the hook emits parseable SessionStart output', True)
+
+        check('the hook reports a claim that exists ONLY on origin/main',
+              'otherclone' in ctx and 'work only origin knows about' in ctx, ctx)
+        check('...without claiming the fetch failed', 'MAY BE INCOMPLETE' not in ctx, ctx)
+        check('...and does not report an uncommitted local file as a real claim',
+              'byhand' not in ctx, ctx)
+
+        check('the hook leaves an uncommitted hand-written claim on disk',
+              os.path.exists(handwritten), 'the hook deleted it')
+        check('...byte-identical',
+              os.path.exists(handwritten) and
+              open(handwritten, encoding='utf-8').read() == before,
+              'the hook overwrote it')
+        check('the hook leaves an UNCOMMITTED EDIT to a tracked claim file intact',
+              open(mine, encoding='utf-8').read() == mine_before,
+              'the hook replaced it with origin\'s copy -- the real 2026-09-04 damage')
+        staged = git(clone, 'diff', '--cached', '--name-only', check=False).stdout.strip()
+        check('the hook stages nothing', staged == '', 'staged: ' + staged)
+        dirty = sorted(l for l in git(clone, 'status', '--porcelain=v1', check=False)
+                       .stdout.split('\n') if l.strip() and not l.startswith('?? tools/'))
+        check('...and modifies nothing else in the tree',
+              dirty == [' M .claude/claims/probe.json',
+                        '?? .claude/claims/handwritten.json'], str(dirty))
+        os.remove(handwritten)
+        git(clone, 'checkout', '--', '.claude/claims/probe.json')
+
+        # A source assertion as well, because every check above would still pass
+        # if the hook read origin correctly AND ALSO ran a checkout afterwards.
+        hooksrc = open(HOOK, encoding='utf-8').read()
+        executed = re.findall(r"\[\s*'git'\s*,\s*'([a-z-]+)'", hooksrc)
+        check('the hook never executes `git checkout`', 'checkout' not in executed,
+              'git commands executed: %s' % sorted(set(executed)))
+        check('...and reads origin/main with `git show`', 'show' in executed,
+              'git commands executed: %s' % sorted(set(executed)))
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
