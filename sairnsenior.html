@@ -1196,7 +1196,17 @@ function senAddDays(dateStr,delta){var d=new Date(dateStr+'T00:00:00');d.setDate
 // validation is server-side in api/_lib/license.js.
 var VALID=['SEN-','DEMO-','SAIRN-'];
 
-var prole='owner',ceid=null,cgeid=null;
+// prole defaults to '' (least-privileged, NOT a real role) until a real
+// server-issued login sets it. IT MUST NEVER DEFAULT TO 'owner' OR ANY OTHER
+// REAL ROLE: the gate helpers below test `prole === 'owner'`, so a privileged
+// default FAILS OPEN before login instead of failing closed.
+//
+// Corrected 2026-09-04. SAIRNbiz found and fixed exactly this on 2026-08-09
+// (Finding 4) and wrote the reasoning down; the fix was never carried across
+// to the six sibling apps that share this login shell, so all six still shipped
+// `var prole='owner'`. Found while confirming whether the write-only *_role
+// localStorage keys were redundant -- they are, and this was underneath them.
+var prole='',ceid=null,cgeid=null;
 var senSession=null;
 
 function senLicenseKey(){ return localStorage.getItem('sen_license_key') || ''; }
@@ -1458,6 +1468,11 @@ function senRestoreSession(){
 }
 
 function doLogout(){
+  // Reset the in-memory role too -- clearing the stored session alone is not
+  // enough. Without this, prole keeps the PREVIOUS user's role after logout,
+  // and every gate helper built on it keeps answering for them. Same fix and
+  // same reason as SAIRNbiz's (Finding 4, 2026-08-09).
+  prole='';
   senSession=null;
   try{localStorage.removeItem('sen_session');}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');
