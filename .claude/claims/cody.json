@@ -516,6 +516,16 @@
       "claimed_at_epoch": 1788555419.0239115,
       "status": "released",
       "released_at": "2026-09-04T21:05:29Z"
+    },
+    {
+      "id": "cody-1788556110",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "saved quote load restores drawing tool state",
+      "claimed_at": "2026-09-04T21:08:30Z",
+      "claimed_at_epoch": 1788556110.554244,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
