@@ -383,6 +383,16 @@
       "claimed_at_epoch": 1788518876.904885,
       "status": "released",
       "released_at": "2026-09-04T11:02:59Z"
+    },
+    {
+      "id": "cc-1788520056",
+      "session": "cc",
+      "subject": "sairncare",
+      "task": "append only integrity checks fail open alf tables",
+      "claimed_at": "2026-09-04T11:07:36Z",
+      "claimed_at_epoch": 1788520056.6890666,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
