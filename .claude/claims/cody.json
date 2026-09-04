@@ -373,8 +373,8 @@
       "task": "system settings write only never read",
       "claimed_at": "2026-09-03T19:08:39Z",
       "claimed_at_epoch": 1788462519.0896845,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-04T10:41:00Z"
     }
   ]
 }
