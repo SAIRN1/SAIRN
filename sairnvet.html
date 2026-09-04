@@ -264,7 +264,13 @@
 <button class="sidebar-btn" onclick="svNav('panel-documents')">Documents &amp; Forms</button>
 <button class="sidebar-btn" onclick="svNav('panel-referrals')">Referrals &amp; Specialists</button>
 <button class="sidebar-btn" onclick="svNav('panel-petinsurance')">Pet Insurance</button>
-<button class="sidebar-btn" onclick="svNav('panel-portal')">Client Portal</button>
+<!-- Renamed from "Client Portal" 2026-09-04. There is no portal: no
+     client-facing page, no client login, no route but /sairnvet, and the only
+     way a request enters this panel is a staff member typing it into the "Log
+     a Request" form. Guardian Check 0b -- a UI element must not imply a
+     capability the code does not have. The panel id is unchanged so nav,
+     CSV export and print targets are untouched. -->
+<button class="sidebar-btn" onclick="svNav('panel-portal')">Client Requests</button>
 <button class="sidebar-btn" onclick="svNav('panel-boarding')">Boarding &amp; Grooming</button>
 <button class="sidebar-btn" onclick="svNav('panel-wellness')">Wellness Plans</button>
 <button class="sidebar-btn" onclick="svNav('panel-mobilevet')">Mobile / Ambulatory Dashboard</button>
@@ -1446,8 +1452,14 @@
 
 <div id="panel-portal" class="panel">
 <div class="panel-header">
-<h1 class="panel-title">Client Portal</h1>
-<p class="panel-desc">Client-facing appointment requests, records access, and messaging</p>
+<h1 class="panel-title">Client Requests</h1>
+<!-- Was: "Client-facing appointment requests, records access, and messaging".
+     Three claims, none of them true of this panel. It is a staff-side LOG:
+     addPortalRequest() reads two text inputs a staff member fills in. There is
+     no records access and no messaging anywhere in this file. The four KPIs
+     below ARE honestly computed from that log -- the defect was the wording
+     above them, not the arithmetic. -->
+<p class="panel-desc">Log of client requests taken by phone, email or in person &mdash; and how quickly each was answered</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-portal-table','panel-portal')">Export CSV</button>
@@ -1496,7 +1508,13 @@
 <div id="panel-mobilevet" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Mobile / Ambulatory Dashboard</h1>
-<p class="panel-desc">Live tracking for farm-call and mobile-unit vets</p>
+<!-- Was: "Live tracking for farm-call and mobile-unit vets". There is NO
+     tracking: navigator.geolocation appears nowhere in this file, and every
+     row in the table below comes from the "Log a Stop" form a vet fills in
+     after the fact. Guardian Check 0b names this exact shape -- StoneDesk had
+     "live-GPS/ETA claims with no tracking system" and they were removed rather
+     than reworded around. The panel itself is real and works. -->
+<p class="panel-desc">Stop log for farm-call and mobile units &mdash; arrival and departure entered by the vet</p>
 </div>
 <div class="panel-actions">
 <button class="btn btn-sm" onclick="exportTableCSV('panel-mobilevet-table','panel-mobilevet')">Export CSV</button>
