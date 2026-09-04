@@ -435,6 +435,17 @@
       "claimed_at_epoch": 1788525956.5381763,
       "status": "released",
       "released_at": "2026-09-04T13:02:08Z"
+    },
+    {
+      "id": "cody-1788526983",
+      "session": "cody",
+      "subject": "sairnbuild-sairnvet",
+      "task": "fail open read sweep and silent failure triage",
+      "claimed_at": "2026-09-04T13:03:03Z",
+      "claimed_at_epoch": 1788526983.8805933,
+      "status": "active",
+      "released_at": null,
+      "note": "OVERRIDE, stated out loud. sairn_claim.py check BLOCKED this against fourth \"stonedesk: missing dom target triage 162 references\" -- the tool's own reason is \"overlap on: triage\". Different apps, different files: fourth is in stonedesk.html DOM references, this is api/bld-*.js and the SAIRNvet endpoints. Sole shared token is the generic word \"triage\". Task string NOT reworded to slip the matcher -- claim written directly with the reason attached, per CLAUDE.md. Dispatched explicitly by Michael."
     }
   ]
 }
