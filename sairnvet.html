@@ -1792,7 +1792,34 @@ function st(key,data){
       _svKeyVerified[key]=true;
     }
     localStorage.setItem(key,JSON.stringify(data));return true;
-  }catch(e){return false;}
+  }catch(e){
+    // ── THE OUTER CATCH USED TO BE SILENT (2026-09-04) ─────────────────
+    // It already returned false, which is why this file never appeared on
+    // the swallowing-catch list. But MEASURED: of 176 saveX() call sites in
+    // this file, 171 DISCARD the boolean -- every saveX() is a one-line
+    // `return st('sv_x', list)` and almost nothing reads what comes back.
+    // So a QuotaExceededError produced a false that no code read and no
+    // console recorded. A boolean nobody reads is not a report.
+    //
+    // Distinct from the unreadable-store guard above: that one refuses to
+    // WRITE OVER a corrupted value and blocks the app. This is the ordinary
+    // "the write did not happen" case, where nothing is corrupt and there is
+    // nothing to protect -- so it logs and returns false rather than blocking.
+    try{ console.error('SAIRNvet: localStorage write FAILED for "'+key+'"'+
+      (svIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                        :' -- '+((e&&e.message)||e))); }catch(_e){}
+    return false;
+  }
+}
+function svIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on the name and the code, so all three spellings are
+  // checked rather than the one this machine happens to produce. A non-quota
+  // failure must NOT be blamed on the quota: sending a clinic to delete its
+  // own records over a SecurityError is its own damage.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
 }
 // Every value under an sv_ key is written by st()/svStore() through
 // JSON.stringify, or by the three direct String(n) counters (sv_trial_start,
@@ -1846,7 +1873,62 @@ function svBlockForCorruptStore(keys){
   }
 }
 function svStore(k,v){return st('sv_'+k,v);}
-function svLoad(k,d){try{var r=localStorage.getItem('sv_'+k);return r?JSON.parse(r):d;}catch(e){return d;}}
+// ── svLoad() BYPASSED BOTH HALVES OF THE GUARD ABOVE (2026-09-04) ────────
+// The unreadable-store guard is deliberately built in two places, "because
+// either alone still fails": st() refuses to overwrite a corrupted value, and
+// svIntegrityScan() blocks the app at boot. THE 39 get*() COLLECTIONS ARE
+// COVERED BY BOTH -- a mid-session parse failure falls through to seed and
+// immediately calls saveX(seed), which enters st(), which finds the corrupt
+// value and blocks before the render returns.
+//
+// svLoad() IS THE ONE READ PATH THAT ENTERS NEITHER. It never calls st(), so
+// nothing trips the guard, and it returns the caller's default in silence.
+// Its four call sites are exactly the ones where a silent default is a
+// decision rather than an empty list:
+//
+//     svLoad('pc_identity', null)   svLoad('license', '')
+//     svLoad('auth')                svLoad('role', 'Doctor')
+//
+// A corrupted sv_role does not read as "unreadable", it reads as **Doctor**.
+// That is a privilege-shaped default arrived at by a parse failure, in a file
+// whose own guard exists because "sample data presented as a real record is
+// worse than a clinic that cannot start".
+//
+// SO A PARSE FAILURE HERE NOW ENTERS THE SAME GUARD st() USES -- marks the
+// key unreadable and blocks -- rather than being logged and waved through.
+// That IS a behaviour change and it is the point: the alternative is
+// returning 'Doctor' for a record nobody could read. The return is otherwise
+// unchanged, all four call sites behave exactly as before, and svLoad() still
+// never throws.
+//
+// A STORE THAT WILL NOT OPEN AT ALL IS NOT BLOCKED, only logged -- there is
+// nothing corrupt to protect and svIntegrityScan() takes the same view.
+//
+// The old test was `r ? JSON.parse(r) : d`, truthiness rather than
+// `r === null`, so a stored EMPTY STRING took the absent branch. It still
+// does, deliberately and unlike the other apps: svIntegrityScan() and st()
+// both treat '' as "nothing stored" for these keys, and disagreeing here
+// would block a clinic on a value those two call absent.
+function svLoad(k,d){
+  var key='sv_'+k, r=null;
+  try{ r=localStorage.getItem(key); }catch(e){
+    try{ console.error('SAIRNvet: localStorage is unavailable, so "'+key+
+      '" could not be read -- using the default, which is NOT the same as empty.'); }catch(_e){}
+    return d;
+  }
+  if(r===null||r==='') return d;         // genuinely absent: the honest empty case
+  try{
+    return JSON.parse(r);
+  }catch(e){
+    try{ console.error('SAIRNvet: stored record "'+key+
+      '" is UNREADABLE. The app is being blocked rather than falling back to a '+
+      'default, because that default is a decision (role, licence, session). '+
+      'Nothing has been deleted or overwritten. '+((e&&e.message)||e)); }catch(_e){}
+    _svUnreadable[key]=true;
+    try{ svBlockForCorruptStore([key]); }catch(_e){}
+    return d;
+  }
+}
 
 async function callClaude(system, messages, maxTokens) {
   try {

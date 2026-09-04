@@ -14,8 +14,15 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. FIVE are fixed here, one or two at a time, deliberately: sweeping thirteen
+// pass. SIX are fixed, one or two at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
+//
+// FIVE OF THE SIX ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
+// omission: it has a different contract. That file carries a deliberate
+// two-place unreadable-store guard, so a corrupt record there must BLOCK the
+// app rather than return the default -- the opposite of what every assertion
+// below requires. It has its own suite, tests/sv_storage_guard.js. Bending
+// these assertions to cover both would have made them true of neither.
 //
 // THE REAL FUNCTIONS ARE DRIVEN against a fake localStorage. The whole point is
 // that the RETURN VALUE is unchanged and only the silence is fixed, and a
@@ -169,7 +176,7 @@ APPS.forEach((app) => {
 // ---------------------------------------------------------------------------
 section('the checker agrees these five are done');
 
-const REMAINING = 9;   // of the original 14
+const REMAINING = 8;   // of the original 14
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -191,7 +198,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other nine are still on the list, not quietly dropped', () => {
+test('...and the other eight are still on the list, not quietly dropped', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,

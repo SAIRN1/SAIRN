@@ -265,10 +265,16 @@ function workingStore() {
   // this was written, so they were measured and listed rather than touched.
   // sairnbuild.html's st() is a different animal -- it carries a server-backup
   // hook and its own okWrite flag -- and needs reading before it is changed.
+  // SHRANK 2026-09-04 (Hank): sairnvet.html:st removed. Its outer catch now
+  // logs, with the quota named and a non-quota failure NOT blamed on it. That
+  // one was never a copy-paste of the others -- the same function carries this
+  // file's unreadable-store refusal, so the fix had to be read into an
+  // existing guard rather than pasted over it. Held by
+  // tests/sv_storage_guard.js, which drives the real st() and svLoad() against
+  // a fake localStorage and a fake DOM, and carries a control per shape.
   const KNOWN_MUTE = [
     'sairnbuild.html:st',
     'sairnsenior.html:st',
-    'sairnvet.html:st',
     'stonedesk.html:st',
     'stonedesk.html:stRaw',
   ];
@@ -278,7 +284,8 @@ function workingStore() {
   // The five fixed ones, named individually so a regression points at the app
   // rather than at a list diff.
   ['sairndental.html', 'sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html',
-   'sairncare.html', 'sairnfreedom.html', 'sairnbiz.html'].forEach((f) => {
+   'sairncare.html', 'sairnfreedom.html', 'sairnbiz.html',
+   'sairnvet.html'].forEach((f) => {
     check(f + ' speaks when a write is refused',
       mute.filter((x) => x.indexOf(f + ':') === 0).length, 0);
   });
