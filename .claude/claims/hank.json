@@ -614,6 +614,16 @@
       "claimed_at_epoch": 1788556691.734958,
       "status": "released",
       "released_at": "2026-09-04T21:24:17Z"
+    },
+    {
+      "id": "hank-1788557096",
+      "session": "hank",
+      "subject": "st-silent-writers-sairncare-sairnfreedom",
+      "task": "a refused localStorage write returns false to nobody and says nothing anywhere",
+      "claimed_at": "2026-09-04T21:24:56Z",
+      "claimed_at_epoch": 1788557096.3508575,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
