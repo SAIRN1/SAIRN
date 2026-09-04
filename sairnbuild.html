@@ -1972,6 +1972,14 @@ var prole='',jeid=null,ceid=null,coeid=null;
 var bldSession=null;
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
+function bldIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on the name and the code, so all four spellings are
+  // checked rather than the one this machine happens to produce.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
+}
 function st(k,v){
   // Server backup hook (2026-09-03). Reads the PREVIOUS value first so only
   // records that actually changed are pushed -- see bldSyncCollection below
@@ -1981,7 +1989,25 @@ function st(k,v){
   var prev=null;
   if(typeof _bldSyncOn!=='undefined'&&_bldSyncOn[k]){prev=ld(k,null);}
   var okWrite;
-  try{localStorage.setItem(k,JSON.stringify(v));okWrite=true;}catch(e){okWrite=false;}
+  // ── A REFUSED WRITE RETURNED false TO NOBODY (2026-09-04) ───────────────
+  // This catch set okWrite=false and recorded nothing. MEASURED IN THIS FILE:
+  // 86 st() call sites, 44 of which ignore the return -- so a
+  // QuotaExceededError produced a `false` that half the callers never read
+  // and no console recorded, indistinguishable from an empty catch.
+  //
+  // The catch stays exactly this shape rather than being restructured. It sits
+  // between the previous-value read and the server-backup hook below, and that
+  // ORDER is load-bearing: a failed local write must not push a value the
+  // device does not itself hold. Adding a log is the whole change.
+  try{localStorage.setItem(k,JSON.stringify(v));okWrite=true;}
+  catch(e){
+    okWrite=false;
+    // A non-quota failure must NOT be blamed on the quota: sending a builder
+    // to delete their job records over a SecurityError is its own damage.
+    try{ console.error('SAIRNbuild: localStorage write FAILED for "'+k+'"'+
+      (bldIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                         :' -- '+((e&&e.message)||e))); }catch(_e){}
+  }
   // Only after the local write succeeded. A failed localStorage write must not
   // push a value the device does not itself hold.
   if(okWrite&&typeof bldSyncCollection==='function'){

@@ -1177,7 +1177,46 @@ var PROXY='https://sairn.vercel.app/api/claude';
 var AUTH_API='https://sairn.vercel.app/api/sen-auth';
 
 function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');}
-function st(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true;}catch(e){return false;}}
+// ── A REFUSED WRITE RETURNED false TO NOBODY (2026-09-04) ─────────────────
+// This already returned a boolean, which is why it was never on the
+// swallowing-catch list in tests/sairn_storage_wrapper_honesty.js -- that
+// check matches `catch(e){}` and says so in its own header. The boolean was
+// not the problem; the silence was.
+//
+// MEASURED IN THIS FILE: all 32 st() call sites ignore the return, and the
+// catch logged nothing. So a QuotaExceededError produced a `false` that no
+// code read and no console recorded -- from the outside, indistinguishable
+// from the empty catch. A boolean nobody reads is not a report. This is a
+// home-care app: the record that silently fails to save is a visit note, a
+// medication administration, or an EVV entry someone will later be asked to
+// produce.
+//
+// THE RETURN IS UNCHANGED -- still true/false, still never throws -- so all
+// 32 call sites behave exactly as before. Only the silence is fixed. A
+// user-facing message is deliberately not added: no single place in this file
+// owns "tell the user", and deciding which of 32 saves is worth interrupting
+// a caregiver for is a per-call judgement, not a mechanical one.
+function senIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on the name and the code, so all four spellings are
+  // checked rather than the one this machine happens to produce.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
+}
+function st(k,v){
+  try{
+    localStorage.setItem(k,JSON.stringify(v));
+    return true;
+  }catch(e){
+    // A non-quota failure must NOT be blamed on the quota: sending someone to
+    // delete their records over a SecurityError is its own damage.
+    try{ console.error('SAIRNsenior: localStorage write FAILED for "'+k+'"'+
+      (senIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                         :' -- '+((e&&e.message)||e))); }catch(_e){}
+    return false;
+  }
+}
 function ld(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.parse(r);}catch(e){return d;}}
 function $(s){return document.getElementById(s);}
 // CENTS ARE SHOWN, ALWAYS (2026-09-02). This rounded to whole dollars, which

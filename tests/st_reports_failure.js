@@ -34,6 +34,24 @@ const APPS = [
   // produced a `false` no code read and no console recorded.
   { file: 'sairncare.html', name: 'SAIRNcare', prefix: 'care' },
   { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free' },
+  // Added 2026-09-04 (Cody) -- the last three on the open-work row's list.
+  // Measured per file rather than assumed from the siblings: sairnsenior's st()
+  // has 32 call sites and ALL 32 ignore the return; sairnbuild's has 86 with 44
+  // ignoring; stonedesk's has 101 with 24, plus stRaw()'s 22 with 19.
+  //
+  // They are not the same animal, which is why this harness grew two optional
+  // fields rather than three copies of itself:
+  //   * sairnbuild's st() takes (k,v) like the others but carries a
+  //     server-backup hook and its own okWrite flag, so the catch had a log
+  //     added rather than being restructured;
+  //   * stonedesk's is `st(key,data)` and DELEGATES its message to a shared
+  //     sdStorageFailed(), because st() and stRaw() must not carry two copies
+  //     of the same wording.
+  { file: 'sairnsenior.html', name: 'SAIRNsenior', prefix: 'sen' },
+  { file: 'sairnbuild.html', name: 'SAIRNbuild', prefix: 'bld', bareCatches: 2 },
+  { file: 'stonedesk.html', name: 'StoneDesk', prefix: 'sd',
+    sig: 'function st(key,data){', extra: ['function sdStorageFailed(key,e){'],
+    bareCatches: 0 },
 ];
 
 let pass = 0, fail = 0;
@@ -43,12 +61,23 @@ function test(name, fn) {
 }
 function section(t) { console.log('--- ' + t + ' ---'); }
 
+// BRACE-MATCHED, not "search for a newline followed by }" (2026-09-04). The
+// original shape only terminated a multi-line function; StoneDesk's st() and
+// stRaw() are one-liners, so the old version ran past the closing brace and
+// swept in `window.st=st;`, which fails in a bare VM with "window is not
+// defined". A slicer that depends on the formatting of the thing it slices
+// fails on correct code, which is how a fixture teaches you to edit the test.
 function grab(src, sig) {
   const i = src.indexOf(sig);
   assert.ok(i > 0, sig + ' not found');
-  const rel = src.slice(i).search(/\r?\n\}/);
-  assert.ok(rel > 0, sig + ' is not terminated');
-  return src.slice(i, i + rel) + '\n}';
+  const open = src.indexOf('{', i);
+  assert.ok(open > 0, sig + ' has no body');
+  let depth = 0;
+  for (let j = open; j < src.length; j++) {
+    if (src[j] === '{') depth++;
+    else if (src[j] === '}') { depth--; if (depth === 0) return src.slice(i, j + 1); }
+  }
+  throw new assert.AssertionError({ message: sig + ' is not terminated' });
 }
 
 // A localStorage that can be told to fail, in each of the ways a browser
@@ -78,7 +107,11 @@ function load(app, mode) {
   };
   vm.createContext(ctx);
   vm.runInContext(grab(src, 'function ' + app.prefix + 'IsQuotaError(e){'), ctx);
-  vm.runInContext(grab(src, 'function st(k,v){'), ctx);
+  // Some wrappers delegate the message to a named helper rather than inlining
+  // it -- StoneDesk's st() and stRaw() share one, so that they cannot drift
+  // into two wordings. The helper is loaded first so the wrapper can reach it.
+  (app.extra || []).forEach((sig) => vm.runInContext(grab(src, sig), ctx));
+  vm.runInContext(grab(src, app.sig || 'function st(k,v){'), ctx);
   return { ctx, errs };
 }
 
@@ -165,11 +198,25 @@ APPS.forEach((app) => {
     // logger guards directly below st() in sairnlaw/sairnlegacy, this test
     // went red while st() was untouched. A fixture that fails on a NEIGHBOUR's
     // correct code is worse than no fixture: it trains you to edit the test.
-    const stBody = grab(src, 'function st(k,v){');
+    const stBody = grab(src, app.sig || 'function st(k,v){');
     const bareInSt = stBody.match(/catch\s*\([A-Za-z_$][\w$]*\)\s*\{\s*\}/g) || [];
-    assert.strictEqual(bareInSt.length, 1,
-      'expected exactly one bare catch in st() -- the one guarding console.error -- got ' + bareInSt.length);
-    assert.match(stBody, /catch\(_e\)\{\}/, 'the allowed bare catch is not the logger guard');
+    // Per-app because the wrappers are genuinely different, not because the
+    // rule is soft. A count ABOVE the app's number still fails, so a new
+    // silent catch cannot be added to any of them:
+    //   * default 1 -- the logger guard inside st() itself;
+    //   * SAIRNbuild 2 -- plus `catch(e){}` around bldSyncCollection(). That
+    //     one is deliberate and pre-dates this work: a server-backup hook that
+    //     throws must not turn a SUCCESSFUL local write into a failure. It is
+    //     named here rather than waved through by a loosened count;
+    //   * StoneDesk 0 -- its st() delegates to sdStorageFailed(), so the
+    //     logger guard lives in the helper, which is where it is asserted.
+    const expectBare = ('bareCatches' in app) ? app.bareCatches : 1;
+    assert.strictEqual(bareInSt.length, expectBare,
+      'expected exactly ' + expectBare + ' bare catch(es) in the wrapper -- got ' + bareInSt.length);
+    // The logger guard must exist SOMEWHERE on the path that logs: a logger
+    // that throws must not turn a failed save into an exception.
+    const guardBody = (app.extra && app.extra.length) ? grab(src, app.extra[0]) : stBody;
+    assert.match(guardBody, /catch\(_e\)\{\}/, 'the logger guard is missing');
     void bare;
   });
 });

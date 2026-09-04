@@ -1820,7 +1820,44 @@ window.escAttrJs=escAttrJs;
 // showed "Saved". This returns true/false so every call site can show an honest message.
 // Attached to window explicitly, same as escHtml above, so every script block on this
 // page can call it regardless of which IIFE it's defined in.
-function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){return false;}}
+// ── A REFUSED WRITE RETURNED false TO NOBODY (2026-09-04) ─────────────────
+// Both st() and stRaw() already returned a boolean, which is exactly why
+// neither was ever on the swallowing-catch list in
+// tests/sairn_storage_wrapper_honesty.js -- that check matches `catch(e){}`
+// and says in its own header that a differently-spelled wrapper is not
+// covered. The boolean was not the problem. The silence was.
+//
+// MEASURED IN THIS FILE, not assumed from the sibling apps: st() has 101 call
+// sites and 24 of them ignore the return; stRaw() has 22 and 19 ignore it.
+// That is better than SAIRNcare (28 of 28) and SAIRNfreedom (78 of 78), and
+// it is recorded as better rather than flattened into one number -- but 43
+// saves that cannot fail out loud is still a save that cannot fail out loud,
+// and the catch recorded nothing at all for any of them.
+//
+// THE RETURN IS UNCHANGED -- still true/false, still never throws -- so all
+// 123 call sites behave exactly as before. Only the silence is fixed.
+//
+// No user-facing message here, deliberately, and for a reason specific to
+// this file: st() runs during boot before #toast exists, and no single place
+// owns "tell the user" across 123 sites. The callers that DO read the boolean
+// already speak; the console line is the half that is unambiguously right for
+// the ones that do not. Same shape as SAIRNcare's careIsQuotaError().
+function sdIsQuotaError(e){
+  if(!e) return false;
+  // Browsers disagree on both the name and the code, so all four spellings are
+  // checked rather than the one this machine happens to produce.
+  return e.name==='QuotaExceededError'
+      || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
+      || e.code===22 || e.code===1014;
+}
+function sdStorageFailed(key,e){
+  // A non-quota failure must NOT be blamed on the quota: sending a shop owner
+  // to delete their slab records over a SecurityError is its own damage.
+  try{ console.error('StoneDesk: localStorage write FAILED for "'+key+'"'+
+    (sdIsQuotaError(e)?' -- storage is FULL. Nothing was saved.'
+                      :' -- '+((e&&e.message)||e))); }catch(_e){}
+}
+function st(key,data){try{localStorage.setItem(key,JSON.stringify(data));return true;}catch(e){sdStorageFailed(key,e);return false;}}
 window.st=st;
 // st()'s raw-string sibling (2026-08-18, added while finishing the sweep above) -- st()
 // always JSON.stringify()s its second argument, which is correct for every real save*()
@@ -1828,7 +1865,7 @@ window.st=st;
 // non-JSON string (read back elsewhere via plain getItem(), not JSON.parse()) -- routing
 // those through st() would double-encode them, exactly the sd_negotiated_prices bug this
 // same audit found and fixed in pmClearAll(). Same honest-failure shape, no JSON.stringify.
-function stRaw(key,value){try{localStorage.setItem(key,value);return true;}catch(e){return false;}}
+function stRaw(key,value){try{localStorage.setItem(key,value);return true;}catch(e){sdStorageFailed(key,e);return false;}}
 window.stRaw=stRaw;
 // sdThemeColor (2026-08-06) -- white-label brand-color support, part of a real
 // resolved-color mechanism for the two contexts CSS custom properties genuinely

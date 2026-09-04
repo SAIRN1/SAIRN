@@ -252,7 +252,31 @@ function workingStore() {
       }
       const body = src.slice(m.index, j + 1);
       if (body.indexOf('localStorage.setItem') === -1) continue;
-      const speaks = /console\.|toast|Toast|alert\(/.test(body);
+      let speaks = /console\.|toast|Toast|alert\(/.test(body);
+      // DELEGATION COUNTS (2026-09-04). The first version looked for a literal
+      // console/toast call inside the wrapper, so a catch that calls a NAMED
+      // helper which logs read as silent. StoneDesk has two wrappers, st() and
+      // stRaw(), sharing one sdStorageFailed() -- and the alternative to
+      // teaching this check was duplicating the message in both, which is the
+      // drift this whole file exists to catch. So: any function this wrapper
+      // calls, whose own body speaks, counts as speaking. One hop only, and
+      // the callee must be defined in the same file -- a deeper chain would
+      // let anything be argued into "speaking".
+      if (!speaks) {
+        const called = body.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
+        speaks = called.some((c) => {
+          const nm = c.replace(/\s*\($/, '');
+          const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src);
+          if (!dm) return false;
+          const o = src.indexOf('{', dm.index);
+          let d = 0, k = o;
+          for (; k < src.length && k - o < 4000; k++) {
+            if (src[k] === '{') d++;
+            else if (src[k] === '}' && --d === 0) break;
+          }
+          return /console\.|toast|Toast|alert\(/.test(src.slice(dm.index, k + 1));
+        });
+      }
       if (!speaks) mute.push(f + ':' + m[1]);
     }
   });
@@ -272,15 +296,67 @@ function workingStore() {
   // existing guard rather than pasted over it. Held by
   // tests/sv_storage_guard.js, which drives the real st() and svLoad() against
   // a fake localStorage and a fake DOM, and carries a control per shape.
-  const KNOWN_MUTE = [
-    'sairnbuild.html:st',
-    'sairnsenior.html:st',
-    'stonedesk.html:st',
-    'stonedesk.html:stRaw',
-  ];
+  // BURNED DOWN TO ZERO 2026-09-04 (Cody). The last four are fixed:
+  // sairnbuild:st (86 call sites, 44 ignoring the return), sairnsenior:st
+  // (32 sites, ALL 32 ignoring it), stonedesk:st (101 sites, 24 ignoring)
+  // and stonedesk:stRaw (22 sites, 19 ignoring) -- each measured in its own
+  // file rather than assumed from the siblings, because they are not the same
+  // animal: sairnbuild's carries the server-backup hook and its own okWrite
+  // flag, and StoneDesk's two share one helper.
+  //
+  // AN EMPTY LIST IS THE POINT AND ALSO THE RISK. It now asserts that NO app
+  // has a silent write wrapper, so the next one added fails here by name. It
+  // is not evidence that no silent write exists anywhere -- see this block's
+  // scope note above: one- and three-argument wrappers are still invisible.
+  const KNOWN_MUTE = [];
 
-  check('no NEW app writes to localStorage with a catch that says nothing',
+  check('no app writes to localStorage with a catch that says nothing',
     mute, KNOWN_MUTE);
+  // The delegation hop must not become a way to argue anything into
+  // "speaking". A wrapper calling a helper that is itself silent is still
+  // silent, and a call to a function that does not exist in the file proves
+  // nothing -- both asserted against synthetic sources rather than trusted.
+  {
+    const probe = (body, extra) => {
+      const src2 = 'function stX(a, b) {' + body + '}\n' + (extra || '');
+      const re = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
+      const m = re.exec(src2);
+      const open = src2.indexOf('{', m.index);
+      let d = 0, j = open;
+      for (; j < src2.length; j++) {
+        if (src2[j] === '{') d++;
+        else if (src2[j] === '}' && --d === 0) break;
+      }
+      const b = src2.slice(m.index, j + 1);
+      let speaks = /console\.|toast|Toast|alert\(/.test(b);
+      if (!speaks) {
+        const called = b.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
+        speaks = called.some((c) => {
+          const nm = c.replace(/\s*\($/, '');
+          const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src2);
+          if (!dm) return false;
+          const o = src2.indexOf('{', dm.index);
+          let dd = 0, k = o;
+          for (; k < src2.length; k++) {
+            if (src2[k] === '{') dd++;
+            else if (src2[k] === '}' && --dd === 0) break;
+          }
+          return /console\.|toast|Toast|alert\(/.test(src2.slice(dm.index, k + 1));
+        });
+      }
+      return speaks;
+    };
+    check('a catch calling a helper that LOGS counts as speaking',
+      probe('try{localStorage.setItem(a,b);}catch(e){oops(e);}',
+            'function oops(e){console.error(e);}'), true);
+    check('a catch calling a helper that says NOTHING is still silent',
+      probe('try{localStorage.setItem(a,b);}catch(e){oops(e);}',
+            'function oops(e){return false;}'), false);
+    check('a catch calling a function that is not in the file is still silent',
+      probe('try{localStorage.setItem(a,b);}catch(e){elsewhere(e);}'), false);
+    check('and a bare empty catch is still silent',
+      probe('try{localStorage.setItem(a,b);}catch(e){}'), false);
+  }
   // The five fixed ones, named individually so a regression points at the app
   // rather than at a list diff.
   ['sairndental.html', 'sairndesign.html', 'sairnlaw.html', 'sairnlegacy.html',
