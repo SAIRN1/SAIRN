@@ -452,6 +452,16 @@
       "claimed_at_epoch": 1788555949.0361626,
       "status": "released",
       "released_at": "2026-09-04T21:15:04Z"
+    },
+    {
+      "id": "fourth-1788556669",
+      "session": "fourth",
+      "subject": "tooling",
+      "task": "shared comment stripper for every scanner",
+      "claimed_at": "2026-09-04T21:17:49Z",
+      "claimed_at_epoch": 1788556669.742423,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
