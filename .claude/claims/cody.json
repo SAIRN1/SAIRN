@@ -466,6 +466,16 @@
       "claimed_at_epoch": 1788530158.550842,
       "status": "released",
       "released_at": "2026-09-04T14:07:25Z"
+    },
+    {
+      "id": "cody-1788552300",
+      "session": "cody",
+      "subject": "sairnbuild",
+      "task": "ai budget early warning independent review and live verification",
+      "claimed_at": "2026-09-04T20:05:00Z",
+      "claimed_at_epoch": 1788552300.4577823,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
