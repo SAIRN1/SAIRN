@@ -506,6 +506,16 @@
       "claimed_at_epoch": 1788554636.1544726,
       "status": "released",
       "released_at": "2026-09-04T20:53:27Z"
+    },
+    {
+      "id": "cody-1788555419",
+      "session": "cody",
+      "subject": "discarded-verdict-crossfile",
+      "task": "hunt for a real cross module instance before building the pass",
+      "claimed_at": "2026-09-04T20:56:59Z",
+      "claimed_at_epoch": 1788555419.0239115,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
