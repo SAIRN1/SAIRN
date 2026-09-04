@@ -1344,9 +1344,32 @@ function rfRenderScopeNote(){
   $('j-assignee-wrap').style.display=MANAGEMENT_ROLES[role]?'block':'none';
 }
 
+// ── "NO JOBS YET" IS A CLAIM ABOUT THIS CONTRACTOR'S BUSINESS (2026-09-04) ──
+// rfData() returns NULL on any failure -- an expired session, a 403, a 500, a
+// dead connection -- and this did `currentJobs = data || []`. So a roofer whose
+// session had lapsed was shown "No jobs yet. Click '+ New Job' to add one."
+// while their real job board sat on the server, AND INVITED TO CREATE ONE.
+// The claim form's job picker said "Add a job first" for the same reason, to
+// somebody filing an insurance claim against a job that exists.
+//
+// Two changes, both deliberate:
+//   * the cache is NOT wiped on failure. Emptying a good list because a refresh
+//     failed loses more than it protects.
+//   * the failure is REMEMBERED and rendered, so a stale list is never passed
+//     off as a current one and an empty one is never passed off as "none".
+// Returns null on failure so callers can tell the two apart -- see
+// refreshCurrentEditingJob(), which used to filter over an empty array and
+// silently blank the measurement and estimate tabs.
+var rfJobsLoadFailed=false;
 function rfLoadJobs(){
   return rfData('read','rf_jobs',{}).then(function(data){
-    currentJobs=data||[];
+    if(data===null||!Array.isArray(data)){
+      rfJobsLoadFailed=true;
+      rJobs();
+      return null;
+    }
+    rfJobsLoadFailed=false;
+    currentJobs=data;
     rJobs();
     return currentJobs;
   });
@@ -1354,7 +1377,18 @@ function rfLoadJobs(){
 
 function rJobs(){
   var el=$('jobs-list');
-  if(!currentJobs.length){el.innerHTML='<div class="empty">No jobs yet. Click "+ New Job" to add one.</div>';return;}
+  // A failed load and an empty board are different facts and must not read the
+  // same. When the last load failed, say so -- and if a previous load had
+  // succeeded, the list below is shown but marked as possibly stale rather
+  // than silently presented as current.
+  var warn=rfJobsLoadFailed
+    ? '<div class="empty" style="border-left:3px solid #dc2626;text-align:left">Could not load your jobs just now. <strong>This does not mean you have none.</strong> Check your connection, or sign in again if your session has expired, then reload.</div>'
+    : '';
+  if(!currentJobs.length){
+    el.innerHTML = rfJobsLoadFailed ? warn
+      : '<div class="empty">No jobs yet. Click "+ New Job" to add one.</div>';
+    return;
+  }
   var rows=currentJobs.map(function(j){
     var cls=j.job_class==='commercial'?'<span class="badge bb">Commercial</span>':'<span class="badge bx">Residential</span>';
     var status=j.status||'lead';
@@ -1363,7 +1397,7 @@ function rJobs(){
       '<td>'+(j.name||'(untitled)')+'</td><td>'+(j.address||'--')+'</td><td>'+cls+'</td><td>'+sbadge+'</td>'+
       '<td>'+(j.assigned_employee_id||'<span style="color:var(--muted);">unassigned</span>')+'</td></tr>';
   }).join('');
-  el.innerHTML='<table><thead><tr><th>Job</th><th>Address</th><th>Class</th><th>Status</th><th>Assigned</th></tr></thead><tbody>'+rows+'</tbody></table>';
+  el.innerHTML=warn+'<table><thead><tr><th>Job</th><th>Address</th><th>Class</th><th>Status</th><th>Assigned</th></tr></thead><tbody>'+rows+'</tbody></table>';
 }
 
 var currentEditingJob=null;
@@ -1867,9 +1901,17 @@ function rfFillClaimJobs(){
   var fill=function(){
     sel.innerHTML=(currentJobs.length
       ? currentJobs.map(function(j){return '<option value="'+rfEsc(j.id)+'">'+rfEsc(j.name||j.id)+'</option>';}).join('')
-      : '<option value="">Add a job first</option>');
+      : (rfJobsLoadFailed
+          ? '<option value="">Could not load jobs -- try again</option>'
+          : '<option value="">Add a job first</option>'));
   };
-  if(currentJobs.length)fill();else rfLoadJobs().then(fill);
+  // "Add a job first" told somebody filing a claim to create a job that
+  // already exists, whenever the load had failed.
+  // RETURNS the promise. It did not, so a caller -- or a test -- had no way to
+  // wait for the picker to be filled, and the async branch completed after
+  // whatever came next had already read the element.
+  if(currentJobs.length){fill();return Promise.resolve();}
+  return rfLoadJobs().then(fill);
 }
 
 function rfClaimCanEdit(){return rfSession&&(rfSession.role==='owner'||rfSession.role==='admin'||rfSession.role==='estimator');}
@@ -4875,6 +4917,10 @@ function closeJobModal(){$('job-modal').classList.remove('on');}
 
 function refreshCurrentEditingJob(){
   return rfLoadJobs().then(function(jobs){
+    // A failed reload used to filter over [] and null the job being edited,
+    // silently stopping the measurement and estimate tabs from refreshing
+    // after a save. Leave what is on screen alone and say nothing false.
+    if(jobs===null){ toast('Could not refresh this job -- your changes were saved, but the view may be out of date.'); return; }
     currentEditingJob=jobs.filter(function(x){return x.id===editingJobId;})[0]||null;
     if(currentEditingJob){renderMeasurementTab();renderEstimateTab();}
   });
