@@ -28776,6 +28776,56 @@ document.addEventListener('DOMContentLoaded', function() {
   ];
   function load(){try{return JSON.parse(localStorage.getItem("sd_timesheets")||"null")||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){return st('sd_timesheets',d);}
+  // ── A MISSING PAY RATE BECAME $28/HOUR, IN SIX PLACES (2026-09-04) ───────
+  // `(x.hrs||0)*(x.rate||28)` appeared at six sites: the payroll KPI, the
+  // per-employee bars, the on-screen table, the CSV export's "Pay Est."
+  // column, and both halves of the printed timesheet. A record with no usable
+  // rate was priced at $28/hour and the result was presented as money, in a
+  // spreadsheet a shop owner opens and a document they hand to someone.
+  //
+  // RE-MEASURED RATHER THAN TAKEN FROM THE ROW THAT REPORTED IT, and the
+  // finding moved. That row said an employee with no rate on file "silently
+  // becomes $28/hour". The entry field is PREFILLED with 28 in the markup, so
+  // a rate is essentially always stored and the display fallbacks rarely fire.
+  // The live defect is narrower and worse: `parseFloat(...)||28` in sdTSLog
+  // turned a DELIBERATE 0 into 28 and stored it, and every display here did
+  // the same to any record carrying 0. An unpaid or salaried-zero entry was
+  // silently repriced. **0 is a rate.** That is why these read the type rather
+  // than truthiness.
+  //
+  // NO REPLACEMENT NUMBER IS INVENTED, per Guardian 0b: a row with no usable
+  // rate shows `--`, is EXCLUDED from the totals, and the exclusion is
+  // disclosed rather than absorbed.
+  function tsRate(x){
+    var r=x&&x.rate;
+    return (typeof r==='number'&&isFinite(r)&&r>=0)?r:null;
+  }
+  function tsPay(x){
+    var r=tsRate(x);
+    return r===null?null:(x.hrs||0)*r;
+  }
+  function tsMoney(v){return v===null?'--':'$'+Math.round(v).toLocaleString();}
+  // The CSV cell is its own named function so a test can DRIVE it. The first
+  // version of this fix was covered only by a source assertion looking for the
+  // literal `p===null?"":`, and a mutation that reintroduced the defect
+  // (`tsPay(x)||0`) left that assertion GREEN -- the text was still there and
+  // the behaviour was gone. A blank, not `--`, because a spreadsheet sums a
+  // column and `--` is a value someone has to notice and delete.
+  function tsCell(x){
+    var p=tsPay(x);
+    return p===null?'':'$'+Math.round(p).toLocaleString();
+  }
+  // Sums only what can be priced, and says how much it could not.
+  function tsTotal(rows){
+    var sum=0,unpriced=0;
+    rows.forEach(function(x){var p=tsPay(x);if(p===null)unpriced++;else sum+=p;});
+    return {sum:sum,unpriced:unpriced};
+  }
+  function tsNote(unpriced){
+    return unpriced?(' — '+unpriced+' row'+(unpriced===1?'':'s')+
+      ' had no hourly rate on file and '+(unpriced===1?'is':'are')+
+      ' NOT included in this total'):'';
+  }
   function render(){
     var d=load();
     var period=document.getElementById("ts-week-filter").value;
@@ -28784,19 +28834,28 @@ document.addEventListener('DOMContentLoaded', function() {
     var filtered=d.filter(function(x){return x.date>=cutoff;});
     if(empF)filtered=filtered.filter(function(x){return x.emp===empF;});
     var totalHrs=filtered.reduce(function(a,x){return a+(x.hrs||0);},0);
-    var totalPay=filtered.reduce(function(a,x){return a+(x.hrs||0)*(x.rate||28);},0);
+    var payTot=tsTotal(filtered);
     var otHrs=filtered.filter(function(x){return x.hrs>8;}).reduce(function(a,x){return a+(x.hrs-8);},0);
     var emps=new Set(filtered.map(function(x){return x.emp;}));
     var scheduled=emps.size*40;
     document.getElementById("ts-week-hrs").textContent=totalHrs.toFixed(1);
-    document.getElementById("ts-payroll").textContent="$"+totalPay.toLocaleString();
+    var payEl=document.getElementById("ts-payroll");
+    // The asterisk is the visible half; the title carries the count. A total
+    // that quietly drops rows is the same defect wearing the opposite sign.
+    payEl.textContent=tsMoney(payTot.sum)+(payTot.unpriced?" *":"");
+    payEl.title=payTot.unpriced?("Partial total"+tsNote(payTot.unpriced)):"";
     document.getElementById("ts-ot").textContent=otHrs.toFixed(1);
     document.getElementById("ts-employees").textContent=emps.size;
     document.getElementById("ts-efficiency").textContent=scheduled?(Math.round(totalHrs/scheduled*100)+"%"):"0%";
     var grouped={};
     filtered.forEach(function(x){
-      if(!grouped[x.emp])grouped[x.emp]={hrs:0,pay:0};
-      grouped[x.emp].hrs+=(x.hrs||0);grouped[x.emp].pay+=(x.hrs||0)*(x.rate||28);
+      if(!grouped[x.emp])grouped[x.emp]={hrs:0,pay:0,priced:0,unpriced:0};
+      grouped[x.emp].hrs+=(x.hrs||0);
+      var p=tsPay(x);
+      // priced is counted, not inferred from pay being non-zero: an employee
+      // whose real rate IS 0 must read $0, and one with no rate at all must
+      // read `--`. Those are different answers and a sum cannot tell them apart.
+      if(p===null)grouped[x.emp].unpriced++;else{grouped[x.emp].priced++;grouped[x.emp].pay+=p;}
     });
     var maxHrs=Math.max.apply(null,Object.values(grouped).map(function(g){return g.hrs;}));
     document.getElementById("ts-list").innerHTML=Object.entries(grouped).sort(function(a,b){return b[1].hrs-a[1].hrs;}).map(function(e){
@@ -28805,7 +28864,7 @@ document.addEventListener('DOMContentLoaded', function() {
       return "<div style=\"margin-bottom:14px\">"
         +"<div style=\"display:flex;justify-content:space-between;align-items:center;margin-bottom:4px\">"
         +"<span style=\"font-weight:700;font-size:13px\">"+escHtml(e[0])+(ot?"<span style=\"background:#fef3c7;color:#92400e;font-size:10px;padding:1px 6px;border-radius:8px;margin-left:6px;font-weight:700\">OT</span>":"")+"</span>"
-        +"<span style=\"font-size:12px\"><strong>"+e[1].hrs.toFixed(1)+" hrs</strong> &bull; <span style=\"color:var(--brand2);font-weight:700\">$"+Math.round(e[1].pay).toLocaleString()+"</span></span>"
+        +"<span style=\"font-size:12px\"><strong>"+e[1].hrs.toFixed(1)+" hrs</strong> &bull; <span style=\"color:var(--brand2);font-weight:700\" title=\""+escHtml(e[1].unpriced?("Partial"+tsNote(e[1].unpriced)):"")+"\">"+tsMoney(e[1].priced?e[1].pay:null)+(e[1].unpriced?" *":"")+"</span></span>"
         +"</div>"
         +"<div style=\"background:#f3f4f6;border-radius:4px;height:8px\"><div style=\"background:"+(ot?"#f59e0b":"var(--brand2)")+";width:"+pct+"%;height:8px;border-radius:4px\"></div></div>"
         +"</div>";
@@ -28819,7 +28878,7 @@ document.addEventListener('DOMContentLoaded', function() {
         +"<td style=\"padding:8px 10px;border-bottom:1px solid var(--border)\">"+x.out+"</td>"
         +"<td style=\"padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;font-weight:700;color:"+(isOT?"#f59e0b":"var(--text)")+"\">"+x.hrs.toFixed(1)+"</td>"
         +"<td style=\"padding:8px 10px;border-bottom:1px solid var(--border);color:var(--muted)\">"+escHtml(x.job||"")+"</td>"
-        +"<td style=\"padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--brand2);font-weight:700\">$"+Math.round((x.hrs||0)*(x.rate||28)).toLocaleString()+"</td>"
+        +"<td style=\"padding:8px 10px;border-bottom:1px solid var(--border);text-align:right;color:var(--brand2);font-weight:700\" title=\""+(tsPay(x)===null?"No hourly rate on file for this entry":"")+"\">"+tsMoney(tsPay(x))+"</td>"
         +"</tr>";
     });
     document.getElementById("ts-tbody").innerHTML=trs.join("")||"<tr><td colspan=\"7\" style=\"padding:20px;text-align:center;color:var(--muted)\">No logs found</td></tr>";
@@ -28842,7 +28901,17 @@ document.addEventListener('DOMContentLoaded', function() {
     var h1=parseInt(inn.split(":")[0])*60+parseInt(inn.split(":")[1]);
     var h2=parseInt(out.split(":")[0])*60+parseInt(out.split(":")[1]);
     var hrs=Math.max(0,(h2-h1)/60);
-    var rate=parseFloat(document.getElementById("ts-rate").value)||28;
+    // `parseFloat(...)||28` turned a DELIBERATE 0 into 28 and stored it, and
+    // turned a cleared field into 28 as well. Both wrote a rate the user never
+    // gave. Blank is refused rather than defaulted -- the field ships prefilled
+    // with 28, so an empty one is a deliberate act, and inventing a pay rate is
+    // not a recoverable guess.
+    var rateRaw=String(document.getElementById("ts-rate").value||"").trim();
+    var rate=rateRaw===""?NaN:parseFloat(rateRaw);
+    if(!isFinite(rate)||rate<0){
+      showToast("Enter an hourly rate — it is used for the Pay Est. column in the export and the printed timesheet. Nothing was logged.");
+      return;
+    }
     var d=load();
     d.push({id:Date.now(),emp:document.getElementById("ts-emp").value,
       date:document.getElementById("ts-date").value||today,
@@ -28866,7 +28935,11 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdTSExport=function(){
     var d=load();
     var rows=[["Employee","Date","Time In","Time Out","Hours","Job","Pay Est."]];
-    d.forEach(function(x){rows.push([x.emp,x.date,x.inn,x.out,x.hrs.toFixed(1),x.job||"",("$"+Math.round((x.hrs||0)*(x.rate||28)).toLocaleString())]);});
+    // An empty cell, never an invented figure: this file is opened in a
+    // spreadsheet and summed, so a placeholder price becomes a payroll number.
+    d.forEach(function(x){rows.push([x.emp,x.date,x.inn,x.out,x.hrs.toFixed(1),x.job||"",tsCell(x)]);});
+    var expTot=tsTotal(d);
+    if(expTot.unpriced)rows.push(["","","","","","","NOTE: "+expTot.unpriced+" row(s) above have no hourly rate on file and are blank in Pay Est."]);
     var csv=rows.map(function(r){return r.map(function(c){return "\""+String(c).replace(/"/g,"\"\"")+"\""}).join(",");}).join("\n");
     var a=document.createElement("a");a.href="data:text/csv;charset=utf-8,"+encodeURIComponent(csv);
     a.download="timesheets-pinnacle-"+today+".csv";a.click();
@@ -28874,14 +28947,19 @@ document.addEventListener('DOMContentLoaded', function() {
   window.sdTSPrint=function(){
     var d=load().filter(function(x){return x.date>=weekAgo;});
     var total=d.reduce(function(a,x){return a+(x.hrs||0);},0);
-    var pay=d.reduce(function(a,x){return a+(x.hrs||0)*(x.rate||28);},0);
+    var payT=tsTotal(d);
     var w=window.open("","_blank");
     w.document.write("<html><head><title>Timesheet</title><style>body{font-family:Arial,sans-serif;padding:24px;color:#111}h1{color:#0A3D1F}table{width:100%;border-collapse:collapse;font-size:12px}th{background:#0A3D1F;color:#fff;padding:8px 10px;text-align:left}td{padding:7px 10px;border-bottom:1px solid #ddd}.total{font-weight:700}.amt{color:'+sdThemeColor('--brand2','#16C762')+';font-weight:700}@media print{body{padding:12px}}</style><scr"+"ipt></scr"+"ipt></head><body>");
     w.document.write("<h1>Pinnacle Stone &amp; Design — Weekly Timesheet</h1><p style=\"color:#888\">Week ending: "+today+"</p>");
     w.document.write("<table><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Job</th><th>Pay Est.</th></tr>");
-    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.emp)+"</td><td>"+x.date+"</td><td>"+x.inn+"</td><td>"+x.out+"</td><td>"+x.hrs.toFixed(1)+"</td><td>"+escHtml(x.job||"")+"</td><td class=\"amt\">$"+Math.round((x.hrs||0)*(x.rate||28)).toLocaleString()+"</td></tr>");});
-    w.document.write("<tr class=\"total\"><td colspan=\"4\">TOTALS</td><td>"+total.toFixed(1)+" hrs</td><td></td><td class=\"amt\">$"+Math.round(pay).toLocaleString()+"</td></tr>");
-    w.document.write("</table></body></html>");w.document.close();w.print();
+    d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.emp)+"</td><td>"+x.date+"</td><td>"+x.inn+"</td><td>"+x.out+"</td><td>"+x.hrs.toFixed(1)+"</td><td>"+escHtml(x.job||"")+"</td><td class=\"amt\">"+tsMoney(tsPay(x))+"</td></tr>");});
+    w.document.write("<tr class=\"total\"><td colspan=\"4\">TOTALS</td><td>"+total.toFixed(1)+" hrs</td><td></td><td class=\"amt\">"+tsMoney(payT.sum)+(payT.unpriced?" *":"")+"</td></tr>");
+    w.document.write("</table>");
+    // A printed page leaves the building. A total that silently omits rows
+    // is the same defect as one that invents them, so the omission is on the
+    // page rather than in a tooltip nobody can hover on paper.
+    if(payT.unpriced)w.document.write("<p style=\"color:#92400e;font-size:11px\">* Partial total"+escHtml(tsNote(payT.unpriced))+".</p>");
+    w.document.write("</body></html>");w.document.close();w.print();
   };
   window.sdTSRender=render;
   render();
