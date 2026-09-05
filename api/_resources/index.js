@@ -141,6 +141,65 @@ const RESOURCES = RESOURCE_NAMES.reduce((map, name) => {
 // Generated, so it can never again disagree with the map above.
 const RESOURCE_LIST_TEXT = RESOURCE_NAMES.join(', ');
 
+// ── PER-APP SCOPING OF THE "must be one of" LIST (2026-09-05) ─────────────
+// The 2026-09-04 reorder in api/sd-data.js stopped an ANONYMOUS caller reading
+// this list. It did not stop an AUTHENTICATED one: any single app's customer
+// still got all 268 names across every other app on the platform, including
+// the fourteen they have no relationship with. Michael's call to scope it.
+//
+// `shared` is always included and that is not a leak: every app reaches those
+// resources through this same endpoint, so naming them tells a caller only
+// about resources it can genuinely use.
+//
+// THE APP MUST COME FROM THE LICENCE ROW, never from the request body.
+// sd-data.js already carries a hard-won note about this: the `memory` branch
+// used to trust `body.app_id`, a client-supplied string with no check at all.
+// A scoping rule fed from the body would be a filter the caller chooses.
+const SHARED_APP = 'shared';
+
+const RESOURCE_NAMES_BY_APP = REGISTRY_MODULES.reduce((m, mod) => {
+  m[mod.app] = mod.resources.slice();
+  return m;
+}, Object.create(null));
+
+const APP_NAMES = Object.keys(RESOURCE_NAMES_BY_APP);
+
+// Is this the app_id of a registry module? `shared` is deliberately NOT one:
+// no licence is issued for it, so a licence claiming it is as unrecognised as
+// a licence claiming nonsense.
+function isKnownApp(appId) {
+  const app = typeof appId === 'string' ? appId.trim() : '';
+  return !!app && app !== SHARED_APP && Object.prototype.hasOwnProperty.call(RESOURCE_NAMES_BY_APP, app);
+}
+
+// The names an app's own caller may be told about, or null when the app is not
+// recognised. Null rather than [] on purpose: "I cannot scope this" and "this
+// app owns nothing" must not read the same to the caller of this function.
+function resourceNamesFor(appId) {
+  if (!isKnownApp(appId)) return null;
+  return (RESOURCE_NAMES_BY_APP[SHARED_APP] || []).concat(RESOURCE_NAMES_BY_APP[appId.trim()]);
+}
+
+// The text for the 400. FALLS BACK TO THE FULL LIST when the app is unknown,
+// and that is a deliberate, conservative choice rather than an oversight:
+//
+//   * nothing in sd-data.js read `lic.app_id` before this change, so there is
+//     no evidence every live licence has it set;
+//   * scoping an unset app_id to shared-only would hand a REAL legacy customer
+//     a list missing their own resources, on the one message they read when
+//     they are already confused;
+//   * so the failure direction is "tells them too much", which is the state
+//     that existed yesterday, rather than "misleads them".
+//
+// THE RESIDUAL IS REAL AND IS NOT HIDDEN: a licence with no recognised app_id
+// still sees all 268 names. sd-data.js logs a warning naming that licence when
+// it happens, so the set is discoverable instead of assumed empty, and the
+// open-work row says so rather than claiming the class is closed.
+function resourceListTextFor(appId) {
+  const names = resourceNamesFor(appId);
+  return names ? names.join(', ') : RESOURCE_LIST_TEXT;
+}
+
 module.exports = {
   RESOURCES,
   RESOURCE_NAMES,
@@ -148,4 +207,9 @@ module.exports = {
   OWNER_BY_RESOURCE,
   REGISTRY_MODULES,
   EXTRA_ACTIONS,
+  RESOURCE_NAMES_BY_APP,
+  APP_NAMES,
+  isKnownApp,
+  resourceNamesFor,
+  resourceListTextFor,
 };

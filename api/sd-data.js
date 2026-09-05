@@ -84,7 +84,9 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 // The request-handling branches were deliberately NOT moved: they close over
 // ~15 handler-local bindings and serve 11 live apps, and they were never the
 // source of the collisions.
-const { RESOURCES, RESOURCE_LIST_TEXT, EXTRA_ACTIONS } = require('./_resources');
+const { RESOURCES, RESOURCE_LIST_TEXT, RESOURCE_NAMES, EXTRA_ACTIONS,
+        isKnownApp, resourceListTextFor } = require('./_resources');
+const { checkAnonRate, recordInvalidLicence } = require('./_lib/anon-rate-limit');
 // Which app ids the `memory` resource will accept. DERIVED, not hand-listed --
 // a hand-written copy beside a real one is how api/_resources/index.js's own
 // header records the resource error string drifting from the resource map.
@@ -225,7 +227,14 @@ function isSc(resource) {
 //
 // Deliberately still narrow: a verb reaches exactly the resources whose own
 // app granted it. Nothing here widens a verb to all 171 resources.
-function checkEnvelope(action, resource) {
+//
+// THE THIRD ARGUMENT IS THE CALLER'S OWN APP, and it scopes the list of names
+// the refusal is allowed to say out loud (2026-09-05). It MUST come from the
+// licence row, never from `body.app_id` -- see the `memory` branch below for
+// what trusting that field cost the last time. Omitted or unrecognised, the
+// list falls back to every registered name, which is yesterday's behaviour;
+// api/_resources/index.js carries the reasoning for that failure direction.
+function checkEnvelope(action, resource, appId) {
   const extraAllowed = EXTRA_ACTIONS[resource] || [];
   const isExtraAction = extraAllowed.indexOf(action) !== -1;
   if (action !== 'read' && action !== 'write' && !isExtraAction) {
@@ -236,9 +245,16 @@ function checkEnvelope(action, resource) {
     return { status: 400, body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } } };
   }
   if (!RESOURCES[resource]) {
-    // NAMES EVERY REGISTERED RESOURCE. That is why this gate now runs only
-    // after the caller's licence has been validated -- see the handler.
-    return { status: 400, body: { error: { message: 'resource must be one of: ' + RESOURCE_LIST_TEXT } } };
+    // NAMES REGISTERED RESOURCES, so this gate runs only after the caller's
+    // licence has been validated (2026-09-04) AND now names only the caller's
+    // own app plus the shared ones (2026-09-05). `code` is for the handler's
+    // logging and is deliberately not part of `body` -- the response shape is
+    // unchanged, because sairnlaw.html:1389 matches on this exact sentence.
+    return {
+      status: 400,
+      code: 'UNKNOWN_RESOURCE',
+      body: { error: { message: 'resource must be one of: ' + resourceListTextFor(appId) } }
+    };
   }
   return null;
 }
@@ -284,6 +300,34 @@ module.exports = async (req, res) => {
   //
   // The 405 method check above deliberately stays first: it discloses nothing
   // about what exists.
+
+  // ── AND THIS IS WHAT PAYS FOR IT (2026-09-05) ────────────────────────────
+  // The round trip above is the amplification the independent review flagged:
+  // a free local refusal became a database call an anonymous caller can drive.
+  // An address that has already failed licence validation too many times is
+  // refused HERE, before the lookup, at no database cost.
+  //
+  // It can never refuse a working customer -- only a FAILED validation is ever
+  // recorded, so a valid key accumulates nothing. See api/_lib/anon-rate-limit.js
+  // for why this is in memory rather than ai-rate-limit.js's Supabase shape
+  // (that one would make every junk request cost two round trips instead of
+  // one), and for the limits it does not pretend to exceed.
+  //
+  // FAILS OPEN on any internal error, matching every other gate on this
+  // platform. A limiter that crashes closed takes down the endpoint it is
+  // protecting, which is a worse outcome than the flood.
+  let anon = null;
+  try {
+    anon = checkAnonRate(req);
+    if (anon.refuse) {
+      res.status(429).json({ error: { code: 'TOO_MANY_INVALID_KEYS', message: 'Too many failed license attempts from this address. Wait a minute and try again.' } });
+      return;
+    }
+  } catch (e) {
+    console.error('sd-data anon rate check failed (allowing):', e && e.message);
+    anon = null;
+  }
+
   let lic;
   try {
     lic = await validateLicenseKey(licenseKey);
@@ -298,6 +342,20 @@ module.exports = async (req, res) => {
     return;
   }
   if (!lic.valid) {
+    // THE ONLY OUTCOME THAT COUNTS AGAINST AN ADDRESS. Not a missing bearer
+    // (no lookup happened), not an inactive licence below (a real key was
+    // presented), not the 502 above (the database's problem, not the
+    // caller's). Best effort: a counter that throws must not turn a 401 into
+    // a 500.
+    try {
+      const n = recordInvalidLicence(req);
+      if (anon && !anon.enforcing && n >= anon.limit) {
+        console.warn('sd-data anon rate limit (OBSERVE mode, not enforced): address has ' +
+          n + ' failed licence attempts, limit ' + anon.limit);
+      }
+    } catch (e) {
+      console.error('sd-data anon rate record failed (ignored):', e && e.message);
+    }
     res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } });
     return;
   }
@@ -333,8 +391,21 @@ module.exports = async (req, res) => {
   const resource = body && body.resource;
   const payload = (body && body.payload) || {};
   const isScResource = isSc(resource);
-  const envelopeRefusal = checkEnvelope(action, resource);
+  // lic.app_id, NOT body.app_id. The `memory` branch below documents what
+  // trusting the body field cost; a scoping rule the caller chooses is not a
+  // scoping rule.
+  const envelopeRefusal = checkEnvelope(action, resource, lic.app_id);
   if (envelopeRefusal) {
+    if (envelopeRefusal.code === 'UNKNOWN_RESOURCE' && !isKnownApp(lic.app_id)) {
+      // THE RESIDUAL, MADE VISIBLE RATHER THAN ASSUMED EMPTY. This licence just
+      // received every registered name because its app_id is not one of the
+      // registry's apps. Nothing read lic.app_id before 2026-09-05, so the size
+      // of this set is genuinely unknown; the fallback is deliberate (see
+      // api/_resources/index.js) and this line is how it stops being invisible.
+      console.warn('sd-data: licence ' + String(licHash || '').slice(0, 8) +
+        ' has app_id ' + JSON.stringify(lic.app_id) + ', which is not a registered app -- ' +
+        'the unknown-resource refusal was NOT scoped and named all ' + RESOURCE_NAMES.length + ' resources');
+    }
     res.status(envelopeRefusal.status).json(envelopeRefusal.body);
     return;
   }

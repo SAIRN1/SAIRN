@@ -435,6 +435,73 @@ async function callHandler(action, resource, key) {
     }
   });
 
+  // ── PER-APP SCOPING OF THE LIST (2026-09-05) ──────────────────────────
+  // The reorder above closed the ANONYMOUS hole. It left an authenticated one:
+  // any single app's customer still got all of every other app's resource
+  // names. These assert the scoping, and — more importantly — the two ways it
+  // could be wrong in the caller's favour.
+  console.log('\nScoping — a caller is told about its own app, and shared:');
+
+  await atest('a known app sees ITS OWN resources plus shared, and nothing else', () => {
+    const own = new Set(reg.RESOURCE_NAMES_BY_APP.sairndental);
+    const shared = new Set(reg.RESOURCE_NAMES_BY_APP.shared);
+    const named = handler.checkEnvelope('read', '__nope__', 'sairndental')
+      .body.error.message.replace('resource must be one of: ', '').split(', ');
+    assert.ok(named.length < reg.RESOURCE_NAMES.length, 'nothing was scoped away');
+    named.forEach((n) => assert.ok(own.has(n) || shared.has(n),
+      '"' + n + '" belongs to ' + reg.OWNER_BY_RESOURCE[n] + ', not to sairndental'));
+    own.forEach((n) => assert.ok(named.indexOf(n) !== -1, 'its own "' + n + '" was withheld'));
+    shared.forEach((n) => assert.ok(named.indexOf(n) !== -1, 'shared "' + n + '" was withheld'));
+  });
+
+  await atest('...and specifically NOT another app\'s', () => {
+    const msg = handler.checkEnvelope('read', '__nope__', 'sairndental').body.error.message;
+    ['sc_denial', 'alf_billing', 'rf_claims', 'law_matters'].forEach((n) => {
+      if (!reg.RESOURCES[n]) return;      // registry moved; do not assert on a name that left
+      assert.ok(msg.indexOf(n) === -1, 'a dental caller was told about "' + n + '"');
+    });
+  });
+
+  await atest('every registered app scopes to strictly fewer names than the whole platform', () => {
+    // One app at a time would pass while a typo'd module quietly fell back.
+    reg.APP_NAMES.filter((a) => a !== 'shared').forEach((app) => {
+      const named = handler.checkEnvelope('read', '__nope__', app)
+        .body.error.message.replace('resource must be one of: ', '').split(', ');
+      assert.ok(named.length < reg.RESOURCE_NAMES.length, app + ' was not scoped at all');
+    });
+  });
+
+  await atest('an UNRECOGNISED app falls back to the full list, deliberately', () => {
+    // The conservative direction, chosen because nothing read lic.app_id before
+    // this change and a legacy licence with no app_id must not be handed a list
+    // missing its own resources. The residual is logged by the handler and
+    // recorded in the open-work row -- it is not claimed to be closed.
+    [null, undefined, '', '   ', 'not-an-app', 'shared'].forEach((appId) => {
+      const msg = handler.checkEnvelope('read', '__nope__', appId).body.error.message;
+      assert.strictEqual(msg, 'resource must be one of: ' + reg.RESOURCE_LIST_TEXT,
+        'app_id ' + JSON.stringify(appId) + ' scoped to something other than the full list');
+    });
+  });
+
+  await atest('the response SHAPE is unchanged, because a client matches on it', () => {
+    // sairnlaw.html:1389 lawWriteFailText() tests /resource must be one of/.
+    // Scoping the names must not change the sentence that client reads.
+    assert.match(handler.checkEnvelope('read', '__nope__', 'sairnlaw').body.error.message,
+      /^resource must be one of: /);
+  });
+
+  test('the handler passes the LICENCE\'s app, never the body\'s', () => {
+    // A scoping rule the caller chooses is not a scoping rule. body.app_id is
+    // client-supplied and this file's own history records what trusting it cost.
+    const raw = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+    const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
+    assert.ok(src.indexOf('checkEnvelope(action, resource, lic.app_id)') > 0,
+      'the handler does not pass lic.app_id to checkEnvelope');
+    assert.ok(src.indexOf('checkEnvelope(action, resource, body.app_id') === -1 &&
+              src.indexOf('checkEnvelope(action, resource, memApp') === -1,
+      'the scoping is being fed from the request body');
+  });
+
   test('the handler validates the licence BEFORE it calls the gate', () => {
     // A source assertion, because every runtime check above would still pass if
     // the two were swapped back and the tests kept driving checkEnvelope
@@ -456,7 +523,10 @@ async function callHandler(action, resource, key) {
     const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
     const body = src.slice(src.indexOf('module.exports = async (req, res) =>'));
     const validate = body.indexOf('await validateLicenseKey(licenseKey)');
-    const envelope = body.indexOf('checkEnvelope(action, resource)');
+    // Prefix, not the whole call: the third argument was added on 2026-09-05
+    // and this assertion went red for the right reason, which is the only
+    // evidence it was ever anchored on anything real.
+    const envelope = body.indexOf('checkEnvelope(action, resource');
     assert.ok(validate > 0, 'validateLicenseKey call not found in the handler');
     assert.ok(envelope > 0, 'checkEnvelope call not found in the handler');
     assert.ok(validate < envelope,
