@@ -532,6 +532,16 @@
       "claimed_at_epoch": 1788611017.8077238,
       "status": "released",
       "released_at": "2026-09-05T12:31:05Z"
+    },
+    {
+      "id": "fourth-1788611918",
+      "session": "fourth",
+      "subject": "sd-data-per-app-scoping",
+      "task": "resource name disclosure rate limiter",
+      "claimed_at": "2026-09-05T12:38:38Z",
+      "claimed_at_epoch": 1788611918.916099,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
