@@ -530,8 +530,8 @@
       "task": "deployed serverless functions vercelignore",
       "claimed_at": "2026-09-05T12:23:37Z",
       "claimed_at_epoch": 1788611017.8077238,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:31:05Z"
     }
   ]
 }
