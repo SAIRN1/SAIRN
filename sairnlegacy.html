@@ -1416,7 +1416,10 @@ function legLicenseKey(){ return localStorage.getItem('leg_license_key') || ''; 
 // call in this file keeps working exactly as before, unauthenticated.
 function sdnData(action,resource,payload,withSession){
   var lic=legLicenseKey();
-  if(!lic)return Promise.resolve(null);
+  // Recorded, not just returned. A missing licence key produced the same
+  // silent null as a server refusal, so both arrived at the caller as "sync
+  // not yet enabled" -- and this one has an action attached to it.
+  if(!lic){legLastErr[resource]={code:'NO_LICENSE',message:''};return Promise.resolve(null);}
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
   if(withSession&&legSession&&legSession.token)h['X-SD-Auth']=legSession.token;
   return fetch(DATA_API,{
@@ -1425,10 +1428,51 @@ function sdnData(action,resource,payload,withSession){
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){
-      if(!r.ok||!d||!d.ok){console.warn('sdnData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;}
+      if(!r.ok||!d||!d.ok){
+        // REMEMBER WHY, PER RESOURCE (2026-09-05). sdnData() returned null on
+        // every failure and this file had no memory of the reason at all, so
+        // 57 save paths reported a real server refusal as "server sync not yet
+        // enabled for this app". Sync IS enabled for this app -- all 37
+        // resources it calls are registered (36 in api/_resources/sairnlegacy.js
+        // plus shared_knowledge in shared.js, checked rather than assumed) --
+        // so that sentence was false in every case and sent a funeral home
+        // looking for a feature flag instead of the real refusal.
+        //
+        // DELIBERATELY DIFFERENT FROM SAIRNlaw's finding: there the same
+        // sentence was hiding 15 UNREGISTERED resources that never reached the
+        // server. Here the registry is complete, so the defect is only the
+        // voice. Recorded because a negative result is the reason not to go
+        // looking again.
+        legLastErr[resource]={code:(d&&d.error&&(d.error.code||''))||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+        console.warn('sdnData '+resource+' failed ('+r.status+'):',legLastErr[resource].code||legLastErr[resource].message);
+        return null;
+      }
+      delete legLastErr[resource];
       return d.data;
     });
-  }).catch(function(e){console.warn('sdnData network error:',e.message);return null;});
+  }).catch(function(e){legLastErr[resource]={code:'NETWORK',message:e.message};console.warn('sdnData network error:',e.message);return null;});
+}
+var legLastErr={};
+function legLastErrText(resource){return legLastErr[resource]?legLastErr[resource].message:'';}
+function legLastErrCode(resource){return legLastErr[resource]?legLastErr[resource].code:'';}
+// What to say when a write did not land. The server's own words first, because
+// they are the only part that is actually true about THIS failure; the
+// fallback carries the consequence in language a funeral home can act on.
+//
+// THE RESOURCE ARGUMENT MUST BE THE ONE THIS CALLER WROTE. A helper that reads
+// a shared map will happily hand back another resource's message if the wrong
+// name is passed -- a wrong reason stated confidently, which is the defect
+// this replaces wearing a new disguise. tests/sairnlegacy_write_failure_voice.js
+// pairs every call site against the resource its own function writes.
+function legWriteFailText(resource,fallback){
+  var code=legLastErrCode(resource),msg=legLastErrText(resource);
+  if(code==='NO_LICENSE'){
+    return 'NOT SAVED TO THE SERVER -- this device has no licence key entered, so the record exists here only. Enter the licence key in Settings.';
+  }
+  if(/resource must be one of/.test(msg)){
+    return 'NOT SAVED TO THE SERVER. This record type is not set up on the server yet, so it exists only on this computer and no one else can see it. Report this -- it is a gap in the app, not something you did.';
+  }
+  return msg||fallback||'Nothing was saved to the server -- it is on this computer only. Try again.';
 }
 
 // ── AUTH CLIENT (2026-08-19) ────────────────────────────────────────────
@@ -2258,7 +2302,7 @@ async function saveCase(){
   st('leg_cases',list);
   closeCaseModal();rCases();rDash();fillCaseSelects();
   var syncResult=await sdnData('write','leg_cases',rec);
-  toast(syncResult?'Case saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Case saved':legWriteFailText('leg_cases','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCases(){
   fillCaseSelects();
@@ -2303,14 +2347,14 @@ async function saveDispatch(){
   var list=dispatches();list.push(rec);st('leg_dispatches',list);
   closeDispatchModal();rDispatches();rDash();
   var syncResult=await sdnData('write','leg_dispatches',rec);
-  toast(syncResult?'Dispatch created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Dispatch created':legWriteFailText('leg_dispatches','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function setDispatchStatus(id,status){
   var list=dispatches();
   var d=list.find(function(x){return x.id===id;});if(!d)return;
   d.status=status;st('leg_dispatches',list);rDispatches();rDash();
   var syncResult=await sdnData('write','leg_dispatches',d);
-  toast(syncResult?'Dispatch marked '+status:'Marked '+status+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Dispatch marked '+status:legWriteFailText('leg_dispatches','Marked '+status+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function shareDispatchLocation(id){
   if(!('geolocation' in navigator)){toast('This browser does not support location sharing');return;}
@@ -2320,7 +2364,7 @@ function shareDispatchLocation(id){
     d.gps_lat=pos.coords.latitude;d.gps_lng=pos.coords.longitude;d.gps_accuracy=pos.coords.accuracy;d.gps_updated_at=new Date().toISOString();
     st('leg_dispatches',list);rDispatches();
     var syncResult=await sdnData('write','leg_dispatches',d);
-    toast(syncResult?'Location shared':'Location saved on this device only -- server sync not yet enabled',syncResult?3000:5000);
+    toast(syncResult?'Location shared':legWriteFailText('leg_dispatches','Location saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
   },function(err){
     toast('Could not get location: '+(err&&err.message?err.message:'permission denied or unavailable'));
   },{enableHighAccuracy:true,timeout:10000});
@@ -2356,7 +2400,7 @@ async function addCustodyEntry(){
   ['ccfrom','ccto','cclocation','ccnotes'].forEach(function(f){$(f).value='';});
   rCustodyLog();
   var syncResult=await sdnData('write','leg_custodylog',rec);
-  toast(syncResult?'Handoff logged':'Logged on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Handoff logged':legWriteFailText('leg_custodylog','Logged on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCustodyLog(){
   var caseId=$('cclogcase').value;
@@ -2408,7 +2452,7 @@ async function saveMerch(){
   st('leg_merch_catalog',list);
   closeMerchModal();rMerch();
   var syncResult=await sdnData('write','leg_merch_catalog',rec);
-  toast(syncResult?'Catalog item saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Catalog item saved':legWriteFailText('leg_merch_catalog','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openUnitModal(merchId){
   mcUnitFor=merchId;
@@ -2425,7 +2469,7 @@ async function saveUnit(){
   var list=merchUnits();list.push(rec);st('leg_merch_units',list);
   closeUnitModal();rMerch();
   var syncResult=await sdnData('write','leg_merch_units',rec);
-  toast(syncResult?'Unit added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Unit added':legWriteFailText('leg_merch_units','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 var mcReserveUnit=null;
 function openReserveModal(unitId){
@@ -2461,7 +2505,8 @@ async function confirmReserve(){
   // other call sites in this file that depend on that exact contract, so
   // it isn't touched -- this is a local, single-call-site change.
   var lic=legLicenseKey();
-  if(!lic){toast('Reserved on this device only -- server sync not yet enabled for this app',5500);return;}
+  if(!lic){legLastErr['leg_merch_units']={code:'NO_LICENSE',message:''};
+    toast(legWriteFailText('leg_merch_units','Reserved on this device only -- it did not reach the server, so no other computer can see it'),5500);return;}
   try{
     var r=await fetch(DATA_API,{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
       body:JSON.stringify({action:'write',resource:'leg_merch_units',app_id:APP_ID,payload:u})});
@@ -2494,9 +2539,14 @@ async function confirmReserve(){
       toast(d.error.message,6000);
       return;
     }
-    toast((r.ok&&d&&d.ok)?'Unit reserved for '+caseLabel(caseId):'Reserved on this device only -- server sync not yet enabled for this app',(r.ok&&d&&d.ok)?3500:5500);
+    // This path reads the response itself, so it records the reason the same
+    // way sdnData() does rather than inventing a second vocabulary for it.
+    if(!(r.ok&&d&&d.ok))legLastErr['leg_merch_units']={code:(d&&d.error&&(d.error.code||''))||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+    else delete legLastErr['leg_merch_units'];
+    toast((r.ok&&d&&d.ok)?'Unit reserved for '+caseLabel(caseId):legWriteFailText('leg_merch_units','Reserved on this device only -- it did not reach the server, so no other computer can see it'),(r.ok&&d&&d.ok)?3500:5500);
   }catch(e){
-    toast('Reserved on this device only -- server sync not yet enabled for this app',5500);
+    legLastErr['leg_merch_units']={code:'NETWORK',message:e.message};
+    toast(legWriteFailText('leg_merch_units','Reserved on this device only -- it did not reach the server, so no other computer can see it'),5500);
   }
 }
 async function releaseUnit(unitId){
@@ -2505,7 +2555,7 @@ async function releaseUnit(unitId){
   u.status='Available';u.reserved_for_case_id='';u.reserved_at='';
   st('leg_merch_units',list);rMerch();
   var syncResult=await sdnData('write','leg_merch_units',u);
-  toast(syncResult?'Reservation released':'Released on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Reservation released':legWriteFailText('leg_merch_units','Released on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function markUnitSold(unitId){
   var list=merchUnits();
@@ -2513,7 +2563,7 @@ async function markUnitSold(unitId){
   u.status='Sold';u.sold_at=legLocalToday();
   st('leg_merch_units',list);rMerch();
   var syncResult=await sdnData('write','leg_merch_units',u);
-  toast(syncResult?'Marked sold':'Marked sold on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked sold':legWriteFailText('leg_merch_units','Marked sold on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rMerch(){
   var catalog=merchCatalog(),units=merchUnits();
@@ -2563,14 +2613,14 @@ async function saveDoc(){
   var list=documents();list.push(rec);st('leg_documents',list);
   closeDocModal();rDocs();
   var syncResult=await sdnData('write','leg_documents',rec);
-  toast(syncResult?'Document created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Document created':legWriteFailText('leg_documents','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function sendDoc(id){
   var list=documents();
   var d=list.find(function(x){return x.id===id;});if(!d)return;
   d.status='Sent';st('leg_documents',list);rDocs();
   var syncResult=await sdnData('write','leg_documents',d);
-  toast(syncResult?'Document sent':'Marked sent on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Document sent':legWriteFailText('leg_documents','Marked sent on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 var mcDocSign=null;
 function openDocSignModal(id){
@@ -2591,7 +2641,7 @@ async function confirmDocSign(){
   st('leg_documents',list);
   closeDocSignModal();rDocs();
   var syncResult=await sdnData('write','leg_documents',d);
-  toast(syncResult?'Document signed by '+name:'Signed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Document signed by '+name:legWriteFailText('leg_documents','Signed on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rDocs(){
   fillCaseSelects();
@@ -2661,7 +2711,7 @@ async function savePermit(){
   st('leg_deathrecords',list);
   closePermitModal();rPermits();rDash();
   var syncResult=await sdnData('write','leg_deathrecords',rec);
-  toast(syncResult?'Death record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Death record saved':legWriteFailText('leg_deathrecords','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rPermits(){
   fillCaseSelects();
@@ -2720,7 +2770,7 @@ async function saveFacility(){
   var list=facilities();list.push(rec);st('leg_facilities',list);
   closeFacilityModal();rScheduling();
   var syncResult=await sdnData('write','leg_facilities',rec);
-  toast(syncResult?'Facility added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Facility added':legWriteFailText('leg_facilities','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openBookingModal(){
   fillCaseSelects();
@@ -2743,14 +2793,14 @@ async function saveBooking(){
   var list=bookings();list.push(rec);st('leg_bookings',list);
   closeBookingModal();rScheduling();
   var syncResult=await sdnData('write','leg_bookings',rec);
-  toast(syncResult?'Booking created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Booking created':legWriteFailText('leg_bookings','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function cancelBooking(id){
   var list=bookings();
   var b=list.find(function(x){return x.id===id;});if(!b)return;
   b.status='Cancelled';st('leg_bookings',list);rScheduling();
   var syncResult=await sdnData('write','leg_bookings',b);
-  toast(syncResult?'Booking cancelled':'Cancelled on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Booking cancelled':legWriteFailText('leg_bookings','Cancelled on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rScheduling(){
   fillCaseSelects();
@@ -2800,7 +2850,7 @@ async function savePlot(){
   st('leg_plots',list);
   closePlotModal();rCemetery();
   var syncResult=await sdnData('write','leg_plots',rec);
-  toast(syncResult?'Plot saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Plot saved':legWriteFailText('leg_plots','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCemetery(){
   var list=plots();
@@ -2854,7 +2904,7 @@ async function saveCremation(){
   st('leg_cremations',list);
   closeCremationModal();rCremation();
   var syncResult=await sdnData('write','leg_cremations',rec);
-  toast(syncResult?'Cremation record saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Cremation record saved':legWriteFailText('leg_cremations','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function logCremationHandoff(caseId){
   fillCaseSelects();
@@ -2906,7 +2956,7 @@ async function savePreneed(){
   st('leg_preneed',list);
   closePreneedModal();rPreneed();
   var syncResult=await sdnData('write','leg_preneed',rec);
-  toast(syncResult?'Pre-need plan saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Pre-need plan saved':legWriteFailText('leg_preneed','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openInsuranceModal(){
   fillCaseSelects();
@@ -2925,7 +2975,7 @@ async function saveInsurance(){
   var list=insurancePolicies();list.push(rec);st('leg_insurance',list);
   closeInsuranceModal();rPreneed();
   var syncResult=await sdnData('write','leg_insurance',rec);
-  toast(syncResult?'Insurance policy saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Insurance policy saved':legWriteFailText('leg_insurance','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rPreneed(){
   fillCaseSelects();
@@ -2965,7 +3015,7 @@ async function advanceInsuranceStatus(id){
   rec.assignment_status=next;
   st('leg_insurance',list);rPreneed();
   var syncResult=await sdnData('write','leg_insurance',rec);
-  toast(syncResult?'Marked '+next:'Marked '+next+' on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Marked '+next:legWriteFailText('leg_insurance','Marked '+next+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 
 // ── ACCOUNTING / INVOICING ────────────────────────────────────────────────
@@ -3012,7 +3062,7 @@ async function saveInvoice(){
   var list=invoices();list.push(rec);st('leg_invoices',list);
   closeInvoiceModal();rInvoicing();
   var syncResult=await sdnData('write','leg_invoices',rec);
-  toast(syncResult?'Invoice created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Invoice created':legWriteFailText('leg_invoices','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openPaymentModal(invoiceId){
   pyInvoiceId=invoiceId;
@@ -3052,7 +3102,9 @@ async function confirmPayment(){
   closePaymentModal();rInvoicing();rPreneed();
   var syncResult=await sdnData('write','leg_invoices',inv);
   var allSynced=syncResult&&planSyncResult;
-  toast(allSynced?'Payment recorded':'Recorded on this device only -- server sync not yet enabled',allSynced?3000:5000);
+  // Two writes, so the message must name the one that FAILED -- a helper
+  // handed the wrong resource returns another write's message, confidently.
+  toast(allSynced?'Payment recorded':legWriteFailText(syncResult?'leg_preneed':'leg_invoices','Recorded on this device only -- it did not reach the server, so no other computer can see it'),allSynced?3000:5000);
 }
 function openGplModal(){
   var services=gplServices(),merch=merchCatalog();
@@ -3071,7 +3123,7 @@ async function saveGplServicePrice(id){
   var s=list.find(function(x){return x.id===id;});if(!s)return;
   s.price=price;st('leg_gplservices',list);
   var syncResult=await sdnData('write','leg_gplservices',s);
-  toast(syncResult?'Rate updated':'Updated on this device only -- server sync not yet enabled',syncResult?2000:4000);
+  toast(syncResult?'Rate updated':legWriteFailText('leg_gplservices','Updated on this device only -- it did not reach the server, so no other computer can see it'),syncResult?2000:4000);
 }
 // ===================================================================
 // PREDICTIVE INSIGHTS (2026-09-01) -- brought up to the level StoneDesk's
@@ -3322,7 +3374,7 @@ async function saveObituaryDraft(){
   if(!existing)list.push(rec);
   st('leg_obituaries',list);rObituary();
   var syncResult=await sdnData('write','leg_obituaries',rec);
-  toast(syncResult?'Draft saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Draft saved':legWriteFailText('leg_obituaries','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function publishObituary(){
   var caseId=$('obcase').value;
@@ -3332,7 +3384,7 @@ async function publishObituary(){
   var rec=list.find(function(o){return o.case_id===caseId;});if(!rec)return;
   rec.status='Published';st('leg_obituaries',list);rObituary();
   var syncResult=await sdnData('write','leg_obituaries',rec);
-  toast(syncResult?'Marked published':'Marked published on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked published':legWriteFailText('leg_obituaries','Marked published on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rObituary(){
   fillCaseSelects();
@@ -3382,7 +3434,7 @@ async function saveMemorial(){
   if(!existing)list.push(rec);
   st('leg_memorials',list);rMemorial();rMemorialCaseChange();
   var syncResult=await sdnData('write','leg_memorials',rec);
-  toast(syncResult?'Memorial page saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Memorial page saved':legWriteFailText('leg_memorials','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function addGuestbookEntry(){
   var caseId=$('mmcase').value;if(!caseId){toast('Select a case first');return;}
@@ -3396,7 +3448,7 @@ async function addGuestbookEntry(){
   $('gbname').value='';$('gbmessage').value='';
   rGuestbook(mem.id);rMemorial();
   var syncResult=await sdnData('write','leg_guestbook',rec);
-  toast(syncResult?'Guestbook entry added':'Added on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Guestbook entry added':legWriteFailText('leg_guestbook','Added on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rGuestbook(memorialId){
   var wrap=$('gb-list');if(!wrap)return;
@@ -3425,10 +3477,15 @@ function keepsakeLabel(id){var k=keepsakeCatalog().find(function(x){return x.id=
 // ── AFTERCARE / GRIEF-SUPPORT FOLLOW-UP ───────────────────────────────────
 function daysFromNow(days){var d=new Date();d.setDate(d.getDate()+days);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');}
 // FIXED 2026-08-09: this was the one write path in the file that never
-// called sdnData() and never showed the "saved on this device only --
-// server sync not yet enabled" disclosure every other save function in
-// this file shows -- silently local-only with no indication anything was
-// device-specific. Now matches that same honest pattern.
+// called sdnData() and never showed the "saved on this device only"
+// disclosure every other save function in this file shows -- silently
+// local-only with no indication anything was device-specific. Now matches
+// that same pattern.
+//
+// The disclosure it was matching said "server sync not yet enabled for this
+// app", which was FALSE -- sync is enabled and every resource is registered.
+// Corrected across all 57 sites on 2026-09-05; this comment is left as the
+// record that the pattern being copied was itself wrong.
 async function generateAftercareSchedule(){
   var caseId=$('accase').value;
   if(!caseId){toast('Select a case first');return;}
@@ -3449,7 +3506,7 @@ async function generateAftercareSchedule(){
     var r=await sdnData('write','leg_aftercare',created[i]);
     if(!r)allSynced=false;
   }
-  toast(allSynced?(created.length+' check-in(s) scheduled'):(created.length+' check-in(s) scheduled on this device only -- server sync not yet enabled for this app'),allSynced?3000:5500);
+  toast(allSynced?(created.length+' check-in(s) scheduled'):legWriteFailText('leg_aftercare',created.length+' check-in(s) scheduled on this device only -- they did not reach the server, so no other computer can see them'),allSynced?3000:5500);
 }
 function openAftercareNoteModal(id){
   acCompleteId=id;$('acnote').value='';
@@ -3464,7 +3521,7 @@ async function confirmAftercareComplete(){
   st('leg_aftercare',list);
   closeAftercareNoteModal();rAftercare();
   var syncResult=await sdnData('write','leg_aftercare',a);
-  toast(syncResult?'Check-in completed':'Completed on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Check-in completed':legWriteFailText('leg_aftercare','Completed on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rAftercare(){
   fillCaseSelects();
@@ -3507,7 +3564,7 @@ async function startProcession(){
   $('prvehicle').value='';
   rProcession();
   var syncResult=await sdnData('write','leg_processions',rec);
-  toast(syncResult?'Procession started':'Started on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Procession started':legWriteFailText('leg_processions','Started on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function shareProcessionLocation(id){
   if(!('geolocation' in navigator)){toast('This browser does not support location sharing');return;}
@@ -3517,7 +3574,7 @@ function shareProcessionLocation(id){
     p.last_lat=pos.coords.latitude;p.last_lng=pos.coords.longitude;p.last_accuracy=pos.coords.accuracy;p.last_updated_at=new Date().toISOString();
     st('leg_processions',list);rProcession();
     var syncResult=await sdnData('write','leg_processions',p);
-    toast(syncResult?'Location shared':'Location saved on this device only -- server sync not yet enabled',syncResult?3000:5000);
+    toast(syncResult?'Location shared':legWriteFailText('leg_processions','Location saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
   },function(err){
     toast('Could not get location: '+(err&&err.message?err.message:'permission denied or unavailable'));
   },{enableHighAccuracy:true,timeout:10000});
@@ -3528,7 +3585,7 @@ async function endProcession(id){
   p.status='Ended';p.ended_at=new Date().toISOString();
   st('leg_processions',list);rProcession();
   var syncResult=await sdnData('write','leg_processions',p);
-  toast(syncResult?'Procession ended':'Ended on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Procession ended':legWriteFailText('leg_processions','Ended on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rProcession(){
   fillCaseSelects();
@@ -3562,7 +3619,7 @@ async function saveVehicle(){
   var list=vehicles();list.push(rec);st('leg_vehicles',list);
   closeVehicleModal();rFleet();
   var syncResult=await sdnData('write','leg_vehicles',rec);
-  toast(syncResult?'Vehicle added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Vehicle added':legWriteFailText('leg_vehicles','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openMaintenanceModal(){
   $('mtvehicle').innerHTML=vehicles().map(function(v){return '<option value="'+v.id+'">'+H(v.name)+'</option>';}).join('');
@@ -3590,7 +3647,7 @@ async function saveMaintenance(){
   }
   closeMaintenanceModal();rFleet();
   var syncResult=await sdnData('write','leg_maintenance',rec);
-  toast(syncResult?'Service logged':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Service logged':legWriteFailText('leg_maintenance','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rFleet(){
   var vl=vehicles(),ml=maintenanceRecords();
@@ -3655,7 +3712,7 @@ async function saveCert(){
   st('leg_certs',list);
   closeCertModal();rCerts();
   var syncResult=await sdnData('write','leg_certs',rec);
-  toast(syncResult?'Certification saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Certification saved':legWriteFailText('leg_certs','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCerts(){
   var list=staffCerts();
@@ -3703,7 +3760,7 @@ async function savePet(){
   st('leg_petcases',list);
   closePetModal();rPets();
   var syncResult=await sdnData('write','leg_petcases',rec);
-  toast(syncResult?'Pet case saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Pet case saved':legWriteFailText('leg_petcases','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rPets(){
   var list=petCases();
@@ -3733,7 +3790,7 @@ async function saveKeepsake(){
   var list=keepsakeCatalog();list.push(rec);st('leg_keepsakes',list);
   closeKeepsakeModal();rKeepsakes();
   var syncResult=await sdnData('write','leg_keepsakes',rec);
-  toast(syncResult?'Catalog item saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Catalog item saved':legWriteFailText('leg_keepsakes','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openKeepsakeOrderModal(){
   fillCaseSelects();
@@ -3751,7 +3808,7 @@ async function saveKeepsakeOrder(){
   var list=keepsakeOrders();list.push(rec);st('leg_keepsakeorders',list);
   closeKeepsakeOrderModal();rKeepsakes();
   var syncResult=await sdnData('write','leg_keepsakeorders',rec);
-  toast(syncResult?'Order created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Order created':legWriteFailText('leg_keepsakeorders','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function advanceKeepsakeOrder(id){
   var list=keepsakeOrders();
@@ -3760,7 +3817,7 @@ async function advanceKeepsakeOrder(id){
   if(!nextStatus)return;
   o.status=nextStatus;st('leg_keepsakeorders',list);rKeepsakes();
   var syncResult=await sdnData('write','leg_keepsakeorders',o);
-  toast(syncResult?'Order marked '+nextStatus:'Marked '+nextStatus+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Order marked '+nextStatus:legWriteFailText('leg_keepsakeorders','Marked '+nextStatus+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rKeepsakes(){
   fillCaseSelects();
@@ -3856,7 +3913,7 @@ async function saveMonument(){
   st('leg_monuments',list);
   closeMonumentModal();rMonument();
   var syncResult=await sdnData('write','leg_monuments',rec);
-  toast(syncResult?'Monument order saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Monument order saved':legWriteFailText('leg_monuments','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rMonument(){
   fillCaseSelects();
@@ -3894,7 +3951,7 @@ async function saveFloristPartner(){
   var list=florists();list.push(rec);st('leg_florists',list);
   closeFloristPartnerModal();rFlorist();
   var syncResult=await sdnData('write','leg_florists',rec);
-  toast(syncResult?'Florist added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Florist added':legWriteFailText('leg_florists','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openFloristOrderModal(){
   fillCaseSelects();
@@ -3914,14 +3971,14 @@ async function saveFloristOrder(){
   var list=floristOrders();list.push(rec);st('leg_floristorders',list);
   closeFloristOrderModal();rFlorist();
   var syncResult=await sdnData('write','leg_floristorders',rec);
-  toast(syncResult?'Order created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Order created':legWriteFailText('leg_floristorders','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function markFloristDelivered(id){
   var list=floristOrders();
   var o=list.find(function(x){return x.id===id;});if(!o)return;
   o.status='Delivered';st('leg_floristorders',list);rFlorist();
   var syncResult=await sdnData('write','leg_floristorders',o);
-  toast(syncResult?'Marked delivered':'Marked delivered on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked delivered':legWriteFailText('leg_floristorders','Marked delivered on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rFlorist(){
   fillCaseSelects();
@@ -3961,7 +4018,7 @@ async function saveCatererPartner(){
   var list=caterers();list.push(rec);st('leg_caterers',list);
   closeCatererPartnerModal();rCaterer();
   var syncResult=await sdnData('write','leg_caterers',rec);
-  toast(syncResult?'Caterer added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Caterer added':legWriteFailText('leg_caterers','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openCatererOrderModal(){
   fillCaseSelects();
@@ -3980,7 +4037,7 @@ async function saveCatererOrder(){
   var list=catererOrders();list.push(rec);st('leg_catererorders',list);
   closeCatererOrderModal();rCaterer();
   var syncResult=await sdnData('write','leg_catererorders',rec);
-  toast(syncResult?'Booking created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Booking created':legWriteFailText('leg_catererorders','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function advanceCatererOrder(id){
   var list=catererOrders();
@@ -3989,7 +4046,7 @@ async function advanceCatererOrder(id){
   if(!nextStatus)return;
   o.status=nextStatus;st('leg_catererorders',list);rCaterer();
   var syncResult=await sdnData('write','leg_catererorders',o);
-  toast(syncResult?'Marked '+nextStatus:'Marked '+nextStatus+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked '+nextStatus:legWriteFailText('leg_catererorders','Marked '+nextStatus+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rCaterer(){
   fillCaseSelects();
@@ -4040,7 +4097,7 @@ async function saveClergyPartner(){
   var list=clergyList();list.push(rec);st('leg_clergy',list);
   closeClergyPartnerModal();rClergy();
   var syncResult=await sdnData('write','leg_clergy',rec);
-  toast(syncResult?'Clergy contact added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Clergy contact added':legWriteFailText('leg_clergy','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openClergyBookingModal(){
   fillCaseSelects();
@@ -4063,7 +4120,7 @@ async function saveClergyBooking(){
   var list=clergyBookings();list.push(rec);st('leg_clergybookings',list);
   closeClergyBookingModal();rClergy();
   var syncResult=await sdnData('write','leg_clergybookings',rec);
-  toast(syncResult?'Booking created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Booking created':legWriteFailText('leg_clergybookings','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function advanceClergyBooking(id){
   var list=clergyBookings();
@@ -4072,7 +4129,7 @@ async function advanceClergyBooking(id){
   if(!nextStatus)return;
   b.status=nextStatus;st('leg_clergybookings',list);rClergy();
   var syncResult=await sdnData('write','leg_clergybookings',b);
-  toast(syncResult?'Marked '+nextStatus:'Marked '+nextStatus+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked '+nextStatus:legWriteFailText('leg_clergybookings','Marked '+nextStatus+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rClergy(){
   fillCaseSelects();
@@ -4120,7 +4177,7 @@ async function saveLiveryVendor(){
   var list=liveryVendors();list.push(rec);st('leg_liveryvendors',list);
   closeLiveryVendorModal();rLivery();
   var syncResult=await sdnData('write','leg_liveryvendors',rec);
-  toast(syncResult?'Vendor added':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Vendor added':legWriteFailText('leg_liveryvendors','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function openLiveryBookingModal(){
   fillCaseSelects();
@@ -4145,7 +4202,7 @@ async function saveLiveryBooking(){
   var list=liveryBookings();list.push(rec);st('leg_liverybookings',list);
   closeLiveryBookingModal();rLivery();
   var syncResult=await sdnData('write','leg_liverybookings',rec);
-  toast(syncResult?'Booking created':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Booking created':legWriteFailText('leg_liverybookings','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 async function advanceLiveryBooking(id){
   var list=liveryBookings();
@@ -4154,7 +4211,7 @@ async function advanceLiveryBooking(id){
   if(!nextStatus)return;
   b.status=nextStatus;st('leg_liverybookings',list);rLivery();
   var syncResult=await sdnData('write','leg_liverybookings',b);
-  toast(syncResult?'Marked '+nextStatus:'Marked '+nextStatus+' on this device only -- server sync not yet enabled',syncResult?3000:5000);
+  toast(syncResult?'Marked '+nextStatus:legWriteFailText('leg_liverybookings','Marked '+nextStatus+' on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rLivery(){
   fillCaseSelects();
@@ -4194,7 +4251,7 @@ async function saveTribute(){
   var list=tributes();list.push(rec);st('leg_tributes',list);
   closeTributeModal();rTribute();
   var syncResult=await sdnData('write','leg_tributes',rec);
-  toast(syncResult?'Option saved':'Saved on this device only -- server sync not yet enabled for this app',syncResult?3000:5000);
+  toast(syncResult?'Option saved':legWriteFailText('leg_tributes','Saved on this device only -- it did not reach the server, so no other computer can see it'),syncResult?3000:5000);
 }
 function rTribute(){
   fillCaseSelects();
