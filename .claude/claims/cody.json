@@ -578,6 +578,16 @@
       "status": "released",
       "released_at": "2026-09-04T22:39:16Z",
       "note": "OVERRIDE, stated out loud, and the block is the bug being fixed. sairn_claim.py check BLOCKED this against fourth \"sd-data-auth-ordering: resource name disclosure before license validation\" -- reason \"overlap on: name\". Sole shared token is the English word \"name\", from my own task string which literally describes fixing this defect. Sixth confirmed instance tonight. Assigned by Michael; task string NOT reworded."
+    },
+    {
+      "id": "cody-1788610796",
+      "session": "cody",
+      "subject": "api/sd-sub-data.js",
+      "task": "pre-auth resource oracle before licence validation",
+      "claimed_at": "2026-09-05T12:19:56Z",
+      "claimed_at_epoch": 1788610796.406324,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
