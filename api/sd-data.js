@@ -8743,6 +8743,79 @@ module.exports = async (req, res) => {
       }
     }
 
+    // -- SAIRNLAW: THE FIFTEEN THAT NEVER REACHED THE SERVER (2026-09-04) ----
+    // sairnlaw.html wrote TWENTY distinct resources across 31 call sites and
+    // api/_resources/sairnlaw.js registered FOUR. The other fifteen were
+    // refused by the resource allowlist above before any credential mattered.
+    //
+    // PROVEN LIVE WITH A CONTROL, not inferred from the file. Same bogus
+    // licence key both times, same request shape, only the name different:
+    //   law_invoices -> 400 "resource must be one of ..."  (refused at the gate)
+    //   law_matters  -> 401 INVALID_LICENSE                (past the gate)
+    //
+    // 23 call sites, including BILLABLE TIME (law_timeentries), invoices,
+    // matter documents (six sites), operating-account transactions and bank
+    // statements. Every failure rendered as "server sync not yet enabled for
+    // this app", which is why it went unnoticed; that message is honest as of
+    // the same session, so these fail loudly now instead.
+    //
+    // One generic read/write pair covering all fifteen, not fifteen
+    // copy-pasted blocks -- same shape and same reasoning as SB_RESOURCES and
+    // BLD_RESOURCES. The four ORIGINAL law resources keep their bespoke
+    // branches above: law_matters and law_trusttx promote real columns
+    // (client_id, matter_id, amount, type, status) that a generic loop would
+    // not populate, and law_trusttx carries a balance guard. Folding them in
+    // would drop both.
+    //
+    // LICENCE-ONLY, MATCHING THE FOUR ABOVE, AND THAT IS A DECISION WITH ITS
+    // REASON. SAIRNlaw has real per-employee auth (api/law-auth.js) and its
+    // sdnData() does not send the session token at all -- gating these fifteen
+    // while law_clients, law_matters and law_trusttx (client trust money) stay
+    // licence-only would be a split posture rather than a protection, and
+    // would 401 every write the moment it shipped. The whole-app gap is its
+    // own row in docs/SAIRN-OPEN-WORK-INDEX.md: one coherent change across all
+    // nineteen, not a thing to do by halves here.
+    //
+    // See sql/sairnlaw_data_extended_schema.sql, which must be run before any
+    // of these answer anything but 503 NOT_PROVISIONED.
+    const LAW_RESOURCES = {
+      law_matterdocs: 'matterdoc_id', law_mattertasks: 'mattertask_id',
+      law_mattermilestones: 'mattermilestone_id', law_timeentries: 'timeentry_id',
+      law_invoices: 'invoice_id', law_opaccounts: 'opaccount_id', law_optx: 'optx_id',
+      law_bankstatements: 'bankstatement_id', law_picases: 'picase_id',
+      law_pimedical: 'pimedical_id', law_portalmessages: 'portalmessage_id',
+      law_portalesign: 'portalesign_id', law_barcerts: 'barcert_id',
+      law_clecredits: 'clecredit_id', law_clerequirements: 'clerequirement_id'
+    };
+    if (LAW_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // 404/400 means the table does not exist yet. Reported as an honest
+      // empty WITH provisioned:false rather than as rows, so the client can
+      // tell "nothing saved yet" apart from "this was never migrated".
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (LAW_RESOURCES[resource] && action === 'write') {
+      const lawIdCol = LAW_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + lawIdCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnlaw', [lawIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNlaw extended data tables are not set up yet — run sql/sairnlaw_data_extended_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     const LEG_RESOURCES = {
       leg_aftercare: 'aftercare_id', leg_bookings: 'booking_id', leg_cases: 'case_id',
       leg_catererorders: 'catererorder_id', leg_caterers: 'caterer_id', leg_certs: 'cert_id',

@@ -57,6 +57,18 @@ function fnBody(name) {
 }
 const stripComments = (src) => src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
 
+// The whole `var LAW_SYNC_RESOURCES=[...]` statement, comments and all.
+function syncListSrc() {
+  const at = html.indexOf('var LAW_SYNC_RESOURCES=[');
+  assert.ok(at > 0, 'LAW_SYNC_RESOURCES not found');
+  const end = html.indexOf('];', at);
+  assert.ok(end > at, 'unterminated LAW_SYNC_RESOURCES');
+  return html.slice(at, end + 2);
+}
+function syncNames() {
+  return (stripComments(syncListSrc()).match(/'(law_\w+)'/g) || []).map((x) => x.replace(/'/g, ''));
+}
+
 function harness(opts) {
   opts = opts || {};
   const stored = {};
@@ -75,9 +87,11 @@ function harness(opts) {
     __stored: stored, __reads: reads,
   };
   vm.createContext(ctx);
-  vm.runInContext(fnBody('var LAW_SYNC_RESOURCES=[') .split('\n')[0] + '\n'
-    + "var LAW_SYNC_RESOURCES=['law_clients','law_matters','law_deadlines','law_trusttx'];\n"
-    + fnBody('async function lawHydrateAll()'), ctx);
+  // The REAL declaration is lifted, not retyped. An earlier version of this
+  // harness hardcoded the four-name list, so when the list grew to nineteen
+  // the suite would have tested a list the app no longer has -- the fixture
+  // drifting from the code it exists to check.
+  vm.runInContext(syncListSrc() + '\n' + fnBody('async function lawHydrateAll()'), ctx);
   return ctx;
 }
 
@@ -104,11 +118,14 @@ test('a locally present id is NEVER overwritten by the server copy', async () =>
   assert.strictEqual(c.__stored.law_matters.find((x) => x.id === 'M-1').note, 'EDITED HERE');
 });
 
-test('all four registered resources are read', async () => {
+test('EVERY registered resource is read -- derived from the registry, not retyped', async () => {
   const c = harness({});
   await c.lawHydrateAll();
-  assert.strictEqual(c.__reads.slice().sort().join(','),
-    'law_clients,law_deadlines,law_matters,law_trusttx');
+  const registeredLaw = registry.resources.filter((r) => r.indexOf('law_') === 0).slice().sort();
+  assert.strictEqual(c.__reads.slice().sort().join(','), registeredLaw.join(','),
+    'the hydrate reads a different set than the registry declares');
+  assert.ok(registeredLaw.length >= 19,
+    'expected all nineteen law resources registered, found ' + registeredLaw.length);
 });
 
 test('a FAILED read leaves local data alone and is counted as failed', async () => {
@@ -146,9 +163,7 @@ test('nothing is written when nothing merged -- a no-op boot costs no storage wr
 section('it hydrates only what the server will actually serve');
 
 test('every hydrated resource is REGISTERED -- otherwise every boot fails four times', () => {
-  const listSrc = html.slice(html.indexOf('var LAW_SYNC_RESOURCES=['));
-  const names = (listSrc.slice(0, listSrc.indexOf(']')).match(/'(law_\w+)'/g) || [])
-    .map((s) => s.replace(/'/g, ''));
+  const names = syncNames();
   assert.ok(names.length > 0, 'no sync list found');
   names.forEach((n) => assert.ok(registry.resources.indexOf(n) !== -1,
     n + ' is hydrated but is NOT in api/_resources/sairnlaw.js -- the read would be refused at the resource gate every boot'));
@@ -158,11 +173,9 @@ test('and the list is not silently smaller than the registry', () => {
   // If a resource is registered and writable but never hydrated, its records
   // are on the server and still unreachable -- which is the original defect,
   // narrowed rather than fixed.
-  const listSrc = html.slice(html.indexOf('var LAW_SYNC_RESOURCES=['));
-  const names = (listSrc.slice(0, listSrc.indexOf(']')).match(/'(law_\w+)'/g) || [])
-    .map((s) => s.replace(/'/g, ''));
+  const names = syncNames();
   const registeredLaw = registry.resources.filter((r) => r.indexOf('law_') === 0);
-  assert.deepStrictEqual(names.slice().sort(), registeredLaw.slice().sort(),
+  assert.strictEqual(names.slice().sort().join(','), registeredLaw.slice().sort().join(','),
     'the hydrate list and the registry disagree -- a registered resource that is never read back is still unreachable');
 });
 

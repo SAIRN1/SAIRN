@@ -4395,7 +4395,16 @@ if (document.readyState === 'loading') {
 // to be. A read that FAILS leaves local data untouched -- sdnData() returns
 // null for a failure, a missing licence and an unprovisioned table alike, and
 // none of those may be rendered as "you have none".
-var LAW_SYNC_RESOURCES=['law_clients','law_matters','law_deadlines','law_trusttx'];
+var LAW_SYNC_RESOURCES=['law_clients','law_matters','law_deadlines','law_trusttx',
+  // The fifteen registered in the same session. Until
+  // sql/sairnlaw_data_extended_schema.sql is run each of these reads
+  // answers provisioned:false, which sdnData() turns into null, which
+  // lawHydrateAll() counts as a FAILED read and reports -- deliberately.
+  // A table that was never created is not the same as having no records,
+  // and the boot toast says which.
+  'law_matterdocs','law_mattertasks','law_mattermilestones','law_timeentries','law_invoices',
+  'law_opaccounts','law_optx','law_bankstatements','law_picases','law_pimedical',
+  'law_portalmessages','law_portalesign','law_barcerts','law_clecredits','law_clerequirements'];
 async function lawHydrateAll(){
   if(!lawLicenseKey())return{merged:0,failed:0};
   var results=await Promise.all(LAW_SYNC_RESOURCES.map(function(key){return sdnData('read',key);}));
