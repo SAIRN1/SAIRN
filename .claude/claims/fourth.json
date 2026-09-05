@@ -540,8 +540,8 @@
       "task": "resource name disclosure rate limiter",
       "claimed_at": "2026-09-05T12:38:38Z",
       "claimed_at_epoch": 1788611918.916099,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T13:22:00Z"
     }
   ]
 }
