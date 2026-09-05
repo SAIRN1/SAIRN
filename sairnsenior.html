@@ -1528,6 +1528,9 @@ function senEnterApp(d){
   senHydrateClaims();
   senHydrateReferrals().then(function(merged){if(merged)rfRender();});
   senHydrateTraining().then(function(merged){if(merged)trRender();});
+  // Both panels repaint on a merge -- a branch that arrived but is not on
+  // screen is the same invisibility, one step later.
+  senHydrateOrg().then(function(merged){if(merged){if(typeof brRender==='function')brRender();if(typeof hrRender==='function')hrRender();}});
   if(typeof rSecurity==='function')rSecurity();
 }
 
@@ -2555,6 +2558,43 @@ function senHydrateReferrals(){
       if(!rows||!Array.isArray(rows))return;
       // Local read INSIDE the .then, after the network completes -- the
       // post-await re-read this platform standardised on after confirmReserve.
+      var local=ld(key,[]);
+      var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
+      var added=false;
+      rows.forEach(function(x){if(x&&x.id&&!seen[x.id]){local.push(x);seen[x.id]=true;added=true;}});
+      if(added){st(key,local);merged=true;}
+    });
+    return merged;
+  });
+}
+
+// -- BRANCHES AND APPLICANTS, READ BACK (2026-09-05) ---------------------
+// FOUND BY tools/write_without_readback_check.py ON ITS FIRST REAL RUN, and
+// then confirmed by hand in a way that did NOT share the tool's assumption:
+// sen_branches and sen_applicants are written by saveBranch() and the hiring
+// panel, stored locally, and read back by nothing -- neither
+// senData('read', ...) nor the object-literal shape SAIRNcare uses. Thirteen
+// of this app's fifteen resources had a hydrate; these two did not.
+//
+// SO A SECOND OFFICE SAW NEITHER. A franchise branch added at head office was
+// invisible on every other workstation, and brName() rendered "(unassigned)"
+// for clients really assigned to it; an applicant entered by one recruiter was
+// invisible to the next. Both sat in Postgres the whole time.
+//
+// Same shape as senHydrateReferrals() above, deliberately -- additive merge by
+// id, a locally present id is never overwritten, and the local read happens
+// INSIDE the .then after the network completes, which is the post-await
+// re-read this platform standardised on after confirmReserve.
+function senHydrateOrg(){
+  if(!senLicenseKey())return Promise.resolve(false);
+  return Promise.all([
+    senData('read','sen_branches',null,true),
+    senData('read','sen_applicants',null,true)
+  ]).then(function(res){
+    var merged=false;
+    [['sen_branches',res[0]],['sen_applicants',res[1]]].forEach(function(pair){
+      var key=pair[0],rows=pair[1];
+      if(!rows||!Array.isArray(rows))return;
       var local=ld(key,[]);
       var seen={};local.forEach(function(x){if(x&&x.id)seen[x.id]=true;});
       var added=false;

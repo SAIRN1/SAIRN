@@ -37,9 +37,10 @@ counts as reading everything it iterates, and reports write names with no read.
 -- WHAT IT CANNOT SEE, said here rather than discovered later ------------------
   * A write whose resource is a VARIABLE. Every current app passes a literal,
     but a future one need not, and such a write is invisible here.
-  * A wrapper whose name does not end in `Data(`. The platform convention is
-    sdnData/sbData/scData/etc.; anything else is not matched, and this is
-    reported per file as SCANNED-BY-NAME so an absence is not read as a pass.
+  * A wrapper whose name does not end in `Data(` AND is not called with an
+    object literal carrying action/resource. Those two shapes are what the
+    platform uses; a third would be invisible, and the SCANNED-BY-NAME line on
+    every run says so, so an absence is not read as a pass.
   * A read loop built from anything other than a flat array of strings, an
     array of pairs, or Object.keys(<object literal>). Anything else resolves
     to COULD NOT TELL for that file, which is NOT a pass -- the exit code says
@@ -70,6 +71,23 @@ WRITE_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
 READ_LIT_RE = re.compile(r"\w*Data\(\s*'read'\s*,\s*'(\w+)'")
 READ_VAR_RE = re.compile(r"\w*Data\(\s*'read'\s*,\s*([A-Za-z_$][\w$]*)")
 WRAPPER_RE = re.compile(r"function\s+(\w*Data)\s*\(")
+
+# THE OBJECT-LITERAL CALL SHAPE, ADDED 2026-09-05 AFTER IT PRODUCED TWO FALSE
+# POSITIVES ON ITS FIRST REAL RUN. SAIRNcare does not call a positional
+# wrapper; it posts a body:
+#
+#   alfPostRaw({ action: 'read', resource: 'alf_op_audits', app_id: ..., ... })
+#
+# so alf_op_audits and alf_staff_credentials were reported as never read back
+# when both are read on every panel refresh. Matching only the positional shape
+# is how a checker invents work.
+#
+# WORSE, AND THE PART WORTH REMEMBERING: the "hand verification" that confirmed
+# those two findings used the SAME positional grep as the tool, so it
+# reproduced the tool's blind spot instead of testing it. A check that shares
+# the checker's assumption verifies nothing.
+READ_OBJ_RE = re.compile(r"action:\s*'read'\s*,\s*resource:\s*'(\w+)'")
+WRITE_OBJ_RE = re.compile(r"action:\s*'write'\s*,\s*resource:\s*'(\w+)'")
 
 
 def strip_comments(src):
@@ -151,7 +169,7 @@ def read_coverage(src, writes):
     A variable read whose set cannot be resolved is a REASON, never silent
     coverage.
     """
-    names = set(READ_LIT_RE.findall(src))
+    names = set(READ_LIT_RE.findall(src)) | set(READ_OBJ_RE.findall(src))
     var_reads = set(READ_VAR_RE.findall(src))
     declared, found = declared_read_sets(src, writes)
     reasons = []
@@ -166,7 +184,7 @@ def read_coverage(src, writes):
 
 def audit(path):
     src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
-    writes = set(WRITE_RE.findall(src)) - PLATFORM_RESOURCES
+    writes = (set(WRITE_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))) - PLATFORM_RESOURCES
     if not writes:
         return None
     reads, reasons, declared = read_coverage(src, writes)

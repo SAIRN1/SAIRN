@@ -120,6 +120,32 @@ def main():
     rc, out = run([obj])
     check('Object.keys(<object literal>) resolves', rc, 0)
 
+    # ── the object-literal call shape ───────────────────────────────────────
+    print('--- the object-literal call shape ---')
+    obj_call = write(os.path.join(tmp, 'objcall.html'), """
+      function go(){ apPostRaw({action:'read',resource:'ap_one',app_id:'x',payload:{}});
+                     apPostRaw({action:'read',resource:'ap_two',app_id:'x',payload:{}}); }
+      function w(){ apData('write','ap_one',{}); apData('write','ap_two',{}); }
+    """)
+    rc, out = run([obj_call])
+    check('a read posted as an object literal counts -- the SAIRNcare false positive', rc, 0)
+
+    obj_write = write(os.path.join(tmp, 'objwrite.html'), """
+      function w(){ apPostRaw({action:'write',resource:'ap_solo',app_id:'x',payload:{}}); }
+    """)
+    rc, out = run([obj_write])
+    check('a WRITE posted as an object literal is seen too', rc != 0, True)
+    check('...and named', 'ap_solo' in out, True)
+
+    care = os.path.join(ROOT, 'sairncare.html')
+    if os.path.exists(care):
+        rc, out = run([care])
+        # The real file that produced the false positive. alf_op_audits and
+        # alf_staff_credentials are read through alfPostRaw({action:'read'...}).
+        check('the REAL SAIRNcare file is clean', rc, 0)
+        check('...and neither previously-flagged name is reported',
+              'alf_op_audits' not in out and 'alf_staff_credentials' not in out, True)
+
     # ── the cases it must still catch ───────────────────────────────────────
     print('--- what it must still catch ---')
     gap = write(os.path.join(tmp, 'gap.html'), """
