@@ -724,6 +724,16 @@
       "claimed_at_epoch": 1788614540.360592,
       "status": "released",
       "released_at": "2026-09-05T13:29:52Z"
+    },
+    {
+      "id": "hank-1788615261",
+      "session": "hank",
+      "subject": "writeback-couldnottell-sairnbuild-stonedesk",
+      "task": "read the generic hydrate loops by eye",
+      "claimed_at": "2026-09-05T13:34:21Z",
+      "claimed_at_epoch": 1788615261.0980155,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
