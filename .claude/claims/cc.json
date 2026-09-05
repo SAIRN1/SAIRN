@@ -573,6 +573,16 @@
       "claimed_at_epoch": 1788612447.3867235,
       "status": "released",
       "released_at": "2026-09-05T13:02:19Z"
+    },
+    {
+      "id": "cc-1788613792",
+      "session": "cc",
+      "subject": "sairncare",
+      "task": "alf op audits and staff credentials read back",
+      "claimed_at": "2026-09-05T13:09:52Z",
+      "claimed_at_epoch": 1788613792.1429067,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
