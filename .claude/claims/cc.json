@@ -583,6 +583,16 @@
       "claimed_at_epoch": 1788613792.1429067,
       "status": "released",
       "released_at": "2026-09-05T13:22:57Z"
+    },
+    {
+      "id": "cc-1788615542",
+      "session": "cc",
+      "subject": "sairndental-writefail-voice",
+      "task": "fix the four review findings on 569b2689 raw exception text ledger drops rows visit toast",
+      "claimed_at": "2026-09-05T13:39:02Z",
+      "claimed_at_epoch": 1788615542.5995343,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
