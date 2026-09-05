@@ -232,6 +232,24 @@ test('svLoad() still never throws, including when the block itself fails', () =>
 // ── the toast rule ─────────────────────────────────────────────────────
 section('a success toast must not follow a refused write');
 
+test('THE LATCH IS DECLARED IN THE FILE, not only in this harness', () => {
+  // Added 2026-09-04 (Cody) by independent review. The harness seeds
+  // `_svWriteFailed: null` into the VM context, so every assertion below
+  // would go green even if `var _svWriteFailed = null;` were deleted from
+  // sairnvet.html -- and in a real browser showToast() would then throw a
+  // ReferenceError on the first refused write, turning a warning into a
+  // broken toast. A fixture that supplies the thing it is testing passes for
+  // the wrong reason; this is the same vacuous-pass shape the ld() and st()
+  // suites each hit once already.
+  const src = fs.readFileSync(path.join(ROOT, 'sairnvet.html'), 'utf8');
+  assert.match(src, /var\s+_svWriteFailed\s*=\s*null\s*;/,
+    'the latch is not declared in sairnvet.html -- the tests below are vacuous');
+  // And it must be a FILE-level declaration, not one nested inside a function
+  // where showToast() could not see it.
+  assert.match(src, /\n\s*var\s+_svWriteFailed\s*=\s*null\s*;/,
+    'the latch declaration is not at file scope');
+});
+
 test('an ordinary success toast is untouched when nothing failed', () => {
   const { ctx, toastEl } = load({});
   ctx.st('sv_whiteboard', [1]);
