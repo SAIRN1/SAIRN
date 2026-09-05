@@ -608,6 +608,16 @@
       "claimed_at_epoch": 1788613161.7910047,
       "status": "released",
       "released_at": "2026-09-05T13:18:13Z"
+    },
+    {
+      "id": "cody-1788614568",
+      "session": "cody",
+      "subject": "preauth-envelope-ordering-data-endpoints",
+      "task": "fourteen non-auth handlers licence validation above envelope",
+      "claimed_at": "2026-09-05T13:22:48Z",
+      "claimed_at_epoch": 1788614568.5195906,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
