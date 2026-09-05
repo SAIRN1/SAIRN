@@ -606,8 +606,8 @@
       "task": "every api handler gate ordering before licence validation",
       "claimed_at": "2026-09-05T12:59:21Z",
       "claimed_at_epoch": 1788613161.7910047,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T13:18:13Z"
     }
   ]
 }
