@@ -95,6 +95,47 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // ── LICENCE VALIDATION RUNS HERE, MOVED 2026-09-04 ──────────────────────
+  // It used to sit BELOW the envelope gate, the same shape fixed in
+  // api/sd-data.js the same day ("a junk bearer token could enumerate all 268
+  // resource names"). The enumeration half was trivial here -- the list is
+  // three hardcoded names a reader of the subcontractor app already knows --
+  // but THE ORACLE WAS REAL: an unauthenticated caller got a different refusal
+  // for `roster` than for `nonsense`, and a different one again for a refused
+  // verb, so the surface and its permitted actions could be mapped by a caller
+  // holding no credential at all.
+  //
+  // Nothing below this point is reachable without a valid, active licence, so
+  // an invalid token now learns exactly one thing: that its token is not
+  // valid. Real resource vs invented, permitted verb vs refused, oversized
+  // payload vs legal -- all return the same 401.
+  //
+  // THE COST IS REAL AND IS NOT HIDDEN, same as the sibling: the envelope
+  // checks were cheap and local, validateLicenseKey() is a Supabase round
+  // trip. Every junk-token request now costs one lookup it did not before, and
+  // the first-failure response changed -- a malformed request from a bad
+  // licence now reports the licence, not the malformation.
+  //
+  // The 405 method check above deliberately stays first: it discloses nothing
+  // about what exists. So does the bearer-presence check, which distinguishes
+  // "no credential offered" from "credential offered and rejected" and cannot
+  // say anything about resources either way.
+  let lic;
+  try {
+    lic = await validateLicenseKey(licenseKey);
+  } catch (err) {
+    if (err.code === 'CONFIG') {
+      console.error('sd-sub-data config error:', err.message);
+      res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
+      return;
+    }
+    console.error('sd-sub-data license validation error:', err);
+    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
+    return;
+  }
+  if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
+  if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch (e) {
@@ -136,20 +177,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  let lic;
-  try {
-    lic = await validateLicenseKey(licenseKey);
-  } catch (err) {
-    if (err.code === 'CONFIG') {
-      res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
-      return;
-    }
-    res.status(502).json({ error: { message: 'Upstream connection error — try again' } });
-    return;
-  }
-  if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
-  if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
-
+  // The licence was validated above, immediately after the bearer check --
+  // see the note there for why. This is where its result is first USED.
   const licHash = lic.license_hash;
   const sbHeaders = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };
   const rest = (path) => SUPABASE_URL + '/rest/v1/' + path;
