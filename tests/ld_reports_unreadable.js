@@ -14,10 +14,10 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. NINE are fixed, one or two at a time, deliberately: sweeping thirteen
+// pass. ELEVEN are fixed, one or two at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
 //
-// EIGHT OF THE NINE ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
+// TEN OF THE ELEVEN ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
 // omission: it has a different contract. That file carries a deliberate
 // two-place unreadable-store guard, so a corrupt record there must BLOCK the
 // app rather than return the default -- the opposite of what every assertion
@@ -59,6 +59,8 @@ const APPS = [
   { file: 'sairnscape.html', name: 'SAIRNscape', fn: 'scpLd' },
   { file: 'sairndesign.html', name: 'SAIRNdesign', fn: 'ld' },
   { file: 'sairngrounds.html', name: 'SAIRNgrounds', fn: 'ld' },
+  { file: 'sairnbuild.html', name: 'SAIRNbuild', fn: 'ld' },
+  { file: 'sairnsenior.html', name: 'SAIRNsenior', fn: 'ld' },
 ];
 
 let pass = 0, fail = 0;
@@ -205,9 +207,9 @@ APPS.forEach((app) => {
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these eight are done -- nine of fourteen overall');
+section('the checker agrees these ten are done -- eleven of fourteen overall');
 
-const REMAINING = 5;   // of the original 14
+const REMAINING = 3;   // of the original 14
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -229,7 +231,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other five are still on the list, not quietly dropped', () => {
+test('...and the other three are still on the list, not quietly dropped', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,
