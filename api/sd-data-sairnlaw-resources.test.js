@@ -45,7 +45,19 @@ function mockRes() {
   res.json = function (b) { res.body = b; return res; };
   return res;
 }
-const mockReq = (body) => ({ method: 'POST', headers: { authorization: 'Bearer GOOD-KEY' }, body: body });
+// A REAL SIGNED SESSION, not a stubbed one, and signed against the hash the
+// HANDLER derives -- api/_lib/license.js hashes the bearer key, and a token
+// signed against anything else verifies fine in isolation and is rejected by
+// the handler with an indistinguishable NO_SESSION. sairn-api-tester section 2.
+const { signSessionToken } = require('./_lib/auth');
+const tok = (role) => signSessionToken({ app: 'sairnlaw', employee_id: 'emp-' + role, role: role, license_hash: LIC_HASH });
+// role defaults to a real signed owner session; pass null for NO session.
+function mockReq(body, role) {
+  const headers = { authorization: 'Bearer GOOD-KEY' };
+  const r = role === undefined ? 'owner' : role;
+  if (r !== null) headers['x-sd-auth'] = tok(r);
+  return { method: 'POST', headers: headers, body: body };
+}
 function loadHandler(fetchImpl) {
   delete require.cache[require.resolve('./_lib/license')];
   require.cache[require.resolve('./_lib/license')] = {
@@ -206,6 +218,90 @@ async function main() {
   await test('an unknown law_ name is still refused -- the allowlist did not become a wildcard', () => {
     assert.ok(!HANDLED['law_notathing']);
     assert.strictEqual(registry.resources.indexOf('law_notathing'), -1);
+  });
+
+
+  // ── PHASE 1 OF THE SESSION GATE ─────────────────────────────────────────
+  await test('NO session -> 401 NO_SESSION on every one of the fifteen, and nothing is queried', async () => {
+    for (const r of Object.keys(HANDLED)) {
+      const handler = loadHandler(async () => { throw new Error('fetch must not be called without a session'); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'read', resource: r }, null), res);
+      assert.strictEqual(res.statusCode, 401, r + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'NO_SESSION');
+    }
+  });
+
+  await test('the refusal tells the user what to DO, not just that it failed', async () => {
+    const handler = loadHandler(async () => { throw new Error('no fetch'); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'law_pimedical', payload: { id: 'X' } }, null), res);
+    assert.match(res.body.error.message, /Sign out and sign in again/);
+    assert.match(res.body.error.message, /nothing was saved/i);
+  });
+
+  await test('a session for ANOTHER app is refused -- Check 28, the cross-app collision', async () => {
+    const foreign = signSessionToken({ app: 'sairndental', employee_id: 'emp-x', role: 'owner', license_hash: LIC_HASH });
+    const handler = loadHandler(async () => { throw new Error('no fetch'); });
+    const res = mockRes();
+    const req = { method: 'POST', headers: { authorization: 'Bearer GOOD-KEY', 'x-sd-auth': foreign }, body: { action: 'read', resource: 'law_timeentries' } };
+    await handler(req, res);
+    assert.strictEqual(res.statusCode, 401);
+    assert.strictEqual(res.body.error.code, 'NO_SESSION');
+  });
+
+  await test('EVERY law role is accepted -- this is a session gate, not a role gate', async () => {
+    // owner / attorney / paralegal all legitimately work matters, time and
+    // documents. Inventing a per-role split here would break the app for the
+    // people it is for.
+    for (const role of ['owner', 'attorney', 'paralegal']) {
+      const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
+      const res = mockRes();
+      await handler(mockReq({ action: 'read', resource: 'law_matterdocs' }, role), res);
+      assert.strictEqual(res.statusCode, 200, role + ' -> ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('PHASE 1 BOUNDARY: the four bespoke resources still work WITHOUT a session', async () => {
+    // Deliberate and temporary. They are live today against clients that send
+    // no token, and Vercel ships the page and the endpoint together -- so
+    // flipping them in the same commit would fail a staff member with the app
+    // already open, mid-session, on trust-money writes. Phase 2 flips them
+    // once the fifteen have been writing cleanly for a full working day.
+    // WHEN THAT HAPPENS THIS TEST MUST BE INVERTED, not deleted.
+    for (const r of ['law_clients', 'law_matters', 'law_trusttx', 'law_deadlines']) {
+      const handler = loadHandler(async () => ({ ok: true, status: 200, json: async () => [] }));
+      const res = mockRes();
+      await handler(mockReq({ action: 'read', resource: r }, null), res);
+      assert.strictEqual(res.statusCode, 200, r + ' -> ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('the client actually SENDS the token it has always held', () => {
+    const HTMLSRC = HTML.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    assert.ok(HTMLSRC.indexOf("h['X-SD-Auth']=tok") > 0, 'sdnData() does not send the session header');
+    assert.ok(HTMLSRC.indexOf('function lawSessionToken()') > 0, 'no token accessor');
+    // SCOPED TO THE FUNCTION BODY, and this arm SURVIVED a mutation probe
+    // until it was: the whole-file match also hit lawRestoreSession(), which
+    // reads the same key, so removing the fallback from lawSessionToken() left
+    // the assertion green. sairn-code-scrubber item 16 Shape A -- match the
+    // function, not a window of the file that mentions it.
+    const at = HTMLSRC.indexOf('function lawSessionToken()');
+    assert.ok(at > 0, 'lawSessionToken not found');
+    let depth = 0, end = at;
+    for (let i = HTMLSRC.indexOf('{', at); i < HTMLSRC.length; i++) {
+      if (HTMLSRC[i] === '{') depth++;
+      else if (HTMLSRC[i] === '}') { depth--; if (depth === 0) { end = i + 1; break; } }
+    }
+    const tokenFn = HTMLSRC.slice(at, end);
+    // The persisted copy is the fallback: sdnData() can run before
+    // lawEnterApp() has set the in-memory mirror on a session restore.
+    assert.match(tokenFn, /getItem\('law_session'\)/,
+      'the persisted-session fallback was removed -- a restored session would send no token');
+    assert.match(tokenFn, /lawSession\.token/, 'the in-memory mirror is no longer read');
+    // A missing token must NOT be invented into a header the server would
+    // then have to reject as malformed rather than absent.
+    assert.match(HTMLSRC, /if\(tok\)h\['X-SD-Auth'\]=tok;/);
   });
 
   console.log('\n' + passed + ' / ' + total + ' passed');

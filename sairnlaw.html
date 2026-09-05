@@ -1336,12 +1336,33 @@ function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()
 
 function lawLicenseKey(){ return localStorage.getItem('law_license_key') || ''; }
 
+// THE SESSION TOKEN THIS APP HAS ALWAYS HAD AND NEVER SENT (2026-09-05).
+// api/law-auth.js issues a real signed session and lawSession holds it, but
+// every sd-data call went out with the licence key alone. So every law
+// resource -- including law_trusttx, which is client trust money, and
+// law_pimedical, which is provider names and billed amounts on a personal-
+// injury matter -- was reachable by anything holding the firm's licence key,
+// a string typed at a gate screen and left in localStorage.
+//
+// lawSession is the in-memory mirror; the persisted copy is the fallback,
+// because sdnData() can be called before lawEnterApp() has run on a restore.
+// A missing token is NOT invented and NOT treated as an error here -- the
+// header is simply absent and the server decides, which is the only place
+// that decision is worth anything.
+function lawSessionToken(){
+  if(lawSession&&lawSession.token)return lawSession.token;
+  try{var s=JSON.parse(localStorage.getItem('law_session')||'null');if(s&&s.token)return s.token;}catch(e){}
+  return '';
+}
 function sdnData(action,resource,payload){
   var lic=lawLicenseKey();
   if(!lic)return Promise.resolve(null);
+  var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
+  var tok=lawSessionToken();
+  if(tok)h['X-SD-Auth']=tok;
   return fetch(DATA_API,{
     method:'POST',
-    headers:{'Content-Type':'application/json','Authorization':'Bearer '+lic},
+    headers:h,
     body:JSON.stringify({action:action,resource:resource,app_id:APP_ID,payload:payload||{}})
   }).then(function(r){
     return r.json().then(function(d){

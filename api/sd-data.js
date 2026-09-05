@@ -8774,14 +8774,40 @@ module.exports = async (req, res) => {
     // not populate, and law_trusttx carries a balance guard. Folding them in
     // would drop both.
     //
-    // LICENCE-ONLY, MATCHING THE FOUR ABOVE, AND THAT IS A DECISION WITH ITS
-    // REASON. SAIRNlaw has real per-employee auth (api/law-auth.js) and its
-    // sdnData() does not send the session token at all -- gating these fifteen
-    // while law_clients, law_matters and law_trusttx (client trust money) stay
-    // licence-only would be a split posture rather than a protection, and
-    // would 401 every write the moment it shipped. The whole-app gap is its
-    // own row in docs/SAIRN-OPEN-WORK-INDEX.md: one coherent change across all
-    // nineteen, not a thing to do by halves here.
+    // ── PHASE 1 OF THE SESSION GATE (2026-09-05) ────────────────────────────
+    // These fifteen now REQUIRE a verified SAIRNlaw employee session. The four
+    // bespoke resources above do not yet, and that split is a DELIBERATE
+    // ROLLOUT rather than the "split posture" this comment previously argued
+    // against -- the difference is that it is temporary, sequenced, and safe
+    // in a way a simultaneous flip is not.
+    //
+    // WHY THESE FIFTEEN CAN BE GATED TODAY WITH ZERO BREAKAGE RISK: no client
+    // write to any of them has ever succeeded. They were refused at the
+    // resource allowlist until the commit before this one, so there is no
+    // working behaviour to regress. Requiring a session here cannot break a
+    // firm that is running an older cached page, because that page's writes to
+    // these fifteen were already failing.
+    //
+    // WHY THE FOUR ARE NOT FLIPPED IN THE SAME COMMIT: law_clients,
+    // law_matters, law_trusttx and law_deadlines are live and working today
+    // against clients that send NO token. Vercel deploys the page and the
+    // endpoint together, so there is no window in which the new client is out
+    // and the old one is gone -- a staff member with the app already open, or
+    // a cached page, would start failing mid-session on trust-money writes.
+    //
+    // THESE FIFTEEN ARE THE CANARY, WHICH IS WHY NO TELEMETRY WAS ADDED. If
+    // the app can write them, its client is sending the header; if a stale
+    // client is still out there, its writes to these fail loudly with a
+    // message telling the user to sign in again. When that has been quiet for
+    // a full working day, phase 2 flips the four. The trigger and the check
+    // are written into the row in docs/SAIRN-OPEN-WORK-INDEX.md.
+    //
+    // A SESSION GATE, NOT A ROLE GATE. ROLES_BY_APP.sairnlaw is owner /
+    // attorney / paralegal, and all three legitimately work matters, time and
+    // documents. Which role may see which record is a product decision with no
+    // obvious answer, and inventing one here would break the app for the
+    // people it is for. The boundary enforced is "a signed-in employee of this
+    // firm"; who may sign in at all is api/law-auth.js's job.
     //
     // See sql/sairnlaw_data_extended_schema.sql, which must be run before any
     // of these answer anything but 503 NOT_PROVISIONED.
@@ -8794,6 +8820,16 @@ module.exports = async (req, res) => {
       law_portalesign: 'portalesign_id', law_barcerts: 'barcert_id',
       law_clecredits: 'clecredit_id', law_clerequirements: 'clerequirement_id'
     };
+    if (LAW_RESOURCES[resource]) {
+      // Verified against the licence hash the HANDLER derived, and scoped to
+      // 'sairnlaw' -- the third argument is what stops a valid session from
+      // another app passing here, the collision Check 28 exists for.
+      const lawSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlaw');
+      if (!lawSess) {
+        res.status(401).json({ error: { code: 'NO_SESSION', message: 'Your sign-in could not be verified, so nothing was saved. Sign out and sign in again, then try once more.' } });
+        return;
+      }
+    }
     if (LAW_RESOURCES[resource] && action === 'read') {
       const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       // 404/400 means the table does not exist yet. Reported as an honest
