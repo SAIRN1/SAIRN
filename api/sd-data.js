@@ -86,7 +86,8 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 // source of the collisions.
 const { RESOURCES, RESOURCE_LIST_TEXT, RESOURCE_NAMES, EXTRA_ACTIONS,
         isKnownApp, resourceListTextFor } = require('./_resources');
-const { checkAnonRate, recordInvalidLicence } = require('./_lib/anon-rate-limit');
+const { checkAnonRate, recordInvalidLicence, addressSource, trackedCount,
+        limit, isEnforcing: isAnonEnforcing } = require('./_lib/anon-rate-limit');
 // Which app ids the `memory` resource will accept. DERIVED, not hand-listed --
 // a hand-written copy beside a real one is how api/_resources/index.js's own
 // header records the resource error string drifting from the resource map.
@@ -320,6 +321,10 @@ module.exports = async (req, res) => {
   try {
     anon = checkAnonRate(req);
     if (anon.refuse) {
+      // A refusal is the one outcome nobody would otherwise see: it never
+      // reaches the database, so no other log line records it.
+      console.warn('sd-data anon: REFUSED 429, count=' + anon.count + '/' + anon.limit +
+        ' addr_src=' + addressSource(req) + ' tracked=' + trackedCount());
       res.status(429).json({ error: { code: 'TOO_MANY_INVALID_KEYS', message: 'Too many failed license attempts from this address. Wait a minute and try again.' } });
       return;
     }
@@ -349,10 +354,21 @@ module.exports = async (req, res) => {
     // a 500.
     try {
       const n = recordInvalidLicence(req);
-      if (anon && !anon.enforcing && n >= anon.limit) {
-        console.warn('sd-data anon rate limit (OBSERVE mode, not enforced): address has ' +
-          n + ' failed licence attempts, limit ' + anon.limit);
-      }
+      // OBSERVABLE ON EVERY FAILURE, added 2026-09-05 after a live burst of 45
+      // concurrent junk requests produced 45 x 401 and not one 429, and NOTHING
+      // logged could tell me whether one instance had seen the address 45 times
+      // or 45 instances had each seen it once. A limiter you cannot observe is
+      // indistinguishable from one that does not run.
+      //
+      // `tracked` is the diagnostic that settles it: if it is 1 on request
+      // after request, horizontal scale-out is defeating the per-instance
+      // counter and this limiter does not work in production, whatever its
+      // unit tests say. The header NAME is logged, never the address itself --
+      // an IP is personal data and answering "is an address being read at all"
+      // does not require knowing whose.
+      console.warn('sd-data anon: invalid licence, count=' + n + '/' + limit() +
+        ' mode=' + (isAnonEnforcing() ? 'enforce' : 'observe') +
+        ' addr_src=' + addressSource(req) + ' tracked=' + trackedCount());
     } catch (e) {
       console.error('sd-data anon rate record failed (ignored):', e && e.message);
     }

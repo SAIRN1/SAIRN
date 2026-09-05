@@ -93,6 +93,32 @@ function clientAddress(req) {
   return '';                                  // unknown: never tracked, always allowed
 }
 
+// WHICH header supplied the address, by NAME ONLY. Added 2026-09-05 after the
+// first live burst -- 45 concurrent junk requests -- produced 45 x 401 and not
+// one 429, and nothing in this module logged anything that could tell me
+// whether the limiter had seen one address 45 times or 45 instances had each
+// seen it once. A limiter you cannot observe is indistinguishable from one
+// that does not run, which is this platform's most-repeated defect class.
+//
+// AN IP IS PERSONAL DATA AND IS NEVER LOGGED. The header NAME answers "is the
+// address being read at all", which is the question, and carries nothing about
+// who sent it.
+function addressSource(req) {
+  const h = (req && req.headers) || {};
+  if (h['x-vercel-forwarded-for']) return 'x-vercel-forwarded-for';
+  if (h['x-real-ip']) return 'x-real-ip';
+  if (h['x-forwarded-for']) return 'x-forwarded-for';
+  return 'NONE';
+}
+
+// How many addresses this instance is currently tracking. Zero on every
+// request is the signature of horizontal scale-out defeating a per-instance
+// counter -- the weakness this module's header claims, made measurable rather
+// than merely stated.
+function trackedCount() {
+  return buckets.size;
+}
+
 function prune(now) {
   for (const [addr, b] of buckets) {
     if (b.resetAt <= now) buckets.delete(addr);
@@ -150,6 +176,8 @@ module.exports = {
   checkAnonRate,
   recordInvalidLicence,
   clientAddress,
+  addressSource,
+  trackedCount,
   isEnforcing,
   limit,
   windowMs,
