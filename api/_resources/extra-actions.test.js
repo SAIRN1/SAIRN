@@ -439,7 +439,21 @@ async function callHandler(action, resource, key) {
     // A source assertion, because every runtime check above would still pass if
     // the two were swapped back and the tests kept driving checkEnvelope
     // directly -- the gate would answer correctly and the handler would leak.
-    const src = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+    //
+    // COMMENTS ARE STRIPPED FIRST, and that is not tidiness. `indexOf` is
+    // lexical: a comment quoting `await validateLicenseKey(licenseKey)` placed
+    // ABOVE the gate would let this pass while the real call sat below it --
+    // and the 27-line block explaining this very ordering sits directly above
+    // that call, so quoting the line is the obvious next edit somebody makes.
+    // Raised by the independent review of the reorder (2026-09-04); neither
+    // string was in a comment at the time, so this closes it before it opens.
+    //
+    // HONEST LIMIT: this still proves textual order, not execution order. A
+    // gate moved into a differently-named helper called earlier would pass it.
+    // The five runtime assertions above cover the semantic case; this is
+    // defence in depth, and is written down as such rather than oversold.
+    const raw = fs.readFileSync(path.join(__dirname, '..', 'sd-data.js'), 'utf8');
+    const src = raw.split('\n').filter((l) => l.trim().indexOf('//') !== 0).join('\n');
     const body = src.slice(src.indexOf('module.exports = async (req, res) =>'));
     const validate = body.indexOf('await validateLicenseKey(licenseKey)');
     const envelope = body.indexOf('checkEnvelope(action, resource)');

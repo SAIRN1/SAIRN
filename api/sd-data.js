@@ -354,13 +354,20 @@ module.exports = async (req, res) => {
     }
   }
 
+  // THE GUARD THAT USED TO BE HERE IS GONE, and its absence is deliberate.
+  // It read `if (!SUPABASE_URL || !SERVICE_KEY) -> 500`. When licence
+  // validation ran BELOW this point that was the first env check in the
+  // request; now that validation runs above, api/_lib/license.js:59-65 has
+  // already checked the SAME two variables and thrown `CONFIG`, which the
+  // handler maps to the same 500. So the condition here could no longer be
+  // true, and dormant code that looks like a safety net is worse than none --
+  // the next reader trusts it. Found by the independent review of the reorder
+  // (2026-09-04), not by the author.
+  //
+  // The two constants stay: `headers` and `rest()` below both need them, and
+  // by this line both are guaranteed non-empty.
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!SUPABASE_URL || !SERVICE_KEY) {
-    console.error('SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
-    res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
-    return;
-  }
 
   const headers = {
     apikey: SERVICE_KEY,
