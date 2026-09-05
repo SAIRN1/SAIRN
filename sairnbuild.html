@@ -8184,6 +8184,29 @@ function renderBidPredictiveInsights() {
   html += '</div>';
   el.innerHTML = html;
 }
+// ── READ 2026-09-05: THIS IS A DECORATOR, NOT A DUPLICATE DEFINITION ──────
+// tools/duplicate_global_check.py reports `rBids -> function@4074,
+// window.assign@here`, and that reads exactly like the shape Guardian's check
+// 13 exists for -- two competing definitions where the later one silently
+// wins. It is not. This deliberately WRAPS the earlier one: it captures it
+// first and calls it before adding the predictive-insights panel.
+//
+// CHECKED, NOT ARGUED, because "it looks intentional" is how a real collision
+// gets waved through:
+//   * both live in the SAME script block (0 of 2), and this sits ~4,100 lines
+//     LATER, so the hoisted declaration is already evaluated when the capture
+//     runs -- _origRBids can never be undefined in practice;
+//   * `function rBids(){...}` at top level IS window.rBids, so reassigning the
+//     property is what every bare rBids() caller resolves to. All eleven call
+//     sites -- nav, init(), bldHydrateBids(), the save paths -- get the
+//     wrapper, which is the intent;
+//   * nothing else assigns rBids anywhere in the file.
+//
+// LEFT AS IS DELIBERATELY. The finding is a false positive of a check worth
+// keeping strict, and duplicate_global_check.py has no acknowledgement file to
+// record that in -- so it is recorded here, at the site, where the next reader
+// arrives. Do NOT "fix" this by deleting either half: deleting the wrapper
+// removes the insights panel, and deleting the declaration removes rBids().
 var _origRBids = window.rBids;
 window.rBids = function() { if (_origRBids) _origRBids(); renderBidPredictiveInsights(); };
 
@@ -8438,13 +8461,30 @@ function tnaCollectResponses(prefix){
 }
 async function saveTnaSelf(){
   var responses=tnaCollectResponses('tself');
-  var m=$('tself-msg');
-  if(m){m.style.color='var(--muted)';m.textContent='Saving…';}
+  // ── A FAILED SAVE REACHED NOBODY (2026-09-05) ──────────────────────────
+  // This wrote its status into an element id ending -msg that DOES NOT
+  // EXIST -- renderTnaFormHtml() emits only the per-item selects, never a
+  // message line. Found by tools/missing_dom_target_check.py while this file
+  // was open for something else. The id is not quoted here on purpose: that
+  // checker matches the literal, so a comment naming it is reported as a
+  // live reference and the finding never clears.
+  //
+  // The `if(m)` guard meant no crash, so nothing ever pointed at it. But the
+  // failure branch's ONLY user-visible output was that textContent, and the
+  // success path toasts -- so a save that WORKED said "Self-assessment saved"
+  // and a save that FAILED said nothing at all. An employee re-answering a
+  // training assessment they believed was already submitted.
+  //
+  // WHICH OF THE TWO FIXES APPLIES WAS DECIDED BY READING, not guessed: there
+  // is no message element anywhere in the file and no CSS for one, while
+  // toast() is already this function's success channel. Adding a second
+  // messaging surface for the failure half alone would be the larger change
+  // and the less consistent one.
   var payload={subject_employee_id:(bldSession&&bldSession.employee_id)||'',perspective:'self',responses:responses};
   var discRow=tnaMyRows().self;
   if(discRow&&discRow.disc_responses){payload.disc_responses=discRow.disc_responses;payload.disc_profile=discRow.disc_profile;}
   var saved=await bldData('write','bld_tna',payload,true);
-  if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
+  if(!saved){toast('NOT SAVED -- your self-assessment did not reach the server. Nothing was recorded; check your connection and try again.',8000);return;}
   toast('Self-assessment saved');
   await tnaLoad();
   tnaRenderKpis();
@@ -8500,10 +8540,12 @@ function tnaPickSubject(id){_tnaAssessSubject=id||null;renderTnaAssessView();}
 async function saveTnaManagement(){
   if(!_tnaAssessSubject){toast('Select an employee first');return;}
   var responses=tnaCollectResponses('tmgmt');
-  var m=$('tmgmt-msg');
-  if(m){m.style.color='var(--muted)';m.textContent='Saving…';}
+  // Same defect as saveTnaSelf() above, same fix, same reason -- its message
+  // element never existed either, so a manager's failed assessment was silent
+  // while a successful one toasted.
+
   var saved=await bldData('write','bld_tna',{subject_employee_id:_tnaAssessSubject,perspective:'management',responses:responses},true);
-  if(!saved){if(m){m.style.color='var(--danger)';m.textContent='Could not save -- check your connection and try again.';}return;}
+  if(!saved){toast('NOT SAVED -- this assessment did not reach the server. Nothing was recorded; check your connection and try again.',8000);return;}
   toast('Assessment saved for '+bldEmployeeName(_tnaAssessSubject));
   await tnaLoad();
   tnaRenderKpis();
