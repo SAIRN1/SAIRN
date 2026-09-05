@@ -520,8 +520,8 @@
       "task": "resource name disclosure before license validation",
       "claimed_at": "2026-09-04T22:23:51Z",
       "claimed_at_epoch": 1788560631.93901,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:21:25Z"
     }
   ]
 }
