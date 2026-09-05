@@ -1,3 +1,33 @@
+# ── TEST FILES ARE NOT ENDPOINTS (2026-09-05) ────────────────────────────
+# 36 *.test.js files under api/ were being DEPLOYED as publicly invocable
+# serverless functions. Vercel filesystem-routes api/, and a LEADING UNDERSCORE
+# on a directory is the only thing that opts a file out -- which is exactly why
+# api/_lib/ (102 test files) and api/_resources/ (1) were never exposed while
+# these were.
+#
+# COUNT CORRECTED BEFORE IT SHIPPED: the first pass said 25, the top-level ones.
+# api/sairncash/ (3) and api/sairndental/ (8) carry no underscore either, so
+# they route the same way. Probed rather than reasoned about:
+#   GET /api/sd-data-approvals.test        -> 500   (top level)
+#   GET /api/sairndental/public-book.test  -> 500   (subdirectory, also routed)
+#   GET /api/sairncash/verify.test         -> 500   (subdirectory, also routed)
+#   GET /api/_lib/auth.test                -> 404   (underscore, correctly hidden)
+#
+# THE 500 IS THE PROOF, NOT THE PROBLEM. A 500 means Vercel routed the request,
+# loaded the module and ran it. The runtime log for one such anonymous GET
+# carries the whole suite's output, all 23 assertions; the file `require`s
+# api/sd-data.js and executes at module load.
+#
+# The response body disclosed nothing, so this was never a data leak. It was 36
+# anonymous code-execution and compute surfaces existing purely by accident of
+# naming -- including api/sairncash/stripe-webhook.test.js.
+#
+# The pattern is deliberately not scoped to api/: nothing outside a test runner
+# ever needs a *.test.js on the server, and one rule is simpler than two.
+# Verified before writing it: no non-test file anywhere in the repo requires
+# one.
+*.test.js
+
 *.DAT*
 *.LOG*
 *.TM.blf
@@ -19,3 +49,11 @@ Searches/
 .bash_history
 .gitconfig
 .lesshst
+
+# NOTE, 2026-09-05: everything from `*.DAT*` down to `.lesshst` above is
+# RESIDUE from when C:\Users\marsh\ was itself a working-tree checkout of this
+# repo (see the open-work index rows on that). None of those paths exist in a
+# real clone. They are left in place rather than deleted because removing them
+# is a deployment-config change with nothing to verify it against, and they
+# cost nothing where they are -- but do not read them as evidence that this
+# repo has a Documents/ or AppData/ directory. It does not.
