@@ -596,8 +596,8 @@
       "task": "complete the independent verification points still open",
       "claimed_at": "2026-09-05T12:42:02Z",
       "claimed_at_epoch": 1788612122.311378,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:53:11Z"
     }
   ]
 }
