@@ -298,15 +298,6 @@ async function manage(req, res, ctx) {
     return;
   }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) {
-      res.status(400).json({ error: { message: 'Invalid JSON body' } });
-      return;
-    }
-  }
-  body = body || {};
-
   let lic;
   try {
     lic = await validateLicenseKey(licenseKey);
@@ -318,6 +309,23 @@ async function manage(req, res, ctx) {
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
   const licHash = lic.license_hash;
+
+  // ── BODY PARSE MOVED BELOW LICENCE VALIDATION 2026-09-05 ─────────────────
+  // This is the POST admin path only. Above it, a caller holding no valid
+  // licence could tell malformed JSON from a well-formed body -- a
+  // body-dependent refusal answered before the caller was known. Same shape as
+  // api/sd-data.js and api/sd-sub-data.js. The GET feed path above is NOT
+  // affected: it authenticates on a hashed BI feed token and never accepts a
+  // licence key. The cost is real and is not hidden: a junk key now costs one
+  // license_keys lookup it did not before.
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {
+      res.status(400).json({ error: { message: 'Invalid JSON body' } });
+      return;
+    }
+  }
+  body = body || {};
 
   const sess = verifySessionToken(tokenFromRequest(req), licHash, 'sairndental');
   if (!sess) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }

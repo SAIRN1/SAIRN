@@ -85,16 +85,24 @@ module.exports = async (req, res) => {
   const appId = String(body.app_id || '');
   const payload = body.payload || {};
 
-  if (!IDENT_RE.test(appId) || appId.length > MAX_ID_LEN) {
-    res.status(400).json({ error: { message: 'app_id is required and must be a short identifier' } });
-    return;
-  }
-
   const licKey = (req.headers.authorization || '').replace(/^Bearer\s+/i, '').trim();
   const lic = await validateLicenseKey(licKey);
   if (!lic || !lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
   const licHash = lic.license_hash;
+
+  // ── app_id VALIDATION MOVED BELOW LICENCE VALIDATION 2026-09-05 ──────────
+  // Above it, a caller holding no valid licence learned the shape this shared
+  // endpoint expects of app_id -- a body-dependent refusal answered before the
+  // caller was known. Same shape as api/sd-data.js and api/sd-sub-data.js. The
+  // 405 stays above it because it says nothing about what exists. The cost is
+  // real and is not hidden: a junk key now costs one license_keys lookup it did
+  // not before. It must still run BEFORE verifySessionToken below, which pins
+  // the token to the app the caller claims to be.
+  if (!IDENT_RE.test(appId) || appId.length > MAX_ID_LEN) {
+    res.status(400).json({ error: { message: 'app_id is required and must be a short identifier' } });
+    return;
+  }
 
   // The session is verified against the app the caller CLAIMS to be, so a
   // token minted for one app cannot be replayed at another through this shared

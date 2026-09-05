@@ -62,16 +62,6 @@ module.exports = async (req, res) => {
   const licenseKey = authz.startsWith('Bearer ') ? authz.slice(7).trim() : null;
   if (!licenseKey) { res.status(401).json({ error: { code: 'NO_LICENSE', message: 'Missing bearer license key' } }); return; }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) { res.status(400).json({ error: { message: 'Invalid JSON body' } }); return; }
-  }
-  const ACTIONS = ['provisioner_health', 'rate_limit_health'];
-  if (!body || ACTIONS.indexOf(body.action) === -1) {
-    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
-    return;
-  }
-
   let lic;
   try { lic = await validateLicenseKey(licenseKey); }
   catch (err) {
@@ -82,6 +72,24 @@ module.exports = async (req, res) => {
   }
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
+  // ── ENVELOPE GATES MOVED BELOW LICENCE VALIDATION 2026-09-05 ─────────────
+  // Above it, a caller holding no valid licence could tell malformed JSON from
+  // a valid envelope with a bad action, and read the action list straight out
+  // of the refusal. Same shape as api/sd-data.js and api/sd-sub-data.js. The
+  // 405 and bearer-presence checks stay above, because neither can say
+  // anything about what exists. The cost is real and is not hidden: a junk key
+  // now costs one license_keys lookup it did not before, and a malformed
+  // request from a bad licence reports the licence, not the malformation.
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) { res.status(400).json({ error: { message: 'Invalid JSON body' } }); return; }
+  }
+  const ACTIONS = ['provisioner_health', 'rate_limit_health'];
+  if (!body || ACTIONS.indexOf(body.action) === -1) {
+    res.status(400).json({ error: { message: 'action must be one of: ' + ACTIONS.join(', ') } });
+    return;
+  }
 
   // ── IS THE AI RATE LIMITER ACTUALLY ATOMIC RIGHT NOW? ───────────────────
   // Added 2026-09-02, and it is here rather than in its own file for the same

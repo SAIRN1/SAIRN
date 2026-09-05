@@ -47,5 +47,15 @@
   { "file": "api/dnt-bi.js", "line": 190, "reason": "Behind the BI feed-token boundary. See line 107." },
   { "file": "api/dnt-bi.js", "line": 198, "reason": "Behind the BI feed-token boundary. See line 107." },
   { "file": "api/dnt-bi.js", "line": 222, "reason": "Behind the BI feed-token boundary. See line 107." },
-  { "file": "api/dnt-bi.js", "line": 235, "reason": "Behind the BI feed-token boundary. See line 107." }
+  { "file": "api/dnt-bi.js", "line": 235, "reason": "Behind the BI feed-token boundary. See line 107." },
+
+  { "file": "api/alf-alerts.js", "line": 225,
+    "reason": "TOOL LIMITATION, same class as dnt-bi. Both SWEEP_READ_FAILED refusals sit inside `if (isCron)`, and isCron is `auth === 'Bearer ' + process.env.CRON_SECRET` (line 179) -- a real credential the detector does not know by name, so validateLicenseKey at line 275 is not this path's boundary. Read 2026-09-05. Listed for the 2026-09-05 fix pass and then NOT changed, because it is not the defect: it is already behind a credential." },
+  { "file": "api/alf-alerts.js", "line": 231,
+    "reason": "Same cron-secret path, the non-array guard. See line 225." },
+
+  { "file": "api/sc-credentials.js", "line": 67,
+    "reason": "TOOL LIMITATION of a third kind: this is the body of the module-level helper `upstream()` (line 65), defined ABOVE module.exports, so it is textually before the boundary and not ordered against it at all. Verified rather than assumed -- both call sites (lines 164, 307) are below validateLicenseKey at line 107. Deliberately NOT fixed by teaching the detector to ignore everything above module.exports: a helper defined above and CALLED pre-auth would then be missed silently, which is the under-report class already fixed twice in this tool." },
+  { "file": "api/sc-eligibility.js", "line": 89,
+    "reason": "Same shape: body of the module-level helper `upstream()` (line 87). Its one call site (line 178) is below validateLicenseKey at line 125. Verified, not assumed." }
 ]
