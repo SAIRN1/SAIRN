@@ -684,6 +684,16 @@
       "claimed_at_epoch": 1788561147.8169792,
       "status": "released",
       "released_at": "2026-09-05T12:26:42Z"
+    },
+    {
+      "id": "hank-1788611471",
+      "session": "hank",
+      "subject": "sairnlegacy-write-failure-voice",
+      "task": "false sync not yet enabled message on every failure",
+      "claimed_at": "2026-09-05T12:31:11Z",
+      "claimed_at_epoch": 1788611471.8578584,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
