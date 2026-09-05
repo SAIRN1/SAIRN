@@ -1898,7 +1898,56 @@ function sdLocalToday(){
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
 }
 window.sdLocalToday=sdLocalToday;
-function sdLoad(k,def){try{var v=localStorage.getItem(k);return v?JSON.parse(v):def;}catch(e){return def;}}
+// ── AN UNREADABLE RECORD USED TO LOOK LIKE AN EMPTY ONE (2026-09-05) ──────
+// This was `catch(e){return def;}` and nothing else. A record that will not
+// parse returned exactly what a key that was never written returns, so
+// "your data is corrupt" and "you have none yet" rendered identically and
+// neither the user nor the console was told which had happened.
+//
+// THE RETURN IS UNCHANGED. `def` still comes back either way, so all
+// 9 call sites in this file behave exactly as before and none of
+// them can break. Only the silence is fixed. sdLoad() also still never
+// throws.
+//
+// NOT THE SAME THING AS THE SEED FALLBACK Guardian's lesson 6 records --
+// checked, not assumed. Those are the inline readers in each panel's own
+// load(), which parse the key and fall through to a demo-gated constant;
+// NONE of sdLoad()'s 9 call sites passes a SEED-shaped default. This fixes
+// the silence, not that fallback, and the remaining SEED sites keep their
+// own open row.
+//
+// THE PATTERN IS DESCRIBED HERE RATHER THAN QUOTED, DELIBERATELY. Two suites
+// (tests/demo_seed_licence_scope.js, tests/crm_seed_not_a_pipeline.js) count
+// those sites by matching the literal text and assert an exact total. A
+// comment quoting it is counted as a site, and both went red on this change
+// before the quote was removed -- a new "seed site" that is a sentence.
+// Same shape as Guardian's own false-positive warnings.
+//
+// The old test was `v ? JSON.parse(v) : def`, truthiness rather than
+// `v === null`, so a stored EMPTY STRING took the absent branch silently. It
+// now parses, throws, and is logged; identical return. st() JSON.stringify()s
+// and can never produce '', so an empty string here did not come from this
+// app.
+function sdLoad(k,def){
+  var v=null;
+  try{ v=localStorage.getItem(k); }catch(e){
+    // getItem itself can throw -- a disabled or partitioned store. Distinct
+    // from a parse failure and said so, because the fixes differ.
+    try{ console.error('StoneDesk: localStorage is unavailable, so "'+k+
+      '" could not be read -- showing the default, which is NOT the same as empty.'); }catch(_e){}
+    return def;
+  }
+  if(v===null) return def;               // genuinely absent: the honest empty case
+  try{
+    return JSON.parse(v);
+  }catch(e){
+    try{ console.error('StoneDesk: stored record "'+k+
+      '" is UNREADABLE and was skipped -- showing the default. This is NOT an empty '+
+      'record; the saved data is still in localStorage and has not been overwritten. '+
+      ((e&&e.message)||e)); }catch(_e){}
+    return def;
+  }
+}
 window.sdLoad=sdLoad;
 // sdDemoCleared() -- the one shared gate every ||SEED demo-data fallback
 // below now checks before defaulting to fabricated Pinnacle Stone content.
@@ -38245,7 +38294,36 @@ document.addEventListener('DOMContentLoaded',function(){
 // pattern already established globally as sdLoad() (see ~line 1310).
 var ITA_USERS_KEY = 'sd_ita_users';
 var ITA_AUDIT_KEY = 'sd_ita_audit';
-function itaLoad(k, def) { try { var v = localStorage.getItem(k); return v ? JSON.parse(v) : def; } catch(e) { return def; } }
+// ── THE SECOND ONE, AND IT IS NOT A DUPLICATE OF sdLoad() (2026-09-05) ────
+// Same defect, same fix, deliberately kept as its own function: itaLoad()
+// belongs to the intake module and is defined 36,000 lines away from
+// sdLoad() inside a different IIFE. Collapsing them into one shared helper
+// is a real change with its own blast radius across 14 call sites, and it is
+// not what this pass is for -- the silence is.
+//
+// THE RETURN IS UNCHANGED. `def` still comes back either way, so all 5 call
+// sites behave exactly as before and itaLoad() still never throws. The
+// truthiness test moves the same way sdLoad()'s did: a stored EMPTY STRING
+// now parses, throws and is logged rather than reading as absent. Identical
+// return.
+function itaLoad(k, def) {
+  var v = null;
+  try { v = localStorage.getItem(k); } catch(e) {
+    try { console.error('StoneDesk intake: localStorage is unavailable, so "' + k +
+      '" could not be read -- showing the default, which is NOT the same as empty.'); } catch(_e) {}
+    return def;
+  }
+  if (v === null) return def;            // genuinely absent: the honest empty case
+  try {
+    return JSON.parse(v);
+  } catch(e) {
+    try { console.error('StoneDesk intake: stored record "' + k +
+      '" is UNREADABLE and was skipped -- showing the default. This is NOT an empty ' +
+      'record; the saved data is still in localStorage and has not been overwritten. ' +
+      ((e && e.message) || e)); } catch(_e) {}
+    return def;
+  }
+}
 function itaSave(k, v) { return st(k, v); }
 function itaRender(){
   var users=itaLoad(ITA_USERS_KEY,[{name:'Owner',role:'admin',pin:'****',added:new Date().toISOString()}]);

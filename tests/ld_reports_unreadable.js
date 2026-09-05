@@ -14,10 +14,10 @@
 // content -- the StoneDesk SEED-fallback shape in Guardian's lesson 6.
 //
 // Fourteen such loaders were enumerated by tools/fail_open_check.py's browser
-// pass. ELEVEN are fixed, one or two at a time, deliberately: sweeping thirteen
+// pass. ALL FOURTEEN are fixed, one to three at a time, deliberately: sweeping thirteen
 // apps mechanically in one pass is what that backlog row warns against.
 //
-// TEN OF THE ELEVEN ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
+// THIRTEEN OF THE FOURTEEN ARE HERE. SAIRNvet's svLoad() is NOT, and that is not an
 // omission: it has a different contract. That file carries a deliberate
 // two-place unreadable-store guard, so a corrupt record there must BLOCK the
 // app rather than return the default -- the opposite of what every assertion
@@ -61,6 +61,14 @@ const APPS = [
   { file: 'sairngrounds.html', name: 'SAIRNgrounds', fn: 'ld' },
   { file: 'sairnbuild.html', name: 'SAIRNbuild', fn: 'ld' },
   { file: 'sairnsenior.html', name: 'SAIRNsenior', fn: 'ld' },
+  { file: 'sairndental.html', name: 'SAIRNdental', fn: 'ld' },
+  // StoneDesk's two spell their parameters differently, and itaLoad() spaces
+  // its signature. `args`/`spaced` exist for exactly the reason `fn` does: a
+  // suite that hardcodes the SIGNATURE cannot extract the function at all,
+  // and one that hardcodes it in the SOURCE pattern passes vacuously instead.
+  // Both are derived now.
+  { file: 'stonedesk.html', name: 'StoneDesk', fn: 'sdLoad', args: ['k', 'def'] },
+  { file: 'stonedesk.html', name: 'StoneDesk intake', fn: 'itaLoad', args: ['k', 'def'], spaced: true },
 ];
 
 let pass = 0, fail = 0;
@@ -95,7 +103,10 @@ function load(app, mode, stored) {
     console: { error: (...a) => errs.push(a.join(' ')), warn: () => {}, log: () => {} },
   };
   vm.createContext(ctx);
-  vm.runInContext(grab(src, 'function ' + app.fn + '(k,d){'), ctx);
+  const A = app.args || ['k', 'd'];
+  const sig = app.spaced ? ('function ' + app.fn + '(' + A[0] + ', ' + A[1] + ') {')
+                         : ('function ' + app.fn + '(' + A[0] + ',' + A[1] + '){');
+  vm.runInContext(grab(src, sig), ctx);
   const ld = ctx[app.fn];
   assert.strictEqual(typeof ld, 'function', app.fn + ' did not define a function');
   return { ctx, errs, ld };
@@ -193,23 +204,34 @@ APPS.forEach((app) => {
     // loader is `scpLd` -- it would have passed with the defect fully intact.
     // A third literal is not the fix; deriving it from app.fn is.
     const bare = src.replace(/\s+/g, '');
-    const head = 'function' + app.fn + '\\(k,d\\)\\{try\\{varr=localStorage\\.getItem\\(k\\);';
-    assert.ok(!new RegExp(head + 'returnr===null\\?d:JSON\\.parse\\(r\\);\\}catch\\(e\\)\\{returnd;\\}\\}').test(bare),
-      'the swallowing one-liner is back');
-    assert.ok(!new RegExp(head + 'returnr\\?JSON\\.parse\\(r\\):d;\\}catch\\(e\\)\\{returnd;\\}\\}').test(bare),
+    // THE PARAMETER NAMES ARE DERIVED for the same reason the function name is.
+    // StoneDesk's loaders take (k,def); a pattern hardcoding (k,d) is vacuously
+    // true of them and would pass with the defect fully intact -- the third
+    // time this one assertion has had to stop being a literal.
+    const P = app.args || ['k', 'd'];
+    const head = 'function' + app.fn + '\\(' + P[0] + ',' + P[1] +
+                 '\\)\\{try\\{var' + P[0] + '=localStorage\\.getItem\\(' + P[0] + '\\);';
+    const nul = 'return' + P[0] + '===null\\?' + P[1] + ':JSON\\.parse\\(' + P[0] +
+                '\\);\\}catch\\(e\\)\\{return' + P[1] + ';\\}\\}';
+    const tru = 'return' + P[0] + '\\?JSON\\.parse\\(' + P[0] + '\\):' + P[1] +
+                ';\\}catch\\(e\\)\\{return' + P[1] + ';\\}\\}';
+    assert.ok(!new RegExp(head + nul).test(bare), 'the swallowing one-liner is back');
+    assert.ok(!new RegExp(head + tru).test(bare),
       'the swallowing one-liner is back, in its truthiness spelling');
-    // ...and the pattern is not vacuous: it must match the defect it names.
-    assert.ok(new RegExp(head + 'returnr\\?JSON\\.parse\\(r\\):d;\\}catch\\(e\\)\\{returnd;\\}\\}')
-      .test(('function ' + app.fn + '(k,d){try{var r=localStorage.getItem(k);' +
-             'return r?JSON.parse(r):d;}catch(e){return d;}}').replace(/\s+/g, '')),
+    // ...and the pattern is not vacuous: it must match the defect it names,
+    // rebuilt from this app's OWN name and parameters.
+    assert.ok(new RegExp(head + tru)
+      .test(('function ' + app.fn + '(' + P[0] + ',' + P[1] + '){try{var ' + P[0] +
+             '=localStorage.getItem(' + P[0] + ');return ' + P[0] + '?JSON.parse(' + P[0] +
+             '):' + P[1] + ';}catch(e){return ' + P[1] + ';}}').replace(/\s+/g, '')),
       'the negative control does not match, so the assertion above proves nothing');
   });
 });
 
 // ---------------------------------------------------------------------------
-section('the checker agrees these ten are done -- eleven of fourteen overall');
+section('the checker agrees ALL FOURTEEN are done');
 
-const REMAINING = 3;   // of the original 14
+const REMAINING = 0;   // of the original 14 -- the row is CLOSED
 
 function checkerOutput() {
   const { execFileSync } = require('child_process');
@@ -231,7 +253,7 @@ test('fail_open_check no longer lists any of them', () => {
   });
 });
 
-test('...and the other three are still on the list, not quietly dropped', () => {
+test('...and NONE are left on the list -- the count is now the regression guard', () => {
   const m = /\((\d+) storage loader\(s\)/.exec(checkerOutput());
   assert.ok(m, 'could not read the loader count');
   assert.strictEqual(Number(m[1]), REMAINING,
