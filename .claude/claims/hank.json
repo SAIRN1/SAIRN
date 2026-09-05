@@ -714,6 +714,16 @@
       "claimed_at_epoch": 1788613445.800977,
       "status": "released",
       "released_at": "2026-09-05T13:20:56Z"
+    },
+    {
+      "id": "hank-1788614540",
+      "session": "hank",
+      "subject": "sairnbuild-duplicate-and-missing-targets",
+      "task": "read the call sites for rBids and the two absent ids",
+      "claimed_at": "2026-09-05T13:22:20Z",
+      "claimed_at_epoch": 1788614540.360592,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
