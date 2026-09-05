@@ -522,6 +522,16 @@
       "claimed_at_epoch": 1788560631.93901,
       "status": "released",
       "released_at": "2026-09-05T12:21:25Z"
+    },
+    {
+      "id": "fourth-1788611017",
+      "session": "fourth",
+      "subject": "api-test-files-public",
+      "task": "deployed serverless functions vercelignore",
+      "claimed_at": "2026-09-05T12:23:37Z",
+      "claimed_at_epoch": 1788611017.8077238,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
