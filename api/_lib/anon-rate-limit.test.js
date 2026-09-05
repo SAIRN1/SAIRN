@@ -23,6 +23,15 @@ const queue = [];
 const LIMITER = path.join(__dirname, 'anon-rate-limit.js');
 const HANDLER = path.join(__dirname, '..', 'sd-data.js');
 
+// ENFORCEMENT IS TURNED ON EXPLICITLY FOR THIS SUITE, because as of 2026-09-05
+// it is OFF by default -- production measurement showed scale-out gives every
+// instance its own counter, so the 429 essentially never fires and all the
+// default could still do was refuse a real customer behind a shared address.
+// The counting and refusal MECHANISM is still correct code and is still worth
+// testing, so the cases below opt in. Two cases deliberately do not, and assert
+// the default: 'it OBSERVES by default' and 'the default never refuses anyone'.
+process.env.SAIRN_ANON_RATE_LIMIT_MODE = 'enforce';
+
 function freshLimiter() {
   delete require.cache[require.resolve(LIMITER)];
   return require(LIMITER);
@@ -101,15 +110,30 @@ test('OBSERVE mode counts and reports the overage but never refuses', () => {
   }
 });
 
-test('it enforces by DEFAULT -- unlike ai-rate-limit.js, and for a stated reason', () => {
+test('it OBSERVES by default -- reversed 2026-09-05 on production evidence', () => {
+  // It shipped enforcing, argued from "a refusal can only land on a request
+  // that was already going to be refused". Production disagreed: 40 concurrent
+  // junk requests produced zero 429s because scale-out gives every instance its
+  // own counter. What enforcement could still do was refuse a real customer
+  // behind a shared address who mistyped a key -- all cost, no benefit. This
+  // assertion is the one that must be changed deliberately if that is revisited.
   const rl = freshLimiter();
   const prev = process.env.SAIRN_ANON_RATE_LIMIT_MODE;
   delete process.env.SAIRN_ANON_RATE_LIMIT_MODE;
   try {
-    assert.strictEqual(rl.isEnforcing(), true);
+    assert.strictEqual(rl.isEnforcing(), false,
+      'the limiter enforces by default again -- see the measurement in its header');
   } finally {
     if (prev !== undefined) process.env.SAIRN_ANON_RATE_LIMIT_MODE = prev;
   }
+});
+
+test('the measured-inert finding is recorded in the module, not only in a row', () => {
+  // A row is somewhere else. The next person to read this file must not have to
+  // find it to learn that the thing does not work.
+  const src = require('fs').readFileSync(LIMITER, 'utf8');
+  assert.match(src, /MEASURED IN PRODUCTION 2026-09-05: THIS DOES NOT WORK/);
+  assert.match(src, /HORIZONTAL SCALE-OUT DEFEATS A PER-INSTANCE COUNTER/);
 });
 
 test('the map cannot be grown without bound by a spread flood', () => {
@@ -181,6 +205,26 @@ test('a flood of junk keys is refused 429 -- WITHOUT a database lookup', async (
     assert.strictEqual(lookups(), before,
       'the 429 still cost a database lookup, which is the whole thing it exists to avoid');
   });
+});
+
+test('THE DEFAULT NEVER REFUSES ANYONE, however many failures', async () => {
+  // The safe interim state while the design decision is open. If this ever
+  // returns 429 with no explicit enforce, the default flipped back and the
+  // production measurement in the module header was not read.
+  const prev = process.env.SAIRN_ANON_RATE_LIMIT_MODE;
+  delete process.env.SAIRN_ANON_RATE_LIMIT_MODE;
+  try {
+    const { handler, rl } = loadHandler();
+    rl._reset();
+    await withStubbedLicence([], async () => {
+      for (let i = 0; i < rl.limit() * 2; i++) {
+        const r = await call(handler, post('203.0.113.99', 'junk-' + i));
+        assert.strictEqual(r.code, 401, 'got ' + r.code + ' on attempt ' + i);
+      }
+    });
+  } finally {
+    process.env.SAIRN_ANON_RATE_LIMIT_MODE = prev === undefined ? 'enforce' : prev;
+  }
 });
 
 test('...and says nothing about what exists', async () => {

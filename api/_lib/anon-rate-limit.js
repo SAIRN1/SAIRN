@@ -28,6 +28,46 @@
 // copying from it -- env-configurable, fails open, states its own limits in
 // its header rather than in a row somebody has to find -- are copied.
 //
+// ══ MEASURED IN PRODUCTION 2026-09-05: THIS DOES NOT WORK. READ THIS FIRST ══
+//
+// It shipped enforcing. Live: 40 concurrent junk-token requests returned 40 x
+// 401 and NOT ONE 429, against a limit of 20 in 60 seconds. The instrumentation
+// added to find out why settled it, and the answer is not a bug in the code
+// below -- the code below does exactly what its tests say. Every log line read:
+//
+//     addr_src=x-vercel-forwarded-for   tracked=1
+//
+// so the address IS being read, and each instance was tracking exactly one
+// address, correctly. What the counts showed is the whole story: they climbed
+// in MANY PARALLEL SEQUENCES -- a dozen or more instances each counting the
+// same address from 1, the busiest reaching 10 of 20. Never the limit.
+//
+// HORIZONTAL SCALE-OUT DEFEATS A PER-INSTANCE COUNTER, AND WORSE THAN THAT, IT
+// DEFEATS IT IN PROPORTION TO THE ATTACK. Concurrency is what makes Vercel add
+// instances, so a bigger flood spreads across more of them and every
+// individual count gets LOWER. The design fails hardest against exactly the
+// case it was written for. A slow sequential attacker cannot trip it either:
+// at the ~3.3s per request measured here, 20 failures do not fit in a
+// 60-second window.
+//
+// So its realistic effect while enforcing was one thing only: a rare false
+// refusal of a real customer behind a shared address who typed a key wrong.
+// All cost, no benefit. IT NOW DEFAULTS TO OBSERVE so it cannot refuse anyone,
+// pending a decision that belongs to a human:
+//
+//   * the right layer for this is the PLATFORM (a Vercel Firewall rate-limit
+//     rule), which costs no database round trip and sees every instance; or
+//   * accept the amplification and delete this, rather than leave dormant code
+//     that reads like a defence.
+//
+// The counting and the instrumentation are kept because the instrumentation is
+// now the only thing measuring the amplification, and it is genuinely useful.
+// The author's argument for this design -- that a Supabase-backed limiter
+// would cost two round trips instead of one -- was correct about ai-rate-limit
+// and wrong about the conclusion: the answer was never an in-process counter
+// on a platform that runs many processes.
+// ═══════════════════════════════════════════════════════════════════════════
+//
 // ── IT CAN NEVER REFUSE A WORKING CUSTOMER ─────────────────────────────────
 // Only a FAILED licence validation is recorded. A caller holding a valid key
 // never accumulates a count, so no amount of legitimate traffic can trip this,
@@ -77,8 +117,16 @@ function windowMs() {
   return (Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_WINDOW_SECONDS) * 1000;
 }
 
+// DEFAULTS TO OBSERVE as of 2026-09-05, reversed from the day it shipped. The
+// original default was enforce, argued from "a refusal here can only land on a
+// request that was already going to be refused". That argument still holds --
+// and it is irrelevant, because production showed the refusal essentially never
+// happens (see the measurement at the top). What was left was the one case it
+// DOES catch: a real customer behind a shared address who mistyped a key.
+// Enforcing a limit that cannot fire against an attacker but can fire against a
+// customer is strictly worse than not enforcing it.
 function isEnforcing() {
-  return String(process.env.SAIRN_ANON_RATE_LIMIT_MODE || '').toLowerCase() !== 'observe';
+  return String(process.env.SAIRN_ANON_RATE_LIMIT_MODE || '').toLowerCase() === 'enforce';
 }
 
 // Vercel sets x-vercel-forwarded-for itself, so it is preferred over the
