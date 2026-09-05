@@ -31,6 +31,12 @@ const HANDLER = path.join(__dirname, '..', 'sd-data.js');
 // testing, so the cases below opt in. Two cases deliberately do not, and assert
 // the default: 'it OBSERVES by default' and 'the default never refuses anyone'.
 process.env.SAIRN_ANON_RATE_LIMIT_MODE = 'enforce';
+// PINNED, not inherited. The cases below read rl.limit() dynamically so they
+// passed either way -- but with the environment's values they would have been
+// asserting something other than what they say. Raised by the independent
+// review 2026-09-05.
+process.env.SAIRN_ANON_INVALID_LIMIT = '20';
+process.env.SAIRN_ANON_WINDOW_SECONDS = '60';
 
 function freshLimiter() {
   delete require.cache[require.resolve(LIMITER)];
@@ -93,6 +99,31 @@ test('the window expires, so it self-heals rather than banning', () => {
   assert.strictEqual(rl.checkAnonRate(req1, t0).refuse, true);
   assert.strictEqual(rl.checkAnonRate(req1, t0 + rl.windowMs() + 1).refuse, false,
     'the count outlived its window -- this is a ban, not a limit');
+});
+
+test('THE WINDOW IS FIXED, NOT SLIDING -- a hit does not extend the ban', () => {
+  // THE ONE GAP THE INDEPENDENT REVIEW FOUND IN THIS SUITE: converting the
+  // window to sliding -- refreshing resetAt on every hit, so a persistent
+  // prober is banned indefinitely -- passed all seventeen assertions. That is a
+  // materially stricter behaviour arriving silently, which is the same class as
+  // the vacuous source assertions this repo keeps recording.
+  const rl = freshLimiter();
+  const t0 = 5000000;
+  rl.recordInvalidLicence(req1, t0);
+  // A hit late in the window must NOT push the expiry out.
+  rl.recordInvalidLicence(req1, t0 + rl.windowMs() - 1);
+  const b = rl._buckets.get('10.0.0.1');
+  assert.strictEqual(b.resetAt, t0 + rl.windowMs(),
+    'resetAt moved -- the window is sliding, so a steady prober is banned forever');
+  assert.strictEqual(rl.checkAnonRate(req1, t0 + rl.windowMs() + 1).count, 0,
+    'the bucket outlived its window');
+});
+
+test('the address is length-capped, so the 5000 ceiling bounds MEMORY too', () => {
+  const rl = freshLimiter();
+  rl.recordInvalidLicence({ headers: { 'x-vercel-forwarded-for': 'a'.repeat(100000) } });
+  const key = [...rl._buckets.keys()][0];
+  assert.ok(key.length <= 64, 'stored a ' + key.length + '-character address key');
 });
 
 test('OBSERVE mode counts and reports the overage but never refuses', () => {

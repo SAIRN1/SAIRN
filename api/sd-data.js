@@ -87,7 +87,8 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 const { RESOURCES, RESOURCE_LIST_TEXT, RESOURCE_NAMES, EXTRA_ACTIONS,
         isKnownApp, resourceListTextFor } = require('./_resources');
 const { checkAnonRate, recordInvalidLicence, addressSource, trackedCount,
-        limit, isEnforcing: isAnonEnforcing } = require('./_lib/anon-rate-limit');
+        limit, windowSeconds: anonWindowSeconds,
+        isEnforcing: isAnonEnforcing } = require('./_lib/anon-rate-limit');
 // Which app ids the `memory` resource will accept. DERIVED, not hand-listed --
 // a hand-written copy beside a real one is how api/_resources/index.js's own
 // header records the resource error string drifting from the resource map.
@@ -325,7 +326,15 @@ module.exports = async (req, res) => {
       // reaches the database, so no other log line records it.
       console.warn('sd-data anon: REFUSED 429, count=' + anon.count + '/' + anon.limit +
         ' addr_src=' + addressSource(req) + ' tracked=' + trackedCount());
-      res.status(429).json({ error: { code: 'TOO_MANY_INVALID_KEYS', message: 'Too many failed license attempts from this address. Wait a minute and try again.' } });
+      // THE MESSAGE SAYS THE REAL WINDOW, not "a minute". It hardcoded a minute
+      // while SAIRN_ANON_WINDOW_SECONDS is configurable, so a deployment that
+      // widened the window would have told the caller to wait the wrong amount
+      // -- small, and the same shape as every other confidently wrong sentence
+      // this repo records. Retry-After is the machine-readable half; a client
+      // that backs off correctly is one that stops generating the flood.
+      const waitSeconds = anonWindowSeconds();
+      if (typeof res.setHeader === 'function') res.setHeader('Retry-After', String(waitSeconds));
+      res.status(429).json({ error: { code: 'TOO_MANY_INVALID_KEYS', message: 'Too many failed license attempts from this address. Wait ' + waitSeconds + ' seconds and try again.' } });
       return;
     }
   } catch (e) {

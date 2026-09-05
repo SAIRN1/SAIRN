@@ -71,9 +71,16 @@
 // ── IT CAN NEVER REFUSE A WORKING CUSTOMER ─────────────────────────────────
 // Only a FAILED licence validation is recorded. A caller holding a valid key
 // never accumulates a count, so no amount of legitimate traffic can trip this,
-// from any address, at any volume. That is why it enforces by default where
-// ai-rate-limit.js observes by default: a refusal here can only ever land on a
-// request that was already going to be refused, one HTTP status earlier.
+// from any address, at any volume.
+//
+// THIS WAS THE ARGUMENT FOR ENFORCING BY DEFAULT AND IT NO LONGER APPLIES. It
+// is still true, and it stopped mattering once production showed the refusal
+// essentially never fires -- see the measurement above. One exception to the
+// claim survives and is asserted rather than glossed: the check runs BEFORE the
+// key is known, so a valid licence arriving from an address already over the
+// limit is refused. In practice that is not "a bad actor behind a NAT" but one
+// badly-behaved tab retrying a stale key, which would then refuse every
+// colleague behind that egress address for the rest of the window.
 //
 // An INACTIVE licence (403) and an upstream failure (502) are NOT recorded
 // either. Both mean a real key was presented, or that the database, not the
@@ -83,9 +90,16 @@
 //  * PER-INSTANCE. Vercel runs many instances; each keeps its own map, and a
 //    cold start resets it. A flood spread across instances is capped per
 //    instance, not globally.
-//  * THE ADDRESS IS NOT PROOF. `x-vercel-forwarded-for` is set by the platform
-//    and is the value trusted first here, but a caller who can vary the
-//    address it presents can rotate past this.
+//  * THE ADDRESS IS NOT PROOF, IN BOTH DIRECTIONS. `x-vercel-forwarded-for` is
+//    set by the platform and is trusted first, and production logs confirm it
+//    is present on every request, so the fallbacks below it are effectively
+//    dead code there. But if that header is ever absent -- a non-Vercel host, a
+//    local or preview run, a future migration -- then `x-real-ip` and the first
+//    `x-forwarded-for` entry are ATTACKER-CONTROLLED. That does not only let an
+//    attacker evade the limit by rotating; it lets them POISON A VICTIM'S
+//    BUCKET and get a real customer refused. Raised by the independent review
+//    2026-09-05, which noted this file argued only the evasion direction. Moot
+//    while the default is observe; it is a blocker on ever enforcing again.
 //  * SO THE WORST CASE IS TODAY'S BEHAVIOUR. Every degradation ends in
 //    "allowed", never in a refused real request. It reduces the amplification
 //    factor of the ordinary case; it is not a defence against a determined
@@ -112,9 +126,13 @@ function limit() {
   return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_LIMIT;
 }
 
-function windowMs() {
+function windowSeconds() {
   const raw = Number(process.env.SAIRN_ANON_WINDOW_SECONDS);
-  return (Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_WINDOW_SECONDS) * 1000;
+  return Number.isFinite(raw) && raw > 0 ? raw : DEFAULT_WINDOW_SECONDS;
+}
+
+function windowMs() {
+  return windowSeconds() * 1000;
 }
 
 // DEFAULTS TO OBSERVE as of 2026-09-05, reversed from the day it shipped. The
@@ -132,12 +150,21 @@ function isEnforcing() {
 // Vercel sets x-vercel-forwarded-for itself, so it is preferred over the
 // x-forwarded-for chain a caller can prepend to. FIRST entry of that chain is
 // the conventional client position when it is used at all.
+// LENGTH-CAPPED, added 2026-09-05 on the independent review's finding. MAX_TRACKED
+// bounds the number of KEYS, not their size, so without this the "bounded at
+// 5000" comment was true of the count and false of the memory -- an attacker
+// sending megabyte-long header values gets tens of MB rather than the hundreds
+// of KB the ceiling implies. 64 characters holds any real IPv6 address with room
+// to spare, and two addresses that collide after truncation share a bucket,
+// which is a limit that is slightly too strict rather than a bypass.
+const MAX_ADDRESS_CHARS = 64;
+
 function clientAddress(req) {
   const h = (req && req.headers) || {};
   const direct = h['x-vercel-forwarded-for'] || h['x-real-ip'];
-  if (direct) return String(direct).trim();
+  if (direct) return String(direct).trim().slice(0, MAX_ADDRESS_CHARS);
   const chain = h['x-forwarded-for'];
-  if (chain) return String(chain).split(',')[0].trim();
+  if (chain) return String(chain).split(',')[0].trim().slice(0, MAX_ADDRESS_CHARS);
   return '';                                  // unknown: never tracked, always allowed
 }
 
@@ -228,6 +255,7 @@ module.exports = {
   trackedCount,
   isEnforcing,
   limit,
+  windowSeconds,
   windowMs,
   _reset,
   _buckets: buckets,
