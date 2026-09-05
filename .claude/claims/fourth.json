@@ -542,6 +542,16 @@
       "claimed_at_epoch": 1788611918.916099,
       "status": "released",
       "released_at": "2026-09-05T13:22:00Z"
+    },
+    {
+      "id": "fourth-1788615312",
+      "session": "fourth",
+      "subject": "app-boundary-gate",
+      "task": "cross app resource access all fifteen apps",
+      "claimed_at": "2026-09-05T13:35:12Z",
+      "claimed_at_epoch": 1788615312.0867825,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
