@@ -682,8 +682,8 @@
       "task": "fabricated hourly rate in exported spreadsheet column",
       "claimed_at": "2026-09-04T22:32:27Z",
       "claimed_at_epoch": 1788561147.8169792,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:26:42Z"
     }
   ]
 }
