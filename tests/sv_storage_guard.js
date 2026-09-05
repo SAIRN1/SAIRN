@@ -300,6 +300,38 @@ test('the BLOCKED-KEY path latches too, because the block screen can itself fail
   assert.match(toastEl.textContent, /NOT SAVED/, 'the already-blocked path does not latch');
 });
 
+test('NO TOAST ELEMENT IS SURVIVED, NOT THROWN ON -- and the latch is kept', () => {
+  // Added 2026-09-05 (Cody) by independent review, answering its own question
+  // "does the blocked-key latch double-report alongside the full-page block
+  // screen". It did not double-report -- it THREW. svBlockForCorruptStore()
+  // replaces document.body.innerHTML, which destroys #sv-toast, and st()
+  // returns NORMALLY on that path, so the caller carried on to its usual
+  // renderX(); showToast(...) and dereferenced null.
+  const { ctx } = load({ setThrows: quota });
+  ctx.st('sv_controlled', [1]);
+  ctx.document.getElementById = () => null;          // the block screen is up
+  assert.doesNotThrow(() => ctx.showToast('Updated Rex', 'success'),
+    'a missing toast element turned a refused write into a TypeError');
+  // The warning must not be spent on a toast nobody could see.
+  assert.strictEqual(ctx._svWriteFailed, 'sv_controlled',
+    'the latch was consumed by a toast that never rendered');
+});
+
+test('the corrected message names the TIMING, not just the failure', () => {
+  // A handful of success toasts in this file follow no storage write at all --
+  // a copied link, an AI answer, a CSV export. The warning is TRUE for them (a
+  // record really was not saved) but a bare "NOT SAVED" on "Scan complete"
+  // reads as the scan having failed. The window is accepted rather than
+  // narrowed -- a false alarm costs a re-read, a missed one costs a clinical
+  // record -- so the wording has to carry the distinction.
+  const { ctx, toastEl } = load({ setThrows: quota });
+  ctx.st('sv_controlled', [1]);
+  ctx.showToast('Scan complete', 'success');
+  assert.match(toastEl.textContent, /an earlier save/,
+    'the message does not say the refusal was an EARLIER action');
+  assert.match(toastEl.textContent, /sv_controlled/);
+});
+
 test('error and info toasts are never rewritten -- only success claims are', () => {
   const { ctx, toastEl } = load({ setThrows: quota });
   ctx.st('sv_x', [1]);

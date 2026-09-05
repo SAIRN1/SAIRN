@@ -1756,9 +1756,35 @@ var VET_DIAGNOSES = [{"name":"Atopic Dermatitis","species":"dog,cat","system":"i
 var _svWriteFailed = null;   // key of the most recent refused write, or null
 function showToast(msg, type, dur) {
   var t = document.getElementById('sv-toast');
+  // ── NO TOAST ELEMENT IS A REAL STATE, NOT AN IMPOSSIBLE ONE (2026-09-05) ──
+  // Found by the independent review of the false-success-toast fix, on its own
+  // question "does the blocked-key latch double-report alongside the full-page
+  // block screen". It does not double-report -- it THREW. This line was
+  // `t.textContent = msg` with no guard, and svBlockForCorruptStore() replaces
+  // document.body.innerHTML, which destroys #sv-toast. st() then RETURNS
+  // NORMALLY on that path, so the caller carries on to its usual
+  // renderX(); showToast(...) and dereferenced null -- a TypeError that
+  // abandoned the rest of that caller.
+  //
+  // Returning early is the right answer rather than recreating the element:
+  // once the block screen is up it OWNS the message, and a toast floating over
+  // it would be the double-report the review was asking about.
+  //
+  // THE GUARD IS ABOVE THE LATCH DELIBERATELY. Consuming _svWriteFailed here
+  // would throw away the only warning a later, working toast could carry.
+  if (!t) return;
   if (type === 'success' && _svWriteFailed) {
-    msg = 'NOT SAVED — this browser refused to store "' + _svWriteFailed +
-          '". Nothing was written and the screen may still show the previous ' +
+    // "an earlier save" rather than an unqualified "NOT SAVED": the latch is
+    // consumed by the first success toast AFTER the refusal, and a handful of
+    // success toasts in this file (a copied link, an AI answer, a CSV export)
+    // follow no storage write at all. The warning is TRUE in those cases -- a
+    // record really was not saved -- but attaching a bare "NOT SAVED" to
+    // "Scan complete" reads as the scan having failed. Naming the key and the
+    // timing keeps it true and stops it being misread. See the review note on
+    // this row for why the window is accepted rather than narrowed: a false
+    // alarm costs a re-read, a missed one costs a clinical record.
+    msg = 'NOT SAVED — an earlier save was refused by this browser ("' + _svWriteFailed +
+          '"). Nothing was written and the screen may still show the previous ' +
           'record. Copy anything you just entered before reloading.';
     type = 'error';
     dur = dur && dur > 9000 ? dur : 9000;
