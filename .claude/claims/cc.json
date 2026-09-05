@@ -553,6 +553,16 @@
       "claimed_at_epoch": 1788560196.988807,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1788611117",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "session token on sdndata and server side verification for all law resources",
+      "claimed_at": "2026-09-05T12:25:17Z",
+      "claimed_at_epoch": 1788611117.9727702,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
