@@ -712,8 +712,8 @@
       "task": "last three corrupt record indistinguishable from absent",
       "claimed_at": "2026-09-05T13:04:05Z",
       "claimed_at_epoch": 1788613445.800977,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T13:20:56Z"
     }
   ]
 }
