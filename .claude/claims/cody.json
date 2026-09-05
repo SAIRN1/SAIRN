@@ -586,8 +586,8 @@
       "task": "pre-auth resource oracle before licence validation",
       "claimed_at": "2026-09-05T12:19:56Z",
       "claimed_at_epoch": 1788610796.406324,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:32:12Z"
     }
   ]
 }
