@@ -551,8 +551,8 @@
       "task": "add the server hydrate that mirrors sairnlegacy sdnHydrateAll",
       "claimed_at": "2026-09-04T22:16:36Z",
       "claimed_at_epoch": 1788560196.988807,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:40:30Z"
     },
     {
       "id": "cc-1788611117",
@@ -561,8 +561,8 @@
       "task": "session token on sdndata and server side verification for all law resources",
       "claimed_at": "2026-09-05T12:25:17Z",
       "claimed_at_epoch": 1788611117.9727702,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-05T12:40:30Z"
     }
   ]
 }
