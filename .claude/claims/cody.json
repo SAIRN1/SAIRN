@@ -588,6 +588,16 @@
       "claimed_at_epoch": 1788610796.406324,
       "status": "released",
       "released_at": "2026-09-05T12:32:12Z"
+    },
+    {
+      "id": "cody-1788612122",
+      "session": "cody",
+      "subject": "sairnvet-toast-latch",
+      "task": "complete the independent verification points still open",
+      "claimed_at": "2026-09-05T12:42:02Z",
+      "claimed_at_epoch": 1788612122.311378,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
