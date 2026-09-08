@@ -621,8 +621,8 @@
       "task": "resolve keys held in constants and never omit a scanned file",
       "claimed_at": "2026-09-08T12:49:52Z",
       "claimed_at_epoch": 1788871792.3395681,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T13:04:54Z"
     }
   ]
 }
