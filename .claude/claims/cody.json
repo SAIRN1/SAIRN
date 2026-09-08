@@ -656,8 +656,8 @@
       "task": "read the twenty six handlers with no licence or session boundary",
       "claimed_at": "2026-09-08T12:22:38Z",
       "claimed_at_epoch": 1788870158.144344,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:28:29Z"
     }
   ]
 }
