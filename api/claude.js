@@ -90,6 +90,55 @@ const KNOWN_APP_IDS = [
 const ALLOWED_SERVER_TOOL_TYPES = ['web_search_20250305'];
 const MAX_TOOL_USES_CEILING = 5;
 
+// ── max_tokens IS NOW CAPPED SERVER-SIDE (2026-09-05) ─────────────────────
+// It was not, and the comment above -- which says "max_uses is also
+// server-capped" -- is about tool USES and was never about tokens.
+// callAnthropic() passed `max_tokens || 1000` straight through to Anthropic,
+// so any caller could ask for an arbitrarily large generation on this
+// platform's own API key. VERIFIED LIVE before fixing, with deliberately
+// minimal spend: a request carrying NO Authorization header at all and
+// max_tokens 64000 returned HTTP 200 and a real completion.
+//
+// 4096 is above every real request on the platform, measured rather than
+// guessed: the largest max_tokens any app's client sends is 2000, and
+// api/sd-agent.js -- the most demanding AI path here, a tool-using agent
+// loop -- sets its own MAX_TOKENS to 4096. So nothing legitimate is refused,
+// and the ceiling is not silently below somebody's working feature.
+//
+// CLAMPED, NOT REFUSED. A 400 here would break a caller that is asking for
+// something reasonable-but-large; clamping gives it a shorter answer, which
+// is the behaviour Anthropic's own max_tokens already has when a model stops
+// early. Nothing about the response shape changes.
+const MAX_TOKENS_CEILING = 4096;
+const DEFAULT_MAX_TOKENS = 1000;
+
+// IN callAnthropic(), NOT in the HTTP handler, and that placement is the
+// whole point. THREE paths reach Anthropic through this module: this file's
+// own handler, api/law-auth.js:596 and api/sc-ai.js:259 -- and the latter two
+// both pass a CLIENT-SUPPLIED `body.max_tokens` through. Capping only the
+// HTTP handler would fix the copy that is easiest to see and leave two others
+// uncapped, which is this repo's own standing lesson about fixing the copy a
+// human invokes and missing the one that runs elsewhere.
+// TYPE-CHECKED BEFORE COERCING, and the first version of this function was
+// not. `Number(true)` is 1 and `Number([5])` is 5, so a bare Number() test
+// accepted a boolean and a single-element array -- `max_tokens: true` came out
+// as a ONE-token ceiling and would have truncated a real answer to nothing.
+// Found by probing the function rather than by reading it. This is verbatim
+// the trap api/_lib/dental-ledger.js's isPositiveMoney() already documents on
+// this platform; the lesson existed and I repeated the bug anyway, which is
+// why it is written here too rather than only there.
+//
+// A non-finite or nonsensical value falls back to the DEFAULT rather than to
+// the ceiling: garbage in should not buy the largest generation available.
+function cappedMaxTokens(requested) {
+  if (typeof requested !== 'number' && typeof requested !== 'string') {
+    return DEFAULT_MAX_TOKENS;
+  }
+  const n = Number(requested);
+  if (!Number.isFinite(n) || n <= 0) return DEFAULT_MAX_TOKENS;
+  return Math.min(Math.floor(n), MAX_TOKENS_CEILING);
+}
+
 function sanitizeTools(tools) {
   if (!Array.isArray(tools)) return undefined;
   const clean = tools
@@ -136,7 +185,7 @@ async function callAnthropic({ system, messages, max_tokens, tools }) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: max_tokens || 1000,
+        max_tokens: cappedMaxTokens(max_tokens),
         system: system || undefined,
         messages: messages,
         tools: sanitizeTools(tools)
@@ -192,44 +241,66 @@ async function claudeProxyHandler(req, res) {
   }
 
   if (is_demo) {
-    // In-memory pre-check, kept deliberately. It is unreliable on its own
-    // (see the KNOWN LIMITATION note at the top of this file) but it is free
-    // and catches repeat traffic hitting the same warm instance without a DB
-    // round trip. It is no longer the only control -- see below.
+    // In-memory pre-check, kept deliberately, and kept INSIDE the is_demo
+    // branch on purpose while the real limiter below moved out. Two reasons:
+    // it is per-instance and documented unreliable, so it was never the
+    // control that mattered; and its refusal shape is `{error:'demo_limit'}`,
+    // which is the demo contract 17 apps parse. Returning that to a paying
+    // SAIRNcash call -- the one path that legitimately sends is_demo:false --
+    // would be a wrong and confusing message about a real subscription.
     const key = getDemoKey(app_id);
     demoCallCounts[key] = (demoCallCounts[key] || 0) + 1;
     if (demoCallCounts[key] > DEMO_DAILY_LIMIT) {
       res.status(200).json({ error: 'demo_limit' });
       return;
     }
+  }
 
-    // The real, persistent, cross-instance limit the KNOWN LIMITATION note
-    // above has always asked for (added 2026-08-20, firewall audit layer 22).
-    // Supabase-backed sliding window, same pattern as api/_lib/courtlistener.js.
-    //
-    // SHIPS IN OBSERVE MODE: 10 of 11 live apps send is_demo:true, and because
-    // the in-memory counter kept resetting, this limit has effectively never
-    // been enforced against real traffic. Enabling enforcement blind would risk
-    // a platform-wide outage on a threshold nobody has measured. It records and
-    // reports instead, until SAIRN_AI_RATE_LIMIT_MODE=enforce is set
-    // deliberately. Fails open on any infrastructure problem.
-    const rl = await checkAiRateLimit(app_id);
-    if (!rl.allowed) {
+  // ── THE REAL LIMITER NOW RUNS FOR EVERY REQUEST (2026-09-05) ─────────────
+  // It used to sit inside `if (is_demo)`, and `is_demo` COMES FROM THE REQUEST
+  // BODY. So the one persistent, cross-instance cost control on this endpoint
+  // could be switched off by the caller: send is_demo:false and both limiters
+  // were skipped entirely, straight through to Anthropic on this platform's
+  // own API key. A control a client can opt out of is not a control.
+  //
+  // BE CLEAR ABOUT WHAT THIS DOES AND DOES NOT DO TODAY. The limiter ships in
+  // OBSERVE mode (SAIRN_AI_RATE_LIMIT_MODE), so `allowed` is currently always
+  // true and it fails open besides -- it is a COST control, not a security
+  // control, and that stays. Moving it here does not refuse anything today.
+  // What it does is make the control REACHABLE on every path, so that when
+  // enforcement is switched on it cannot be bypassed by a flag the caller
+  // sets. Without this, flipping to enforce would have capped honest demo
+  // traffic while leaving anyone who sends is_demo:false completely uncapped
+  // -- the limit would have looked real and protected nothing.
+  //
+  // IT ALSO CLOSES THE FILE'S OWN "HONEST SCOPE" GAP further down: usageRowId
+  // only ever existed on the demo path, so a non-demo call was absent from the
+  // usage table entirely rather than present with null tokens. Now every call
+  // that gets a row gets its cost recorded.
+  const rl = await checkAiRateLimit(app_id);
+  if (!rl.allowed) {
+    // The demo contract is preserved exactly for demo callers. A non-demo
+    // caller gets a real 429 instead, because telling a paying subscriber they
+    // hit a "demo limit" would be false.
+    if (is_demo) {
       res.status(200).json({ error: 'demo_limit' });
-      return;
+    } else {
+      res.status(429).json({ error: { code: 'AI_RATE_LIMIT',
+        message: 'This app has reached its AI request limit for today. Try again tomorrow.' } });
     }
-    usageRowId = rl.rowId;
-    // The limiter fails OPEN by design -- it is a cost control, not a security
-    // control -- but until 2026-09-04 it did so silently, so an unreachable
-    // counter and a healthy one produced identical responses. `degraded` says
-    // the allow was the ABSENCE of a decision rather than one. Recorded on the
-    // response the same way api/sc-ai.js reports `audited`.
-    rateLimitDegraded = !!rl.degraded;
-    rateLimitDegradedReason = rl.degraded_reason || null;
-    if (rateLimitDegraded) {
-      console.error('api/claude: AI rate limit NOT ENFORCED for app_id=' + app_id +
-        ' (' + rateLimitDegradedReason + ') -- request allowed');
-    }
+    return;
+  }
+  usageRowId = rl.rowId;
+  // The limiter fails OPEN by design -- it is a cost control, not a security
+  // control -- but until 2026-09-04 it did so silently, so an unreachable
+  // counter and a healthy one produced identical responses. `degraded` says
+  // the allow was the ABSENCE of a decision rather than one. Recorded on the
+  // response the same way api/sc-ai.js reports `audited`.
+  rateLimitDegraded = !!rl.degraded;
+  rateLimitDegradedReason = rl.degraded_reason || null;
+  if (rateLimitDegraded) {
+    console.error('api/claude: AI rate limit NOT ENFORCED for app_id=' + app_id +
+      ' (' + rateLimitDegradedReason + ') -- request allowed');
   }
 
   const result = await callAnthropic({ system, messages, max_tokens, tools });
@@ -277,4 +348,6 @@ claudeProxyHandler.callAnthropic = callAnthropic;
 claudeProxyHandler.getDemoKey = getDemoKey;
 claudeProxyHandler.demoCallCounts = demoCallCounts;
 claudeProxyHandler.DEMO_DAILY_LIMIT = DEMO_DAILY_LIMIT;
+claudeProxyHandler.cappedMaxTokens = cappedMaxTokens;
+claudeProxyHandler.MAX_TOKENS_CEILING = MAX_TOKENS_CEILING;
 module.exports = claudeProxyHandler;
