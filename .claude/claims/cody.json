@@ -636,8 +636,8 @@
       "task": "research distributed limiter versus vercel firewall rule",
       "claimed_at": "2026-09-08T12:06:56Z",
       "claimed_at_epoch": 1788869216.7655714,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:12:20Z"
     }
   ]
 }
