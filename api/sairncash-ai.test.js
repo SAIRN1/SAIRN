@@ -180,16 +180,27 @@ t('Stripe\'s own error text never reaches the caller', async () => {
     'the Stripe key prefix leaked to the caller');
 });
 
-t('an upstream Stripe failure does NOT silently fall through to the trial path', async () => {
-  // A caller holding a real trial token and a junk subscriptionId must not be
-  // able to turn a Stripe outage into a free pass -- but more importantly, an
-  // outage must not be reported as "no subscription", which would send a paying
-  // customer to the signup screen.
+t('a VALID TRIAL still works while Stripe is down -- an independent credential '
+  + 'must not be suppressed by an unrelated outage', async () => {
+  // CORRECTED after live-probing production, where this stopped being
+  // hypothetical: the Stripe key there does not work, and the first version of
+  // this file let that take the assistant away from trial users too.
   stripeThrows = true;
   trialRow = { status: 'active', expires_at: new Date(Date.now() + 86400000).toISOString() };
   const r = await call({ subscriptionId: 'sub_1', trialToken: 'tok', messages: MSG });
   stripeThrows = false; trialRow = null;
-  assert.strictEqual(r.status, 503, 'an outage was reported as something else: ' + JSON.stringify(r.body));
+  assert.strictEqual(r.status, 200, 'a Stripe outage blocked a valid trial: ' + JSON.stringify(r.body));
+});
+
+t('but with NO valid trial, a Stripe outage is still reported as an outage -- '
+  + 'never as "your subscription is not valid"', async () => {
+  stripeThrows = true;
+  trialRow = null;
+  const r = await call({ subscriptionId: 'sub_1', trialToken: 'tok', messages: MSG });
+  stripeThrows = false;
+  assert.strictEqual(r.status, 503, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'VERIFY_UNAVAILABLE');
+  assert.strictEqual(r.spent, 0);
 });
 
 section('--- a subscription that does not exist is NOT an outage ---');

@@ -134,11 +134,30 @@ module.exports = async (req, res) => {
   // from a well-formed one, or learn what this endpoint expects, by which
   // refusal comes back. The 405 above stays first because it says nothing
   // about what exists.
+  // THE TRIAL IS TRIED EVEN WHEN STRIPE IS DOWN, and that is a correction to
+  // this file's first version. A trial token is an INDEPENDENT credential
+  // checked against a different system, so letting a Stripe outage suppress it
+  // takes the assistant away from trial users for no reason at all. What the
+  // outage must still change is the ANSWER when nothing else authenticates: a
+  // caller whose Stripe lookup failed gets the 503, never the 401, because
+  // "your subscription is not valid" would be a claim this endpoint cannot
+  // support while it cannot reach Stripe.
+  //
+  // THIS IS NOT HYPOTHETICAL AS OF 2026-09-05: production's Stripe key does not
+  // work -- api/sairncash/verify.js answers 500 from its catch, and
+  // api/sairncash/checkout.js reports 'Stripe not configured' on its separate
+  // STRIPE_PRICE_ID check. Under the first version of this file, that state
+  // took SAIRNcash's assistant away from trial users too.
   let auth = { ok: false };
-  if (subscriptionId) auth = await subscriptionActive(subscriptionId);
-  if (!auth.ok && auth.reason !== 'UPSTREAM' && auth.reason !== 'CONFIG' && trialToken) {
-    auth = await trialActive(trialToken);
+  let subReason;
+  if (subscriptionId) {
+    auth = await subscriptionActive(subscriptionId);
+    if (!auth.ok) subReason = auth.reason;
   }
+  if (!auth.ok && trialToken) auth = await trialActive(trialToken);
+  // An upstream failure on EITHER check outranks a plain "no", so a caller is
+  // never told their credential is invalid on the strength of an outage.
+  if (!auth.ok && !auth.reason && subReason) auth = { ok: false, reason: subReason };
 
   if (!auth.ok) {
     if (auth.reason === 'CONFIG') {
