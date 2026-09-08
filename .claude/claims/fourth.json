@@ -580,8 +580,8 @@
       "task": "envelope gate above licence validation",
       "claimed_at": "2026-09-08T12:48:00Z",
       "claimed_at_epoch": 1788871680.432273,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T13:00:07Z"
     }
   ]
 }
