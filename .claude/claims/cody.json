@@ -638,6 +638,16 @@
       "claimed_at_epoch": 1788869216.7655714,
       "status": "released",
       "released_at": "2026-09-08T12:12:20Z"
+    },
+    {
+      "id": "cody-1788869666",
+      "session": "cody",
+      "subject": "waf-log-mode-rule",
+      "task": "stage firewall rate limit log action and checker",
+      "claimed_at": "2026-09-08T12:14:26Z",
+      "claimed_at_epoch": 1788869666.4629629,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
