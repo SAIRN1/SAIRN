@@ -644,6 +644,16 @@
       "claimed_at_epoch": 1788879904.721814,
       "status": "released",
       "released_at": "2026-09-08T15:23:37Z"
+    },
+    {
+      "id": "cc-1788881321",
+      "session": "cc",
+      "subject": "negative-control-claims-audit",
+      "task": "sweep index rows claiming probe counts and spot-check them",
+      "claimed_at": "2026-09-08T15:28:41Z",
+      "claimed_at_epoch": 1788881321.1363397,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
