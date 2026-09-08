@@ -1283,7 +1283,14 @@ function dntLicenseKey(){ return localStorage.getItem('dnt_license_key') || ''; 
 // sdnData()-equivalent, matches every other app's pattern exactly.
 function sdnData(action,resource,payload){
   var lic=dntLicenseKey();
-  if(!lic)return Promise.resolve(null);
+  // NO LICENCE IS ITS OWN REASON, AND IT USED TO INHERIT SOMEBODY ELSE'S.
+  // This branch returned null without touching dntLastErr, so a message left
+  // over from an earlier, unrelated failure of the SAME resource was still
+  // sitting there and got shown as the explanation. A stale server sentence
+  // reads as a real diagnosis and is worse than the generic fallback.
+  // No `status`, deliberately: no server answered, so dntLastErrText() must
+  // stay quiet and the caller's own fallback must be what speaks.
+  if(!lic){dntLastErr[resource]={code:'NO_LICENCE',message:''};return Promise.resolve(null);}
   return fetch(DATA_API,{
     method:'POST',
     // TWO secrets, TWO headers, deliberately: the licence identifies the
@@ -1298,7 +1305,11 @@ function sdnData(action,resource,payload){
         // without this the caller cannot tell "you are not linked to a provider
         // yet" (fixable, and the owner can fix it) from "the network is down".
         // Both used to render as the same silent nothing.
-        dntLastErr[resource]={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||''};
+        // `status` IS THE FLAG THAT SAYS A SERVER ANSWERED. It is recorded for
+        // no other purpose and read by exactly two functions below. Its
+        // ABSENCE, on the catch path and the no-licence path, is what marks a
+        // message as browser-authored.
+        dntLastErr[resource]={code:(d&&d.error&&d.error.code)||('HTTP_'+r.status),message:(d&&d.error&&d.error.message)||'',status:r.status};
         console.warn('sdnData '+resource+' failed ('+r.status+'):',dntLastErr[resource].code);
         return null;
       }
@@ -1309,7 +1320,38 @@ function sdnData(action,resource,payload){
 }
 var dntLastErr={};
 function dntLastErrCode(resource){return dntLastErr[resource]?dntLastErr[resource].code:'';}
-function dntLastErrText(resource){return dntLastErr[resource]?dntLastErr[resource].message:'';}
+// ── ONLY THE SERVER'S OWN WORDS COME OUT OF HERE (2026-09-05) ─────────────
+// This returned dntLastErr[resource].message unconditionally, and on the
+// .catch path that message is a RAW BROWSER EXCEPTION -- `e.message` from a
+// fetch rejection. So an offline save showed the receptionist "Failed to
+// fetch", and a Vercel HTML error page showed "Unexpected token '<'... is not
+// valid JSON", because r.json() rejects into the same catch.
+//
+// THE HARM IS NOT THE UGLY STRING, IT IS WHAT THE STRING DISPLACED. Every
+// caller is written `dntLastErrText(x)||fallback`, and for dnt_charges and
+// dnt_payments that fallback is the sentence carrying the only thing that
+// matters -- nothing was recorded on this device or the server. A truthy
+// exception string replaced it, so the one fact the person needed never
+// appeared. Found by Fourth's independent review of 569b2689, not by me.
+//
+// Fixed HERE rather than in dntWriteFailText(), which is where the review
+// found it: five call sites use this function directly with their own
+// `||fallback` and had the identical hole. Fixing the helper alone would have
+// closed it in the copy you are more likely to look at.
+function dntLastErrText(resource){
+  var e=dntLastErr[resource];
+  return (e&&e.status)?e.message:'';
+}
+// ── REFUSED IS A JUDGEMENT THE SERVER MADE; EVERYTHING ELSE IS NOT ────────
+// A 4xx (or a 200 carrying ok:false) means the server LOOKED at the row and
+// rejected it -- keeping it locally would put a charge in this device's ledger
+// that the server does not have. A network failure, an HTML error page, a 5xx,
+// or no licence on this device all mean the row was NEVER LOOKED AT, and
+// discarding it loses money the practice really took.
+function dntWriteRefused(resource){
+  var e=dntLastErr[resource];
+  return !!(e&&e.status&&e.status<500);
+}
 // ── WHAT TO SAY WHEN A WRITE DID NOT LAND (2026-09-04) ────────────────────
 // Seventeen save paths in this file reported EVERY failure as
 //   "Saved on this device only -- server sync not yet enabled for this app"
@@ -2979,7 +3021,14 @@ async function setAppointmentStatus(id,status){
   if($('panel-appointments'))rAppointments();
   var syncResult=await sdnData('write','dnt_appointments',a);
   toast(syncResult?('Appointment '+status.toLowerCase()):dntWriteFailText('dnt_appointments','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
-  return a;
+  // RETURNS WHETHER IT LANDED, added 2026-09-05. It returned the appointment
+  // alone, so submitCompleteVisit() could not tell a synced status change from
+  // a local-only one and announced success either way -- see there.
+  // Deliberately still LOCAL-FIRST above: confirm/reject share this function
+  // and the honest failure toast already says the row is on this device only.
+  // Making appointment writes server-first is a behaviour change for three
+  // callers and is not this fix.
+  return {appt:a, syncResult:syncResult};
 }
 function confirmAppointment(id){setAppointmentStatus(id,'Confirmed');}
 function rejectAppointment(id){setAppointmentStatus(id,'Cancelled');}
@@ -3044,9 +3093,34 @@ async function submitCompleteVisit(){
   // says "Visit completed, charge added" -- and completing the appointment
   // while the charge went nowhere is a visit that looks billed and is not.
   // Keeping the modal open leaves the amount in the box to correct.
-  if(!result.syncResult){toast(dntWriteFailText('dnt_charges','The charge was not saved, so the visit was not marked completed.'),9000);return;}
+  if(!result.syncResult){
+    toast(result.refused
+      ? dntWriteFailText('dnt_charges','The charge was not saved, so the visit was not marked completed.')
+      : (result.kept
+        ? 'The charge was recorded on THIS DEVICE ONLY and the visit was not marked completed -- the server could not be reached.'
+        : 'The charge was NOT saved anywhere and the visit was not marked completed -- the server could not be reached and this device could not store it either.'),
+      9000);
+    return;
+  }
   closeCompleteVisitModal();
-  await setAppointmentStatus(a.id,'Completed');
+  // THE APPOINTMENT HALF WAS NEVER CHECKED, and the toast below overwrote the
+  // honest one. Found by Fourth's independent review of 569b2689: that commit
+  // tightened the CHARGE half of this exact function and left this half alone.
+  // toast() is a single element setting textContent, so the last call wins --
+  // setAppointmentStatus() said "Saved on this device only" and a quarter of a
+  // second later this line said "Visit completed, charge added" over the top
+  // of it. The visit then read Completed here and Confirmed everywhere else,
+  // with a charge attached and nobody told.
+  var appt=await setAppointmentStatus(a.id,'Completed');
+  if(!appt||!appt.syncResult){
+    // Deliberately replaces setAppointmentStatus()'s generic message rather
+    // than leaving it: that one does not mention the charge, and the charge
+    // landing while the status did not is the thing that needs saying.
+    toast('The charge WAS recorded. The VISIT STATUS was not -- '+
+      dntWriteFailText('dnt_appointments','the server did not accept it')+
+      ' It still reads as Confirmed on every other workstation; mark it completed again from the Appointments panel.',10000);
+    return;
+  }
   toast('Visit completed, charge added');
 }
 
@@ -4481,7 +4555,19 @@ async function submitCharge(){
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addChargeEntry(patientId,'',procId,amount);
   rBilling();
-  if(!result.syncResult){toast(dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.'),8000);return;}
+  if(!result.syncResult){
+    // TWO DIFFERENT FACTS, AND THEY USED TO SHARE ONE SENTENCE. Refused means
+    // the server read it and said no, so nothing is stored and the amount stays
+    // in the box. Unreachable means it is in this device's ledger and nowhere
+    // else -- which is not "saved", and is not "lost" either.
+    toast(result.refused
+      ? dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.')
+      : (result.kept
+        ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.'
+        : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.'),
+      9000);
+    return;
+  }
   toast('Charge added');
 }
 async function submitPayment(){
@@ -4492,7 +4578,26 @@ async function submitPayment(){
   if(!amount||amount<=0){toast('Enter a real amount');return;}
   var result=await addPaymentEntry(patientId,amount,method);
   rBilling();
-  if(!result.syncResult){toast(dntWriteFailText('dnt_payments','The payment was not saved -- nothing was recorded on this device or the server.'),8000);return;}
+  if(!result.syncResult){
+    if(result.refused){
+      // Nothing was stored anywhere, so the amount stays in the box to correct
+      // rather than going away with the message.
+      toast(dntWriteFailText('dnt_payments','The payment was not saved -- nothing was recorded on this device or the server.'),9000);
+      return;
+    }
+    if(!result.kept){
+      // Neither the server nor this device took it. The amount stays in the
+      // box for the same reason a refusal leaves it there.
+      toast('The payment was NOT saved anywhere -- the server could not be reached and this device could not store it either.',9000);
+      return;
+    }
+    // It IS in this device's ledger, so the box is cleared: re-entering would
+    // DOUBLE the payment, because a second entry gets a new id and
+    // dntMergeById() keeps both rows.
+    $('pm-add-amount').value='';
+    toast('Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.',9000);
+    return;
+  }
   // Cleared only after it really landed, so a refused amount is still in the
   // box to correct rather than gone with the message.
   $('pm-add-amount').value='';
@@ -4768,23 +4873,50 @@ function patientBalance(patientId){
 // or payment the server does not have. Adding a refusal without moving the
 // local write would have been a worse state than no refusal at all.
 //
+// SERVER-FIRST WAS RIGHT AND "DROP IT ON ANY NULL" WAS NOT -- corrected
+// 2026-09-05 after Fourth's independent review of 569b2689. Both functions
+// returned early on ANY null from sdnData(), and null is also what a downed
+// network, an HTML error page, a 5xx and a missing licence key return. So a
+// practice on a flaky connection LOST every charge and payment it entered --
+// no local row, no server row, nothing to re-read. The refusal I added that
+// morning was worth having; discarding a row the server never even saw was
+// not, and the two were indistinguishable to these callers.
+//
+// dntWriteRefused() is the distinction, and it is only ever consulted when the
+// write already failed. A REFUSED row is still stored nowhere -- that half is
+// unchanged and its probes still bite.
+//
+// A KEPT ROW IS LOCAL-ONLY AND STAYS THAT WAY. There is no outbound retry
+// queue in this app; dntSyncFromServer() only READS. The row survives a sync
+// (dntMergeById is additive and never drops a local-only id) and will never
+// upload by itself, so the caller must SAY that rather than let it read as
+// saved. Recorded as its own open-work row rather than invented here.
+//
 // The row is returned either way so the caller can name it; syncResult is null
-// when nothing was stored anywhere, and the caller says why using
-// dntWriteFailText(), which carries the server's own words.
+// whenever the server did not take it, `refused` says whether that was a
+// judgement, and the caller says why using dntWriteFailText(), which carries
+// the server's own words.
 async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount){
   var pt=patients().find(function(p){return p.id===patientId;});
   var est=computeEstimatedInsurance(amount, pt?pt.insurance_payer:'', procedureTypeId);
   var rec={id:newId('CH'), patient_id:patientId, appointment_id:appointmentId||'', procedure_type_id:procedureTypeId,
     amount:Number(amount)||0, estimated_insurance_portion:est.amount, date:dntLocalToday()};
   var syncResult=await sdnData('write','dnt_charges',rec);
-  if(syncResult){var list=charges();list.push(rec);st('dnt_charges_list',list);}
-  return {rec:rec, coverageFound:est.found, syncResult:syncResult};
+  var refused=!syncResult&&dntWriteRefused('dnt_charges');
+  // st()'s RETURN IS READ, because keeping a row locally is now a claim this
+  // function makes and a full localStorage would make it false. It was safe to
+  // ignore while a kept row implied the server already had it; it is not now.
+  var kept=false;
+  if(syncResult||!refused){var list=charges();list.push(rec);kept=st('dnt_charges_list',list);}
+  return {rec:rec, coverageFound:est.found, syncResult:syncResult, refused:refused, kept:kept};
 }
 async function addPaymentEntry(patientId, amount, method){
   var rec={id:newId('PM'), patient_id:patientId, amount:Number(amount)||0, method:method, date:dntLocalToday()};
   var syncResult=await sdnData('write','dnt_payments',rec);
-  if(syncResult){var list=payments();list.push(rec);st('dnt_payments_list',list);}
-  return {rec:rec, syncResult:syncResult};
+  var refused=!syncResult&&dntWriteRefused('dnt_payments');
+  var kept=false;
+  if(syncResult||!refused){var list=payments();list.push(rec);kept=st('dnt_payments_list',list);}
+  return {rec:rec, syncResult:syncResult, refused:refused, kept:kept};
 }
 
 function rDash(){

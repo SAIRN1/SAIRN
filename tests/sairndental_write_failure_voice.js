@@ -87,7 +87,29 @@ test('each write path names the resource it actually writes', () => {
   // A helper called with the wrong resource returns another resource's stale
   // message -- which reads as a real explanation and is worse than a generic
   // one, so the pairing is what gets asserted, not the presence of the call.
+  //
+  // IT ONLY SAW DIRECT WRITERS UNTIL 2026-09-05, and a mutation probe is what
+  // said so. Changing submitCharge to ask for 'dnt_payments' -- exactly the
+  // defect this test exists to catch, in the function that reports the CHARGE
+  // ledger -- left it green, because submitCharge contains no sdnData('write')
+  // of its own; it calls addChargeEntry(). So the three functions carrying the
+  // ledger's failure sentences were outside the walk entirely. A second hole
+  // in the same walk as Fourth's finding 4, found by probing rather than by
+  // reading, and the walk now follows ONE level of helper call. The map is
+  // derived from the file, not listed here, so a new helper is covered by
+  // existing it rather than by remembering to add it.
   const re = /(?:async\s+)?function\s+(\w+)\s*\(/g;
+  const writesOf = {};
+  {
+    let d;
+    const dre = /(?:async\s+)?function\s+(\w+)\s*\(/g;
+    while ((d = dre.exec(html)) !== null) {
+      let b;
+      try { b = fnBodyAt(d.index); } catch (e) { continue; }
+      const w = [...stripComments(b).matchAll(/sdnData\('write','(dnt_\w+)'/g)].map((x) => x[1]);
+      if (w.length) writesOf[d[1]] = w;
+    }
+  }
   let m, checked = 0;
   const problems = [];
   while ((m = re.exec(html)) !== null) {
@@ -95,14 +117,39 @@ test('each write path names the resource it actually writes', () => {
     try { body = fnBodyAt(m.index); } catch (e) { continue; }
     const code = stripComments(body);
     const writes = [...code.matchAll(/sdnData\('write','(dnt_\w+)'/g)].map((x) => x[1]);
+    Object.keys(writesOf).forEach((helper) => {
+      if (helper === m[1]) return;
+      if (new RegExp('\\b' + helper + '\\s*\\(').test(code)) {
+        writesOf[helper].forEach((w) => { if (writes.indexOf(w) === -1) writes.push(w); });
+      }
+    });
     if (!writes.length) continue;
     if (code.indexOf('syncResult?') === -1 && code.indexOf('!result.syncResult') === -1
         && code.indexOf('!syncResult') === -1) continue;
-    const asked = [...code.matchAll(/dntWriteFailText\('(dnt_\w+)'/g)].map((x) => x[1]);
+    // TIGHTENED 2026-09-05, on Fourth's finding 4. This used to exempt any
+    // function containing the BARE STRING 'dntLastErrText(' without looking at
+    // which resource it asked for -- so a path could ask for another resource
+    // entirely and pass. The four paths that took the exemption were
+    // hand-checked as correct at the time, which is exactly the kind of fact
+    // that stops being true without anyone noticing. Both helpers are now
+    // collected and both are checked against what the function writes.
+    const asked = [...code.matchAll(/dntWriteFailText\('(dnt_\w+)'/g)].map((x) => x[1])
+      .concat([...code.matchAll(/dntLastErrText\('(dnt_\w+)'/g)].map((x) => x[1]));
     if (!asked.length) {
-      // Some paths surface the error another way (dntLastErrText directly, or
-      // a dedicated writer). Those are fine; a path that reports NOTHING is not.
-      if (code.indexOf('dntLastErrText(') === -1 && code.indexOf('dntSettingsWrite(') === -1) {
+      // A dedicated writer surfaces the error itself. A path that reports
+      // NOTHING is not fine, and neither is one that asks with a variable --
+      // this walk cannot check that pairing, so it must not silently pass it.
+      //
+      // THE ONE HONEST EXEMPTION: a helper that HANDS THE OUTCOME BACK. Adding
+      // `refused` to addChargeEntry/addPaymentEntry on 2026-09-05 put the token
+      // `!syncResult` in their bodies, which pulled two functions into this walk
+      // that deliberately say nothing -- they return {syncResult, refused} and
+      // their callers do the talking. Written as a named exemption rather than
+      // by loosening the entry condition, because the callers are asserted
+      // separately below and this must not become a way for a silent path to
+      // pass.
+      const handsBack = /return\s*\{[^}]*syncResult:/.test(code);
+      if (!handsBack && code.indexOf('dntSettingsWrite(') === -1) {
         problems.push(m[1] + ' writes ' + writes.join('/') + ' and reports no real reason on failure');
       }
       continue;
@@ -125,44 +172,195 @@ test('the helper falls back rather than showing an empty toast', () => {
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-section('the two ledger writes I made refusable do not keep a refused row');
+// THE HARNESS RUNS THE REAL sdnData(), NOT A STUB THAT RETURNS null.
+//
+// The previous version stubbed sdnData to `Promise.resolve(refuse ? null : x)`,
+// which encoded the very assumption Fourth's review overturned: that every null
+// means the same thing. A stub written in the shape I already believed could
+// never have caught it. So the fake is one layer lower -- at fetch() -- and the
+// classification code under test is the file's own.
+//
+// (The same lesson landed the same week on the write-without-readback checker:
+// hand-verifying with the tool's own grep reproduced its blind spot instead of
+// testing it. A check that shares the assumption verifies nothing.)
+section('sdnData tells a REFUSAL from a row the server never saw');
 
-function ledgerHarness(opts) {
+const MODES = {
+  accepted: () => Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ ok: true, data: [{ id: 'X' }] }) }),
+  // A real 400 from api/sd-data.js: the server looked at the row and said no,
+  // in its own words, which are worth showing.
+  refused: () => Promise.resolve({
+    ok: false, status: 400,
+    json: () => Promise.resolve({ ok: false, error: { code: 'INVALID_PAYMENT', message: 'A payment amount must be a number greater than zero.' } }),
+  }),
+  // A Vercel HTML error page. r.json() REJECTS, so this lands in the same
+  // .catch as an offline save and used to render as "Unexpected token '<'".
+  htmlErrorPage: () => Promise.resolve({
+    ok: false, status: 500,
+    json: () => Promise.reject(new SyntaxError('Unexpected token \'<\', "<!DOCTYPE "... is not valid JSON')),
+  }),
+  offline: () => Promise.reject(new TypeError('Failed to fetch')),
+  // A 5xx that DOES parse. The server errored; it did not judge the row.
+  serverError: () => Promise.resolve({ ok: false, status: 503, json: () => Promise.resolve({ ok: false }) }),
+};
+
+function harness(mode, opts) {
   opts = opts || {};
-  const calls = { sent: [], stored: [] };
+  const calls = { sent: [], stored: [], warned: [] };
   const ctx = {
-    JSON, Object, Array, Number, Math, Promise,
+    JSON, Object, Array, Number, Math, Promise, SyntaxError, TypeError,
+    console: { warn: (...a) => calls.warned.push(a.join(' ')), error: () => {} },
+    DATA_API: '/api/sd-data', APP_ID: 'sairndental',
+    dntHeaders: () => ({}),
+    dntLicenseKey: () => (opts.noLicence ? '' : 'DNT-TEST-2026'),
+    fetch: () => MODES[mode](),
+    dntLastErr: {},
     patients: () => [{ id: 'PT-1', insurance_payer: 'Delta' }],
     computeEstimatedInsurance: () => ({ amount: 40, found: true }),
     charges: () => [], payments: () => [],
-    st: (k, v) => { calls.stored.push({ key: k, rows: v.length }); return true; },
+    st: (k, v) => { calls.stored.push({ key: k, rows: v.length }); return !opts.storageFull; },
     newId: (p) => p + '-1',
-    dntLocalToday: () => '2026-09-04',
-    sdnData: (a, r, payload) => { calls.sent.push({ resource: r, payload }); return Promise.resolve(opts.refuse ? null : payload); },
+    dntLocalToday: () => '2026-09-05',
     __calls: calls,
   };
   vm.createContext(ctx);
-  vm.runInContext(fnBody('async function addChargeEntry(') + '\n' + fnBody('async function addPaymentEntry('), ctx);
+  vm.runInContext([
+    fnBody('function sdnData('),
+    fnBody('function dntLastErrCode('),
+    fnBody('function dntLastErrText('),
+    fnBody('function dntWriteRefused('),
+    fnBody('function dntWriteFailText('),
+    fnBody('async function addChargeEntry('),
+    fnBody('async function addPaymentEntry('),
+  ].join('\n'), ctx);
   return ctx;
 }
 
+test('an OFFLINE save never shows the raw browser exception', async () => {
+  const c = harness('offline');
+  await c.sdnData('write', 'dnt_charges', { id: 'CH-1' });
+  assert.strictEqual(c.dntLastErrCode('dnt_charges'), 'NETWORK', 'the code should still record what happened');
+  assert.strictEqual(c.dntLastErrText('dnt_charges'), '',
+    'a fetch rejection reached the user as "Failed to fetch" instead of the sentence saying nothing was saved');
+  const shown = c.dntWriteFailText('dnt_charges', 'The charge was not saved -- nothing was recorded on this device or the server.');
+  assert.strictEqual(shown.indexOf('Failed to fetch'), -1, 'the exception displaced the fallback');
+  assert.match(shown, /nothing was recorded/);
+  assert.ok(c.__calls.warned.join(' ').indexOf('Failed to fetch') >= 0,
+    'the exception should still be in the console -- suppressed for the user, not destroyed');
+});
+
+test('a Vercel HTML error page does not become the message either', async () => {
+  const c = harness('htmlErrorPage');
+  await c.sdnData('write', 'dnt_payments', { id: 'PM-1' });
+  assert.strictEqual(c.dntLastErrText('dnt_payments'), '');
+  const shown = c.dntWriteFailText('dnt_payments', 'The payment was not saved -- nothing was recorded on this device or the server.');
+  assert.strictEqual(shown.indexOf('not valid JSON'), -1);
+  assert.match(shown, /nothing was recorded/);
+});
+
+test("a REFUSAL still shows the server's own words -- that half must not regress", async () => {
+  const c = harness('refused');
+  await c.sdnData('write', 'dnt_payments', { id: 'PM-1' });
+  assert.strictEqual(c.dntLastErrText('dnt_payments'), 'A payment amount must be a number greater than zero.');
+  assert.strictEqual(c.dntWriteFailText('dnt_payments', 'generic'), 'A payment amount must be a number greater than zero.');
+  assert.strictEqual(c.dntWriteRefused('dnt_payments'), true);
+});
+
+test('NETWORK, a 5xx and an HTML page are all NOT refusals', async () => {
+  for (const mode of ['offline', 'htmlErrorPage', 'serverError']) {
+    const c = harness(mode);
+    await c.sdnData('write', 'dnt_charges', { id: 'CH-1' });
+    assert.strictEqual(c.dntWriteRefused('dnt_charges'), false, mode + ' was classed as a refusal');
+  }
+});
+
+test('no licence does not inherit an earlier failure of the same resource', async () => {
+  // Fourth's finding 4, second half: this branch returned null without touching
+  // dntLastErr, so a stale server sentence was shown as the reason.
+  const c = harness('refused');
+  await c.sdnData('write', 'dnt_payments', { id: 'PM-1' });
+  assert.strictEqual(c.dntLastErrText('dnt_payments'), 'A payment amount must be a number greater than zero.');
+  c.dntLicenseKey = () => '';
+  await c.sdnData('write', 'dnt_payments', { id: 'PM-2' });
+  assert.strictEqual(c.dntLastErrCode('dnt_payments'), 'NO_LICENCE');
+  assert.strictEqual(c.dntLastErrText('dnt_payments'), '',
+    "the previous refusal's sentence was shown as the reason for an unrelated failure");
+  assert.strictEqual(c.dntWriteRefused('dnt_payments'), false);
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('a REFUSED row is kept nowhere; a row the server never saw is not lost');
+
 test('a REFUSED charge is stored nowhere', async () => {
-  const c = ledgerHarness({ refuse: true });
+  const c = harness('refused');
   const r = await c.addChargeEntry('PT-1', '', 'PR-1', 100);
   assert.strictEqual(r.syncResult, null);
+  assert.strictEqual(r.refused, true);
   assert.strictEqual(c.__calls.stored.length, 0,
     'a charge the server refused stayed in this device ledger -- patientBalance() and dnAging() would count it');
 });
 
 test('a REFUSED payment is stored nowhere', async () => {
-  const c = ledgerHarness({ refuse: true });
+  const c = harness('refused');
   const r = await c.addPaymentEntry('PT-1', 100, 'Cash');
   assert.strictEqual(r.syncResult, null);
+  assert.strictEqual(r.refused, true);
   assert.strictEqual(c.__calls.stored.length, 0);
 });
 
+test('an OFFLINE charge is KEPT locally rather than dropped', async () => {
+  // The defect Fourth found: a practice on a flaky connection lost every charge
+  // and payment it entered, because addChargeEntry returned early on ANY null.
+  const c = harness('offline');
+  const r = await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(r.syncResult, null);
+  assert.strictEqual(r.refused, false);
+  assert.deepStrictEqual(c.__calls.stored.map((x) => x.key), ['dnt_charges_list'],
+    'the charge was lost -- not on the server, not on the device, nowhere');
+});
+
+test('an OFFLINE payment is KEPT locally rather than dropped', async () => {
+  const c = harness('offline');
+  const r = await c.addPaymentEntry('PT-1', 100, 'Cash');
+  assert.strictEqual(r.refused, false);
+  assert.deepStrictEqual(c.__calls.stored.map((x) => x.key), ['dnt_payments_list']);
+});
+
+test('a 5xx and a missing licence keep the row too', async () => {
+  const a = harness('serverError');
+  await a.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(a.__calls.stored.length, 1, 'a 5xx dropped the charge');
+  const b = harness('accepted', { noLicence: true });
+  await b.addPaymentEntry('PT-1', 100, 'Cash');
+  assert.strictEqual(b.__calls.stored.length, 1, 'an unlicensed device dropped the payment');
+});
+
+test('KEEPING a row is a claim, and a full localStorage makes it false', async () => {
+  // Introduced BY this fix and closed in the same pass: "recorded on this
+  // device only" is a promise about local storage, and st() can fail. It was
+  // safe to ignore its return while a kept row implied the server already had
+  // it. It is not safe now.
+  const ok = harness('offline');
+  const r1 = await ok.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(r1.kept, true);
+  const full = harness('offline', { storageFull: true });
+  const r2 = await full.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.strictEqual(r2.kept, false, 'a failed local write still reported the row as kept');
+  const p = await harness('offline', { storageFull: true }).addPaymentEntry('PT-1', 100, 'Cash');
+  assert.strictEqual(p.kept, false);
+});
+
+test('all three ledger callers read `kept` before promising the device has it', () => {
+  ['async function submitCharge()', 'async function submitPayment()', 'async function submitCompleteVisit()'].forEach((f) => {
+    const code = stripComments(fnBody(f));
+    assert.ok(code.indexOf('result.kept') > 0,
+      f + ' says the row is on this device without checking that it landed there');
+    assert.match(code, /NOT saved anywhere/, f + ' has no sentence for "nowhere at all"');
+  });
+});
+
 test('an ACCEPTED charge and payment are both stored', async () => {
-  const c = ledgerHarness({});
+  const c = harness('accepted');
   await c.addChargeEntry('PT-1', '', 'PR-1', 100);
   await c.addPaymentEntry('PT-1', 100, 'Cash');
   assert.deepStrictEqual(c.__calls.stored.map((x) => x.key), ['dnt_charges_list', 'dnt_payments_list']);
@@ -192,18 +390,85 @@ test('a refused visit charge does NOT mark the appointment completed', () => {
   assert.match(code, /was not marked completed/, 'the message does not say the visit was left alone');
 });
 
-test('a refused payment leaves the amount in the box to correct', () => {
+test('a REFUSED payment leaves the amount in the box; a kept one clears it', () => {
   const code = stripComments(fnBody('async function submitPayment()'));
   const guard = code.indexOf('if(!result.syncResult)');
+  const refusedBranch = code.indexOf('if(result.refused)');
   const clear = code.indexOf("$('pm-add-amount').value=''");
   assert.ok(guard > 0 && clear > guard,
     'the input is cleared before the write is known to have landed -- the amount is gone with the message');
+  // Tighter than the index check above, which would pass even if the refused
+  // path cleared the box: the refused branch must RETURN before any clear.
+  assert.ok(refusedBranch > 0, 'submitPayment no longer tells a refusal from an unreachable server');
+  const refusedBody = code.slice(refusedBranch, clear);
+  assert.match(refusedBody, /return;/,
+    'the refused branch falls through to the clear -- the amount the server rejected is gone from the box');
+});
+
+test('both submit paths tell a REFUSAL from a server they could not reach', () => {
+  ['async function submitCharge()', 'async function submitPayment()'].forEach((f) => {
+    const code = stripComments(fnBody(f));
+    assert.ok(code.indexOf('result.refused') > 0, f + ' reports one sentence for two different facts');
+    assert.match(code, /THIS DEVICE ONLY/,
+      f + ' does not say the row is on this device and nowhere else');
+    assert.match(code, /will not upload by itself/,
+      f + ' implies the row will sync later -- there is no outbound retry queue in this app');
+  });
+});
+
+// ── FINDING 3, and it is the one a static assertion would have missed ──────
+// toast() is one element setting textContent, so the LAST call wins. The old
+// code let setAppointmentStatus() toast its honest failure and then wrote
+// 'Visit completed, charge added' over the top of it. What matters is not that
+// a guard exists, it is which sentence is on screen when the dust settles.
+function visitHarness(apptSynced) {
+  const toasts = [];
+  const ctx = {
+    JSON, Object, Array, Number, Math, Promise,
+    cvAppointmentId: 'AP-1',
+    appointments: () => [{ id: 'AP-1', patient_id: 'PT-1', procedure_type_id: 'PR-1', status: 'Confirmed' }],
+    $: () => ({ value: '100' }),
+    toast: (m) => toasts.push(m),
+    closeCompleteVisitModal: () => {},
+    addChargeEntry: () => Promise.resolve({ rec: { id: 'CH-1' }, syncResult: [{ id: 'CH-1' }], refused: false }),
+    setAppointmentStatus: () => Promise.resolve({ appt: { id: 'AP-1' }, syncResult: apptSynced ? [{ id: 'AP-1' }] : null }),
+    dntWriteFailText: (r, fb) => fb,
+    __toasts: toasts,
+  };
+  vm.createContext(ctx);
+  vm.runInContext(fnBody('async function submitCompleteVisit()'), ctx);
+  return ctx;
+}
+
+test('a FAILED appointment write does not get announced as a completed visit', async () => {
+  const c = visitHarness(false);
+  await c.submitCompleteVisit();
+  const last = c.__toasts[c.__toasts.length - 1];
+  assert.notStrictEqual(last, 'Visit completed, charge added',
+    'the honest failure was overwritten -- the visit reads Completed here and Confirmed everywhere else');
+  assert.match(last, /VISIT STATUS was not/, 'the message does not say which half failed');
+  assert.match(last, /charge WAS recorded/, 'the message does not say the charge landed, which it did');
+});
+
+test('a fully successful visit still says so', async () => {
+  const c = visitHarness(true);
+  await c.submitCompleteVisit();
+  assert.strictEqual(c.__toasts[c.__toasts.length - 1], 'Visit completed, charge added');
+});
+
+test('setAppointmentStatus returns whether it landed, or the check above is blind', () => {
+  const code = stripComments(fnBody('async function setAppointmentStatus('));
+  assert.match(code, /return\s*\{appt:a,\s*syncResult:syncResult\}/,
+    'it returns the appointment alone again -- submitCompleteVisit cannot tell a synced status change from a local-only one');
 });
 
 test('submitCharge stops after a refusal instead of announcing success', () => {
   const code = stripComments(fnBody('async function submitCharge()'));
-  assert.match(code, /if\(!result\.syncResult\)\{toast\(dntWriteFailText\('dnt_charges'/);
-  assert.match(code, /return;\}\n\s*toast\('Charge added'\)/);
+  const guard = code.indexOf('if(!result.syncResult)');
+  const success = code.indexOf("toast('Charge added')");
+  assert.ok(guard > 0 && success > guard);
+  assert.match(code.slice(guard, success), /return;/,
+    'submitCharge falls through to "Charge added" after a failed write');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
