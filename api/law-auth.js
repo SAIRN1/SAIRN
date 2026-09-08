@@ -660,9 +660,32 @@ module.exports = async (req, res) => {
       // server could confirm it, which is the same standard the rest of this
       // handler applies: an unverified claim must not be stored as a verified
       // one.
+      // ── `null` MEANT TWO THINGS, AND THE PANEL PICKED THE WRONG ONE ──────
+      // Corrected 2026-09-08 by the independent review of this change. The
+      // commit and the row both describe FOUR states, but the value space had
+      // only three: `null` was the initialiser for 'general' ("nothing to
+      // verify") AND what a failed lookup left behind ("could not check").
+      // Two different facts, one value, and no consumer could separate them.
+      //
+      // The panel then rendered a failed lookup as "Logged before the server
+      // began checking matter attribution" -- a specific claim about the
+      // record's AGE, made about an entry logged today whose check simply did
+      // not complete. The same reasoning that says "could not check" must not
+      // be written down as "checked and false" says it must not be written
+      // down as "never checked" either.
+      //
+      // 'unavailable' is a distinct value so ANY consumer can tell them apart,
+      // not just the panel -- which matters because the open question on this
+      // row is whether ai_list should let a reviewer FILTER to unconfirmed
+      // entries, and a filter cannot separate what the record does not.
+      // Records written in the window before this correction carry `null` with
+      // a real matter_id; that is unambiguous (the initialiser only survives
+      // when the lookup did not complete) so they need no migration and the
+      // panel treats them the same.
       const matter_id = body.matter_id ? String(body.matter_id) : 'general';
       let matter_verified = null;          // null = 'general', nothing to verify
       if (matter_id !== 'general') {
+        matter_verified = 'unavailable';   // until a lookup actually answers
         try {
           const mr = await fetch(rest('law_matters?license_hash=eq.' + enc(licHash) +
             '&matter_id=eq.' + enc(matter_id) + '&select=matter_id&limit=1'), { headers });
@@ -670,10 +693,11 @@ module.exports = async (req, res) => {
             const mrows = await mr.json();
             matter_verified = Array.isArray(mrows) && mrows.length > 0;
           }
-          // A failed lookup leaves matter_verified null: "could not check" is
-          // a third answer and must not be written down as "checked and
-          // false", which would accuse a real matter of being fabricated.
-        } catch (e) { /* leaves null -- see above */ }
+          // A failed lookup leaves matter_verified 'unavailable': "could not
+          // check" is its own answer and must not be written down as "checked
+          // and false", which would accuse a real matter of being fabricated,
+          // nor as "never checked", which would misdate the record.
+        } catch (e) { /* leaves 'unavailable' -- see above */ }
       }
       // Derive tools_used from the REAL messages array rather than trusting
       // body.tools_used -- on the final leg of a tool-use exchange, the

@@ -4281,19 +4281,30 @@ function aicocLoad(){
       var mlabel=e.matter_id==='general'?'General':(mmap[e.matter_id]||e.matter_id||'General');
       // ── THE ATTRIBUTION NOW CARRIES ITS OWN CONFIDENCE (2026-09-05) ─────
       // The server takes matter_id from the client and, since 2026-09-05,
-      // checks it against law_matters for this licence. THREE answers, not
-      // two, and they must not be flattened: true = confirmed;
+      // checks it against law_matters for this licence. FOUR answers, not
+      // three, and they must not be flattened: true = confirmed;
       // false = the server has no such matter for this licence, which is NOT
       // proof of fabrication because a matter created on a device that has
-      // not hydrated is genuinely absent; undefined = the record predates the
-      // check, so nothing was verified either way and it must not render as a
-      // failure. A verification the reviewer cannot see is the same as not
-      // doing it -- this panel is the whole point of the log.
+      // not hydrated is genuinely absent; 'unavailable' (or a bare null on a
+      // record from the 2026-09-08 window before the server split the value)
+      // = the check RAN AND COULD NOT ANSWER; undefined = the record predates
+      // the check entirely. A verification the reviewer cannot see is the same
+      // as not doing it -- this panel is the whole point of the log.
+      //
+      // CORRECTED 2026-09-08 by the independent review. This said THREE and
+      // rendered a failed lookup under "Logged before the server began
+      // checking attribution (2026-09-05)" -- a claim about the record's AGE,
+      // shown on an entry logged today whose check did not complete. "Could
+      // not check" must not be written down as "never checked" for the same
+      // reason it must not be written down as "checked and false": both put a
+      // specific wrong reason in front of a reviewer of a legal audit trail.
       var mflag='';
       if(e.matter_id!=='general'){
         if(e.matter_verified===false){
           mflag=' <span style="color:var(--warn);font-weight:700" title="This interaction is filed against a matter the server has no record of for this licence. That can mean a matter created on a device that has not synced -- or an id that was never real. It is recorded exactly as the client sent it.">&#9888; matter UNCONFIRMED</span>';
-        } else if(e.matter_verified===undefined||e.matter_verified===null){
+        } else if(e.matter_verified==='unavailable'||e.matter_verified===null){
+          mflag=' <span style="color:var(--warn)" title="The server tried to confirm this matter against your records and could not get an answer -- the lookup itself failed. This is NOT a statement about the matter; it is a statement about the check. Nothing is known either way, and the id is recorded exactly as the client sent it.">&#9888; attribution CHECK FAILED</span>';
+        } else if(e.matter_verified===undefined){
           mflag=' <span style="color:var(--muted)" title="Logged before the server began checking matter attribution (2026-09-05). Nothing was verified either way.">&middot; attribution not checked</span>';
         }
       }

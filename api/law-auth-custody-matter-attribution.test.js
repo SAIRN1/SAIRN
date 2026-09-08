@@ -90,19 +90,45 @@ function main() {
       "the check does not exempt 'general', so every general chat hits the database");
   });
 
-  test('a FAILED lookup leaves the verdict null, never false', () => {
+  test("a FAILED lookup leaves the verdict 'unavailable', never false and never absent", () => {
     // "Could not check" written down as "checked and false" would accuse a
     // real matter of being fabricated, on the strength of a network blip.
     // From the DECLARATION, not from the `if` -- the initialiser is what makes
     // "could not check" distinguishable, and slicing below it hid the very
     // line under test.
+    //
+    // UPDATED 2026-09-08: the initialiser used to be `null` for BOTH 'general'
+    // and a non-general id awaiting its lookup, so one value carried two
+    // facts and no consumer outside the panel could tell them apart. A
+    // non-general id now starts at 'unavailable'.
     const block = CODE.slice(CODE.indexOf('let matter_verified'),
                              CODE.indexOf('const tools_used'));
-    assert.match(block, /let matter_verified = null;|matter_verified = null/,
-      'the verdict does not start null');
+    assert.match(block, /let matter_verified = null;/,
+      "the 'general' case no longer starts null");
+    assert.match(block, /matter_verified = 'unavailable';/,
+      'a non-general id does not start at a value meaning "could not check"');
     assert.match(block, /if \(mr\.ok\)/, 'a non-ok response is not distinguished');
     assert.ok(!/catch \(e\) \{\s*matter_verified = false/.test(block),
       'a thrown lookup is recorded as a failed verification');
+    assert.ok(!/catch \(e\) \{\s*matter_verified = null/.test(block),
+      "a thrown lookup falls back to null, which is the 'general' value");
+  });
+
+  test("'unavailable' is separable by anything, not only by the panel", () => {
+    // The open question on this row is whether ai_list should let a reviewer
+    // FILTER to unconfirmed entries. A filter cannot separate what the record
+    // does not: while 'general' and could-not-check shared `null`, the only
+    // thing that told them apart was the panel's own `matter_id!=='general'`
+    // guard, which no other consumer has.
+    const block = CODE.slice(CODE.indexOf('let matter_verified'),
+                             CODE.indexOf('const tools_used'));
+    const generalValue = /let matter_verified = null;/.test(block);
+    const failedValue = /matter_verified = 'unavailable';/.test(block);
+    assert.ok(generalValue && failedValue,
+      'the two states share a value again, so a filter cannot tell them apart');
+    // And the projection must not coerce it on the way out.
+    assert.match(CODE, /matter_verified: e\.detail \? e\.detail\.matter_verified : undefined/,
+      'ai_list coerces the verdict, so the distinction dies at the API boundary');
   });
 
   test('the verdict is written into the custody record itself', () => {
@@ -124,13 +150,44 @@ function main() {
       'the projection coerces a missing field into a verdict: ' + proj);
   });
 
-  test('the panel renders THREE outcomes and warns on only one', () => {
+  test('the panel renders FOUR outcomes and warns on two', () => {
+    // CORRECTED 2026-09-08 by the independent review of this change, and this
+    // assertion is the reason the defect survived. It PINNED
+    //     e.matter_verified===undefined||e.matter_verified===null
+    // -- the flattening itself -- under the failure message "a not-checked
+    // record is not distinguished from a failed one". The message described
+    // the flattening as the defect while the assertion required it, so
+    // separating the two states turned the suite RED with a message saying
+    // they had not been separated. A test that holds a defect in place and
+    // mislabels why is worse than no test for it.
     assert.match(HTML_CODE, /e\.matter_verified===false/, 'the panel does not surface an unconfirmed matter');
     assert.match(HTML_CODE, /matter UNCONFIRMED/, 'there is no visible marker for the reviewer');
-    assert.match(HTML_CODE, /e\.matter_verified===undefined\|\|e\.matter_verified===null/,
-      'a not-checked record is not distinguished from a failed one');
+    assert.match(HTML_CODE, /e\.matter_verified==='unavailable'\|\|e\.matter_verified===null/,
+      'a lookup that FAILED is not distinguished from one that never ran');
+    assert.match(HTML_CODE, /attribution CHECK FAILED/,
+      'a failed lookup has no distinct label, so it reads as something else');
+    assert.match(HTML_CODE, /e\.matter_verified===undefined/,
+      'a pre-change record is no longer matched on its own');
     assert.match(HTML_CODE, /attribution not checked/,
       'a pre-change record has no distinct label');
+  });
+
+  test('a failed check is never labelled as a record that predates the check', () => {
+    // The live defect: an entry logged TODAY whose lookup did not complete was
+    // shown "Logged before the server began checking matter attribution
+    // (2026-09-05)" -- a specific, false claim about the record's age, in a
+    // legal audit trail. Driven on the branch text rather than grepped for a
+    // phrase, because the phrase itself is still in the file and correct for
+    // the state it now belongs to.
+    const squashed = HTML_CODE.replace(/\s+/g, '');
+    const failedBranch = squashed.slice(
+      squashed.indexOf("e.matter_verified==='unavailable'"),
+      squashed.indexOf('e.matter_verified===undefined'));
+    assert.ok(failedBranch.length > 0, 'the failed-lookup branch is gone');
+    assert.ok(failedBranch.indexOf('Loggedbeforetheserverbegan') === -1,
+      'a failed lookup is still described as a record that predates the check');
+    assert.match(failedBranch, /couldnotgetananswer|CHECKFAILED/,
+      'the failed-lookup branch does not say the check is what failed');
   });
 
   test('the warning does NOT call an unconfirmed matter fabricated', () => {
