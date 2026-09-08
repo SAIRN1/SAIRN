@@ -600,8 +600,8 @@
       "task": "examine untracked pile and recurrence of cross file warnings",
       "claimed_at": "2026-09-08T15:12:46Z",
       "claimed_at_epoch": 1788880366.7751286,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T15:19:31Z"
     }
   ]
 }
