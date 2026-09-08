@@ -26,7 +26,6 @@
     "written down, which is the difference between a risk somebody chose and a",
     "risk nobody noticed."
   ],
-
   "api/greeting.js": {
     "class": "public-by-design",
     "reason": "Returns an opening line before anyone has typed anything; every SAIRN app calls it on load, before any licence exists. Zero Supabase writes -- verified by grep for method:'POST'/'PATCH'/'DELETE', which returns none. Read 2026-09-08."
@@ -54,7 +53,6 @@
     "class": "public-by-design",
     "reason": "The public storefront. Its header states the model outright: the only thing identifying a shop is its public shop_slug, and it refuses a slug whose shop is not published (resolveShopSlug, :197). Writes are quote_request leads, which is the feature. Rate-limited."
   },
-
   "api/agent/enqueue.js": {
     "class": "pilot-only",
     "reason": "Queues an arbitrary operation and params to a named on-prem agent with NO credential. The only gates are that agent_id exists, its status is active, and its plan has not expired.",
@@ -76,7 +74,6 @@
     "class": "webhook-signature",
     "reason": "STRIPE_WEBHOOK_SECRET with a stripe-signature header. Authenticated by the signature over the raw body, which no bearer check could replace."
   },
-
   "api/sairncash/checkout.js": {
     "class": "public-by-design",
     "reason": "Creates a Stripe Checkout session for a prospect who by definition has no account yet. Holds STRIPE_SECRET_KEY server-side; the caller supplies nothing privileged."
@@ -113,7 +110,6 @@
     "class": "public-by-design",
     "reason": "Pre-launch waitlist signup: an email address from an anonymous visitor is the whole feature. Inserts with resolution=ignore-duplicates. It exists because the previous handler faked success and discarded the email."
   },
-
   "api/sairndental/public-availability.js": {
     "class": "public-by-design",
     "reason": "Read-only appointment availability for a practice's public booking page. Zero writes -- verified by grep. Rate-limited."
@@ -133,5 +129,9 @@
   "api/sairndental/send-reminder.js": {
     "class": "cron-secret",
     "reason": "Refuses unless the Authorization header equals 'Bearer ' + CRON_SECRET, checked first. Invoked by the vercel.json cron entry."
+  },
+  "api/sairncash/ai.js": {
+    "class": "bespoke-auth",
+    "reason": "It is NOT unauthenticated -- it verifies a real Stripe subscription or a live trial token SERVER-SIDE before it will spend anything, and refuses 401 otherwise. preauth_oracle_check.py reports it as having no boundary because the boundary is not validateLicenseKey() or verifySessionToken(), the only two names that checker knows. This is the FOURTH instance of that limitation, after dnt-bi's feed token, alf-alerts' cron secret and sd-agent's store.validateAndGate(). Built 2026-09-05 because SAIRNcash has no SAIRN licence key at all -- it is a consumer app identified by a device id plus a Stripe subscription -- so it cannot satisfy the licence-key requirement coming to api/claude.js. The client sends only an IDENTIFIER; this file looks it up and never believes what localStorage claims, which is the lesson of that app's own 2026-08-10 fix. It FAILS CLOSED on a Stripe outage, unlike the shared proxy's fail-open licence check, because here the identifier is the only thing between a caller and the Anthropic key. Held by 17 assertions in api/sairncash-ai.test.js, including that a canceled subscription, an expired-but-still-marked-active trial, and an upstream outage each spend nothing. Read 2026-09-05."
   }
 }

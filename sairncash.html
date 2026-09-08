@@ -658,6 +658,32 @@ function signOut() {
 // anywhere in this client code, by design.
 function getTrial() { try { return JSON.parse(localStorage.getItem('sairncash_trial') || 'null'); } catch { return null; } }
 function saveTrial(d) { localStorage.setItem('sairncash_trial', JSON.stringify(d)); }
+
+// ── SAIRNcash's AI CALLS NOW GO TO ITS OWN AUTHENTICATED ENDPOINT (2026-09-05)
+// They used to POST straight to /api/claude with no credential of any kind --
+// that shared proxy accepted anyone, and SAIRNcash sent is_demo:false, which
+// skipped every cost control it had. Nothing anywhere checked that an AI
+// caller was a subscriber.
+//
+// api/sairncash/ai.js verifies the subscription SERVER-SIDE before it will
+// spend anything. What is sent from here is only an IDENTIFIER -- the server
+// looks it up. localStorage.sairncash_sub is forgeable and this app's own
+// 2026-08-10 fix exists because it used to be trusted; that is not re-broken
+// by sending it here, because the server does not believe it.
+//
+// The three former call sites all route through this one function, so the
+// credential cannot be forgotten at a new call site later.
+async function scAiFetch(payload) {
+  const sub = getSub(), trial = getTrial();
+  const body = Object.assign({}, payload);
+  if (sub && sub.subscriptionId) body.subscriptionId = sub.subscriptionId;
+  if (trial && trial.trialToken) body.trialToken = trial.trialToken;
+  return fetch('/api/sairncash/ai', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body)
+  });
+}
 function isTrialActive() {
   const t = getTrial();
   if (!t || !t.expiresAt) return false;
@@ -1118,11 +1144,11 @@ async function suggestDeductionCategory() {
   const description = descEl.value.trim();
   if (!description || catEl.value.trim()) return; // don't overwrite a category the user already typed
   try {
-    const res = await fetch('/api/claude', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+    const res = await scAiFetch({
       app_id: 'sairncash', is_demo: false, max_tokens: 20,
       system: 'Suggest ONE short deduction category (2-3 words, e.g. "Equipment", "Software Subscriptions", "Home Office") for the given business expense description. Output ONLY the category label, nothing else.',
       messages: [{ role: 'user', content: description }]
-    })});
+    });
     const data = await res.json();
     const suggestion = data && data.content && data.content[0] && data.content[0].text;
     if (suggestion && !catEl.value.trim()) catEl.value = suggestion.trim();
@@ -1325,7 +1351,7 @@ async function callClaude(userMsg) {
   localHistory.push({role:'user',content:userMsg});
   try {
     const toolDefs=Object.keys(SC_TOOLS).map(k=>SC_TOOLS[k].definition);
-    const res=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory,tools:toolDefs})});
+    const res=await scAiFetch({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory,tools:toolDefs});
     const data=await res.json();
     if(data.error){
       removeThinking();
@@ -1356,7 +1382,7 @@ async function callClaude(userMsg) {
     });
     localHistory.push({role:'assistant',content:blocks});
     localHistory.push({role:'user',content:toolResults});
-    const res2=await fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory})});
+    const res2=await scAiFetch({app_id:'sairncash',is_demo:false,max_tokens:1000,system:SYSTEM_PROMPT,messages:localHistory});
     const data2=await res2.json();
     removeThinking();
     if(data2.error){addBubble('system','Error: '+(data2.error.message||data2.error));}

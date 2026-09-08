@@ -133,6 +133,79 @@ tr:hover td{background:var(--t)}
 </head>
 <body>
 <script>
+/* ── LICENCE KEY ON EVERY AI CALL (added 2026-09-05) ───────────────────────
+   api/claude.js accepted requests with NO credential at all and spent the
+   platform's Anthropic key on them -- confirmed live, not inferred. It is
+   moving to a licence-key requirement in stages; this is the client half.
+
+   THIS IS A fetch WRAPPER RATHER THAN AN EDIT AT EVERY CALL SITE, and that is
+   a deliberate trade, recorded in full in
+   docs/2026-09-05-claude-proxy-auth-rollout.md. The platform reaches that
+   proxy from roughly 134 places -- 85 in stonedesk.html alone -- and most of
+   them hardcode the URL rather than going through their app's own
+   callClaude(). Editing them all to ship a security fix is the larger risk.
+
+   THE COST OF THAT CHOICE, STATED RATHER THAN HIDDEN: the credential is now
+   INVISIBLE AT THE CALL SITE. A reader of any fetch to the proxy in this file
+   will not see auth being sent. It is sent here.
+
+   IT CANNOT TURN A WORKING CALL INTO A FAILING ONE: it attaches nothing when
+   an Authorization header is already present, nothing when there is no key to
+   send, and the whole body is wrapped so a throw falls through to the real
+   fetch untouched. The server is in OBSERVE mode and refuses nothing yet --
+   its log of who arrives authenticated is what gates enforcement later.
+   ─────────────────────────────────────────────────────────────────────── */
+(function () {
+  if (typeof window === 'undefined' || !window.fetch) return;
+  if (window.__sairnAiAuthInstalled) return;              /* installed once, never twice */
+  window.__sairnAiAuthInstalled = true;
+
+  /* Read straight from localStorage rather than through this app's own
+     storage helper: the helper is not always defined in the same <script>
+     block as every AI call site (sairnscape has calls in two blocks and its
+     helper in one), and a wrapper that depends on load order is a wrapper
+     that silently does nothing on some page. A value stored through a
+     JSON-encoding helper arrives quoted, so both spellings are handled. */
+  var KEYS = ['sairnmechanical_license_key'];
+  function licenceKey() {
+    for (var i = 0; i < KEYS.length; i++) {
+      var raw = null;
+      try { raw = localStorage.getItem(KEYS[i]); } catch (e) { return ''; }
+      if (!raw) continue;
+      if (raw.charAt(0) === '"') { try { raw = JSON.parse(raw); } catch (e) { continue; } }
+      if (raw) return String(raw);
+    }
+    return '';
+  }
+
+  var realFetch = window.fetch.bind(window);
+  window.fetch = function (input, init) {
+    try {
+      var url = typeof input === 'string' ? input : ((input && input.url) || '');
+      if (url.indexOf('/api/claude') !== -1) {
+        var src = (init && init.headers) || {};
+        var h = {};
+        if (typeof Headers !== 'undefined' && src instanceof Headers) {
+          src.forEach(function (v, k) { h[k] = v; });
+        } else {
+          for (var k in src) { if (Object.prototype.hasOwnProperty.call(src, k)) h[k] = src[k]; }
+        }
+        var already = false;
+        for (var hk in h) { if (hk.toLowerCase() === 'authorization') already = true; }
+        if (!already) {
+          var key = licenceKey();
+          if (key) {
+            h.Authorization = 'Bearer ' + key;
+            init = Object.assign({}, init || {}, { headers: h });
+          }
+        }
+      }
+    } catch (e) { /* never let this break a call */ }
+    return realFetch(input, init);
+  };
+})();
+</script>
+<script>
 /* ============================================================
    SAIRN CLAUDE ENGINE — sairnmechanical
    Single definition. Loaded first. Works everywhere.
