@@ -603,6 +603,16 @@
       "claimed_at_epoch": 1788868839.1230257,
       "status": "released",
       "released_at": "2026-09-08T12:22:47Z"
+    },
+    {
+      "id": "cc-1788870296",
+      "session": "cc",
+      "subject": "sairndental-outbound-retry-queue",
+      "task": "idempotent pending ledger rows flushed on reconnect",
+      "claimed_at": "2026-09-08T12:24:56Z",
+      "claimed_at_epoch": 1788870296.8605478,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
