@@ -143,10 +143,17 @@ def _run(js, py, quiet):
     return failures, skipped
 
 
+def _tree():
+    r = subprocess.run(['git', 'status', '--porcelain'], cwd=REPO,
+                       capture_output=True, text=True)
+    return [l for l in (r.stdout or '').splitlines() if l.strip()]
+
+
 def main(argv):
     if '--hook' in argv:
         return hook_main()
     quiet = '--quiet' in argv
+    before = _tree()
     js, py, unrun = discover()
     # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.
     # Two push-gate probes commit planted fixtures and reset, so they refuse to
@@ -156,9 +163,31 @@ def main(argv):
     # failure, and it is not a pass either.
     failures, skipped = _run(js, py, quiet)
 
+    # ── RESIDUE IS REPORTED, BECAUSE A CASCADE LOOKS LIKE A BUG (2026-09-08)
+    # Several probes mutate a tracked file and restore it in a finally. If one
+    # is interrupted, the residue makes EVERY later clean-tree-dependent probe
+    # fail for a reason that has nothing to do with it -- which is exactly what
+    # happened while this runner was being written: four files went red at
+    # once, and every one of them passed individually on a clean tree.
+    #
+    # It does NOT restore anything. `git checkout --` on somebody's working
+    # tree to make a test suite happy is a far worse trade than a loud
+    # sentence. Naming the files and saying results after this point may be
+    # cascade is the whole job.
+    after = _tree()
     print('')
     print('RAN: %d JS + %d PY = %d files (%d skipped)'
           % (len(js), len(py), len(js) + len(py), len(skipped)))
+    residue = [l for l in after if l not in before]
+    if residue:
+        print('')
+        print('THE SUITE DIRTIED THE TREE (%d path(s)) -- a probe did not clean up:'
+              % len(residue))
+        for l in residue:
+            print('    %s' % l)
+        print('    Results above may be CASCADE, not real: a modified tracked file')
+        print('    fails every clean-tree probe after it. Restore with git and re-run')
+        print('    before believing any failure. Nothing was restored for you.')
     if skipped:
         print('SKIPPED (%d) -- a precondition was not met, NOT a pass:' % len(skipped))
         for kind, rel, why in skipped:
