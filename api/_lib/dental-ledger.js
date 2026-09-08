@@ -272,7 +272,105 @@ function coverageRuleProblem(record) {
   return null;
 }
 
+// ── dnt_denial, THE FOURTH OF THE FIFTEEN (2026-09-05) ────────────────────
+// Chosen the same way the first three were: by measuring what a bad row does
+// to a number a practice reads, not by which table sounds worst. Every rule
+// below is one sairndental.html's own saveDenial() already refuses on. None is
+// invented here.
+//
+// THE ONE THAT MADE IT NEXT IS THE DATE, and it is a different shape from the
+// three money rules above -- it does not corrupt a total, it removes a WARNING.
+// dnAppealWindow() returns { known, deadline, days }. Given a denied_on it
+// cannot parse, dnAddDays() returns '' and dnDaysUntil('') returns null, so the
+// row comes back known:true with days:null and the "closing within 14 days"
+// filter -- `w.known && w.days !== null && w.days <= 14` -- silently excludes
+// it. THE DENIAL DISAPPEARS FROM THE APPEAL-DEADLINE WARNING WHILE STILL
+// LOOKING LIKE A DENIAL WITH A KNOWN WINDOW. An appeal window that passes
+// unnoticed is money that cannot be recovered afterwards.
+//
+// AND A ROLLOVER DATE IS WORSE THAN AN UNPARSEABLE ONE, which is why the check
+// round-trips instead of trusting `new Date()`. '2026-02-31T00:00:00' is not
+// NaN in JavaScript -- it silently becomes 3 March -- so dnAddDays() would
+// compute a real-looking appeal deadline counted from a day that never existed.
+// A wrong deadline is more dangerous than a missing one, because nothing about
+// it looks wrong.
+const DENIAL_STAGES = {
+  none: true, drafted: true, submitted: true,
+  won: true, partial: true, lost: true, abandoned: true,
+};
+
+// A calendar date the appeal window can actually be counted from. The
+// round-trip is the whole point: see the rollover note above.
+function isCalendarDate(v) {
+  if (typeof v !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(v)) return false;
+  const d = new Date(v + 'T00:00:00');
+  if (Number.isNaN(d.getTime())) return false;
+  const back = d.getFullYear() + '-'
+    + String(d.getMonth() + 1).padStart(2, '0') + '-'
+    + String(d.getDate()).padStart(2, '0');
+  return back === v;
+}
+
+function denialProblem(record) {
+  const r = record || {};
+  const patientId = String(r.patient_id == null ? '' : r.patient_id).trim();
+  if (!patientId) {
+    return 'This denial is not attached to a patient, so nothing can show it '
+         + 'against the account it belongs to. Send patient_id with the denial.';
+  }
+  if (!isPositiveMoney(r.amount)) {
+    return 'A denied amount must be a number greater than zero. dnAtStake() '
+         + 'reads it through Number(x) || 0, so a value that is not a number '
+         + 'becomes zero and the denial silently stops counting toward the '
+         + 'amount at stake, and a negative one reduces that total below what '
+         + 'the other denials really are.';
+  }
+  if (!isCalendarDate(r.denied_on)) {
+    return 'A denial needs the date it was denied, as a real calendar date '
+         + '(YYYY-MM-DD). The appeal window is counted from it, and a date that '
+         + 'cannot be parsed drops the denial out of the "closing soon" warning '
+         + 'while still appearing to have a known window -- so an appeal '
+         + 'deadline passes with nothing on screen to say so.';
+  }
+  if (!DENIAL_STAGES[r.stage]) {
+    return 'A denial stage must be one of: '
+         + Object.keys(DENIAL_STAGES).join(', ')
+         + '. Any other value is not in the app\'s decided-stage table, so the '
+         + 'denial counts as still open forever -- it inflates the open count '
+         + 'and the amount at stake, and it is never counted in the appeal '
+         + 'success rate either way.';
+  }
+  // recovered is optional; zero is the ordinary value for a denial that
+  // recovered nothing, so this is the non-negative test rather than positive.
+  if (r.recovered !== undefined && r.recovered !== null && r.recovered !== '') {
+    if (!isNonNegativeMoney(r.recovered)) {
+      return 'The amount recovered must be a number of zero or more.';
+    }
+    if (Number(r.recovered) > Number(r.amount)) {
+      return 'More was recovered than was denied. The denials panel prints '
+           + '"recovered of denied" straight from these two fields, so this row '
+           + 'would read as the practice having been paid more than the payer '
+           + 'refused.';
+    }
+  }
+  return null;
+}
+
+// NOT CHECKED HERE, and recorded so the absence is a decision rather than an
+// oversight:
+//   * THE APPEAL DATE ORDER -- submitted_on on or after denied_on, decided_on
+//     on or after submitted_on. saveDenial() enforces all three, but they are
+//     workflow rules about how an appeal proceeded, not rules about whether the
+//     row can be added up. Enforcing them server-side would refuse a practice
+//     correcting a historical record, which is the one time somebody genuinely
+//     needs to write a shape the form would not produce today.
+//   * A FUTURE denied_on. saveDenial() refuses it against the browser's local
+//     today; this module has no way to know the practice's timezone, and
+//     refusing against UTC would reject a denial entered on the correct local
+//     day west of UTC in the evening. That is the UTC-midnight trap this
+//     platform has already been bitten by.
+
 module.exports = {
-  paymentProblem, chargeProblem, coverageRuleProblem,
-  isPositiveMoney, isNonNegativeMoney,
+  paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
+  isPositiveMoney, isNonNegativeMoney, isCalendarDate,
 };

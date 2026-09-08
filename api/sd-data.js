@@ -41,6 +41,7 @@ const {
   paymentProblem: dntPaymentProblem,
   chargeProblem: dntChargeProblem,
   coverageRuleProblem: dntCoverageRuleProblem,
+  denialProblem: dntDenialProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -9495,6 +9496,30 @@ module.exports = async (req, res) => {
             return;
           }
         }
+      }
+      // dnt_denial, the FOURTH of the fifteen (2026-09-05). Every rule in
+      // denialProblem() is one saveDenial() already refuses on; none is
+      // invented here, the same standard as the coverage rule above.
+      //
+      // IT IS A DIFFERENT SHAPE FROM THE THREE MONEY RULES ABOVE and that is
+      // why it was taken next: a bad denial does not corrupt a total, it
+      // REMOVES A WARNING. An unparseable denied_on leaves dnAppealWindow()
+      // returning known:true with days:null, and the "closing within 14 days"
+      // filter drops the row while it still looks like a denial with a known
+      // window. A rollover date like 2026-02-31 is worse again -- JavaScript
+      // silently makes it 3 March, so the appeal deadline is real-looking and
+      // counted from a day that never existed. An appeal window that passes
+      // unnoticed is money that cannot be recovered afterwards.
+      //
+      // LEGACY ROWS, CHECKED RATHER THAN ASSUMED, and the answer differs from
+      // dnt_payments'. Denials are NOT append-only: saveDenial() re-sends an
+      // edited row. But it rebuilds the record from the form every time and its
+      // own checks are stricter than these, so nothing the app can produce is
+      // refused here. dntSyncFromServer() only READS dnt_denial; there is no
+      // bulk re-upload path that could re-send an old row into this gate.
+      if (resource === 'dnt_denial') {
+        const dp = dntDenialProblem(payload);
+        if (dp) { res.status(400).json({ error: { code: 'INVALID_DENIAL', message: dp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

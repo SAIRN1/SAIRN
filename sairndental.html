@@ -4844,10 +4844,19 @@ var DNT_SYNC_RESOURCES=[
 // see "no match" and append the whole rule set again, growing without bound.
 // Rules are a small authoritative set, so they are replaced wholesale instead
 // -- the same treatment dnt_settings gets below, and for the same reason.
-// dnt_denial/dnt_ar/dnt_revenue deliberately excluded -- no client-side
-// accessor or render function exists for any of them yet (confirmed by
-// reading the file); that's a separate, not-yet-built follow-up feature
-// area, not part of this fix. See this plan's "Real correction" section.
+// CORRECTED 2026-09-05: this comment said "dnt_denial/dnt_ar/dnt_revenue
+// deliberately excluded -- no client-side accessor or render function exists
+// for any of them yet". That is now FALSE of dnt_denial in two ways at once --
+// it IS in the list above, and denials()/rDenials()/saveDenial() all exist a
+// few thousand lines up. A reader trusting it would have concluded the denials
+// panel could not be syncing, three lines below the line that syncs it.
+//
+// dnt_ar and dnt_revenue ARE still excluded, and now for a stated reason rather
+// than an out-of-date one: dnt_ar is registered and deliberately never written
+// (see the note at the top of the denials section -- a stored ageing row is
+// stale the next day, so ageing is recomputed from the charges and payments
+// that really exist), and dnt_revenue has no client accessor. Re-check both
+// against the code rather than against this comment before relying on it.
 async function dntSyncFromServer(){
   var changed=false;
   var failureCount=0;

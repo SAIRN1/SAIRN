@@ -84,7 +84,7 @@ function loadHandler(fetchImpl, noValidator) {
   delete require.cache[require.resolve('./_lib/dental-ledger')];
   if (noValidator) {
     require.cache[require.resolve('./_lib/dental-ledger')] = {
-      exports: { paymentProblem: function () { return null; }, chargeProblem: function () { return null; }, coverageRuleProblem: function () { return null; }, isPositiveMoney: function () { return true; }, isNonNegativeMoney: function () { return true; } }
+      exports: { paymentProblem: function () { return null; }, chargeProblem: function () { return null; }, coverageRuleProblem: function () { return null; }, denialProblem: function () { return null; }, isPositiveMoney: function () { return true; }, isNonNegativeMoney: function () { return true; }, isCalendarDate: function () { return true; } }
     };
   }
   global.fetch = fetchImpl;
@@ -608,16 +608,145 @@ async function main() {
       'the stale "sync not enabled" message came back -- sync IS enabled, and that string hid the real reason');
   });
 
+  // ── 5d. dnt_denial, THE FOURTH (2026-09-05) ─────────────────────────────
+  //
+  // A DIFFERENT FAILURE SHAPE FROM THE THREE ABOVE, and that is why it was
+  // taken next rather than another money field. A bad denial does not corrupt
+  // a total -- it REMOVES A WARNING. dnAppealWindow() returns
+  // { known, deadline, days }; given a denied_on that dnAddDays() cannot parse
+  // it returns known:true with deadline:'' and days:null, and rDenials()'s
+  // closing-soon filter is `w.known && w.days !== null && w.days <= 14`. The
+  // denial silently leaves the warning while still looking like one with a
+  // known window. An appeal window that passes unnoticed is money that cannot
+  // be recovered afterwards.
+  await test('a denial with an UNPARSEABLE date is refused -- it would vanish from the closing-soon warning', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: 'last tuesday', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400, 'expected 400, got ' + res.statusCode);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+    assert.match(res.body.error.message, /closing soon/);
+  });
+
+  // THE ROLLOVER CASE IS ITS OWN ASSERTION because it is the dangerous one and
+  // a naive date check passes it. new Date('2026-02-31T00:00:00') is NOT NaN in
+  // JavaScript -- it is 3 March -- so dnAddDays() would compute a real-looking
+  // appeal deadline counted from a day that never existed. A wrong deadline is
+  // worse than a missing one, because nothing about it looks wrong.
+  await test('2026-02-31 is refused -- JavaScript rolls it to 3 March rather than rejecting it', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-02-31', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+  });
+
+  await test('a real leap day IS accepted -- the date check must not be a calendar it invented', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2028-02-29', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a valid leap day was refused -- got ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('a NEGATIVE denied amount is refused -- it reduces the at-stake total below the other denials', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: -250, denied_on: '2026-01-15', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+  });
+
+  await test('a NON-NUMERIC denied amount is refused -- dnAtStake() reads it through Number(x) || 0', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 'lots', denied_on: '2026-01-15', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+  });
+
+  await test('an UNKNOWN stage is refused -- DN_DECIDED has no entry, so the row counts as open forever', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'appealed' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+    assert.match(res.body.error.message, /open forever/);
+  });
+
+  // EVERY stage the form can produce must pass. A validator that accepted only
+  // the ones this author happened to think of would refuse real denials, and
+  // 'drafted' is the one a DN_DECIDED-derived list would have missed -- it is
+  // in the <select> and NOT in DN_DECIDED.
+  for (const stage of ['none', 'drafted', 'submitted', 'won', 'partial', 'lost', 'abandoned']) {
+    await test('stage "' + stage + '" is accepted -- it is in the form\'s own select', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: stage } }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, 'stage ' + stage + ' was refused: ' + JSON.stringify(res.body));
+      assert.ok(wrote);
+    });
+  }
+
+  await test('recovered ABOVE the denied amount is refused -- the panel prints "recovered of denied"', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'partial', recovered: 400 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.match(res.body.error.message, /More was recovered/);
+  });
+
+  await test('recovered EQUAL to the denied amount is accepted -- a won appeal recovers all of it', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'won', recovered: 250 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a fully recovered appeal was refused: ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('recovered ABSENT is accepted -- most denials recover nothing and the field is optional', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(wrote);
+  });
+
+  await test('a denial with no patient_id is refused', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_denial', payload: { id: 'DN-1', amount: 250, denied_on: '2026-01-15', stage: 'none' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
+  });
+
+  // The denial rule must not have leaked onto its neighbours. dnt_referrals is
+  // checked at the end of this section for the amount rules; this checks the
+  // DATE rule specifically, which is new to this pass and the likeliest to leak
+  // because several resources carry a date field.
+  await test('the DATE rule is scoped to dnt_denial -- dnt_recall_outreach with a junk date still writes', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', denied_on: 'not a date', due: '2026-02-31' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the denial date rule leaked onto dnt_recall_outreach');
+    assert.ok(wrote);
+  });
+
   // ── 5c. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_txplans with an absurd amount still goes through -- ten resources remain', async () => {
+  await test('dnt_txplans with an absurd amount still goes through -- nine resources remain', async () => {
     // The current edge of the change, and dnt_txplans is a REPRESENTATIVE
     // unvalidated resource here, not a claim that it is next -- nothing has
-    // been measured about it yet. Ten of the fifteen still have no domain
-    // check: dnt_providers, dnt_operatories, dnt_provider_hours,
-    // dnt_procedure_types, dnt_denial, dnt_ar, dnt_revenue, dnt_referrals,
-    // dnt_recall_outreach and this one. Counted off DNT_RESOURCES rather than
-    // tracked in prose, because a prose tally in the index row was already
-    // wrong once by one.
+    // been measured about it yet. NINE of the fifteen still have no domain
+    // check, down from ten when dnt_denial closed on 2026-09-05:
+    // dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types,
+    // dnt_ar, dnt_revenue, dnt_referrals, dnt_recall_outreach and this one.
+    // Counted off DNT_RESOURCES rather than tracked in prose, because a prose
+    // tally in the index row was already wrong once by one.
     // If this ever fails, either the scope grew -- fine, say so here as the
     // previous two boundaries did -- or a rule leaked across resources.
     let wrote = false;
@@ -679,6 +808,11 @@ async function main() {
     ['dnt_coverage_rules', { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 150 }],
     ['dnt_coverage_rules', { id: 'CV-1', payer: 'Delta', procedure_type_id: 'PR-1', coverage_percent: 'abc' }],
     ['dnt_coverage_rules', { id: 'CV-1', procedure_type_id: 'PR-1', coverage_percent: 80 }],
+    ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: 'last tuesday', stage: 'none' }],
+    ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-02-31', stage: 'none' }],
+    ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: -250, denied_on: '2026-01-15', stage: 'none' }],
+    ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'appealed' }],
+    ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'partial', recovered: 400 }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;
