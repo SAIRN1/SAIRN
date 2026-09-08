@@ -582,6 +582,16 @@
       "claimed_at_epoch": 1788871680.432273,
       "status": "released",
       "released_at": "2026-09-08T13:00:07Z"
+    },
+    {
+      "id": "fourth-1788873183",
+      "session": "fourth",
+      "subject": "public-endpoint-declaration",
+      "task": "no auth boundary handlers must be declared",
+      "claimed_at": "2026-09-08T13:13:03Z",
+      "claimed_at_epoch": 1788873183.3286507,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
