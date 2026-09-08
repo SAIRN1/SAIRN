@@ -56,6 +56,12 @@ function harness(opts) {
     console,
     sdNestingData: { slabW: 126, slabH: 63, cutouts: opts.cutouts || [], saved: [] },
     sdLocalToday: () => '2026-09-02',
+    // Added 2026-09-08: the saw ticket's header stopped naming one fixed shop
+    // and now reads sdShopName(), so the harness has to supply it. A distinctive
+    // value rather than a realistic one, so a header that silently stops using
+    // it shows up in an assertion instead of looking plausible.
+    sdShopName: () => 'Harness Stone Co',
+    sdShopSlug: () => 'harness-stone-co',
     notify: (m, k) => notices.push({ m, k }),
     escHtml: (v) => String(v == null ? '' : v)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
