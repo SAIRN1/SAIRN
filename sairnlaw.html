@@ -4184,7 +4184,23 @@ function aicocLoad(){
     // Rendered from what the SERVER returns, same discipline as
     // secLoadAudit()'s coverage disclosure -- the panel can't imply
     // completeness the server itself didn't claim.
-    $('aicoc-note').textContent=r.data.note||'';
+    // ── A TRUNCATION NOTICE THE SAME COLOUR AS EVERYTHING ELSE IS NOT A
+    // NOTICE (2026-09-08). The server now says whether its window was full,
+    // i.e. whether older interactions exist that this listing does NOT
+    // contain. Rendered in muted grey beside a complete listing it would read
+    // as ordinary scope text -- which is how a partial log gets mistaken for
+    // the whole one. Only the truncated case changes colour and weight; a
+    // complete listing keeps its quiet note, because a warning that fires
+    // every time is a warning nobody reads.
+    var noteEl=$('aicoc-note');
+    noteEl.textContent=r.data.note||'';
+    if(r.data.truncated){
+      noteEl.style.color='var(--warn)';
+      noteEl.style.fontWeight='700';
+    } else {
+      noteEl.style.color='var(--muted)';
+      noteEl.style.fontWeight='';
+    }
     var rows=r.data.entries||[];
     if(!rows.length){box.innerHTML='<div style="color:var(--muted);font-size:13px">No AI interactions logged yet.</div>';return;}
     var mmap={};matters().forEach(function(m){mmap[m.id]=m.matter_number+' -- '+m.matter_name;});

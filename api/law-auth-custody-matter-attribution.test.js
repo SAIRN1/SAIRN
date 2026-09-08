@@ -150,6 +150,53 @@ function main() {
       "a general chat would carry an attribution marker it cannot have");
   });
 
+  // ── ai_list's completeness claim, added 2026-09-08 ─────────────────────
+  // Same log, adjacent defect: the listing's own note claimed something it
+  // had not checked.
+
+  test('the note counts INTERACTIONS and names the window separately', () => {
+    // It used to read "Showing the N most recent ... events" where N was the
+    // interaction count and the query had fetched `limit` rows of FOUR event
+    // types -- the number named one thing and the word named another.
+    assert.match(CODE, /Showing ' \+ entries\.length \+ ' AI interaction'/,
+      'the note does not say what the number actually counts');
+    assert.match(CODE, /most recent log events for this licence/,
+      'the note does not distinguish the window from the interactions in it');
+  });
+
+  test('TRUNCATION IS DETECTED AND SAID OUT LOUD', () => {
+    assert.match(CODE, /const truncated = all\.length >= limit;/,
+      'a full window is not detected, so a partial log reads as the whole one');
+    assert.match(CODE, /THAT WINDOW IS FULL/,
+      'a truncated listing does not say older interactions exist');
+    assert.match(CODE, /this is not the complete log/,
+      'the truncated wording does not deny completeness');
+  });
+
+  test('...and a COMPLETE listing says so positively, rather than staying silent', () => {
+    // Silence is what the old note effectively was. A reviewer needs to know
+    // which of the two they are looking at, not just be warned sometimes.
+    assert.match(CODE, /the listing is complete/,
+      'a complete listing makes no positive claim, so the two cases look alike');
+  });
+
+  test('the raw numbers are returned, so the sentence is checkable', () => {
+    assert.match(CODE, /truncated: truncated,/, 'the flag is not exposed to the client');
+    assert.match(CODE, /scanned: all\.length,/, 'the window size is not exposed');
+    assert.match(CODE, /limit: limit,/, 'the cap is not exposed');
+  });
+
+  test('the panel makes a truncated listing LOOK different', () => {
+    // Muted grey beside a complete listing is how a partial log gets mistaken
+    // for the whole one.
+    assert.match(HTML_CODE, /if\(r\.data\.truncated\)\{/,
+      'the client ignores the truncation flag');
+    assert.match(HTML_CODE, /noteEl\.style\.color='var\(--warn\)'/,
+      'a truncated listing renders in the same muted style as a complete one');
+    assert.match(HTML_CODE, /noteEl\.style\.color='var\(--muted\)'/,
+      'the style is never restored, so one truncated load leaves the panel shouting forever');
+  });
+
   test('the unvalidated assignment is gone from the source', () => {
     // Whitespace-normalised: three separate assertions on this platform have
     // now gone vacuous on a reformatted copy of the thing they name.

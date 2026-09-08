@@ -740,13 +740,43 @@ module.exports = async (req, res) => {
           reviewed_at: statusEvent ? statusEvent.created_at : null
         };
       });
+      // ── THE NOTE CLAIMED SOMETHING IT COULD NOT CHECK (2026-09-08) ──────
+      // It read "Showing the N most recent AI Chain of Custody events", where
+      // N was entries.length -- the INTERACTION count -- while the query had
+      // fetched `limit` rows of FOUR event types. So the number named one
+      // thing and the word named another, and neither said whether anything
+      // was cut off. On a busy licence a reviewer could be shown 43 of
+      // thousands under a sentence that reads like the whole log.
+      //
+      // TRUNCATION IS DETECTABLE HERE AND WAS SIMPLY NOT REPORTED: a full
+      // window (all.length >= limit) means older events exist that this
+      // response does not contain. Nothing else changes -- no extra query, no
+      // second round trip.
+      //
+      // THE PAIRING ITSELF IS SOUND, and that is worth writing down so the
+      // next reader fixes the disclosure rather than the join. The window is
+      // the newest `limit` rows ordered created_at.desc, so it is CONTIGUOUS:
+      // if an interaction is inside it, every event created after that
+      // interaction -- including its own review, rejection or filing -- is
+      // also inside it. A status can therefore never be missed for a shown
+      // entry, which is why this is a completeness problem and not a wrong
+      // status. An orphaned status event whose interaction fell out of the
+      // window is harmless: it is keyed by log_entry_id and matches nothing.
+      const truncated = all.length >= limit;
       res.status(200).json({
         ok: true,
         entries: entries,
         // Honest coverage/scope disclosure alongside the data itself, same
         // precedent as audit_read's `coverage` field above — the UI can't
         // imply this listing is complete or untruncated when it isn't.
-        note: 'Showing the ' + entries.length + ' most recent AI Chain of Custody events for this license.'
+        truncated: truncated,
+        scanned: all.length,
+        limit: limit,
+        note: 'Showing ' + entries.length + ' AI interaction' + (entries.length === 1 ? '' : 's') +
+              ', found in the ' + all.length + ' most recent log events for this licence' +
+              (truncated
+                ? '. THAT WINDOW IS FULL, so older interactions exist and are NOT shown — this is not the complete log.'
+                : '. That is every event on record for this licence, so the listing is complete.')
       });
       return;
     }
