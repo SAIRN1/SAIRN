@@ -194,6 +194,12 @@ const SCP_QC_AUTHORITY_ROLES = ['owner', 'crew_lead'];
 // well under this ceiling before it's ever sent.
 const MAX_PAYLOAD_BYTES = 64 * 1024; // 65536
 
+// Pairs already reported by the app-boundary log, so a caller cannot drive an
+// unbounded number of log lines. Capped so the set itself cannot be grown
+// without bound -- past the cap the warning simply repeats, which is the safe
+// direction for a log.
+const BOUNDARY_LOGGED = new Set();
+
 // Single source for "is this one of the 28 SAIRNcode resources". Used by the
 // envelope gate below and by the handler (the delete branch reads it too), so
 // the two cannot answer differently.
@@ -239,57 +245,65 @@ function isSc(resource) {
 // list falls back to every registered name, which is yesterday's behaviour;
 // api/_resources/index.js carries the reasoning for that failure direction.
 function checkEnvelope(action, resource, appId) {
+  // ── VISIBILITY FIRST, REORDERED 2026-09-08 ──────────────────────────────
+  // The action gate used to run above this and IT LEAKED, which the
+  // independent review of the boundary commit found and confirmed live. Its
+  // message depends on facts about the resource:
+  //
+  //   bogus_verb + sc_denial          -> "... or 'delete'"   (exists, sairncode)
+  //   bogus_verb + sc_not_a_real_name -> "..."               (does not exist)
+  //   delete     + sc_denial          -> the resource refusal (exists)
+  //   delete     + sc_not_a_real_name -> the action refusal   (does not exist)
+  //
+  // So a stonedesk licence could still classify any guessed name one request at
+  // a time by sending an EXTRA VERB -- the action gate passes only for
+  // resources that actually own that verb. That covered all 28 sc_* names, the
+  // four `evaluate` owners, `route`, `derive_charges`, `reserve` and the rf_*
+  // verbs directly, and excluded the rest from that set.
+  //
+  // The commit claimed "same 400, byte-identical body". That was true only for
+  // action 'read' and 'write', which was the only case its own test drove.
+  //
+  // Deciding visibility first fixes the class rather than the symptom: the
+  // action gate now only ever sees a resource the caller can already see, so
+  // nothing it says can reveal anything the caller did not already know.
+  const registered = !!RESOURCES[resource];
+  const visible = registered && (isVisibleTo(resource, appId) || boundaryDisabled());
+  if (!visible) {
+    // ONE RESPONSE FOR TWO CONDITIONS, DELIBERATELY. A resource the caller's
+    // app does not own is answered exactly as one that does not exist -- same
+    // status, same scoped list, byte-identical body, now for EVERY verb.
+    //
+    // `code` is for the handler's logging and is deliberately NOT part of
+    // `body`: telling the two apart is exactly what the caller must not do.
+    //
+    // A 403 would be more semantically precise and would rebuild the oracle it
+    // was meant to close. Indistinguishability over precision is the trade, and
+    // it keeps the response shape sairnlaw.html and sairnlegacy.html match on.
+    //
+    // Built here rather than above, so a successful request does not pay to
+    // join a 283-name list it will never send.
+    return {
+      status: 400,
+      code: registered ? 'FOREIGN_RESOURCE' : 'UNKNOWN_RESOURCE',
+      body: { error: { message: 'resource must be one of: ' + resourceListTextFor(appId) } }
+    };
+  }
+
+  // Verbs beyond read/write are declared per resource in api/_resources/<app>.js
+  // and merged into EXTRA_ACTIONS. Reached only for a resource this caller can
+  // see, so the message below cannot disclose anything.
   const extraAllowed = EXTRA_ACTIONS[resource] || [];
   const isExtraAction = extraAllowed.indexOf(action) !== -1;
   if (action !== 'read' && action !== 'write' && !isExtraAction) {
-    // Message text unchanged from the flag-based version on purpose: 'delete'
-    // is the only extra verb it has ever named, and a resource-accurate list
-    // here would change real response bodies. Worth doing separately, on its
-    // own evidence, not as a side effect of this refactor.
-    return { status: 400, body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } } };
+    // Message text unchanged from the flag-based version on purpose.
+    return {
+      status: 400,
+      code: 'BAD_ACTION',
+      body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } }
+    };
   }
-  // ── THE APP BOUNDARY, AND WHY IT SHARES THE UNREGISTERED ANSWER ─────────
-  // Two conditions, ONE response, deliberately: a resource this caller's app
-  // does not own is answered exactly as a resource that does not exist.
-  //
-  // Michael's call, 2026-09-05, on the independent review's finding that
-  // scoping the LIST was only a message control: an active `stonedesk` licence
-  // got 200 from `law_matters`, `sc_denial` and `leg_cases`. No cross-tenant
-  // DATA leak -- every row is license_hash-scoped, so it saw its own empty
-  // slice -- but the capability was not gated.
-  //
-  // Making the two indistinguishable closes the ENUMERATION ORACLE in the same
-  // move. Before this, an authenticated caller could still classify any guessed
-  // name one request at a time: 400 meant "not registered", anything else meant
-  // "registered". Now a caller sees exactly one universe -- its own app's
-  // resources plus `shared` -- and every name outside it, real or invented,
-  // returns the identical 400 naming the identical scoped list. That sentence
-  // is also TRUE of the caller: those really are the only resources it may use.
-  //
-  // A 403 would be more semantically precise and would rebuild the oracle it
-  // was supposed to close. Choosing indistinguishability over precision is the
-  // deliberate trade, and it keeps the response shape two clients already match
-  // on (sairnlaw.html and sairnlegacy.html both test this sentence).
-  //
-  // SAIRN_APP_BOUNDARY=off disables ONLY the boundary half, never the
-  // unregistered check. It exists because this is an authorization change
-  // across fifteen live apps and no session can see license_keys.app_id in the
-  // real database; if it turns out an app is provisioned with an app_id nobody
-  // expected, this is the difference between an env var and an outage. SAY SO
-  // OUT LOUD WHEN YOU USE IT -- same standard as SAIRN_SEED_GATE. It logs
-  // loudly on every request while it is off.
-  const refusal = {
-    status: 400,
-    // `code` is for the handler's logging and is deliberately NOT part of
-    // `body`: the two cases must look identical on the wire, and telling them
-    // apart is exactly what the caller must not be able to do.
-    code: RESOURCES[resource] ? 'FOREIGN_RESOURCE' : 'UNKNOWN_RESOURCE',
-    body: { error: { message: 'resource must be one of: ' + resourceListTextFor(appId) } }
-  };
-  if (!RESOURCES[resource]) return refusal;
-  if (isVisibleTo(resource, appId)) return null;
-  if (boundaryDisabled()) return null;          // logged by the handler, loudly
-  return refusal;
+  return null;
 }
 
 // The override, read at request time rather than at module load so it can be
@@ -471,10 +485,20 @@ module.exports = async (req, res) => {
       // A caller reaching for another app's resource type. Logged because the
       // response deliberately cannot say so -- it is identical to the one for a
       // name that does not exist -- and because this is the line that shows
-      // whether the boundary is refusing anything real or only ever theory.
-      console.warn('sd-data: APP BOUNDARY refused "' + resource + '" (owned by ' +
-        (OWNER_BY_RESOURCE[resource] || '?') + ') for a licence whose app_id is ' +
-        JSON.stringify(lic.app_id));
+      // whether the boundary refuses anything real or only ever theory.
+      //
+      // ONCE PER PAIR PER INSTANCE. Raised by the independent review: this line
+      // is caller-driven and was unbounded, so probing the endpoint emitted one
+      // log entry per probe -- on the endpoint that just gained a rate limiter
+      // for exactly that amplification shape. The first occurrence of each
+      // (app, resource) is the whole signal; the thousandth is only cost.
+      const seenKey = String(lic.app_id) + ' ' + resource;
+      if (!BOUNDARY_LOGGED.has(seenKey)) {
+        if (BOUNDARY_LOGGED.size < 2000) BOUNDARY_LOGGED.add(seenKey);
+        console.warn('sd-data: APP BOUNDARY refused "' + resource + '" (owned by ' +
+          (OWNER_BY_RESOURCE[resource] || '?') + ') for a licence whose app_id is ' +
+          JSON.stringify(lic.app_id));
+      }
     }
     if (envelopeRefusal.code === 'UNKNOWN_RESOURCE' && !isKnownApp(lic.app_id)) {
       // THE RESIDUAL, MADE VISIBLE RATHER THAN ASSUMED EMPTY. This licence just

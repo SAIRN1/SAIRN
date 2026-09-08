@@ -176,8 +176,18 @@ const APP_NAMES = Object.keys(RESOURCE_NAMES_BY_APP);
 // Is this the app_id of a registry module? `shared` is deliberately NOT one:
 // no licence is issued for it, so a licence claiming it is as unrecognised as
 // a licence claiming nonsense.
+// CASE-FOLDED as well as trimmed, added 2026-09-08 on the independent review's
+// finding. It trimmed and did not lowercase: a licence issued with app_id
+// 'StoneDesk' was UNATTRIBUTABLE, which silently turned the boundary off for it
+// AND handed it the full resource list -- with no signal beyond the
+// unattributable warning line. Every one of the 20 licences measured live is
+// lowercase today, so this closes a trap rather than a live hole.
+function normApp(appId) {
+  return typeof appId === 'string' ? appId.trim().toLowerCase() : '';
+}
+
 function isKnownApp(appId) {
-  const app = typeof appId === 'string' ? appId.trim() : '';
+  const app = normApp(appId);
   return !!app && app !== SHARED_APP && Object.prototype.hasOwnProperty.call(RESOURCE_NAMES_BY_APP, app);
 }
 
@@ -186,7 +196,7 @@ function isKnownApp(appId) {
 // app owns nothing" must not read the same to the caller of this function.
 function resourceNamesFor(appId) {
   if (!isKnownApp(appId)) return null;
-  return (RESOURCE_NAMES_BY_APP[SHARED_APP] || []).concat(RESOURCE_NAMES_BY_APP[appId.trim()]);
+  return (RESOURCE_NAMES_BY_APP[SHARED_APP] || []).concat(RESOURCE_NAMES_BY_APP[normApp(appId)]);
 }
 
 // The text for the 400. FALLS BACK TO THE FULL LIST when the app is unknown,
@@ -240,7 +250,7 @@ function resourceListTextFor(appId) {
 function isVisibleTo(resource, appId) {
   if (RESOURCE_NAMES_BY_APP[SHARED_APP].indexOf(resource) !== -1) return true;
   if (!isKnownApp(appId)) return true;          // cannot attribute -> cannot judge
-  return RESOURCE_NAMES_BY_APP[appId.trim()].indexOf(resource) !== -1;
+  return RESOURCE_NAMES_BY_APP[normApp(appId)].indexOf(resource) !== -1;
 }
 
 module.exports = {

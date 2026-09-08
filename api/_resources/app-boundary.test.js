@@ -180,43 +180,69 @@ section('no app makes a cross-app call on this endpoint');
 
 test('every resource an app HTML asks sd-data for is its own or shared', () => {
   // THE PREMISE THE WHOLE GATE RESTS ON. Enforcing is only safe because nothing
-  // legitimately crosses; that was measured once before shipping, and a
-  // measurement taken once is a claim by tomorrow. This re-takes it.
+  // legitimately crosses; a measurement taken once is a claim by tomorrow, so
+  // this re-takes it.
   //
-  // `jobs` and `progress_photos` in stonedesk.html are NOT exceptions to the
-  // rule -- they POST to /api/sd-sub-data, a different endpoint with its own
-  // three-name registry, which was checked by reading the fetch call rather
-  // than inferred from the name.
+  // THE FIRST VERSION OF THIS ASSERTION MISSED THREE OF THE FOUR REALISTIC WAYS
+  // A CROSS-APP CALL GETS WRITTEN, which the independent review proved by
+  // injecting them: it only matched a literal `xData('verb','name')`, so a call
+  // through `rfDataRaw(` or `hrCall(` -- helpers that do not contain "Data" --
+  // and a name added to a SYNC ARRAY all passed while the suite printed green.
+  // The helper name is now irrelevant, and array literals are read.
+  //
+  // `jobs` and `progress_photos` in stonedesk.html are not exceptions: they
+  // POST to /api/sd-sub-data, a different endpoint with its own three-name
+  // registry, confirmed by reading the fetch call rather than inferring.
   const SUB_DATA_ONLY = new Set(['jobs', 'progress_photos', 'roster']);
-  const VERBS = 'read|write|delete|route|evaluate|derive_charges|reconcile|assess_damage|' +
-                'set_status|agreement_status|issue|add_payment|reconcile_claim';
-  const patterns = [
-    new RegExp("\\w*[Dd]ata\\(\\s*['\"](?:" + VERBS + ")['\"]\\s*,\\s*['\"]([a-z0-9_]+)['\"]", 'g'),
-    new RegExp("\\w*[Dd]ata\\(\\s*\\w+\\s*,\\s*['\"]([a-z0-9_]+)['\"]", 'g'),
-    new RegExp("['\"]?resource['\"]?\\s*:\\s*['\"]([a-z0-9_]+)['\"]", 'g'),
-  ];
+  const VERBS = "read|write|delete|route|evaluate|derive_charges|reconcile|assess_damage|" +
+                "set_status|agreement_status|issue|add_payment|reconcile_claim|reserve|qc-review";
   const problems = [];
-  let scanned = 0;
+  let scanned = 0, callSites = 0;
+
   for (const f of fs.readdirSync(ROOT).filter((n) => n.endsWith('.html'))) {
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
     if (src.indexOf('/api/sd-data') === -1) continue;
     const app = f.replace(/\.html$/, '').replace(/-.*$/, '');
-    if (!reg.isKnownApp(app)) continue;      // a public page, not an app shell
+    if (!reg.isKnownApp(app)) continue;
     scanned++;
-    const names = new Set();
-    for (const rx of patterns) { let m; rx.lastIndex = 0; while ((m = rx.exec(src)) !== null) names.add(m[1]); }
-    for (const n of names) {
+
+    const asked = new Set();
+    // 1. ANY helper, not just one whose name contains "Data": fn('verb','name')
+    let m;
+    const byVerb = new RegExp(String.raw`\w+\(\s*['"](?:` + VERBS + String.raw`)['"]\s*,\s*['"]([a-z0-9_]+)['"]`, 'g');
+    while ((m = byVerb.exec(src)) !== null) asked.add(m[1]);
+    // 2. fn(actionVariable, 'name')
+    const byVar = /\w+\(\s*[A-Za-z_$][\w$]*\s*,\s*['"]([a-z0-9_]+)['"]/g;
+    while ((m = byVar.exec(src)) !== null) asked.add(m[1]);
+    // 3. an explicit envelope: resource:'name'
+    const byField = /['"]?resource['"]?\s*:\s*['"]([a-z0-9_]+)['"]/g;
+    while ((m = byField.exec(src)) !== null) asked.add(m[1]);
+    // 4. SYNC / RESOURCE ARRAYS -- how five apps name their resources. The
+    //    review added a foreign name to BLD_SYNCED and the old sweep missed it.
+    const arrays = /(?:var|const|let)\s+\w*(?:SYNC\w*|RESOURCES?|RESOURCE_\w+)\s*=\s*\[([\s\S]{0,4000}?)\]/g;
+    while ((m = arrays.exec(src)) !== null) {
+      const names = m[1].match(/['"]([a-z0-9_]+)['"]/g) || [];
+      names.forEach((n) => asked.add(n.slice(1, -1)));
+    }
+
+    for (const n of asked) {
       if (SUB_DATA_ONLY.has(n)) continue;
       const owner = reg.OWNER_BY_RESOURCE[n];
-      if (!owner) continue;                  // unregistered: already a 400, not a boundary question
+      if (!owner) continue;               // unregistered: already a 400
+      callSites++;
       if (owner !== 'shared' && owner !== app) {
         problems.push(f + ' asks for ' + n + ', owned by ' + owner);
       }
     }
   }
-  assert.ok(scanned >= 10, 'only scanned ' + scanned + ' app files -- the sweep found nothing to check');
+
+  assert.ok(scanned >= 10, 'only scanned ' + scanned + ' app files');
+  // NOT just a file count: the old version was satisfied by files that named
+  // nothing. This requires the sweep to have actually resolved resource names.
+  assert.ok(callSites >= 100,
+    'only resolved ' + callSites + ' resource references -- the patterns stopped matching');
   assert.deepStrictEqual(problems, [],
-    'A CROSS-APP CALL NOW EXISTS AND THE BOUNDARY WILL BREAK IT:\n    ' + problems.join('\n    '));
+    'A CROSS-APP CALL NOW EXISTS AND THE BOUNDARY WILL BREAK IT:' + problems.join('; '));
 });
 
 (async () => {

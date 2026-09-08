@@ -332,33 +332,43 @@ async function callHandler(action, resource, key) {
       'resource must be one of: ' + reg.RESOURCE_LIST_TEXT
     );
   });
-  await atest('verb gate runs BEFORE the resource gate (pre-existing order, unchanged)', async () => {
-    // An unknown resource asked for an extra verb is refused by the ACTION
-    // gate, not the resource gate -- the action check sits above it in
-    // api/sd-data.js and always has. Asserted so the ordering is a documented
-    // fact rather than a surprise to whoever changes either gate next; it is
-    // also why an unregistered resource can never be granted a verb by
-    // accident.
+  await atest('THE RESOURCE GATE NOW RUNS FIRST -- reversed 2026-09-08, deliberately', async () => {
+    // THIS ASSERTION USED TO SAY THE OPPOSITE, and reversing it is the point.
+    // It documented that the ACTION gate sat above the resource gate, so
+    // `delete` on an unknown resource was refused for the verb rather than the
+    // name. The independent review of the app-boundary commit showed that
+    // ordering IS an enumeration oracle: the action message depends on facts
+    // about the resource, so sending an extra verb told a caller whether a
+    // guessed name exists and which app owns it. Confirmed live, including
+    // `bogus_verb` on a foreign sc_ resource still answering "or 'delete'".
     const r = await gate('delete', '__no_such_resource__');
     assert.strictEqual(r.code, REJECTED);
-    assert.strictEqual(r.body.error.message, "action must be 'read' or 'write'");
+    assert.match(r.body.error.message, /^resource must be one of: /,
+      'an unknown resource answered for its VERB again -- the oracle is back');
   });
 
-  // ── ORDERING: NO RESOURCE NAME LEAVES THE ENDPOINT WITHOUT A VALID LICENCE ──
-  //
-  // Fixed 2026-09-04. Before it, `POST /api/sd-data` with
-  // `Authorization: Bearer not-a-real-key` and an unknown resource answered
-  // 400 naming all 171 registered resources, to a caller holding no credential
-  // -- verified live on 2026-08-24 with no credential used. Names only, never
-  // data, but it enumerated the whole platform's surface and let an anonymous
-  // caller tell a real resource from an invented one by which refusal came
-  // back.
-  //
-  // These go through the REAL EXPORTED HANDLER on purpose. Everything above
-  // drives checkEnvelope directly, which is only safe while the handler is
-  // known to run validation first -- so that is what these assert. No env vars
-  // are set, so validateLicenseKey() throws CONFIG and the handler answers 500
-  // before any Supabase call.
+  await atest('...and an extra verb cannot distinguish a real name from an invented one', async () => {
+    // The exact probe the reviewer ran against production.
+    const real = handler.checkEnvelope('delete', 'sc_denial', 'stonedesk');
+    const fake = handler.checkEnvelope('delete', 'sc_not_a_real_name', 'stonedesk');
+    assert.deepStrictEqual(real.body, fake.body, 'the extra-verb oracle is open');
+    const realBogus = handler.checkEnvelope('bogus_verb', 'sc_denial', 'stonedesk');
+    const fakeBogus = handler.checkEnvelope('bogus_verb', 'sc_not_a_real_name', 'stonedesk');
+    assert.deepStrictEqual(realBogus.body, fakeBogus.body,
+      'the "or delete" suffix still confirms the sc_ family to an outsider');
+  });
+
+  await atest('...but an OWNER still gets the accurate verb message', async () => {
+    // Closing the oracle must not make the endpoint useless to the app that
+    // owns the resource.
+    assert.strictEqual(
+      handler.checkEnvelope('bogus_verb', 'sc_denial', 'sairncode').body.error.message,
+      "action must be 'read' or 'write' or 'delete'");
+    assert.strictEqual(
+      handler.checkEnvelope('bogus_verb', 'profile', 'stonedesk').body.error.message,
+      "action must be 'read' or 'write'");
+  });
+
   console.log('\nOrdering — an unauthenticated caller learns nothing:');
 
   await atest('the gate is exported for the tests above, and is the real one', () => {
