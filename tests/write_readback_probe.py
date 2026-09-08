@@ -120,6 +120,106 @@ def main():
     rc, out = run([obj])
     check('Object.keys(<object literal>) resolves', rc, 0)
 
+    # ── the GENERIC WRITE shapes, added 2026-09-05 ─────────────────────────
+    # Both existed in the two largest apps and were reported COULD NOT TELL.
+    # The resolvers that fixed that are pinned here in BOTH directions: they
+    # must resolve the real shape, and they must NOT invent coverage.
+    print('--- the generic write shapes ---')
+
+    guard = write(os.path.join(tmp, 'guard.html'), """
+      var X_SYNC=['ap_one','ap_two','ap_three'];
+      var _on={}; X_SYNC.forEach(function(k){ _on[k]=true; });
+      function push(key,rec){ if(!_on[key]) return; apData('write',key,rec); }
+      function go(){ X_SYNC.map(function(k){ return apData('read',k); }); }
+    """)
+    rc, out = run([guard])
+    check('a membership-guarded generic WRITE resolves -- the SAIRNbuild shape', rc, 0)
+
+    guard_unread = write(os.path.join(tmp, 'guard_unread.html'), """
+      var X_SYNC=['ap_one','ap_two','ap_three'];
+      var _on={}; X_SYNC.forEach(function(k){ _on[k]=true; });
+      function push(key,rec){ if(!_on[key]) return; apData('write',key,rec); }
+      function go(){ apData('read','ap_one'); apData('read','ap_two'); }
+    """)
+    rc, out = run([guard_unread])
+    check('...and the resolver ACCUSES when that list is not read back', rc != 0, True)
+    check('...naming the one left out', 'ap_three' in out, True)
+
+    hop = write(os.path.join(tmp, 'hop.html'), """
+      function syncOne(resource,rec){ apData('write',resource,rec); }
+      function a(){ syncOne('ap_one',{}); }
+      function b(){ syncOne('ap_two',{}); }
+      function go(){ var pairs=[['ap_one','x'],['ap_two','y']];
+        for(var i=0;i<pairs.length;i++){ apData('read',pairs[i][0]); } }
+    """)
+    rc, out = run([hop])
+    check('a one-hop generic WRITER resolves from its call sites -- the StoneDesk shape', rc, 0)
+
+    hop_unread = write(os.path.join(tmp, 'hop_unread.html'), """
+      function syncOne(resource,rec){ apData('write',resource,rec); }
+      function a(){ syncOne('ap_one',{}); }
+      function b(){ syncOne('ap_two',{}); }
+      function c(){ syncOne('ap_three',{}); }
+      function go(){ var pairs=[['ap_one','x'],['ap_two','y']];
+        for(var i=0;i<pairs.length;i++){ apData('read',pairs[i][0]); } }
+    """)
+    rc, out = run([hop_unread])
+    check('...and a hopped write with no read is caught', rc != 0, True)
+    check('...naming it', 'ap_three' in out, True)
+
+    # ── the READ side had to widen in the SAME commit ──────────────────────
+    # Making writes visible without these would have shipped nine invented
+    # findings about a real business's AP, budgets, payroll and invoices --
+    # every one of them read through a wrapper the name pattern cannot see.
+    print('--- the wrapper shapes the name pattern cannot see ---')
+
+    fwd = write(os.path.join(tmp, 'fwd.html'), """
+      function pcRead(resource){ return apData('read',resource,{}); }
+      function pcWrite(resource,p){ return apData('write',resource,p); }
+      function a(){ pcWrite('ap_one',{}); pcWrite('ap_two',{}); }
+      function b(){ pcRead('ap_one'); pcRead('ap_two'); }
+    """)
+    rc, out = run([fwd])
+    check('a one-hop forwarding READER resolves -- the StoneDesk pcRead shape', rc, 0)
+
+    fwd_gap = write(os.path.join(tmp, 'fwd_gap.html'), """
+      function pcRead(resource){ return apData('read',resource,{}); }
+      function pcWrite(resource,p){ return apData('write',resource,p); }
+      function a(){ pcWrite('ap_one',{}); pcWrite('ap_two',{}); pcWrite('ap_three',{}); }
+      function b(){ pcRead('ap_one'); pcRead('ap_two'); }
+    """)
+    rc, out = run([fwd_gap])
+    check('...and a forwarded write with no forwarded read is still caught', rc != 0, True)
+    check('...naming it', 'ap_three' in out, True)
+
+    # ── the two traps the widening created, both caught by control ─────────
+    print('--- what the widened resolver must NOT accept ---')
+
+    # A write-guard list is now GUARANTEED to overlap the write set, because
+    # the write set is derived from it. Overlap alone can no longer be
+    # evidence that a list is read.
+    guard_other = write(os.path.join(tmp, 'guard_other.html'), """
+      var LIST=['ap_one','ap_two','ap_three'];
+      var _on={}; LIST.forEach(function(k){ _on[k]=true; });
+      function push(key,rec){ if(!_on[key]) return; apData('write',key,rec); }
+      function go(){ var two=['ap_one','ap_two']; two.map(function(k){ return apData('read',k); }); }
+    """)
+    rc, out = run([guard_other])
+    check('a write-guard list is NOT counted as read just because it overlaps', rc != 0, True)
+    check('...and the uncovered name is still reported', 'ap_three' in out, True)
+
+    # The same fixture is what proved a fixed-size window is not a body: a
+    # 1,500-char slice after LIST.forEach(function(k){...}) ran past the
+    # callback and found the OTHER loop's read of a variable also called `k`.
+    covered = write(os.path.join(tmp, 'covered.html'), """
+      var LIST=['ap_one','ap_two','ap_three'];
+      var _on={}; LIST.forEach(function(k){ _on[k]=true; });
+      function push(key,rec){ if(!_on[key]) return; apData('write',key,rec); }
+      function go(){ LIST.map(function(k){ return apData('read',k); }); }
+    """)
+    rc, out = run([covered])
+    check('...while the SAME list genuinely read back is clean', rc, 0)
+
     # ── the object-literal call shape ───────────────────────────────────────
     print('--- the object-literal call shape ---')
     obj_call = write(os.path.join(tmp, 'objcall.html'), """

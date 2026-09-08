@@ -45,6 +45,26 @@ counts as reading everything it iterates, and reports write names with no read.
     array of pairs, or Object.keys(<object literal>). Anything else resolves
     to COULD NOT TELL for that file, which is NOT a pass -- the exit code says
     so.
+  * A binding more than the hops listed in _is_actually_read(). Each hop is a
+    place to be wrong; a fourth would be guessing rather than following.
+
+-- WIDENED 2026-09-05, IN BOTH DIRECTIONS AT ONCE -----------------------------
+It reported COULD NOT TELL for the two largest apps, and the row said to READ
+those loops rather than loosen anything. Both were read: SAIRNbuild drives its
+write guard and its hydrate off ONE list; StoneDesk's lineage writer is a
+one-hop function whose three call sites match its read loop exactly. Both are
+now resolved from that evidence.
+
+THE PART WORTH KEEPING IS WHAT HAPPENED IN BETWEEN. Making generic WRITES
+visible immediately produced ten "written and never read back" findings across
+SAIRNbiz and StoneDesk -- every one FALSE. They are read through wrappers this
+file cannot see by name (`sbBackupFetch('read', key)`, `pcRead(resource)`).
+Widening one side of a comparison manufactures accusations, so the read side
+was widened in the same change, and two negative controls now pin the traps
+that created: a write-guard list must not count as a read set merely because
+it overlaps the write set it defines, and a callback body must be brace-matched
+rather than sliced, or it swallows an unrelated loop's read of a variable that
+happens to share a name.
   * Whether the read is ever CALLED. A hydrate that exists and is never invoked
     reads clean here. tools/sairn_reachability_check.py is the tool for that
     question, and this one says so rather than implying coverage it lacks.
@@ -68,6 +88,10 @@ PLATFORM_RESOURCES = {
 }
 
 WRITE_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+# A GENERIC WRITE IS AS INVISIBLE AS A GENERIC READ, and that blind spot is
+# what produced both COULD NOT TELL results on 2026-09-05. Resolved 2026-09-05
+# after reading both loops by hand -- see resolve_generic_writes().
+WRITE_VAR_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*([A-Za-z_$][\w$]*)\s*,")
 READ_LIT_RE = re.compile(r"\w*Data\(\s*'read'\s*,\s*'(\w+)'")
 READ_VAR_RE = re.compile(r"\w*Data\(\s*'read'\s*,\s*([A-Za-z_$][\w$]*)")
 WRAPPER_RE = re.compile(r"function\s+(\w*Data)\s*\(")
@@ -111,6 +135,128 @@ def _literal_body(src, name, opener, closer):
             if depth == 0:
                 return src[start:i + 1]
     return None
+
+
+def resolve_generic_writes(src):
+    """Resource names a GENERIC write loop provably covers.
+
+    ADDED 2026-09-05, after this checker reported COULD NOT TELL for the two
+    largest apps and the row told the next session to READ the loops rather
+    than loosen anything. Both were read by hand first; these two resolvers
+    encode what the reading found, and nothing wider.
+
+    The blind spot was symmetric and that is why it was confusing: a generic
+    READ was already reported honestly, but a generic WRITE was simply not
+    seen, so the app's write set was whatever literals happened to remain --
+    and then the real read list looked like an unrelated constant, because it
+    overlapped a write set that was missing 30 of its 32 names.
+
+    ── SHAPE A: the write is GUARDED BY MEMBERSHIP IN A DECLARED LIST ────────
+    SAIRNbuild hooks st() and pushes only keys it is told to sync:
+
+        var BLD_SYNCED = ['bld_jobs', ...];
+        var _bldSyncOn = {};
+        BLD_SYNCED.forEach(function(k){ _bldSyncOn[k] = true; });
+        function bldSyncCollection(key, ...) {
+          if (!_bldSyncOn[key] || bldSeeding) return;
+          ... bldData('write', key, r) ...
+        }
+
+    The guard IS the write set, and the same constant drives bldHydrateAll()'s
+    read. One list on both sides is the strongest coverage evidence there is --
+    stronger than the name overlap this file already relies on elsewhere.
+
+    ── SHAPE B: the generic writer is a FUNCTION whose callers pass literals ─
+    StoneDesk's lineage sync:
+
+        async function sdLineageSyncOne(resource, rec) { ... sdData('write', resource, rec) ... }
+        sdLineageSyncOne('sd_slab_history', rec);   // and sd_blocks, sd_bundles
+
+    Following one hop to the call sites is not dataflow analysis; the argument
+    is a literal at every site or this returns nothing for it.
+
+    WHAT THIS DELIBERATELY DOES NOT DO: it does not guess. A generic write it
+    cannot resolve is still invisible, which leaves the app's write set short
+    and can only ever produce a COULD NOT TELL or a false clean on the READ
+    side -- never a false accusation. The names it resolves are printed, the
+    same disclosure the read sets already carry, so a wrong resolution is
+    visible rather than implied.
+    """
+    resolved = set()
+    # Shape A -- a membership guard built from a declared list.
+    for gm in re.finditer(r'\b(\w+)\.forEach\(\s*function\s*\(\s*(\w+)\s*\)\s*\{\s*'
+                          r'(\w+)\s*\[\s*\2\s*\]\s*=\s*true', src):
+        list_name, guard = gm.group(1), gm.group(3)
+        if not re.search(r'!\s*' + re.escape(guard) + r'\s*\[', src):
+            continue                      # the map exists but nothing gates on it
+        body = _literal_body(src, list_name, '[', ']')
+        if body:
+            resolved |= set(re.findall(r"'(\w+)'", body))
+    # Shape B -- one hop to a generic writer's call sites.
+    for fm in re.finditer(r'\b(?:async\s+)?function\s+(\w+)\s*\(\s*(\w+)\s*,', src):
+        fn, param = fm.group(1), fm.group(2)
+        tail = src[fm.end():fm.end() + 4000]
+        if not re.search(r"\w*Data\(\s*'write'\s*,\s*" + re.escape(param) + r'\s*,', tail):
+            continue
+        for cm in re.finditer(r'(?<![\w$.])' + re.escape(fn) + r"\(\s*'(\w+)'\s*,", src):
+            resolved.add(cm.group(1))
+    return resolved
+
+
+def resolve_generic_reads(src):
+    """Resource names a GENERIC read provably covers, by the same two shapes.
+
+    ADDED 2026-09-05, IN THE SAME PASS AND FOR A REASON WORTH RECORDING. The
+    write resolver above made three apps' real write sets visible for the first
+    time, and the moment it did, this checker reported 10 resources as "written
+    and never read back" across SAIRNbiz and StoneDesk. Every one was FALSE.
+    They are all read -- through wrappers this file could not see, because it
+    identifies a data call by the NAME pattern `\\w*Data(`:
+
+        sbBackupFetch('read', key, null)      // SAIRNbiz, posts to DATA_API itself
+        pcRead('sd_quote_requests')           // StoneDesk, forwards to sdData
+
+    The tool's header already disclosed the name assumption. What it did not
+    say is that the assumption was load-bearing for the RESULT, not just the
+    coverage: making writes visible without making these reads visible would
+    have shipped nine invented findings about a business's AP, budgets,
+    payroll and invoices. **A resolver that only widens one side of a
+    comparison manufactures accusations.** Both sides moved in the same commit.
+
+    Two shapes, mirroring the write side:
+      * a forwarder -- `function pcRead(resource){ ... sdData('read', resource ...) }`
+        -- resolved one hop to its call sites' literals;
+      * a declared list iterated with `.map(function(key){ ... 'read' ... key ... })`,
+        which is how every hydrate-all in this platform is written.
+
+    Unresolvable stays unresolvable and still reports COULD NOT TELL.
+    """
+    names = set()
+    # Shape B-mirror: a one-hop forwarder whose parameter becomes the resource.
+    for fm in re.finditer(r'\b(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)', src):
+        fn, params = fm.group(1), [p.strip() for p in fm.group(2).split(',') if p.strip()]
+        if not params:
+            continue
+        tail = src[fm.end():fm.end() + 1200]
+        for idx, p in enumerate(params):
+            if re.search(r"\w*Data\(\s*'read'\s*,\s*" + re.escape(p) + r'\b', tail):
+                for cm in re.finditer(r'(?<![\w$.])' + re.escape(fn) + r'\(([^)]*)\)', src):
+                    args = [a.strip() for a in cm.group(1).split(',')]
+                    if idx < len(args):
+                        lit = re.fullmatch(r"'(\w+)'", args[idx])
+                        if lit:
+                            names.add(lit.group(1))
+                break
+    # Shape A-mirror: a declared list mapped over, with a read inside the body.
+    for mm in re.finditer(r'\b(\w+)\.map\(\s*function\s*\(\s*(\w+)\s*\)\s*\{', src):
+        list_name, var = mm.group(1), mm.group(2)
+        body = src[mm.end():mm.end() + 1500]
+        if not re.search(r"'read'\s*,\s*" + re.escape(var) + r'\b', body):
+            continue
+        lit = _literal_body(src, list_name, '[', ']')
+        if lit:
+            names |= set(re.findall(r"'(\w+)'", lit))
+    return names
 
 
 def declared_read_sets(src, writes):
@@ -157,43 +303,176 @@ def declared_read_sets(src, writes):
         else:
             entries = set(re.findall(r"[{,]\s*'?(\w+)'?\s*:", body))
         overlap = entries & writes
-        if len(overlap) >= 2:
+        if len(overlap) >= 2 and _is_actually_read(src, var):
             names |= overlap
             found.append(var)
     return names, found
 
 
+def _callback_body(src, start):
+    """The text of a callback body that begins just after its opening brace.
+
+    A FIXED-SIZE WINDOW IS NOT A BODY, and a negative control proved it: a
+    1,500-character slice after `LIST.forEach(function(k){ _on[k]=true; })`
+    ran straight past the callback and swallowed an UNRELATED loop's
+    `apData('read', k)` further down the file, so a write-guard was accepted as
+    a read set. Brace-matching is the difference between reading a body and
+    reading whatever happens to be nearby.
+    """
+    depth = 1
+    for i in range(start, min(len(src), start + 20000)):
+        if src[i] == '{':
+            depth += 1
+        elif src[i] == '}':
+            depth -= 1
+            if depth == 0:
+                return src[start:i]
+    return src[start:start + 20000]
+
+
+def _is_actually_read(src, var):
+    """Is this list DEMONSTRABLY the thing a generic read iterates?
+
+    TIGHTENED 2026-09-05, AND THE TIGHTENING WAS FORCED BY MY OWN CHANGE. The
+    overlap-by-two rule above already carried a stated residual risk: "a list
+    that is NOT a read set but happens to contain two or more of the app's
+    resource names would be counted as coverage that does not exist."
+
+    resolve_generic_writes() made that risk certain rather than residual. The
+    Shape-A write guard is BUILT FROM a declared list, so that list now
+    overlaps the write set completely, by construction -- every write-side
+    constant would have been accepted as a read set and the check would have
+    gone permanently green on exactly the apps it was widened to cover. A probe
+    fixture caught it: a list that is written and never read came back clean.
+
+    So overlap is no longer sufficient. The list must be seen feeding a read:
+    indexed straight into one, or iterated with the loop variable passed as the
+    resource. Everything the platform actually writes matches one of those.
+    """
+    if re.search(r"'read'\s*,\s*" + re.escape(var) + r'\s*\[', src):
+        return True
+    for m in re.finditer(re.escape(var) + r'\.(?:map|forEach)\(\s*function\s*\(\s*(\w+)\s*\)\s*\{', src):
+        v = m.group(1)
+        body = _callback_body(src, m.end())
+        if re.search(r"'read'\s*,\s*" + re.escape(v) + r'\b', body):
+            return True
+    # A `for (var i...)` loop that indexes the list inside the read argument
+    # itself -- apData('read', resources[i][0]) -- so there is no callback
+    # parameter to follow.
+    if re.search(r"'read'\s*,\s*" + re.escape(var) + r'\s*\[\s*\w+\s*\]', src):
+        return True
+    # Everything else goes the other way round: start from the variable that IS
+    # the resource argument of a read, and ask whether it was bound from this
+    # list. Four bindings cover every app on the platform, and each one was
+    # read out of a real file rather than imagined:
+    #
+    #   var resource = DNT_SYNC_RESOURCES[i][0];        (SAIRNdental)
+    #   var res = pairs[i]; ... 'read', res[0]          (StoneDesk)
+    #   var resources = Object.keys(SC_RESOURCE_STORAGE_KEYS);  (SAIRNcode)
+    #   LIST.map(function (key) { ... 'read', key ... }) (handled above)
+    #
+    # ALIASES ARE FOLLOWED ONE HOP, not chased. A binding this cannot see keeps
+    # the list unresolved, which is the safe direction: it costs a COULD NOT
+    # TELL, never a false clean.
+    aliases = {var}
+    for al in re.finditer(r'\b(?:var|let|const)\s+(\w+)\s*=\s*(?:Object\.keys\(\s*)?' +
+                          re.escape(var) + r'\s*\)?\s*;', src):
+        aliases.add(al.group(1))
+    read_args = set(re.findall(r"'read'\s*,\s*([A-Za-z_$][\w$]*)", src))
+    for a in aliases:
+        for rv in read_args:
+            # var rv = ALIAS[i]  /  ALIAS[i][0]
+            if re.search(r'\b(?:var|let|const)\s+' + re.escape(rv) + r'\s*=\s*' +
+                         re.escape(a) + r'\s*\[', src):
+                return True
+            # ALIAS.map/forEach(function (rv) { ... 'read', rv ... })
+            #
+            # THE READ MUST BE INSIDE THAT BODY. Matching the parameter NAME
+            # anywhere was tried and a negative control caught it in minutes: a
+            # write-guard built as `LIST.forEach(function(k){_on[k]=true;})`
+            # was accepted as a read set because some OTHER list's read loop
+            # also happened to call its parameter `k`. Two loops sharing a
+            # one-letter variable is not evidence of anything.
+            for it in re.finditer(re.escape(a) + r'\.(?:map|forEach)\(\s*function\s*\(\s*' +
+                                  re.escape(rv) + r'\s*\)\s*\{', src):
+                if re.search(r"'read'\s*,\s*" + re.escape(rv) + r'\b',
+                             _callback_body(src, it.end())):
+                    return True
+        # var res = ALIAS[i]; ... 'read', res[0]
+        for am in re.finditer(r'\b(?:var|let|const)\s+(\w+)\s*=\s*' + re.escape(a) +
+                              r'\s*\[\s*\w+\s*\]', src):
+            if re.search(r"'read'\s*,\s*" + re.escape(am.group(1)) + r'\s*\[', src):
+                return True
+        # ONE MORE HOP, and the last one: the iteration hands each name to a
+        # per-resource function whose parameter is what reaches the read --
+        #   resources.map(function (r) { return scSyncOneResource(r); })
+        #   async function scSyncOneResource(resource) { ... 'read', resource ... }
+        # SAIRNcode is the only app shaped this way, and without this it is a
+        # COULD NOT TELL. Stopping here is deliberate: each hop is a place to
+        # be wrong, and a fourth would be guessing rather than following.
+        for im in re.finditer(re.escape(a) + r'\.(?:map|forEach)\(\s*function\s*\(\s*(\w+)\s*\)\s*\{',
+                              src):
+            iv = im.group(1)
+            body = src[im.end():im.end() + 600]
+            for cm in re.finditer(r'(\w+)\(\s*' + re.escape(iv) + r'\s*\)', body):
+                callee = cm.group(1)
+                fm2 = re.search(r'\b(?:async\s+)?function\s+' + re.escape(callee) +
+                                r'\s*\(\s*(\w+)', src)
+                if fm2 and re.search(r"'read'\s*,\s*" + re.escape(fm2.group(1)) + r'\b',
+                                     src[fm2.end():fm2.end() + 3000]):
+                    return True
+    return False
+
+
 def read_coverage(src, writes):
-    """(names read, unresolved reasons, declared sets used).
+    """(names read, unresolved variable names, declared sets used).
 
     A variable read whose set cannot be resolved is a REASON, never silent
-    coverage.
+    coverage -- but the reason is now RAISED BY audit(), not here, because
+    whether it matters depends on the answer. Changed 2026-09-05: an
+    unresolved generic read alongside FULL coverage is not a could-not-tell,
+    it is a question that got answered another way. Reporting it anyway made
+    every forwarding wrapper permanently unresolvable even when every write it
+    performs is demonstrably read back, which is a check that can never go
+    green rather than one that is strict.
     """
-    names = set(READ_LIT_RE.findall(src)) | set(READ_OBJ_RE.findall(src))
+    names = (set(READ_LIT_RE.findall(src)) | set(READ_OBJ_RE.findall(src))
+             | resolve_generic_reads(src))
     var_reads = set(READ_VAR_RE.findall(src))
     declared, found = declared_read_sets(src, writes)
-    reasons = []
-    if var_reads:
-        if declared:
-            names |= declared
-        else:
-            reasons.append('a generic read loop exists (%s) but no declared list '
-                           'overlaps this app\'s write set' % ', '.join(sorted(var_reads)))
-    return names, reasons, found
+    unresolved = sorted(var_reads) if var_reads and not declared else []
+    if declared:
+        names |= declared
+    return names, unresolved, found
 
 
 def audit(path):
     src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
-    writes = (set(WRITE_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))) - PLATFORM_RESOURCES
+    writes = (set(WRITE_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
+              | resolve_generic_writes(src)) - PLATFORM_RESOURCES
     if not writes:
         return None
-    reads, reasons, declared = read_coverage(src, writes)
+    reads, unresolved, declared = read_coverage(src, writes)
+    missing = sorted(writes - reads)
+    # COULD NOT TELL only where it is actually true: an unresolved generic read
+    # AND something still unaccounted for. With NOTHING missing there is
+    # nothing this could not tell -- the question got answered another way,
+    # and reporting it anyway made every forwarding wrapper permanently
+    # unresolvable even where every write it performs is demonstrably read
+    # back. Where something IS missing, BOTH are reported: the names, and the
+    # note that an unresolved loop might cover them. Suppressing the names in
+    # that case was tried and reverted the same hour -- it silenced the real
+    # pre-fix SAIRNlaw finding, which is the case this whole tool exists for.
+    reasons = []
+    if unresolved and missing:
+        reasons.append('a generic read loop exists (%s) but no declared list '
+                       "overlaps this app's write set" % ', '.join(unresolved))
     wrappers = sorted(set(WRAPPER_RE.findall(src)))
     return {
         'file': os.path.basename(path),
         'writes': writes,
         'reads': reads,
-        'missing': sorted(writes - reads),
+        'missing': missing,
         'reasons': reasons,
         'declared': declared,
         'wrappers': wrappers,
