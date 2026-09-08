@@ -8842,6 +8842,70 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- STONEDESK: THE LOCAL-ONLY RECORD (2026-09-08) ------------------------
+    // Closes the open-work row "TWELVE record collections live on one
+    // workstation and reach no server at all". THE TWELVE WAS AN UNDERCOUNT:
+    // tools/local_only_collection_check.py, after the repair whose own commit
+    // says "the checker could not read half of StoneDesk", reports 26 of 37
+    // collections with no route to a server. Twenty-one are backed up here;
+    // seven are excluded with a reason each in api/_resources/stonedesk.js.
+    //
+    // WORSE HERE THAN IN SAIRNbiz OR SAIRNbuild, for a reason specific to this
+    // app: StoneDesk DOES sync slabs, customers, CRM and approvals. So the
+    // records that look authoritative survive a browser-data clear and the
+    // INVOICES that justify them do not. A uniformly local app at least fails
+    // honestly; this one fails selectively, in the direction that looks fine.
+    //
+    // One generic read/write pair covering all 21 -- same shape and reasoning
+    // as BLD_RESOURCES above and SB_RESOURCES below. See
+    // sql/stonedesk_data_schema.sql for the tables and the id-column rule.
+    //
+    // NO SESSION GATE, following BLD_RESOURCES rather than SB_RESOURCES, and
+    // that is a decision. These are the shared shop record -- quote history,
+    // inventory, drawings, remakes -- and every role in a fabrication shop
+    // reads them. StoneDesk's personnel and financial data already sits behind
+    // session gates elsewhere (sd_hr_employees, sd_hr_certs, employees,
+    // sd_approvals), which is where that boundary belongs.
+    const SD_LOCAL_RESOURCES = {
+      sd_invoices: 'invoice_id', sd_drawings: 'drawing_id', sd_remakes: 'remake_id',
+      sd_fin_jobs: 'fin_job_id', sd_pricing_rules: 'pricing_rule_id',
+      sd_negotiated_prices: 'negotiated_price_id', sd_order_history: 'order_id',
+      sd_inventory: 'inventory_id', sd_comms: 'comm_id', sd_sms_log: 'sms_id',
+      stonedesk_quote_history: 'quote_id', sd_business_snapshots: 'snapshot_id',
+      sd_field_stops: 'field_stop_id', sd_exec_msgs: 'exec_msg_id',
+      sd_aiquotes: 'aiquote_id', sd_nesting_saved: 'nesting_id',
+      sd_veinmatch: 'veinmatch_id', sd_seamai: 'seamai_id', sd_photos: 'photo_id',
+      sd_templates: 'template_id', sd_email_threats: 'threat_id'
+    };
+    if (SD_LOCAL_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // 404/400 means the table does not exist yet. Reported as an honest empty
+      // WITH provisioned:false rather than as rows, so the client can tell
+      // "nothing saved yet" from "this was never migrated".
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (SD_LOCAL_RESOURCES[resource] && action === 'write') {
+      const idCol = SD_LOCAL_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'stonedesk', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // -- SAIRNBIZ: THE BUSINESS RECORD (2026-09-04) ---------------------------
     // Closes docs/SAIRN-OPEN-WORK-INDEX.md's "No server-side persistence for
     // anything except the employee roster -- and the ledger implies more data

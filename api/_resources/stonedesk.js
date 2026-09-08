@@ -116,5 +116,89 @@ module.exports = {
   // 'slabs' -- a yard's name and address is operational data.
   // REQUIRES sql/stonedesk_locations_schema.sql to be run.
     'locations',
+
+  // ── THE LOCAL-ONLY RECORD, 2026-09-08 ───────────────────────────────────
+  // Closes the open-work row "TWELVE record collections live on one
+  // workstation and reach no server at all". THE TWELVE WAS AN UNDERCOUNT and
+  // this is the corrected figure: tools/local_only_collection_check.py, after
+  // the 2026-09-08 repair whose own commit message says "the checker could not
+  // read half of StoneDesk", reports 26 of 37 collections with NO route to a
+  // server. The twelve came from its pre-fix run.
+  //
+  // WORSE HERE THAN IN SAIRNbiz OR SAIRNbuild, and for a reason specific to
+  // this app: StoneDesk DOES sync slabs, customers, CRM and approvals. So the
+  // records that look authoritative survive a browser-data clear and the
+  // INVOICES that justify them do not. A uniformly local app at least fails
+  // honestly.
+  //
+  // Twenty-one below. One generic read/write pair in api/sd-data.js, not
+  // twenty-one copy-pasted blocks -- same shape and same reasoning as
+  // BLD_RESOURCES, SB_RESOURCES and LEG_RESOURCES. See
+  // sql/stonedesk_data_schema.sql for the tables and the id-column rule.
+  //
+  // NAMING: the resource name is the localStorage key verbatim, which is not
+  // cosmetic -- the client's sync hook keys off the storage key directly, so a
+  // rename would need a mapping table on both sides to stay correct. That is
+  // why `stonedesk_quote_history` keeps its odd, unprefixed name.
+  //
+  // NO SESSION GATE, and that is a decision rather than an omission. It
+  // follows BLD_RESOURCES rather than SB_RESOURCES: these are the shared shop
+  // record -- the quote history, the inventory, the drawings, the schedule of
+  // remakes -- and every role in a fabrication shop reads them. StoneDesk's
+  // personnel and financial data already sits behind session gates elsewhere
+  // (`sd_hr_employees`, `sd_hr_certs`, `employees`, `sd_approvals`), which is
+  // where that boundary belongs. If a future per-role rule is wanted on one of
+  // these it needs its own bespoke branch, not a gate bolted onto the loop.
+    'sd_invoices',
+    'sd_drawings',
+    'sd_remakes',
+    'sd_fin_jobs',
+    'sd_pricing_rules',
+    'sd_negotiated_prices',
+    'sd_order_history',
+    'sd_inventory',
+    'sd_comms',
+    'sd_sms_log',
+  // The odd name is the real localStorage key -- see NAMING above.
+    'stonedesk_quote_history',
+    'sd_business_snapshots',
+    'sd_field_stops',
+    'sd_exec_msgs',
+    'sd_aiquotes',
+    'sd_nesting_saved',
+    'sd_veinmatch',
+    'sd_seamai',
+  // Reported by the checker as COULD-NOT-TELL because st('sd_customers', ...)
+  // happens to sit on the line above it. Read by hand: it is NOT server-backed
+  // and it belongs here.
+    'sd_photos',
+  // The Template Manager's canonical key -- a 5-state workflow with a
+  // statusLog[] audit trail, and the surviving half of a 2026-07-30 feature
+  // de-duplication. Records, not settings.
+    'sd_templates',
+  // Accumulated email-security findings, loaded and saved as a plain array
+  // like any other record list. Read before placing: it is not recomputed from
+  // a scan, so losing it loses the shop's history.
+    'sd_email_threats',
+
+  // ── DELIBERATELY NOT BACKED UP, with the reason for each ─────────────────
+  // Written down here rather than left as an absence, because "not in the list"
+  // and "decided against" look identical to the next reader.
+  //
+  //   sd_ai_counts        -- a usage counter. Regenerable, and a stale count
+  //                          restored from a backup would be worse than none.
+  //   sd_settings         -- device configuration.
+  //   sd_alert_settings   -- device configuration. SAIRNdental syncs its
+  //                          equivalent; that is a defensible difference, not a
+  //                          precedent, and it can be revisited on its own
+  //                          evidence rather than by analogy.
+  //   sd_stonehead_history -- an AI conversation transcript.
+  //   sd_stonehub_log      -- a log.
+  //   sd_market_history    -- derived market data, recomputed.
+  //   sd_intake            -- ALREADY server-backed, by a different route:
+  //                          sb.from(INTAKE_TABLE), a direct Supabase call the
+  //                          checker cannot tie to a storage key. Adding it
+  //                          here would create a SECOND, differently-tenanted
+  //                          copy of the same records.
   ],
 };
