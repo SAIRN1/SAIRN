@@ -144,9 +144,15 @@ try:
     # the real file, because suppressing the message everywhere would trade a
     # false alarm for a silent one -- and that is the easy mistake here.
     EX = os.path.join(REPO, 'tools', 'reachability_exemptions.json')
-    original = open(EX, encoding='utf-8').read()
+    # BYTES, not text. Read as text and written back as text, the restore
+    # rewrites CRLF as LF and leaves the file MODIFIED in git -- which is not
+    # cosmetic here: tests/push_gate/check4_probe.py and check7_probe.py both
+    # refuse to run on a dirty tree, so this probe silently broke two others.
+    # Caught 2026-09-08 the first time the whole suite was run in one pass,
+    # which is the entire argument for having a runner.
+    original = open(EX, 'rb').read()
     try:
-        doc = json.loads(original)
+        doc = json.loads(original.decode('utf-8'))
         doc['exemptions'].append({'file': 'zz_no_such_file.html', 'code': 'R3',
                                   'name': 'zzDefinitelyNotAFinding',
                                   'added': 'probe', 'reason': 'probe fixture'})
@@ -162,7 +168,7 @@ try:
             'STALE EXEMPTIONS' in (r_full.stdout or '')
             and 'zzDefinitelyNotAFinding' in (r_full.stdout or ''))
     finally:
-        with open(EX, 'w', encoding='utf-8') as fh:
+        with open(EX, 'wb') as fh:
             fh.write(original)
 finally:
     os.remove(target)
