@@ -616,8 +616,8 @@
       "task": "fourteen non-auth handlers licence validation above envelope",
       "claimed_at": "2026-09-05T13:22:48Z",
       "claimed_at_epoch": 1788614568.5195906,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T11:41:26Z"
     }
   ]
 }
