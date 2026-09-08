@@ -590,8 +590,8 @@
       "task": "no auth boundary handlers must be declared",
       "claimed_at": "2026-09-08T13:13:03Z",
       "claimed_at_epoch": 1788873183.3286507,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T13:21:39Z"
     }
   ]
 }
