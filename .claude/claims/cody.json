@@ -708,6 +708,16 @@
       "claimed_at_epoch": 1788883158.0834424,
       "status": "released",
       "released_at": "2026-09-08T16:05:38Z"
+    },
+    {
+      "id": "cody-1788884653",
+      "session": "cody",
+      "subject": "dead-bare-named-tables",
+      "task": "confirm empty and unreferenced before proposing a drop",
+      "claimed_at": "2026-09-08T16:24:13Z",
+      "claimed_at_epoch": 1788884653.9636686,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
