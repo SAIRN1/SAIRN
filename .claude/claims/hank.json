@@ -752,8 +752,8 @@
       "task": "the listing note claims completeness it cannot check",
       "claimed_at": "2026-09-08T12:14:37Z",
       "claimed_at_epoch": 1788869677.1215923,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:18:47Z"
     }
   ]
 }
