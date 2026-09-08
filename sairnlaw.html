@@ -4190,6 +4190,24 @@ function aicocLoad(){
     var mmap={};matters().forEach(function(m){mmap[m.id]=m.matter_number+' -- '+m.matter_name;});
     box.innerHTML=rows.map(function(e){
       var mlabel=e.matter_id==='general'?'General':(mmap[e.matter_id]||e.matter_id||'General');
+      // ── THE ATTRIBUTION NOW CARRIES ITS OWN CONFIDENCE (2026-09-05) ─────
+      // The server takes matter_id from the client and, since 2026-09-05,
+      // checks it against law_matters for this licence. THREE answers, not
+      // two, and they must not be flattened: true = confirmed;
+      // false = the server has no such matter for this licence, which is NOT
+      // proof of fabrication because a matter created on a device that has
+      // not hydrated is genuinely absent; undefined = the record predates the
+      // check, so nothing was verified either way and it must not render as a
+      // failure. A verification the reviewer cannot see is the same as not
+      // doing it -- this panel is the whole point of the log.
+      var mflag='';
+      if(e.matter_id!=='general'){
+        if(e.matter_verified===false){
+          mflag=' <span style="color:var(--warn);font-weight:700" title="This interaction is filed against a matter the server has no record of for this licence. That can mean a matter created on a device that has not synced -- or an id that was never real. It is recorded exactly as the client sent it.">&#9888; matter UNCONFIRMED</span>';
+        } else if(e.matter_verified===undefined||e.matter_verified===null){
+          mflag=' <span style="color:var(--muted)" title="Logged before the server began checking matter attribution (2026-09-05). Nothing was verified either way.">&middot; attribution not checked</span>';
+        }
+      }
       var statusColor=e.status==='rejected'?'var(--danger)':(e.status==='used_in_filing'?'var(--ok)':(e.status==='reviewed'?'var(--p)':'var(--warn)'));
       var actions='';
       if(e.status==='unreviewed'){
@@ -4202,7 +4220,7 @@ function aicocLoad(){
       }
       return '<div class="card" style="margin-bottom:10px"><div class="cb">'
         +'<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px">'
-        +'<div style="font-size:12px;color:var(--muted)">'+H(fdatetime(e.created_at))+' &middot; '+H(e.employee_id||'--')+(e.role?' ('+H(e.role)+')':'')+' &middot; '+H(mlabel)+'</div>'
+        +'<div style="font-size:12px;color:var(--muted)">'+H(fdatetime(e.created_at))+' &middot; '+H(e.employee_id||'--')+(e.role?' ('+H(e.role)+')':'')+' &middot; '+H(mlabel)+mflag+'</div>'
         +'<div style="font-size:11px;font-weight:700;color:'+statusColor+'">'+H(AICOC_STATUS_LABEL[e.status]||e.status)+'</div>'
         +'</div>'
         +'<div style="font-size:12px;color:var(--muted);font-style:italic;margin-bottom:6px">'+H(e.prompt||'')+'</div>'

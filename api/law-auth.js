@@ -625,7 +625,43 @@ module.exports = async (req, res) => {
       const prompt = String(derivedPrompt || body.prompt_for_log || '').slice(0, AI_PROMPT_RESPONSE_CAP);
       if (!prompt) { res.status(400).json({ error: { message: 'Could not establish a prompt to log — request rejected' } }); return; }
       const response = responseText.slice(0, AI_PROMPT_RESPONSE_CAP);
+      // ── THE ONE FIELD IN THIS HANDLER STILL TAKEN ON TRUST (2026-09-05) ──
+      // `prompt` is derived from the real messages array rather than
+      // body.prompt_for_log, and `tools_used` from the real assistant turns
+      // rather than body.tools_used -- both with comments right here saying
+      // why client-asserted metadata about a custody record cannot be trusted.
+      // `matter_id` was the exception, taken verbatim from the body, in a log
+      // the panel above it describes as "Every AI interaction, matter-linked
+      // and logged server-side... Nothing here can be edited or deleted".
+      // Mis-ATTRIBUTION is the failure that matters in a record like that: an
+      // interaction filed against the wrong matter, or against one that does
+      // not exist, is invisible to the matter it actually concerned.
+      //
+      // IT IS NOT REJECTED, AND THAT IS A DELIBERATE CALL RATHER THAN
+      // CAUTION. law_matters syncs to the server, but a matter created on a
+      // device that has not hydrated yet is genuinely absent from it -- so
+      // "not found" cannot distinguish a fabricated id from a real matter the
+      // server has not seen. Refusing would break the chat for the second
+      // case, and coercing to 'general' would destroy real attribution for
+      // it. The record therefore keeps the claimed id AND says whether the
+      // server could confirm it, which is the same standard the rest of this
+      // handler applies: an unverified claim must not be stored as a verified
+      // one.
       const matter_id = body.matter_id ? String(body.matter_id) : 'general';
+      let matter_verified = null;          // null = 'general', nothing to verify
+      if (matter_id !== 'general') {
+        try {
+          const mr = await fetch(rest('law_matters?license_hash=eq.' + enc(licHash) +
+            '&matter_id=eq.' + enc(matter_id) + '&select=matter_id&limit=1'), { headers });
+          if (mr.ok) {
+            const mrows = await mr.json();
+            matter_verified = Array.isArray(mrows) && mrows.length > 0;
+          }
+          // A failed lookup leaves matter_verified null: "could not check" is
+          // a third answer and must not be written down as "checked and
+          // false", which would accuse a real matter of being fabricated.
+        } catch (e) { /* leaves null -- see above */ }
+      }
       // Derive tools_used from the REAL messages array rather than trusting
       // body.tools_used -- on the final leg of a tool-use exchange, the
       // assistant turn that requested the tool is right there in `messages`
@@ -638,7 +674,7 @@ module.exports = async (req, res) => {
         }
       });
       const tools_used = Object.keys(toolsUsedSet);
-      const logged = await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, tools_used } });
+      const logged = await audit('ai_interaction', { employee_id: caller.employee_id, role: caller.role, detail: { prompt, response, matter_id, matter_verified, tools_used } });
       if (!logged) {
         res.status(502).json({ error: { code: 'LOG_WRITE_FAILED', message: 'Could not write to the AI Chain of Custody log — the AI response was generated but is being withheld until this is logged. Try again.' } });
         return;
@@ -686,7 +722,14 @@ module.exports = async (req, res) => {
         var fullResponse = (e.detail && e.detail.response) || '';
         return {
           id: e.id, employee_id: e.employee_id, role: e.role, created_at: e.created_at,
-          matter_id: e.detail && e.detail.matter_id, prompt: truncPreview(fullPrompt),
+          matter_id: e.detail && e.detail.matter_id,
+          // Surfaced, not just stored. A verification nobody can see is the
+          // same as not doing it -- and records written BEFORE 2026-09-05
+          // carry no such field at all, so `undefined` means "not checked at
+          // the time" and must not render as "failed". The client
+          // distinguishes all three.
+          matter_verified: e.detail ? e.detail.matter_verified : undefined,
+          prompt: truncPreview(fullPrompt),
           prompt_truncated: fullPrompt.length > AI_LIST_PREVIEW_CAP,
           response: truncPreview(fullResponse),
           response_truncated: fullResponse.length > AI_LIST_PREVIEW_CAP,
