@@ -744,6 +744,16 @@
       "claimed_at_epoch": 1788868361.6659212,
       "status": "released",
       "released_at": "2026-09-08T12:02:34Z"
+    },
+    {
+      "id": "hank-1788869677",
+      "session": "hank",
+      "subject": "sairnlaw-ailist-window-disclosure",
+      "task": "the listing note claims completeness it cannot check",
+      "claimed_at": "2026-09-08T12:14:37Z",
+      "claimed_at_epoch": 1788869677.1215923,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
