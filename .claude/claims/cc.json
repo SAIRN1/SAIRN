@@ -662,8 +662,8 @@
       "task": "write the committed mutation controls that suite claims",
       "claimed_at": "2026-09-08T15:37:50Z",
       "claimed_at_epoch": 1788881870.4589686,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T15:40:43Z"
     }
   ]
 }
