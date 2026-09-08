@@ -742,8 +742,8 @@
       "task": "unvalidated localstorage id on the chain of custody record",
       "claimed_at": "2026-09-08T11:52:41Z",
       "claimed_at_epoch": 1788868361.6659212,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:02:34Z"
     }
   ]
 }
