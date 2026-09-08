@@ -25,8 +25,10 @@ Per app HTML file:
   1. discovers the app's own localStorage SETTER by reading it (a function
      whose first parameter is handed to localStorage.setItem), rather than
      assuming it is called st();
-  2. collects the keys written through it, and the keys written by a bare
-     localStorage.setItem for apps that have no wrapper;
+  2. collects the keys written through it AND by a bare localStorage.setItem,
+     resolving three key shapes -- a literal, a SCREAMING_CASE constant, and a
+     constant prefix joined to a literal suffix (SAIRNmechanical writes every
+     one of its collections as mechSt(APP_ID+'_quotes', ...));
   3. keeps only the ones that look like a RECORD COLLECTION rather than device
      state -- see collection_keys() for the test and what it lets through;
   4. resolves the SIX ways this platform actually connects a local key to a
@@ -44,10 +46,29 @@ seventeen collections; this finds eleven, because six of the seventeen are
 settings, counters and flags rather than record sets. The eleven are a subset,
 the numbers are not interchangeable, and the probe asserts the subset.
 
+-- THE COUNT IS A FLOOR, NOT A TOTAL, AND THE REPORT SAYS SO PER FILE ---------
+The `unclassified` column counts keys that ARE written, are NOT device state,
+and whose shape this could not read. It exists because the first version simply
+dropped them, which made a partial count look like a complete one:
+
+  * SAIRNcode reads every one of its forty collections as
+    `var s = getItem('sc_claims'); if (s) return JSON.parse(s); ... return [];`
+    -- the default is a `return` several statements away, so nothing here sees
+    it, and a LIVE APP WITH FORTY STORES resolved to zero collections.
+  * StoneDesk's dominant shape is `JSON.parse(getItem(k)||'null')||SEED`. Its
+    own SAFE_DEMO_KEYS list names about thirty collections this still does not
+    count, on top of the thirty-seven it does.
+
+Both are honest could-not-reads and both are printed. Widening to those shapes
+is a separate pass with its own verification -- widening one side of a
+comparison without the other is how the sibling checker manufactured ten false
+findings in an hour, and that lesson is three days old.
+
 -- WHAT IT CANNOT SEE, said here rather than discovered later ------------------
-  * An app with NO storage wrapper and NO bare setItem collections is reported
-    as having nothing to check, not as clean. The SCANNED-BY-NAME line says
-    which setter it found, so an app it could not read is visible.
+  * An app that writes NOTHING this can read exits NON-ZERO and is named under
+    NOTHING TO CHECK. An app that writes storage but yields no classified
+    collection is the same case and is treated the same way -- a zero from a
+    scanner nobody has watched fire is not a result.
   * A key connected to a server by a mapping this does not model resolves to
     COULD NOT TELL for that file, which is NOT a pass -- the exit code says so.
     The fix is to read the mapping and teach it, the same standard the read-back
@@ -83,6 +104,14 @@ DEVICE_STATE_SUFFIX = (
     '_license_key', '_licence_key', '_seeded', '_demo_cleared', '_theme',
     '_session', '_session_token', '_token', '_trial_start', '_fingerprint',
     '_last_sync', '_lastsync', '_collapsed', '_prefs', '_pref', '_ui',
+    # AN OUTBOUND QUEUE IS LOCAL BY DEFINITION and reporting one as "kept on
+    # the device and sent nowhere" is exactly backwards -- its whole job is to
+    # hold rows on the device UNTIL they reach the server. Added 2026-09-08
+    # when resolving constant keys made SAIRNdental's dnt_pending_writes and
+    # SAIRNsenior's sen_evv_queue visible for the first time and both were
+    # reported as findings. Named, not a prefix rule: a silent category
+    # exclusion is how a real collection hides.
+    '_queue', '_pending_writes', '_outbox',
 )
 
 # How close a server call has to be to a local write for the two to count as
@@ -164,30 +193,126 @@ def collection_keys(src, setters):
     rather than guessed at, because a checker that cries wolf on an entire app
     is worse than no checker -- nobody runs it twice.
     """
+    # A KEY HELD IN A CONSTANT IS STILL A KEY, added 2026-09-08 after this tool
+    # demonstrated the blind spot on code written an hour after it shipped.
+    # SAIRNdental's new outbound queue writes st(DNT_PENDING_KEY, q) and the
+    # first version could not see it -- harmless there, because a queue is not
+    # a business collection, but SAIRNfreedom writes FORTY-TWO collections that
+    # way (K_MEMBERS, K_LEDGER, K_TICKETS, ...) and StoneDesk another fifteen.
+    # SAIRNfreedom did not appear in the report at all: it produced no keys, so
+    # it produced no row, and an app writing forty-two collections read as an
+    # app with nothing to check. Constants assigned a string literal are now
+    # resolved, and main() prints a NOTHING TO CHECK line for any file that
+    # still yields none, so a file can never silently leave the table.
+    # PER STATEMENT, NOT PER DECLARATOR. `var K_POST='sf_post', K_OFFICERS=
+    # 'sf_officers', ...` is one `var` with forty-two declarators in
+    # SAIRNfreedom, and a regex anchored on the keyword sees only the first --
+    # which is why the first version of this fix found three of its collections
+    # instead of forty-two, and the count is what said so.
+    #
+    # SCREAMING_CASE ONLY, AND NO TRAILING UNDERSCORE. Both restrictions come
+    # from false positives this produced on StoneDesk before it shipped:
+    #   * a lowercase `var key='custom_'` is a REASSIGNED LOCAL, not a
+    #     constant, and taking its first declaration made `custom_` look like a
+    #     collection key;
+    #   * `PLAN_KEY='sairn_action_plans_'` is a key PREFIX -- the code writes
+    #     st(PLAN_KEY+id, ...) -- and a trailing underscore is never a whole
+    #     key on this platform.
+    # Both would have been reported as records kept on the device, in the
+    # flagship app, beside twelve findings that are real. A checker's false
+    # positives are borrowed against the credibility of its true ones.
+    const = {}
+    for m in re.finditer(r'\b(?:var|let|const)\s', src):
+        stmt = src[m.end():m.end() + 4000].split(';', 1)[0]
+        for name, val in re.findall(r'([A-Z][A-Z0-9_]*)\s*=\s*[\'"]([\w.-]+)[\'"]', stmt):
+            if not val.endswith('_'):
+                const.setdefault(name, val)
+
+    def _keys_written_by(pattern):
+        found = set()
+        for m in re.finditer(pattern, src):
+            arg = m.group(1)
+            if arg.startswith("'"):
+                found.add(arg.strip("'"))
+            elif arg in const:
+                found.add(const[arg])
+        return found
+
+    # A THIRD KEY SHAPE: a constant PREFIX joined to a literal suffix.
+    # SAIRNmechanical writes mechSt(APP_ID+'_quotes', ...) for every one of its
+    # collections, so without this it resolves ZERO keys while calling its
+    # setter eight times -- an app with a storage layer reading as an app with
+    # nothing in it.
+    def _joined(pattern):
+        found = set()
+        for m in re.finditer(pattern, src):
+            head, tail = m.group(1), m.group(2)
+            if head in const:
+                found.add(const[head] + tail)
+        return found
+
     keys = set()
     for name in setters:
-        for m in re.finditer(re.escape(name) + r"\(\s*'([\w.-]+)'", src):
-            keys.add(m.group(1))
-    if not setters:
-        for m in re.finditer(r"localStorage\.setItem\(\s*'([\w.-]+)'", src):
-            keys.add(m.group(1))
+        keys |= _keys_written_by(re.escape(name) + r"\(\s*('[\w.-]+'|[A-Za-z_$][\w$]*)\s*,")
+        keys |= _joined(re.escape(name) + r"\(\s*([A-Z][A-Z0-9_]*)\s*\+\s*'([\w.-]+)'\s*,")
+    # THE BARE-setItem FALLBACK RUNS EVEN WHEN A SETTER EXISTS, corrected
+    # 2026-09-08. It used to run only when there was none, so an app with a
+    # wrapper AND direct calls had the direct ones ignored -- SAIRNmechanical
+    # writes five collections through localStorage.setItem and four through
+    # mechSt().
+    keys |= _keys_written_by(r"localStorage\.setItem\(\s*('[\w.-]+'|[A-Za-z_$][\w$]*)\s*,")
+    keys |= _joined(r"localStorage\.setItem\(\s*([A-Z][A-Z0-9_]*)\s*\+\s*'([\w.-]+)'\s*,")
 
-    array_read = set(re.findall(r"\w*\(\s*'([\w.-]+)'\s*,\s*\[\s*\]\s*\)", src))
-    array_write = set(re.findall(r"\w*\(\s*'([\w.-]+)'\s*,\s*\[\s*\]\s*\)", src))
+    # The shape test accepts either the literal key or the constant that holds
+    # it, so a collection read as ld(K_MEMBERS, []) is recognised the same as
+    # ld('sf_members', []).
+    def _alias(k):
+        return [k] + [n for n, v in const.items() if v == k]
+
+    array_default = set(re.findall(r"\w*\(\s*'([\w.-]+)'\s*,\s*\[\s*\]\s*\)", src))
+    for name, val in const.items():
+        if re.search(r"\w*\(\s*" + re.escape(name) + r"\s*,\s*\[\s*\]\s*\)", src):
+            array_default.add(val)
+    # THE RAW READ, for apps with no ld() wrapper at all. SAIRNcode reads every
+    # one of its forty collections as
+    #   JSON.parse(localStorage.getItem('sc_claims') || '[]')
+    # so the wrapper-shaped test above never fired and the ENTIRE APP resolved
+    # to zero collections -- a live app with forty stores reading as "nothing
+    # to check". Found by asking why it was absent from the table, not by the
+    # tool saying anything.
+    array_default |= set(re.findall(
+        r"localStorage\.getItem\(\s*'([\w.-]+)'\s*\)\s*\|\|\s*'\[\s*\]'", src))
+    for name, val in const.items():
+        if re.search(r"localStorage\.getItem\(\s*" + re.escape(name) + r"\s*\)\s*\|\|\s*'\[\s*\]'", src):
+            array_default.add(val)
+    for m in re.finditer(r"localStorage\.getItem\(\s*([A-Z][A-Z0-9_]*)\s*\+\s*'([\w.-]+)'\s*\)\s*\|\|\s*'\[\s*\]'", src):
+        if m.group(1) in const:
+            array_default.add(const[m.group(1)] + m.group(2))
     listish_write = set()
     for name in setters:
-        for m in re.finditer(re.escape(name) + r"\(\s*'([\w.-]+)'\s*,\s*([A-Za-z_$][\w$]*)\s*\)", src):
-            var = m.group(2).lower()
-            if var.endswith('s') or 'list' in var or 'rows' in var or 'arr' in var:
-                listish_write.add(m.group(1))
+        for m in re.finditer(re.escape(name) + r"\(\s*('[\w.-]+'|[A-Za-z_$][\w$]*)\s*,\s*([A-Za-z_$][\w$]*)\s*\)", src):
+            arg, var = m.group(1), m.group(2).lower()
+            key = arg.strip("'") if arg.startswith("'") else const.get(arg)
+            if key and (var.endswith('s') or 'list' in var or 'rows' in var or 'arr' in var):
+                listish_write.add(key)
 
     out = {}
+    unclassified = set()
     for k in keys:
         if is_device_state(k):
             continue
-        if k in array_read or k in array_write or k in listish_write:
+        if k in array_default or k in listish_write:
             out[k] = 'list'
-    return out
+        else:
+            # WRITTEN, NOT DEVICE STATE, AND THIS COULD NOT TELL WHETHER IT
+            # HOLDS RECORDS. Counted and reported rather than dropped, because
+            # dropping it is what makes a partial count look like a total.
+            # StoneDesk is the case that forced this: its dominant read shape
+            # is `JSON.parse(getItem(k)||'null')||SEED`, which no test here
+            # recognises, and its own SAFE_DEMO_KEYS list names about thirty
+            # collections this still does not count. Its number is a FLOOR.
+            unclassified.add(k)
+    return out, unclassified
 
 
 NAME_SUFFIXES = ('_list', '_obj', '_arr', '_rows', '_data', '_cache')
@@ -380,8 +505,8 @@ def registered_names(path):
 def scan(path):
     src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
     setters = find_setter(src)
-    local = collection_keys(src, setters)
-    if not local:
+    local, unclassified = collection_keys(src, setters)
+    if not local and not unclassified:
         return None
     reg, has_reg = registered_names(path)
     named = set(WRITE_LIT_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
@@ -397,6 +522,7 @@ def scan(path):
         'covered': covered,
         'unsure': unsure,
         'uncovered': uncovered,
+        'unclassified': sorted(unclassified),
     }
 
 
@@ -406,17 +532,34 @@ def main(argv):
         root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         targets = sorted(
             os.path.join(root, f) for f in os.listdir(root) if f.endswith('.html'))
-    rows = [r for r in (scan(t) for t in targets) if r]
+    scanned = [(t, scan(t)) for t in targets]
+    rows = [r for _, r in scanned if r]
+    empty = [os.path.basename(t) for t, r in scanned if not r]
     print('SCANNED-BY-NAME: the storage setter is discovered per file and named '
           'below. A file with no setter and no bare setItem collection is '
           'reported as NOTHING TO CHECK, not as clean.')
     print()
-    print('%-24s %-16s %6s %8s %10s %10s' % (
-        'app', 'setter', 'colls', 'covered', 'local-only', 'cannot-tell'))
+    print('%-24s %-16s %6s %8s %10s %11s %12s' % (
+        'app', 'setter', 'colls', 'covered', 'local-only', 'cannot-tell', 'unclassified'))
     for r in rows:
-        print('%-24s %-16s %6d %8d %10d %10d' % (
+        print('%-24s %-16s %6d %8d %10d %11d %12d' % (
             r['file'], ','.join(r['setters']) or '(bare setItem)',
-            r['total'], len(r['covered']), len(r['uncovered']), len(r['unsure'])))
+            r['total'], len(r['covered']), len(r['uncovered']), len(r['unsure']),
+            len(r['unclassified'])))
+    print()
+    print('UNCLASSIFIED means a key is written, is not device state, and this could')
+    print('not tell whether it holds records. A file with a high count has a FLOOR,')
+    print('not a total -- its real number of collections is larger than `colls`.')
+
+    if empty:
+        # PRINTED, NOT OMITTED. The first version dropped these files from the
+        # output entirely, so an app whose keys this could not read looked
+        # exactly like an app with nothing to find -- and SAIRNfreedom, with
+        # forty-two collections behind constants, was one of them.
+        print()
+        print('NOTHING TO CHECK (no collection keys resolved -- this is NOT a clean result):')
+        for f in empty:
+            print('  ' + f)
 
     print()
     print('=== KEPT ON THE DEVICE AND SENT NOWHERE ===')
@@ -457,7 +600,16 @@ def main(argv):
     print('NOTE: a route existing is not the same as it working. Whether the write '
           'is ever CALLED is tools/sairn_reachability_check.py; whether the row '
           'comes BACK is tools/write_without_readback_check.py.')
-    return 1 if (found or unsure_any) else 0
+    # A FILE THAT WRITES STORAGE AND YIELDS NO CLASSIFIED COLLECTION IS A
+    # COULD-NOT-READ, not a pass. SAIRNcode is the case: forty stores, zero
+    # resolved, and the first version exited 0 on it.
+    blind = [r['file'] for r in rows if not r['total'] and r['unclassified']]
+    if blind:
+        print()
+        print('WROTE STORAGE, RESOLVED NO COLLECTIONS -- could not read these, NOT a pass:')
+        for f in blind:
+            print('  ' + f)
+    return 1 if (found or unsure_any or blind) else 0
 
 
 if __name__ == '__main__':

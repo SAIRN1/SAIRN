@@ -233,6 +233,86 @@ function s(){st('x_license_key','K');st('x_session_token','T');st('x_ui',{});}""
     check('licence/session/ui keys are not reported as collections',
           findings(out), set())
 
+    print('-- keys held in constants, and the three ways that goes wrong --')
+
+    # A KEY IN A CONSTANT IS STILL A KEY. The first version could not see one,
+    # and the app that showed it was SAIRNfreedom -- forty-two collections
+    # behind K_* constants, which produced no keys, so no row, so it did not
+    # appear in the report at all.
+    show(tmp + '/m/app.html', APP % """
+var K_MEMBERS='z_members';
+function rows(){return ld(K_MEMBERS,[]);}
+function save(l){st(K_MEMBERS,l);}""", None)
+    check('a key held in a SCREAMING_CASE constant is found',
+          findings(run(tmp + '/m/app.html')[1]), {'z_members'})
+
+    # ONE `var`, MANY DECLARATORS. Anchoring on the keyword sees only the first
+    # -- which is why the first attempt at this fix found three of
+    # SAIRNfreedom's collections instead of forty-two.
+    show(tmp + '/n/app.html', APP % """
+var K_A='z_alpha', K_B='z_beta',
+    K_C='z_gamma';
+function a(){return ld(K_A,[]);}
+function b(){return ld(K_B,[]);}
+function c(){return ld(K_C,[]);}
+function s(l){st(K_A,l);st(K_B,l);st(K_C,l);}""", None)
+    check('every declarator in one var statement is resolved',
+          findings(run(tmp + '/n/app.html')[1]), {'z_alpha', 'z_beta', 'z_gamma'})
+
+    # A LOWERCASE LOCAL IS NOT A CONSTANT. StoneDesk has `var key='custom_'`
+    # reassigned in a loop; taking its first declaration invented a key.
+    show(tmp + '/o/app.html', APP % """
+function loop(items){var key='custom_';items.forEach(function(it){key='custom_'+it.id;st(key,[it]);});}
+function read(id){return ld('custom_'+id,[]);}""", None)
+    check('a reassigned lowercase local is not treated as a constant',
+          findings(run(tmp + '/o/app.html')[1]), set())
+
+    # A PREFIX IS NOT A KEY. `PLAN_KEY='sairn_action_plans_'` is concatenated
+    # with an id at every use; a trailing underscore is never a whole key here.
+    show(tmp + '/p/app.html', APP % """
+var PLAN_KEY='z_plans_';
+function save(id,l){st(PLAN_KEY+id,l);}
+function read(id){return ld(PLAN_KEY+id,[]);}""", None)
+    check('a constant holding a key PREFIX is not reported as a key',
+          findings(run(tmp + '/p/app.html')[1]), set())
+
+    # AN OUTBOUND QUEUE IS LOCAL BY DEFINITION. Reporting one as "sent nowhere"
+    # is backwards -- holding rows on the device until they reach the server is
+    # the whole job.
+    show(tmp + '/q/app.html', APP % """
+var Q_KEY='z_pending_writes';
+function q(){return ld(Q_KEY,[]);}
+function push(l){st(Q_KEY,l);}""", None)
+    check('an outbound queue is not reported as a stranded collection',
+          findings(run(tmp + '/q/app.html')[1]), set())
+
+    # A FILE THIS CANNOT READ MUST NOT VANISH FROM THE REPORT.
+    show(tmp + '/r/app.html', """<html><script>
+function noop(){return 1;}
+</script></html>""", None)
+    rc, out = run(tmp + '/r/app.html')
+    # Anchored on the section HEADING line, not on the phrase: the report's
+    # opening paragraph also says "NOTHING TO CHECK", so splitting on the
+    # phrase put the paragraph between the parser and the filename and this
+    # arm failed for a reason that had nothing to do with the tool. Same
+    # mistake as the findings() parser earlier in this file.
+    m = re.search(r'^NOTHING TO CHECK \(.*$', out, re.M)
+    named = bool(m) and 'app.html' in out[m.end():].split('===')[0]
+    check('a file with no resolvable collections is NAMED, not omitted', named, True)
+
+    # AND AN APP THAT WRITES STORAGE BUT RESOLVES NOTHING IS THE SAME CASE.
+    # SAIRNcode is the real one: forty stores, zero collections resolved,
+    # because its reads put the [] default in a `return` several statements
+    # away. Exiting 0 on that would be a scanner reporting a pass it never
+    # earned.
+    show(tmp + '/s/app.html', """<html><script>
+function get(){try{var s=localStorage.getItem('z_claims');if(s)return JSON.parse(s);}catch(e){}return [];}
+function put(d){localStorage.setItem('z_claims',JSON.stringify(d));}
+</script></html>""", None)
+    rc, out = run(tmp + '/s/app.html')
+    check('an app that writes storage but resolves nothing exits non-zero', rc, 1)
+    check('...and is named, with the reason', 'RESOLVED NO COLLECTIONS' in out, True)
+
     # THE SETTER IS DISCOVERED, NOT ASSUMED. An app that does not call it st()
     # must still be checked -- hardcoding the name would pass three apps clean
     # while checking nothing.
