@@ -572,6 +572,16 @@
       "claimed_at_epoch": 1788870163.6302822,
       "status": "released",
       "released_at": "2026-09-08T12:38:01Z"
+    },
+    {
+      "id": "fourth-1788871680",
+      "session": "fourth",
+      "subject": "preauth-fifteen-auth-handlers",
+      "task": "envelope gate above licence validation",
+      "claimed_at": "2026-09-08T12:48:00Z",
+      "claimed_at_epoch": 1788871680.432273,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
