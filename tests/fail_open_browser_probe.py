@@ -77,11 +77,29 @@ results['a_catch_returning_null_is_NOT_this_shape'] = with_file(
     'zz_fo_other.html', OTHER_RETURN, lambda n: loader_count(run(n)) == 0)
 
 # And the real tree, so the pass is known to run where it matters.
+#
+# ── THESE TWO ARMS COULD ONLY PASS WHILE THE DEFECT EXISTED (2026-09-08) ──
+# They were `loader_count(out) > 0` and `'stonedesk.html' in out`: the first
+# asserted the real tree is scanned BY FINDING AT LEAST ONE SILENT LOADER, and
+# the second asserted the HTML walk happens BY FINDING StoneDesk NAMED IN THE
+# FINDINGS. Both stopped being true the moment the last of the fourteen
+# loaders was fixed -- so finishing the work broke the probe, and the probe
+# had no way to say "clean" versus "did not run".
+#
+# WORSE, IT WENT UNNOTICED. This is a .py probe, so the JS suite runs that
+# gated every one of those loader commits never executed it.
+#
+# The arms now assert that the SCAN happened, which is what they were always
+# trying to say: the tool walked HTML files and printed its browser-side
+# section, whatever the count turns out to be. `live_loader_count` stays as a
+# reported number rather than an assertion -- it is the burndown, and it is
+# expected to be 0 now.
 full = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, cwd=REPO)
 out = (full.stdout or '')
-results['the_real_tree_is_scanned'] = loader_count(out) > 0
+results['the_browser_pass_actually_ran'] = 'BROWSER-SIDE' in out
+results['the_real_tree_is_scanned'] = 'fail-open reads found:' in out
+results['html_is_in_the_default_walk'] = '.html' in out and 'HTML' in out.upper()
 results['live_loader_count'] = loader_count(out)
-results['html_is_in_the_default_walk'] = 'stonedesk.html' in out
 
 print('--- results ---')
 bad = 0

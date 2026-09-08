@@ -36,5 +36,25 @@
     "file": "sairncode.html",
     "var": "r",
     "reason": "ACCEPTED, and the direction is why. findIcd10Match() does `if (!r.ok) return null` on a public NLM ICD-10 lookup. Surfaced 2026-09-04 the first time this tool's default walk included app HTML. Both consumers were read, not assumed. sairncode.html:6598 turns a null into `{source:'none'}` -- a VERIFICATION source, so an unreachable API reports the code as UNVERIFIED rather than verified: it under-claims, which is the safe direction for a coding tool. sairncode.html:11774 falls through to a web-search tier whose own prompt says 'never invent a plausible-sounding code number'. Neither consumer reads null as 'no such code exists'. The function's comment states the rule it is keeping -- 'never invents a code if the API returns nothing' -- and the code keeps it. NOT accepted as a general licence for `if (!r.ok) return null` in this file: this is one function whose two call sites were both checked."
+  },
+  {
+    "file": "api/sc-credentials.js",
+    "var": "reRows",
+    "reason": "ACCEPTED 2026-09-08 after reading the retry loop, which is the question the open-work row asked and did not answer. This is the RE-READ before a retry: reRows feeds `const reRow = (Array.isArray(reRows) && reRows[0]) || null;` and the very next statement is `if (!reRow) { 409 WRITE_CONFLICT ... 'the record could not be re-read. Nothing was saved' }`. So a failed read FAILS CLOSED, refuses the write, and the refusal message names the real reason rather than blaming a conflict that may not exist. The checker matches the ternary shape; the null flows into an explicit guard that refuses, which is the shape this sweep converts things TO."
+  },
+  {
+    "file": "api/sc-credentials.js",
+    "var": "secondRows",
+    "reason": "ACCEPTED 2026-09-08, and it is the OPPOSITE of reRows above by design -- worth stating because the two are three lines apart and identical to the checker. This one is the WRITE's echo, not an input: the guard is `if (!writeR.ok || (Array.isArray(secondRows) && secondRows.length === 0))`, so an unreadable BODY on a 2xx does not refuse. That is correct -- the write landed; only the server's echo of the saved row was lost. The response then reports `publicStatus((savedRow && savedRow.data) || applyChange(reRow.data))`, and that fallback is the exact blob this request just wrote against the re-read row, which is what the author's own comment above it requires (\"the response must describe THAT blob, not the stale `next`\"). A read that cannot be read is a failure; a write that succeeded but could not be echoed is not."
+  },
+  {
+    "file": "sairngrounds.html",
+    "var": "res",
+    "reason": "ACCEPTED 2026-09-08. This is the app's own data wrapper, not a decision: `grdData()` ends `if (!res.ok) return null; var j = await res.json(); return (j && j.ok) ? j : null;` and returning null on any failure IS the platform contract every app's xData() implements -- the checker's own header calls that the shape this sweep converts things TO. The real question is whether CALLERS act on the null, and that was measured rather than assumed: 36 of 45 call sites in this file read the result. The remaining 9 are fire-and-forget, which is the separate discard-the-result class the storage-wrapper and write-failure-voice work covers -- NOT a fail-open in this wrapper, and NOT cleared by this entry. Also checked while here: the false \"server sync not yet enabled for this app\" message is now absent from every app file, so a failure in this wrapper no longer surfaces a wrong reason anywhere."
+  },
+  {
+    "file": "sairnscape.html",
+    "var": "res",
+    "reason": "ACCEPTED 2026-09-08. This is the app's own data wrapper, not a decision: `scpData()` ends `if (!res.ok) return null; var j = await res.json(); return (j && j.ok) ? j : null;` and returning null on any failure IS the platform contract every app's xData() implements -- the checker's own header calls that the shape this sweep converts things TO. The real question is whether CALLERS act on the null, and that was measured rather than assumed: 19 of 22 call sites in this file read the result. The remaining 3 are fire-and-forget, which is the separate discard-the-result class the storage-wrapper and write-failure-voice work covers -- NOT a fail-open in this wrapper, and NOT cleared by this entry. Also checked while here: the false \"server sync not yet enabled for this app\" message is now absent from every app file, so a failure in this wrapper no longer surfaces a wrong reason anywhere."
   }
 ]
