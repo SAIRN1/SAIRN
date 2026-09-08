@@ -50,6 +50,7 @@ def dry_push():
         'blocked_by_preauth': 'answer a refusal BEFORE the' in err,
         'names_the_file': EP in err,
         'unchecked': 'UNCHECKED for pre-auth disclosures' in err,
+        'blocked_undeclared': 'NO authentication' in err and 'no declaration' in err,
         'rejected_by_remote': 'fetch first' in err or 'rejected' in err,
     }
 
@@ -87,7 +88,31 @@ try:
     R['planted_disclosure'] = dry_push()
     run('git', 'reset', '--mixed', start)
     run('git', 'checkout', '--', EP)
+    # ── ARM 3: a NEW endpoint with no auth boundary must block ─────────────
+    # The api/claude.js shape: an endpoint that authenticates nothing, added
+    # with nothing to notice it. It is not wrong on its own -- 25 are public on
+    # purpose -- but it must be DECLARED, and this arm is the only thing that
+    # proves an undeclared one cannot slip in.
+    newep = os.path.join(REPO, 'api', 'zz_probe_public.js')
+    _src = [
+        '// probe: an endpoint that authenticates nothing and declares nothing.',
+        'module.exports = async (req, res) => {',
+        "  if (req.method !== 'POST') { res.status(405).json({ error: { message: 'POST only' } }); return; }",
+        '  res.status(200).json({ ok: true });',
+        '};',
+    ]
+    open(newep, 'w', encoding='utf-8', newline='').write(chr(10).join(_src) + chr(10))
+    run('git', 'add', 'api/zz_probe_public.js')
+    run('git', 'commit', '-q', '-m', 'PROBE undeclared public endpoint')
+    R['undeclared_endpoint'] = dry_push()
+    run('git', 'reset', '--mixed', start)
+    if os.path.exists(newep):
+        os.remove(newep)
+
 finally:
+    _stray = os.path.join(REPO, 'api', 'zz_probe_public.js')
+    if os.path.exists(_stray):
+        os.remove(_stray)
     open(path, 'w', encoding='utf-8', newline='').write(original)
     run('git', 'reset', '--mixed', start)
     run('git', 'checkout', '--', EP)
@@ -114,10 +139,17 @@ check('the reorder put back IS blocked', b['blocked_by_preauth'], str(b))
 check('...and the refusal names the file', b['names_the_file'], str(b))
 check('...and the push exits non-zero', b['exit'] != 0, str(b))
 
+c = R['undeclared_endpoint']
+check('a NEW endpoint with no auth boundary and no declaration IS blocked',
+      c['blocked_undeclared'], str(c))
+check('...and that push exits non-zero', c['exit'] != 0, str(c))
+
 check('the repo was restored', open(path, encoding='utf-8').read() == original)
+check('...and the probe endpoint was removed',
+      not os.path.exists(os.path.join(REPO, 'api', 'zz_probe_public.js')))
 check('...and HEAD is back where it started',
       run('git', 'rev-parse', 'HEAD').stdout.strip() == start)
 
 print('\n%s  check7_probe: %d checks, %d failed'
-      % ('FAILED' if fails else 'ok', 7, len(fails)))
+      % ('FAILED' if fails else 'ok', 10, len(fails)))
 sys.exit(1 if fails else 0)

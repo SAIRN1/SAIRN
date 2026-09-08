@@ -1,0 +1,137 @@
+{
+  "_README": [
+    "Every api/ handler that tools/preauth_oracle_check.py reports as having NO",
+    "AUTH BOUNDARY must appear here, declared, with a reason somebody can check.",
+    "",
+    "WHY THIS FILE EXISTS. The checker has always listed those handlers and its",
+    "own header has always said they must be READ rather than assumed public.",
+    "Nothing recorded the outcome of reading them, so the list was re-triaged from",
+    "scratch every time and a NEW one could be added with nothing to notice it.",
+    "That is not hypothetical: api/claude.js was an open Anthropic proxy whose own",
+    "comment said 'this endpoint has no other auth beyond a client-supplied",
+    "app_id'. The design was known. The consequence was not, until 2026-09-05.",
+    "",
+    "'class' is what actually protects the endpoint, not what it is called:",
+    "  public-by-design    anonymous callers are the point. Anti-abuse, if any, is",
+    "                      named in the reason.",
+    "  bespoke-auth        a real credential the checker cannot see, because it is",
+    "                      not validateLicenseKey() or verifySessionToken().",
+    "  webhook-signature   authenticated by the sender's signature over the body.",
+    "  cron-secret         a shared secret in the Authorization header.",
+    "  pilot-only          reachable without a credential, and that is a KNOWN",
+    "                      LIMIT with a stated precondition. Read 'precondition'",
+    "                      before assuming it still holds.",
+    "",
+    "A declaration is not an endorsement. pilot-only entries are open questions",
+    "written down, which is the difference between a risk somebody chose and a",
+    "risk nobody noticed."
+  ],
+
+  "api/greeting.js": {
+    "class": "public-by-design",
+    "reason": "Returns an opening line before anyone has typed anything; every SAIRN app calls it on load, before any licence exists. Zero Supabase writes -- verified by grep for method:'POST'/'PATCH'/'DELETE', which returns none. Read 2026-09-08."
+  },
+  "api/bridge.js": {
+    "class": "pilot-only",
+    "reason": "One Supabase write, to rest/v1/bridge_data, with no credential of any kind. NOT the cross-app data path most apps mean by 'bridge' -- its own header opens by warning about that name collision, and the real path is api/sd-data.js.",
+    "precondition": "Nothing stops an anonymous caller writing bridge_data. Acceptable only while that table holds nothing a customer relies on. Read 2026-09-08 and recorded as an open row rather than fixed."
+  },
+  "api/network.js": {
+    "class": "pilot-only",
+    "reason": "Cross-tenant anonymised-pattern aggregation. One write to rest/v1/network_insights with no credential.",
+    "precondition": "An anonymous caller can contribute to a cross-tenant aggregate, i.e. poison it. The data is anonymised so this is an integrity question, not a confidentiality one. Open row."
+  },
+  "api/org-intel.js": {
+    "class": "pilot-only",
+    "reason": "SAIRNscape organisation-intelligence backend. One write, no credential.",
+    "precondition": "Same shape as api/network.js. Read 2026-09-08."
+  },
+  "api/sd-agent.js": {
+    "class": "bespoke-auth",
+    "reason": "FALSE POSITIVE in the checker, and the clearest example of why this file is per-endpoint rather than a blanket exemption. It DOES authenticate: sd-agent.js:214-215 reads the bearer, :228 calls store.validateAndGate(licenseKey). The checker only knows validateLicenseKey() and verifySessionToken() by name, exactly as its own header says. Its header also states the residual honestly: bearer licence is the only auth, so anyone holding the key can confirm a tool use."
+  },
+  "api/stonedesk-public.js": {
+    "class": "public-by-design",
+    "reason": "The public storefront. Its header states the model outright: the only thing identifying a shop is its public shop_slug, and it refuses a slug whose shop is not published (resolveShopSlug, :197). Writes are quote_request leads, which is the feature. Rate-limited."
+  },
+
+  "api/agent/enqueue.js": {
+    "class": "pilot-only",
+    "reason": "Queues an arbitrary operation and params to a named on-prem agent with NO credential. The only gates are that agent_id exists, its status is active, and its plan has not expired.",
+    "precondition": "ITS OWN HEADER SETS THE CONDITION AND IT IS THE ONE TO CHECK: 'fine for a single-customer pilot where the agent_id isn't guessable/shared, but it must NOT be treated as secure multi-tenant isolation. Before more than one customer relies on this in parallel, add real per-customer auth.' Whether that precondition still holds is a question about the sairn_agents table, not about this file. Raised as its own open row 2026-09-08."
+  },
+  "api/agent/poll.js": {
+    "class": "bespoke-auth",
+    "reason": "Bearer AGENT token, read from the Authorization header and refused when absent. The credential is the agent's own, not a licence, so the checker cannot see it."
+  },
+  "api/agent/register.js": {
+    "class": "bespoke-auth",
+    "reason": "Same bearer agent-token shape as poll.js."
+  },
+  "api/agent/result.js": {
+    "class": "bespoke-auth",
+    "reason": "Same bearer agent-token shape as poll.js."
+  },
+  "api/agent/stripe-webhook.js": {
+    "class": "webhook-signature",
+    "reason": "STRIPE_WEBHOOK_SECRET with a stripe-signature header. Authenticated by the signature over the raw body, which no bearer check could replace."
+  },
+
+  "api/sairncash/checkout.js": {
+    "class": "public-by-design",
+    "reason": "Creates a Stripe Checkout session for a prospect who by definition has no account yet. Holds STRIPE_SECRET_KEY server-side; the caller supplies nothing privileged."
+  },
+  "api/sairncash/portal.js": {
+    "class": "public-by-design",
+    "reason": "Stripe billing-portal link. Same pre-account position as checkout.js."
+  },
+  "api/sairncash/firebase-config.js": {
+    "class": "public-by-design",
+    "reason": "Serves the Firebase WEB config, which is public by Firebase's own design -- it identifies a project, it does not authorise. Kept server-side only to avoid hardcoding it in the client."
+  },
+  "api/sairncash/stripe-webhook.js": {
+    "class": "webhook-signature",
+    "reason": "SAIRNCASH_STRIPE_WEBHOOK_SECRET, verified with stripe.webhooks.constructEvent over the raw body."
+  },
+  "api/sairncash/trial-renew.js": {
+    "class": "cron-secret",
+    "reason": "Refuses unless the Authorization header equals 'Bearer ' + SAIRNCASH_ADMIN_SECRET, checked before anything else. Admin-approval-gated by design."
+  },
+  "api/sairncash/trial-start.js": {
+    "class": "public-by-design",
+    "reason": "Creates a 30-day trial for a prospect with no account. Michael's 2026-08-18 decision, recorded in the file: one trial per email is the only anti-abuse control in v1, accepted because renewal is admin-gated (trial-renew.js). Duplicate emails answer 409."
+  },
+  "api/sairncash/trial-verify.js": {
+    "class": "bespoke-auth",
+    "reason": "Re-verifies a trial against sairncash_trial by the caller's own trial_token. The token IS the credential; expiry is computed from the table's expires_at against the server clock, never from a client-supplied date."
+  },
+  "api/sairncash/verify.js": {
+    "class": "bespoke-auth",
+    "reason": "Verifies a Stripe sessionId or subscriptionId against Stripe itself. The identifier is the credential and it is checked upstream, not trusted."
+  },
+  "api/sairncash/waitlist.js": {
+    "class": "public-by-design",
+    "reason": "Pre-launch waitlist signup: an email address from an anonymous visitor is the whole feature. Inserts with resolution=ignore-duplicates. It exists because the previous handler faked success and discarded the email."
+  },
+
+  "api/sairndental/public-availability.js": {
+    "class": "public-by-design",
+    "reason": "Read-only appointment availability for a practice's public booking page. Zero writes -- verified by grep. Rate-limited."
+  },
+  "api/sairndental/public-book.js": {
+    "class": "public-by-design",
+    "reason": "A patient books an appointment without an account; that is the feature. Writes are the booking. Rate-limited, and the orphan-on-failure defect it once had is fixed and covered by its own suite."
+  },
+  "api/sairndental/public-complaint-submit.js": {
+    "class": "public-by-design",
+    "reason": "A patient submits a complaint anonymously. One write, rate-limited."
+  },
+  "api/sairndental/public-complaint-thread.js": {
+    "class": "bespoke-auth",
+    "reason": "Reads one complaint thread by its own token: fetchByToken(token), refused when absent. The token IS the credential -- the same shape api/sen-portal.js's link token has, and the reason that file's refusals are triaged in preauth_oracle_accepted.json."
+  },
+  "api/sairndental/send-reminder.js": {
+    "class": "cron-secret",
+    "reason": "Refuses unless the Authorization header equals 'Bearer ' + CRON_SECRET, checked first. Invoked by the vercel.json cron entry."
+  }
+}

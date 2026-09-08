@@ -63,6 +63,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ACCEPTED_PATH = os.path.join(ROOT, 'tools', 'preauth_oracle_accepted.json')
+DECLARED_PATH = os.path.join(ROOT, 'tools', 'public_endpoint_declarations.json')
 
 # The first call that establishes WHO is asking. Anything answering above one
 # of these answers to an unauthenticated caller.
@@ -206,16 +207,54 @@ def scan(path):
     return rel, boundary, found
 
 
+def load_declared():
+    """Endpoints declared to have no auth boundary ON PURPOSE, with a reason.
+
+    ── WHY A DECLARATION AND NOT JUST A LIST (2026-09-08) ────────────────────
+    This checker has always PRINTED the no-boundary handlers, and the header
+    above has always said they must be READ rather than assumed public. Nothing
+    recorded the outcome of reading them, so the list was re-triaged from
+    scratch every time and, worse, a NEW one could be added with nothing to
+    notice it.
+
+    That is not hypothetical. api/claude.js was an open Anthropic proxy whose
+    own comment said "this endpoint has no other auth beyond a client-supplied
+    app_id" -- the design was known and written down IN THE FILE, and the
+    consequence still went unnoticed until 2026-09-05.
+
+    An UNDECLARED no-boundary handler now fails this checker, so the answer has
+    to be written down once rather than re-derived by whoever looks next.
+    """
+    try:
+        with io.open(DECLARED_PATH, encoding='utf-8') as fh:
+            doc = json.load(fh)
+    except (OSError, ValueError):
+        return None                      # unreadable: reported, never silently empty
+    return {k: v for k, v in doc.items() if not k.startswith('_')}
+
+
 def main(argv):
     accepted = load_accepted()
+    declared = load_declared()
     files = [a for a in argv if not a.startswith('--')]
-    disclosure = oracle = unbounded = 0
+    disclosure = oracle = unbounded = undeclared = 0
+    undeclared_names = []
     for path in handlers(files):
         rel, boundary, found = scan(path)
         if boundary is None:
             unbounded += 1
-            print('NO AUTH BOUNDARY  %s  -- nothing to be "before"; read it rather '
-                  'than assuming it is public' % rel)
+            if declared is None:
+                print('NO AUTH BOUNDARY  %s  -- declarations file unreadable, so this '
+                      'is UNTRIAGED rather than accepted' % rel)
+            elif rel in declared:
+                print('NO AUTH BOUNDARY  %s  -- declared %s: %s'
+                      % (rel, declared[rel].get('class', '?'),
+                         (declared[rel].get('reason', '') or '')[:90]))
+            else:
+                undeclared += 1
+                undeclared_names.append(rel)
+                print('UNDECLARED PUBLIC %s  -- no auth boundary and no entry in '
+                      'tools/public_endpoint_declarations.json' % rel)
             continue
         for line, tier, code, text in found:
             if (rel, line) in accepted:
@@ -228,10 +267,20 @@ def main(argv):
     print('PREAUTH_DISCLOSURES:%d' % disclosure)
     print('PREAUTH_ORACLES:%d' % oracle)
     print('HANDLERS_WITH_NO_AUTH_BOUNDARY:%d' % unbounded)
+    print('UNDECLARED_PUBLIC_HANDLERS:%d' % undeclared)
+    if undeclared:
+        print('')
+        print('An endpoint with no auth boundary is not a finding on its own -- some '
+              'are public on purpose. What it must not be is UNANSWERED. Read each '
+              'one and add an entry to tools/public_endpoint_declarations.json '
+              'saying what actually protects it, or that nothing does and why that '
+              'is acceptable:')
+        for n in undeclared_names:
+            print('    %s' % n)
     print('NOTE: a clean run means no refusal matched these SHAPES above the '
           'first auth call. It cannot tell you whether a leak matters -- see '
           'the header.')
-    return 1 if disclosure else 0
+    return 1 if (disclosure or undeclared) else 0
 
 
 if __name__ == '__main__':

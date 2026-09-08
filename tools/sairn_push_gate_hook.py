@@ -999,7 +999,7 @@ def main():
         if _eps:
             _accepted = _pc.load_accepted()
             _tmp = _tf2.mkdtemp(prefix='sairn-preauth-')
-            _disc, _orac = [], []
+            _disc, _orac, _undeclared = [], [], []
             try:
                 for _rel in _eps:
                     _blob = subprocess.run(['git', '-C', repo, 'show', tip + ':' + _rel],
@@ -1011,7 +1011,19 @@ def main():
                         _fh.write(_blob.stdout)
                     _r, _boundary, _found = _pc.scan(_f)
                     if _boundary is None:
-                        continue          # no auth boundary: check 5's question, not this one
+                        # ── NO BOUNDARY AT ALL: IT MUST BE DECLARED (2026-09-08) ──
+                        # Not a finding on its own -- 25 endpoints are public on
+                        # purpose. What it must not be is UNANSWERED. api/claude.js
+                        # was an open Anthropic proxy whose own comment said it had
+                        # no auth beyond a client-supplied app_id: the design was
+                        # written down IN THE FILE and still went unnoticed for
+                        # months. A declaration makes the answer a thing somebody
+                        # wrote once, rather than a read whoever looks next has to
+                        # redo.
+                        _decl = _pc.load_declared()
+                        if _decl is not None and _rel not in _decl:
+                            _undeclared.append(_rel)
+                        continue
                     for _line, _tier, _code, _text in _found:
                         if (_rel, _line) in _accepted:
                             continue
@@ -1019,6 +1031,28 @@ def main():
                             '  %-11s %s:%d  [%s]  %s' % (_tier, _rel, _line, _code, _text))
             finally:
                 _sh2.rmtree(_tmp, ignore_errors=True)
+
+            if _undeclared:
+                deny(chr(10).join([
+                    'Blocked: this push ships api/ endpoint(s) with NO authentication',
+                    'boundary and no declaration saying that is deliberate.',
+                    '',
+                ] + ['  ' + _u for _u in _undeclared] + [
+                    '',
+                    'An endpoint with no auth boundary is not wrong on its own -- 25 are',
+                    'public on purpose. What it must not be is UNANSWERED. api/claude.js was',
+                    'an open Anthropic proxy whose own comment said it had no auth beyond a',
+                    'client-supplied app_id: the design was written down in the file and still',
+                    'went unnoticed for months.',
+                    '',
+                    'Read it, then add an entry to tools/public_endpoint_declarations.json',
+                    'saying what actually protects it -- public-by-design, bespoke-auth,',
+                    'webhook-signature, cron-secret -- or pilot-only with the precondition',
+                    'that makes it acceptable, stated so the next reader can check whether it',
+                    'still holds.',
+                    '',
+                    OVERRIDE_HINT,
+                ]))
 
             if _orac and not _disc:
                 print('NOTE: pre-auth ORACLE shape(s) in this push, reported and not '
