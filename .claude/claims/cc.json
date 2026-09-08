@@ -613,6 +613,16 @@
       "claimed_at_epoch": 1788870296.8605478,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1788871792",
+      "session": "cc",
+      "subject": "localonly-checker-constant-keys",
+      "task": "resolve keys held in constants and never omit a scanned file",
+      "claimed_at": "2026-09-08T12:49:52Z",
+      "claimed_at_epoch": 1788871792.3395681,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
