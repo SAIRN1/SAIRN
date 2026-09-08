@@ -628,6 +628,16 @@
       "claimed_at_epoch": 1788868011.3047225,
       "status": "released",
       "released_at": "2026-09-08T12:03:09Z"
+    },
+    {
+      "id": "cody-1788869216",
+      "session": "cody",
+      "subject": "anon-amplification-limiter",
+      "task": "research distributed limiter versus vercel firewall rule",
+      "claimed_at": "2026-09-08T12:06:56Z",
+      "claimed_at_epoch": 1788869216.7655714,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
