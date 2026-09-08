@@ -648,6 +648,16 @@
       "claimed_at_epoch": 1788869666.4629629,
       "status": "released",
       "released_at": "2026-09-08T12:21:13Z"
+    },
+    {
+      "id": "cody-1788870158",
+      "session": "cody",
+      "subject": "unauthenticated-endpoint-audit",
+      "task": "read the twenty six handlers with no licence or session boundary",
+      "claimed_at": "2026-09-08T12:22:38Z",
+      "claimed_at_epoch": 1788870158.144344,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
