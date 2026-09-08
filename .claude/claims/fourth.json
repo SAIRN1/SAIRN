@@ -560,8 +560,8 @@
       "task": "pinnacle exports prints greeting",
       "claimed_at": "2026-09-08T11:50:20Z",
       "claimed_at_epoch": 1788868220.2447712,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:20:16Z"
     }
   ]
 }
