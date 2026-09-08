@@ -201,4 +201,51 @@ module.exports = {
   //                          here would create a SECOND, differently-tenanted
   //                          copy of the same records.
   ],
+
+  // ── 'soft_delete' ON THE TWENTY-ONE BACKED-UP COLLECTIONS (2026-09-08) ───
+  // Michael's decision on the platform's long-open "no delete capability"
+  // row: SOFT delete. A record is marked deleted and hidden from view; the
+  // underlying row stays and stays recoverable. A hard-delete path for a
+  // genuine erasure request is its own separate action if it is ever needed.
+  //
+  // WHY THE VERB IS 'soft_delete' AND NOT 'delete'. 'delete' already exists on
+  // this platform and means a real DELETE -- the SAIRNcode family's
+  // Compliance-Admin-gated branch issues the only `method: 'DELETE'` in
+  // api/sd-data.js. Two verbs that destroy different amounts of data must not
+  // share a name; a caller copying a working `delete` call from one family to
+  // another would silently get the other behaviour.
+  //
+  // IT NEEDS NO NEW DATABASE PRIVILEGE, which is the point of the design: the
+  // marker lives inside the existing `data` jsonb and the write is an UPDATE.
+  // sql/stonedesk_data_schema.sql grants select/insert/update and no delete,
+  // and that stays true.
+  //
+  // SCOPED TO THIS FAMILY DELIBERATELY. The other generic families (BLD, SB,
+  // LEG, SDN, LAW, DNT...) share the same table shape and could take the same
+  // verb mechanically -- but each has its own session or role gate, and who
+  // may delete is not the same question as who may write. Widening is one
+  // decision per family, not a sweep.
+  extraActions: {
+    'sd_invoices': ['soft_delete'],
+    'sd_drawings': ['soft_delete'],
+    'sd_remakes': ['soft_delete'],
+    'sd_fin_jobs': ['soft_delete'],
+    'sd_pricing_rules': ['soft_delete'],
+    'sd_negotiated_prices': ['soft_delete'],
+    'sd_order_history': ['soft_delete'],
+    'sd_inventory': ['soft_delete'],
+    'sd_comms': ['soft_delete'],
+    'sd_sms_log': ['soft_delete'],
+    'stonedesk_quote_history': ['soft_delete'],
+    'sd_business_snapshots': ['soft_delete'],
+    'sd_field_stops': ['soft_delete'],
+    'sd_exec_msgs': ['soft_delete'],
+    'sd_aiquotes': ['soft_delete'],
+    'sd_nesting_saved': ['soft_delete'],
+    'sd_veinmatch': ['soft_delete'],
+    'sd_seamai': ['soft_delete'],
+    'sd_photos': ['soft_delete'],
+    'sd_templates': ['soft_delete'],
+    'sd_email_threats': ['soft_delete'],
+  },
 };

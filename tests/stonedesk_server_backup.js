@@ -226,6 +226,68 @@ test('hydration is additive: it never overwrites a local id', () => {
     'hydrated rows would be echoed straight back to the server');
 });
 
+section('soft delete: marked and hidden, never destroyed');
+
+test("the verb is 'soft_delete', not 'delete'", () => {
+  // 'delete' already exists on this platform and means a real DELETE -- the
+  // SAIRNcode branch issues the only method:'DELETE' in api/sd-data.js. Two
+  // verbs that destroy different amounts of data must not share a name.
+  const granted = Object.keys(reg.EXTRA_ACTIONS)
+    .filter((k) => (reg.EXTRA_ACTIONS[k] || []).indexOf('soft_delete') !== -1);
+  assert.strictEqual(granted.length, 21, 'soft_delete is granted to ' + granted.length + ' resources, not 21');
+  granted.forEach((k) => {
+    assert.ok(handlerMap()[k], k + ' has soft_delete but is not a backed-up resource');
+    assert.ok((reg.EXTRA_ACTIONS[k] || []).indexOf('delete') === -1,
+      k + ' grants the HARD delete verb as well -- the two must not both be reachable here');
+  });
+});
+
+test('the handler never issues a real DELETE for these resources', () => {
+  const at = api.indexOf("if (SD_LOCAL_RESOURCES[resource] && action === 'soft_delete')");
+  assert.ok(at > 0, 'the soft_delete branch is gone');
+  const body = api.slice(at, at + 3000);
+  assert.ok(body.indexOf("method: 'DELETE'") === -1, 'the soft delete issues a real DELETE');
+  assert.ok(body.indexOf("method: 'PATCH'") !== -1, 'it no longer updates the row in place');
+  assert.ok(body.indexOf('_deleted_at') !== -1, 'the marker is gone');
+});
+
+test('it is READ-MODIFY-WRITE, not a blind upsert of the caller copy', () => {
+  // A delete must not double as an opportunity to overwrite the stored record
+  // with a stale client copy.
+  const at = api.indexOf("if (SD_LOCAL_RESOURCES[resource] && action === 'soft_delete')");
+  const body = api.slice(at, at + 2600);
+  const readAt = body.indexOf("select=data");
+  const writeAt = body.indexOf("method: 'PATCH'");
+  assert.ok(readAt > 0 && writeAt > readAt, 'it writes without reading what is stored');
+  assert.ok(body.indexOf('Object.assign({}, stored,') !== -1,
+    'the stored record is not preserved -- the marker is being applied to the payload instead');
+});
+
+test('a missing record is a 404, not a silent success', () => {
+  const at = api.indexOf("if (SD_LOCAL_RESOURCES[resource] && action === 'soft_delete')");
+  const body = api.slice(at, at + 2600);
+  assert.ok(body.indexOf("code: 'NOT_FOUND'") !== -1,
+    'deleting a record that is not there reports success -- the false-success shape this repo keeps recording');
+  assert.ok(body.indexOf('nothing was deleted') !== -1);
+});
+
+test('reads EXCLUDE soft-deleted rows, and the filter is null-safe for old rows', () => {
+  const at = api.indexOf("if (SD_LOCAL_RESOURCES[resource] && action === 'read')");
+  const body = api.slice(at, at + 900);
+  assert.ok(body.indexOf('data->>_deleted_at=is.null') !== -1,
+    'a soft-deleted record still comes back on read');
+  // A row written before this existed has no _deleted_at key at all, so ->>
+  // yields NULL and is.null matches it. The filter must be is.null, never
+  // eq.something, or every pre-existing row would vanish.
+  assert.ok(body.indexOf('_deleted_at=eq.') === -1, 'the filter would hide every pre-existing row');
+});
+
+test('the schema still grants no delete privilege -- soft delete needed none', () => {
+  const sqlCode = sql.split(String.fromCharCode(10)).filter((l) => l.trim().indexOf('--') !== 0).join(String.fromCharCode(10));
+  assert.ok(!/grant[^;]*delete/i.test(sqlCode));
+  assert.ok(/grant select, insert, update/.test(sqlCode));
+});
+
 (async () => {
   for (const item of queue) {
     if (item.section) { console.log('--- ' + item.section + ' ---'); continue; }

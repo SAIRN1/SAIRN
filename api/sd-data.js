@@ -8878,7 +8878,13 @@ module.exports = async (req, res) => {
       sd_templates: 'template_id', sd_email_threats: 'threat_id'
     };
     if (SD_LOCAL_RESOURCES[resource] && action === 'read') {
-      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // SOFT-DELETED ROWS ARE NOT RETURNED. The marker lives inside `data`, so
+      // the filter is on the jsonb field rather than a column. A row that has
+      // never been soft-deleted has no `_deleted_at` key at all and `->>`
+      // yields NULL for it, so `is.null` matches every pre-existing row --
+      // this filter changes nothing for data written before it existed.
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+        '&data->>_deleted_at=is.null&select=data'), { headers });
       // 404/400 means the table does not exist yet. Reported as an honest empty
       // WITH provisioned:false rather than as rows, so the client can tell
       // "nothing saved yet" from "this was never migrated".
@@ -8903,6 +8909,71 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // PLACED AFTER the SD_LOCAL_RESOURCES declaration, not before it. The
+    // first version sat above the `const` and every request to any resource
+    // died on a TDZ ReferenceError -- `Cannot access 'SD_LOCAL_RESOURCES'
+    // before initialization` -- because the guard is evaluated on every call,
+    // not only for this family. node --check accepted it; eight existing
+    // suites caught it.
+    // -- SOFT DELETE (2026-09-08) ---------------------------------------------
+    // Michael's decision on the platform's long-open "no delete capability"
+    // row: SOFT delete. The record is marked and hidden; the row stays and
+    // stays recoverable. A hard-delete path for a genuine erasure request is a
+    // separate action if it is ever wanted.
+    //
+    // THE VERB IS 'soft_delete', NOT 'delete', and that is deliberate. 'delete'
+    // already exists here and means a real DELETE -- the SAIRNcode family's
+    // Compliance-Admin-gated branch issues the only method:'DELETE' in this
+    // file. Two verbs that destroy different amounts of data must not share a
+    // name: a caller copying a working `delete` call from one family to another
+    // would silently get the other behaviour.
+    //
+    // READ-MODIFY-WRITE, NOT A BLIND UPSERT OF THE CALLER'S COPY. The client
+    // holds the record and could have sent it back with a marker in one trip,
+    // which is what the write path does -- but a delete must not also be an
+    // opportunity to overwrite the stored record with a stale one. This reads
+    // what is actually stored, adds the marker, and writes that back, so the
+    // record is preserved exactly and only the marker changes.
+    //
+    // NO NEW DATABASE PRIVILEGE. The marker is inside the existing `data`
+    // jsonb and the write is an UPDATE; sql/stonedesk_data_schema.sql grants
+    // select/insert/update and no delete, and that stays true.
+    //
+    // 404 IS AN HONEST ANSWER, not a silent success. Soft-deleting a record
+    // that is not there tells the caller so, rather than reporting a deletion
+    // that did not happen -- the false-success shape this platform keeps
+    // recording.
+    if (SD_LOCAL_RESOURCES[resource] && action === 'soft_delete') {
+      const idCol = SD_LOCAL_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const rowId = String(payload.id);
+      const cur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+        '&' + idCol + '=eq.' + enc(rowId) + '&select=data'), { headers });
+      if (cur.status === 404 || cur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'StoneDesk data tables are not set up yet — run sql/stonedesk_data_schema.sql in Supabase first.' } }); return; }
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+      if (!Array.isArray(curRows) || curRows.length === 0) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No ' + resource + ' record with that id — nothing was deleted' } });
+        return;
+      }
+      const stored = curRows[0].data || {};
+      if (stored._deleted_at) { res.status(200).json({ ok: true, data: stored, already_deleted: true }); return; }
+      const marked = Object.assign({}, stored, { _deleted_at: nowISO() });
+      const w = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+        '&' + idCol + '=eq.' + enc(rowId)), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ data: marked, updated_at: nowISO() })
+      });
+      const wRows = await w.json().catch(function () { return null; });
+      if (!w.ok) return upstream(res, wRows);
+      res.status(200).json({ ok: true, data: marked });
       return;
     }
 
