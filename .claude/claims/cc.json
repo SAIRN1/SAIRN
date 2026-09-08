@@ -611,8 +611,8 @@
       "task": "idempotent pending ledger rows flushed on reconnect",
       "claimed_at": "2026-09-08T12:24:56Z",
       "claimed_at_epoch": 1788870296.8605478,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T13:05:29Z"
     },
     {
       "id": "cc-1788871792",
