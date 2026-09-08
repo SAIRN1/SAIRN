@@ -601,8 +601,8 @@
       "task": "build the never-written-to-the-server-at-all counterpart to write-without-readback",
       "claimed_at": "2026-09-08T12:00:39Z",
       "claimed_at_epoch": 1788868839.1230257,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:22:47Z"
     }
   ]
 }
