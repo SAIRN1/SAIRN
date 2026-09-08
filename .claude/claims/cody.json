@@ -668,6 +668,16 @@
       "claimed_at_epoch": 1788870717.7113912,
       "status": "released",
       "released_at": "2026-09-08T13:02:41Z"
+    },
+    {
+      "id": "cody-1788872702",
+      "session": "cody",
+      "subject": "claude-auth-phase2-clients",
+      "task": "fetch wrappers in fifteen apps and sairncash ai endpoint",
+      "claimed_at": "2026-09-08T13:05:02Z",
+      "claimed_at_epoch": 1788872702.527148,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
