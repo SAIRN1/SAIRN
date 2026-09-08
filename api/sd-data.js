@@ -85,7 +85,8 @@ const roofingDamage = require('./_lib/roofing-damage-assessment');
 // ~15 handler-local bindings and serve 11 live apps, and they were never the
 // source of the collisions.
 const { RESOURCES, RESOURCE_LIST_TEXT, RESOURCE_NAMES, EXTRA_ACTIONS,
-        isKnownApp, resourceListTextFor } = require('./_resources');
+        isKnownApp, resourceListTextFor, isVisibleTo,
+        OWNER_BY_RESOURCE } = require('./_resources');
 const { checkAnonRate, recordInvalidLicence, addressSource, trackedCount,
         limit, windowSeconds: anonWindowSeconds,
         isEnforcing: isAnonEnforcing } = require('./_lib/anon-rate-limit');
@@ -246,19 +247,54 @@ function checkEnvelope(action, resource, appId) {
     // own evidence, not as a side effect of this refactor.
     return { status: 400, body: { error: { message: "action must be 'read' or 'write'" + (isSc(resource) ? " or 'delete'" : '') } } };
   }
-  if (!RESOURCES[resource]) {
-    // NAMES REGISTERED RESOURCES, so this gate runs only after the caller's
-    // licence has been validated (2026-09-04) AND now names only the caller's
-    // own app plus the shared ones (2026-09-05). `code` is for the handler's
-    // logging and is deliberately not part of `body` -- the response shape is
-    // unchanged, because sairnlaw.html:1389 matches on this exact sentence.
-    return {
-      status: 400,
-      code: 'UNKNOWN_RESOURCE',
-      body: { error: { message: 'resource must be one of: ' + resourceListTextFor(appId) } }
-    };
-  }
-  return null;
+  // ── THE APP BOUNDARY, AND WHY IT SHARES THE UNREGISTERED ANSWER ─────────
+  // Two conditions, ONE response, deliberately: a resource this caller's app
+  // does not own is answered exactly as a resource that does not exist.
+  //
+  // Michael's call, 2026-09-05, on the independent review's finding that
+  // scoping the LIST was only a message control: an active `stonedesk` licence
+  // got 200 from `law_matters`, `sc_denial` and `leg_cases`. No cross-tenant
+  // DATA leak -- every row is license_hash-scoped, so it saw its own empty
+  // slice -- but the capability was not gated.
+  //
+  // Making the two indistinguishable closes the ENUMERATION ORACLE in the same
+  // move. Before this, an authenticated caller could still classify any guessed
+  // name one request at a time: 400 meant "not registered", anything else meant
+  // "registered". Now a caller sees exactly one universe -- its own app's
+  // resources plus `shared` -- and every name outside it, real or invented,
+  // returns the identical 400 naming the identical scoped list. That sentence
+  // is also TRUE of the caller: those really are the only resources it may use.
+  //
+  // A 403 would be more semantically precise and would rebuild the oracle it
+  // was supposed to close. Choosing indistinguishability over precision is the
+  // deliberate trade, and it keeps the response shape two clients already match
+  // on (sairnlaw.html and sairnlegacy.html both test this sentence).
+  //
+  // SAIRN_APP_BOUNDARY=off disables ONLY the boundary half, never the
+  // unregistered check. It exists because this is an authorization change
+  // across fifteen live apps and no session can see license_keys.app_id in the
+  // real database; if it turns out an app is provisioned with an app_id nobody
+  // expected, this is the difference between an env var and an outage. SAY SO
+  // OUT LOUD WHEN YOU USE IT -- same standard as SAIRN_SEED_GATE. It logs
+  // loudly on every request while it is off.
+  const refusal = {
+    status: 400,
+    // `code` is for the handler's logging and is deliberately NOT part of
+    // `body`: the two cases must look identical on the wire, and telling them
+    // apart is exactly what the caller must not be able to do.
+    code: RESOURCES[resource] ? 'FOREIGN_RESOURCE' : 'UNKNOWN_RESOURCE',
+    body: { error: { message: 'resource must be one of: ' + resourceListTextFor(appId) } }
+  };
+  if (!RESOURCES[resource]) return refusal;
+  if (isVisibleTo(resource, appId)) return null;
+  if (boundaryDisabled()) return null;          // logged by the handler, loudly
+  return refusal;
+}
+
+// The override, read at request time rather than at module load so it can be
+// flipped without a redeploy taking effect only on cold instances.
+function boundaryDisabled() {
+  return String(process.env.SAIRN_APP_BOUNDARY || '').toLowerCase() === 'off';
 }
 
 module.exports = async (req, res) => {
@@ -420,7 +456,25 @@ module.exports = async (req, res) => {
   // trusting the body field cost; a scoping rule the caller chooses is not a
   // scoping rule.
   const envelopeRefusal = checkEnvelope(action, resource, lic.app_id);
+  if (!envelopeRefusal && RESOURCES[resource] && !isVisibleTo(resource, lic.app_id)) {
+    // ONLY REACHABLE WITH SAIRN_APP_BOUNDARY=off. An override nobody mentions is
+    // how a gate gets hollowed out, so this shouts on EVERY request it lets
+    // through rather than once at startup -- the same standard CLAUDE.md sets
+    // for SAIRN_SEED_GATE.
+    console.error('sd-data: APP BOUNDARY IS DISABLED (SAIRN_APP_BOUNDARY=off) -- allowed "' +
+      resource + '" (owned by ' + (OWNER_BY_RESOURCE[resource] || '?') +
+      ') for a licence whose app_id is ' + JSON.stringify(lic.app_id));
+  }
   if (envelopeRefusal) {
+    if (envelopeRefusal.code === 'FOREIGN_RESOURCE') {
+      // A caller reaching for another app's resource type. Logged because the
+      // response deliberately cannot say so -- it is identical to the one for a
+      // name that does not exist -- and because this is the line that shows
+      // whether the boundary is refusing anything real or only ever theory.
+      console.warn('sd-data: APP BOUNDARY refused "' + resource + '" (owned by ' +
+        (OWNER_BY_RESOURCE[resource] || '?') + ') for a licence whose app_id is ' +
+        JSON.stringify(lic.app_id));
+    }
     if (envelopeRefusal.code === 'UNKNOWN_RESOURCE' && !isKnownApp(lic.app_id)) {
       // THE RESIDUAL, MADE VISIBLE RATHER THAN ASSUMED EMPTY. This licence just
       // received every registered name because its app_id is not one of the

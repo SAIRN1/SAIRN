@@ -60,6 +60,15 @@ const REGISTRY_MODULES = [
   // sd-data.js only through `employees` and `shared_knowledge`, both owned by
   // shared.js.
   require('./sairnbiz'),
+  // SAIRNvet and SAIRNcash joined 2026-09-05 with EMPTY resource lists, which
+  // is the measured answer and not a placeholder. Neither owns a resource here.
+  // They are registered because `lic.app_id` is now load-bearing -- it scopes
+  // the unknown-resource list and drives the app-boundary gate -- and an app
+  // with no module is UNATTRIBUTABLE: its licences take the full-list fallback
+  // and bypass the boundary. Each file records what was measured, including the
+  // correction that sairncash.html does not call this endpoint at all.
+  require('./sairnvet'),
+  require('./sairncash'),
 ];
 
 // Fail loudly at load rather than silently letting one app shadow another's
@@ -200,6 +209,40 @@ function resourceListTextFor(appId) {
   return names ? names.join(', ') : RESOURCE_LIST_TEXT;
 }
 
+// ── THE APP BOUNDARY (2026-09-05) ─────────────────────────────────────────
+// Scoping the LIST was a message control. This is the access control, and the
+// independent review is what separated the two: against the real handler, an
+// active `stonedesk` licence got the scoped 400 for a made-up name and 200 for
+// `law_matters`, `sc_denial` and `leg_cases`. No cross-tenant DATA leak -- every
+// row is license_hash-scoped, so what came back was that licence's own (empty)
+// slice -- but the CAPABILITY to address another app's resource types was not
+// gated at all.
+//
+// MEASURED BEFORE IT WAS ENFORCED, because a wrong answer here is a
+// platform-wide outage rather than a bug. Every app HTML at the repo root was
+// scanned for the resources it actually asks this endpoint for, and every one
+// touches only its own module plus `shared`. The two apparent exceptions in
+// stonedesk.html -- `jobs` and `progress_photos`, owned by sairngrounds and by
+// nothing -- both turned out to POST to /api/sd-sub-data, a different endpoint
+// with its own three-name registry. There is no legitimate cross-app call on
+// this endpoint to break.
+//
+// `shared` is visible to everyone by construction: those resources exist
+// precisely because every app reaches them through this one endpoint.
+//
+// UNATTRIBUTABLE LICENCES ARE ALLOWED THROUGH, and that is the same
+// conservative direction resourceListTextFor() takes, for the same reason:
+// nothing read `lic.app_id` before 2026-09-04, so there is no evidence every
+// live licence has it set, and refusing an unrecognised one would break a real
+// customer nobody can enumerate. The handler LOGS every such request, so the
+// set stops being unknown; once the logs show it is empty the fallback can be
+// tightened, and sd-data.js carries the env switch to do it.
+function isVisibleTo(resource, appId) {
+  if (RESOURCE_NAMES_BY_APP[SHARED_APP].indexOf(resource) !== -1) return true;
+  if (!isKnownApp(appId)) return true;          // cannot attribute -> cannot judge
+  return RESOURCE_NAMES_BY_APP[appId.trim()].indexOf(resource) !== -1;
+}
+
 module.exports = {
   RESOURCES,
   RESOURCE_NAMES,
@@ -212,4 +255,5 @@ module.exports = {
   isKnownApp,
   resourceNamesFor,
   resourceListTextFor,
+  isVisibleTo,
 };
