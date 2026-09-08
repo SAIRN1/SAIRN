@@ -7,6 +7,21 @@
 --
 -- 3a -- ONE row: license_keys, the deliberate exclusion, nothing else.
 --       Every other non-sc_* table has lost DELETE.
+--
+--       ⚠ SUPERSEDED 2026-09-05 — RE-RUNNING 3a TODAY RETURNS **ZERO** ROWS,
+--       AND THAT IS CORRECT, NOT A BROKEN CHECK. license_keys got its own
+--       dedicated review that day (sql/license_keys_grant_review_2026-09-05
+--       .sql), run end to end by the owner: service_role held all SEVEN
+--       privileges there and now holds SELECT alone, so its DELETE is gone
+--       and it can no longer appear in this query.
+--
+--       Recorded HERE, in the file that carries the expectation, rather than
+--       only in the file that changed it -- a note about a defect written in
+--       the file that HIT it instead of the file that HAS it is a documented
+--       failure mode on this platform, and it cost a rediscovery twice in one
+--       session. A future session reading "expect ONE row", seeing zero, and
+--       concluding the verification is broken is exactly the outcome this
+--       paragraph exists to prevent.
 -- 3b -- ONE row: LOST | DELETE | 134. Exactly the assertion this file's
 --       inverted Section 3 was built around: 134 LOST, every one of them
 --       DELETE, ZERO GAINED, and ZERO LOST of any other privilege type.

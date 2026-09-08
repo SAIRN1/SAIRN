@@ -6,7 +6,25 @@
 -- because the reasoning was built under it.
 --
 -- 3a -- ONE row: license_keys, full TRUNCATE family. That is the
--- deliberate exclusion and nothing else. All 213 other tables from the
+-- deliberate exclusion and nothing else.
+--
+-- ⚠ SUPERSEDED 2026-09-05 — RE-RUNNING 3a TODAY RETURNS **ZERO** ROWS FOR
+-- service_role, AND THAT IS CORRECT, NOT A BROKEN CHECK. license_keys got
+-- its own dedicated review that day (sql/license_keys_grant_review_2026-09-05
+-- .sql), run end to end by the owner: service_role held all SEVEN privileges
+-- there -- DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE --
+-- and now holds SELECT alone. Its TRUNCATE/REFERENCES/TRIGGER are gone, so
+-- it can no longer appear in this query for that role.
+--
+-- WHAT DID NOT CHANGE, and matters if this file is ever re-run in anger:
+-- `anon` and `authenticated` were confirmed by that same run to hold NOTHING
+-- on license_keys, so the 158-tables-each row for those two roles is
+-- unaffected by this and license_keys was never part of it.
+--
+-- Recorded HERE, in the file that carries the expectation, not only in the
+-- file that changed it -- a note written in the file that HIT a defect
+-- instead of the file that HAS it is a documented failure mode on this
+-- platform and caused a rediscovery twice in one session. All 213 other tables from the
 -- 214-row Section 1 list are clean, INCLUDING the 20 zero-CRUD tables --
 -- their outcome is confirmed HERE, not in 3b, because having contributed
 -- no baseline rows they are silent in the diff by construction.
