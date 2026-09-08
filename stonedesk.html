@@ -19117,15 +19117,31 @@ async function generateFollowUps(aiResponse) {
       chip.className = 'sairn-fu-chip';
       chip.textContent = q;
       chip.onclick = function() {
-        // Remove all follow-up rows (question answered)
+        // ── RETARGETED TO THE LIVE CHAT (2026-09-08) ──────────────────────
+        // This handler drove the RETIRED legacy chat: addMessage() appends to
+        // #messages, chatHistory is only ever declared inside setMode(), and
+        // sendToClaudeAndRender() posts from #userInput. None of those three
+        // exist -- the DEAD CODE FLAG above panel-ai has said so since the
+        // chat was replaced, and other callers were retargeted then.
+        //
+        // THESE CHIPS ARE NOT DEAD, WHICH IS WHY THIS ONE MATTERED. installHook()
+        // wraps the LIVE addMsg(), so generateFollowUps() runs after every real
+        // AI answer over 150 characters and renders three "Ask a follow-up"
+        // chips into #chatArea. A user clicked one and got a TypeError on
+        // addMessage's null container -- the click did nothing, silently, and
+        // the chips stayed on screen inviting another try.
+        //
+        // sdAIQuick() is the same retarget already applied to
+        // custFollowUpAI/vendorSpendAI/warrAskClaude: it fills #ai-input and
+        // sends through sdAISend(), so the answer renders in the live panel and
+        // the follow-up hook fires again on the reply.
         document.querySelectorAll('.sairn-followup-row').forEach(function(r) { r.remove(); });
-
-        // Send the question
-        var inp = document.getElementById('userInput');
-        addMessage('user', q);
-        chatHistory.push({ role: 'user', content: q });
-        if (inp) inp.value = '';
-        sendToClaudeAndRender();
+        if (typeof sdAIQuick === 'function') { sdAIQuick(q); return; }
+        // NEVER SILENTLY NOTHING. If the live sender is missing the user is
+        // told, rather than left clicking a chip that quietly fails -- which is
+        // exactly what the old handler did.
+        if (typeof notify === 'function') notify('Could not send that follow-up -- open the AI panel and ask it there', 'warn');
+        else console.error('follow-up chip: sdAIQuick() is unavailable, the question was not sent');
       };
       row.appendChild(chip);
     });
