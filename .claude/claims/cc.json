@@ -684,16 +684,6 @@
       "claimed_at_epoch": 1788883030.3639572,
       "status": "active",
       "released_at": null
-    },
-    {
-      "id": "cc-1788883055",
-      "session": "cc",
-      "subject": "trial-expiry-gate-never-fires",
-      "task": "make the three dead gates honest about the missing column",
-      "claimed_at": "2026-09-08T15:57:35Z",
-      "claimed_at_epoch": 1788883055.8080616,
-      "status": "active",
-      "released_at": null
     }
   ]
 }
