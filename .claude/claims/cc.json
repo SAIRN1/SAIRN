@@ -672,8 +672,8 @@
       "task": "add committed mutation arms to the five named suites",
       "claimed_at": "2026-09-08T15:43:15Z",
       "claimed_at_epoch": 1788882195.0539567,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T15:55:52Z"
     }
   ]
 }
