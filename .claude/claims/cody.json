@@ -718,6 +718,16 @@
       "claimed_at_epoch": 1788884653.9636686,
       "status": "released",
       "released_at": "2026-09-08T19:51:28Z"
+    },
+    {
+      "id": "cody-1788897340",
+      "session": "cody",
+      "subject": "reachability-probe-restore-failure",
+      "task": "find the trigger and make it restore every file it mutates",
+      "claimed_at": "2026-09-08T19:55:40Z",
+      "claimed_at_epoch": 1788897340.7681353,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
