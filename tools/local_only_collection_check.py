@@ -1,0 +1,464 @@
+"""Every business COLLECTION an app keeps should reach a server somehow.
+
+WHY THIS EXISTS, and why it is a SECOND tool rather than a wider first one.
+tools/write_without_readback_check.py was built on 2026-09-05 from two real
+incidents and its own header says, in as many words, that it catches ONE of
+them:
+
+  SAIRNlaw  -- 20 resources written to the server, exactly one read back.
+               CAUGHT. The tool goes red on sairnlaw.html at 3d869e1c^.
+  SAIRNbiz  -- 17 localStorage collections, ONE of which reached a server.
+               NOT CAUGHT, and correctly so by its own rules: SAIRNbiz was
+               not writing through a wrapper and reading nothing back, it was
+               writing to localStorage and STOPPING.
+
+"Written to the server and never read back" and "never written to a server at
+all" are different defects with different shapes, and the first tool says so
+rather than implying coverage it lacks. This is the second one.
+
+BOTH REAL CASES WERE FOUND BY HAND. SAIRNbiz's seventeen came off an index row
+somebody wrote; SAIRNbuild's thirty-seven came from a session reading the file.
+Neither was found by a machine, and that is the whole argument for this.
+
+-- WHAT IT DOES --------------------------------------------------------------
+Per app HTML file:
+  1. discovers the app's own localStorage SETTER by reading it (a function
+     whose first parameter is handed to localStorage.setItem), rather than
+     assuming it is called st();
+  2. collects the keys written through it, and the keys written by a bare
+     localStorage.setItem for apps that have no wrapper;
+  3. keeps only the ones that look like a RECORD COLLECTION rather than device
+     state -- see collection_keys() for the test and what it lets through;
+  4. resolves the SIX ways this platform actually connects a local key to a
+     server, every one of them read off a real app rather than imagined:
+     the same name, the name with a `_list`/`_obj` suffix dropped, the name
+     with its app prefix dropped, a [resource, key] pair list, a declared
+     synced-keys list gating a generic write hook, and a server call sharing
+     a variable with the local write;
+  5. reports collections with no route to a server at all, and separately
+     reports the ones it could not decide.
+
+IT COUNTS RECORD COLLECTIONS, NOT localStorage KEYS, and the difference shows
+up the moment anyone compares it to a hand count. SAIRNbiz's index row says
+seventeen collections; this finds eleven, because six of the seventeen are
+settings, counters and flags rather than record sets. The eleven are a subset,
+the numbers are not interchangeable, and the probe asserts the subset.
+
+-- WHAT IT CANNOT SEE, said here rather than discovered later ------------------
+  * An app with NO storage wrapper and NO bare setItem collections is reported
+    as having nothing to check, not as clean. The SCANNED-BY-NAME line says
+    which setter it found, so an app it could not read is visible.
+  * A key connected to a server by a mapping this does not model resolves to
+    COULD NOT TELL for that file, which is NOT a pass -- the exit code says so.
+    The fix is to read the mapping and teach it, the same standard the read-back
+    checker's two could-not-tells were held to.
+  * Whether the write is ever CALLED, and whether the row comes BACK. The first
+    is tools/sairn_reachability_check.py; the second is
+    tools/write_without_readback_check.py. Running this alone proves a route
+    exists, not that it works.
+  * A collection held in a variable and never persisted at all is invisible
+    here -- this only sees what reaches localStorage.
+
+PROVEN ON REAL HISTORY, NOT ONLY ON ITSELF, by tests/local_only_probe.py.
+Against sairnbiz.html at 48c122df^ it names TEN of eleven collections; against
+the same file after that commit, exactly ONE -- sb_incidents, which really is
+still open and has its own index row. Against sairnbuild.html at 1f1705e^ it
+names TWENTY-NINE; afterwards, none. THE FIX IS WHAT CHANGES THE ANSWER, which
+is the bar tools/discarded_verdict_check.py set and the reason a checker that
+has only ever returned clean is a checker whose behaviour nobody knows.
+"""
+import os
+import re
+import sys
+
+# Keys that are device state, not a business record, no matter what shape they
+# are stored in. Named individually rather than by prefix: a silent category
+# exclusion is how a real collection hides. Anything matched here is not even
+# counted, so the totals stay honest.
+DEVICE_STATE = {
+    'license_key', 'licence_key', 'demo_cleared', 'seeded', 'theme', 'sidebar',
+    'last_sync', 'session', 'session_token', 'trial_start', 'lic_fingerprint',
+}
+DEVICE_STATE_SUFFIX = (
+    '_license_key', '_licence_key', '_seeded', '_demo_cleared', '_theme',
+    '_session', '_session_token', '_token', '_trial_start', '_fingerprint',
+    '_last_sync', '_lastsync', '_collapsed', '_prefs', '_pref', '_ui',
+)
+
+# How close a server call has to be to a local write for the two to count as
+# one action. 300 characters is roughly the statement block around a save --
+# `st(key, rows); closeModal(); render(); syncRows(rows);` -- and is narrow
+# enough that a function doing unrelated server work elsewhere does not excuse
+# a key. Tuned against the six keys the unscoped version wrongly cleared.
+WINDOW = 300
+
+WRITE_LIT_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+WRITE_OBJ_RE = re.compile(r"action:\s*'write'\s*,\s*resource:\s*'(\w+)'")
+FN_RE = re.compile(r'(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)')
+
+
+def strip_comments(src):
+    """Line comments only. Every call site here is code, and a commented-out
+    example must not count as coverage."""
+    return '\n'.join(l for l in src.split('\n') if not l.strip().startswith('//'))
+
+
+def _body(src, at, limit=40000, opener='{'):
+    closer = {'{': '}', '[': ']'}[opener]
+    open_at = src.find(opener, at)
+    if open_at < 0:
+        return ''
+    depth = 0
+    for i in range(open_at, min(len(src), open_at + limit)):
+        if src[i] == opener:
+            depth += 1
+        elif src[i] == closer:
+            depth -= 1
+            if depth == 0:
+                return src[at:i + 1]
+    return ''
+
+
+def find_setter(src):
+    """The app's own localStorage setter, by READING it rather than assuming.
+
+    Most apps call it st(); SAIRNscape calls it scpSt(), SAIRNmechanical
+    mechSt(), StoneDesk has st() and stRaw(). Hardcoding 'st' would silently
+    check nothing in three apps -- the same shape as a guard that hardcodes
+    `owner` and passes SAIRNcode clean forever.
+    """
+    names = []
+    for m in FN_RE.finditer(src):
+        params = [p.strip() for p in m.group(2).split(',') if p.strip()]
+        if not params:
+            continue
+        body = _body(src, m.start())
+        if body and re.search(r'localStorage\.setItem\(\s*' + re.escape(params[0]) + r'\b', body):
+            names.append(m.group(1))
+    return names
+
+
+def is_device_state(key):
+    k = key.lower()
+    if k in DEVICE_STATE:
+        return True
+    # Strip the app prefix (dnt_, sb_, bld_, ...) before the exact-name test,
+    # so dnt_license_key is recognised the same as license_key.
+    tail = k.split('_', 1)[1] if '_' in k else k
+    if tail in DEVICE_STATE:
+        return True
+    return any(k.endswith(s) for s in DEVICE_STATE_SUFFIX)
+
+
+def collection_keys(src, setters):
+    """Keys that hold a RECORD COLLECTION rather than a single setting.
+
+    THE TEST IS THE READ, NOT THE WRITE, and that is deliberate. A write's
+    argument is usually a variable (st('dnt_charges_list', list)) and says
+    nothing about shape. The matching read almost always carries a default --
+    ld('dnt_charges_list', []) for a list, ld('dnt_settings_obj', {}) for a
+    record -- and THAT is the app telling you what it thinks the key holds.
+
+    A key written but never read with a default falls back to the write: a
+    literal [] or a variable named like a list. Anything else is left out
+    rather than guessed at, because a checker that cries wolf on an entire app
+    is worse than no checker -- nobody runs it twice.
+    """
+    keys = set()
+    for name in setters:
+        for m in re.finditer(re.escape(name) + r"\(\s*'([\w.-]+)'", src):
+            keys.add(m.group(1))
+    if not setters:
+        for m in re.finditer(r"localStorage\.setItem\(\s*'([\w.-]+)'", src):
+            keys.add(m.group(1))
+
+    array_read = set(re.findall(r"\w*\(\s*'([\w.-]+)'\s*,\s*\[\s*\]\s*\)", src))
+    array_write = set(re.findall(r"\w*\(\s*'([\w.-]+)'\s*,\s*\[\s*\]\s*\)", src))
+    listish_write = set()
+    for name in setters:
+        for m in re.finditer(re.escape(name) + r"\(\s*'([\w.-]+)'\s*,\s*([A-Za-z_$][\w$]*)\s*\)", src):
+            var = m.group(2).lower()
+            if var.endswith('s') or 'list' in var or 'rows' in var or 'arr' in var:
+                listish_write.add(m.group(1))
+
+    out = {}
+    for k in keys:
+        if is_device_state(k):
+            continue
+        if k in array_read or k in array_write or k in listish_write:
+            out[k] = 'list'
+    return out
+
+
+NAME_SUFFIXES = ('_list', '_obj', '_arr', '_rows', '_data', '_cache')
+
+
+def name_candidates(key):
+    """Server names this local key could reasonably BE.
+
+    THREE NAMING CONVENTIONS ARE IN USE AND ALL THREE ARE REAL, read off the
+    apps rather than chosen:
+
+      verbatim        SAIRNbiz -- `sb_invs` on disk is `sb_invs` on the server,
+                      deliberately, because its sync hook keys off the storage
+                      key directly.
+      suffixed        SAIRNdental -- `dnt_charges_list` on disk is `dnt_charges`
+                      on the server.
+      prefix stripped StoneDesk -- `sd_slabs` on disk is `slabs` on the server
+                      (`sdData('read','slabs',{})`).
+
+    Testing only the first would report every SAIRNdental and StoneDesk
+    collection as local-only, which is the false positive that would have sunk
+    this on its first run -- a checker that cries wolf on an entire app is one
+    nobody runs twice.
+    """
+    out = {key}
+    for s in NAME_SUFFIXES:
+        if key.endswith(s):
+            out.add(key[:-len(s)])
+    for k in list(out):
+        if '_' in k:
+            out.add(k.split('_', 1)[1])
+    return out
+
+
+def _server_calling_functions(src):
+    """Function names whose body reaches a server at all, by any mechanism.
+
+    Deliberately broad, because this set is only ever used to EXCUSE a key, and
+    the cost of missing one is a false accusation. Covers the wrapper call, the
+    raw fetch carrying an action/resource envelope, and a direct Supabase
+    table call -- StoneDesk uses the last one for its intake table and nothing
+    that looks at resource names would ever see it.
+    """
+    reaches = set()
+    bodies = {}
+    for m in FN_RE.finditer(src):
+        body = _body(src, m.start())
+        if body:
+            bodies[m.group(1)] = body
+    direct = re.compile(r"\w*Data\(\s*'(?:read|write)'|action:\s*'(?:read|write)'\s*,\s*resource:|\.from\(")
+    for name, body in bodies.items():
+        if direct.search(body):
+            reaches.add(name)
+    # One hop: a function that calls one of those reaches a server too.
+    for name, body in bodies.items():
+        if name in reaches:
+            continue
+        for other in reaches:
+            if re.search(r'\b' + re.escape(other) + r'\s*\(', body):
+                reaches.add(name)
+                break
+    return reaches, bodies
+
+
+def covered_keys(src, local_keys, known_names):
+    """Every route this platform actually uses to get a local key to a server.
+
+    Each route is one the apps really use, read off them rather than imagined.
+    `known_names` is the union of the app's registered resources and every
+    resource name the file names in a server call.
+    """
+    covered = {}
+    for k in local_keys:
+        hit = name_candidates(k) & known_names
+        if hit:
+            covered[k] = "named resource '%s'" % sorted(hit)[0]
+
+    # PAIR LIST -- [ 'resource', 'key' ] in either order, anywhere in the file.
+    # SAIRNdental's DNT_SYNC_RESOURCES is the canonical shape.
+    for a, b in re.findall(r"\[\s*'([\w.-]+)'\s*,\s*'([\w.-]+)'\s*\]", src):
+        if b in local_keys and a in known_names:
+            covered.setdefault(b, "pair list with '%s'" % a)
+        if a in local_keys and b in known_names:
+            covered.setdefault(a, "pair list with '%s'" % b)
+
+    # SYNCED LIST -- a declared list whose members gate a generic write hook.
+    # SAIRNbuild's BLD_SYNCED and SAIRNbiz's SB_SYNCED are both this shape; the
+    # list IS the write set, and the same constant drives the read.
+    for gm in re.finditer(r'\b(\w+)\.forEach\(\s*function\s*\(\s*(\w+)\s*\)\s*\{\s*'
+                          r'(\w+)\s*\[\s*\2\s*\]\s*=\s*true', src):
+        list_name, guard = gm.group(1), gm.group(3)
+        if not re.search(r'!\s*' + re.escape(guard) + r'\s*\[', src):
+            continue
+        m = re.search(r'\b(?:var|let|const)\s+' + re.escape(list_name) + r'\s*=\s*\[', src)
+        if not m:
+            continue
+        body = _body(src, m.start())
+        for k in re.findall(r"'([\w.-]+)'", body or ''):
+            if k in local_keys:
+                covered.setdefault(k, 'synced list %s' % list_name)
+
+    # SIBLING SYNC -- the local write and the server call sit in the same
+    # function, under names that have nothing to do with each other.
+    #
+    # THIS ROUTE EXISTS BECAUSE OF TWO REAL FALSE POSITIVES, both caught by
+    # reading the call sites before this shipped rather than after:
+    #   SAIRNbiz  st('sb_emps',emps) sits beside syncEmps(emps), which posts
+    #             resource:'employees'. No name test connects sb_emps to
+    #             employees, and it is genuinely synced.
+    #   StoneDesk st('sd_intake', ...) sits beside sb.from(INTAKE_TABLE)
+    #             .update(...), where INTAKE_TABLE is 'intake_submissions'.
+    # SIBLING SYNC IS THE WEAK ROUTE AND IT IS TREATED AS ONE.
+    #
+    # THE TEST IS A SHARED VARIABLE, NOT PROXIMITY, and both weaker versions
+    # were tried and rejected against the real files rather than reasoned away:
+    #
+    #   whole function  excused any key written anywhere inside a function that
+    #                   touched a server anywhere. It silently cleared six
+    #                   genuinely local-only keys -- SAIRNbuild's integrations
+    #                   and SAIRNdental's vendor tables -- in bodies long enough
+    #                   to contain both.
+    #   a 300-char window
+    #                   still cleared three of SAIRNbuild's inside bldSeedRows(),
+    #                   where a SEED sits beside a server call and is not a sync
+    #                   at all, and cleared StoneDesk's sd_photos because
+    #                   `st('sd_customers',...)` happens to be the line above it.
+    #
+    # A route that over-covers produces a FALSE CLEAN, the one direction this
+    # must not fail in. So the local write and the server call have to be about
+    # THE SAME DATA: `st('sb_emps',emps)` beside `syncEmps(emps)`.
+    #
+    # Anything the window suggests but the variable does not confirm is a
+    # COULD NOT TELL, reported and exiting non-zero -- never a quiet pass.
+    reaches, bodies = _server_calling_functions(src)
+    near = re.compile(r"\w*Data\(\s*'(?:read|write)'|action:\s*'(?:read|write)'\s*,\s*resource:|\.from\(")
+    unsure = {}
+    for fname, body in bodies.items():
+        if fname not in reaches:
+            continue
+        for k in local_keys:
+            if k in covered:
+                continue
+            for m in re.finditer(r"\(\s*'" + re.escape(k) + r"'\s*,\s*([A-Za-z_$][\w$]*)\s*\)", body):
+                var = m.group(1)
+                lo, hi = max(0, m.start() - WINDOW), m.end() + WINDOW
+                window = body[lo:hi]
+                if not (near.search(window) or any(
+                        re.search(r'\b' + re.escape(o) + r'\s*\(', window) for o in reaches)):
+                    continue
+                shares = re.search(
+                    r'\b(?:' + '|'.join(sorted(map(re.escape, reaches), key=len, reverse=True)) +
+                    r')\s*\([^)]*\b' + re.escape(var) + r'\b', window) or re.search(
+                    r'\b' + re.escape(var) + r'\s*=\s*(?:await\s+)?\w*(?:Data|Fetch|Sync|Load)\s*\(', body)
+                if shares:
+                    covered[k] = 'same data as a server call in %s()' % fname
+                else:
+                    unsure.setdefault(k, 'written near a server call in %s(), '
+                                          'but nothing ties them to the same data' % fname)
+                break
+    return covered, {k: v for k, v in unsure.items() if k not in covered}
+
+
+def registered_names(path):
+    """Resources the platform has registered for this app.
+
+    The REGISTRY IS THE STRONGEST EVIDENCE a route exists, and it lives outside
+    the HTML, so a checker reading only the app file would miss it. An app with
+    no registry file gets an empty set -- which is itself the finding in
+    SAIRNvet's case, not an error.
+    """
+    app = os.path.splitext(os.path.basename(path))[0]
+    reg = os.path.join(os.path.dirname(os.path.abspath(path)),
+                       'api', '_resources', app + '.js')
+    if not os.path.exists(reg):
+        return set(), False
+    # ONLY THE `resources: [...]` ARRAY, AND ONLY AFTER STRIPPING COMMENTS.
+    # Reading every quoted lowercase word in the file was the first version and
+    # it was badly wrong: these registries carry long prose comments, so words
+    # like 'jobs', 'quotes', 'customers' and 'slabs' appear in sentences and
+    # were being counted as registered resources. StoneDesk's sd_jobs and
+    # SAIRNgrounds' grd_properties both cleared on a word in a comment.
+    text = strip_comments(open(reg, encoding='utf-8', errors='replace').read())
+    m = re.search(r'resources\s*:\s*\[', text)
+    if not m:
+        return set(), True
+    body = _body(text, m.start(), opener='[')
+    return set(re.findall(r"'([\w.-]+)'", body or '')), True
+
+
+def scan(path):
+    src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
+    setters = find_setter(src)
+    local = collection_keys(src, setters)
+    if not local:
+        return None
+    reg, has_reg = registered_names(path)
+    named = set(WRITE_LIT_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
+    named |= set(re.findall(r"\w*Data\(\s*'read'\s*,\s*'(\w+)'", src))
+    named |= set(re.findall(r"action:\s*'read'\s*,\s*resource:\s*'(\w+)'", src))
+    covered, unsure = covered_keys(src, local, reg | named)
+    uncovered = sorted(k for k in local if k not in covered and k not in unsure)
+    return {
+        'file': os.path.basename(path),
+        'setters': setters,
+        'registry': has_reg,
+        'total': len(local),
+        'covered': covered,
+        'unsure': unsure,
+        'uncovered': uncovered,
+    }
+
+
+def main(argv):
+    targets = argv[1:]
+    if not targets:
+        root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        targets = sorted(
+            os.path.join(root, f) for f in os.listdir(root) if f.endswith('.html'))
+    rows = [r for r in (scan(t) for t in targets) if r]
+    print('SCANNED-BY-NAME: the storage setter is discovered per file and named '
+          'below. A file with no setter and no bare setItem collection is '
+          'reported as NOTHING TO CHECK, not as clean.')
+    print()
+    print('%-24s %-16s %6s %8s %10s %10s' % (
+        'app', 'setter', 'colls', 'covered', 'local-only', 'cannot-tell'))
+    for r in rows:
+        print('%-24s %-16s %6d %8d %10d %10d' % (
+            r['file'], ','.join(r['setters']) or '(bare setItem)',
+            r['total'], len(r['covered']), len(r['uncovered']), len(r['unsure'])))
+
+    print()
+    print('=== KEPT ON THE DEVICE AND SENT NOWHERE ===')
+    found = False
+    for r in rows:
+        if not r['uncovered']:
+            continue
+        found = True
+        print('  %s -- %d of %d collections have NO route to a server:'
+              % (r['file'], len(r['uncovered']), r['total']))
+        for k in r['uncovered']:
+            print('      %s' % k)
+    if not found:
+        print('  none')
+
+    print()
+    print('=== COULD NOT TELL -- NOT A PASS ===')
+    unsure_any = False
+    for r in rows:
+        for k, why in sorted(r['unsure'].items()):
+            unsure_any = True
+            print('  %s %s -- %s' % (r['file'], k, why))
+    if not unsure_any:
+        print('  none')
+
+    print()
+    print('=== HOW THE COVERED ONES GET THERE (printed so a wrong resolution is visible) ===')
+    for r in rows:
+        if not r['covered']:
+            continue
+        by = {}
+        for k, how in r['covered'].items():
+            by.setdefault(how.split(" with ")[0], []).append(k)
+        print('  %-24s %s' % (r['file'], '; '.join(
+            '%s: %d' % (h, len(v)) for h, v in sorted(by.items()))))
+
+    print()
+    print('NOTE: a route existing is not the same as it working. Whether the write '
+          'is ever CALLED is tools/sairn_reachability_check.py; whether the row '
+          'comes BACK is tools/write_without_readback_check.py.')
+    return 1 if (found or unsure_any) else 0
+
+
+if __name__ == '__main__':
+    sys.exit(main(sys.argv))
