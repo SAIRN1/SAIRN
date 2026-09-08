@@ -443,9 +443,22 @@ module.exports = async (req, res) => {
   // ── ◆ PATTERN 13 ENTITLEMENT GATE ◆ ─────────────────────────────────────
   // A paid license (has a Stripe subscription) bypasses the trial entirely.
   // Otherwise, once the trial window has passed, refuse with 402 TRIAL_EXPIRED.
-  // A null/absent trial_ends_at (e.g. before the migration, or intentionally
-  // unset) is treated as "not expired" and allowed through. Stripe wiring that
-  // sets stripe_subscription_id is a separate task; this is enforcement only.
+  // CORRECTED 2026-09-08. This used to say a null/absent trial_ends_at was
+  // handled "e.g. before the migration, or intentionally unset", which reads
+  // as an edge case. It is not an edge case -- it is the ONLY case, and that
+  // sentence is why nobody looked for four months.
+  // ── INERT ON EVERY LICENCE, AND ALWAYS HAS BEEN (2026-09-08) ──────────
+  // `trial_ends_at` IS NOT A COLUMN on license_keys -- measured twice by two
+  // other people: a run of sql/demo_license_keys_seed.sql failed 42703
+  // `column "trial_ends_at" does not exist`, and db/schema_snapshot.json,
+  // captured live 2026-09-02, lists eleven columns without it. So the field is
+  // null on every licence, the `&&` short-circuits, and this 402 has never
+  // been reached. Do not read it as enforcement.
+  //
+  // NOTHING IS DELETED AND NO COLUMN IS INVENTED HERE: which of those to do is
+  // a billing decision and Stripe is not configured, so nobody is on a paid
+  // plan to expire. api/license-trial-gate.test.js pins this AS-IS -- the day
+  // the column is added, that suite goes red and names all three handlers.
   const isPaid = !!lic.stripe_subscription_id;
   if (!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {
     res.status(402).json({ error: { code: 'TRIAL_EXPIRED', message: 'Your trial has ended. Please subscribe to continue.' } });

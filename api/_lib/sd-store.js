@@ -45,6 +45,18 @@ async function validateAndGate(licenseKey) {
   if (!lic.valid) throw storeError('INVALID_LICENSE', 'Unknown license key');
   if (!lic.active) throw storeError('LICENSE_INACTIVE', 'This license is not active');
 
+  // ── INERT ON EVERY LICENCE, AND ALWAYS HAS BEEN (2026-09-08) ──────────
+  // `trial_ends_at` IS NOT A COLUMN on license_keys -- measured twice by two
+  // other people: a run of sql/demo_license_keys_seed.sql failed 42703
+  // `column "trial_ends_at" does not exist`, and db/schema_snapshot.json,
+  // captured live 2026-09-02, lists eleven columns without it. So the field is
+  // null on every licence, the `&&` short-circuits, and this 402 has never
+  // been reached. Do not read it as enforcement.
+  //
+  // NOTHING IS DELETED AND NO COLUMN IS INVENTED HERE: which of those to do is
+  // a billing decision and Stripe is not configured, so nobody is on a paid
+  // plan to expire. api/license-trial-gate.test.js pins this AS-IS -- the day
+  // the column is added, that suite goes red and names all three handlers.
   const isPaid = !!lic.stripe_subscription_id;
   if (!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {
     throw storeError('TRIAL_EXPIRED', 'Your trial has ended. Please subscribe to continue.');
