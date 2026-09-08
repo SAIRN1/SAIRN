@@ -1,8 +1,27 @@
 # Scoping: a rate limiter that actually works for the unauthenticated licence lookup
 
-**Written 2026-09-05 (Cody). Skills used: `sairn-decision-gate` (Premortem), `sairn-software-architect`.
-This is a PROPOSAL. Nothing in it is built. Michael's decision is "invest in a real
-fix, scope it properly rather than rushing something inadequate" — this is that scope.**
+**Written 2026-09-05 (Cody). Skills used: `sairn-decision-gate` (Premortem), `sairn-software-architect`.**
+
+> **STATUS — APPROVED, AND STEPS 2 AND 3 ARE DONE (2026-09-05).** Michael approved
+> the recommendation and the sequencing, and decided to stage the log-mode rule
+> immediately rather than wait on historical traffic numbers, on the grounds
+> that the log-mode deployment *is* the measurement mechanism. That is right and
+> it also removes unknown §5.3 by answering it rather than researching it.
+>
+> **Live now, published to production:** two observe-only WAF rules,
+> `anon-api-observe-100` and `anon-api-observe-600`, both `rate_limit` on
+> `/api/` keyed by `ip` with **`action: log`** on exceed. Nothing blocks.
+> **Verified live rather than assumed:** 130 concurrent requests across the
+> 100/60s threshold returned **130 × 401 and zero 429s**.
+>
+> **`tools/waf_rule_check.py` shipped in the same pass**, with
+> `tools/waf_rules_expected.json` as the declared intent and
+> `tests/run_waf_rule_check_probe.py` (15/15) holding it.
+>
+> **Unknown §5.2 is now answered:** the project had **no custom firewall rules
+> at all** before this. Read from the live config, not assumed.
+>
+> Steps 1 and 4–8 below remain open. The observation window runs to **2026-09-12**.
 
 ---
 

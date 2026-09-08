@@ -1,0 +1,60 @@
+{
+  "_why": [
+    "The DECLARED INTENT for the Vercel WAF rules on project `sairn`, kept in git",
+    "because the live config is not. A firewall rule lives in Vercel's dashboard,",
+    "so it is invisible to git log, to every reviewer, and to every gate in this",
+    "repository -- somebody can disable it and nothing here would ever say so.",
+    "",
+    "That is not hypothetical. api/_lib/anon-rate-limit.js shipped ENFORCING and",
+    "was measured completely inert in production: 40 concurrent junk-token",
+    "requests returned 40 x 401 and not one 429. A protection nobody verifies is",
+    "not a protection, and the same failure one layer up is a rule somebody",
+    "switched off in March that nobody notices until it is needed.",
+    "",
+    "tools/waf_rule_check.py compares the LIVE config against this file. Change",
+    "this file in the same commit as the rule, never afterwards -- a spec edited",
+    "to match reality is a spec that has stopped checking anything.",
+    "",
+    "See docs/2026-09-05-anon-amplification-limiter-scoping.md for the whole plan."
+  ],
+  "projectId": "prj_bj475nKLxC1TTmpFU6j7HVCSMEhn",
+  "teamId": "team_xlXR8IEKwOD7fvQQeiJtzxiT",
+  "firewallEnabled": true,
+  "rules": [
+    {
+      "name": "anon-api-observe-100",
+      "_purpose": "Observation threshold 1 of 2. Logs, never blocks. Set deliberately LOW -- a ten-workstation practice syncing 16 resources can plausibly cross it -- because the question this week answers is 'how often would a plausible enforce ceiling have fired, and on whom'. A threshold nothing ever crosses teaches nothing.",
+      "active": true,
+      "path_prefix": "/api/",
+      "mitigate_action": "rate_limit",
+      "rate_limit": {
+        "limit": 100,
+        "window": 60,
+        "keys": ["ip"],
+        "algo": "fixed_window",
+        "action": "log"
+      }
+    },
+    {
+      "name": "anon-api-observe-600",
+      "_purpose": "Observation threshold 2 of 2, so the week yields a DISTRIBUTION rather than one bit. 600/60s is well above any plausible legitimate burst, so anything crossing it is worth looking at directly.",
+      "active": true,
+      "path_prefix": "/api/",
+      "mitigate_action": "rate_limit",
+      "rate_limit": {
+        "limit": 600,
+        "window": 60,
+        "keys": ["ip"],
+        "algo": "fixed_window",
+        "action": "log"
+      }
+    }
+  ],
+  "_invariant_that_outlives_these_two_rules": [
+    "EVERY rule listed here must have rate_limit.action == 'log' until the",
+    "open-work row for the anon amplification says otherwise IN WRITING.",
+    "The checker enforces that separately from the per-rule comparison, so",
+    "flipping a rule to block by editing this file still trips a distinct,",
+    "loud failure rather than sliding through as a spec update."
+  ]
+}
