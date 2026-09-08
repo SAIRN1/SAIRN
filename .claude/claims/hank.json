@@ -732,8 +732,8 @@
       "task": "read the generic hydrate loops by eye",
       "claimed_at": "2026-09-05T13:34:21Z",
       "claimed_at_epoch": 1788615261.0980155,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T11:50:59Z"
     }
   ]
 }
