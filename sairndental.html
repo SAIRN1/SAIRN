@@ -653,6 +653,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-billing">
         <div class="ph"><div><div class="ptitle">Billing</div><div class="psub">Real-time patient balance &mdash; charges, insurance estimates locked in at entry time, and payments.</div></div></div>
+        <div id="bill-pending"></div>
         <div class="card">
           <div class="fg"><label>Patient</label><select id="bill-patient" onchange="rBilling()"></select></div>
         </div>
@@ -3096,9 +3097,11 @@ async function submitCompleteVisit(){
   if(!result.syncResult){
     toast(result.refused
       ? dntWriteFailText('dnt_charges','The charge was not saved, so the visit was not marked completed.')
-      : (result.kept
-        ? 'The charge was recorded on THIS DEVICE ONLY and the visit was not marked completed -- the server could not be reached.'
-        : 'The charge was NOT saved anywhere and the visit was not marked completed -- the server could not be reached and this device could not store it either.'),
+      : (result.queued
+        ? 'The charge was recorded and QUEUED for upload, and the visit was NOT marked completed -- the server could not be reached. Mark it completed once the connection is back.'
+        : (result.kept
+          ? 'The charge was recorded on THIS DEVICE ONLY and the visit was not marked completed -- the server could not be reached and it could not be queued either.'
+          : 'The charge was NOT saved anywhere and the visit was not marked completed -- the server could not be reached and this device could not store it either.')),
       9000);
     return;
   }
@@ -4498,6 +4501,10 @@ function rGfe(){
 
 // ── BILLING PANEL (2026-08-11) ────────────────────────────────────
 function rBilling(){
+  // The queue is rendered by the panel that owns the ledger, from the same
+  // store dntFlushPending() writes -- no second renderer, no second copy.
+  var banner=$('bill-pending');
+  if(banner)banner.innerHTML=dntPendingBannerHtml();
   var sel=$('bill-patient');
   var curPatient=sel.value;
   var pats=patients();
@@ -4562,9 +4569,11 @@ async function submitCharge(){
     // else -- which is not "saved", and is not "lost" either.
     toast(result.refused
       ? dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.')
-      : (result.kept
-        ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.'
-        : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.'),
+      : (result.queued
+        ? 'Recorded on this device and QUEUED -- the server could not be reached. It will upload automatically when the connection returns. Do not re-enter it.'
+        : (result.kept
+          ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached, and it could not be queued for upload either, so this device is the only copy.'
+          : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.')),
       9000);
     return;
   }
@@ -4595,7 +4604,9 @@ async function submitPayment(){
     // DOUBLE the payment, because a second entry gets a new id and
     // dntMergeById() keeps both rows.
     $('pm-add-amount').value='';
-    toast('Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.',9000);
+    toast(result.queued
+      ? 'Recorded on this device and QUEUED -- the server could not be reached. It will upload automatically when the connection returns. Do not re-enter it.'
+      : 'Recorded on THIS DEVICE ONLY -- the server could not be reached, and it could not be queued for upload either, so this device is the only copy.',9000);
     return;
   }
   // Cleared only after it really landed, so a refused amount is still in the
@@ -4886,11 +4897,12 @@ function patientBalance(patientId){
 // write already failed. A REFUSED row is still stored nowhere -- that half is
 // unchanged and its probes still bite.
 //
-// A KEPT ROW IS LOCAL-ONLY AND STAYS THAT WAY. There is no outbound retry
-// queue in this app; dntSyncFromServer() only READS. The row survives a sync
-// (dntMergeById is additive and never drops a local-only id) and will never
-// upload by itself, so the caller must SAY that rather than let it read as
-// saved. Recorded as its own open-work row rather than invented here.
+// A KEPT ROW IS NOW QUEUED, changed 2026-09-08 on Michael's decision. It used
+// to be kept and stranded: dntSyncFromServer() only READS, so a charge entered
+// while the server was unreachable stayed on that one workstation forever, and
+// re-entering it after the connection returned DOUBLED it, because a second
+// entry gets a new id and dntMergeById() keeps both rows. Better than losing
+// it and not the same as fixed. dntPendingAdd() below closes that.
 //
 // The row is returned either way so the caller can name it; syncResult is null
 // whenever the server did not take it, `refused` says whether that was a
@@ -4908,7 +4920,11 @@ async function addChargeEntry(patientId, appointmentId, procedureTypeId, amount)
   // ignore while a kept row implied the server already had it; it is not now.
   var kept=false;
   if(syncResult||!refused){var list=charges();list.push(rec);kept=st('dnt_charges_list',list);}
-  return {rec:rec, coverageFound:est.found, syncResult:syncResult, refused:refused, kept:kept};
+  // QUEUED ONLY IF IT IS REALLY ON THIS DEVICE. A row the local write also lost
+  // is in no ledger to reconcile against, so queueing it would upload a charge
+  // the practice cannot see.
+  var queued=(!syncResult&&!refused&&kept)?dntPendingAdd('dnt_charges',rec):false;
+  return {rec:rec, coverageFound:est.found, syncResult:syncResult, refused:refused, kept:kept, queued:queued};
 }
 async function addPaymentEntry(patientId, amount, method){
   var rec={id:newId('PM'), patient_id:patientId, amount:Number(amount)||0, method:method, date:dntLocalToday()};
@@ -4916,7 +4932,141 @@ async function addPaymentEntry(patientId, amount, method){
   var refused=!syncResult&&dntWriteRefused('dnt_payments');
   var kept=false;
   if(syncResult||!refused){var list=payments();list.push(rec);kept=st('dnt_payments_list',list);}
-  return {rec:rec, syncResult:syncResult, refused:refused, kept:kept};
+  var queued=(!syncResult&&!refused&&kept)?dntPendingAdd('dnt_payments',rec):false;
+  return {rec:rec, syncResult:syncResult, refused:refused, kept:kept, queued:queued};
+}
+
+// ── THE OUTBOUND QUEUE (2026-09-08) ───────────────────────────────────────
+// Closes the gap the previous fix created and said so at the time: a ledger row
+// kept because the server was unreachable never uploaded, and re-entering it
+// after reconnection DOUBLED it.
+//
+// IT IS IDEMPOTENT BECAUSE THE SERVER ALREADY IS, and that was CHECKED rather
+// than assumed. api/sd-data.js's generic dnt_* write posts with
+// `?on_conflict=license_hash,<idCol>` and `Prefer: resolution=merge-duplicates`
+// -- an UPSERT keyed on (licence, row id). `rec.id` is generated by newId() on
+// this device before the first attempt and never changes. So retrying a row the
+// server ALREADY TOOK, whose response was lost on the way back, updates the same
+// row instead of adding a second one. No server change was needed and none was
+// made.
+//
+// THE DUPLICATION THIS ACTUALLY PREVENTS IS THE HUMAN ONE. The server could
+// never double a retry; a receptionist re-typing a charge that "did not save"
+// could, because the re-typed row gets a NEW id. Removing the reason to re-type
+// is the fix.
+//
+// ONE STORE, NOT TWO. Pending and refused entries live in the same key with a
+// `status`, and the ledger rows themselves stay in dnt_charges_list /
+// dnt_payments_list where every existing reader already looks. A parallel copy
+// of a synced concept is the failure this platform keeps recording.
+//
+// NO NEW TIMER. It flushes on the three moments a connection can have returned:
+// boot, the Refresh button, and the browser's own `online` event. A polling
+// interval racing dntSyncFromServer() for the same rows would be a second
+// scheduler for one job.
+var DNT_PENDING_KEY='dnt_pending_writes';
+function dntPendingAll(){var q=ld(DNT_PENDING_KEY,[]);return Array.isArray(q)?q:[];}
+function dntPendingCount(){return dntPendingAll().filter(function(p){return p&&p.status==='pending';}).length;}
+function dntRefusedAll(){return dntPendingAll().filter(function(p){return p&&p.status==='refused';});}
+function dntPendingAdd(resource,rec){
+  var q=dntPendingAll();
+  // KEYED ON (resource, id), SO A RE-QUEUE REPLACES. Without this a row that
+  // failed, was edited, and failed again would sit in the queue twice and
+  // upload twice -- the queue reintroducing the duplication it exists to stop.
+  var i=-1;
+  for(var n=0;n<q.length;n++){if(q[n]&&q[n].resource===resource&&q[n].rec&&q[n].rec.id===rec.id){i=n;break;}}
+  var entry={resource:resource,rec:rec,status:'pending',
+    queued_at:(i>=0&&q[i].queued_at)||new Date().toISOString(),
+    attempts:(i>=0&&q[i].attempts)||0,last_error:dntLastErrCode(resource)||'NETWORK',refused_message:''};
+  if(i>=0)q[i]=entry;else q.push(entry);
+  // st()'s RETURN AGAIN: "it will upload when you reconnect" is a promise, and
+  // a full localStorage makes it false. The caller is told which promise it can
+  // actually make.
+  return st(DNT_PENDING_KEY,q);
+}
+var _dntFlushing=false;
+async function dntFlushPending(){
+  var q=dntPendingAll();
+  var pending=q.filter(function(p){return p&&p.status==='pending';});
+  if(_dntFlushing||!pending.length)return {sent:0,refused:0,left:pending.length,ran:false};
+  _dntFlushing=true;
+  var sent=0,refusedNow=0;
+  var keep=q.filter(function(p){return p&&p.status!=='pending';});
+  try{
+    for(var i=0;i<pending.length;i++){
+      var p=pending[i];
+      var ok=await sdnData('write',p.resource,p.rec);
+      if(ok){sent++;continue;}
+      if(dntWriteRefused(p.resource)){
+        // THE SERVER LOOKED AT IT AND SAID NO. Retrying forever would be a
+        // queue that never drains. It stops being pending and becomes a
+        // REFUSED entry the banner keeps showing -- a pending row that is
+        // quietly dropped is exactly the silent failure this feature exists
+        // to remove, and it is money.
+        //
+        // THE LOCAL LEDGER ROW IS DELIBERATELY NOT DELETED. The server will
+        // not take it, so the two now disagree, and that is worth saying out
+        // loud rather than resolving by erasing a charge the practice entered
+        // and can see. The banner names it and a human decides.
+        p.status='refused';
+        p.refused_message=dntWriteFailText(p.resource,'the server did not accept it');
+        keep.push(p);refusedNow++;continue;
+      }
+      // Still unreachable. Stop here rather than throwing the rest of the
+      // queue at a connection that is plainly down.
+      p.attempts=(p.attempts||0)+1;
+      p.last_error=dntLastErrCode(p.resource)||'NETWORK';
+      keep=keep.concat(pending.slice(i));
+      break;
+    }
+    st(DNT_PENDING_KEY,keep);
+  }finally{_dntFlushing=false;}
+  return {sent:sent,refused:refusedNow,
+    left:keep.filter(function(p){return p&&p.status==='pending';}).length,ran:true};
+}
+// Reports what happened and never silently succeeds. Called from boot, from the
+// Refresh button and from `online`.
+async function dntFlushAndReport(quiet){
+  var r=await dntFlushPending();
+  if(!r.ran)return r;
+  if(typeof rBilling==='function'&&$('panel-billing'))rBilling();
+  if(r.refused){
+    toast(r.refused+' queued entr'+(r.refused===1?'y was':'ies were')+
+      ' REFUSED by the server and are still on this device only -- see the Billing panel.',12000);
+  }else if(r.sent&&!quiet){
+    toast(r.sent+' queued entr'+(r.sent===1?'y':'ies')+' uploaded');
+  }
+  return r;
+}
+function dntDismissRefused(id){
+  var q=dntPendingAll().filter(function(p){return !(p&&p.status==='refused'&&p.rec&&p.rec.id===id);});
+  if(!st(DNT_PENDING_KEY,q)){toast('Could not update this device\'s records -- storage may be full');return;}
+  rBilling();
+}
+function dntPendingBannerHtml(){
+  var pend=dntPendingCount(),ref=dntRefusedAll();
+  if(!pend&&!ref.length)return '';
+  var html='';
+  if(pend){
+    html+='<div class="card" style="border-left:4px solid var(--warn,#F59E0B)"><div class="cb">'+
+      '<strong>'+pend+' entr'+(pend===1?'y is':'ies are')+' waiting to upload.</strong> '+
+      'They are recorded on this device and will be sent automatically when the connection returns. '+
+      'Do not re-enter them -- a second entry would be counted twice.'+
+      '</div></div>';
+  }
+  if(ref.length){
+    html+='<div class="card" style="border-left:4px solid var(--danger)"><div class="cb">'+
+      '<strong>'+ref.length+' entr'+(ref.length===1?'y was':'ies were')+' refused by the server.</strong> '+
+      'They are on this device only and are NOT on any other workstation.'+
+      ref.map(function(p){
+        return '<div style="margin-top:8px;font-size:13px">'+
+          H(p.resource==='dnt_payments'?'Payment':'Charge')+' '+fmt(p.rec&&p.rec.amount)+
+          ' &mdash; '+H(p.refused_message||'the server did not accept it')+
+          ' <button class="btn bo bs" onclick="dntDismissRefused(\''+H(p.rec&&p.rec.id)+'\')">Dismiss</button></div>';
+      }).join('')+
+      '</div></div>';
+  }
+  return html;
 }
 
 function rDash(){
@@ -5076,6 +5226,11 @@ async function dntRefreshPending(){
   var btn=$('dnt-refresh-pending-btn');
   if(btn){btn.disabled=true;btn.textContent='Refreshing...';}
   try{
+    // FLUSH BEFORE READING, deliberately. A queued row uploaded first is then
+    // read straight back by the sync below, so this device ends the refresh
+    // agreeing with the server instead of holding a local-only copy that the
+    // very next merge would leave looking identical to a synced one.
+    await dntFlushAndReport();
     var result=await dntSyncFromServer();
     if(result&&result.failures===result.total){
       toast('Could not refresh from server -- check your connection and try again');
@@ -5555,6 +5710,17 @@ function init(){
       toast(dntStorageFailureMessage(result), 12000);
     }
   });
+  // THE QUEUE DRAINS ON THE THREE MOMENTS A CONNECTION CAN HAVE RETURNED, and
+  // on no timer of its own. Boot is the one that matters most: a device that
+  // was offline when the charge was entered is usually reopened after the
+  // connection is back, and nobody presses Refresh first.
+  //
+  // `quiet` on boot, because a toast the moment the app opens, reporting an
+  // upload the person did not ask for, is noise -- the Billing banner is where
+  // it belongs and rBilling() redraws it. A REFUSAL still speaks, at boot or
+  // anywhere else, because that one needs a decision.
+  dntFlushAndReport(true);
+  window.addEventListener('online',function(){dntFlushAndReport();});
 }
 </script>
 </body>

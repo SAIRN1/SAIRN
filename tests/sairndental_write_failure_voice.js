@@ -206,7 +206,7 @@ const MODES = {
 
 function harness(mode, opts) {
   opts = opts || {};
-  const calls = { sent: [], stored: [], warned: [] };
+  const calls = { sent: [], stored: [], warned: [], queued: [] };
   const ctx = {
     JSON, Object, Array, Number, Math, Promise, SyntaxError, TypeError,
     console: { warn: (...a) => calls.warned.push(a.join(' ')), error: () => {} },
@@ -219,6 +219,15 @@ function harness(mode, opts) {
     computeEstimatedInsurance: () => ({ amount: 40, found: true }),
     charges: () => [], payments: () => [],
     st: (k, v) => { calls.stored.push({ key: k, rows: v.length }); return !opts.storageFull; },
+    // THE OUTBOUND QUEUE IS A COLLABORATOR HERE, NOT THE SUBJECT, and it is
+    // stubbed at its own named seam. This is not the kind of stub the header
+    // above warns about: that one replaced the code UNDER TEST and encoded its
+    // assumption. dntPendingAdd's real behaviour -- what it queues, what it
+    // refuses to queue, and that a retry reuses the row id -- is driven for
+    // real in tests/sairndental_outbound_queue.js and mutation-probed there.
+    // What THIS suite still owns is that the queue is invoked at all, asserted
+    // below.
+    dntPendingAdd: (resource, rec) => { calls.queued.push({ resource, id: rec.id }); return true; },
     newId: (p) => p + '-1',
     dntLocalToday: () => '2026-09-05',
     __calls: calls,
@@ -326,6 +335,19 @@ test('an OFFLINE payment is KEPT locally rather than dropped', async () => {
   assert.deepStrictEqual(c.__calls.stored.map((x) => x.key), ['dnt_payments_list']);
 });
 
+test('a kept row is HANDED TO THE QUEUE -- the seam between the two suites', async () => {
+  // All this suite owns is that the handoff happens. What the queue then does
+  // with the row is driven for real, and mutation-probed, in
+  // tests/sairndental_outbound_queue.js.
+  const c = harness('offline');
+  await c.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.deepStrictEqual(c.__calls.queued, [{ resource: 'dnt_charges', id: 'CH-1' }],
+    'an unreachable charge was kept locally and never offered to the outbound queue');
+  const r = harness('refused');
+  await r.addChargeEntry('PT-1', '', 'PR-1', 100);
+  assert.deepStrictEqual(r.__calls.queued, [], 'a refused charge was offered to the queue');
+});
+
 test('a 5xx and a missing licence keep the row too', async () => {
   const a = harness('serverError');
   await a.addChargeEntry('PT-1', '', 'PR-1', 100);
@@ -411,8 +433,13 @@ test('both submit paths tell a REFUSAL from a server they could not reach', () =
     assert.ok(code.indexOf('result.refused') > 0, f + ' reports one sentence for two different facts');
     assert.match(code, /THIS DEVICE ONLY/,
       f + ' does not say the row is on this device and nowhere else');
-    assert.match(code, /will not upload by itself/,
-      f + ' implies the row will sync later -- there is no outbound retry queue in this app');
+    // UPDATED 2026-09-08 when the outbound queue landed. This used to assert
+    // the caller said the row "will not upload by itself", which was true and
+    // is now false -- the queue uploads it. What must stay true is that the
+    // caller distinguishes a QUEUED row from one stranded on this device,
+    // because those are different promises to a person entering money.
+    assert.ok(code.indexOf('result.queued') > 0,
+      f + ' no longer tells a queued row from a stranded one');
   });
 });
 

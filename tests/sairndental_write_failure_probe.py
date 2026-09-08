@@ -79,12 +79,16 @@ MUTATIONS = [
     ("11. a dntLastErrText path asks for the WRONG resource",
      "if(!syncResult){toast(dntLastErrText('dnt_coverage_rules')||'Could not save the coverage rule -- nothing was changed',7000);return;}",
      "if(!syncResult){toast(dntLastErrText('dnt_patients')||'Could not save the coverage rule -- nothing was changed',7000);return;}"),
+    # RE-ANCHORED 2026-09-08 when the outbound queue added a third and a fourth
+    # outcome to this toast. The old anchors stopped matching and the probe
+    # reported ANCHOR-0 rather than skipping quietly -- which is the whole
+    # reason a dead anchor is a failure here and not a shrug.
     ("12. submitCharge stops distinguishing unreachable from refused",
-     "    toast(result.refused\n      ? dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.')\n      : (result.kept\n        ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.'\n        : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.'),\n      9000);",
-     "    toast(dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.'),9000);"),
+     "    toast(result.refused\n      ? dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.')\n      : (result.queued",
+     "    toast(dntWriteFailText('dnt_charges','The charge was not saved -- nothing was recorded on this device or the server.')||(result.queued"),
     ("13. submitCharge stops distinguishing a kept row from a lost one",
-     "      : (result.kept\n        ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.'\n        : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.'),",
-     "      : 'Recorded on THIS DEVICE ONLY -- the server could not be reached. It is not on any other workstation and will not upload by itself.',"),
+     "        : (result.kept\n          ? 'Recorded on THIS DEVICE ONLY -- the server could not be reached, and it could not be queued for upload either, so this device is the only copy.'\n          : 'The charge was NOT saved anywhere -- the server could not be reached and this device could not store it either.')),",
+     "        : 'Recorded on THIS DEVICE ONLY -- the server could not be reached, and it could not be queued for upload either, so this device is the only copy.'),"),
     ("14. submitPayment promises the device has a row it could not store",
      "    if(!result.kept){",
      "    if(false){"),
