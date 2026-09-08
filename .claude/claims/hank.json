@@ -764,6 +764,16 @@
       "claimed_at_epoch": 1788870105.8530042,
       "status": "released",
       "released_at": "2026-09-08T12:27:08Z"
+    },
+    {
+      "id": "hank-1788870568",
+      "session": "hank",
+      "subject": "test-runner-nothing-runs-the-py-probes",
+      "task": "one command that runs every suite and names what it did not run",
+      "claimed_at": "2026-09-08T12:29:28Z",
+      "claimed_at_epoch": 1788870568.1474326,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
