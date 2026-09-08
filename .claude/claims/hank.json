@@ -754,6 +754,16 @@
       "claimed_at_epoch": 1788869677.1215923,
       "status": "released",
       "released_at": "2026-09-08T12:18:47Z"
+    },
+    {
+      "id": "hank-1788870105",
+      "session": "hank",
+      "subject": "sc-credentials-failopen-triage",
+      "task": "read the retry loop and answer whether null is right",
+      "claimed_at": "2026-09-08T12:21:45Z",
+      "claimed_at_epoch": 1788870105.8530042,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
