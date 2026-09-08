@@ -272,6 +272,37 @@ t('enforce mode FAILS OPEN when the licence store is unreachable -- refusing on 
   assert.strictEqual(r.status, 200, 'an upstream failure took the AI down: ' + JSON.stringify(r.body));
 });
 
+t('NO ENVELOPE ORACLE IN ENFORCE MODE -- malformed JSON, a missing body and a '
+  + 'well-formed one are byte-identical to an unauthenticated caller', async () => {
+  // The Phase 1 licence check originally sat BELOW the body gate, which put
+  // back into the one endpoint that spends money exactly the shape just
+  // removed from twenty-nine others. tools/preauth_oracle_check.py caught it
+  // and it was my own placement that put it there. The body is now parsed
+  // before the auth block -- it has to be, app_id lives in it -- but the
+  // REFUSAL is deferred until the caller is known.
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
+  const malformed = await call('{not json');
+  const missing = await call(null);
+  const wellFormed = await call({ app_id: 'stonedesk', messages: MSG });
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
+  assert.strictEqual(malformed.status, 401);
+  assert.strictEqual(JSON.stringify(malformed.body), JSON.stringify(missing.body),
+    'malformed JSON is distinguishable from a missing body without a credential');
+  assert.strictEqual(JSON.stringify(missing.body), JSON.stringify(wellFormed.body),
+    'a bad envelope is distinguishable from a good one without a credential');
+  assert.strictEqual(malformed.sent, null, 'a refused request reached Anthropic');
+});
+
+t('and in OBSERVE mode the envelope errors still come back unchanged, so no '
+  + 'live app sees a different answer today', async () => {
+  const malformed = await call('{not json');
+  assert.strictEqual(malformed.status, 400);
+  assert.match(malformed.body.error.message, /Invalid JSON body/);
+  const missing = await call(null);
+  assert.strictEqual(missing.status, 400);
+  assert.match(missing.body.error.message, /Missing request body/);
+});
+
 t('an INACTIVE licence is not treated as absent -- the states are distinguished '
   + 'because they need different answers', async () => {
   licenceAnswer = { valid: true, active: false, license_hash: 'h' };

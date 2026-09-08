@@ -214,17 +214,28 @@ async function claudeProxyHandler(req, res) {
     return;
   }
 
+  // ── THE BODY IS PARSED HERE BUT NOT REFUSED HERE (2026-09-05) ───────────
+  // This file gained a licence check the same day, and putting it below the
+  // envelope gate reintroduced, in the one endpoint that spends money, exactly
+  // the shape just removed from twenty-nine others: an unauthenticated caller
+  // could tell malformed JSON from a missing body from a bad licence by which
+  // refusal came back. tools/preauth_oracle_check.py caught it, and it was MY
+  // Phase 1 placement that put it there.
+  //
+  // It cannot simply move below the auth block, because that block's whole
+  // purpose is a per-app_id log line and app_id lives in the body. So the
+  // parse happens first and the REFUSAL is deferred: nothing is answered until
+  // the caller is known.
   let body = req.body;
+  let envelopeProblem = null;
   if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) {
-      res.status(400).json({ error: { message: 'Invalid JSON body' } });
-      return;
-    }
+    try { body = JSON.parse(body); } catch (e) { envelopeProblem = 'Invalid JSON body'; }
   }
-  if (!body || typeof body !== 'object') {
-    res.status(400).json({ error: { message: 'Missing request body' } });
-    return;
+  if (!envelopeProblem && (!body || typeof body !== 'object')) {
+    envelopeProblem = 'Missing request body';
   }
+  // Never let a bad body throw before the auth block reads app_id off it.
+  if (!body || typeof body !== 'object') body = {};
 
   // ── PHASE 1 OF THE LICENCE-KEY REQUIREMENT (2026-09-05) ──────────────────
   // This endpoint requires no credential. That is the finding of 2026-09-05,
@@ -271,6 +282,15 @@ async function claudeProxyHandler(req, res) {
   if (claudeAuthMode === 'enforce' && (authState === 'absent' || authState === 'invalid')) {
     res.status(401).json({ error: { code: 'NO_LICENSE',
       message: 'A valid license key is required. Send it as Authorization: Bearer <key>.' } });
+    return;
+  }
+
+  // THE DEFERRED ENVELOPE REFUSAL, answered only now that the caller is known.
+  // In observe mode this is the same 400 as before and nothing has changed for
+  // any live app; in enforce mode an unauthenticated caller has already been
+  // refused above and never reaches it, which is the whole point.
+  if (envelopeProblem) {
+    res.status(400).json({ error: { message: envelopeProblem } });
     return;
   }
 
