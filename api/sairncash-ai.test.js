@@ -35,6 +35,9 @@ require.cache[CLAUDE] = {
 
 let stripeStatus = 'active';
 let stripeThrows = false;
+// null = the generic outage shape. Otherwise the extra fields Stripe puts on a
+// real error object, which is how a missing subscription is told from an outage.
+let stripeErrShape = null;
 const STRIPE = require.resolve('stripe');
 require.cache[STRIPE] = {
   id: STRIPE, filename: STRIPE, loaded: true,
@@ -42,7 +45,11 @@ require.cache[STRIPE] = {
     return {
       subscriptions: {
         retrieve: async () => {
-          if (stripeThrows) throw new Error('Expired API Key provided: sk_test_xxx');
+          if (stripeThrows) {
+            const e = new Error('Expired API Key provided: sk_test_xxx');
+            if (stripeErrShape) Object.assign(e, stripeErrShape);
+            throw e;
+          }
           return { status: stripeStatus };
         },
       },
@@ -183,6 +190,48 @@ t('an upstream Stripe failure does NOT silently fall through to the trial path',
   const r = await call({ subscriptionId: 'sub_1', trialToken: 'tok', messages: MSG });
   stripeThrows = false; trialRow = null;
   assert.strictEqual(r.status, 503, 'an outage was reported as something else: ' + JSON.stringify(r.body));
+});
+
+section('--- a subscription that does not exist is NOT an outage ---');
+
+t('an UNKNOWN subscriptionId gets 401, not the 503 outage answer', async () => {
+  // FOUND BY LIVE-PROBING PRODUCTION, not by reading. The first version of this
+  // file classified every Stripe throw as UPSTREAM, so a junk subscriptionId
+  // came back 503 VERIFY_UNAVAILABLE with "this is not a problem with your
+  // account" -- which is false, tells the caller to retry forever, and hides a
+  // real invalid credential behind an infrastructure excuse.
+  stripeThrows = true;
+  stripeErrShape = { code: 'resource_missing', type: 'StripeInvalidRequestError', statusCode: 404 };
+  const r = await call({ subscriptionId: 'sub_nope', messages: MSG });
+  stripeThrows = false; stripeErrShape = null;
+  assert.strictEqual(r.status, 401, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'NO_SUBSCRIPTION');
+  assert.strictEqual(r.spent, 0);
+});
+
+t('an unknown subscriptionId DOES fall through to a valid trial token', async () => {
+  stripeThrows = true;
+  stripeErrShape = { code: 'resource_missing', type: 'StripeInvalidRequestError', statusCode: 404 };
+  trialRow = { status: 'active', expires_at: new Date(Date.now() + 86400000).toISOString() };
+  const r = await call({ subscriptionId: 'sub_nope', trialToken: 'tok', messages: MSG });
+  stripeThrows = false; stripeErrShape = null; trialRow = null;
+  assert.strictEqual(r.status, 200, 'a stale subscriptionId blocked a live trial: ' + JSON.stringify(r.body));
+});
+
+t('a Stripe 401 -- OUR key is bad -- is still an outage, not the caller\'s fault', async () => {
+  stripeThrows = true;
+  stripeErrShape = { type: 'StripeAuthenticationError', statusCode: 401 };
+  const r = await call({ subscriptionId: 'sub_1', messages: MSG });
+  stripeThrows = false; stripeErrShape = null;
+  assert.strictEqual(r.status, 503, 'a broken API key was blamed on the customer');
+});
+
+t('a Stripe 429 is an outage too -- rate limiting is ours, not theirs', async () => {
+  stripeThrows = true;
+  stripeErrShape = { type: 'StripeRateLimitError', statusCode: 429 };
+  const r = await call({ subscriptionId: 'sub_1', messages: MSG });
+  stripeThrows = false; stripeErrShape = null;
+  assert.strictEqual(r.status, 503);
 });
 
 section('--- the trial path ---');

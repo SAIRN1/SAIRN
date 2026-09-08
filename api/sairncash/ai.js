@@ -56,7 +56,22 @@ async function subscriptionActive(subscriptionId) {
     // where returning err.message disclosed the API key's type and last six
     // characters to an anonymous probe. Detail goes to the log only.
     console.error('SAIRNcash ai: Stripe lookup failed:', err.message);
-    return { ok: false, reason: 'UPSTREAM' };
+    // A SUBSCRIPTION THAT DOES NOT EXIST IS NOT AN OUTAGE, and the first
+    // version of this file conflated them. Found by live-probing production
+    // rather than by reading: a junk subscriptionId returned
+    // 503 VERIFY_UNAVAILABLE with the message "this is not a problem with your
+    // account" -- which is false, tells the caller to retry forever, and hides
+    // a real invalid credential behind an infrastructure excuse.
+    //
+    // Stripe answers a missing object with an invalid-request error and a 4xx.
+    // Those are the caller's problem and get the 401. Anything else -- a
+    // network failure, a 5xx, an auth failure on OUR key -- is genuinely ours
+    // and keeps the fail-closed 503. Both still spend nothing.
+    const stripeStatus = Number(err && err.statusCode);
+    const missing = (err && err.code === 'resource_missing')
+      || (err && err.type === 'StripeInvalidRequestError')
+      || (stripeStatus >= 400 && stripeStatus < 500 && stripeStatus !== 401 && stripeStatus !== 429);
+    return { ok: false, reason: missing ? undefined : 'UPSTREAM' };
   }
 }
 
