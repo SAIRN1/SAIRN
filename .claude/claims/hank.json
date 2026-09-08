@@ -772,8 +772,8 @@
       "task": "one command that runs every suite and names what it did not run",
       "claimed_at": "2026-09-08T12:29:28Z",
       "claimed_at_epoch": 1788870568.1474326,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T13:19:08Z"
     }
   ]
 }
