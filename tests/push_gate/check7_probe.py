@@ -32,7 +32,19 @@ def clean_tree():
 
 
 dirty = [l for l in clean_tree().split('\n') if l.strip() and not l.startswith('??')]
-assert not dirty, 'probe needs a clean tracked tree, got:\n' + '\n'.join(dirty)
+# ── A PRECONDITION IS NOT A FAILURE (2026-09-08) ──────────────────────────
+# Same change and same reason as check4_probe.py. The guard stays: this probe
+# commits planted fixtures and `git reset --mixed` back, so a dirty TRACKED
+# tree would put somebody's work into a probe commit. But exiting 1 said
+# "check 7 is broken" when nothing about check 7 had been examined. Exit 3 is
+# SKIPPED, which tools/run_all_tests.py reports separately and never counts
+# as a pass.
+if dirty:
+    print('SKIPPED: this probe commits fixtures and resets, so it needs a clean')
+    print('tracked tree -- running it now would sweep uncommitted work into a')
+    print('probe commit. Nothing about check 7 was verified. Modified:')
+    print('\n'.join(dirty))
+    sys.exit(3)
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 R = {}
 

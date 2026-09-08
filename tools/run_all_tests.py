@@ -77,18 +77,32 @@ def discover():
 def main(argv):
     quiet = '--quiet' in argv
     js, py, unrun = discover()
-    failures = []
+    # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.
+    # Two push-gate probes commit planted fixtures and reset, so they refuse to
+    # run against a dirty tree -- a guard that protects real work and must
+    # stay. They used to exit 1 for that, which read as "check 4 is broken"
+    # when nothing about check 4 had been examined. A precondition is not a
+    # failure, and it is not a pass either.
+    failures, skipped = [], []
     for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
         for rel in files:
             r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True)
-            if r.returncode != 0:
-                tail = (r.stdout or r.stderr or '').strip().splitlines()
-                failures.append((kind, rel, tail[-1] if tail else '(no output)'))
+            out = (r.stdout or r.stderr or '').strip().splitlines()
+            if r.returncode == 3:
+                first = next((l for l in out if l.startswith('SKIPPED')), 'SKIPPED')
+                skipped.append((kind, rel, first))
+            elif r.returncode != 0:
+                failures.append((kind, rel, out[-1] if out else '(no output)'))
             elif not quiet:
                 print('  ok   %-5s %s' % (kind, rel))
 
     print('')
-    print('RAN: %d JS + %d PY = %d files' % (len(js), len(py), len(js) + len(py)))
+    print('RAN: %d JS + %d PY = %d files (%d skipped)'
+          % (len(js), len(py), len(js) + len(py), len(skipped)))
+    if skipped:
+        print('SKIPPED (%d) -- a precondition was not met, NOT a pass:' % len(skipped))
+        for kind, rel, why in skipped:
+            print('    %-52s %s' % (rel, why))
     # Named on every run, pass or fail. The point of this section is that a
     # file this runner does not understand is VISIBLE rather than absent.
     print('NOT RUN (%d):' % len(unrun))
@@ -103,8 +117,12 @@ def main(argv):
         for kind, rel, tail in failures:
             print('  FAIL %-5s %-52s %s' % (kind, rel, tail))
     print('')
+    ran = len(js) + len(py) - len(skipped)
     if failures:
         print('%d FAILING TEST FILE(S)' % len(failures))
+    elif skipped:
+        print('%d of %d test files pass; %d SKIPPED and therefore unverified '
+              '-- read the SKIPPED list' % (ran, len(js) + len(py), len(skipped)))
     elif surprises:
         print('all %d ran clean, but %d file(s) under tests/ were not recognised '
               '-- read the NOT RUN list' % (len(js) + len(py), len(surprises)))

@@ -20,7 +20,24 @@ def clean_tree():
     return run('git', 'status', '--porcelain').stdout.strip()
 
 
-assert clean_tree() == '', 'probe needs a clean tree, got:\n' + clean_tree()
+# ── A PRECONDITION IS NOT A FAILURE (2026-09-08) ──────────────────────────
+# This was `assert clean_tree() == ''`, which exits 1 -- indistinguishable
+# from "check 4 is broken". It is neither. This probe COMMITS planted
+# fixtures and then `git reset --mixed` back, so running it against a dirty
+# tree would sweep somebody's uncommitted work into a probe commit and then
+# unstage it. The guard protects real work and must stay.
+#
+# What was wrong is the SIGNAL. On 2026-09-08 an unrelated probe left one
+# tracked file byte-modified and this exited 1, which read as a failing
+# push-gate check and sent a reader looking at check 4. Exit 3 now means
+# SKIPPED -- tools/run_all_tests.py lists it under SKIPPED with this reason
+# and never counts it as a pass, because "could not run" is not "ran clean".
+if clean_tree() != '':
+    print('SKIPPED: this probe commits fixtures and resets, so it needs a clean')
+    print('tree -- running it now would sweep uncommitted work into a probe')
+    print('commit. Nothing about check 4 was verified. Working tree holds:')
+    print(clean_tree())
+    sys.exit(3)
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 R = {}
 
