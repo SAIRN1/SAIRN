@@ -618,6 +618,16 @@
       "claimed_at_epoch": 1788614568.5195906,
       "status": "released",
       "released_at": "2026-09-08T11:41:26Z"
+    },
+    {
+      "id": "cody-1788868011",
+      "session": "cody",
+      "subject": "sairndental-dnt-resource-write-validation",
+      "task": "next resource after coverage rules",
+      "claimed_at": "2026-09-08T11:46:51Z",
+      "claimed_at_epoch": 1788868011.3047225,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
