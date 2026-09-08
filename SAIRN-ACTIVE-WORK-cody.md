@@ -968,3 +968,16 @@ docs/superpowers/specs/2026-08-21-plumbing-electrical-hvac-worldwide-research.md
   **THE COMMENT IS WHY IT SURVIVED -- prose-about-code again.** `sd-data.js` says a null `trial_ends_at` is *"e.g. before the migration, or intentionally unset"* and is treated as not-expired. That reads as an edge case being handled. **It is not an edge case, it is the only case**, on every licence, always. A reader concludes trial enforcement works.
 
   **Severity stated honestly: this is a REVENUE gate, not a security one**, and it costs nothing today because Stripe is not set up under the new LLC so nobody is on a paid plan to expire. That is precisely why it should be closed before billing goes live rather than after. 2026-09-05
+- docs/SAIRN-OPEN-WORK-INDEX.md (Cody, 2026-09-05) -- **THE `anon` GRANT QUESTION ON `license_keys`, MEASURED. It closes rather than confirms. Skill used: `sairn-grant-sweep`.**
+
+  **FIRST, A CORRECTION TO MY OWN WORDING.** Section 2a of the SQL file **found nothing** -- it is an unrun query in a file no clone can execute. What I wrote was a hypothesis worth checking, and it was read back to me as a finding. `anon`/`authenticated` grants here were **unknown**, not known-bad. Writing "nobody has looked" up as "we found it" is exactly the error this index exists to stop, so I corrected it before writing anything else.
+
+  **THEN I MEASURED IT RATHER THAN WRITING IT UP.** The browsers ship a real publishable key against the live project. `GET /rest/v1/license_keys?select=id&limit=0` returns **401 / 42501 permission denied**, with PostgREST's own hint naming the grant as absent. **`anon` holds no SELECT on `license_keys`.**
+
+  **THE PROBE WAS NON-DISCLOSING BY CONSTRUCTION** -- `limit=0` with `Prefer: count=exact` returns a count and ZERO rows, so it answers "is this readable" without reading one customer email or Stripe id. The whole concern was disclosure; a probe that proved it by disclosing would itself have been the finding.
+
+  **THE CONTROL IS WHAT MAKES THE NEGATIVE MEAN ANYTHING.** Nine `42501`s are indistinguishable from a dead key. `stonedesk.html:36067` records, from 2026-09-03, *"anon has never been granted anything on intake_submissions, verified live with the real shipped key"* -- and my probe reproduces exactly that, independently. So the key maps to `anon` and the denials are authorization, not a revoked credential.
+
+  **IT ALSO ANSWERS THE SHARPER QUESTION BY INFERENCE.** The real reason to worry was that `supabase_admin`'s default ACL grants `anon`/`authenticated` FULL CRUD on tables it creates, and `license_keys` is the one table with no tracked `CREATE TABLE` -- nobody knows which role created it. Full CRUD includes SELECT. **anon does not have SELECT here, so `license_keys` did not arrive with that default ACL.**
+
+  **WHAT IS STILL UNMEASURED, so this is not read as more than it is:** `authenticated` (no signed-in JWT in this clone, not probed at all); the non-SELECT verbs for anon (TRUNCATE/REFERENCES/TRIGGER, known present on 158 tables, inert over HTTP because PostgREST exposes no verb that reaches them); and whether `license_keys` is one of those 158. All three fall out of Section 2a when somebody runs it as `postgres`. **None of them is the disclosure risk I flagged.** 2026-09-05
