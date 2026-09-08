@@ -28946,10 +28946,24 @@ document.addEventListener('DOMContentLoaded', function() {
     return p===null?'':'$'+Math.round(p).toLocaleString();
   }
   // Sums only what can be priced, and says how much it could not.
+  // `priced` IS COUNTED, NOT INFERRED FROM `sum`, and that is the whole point
+  // -- found 2026-09-08 by the independent review of this change and confirmed
+  // in a live browser before it was written down. A period where NOTHING can
+  // be priced returns sum 0, and `tsMoney(0)` is "$0". So the payroll KPI and
+  // the printed TOTALS row read **$0** while every row beneath them read `--`:
+  // two adjacent displays of one fact disagreeing, and the one a shop owner
+  // reads first stating a number.
+  //
+  // "$0" and "--" are different answers. A shop whose payroll really is zero
+  // and a shop whose rates are all missing must not look identical, and the
+  // asterisk does not fix it -- an invented figure with a footnote is still an
+  // invented figure, which is the exact defect this change exists to remove.
+  // The per-employee bars already got this right (`priced?pay:null`); the
+  // top-line total did not.
   function tsTotal(rows){
-    var sum=0,unpriced=0;
-    rows.forEach(function(x){var p=tsPay(x);if(p===null)unpriced++;else sum+=p;});
-    return {sum:sum,unpriced:unpriced};
+    var sum=0,priced=0,unpriced=0;
+    rows.forEach(function(x){var p=tsPay(x);if(p===null)unpriced++;else{priced++;sum+=p;}});
+    return {sum:sum,priced:priced,unpriced:unpriced,total:priced?sum:null};
   }
   function tsNote(unpriced){
     return unpriced?(' — '+unpriced+' row'+(unpriced===1?'':'s')+
@@ -28972,7 +28986,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var payEl=document.getElementById("ts-payroll");
     // The asterisk is the visible half; the title carries the count. A total
     // that quietly drops rows is the same defect wearing the opposite sign.
-    payEl.textContent=tsMoney(payTot.sum)+(payTot.unpriced?" *":"");
+    payEl.textContent=tsMoney(payTot.total)+(payTot.unpriced?" *":"");
     payEl.title=payTot.unpriced?("Partial total"+tsNote(payTot.unpriced)):"";
     document.getElementById("ts-ot").textContent=otHrs.toFixed(1);
     document.getElementById("ts-employees").textContent=emps.size;
@@ -29083,7 +29097,7 @@ document.addEventListener('DOMContentLoaded', function() {
     w.document.write("<h1>"+escHtml(sdShopName())+" — Weekly Timesheet</h1><p style=\"color:#888\">Week ending: "+today+"</p>");
     w.document.write("<table><tr><th>Employee</th><th>Date</th><th>In</th><th>Out</th><th>Hours</th><th>Job</th><th>Pay Est.</th></tr>");
     d.forEach(function(x){w.document.write("<tr><td>"+escHtml(x.emp)+"</td><td>"+x.date+"</td><td>"+x.inn+"</td><td>"+x.out+"</td><td>"+x.hrs.toFixed(1)+"</td><td>"+escHtml(x.job||"")+"</td><td class=\"amt\">"+tsMoney(tsPay(x))+"</td></tr>");});
-    w.document.write("<tr class=\"total\"><td colspan=\"4\">TOTALS</td><td>"+total.toFixed(1)+" hrs</td><td></td><td class=\"amt\">"+tsMoney(payT.sum)+(payT.unpriced?" *":"")+"</td></tr>");
+    w.document.write("<tr class=\"total\"><td colspan=\"4\">TOTALS</td><td>"+total.toFixed(1)+" hrs</td><td></td><td class=\"amt\">"+tsMoney(payT.total)+(payT.unpriced?" *":"")+"</td></tr>");
     w.document.write("</table>");
     // A printed page leaves the building. A total that silently omits rows
     // is the same defect as one that invents them, so the omission is on the

@@ -127,6 +127,16 @@ test('NOT ONE `rate || 28` survives anywhere in the file', () => {
   const squashed = SRC.replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
   assert.ok(!/x\.rate\|\|28/.test(squashed), 'a $28 fallback is back');
   assert.ok(!/rate\|\|28/.test(squashed), 'a $28 fallback is back in some other spelling');
+  // WIDENED 2026-09-08 by the independent review, which defeated both greps
+  // above with `parseFloat(rateRaw)||28` -- a spelling containing neither
+  // `x.rate||28` nor `rate||28`. Guessing the spelling is the wrong shape of
+  // assertion. Inside this module there is no legitimate `||28`, so the module
+  // is what gets scanned.
+  const modStart = SRC.indexOf('function tsRate(x){');
+  const modEnd = SRC.indexOf('window.sdTSRender=render;');
+  assert.ok(modStart > 0 && modEnd > modStart, 'the timesheet module could not be located');
+  const mod = SRC.slice(modStart, modEnd).replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  assert.ok(!/\|\|28/.test(mod), 'SOME $28 fallback is back in the timesheet module');
 });
 
 test('sdTSLog REFUSES a blank rate instead of defaulting to 28', () => {
@@ -136,7 +146,18 @@ test('sdTSLog REFUSES a blank rate instead of defaulting to 28', () => {
     'the storing fallback is back — a cleared field writes a rate the user never gave');
   assert.ok(/showToast\(/.test(body) && /Enter an hourly rate/.test(body),
     'a blank rate is accepted silently again');
-  assert.ok(/return;/.test(body), 'nothing stops the record being logged');
+  // TIGHTENED 2026-09-08 by the independent review. All three assertions above
+  // passed a mutation that replaced the guard with `parseFloat(rateRaw)||28`
+  // and `if(false){`: the old spelling really was absent, the toast text really
+  // was still in the file -- inside a branch that can no longer run -- and
+  // `return;` matched somewhere else entirely. The GUARD has to be pinned, not
+  // the words near it. This is the weakness this file's own header warns about,
+  // demonstrated rather than asserted.
+  const sq = body.replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  assert.ok(/varrate=rateRaw===""\?NaN:parseFloat\(rateRaw\);/.test(sq),
+    'a blank rate no longer becomes NaN, so it can be coerced into a rate the user never gave');
+  assert.ok(/if\(!isFinite\(rate\)\|\|rate<0\)\{showToast\([\s\S]{0,400}?return;\}/.test(sq),
+    'the refusal branch is gone, never fires, or no longer returns — the record is logged anyway');
 });
 
 test('the CSV writes an EMPTY cell for an unpriced row, not a price', () => {
@@ -163,12 +184,64 @@ test('the printed timesheet discloses a partial total ON THE PAGE', () => {
   const body = SRC.slice(SRC.indexOf('window.sdTSPrint=function(){'));
   assert.ok(/Partial total/.test(body.slice(0, 3000)),
     'the printed total can silently omit rows');
+  // TIGHTENED 2026-09-08 by the independent review, which defeated the grep
+  // above by changing the guard to `if(false)`. The text stayed; the page
+  // stopped saying it. The CONDITION is the assertion.
+  const sqp = body.slice(0, 4000).replace(/\/\/[^\n]*/g, '').replace(/\s+/g, '');
+  assert.ok(/if\(payT\.unpriced\)w\.document\.write\([\s\S]{0,160}?Partialtotal/.test(sqp),
+    'the disclosure is in the source but no longer conditional on there being omitted rows');
 });
 
 test('the on-screen payroll KPI marks a partial total', () => {
+  // UPDATED 2026-09-08, not deleted. It asserted `tsMoney(payTot.sum)` and went
+  // red on the commit that fixed the defect below -- which is exactly what an
+  // as-is assertion is for. It now pins the corrected shape.
   const squashed = SRC.replace(/\s+/g, '');
-  assert.ok(/payEl\.textContent=tsMoney\(payTot\.sum\)\+\(payTot\.unpriced\?"\*":""\)/.test(squashed),
-    'the KPI shows a partial total with no marker');
+  assert.ok(/payEl\.textContent=tsMoney\(payTot\.total\)\+\(payTot\.unpriced\?"\*":""\)/.test(squashed),
+    'the KPI shows a partial total with no marker, or reads .sum again');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// A TOTAL OF NOTHING IS NOT ZERO -- added 2026-09-08 by the independent review
+// of this change, and confirmed in a live browser before it was written down.
+//
+// With two rows and no rate on either, sairn.vercel.app/stonedesk rendered:
+//     payroll KPI          "$0 *"
+//     per-employee bars    "-- *"  "-- *"
+//     table Pay Est.       "--"    "--"
+// Two adjacent displays of one fact disagreeing, and the one a shop owner
+// reads first stating a number. `$0` is an answer; `--` is the absence of one.
+// An invented figure with a footnote is still an invented figure.
+//
+// These are DRIVEN, not source-matched, because the assertion above is source-
+// matched and this file's own header says why that is weaker.
+console.log('--- a total of NOTHING is not $0 ---');
+
+test('tsTotal separates "could not price anything" from "priced at zero"', () => {
+  const none = ctx.tsTotal([{ hrs: 8 }, { hrs: 6 }]);
+  const zero = ctx.tsTotal([{ hrs: 8, rate: 0 }]);
+  assert.strictEqual(none.total, null, 'a period with nothing priceable reports a number');
+  assert.strictEqual(zero.total, 0, 'a genuine zero payroll was blanked');
+  // Both still carry sum 0, which is why `sum` alone can never tell them apart.
+  assert.strictEqual(none.sum, 0);
+  assert.strictEqual(zero.sum, 0);
+  assert.strictEqual(none.priced, 0);
+  assert.strictEqual(zero.priced, 1);
+});
+
+test('...and that is what reaches the screen and the printed page', () => {
+  const none = ctx.tsTotal([{ hrs: 8 }, { hrs: 6 }]);
+  const zero = ctx.tsTotal([{ hrs: 8, rate: 0 }]);
+  assert.strictEqual(ctx.tsMoney(none.total) + (none.unpriced ? ' *' : ''), '-- *',
+    'the payroll KPI reads $0 when nothing could be priced');
+  assert.strictEqual(ctx.tsMoney(zero.total) + (zero.unpriced ? ' *' : ''), '$0',
+    'a real zero payroll stopped reading $0');
+});
+
+test('the printed TOTALS row uses the same distinction', () => {
+  const squashed = SRC.replace(/\s+/g, '');
+  assert.ok(/tsMoney\(payT\.total\)\+\(payT\.unpriced\?"\*":""\)/.test(squashed),
+    'the printed total reads .sum, so a page handed to a person can say $0 for "no rates on file"');
 });
 
 console.log('\n' + (fail === 0
