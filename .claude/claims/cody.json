@@ -678,6 +678,16 @@
       "claimed_at_epoch": 1788872702.527148,
       "status": "released",
       "released_at": "2026-09-08T15:22:02Z"
+    },
+    {
+      "id": "cody-1788881360",
+      "session": "cody",
+      "subject": "license-keys-grant-review",
+      "task": "what the platform actually does to the table and the minimum grant",
+      "claimed_at": "2026-09-08T15:29:20Z",
+      "claimed_at_epoch": 1788881360.7614193,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
