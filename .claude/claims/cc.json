@@ -682,8 +682,8 @@
       "task": "make the three dead gates honest about the missing column",
       "claimed_at": "2026-09-08T15:57:10Z",
       "claimed_at_epoch": 1788883030.3639572,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T19:46:41Z"
     }
   ]
 }
