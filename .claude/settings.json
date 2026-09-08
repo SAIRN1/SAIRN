@@ -54,6 +54,15 @@
             "statusMessage": "Verifying live deploy...",
             "async": true,
             "asyncRewake": true
+          },
+          {
+            "type": "command",
+            "command": "python tools/run_all_tests.py --hook",
+            "if": "Bash(git push*)",
+            "timeout": 400,
+            "statusMessage": "Running the full test suite (report only)...",
+            "async": true,
+            "asyncRewake": true
           }
         ]
       }

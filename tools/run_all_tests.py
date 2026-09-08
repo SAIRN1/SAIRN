@@ -13,7 +13,8 @@ red, and neither had been red for a reason anybody chose:
 Both are the same shape -- a probe pinned to a current defect rots the moment
 that defect is fixed -- and both went unnoticed for the same reason: EVERY
 SESSION RUNS `for f in tests/*.js`, which is 53 of the 125 test files in this
-repo. tests/**/*.py is run by nothing. tests/sairncare/ (18 JS files) and
+repo -- 130 as of 2026-09-08 and growing, so re-count rather than trust that
+number. tests/**/*.py is run by nothing. tests/sairncare/ (18 JS files) and
 tests/sairnsenior/ are run by nothing. api/*.test.js only if someone remembers.
 
 So "the suite passes" has been a claim about 42% of the suite, stated in good
@@ -34,14 +35,23 @@ than implied by a number.
 It does NOT run anything under __pycache__, and it does not treat a fixture
 (.sql, .json) as a failure -- those are listed as unrun and expected.
 
-── WHAT IT IS NOT ────────────────────────────────────────────────────────────
-Not a gate. Nothing here blocks a push; wiring it into the push hook is a
-separate decision with a real cost (125 subprocesses) and belongs to whoever
-owns that hook. This is the one command that tells the truth when someone
-chooses to ask.
+── WIRED REPORT-ONLY, ON MICHAEL'S DECISION 2026-09-08 ──────────────────────
+`--hook` runs as an async PostToolUse hook after every `git push` and NEVER
+blocks: it exits 0 whatever it finds, and stays silent unless something failed
+or was skipped. That is the same promotion path checks 5 and 7 took, for the
+same reason -- this one has a KNOWN false-alarm shape (two probes need a clean
+tree), and a gate that cries wolf before it has earned trust teaches people to
+route around it. Promoting it to blocking is a later decision, and the
+precondition it must clear is that the skip case has been quiet in practice.
+
+Silence on a clean run is deliberate. A notice that fires every push is a
+notice nobody reads. A SKIPPED file does notify, because "could not run" being
+invisible is the whole problem this exists to fix.
 
 Run:  python tools/run_all_tests.py [--quiet]
+      python tools/run_all_tests.py --hook   (reads a hook payload on stdin)
 """
+import json
 import os
 import subprocess
 import sys
@@ -74,7 +84,68 @@ def discover():
     return js, py, unrun
 
 
+def hook_main():
+    """PostToolUse hook mode: run everything, stay silent unless something is wrong.
+
+    REPORT-ONLY, ON MICHAEL'S DECISION 2026-09-08, and the reasoning is the
+    same promotion path checks 5 and 7 took: a gate that produces a false alarm
+    before it has earned trust teaches people to route around it. This one has
+    a known false-alarm shape -- two probes need a clean tree -- so it reports
+    and never blocks until that has been proven quiet in practice.
+    It exits 0 ALWAYS. The only thing it can do is say something.
+
+    Silence on a clean run is deliberate: a notice that fires on every push is
+    a notice nobody reads. Skipped files DO produce a notice, because "could
+    not run" is exactly the thing this hook exists to stop being invisible.
+    """
+    try:
+        json.load(sys.stdin)          # the hook payload; nothing here needs it
+    except Exception:
+        pass
+    js, py, unrun = discover()
+    failures, skipped = _run(js, py, quiet=True)
+    if not failures and not skipped:
+        return 0
+    lines = []
+    if failures:
+        lines.append('%d test file(s) FAILING after this push:' % len(failures))
+        lines += ['  %s -- %s' % (rel, tail) for _, rel, tail in failures[:12]]
+    if skipped:
+        lines.append('%d test file(s) SKIPPED, so they verified nothing:' % len(skipped))
+        lines += ['  %s -- %s' % (rel, why) for _, rel, why in skipped[:12]]
+    lines.append('Run `python tools/run_all_tests.py` to see the whole picture.')
+    lines.append('REPORT ONLY -- this hook never blocks a push. It exists because '
+                 'every session was running 53 of these files and calling it the suite.')
+    print(json.dumps({
+        'systemMessage': 'Full test suite after push: %d failing, %d skipped.'
+                         % (len(failures), len(skipped)),
+        'hookSpecificOutput': {
+            'hookEventName': 'PostToolUse',
+            'additionalContext': '\n'.join(lines),
+        },
+    }))
+    return 0
+
+
+def _run(js, py, quiet):
+    failures, skipped = [], []
+    for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
+        for rel in files:
+            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True)
+            out = (r.stdout or r.stderr or '').strip().splitlines()
+            if r.returncode == 3:
+                skipped.append((kind, rel, next((l for l in out if l.startswith('SKIPPED')),
+                                                'SKIPPED')))
+            elif r.returncode != 0:
+                failures.append((kind, rel, out[-1] if out else '(no output)'))
+            elif not quiet:
+                print('  ok   %-5s %s' % (kind, rel))
+    return failures, skipped
+
+
 def main(argv):
+    if '--hook' in argv:
+        return hook_main()
     quiet = '--quiet' in argv
     js, py, unrun = discover()
     # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.
@@ -83,18 +154,7 @@ def main(argv):
     # stay. They used to exit 1 for that, which read as "check 4 is broken"
     # when nothing about check 4 had been examined. A precondition is not a
     # failure, and it is not a pass either.
-    failures, skipped = [], []
-    for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
-        for rel in files:
-            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True)
-            out = (r.stdout or r.stderr or '').strip().splitlines()
-            if r.returncode == 3:
-                first = next((l for l in out if l.startswith('SKIPPED')), 'SKIPPED')
-                skipped.append((kind, rel, first))
-            elif r.returncode != 0:
-                failures.append((kind, rel, out[-1] if out else '(no output)'))
-            elif not quiet:
-                print('  ok   %-5s %s' % (kind, rel))
+    failures, skipped = _run(js, py, quiet)
 
     print('')
     print('RAN: %d JS + %d PY = %d files (%d skipped)'
