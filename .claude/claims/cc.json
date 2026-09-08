@@ -634,6 +634,16 @@
       "status": "released",
       "released_at": "2026-09-08T13:26:11Z",
       "note": "WRITTEN BY HAND, DELIBERATELY, AND SAYING SO. sairn_claim.py refused this with BLOCKED -- overlap on the shared phrase \"did not\" -- against hank's test-runner-nothing-runs-the-py-probes. That is the documented lexical false positive: a generic English phrase in the task text, not a shared app, file or subject. Hank is building one command that runs every suite; I am independently verifying a single StoneDesk commit, fe16d5d, which the index row says must be reviewed by a session other than Hank. Per CLAUDE.md I did NOT reword the task to slip past the matcher -- I removed no words for that purpose and the phrase is gone only because 'is not its author' is the more accurate wording. NO REAL OVERLAP, and one worth noting in the other direction: hank's runner will eventually run tests/sd_timesheet_pay_est.js, which is part of what I am reviewing, so his work consumes mine rather than competing with it."
+    },
+    {
+      "id": "cc-1788879904",
+      "session": "cc",
+      "subject": "sairnlaw-custody-attribution-independent-review",
+      "task": "verify b5a76cf as a reviewer who is not its author",
+      "claimed_at": "2026-09-08T15:05:04Z",
+      "claimed_at_epoch": 1788879904.721814,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
