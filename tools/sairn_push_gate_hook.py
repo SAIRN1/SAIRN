@@ -954,6 +954,100 @@ def main():
         print("NOTE: the redaction scan could not run (%s: %s), so this push is "
               "UNCHECKED for credentials." % (type(_e).__name__, _e))
 
+    # ── CHECK 7: PRE-AUTH ORACLES ON WHAT THIS PUSH SHIPS (2026-09-08) ─────
+    # tools/preauth_oracle_check.py finds refusals answered ABOVE the first auth
+    # call -- a caller with no credential learning one input from another by
+    # which 400 comes back, and often being handed the endpoint's whole action
+    # vocabulary on the way.
+    #
+    # IT SHIPS BLOCKING, AND THAT IS ONLY DEFENSIBLE BECAUSE ITS FINDINGS ARE
+    # NOW CLEAN. It reported 15 DISCLOSURES and exited 1 continuously from the
+    # 2026-09-05 sweep until the fifteen *-auth.js handlers were reordered on
+    # 2026-09-08; a gate switched on over standing findings is one somebody
+    # disables within the hour, which is why check 5 went in report-only. This
+    # one exits 0 on the whole tree today -- measured, not assumed, and if that
+    # stops being true the honest move is to fix the finding.
+    #
+    # IT BLOCKS ON DISCLOSURES ONLY, matching the checker's own exit code. The
+    # weaker ORACLE tier is reported and never blocks: one of those lines today
+    # is api/sd-data.js's 429 rate limiter, which sits above the licence call
+    # BY DESIGN and discloses nothing. The checker matches shapes and cannot
+    # tell a deliberate pre-auth refusal from a leak, so making it block on that
+    # tier would deny a correct push.
+    #
+    # IT READS THE PUSHED COMMIT, NOT THE WORKING TREE -- the lesson check 1
+    # records in its own header. `git push origin <sha>:main` ships something
+    # other than what is checked out, and a gate that reads disk describes the
+    # wrong thing.
+    #
+    # SCOPED TO THE api/ ENDPOINTS THIS PUSH TOUCHES, the same standard as
+    # checks 5 and 6. A disclosure introduced by somebody else's commit is not
+    # this push's to answer for, and blocking on it is how a shared gate becomes
+    # everyone's problem and then nobody's.
+    try:
+        import importlib.util as _ilu2, tempfile as _tf2, shutil as _sh2
+        _pspec = _ilu2.spec_from_file_location(
+            'sairn_preauth', os.path.join(repo, 'tools', 'preauth_oracle_check.py'))
+        _pc = _ilu2.module_from_spec(_pspec)
+        _pspec.loader.exec_module(_pc)
+
+        _eps = [p for p in changed
+                if p.startswith('api/') and p.endswith('.js')
+                and not p.endswith('.test.js')
+                and not p.startswith('api/_lib/')
+                and not p.startswith('api/_resources/')]
+        if _eps:
+            _accepted = _pc.load_accepted()
+            _tmp = _tf2.mkdtemp(prefix='sairn-preauth-')
+            _disc, _orac = [], []
+            try:
+                for _rel in _eps:
+                    _blob = subprocess.run(['git', '-C', repo, 'show', tip + ':' + _rel],
+                                           capture_output=True)
+                    if _blob.returncode != 0:
+                        continue          # deleted in this push: nothing to scan
+                    _f = os.path.join(_tmp, os.path.basename(_rel))
+                    with open(_f, 'wb') as _fh:
+                        _fh.write(_blob.stdout)
+                    _r, _boundary, _found = _pc.scan(_f)
+                    if _boundary is None:
+                        continue          # no auth boundary: check 5's question, not this one
+                    for _line, _tier, _code, _text in _found:
+                        if (_rel, _line) in _accepted:
+                            continue
+                        (_disc if _tier == 'DISCLOSURE' else _orac).append(
+                            '  %-11s %s:%d  [%s]  %s' % (_tier, _rel, _line, _code, _text))
+            finally:
+                _sh2.rmtree(_tmp, ignore_errors=True)
+
+            if _orac and not _disc:
+                print('NOTE: pre-auth ORACLE shape(s) in this push, reported and not '
+                      'blocking:' + chr(10) + chr(10).join(_orac))
+            if _disc:
+                deny(chr(10).join([
+                    'Blocked: this push ships endpoint(s) that answer a refusal BEFORE the',
+                    'caller is authenticated, naming their own vocabulary in the process.',
+                    '',
+                ] + _disc + [
+                    '',
+                    'Move the body parse and the action/resource enum BELOW the',
+                    'validateLicenseKey() call. Leave the 405 method check and the',
+                    'bearer-presence check above it: neither discloses anything, and a',
+                    'missing credential must still cost no database lookup.',
+                    '',
+                    'Twenty-nine handlers were reordered this way on 2026-09-05 and',
+                    '2026-09-08 -- api/sb-auth.js is a small, current example, and',
+                    'api/preauth-envelope-ordering.test.js is the assertion pattern.',
+                    '',
+                    'Read from the COMMIT BEING PUSHED, not the working tree.',
+                    '',
+                    OVERRIDE_HINT,
+                ]))
+    except Exception as _e:
+        # Fails OPEN, loudly, same standard as every other check here.
+        print('NOTE: the pre-auth oracle scan could not run (%s: %s), so this push '
+              'is UNCHECKED for pre-auth disclosures.' % (type(_e).__name__, _e))
+
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
     for path in changed:
