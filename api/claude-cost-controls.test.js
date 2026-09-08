@@ -46,7 +46,26 @@ require.cache[LIMITER] = {
   },
 };
 
+// The licence lookup is stubbed for the same reason the limiter is: on a
+// developer machine SUPABASE_URL is unset, so the real one throws CONFIG and
+// every auth state would collapse to `error`. A suite written against that
+// would pass whether the auth logic is right or not -- the trap
+// api/sd-sub-data-auth-ordering.test.js recorded.
+const LICENCE = require.resolve('./_lib/license');
+let licenceAnswer = { valid: true, active: true, license_hash: 'h' };
+let licenceThrows = false;
+require.cache[LICENCE] = {
+  id: LICENCE, filename: LICENCE, loaded: true,
+  exports: {
+    validateLicenseKey: async () => {
+      if (licenceThrows) { const e = new Error('upstream'); e.code = 'UPSTREAM'; throw e; }
+      return licenceAnswer;
+    },
+  },
+};
+
 process.env.ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || 'test-key';
+process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
 
 delete require.cache[require.resolve('./claude.js')];
 const handler = require('./claude.js');
@@ -72,13 +91,16 @@ function mockRes() {
   return res;
 }
 
-async function call(body) {
+async function callWithAuth(body, key) {
   sentBody = null;
   limiterCalls = [];
+  const headers = key ? { authorization: 'Bearer ' + key } : {};
   const res = mockRes();
-  await handler({ method: 'POST', headers: {}, body }, res);
+  await handler({ method: 'POST', headers, body }, res);
   return { status: res._s, body: res._j, sent: sentBody, limiterCalls: limiterCalls.slice() };
 }
+
+async function call(body) { return callWithAuth(body, null); }
 
 const MSG = [{ role: 'user', content: 'hi' }];
 
@@ -201,20 +223,67 @@ t('the limiter still FAILS OPEN and still reports that it degraded', async () =>
 
 section('--- 3. what is NOT fixed, asserted as-is so it cannot be mistaken for closed ---');
 
-t('THE ENDPOINT STILL REQUIRES NO CREDENTIAL. Asserted as it IS, not as it '
-  + 'should be -- when the licence-key requirement lands this test must FAIL '
-  + 'and be updated, rather than the change surprising someone', async () => {
+t('IN OBSERVE MODE AN UNAUTHENTICATED CALL IS STILL ALLOWED. Asserted as it IS, '
+  + 'not as it should be -- Phase 1 must not refuse anything, and when '
+  + 'SAIRN_CLAUDE_AUTH_MODE=enforce is set this behaviour changes deliberately '
+  + 'rather than surprising someone', async () => {
   const r = await call({ app_id: 'stonedesk', is_demo: false, messages: MSG });
   assert.strictEqual(r.status, 200,
-    'a call with no Authorization header was refused -- if the licence-key '
-    + 'requirement has shipped, update this test and the open-work row');
+    'observe mode refused an unauthenticated call -- that is Phase 4 behaviour '
+    + 'arriving early, and it would break every live app');
 });
 
-t('the source still has no Authorization read at all, which is the finding', () => {
+t('this suite UPDATED rather than being deleted when the Authorization read '
+  + 'landed -- the previous version asserted there was none, and it went red on '
+  + 'the very commit that added it, which is the point of an as-is assertion', () => {
   const src = fs.readFileSync(path.join(__dirname, 'claude.js'), 'utf8');
-  const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
-  assert.strictEqual(code.indexOf("headers['authorization']"), -1,
-    'an authorization read appeared -- the full fix may have landed; update this row');
+  assert.ok(src.indexOf("req.headers['authorization']") !== -1,
+    'the Phase 1 auth read disappeared');
+  assert.ok(src.indexOf('SAIRN_CLAUDE_AUTH_MODE') !== -1,
+    'the mode flag disappeared -- enforcement must stay revertible without a deploy');
+});
+
+section('--- 4. Phase 1: observe, and record absent vs invalid as different things ---');
+
+t('ENFORCE MODE REFUSES an unauthenticated call with 401 NO_LICENSE', async () => {
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
+  const r = await call({ app_id: 'stonedesk', is_demo: true, messages: MSG });
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
+  assert.strictEqual(r.status, 401, JSON.stringify(r.body));
+  assert.strictEqual(r.body.error.code, 'NO_LICENSE');
+  assert.strictEqual(r.sent, null, 'a refused request still reached Anthropic');
+});
+
+t('enforce mode ALLOWS a valid, active licence', async () => {
+  licenceAnswer = { valid: true, active: true, license_hash: 'h' };
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
+  const r = await callWithAuth({ app_id: 'stonedesk', is_demo: true, messages: MSG }, 'real-key');
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
+});
+
+t('enforce mode FAILS OPEN when the licence store is unreachable -- refusing on '
+  + 'our own outage would punish the customer for it', async () => {
+  licenceThrows = true;
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
+  const r = await callWithAuth({ app_id: 'stonedesk', is_demo: true, messages: MSG }, 'real-key');
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
+  licenceThrows = false;
+  assert.strictEqual(r.status, 200, 'an upstream failure took the AI down: ' + JSON.stringify(r.body));
+});
+
+t('an INACTIVE licence is not treated as absent -- the states are distinguished '
+  + 'because they need different answers', async () => {
+  licenceAnswer = { valid: true, active: false, license_hash: 'h' };
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'enforce';
+  const r = await callWithAuth({ app_id: 'stonedesk', is_demo: true, messages: MSG }, 'real-key');
+  process.env.SAIRN_CLAUDE_AUTH_MODE = 'observe';
+  licenceAnswer = { valid: true, active: true, license_hash: 'h' };
+  // Recorded as `inactive`, and deliberately NOT refused by the enforce branch,
+  // which lists only absent and invalid. An inactive licence is a billing
+  // state, and cutting off AI is not this endpoint's call to make -- the app's
+  // own licence gate already handles it. Asserted so the choice is visible.
+  assert.strictEqual(r.status, 200, JSON.stringify(r.body));
 });
 
 (async function () {

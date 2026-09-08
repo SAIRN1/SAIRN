@@ -29,6 +29,8 @@
 // message) works with zero changes here once an app's frontend sends it in the standard API format.
 
 const { checkAiRateLimit, recordAiUsage } = require('./_lib/ai-rate-limit');
+// Phase 1 of the licence-key requirement -- see the block in the handler.
+const { validateLicenseKey } = require('./_lib/license');
 
 const KNOWN_APP_IDS = [
   'stonedesk', 'sairnbiz', 'sairnscape', 'sairncode', 'sairnbuild',
@@ -221,6 +223,54 @@ async function claudeProxyHandler(req, res) {
   }
   if (!body || typeof body !== 'object') {
     res.status(400).json({ error: { message: 'Missing request body' } });
+    return;
+  }
+
+  // ── PHASE 1 OF THE LICENCE-KEY REQUIREMENT (2026-09-05) ──────────────────
+  // This endpoint requires no credential. That is the finding of 2026-09-05,
+  // confirmed live: a request with no Authorization header returned 200 and a
+  // real completion on this platform's own Anthropic key.
+  //
+  // THE FIX IS BREAKING -- roughly 134 call sites across 16 apps send no auth
+  // header today -- so it ships in the shape this platform already uses for
+  // SAIRN_AI_RATE_LIMIT_MODE: OBSERVE FIRST, MEASURE, THEN ENFORCE, behind an
+  // env flag that can be reverted in seconds without a deploy.
+  //
+  // IN OBSERVE MODE NOTHING IS REFUSED. The point of this block is the log
+  // line: it is what tells us, per app_id, whether the clients have actually
+  // caught up. Phase 4's gate is that measurement -- NOT a checklist of files
+  // edited, because the call site nobody found is exactly what a file
+  // checklist cannot see. See docs/2026-09-05-claude-proxy-auth-rollout.md.
+  //
+  // `absent` and `invalid` are recorded as DIFFERENT states on purpose. Absent
+  // means a client that never sends one -- possibly a surface with no licence
+  // to send, which needs a different answer than a bug. Invalid means it tried
+  // and the key is wrong. Collapsing them would hide the case that changes the
+  // plan.
+  const claudeAuthMode = String(process.env.SAIRN_CLAUDE_AUTH_MODE || 'observe')
+    .trim().toLowerCase();
+  const claudeAuthz = req.headers['authorization'] || '';
+  const claudeLicenceKey = claudeAuthz.startsWith('Bearer ')
+    ? claudeAuthz.slice(7).trim() : null;
+  let authState = 'absent';
+  if (claudeLicenceKey) {
+    try {
+      const lic = await validateLicenseKey(claudeLicenceKey);
+      authState = lic.valid ? (lic.active ? 'valid' : 'inactive') : 'invalid';
+    } catch (err) {
+      // FAILS OPEN, and says so. An unreachable licence store must not take
+      // down every AI feature on the platform -- the same standard every other
+      // gate here holds. In enforce mode this is the one path that still
+      // allows, because refusing on OUR outage punishes the customer for it.
+      authState = 'error';
+      console.error('api/claude auth check failed (allowing): ' + err.message);
+    }
+  }
+  console.log('api/claude auth_observe app_id=' + (body.app_id || '(none)') +
+    ' state=' + authState + ' mode=' + claudeAuthMode);
+  if (claudeAuthMode === 'enforce' && (authState === 'absent' || authState === 'invalid')) {
+    res.status(401).json({ error: { code: 'NO_LICENSE',
+      message: 'A valid license key is required. Send it as Authorization: Bearer <key>.' } });
     return;
   }
 
