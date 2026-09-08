@@ -706,8 +706,8 @@
       "task": "the last three oracles keeping the detector non-zero",
       "claimed_at": "2026-09-08T15:59:18Z",
       "claimed_at_epoch": 1788883158.0834424,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T16:05:38Z"
     }
   ]
 }
