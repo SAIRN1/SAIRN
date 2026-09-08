@@ -88,7 +88,7 @@ test('each write path names the resource it actually writes', () => {
   // message -- which reads as a real explanation and is worse than a generic
   // one, so the pairing is what gets asserted, not the presence of the call.
   //
-  // IT ONLY SAW DIRECT WRITERS UNTIL 2026-09-05, and a mutation probe is what
+  // IT ONLY SAW DIRECT WRITERS UNTIL 2026-09-08, and a mutation probe is what
   // said so. Changing submitCharge to ask for 'dnt_payments' -- exactly the
   // defect this test exists to catch, in the function that reports the CHARGE
   // ledger -- left it green, because submitCharge contains no sdnData('write')
@@ -126,7 +126,7 @@ test('each write path names the resource it actually writes', () => {
     if (!writes.length) continue;
     if (code.indexOf('syncResult?') === -1 && code.indexOf('!result.syncResult') === -1
         && code.indexOf('!syncResult') === -1) continue;
-    // TIGHTENED 2026-09-05, on Fourth's finding 4. This used to exempt any
+    // TIGHTENED 2026-09-08, on Fourth's finding 4. This used to exempt any
     // function containing the BARE STRING 'dntLastErrText(' without looking at
     // which resource it asked for -- so a path could ask for another resource
     // entirely and pass. The four paths that took the exemption were
@@ -141,7 +141,7 @@ test('each write path names the resource it actually writes', () => {
       // this walk cannot check that pairing, so it must not silently pass it.
       //
       // THE ONE HONEST EXEMPTION: a helper that HANDS THE OUTCOME BACK. Adding
-      // `refused` to addChargeEntry/addPaymentEntry on 2026-09-05 put the token
+      // `refused` to addChargeEntry/addPaymentEntry on 2026-09-08 put the token
       // `!syncResult` in their bodies, which pulled two functions into this walk
       // that deliberately say nothing -- they return {syncResult, refused} and
       // their callers do the talking. Written as a named exemption rather than

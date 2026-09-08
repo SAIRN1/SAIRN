@@ -1320,7 +1320,7 @@ function sdnData(action,resource,payload){
 }
 var dntLastErr={};
 function dntLastErrCode(resource){return dntLastErr[resource]?dntLastErr[resource].code:'';}
-// ── ONLY THE SERVER'S OWN WORDS COME OUT OF HERE (2026-09-05) ─────────────
+// ── ONLY THE SERVER'S OWN WORDS COME OUT OF HERE (2026-09-08) ─────────────
 // This returned dntLastErr[resource].message unconditionally, and on the
 // .catch path that message is a RAW BROWSER EXCEPTION -- `e.message` from a
 // fetch rejection. So an offline save showed the receptionist "Failed to
@@ -3021,7 +3021,7 @@ async function setAppointmentStatus(id,status){
   if($('panel-appointments'))rAppointments();
   var syncResult=await sdnData('write','dnt_appointments',a);
   toast(syncResult?('Appointment '+status.toLowerCase()):dntWriteFailText('dnt_appointments','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
-  // RETURNS WHETHER IT LANDED, added 2026-09-05. It returned the appointment
+  // RETURNS WHETHER IT LANDED, added 2026-09-08. It returned the appointment
   // alone, so submitCompleteVisit() could not tell a synced status change from
   // a local-only one and announced success either way -- see there.
   // Deliberately still LOCAL-FIRST above: confirm/reject share this function
@@ -4874,12 +4874,12 @@ function patientBalance(patientId){
 // local write would have been a worse state than no refusal at all.
 //
 // SERVER-FIRST WAS RIGHT AND "DROP IT ON ANY NULL" WAS NOT -- corrected
-// 2026-09-05 after Fourth's independent review of 569b2689. Both functions
+// 2026-09-08 after Fourth's independent review of 569b2689. Both functions
 // returned early on ANY null from sdnData(), and null is also what a downed
 // network, an HTML error page, a 5xx and a missing licence key return. So a
 // practice on a flaky connection LOST every charge and payment it entered --
 // no local row, no server row, nothing to re-read. The refusal I added that
-// morning was worth having; discarding a row the server never even saw was
+// 2026-09-04 was worth having; discarding a row the server never even saw was
 // not, and the two were indistinguishable to these callers.
 //
 // dntWriteRefused() is the distinction, and it is only ever consulted when the
