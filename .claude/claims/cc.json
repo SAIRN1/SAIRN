@@ -652,8 +652,8 @@
       "task": "sweep index rows claiming probe counts and spot-check them",
       "claimed_at": "2026-09-08T15:28:41Z",
       "claimed_at_epoch": 1788881321.1363397,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T15:37:14Z"
     }
   ]
 }
