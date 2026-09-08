@@ -696,6 +696,16 @@
       "task": "the deferred fifteen auth files",
       "claimed_at": "2026-09-08T15:58:26Z",
       "claimed_at_epoch": 1788883106.7263994,
+      "status": "released",
+      "released_at": "2026-09-08T15:59:03Z"
+    },
+    {
+      "id": "cody-1788883158",
+      "session": "cody",
+      "subject": "claude-js-envelope-above-its-own-auth",
+      "task": "the last three oracles keeping the detector non-zero",
+      "claimed_at": "2026-09-08T15:59:18Z",
+      "claimed_at_epoch": 1788883158.0834424,
       "status": "active",
       "released_at": null
     }
