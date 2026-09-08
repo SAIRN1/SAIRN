@@ -646,8 +646,8 @@
       "task": "stage firewall rate limit log action and checker",
       "claimed_at": "2026-09-08T12:14:26Z",
       "claimed_at_epoch": 1788869666.4629629,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:21:13Z"
     }
   ]
 }
