@@ -592,6 +592,16 @@
       "claimed_at_epoch": 1788873183.3286507,
       "status": "released",
       "released_at": "2026-09-08T13:21:39Z"
+    },
+    {
+      "id": "fourth-1788880366",
+      "session": "fourth",
+      "subject": "agents-dir-and-crossfile-notes",
+      "task": "examine untracked pile and recurrence of cross file warnings",
+      "claimed_at": "2026-09-08T15:12:46Z",
+      "claimed_at_epoch": 1788880366.7751286,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
