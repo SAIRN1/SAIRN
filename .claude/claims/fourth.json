@@ -552,6 +552,16 @@
       "claimed_at_epoch": 1788615312.0867825,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1788868220",
+      "session": "fourth",
+      "subject": "stonedesk-hardcoded-shop-name",
+      "task": "pinnacle exports prints greeting",
+      "claimed_at": "2026-09-08T11:50:20Z",
+      "claimed_at_epoch": 1788868220.2447712,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
