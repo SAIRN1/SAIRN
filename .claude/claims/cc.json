@@ -664,6 +664,16 @@
       "claimed_at_epoch": 1788881870.4589686,
       "status": "released",
       "released_at": "2026-09-08T15:40:43Z"
+    },
+    {
+      "id": "cc-1788882195",
+      "session": "cc",
+      "subject": "unsupported-control-suites-backfill",
+      "task": "add committed mutation arms to the five named suites",
+      "claimed_at": "2026-09-08T15:43:15Z",
+      "claimed_at_epoch": 1788882195.0539567,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
