@@ -238,6 +238,20 @@ def main(argv):
         return 2
 
     targets = rest or sorted(glob.glob('*.html'))
+    # A STALE REPORT IS ONLY MEANINGFUL ON A FULL RUN, and this tool was missing
+    # the fix its sibling already had. fail_open_check.py carried exactly this
+    # bug -- it compared every acceptance against whatever subset had just been
+    # scanned, so a targeted run declared a live, correct entry dead and told
+    # the reader to delete it. That was fixed there and never here.
+    #
+    # It cost something on 2026-09-08. A run of ONE unrelated file printed both
+    # of stonedesk.html's exemptions under "STALE EXEMPTIONS -- these no longer
+    # match any finding and should be deleted", because a file that was never
+    # scanned cannot match anything. Acting on that advice removed two live,
+    # justified exemptions and un-suppressed two real R1 findings; it was caught
+    # only by re-running and watching the count move from 0 to 2. The advice was
+    # confident, specific, and wrong.
+    full_run = not rest
     snaps = load_snapshots(live_paths) if live_paths else None
     if live_paths and snaps is None:
         return 2
@@ -279,7 +293,7 @@ def main(argv):
         print('COVERAGE: %s' % coverage_note)
     if cleared_total:
         print('%d static finding(s) cleared by the live DOM.' % cleared_total)
-    stale = sorted(exempt - matched)
+    stale = sorted(exempt - matched) if full_run else []
     if exempted_count:
         print('%d finding(s) suppressed by tools/reachability_exemptions.json.' % exempted_count)
     if stale:
