@@ -762,8 +762,8 @@
       "task": "read the retry loop and answer whether null is right",
       "claimed_at": "2026-09-08T12:21:45Z",
       "claimed_at_epoch": 1788870105.8530042,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-08T12:27:08Z"
     }
   ]
 }
