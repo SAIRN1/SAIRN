@@ -65,19 +65,6 @@ module.exports = async (req, res) => {
     return;
   }
 
-  let body = req.body;
-  if (typeof body === 'string') {
-    try { body = JSON.parse(body); } catch (e) {
-      res.status(400).json({ error: { message: 'Invalid JSON body' } });
-      return;
-    }
-  }
-  const action = body && body.action;
-  if (['bootstrap', 'login', 'setup', 'roster', 'set_active'].indexOf(action) === -1) {
-    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'roster', or 'set_active'" } });
-    return;
-  }
-
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
   if (!SUPABASE_URL || !SERVICE_KEY || !process.env.SD_AUTH_SECRET) {
@@ -86,6 +73,19 @@ module.exports = async (req, res) => {
     return;
   }
 
+  // ── THE ENVELOPE GATE MOVED BELOW THIS (2026-09-08) ─────────────────────
+  // Body parse and action enum used to answer ABOVE licence validation, so a
+  // caller holding no credential could tell malformed JSON from a valid
+  // envelope with a bad action from a bad licence -- three distinguishable
+  // answers, and the action refusal named this app's whole verb vocabulary.
+  // Same defect and same fix as the fourteen data endpoints reordered on
+  // 2026-09-05; these fifteen were held back that day only because other
+  // sessions were live in these files.
+  //
+  // THE COST, which is the same one sd-data.js records: every junk-token
+  // request now costs a license_keys lookup it did not before, and this
+  // endpoint's FIRST failure answer changed. A malformed body from a bad
+  // licence now reports the licence.
   let lic;
   try {
     lic = await validateLicenseKey(licenseKey);
@@ -99,6 +99,19 @@ module.exports = async (req, res) => {
   }
   if (!lic.valid) { res.status(401).json({ error: { code: 'INVALID_LICENSE', message: 'Unknown license key' } }); return; }
   if (!lic.active) { res.status(403).json({ error: { code: 'LICENSE_INACTIVE', message: 'This license is not active' } }); return; }
+
+  let body = req.body;
+  if (typeof body === 'string') {
+    try { body = JSON.parse(body); } catch (e) {
+      res.status(400).json({ error: { message: 'Invalid JSON body' } });
+      return;
+    }
+  }
+  const action = body && body.action;
+  if (['bootstrap', 'login', 'setup', 'roster', 'set_active'].indexOf(action) === -1) {
+    res.status(400).json({ error: { message: "action must be 'bootstrap', 'login', 'setup', 'roster', or 'set_active'" } });
+    return;
+  }
 
   const licHash = lic.license_hash;
   const headers = { apikey: SERVICE_KEY, Authorization: 'Bearer ' + SERVICE_KEY, 'Content-Type': 'application/json' };

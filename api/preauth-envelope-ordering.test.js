@@ -121,6 +121,84 @@ t('the bearer-presence check still runs FIRST, so a missing credential costs no 
   });
 });
 
+// ── PART A2: the FIFTEEN *-auth.js handlers, reordered 2026-09-08 ─────────
+// The deferred half of the same sweep. They were held on 2026-09-05 only
+// because other sessions were live in these files, and the open-work row said
+// so rather than leaving it to look like an oversight.
+//
+// THE ARGUMENT WAS NEVER MAINLY THE LEAK. What each disclosed is its own action
+// vocabulary, and those verb names already ship inside the downloadable client
+// JS. Two things made it worth doing: the ORACLE (malformed JSON, valid
+// envelope with a bad action, and a bad licence were three distinguishable
+// answers to a caller holding no credential), and TEMPLATE CONSISTENCY -- while
+// fifteen of twenty-nine carried the shape, the next auth handler copied from a
+// sibling reproduced it. tools/preauth_oracle_check.py exited 1 before this and
+// exits 0 after, so it can gate a push now, which it never could while these
+// fifteen stood.
+const AUTH_FILES = [
+  'alf-auth.js', 'bld-auth.js', 'dnt-auth.js', 'grd-auth.js', 'law-auth.js',
+  'leg-auth.js', 'mech-auth.js', 'rf-auth.js', 'sb-auth.js', 'sc-auth.js',
+  'scp-auth.js', 'sd-auth.js', 'sd-sub-auth.js', 'sdn-auth.js', 'sen-auth.js',
+];
+
+section('--- the fifteen *-auth.js handlers ---');
+
+AUTH_FILES.forEach(function (file) {
+  t(file + ': licence validation runs ABOVE both envelope gates', function () {
+    const src = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    const lic = src.indexOf('await validateLicenseKey(');
+    assert.ok(lic !== -1, 'no validateLicenseKey call in ' + file);
+    // Two anchors, so a partial move fails: the body parse AND the action enum.
+    const parse = src.indexOf('JSON.parse(body)');
+    assert.ok(parse !== -1, 'the body parse is gone from ' + file);
+    assert.ok(lic < parse, file + ': the body parse still answers before the caller is known');
+    const enumAt = src.indexOf('.indexOf(action)');
+    assert.ok(enumAt !== -1, 'the action enum is gone from ' + file);
+    assert.ok(lic < enumAt, file + ': the action enum still answers before the caller is known');
+  });
+});
+
+t('each of the fifteen validates the licence exactly once', function () {
+  AUTH_FILES.forEach(function (file) {
+    const src = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    const n = (src.match(/await validateLicenseKey\(/g) || []).length;
+    assert.strictEqual(n, 1, file + ' validates the licence ' + n + ' times');
+  });
+});
+
+t('the bearer-presence check still runs FIRST in all fifteen', function () {
+  // A missing credential must still cost no database lookup.
+  AUTH_FILES.forEach(function (file) {
+    const src = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    const noLic = src.indexOf("code: 'NO_LICENSE'");
+    const lic = src.indexOf('await validateLicenseKey(');
+    assert.ok(noLic !== -1 && noLic < lic, file + ': the bearer check no longer runs first');
+  });
+});
+
+t('the METHOD check still runs before everything, in all fifteen', function () {
+  AUTH_FILES.forEach(function (file) {
+    const src = fs.readFileSync(path.join(__dirname, file), 'utf8');
+    const m = src.indexOf("req.method !== 'POST'");
+    const lic = src.indexOf('await validateLicenseKey(');
+    assert.ok(m !== -1 && m < lic, file + ': the 405 check moved below the licence lookup');
+  });
+});
+
+t('THE CHECKER AGREES, and its exit code is the reason this was worth doing', function () {
+  // tools/preauth_oracle_check.py returns 1 while any DISCLOSURE stands. It
+  // returned 1 for as long as these fifteen carried the shape, so it could
+  // never gate a push. Asserted here rather than described, because "it exits
+  // 0 now" is the whole deliverable beyond the leak itself.
+  const { spawnSync } = require('child_process');
+  const r = spawnSync('python', [path.join(__dirname, '..', 'tools', 'preauth_oracle_check.py')],
+    { cwd: path.join(__dirname, '..'), encoding: 'utf8' });
+  if (r.error) return;                       // no python on this machine: skip, do not fake a pass
+  assert.strictEqual(r.status, 0,
+    'preauth_oracle_check still reports a disclosure: ' + (r.stdout || '').slice(-600));
+  assert.match(r.stdout, /PREAUTH_DISCLOSURES:0/);
+});
+
 // ── PART B: the behaviour, through the real handlers ──────────────────────
 const LICENSE_PATH = require.resolve('./_lib/license.js');
 let licenseAnswer = { valid: false };
@@ -166,6 +244,16 @@ const PROBES = [
     name: 'sc-eligibility',
     bad: { action: 'nonsense' },
     leaks: ['search_payer'],
+    envelopeMatch: /action must be/,
+  },
+  {
+    // One of the fifteen, driven end to end rather than only anchored in
+    // source: the ordering assertions above prove WHERE the gate sits, and this
+    // proves what a caller actually receives.
+    file: './sb-auth.js',
+    name: 'sb-auth',
+    bad: { action: 'nonsense' },
+    leaks: ['bootstrap', 'set_active', 'roster'],
     envelopeMatch: /action must be/,
   },
   {
