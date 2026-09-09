@@ -1092,3 +1092,59 @@ does not go through `tools/run_all_tests.py` -- the lockfile was verifiably
 absent while probes were mutating this tree, and the lock is proven to be taken
 in hook mode. So the lock does not cover every path into these probes. The
 per-probe dirty guard does, which is why both halves shipped.
+
+## 2026-09-09 (Cody) -- the tooling inventory, and what runs nothing
+
+CLAIMED and now released: `tooling-inventory`. Written up in
+`docs/2026-09-09-tooling-inventory.md`. **Every count is derived** from
+`.claude/settings.json`, `.githooks/pre-push`, `tools/sairn_push_gate_hook.py`
+and `git ls-files` -- not read off any earlier document, and the doc carries a
+*How to re-derive this* section so the next session redoes it rather than
+trusting it.
+
+**77 files in `tools/`:** 10 BLOCKING, 3 report-only, 2 advisory,
+29 library/generator, **33 unwired -- 28 of them working checkers nobody runs.**
+
+**The finding I would act on first:** nine of those 28 have a purpose-built
+probe under `tests/` that `run_all_tests.py` executes on every push. The suite
+proves the checker WORKS, on fixtures, while nothing ever runs it against the
+real code. A green probe on an unwired checker reads as coverage and is
+coverage of the tool, not of the codebase.
+
+**Three unwired checkers are named as REQUIRED by Guardian v2 or CLAUDE.md**
+and are not wired: `sairn_dead_button_audit.py` (Guardian check 27),
+`nav_panel_check.py` (checks 16-18; the safe-editing rules say after EVERY
+edit), `vercel_config_check.py` (whose own note says the failure it catches
+takes production down while looking like nothing happened).
+`div_balance_check.py` is in the same sentence as `nav_panel_check.py`.
+Four rules that depend on remembering, in a repo whose recurring lesson is
+that those are the failure mode.
+
+**Deliberately NOT a recommendation to wire all 28.** Four are live network
+probes needing a real licence and are correctly manual; several are one-off
+audits. The decision each needs is blocking / report-only / deliberately
+manual, recorded once instead of left unanswered by default. **That decision
+is Michael's.**
+
+**Skill-list audit re-derived the same day -- every claim still holds:** 60 on
+disk, 32 SAIRN mirrored with **0 real content differences** and exactly 12
+CRLF-only, 28 general-only, `security-auditor` absent from both stores,
+`grill-me` present with `disable-model-invocation: true`, `sairn-code-guardian`
+in neither store.
+
+### Item 1 (probes running outside run_all_tests) -- ANSWERED BY HANK, not me
+
+`4cbbcf23`. `.claude/settings.json` gated both Bash PostToolUse hooks with an
+`"if"` key. **A hook entry has no `if` field** -- its only gate is `matcher`,
+which matches the TOOL NAME -- so the unknown key was ignored in silence and
+the full mutating suite ran after **every Bash tool call**. That is the volume
+I could not explain and logged as an open observation. I pulled the fix rather
+than duplicating the work; the churn stopped immediately.
+
+**One thing that happened while I was working, worth recording as a class:** a
+probe's `git reset --mixed <its own start>` REWOUND a completed rebase in this
+clone, leaving Hank's just-pulled commits as uncommitted working-tree
+modifications. Nothing was lost -- every byte was verified identical to
+`origin/main` before recovering -- but a session that ran `git checkout -- .`
+on that state, or committed it, would have made a real mess. **A probe that
+resets HEAD is dangerous to more than its own files.**
