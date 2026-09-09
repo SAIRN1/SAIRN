@@ -51,10 +51,13 @@ invisible is the whole problem this exists to fix.
 Run:  python tools/run_all_tests.py [--quiet]
       python tools/run_all_tests.py --hook   (reads a hook payload on stdin)
 """
+import hashlib
 import json
 import os
 import subprocess
 import sys
+import tempfile
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # Fixtures that are data for another test, not tests themselves. Named, not
@@ -63,6 +66,69 @@ KNOWN_FIXTURES = {
     'tests/sql_preflight/probe_control.sql',
     'tests/sql_preflight/probe_defects.sql',
 }
+
+# ── ONE SUITE RUN AT A TIME PER CLONE (2026-09-09) ───────────────────────────
+# WHY. Several probes under tests/ mutate a real tracked file and restore the
+# bytes THEY read at their own start, in a finally. That is correct alone and
+# wrong in parallel, and nothing serialised these runs: this hook fires on
+# every `git push`, async, and on 2026-09-09 THREE concurrent `--hook` runs
+# were observed alive in one tree (09:05:38, 09:06:06, 09:06:21) together with
+# two copies of tests/seam_check/run_probe.py started in the same second.
+#
+#   run A snapshots the clean file, mutates it
+#   run B snapshots THE MUTATED FILE as its "original"
+#   run A restores clean
+#   run B restores the mutation -- and it stays on disk
+#
+# That is how sairnvet.html repeatedly lost the corrupt-store guard from
+# ebf2823e overnight, and how tools/reachability_exemptions.json kept a
+# zzDefinitelyNotAFinding entry that no live_mode_probe run had failed to
+# clean up. THE `finally` WAS NEVER THE DEFECT AND RESTORING HARDER CANNOT FIX
+# IT -- both runs restored exactly what they read. The SNAPSHOT was the defect,
+# so the fix is that there is only ever one run to snapshot against.
+#
+# Two things this deliberately does NOT do:
+#   * it does not live in the working tree. An untracked lockfile in REPO would
+#     show as `??` and make every clean-tree-dependent probe skip -- trading
+#     this bug for the cascade the residue section below already warns about.
+#   * staleness is by AGE, not by testing the holder's pid. os.kill(pid, 0) on
+#     Windows does not test liveness, it calls TerminateProcess. A ceiling well
+#     above the 400s hook timeout is the boring answer that cannot kill
+#     somebody's process; a killed run costs one skipped cycle, not a
+#     permanent block.
+LOCK = os.path.join(
+    tempfile.gettempdir(),
+    'sairn-suite-%s.lock' % hashlib.sha256(REPO.encode('utf-8')).hexdigest()[:16])
+LOCK_MAX_AGE = 900
+
+
+def acquire_lock():
+    """True if this process now owns the suite lock, False if another run has it."""
+    for _ in range(2):
+        try:
+            fd = os.open(LOCK, os.O_CREAT | os.O_EXCL | os.O_WRONLY)
+            os.write(fd, ('%d %f\n' % (os.getpid(), time.time())).encode('utf-8'))
+            os.close(fd)
+            return True
+        except FileExistsError:
+            try:
+                age = time.time() - os.path.getmtime(LOCK)
+            except OSError:
+                continue                      # vanished between the calls; retry
+            if age < LOCK_MAX_AGE:
+                return False
+            try:
+                os.remove(LOCK)               # abandoned by a killed run
+            except OSError:
+                return False
+    return False
+
+
+def release_lock():
+    try:
+        os.remove(LOCK)
+    except OSError:
+        pass
 
 
 def discover():
@@ -102,6 +168,30 @@ def hook_main():
         json.load(sys.stdin)          # the hook payload; nothing here needs it
     except Exception:
         pass
+    # A second concurrent run does not queue -- it declines and SAYS SO. Running
+    # it would corrupt the first one's snapshots (see the LOCK block above), and
+    # staying silent about declining would make "the suite ran after that push"
+    # false in exactly the way this file exists to stop.
+    if not acquire_lock():
+        print(json.dumps({
+            'systemMessage': 'Full test suite after push: SKIPPED, already running.',
+            'hookSpecificOutput': {
+                'hookEventName': 'PostToolUse',
+                'additionalContext':
+                    'The full suite did not run after this push: another run of it '
+                    'is still in progress in this clone, and two at once corrupt '
+                    "each other's file restores. Nothing was verified by this "
+                    'push. The in-flight run covers the same tree.',
+            },
+        }))
+        return 0
+    try:
+        return _hook_body()
+    finally:
+        release_lock()
+
+
+def _hook_body():
     js, py, unrun = discover()
     failures, skipped = _run(js, py, quiet=True)
     if not failures and not skipped:
@@ -152,7 +242,21 @@ def _tree():
 def main(argv):
     if '--hook' in argv:
         return hook_main()
-    quiet = '--quiet' in argv
+    # EXIT 3, the same "could not run is not a pass" code the probes use.
+    if not acquire_lock():
+        print('SKIPPED: another run of this suite already holds the lock for this')
+        print('clone. Two at once corrupt each other -- a probe that mutates a')
+        print('tracked file snapshots whatever is on disk when it starts, so the')
+        print("second run adopts the first's mutation as its 'original' and")
+        print('restores that. Nothing was verified. Wait for the other run.')
+        return 3
+    try:
+        return _main_body('--quiet' in argv)
+    finally:
+        release_lock()
+
+
+def _main_body(quiet):
     before = _tree()
     js, py, unrun = discover()
     # EXIT 3 MEANS SKIPPED, and it is reported apart from both other answers.

@@ -135,8 +135,39 @@ def run(suite):
     return subprocess.run(exe, cwd=ROOT, capture_output=True).returncode
 
 
+def dirty(paths):
+    r = subprocess.run(['git', 'status', '--porcelain', '--'] + list(paths),
+                       cwd=ROOT, capture_output=True, text=True)
+    return [l for l in (r.stdout or '').splitlines() if l.strip()]
+
+
 def main():
     targets = sorted({t for _, t, _ in SUITES})
+    # ── A DIRTY TARGET IS A SKIP, NOT A SNAPSHOT (2026-09-09) ────────────────
+    # This probe reverts a real fix in five real app files and restores the
+    # bytes it read at the top. If one of those files is ALREADY modified when
+    # it starts -- because a parallel run of this probe is mid-mutation, or
+    # because one was killed before its finally -- then `orig` captures the
+    # MUTATION, and the restore at the bottom writes it back and reports
+    # "restored byte-identical: True". It is telling the truth about the wrong
+    # baseline. That is how sairnvet.html lost the corrupt-store guard from
+    # ebf2823e overnight: nothing failed, and the sha check passed, while the
+    # third control above sat on disk as production code.
+    #
+    # tools/run_all_tests.py now holds a per-clone lock so two suite runs
+    # cannot overlap, which removes the parallel case. This guard is the other
+    # half and the one the lock cannot cover: a process KILLED before its
+    # finally leaves residue that no lock notices. It also refuses to snapshot
+    # somebody's legitimate uncommitted work and hand it back as "restored".
+    already = dirty(targets)
+    if already:
+        print('SKIPPED: a target of this probe is already modified, so the bytes')
+        print('it would snapshot as "original" are not the original. Restoring')
+        print('them would BAKE IN whatever is there -- including a stripped')
+        print('guard left by a killed run. Nothing was verified. Working tree:')
+        for l in already:
+            print('    %s' % l)
+        return 3
     orig = {t: open(os.path.join(ROOT, t), 'rb').read() for t in targets}
     before = {t: hashlib.sha256(v).hexdigest() for t, v in orig.items()}
 

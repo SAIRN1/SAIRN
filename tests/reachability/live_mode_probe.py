@@ -44,6 +44,29 @@ import tempfile
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'sairn_reachability_check.py')
+EXEMPTIONS = 'tools/reachability_exemptions.json'
+
+# ── A DIRTY EXEMPTIONS FILE IS A SKIP, NOT A SNAPSHOT (2026-09-09) ───────────
+# Arm 6 below injects a dead exemption into the REAL file and restores the
+# bytes it read at the top, in a finally. If the file is already modified when
+# this starts, those bytes are not the original -- and the restore writes the
+# modification back as though it were. That is how a zzDefinitelyNotAFinding
+# entry survived overnight with no run of this probe having failed: two runs
+# overlapped, the second adopted the first's injection as its baseline, and
+# handed it back.
+#
+# tools/run_all_tests.py now serialises suite runs, which closes the overlap.
+# This guard closes the other half the lock cannot see -- a run KILLED before
+# its finally -- and stops the probe adopting somebody's real uncommitted edit.
+_dirty = subprocess.run(['git', 'status', '--porcelain', '--', EXEMPTIONS],
+                        cwd=REPO, capture_output=True, text=True).stdout.strip()
+if _dirty:
+    print('SKIPPED: %s is already modified, so the bytes this probe would'
+          % EXEMPTIONS)
+    print('snapshot as "original" are not the original, and restoring them would')
+    print('bake the modification in. Nothing about --live was verified. Tree:')
+    print('    %s' % _dirty)
+    sys.exit(3)
 
 # One orphan and one wired handler, by construction. `zzWired` is called from
 # an onclick in the markup, so the static pass must never report it; `zzOrphan`
@@ -143,7 +166,7 @@ try:
     # DRIVEN IN BOTH DIRECTIONS with a genuinely dead exemption injected into
     # the real file, because suppressing the message everywhere would trade a
     # false alarm for a silent one -- and that is the easy mistake here.
-    EX = os.path.join(REPO, 'tools', 'reachability_exemptions.json')
+    EX = os.path.join(REPO, EXEMPTIONS)
     # BYTES, not text. Read as text and written back as text, the restore
     # rewrites CRLF as LF and leaves the file MODIFIED in git -- which is not
     # cosmetic here: tests/push_gate/check4_probe.py and check7_probe.py both
