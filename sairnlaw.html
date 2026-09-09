@@ -551,9 +551,12 @@ label.chk input{width:auto;}
   <div class="ph"><div><div class="ptitle">Time Tracking &amp; Billing</div><div class="psub">UTBMS-style billing codes, invoice generation, split-fee billing</div></div>
   <div class="pa"><button class="btn bo bs" onclick="openTimeModal()">+ Log Time</button><button class="btn bp bs" onclick="openInvoiceModal()">+ New Invoice</button></div></div>
   <div style="color:var(--muted);font-size:12px;margin-bottom:14px">
-    Billing codes seeded below are a representative subset of the real, publicly-published UTBMS Litigation code set
+    Billing codes used below are a representative subset of the real, publicly-published UTBMS Litigation code set
     (L100-L700 series), entered from memory of the published standard -- verify against the official UTBMS/LEDES
     code list before relying on these for real client billing or LEDES export.
+    <strong>This list is fixed:</strong> it ships with the app, cannot be edited here, and is not stored per firm --
+    so there is nothing on this list to lose, and nothing to sync. Your time entries and invoices are separate and
+    are saved to the server.
   </div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Unbilled Hours</div><div class="kval" id="bl-unbilled">0</div><div class="kt">This month</div></div>
@@ -1882,6 +1885,58 @@ function nav(id){
   if(id==='aicoc')aicocLoad();
 }
 
+// ── THE UTBMS CODE LIST IS A CONSTANT, SO IT IS ONE NOW (2026-09-09) ──────
+// It used to exist only as a literal inside seed(), with the accessor
+// defaulting to []. That made an unreadable or unavailable store -- both of
+// which ld() handles and logs -- render as an EMPTY <select> in the Log Time
+// modal, whose .value is ''. saveTime() has no billing-code validation, so it
+// wrote billing_code:'' into law_timeentries AND SYNCED IT: a billable hour
+// with no UTBMS code, silently, on the exact record invoices and LEDES export
+// are built from.
+//
+// THIS IS NOT THE SEED-FALLBACK PATTERN GUARDIAN WARNS ABOUT, and the
+// difference is the whole reason it is allowed here. That rule exists because
+// a seeded default standing in for a firm's OWN data renders invented content
+// as if it were theirs. This list is not the firm's data: it is a published
+// external standard, there is no UI anywhere in this file that can edit it
+// (grep: two sites, this accessor and seed()), and it is deliberately NOT in
+// api/_resources/sairnlaw.js because a constant has nothing to sync. Falling
+// back to it cannot invent anything -- it returns the same 27 rows seed()
+// would have written.
+//
+// Accuracy of the codes themselves is unchanged and still carries the panel's
+// on-screen caveat: entered from memory of the published UTBMS Litigation set,
+// to be verified against the official UTBMS/LEDES list before real billing.
+var LAW_BILLING_CODES=[
+  {id:'L100',code:'L100',label:'Case Assessment, Development and Administration'},
+  {id:'L110',code:'L110',label:'Fact Investigation/Development'},
+  {id:'L120',code:'L120',label:'Analysis/Strategy'},
+  {id:'L130',code:'L130',label:'Experts/Consultants'},
+  {id:'L140',code:'L140',label:'Document/File Management'},
+  {id:'L160',code:'L160',label:'Settlement/Non-Binding ADR'},
+  {id:'L190',code:'L190',label:'Other Case Assessment, Development and Administration'},
+  {id:'L210',code:'L210',label:'Pleadings'},
+  {id:'L220',code:'L220',label:'Preliminary Injunctions/Provisional Remedies'},
+  {id:'L230',code:'L230',label:'Court Mandated Conferences'},
+  {id:'L240',code:'L240',label:'Dispositive Motions'},
+  {id:'L250',code:'L250',label:'Other Written Motions and Submissions'},
+  {id:'L310',code:'L310',label:'Written Discovery'},
+  {id:'L320',code:'L320',label:'Document Production'},
+  {id:'L330',code:'L330',label:'Depositions'},
+  {id:'L340',code:'L340',label:'Expert Discovery'},
+  {id:'L350',code:'L350',label:'Discovery Motions'},
+  {id:'L390',code:'L390',label:'Other Discovery'},
+  {id:'L410',code:'L410',label:'Fact Witnesses'},
+  {id:'L420',code:'L420',label:'Expert Witnesses'},
+  {id:'L430',code:'L430',label:'Written Discovery Response/Trial Preparation'},
+  {id:'L440',code:'L440',label:'Other Trial Preparation and Support'},
+  {id:'L450',code:'L450',label:'Trial and Hearing Attendance'},
+  {id:'L460',code:'L460',label:'Post-Trial Motions and Submissions'},
+  {id:'L510',code:'L510',label:'Appellate Motions and Submissions'},
+  {id:'L520',code:'L520',label:'Appellate Briefs'},
+  {id:'L530',code:'L530',label:'Oral Argument'}
+];
+
 // ── DATA ACCESSORS ────────────────────────────────────────────────────────
 function clients(){return ld('law_clients',[]);}
 function matters(){return ld('law_matters',[]);}
@@ -1891,7 +1946,7 @@ function matterDocs(){return ld('law_matterdocs',[]);}
 function deadlines(){return ld('law_deadlines',[]);}
 function trustTransactions(){return ld('law_trusttx',[]);}
 function bankStatements(){return ld('law_bankstatements',[]);}
-function billingCodes(){return ld('law_billingcodes',[]);}
+function billingCodes(){return ld('law_billingcodes',LAW_BILLING_CODES);}
 function timeEntries(){return ld('law_timeentries',[]);}
 function invoices(){return ld('law_invoices',[]);}
 function clientLabel(id){var c=clients().find(function(x){return x.id===id;});return c?c.name:'(unknown client)';}
@@ -1952,35 +2007,10 @@ function seed(){
   // own on-screen disclosure: entered from memory of the published
   // standard, not fabricated, but verify against the official UTBMS/LEDES
   // list before relying on these for real billing/LEDES export.
-  st('law_billingcodes',[
-    {id:'L100',code:'L100',label:'Case Assessment, Development and Administration'},
-    {id:'L110',code:'L110',label:'Fact Investigation/Development'},
-    {id:'L120',code:'L120',label:'Analysis/Strategy'},
-    {id:'L130',code:'L130',label:'Experts/Consultants'},
-    {id:'L140',code:'L140',label:'Document/File Management'},
-    {id:'L160',code:'L160',label:'Settlement/Non-Binding ADR'},
-    {id:'L190',code:'L190',label:'Other Case Assessment, Development and Administration'},
-    {id:'L210',code:'L210',label:'Pleadings'},
-    {id:'L220',code:'L220',label:'Preliminary Injunctions/Provisional Remedies'},
-    {id:'L230',code:'L230',label:'Court Mandated Conferences'},
-    {id:'L240',code:'L240',label:'Dispositive Motions'},
-    {id:'L250',code:'L250',label:'Other Written Motions and Submissions'},
-    {id:'L310',code:'L310',label:'Written Discovery'},
-    {id:'L320',code:'L320',label:'Document Production'},
-    {id:'L330',code:'L330',label:'Depositions'},
-    {id:'L340',code:'L340',label:'Expert Discovery'},
-    {id:'L350',code:'L350',label:'Discovery Motions'},
-    {id:'L390',code:'L390',label:'Other Discovery'},
-    {id:'L410',code:'L410',label:'Fact Witnesses'},
-    {id:'L420',code:'L420',label:'Expert Witnesses'},
-    {id:'L430',code:'L430',label:'Written Discovery Response/Trial Preparation'},
-    {id:'L440',code:'L440',label:'Other Trial Preparation and Support'},
-    {id:'L450',code:'L450',label:'Trial and Hearing Attendance'},
-    {id:'L460',code:'L460',label:'Post-Trial Motions and Submissions'},
-    {id:'L510',code:'L510',label:'Appellate Motions and Submissions'},
-    {id:'L520',code:'L520',label:'Appellate Briefs'},
-    {id:'L530',code:'L530',label:'Oral Argument'}
-  ]);
+  // The rows themselves now live in LAW_BILLING_CODES beside the accessor, so
+  // seed() and billingCodes() cannot drift apart and an unreadable store shows
+  // the real list instead of an empty dropdown. See the note there.
+  st('law_billingcodes',LAW_BILLING_CODES);
   st('law_timeentries',[]);
   st('law_invoices',[]);
   st('law_portalmessages',[]);
