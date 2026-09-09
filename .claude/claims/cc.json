@@ -694,6 +694,16 @@
       "claimed_at_epoch": 1788897117.8919015,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1788959633",
+      "session": "cc",
+      "subject": "seam-gate-reads-working-tree",
+      "task": "",
+      "claimed_at": "2026-09-09T13:13:53Z",
+      "claimed_at_epoch": 1788959633.4650526,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
