@@ -784,6 +784,16 @@
       "claimed_at_epoch": 1788958949.3609815,
       "status": "released",
       "released_at": "2026-09-09T13:25:32Z"
+    },
+    {
+      "id": "hank-1788960336",
+      "session": "hank",
+      "subject": "suite-hook-fires-on-every-bash-call",
+      "task": "gate run_all_tests on the payload not a nonexistent settings field",
+      "claimed_at": "2026-09-09T13:25:36Z",
+      "claimed_at_epoch": 1788960336.678352,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
