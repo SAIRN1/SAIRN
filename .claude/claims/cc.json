@@ -704,6 +704,16 @@
       "claimed_at_epoch": 1788959633.4650526,
       "status": "released",
       "released_at": "2026-09-09T13:56:29Z"
+    },
+    {
+      "id": "cc-1788962503",
+      "session": "cc",
+      "subject": "unwired-checkers-run-against-real-code",
+      "task": "",
+      "claimed_at": "2026-09-09T14:01:43Z",
+      "claimed_at_epoch": 1788962503.0970209,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
