@@ -370,7 +370,145 @@ function denialProblem(record) {
 //     day west of UTC in the evening. That is the UTC-midnight trap this
 //     platform has already been bitten by.
 
+// ── FIFTH RESOURCE: dnt_procedure_types ───────────────────────────────────
+// The first one in this file that is NOT a ledger row, which is worth saying
+// out loud rather than quietly widening the header: a procedure type is the
+// practice's fee schedule and its CDT coding record. It lives here because it
+// is the ROOT the four rows above compute from -- setChargeProcedure() seeds
+// ch-add-amount from default_fee, tpItemMoney() seeds the plan item from it,
+// and computeEstimatedInsurance() is handed it directly -- and because it
+// needs isCalendarDate(), which already carries the rollover discipline the
+// denial pass worked out. A second module would have copied that helper.
+//
+// IT IS THE HIGHEST-STAKES OF THE NINE THAT WERE LEFT, and the reason is a
+// gate that is missing rather than a number that is wrong. dnt_procedure_types
+// is NOT in DNT_FINANCIAL_RESOURCES and the write branch role-gates exactly one
+// resource (dnt_providers), so ANY authenticated role -- provider, hygienist,
+// assistant -- can write this practice's fee schedule, and until now the only
+// thing checked was that payload.id was present.
+//
+// NO LEGACY-ROW COST, checked rather than assumed. sdnData('write',
+// 'dnt_procedure_types', ...) appears exactly ONCE in sairndental.html, in
+// addProcedureType(), which only creates. There is no edit path at all --
+// removeProcedureType() is local-only and says so -- so nothing re-sends an
+// existing row and nothing existing can be blocked by this. Same standing as
+// dnt_payments, and the opposite of the guardian rule.
+//
+// ── THE RULES, EVERY ONE ALREADY REFUSED BY THE BROWSER ───────────────────
+//
+//   1. CODE AND DESCRIPTION. addProcedureType() refuses `!code || !desc`
+//      outright. rProcedures() renders H(p.cdt_code) into the first column and
+//      cdtStatusFor() falls back to the literal string 'this code' when it is
+//      missing, so a code-less row is a blank cell in the fee schedule and an
+//      unnamed code in every compliance message about it. The CDT code is also
+//      what goes on the claim: a charge built from a procedure type with no
+//      code is a charge nobody can bill.
+//
+//   2. THE EFFECTIVE WINDOW MUST BE A REAL CALENDAR DATE. The browser cannot
+//      produce anything else -- pc-add-efffrom and pc-add-effto are
+//      <input type="date">, which yields zero-padded ISO or nothing -- so this
+//      enforces what the form already guarantees rather than inventing a rule.
+//
+//      AND IT MATTERS MORE THAN A TYPE CHECK USUALLY DOES, because
+//      cdtStatusFor() compares these as STRINGS:
+//          if (from && serviceDate < from)  -> 'future'
+//          if (to   && serviceDate > to)    -> 'retired'
+//      Lexicographic comparison is correct for zero-padded ISO and silently
+//      wrong for anything else. '2026-1-5' is a date a human would read as
+//      January; against it, a March service date compares '2026-03-01' <
+//      '2026-1-5' -> TRUE, and the panel reports that the code "did not take
+//      effect until 2026-1-5" for a service four months after it did. The
+//      verdict is inverted, confidently, with a real-looking date in the
+//      sentence.
+//
+//   3. THE WINDOW MUST NOT BE INVERTED. addProcedureType() refuses this in the
+//      browser with its own reason recorded -- "an inverted window makes every
+//      date-of-service check on this code meaningless in both directions" --
+//      and re-measuring it here confirms something sharper than "meaningless":
+//      with effective_to before effective_from, EVERY service date satisfies
+//      one branch or the other, so cdtStatusFor() can never return 'ok'. The
+//      code reads as not-yet-in-effect or retired forever, on every
+//      appointment, which is a compliance check that has quietly stopped being
+//      capable of passing.
+//
+//   4. A PRESENT default_fee MUST BE A NUMBER. addProcedureType() stores
+//      `isNaN(fee) ? 0 : fee` from parseFloat, so the browser can only ever
+//      store a number. A string fee reaches tpItemMoney() as
+//      Number(proc.default_fee || 0) -- and 'abc' is truthy, so the || 0 never
+//      fires and the plan total renders NaN. Checked only when SENT: absent is
+//      a legitimate shape, because that same expression turns undefined into 0.
+//
+// ── DELIBERATELY NOT CHECKED, so each absence is a decision ────────────────
+//   * A NEGATIVE default_fee. parseFloat('-50') is not NaN, so the browser
+//     stores it and the practice may well mean it -- an adjustment or credit
+//     code is a real thing. This module does not get to overrule the form.
+//   * default_length_minutes and recall_months, for the same reason on sign,
+//     and because a bad recall_months is inert: recallDueProcedures() filters
+//     on Number(p.recall_months) > 0, so a negative or non-numeric value reads
+//     as "we do not recall on this", which is the correct answer for most
+//     codes anyway.
+//   * cdt_version and superseded_by. Free text that nothing parses --
+//     cdtMaintenance() counts editions by whatever string is there and
+//     cdtStatusFor() prints superseded_by verbatim. Constraining them would be
+//     inventing a vocabulary the practice never agreed to.
+//   * THAT superseded_by NAMES A REAL CODE. That is a read before every write,
+//     the same round trip this file already declines for "does the patient
+//     exist".
+//   * UNIQUENESS OF cdt_code. Not the coverage-rule shape, and that was
+//     checked rather than assumed: every reader resolves a procedure by
+//     `find(p => p.id === ...)`, never by code, so two rows sharing a CDT code
+//     do not put the applied value at the mercy of row order the way two
+//     matching coverage rules do.
+function procedureTypeProblem(record) {
+  const r = record || {};
+  const code = String(r.cdt_code == null ? '' : r.cdt_code).trim();
+  if (!code) {
+    return 'A procedure type needs its CDT code. The fee schedule prints it as '
+         + 'the first column, every compliance message about the code names it, '
+         + 'and it is what goes on the claim -- a charge built from a procedure '
+         + 'type with no code is a charge nobody can bill.';
+  }
+  const desc = String(r.description == null ? '' : r.description).trim();
+  if (!desc) {
+    return 'A procedure type needs a description. The picker renders it as '
+         + '"code -- description", so without one the person choosing a '
+         + 'procedure is picking from bare codes.';
+  }
+  const from = r.effective_from == null ? '' : String(r.effective_from);
+  const to = r.effective_to == null ? '' : String(r.effective_to);
+  if (from !== '' && !isCalendarDate(from)) {
+    return 'The effective-from date must be a real calendar date (YYYY-MM-DD). '
+         + 'cdtStatusFor() compares it against the date of service as a STRING, '
+         + 'which is only correct for that exact zero-padded shape -- against '
+         + 'anything else the in-effect check silently returns the wrong '
+         + 'verdict rather than failing.';
+  }
+  if (to !== '' && !isCalendarDate(to)) {
+    return 'The retirement date must be a real calendar date (YYYY-MM-DD), for '
+         + 'the same reason as the effective-from date: the retired-code check '
+         + 'is a string comparison against the date of service, and any other '
+         + 'shape makes it answer confidently and wrongly.';
+  }
+  if (from !== '' && to !== '' && to < from) {
+    return 'The retirement date is before the effective date. That window '
+         + 'cannot be checked against any date of service -- every date is '
+         + 'either before the start or after the end, so this code would report '
+         + 'as not-yet-in-effect or retired on every appointment and could '
+         + 'never come back "in effect".';
+  }
+  if (r.default_fee !== undefined && r.default_fee !== null && r.default_fee !== '') {
+    if (typeof r.default_fee === 'boolean' || !Number.isFinite(Number(r.default_fee))) {
+      return 'The default fee must be a number. A treatment-plan item seeded '
+           + 'from this code reads it as Number(default_fee || 0), and a '
+           + 'non-numeric value is truthy -- so the fallback never fires and '
+           + 'the plan total renders NaN.';
+    }
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
+  procedureTypeProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
 };

@@ -116,7 +116,7 @@
     "status": "429",
     "match": "code: 'TOO_MANY_INVALID_KEYS'",
     "lines_when_written": [
-      388
+      389
     ],
     "reason": "MUST answer above the boundary -- that is the entire point of it. This is the anon rate limiter (api/_lib/anon-rate-limit.js, added by Fourth 2026-09-05), and it exists BECAUSE licence validation moved above the envelope gate: every junk token now costs one license_keys SELECT, so the limiter has to refuse BEFORE that lookup or it would be paying the exact cost it was built to avoid. Its own comment says so -- 'it never reaches the database'. It is also not an oracle about what EXISTS: it counts only FAILED validations from one address, so it says nothing about resources, verbs or keys, and a valid key accumulates nothing at any volume. NOTE that the limiter is currently in OBSERVE mode and was measured INERT in production (40 concurrent junk requests, 40 x 401, not one 429) because horizontal scale-out defeats a per-instance counter -- so this refusal is unreachable today in any case. Read 2026-09-05 (Cody); the code is Fourth's and this entry only declares it, it does not change it."
   },

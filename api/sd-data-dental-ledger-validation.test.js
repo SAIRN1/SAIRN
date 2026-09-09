@@ -83,9 +83,30 @@ function loadHandler(fetchImpl, noValidator) {
   };
   delete require.cache[require.resolve('./_lib/dental-ledger')];
   if (noValidator) {
-    require.cache[require.resolve('./_lib/dental-ledger')] = {
-      exports: { paymentProblem: function () { return null; }, chargeProblem: function () { return null; }, coverageRuleProblem: function () { return null; }, denialProblem: function () { return null; }, isPositiveMoney: function () { return true; }, isNonNegativeMoney: function () { return true; }, isCalendarDate: function () { return true; } }
-    };
+    // ── THE STUB IS DERIVED FROM THE REAL MODULE, not hand-listed (2026-09-09) ──
+    // It used to be a literal object naming each export. That went stale the
+    // moment a fifth validator was added: sd-data.js destructured
+    // `procedureTypeProblem` from a stub that did not have it, so the mutation
+    // arms ran against an UNDEFINED validator rather than a permissive one.
+    // Node reported it only as a "non-existent property ... inside circular
+    // dependency" warning, and the arms would have failed with a TypeError
+    // instead of proving that a bad row reaches the store without the check.
+    //
+    // A hand-written mirror of a module's exports is the same shape as a
+    // generated gate that must be regenerated after every edit -- a forgotten
+    // update is silently the failure the thing exists to catch. Deriving it
+    // means the next resource added to dental-ledger.js is stubbed correctly
+    // with no edit here at all.
+    const real = require('./_lib/dental-ledger');
+    const stub = {};
+    Object.keys(real).forEach(function (k) {
+      // *Problem() answers "what is wrong with this record", so a permissive
+      // stub returns null (nothing wrong). The is*() predicates answer "is this
+      // acceptable", so a permissive stub returns true. Getting these backwards
+      // would make the mutation arm refuse everything and still look green.
+      stub[k] = /^is[A-Z]/.test(k) ? function () { return true; } : function () { return null; };
+    });
+    require.cache[require.resolve('./_lib/dental-ledger')] = { exports: stub };
   }
   global.fetch = fetchImpl;
   delete require.cache[require.resolve('./sd-data.js')];
@@ -147,7 +168,12 @@ async function test(name, fn) {
 }
 
 async function main() {
-  console.log('api/sd-data.js -- SAIRNdental ledger write validation (dnt_payments, dnt_charges, dnt_coverage_rules)');
+  // The title listed three resources while the suite covered five -- it went
+  // stale when dnt_denial landed and again here. Derived from the module's own
+  // exports instead, so it cannot: a name that appears in this banner is a
+  // validator that exists.
+  console.log('api/sd-data.js -- SAIRNdental write validation ('
+    + Object.keys(require('./_lib/dental-ledger')).filter(function (k) { return /Problem$/.test(k); }).join(', ') + ')');
 
   process.env.SUPABASE_URL = 'https://test.supabase.co';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-key';
@@ -559,10 +585,20 @@ async function main() {
     assert.strictEqual(c.calls.reads, 0, 'a round trip was spent on a payload that could never be stored');
   });
 
-  await test('the uniqueness check is scoped to dnt_coverage_rules -- dnt_procedure_types is unaffected', async () => {
+  // ── THIS BOUNDARY TEST HAS NOW MOVED THREE TIMES, and each move is stated ──
+  // dnt_charges -> dnt_coverage_rules -> dnt_procedure_types -> dnt_operatories.
+  // Its job is to prove the uniqueness read is scoped to dnt_coverage_rules and
+  // is not paid for by every DNT resource, so it needs a resource that reaches
+  // the store with NO validator of its own. dnt_procedure_types stopped being
+  // one on 2026-09-09 when it became the fifth validated resource -- the old
+  // payload here, `{ id, code, description }`, does not even carry the field
+  // the app writes (`cdt_code`, not `code`), so it is now correctly a 400.
+  // dnt_operatories is the next unvalidated resource; when it acquires rules,
+  // move this again and add a line rather than editing this comment away.
+  await test('the uniqueness check is scoped to dnt_coverage_rules -- dnt_operatories is unaffected', async () => {
     const c = cvHandler(CV_EXISTING);
     const res = mockRes();
-    await c.handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: { id: 'PR-9', code: 'D2740', description: 'Crown' } }, tokenFor('owner')), res);
+    await c.handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-9', name: 'Room 2' } }, tokenFor('owner')), res);
     assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(c.calls.reads, 0, 'a uniqueness read ran for a resource that does not have the rule');
   });
@@ -737,13 +773,202 @@ async function main() {
     assert.ok(wrote);
   });
 
+  // ── 5e. dnt_procedure_types, THE FIFTH (2026-09-09) ─────────────────────
+  //
+  // A THIRD FAILURE SHAPE. The money rules corrupt a total; the denial rule
+  // removes a warning; this one INVERTS A COMPLIANCE VERDICT. cdtStatusFor()
+  // compares effective_from/effective_to against the date of service as
+  // STRINGS, so the comparison is correct only for zero-padded ISO.
+  //
+  // AND IT WAS TAKEN NEXT FOR A GATE THAT IS MISSING, not a number that is
+  // wrong: dnt_procedure_types is not in DNT_FINANCIAL_RESOURCES and the write
+  // branch role-gates only dnt_providers, so any authenticated role can write
+  // this practice's fee schedule.
+  const PT_OK = { id: 'PR-1', cdt_code: 'D2740', description: 'Crown, porcelain' };
+  function ptWith(extra) {
+    const p = {};
+    Object.keys(PT_OK).forEach(function (k) { p[k] = PT_OK[k]; });
+    Object.keys(extra || {}).forEach(function (k) { p[k] = extra[k]; });
+    return p;
+  }
+
+  await test('a procedure type with no cdt_code -> 400 INVALID_PROCEDURE_TYPE, and nothing is written', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: { id: 'PR-1', description: 'Crown' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400, 'expected 400, got ' + res.statusCode);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+    assert.match(res.body.error.message, /claim/);
+  });
+
+  await test('a whitespace-only cdt_code is refused -- it is trimmed before the check', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ cdt_code: '   ' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+  });
+
+  await test('a procedure type with no description is refused', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: { id: 'PR-1', cdt_code: 'D2740' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+  });
+
+  // THE SHARP ONE. '2026-1-5' is a date a human reads as January and the string
+  // comparison does not: '2026-03-01' < '2026-1-5' is TRUE because '0' < '1',
+  // so a March service on a January-effective code reports "did not take effect
+  // until 2026-1-5". The verdict is inverted, with a real-looking date in the
+  // sentence. The browser cannot produce this -- pc-add-efffrom is an
+  // <input type="date"> -- which is exactly why nothing caught it.
+  await test('a non-ISO effective_from is refused -- cdtStatusFor() compares it as a STRING', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ effective_from: '2026-1-5' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+    assert.match(res.body.error.message, /STRING/);
+  });
+
+  // CONTROL FOR THE LEXICOGRAPHIC CLAIM ABOVE, so the rule is not taken on
+  // trust: this is the comparison cdtStatusFor() actually performs, and it
+  // really does return the wrong answer for the shape the check now refuses.
+  await test('the inversion is REAL, not asserted -- the string comparison is reproduced here', () => {
+    assert.strictEqual('2026-03-01' < '2026-1-5', true, 'the premise of the ISO rule does not hold');
+    assert.strictEqual('2026-03-01' < '2026-01-05', false, 'zero-padded ISO compares correctly, as the rule assumes');
+  });
+
+  await test('a rollover effective_to is refused -- 2026-02-31 is 3 March, not an error', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ effective_to: '2026-02-31' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+  });
+
+  await test('an INVERTED window is refused -- the code could never read "in effect" on any date', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ effective_from: '2026-06-01', effective_to: '2026-01-01' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+    assert.match(res.body.error.message, /never come back/);
+  });
+
+  await test('a window of a single day is accepted -- equal dates are not inverted', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ effective_from: '2026-01-01', effective_to: '2026-01-01' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  // NO WINDOW AT ALL IS THE ORDINARY CASE and must stay writable. cdtStatusFor()
+  // has a branch for exactly this -- 'unknown', "no effective window recorded"
+  // -- so refusing it here would refuse the state the app is built to report.
+  await test('a procedure type with NO effective window is accepted -- that state is reported, not refused', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: PT_OK }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('empty-string window fields are treated as absent, which is what the form sends', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ effective_from: '', effective_to: '' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the form sends "" for an untouched date input -- got ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('a NON-NUMERIC default_fee is refused -- the plan total would render NaN', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ default_fee: 'abc' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_PROCEDURE_TYPE');
+    assert.match(res.body.error.message, /NaN/);
+  });
+
+  // A NEGATIVE FEE IS ACCEPTED ON PURPOSE. parseFloat('-50') is not NaN, so
+  // addProcedureType() stores it and the practice may well mean it. This module
+  // does not get to overrule the form -- the same standard as "an unknown
+  // payment method is NOT refused: no invented enum" earlier in this file.
+  await test('a NEGATIVE default_fee is accepted -- the form permits it and this is not an invented rule', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ default_fee: -50 }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('an ABSENT default_fee is accepted -- Number(undefined || 0) is 0, which is honest', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: PT_OK }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(wrote);
+  });
+
+  await test('a negative recall_months is accepted -- it reads as "no recall", which is the common case', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: ptWith({ recall_months: -6 }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a rule was invented for recall_months -- the form floors it at 0 and the reader filters > 0');
+    assert.ok(wrote);
+  });
+
+  // THE ROLE LADDER, because the point of taking this resource was the gate
+  // that is NOT there. Asserted as it IS: any authenticated role writes the fee
+  // schedule. The role is `provider` and not `hygienist` because sairndental's
+  // real roster in api/_lib/auth.js:87 is exactly owner, frontdesk, provider --
+  // signSessionToken() refused the invented role outright, which is the auth
+  // layer doing its job and is worth recording rather than quietly swapping. If this ever returns 403 a write-side role gate was added, and
+  // the index row must be updated rather than this test quietly relaxed.
+  await test('a PROVIDER can write the fee schedule -- asserted as-is, the write branch role-gates only dnt_providers', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: PT_OK }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, 'if this is now 403 a role gate was added -- update the index row, do not relax this test');
+    assert.ok(wrote);
+  });
+
+  await test('no session + a bad procedure type -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_procedure_types', payload: { id: 'PR-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check -- got ' + res.statusCode);
+  });
+
+  // The CDT rules must not have leaked onto neighbours that also carry dates
+  // and codes. dnt_provider_hours is the closest shape -- it has no validator
+  // and its rows carry times that look like the same family of field.
+  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_provider_hours with junk fields still writes', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: { id: 'PH-1', provider_id: 'PV-1', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_provider_hours');
+    assert.ok(wrote);
+  });
+
   // ── 5c. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_txplans with an absurd amount still goes through -- nine resources remain', async () => {
+  await test('dnt_txplans with an absurd amount still goes through -- eight resources remain', async () => {
     // The current edge of the change, and dnt_txplans is a REPRESENTATIVE
     // unvalidated resource here, not a claim that it is next -- nothing has
-    // been measured about it yet. NINE of the fifteen still have no domain
-    // check, down from ten when dnt_denial closed on 2026-09-05:
-    // dnt_providers, dnt_operatories, dnt_provider_hours, dnt_procedure_types,
+    // been measured about it yet. EIGHT of the fifteen still have no domain
+    // check, down from nine when dnt_procedure_types closed on 2026-09-09:
+    // dnt_providers, dnt_operatories, dnt_provider_hours,
     // dnt_ar, dnt_revenue, dnt_referrals, dnt_recall_outreach and this one.
     // Counted off DNT_RESOURCES rather than tracked in prose, because a prose
     // tally in the index row was already wrong once by one.
@@ -813,6 +1038,12 @@ async function main() {
     ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: -250, denied_on: '2026-01-15', stage: 'none' }],
     ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'appealed' }],
     ['dnt_denial', { id: 'DN-1', patient_id: 'PT-1', amount: 250, denied_on: '2026-01-15', stage: 'partial', recovered: 400 }],
+    ['dnt_procedure_types', { id: 'PR-1', description: 'Crown' }],
+    ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740' }],
+    ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', effective_from: '2026-1-5' }],
+    ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', effective_to: '2026-02-31' }],
+    ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', effective_from: '2026-06-01', effective_to: '2026-01-01' }],
+    ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', default_fee: 'abc' }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

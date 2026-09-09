@@ -42,6 +42,7 @@ const {
   chargeProblem: dntChargeProblem,
   coverageRuleProblem: dntCoverageRuleProblem,
   denialProblem: dntDenialProblem,
+  procedureTypeProblem: dntProcedureTypeProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -9692,6 +9693,38 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_denial') {
         const dp = dntDenialProblem(payload);
         if (dp) { res.status(400).json({ error: { code: 'INVALID_DENIAL', message: dp } }); return; }
+      }
+      // dnt_procedure_types, the FIFTH of the fifteen (2026-09-09), and the
+      // first that is not a ledger row. It was taken next because of a gate
+      // that is MISSING rather than a number that is wrong: this resource is
+      // not in DNT_FINANCIAL_RESOURCES, and the only role check on this whole
+      // write branch is the dnt_providers one above -- so ANY authenticated
+      // role can write the practice's fee schedule and its CDT coding record,
+      // and payload.id was the only thing ever checked.
+      //
+      // A BAD PROCEDURE TYPE IS A THIRD SHAPE AGAIN. The money rules corrupt a
+      // total and the denial rule removes a warning; this one INVERTS A
+      // COMPLIANCE VERDICT. cdtStatusFor() compares effective_from and
+      // effective_to against the date of service as STRINGS, which is right for
+      // zero-padded ISO and silently wrong for anything else -- so '2026-1-5'
+      // makes a March service report as "did not take effect until 2026-1-5".
+      // An inverted window is worse still: every date is either before the
+      // start or after the end, so the code can never come back "in effect" on
+      // any appointment. The app's own words for what that check is for are
+      // "a reimbursement and an audit exposure, not a formatting nit".
+      //
+      // NO LEGACY-ROW COST, checked and not assumed. sdnData('write',
+      // 'dnt_procedure_types', ...) appears exactly once in sairndental.html,
+      // in addProcedureType(), which only creates; there is no edit path and
+      // removeProcedureType() is local-only. Nothing re-sends an existing row.
+      //
+      // Every rule is one addProcedureType() already refuses or already
+      // guarantees -- see api/_lib/dental-ledger.js, which also records what is
+      // deliberately NOT checked and why, including the negative fee the form
+      // permits on purpose.
+      if (resource === 'dnt_procedure_types') {
+        const ptp = dntProcedureTypeProblem(payload);
+        if (ptp) { res.status(400).json({ error: { code: 'INVALID_PROCEDURE_TYPE', message: ptp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate
