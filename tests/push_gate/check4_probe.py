@@ -53,6 +53,9 @@ if dirty:
     print('\n'.join(dirty))
     sys.exit(3)
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
+# The untracked files that were here BEFORE this probe ran. The restore check at
+# the bottom compares against this rather than against an empty tree.
+START_UNTRACKED = {l for l in clean_tree().split('\n') if l.startswith('??')}
 R = {}
 
 
@@ -89,7 +92,22 @@ R['planted_violation'] = dry_push()
 run('git', 'reset', '--mixed', start)
 run('git', 'checkout', '--', EP)
 
-R['restored'] = (clean_tree() == '')
+# ── RESTORED MEANS "THIS PROBE LEFT NOTHING", NOT "THE TREE IS EMPTY" ──────
+# Same defect as the guard at the top and found in the same run: this was
+# `clean_tree() == ''`, so a pre-existing untracked file made the probe report
+# NOT RESTORED and exit 1 -- a false failure about the probe's own cleanup,
+# which is the loudest possible way to be wrong about residue in a repo that
+# has spent a session learning to read residue correctly.
+#
+# What actually matters is that nothing THIS PROBE created or modified is still
+# there. So: no modified tracked files, and the untracked set is exactly what it
+# was before the probe started. That still catches a stranded fixture -- the
+# thing the check exists for -- and stops blaming this probe for a file it never
+# touched.
+_after_untracked = {l for l in clean_tree().split('\n') if l.startswith('??')}
+_after_tracked = [l for l in clean_tree().split('\n')
+                  if l.strip() and not l.startswith('??')]
+R['restored'] = (not _after_tracked and _after_untracked == START_UNTRACKED)
 R['head_restored'] = (run('git', 'rev-parse', 'HEAD').stdout.strip() == start)
 
 for k, v in R.items():
