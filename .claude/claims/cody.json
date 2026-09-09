@@ -738,6 +738,16 @@
       "claimed_at_epoch": 1788961782.2527435,
       "status": "released",
       "released_at": "2026-09-09T13:58:38Z"
+    },
+    {
+      "id": "cody-1788962451",
+      "session": "cody",
+      "subject": "stonedesk-timesheet-ai-labour-cost-disclosure",
+      "task": "",
+      "claimed_at": "2026-09-09T14:00:51Z",
+      "claimed_at_epoch": 1788962451.7241135,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
