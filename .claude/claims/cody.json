@@ -748,6 +748,16 @@
       "claimed_at_epoch": 1788962451.7241135,
       "status": "released",
       "released_at": "2026-09-09T14:13:53Z"
+    },
+    {
+      "id": "cody-1788965326",
+      "session": "cody",
+      "subject": "report-only-hook-mechanism",
+      "task": "vercel-config dead-button nav-panel matcher",
+      "claimed_at": "2026-09-09T14:48:46Z",
+      "claimed_at_epoch": 1788965326.736443,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
