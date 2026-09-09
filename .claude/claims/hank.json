@@ -774,6 +774,16 @@
       "claimed_at_epoch": 1788870568.1474326,
       "status": "released",
       "released_at": "2026-09-08T13:19:08Z"
+    },
+    {
+      "id": "hank-1788958949",
+      "session": "hank",
+      "subject": "sairndental",
+      "task": "vendor supply collections server routing",
+      "claimed_at": "2026-09-09T13:02:29Z",
+      "claimed_at_epoch": 1788958949.3609815,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
