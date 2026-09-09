@@ -63,6 +63,12 @@ COMPANION_PAGES = {
     'stonedesk-hr.html',            # HR onboarding, a second page of StoneDesk
     'sairndental-book.html',        # public booking page for SAIRNdental
     'sairndental-complaint.html',   # public complaint page for SAIRNdental
+    # Added 2026-09-09 on this tool's FIRST run against the whole repo. Both
+    # were reported as unmapped apps; both are StoneDesk companion pages, the
+    # same class as stonedesk-hr.html above -- confirmed from their own
+    # <title>, not from the filename.
+    'stonedesk-catalog.html',       # "Slab Catalog", a StoneDesk public page
+    'stonedesk-intake.html',        # "Project Intake", a StoneDesk public page
 }
 
 

@@ -1,11 +1,17 @@
 ---
 name: sairn-guardian-v2
-description: 'The permanent mechanical guardian for ALL 16 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds, SAIRNdental, SAIRNroofing, SAIRNsenior — count corrected 2026-08-30 from 13 to 16, and DERIVED rather than counted by hand: run `python tools/sairn_app_map_check.py --live`, which diffs this file's App File Map against git ls-files, vercel.json and a live request per route. Do not trust this sentence's number either — the tool is the source that moves when an app is added. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 31 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
+description: 'The permanent mechanical guardian for ALL 17 SAIRN apps (corrected 2026-08-13 — SAIRNhr and SAIRNacc removed, they were speculative planning-table entries, not real or needed apps; corrected again 2026-08-19 — SAIRNcash and SAIRNgrounds added, both real live deployed apps missing from this map despite substantial work already done on each; see App File Map). Expanded from the original sairn-code-guardian to cover every app in the platform. Trigger this skill automatically on every build session start, every file push, every code review, and every time the user says "check", "scan", "push", "fix", "audit", "is this ready", "before I push", "something broke", "Guardian", "Guardian v2", or "scan all apps". Covers StoneDesk, SAIRNbiz, SAIRNscape, SAIRNcode, SAIRNbuild, SAIRNlaw, SAIRNdesign, SAIRNcare, SAIRNvet, SAIRNlegacy, SAIRNmechanical, SAIRNcash, SAIRNgrounds, SAIRNdental, SAIRNroofing, SAIRNsenior, SAIRNfreedom — count corrected 2026-08-30 from 13 to 16, and again 2026-09-09 from 16 to 17 when SAIRNfreedom turned up unmapped, and DERIVED rather than counted by hand: run `python tools/sairn_app_map_check.py --live`, which diffs this file's App File Map against git ls-files, vercel.json and a live request per route. Do not trust this sentence's number either — the tool is the source that moves when an app is added. Runs Check 0 (syntax/fabrication/coverage/dormant-code/multi-codebase, four sub-checks) plus 31 numbered checks per file. Zero bugs shipped. This is the skill that catches what human eyes miss — including, as of this update, drift in its own app map and check count.'
 ---
 
 # SAIRN Guardian v2
 
-Platform-wide code quality enforcement for all 13 SAIRN apps. Mechanical. Automatic. Zero tolerance.
+Platform-wide code quality enforcement for all 17 SAIRN apps. Mechanical. Automatic. Zero tolerance.
+
+**This line said 13 from 2026-08-30 until 2026-09-09** while the description
+above it said 16 and the App File Map below it listed 16 — three numbers in one
+file, which is the internal drift Check 0c exists to catch, sitting in the file
+that defines Check 0c. Run `python tools/sairn_app_map_check.py`; the map is the
+only one of the three that is derived, and none of these sentences are.
 
 ## The 31 Checks
 
@@ -541,6 +547,32 @@ drifts exactly like any other unverified claim in this skill set.
 | SAIRNdental | sairndental.html | #0EA5E9 | sairndental |
 | SAIRNroofing | sairnroofing.html | #C2410C | sairnroofing |
 | SAIRNsenior | sairnsenior.html | #DB2777 | sairnsenior |
+| SAIRNfreedom | sairnfreedom.html | #1E3A8A | sairnfreedom |
+
+**Corrected 2026-09-09, the SEVENTH correction, and the tool built for exactly
+this found it — the first time anybody ran it.** Added **SAIRNfreedom**
+(*"Veterans and Fraternal Post Operations"*), a real app, tracked, routed in
+`vercel.json`, and absent from this table. Every Guardian pass that said *"all
+apps"* excluded it.
+
+**The reason it sat undetected is the finding, not the missing row.**
+`tools/sairn_app_map_check.py` was written on 2026-08-30 precisely so this
+failure could not recur a seventh time, and it is one of the 28 checkers in
+`docs/2026-09-09-tooling-inventory.md` that **nothing invokes** — no hook, no
+push gate, no suite. It was committed and never pointed at the codebase again.
+A tool that exists is not a mechanism; a tool that RUNS is.
+
+Colour `#1E3A8A` and `app_id` `sairnfreedom` were read out of the app's own
+source (`--p` custom property, line 15; the `app_id` literal, line 3387), the
+same rule the three 2026-08-30 rows followed — not assigned here.
+
+Also corrected in the checker rather than in this table: `stonedesk-catalog.html`
+(*"Slab Catalog"*) and `stonedesk-intake.html` (*"Project Intake"*) were
+reported as unmapped apps. They are StoneDesk **companion pages**, the same
+class as `stonedesk-hr.html`, so they belong in that tool's `COMPANION_PAGES`
+list and NOT in this map — which is what its own comment asks for: *"a new
+companion page should be a deliberate addition here, not something a regex
+silently swallows."*
 
 **Corrected 2026-08-30, the SIXTH correction, and this time the map is DERIVED
 rather than argued.** Added **SAIRNdental**, **SAIRNroofing** and **SAIRNsenior**
