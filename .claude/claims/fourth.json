@@ -622,6 +622,16 @@
       "claimed_at_epoch": 1788959088.752953,
       "status": "released",
       "released_at": "2026-09-09T13:20:25Z"
+    },
+    {
+      "id": "fourth-1788963214",
+      "session": "fourth",
+      "subject": "sairndental",
+      "task": "dnt_providers write-validation generic DNT_RESOURCES",
+      "claimed_at": "2026-09-09T14:13:34Z",
+      "claimed_at_epoch": 1788963214.3960192,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
