@@ -679,7 +679,19 @@ def main():
         seam = os.path.join(repo, 'tools', 'sairn_seam_check.py')
         if os.path.isfile(seam):
             try:
-                s = subprocess.run([sys.executable, seam],
+                # ── AT THE PUSHED TIP, NOT THE WORKING TREE (2026-09-08) ────
+                # This ran the seam check with no ref, so it read whatever was
+                # on disk. tools/run_all_tests.py --hook mutates tracked files
+                # while its probes run, and on 2026-09-08 that DENIED THREE
+                # LEGITIMATE PUSHES over `zz_probe_field` -- a field a probe
+                # had injected into api/_lib/dental-guardian.js, present in
+                # neither HEAD nor origin. The check was right about the bytes
+                # it was handed; the bytes were nobody's code.
+                #
+                # Check 1 above already exports sql/ at the tip for exactly
+                # this reason. This is the same fix, one flag instead of a temp
+                # directory, and it is what the pushed commits actually contain.
+                s = subprocess.run([sys.executable, seam, '--ref', tip],
                                    capture_output=True, text=True, timeout=90, cwd=repo)
             except Exception as e:
                 deny(chr(10).join([
@@ -708,6 +720,22 @@ def main():
                     "    // seam-check: server-supplied <field> [<field>...]",
                     "",
                     "Full detail:  python tools/sairn_seam_check.py",
+                    OVERRIDE_HINT,
+                ]))
+            if s.returncode not in (0, 1, 2):
+                # Anything else is the checker failing, not the code passing.
+                # Before 2026-09-08 an unknown code fell off the end of this
+                # block and the push was ALLOWED SILENTLY -- the shape this
+                # whole check exists to avoid. --ref makes it reachable: an
+                # unreadable revision now exits 4 rather than borrowing 2.
+                deny(chr(10).join([
+                    "Blocked: the endpoint/engine seam check exited %d, which is neither"
+                    % s.returncode,
+                    "a pass, a finding, nor a could-not-tell. It did not check this push.",
+                    "",
+                    (s.stderr or s.stdout or '').strip()[:800],
+                    "",
+                    "A checker that did not run has not passed anything.",
                     OVERRIDE_HINT,
                 ]))
             if s.returncode == 2:

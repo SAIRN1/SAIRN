@@ -87,8 +87,47 @@ def norm(p):
     return p.replace(SEP, '/')
 
 
+# ── READ FROM A COMMIT, NOT THE WORKING TREE, WHEN ASKED (2026-09-08) ──────
+# The push gate shells out to this file, and this file read the working tree.
+# On 2026-09-08 that combination DENIED THREE LEGITIMATE PUSHES: the post-push
+# runner (tools/run_all_tests.py --hook) mutates tracked files while its probes
+# run -- revert a fix, run a suite, restore it -- so the gate read
+# api/_lib/dental-guardian.js mid-mutation and reported a field called
+# `zz_probe_field` as not forwarded. That field exists in neither HEAD nor
+# origin. The seam check was right about the bytes it was given and the bytes
+# were nobody's code.
+#
+# `--ref <rev>` makes it read the same bytes the push is actually sending, via
+# `git show`, which cannot see a working-tree mutation at all. Same fix the
+# claims tooling took on 2026-09-04 after `git checkout origin/main -- path`
+# turned a read into a write, and the same pattern Check 1 of the push gate
+# already uses for sql/ at the pushed tip.
+#
+# THE DEFAULT IS STILL THE WORKING TREE, deliberately: run by hand, mid-edit,
+# what you want checked is what you just typed. Only the gate passes --ref.
+REF = None
+
+
+def _git(*args):
+    import subprocess
+    r = subprocess.run(('git',) + args, capture_output=True)
+    if r.returncode != 0:
+        raise IOError('git %s failed: %s' % (' '.join(args), r.stderr.decode('utf-8', 'replace')[:200]))
+    return r.stdout
+
+
 def read(p):
+    if REF:
+        return _git('show', '%s:%s' % (REF, norm(p))).decode('utf-8', 'replace')
     return open(p, encoding='utf-8', errors='replace').read()
+
+
+def list_api_js():
+    """Endpoint candidates, from the ref when one is set."""
+    if REF:
+        out = _git('ls-tree', '-r', '--name-only', REF, 'api/').decode('utf-8', 'replace')
+        return [q for q in out.split(chr(10)) if q.endswith('.js') and q.count('/') <= 2]
+    return [norm(q) for q in glob.glob('api/*.js') + glob.glob('api/*/*.js')]
 
 
 def strip_comments(s):
@@ -117,8 +156,8 @@ def strip_comments(s):
 
 def discover_pairs(root='.'):
     """(endpoint, lib, fn) for every object-literal call into an api/_lib module."""
-    endpoints = [norm(p) for p in glob.glob('api/*.js') + glob.glob('api/*/*.js')
-                 if not p.endswith('.test.js') and '/_lib/' not in norm(p)]
+    endpoints = [q for q in list_api_js()
+                 if not q.endswith('.test.js') and '/_lib/' not in q]
     out = []
     for ep in sorted(endpoints):
         src = read(ep)
@@ -381,6 +420,25 @@ def declared_server_supplied(lib_src):
 
 
 def main():
+    global REF
+    if '--ref' in sys.argv:
+        i = sys.argv.index('--ref')
+        # EXIT 4, NOT 2. Exit 2 means "could not tell", and the push gate lets
+        # a 2 through with a note. A revision this tool cannot read has not
+        # checked anything at all, so it must not borrow the code that says a
+        # seam was merely unreadable -- that is the same shape as the gate this
+        # very fix exists to correct. The gate denies on any code it does not
+        # recognise.
+        if i + 1 >= len(sys.argv):
+            sys.stderr.write('--ref needs a revision' + chr(10))
+            return 4
+        REF = sys.argv[i + 1]
+        try:
+            _git('rev-parse', '--verify', REF + '^{commit}')
+        except IOError as e:
+            sys.stderr.write('--ref %s is not a readable commit here: %s%s'
+                             % (REF, e, chr(10)))
+            return 4
     as_json = '--json' in sys.argv
     findings, unanalyzable, clean = [], [], []
 
