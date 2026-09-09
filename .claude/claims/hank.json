@@ -782,8 +782,8 @@
       "task": "vendor supply collections server routing",
       "claimed_at": "2026-09-09T13:02:29Z",
       "claimed_at_epoch": 1788958949.3609815,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-09T13:25:32Z"
     }
   ]
 }
