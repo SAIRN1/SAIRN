@@ -137,6 +137,30 @@ def _literal_body(src, name, opener, closer):
     return None
 
 
+def _function_body(src, params_start):
+    """Body of the function whose parameter list is open at `params_start`.
+
+    `params_start` is an index INSIDE the parameter list (the callers' regexes
+    end just after the first parameter's comma), so the depth starts at 1.
+    Returns None rather than guessing if the parens do not close or no brace
+    follows them -- an unresolvable shape must stay invisible, which costs a
+    missed write, not an invented one.
+    """
+    depth, i = 1, params_start
+    while i < len(src) and depth:
+        if src[i] == '(':
+            depth += 1
+        elif src[i] == ')':
+            depth -= 1
+        i += 1
+    if depth:
+        return None
+    j = src.find('{', i)
+    if j < 0 or j - i > 200:
+        return None
+    return _callback_body(src, j + 1)
+
+
 def resolve_generic_writes(src):
     """Resource names a GENERIC write loop provably covers.
 
@@ -187,7 +211,18 @@ def resolve_generic_writes(src):
     for gm in re.finditer(r'\b(\w+)\.forEach\(\s*function\s*\(\s*(\w+)\s*\)\s*\{\s*'
                           r'(\w+)\s*\[\s*\2\s*\]\s*=\s*true', src):
         list_name, guard = gm.group(1), gm.group(3)
-        if not re.search(r'!\s*' + re.escape(guard) + r'\s*\[', src):
+        # A GATE CAN BE POSITIVE (2026-09-09). This required `!MAP[`, which is
+        # SAIRNbuild's shape (`if (!_bldSyncOn[key]) return;`). StoneDesk gates
+        # the same list the other way round --
+        #   var synced = (typeof SD_SYNCED_ON !== 'undefined') && SD_SYNCED_ON[key];
+        #   if (synced) { sdSyncCollection(key, data, prev); }
+        # -- so SD_SYNCED, the real 21-name write set of the platform's largest
+        # app, was skipped entirely, and two of its names (sd_email_threats,
+        # sd_templates) appear nowhere else in the file. The question the `!`
+        # was standing in for is whether the map is CONSULTED at all, so ask
+        # that directly: more than one `MAP[` means somewhere other than the
+        # `MAP[k] = true` that built it. A map nothing reads still fails.
+        if len(re.findall(re.escape(guard) + r'\s*\[', src)) < 2:
             continue                      # the map exists but nothing gates on it
         body = _literal_body(src, list_name, '[', ']')
         if body:
@@ -195,8 +230,24 @@ def resolve_generic_writes(src):
     # Shape B -- one hop to a generic writer's call sites.
     for fm in re.finditer(r'\b(?:async\s+)?function\s+(\w+)\s*\(\s*(\w+)\s*,', src):
         fn, param = fm.group(1), fm.group(2)
-        tail = src[fm.end():fm.end() + 4000]
-        if not re.search(r"\w*Data\(\s*'write'\s*,\s*" + re.escape(param) + r'\s*,', tail):
+        # A FIXED-SIZE WINDOW IS NOT A BODY -- the same lesson _callback_body()
+        # already carries for the READ side, and it was live on the WRITE side
+        # the whole time. A 4,000-character slice from `function st(key,data)`
+        # runs 1,708 characters past the end of st() into its NEIGHBOUR
+        # sdSyncCollection(key,...), which does contain `sdData('write',key,r)`.
+        # Every parameter is named `key`, so st() was accepted as a generic
+        # writer and all 68 of its `st('literal', ...)` call sites -- i.e. every
+        # localStorage write in stonedesk.html -- were counted as server writes.
+        # stRaw() was caught the same way at 1,257 characters, and stRaw() is
+        # `localStorage.setItem` and nothing else: it has no server path at all.
+        # That produced 50 "written and never read back" findings against the
+        # flagship app, EVERY ONE FALSE -- against this function's own docstring
+        # promise that it "can only ever produce a COULD NOT TELL or a false
+        # clean on the READ side -- never a false accusation."
+        body = _function_body(src, fm.end())
+        if body is None:
+            continue
+        if not re.search(r"\w*Data\(\s*'write'\s*,\s*" + re.escape(param) + r'\s*,', body):
             continue
         for cm in re.finditer(r'(?<![\w$.])' + re.escape(fn) + r"\(\s*'(\w+)'\s*,", src):
             resolved.add(cm.group(1))
