@@ -32,11 +32,25 @@ def clean_tree():
 # push-gate check and sent a reader looking at check 4. Exit 3 now means
 # SKIPPED -- tools/run_all_tests.py lists it under SKIPPED with this reason
 # and never counts it as a pass, because "could not run" is not "ran clean".
-if clean_tree() != '':
+#
+# ── AND AN UNTRACKED FILE IS NOT DIRT (2026-09-09) ────────────────────────
+# This compared the WHOLE porcelain output, so a single untracked file skipped
+# it -- and one has been sitting in a clone since 2026-08-28, which means this
+# probe had been reporting SKIPPED on every run in that clone and verifying
+# nothing about a BLOCKING gate. Its sibling check7_probe.py already filters
+# `??` for exactly this reason; the two guards were written to the same
+# intention and only one of them implemented it.
+#
+# It is safe: the danger this guard exists for is `git add` sweeping somebody's
+# uncommitted work into a probe commit, and this probe adds NAMED PATHS. An
+# untracked file elsewhere cannot be swept by that, and `git reset --mixed`
+# does not touch it either.
+dirty = [l for l in clean_tree().split('\n') if l.strip() and not l.startswith('??')]
+if dirty:
     print('SKIPPED: this probe commits fixtures and resets, so it needs a clean')
     print('tree -- running it now would sweep uncommitted work into a probe')
-    print('commit. Nothing about check 4 was verified. Working tree holds:')
-    print(clean_tree())
+    print('commit. Nothing about check 4 was verified. Modified:')
+    print('\n'.join(dirty))
     sys.exit(3)
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 R = {}
