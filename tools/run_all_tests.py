@@ -54,6 +54,7 @@ Run:  python tools/run_all_tests.py [--quiet]
 import hashlib
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -150,6 +151,41 @@ def discover():
     return js, py, unrun
 
 
+# ── DOES THIS COMMAND ACTUALLY PUSH? ─────────────────────────────────────────
+# `git push` has to appear where a COMMAND goes, not merely somewhere in the
+# text. The first version of this gate used a bare `\bgit\s+push\b` against the
+# whole command, on the reasoning that a stray mention only costs one
+# report-only run -- and the VERY NEXT COMMIT tripped it, because this repo's
+# commit messages quote the words: `git commit -F -` with a heredoc explaining
+# that "an ordinary `git push origin main` raced one of the probes". The suite
+# ran, dirtied the tree mid-commit, and restored itself. Cheap once; not cheap
+# as a habit, since the incident this file exists to prevent was a probe commit
+# racing a real push.
+#
+# So a match counts only when everything between the last command separator and
+# it is whitespace or `VAR=value` assignments -- which keeps the two real
+# spellings used here (`git push ...` and `SAIRN_SEED_GATE=off git push ...`)
+# and drops mentions inside prose, since those sit after a backtick or a word.
+#
+# NAMED FALSE NEGATIVES, because trading a false alarm for a silent one without
+# saying so is the failure mode this repo keeps recording: a push wrapped in
+# another command -- `sudo git push`, `time git push`, `xargs git push`, or one
+# built by a script -- does not match and gets no report. That is the same
+# blind spot tools/deploy_verify_notify.py already documents for pushes driven
+# from Python, and the cost is a missing report rather than a missing check;
+# `python tools/run_all_tests.py` by hand still runs everything.
+PUSH_RE = re.compile(
+    r"""(?:^|[;&|\n(]|&&|\|\|)          # a command position
+        (?:\s*[A-Za-z_][A-Za-z0-9_]*=(?:"[^"]*"|'[^']*'|\S*))*   # env prefixes
+        \s*git\s+push\b""",
+    re.VERBOSE)
+
+
+def pushes(cmd):
+    """True if this Bash command text runs `git push` as a command."""
+    return bool(PUSH_RE.search(cmd))
+
+
 def hook_main():
     """PostToolUse hook mode: run everything, stay silent unless something is wrong.
 
@@ -164,10 +200,43 @@ def hook_main():
     a notice nobody reads. Skipped files DO produce a notice, because "could
     not run" is exactly the thing this hook exists to stop being invisible.
     """
+    # ── THE PAYLOAD IS THE GATE. IT IS NOT DECORATION -- corrected 2026-09-09.
+    # This read the payload and threw it away under a comment saying "nothing
+    # here needs it", on the belief that this entry in .claude/settings.json
+    # restricted it to pushes:
+    #
+    #     { "command": "python tools/run_all_tests.py --hook",
+    #       "if": "Bash(git push*)" }        <-- THERE IS NO `if` FIELD
+    #
+    # A Claude Code hook entry's only gate is `matcher`, which matches the TOOL
+    # NAME. `matcher: "Bash"` means every Bash tool call; the unknown key was
+    # ignored in silence. Measured 2026-09-09, not reasoned: ten concurrent
+    # copies of this suite in one clone inside four minutes on a single push,
+    # twenty-seven live processes before it was caught, and a `PROBE clean
+    # endpoint change` commit on origin/main because an ordinary push raced one
+    # of the probes that commit to `main`.
+    #
+    # THE LOCK ABOVE IS NOT THIS FIX AND DOES NOT SUBSUME IT. The lock stops a
+    # second run from corrupting the first one's restores; it still leaves one
+    # full suite -- which mutates tracked files and commits to `main` -- running
+    # after every `git status`, `git log` and `node --check` anybody types.
+    #
+    # Its sibling tools/deploy_verify_notify.py:57 had this gate in code from
+    # the start and never misfired. Two hooks, one config block, one wrong
+    # belief between them: A HOOK THAT LOOKS GATED IN CONFIG IS UNGATED UNTIL
+    # THE HOOK ITSELF CHECKS. Held by tests/run_all_tests_hook_gate_probe.py.
     try:
-        json.load(sys.stdin)          # the hook payload; nothing here needs it
+        payload = json.load(sys.stdin)
     except Exception:
-        pass
+        payload = {}
+    cmd = (payload.get('tool_input', {}) or {}).get('command', '') or ''
+    # An UNREADABLE or absent payload falls through and runs, deliberately:
+    # that is `python tools/run_all_tests.py --hook` typed by hand, and it is
+    # the same fail-open standard the other hooks here hold. If a future
+    # payload shape stops parsing, this hook goes back to running on every Bash
+    # call and this is the line to look at.
+    if payload and not pushes(cmd):
+        return 0
     # A second concurrent run does not queue -- it declines and SAYS SO. Running
     # it would corrupt the first one's snapshots (see the LOCK block above), and
     # staying silent about declining would make "the suite ran after that push"
