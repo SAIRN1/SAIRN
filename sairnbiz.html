@@ -642,7 +642,7 @@ textarea{resize:vertical;min-height:80px;}
     <div class="kpi"><div class="klbl">Certs Active</div><div class="kval" id="tr-cert">0</div><div class="kt">All employees</div></div>
     <div class="kpi"><div class="klbl">Expiring 90 Days</div><div class="kval" id="tr-exp">0</div><div class="kt d">Needs renewal</div></div>
     <div class="kpi"><div class="klbl">Training Hours Logged</div><div class="kval" id="tr-hrs">0</div><div class="kt">All staff</div></div>
-    <div class="kpi"><div class="klbl">Safety Incidents</div><div class="kval" id="tr-safe">0</div><div class="kt">YTD OSHA log</div></div>
+    <div class="kpi"><div class="klbl">Safety Incidents</div><div class="kval" id="tr-safe">--</div><div class="kt" id="tr-safe-note">Not recorded here yet</div></div>
     <div class="kpi"><div class="klbl">Training Spend</div><div class="kval" id="tr-bud">$0</div><div class="kt">Recorded</div></div>
   </div>
   <div class="card"><div class="cb">
@@ -3264,13 +3264,45 @@ function sbNormalizeTrain(tr){
   return tr;
 }
 
+// Flip to true in the SAME change that adds an add-incident path. See the
+// note inside rTrain(); tests/sairnbiz_incidents_kpi.js checks this against
+// the real writer count in this file, so it cannot quietly disagree with it.
+var SB_INCIDENTS_HAVE_A_WRITE_PATH=false;
+
 function rTrain(){
   var tr=sbNormalizeTrain(ld('sb_train',[]));
   var exp=tr.filter(function(t){return sbCertStatus(t)==='Expiring Soon';}).length;
   var hrs=tr.reduce(function(s,t){return s+(t.hrs||0);},0);
   var spend=tr.reduce(function(s,t){return s+(t.cost||0);},0);
   var incidents=ld('sb_incidents',[]).length;
-  $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=hrs;$('tr-safe').textContent=incidents;$('tr-bud').textContent=fmt(spend);
+  $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=hrs;$('tr-bud').textContent=fmt(spend);
+  // ── A ZERO NOBODY CAN CHANGE IS NOT A MEASUREMENT (2026-09-09) ──────────
+  // This tile read "0" under the subtitle "YTD OSHA log", which tells a
+  // customer their year-to-date OSHA log is clean. It is not a fabricated
+  // number -- the count is real and the array is really empty -- so it is not
+  // a Check 0b violation. It is worse in one specific way: `st('sb_incidents',
+  // [])` appears exactly once, in seed(), and NOTHING in this file writes it
+  // again. There is no add-incident path anywhere, so the tile could only ever
+  // say 0. "No incidents" and "no way to record one" rendered identically, and
+  // the more reassuring of the two is the one that showed.
+  //
+  // The count is still read and still displayed the moment a write path
+  // exists. What changed is that the app now says which of the two it means.
+  // SB_INCIDENTS_HAVE_A_WRITE_PATH is the single place to flip, and
+  // tests/sairnbiz_incidents_kpi.js DERIVES the truth from the number of
+  // st('sb_incidents') writers in the file rather than trusting this flag --
+  // so building the feature and forgetting this line fails loudly instead of
+  // leaving a real count hidden behind a dash.
+  //
+  // Whether to build incident recording at all is a product decision and is
+  // deliberately NOT taken here; the open-work row stays open for it.
+  if(SB_INCIDENTS_HAVE_A_WRITE_PATH){
+    $('tr-safe').textContent=incidents;
+    $('tr-safe-note').textContent='YTD OSHA log';
+  }else{
+    $('tr-safe').textContent='--';
+    $('tr-safe-note').textContent='Not recorded here yet';
+  }
   $('trtbody').innerHTML=tr.map(function(t){var stt=sbCertStatus(t);var sc={Active:'bg','Expiring Soon':'bw','No Expiry':'bx'}[stt]||'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(stt)+'</span></td><td><button class="btn bo bs" onclick="openCertRenew(\''+H(t.id)+'\')">Record Renewal</button></td></tr>';}).join('');
 }
 
