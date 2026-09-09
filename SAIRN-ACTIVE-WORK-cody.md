@@ -1148,3 +1148,49 @@ modifications. Nothing was lost -- every byte was verified identical to
 `origin/main` before recovering -- but a session that ran `git checkout -- .`
 on that state, or committed it, would have made a real mess. **A probe that
 resets HEAD is dangerous to more than its own files.**
+
+### 2026-09-09 (Cody) -- StoneDesk timesheet AI panel: told what it cannot price
+
+CLAIMED and released: `stonedesk-timesheet-ai-labour-cost-disclosure`. Picked as
+the next real gap after the inventory: unassigned, sized S, and I had fresh
+context on exactly this code from verifying `sd_timesheet_pay_est_probe.py`
+earlier the same session.
+
+`sdTSAI()` was the ONE consumer of `sd_timesheets` that did not go through
+`tsRate`/`tsPay`. It posted the RAW rows and asked for "Estimated labor cost
+efficiency", so an unrated row arrived as bare hours plus whatever was in
+`rate`, and the answer carried no exclusion note. Same defect as the "$0 total
+over all-`--` rows" one layer out -- **in prose rather than in a cell, which is
+where it is hardest to see.**
+
+Fixed with two NAMED, 2-space-indented helpers so the test can EXTRACT AND
+DRIVE them, the same reason `tsCell()` is named. That mattered here: the fetch
+needs a network, so a source assertion was otherwise the only possible cover,
+and this suite has already caught one of those passing a mutation that had
+removed the behaviour.
+
+- `tsAIRows()` -- `rate:tsRate(x)`, `pay_est:tsPay(x)`, both null where the row
+  cannot be priced. **Sending the raw `rate` handed a string `"28"` straight to
+  the model, exactly the coercion `tsRate()` refuses.** `0` survives as `0`.
+- `tsAIScope()` -- states the counts, says null means UNKNOWN NOT ZERO, tells
+  the model not to estimate a rate for excluded rows. Three cases: a clean
+  period must not carry an exclusion warning, an empty one must not be analysed.
+
+**Verified:** checkblocks 130/0, duplicate-global clean, 27/27 suite assertions
+(6 new), and ALL 12 mutation controls BITE (10-12 are new and guard precisely
+the two source assertions) with `stonedesk.html` restored byte-identical.
+
+**Two workflow notes from today, both worth keeping:**
+
+1. **The probe now refuses a dirty tree**, so it cannot be run against
+   uncommitted work. Order is **commit locally -> probe -> push**. That is a
+   real cost of this morning's fix and it is the right trade: the alternative
+   is a probe that snapshots your uncommitted work and hands it back as
+   "restored byte-identical".
+2. **`tools/md_table_check.py` caught me editing an index row by parts.** I
+   replaced the leading cells and left the original tail, producing a 12-cell
+   row against a 9-cell header -- the exact failure CLAUDE.md added that tool
+   for, committed by the session that had just written a document about
+   unwired checkers. **It is one of the 28 unwired checkers and I only ran it
+   because I had just inventoried it.** Rebuilt the row whole. That is the
+   strongest argument in the inventory, and I did not have to look for it.
