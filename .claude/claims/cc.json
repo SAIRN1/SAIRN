@@ -714,6 +714,16 @@
       "claimed_at_epoch": 1788962503.0970209,
       "status": "released",
       "released_at": "2026-09-09T14:31:10Z"
+    },
+    {
+      "id": "cc-1788965417",
+      "session": "cc",
+      "subject": "sairnvet",
+      "task": "sairnfreedom server backup local-only collections",
+      "claimed_at": "2026-09-09T14:50:17Z",
+      "claimed_at_epoch": 1788965417.698267,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
