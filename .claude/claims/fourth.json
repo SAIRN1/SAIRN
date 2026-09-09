@@ -620,8 +620,8 @@
       "task": "plus load-state-gates license-keys-service-role-grants graphify-scope writeups",
       "claimed_at": "2026-09-09T13:04:48Z",
       "claimed_at_epoch": 1788959088.752953,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-09T13:20:25Z"
     }
   ]
 }
