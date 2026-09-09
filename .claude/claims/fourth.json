@@ -612,6 +612,16 @@
       "claimed_at_epoch": 1788881202.7488716,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1788959088",
+      "session": "fourth",
+      "subject": "check7-probe-residue-reached-origin",
+      "task": "plus load-state-gates license-keys-service-role-grants graphify-scope writeups",
+      "claimed_at": "2026-09-09T13:04:48Z",
+      "claimed_at_epoch": 1788959088.752953,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
