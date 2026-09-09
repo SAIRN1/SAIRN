@@ -29175,6 +29175,44 @@ document.addEventListener('DOMContentLoaded', function() {
       ' had no hourly rate on file and '+(unpriced===1?'is':'are')+
       ' NOT included in this total'):'';
   }
+  // THE AI PANEL WAS THE ONE CONSUMER OF sd_timesheets THAT DID NOT GO THROUGH
+  // tsRate/tsPay. sdTSAI() posted the RAW rows and asked the model for, among
+  // other things, "Estimated labor cost efficiency" -- so a row with no usable
+  // rate arrived as bare hours plus whatever junk was in `rate`, and the figure
+  // that came back carried NO exclusion note. Same defect as the "$0 total over
+  // all-`--` rows" fixed above, one layer out: in prose rather than in a cell,
+  // and prose is where it is hardest to spot.
+  //
+  // These two are named and 2-space-indented so the test can EXTRACT and DRIVE
+  // them, the same reason tsCell() exists. The fetch itself needs a network, so
+  // a source assertion is all that could otherwise cover this -- and a source
+  // assertion has already been caught here passing a mutation that had removed
+  // the behaviour.
+  //
+  // NO RATE IS INVENTED, per Guardian 0b: `rate` and `pay_est` are null where
+  // the row cannot be priced, and the model is TOLD that null means unknown
+  // rather than zero. Sending the raw `rate` would hand a string like "28"
+  // straight to the model, which is exactly the coercion tsRate() refuses.
+  function tsAIRows(rows){
+    return rows.map(function(x){
+      return {emp:x.emp,date:x.date,inn:x.inn,out:x.out,hrs:x.hrs,
+        job:x.job,rate:tsRate(x),pay_est:tsPay(x)};
+    });
+  }
+  function tsAIScope(rows){
+    if(!rows.length)return 'There are NO timesheet rows in this period. Do not'+
+      ' estimate any labour cost; say there is nothing to analyse.';
+    var t=tsTotal(rows);
+    if(!t.unpriced)return 'All '+rows.length+' rows carry an hourly rate, so'+
+      ' pay_est is complete for this period.';
+    return 'Of '+rows.length+' rows, '+t.priced+' can be priced and '+
+      t.unpriced+' have NO hourly rate on file (rate and pay_est are null).'+
+      ' Labour cost for '+(t.unpriced===1?'that row':'those rows')+' is'+
+      ' UNKNOWN, not zero. Base any cost figure only on the '+t.priced+
+      ' priced row'+(t.priced===1?'':'s')+', state that '+t.unpriced+' row'+
+      (t.unpriced===1?' is':'s are')+' excluded, and do not estimate a rate'+
+      ' for them.';
+  }
   function render(){
     var d=load();
     var period=document.getElementById("ts-week-filter").value;
@@ -29276,7 +29314,7 @@ document.addEventListener('DOMContentLoaded', function() {
     var out=document.getElementById("ts-ai-out");
     out.style.display="block";out.innerHTML="<em>Analyzing labor data...</em>";
     fetch("https://sairn.vercel.app/api/claude",{method:"POST",headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({app_id:"stonedesk",is_demo:true,messages:[{role:"user",content:"You are a labor efficiency advisor for a stone fabrication shop. Analyze this weekly timesheet and provide: (1) Overtime risk assessment, (2) Most productive crew members, (3) Job costing observations, (4) Scheduling recommendations to reduce OT, (5) Estimated labor cost efficiency. Data: "+JSON.stringify(d)}]})
+      body:JSON.stringify({app_id:"stonedesk",is_demo:true,messages:[{role:"user",content:"You are a labor efficiency advisor for a stone fabrication shop. Analyze this weekly timesheet and provide: (1) Overtime risk assessment, (2) Most productive crew members, (3) Job costing observations, (4) Scheduling recommendations to reduce OT, (5) Estimated labor cost efficiency. "+tsAIScope(d)+" Data: "+JSON.stringify(tsAIRows(d))}]})
     }).then(function(r){return r.json();}).then(function(r){
       out.innerHTML="<strong style=\"color:#166534\">🤖 Labor Intelligence Analysis</strong><br><br>"+escHtml((r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||""))).replace(/\n/g,"<br>");
     }).catch(function(){out.textContent="AI unavailable.";});

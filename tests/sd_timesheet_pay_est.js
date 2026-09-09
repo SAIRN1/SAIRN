@@ -58,7 +58,8 @@ function grab(src, sig) {
 const ctx = { Math: Math, Number: Number, String: String, isFinite: isFinite };
 vm.createContext(ctx);
 ['function tsRate(x){', 'function tsPay(x){', 'function tsMoney(v){',
- 'function tsCell(x){', 'function tsTotal(rows){', 'function tsNote(unpriced){'].forEach((sig) => {
+ 'function tsCell(x){', 'function tsTotal(rows){', 'function tsNote(unpriced){',
+ 'function tsAIRows(rows){', 'function tsAIScope(rows){'].forEach((sig) => {
   vm.runInContext(grab(SRC, sig), ctx);
 });
 
@@ -242,6 +243,64 @@ test('the printed TOTALS row uses the same distinction', () => {
   const squashed = SRC.replace(/\s+/g, '');
   assert.ok(/tsMoney\(payT\.total\)\+\(payT\.unpriced\?"\*":""\)/.test(squashed),
     'the printed total reads .sum, so a page handed to a person can say $0 for "no rates on file"');
+});
+
+section('the AI panel is told what it cannot see');
+
+// sdTSAI() was the one consumer of sd_timesheets that did not go through
+// tsRate/tsPay: it posted the RAW rows and asked for "estimated labor cost
+// efficiency". The two helpers are extracted and DRIVEN here for the same
+// reason tsCell() is -- the fetch needs a network, and the only alternative
+// is a source assertion, which this file has already caught passing a
+// mutation that had removed the behaviour.
+
+test('an unpriceable row reaches the model as null, not as a bare hour count', () => {
+  const rows = ctx.tsAIRows([{ emp: 'A', hrs: 8, rate: 20 },
+                             { emp: 'B', hrs: 8 },
+                             { emp: 'C', hrs: 8, rate: 0 }]);
+  assert.strictEqual(rows[0].pay_est, 160);
+  assert.strictEqual(rows[1].rate, null, 'a missing rate was not nulled');
+  assert.strictEqual(rows[1].pay_est, null,
+    'an unpriceable row was handed to the model as if it were priceable');
+  assert.strictEqual(rows[2].pay_est, 0, '0 is a rate, and must survive to the model');
+});
+
+test('a string rate is refused on the way to the model too', () => {
+  // Number('28') would "work" here exactly as it would in the CSV. Sending the
+  // raw field is what let the model price a row tsRate() refuses to price.
+  const rows = ctx.tsAIRows([{ emp: 'A', hrs: 8, rate: '28' }]);
+  assert.strictEqual(rows[0].rate, null);
+  assert.strictEqual(rows[0].pay_est, null);
+});
+
+test('the prompt states the exclusion, with the counts', () => {
+  const s = ctx.tsAIScope([{ hrs: 8, rate: 20 }, { hrs: 8 }, { hrs: 4 }]);
+  assert.ok(/2 have NO hourly rate/.test(s), 'the unpriced count is not stated: ' + s);
+  assert.ok(/1 can be priced/.test(s), 'the priced count is not stated: ' + s);
+  assert.ok(/UNKNOWN, not zero/.test(s),
+    'null was not distinguished from zero, which is the whole defect');
+  assert.ok(/do not estimate a rate/.test(s), 'the model is not told to refrain');
+});
+
+test('a complete period says so instead of warning about nothing', () => {
+  const s = ctx.tsAIScope([{ hrs: 8, rate: 20 }, { hrs: 8, rate: 0 }]);
+  assert.ok(/pay_est is complete/.test(s), s);
+  assert.ok(!/NO hourly rate/.test(s), 'a clean period carried an exclusion warning');
+});
+
+test('an empty period is not analysed at all', () => {
+  const s = ctx.tsAIScope([]);
+  assert.ok(/NO timesheet rows/.test(s), s);
+  assert.ok(/Do not\s+estimate any labour cost/.test(s.replace(/\s+/g, ' ')), s);
+});
+
+test('sdTSAI actually sends both, and no longer sends the raw rows', () => {
+  const squashed = SRC.replace(/\s+/g, '');
+  assert.ok(/tsAIScope\(d\)/.test(squashed), 'the scope sentence is built but never sent');
+  assert.ok(/JSON\.stringify\(tsAIRows\(d\)\)/.test(squashed),
+    'the AI panel still posts the raw timesheet rows');
+  assert.ok(!/EstimatedlaborcostefficiencyData:"\+JSON\.stringify\(d\)/.test(squashed),
+    'the original raw-row prompt is still present');
 });
 
 console.log('\n' + (fail === 0

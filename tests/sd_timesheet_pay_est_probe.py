@@ -56,6 +56,19 @@ MUTATIONS = [
     ("9. the printed page drops its partial-total disclosure",
      'if(payT.unpriced)w.document.write("<p style=\\"color:#92400e;font-size:11px\\">* Partial total"',
      'if(false)w.document.write("<p style=\\"color:#92400e;font-size:11px\\">* Partial total"'),
+    # 10-12 guard the AI panel, added 2026-09-09 with the fix. The suite arms
+    # for it are the weakest kind on their own -- two are source assertions,
+    # and this file already caught one of those passing a mutation that had
+    # removed the behaviour -- so each one gets a control that must bite.
+    ("10. the AI payload sends the RAW rate again, so a string is coerced",
+     "        job:x.job,rate:tsRate(x),pay_est:tsPay(x)};",
+     "        job:x.job,rate:x.rate,pay_est:(x.hrs||0)*(x.rate||0)};"),
+    ("11. every period reports complete, so the exclusion is never stated",
+     "    if(!t.unpriced)return 'All '+rows.length+' rows carry an hourly rate, so'+",
+     "    if(true)return 'All '+rows.length+' rows carry an hourly rate, so'+"),
+    ("12. sdTSAI posts the raw rows and drops the scope sentence",
+     '"+tsAIScope(d)+" Data: "+JSON.stringify(tsAIRows(d))',
+     ' Data: "+JSON.stringify(d)'),
 ]
 
 
