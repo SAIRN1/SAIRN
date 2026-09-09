@@ -1005,3 +1005,58 @@ docs/superpowers/specs/2026-08-21-plumbing-electrical-hvac-worldwide-research.md
   **IT ASKS WHAT A CODE SCAN STRUCTURALLY CANNOT:** inbound foreign keys, views and matviews whose definition names the table, and non-internal triggers. Any one of those is a dependency no repo grep can see.
 
   **SECTION 7 IS A TEMPLATE, NOT A RECOMMENDATION.** The row is explicit that a drop is the schema owner's call, and nothing I measured changes that. One table at a time rather than a loop, so a mistake is one table and not nineteen, and deliberately NOT `drop ... cascade` -- cascade is how an unchecked dependency disappears quietly, which is the whole reason Section 4 exists. **Section 6 prints size on purpose:** if the answer is a few kilobytes then leaving all 19 alone is a perfectly good outcome, and this file should not read as pressure to act. 2026-09-05
+
+## 2026-09-09 (Cody) -- the probe that kept stripping sairnvet.html's corrupt-store guard
+
+RELEASED: reachability-probe-restore-failure. Root cause found, fixed, pushed
+as `5b8570ce`.
+
+**The trigger was CONCURRENCY, not a missing `finally`.** Probes under `tests/`
+mutate a real tracked file and restore the bytes THEY read at their own start.
+Nothing serialised the runs, and `tools/run_all_tests.py --hook` fires on every
+`git push`, async. Observed alive in one tree on 2026-09-09: THREE concurrent
+`--hook` runs (09:05:38, 09:06:06, 09:06:21) plus two copies of
+`tests/seam_check/run_probe.py` started in the same second.
+
+    run A snapshots the clean file, mutates it
+    run B snapshots THE MUTATED FILE as its "original"
+    run A restores clean
+    run B restores the mutation -- and it stays on disk
+
+Both runs restored exactly what they read. **The snapshot was the defect, not
+the restore**, which is why "make it restore reliably" was the wrong shape of
+fix and why Hank's 2026-09-08 observation (three files dirtied, five probes
+red) was never reproducible with an instrumented SEQUENTIAL run.
+
+**Caught in the act mid-session:** backfill control 1 ("a full disk goes back
+to being silent") was found live on disk in `sairnvet.html` while this was
+being written. Restored with a targeted `git checkout --`.
+
+**Fix, two parts, because neither covers the other's case:**
+- `tools/run_all_tests.py` takes a per-clone lock; a second run declines and
+  says so. Lockfile lives in the temp dir -- an untracked one inside REPO
+  would show as `??` and make every clean-tree probe skip. Stale by AGE, not
+  pid: `os.kill(pid, 0)` on Windows does not test liveness, it calls
+  TerminateProcess.
+- `suite_control_backfill_probe.py` and `reachability/live_mode_probe.py`
+  refuse to snapshot an ALREADY-DIRTY target (exit 3). This is the half the
+  lock cannot see -- a process killed before its `finally`.
+
+`tests/run_suite_lock_probe.py` is the control, 19 checks, both directions.
+
+**Verified, not assumed:** 19/19 green; `live_mode_probe` still reports LIVE
+MODE VERIFIED on a clean file; the backfill probe still GREEN with every
+control BITING and all five app files restored byte-identical; `sairnvet.html`
+and `tools/reachability_exemptions.json` confirmed clean on `origin/main`
+after the push.
+
+**NOT mine, claimed by `fourth`:** a probe COMMIT is residue no per-file
+restore can undo. `check7_probe`'s fixture reached origin as `b909dbee`
+(reverted in `86bf4b68`). The lock narrows that window; it does not close it.
+
+**Standing lesson worth more than the fix:** a probe that snapshots the
+working tree is only correct while it owns the working tree. Every
+save-mutate-restore harness in this repo assumes exclusivity nobody granted
+it, and the failure is silent in both directions -- the backfill probe printed
+`restored byte-identical: True` the entire time the guard was missing, because
+it was telling the truth about the wrong baseline.
