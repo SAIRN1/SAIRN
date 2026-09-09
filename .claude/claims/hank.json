@@ -815,6 +815,16 @@
       "claimed_at_epoch": 1788964268.4943476,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1788965487",
+      "session": "hank",
+      "subject": "stonedesk",
+      "task": "orphaned damage claim module dmg",
+      "claimed_at": "2026-09-09T14:51:27Z",
+      "claimed_at_epoch": 1788965487.7624543,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
