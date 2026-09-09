@@ -52,7 +52,6 @@ const TABLE = 'sb_employee_auth';
 const PROVISIONING_ROLES = ['owner', 'hr'];
 const PROVISIONING_LABEL = 'Owner or HR';
 
-// probe: a comment, and nothing else
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
