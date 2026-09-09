@@ -804,6 +804,16 @@
       "claimed_at_epoch": 1788963256.4439683,
       "status": "released",
       "released_at": "2026-09-09T14:30:30Z"
+    },
+    {
+      "id": "hank-1788964268",
+      "session": "hank",
+      "subject": "sairnbiz",
+      "task": "sb_incidents safety kpi with no write path",
+      "claimed_at": "2026-09-09T14:31:08Z",
+      "claimed_at_epoch": 1788964268.4943476,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
