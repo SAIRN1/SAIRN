@@ -153,11 +153,75 @@ def strip_comments(src):
 
 
 def load_accepted():
+    """Accepted pre-auth refusals, matched by WHAT THEY ARE, not by where they sit.
+
+    ── WHY THIS IS NOT KEYED ON A LINE NUMBER ANY MORE (2026-09-09) ──────────
+    It was: {(file, line): reason}. That breaks in both directions, and both
+    were reproduced in this repo rather than argued.
+
+    THE NOISY DIRECTION, which is how it was found. Adding ONE import line near
+    the top of api/sd-data.js shifted its 429 rate limiter from line 388 to 389,
+    the exemption keyed at 388 stopped matching, and the tool reported a fresh
+    ORACLE against code nobody had touched. An exemption that expires whenever
+    anything above it moves generates a false finding on ordinary edits, and a
+    gate that cries wolf on ordinary edits is one somebody switches off.
+
+    THE SILENT DIRECTION, which is the dangerous one. The same drift runs the
+    other way: a DIFFERENT refusal shifting INTO an exempted line inherits an
+    exemption written for something else. This tool gates a push on the
+    DISCLOSURE tier, so that is a blocking gate quietly ceasing to block, with
+    nothing on screen to say so -- the exact shape this repo keeps recording.
+
+    THE KEY IS NOW (file, status, match), where `match` is a substring the
+    refusal's own text must contain -- normally its error-code identifier. A
+    refusal cannot drift into somebody else's exemption because it would have to
+    BE that refusal to match.
+
+    WHAT THAT DELIBERATELY ALLOWS, said plainly rather than discovered later: a
+    second refusal with the SAME status and the SAME code in the SAME file is
+    covered by one entry. That is intended. Three of these already exist --
+    api/stonedesk-track.js answers UPSTREAM identically at three lines -- and
+    they are textually indistinguishable, so a line key was the only thing ever
+    separating them. If an identical refusal is acceptable at one line it is
+    acceptable at another; what is NOT acceptable is a different one inheriting
+    the pass.
+
+    `lines_when_written` is kept as a HUMAN HINT and is never matched on. main()
+    reports it when it has drifted, so the file can be tidied without the drift
+    ever having been able to change a verdict.
+    """
     try:
         with io.open(ACCEPTED_PATH, encoding='utf-8') as fh:
-            return {(e['file'], e['line']): e.get('reason', '') for e in json.load(fh)}
+            raw = json.load(fh)
     except (IOError, ValueError):
-        return {}
+        return []
+    out = []
+    for e in raw:
+        if not isinstance(e, dict) or 'file' not in e or 'match' not in e:
+            # A malformed entry must not silently become a blanket pass, and it
+            # must not silently vanish either -- it is surfaced by main() as an
+            # exemption that matched nothing.
+            continue
+        out.append({
+            'file': e['file'],
+            'status': str(e.get('status', '')),
+            'match': e['match'],
+            'lines_when_written': e.get('lines_when_written') or (
+                [e['line_when_written']] if e.get('line_when_written') is not None
+                else ([e['line']] if e.get('line') is not None else [])),
+            'reason': e.get('reason', ''),
+            'hits': 0,
+            'lines': [],
+        })
+    return out
+
+
+def accepted_entry(accepted, rel, code, text):
+    """The entry covering this refusal, or None. First match wins."""
+    for e in accepted:
+        if e['file'] == rel and e['status'] == code and e['match'] in text:
+            return e
+    return None
 
 
 def handlers(paths):
@@ -257,13 +321,46 @@ def main(argv):
                       'tools/public_endpoint_declarations.json' % rel)
             continue
         for line, tier, code, text in found:
-            if (rel, line) in accepted:
+            hit = accepted_entry(accepted, rel, code, text)
+            if hit is not None:
+                hit['hits'] += 1
+                hit['lines'].append(line)
                 continue
             if tier == 'DISCLOSURE':
                 disclosure += 1
             else:
                 oracle += 1
             print('%-11s %s:%d  [%s]  %s' % (tier, rel, line, code, text))
+    # ── BOOKKEEPING ON THE EXEMPTION FILE ITSELF ─────────────────────────────
+    # An accepted-list that nobody audits is how a suppression outlives the
+    # thing it suppressed. Neither of these changes the verdict -- they are
+    # facts about the FILE, not about the code -- but both are printed, because
+    # the alternative is a list that quietly rots.
+    #
+    # This block is skipped when specific files were named on the command line:
+    # every entry for a file that was not scanned would report as stale, which
+    # would be an artefact of the invocation rather than a fact about the file.
+    if not files:
+        stale = [e for e in accepted if e['hits'] == 0]
+        drift = [e for e in accepted
+                 if e['hits'] and e['lines_when_written']
+                 and sorted(e['lines']) != sorted(e['lines_when_written'])]
+        if stale:
+            print('')
+            for e in stale:
+                print('STALE EXEMPTION  %s [%s] %s -- matched nothing. Either the '
+                      'refusal was removed (delete this entry) or its text changed '
+                      '(re-read it, then update `match`).'
+                      % (e['file'], e['status'], e['match']))
+        if drift:
+            for e in drift:
+                print('NOTE  %s [%s] %s -- now at %s, recorded as %s. The hint is '
+                      'stale; the exemption still matched, because it is keyed on '
+                      'the refusal and not on the line.'
+                      % (e['file'], e['status'], e['match'],
+                         ','.join(str(x) for x in sorted(e['lines'])),
+                         ','.join(str(x) for x in sorted(e['lines_when_written']))))
+        print('STALE_EXEMPTIONS:%d' % len(stale))
     print('PREAUTH_DISCLOSURES:%d' % disclosure)
     print('PREAUTH_ORACLES:%d' % oracle)
     print('HANDLERS_WITH_NO_AUTH_BOUNDARY:%d' % unbounded)

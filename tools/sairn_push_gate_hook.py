@@ -1053,7 +1053,15 @@ def main():
                             _undeclared.append(_rel)
                         continue
                     for _line, _tier, _code, _text in _found:
-                        if (_rel, _line) in _accepted:
+                        # MATCHED ON THE REFUSAL, NOT ITS LINE (2026-09-09). This
+                        # was `(_rel, _line) in _accepted`, and a one-line edit
+                        # anywhere above an exempted refusal expired its
+                        # exemption -- reproduced on api/sd-data.js, whose 429
+                        # limiter moved 388 -> 389. The same drift runs the other
+                        # way and is worse: a DIFFERENT refusal shifting into an
+                        # exempted line would inherit the pass, and this check
+                        # BLOCKS on the DISCLOSURE tier. See load_accepted().
+                        if _pc.accepted_entry(_accepted, _rel, _code, _text) is not None:
                             continue
                         (_disc if _tier == 'DISCLOSURE' else _orac).append(
                             '  %-11s %s:%d  [%s]  %s' % (_tier, _rel, _line, _code, _text))

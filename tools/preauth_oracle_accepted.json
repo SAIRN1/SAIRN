@@ -1,172 +1,236 @@
 [
   {
-    "file": "api/sen-portal.js",
-    "line": 70,
-    "reason": "MUST be above the boundary. action 'view' (line 95) is the one action with no employee auth at all -- a family member holding a portal link has no license key -- so the envelope must be parsed before licence validation or the public action is unreachable. Read 2026-09-05."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 77,
-    "reason": "Same: the action enum has to run before the public 'view' branch can be dispatched. The four verbs it names are in the shipped SAIRNsenior client anyway."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 97,
-    "reason": "Inside the public 'view' branch, whose credential IS the link token. Refusal design read in full and is deliberate: a short/absent token is rejected before it reaches the database."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 100,
-    "reason": "Public 'view' branch. PostgREST 404/400 means the migration has not run -- an honest 503, not a statement about the token."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 102,
-    "reason": "Public 'view' branch. Upstream read failure, deliberately distinguished from an invalid link (2026-09-04 fix: a dead store must not accuse the holder of a bad link)."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 104,
-    "reason": "Public 'view' branch. A revoked link and a link that never existed answer identically here, which is the correct non-oracle behaviour."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 130,
-    "reason": "Public 'view' branch. READ_FAILED rather than an empty schedule -- telling a family member 'no visits' from an unreadable store was the 2026-09-04 defect this replaced."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 136,
-    "reason": "Public 'view' branch, non-array guard, same reasoning as line 130."
-  },
-  {
-    "file": "api/sen-portal.js",
-    "line": 154,
-    "reason": "Public 'view' branch catch-all. Says nothing about what exists."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 77,
-    "reason": "MUST be above the boundary. action 'view' (line 85) is public by design -- a customer tracking link carries no license key. Read 2026-09-05."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 90,
-    "reason": "Public 'view' branch. Token shape checked before the database is touched; a non-token gets the same 404 as an unknown token."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 109,
-    "reason": "Public 'view' branch. PostgREST 404/400 is an unrun migration, answered honestly as NOT_PROVISIONED."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 114,
-    "reason": "Public 'view' branch. Upstream failure, deliberately separated from 'your link is not valid' (2026-09-03 fix)."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 122,
-    "reason": "Public 'view' branch, non-array guard, same reasoning as line 114."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 129,
-    "reason": "Public 'view' branch. A revoked link and a link that never existed answer identically -- stated in the code's own comment and verified."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 140,
-    "reason": "Public 'view' branch. Customer read failure, separated from 'that job is no longer on file'."
-  },
-  {
-    "file": "api/stonedesk-track.js",
-    "line": 146,
-    "reason": "Public 'view' branch. Genuinely absent job, reached only with a valid active link, so the caller already holds the credential."
+    "file": "api/alf-alerts.js",
+    "status": "502",
+    "match": "code: 'SWEEP_READ_FAILED'",
+    "lines_when_written": [
+      225,
+      231
+    ],
+    "reason": "ONE ENTRY, 2 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L225: TOOL LIMITATION, same class as dnt-bi. Both SWEEP_READ_FAILED refusals sit inside `if (isCron)`, and isCron is `auth === 'Bearer ' + process.env.CRON_SECRET` (line 179) -- a real credential the detector does not know by name, so validateLicenseKey at line 275 is not this path's boundary. Read 2026-09-05. Listed for the 2026-09-05 fix pass and then NOT changed, because it is not the defect: it is already behind a credential. || L231: Same cron-secret path, the non-array guard. See line 225."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 107,
+    "status": "401",
+    "match": "code: 'NO_TOKEN'",
+    "lines_when_written": [
+      107
+    ],
     "reason": "TOOL LIMITATION, not a clean bill of health. The GET feed path authenticates with a BI feed token (hashed lookup, line 114) and deliberately never accepts a license key, so validateLicenseKey at line 312 is NOT this path's boundary -- everything from 105 to ~235 is already behind its own credential. Read 2026-09-05."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 120,
+    "status": "503",
+    "match": "code: 'NOT_PROVISIONED'",
+    "lines_when_written": [
+      120
+    ],
     "reason": "Behind the BI feed-token boundary. See line 107."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 124,
-    "reason": "Behind the BI feed-token boundary. See line 107."
+    "status": "502",
+    "match": "code: 'UPSTREAM'",
+    "lines_when_written": [
+      124,
+      142,
+      222
+    ],
+    "reason": "ONE ENTRY, 3 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L124: Behind the BI feed-token boundary. See line 107. || L142: Behind the BI feed-token boundary. See line 107. || L222: Behind the BI feed-token boundary. See line 107."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 131,
+    "status": "401",
+    "match": "code: 'INVALID_TOKEN'",
+    "lines_when_written": [
+      131
+    ],
     "reason": "Behind the BI feed-token boundary. The code's own comment records that a revoked and an unknown token answer identically -- the non-oracle choice."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 142,
+    "status": "403",
+    "match": "code: 'EMPLOYEE_INACTIVE'",
+    "lines_when_written": [
+      147
+    ],
     "reason": "Behind the BI feed-token boundary. See line 107."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 147,
-    "reason": "Behind the BI feed-token boundary. See line 107."
-  },
-  {
-    "file": "api/dnt-bi.js",
-    "line": 167,
+    "status": "404",
+    "match": "code: 'UNKNOWN_DATASET'",
+    "lines_when_written": [
+      167
+    ],
     "reason": "Behind the BI feed-token boundary. Names a dataset to an authenticated feed holder only."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 176,
+    "status": "403",
+    "match": "code: allowed.code",
+    "lines_when_written": [
+      176
+    ],
     "reason": "Behind the BI feed-token boundary. See line 107."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 190,
-    "reason": "Behind the BI feed-token boundary. See line 107."
+    "status": "502",
+    "match": "code: 'SCOPE_LOOKUP_FAILED'",
+    "lines_when_written": [
+      190,
+      235
+    ],
+    "reason": "ONE ENTRY, 2 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L190: Behind the BI feed-token boundary. See line 107. || L235: Behind the BI feed-token boundary. See line 107."
   },
   {
     "file": "api/dnt-bi.js",
-    "line": 198,
+    "status": "403",
+    "match": "code: 'PROVIDER_NOT_LINKED'",
+    "lines_when_written": [
+      198
+    ],
     "reason": "Behind the BI feed-token boundary. See line 107."
-  },
-  {
-    "file": "api/dnt-bi.js",
-    "line": 222,
-    "reason": "Behind the BI feed-token boundary. See line 107."
-  },
-  {
-    "file": "api/dnt-bi.js",
-    "line": 235,
-    "reason": "Behind the BI feed-token boundary. See line 107."
-  },
-  {
-    "file": "api/alf-alerts.js",
-    "line": 225,
-    "reason": "TOOL LIMITATION, same class as dnt-bi. Both SWEEP_READ_FAILED refusals sit inside `if (isCron)`, and isCron is `auth === 'Bearer ' + process.env.CRON_SECRET` (line 179) -- a real credential the detector does not know by name, so validateLicenseKey at line 275 is not this path's boundary. Read 2026-09-05. Listed for the 2026-09-05 fix pass and then NOT changed, because it is not the defect: it is already behind a credential."
-  },
-  {
-    "file": "api/alf-alerts.js",
-    "line": 231,
-    "reason": "Same cron-secret path, the non-array guard. See line 225."
   },
   {
     "file": "api/sc-credentials.js",
-    "line": 67,
+    "status": "502",
+    "match": "message: 'Data store error",
+    "lines_when_written": [
+      67
+    ],
     "reason": "TOOL LIMITATION of a third kind: this is the body of the module-level helper `upstream()` (line 65), defined ABOVE module.exports, so it is textually before the boundary and not ordered against it at all. Verified rather than assumed -- both call sites (lines 164, 307) are below validateLicenseKey at line 107. Deliberately NOT fixed by teaching the detector to ignore everything above module.exports: a helper defined above and CALLED pre-auth would then be missed silently, which is the under-report class already fixed twice in this tool."
   },
   {
     "file": "api/sc-eligibility.js",
-    "line": 89,
+    "status": "502",
+    "match": "message: 'Data store error",
+    "lines_when_written": [
+      89
+    ],
     "reason": "Same shape: body of the module-level helper `upstream()` (line 87). Its one call site (line 178) is below validateLicenseKey at line 125. Verified, not assumed."
   },
   {
     "file": "api/sd-data.js",
-    "line": 388,
+    "status": "429",
+    "match": "code: 'TOO_MANY_INVALID_KEYS'",
+    "lines_when_written": [
+      388
+    ],
     "reason": "MUST answer above the boundary -- that is the entire point of it. This is the anon rate limiter (api/_lib/anon-rate-limit.js, added by Fourth 2026-09-05), and it exists BECAUSE licence validation moved above the envelope gate: every junk token now costs one license_keys SELECT, so the limiter has to refuse BEFORE that lookup or it would be paying the exact cost it was built to avoid. Its own comment says so -- 'it never reaches the database'. It is also not an oracle about what EXISTS: it counts only FAILED validations from one address, so it says nothing about resources, verbs or keys, and a valid key accumulates nothing at any volume. NOTE that the limiter is currently in OBSERVE mode and was measured INERT in production (40 concurrent junk requests, 40 x 401, not one 429) because horizontal scale-out defeats a per-instance counter -- so this refusal is unreachable today in any case. Read 2026-09-05 (Cody); the code is Fourth's and this entry only declares it, it does not change it."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "400",
+    "match": "message: 'Invalid JSON body",
+    "lines_when_written": [
+      70
+    ],
+    "reason": "MUST be above the boundary. action 'view' (line 95) is the one action with no employee auth at all -- a family member holding a portal link has no license key -- so the envelope must be parsed before licence validation or the public action is unreachable. Read 2026-09-05."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "400",
+    "match": "message: 'action must be one of:",
+    "lines_when_written": [
+      77
+    ],
+    "reason": "Same: the action enum has to run before the public 'view' branch can be dispatched. The four verbs it names are in the shipped SAIRNsenior client anyway."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "400",
+    "match": "code: 'INVALID_LINK'",
+    "lines_when_written": [
+      97
+    ],
+    "reason": "Inside the public 'view' branch, whose credential IS the link token. Refusal design read in full and is deliberate: a short/absent token is rejected before it reaches the database."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "503",
+    "match": "code: 'NOT_PROVISIONED'",
+    "lines_when_written": [
+      100
+    ],
+    "reason": "Public 'view' branch. PostgREST 404/400 means the migration has not run -- an honest 503, not a statement about the token."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "502",
+    "match": "message: 'Could not verify this link",
+    "lines_when_written": [
+      102
+    ],
+    "reason": "Public 'view' branch. Upstream read failure, deliberately distinguished from an invalid link (2026-09-04 fix: a dead store must not accuse the holder of a bad link)."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "404",
+    "match": "code: 'INVALID_LINK'",
+    "lines_when_written": [
+      104
+    ],
+    "reason": "Public 'view' branch. A revoked link and a link that never existed answer identically here, which is the correct non-oracle behaviour."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "502",
+    "match": "code: 'READ_FAILED'",
+    "lines_when_written": [
+      130,
+      136
+    ],
+    "reason": "ONE ENTRY, 2 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L130: Public 'view' branch. READ_FAILED rather than an empty schedule -- telling a family member 'no visits' from an unreadable store was the 2026-09-04 defect this replaced. || L136: Public 'view' branch, non-array guard, same reasoning as line 130."
+  },
+  {
+    "file": "api/sen-portal.js",
+    "status": "502",
+    "match": "message: 'Upstream error",
+    "lines_when_written": [
+      154
+    ],
+    "reason": "Public 'view' branch catch-all. Says nothing about what exists."
+  },
+  {
+    "file": "api/stonedesk-track.js",
+    "status": "400",
+    "match": "message: 'Invalid JSON body",
+    "lines_when_written": [
+      77
+    ],
+    "reason": "MUST be above the boundary. action 'view' (line 85) is public by design -- a customer tracking link carries no license key. Read 2026-09-05."
+  },
+  {
+    "file": "api/stonedesk-track.js",
+    "status": "404",
+    "match": "code: 'NOT_FOUND'",
+    "lines_when_written": [
+      90,
+      129,
+      146
+    ],
+    "reason": "ONE ENTRY, 3 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L90: Public 'view' branch. Token shape checked before the database is touched; a non-token gets the same 404 as an unknown token. || L129: Public 'view' branch. A revoked link and a link that never existed answer identically -- stated in the code's own comment and verified. || L146: Public 'view' branch. Genuinely absent job, reached only with a valid active link, so the caller already holds the credential."
+  },
+  {
+    "file": "api/stonedesk-track.js",
+    "status": "503",
+    "match": "code: 'NOT_PROVISIONED'",
+    "lines_when_written": [
+      109
+    ],
+    "reason": "Public 'view' branch. PostgREST 404/400 is an unrun migration, answered honestly as NOT_PROVISIONED."
+  },
+  {
+    "file": "api/stonedesk-track.js",
+    "status": "502",
+    "match": "code: 'UPSTREAM'",
+    "lines_when_written": [
+      114,
+      122,
+      140
+    ],
+    "reason": "ONE ENTRY, 3 IDENTICAL REFUSALS -- same status, same code, same message, so nothing but a line number ever separated them. Each original reason is kept, prefixed with the line it was written against. L114: Public 'view' branch. Upstream failure, deliberately separated from 'your link is not valid' (2026-09-03 fix). || L122: Public 'view' branch, non-array guard, same reasoning as line 114. || L140: Public 'view' branch. Customer read failure, separated from 'that job is no longer on file'."
   }
 ]
