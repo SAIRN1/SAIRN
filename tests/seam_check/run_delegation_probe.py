@@ -57,8 +57,20 @@ def read(path):
         return fh.read()
 
 
-for p in (EP, LIB):
-    assert clean(p), '%s must be unmodified before the probe' % p
+# ── A DIRTY TARGET IS A SKIP, NOT A FAILURE (2026-09-09) ────────────────────
+# Was a bare `assert`, which exits 1 and reads as "the seam check is broken"
+# when nothing about it has been examined -- the signal defect already fixed in
+# check4_probe. It is a precondition: this probe restores the bytes it read at
+# its own start, so an already-modified target means it would hand the
+# modification back as the original. Exit 3 = SKIPPED, which the runner reports
+# apart from both pass and fail.
+_dirty = [p for p in (EP, LIB) if not clean(p)]
+if _dirty:
+    print('SKIPPED: already modified, so the bytes this probe would snapshot as')
+    print('"original" are not the original and restoring them would bake the')
+    print('modification in. Nothing about the seam check was verified: %s'
+          % ', '.join(_dirty))
+    sys.exit(3)
 
 base_rc, base_out = tool()
 base_tail = base_out.strip().splitlines()[-1]

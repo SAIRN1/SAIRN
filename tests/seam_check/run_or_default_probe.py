@@ -41,6 +41,22 @@ def line_for(out, needle):
     return ''
 
 
+# ── A DIRTY TARGET IS A SKIP (2026-09-09) ─────────────────────────────────
+# This probe mutates both files below and restores the bytes it read at its own
+# start. If either is ALREADY modified those bytes are not the original, and
+# the restore writes the modification back as though it were -- how
+# sairnvet.html lost a real guard overnight. Exit 3 = SKIPPED, reported apart
+# from pass and fail. See tests/run_suite_lock_probe.py.
+_rel = ['api/_lib/dental-guardian.js', 'api/sairndental/public-book.js']
+_dirty = subprocess.run(['git', 'status', '--porcelain', '--'] + _rel, cwd=REPO,
+                        capture_output=True, text=True).stdout.strip()
+if _dirty:
+    print('SKIPPED: a target is already modified, so the bytes this probe would')
+    print('snapshot as "original" are not the original and restoring them would')
+    print('bake the modification in. Nothing was verified. Tree:')
+    print('    %s' % _dirty.replace('\n', '\n    '))
+    sys.exit(3)
+
 results = {}
 
 # ── ARM 1: the seam is read at all ────────────────────────────────────────

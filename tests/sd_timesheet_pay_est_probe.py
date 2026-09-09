@@ -61,6 +61,23 @@ MUTATIONS = [
 
 def main():
     path = os.path.join(ROOT, TARGET)
+    # ── A DIRTY TARGET IS A SKIP, NOT A SNAPSHOT (2026-09-09) ───────────────
+    # `orig` below becomes the restore baseline. If stonedesk.html is ALREADY
+    # modified when this starts -- a parallel run mid-mutation, or one killed
+    # before its finally -- then `orig` captures the MUTATION, the finally
+    # writes it back, and the line below reports "restored byte-identical:
+    # True" while telling the truth about the wrong baseline. That is exactly
+    # how sairnvet.html lost its corrupt-store guard overnight, on a 2 MB file
+    # where nobody would notice one changed line. See
+    # tests/run_suite_lock_probe.py.
+    already = subprocess.run(['git', 'status', '--porcelain', '--', TARGET],
+                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if already:
+        print('SKIPPED: %s is already modified, so the bytes this probe' % TARGET)
+        print('would snapshot as "original" are not the original and the restore')
+        print('would bake them in. Nothing was verified. Tree:')
+        print('    %s' % already)
+        return 3
     orig = open(path, 'rb').read()
     before = hashlib.sha256(orig).hexdigest()
 

@@ -96,6 +96,22 @@ MUTATIONS = [
 
 
 def main():
+    # ── A DIRTY TARGET IS A SKIP, NOT A SNAPSHOT (2026-09-09) ───────────────
+    # `orig` below becomes the restore baseline. If sairndental.html is ALREADY
+    # modified when this starts -- a parallel run mid-mutation, or one killed
+    # before its finally -- then `orig` captures the MUTATION, the finally
+    # writes it back, and the sha check at the bottom reports "restored
+    # byte-identical: True" while telling the truth about the wrong baseline.
+    # That is exactly how sairnvet.html lost its corrupt-store guard overnight.
+    # See tests/run_suite_lock_probe.py.
+    already = subprocess.run(['git', 'status', '--porcelain', '--', 'sairndental.html'],
+                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+    if already:
+        print('SKIPPED: sairndental.html is already modified, so the bytes this')
+        print('probe would snapshot as "original" are not the original and the')
+        print('restore would bake them in. Nothing was verified. Tree:')
+        print('    %s' % already)
+        return 3
     orig = open(TARGET, encoding='utf-8', newline='').read()
     before = hashlib.sha256(orig.encode('utf-8')).hexdigest()
 

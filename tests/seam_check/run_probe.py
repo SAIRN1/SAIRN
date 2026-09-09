@@ -23,8 +23,20 @@ def tool():
     return r.returncode, r.stdout
 
 
-assert run('git', 'status', '--porcelain', '--', EP).stdout.strip() == '', \
-    'endpoint must be unmodified before the probe'
+# ── A DIRTY ENDPOINT IS A SKIP, NOT A FAILURE (2026-09-09) ──────────────────
+# This was a bare `assert`, which exits 1 -- indistinguishable from "the seam
+# check is broken", the exact signal defect already fixed in check4_probe. It
+# is neither: the probe plants a defect and restores `original`, so a target
+# that is ALREADY modified means those bytes are not the original and the
+# restore would write the modification back as though it were. That is how
+# sairnvet.html lost a real guard overnight (see tests/run_suite_lock_probe.py).
+_d = run('git', 'status', '--porcelain', '--', EP).stdout.strip()
+if _d:
+    print('SKIPPED: %s is already modified, so the bytes this probe would snapshot' % EP)
+    print('as "original" are not the original and restoring them would bake the')
+    print('modification in. Nothing about the seam check was verified. Tree:')
+    print('    %s' % _d)
+    sys.exit(3)
 
 before_rc, before_out = tool()
 print('BASELINE exit', before_rc)
