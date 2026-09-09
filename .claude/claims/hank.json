@@ -794,6 +794,16 @@
       "claimed_at_epoch": 1788960336.678352,
       "status": "released",
       "released_at": "2026-09-09T14:07:06Z"
+    },
+    {
+      "id": "hank-1788963256",
+      "session": "hank",
+      "subject": "sairnlaw",
+      "task": "law_billingcodes reaches no server",
+      "claimed_at": "2026-09-09T14:14:16Z",
+      "claimed_at_epoch": 1788963256.4439683,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
