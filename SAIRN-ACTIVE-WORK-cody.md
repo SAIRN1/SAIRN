@@ -1060,3 +1060,35 @@ save-mutate-restore harness in this repo assumes exclusivity nobody granted
 it, and the failure is silent in both directions -- the backfill probe printed
 `restored byte-identical: True` the entire time the guard was missing, because
 it was telling the truth about the wrong baseline.
+
+### Follow-up the same day: the other five probes, and two more stranded mutations
+
+`grep`ping the repo for the same defective shape found FIVE more probes that
+snapshot the working tree with no baseline check -- `seam_check/run_probe.py`,
+`seam_check/run_delegation_probe.py`, `seam_check/run_or_default_probe.py`,
+`sairndental_write_failure_probe.py`, `sd_timesheet_pay_est_probe.py`. All five
+now refuse a dirty target and exit 3. Two of them were bare `assert`s, exiting
+1, which reads as "the seam check is broken" -- the same signal defect already
+fixed in `check4_probe`.
+
+`tests/run_suite_lock_probe.py` now drives **all seven** in a throwaway
+`git worktree` (~2s), which is what makes it safe to dirty `stonedesk.html` and
+`sairndental.html` at all. 40 checks, 0 failed.
+
+**Two stranded `api/sd-data.js` mutations were found on disk during this**, both
+`warn_days: gateWarn` deleted from the `canAssign` call site (delegation-probe
+arm 1), both with the probe process already gone. The kill case is real and
+frequent, not theoretical.
+
+**Fourth's correction is right and I should record that I did not always meet
+it:** DURING a run and AFTER an interrupted one look identical in `git status`.
+I checked for a live process before restoring `api/sd-data.js`. I did NOT check
+before restoring `sairnvet.html` earlier in the session -- that restore may have
+clobbered a live probe mid-run. It did no harm (the probe rewrites its own
+baseline), but the discipline is: check for a running python process first.
+
+**Also noted, not fixed:** something is running probes against this clone that
+does not go through `tools/run_all_tests.py` -- the lockfile was verifiably
+absent while probes were mutating this tree, and the lock is proven to be taken
+in hook mode. So the lock does not cover every path into these probes. The
+per-probe dirty guard does, which is why both halves shipped.
