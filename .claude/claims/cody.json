@@ -726,8 +726,8 @@
       "task": "find the trigger and make it restore every file it mutates",
       "claimed_at": "2026-09-08T19:55:40Z",
       "claimed_at_epoch": 1788897340.7681353,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-09T13:37:36Z"
     }
   ]
 }
