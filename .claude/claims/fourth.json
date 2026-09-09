@@ -630,8 +630,8 @@
       "task": "dnt_providers write-validation generic DNT_RESOURCES",
       "claimed_at": "2026-09-09T14:13:34Z",
       "claimed_at_epoch": 1788963214.3960192,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-09T14:16:01Z"
     }
   ]
 }
