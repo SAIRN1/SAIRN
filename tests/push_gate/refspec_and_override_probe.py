@@ -65,6 +65,24 @@ narrow = H.outgoing_files(REPO, prev, prev)
 check("range base..HEAD is non-empty (fixture is valid)", bool(wide), True)
 check("range base..base is empty -- the commit is not outgoing from itself",
       narrow, [])
+# ── WHY THAT ARM NEEDED A FIX BENEATH IT, 2026-09-09 ────────────────────────
+# It failed for a whole session, and not because of anything it tests: this
+# clone was two commits ahead of origin/main, so `git log base..base` was empty,
+# outgoing_files() fell through to its `@{u}` fallback, and returned that
+# commit's own files. The assertion above is CORRECT and was reporting a real
+# defect -- a push whose range is empty being answered with a wider range it is
+# not sending, the same shape as the 2026-09-01 refspec case this file exists
+# for. It reads as flaky because it only fires when the branch is ahead.
+#
+# THE OTHER DIRECTION MUST STILL WIDEN, and it is the dangerous one, so it is
+# pinned here rather than left to the comment in the tool. `base` is the REMOTE
+# sha from git's pre-push stdin and a clone that has not fetched may not hold
+# that object. Returning [] for an unresolvable base would mean "no seed
+# touched" on a real push -- fail-OPEN on a blocking gate.
+check("an UNRESOLVABLE base still widens -- [] there would fail open on a real push",
+      bool(H.outgoing_files(REPO, '0' * 40, head)), True)
+check("...and a resolvable base is trusted even when its range is empty",
+      H.outgoing_files(REPO, head, head), [])
 
 # ── A3: export_sql_at reproduces sql/ as of a commit ────────────────────────
 print("\nA3. export_sql_at() reads seeds from the commit, not the working tree")

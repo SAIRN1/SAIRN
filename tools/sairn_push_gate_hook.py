@@ -282,6 +282,32 @@ def outgoing_files(repo, base=None, tip='HEAD'):
     `tip` is the LOCAL end of the range and was hardcoded to HEAD until
     2026-09-03. See pushed_tip() for what that cost.
     """
+    # ── AN EXPLICIT, RESOLVABLE `base` IS AUTHORITATIVE (2026-09-09) ─────────
+    # The widening fallback used to run even when `base` was given and its range
+    # came back legitimately EMPTY -- so a push that sends nothing was answered
+    # with the files of a WIDER range it is not sending. Reproduced by
+    # tests/push_gate/refspec_and_override_probe.py's A2 arm, which asserts
+    # `base..base` is empty and FAILED for a whole session purely because this
+    # clone was two commits ahead of origin/main: `git log base..base` was
+    # empty, so it fell through to `@{u}..base` and returned that commit's own
+    # files. Nothing about the code under test had changed.
+    #
+    # THE PRODUCTION SHAPE IS THE SAME BUG the refspec fix already closed once:
+    # a push being gated against commits it is not sending. It over-blocks
+    # rather than under-blocks, which is why it went unnoticed.
+    #
+    # "RESOLVABLE" IS CHECKED, NOT ASSUMED, and that is the whole reason this is
+    # not a one-line change. `base` is the REMOTE sha from git's pre-push stdin,
+    # and a clone that has not fetched may not hold that object at all. An
+    # unresolvable base must still widen -- returning [] there would mean "no
+    # seed touched" on a real push, which is the fail-OPEN direction on a
+    # blocking gate. So: resolvable base -> trust its range, empty or not;
+    # unresolvable base -> fall through exactly as before.
+    if base and subprocess.run(
+            ['git', '-C', repo, 'cat-file', '-e', base + '^{commit}'],
+            capture_output=True, timeout=20).returncode == 0:
+        out = git(repo, 'log', base + '..' + tip, '--name-only', '--pretty=format:')
+        return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
     refs = ([base] if base else []) + ['@{u}', 'origin/main']
     for ref in refs:
         out = git(repo, 'log', ref + '..' + tip, '--name-only', '--pretty=format:')
