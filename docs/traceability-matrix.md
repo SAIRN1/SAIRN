@@ -86,6 +86,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **SOUP register &mdash; every third-party component, with a real stated reason it is trusted** | **BUILT 2026-09-10 (Hank)**, and it is a standing practice, not a one-off | `tests/run_soup_register_probe.py` |
 | **A mutation arm that had stopped proving anything, reported under a headline that pointed the reader the wrong way** | **FIXED 2026-09-10 (Fourth), `8366aa89`** — all 15 arms of `tests/sairndental_outbound_queue_probe.py` bite again | `tests/sairndental_outbound_queue_probe.py` |
 | ~~The `employees` read refused THREE different facts with one sentence, and the sentence blamed the role~~ | **FIXED AND LIVE-VERIFIED 2026-09-10 (Fourth), `6213c339`** | `api/sd-data-employees-refusal.test.js` |
+| **Criticality tiering -- the third standing discipline, and the one nothing on this platform had** | **BUILT 2026-09-10 (Fourth), `0cc22581`** -- `docs/CRITICALITY-TIERS.md`, checked by `tools/criticality_tier_check.py`, held by `tests/run_criticality_tier_probe.py` | `tests/run_criticality_tier_probe.py` |
 | ~~29 rows claim negative controls and before 2026-09-08 NOT ONE app-fix suite had any~~ &mdash; **THAT HEADLINE WAS MINE AND IT WAS WRONG. Corrected within the hour: controls are common, they just live INSIDE the suites** | Open (decision), **and the first version of this row is retracted** &mdash; swept 2026-09-08 (CC) on Michael's direction, then corrected by CC the same session | `api/sairndental/public-book-guardian.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-settings-patch.test.js`, `tests/X_probe.py`, `tests/local_only_probe.py`, `tests/sairnbiz_server_backup.js`, `tests/sairndental_coverage_edit.js`, `tests/sairnlaw_hydrate.js`, `tests/sairnsenior_org_hydrate.js`, `tests/suite_control_backfill_probe.py`, `tests/sv_storage_guard.js` |
 | ~~No app clears local data on a license/device re-key; storage keys are not license-scoped~~ | **CLOSED 2026-09-03 for 13 of 15 apps (Fourth, `343c5a3`)** — SAIRNdental, senior, care, build, design, law, legacy, roofing, code, biz, grounds, scape, freedom. **NOT by the fix this row proposed, an | `tests/licence_rekey_isolation.js` |
 | ~~The same false *"server sync not yet enabled for this app"* message is still on 29 sites in `sairnlaw.html` and 58 in `sairnlegacy.html`~~ | **CLOSED 2026-09-05 (Hank)** — SAIRNlegacy done in `dc02df8`, live-verified; **SAIRNlaw was ALREADY done and this row's 29 was stale** | `tests/sairnlegacy_write_failure_voice.js` |
@@ -195,7 +196,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**79 of 269 test files are traced to a stated requirement. 190 are not.**
+**80 of 270 test files are traced to a stated requirement. 190 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
