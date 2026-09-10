@@ -742,6 +742,16 @@
       "claimed_at_epoch": 1789082462.1179202,
       "status": "released",
       "released_at": "2026-09-10T23:26:22Z"
+    },
+    {
+      "id": "fourth-1789083035",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "tier-B-measured-not-absence-of-evidence eight-verticals",
+      "claimed_at": "2026-09-10T23:30:35Z",
+      "claimed_at_epoch": 1789083035.3072536,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
