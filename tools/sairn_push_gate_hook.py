@@ -144,6 +144,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 # The canonical licence per app. These are the demo/verification keys already
 # committed in sql/*_license_seed.sql -- no secret is introduced by naming them,
@@ -189,6 +190,84 @@ SEED_PATTERNS = [
 # and are deliberately NOT duplicated, because two copies of a gate is how one
 # of them silently goes stale.
 MODE = 'pretooluse'
+
+# ── CHECK 9: THE NAMED GUARD AND SEAM TESTS BLOCK (2026-09-10) ─────────
+# Michael's decision, after a PROBE fixture commit deleted
+# `service_methods: body.service_methods` from api/legal-deadlines.js and
+# shipped. api/_lib/deadline-endpoint-inputs.test.js -- named three lines
+# above that very line as "the guard against a third instance" -- FAILED
+# EXACTLY AS DESIGNED and could not stop it, because the whole suite is
+# wired REPORT-ONLY after a push. A guard that catches something and is
+# powerless to act on it is the specific risk this closes.
+#
+# IT IS NOT THE FULL SUITE, DELIBERATELY. 146 files on every push is a real
+# wall-time tax on every session, and most of them test one unit's
+# behaviour -- a class that fails when the author changed something and is
+# already caught by the author running it. The registry below is the SEAM
+# class: tests that check two independently-maintained sides still AGREE.
+# Those fail when somebody ELSE changed one side, which is why they arrive
+# silently, and often through a rebase rather than through a working-tree
+# edit.
+#
+# WHOLE TREE, NOT THE FILES THIS PUSH TOUCHES, and that is the point rather
+# than an oversight. Checks 5, 6 and 7 scope to changed files precisely so a
+# push does not answer for somebody else's commit. A seam test is the
+# opposite case: fab44663 broke api/legal-deadlines.js and arrived in every
+# clone by rebase, so scoping to touched files would have skipped the one
+# test that names it. The cost of the wider scope is that a push can be
+# denied for a regression it did not cause -- which is the correct trade
+# here, because the alternative is shipping on top of a known-broken seam,
+# and the refusal names the test and what it guards so the reader is not
+# left guessing.
+#
+# EVERY ENTRY IS A RECORDED DEFECT, not a test somebody liked. Adding one is
+# a registry entry with the same four fields, and a test with no real defect
+# behind it does not belong here -- it belongs in the report-only runner.
+GUARD_TESTS = [
+    ('api/_lib/deadline-endpoint-inputs.test.js',
+     'the endpoint forwards every input the deadline engine reads',
+     'The engine grew `service_methods` on 2026-08-27 and api/legal-deadlines.js '
+     'was never updated, so the field was silently dropped on every live request '
+     'for five days: Florida returned +5 days and an assumed exclusivity even when '
+     'the caller sent ["mail","email"], on the shortest answer period in the '
+     'engine, and Utah\'s +7 became unreachable. Both per-state suites were green '
+     'throughout -- 14/14 and 59/59 -- because they call computeDeadline() '
+     'directly and never traverse the endpoint.'),
+    ('api/_lib/employee-lifecycle-wiring.test.js',
+     'each auth endpoint passes the shared helper THE SAME roles its own setup '
+     'gate enforces',
+     'The shared helper takes PROVISIONING_ROLES as a parameter so each app can '
+     'pass its own, and the wrong list is invisible in review because it looks '
+     'like every other app\'s. CLAUDE.md records the live case: SAIRNcode\'s is '
+     '`admin`, not `owner`, and a guard hardcoding `owner` passes it clean '
+     'forever while checking nothing.'),
+    ('api/preauth-envelope-ordering.test.js',
+     'the fourteen data endpoints still authenticate before they refuse',
+     'Not redundant with check 7, which scopes to the api/ files THIS push '
+     'touches. This asserts the ordering across all fourteen from source '
+     'anchors regardless of what the push contains -- the case where somebody '
+     'else\'s commit reorders one and arrives here by rebase. It anchors on CODE '
+     'and never on message text, because the detector\'s own boundary regex once '
+     'matched `verifySessionToken(` inside a header comment and reported two '
+     'defective files as clean.'),
+    ('tests/st_reports_failure.js',
+     'no storage wrapper on the platform can fail silently',
+     'A write that returns false to nobody and logs nothing is indistinguishable '
+     'from a write that worked; in SAIRNcare all 28 st() call sites ignored the '
+     'return and in SAIRNfreedom all 78 did. The bare-catch count is per app and '
+     'fails ABOVE its number as well as below, so a new silent catch cannot enter '
+     'a wrapper unnoticed -- it caught exactly that on 2026-09-10 when a server '
+     'backup added one to SAIRNfreedom.'),
+    ('api/_lib/deadline-coverage-contract.test.js',
+     'every disclosed coverage gap is actually disclosed, in the channel that '
+     'was decided on',
+     'JURISDICTION_COVERAGE is the single channel for a disclosed gap, by '
+     'Michael\'s decision of 2026-09-01. Two jurisdictions previously asserted '
+     'their gaps were row-level and an audit measured that claim false -- 2 of '
+     'Utah\'s 9 rows and 2 of Nevada\'s 10 carried any omission note -- so a '
+     'caller was told through neither channel.'),
+]
+
 
 
 def deny(reason):
@@ -1228,6 +1307,93 @@ def main():
                 OVERRIDE_HINT,
             ]))
 
+    # A SUITE RUN IN FLIGHT MUST NOT BE READ AS A FAILURE. run_all_tests.py takes
+    # a per-clone lock in tempdir (deliberately NOT in the working tree, so it
+    # cannot make clean-tree probes skip), and several of its probes mutate
+    # tracked files for the length of one arm. Reading the working tree during
+    # that window is exactly the mid-run-vs-residue confusion this repo spent a
+    # session on -- so if the lock is held, check 9 says COULD NOT TELL and
+    # allows, loudly. It never denies on a maybe.
+    _suite_busy = False
+    try:
+        import hashlib as _hl, tempfile as _tf3
+        _lock = os.path.join(_tf3.gettempdir(),
+                             'sairn-suite-%s.lock'
+                             % _hl.sha256(repo.encode('utf-8')).hexdigest()[:16])
+        _suite_busy = os.path.exists(_lock) and (time.time() - os.path.getmtime(_lock)) < 900
+    except Exception:
+        _suite_busy = False
+
+    _guard_fail = []
+    _guard_unrun = []
+    if not _suite_busy:
+        for _t, _guards, _why in GUARD_TESTS:
+            _p = os.path.join(repo, _t)
+            if not os.path.isfile(_p):
+                # A registry entry naming a file that is gone is a suppression
+                # nobody would notice. Reported, never a denial.
+                _guard_unrun.append((_t, 'the file does not exist'))
+                continue
+            try:
+                _r = subprocess.run(['node', _p], capture_output=True, text=True,
+                                    timeout=120, cwd=repo)
+            except Exception as _e:
+                _guard_unrun.append((_t, '%s: %s' % (type(_e).__name__, _e)))
+                continue
+            if _r.returncode != 0:
+                _out = ((_r.stdout or '') + (_r.stderr or '')).strip().splitlines()
+                _guard_fail.append((_t, _guards, _why,
+                                    [l for l in _out if l.strip()][-12:]))
+
+    if _guard_fail:
+        _lines = [
+            "Blocked: a named GUARD test is failing. These are the seam tests --",
+            "the ones that check two independently-maintained sides still agree --",
+            "and they are blocking because on 2026-09-10 one of them caught a live",
+            "legal-deadline field being dropped and was powerless to stop the push.",
+            "",
+        ]
+        for _t, _guards, _why, _tail in _guard_fail:
+            _lines += ["  %s" % _t,
+                       "    GUARDS: %s" % _guards,
+                       "    WHY IT EXISTS: %s" % _why,
+                       "    OUTPUT:"]
+            _lines += ["      " + l for l in _tail]
+            _lines.append("")
+        _lines += [
+            "IT MAY NOT BE YOUR CHANGE. This check reads the WHOLE working tree, not",
+            "just the files this push touches, because a seam breaks when somebody",
+            "ELSE changes one side and it arrives here by rebase -- which is exactly",
+            "how the 2026-09-10 case reached every clone. Run the named test, read",
+            "what it says, and fix the seam. Do not raise a count or relax an",
+            "assertion to get past this: on 2026-09-10 the count that looked like an",
+            "obstacle was the thing that caught the regression.",
+            "",
+            OVERRIDE_HINT,
+        ]
+        deny("\n".join(_lines))
+
+    # ONE CONTEXT OBJECT PER RUN, NOT TWO. Check 1 further down has its own
+    # "could not tell" emitter, and printing two JSON objects on stdout is a
+    # PreToolUse payload nothing promises to read past the first of. So this is
+    # STORED and emitted at whichever exit is actually reached, which also means
+    # a guard note can never silently displace a seed note.
+    guard_note = ''
+    if _suite_busy or _guard_unrun:
+        _note = []
+        if _suite_busy:
+            _note.append("the full suite holds the run lock, so the working tree may be "
+                         "mid-mutation and the guard tests were NOT run")
+        for _t, _why in _guard_unrun:
+            _note.append("%s could not be run (%s)" % (_t, _why))
+        guard_note = ("Guard-test gate (check 9) COULD NOT TELL: " + "; ".join(_note)
+                      + ". The push is allowed, because a check that cannot run must "
+                        "not block a legitimate push -- but nothing was verified "
+                        "about these seams. Re-run them by hand and report the real "
+                        "result rather than treating this as a pass.")
+        if MODE == 'prepush':
+            sys.stderr.write("\n" + guard_note + "\n\n")
+
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
     for path in changed:
@@ -1235,6 +1401,9 @@ def main():
             if pattern.match(path) and app not in apps:
                 apps.append(app)
     if not apps:
+        if guard_note and MODE != 'prepush':
+            print(json.dumps({"hookSpecificOutput": {
+                "hookEventName": "PreToolUse", "additionalContext": guard_note}}))
         sys.exit(0)
 
     # ── COMPARE LIVE AGAINST THE PUSHED COMMIT, NOT THE WORKING TREE ────────
@@ -1320,8 +1489,14 @@ def main():
                       "push, but nothing was verified about that app's live rules. Run "
                       "tools/sairn_load_state_check.py --app <app> --key <key> and report the real result "
                       "rather than treating this as a pass."
+                    + ((" " + guard_note) if guard_note else "")
             }
         }))
+    elif guard_note:
+        # Reached when check 1 had nothing to say and check 9 did. Same object,
+        # one emission -- see the note where guard_note is built.
+        print(json.dumps({"hookSpecificOutput": {
+            "hookEventName": "PreToolUse", "additionalContext": guard_note}}))
     sys.exit(0)
 
 
