@@ -722,7 +722,41 @@ module.exports = async (req, res) => {
       // StoneDesk roles) would slip through this gate unintentionally.
       // Caught while generalizing api/_lib/auth.js for api/sb-auth.js.
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
-      if (!session || EMPLOYEES_READ_DENIED_ROLES[session.role]) {
+      // ── THE REFUSAL BLAMED THE ROLE FOR A CAUSE THAT WAS THE APP (2026-09-10) ──
+      // One message covered three different facts: no session at all, a session
+      // for ANOTHER app, and a StoneDesk session whose role is denied. Only the
+      // third is about a role, and the sentence asserted the third every time.
+      //
+      // Found by holding a valid SAIRNbiz owner session and being told "Your
+      // role does not have access to employee records" -- which sends the
+      // reader to the role model of an app that was never the problem. It is
+      // not a security defect and it is not cosmetic either: it is the same
+      // class as "no patients" versus "you are not linked yet" elsewhere in
+      // this file, where a distinct code exists precisely so the client can
+      // say WHICH.
+      //
+      // THE SECOND VERIFY IS FOR THE MESSAGE AND FOR NOTHING ELSE, and the
+      // distinction is load-bearing. `session` above -- the one bound to
+      // 'stonedesk' -- remains the ONLY thing any authorization reads. The
+      // unbound call below is deliberately not assigned anywhere it could be
+      // mistaken for a session, because dropping expectedApp is exactly the
+      // looseness the comment above warns about: this branch's deny-list names
+      // only StoneDesk roles, so a SAIRNbiz role would slip through it.
+      if (!session) {
+        const otherApp = verifySessionToken(tokenFromRequest(req), licHash);
+        if (otherApp && otherApp.app !== 'stonedesk') {
+          // Discloses nothing the caller does not already hold: they came with
+          // a valid session for that app, on this licence.
+          res.status(403).json({ error: { code: 'WRONG_APP_SESSION', message:
+            'The employee roster is read with a StoneDesk session. Yours is a '
+            + otherApp.app + ' session, so this is not about your role -- SAIRNbiz '
+            + 'writes this roster and StoneDesk reads it.' } });
+          return;
+        }
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'No valid session for employee records' } });
+        return;
+      }
+      if (EMPLOYEES_READ_DENIED_ROLES[session.role]) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Your role does not have access to employee records' } });
         return;
       }
