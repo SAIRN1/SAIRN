@@ -375,6 +375,25 @@ REGISTRY = [
                           'data. SAIRNlaw wrote 20 resources and read ONE back',
         'evidence': 'real run 2026-09-10: 0 findings, 0 could-not-tell, exit 0',
     },
+    {
+        'tool': 'traceability_matrix.py',
+        'mode': 'once',
+        'args': ['--check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-10, the day it was built',
+        'catches': 'docs/traceability-matrix.md no longer matching the '
+                   'sources it is derived from -- a guard test, a gate '
+                   'check, a registry entry or an index row moved and the '
+                   'matrix did not',
+        'why_it_matters': 'CLAUDE.md records that a GENERATED artefact which '
+                          'must be regenerated after every edit reproduces the '
+                          'silent-failure shape it exists to catch. This is the '
+                          'document an outside auditor would read, so it going '
+                          'quietly stale is the worst version of that',
+        'evidence': 'built and wired the same day: 21-check probe including the '
+                    'one that matters -- add a GUARD_TESTS entry and --check '
+                    'goes RED, regenerate and it agrees again',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
@@ -422,7 +441,11 @@ def run_one(entry, show_all, verbose=False):
     targets = app_files(verbose) if entry['mode'] == 'apps' else [None]
     findings, unrun = [], []
     for t in targets:
-        cmd = [sys.executable, os.path.join('tools', tool)] + ([t] if t else [])
+        # `args` lets an entry run a tool in a specific MODE -- the matrix
+        # is registered as `--check`, not as a regeneration, because a
+        # report-only checker that WRITES is not report-only.
+        cmd = ([sys.executable, os.path.join('tools', tool)]
+               + list(entry.get('args', [])) + ([t] if t else []))
         try:
             r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True,
                                timeout=300)
