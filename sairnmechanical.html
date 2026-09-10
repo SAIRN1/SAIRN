@@ -1574,11 +1574,21 @@ async function runBlueprintAI(input){
     unknown:  'background:#e5e7eb;color:#374151'
   };
 
-  function mechEsc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-  }
+  // mechEsc REMOVED HERE 2026-09-09 -- it was DEAD, not lost. A second
+  // declaration of the same name sits later in this same script block, and a
+  // function declaration hoists, so THAT one won for all 26 call sites and
+  // this one had never run. Both escaped the same five characters and were
+  // proven byte-identical over ten inputs (null, undefined, 0, '', a script
+  // tag, mixed quotes, an already-escaped entity, an object, an array) before
+  // this was touched, so removing it changes nothing.
+  //
+  // Found by the first real run of tools/sairn_dead_button_audit.py, section
+  // D1 -- Guardian check 27 has said "run it against every app file before
+  // declaring it done" the whole time and nothing ever did.
+  //
+  // The duplicate was harmless only because the two agreed. An edit to either
+  // one -- adding a character to the escape set, say -- would have silently
+  // reached none of the call sites, in an HTML ESCAPER, which is Guardian 25.
 
   // MECH_NOT_SHOWN -- the table's own version of the distinction the notes
   // above already make. Every failure path below (401/403, error, unprovisioned)
