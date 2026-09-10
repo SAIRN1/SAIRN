@@ -734,6 +734,16 @@
       "claimed_at_epoch": 1789047819.8012264,
       "status": "released",
       "released_at": "2026-09-10T13:56:28Z"
+    },
+    {
+      "id": "cc-1789049061",
+      "session": "cc",
+      "subject": "sairndental-vendor-collections-and-law-billingcodes",
+      "task": "server backup",
+      "claimed_at": "2026-09-10T14:04:21Z",
+      "claimed_at_epoch": 1789049061.6145644,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
