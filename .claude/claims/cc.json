@@ -814,6 +814,16 @@
       "claimed_at_epoch": 1789082403.2464519,
       "status": "released",
       "released_at": "2026-09-10T23:43:00Z"
+    },
+    {
+      "id": "cc-1789084216",
+      "session": "cc",
+      "subject": "tool-blind-spot-audit",
+      "task": "checkers that exit clean while silently not looking",
+      "claimed_at": "2026-09-10T23:50:16Z",
+      "claimed_at_epoch": 1789084216.002908,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
