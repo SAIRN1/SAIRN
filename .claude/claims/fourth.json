@@ -672,6 +672,16 @@
       "claimed_at_epoch": 1789052399.5306745,
       "status": "released",
       "released_at": "2026-09-10T17:20:14Z"
+    },
+    {
+      "id": "fourth-1789061897",
+      "session": "fourth",
+      "subject": "sairnvet",
+      "task": "hydration-suppression-no-finally plus stale-peerconsult-cross-device-toast",
+      "claimed_at": "2026-09-10T17:38:17Z",
+      "claimed_at_epoch": 1789061897.9561932,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
