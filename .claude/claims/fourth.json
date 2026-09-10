@@ -740,8 +740,8 @@
       "task": "apply-tier-inheritance-to-public-surfaces",
       "claimed_at": "2026-09-10T23:21:02Z",
       "claimed_at_epoch": 1789082462.1179202,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T23:26:22Z"
     }
   ]
 }
