@@ -316,6 +316,26 @@ def outgoing_files(repo, base=None, tip='HEAD'):
     return []
 
 
+def outgoing_subjects(repo, base=None, tip='HEAD'):
+    """(sha, subject) for the commits this push would actually send.
+
+    Same range and the same fallback order as outgoing_files(), for the same
+    reasons -- see its comments. Kept as a separate function rather than a flag
+    on that one because the two answer different questions and every caller of
+    outgoing_files() wants paths.
+    """
+    if base and subprocess.run(
+            ['git', '-C', repo, 'cat-file', '-e', base + '^{commit}'],
+            capture_output=True, timeout=20).returncode == 0:
+        out = git(repo, 'log', base + '..' + tip, '--pretty=format:%H %s')
+        return [tuple(ln.split(' ', 1)) for ln in out.splitlines() if ' ' in ln]
+    for ref in ([base] if base else []) + ['@{u}', 'origin/main']:
+        out = git(repo, 'log', ref + '..' + tip, '--pretty=format:%H %s')
+        if out.strip():
+            return [tuple(ln.split(' ', 1)) for ln in out.splitlines() if ' ' in ln]
+    return []
+
+
 def prepush_base():
     """Remote sha for the ref being pushed, read from git's pre-push stdin.
 
@@ -1143,6 +1163,70 @@ def main():
         # Fails OPEN, loudly, same standard as every other check here.
         print('NOTE: the pre-auth oracle scan could not run (%s: %s), so this push '
               'is UNCHECKED for pre-auth disclosures.' % (type(_e).__name__, _e))
+
+    # ── CHECK 8: A PROBE FIXTURE COMMIT MUST NOT REACH ORIGIN (2026-09-10) ──
+    # Not speculative. On 2026-09-09 `b909dbee "PROBE clean endpoint change"` --
+    # arm 1 of tests/push_gate/check7_probe.py, a one-line comment planted in
+    # api/sb-auth.js -- was the LIVE TIP of origin/main and shipped to
+    # production. It was reverted in 86bf4b68 and the mechanism written down;
+    # this is the mechanism that stops the next one.
+    #
+    # HOW IT HAPPENS, and why no probe is at fault. check4_probe and
+    # check7_probe both commit a fixture, `git push --dry-run` it, and unwind
+    # with `git reset --mixed` in a finally. They cannot publish anything
+    # themselves. But between the commit and the reset the PROBE commit is
+    # sitting on the working branch, and an ordinary `git push` from that clone
+    # in that window carries it -- at which point it looks like one more line of
+    # work.
+    #
+    # THE WINDOW IS NOT RARE ANY MORE, which is what turned this from a filed
+    # observation into a fix. tools/run_all_tests.py runs after every push, and
+    # on 2026-09-09 check4_probe was repaired after twelve days of silently
+    # skipping -- so both probes now really run, in four clones, after every
+    # push. The window was observed live the next morning: HEAD sat on
+    # `PROBE seam violation` for minutes and returned on its own.
+    #
+    # A DRY RUN IS EXEMPT, and that is a correctness requirement rather than a
+    # convenience. A dry run publishes nothing, so it cannot strand anything --
+    # and the probes' own "a clean change is NOT blocked" arms exist to prove
+    # the gate lets a good push through. If this check denied those, the arms
+    # would stop short of the thing they name and could no longer tell
+    # "check N allowed it" from "everything is denied", which is the
+    # test-cannot-reach-what-it-names failure this repo already has a skill
+    # section about.
+    #
+    # The two modes detect a dry run differently because they are handed
+    # different things. PreToolUse sees the command text. A pre-push hook is
+    # given no signal at all by git -- verified, not assumed -- so the probes
+    # declare themselves with SAIRN_PROBE_PUSH=1 on the subprocess they spawn.
+    # That escape is deliberately narrow: it suppresses THIS check only, and a
+    # real push that sets it is defeating a gate it had to go out of its way to
+    # defeat, which is the same standing as SAIRN_SEED_GATE=off and should be
+    # said out loud the same way.
+    _dry = bool(re.search(r'(^|\s)(--dry-run|-n)(\s|$)', cmd)) if MODE != 'prepush' \
+        else os.environ.get('SAIRN_PROBE_PUSH', '') == '1'
+    if not _dry:
+        _probes = [(sha, subj) for sha, subj in outgoing_subjects(repo, base, tip)
+                   if re.match(r'^PROBE\b', subj)]
+        if _probes:
+            deny("\n".join([
+                "Blocked: this push carries a PROBE fixture commit. That is not a change",
+                "anybody made -- it is a test fixture a probe strands on the branch when it",
+                "is interrupted between its commit and its `git reset --mixed`.",
+                "",
+            ] + ["  %s  %s" % (s[:8], t) for s, t in _probes] + [
+                "",
+                "This has already happened once: b909dbee was the live tip of origin/main",
+                "on 2026-09-09 and shipped to production before it was reverted. The content",
+                "was a comment and harmless; the next one may not be.",
+                "",
+                "Drop it and push again -- `git reset --mixed <sha>^` if it is the newest",
+                "commit -- and check `git status` for a fixture file it also left behind.",
+                "If a probe is running RIGHT NOW this is not residue and there is nothing to",
+                "clean: wait for it to finish and the commit will disappear on its own.",
+                "",
+                OVERRIDE_HINT,
+            ]))
 
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []

@@ -12,8 +12,22 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 EP = 'api/legal-deadlines.js'
 
 
+# ── THIS PROBE DECLARES ITSELF TO PUSH-GATE CHECK 8 (2026-09-10) ──────────
+# Check 8 refuses a push carrying a commit whose subject starts with PROBE,
+# because one of this file's own fixtures reached origin/main and shipped to
+# production on 2026-09-09. This probe's pushes are `--dry-run` and publish
+# nothing, so they are exempt -- but git hands a pre-push hook NO signal that a
+# push is a dry run, so the exemption has to be declared rather than detected.
+#
+# It suppresses CHECK 8 ONLY. It is set here, in the probe that plants the
+# fixture, and nowhere else. A real push that sets it is defeating a gate it had
+# to go out of its way to defeat.
+PROBE_ENV = dict(os.environ, SAIRN_PROBE_PUSH='1')
+
+
 def run(*a, **k):
-    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, **k)
+    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True,
+                          env=PROBE_ENV, **k)
 
 
 def clean_tree():
