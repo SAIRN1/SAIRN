@@ -1478,3 +1478,39 @@ preflight does.
 one clone; four clones pushing is real load. If it becomes a problem the answer
 is scoping the `apps`-mode checkers to files the push actually touched, not
 dropping checkers.
+
+## 2026-09-10 (Cody) -- SAIRNvet live demo-seed: verified closed, three findings handed to Hank
+
+**Did not claim and did not edit `sairnvet.html`.** Hank held
+`sairnvet-demo-seed-reaching-live-server` before the dispatch reached me and had
+already fixed and pushed it (`a858cab7`), with the file still open in their
+clone. Michael's call: fold my three findings into Hank's claim.
+
+**Item 1 CLOSED, and verified against the DEPLOYED file rather than the repo:**
+`svSeedStore` live at `sairn.vercel.app/sairnvet` with **39 call sites**,
+setting and clearing the flag in a `finally`; `svSyncCollection` returns
+immediately when suppressed; and **derived from the deployed source, 46 getters
+with ZERO seeding outside the wrapper.** Deriving it beat counting it -- the
+count could have been right while one getter slipped past.
+
+**Three findings handed over, all confirmed on the live file:**
+
+1. **`sv_peerconsults` is in `SV_SYNCED` and every photo consult write is
+   REJECTED.** `image: pcCapturedB64` is a full base64 JPEG against
+   `check (octet_length(data::text) <= 65536)`. Only surfacing is a
+   `console.warn`. **And the toast still says "no cross-device delivery yet"**
+   on 2026-08-09 honest-language grounds that the collection is
+   localStorage-only -- **stale now that it is synced**, so the feature asserts
+   two contradictory things at once.
+2. **Additive-only hydration**: a corrected dosing entry never reaches a second
+   workstation, and nothing in the file says so.
+3. **NEW: the hydration path has no `try/finally`** (deployed 2143-2145).
+   `svSyncSuppressed=true; st(key,local); svSyncSuppressed=false;` -- `st()` is
+   the function hardened for quota and corrupt-store failures, and the
+   surrounding `.catch(function(){})` swallows the throw, so **one failed write
+   silences the backup for the rest of the session.** That is precisely what
+   `svSeedStore`'s `finally` exists to prevent, six lines above it.
+
+**Worth keeping: a guard added with a `finally` next to one without it is the
+shape to look for.** The fix and the defect were in the same function body,
+written the same day, and the difference between them is three characters.
