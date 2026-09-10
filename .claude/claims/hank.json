@@ -913,8 +913,8 @@
       "task": "sairndental vendor supply delete semantics reviewer not author",
       "claimed_at": "2026-09-10T18:52:49Z",
       "claimed_at_epoch": 1789066369.0499067,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T18:59:32Z"
     }
   ]
 }
