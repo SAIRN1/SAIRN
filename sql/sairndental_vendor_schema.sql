@@ -17,12 +17,23 @@
 -- selective shape is worse than a uniformly local app, for the same reason it
 -- was worse in StoneDesk: what survives looks authoritative.
 --
--- RESOURCE NAMES ARE NOT THE STORAGE KEYS HERE, and that is this app's existing
--- convention rather than a new one: DNT_SYNC_RESOURCES is a list of
--- [resource, storage-key] PAIRS (dnt_patients <-> dnt_patients_list). The four
--- pairs added are dnt_supplies <-> dnt_supplies_list, dnt_vendor_orders <->
--- dnt_vendor_order_history, dnt_vendor_contacts <-> dnt_vendor_contacts and
--- dnt_vendor_pricing_rules <-> dnt_vendor_pricing_rules.
+-- TWO OF THE FOUR RESOURCE NAMES ARE NOT THEIR STORAGE KEYS, and that is this
+-- app's existing convention rather than a new one: DNT_SYNC_RESOURCES is a list
+-- of [resource, storage-key] PAIRS (dnt_patients <-> dnt_patients_list). The
+-- four pairs added are:
+--   dnt_supplies             <-> dnt_supplies_list
+--   dnt_vendor_orders        <-> dnt_vendor_order_history
+--   dnt_vendor_contacts      <-> dnt_vendor_contacts          (same name)
+--   dnt_vendor_pricing_rules <-> dnt_vendor_pricing_rules     (same name)
+--
+-- THE TWO THAT MATCH DO SO ON PURPOSE. tools/local_only_collection_check.py
+-- resolves coverage by matching a resource name against a storage key, and a
+-- DIFFERING pair is only visible to it inside a [resource, key] literal --
+-- which these two have not got, because they are single objects hydrated in
+-- their own block rather than through DNT_SYNC_RESOURCES. Naming them
+-- identically is what makes their coverage MEASURABLE instead of a permanent
+-- could-not-tell. The heading of this paragraph said "RESOURCE NAMES ARE NOT
+-- THE STORAGE KEYS HERE" as though it covered all four; it covers two.
 --
 -- TWO OF THE FOUR ARE SINGLE OBJECTS, NOT LISTS. dnt_vendor_contacts is a map
 -- keyed by vendor and dnt_vendor_pricing_rules is one settings object
