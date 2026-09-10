@@ -682,6 +682,16 @@
       "claimed_at_epoch": 1789061897.9561932,
       "status": "released",
       "released_at": "2026-09-10T17:46:27Z"
+    },
+    {
+      "id": "fourth-1789062577",
+      "session": "fourth",
+      "subject": "sairndental-outbound-queue-probe",
+      "task": "arm15-mutation-does-not-bite",
+      "claimed_at": "2026-09-10T17:49:37Z",
+      "claimed_at_epoch": 1789062577.1991713,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
