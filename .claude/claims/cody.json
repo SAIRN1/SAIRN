@@ -778,6 +778,16 @@
       "claimed_at_epoch": 1789046559.3580081,
       "status": "released",
       "released_at": "2026-09-10T13:46:12Z"
+    },
+    {
+      "id": "cody-1789048217",
+      "session": "cody",
+      "subject": "sairnmechanical",
+      "task": "toast-only buttons human read",
+      "claimed_at": "2026-09-10T13:50:17Z",
+      "claimed_at_epoch": 1789048217.532668,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
