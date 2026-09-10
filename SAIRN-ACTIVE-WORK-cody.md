@@ -1379,3 +1379,49 @@ picking onto a **detached worktree at `origin/main`** and pushing from there
 touches no file in the clone and cannot be raced. `scratchpad/wtpush.sh` does
 it; it reported failure after six attempts once while a manual retry succeeded
 immediately, so it wants more attempts and a backoff.
+
+## 2026-09-10 (Cody) -- second promotion batch: 4 -> 10 checkers
+
+CLAIMED and released: `promote-second-batch`. Six more of the 25 unwired
+checkers run against real code and promoted; **19 still unwired.**
+
+**Clean first time, promoted as they stood:** `md_table_check.py`,
+`div_balance_check.py`, `fail_open_check.py`, `discarded_verdict_check.py`.
+
+**Two were broken, and both in the same way as yesterday's C1 read: an
+INTENTIONAL pattern that a heuristic cannot tell from the defect it
+resembles.** That is now three instances in two days, and it is the thing to
+expect from any checker's first real run.
+
+- `duplicate_global_check.py` flagged `rBids` on `sairnbuild.html`. It is a
+  **deliberate wrapper** -- `var _origRBids = window.rBids;` then a
+  redefinition that CALLS it -- with a comment at the site reading *"Do NOT
+  'fix' this by deleting either half."* **Acting on the report would have
+  deleted a live feature to satisfy a checker.** Now behavioural: is the
+  original saved AND called? Every excused pair prints. Saving the reference
+  without calling it is still reported, because excusing every second
+  definition would switch the checker off.
+- `panel_nesting_check.py` **failed on 7 of 22 app files, every one for having
+  nothing to check.** Four defects:
+  1. `NO_PANELS_FOUND` exited **1** -- a failure for an empty question.
+  2. `page-` containers unmatched (the same miss as its sibling).
+  3. the name part excluded hyphens, so `panel-check-register` was invisible
+     **even under the convention it did support** -- nothing to do with
+     `page-`, and there all along.
+  4. SAIRNcash's `id="homePage"` has no separator, so the id test is now a
+     MATCHER rather than a string prefix.
+
+  `looks_navigated()` is **imported** from `nav_panel_check.py`, not copied.
+
+**One self-inflicted break, recorded:** a heredoc turned the sentinel
+`'\x00camel'` into a real NUL byte and broke the module; every app then
+"failed". Restored from git and re-applied from a script file. **A patch script
+containing escapes does not go in a heredoc** -- the same class as the earlier
+backslash-eating that made two regexes unparseable.
+
+**Note on the sairncash SKIP that briefly existed.** Adding the skip path made
+the hook fire on every push for one file with genuinely nothing to nest. I did
+not leave it and I did not silence it -- I taught the tool the camelCase
+convention so it now gives a real answer. A standing notice is how a
+report-only checker teaches people to ignore it, and hiding the notice is
+worse; the third option is to make the tool able to answer.
