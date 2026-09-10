@@ -121,8 +121,21 @@ DEVICE_STATE_SUFFIX = (
 # a key. Tuned against the six keys the unscoped version wrongly cleared.
 WINDOW = 300
 
-WRITE_LIT_RE = re.compile(r"\w*Data\(\s*'write'\s*,\s*'(\w+)'")
+# `\w*Data(` WAS TOO NARROW AND IT COST A FALSE ACCUSATION (2026-09-10).
+# stonedesk-hr.html sends both its collections to the server through
+# hrCall('write', 'sd_hr_employees', ...) -- a wrapper that does not end in
+# `Data`, so neither name was harvested and the page was reported as 2 of 2
+# collections kept on the device. Its localStorage write is an explicit CACHE,
+# commented as one, beside a real server write.
+#
+# The shape that is actually the platform convention is ACTION-FIRST --
+# f('write'|'read', '<resource>', payload) -- not a particular function name,
+# so that is what is matched. Deliberately still a LITERAL resource and still
+# an exact two-argument prefix: this widens which FUNCTION counts, not what a
+# server call looks like.
+WRITE_LIT_RE = re.compile(r"\w+\(\s*'write'\s*,\s*'(\w+)'")
 WRITE_OBJ_RE = re.compile(r"action:\s*'write'\s*,\s*resource:\s*'(\w+)'")
+READ_LIT_RE = re.compile(r"\w+\(\s*'read'\s*,\s*'(\w+)'")
 FN_RE = re.compile(r'(?:async\s+)?function\s+(\w+)\s*\(([^)]*)\)')
 
 
@@ -295,6 +308,27 @@ def collection_keys(src, setters):
             key = arg.strip("'") if arg.startswith("'") else const.get(arg)
             if key and (var.endswith('s') or 'list' in var or 'rows' in var or 'arr' in var):
                 listish_write.add(key)
+    # ── AN APP WITH NO WRAPPER STILL WRITES COLLECTIONS (2026-09-10) ────────
+    # The loop above only sees apps that HAVE a named setter. Three apps do not
+    # -- sairncash, sairncode and sairnroofing all call localStorage.setItem
+    # directly -- so `setters` came back empty, nothing was ever classified,
+    # and all three sat permanently in the "WROTE STORAGE, RESOLVED NO
+    # COLLECTIONS -- could not read these, NOT a pass" bucket. A standing
+    # unknown on three live apps, one of which (SAIRNcode) is a medical coding
+    # product holding claims, denials, providers and A/R.
+    #
+    # It is the SAME heuristic, applied to the bare call instead of a wrapper,
+    # and the JSON.stringify() form these apps actually use:
+    #     localStorage.setItem('sc_claims', JSON.stringify(list))
+    # Nothing is loosened -- the listish-variable test is unchanged, so a
+    # non-list write is still not called a collection.
+    for m in re.finditer(
+            r"localStorage\.setItem\(\s*('[\w.-]+'|[A-Za-z_$][\w$]*)\s*,\s*"
+            r"(?:JSON\.stringify\(\s*)?([A-Za-z_$][\w$]*)\s*[),]", src):
+        arg, var = m.group(1), m.group(2).lower()
+        key = arg.strip("'") if arg.startswith("'") else const.get(arg)
+        if key and (var.endswith('s') or 'list' in var or 'rows' in var or 'arr' in var):
+            listish_write.add(key)
 
     out = {}
     unclassified = set()
@@ -510,7 +544,7 @@ def scan(path):
         return None
     reg, has_reg = registered_names(path)
     named = set(WRITE_LIT_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
-    named |= set(re.findall(r"\w*Data\(\s*'read'\s*,\s*'(\w+)'", src))
+    named |= set(READ_LIT_RE.findall(src))
     named |= set(re.findall(r"action:\s*'read'\s*,\s*resource:\s*'(\w+)'", src))
     covered, unsure = covered_keys(src, local, reg | named)
     uncovered = sorted(k for k in local if k not in covered and k not in unsure)
