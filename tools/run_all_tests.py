@@ -1,4 +1,21 @@
-"""Run every test file in the repo, and NAME the ones it decided not to run.
+""""--hook" IS PAUSED AS OF 2026-09-10. See docs/2026-09-10-run-all-tests-hook-PAUSED.md.
+
+The PostToolUse/Bash entry that ran this file with --hook has been removed from
+.claude/settings.json. FIVE stranded PROBE commits reached origin/main in one
+day and a sixth was caught locally; one of them deleted
+`service_methods: body.service_methods` from api/legal-deadlines.js -- the exact
+line whose absence made SAIRNlaw run Florida five days late for five days.
+
+THE PROBE IS NOT WRONG, THE TRIGGER WAS. tests/push_gate/check4_probe.py commits
+to `main` and resets back, which is safe for ONE runner on a QUIET branch; the
+hook fired on every Bash tool call, so copies interleaved and whichever commit
+survived a reset got published by the next push.
+
+RUNNING THIS FILE BY HAND IS UNAFFECTED and remains the way to run the suite
+deliberately. Only the automatic trigger is off. Re-enable per that document,
+which carries the exact settings entry and the two conditions.
+
+Run every test file in the repo, and NAME the ones it decided not to run.
 
 WHY THIS EXISTS, and it is not tidiness. On 2026-09-08 two probes were found
 red, and neither had been red for a reason anybody chose:
