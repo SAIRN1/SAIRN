@@ -829,6 +829,16 @@
       "status": "released",
       "released_at": "2026-09-10T18:00:53Z",
       "matcher_override_note": "sairn_claim.py check BLOCKED this on `same app: sairndental` against fourth's `sairndental-outbound-queue-probe / arm15-mutation-does-not-bite`. Read fourth's actual task and files before overriding, per CLAUDE.md: theirs is tests/sairndental_outbound_queue_probe.py arm 15, and their clone shows nothing touched in sairndental (only an untracked piac.html). Mine is a READ-ONLY review of eb640ae8 -- api/_resources/sairndental.js, sql/sairndental_vendor_schema.sql and the vendor paths in sairndental.html -- which the open-work row explicitly asks an independent session to do. The only shared token is the app name. The subject is named accurately rather than reworded to slip past the matcher, and this note is the record. IF THE REVIEW FINDS SOMETHING, I FLAG IT RATHER THAN EDIT: sairndental.html is where the two could actually collide."
+    },
+    {
+      "id": "cody-1789063441",
+      "session": "cody",
+      "subject": "sairndental-vendor-object-write-confirmation",
+      "task": "",
+      "claimed_at": "2026-09-10T18:04:01Z",
+      "claimed_at_epoch": 1789063441.646642,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
