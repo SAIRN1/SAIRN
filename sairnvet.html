@@ -2042,6 +2042,39 @@ var SV_ID_FIELD={ sv_controlled:'drug' };
 // that CAME from the server, so echoing them back is pure noise.
 var svSyncSuppressed=false;
 
+// ── A DEMO SEED MUST NOT REACH THE CLINIC'S SERVER (2026-09-10) ────────────
+// FOUND BY INDEPENDENT REVIEW, AND IT WAS LIVE: sql/sairnvet_data_schema.sql
+// had already been run, so this was not a hypothetical.
+//
+// 39 of the 41 synced collections seed DEMO ROWS LAZILY -- every getX() writes
+// its own sample data on FIRST READ when the key is absent, through saveX() ->
+// st(). st() now carries the backup hook, so merely OPENING a panel on a fresh
+// or cleared device pushed fabricated records to the real tables. The
+// controlled-substance panel was the worst of them: invented Ketamine,
+// Butorphanol and Fentanyl balances with named vets, into a DEA-relevant
+// register. Hydration is additive-only and there is NO delete path anywhere in
+// this product, so a demo row that lands on the server spreads to every other
+// device and cannot be removed from the app.
+//
+// The comment above svSyncSuppressed said "Set while seeding or hydrating".
+// It was only ever set while HYDRATING -- that sentence described SAIRNbiz's
+// one-pass sbSeedRows(), which really does wrap its seeding in a try/finally.
+// This app has no such pass, so there was nothing to wrap and nobody noticed.
+//
+// WHY A WRAPPER AND NOT A SMARTER st(). st() cannot tell a seed from a real
+// first record: both write a key that does not exist yet. Inferring it from
+// "the key was absent" would silently drop the FIRST genuine record of any
+// collection from the backup, which trades this defect for a quieter one. The
+// caller knows it is seeding; only the caller can say so.
+//
+// The finally is not decoration: a throw inside a saver must not leave the
+// whole app's backup suppressed for the rest of the session.
+function svSeedStore(saver, rows){
+  svSyncSuppressed = true;
+  try { return saver(rows); }
+  finally { svSyncSuppressed = false; }
+}
+
 function svSyncCollection(key,next,prev){
   if(svSyncSuppressed) return;
   if(typeof svData!=='function') return;
@@ -2408,7 +2441,7 @@ function getWhiteboardPatients(){
     {id:'wb2', name:'Milo', location:'Kennel 1', status:'Critical — ICU', doctor:'Dr. Chen', notes:'GDV post-op, monitor q1h'},
     {id:'wb3', name:'Bella', location:'Cat Ward B', status:'Ready for Discharge', doctor:'Dr. Mitchell', notes:'Spay recovery complete'}
   ];
-  saveWhiteboardPatients(seed);
+  svSeedStore(saveWhiteboardPatients, seed);
   return seed;
 }
 
@@ -2531,7 +2564,7 @@ function getScheduleAppts(){
     {id:'sc3', time:'9:15 AM', patient:'Bessie (Farm)', type:'Herd Health Visit', doctor:'Dr. Mitchell', room:'Farm Call', status:'En Route'},
     {id:'sc4', time:'10:00 AM', patient:'Kiwi', type:'Wellness — Avian', doctor:'Dr. Chen', room:'Exam 3', status:'Scheduled'}
   ];
-  saveScheduleAppts(seed);
+  svSeedStore(saveScheduleAppts, seed);
   return seed;
 }
 
@@ -2689,7 +2722,7 @@ function getVitals(){
     {id:'vt2', patient:'Milo', species:'Canine', temp:103.9, hr:142, rr:38, weight:'18.1 kg', date:today},
     {id:'vt3', patient:'Star', species:'Equine', temp:99.8, hr:36, rr:14, weight:'512 kg', date:today}
   ];
-  saveVitals(seed);
+  svSeedStore(saveVitals, seed);
   return seed;
 }
 
@@ -2847,7 +2880,7 @@ function getLabResults(){
     {id:'lb2', patient:'Max', test:'CBC', result:'WNL', refRange:'—', status:'Resulted', manualFlag:'Normal', critical:false, notes:'', date:today},
     {id:'lb3', patient:'Bessie', test:'Milk Culture', result:'Staph aureus', refRange:'—', status:'Resulted', manualFlag:'Positive', critical:false, notes:'Treat per mastitis protocol', date:today}
   ];
-  saveLabResults(seed);
+  svSeedStore(saveLabResults, seed);
   return seed;
 }
 
@@ -2984,7 +3017,7 @@ function getImagingStudies(){
     {id:'im2', patient:'Star', study:'Distal Limb', modality:'Radiograph', doctor:'Dr. Chen', status:'Pending Read', findings:'', date:today},
     {id:'im3', patient:'Bella', study:'Abdomen', modality:'Ultrasound', doctor:'Dr. Mitchell', status:'In Progress', findings:'', date:today}
   ];
-  saveImagingStudies(seed);
+  svSeedStore(saveImagingStudies, seed);
   return seed;
 }
 
@@ -3106,7 +3139,7 @@ function getSurgeries(){
     {id:'sg2', patient:'Bella', procedure:'Spay', surgeon:'Dr. Chen', time:'9:30 AM', consent:true, status:'Complete', complication:false, complicationNote:'', duration:48, date:today},
     {id:'sg3', patient:'Milo', procedure:'Exploratory — GDV', surgeon:'Dr. Mitchell', time:'11:00 AM', consent:true, status:'In Recovery', complication:false, complicationNote:'', duration:null, date:today}
   ];
-  saveSurgeries(seed);
+  svSeedStore(saveSurgeries, seed);
   return seed;
 }
 
@@ -3248,7 +3281,7 @@ function getDentalRecords(){
     {id:'dt1', patient:'Whiskers', procedure:'Cleaning + Extractions', teeth:'2 (109, 209)', grade:'3', doctor:'Dr. Chen', date:'2026-07-03', duration:null},
     {id:'dt2', patient:'Max', procedure:'Cleaning', teeth:'0', grade:'1', doctor:'Dr. Mitchell', date:'2026-06-29', duration:null}
   ];
-  saveDentalRecords(seed);
+  svSeedStore(saveDentalRecords, seed);
   return seed;
 }
 
@@ -3399,7 +3432,7 @@ function getExamRooms(){
     {id:'er4', room:'Exam 4', status:'Open', patient:'', doctor:'', since:'—', cleaningStartedAt:null},
     {id:'er5', room:'Farm Call Bay', status:'Occupied', patient:'Bessie', doctor:'Dr. Mitchell', since:'9:15 AM', cleaningStartedAt:null}
   ];
-  saveExamRooms(seed);
+  svSeedStore(saveExamRooms, seed);
   return seed;
 }
 
@@ -3542,7 +3575,7 @@ function getTeleconsults(){
     {id:'tc1', client:'Smith, John', patient:'Max', reason:'Follow-up — skin recheck', doctor:'Dr. Mitchell', time:'2:00 PM', status:'Scheduled', satisfaction:null, date:today},
     {id:'tc2', client:'Doe, Jane', patient:'Whiskers', reason:'Diet question', doctor:'Dr. Chen', time:'—', status:'Completed', satisfaction:5, date:today}
   ];
-  saveTeleconsults(seed);
+  svSeedStore(saveTeleconsults, seed);
   return seed;
 }
 
@@ -3680,7 +3713,7 @@ function getLamenessExams(){
     {id:'lm1', patient:'Star', limb:'RF', grade:'2', block:'Positive to abaxial block', doctor:'Dr. Mitchell', followUp:false, date:today},
     {id:'lm2', patient:'Duke', limb:'LH', grade:'3', block:'Positive to fetlock block', doctor:'Dr. Mitchell', followUp:false, date:today}
   ];
-  saveLamenessExams(seed);
+  svSeedStore(saveLamenessExams, seed);
   return seed;
 }
 
@@ -3809,7 +3842,7 @@ function getFarmCalls(){
     {id:'fc1', date:'2026-07-07', client:'Miller Dairy Farm', species:'Cattle', reason:'Herd health check', status:'En Route', miles:null, charge:null},
     {id:'fc2', date:'2026-07-06', client:'Johnson Ranch', species:'Equine', reason:'Lameness + vaccines', status:'Complete', miles:null, charge:null}
   ];
-  saveFarmCalls(seed);
+  svSeedStore(saveFarmCalls, seed);
   return seed;
 }
 
@@ -3939,7 +3972,7 @@ function getReproRecords(){
     {id:'rp1', patient:'Belle', species:'Equine', procedure:'Ultrasound Pregnancy Check', outcome:'Confirmed Pregnant', notes:'Day 28', date:'2026-07-05'},
     {id:'rp2', patient:'Bessie', species:'Bovine', procedure:'Rectal Pregnancy Check', outcome:'Confirmed Pregnant', notes:'~5mo', date:'2026-07-02'}
   ];
-  saveReproRecords(seed);
+  svSeedStore(saveReproRecords, seed);
   return seed;
 }
 
@@ -4065,7 +4098,7 @@ function getEquineDentalRecords(){
     {id:'ed1', patient:'Star', procedure:'Routine Float', findings:'Mild points, corrected', doctor:'Dr. Mitchell', sedated:true, date:'2026-06-20'},
     {id:'ed2', patient:'Duke', procedure:'Float + Wolf Tooth Extraction', findings:'Retained wolf tooth', doctor:'Dr. Mitchell', sedated:true, date:'2026-06-25'}
   ];
-  saveEquineDentalRecords(seed);
+  svSeedStore(saveEquineDentalRecords, seed);
   return seed;
 }
 
@@ -4193,7 +4226,7 @@ function getPPEs(){
     {id:'pp1', horse:'Cash', buyer:'Thompson, Amy', seller:'Miller Ranch', result:'Passed with Notes', findings:'', radiographs:true, pages:null, date:'2026-07-01'},
     {id:'pp2', horse:'Ranger', buyer:'Lee, Kevin', seller:'Private Seller', result:'Failed', findings:'navicular changes', radiographs:true, pages:null, date:'2026-06-22'}
   ];
-  savePPEs(seed);
+  svSeedStore(savePPEs, seed);
   return seed;
 }
 
@@ -4333,7 +4366,7 @@ function getPatients(){
     {id:'pt5', name:'Kiwi', species:'Avian', breed:'African Grey', owner:'Nguyen, Lisa', age:15, lastVisit:'2026-07-02', status:'Wellness', added:'2022-09-14', visitsThisYear:1, chartComplete:true},
     {id:'pt6', name:'Shelly', species:'Chelonian', breed:'Sulcata Tortoise', owner:'Park, David', age:20, lastVisit:'2026-06-15', status:'MBD Recheck', added:'2026-07-01', visitsThisYear:1, chartComplete:false}
   ];
-  savePatients(seed);
+  svSeedStore(savePatients, seed);
   return seed;
 }
 
@@ -4801,7 +4834,7 @@ function getDocuments(){
     {id:'dc2', name:'Discharge Instructions — Spay/Neuter', type:'Discharge', updated:'2026-05-10', usedDates:[]},
     {id:'dc3', name:'Boarding Agreement', type:'Agreement', updated:'2026-04-22', usedDates:[]}
   ];
-  saveDocuments(seed);
+  svSeedStore(saveDocuments, seed);
   return seed;
 }
 
@@ -4877,7 +4910,7 @@ function getMobileStops(){
   var seed = [
     {id:'mv1', unit:'Mobile Unit 1', vet:'Dr. Mitchell', location:'Miller Dairy Farm', date:today, arrival:'08:15', departure:null, miles:null}
   ];
-  saveMobileStops(seed);
+  svSeedStore(saveMobileStops, seed);
   return seed;
 }
 
@@ -4967,7 +5000,7 @@ function getClaims(){
     {id:'pi1', patient:'Max', provider:'Trupanion', amount:412.00, status:'Submitted', submitted:'2026-07-05', reimbursed:null, reimbursedDate:null},
     {id:'pi2', patient:'Whiskers', provider:'Healthy Paws', amount:189.00, status:'Reimbursed', submitted:'2026-06-20', reimbursed:143.64, reimbursedDate:'2026-06-29'}
   ];
-  saveClaims(seed);
+  svSeedStore(saveClaims, seed);
   return seed;
 }
 
@@ -5038,7 +5071,7 @@ function getPortalRequests(){
     {id:'pt1', client:'Smith, John', request:'Appointment request — annual exam', status:'Confirmed', requested:'2026-07-06T09:00:00', responded:'2026-07-06T10:15:00'},
     {id:'pt2', client:'Doe, Jane', request:'Records request — vaccine history', status:'Sent', requested:'2026-07-07T14:00:00', responded:'2026-07-07T14:45:00'}
   ];
-  savePortalRequests(seed);
+  svSeedStore(savePortalRequests, seed);
   return seed;
 }
 
@@ -5099,7 +5132,7 @@ function getReferrals(){
     {id:'rf1', patient:'Milo', specialist:'Metro Veterinary Cardiology', reason:'DCM workup', status:'Consult scheduled', sent:'2026-07-05', returned:null},
     {id:'rf2', patient:'Rex', specialist:'Regional Ortho Referral', reason:'TPLO consult', status:'Awaiting records transfer', sent:'2026-07-02', returned:null}
   ];
-  saveReferrals(seed);
+  svSeedStore(saveReferrals, seed);
   return seed;
 }
 
@@ -5160,7 +5193,7 @@ function getReminders(){
     {id:'rm1', patient:'Max', type:'Rabies Booster', due:'2026-07-15', status:'Scheduled', contacted:true},
     {id:'rm2', patient:'Star', type:'Coggins Renewal', due:'2026-08-01', status:'Not yet contacted', contacted:false}
   ];
-  saveReminders(seed);
+  svSeedStore(saveReminders, seed);
   return seed;
 }
 
@@ -5251,7 +5284,7 @@ function getWellnessPlans(){
     {id:'wp1', patient:'Max', plan:'Adult Wellness Plus', monthly:52.00, renewal:'2027-01-15', status:'Active'},
     {id:'wp2', patient:'Whiskers', plan:'Senior Wellness', monthly:68.00, renewal:'2026-11-02', status:'Active'}
   ];
-  saveWellnessPlans(seed);
+  svSeedStore(saveWellnessPlans, seed);
   return seed;
 }
 
@@ -5377,7 +5410,7 @@ function getCogginsTests(){
     {id:'cg1', horse:'Star', owner:'Johnson, Sarah', date:'2026-07-01', labStatus:'Negative', certificate:'Issued'},
     {id:'cg2', horse:'Duke', owner:'Miller Ranch', date:'2026-07-05', labStatus:'Pending', certificate:'Not Issued'}
   ];
-  saveCogginsTests(seed);
+  svSeedStore(saveCogginsTests, seed);
   return seed;
 }
 
@@ -5500,7 +5533,7 @@ function getHerds(){
     {id:'hd1', herd:'Miller Dairy Farm', species:'Holstein Cattle', headCount:340, lastVisit:'2026-07-07', status:'Routine Check', vaccinationCompliance:null, scc:null},
     {id:'hd2', herd:'Green Pastures Ranch', species:'Angus Beef', headCount:890, lastVisit:'2026-06-28', status:'Vaccinations Current', vaccinationCompliance:null, scc:null}
   ];
-  saveHerds(seed);
+  svSeedStore(saveHerds, seed);
   return seed;
 }
 
@@ -5637,7 +5670,7 @@ function getWildlifeCases(){
     {id:'wr1', animal:'#2607-A', species:'Red-Tailed Hawk', reason:'Vehicle strike, wing fracture', intakeDate:'2026-06-19', status:'Rehab — Flight Conditioning', releaseDate:null},
     {id:'wr2', animal:'#2607-B', species:'Eastern Box Turtle', reason:'Vehicle strike, shell fracture', intakeDate:'2026-06-04', status:'Stabilizing', releaseDate:null}
   ];
-  saveWildlifeCases(seed);
+  svSeedStore(saveWildlifeCases, seed);
   return seed;
 }
 
@@ -5763,7 +5796,7 @@ function getConservationRecords(){
     {id:'cn1', species:'Amur Leopard', studbook:'SB-0442', program:'AZA SSP', status:'Active breeding recommendation', pairs:null},
     {id:'cn2', species:'Red Wolf', studbook:'SB-0198', program:'AZA SAFE', status:'Genetic management — hold', pairs:null}
   ];
-  saveConservationRecords(seed);
+  svSeedStore(saveConservationRecords, seed);
   return seed;
 }
 
@@ -5887,7 +5920,7 @@ function getComplianceItems(){
     {id:'cm2', item:'State Veterinary License — Dr. Mitchell', type:'State', dueDate:'2027-06-30'},
     {id:'cm3', item:'Radiation Safety Officer Training', type:'OSHA', dueDate:'2026-08-15'}
   ];
-  saveComplianceItems(seed);
+  svSeedStore(saveComplianceItems, seed);
   return seed;
 }
 
@@ -6014,7 +6047,7 @@ function getClients(){
     {id:'cl1', client:'Smith, John', patients:'1', lastVisit:'2026-07-05', balance:0.00, status:'Active', since:null},
     {id:'cl2', client:'Miller Dairy Farm', patients:'340 head', lastVisit:'2026-07-07', balance:1240.00, status:'Active — Net 30', since:null}
   ];
-  saveClients(seed);
+  svSeedStore(saveClients, seed);
   return seed;
 }
 
@@ -6138,7 +6171,7 @@ function getInvoices(){
     {id:'iv1', num:'INV-10422', client:'Smith, John', amount:287.00, status:'Paid', date:'2026-07-05'},
     {id:'iv2', num:'INV-10419', client:'Miller Dairy Farm', amount:1240.00, status:'Net 30 — Open', date:'2026-06-30'}
   ];
-  saveInvoices(seed);
+  svSeedStore(saveInvoices, seed);
   return seed;
 }
 
@@ -6265,7 +6298,7 @@ function getBillingTx(){
     {id:'bl1', client:'Smith, John', method:'Card', amount:287.00, status:'Approved', date:'2026-07-05'},
     {id:'bl2', client:'Doe, Jane', method:'Payment Plan', amount:95.00, status:'Active', date:'2026-07-01'}
   ];
-  saveBillingTx(seed);
+  svSeedStore(saveBillingTx, seed);
   return seed;
 }
 
@@ -6392,7 +6425,7 @@ function getFinancials(){
     {id:'fn1', category:'Pharmacy Revenue', budget:40000, actual:44200},
     {id:'fn2', category:'Labor Costs', budget:60000, actual:58900}
   ];
-  saveFinancials(seed);
+  svSeedStore(saveFinancials, seed);
   return seed;
 }
 
@@ -6514,7 +6547,7 @@ function getReports(){
     {id:'rp1', report:'Monthly Revenue Summary', category:'Financial', frequency:'Monthly', lastRun:'2026-07-01'},
     {id:'rp2', report:'Vaccination Compliance', category:'Clinical', frequency:'Weekly', lastRun:'2026-07-06'}
   ];
-  saveReports(seed);
+  svSeedStore(saveReports, seed);
   return seed;
 }
 
@@ -6684,7 +6717,7 @@ function getStaff(){
     {id:'st2', name:'Dr. Amy Chen', role:'Associate DVM', credential:'Current', nextShift:'2026-07-07 8:00 AM'},
     {id:'st3', name:'Reyes, Carlos', role:'Veterinary Technician', credential:'Current', nextShift:'2026-07-07 7:30 AM'}
   ];
-  saveStaff(seed);
+  svSeedStore(saveStaff, seed);
   return seed;
 }
 
@@ -6800,7 +6833,7 @@ function getLocations(){
   var seed = [
     {id:'ms1', location:'Pinnacle Animal Hospital — Main', revenue:null, patients:null, status:'Operating'}
   ];
-  saveLocations(seed);
+  svSeedStore(saveLocations, seed);
   return seed;
 }
 
@@ -6924,7 +6957,7 @@ function getControlledLog(){
     {drug:'Butorphanol 10mg/mL', schedule:'IV', onHand:480, unit:'mg', lastTransaction:'2026-07-05 — 20mg used, Dr. Chen', witness:''},
     {drug:'Fentanyl 50mcg/mL', schedule:'II', onHand:96, unit:'mL', lastTransaction:'2026-07-04 — 4mL used, Dr. Mitchell (witnessed: Tech Reyes)', witness:'Tech Reyes'}
   ];
-  saveControlledLog(seed);
+  svSeedStore(saveControlledLog, seed);
   return seed;
 }
 
@@ -7494,7 +7527,7 @@ function getSoapNotes(){
     if(stored) return JSON.parse(stored);
   } catch(e){}
   var seed = [];
-  saveSoapNotes(seed);
+  svSeedStore(saveSoapNotes, seed);
   return seed;
 }
 
@@ -7565,7 +7598,7 @@ function getComms(){
     {id:'cm1', type:'Appointment Reminder', recipients:28, sent:'2026-07-07', openRate:94, campaign:false},
     {id:'cm2', type:'Wellness Plan Renewal Campaign', recipients:46, sent:'2026-07-06', openRate:58, campaign:true}
   ];
-  saveComms(seed);
+  svSeedStore(saveComms, seed);
   return seed;
 }
 
@@ -7630,7 +7663,7 @@ function getBoarding(){
     {id:'bd1', patient:'Bella', service:'Boarding', checkin:'2026-07-05', checkout:'2026-07-09', rate:45},
     {id:'bd2', patient:'Kiwi', service:'Bath + Nail Trim', checkin:'2026-07-07', checkout:'2026-07-07', rate:55}
   ];
-  saveBoarding(seed);
+  svSeedStore(saveBoarding, seed);
   return seed;
 }
 
@@ -7809,7 +7842,7 @@ function getSpeciesRefs(){
     {id:'sr5', species:'Rabbit', temp:'101.0-103.5°F', hr:'130-325 bpm', rr:'30-60 rpm', notes:'Prey species — handle low-stress', updated:'2026-07-07'},
     {id:'sr6', species:'Ball Python', temp:'N/A (ectotherm)', hr:'N/A', rr:'N/A', notes:'Ambient gradient 75-90°F', updated:'2026-07-07'}
   ];
-  saveSpeciesRefs(seed);
+  svSeedStore(saveSpeciesRefs, seed);
   return seed;
 }
 
