@@ -754,6 +754,16 @@
       "claimed_at_epoch": 1789050942.9119437,
       "status": "released",
       "released_at": "2026-09-10T17:05:31Z"
+    },
+    {
+      "id": "cc-1789060422",
+      "session": "cc",
+      "subject": "sairnfreedom-schema-35-tables-provisioning-readonly-check",
+      "task": "",
+      "claimed_at": "2026-09-10T17:13:42Z",
+      "claimed_at_epoch": 1789060422.237907,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
