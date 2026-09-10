@@ -415,6 +415,33 @@ REGISTRY = [
                     'an invented layer and a duplicate are each refused, and '
                     'a record whose commit is deleted makes --check go red',
     },
+    {
+        'tool': 'npm_audit_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, the day it was built',
+        'catches': 'a known advisory against a package in the committed '
+                   'lockfile, direct or transitive, with the advisory URL',
+        'why_it_matters': 'two moderate Dependabot alerts sat open for at least '
+                          'a day and the SOUP register recorded them as '
+                          'untriaged BECAUSE `gh` is not installed here. That '
+                          'reason was assumed and wrong -- `npm audit` reads '
+                          'the lockfile and needs no GitHub credential. The '
+                          'blocker was never the missing tool, it was that '
+                          'nothing ran the check that did not need one',
+        'why_it_is_wired_despite_needing_the_network':
+            'MEASURED, not guessed: 8.1s and 8.5s on two runs, against a sweep '
+            'that already takes 146s -- about 5%. It was nearly held back on an '
+            'assumed 30s cost. Network failure is exit 3 (could-not-tell) and '
+            'lands in UNRUN, never in findings and never silently in a pass',
+        'evidence': 'real negative control, not a fixture: run against the '
+                    'PRE-BUMP lockfile it exits 1 and names both qs advisories '
+                    'by URL; against the fixed lockfile it exits 0. Its first '
+                    'version reported `SKIPPED: npm is not on PATH` on this '
+                    'machine because npm is npm.cmd on Windows -- an honest '
+                    'exit 3 that would have printed on every push in every '
+                    'clone forever. Caught by running it, not by reading it',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

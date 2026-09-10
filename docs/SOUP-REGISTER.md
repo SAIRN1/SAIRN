@@ -113,12 +113,58 @@ pretend otherwise — that is the honest state, not an omission. What exists:
 - one explicit `overrides` entry, `uuid >= 11.1.1` (installed: 14.0.2), added to
   force a transitive dependency past a known-bad range — the one place this repo
   has already exercised a supply-chain response;
-- GitHub Dependabot is enabled and reports against the default branch. **One
-  moderate alert was open as of 2026-09-10**, surfaced on every `git push`
-  ("GitHub found 1 vulnerability on SAIRN1/SAIRN's default branch"). It is not
-  triaged here because the alert detail needs the GitHub UI or an authenticated
-  API call, and `gh` is not installed in this clone. **Recorded as untriaged
-  rather than assumed benign.**
+- GitHub Dependabot is enabled and reports against the default branch. **The two
+  moderate alerts open on 2026-09-10 are TRIAGED AND FIXED** — see the next
+  subsection. The earlier version of this bullet said "one moderate alert",
+  said it was untriaged because `gh` is not installed here, and was wrong about
+  the count; the real number came off GitHub's own push output.
+
+### The `qs` alerts — triaged 2026-09-10, and `gh` was never needed
+
+**Both alerts were the same package.** `npm audit --json` reads the committed
+lockfile and needs no GitHub credential at all, which is what the previous
+"needs the GitHub UI or an authenticated API call" bullet had wrong — the
+blocker was assumed, not tested.
+
+| Advisory | Flaw is in | Trigger | Affected |
+|---|---|---|---|
+| `GHSA-x5fp-wj9c-mxmx` | `qs.parse` | bracket-key + comma values, needs `comma: true` | 6.14.2 – 6.15.3 |
+| `GHSA-4mjr-xmp4-gh2g` | `qs.stringify` | an object whose `constructor.isBuffer` is truthy but not callable | >= 2.2.5 < 6.16.0 |
+
+**`qs@6.15.3` was transitive, pulled by `stripe@17.7.0` through `^6.11.0`.**
+6.16.0 satisfies that range, so the fix is a **lockfile-only** bump — one
+package changed, `package.json` untouched, still three direct dependencies.
+`npm audit` now reports 0 vulnerabilities. Deliberately done with
+`npm update qs --package-lock-only`, not `npm install qs@6.16.0`, which was
+tried first and **added `qs` as a fourth direct dependency** — a register entry
+for a package no SAIRN file imports.
+
+**Reachability, read rather than assumed, because it changes what the fix is
+worth:**
+
+- **`GHSA-x5fp` was never reachable.** `stripe@17.7.0` references `qs` exactly
+  once, in `cjs/utils.js`, and it calls **`qs.stringify` only** —
+  `queryStringifyRequestData`, serialising outbound request data. It never calls
+  `qs.parse`. Verified by unpacking the published tarball, not by reasoning
+  about the SDK.
+- **`GHSA-4mjr` was reachable, and by a wider door than its own advisory
+  describes.** The advisory frames it as a `parse`-then-`stringify` round trip
+  needing `plainObjects: true` or `allowPrototypes: true`. The actual defect is
+  one line in `utils.js`: 6.15.3 tests `obj.constructor.isBuffer &&
+  obj.constructor.isBuffer(obj)` — truthy, not callable — and 6.16.0 tests
+  `typeof obj.constructor.isBuffer === 'function'`. **Any** object with an own
+  `constructor.isBuffer` that is truthy and not a function reaches it, and
+  `JSON.parse` sets such a key freely. `api/sairncash/checkout.js` passes
+  `req.body.email` straight into `stripe.checkout.sessions.create`, so
+  `{"email":{"constructor":{"isBuffer":"x"}}}` on an unauthenticated POST is
+  that shape. **No `qs.parse` required.**
+- **What bounded it, and it is not the code being careful about this:** every
+  Stripe call in `api/sairncash/` sits inside a `try/catch` that answers a 500
+  JSON error, so the `TypeError` became a 500 rather than a dead worker. On top
+  of that, `STRIPE_SECRET_KEY` is unset, so `checkout.js` returns
+  `{"error":"Stripe not configured"}` before `stripe` is ever required. Two
+  incidental bounds, neither designed for this — which is exactly why the bump
+  is the fix rather than the analysis.
 
 ---
 
@@ -242,12 +288,11 @@ and it does not exist yet.
   checkers in `tools/`. Those shape what ships without running in production,
   and they are a deliberate second pass, not an oversight.
 - **It has no CVE feed of its own.** Dependabot is the only automated watch, it
-  covers npm only, and it sees none of the three CDN components. **TWO moderate
-  Dependabot alerts are open and untriaged as of 2026-09-10** — corrected from
-  "one", which is what the previous entry and the 2026-09-09 handoff both said.
-  The real count came from GitHub's own push output (`GitHub found 2
-  vulnerabilities on SAIRN1/SAIRN's default branch (2 moderate)`), not from
-  `gh`, which is not installed in this clone. **Nobody has read either alert.**
+  covers npm only, and it sees none of the three CDN components. **The two
+  moderate alerts open on 2026-09-10 are triaged and fixed** — both were `qs`,
+  see the Transitive section. `npm audit` reports 0 vulnerabilities as of that
+  date. **That is a snapshot, not a standing property**, and nothing in this
+  repo runs `npm audit` on a schedule.
 - **It does not cover a script element built by any loader shape other than a
   literal `document.createElement('script')`.** That is stated in the checker's
   own docstring too. The gap that let `tesseract.js` sit here unrecorded was
