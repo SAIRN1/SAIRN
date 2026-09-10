@@ -1311,3 +1311,71 @@ pushing from there is race-proof and does not touch the working tree at all.
 `sairnbiz sb_incidents` off the index, then found Hank had already closed the
 display half in `37e409e2` with a 10/10 test. Released the claim immediately.
 The row had been updated on origin between my read and my claim.
+
+## 2026-09-10 (Cody) -- the human read on two C1s, and what it actually found
+
+CLAIMED and released: `sairnmechanical toast-only buttons human read`.
+
+**The read came back CLEAN, and that is the correct result.** `syncAll()` and
+`mechNotLive()` are DELIBERATE honest refusals built on 2026-09-03 with the
+reasoning in the file -- "Cross-app sync is not enabled for SAIRNmechanical yet
+-- nothing was sent" and the eight silent controls that used to swallow a click
+entirely. **"Wire this up" would have turned an honest refusal into a
+fabricated feature**, which is the opposite of the fix. Recorded so the next
+reader of a C1 count does not do that.
+
+**The real finding was in the checker, not the app** -- and it is the SILENT
+direction of `nav_panel_check.py`'s own recurring bug. That file has now stopped
+hardcoding the class, the id, the nav-function name and the element, four
+corrections, every one after it reported a WORKING app as broken. The fifth
+failed the other way:
+
+    sairnmechanical.html   17 containers id="page-x", showPage()  -> PASS
+    stonedesk-hr.html      15 containers id="page-x", showPage()  -> PASS
+
+**32 real containers invisible, reported as clean, by a checker I had promoted
+to the registry that same morning.**
+
+**Four defects, each one only findable after the one before it was fixed:**
+
+1. `page-` containers unrecognised at all.
+2. My first fix adopted only the `page-` ids something CALLS by name. **That is
+   self-defeating** -- an unreachable container is by definition one nothing
+   calls -- and it made sairnmechanical pass with 16 of 17 panels by dropping
+   the unreachable one. The ≥2 test now decides whether the FILE navigates by
+   `page-`; if it does, every `page-` container is in scope.
+3. `nav_call_re` demanded the closing paren immediately after the quoted
+   argument, so `showPage('dashboard', this)` was invisible and stonedesk-hr's
+   fifteen working sidebar items counted as **zero**. **This was hidden BEHIND
+   defect 1**: with no containers found, the file passed vacuously either way.
+4. `resolve_panel` could not map a bare nav argument onto a camelCase id.
+
+**"Could not tell" is no longer a pass.** No containers plus a nav function
+called from ≥2 element handlers now exits **3 SKIPPED**, and the registry routes
+exit 3 to "could not run". A genuinely single-purpose page has no nav system and
+still passes, so the notice stays rare rather than firing every push.
+
+**One true finding, already known and now suppressed WITH DISCLOSURE:**
+`page-sairnbiz-connector`. Every suppression is printed on the run.
+
+### Two corrections against myself
+
+- **A probe arm I wrote asserted the OPPOSITE of the final design.** It said app
+  SHELL containers must not be adopted -- written while the tool was wrongly
+  reporting SAIRNcash's `homePage`/`appPage` as unreachable. Wrong diagnosis:
+  those two ARE navigated, and the real defect was 4 above. Refusing to adopt
+  would have been **a silent miss dressed up as a fix**. Rewritten in place with
+  that reasoning rather than quietly deleted.
+- **My earlier claim that the tightened tag pattern "loses not one real
+  control" was true of the counts I compared and blind here.** stonedesk-hr's
+  fifteen controls were already invisible for a different reason, so the
+  comparison could not have shown a loss. A measurement is only as wide as what
+  it could have seen.
+
+### The push path, since the churn makes this recurring
+
+`git rebase` refuses while probes dirty the tree, so pushes cannot land. Cherry-
+picking onto a **detached worktree at `origin/main`** and pushing from there
+touches no file in the clone and cannot be raced. `scratchpad/wtpush.sh` does
+it; it reported failure after six attempts once while a manual retry succeeded
+immediately, so it wants more attempts and a backoff.
