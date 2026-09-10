@@ -730,8 +730,8 @@
       "task": "criticality-tier-register-for-verticals third-leg-of-the-standard",
       "claimed_at": "2026-09-10T19:44:54Z",
       "claimed_at_epoch": 1789069494.486734,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T20:54:16Z"
     }
   ]
 }
