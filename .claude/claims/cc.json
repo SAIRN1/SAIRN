@@ -744,6 +744,16 @@
       "claimed_at_epoch": 1789049061.6145644,
       "status": "released",
       "released_at": "2026-09-10T14:24:24Z"
+    },
+    {
+      "id": "cc-1789050942",
+      "session": "cc",
+      "subject": "local_only_collection_check.py",
+      "task": "heuristic false clean on st-hooked wrapper",
+      "claimed_at": "2026-09-10T14:35:42Z",
+      "claimed_at_epoch": 1789050942.9119437,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
