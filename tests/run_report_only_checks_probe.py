@@ -284,6 +284,61 @@ rc, out = nest_on('<!doctype html><html><body><div class="wrap">'
 check('D5f a trapped container is still reported', rc, 1)
 check('D5g and named', 'trapped' in out, True)
 
+# ── D6. sairn_strict_args_check: ORDER is the bug, not co-occurrence ───────
+# Guardian check 31 is the class where six window.fetch patches shipped doing
+# nothing at all. The checker asked "does this body mutate ANYWHERE and forward
+# `arguments` ANYWHERE", which is not that bug -- and its first real run flagged
+# stonedesk.html:3391, which is CORRECT CODE: the `apply(this, arguments)` is an
+# early return for a non-proxy URL, before anything is touched, and the mutating
+# path ends in an explicit forward. Guardian 31's own text says not to "fix" a
+# pass-through that has nothing to forward.
+STRICT = os.path.join(REPO, 'tools', 'sairn_strict_args_check.py')
+
+
+def strict_on(js):
+    fd, path = tempfile.mkstemp(suffix='.html')
+    with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+        fh.write('<html><body><script>\n(function(){\n  "use strict";\n'
+                 '  var _orig = window.fetch;\n' + js + '\n})();\n</script></body></html>')
+    try:
+        p = subprocess.run([sys.executable, STRICT, path], cwd=REPO,
+                           capture_output=True, text=True, timeout=120)
+        return p.returncode, (p.stdout or '') + (p.stderr or '')
+    finally:
+        os.remove(path)
+
+
+rc, out = strict_on(
+    '  window.fetch = function(url, opts) {\n'
+    '    opts = Object.assign({}, opts, { body: "x" });\n'
+    '    return _orig.apply(this, arguments);\n'
+    '  };')
+check('D6a mutate THEN forward arguments is still reported', rc, 1)
+
+rc, out = strict_on(
+    '  window.fetch = function(url, opts) {\n'
+    '    if (!isMine(url)) return _orig.apply(this, arguments);\n'
+    '    opts = Object.assign({}, opts, { body: "x" });\n'
+    '    return _orig.call(this, url, opts);\n'
+    '  };')
+check('D6b an early pass-through before any mutation is NOT reported', rc, 0)
+
+# The sloppy-mode half of check 31: without 'use strict' the arguments object IS
+# linked to the parameters, so the mutation really does carry through. Reporting
+# it would be telling somebody to change working code.
+fd, _p = tempfile.mkstemp(suffix='.html')
+with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+    fh.write('<html><body><script>\nvar _orig = window.fetch;\n'
+             'window.fetch = function(url, opts) {\n'
+             '  opts = Object.assign({}, opts, { body: "x" });\n'
+             '  return _orig.apply(this, arguments);\n};\n'
+             '</script></body></html>')
+_r = subprocess.run([sys.executable, STRICT, _p], cwd=REPO, capture_output=True,
+                    text=True, timeout=120)
+os.remove(_p)
+check('D6c the same shape in SLOPPY mode is not a defect and is not reported',
+      _r.returncode, 0)
+
 # ── E. the runner: registry integrity ──────────────────────────────────────
 missing = [e['tool'] for e in roc.REGISTRY
            if not os.path.isfile(os.path.join(REPO, 'tools', e['tool']))]

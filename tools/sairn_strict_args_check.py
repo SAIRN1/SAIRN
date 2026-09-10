@@ -103,7 +103,37 @@ def scan(path):
                 body = body[:end.end()]
             body = strip_comments(body)
             mutates = re.search(r'\b%s\s*=\s*Object\.assign' % re.escape(p2), body)
-            if mutates and FORWARD.search(body):
+            # ── ORDER MATTERS, added 2026-09-10 ─────────────────────────────
+            # This asked "does the body mutate ANYWHERE and forward ANYWHERE",
+            # which is not the bug. The bug is a forward that happens AFTER the
+            # mutation and therefore throws it away.
+            #
+            # stonedesk.html:3391 was reported on its first real run and is
+            # CORRECT CODE. Its `apply(this, arguments)` is an early return for
+            # a non-proxy URL, before anything is touched; the mutating path
+            # ends in an EXPLICIT forward,
+            # `saSecureClaudeCall(url, opts, _saInnerFetch)`, which delivers it.
+            # The two are mutually exclusive paths.
+            #
+            # Guardian check 31 says in its own text not to "fix" a
+            # pass-through that has nothing to forward -- it is correct as
+            # `apply(this, arguments)` and BETTER that way, since it preserves
+            # extra arguments. Acting on this report would have made two live
+            # fetch patches worse.
+            #
+            # LIMIT, stated rather than implied: this is textual order, not
+            # control flow. A forward written above a mutation but reached
+            # after it -- inside a loop, or a branch that falls through -- is
+            # not caught. Every real site in this repo is a linear
+            # guard-then-work function, and a false negative here is cheaper
+            # than a false positive that gets the checker switched off.
+            hit = None
+            if mutates:
+                for fm in FORWARD.finditer(body):
+                    if fm.start() > mutates.start():
+                        hit = fm
+                        break
+            if hit:
                 findings.append((src[:base + m.start()].count('\n') + 1, name, p1, p2))
     return findings
 

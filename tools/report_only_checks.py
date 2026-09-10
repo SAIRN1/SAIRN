@@ -283,8 +283,115 @@ REGISTRY = [
                           'that does not authorise anything',
         'evidence': 'real run 2026-09-10: 0 findings, exit 0. Its own header '
                     'says it cannot see across files; the cross-module half is '
-                    'tools/discarded_verdict_crossfile.py, not yet promoted',
+                    'tools/discarded_verdict_crossfile.py, now promoted below',
     },
+    # ── THIRD BATCH, 2026-09-10 ─────────────────────────────────────────────
+    {
+        'tool': 'discarded_verdict_crossfile.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'the CROSS-MODULE half: a verdict returned by a required '
+                   'module and dropped in another file',
+        'why_it_matters': 'the same-file checker says in its own header that it '
+                          'cannot see this, and an unread verdict is an '
+                          'authorisation check that authorises nothing',
+        'evidence': 'real run 2026-09-10: 83 verdict-shaped exports, 0 dropped',
+    },
+    {
+        'tool': 'literal_drift_check.py',
+        'mode': 'apps',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a duplicated literal whose copies have DIVERGED -- the same '
+                   'constant written twice and then changed once',
+        'why_it_matters': 'the copy that was not updated keeps working and keeps '
+                          'being wrong, which is how a fix reaches one call site',
+        'evidence': 'real run 2026-09-10 over all 22 app files: 0 findings',
+    },
+    {
+        'tool': 'orphan_register_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'an open-work row citing something the register records as '
+                   'removed -- a task pointing at code that is gone',
+        'why_it_matters': 'the index is what every session reads to choose work',
+        'evidence': 'real run 2026-09-10: 11 register entries, 36 deleted names, '
+                    '82 open rows, RESULT:CLEAN',
+    },
+    {
+        'tool': 'key_collision_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a localStorage key written by more than one feature, where '
+                   'the two writers disagree about the shape',
+        'why_it_matters': 'two writers on one key is how one panel silently '
+                          'erases another\'s rows',
+        'evidence': 'real run 2026-09-10: RESULT:CLEAN -- four collisions, every '
+                    'one ACKNOWLEDGED with a hand trace in the tool itself. Its '
+                    'own line is the right standard: "a key with two writers is '
+                    'a pointer, not a verdict"',
+    },
+    {
+        'tool': 'sairn_strict_args_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, after its one real-run finding turned out to be '
+                    'correct code',
+        'catches': 'Guardian check 31 -- a function that mutates a parameter and '
+                   'then forwards `arguments` under strict mode, where the '
+                   'mutation is silently discarded',
+        'why_it_matters': 'six window.fetch patches shipped this way; three were '
+                          'live features that had been doing nothing since they '
+                          'shipped, with no error and nothing wrong on screen',
+        'evidence': 'first real run flagged stonedesk.html:3391. HAND-READ: '
+                    'correct code -- its `apply(this, arguments)` is an early '
+                    'return for a non-proxy URL, BEFORE anything is touched, and '
+                    'the mutating path ends in an explicit '
+                    '`saSecureClaudeCall(url, opts, _saInnerFetch)`. Guardian 31 '
+                    'says in its own text not to "fix" a pass-through that has '
+                    'nothing to forward. The checker now requires the forward to '
+                    'come AFTER the mutation; driven both ways, and 0 across 22 '
+                    'files',
+    },
+]
+
+# ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
+# `docs/2026-09-09-tooling-inventory.md` says the decision each unwired checker
+# needs is blocking / report-only / deliberately manual, "recorded once rather
+# than left unanswered by default". This is that record for the ones that are
+# NOT going in, so the next session does not re-derive it. Printed by --list.
+NOT_PROMOTED = [
+    ('sairn_ai_fact_scan.py', 'a READ-LIST, not a gate. Its own output says '
+     '"every one is a candidate to READ, not a confirmed defect: a legitimate '
+     'default (role || \'user\') and a fabricated one (city || \'Westlake\') are '
+     'the same shape and only a human can tell them apart." 14 hits today.'),
+    ('sairn_stale_snapshot_scan.py', 'says in its own output "do not treat this '
+     'total as a score, and do not drive it to zero" -- a rising number can mean '
+     'the code got better. A gate cannot be built on a number like that.'),
+    ('sairn_dead_function_sweep.py', 'a research sweep: 99 dead functions today, '
+     'and its own line is "verify each site by hand before deleting". C1 and C2 '
+     'are opposite fixes and the caller list decides.'),
+    ('sairn_reachability_probe.py', 'its header says "This is a PROBE, not a '
+     'gate. It over-reports by construction ... so it prints its own caveat '
+     'rather than a verdict."'),
+    ('waf_rule_check.py', 'CLEAN today, and gate-shaped -- but it makes a LIVE '
+     'API call, so a transient network failure would read as a finding on a '
+     'push. That is the false alarm that gets a report-only checker switched '
+     'off. Run it by hand, or promote it once it distinguishes "drifted" from '
+     '"could not ask" the way the SQL preflight does.'),
+    ('licence_recoverability_check.py, rf_claim_gate_live_probe.py, '
+     'rf_roundtrip_probe.py, probe_public_book_guardian.py',
+     'live probes needing a real licence and a network; correctly manual.'),
+    ('sairnlaw_citation_audit.py, va_rule_currency.py, reclassification_sweep.py',
+     'one-off audits against a point in time, not standing checks.'),
+    ('missing_dom_target_check.py', 'its 137 findings are an OPEN, OWNED row '
+     '(Fourth). Promoting it now would fire on every push against work already '
+     'in progress.'),
+    ('write_without_readback_check.py, local_only_collection_check.py, '
+     'sairn_app_map_check.py', 'held by CC.'),
 ]
 
 
@@ -394,6 +501,12 @@ def main(argv):
             print('    catches : %s' % e['catches'])
             print('    matters : %s' % e['why_it_matters'])
             print('    evidence: %s' % e['evidence'])
+        print('')
+        print('DELIBERATELY NOT PROMOTED (%d) -- the decision, recorded once:'
+              % len(NOT_PROMOTED))
+        for tool, why in NOT_PROMOTED:
+            print('  %s' % tool)
+            print('      %s' % why)
         return 0
     findings, unrun = sweep(show_all='--all-sections' in argv)
     print('')
