@@ -47,6 +47,10 @@ const VERSION = 'v1';
 const ALGO = 'aes-256-gcm';
 const KEY_BYTES = 32;
 const IV_BYTES = 12;   // 96-bit, the size GCM is specified for
+// 128-bit, the FULL GCM tag. Pinned rather than left to the default because
+// the default is "accept 4, 8, or 12-16 bytes", and the tag below is read out
+// of the stored ciphertext. See decrypt().
+const TAG_BYTES = 16;
 const ENV_VAR = 'ACCOUNTING_TOKEN_KEY';
 
 // Read at call time, not at module load. A module-level read would freeze
@@ -103,7 +107,17 @@ function decrypt(payload, keyHex) {
   const iv = Buffer.from(parts[1], 'base64');
   const tag = Buffer.from(parts[2], 'base64');
   const ct = Buffer.from(parts[3], 'base64');
-  const d = crypto.createDecipheriv(ALGO, key, iv);
+  // A SHORT TAG IS ITS OWN REFUSAL, not a bad-tag failure. Without
+  // authTagLength Node would accept a four-byte tag here and drop forgery
+  // resistance from 2^128 to 2^32; encrypt() has always written the full 16
+  // (getAuthTag() defaults to it), so nothing this codebase produced is
+  // rejected by pinning it. Found by Semgrep `gcm-no-tag-length`, 2026-09-10.
+  if (tag.length !== TAG_BYTES) {
+    const e = new Error('auth tag is ' + tag.length + ' bytes, not ' + TAG_BYTES);
+    e.code = 'BAD_FORMAT';
+    throw e;
+  }
+  const d = crypto.createDecipheriv(ALGO, key, iv, { authTagLength: TAG_BYTES });
   d.setAuthTag(tag);
   // Throws on a bad tag. Deliberately NOT wrapped in a try that returns null:
   // "this token has been tampered with" and "there is no token" need opposite

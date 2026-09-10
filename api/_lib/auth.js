@@ -484,7 +484,16 @@ function decryptSecret(stored) {
   const authTag = b64urlDecode(parts[1]);
   const encrypted = b64urlDecode(parts[2]);
   try {
-    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv);
+    // authTagLength IS NOT OPTIONAL HERE, and omitting it is not the same as
+    // leaving it at a safe default. Node accepts a GCM tag of 4, 8, or 12-16
+    // bytes unless the length is pinned, and `authTag` above is read straight
+    // out of the stored ciphertext -- so anything that can write that column
+    // could present a FOUR-byte tag and drop forgery resistance from 2^128 to
+    // 2^32. encryptSecret() has always produced the full 16 (getAuthTag()
+    // defaults to it), so pinning it here rejects nothing that was written by
+    // this codebase. Found by Semgrep `gcm-no-tag-length`, 2026-09-10.
+    const decipher = crypto.createDecipheriv('aes-256-gcm', key, iv, { authTagLength: 16 });
+    if (authTag.length !== 16) return null;
     decipher.setAuthTag(authTag);
     return Buffer.concat([decipher.update(encrypted), decipher.final()]).toString('utf8');
   } catch (e) { return null; } // wrong key or tampered ciphertext -- never throw into a caller that might leak detail
