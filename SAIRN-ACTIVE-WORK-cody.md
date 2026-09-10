@@ -1567,3 +1567,57 @@ may be old is worth nothing unless the checks it vouches for still bite.
 
 The escaped commit itself I reverted in `2a0378f5`; it added
 `api/_lib/zz_probe_clean.js` to the production tree.
+
+## 2026-09-10 (Cody) -- independent review of eb640ae8 (SAIRNdental vendor collections)
+
+CLAIMED BY HAND with a recorded override, and released. `sairn_claim.py check`
+blocked on **`same app: sairndental`** against Fourth's
+`sairndental-outbound-queue-probe / arm15-mutation-does-not-bite`. I read their
+actual task and files first: theirs is `tests/sairndental_outbound_queue_probe.py`
+arm 15 and their clone had nothing touched in the app. **I named the subject
+accurately (`sairndental-vendor-schema-review`) rather than rewording to slip
+past the matcher, and the claim carries a `matcher_override_note` saying so** --
+same standard as saying `SAIRN_SEED_GATE=off` out loud. **Read-only review; I
+did not edit `sairndental.html`**, which is the one file where we could have
+collided.
+
+**The commit holds up. `tests/dnt_vendor_backup_probe.py` ALL ARMS PASS.** The
+three questions the row asked a reviewer to attack:
+
+- **Soft delete on `dnt_supplies` alone -- CORRECT**, and I checked it by grep
+  rather than by reading the rationale: no splice or delete against
+  `dnt_vendor_contacts` or `dnt_vendor_pricing_rules` anywhere in the file, and
+  `dnt_vendor_orders` is append-only. The reasoning and the code agree.
+- **The nesting asymmetry -- JUSTIFIED.** Contacts are keyed by vendor name and
+  would collide with `id`; the pricing object IS the record.
+- **Wholesale-not-merged -- RIGHT, and it carries a cost the commit does not
+  name.** That is the finding.
+
+### The finding: a failed push looks like success and is then silently reverted
+
+`vSetVendorDiscount()` / `vSetCategoryDiscount()` / `vSetProductOverride()` all
+do:
+
+    st('dnt_vendor_pricing_rules', rules);
+    dntPushVendorPricing(rules);          // not awaited, result never checked
+    toast('... discount set to ' + pct + '%');   // unconditional
+
+`dntPushOne()` reports a failed write with a **`console.warn` and nothing
+else**. And hydration is **server-wins with no guard** -- `dntSyncFromServer()`
+`st()`s the server object straight over the local one. So a push that fails
+shows a success toast, and the **next sync replaces the edit with the server's
+stale copy.**
+
+`dnt_settings` is cited as the precedent, and there this costs a preference.
+**Here it is a negotiated vendor discount, so it changes what the practice
+pays.**
+
+**It is inert today and live the day the SQL runs.** With
+`sql/sairndental_vendor_schema.sql` unrun, reads come back non-array,
+`failureCount++` fires, and nothing is overwritten. The exposure starts the
+moment the schema is provisioned -- which is precisely when nobody will be
+looking for it. That timing is why this is worth writing down now rather than
+after.
+
+**Minimum bar:** check the push result before the success toast, and do not let
+hydration overwrite an object whose last local write has not been confirmed.
