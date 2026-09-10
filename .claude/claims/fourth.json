@@ -650,8 +650,8 @@
       "task": "probe-subject-commits-must-not-reach-origin",
       "claimed_at": "2026-09-10T13:29:31Z",
       "claimed_at_epoch": 1789046971.5246491,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T14:25:48Z"
     },
     {
       "id": "fourth-1789049316",
