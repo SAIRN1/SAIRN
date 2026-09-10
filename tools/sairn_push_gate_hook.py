@@ -1394,6 +1394,75 @@ def main():
         if MODE == 'prepush':
             sys.stderr.write("\n" + guard_note + "\n\n")
 
+    # ── CHECK 10: THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) ─
+    # REPORT-ONLY. It reports the one thing no other check here can: that the
+    # checks themselves may be out of date.
+    #
+    # WHY IT EXISTS, and it is not hypothetical. Check 8 -- "a PROBE fixture
+    # commit must not reach origin" -- landed at 10:08 on 2026-09-10. At 13:24,
+    # THREE HOURS LATER, `8fa974f9 "PROBE clean api change"` became the tip of
+    # origin/main anyway, adding api/_lib/zz_probe_clean.js to the production
+    # tree. Check 8 was not broken: driven directly with a PROBE commit in
+    # range it fires and exits 1, verified rather than assumed.
+    #
+    # The hook runs `$(git rev-parse --show-toplevel)/tools/sairn_push_gate_hook.py`
+    # -- the WORKING TREE copy. A session that has been running since before
+    # 10:08 and has not reset is executing the pre-check-8 gate, which has no
+    # check 8 in it at all (`git show 46a4e229^:tools/sairn_push_gate_hook.py`
+    # greps 0). Four clones and long sessions make that window hours wide.
+    #
+    # THIS APPLIES TO EVERY CHECK IN THIS FILE, not to check 8. A gate shipped
+    # at 10:08 protects nobody who last synced at 09:00, and nothing said so.
+    #
+    # It does NOT fetch. A network call in a pre-push hook is latency on every
+    # push and a new way to fail; it compares against the origin/main this
+    # clone already knows, so the worst case is that it under-reports right
+    # after somebody else pushes a gate change. Under-reporting is the correct
+    # direction for a check about staleness.
+    #
+    # REPORT-ONLY on the same promotion path as checks 5, 7 and run_all_tests:
+    # a stale gate is "could not tell how much was checked", not proof of a bad
+    # push, and denying on it would block a legitimate push for somebody else's
+    # commit. PRECONDITION FOR PROMOTING IT TO A DENY: that this notice has
+    # been rare in practice, which is a claim about a week of pushes and not
+    # about today.
+    try:
+        _self = os.path.abspath(__file__)
+        _rel = os.path.relpath(_self, repo).replace(os.sep, '/')
+        _on_disk = open(_self, 'rb').read()
+        _on_origin = subprocess.run(
+            ['git', '-C', repo, 'show', 'origin/main:%s' % _rel],
+            capture_output=True, timeout=20)
+        if _on_origin.returncode == 0 and _on_origin.stdout:
+            # Normalise line endings before comparing: this repo has produced
+            # four separate false "files differ" alarms from CRLF alone, and a
+            # staleness warning that fires on every push in a CRLF clone is
+            # worth less than no warning at all.
+            if _on_disk.replace(b'\r\n', b'\n') != _on_origin.stdout.replace(b'\r\n', b'\n'):
+                _behind = len([l for l in subprocess.run(
+                    ['git', '-C', repo, 'log', '--oneline', 'HEAD..origin/main',
+                     '--', _rel], capture_output=True, text=True,
+                    timeout=20).stdout.split('\n') if l.strip()])
+                _msg = (
+                    "Gate-freshness (check 10) NOTICE: the push gate that just ran is "
+                    "NOT the one on origin/main.%s Every check in it may be older than "
+                    "the checks that exist. This is exactly how 8fa974f9 reached "
+                    "origin/main on 2026-09-10 three hours after check 8 shipped to "
+                    "stop it. The push is ALLOWED -- a stale gate is a could-not-tell, "
+                    "not a bad push -- but do not read a clean pass as a full one. "
+                    "Sync and push again to get the real answer."
+                    % ('' if not _behind else
+                       ' It is %d commit(s) behind on %s.' % (_behind, _rel)))
+                if MODE == 'prepush':
+                    sys.stderr.write("\n" + _msg + "\n\n")
+                else:
+                    print("NOTE: " + _msg)
+    except Exception:
+        # Fails OPEN and SILENT, deliberately: this check is about the gate
+        # itself, and a check about staleness that crashes a push would be a
+        # worse defect than the one it reports.
+        pass
+
     # ── CHECK 1: seed load state ──────────────────────────────
     apps = []
     for path in changed:
