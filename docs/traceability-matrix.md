@@ -139,7 +139,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | The generic `DNT_RESOURCES` write validates `payload.id` and nothing else, for FIFTEEN resources | Open — **7 of 15 CLOSED, EIGHT REMAIN.** `dnt_procedure_types` 2026-09-09 (Fourth). `dnt_denial` 2026-09-05 (Cody). `dnt_patients` (guardian) and `dnt_gfe` (45 CFR 149.610(c)(1)) 2026-09-04 (Hank); ** | `api/sd-data-dental-ledger-validation.test.js` |
 | ~~A coverage rule cannot be changed or removed once written — `removeCoverageRule()` is local-only and there is no update path~~ | **CLOSED 2026-09-04 (CC)** — an EDIT path exists; removal is still not a delete and the message now says so | `api/sd-data-dental-ledger-validation.test.js`, `tests/sairndental_coverage_edit.js`, `tests/suite_control_backfill_probe.py` |
 | ~~Every write failure was reported as *"server sync not yet enabled for this app"*, which is FALSE — and it was swallowing the refusals added the same day~~ | **CLOSED 2026-09-04 (CC)** for SAIRNdental. **SAIRNlaw (29) and SAIRNlegacy (58) still carry it — see the row below** | `tests/sairndental_write_failure_voice.js` |
-| The financial tier gates READS to owner/frontdesk and gates WRITES for nobody — a provider can write a payment it is not allowed to read back | Open — **found 2026-09-04 (CC)** while closing the row above; **recorded, deliberately NOT fixed** | `api/sd-data-dental-ledger-validation.test.js` |
+| ~~The financial tier gates READS to owner/frontdesk and gates WRITES for nobody &mdash; a provider can write a payment it is not allowed to read back~~ &mdash; **CLOSED: the same list and the same roles now gate the write branch** | **CLOSED 2026-09-10 (CC)** &mdash; `ddbd1f2c`. Found 2026-09-04 (CC) and left open on purpose because it is a behaviour change, not a validation | `api/sd-data-dental-financial-tier.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `tests/push_gate/refspec_and_override_probe.py`, `tests/run_report_only_checks_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
 | Independent review of `569b2689` (CC's write-failure voice fix) found four things: a raw browser exception could REPLACE the sentence saying nothing was saved, the ledger dropped rows on an UNREACHABLE server, `submitCompleteVisit()` announced success when the appointment write failed, and the suite had two holes | **CLOSED 2026-09-08 (CC)** &mdash; all four fixed, and running the mutation probe found a fifth and a sixth that reading had not | `tests/sairndental_write_failure_probe.py` |
 | ~~`dnt_settings` is a whole-record PUT, so two workstations saving inside one round trip still end last-write-wins~~ | **CLOSED 2026-09-04 (CC) on Michael's decision** — switched to PATCH, and the race is proven closed rather than argued closed | `api/sd-data-dental-settings-patch.test.js`, `tests/suite_control_backfill_probe.py` |
 
@@ -203,7 +203,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**82 of 271 test files are traced to a stated requirement. 189 are not.**
+**85 of 271 test files are traced to a stated requirement. 186 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -310,7 +310,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sairncash-ai.test.js`
 - `api/sc-credentials.test.js`
 - `api/sd-data-approvals.test.js`
-- `api/sd-data-dental-financial-tier.test.js`
 - `api/sd-data-dental-provider-scope.test.js`
 - `api/sd-data-exec-context.test.js`
 - `api/sd-data-food-temp-unevaluated.test.js`
@@ -347,7 +346,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/prompt_budget.js`
 - `tests/push_gate/check4_probe.py`
 - `tests/push_gate/check9_probe.py`
-- `tests/push_gate/refspec_and_override_probe.py`
 - `tests/quote_history_duplication.js`
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
@@ -356,7 +354,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
-- `tests/sairn_storage_wrapper_honesty.js`
 - `tests/sairnbuild_backup_pending.js`
 - `tests/sairnbuild_server_backup.js`
 - `tests/sairncare/test-alf-activities.js`
