@@ -873,8 +873,8 @@
       "task": "guardian 0d delete or quarantine the 18 functions",
       "claimed_at": "2026-09-10T17:55:44Z",
       "claimed_at_epoch": 1789062944.1889875,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T18:08:36Z"
     }
   ]
 }
