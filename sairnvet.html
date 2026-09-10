@@ -2176,9 +2176,29 @@ function svHydrateAll(){
       rows.forEach(function(r){ if(r&&r[idField]!=null&&!have[String(r[idField])]){ local.push(r); added++; } });
       if(added){
         merged+=added;
+        // ── THE SAME finally THE SEED WRAPPER GOT, SIX LINES FROM ITS OWN
+        //    COMMENT SAYING WHY (2026-09-10) ──────────────────────────────
+        // svSeedStore() above already records the rule: "a throw inside a
+        // saver must not leave the whole app's backup suppressed for the rest
+        // of the session." This site had the identical shape and no finally.
+        //
+        // IT IS WORSE HERE THAN ANYWHERE ELSE IN THE FILE, because of what
+        // surrounds it. The enclosing promise ends in `.catch(function(){})`,
+        // so a throw out of st() is not merely unhandled -- it is INVISIBLE.
+        // Nothing logs, the hydrate resolves, and svSyncSuppressed stays true
+        // for the lifetime of the page. From that moment svSyncCollection()
+        // returns on its first line for every collection, so every subsequent
+        // write is saved locally and silently never backed up: the app looks
+        // completely normal and the server stops receiving anything.
+        //
+        // st() CAN throw, which is why this is not theoretical. It calls
+        // svBlockForCorruptStore() on an unparseable key, and the backup hook
+        // it carries runs real code. A hydrate is also precisely when a
+        // corrupt key is most likely to be met: it is the first thing that
+        // touches every collection after sign-in.
         svSyncSuppressed=true;
-        st(key,local);
-        svSyncSuppressed=false;
+        try{ st(key,local); }
+        finally{ svSyncSuppressed=false; }
       }
     }).catch(function(){});
   })).then(function(){ return merged; });
@@ -8435,12 +8455,30 @@ window.submitPeerConsult = function(){
     patient:patient, species:species, note:note, image:pcCapturedB64, status:'Pending'});
   savePeerConsults(list);
   logDoseAudit({type:'photo_consult_sent', to:to, patient:patient});
-  // Honest language (2026-08-09 audit): sv_peerconsults is localStorage-only
-  // -- there is no cross-device sync for this feature, so "they will see it"
-  // was a false delivery promise about a named colleague's visibility on a
-  // different device. Say what actually happened: saved here, on this
-  // device, for someone to hand off or show in person.
-  showToast('Saved to Consult Queue for '+to+' on this device — no cross-device delivery yet, hand off or show them here directly','success',6000);
+  // ── THE HONEST MESSAGE WENT STALE WHEN THE FEATURE CHANGED (2026-09-10) ──
+  // The 2026-08-09 audit replaced a false delivery promise ("they will see
+  // it") with "no cross-device delivery yet", and that was correct: this
+  // collection was localStorage-only. It is not any more. sv_peerconsults is
+  // one of the 41 in SV_SYNCED as of 55889165, so the consult DOES reach
+  // another workstation's copy on its next hydrate.
+  //
+  // A MESSAGE THAT UNDERSTATES IS NOT SAFE JUST BECAUSE IT UNDERSTATES. A vet
+  // reading "no cross-device delivery" walks the colleague to this machine or
+  // hands the tablet over -- work nobody needs to do -- and, worse, will not
+  // think of the consult as something that left the device. That is the same
+  // defect as the old over-promise, pointing the other way: the sentence does
+  // not describe what the software does.
+  //
+  // WHAT IS SAID IS EXACTLY WHAT IS TRUE, and no more. It reaches them when
+  // they next SIGN IN, because svHydrateAll() runs there and nowhere else --
+  // this is a backup that is read back, not live delivery, and saying "sent"
+  // would rebuild the original false promise in new words. And the PHOTO is
+  // named as staying here, because SV_LOCAL_ONLY_FIELDS strips it: a colleague
+  // who is told the consult arrived and finds no image would otherwise think
+  // one was never taken.
+  showToast('Saved to Consult Queue for '+to+'. It reaches their workstation the '+
+    'next time they sign in'+(pcCapturedB64 ? ' — the PHOTO stays on this device, it is '+
+    'too large for the server backup' : '')+'.','success',6000);
   closePeerCam();
   renderPeerConsults();
 };

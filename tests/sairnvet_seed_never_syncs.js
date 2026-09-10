@@ -272,6 +272,81 @@ test('svSyncSuppressed is set in exactly the two places that should set it', () 
     + '(svHydrateAll and svSeedStore)');
 });
 
+section('4. BOTH suppression sites clear the flag in a finally, not just the seeder');
+
+test('svHydrateAll clears svSyncSuppressed in a finally', () => {
+  // The seeder got a finally and its comment says why: "a throw inside a saver
+  // must not leave the whole app's backup suppressed for the rest of the
+  // session." The hydrate had the identical shape and no finally, six lines
+  // below that sentence.
+  //
+  // IT IS WORSE AT THIS SITE THAN AT THE OTHER ONE, which is why it is its own
+  // assertion rather than a widened version of the one above. The hydrate's
+  // promise ends in `.catch(function(){})`, so a throw out of st() is not
+  // merely unhandled, it is INVISIBLE: nothing logs, the hydrate resolves, and
+  // svSyncSuppressed stays true for the life of the page. svSyncCollection()
+  // then returns on its first line for every collection, so every later write
+  // is saved locally and silently never backed up.
+  const body = fn('function svHydrateAll(');
+  assert.ok(/try\s*\{\s*st\(/.test(body),
+    'svHydrateAll calls st() outside a try -- a throw there strands the flag');
+  assert.ok(/finally\s*\{\s*svSyncSuppressed\s*=\s*false/.test(body),
+    'svHydrateAll does not clear svSyncSuppressed in a finally');
+});
+
+test('NEITHER site clears the flag on the plain path only', () => {
+  // Derived from the source rather than listed, so a third suppression site
+  // added later is held to the same rule the moment it appears -- the count
+  // above says there are exactly two, and this says both of them are safe.
+  ['function svSeedStore(', 'function svHydrateAll('].forEach((sig) => {
+    const body = fn(sig);
+    const sets = (body.match(/svSyncSuppressed\s*=\s*true/g) || []).length;
+    if (!sets) return;
+    assert.ok(/finally\s*\{\s*svSyncSuppressed\s*=\s*false/.test(body),
+      sig + ' suppresses the backup without a finally to clear it');
+  });
+});
+
+section('5. a synced collection may not be described as having no cross-device delivery');
+
+test('no user-facing string denies cross-device delivery for a collection that syncs', () => {
+  // A SEAM, not a wording nit. sv_peerconsults was localStorage-only and its
+  // toast correctly said "no cross-device delivery yet" -- a 2026-08-09 audit
+  // wrote that sentence to replace a FALSE DELIVERY PROMISE. Then 55889165 put
+  // the collection in SV_SYNCED and the sentence became false in the other
+  // direction, with nothing to notice: a vet reads it and walks a colleague to
+  // this machine for a consult that already reached theirs.
+  //
+  // Understating is not safe just because it understates. The rule is that the
+  // sentence must describe what the software does, and this pins it for EVERY
+  // collection rather than for the one that happened to go stale.
+  const denials = html.split('\n')
+    .map((l, i) => [i + 1, l])
+    .filter(([, l]) => /no cross-device delivery|there is no cross-device sync/i.test(l))
+    .filter(([, l]) => l.indexOf('//') === -1 || l.indexOf('//') > l.search(/no cross-device/i));
+  assert.deepStrictEqual(denials.map(([n]) => n), [],
+    'a live string still denies cross-device delivery at line(s) '
+    + denials.map(([n, l]) => n + ': ' + l.trim().slice(0, 90)).join(' | ')
+    + '. If the collection really does not sync, say which one and why here.');
+});
+
+test('the peer-consult toast names the photo as staying, and only when there IS one', () => {
+  // Anchored on the toast itself rather than on a function name: the sender is
+  // `window.submitPeerConsult = function(){`, and an anchor that assumes a
+  // declaration shape is how the slicer in st_reports_failure.js swept in the
+  // wrong lines. The window either side of the string is enough to see both
+  // halves of the sentence.
+  const at = html.indexOf('Saved to Consult Queue');
+  assert.ok(at > 0, 'the peer-consult toast is gone -- read it before changing this');
+  const src = html.slice(at - 200, at + 400);
+  assert.ok(/pcCapturedB64\s*\?/.test(src),
+    'the photo caveat is unconditional -- a consult with no photo would be told '
+    + 'one is staying behind');
+  assert.ok(/next time they sign in/.test(src),
+    'the toast does not say WHEN it reaches them; "sent" would rebuild the '
+    + 'delivery promise the 2026-08-09 audit removed');
+});
+
 // ═══════════════════════════════════════════════════════════════════════════
 console.log('\n' + pass + '/' + (pass + fail) + ' passed');
 process.exit(fail ? 1 : 0);
