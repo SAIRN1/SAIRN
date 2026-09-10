@@ -825,6 +825,16 @@
       "claimed_at_epoch": 1788965487.7624543,
       "status": "released",
       "released_at": "2026-09-10T13:12:11Z"
+    },
+    {
+      "id": "hank-1789048264",
+      "session": "hank",
+      "subject": "sairnbiz-osha-incident-recording",
+      "task": "real writer table registry form",
+      "claimed_at": "2026-09-10T13:51:04Z",
+      "claimed_at_epoch": 1789048264.9924889,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
