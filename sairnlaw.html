@@ -3345,7 +3345,27 @@ function loadTesseract(){
   if(tesseractLoading)return tesseractLoading;
   tesseractLoading=new Promise(function(resolve,reject){
     var s=document.createElement('script');
-    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js';
+    // Pinned + hashed 2026-09-10. Was `@5` -- a floating major, so any future
+    // 5.x publish (including a compromised one) executed in this page, which
+    // holds privileged client matter records. Semgrep's `missing-integrity`
+    // rule and StoneDesk's Layer 12 both walk STATIC <script src> tags, so
+    // neither could ever see this one: it is injected on demand from JS.
+    // The three static tags across the platform were pinned in 799d78db; this
+    // is the fourth, and it was invisible to the scan that found them.
+    // crossOrigin is required -- without it the browser does not check the hash.
+    //
+    // WHAT THIS DOES NOT COVER, verified by reading the shipped files rather
+    // than assumed: this entry script fetches `worker.min.js` from the same
+    // pinned jsdelivr path, and that worker then fetches `tesseract.js-core`
+    // (wasm) and `@tesseract.js-data/<lang>` (traineddata) from jsdelivr at run
+    // time. Those three sub-resources carry no integrity attribute and there is
+    // no supported way to give them one. So one of four fetched artefacts is
+    // hash-verified -- the one that runs in this page's own context with access
+    // to the DOM and the session token. That is the significant one, and it is
+    // not the whole OCR supply chain. Recorded as such in docs/SOUP-REGISTER.md.
+    s.src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+    s.integrity='sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F';
+    s.crossOrigin='anonymous';
     s.onload=function(){tesseractLoaded=true;resolve();};
     s.onerror=function(){tesseractLoading=null;reject(new Error('Could not load OCR library'));};
     document.head.appendChild(s);
@@ -3364,7 +3384,11 @@ async function runOcr(){
   var file=fileInput.files[0];
   $('ocr-status').textContent='Loading OCR engine...';
   try{ await loadTesseract(); }
-  catch(e){ $('ocr-status').textContent='Could not load the OCR library (no connection?) -- type the text in manually below instead.'; return; }
+  // Was "(no connection?)". Since the script now carries an integrity hash, a
+  // mismatch fails down this exact path -- so naming the connection as the
+  // cause would be asserting a cause this code cannot know, which is the same
+  // defect as the employees read that blamed the role (1cd64840).
+  catch(e){ $('ocr-status').textContent='The OCR library did not load -- either it could not be reached, or the file that arrived failed its integrity check. Type the text in manually below instead.'; return; }
   $('ocr-status').textContent='Reading image... this can take a few seconds.';
   try{
     var result=await Tesseract.recognize(file,'eng');

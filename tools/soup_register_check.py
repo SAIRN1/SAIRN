@@ -25,8 +25,23 @@ delete exactly the part that matters. Same reasoning as
 and refuses to rewrite the colour and app_id it cannot derive.
 
 BROWSER SCRIPTS ARE THE HALF AN npm AUDIT DOES NOT SEE, and on this platform
-they are the weaker half: two CDN scripts, no Subresource Integrity on either,
-one on a floating major. They are checked here for that reason.
+they were the weaker half: no Subresource Integrity on any of them, two on a
+floating major. All four are pinned and hashed as of 2026-09-10. They are
+checked here for that reason.
+
+WHAT THIS TOOL GOT WRONG ON ITS FIRST DAY, kept because it is the reason for
+half the code below. It reported `CLEAN -- every running component is in the
+register` while a FOURTH CDN script was running and unregistered:
+`tesseract.js@5`, a floating major, in `sairnlaw.html`, a page holding
+privileged client matter records. It was missed because it is injected from JS
+rather than written as a `<script src>` tag -- and that one property made it
+invisible to three separate checks at once: Semgrep's `missing-integrity`,
+StoneDesk's own Layer 12 SRI walk, and this register check. A register derived
+from a source that cannot see a component is not derived, it is narrowed.
+
+So this now reads BOTH shapes, and the three checks that were report-only
+because the no-SRI state was "recorded and owned" now FAIL -- that state is
+closed, and a note is the wrong signal for a regression.
 """
 import io
 import json
@@ -68,17 +83,58 @@ def declared_deps():
 
 
 def cdn_scripts():
-    """Every <script src="http(s)://..."> in a root app, with SRI status."""
+    """Every external script a root app loads, static OR injected, with SRI state.
+
+    Two shapes, because this platform ships both and the second one is what
+    slipped through:
+
+      static    <script src="https://..." integrity="sha384-...">
+      injected  var s = document.createElement('script');
+                s.src = 'https://...'; s.integrity = 'sha384-...';
+
+    THE HONEST LIMIT of the injected half: it pairs a `.src` assignment with the
+    variable a literal `document.createElement('script')` bound in the same
+    file. A script element built any other way -- returned from a helper, held
+    in an object property, named by a computed string -- is NOT seen. That is a
+    real gap and it is stated rather than papered over; it is narrower than the
+    gap it replaces, not zero. If a loader like that gets written, this docstring
+    is the thing that should have said so first.
+    """
     found = {}
+
+    def note(url, app, has_sri):
+        rec = found.setdefault(url, {'apps': [], 'sri': has_sri})
+        rec['apps'].append(app)
+        # One app with SRI and one without is not "has SRI".
+        rec['sri'] = rec['sri'] and has_sri
+
     for f in root_html():
         src = read(os.path.join(REPO, f))
         for m in re.finditer(r'<script[^>]*\ssrc="(https?://[^"]+)"([^>]*)>', src):
-            url, rest = m.group(1), m.group(2)
-            rec = found.setdefault(url, {'apps': [], 'sri': 'integrity=' in rest})
-            rec['apps'].append(f)
-            # One app with SRI and one without is not "has SRI".
-            rec['sri'] = rec['sri'] and ('integrity=' in rest)
+            note(m.group(1), f, 'integrity=' in m.group(2))
+        for var in set(re.findall(
+                r'\b([A-Za-z_$][\w$]*)\s*=\s*document\.createElement\(\s*[\'"]script[\'"]\s*\)',
+                src)):
+            v = re.escape(var)
+            has_sri = re.search(r'\b%s\s*\.\s*integrity\s*=' % v, src) is not None
+            for m in re.finditer(r'\b%s\s*\.\s*src\s*=\s*[\'"](https?://[^\'"]+)[\'"]' % v, src):
+                note(m.group(1), f, has_sri)
     return found
+
+
+def cdn_version(url):
+    """The pinned version in a CDN URL, or None if the URL states none.
+
+    Returns the literal text, floating majors included -- `2` and `2.116.0` are
+    both versions and the difference between them is the whole point.
+    """
+    m = re.search(r'/npm/(?:@[^/@]+/)?[^/@]+@([^/]+)', url)
+    if m:
+        return m.group(1)
+    m = re.search(r'/libs/[^/]+/([^/]+)/', url)
+    if m:
+        return m.group(1)
+    return None
 
 
 def package_name(url):
@@ -90,6 +146,31 @@ def package_name(url):
     if m:
         return m.group(1)
     return url
+
+
+COMPONENT_SECTIONS = ('server-side', 'browser-side')
+
+
+def register_rows(reg):
+    """Component names from the two component tables only.
+
+    A backticked first cell means "component" under `## Server-side` and
+    `## Browser-side`, and means nothing anywhere else in the document -- the
+    entries themselves carry explanatory tables whose rows are not components.
+    """
+    names, section = [], ''
+    for line in reg.split('\n'):
+        if line.startswith('## '):
+            section = line[3:].strip().lower()
+        elif line.startswith('### '):
+            # An entry's own heading ends the table; its prose tables are not
+            # part of it.
+            section = ''
+        elif section.startswith(COMPONENT_SECTIONS):
+            m = re.match(r'\| `([^`]+)` \|', line)
+            if m:
+                names.append(m.group(1))
+    return names
 
 
 def main(argv):
@@ -116,21 +197,45 @@ def main(argv):
     cdn = cdn_scripts()
     for url, rec in sorted(cdn.items()):
         name = package_name(url)
+        where = ', '.join(sorted(set(rec['apps'])))
         if ('`%s`' % name) not in reg:
             problems.append('CDN script NOT in the register: %s (loaded by %s)'
-                            % (name, ', '.join(sorted(set(rec['apps'])))))
+                            % (name, where))
         if not rec['sri']:
-            # REPORTED, not a failure. Both current entries lack SRI and the
-            # register says so with its own open-work row; making this fail
-            # would mean the check is red on a state that is already recorded
-            # and owned, which teaches people to ignore it.
-            notes.append('no Subresource Integrity on %s (loaded by %s)'
-                         % (name, ', '.join(sorted(set(rec['apps'])))))
+            # FAILS, and used to be a report-only note. The note was right while
+            # every CDN script lacked SRI and the register owned that with an
+            # open-work row -- a check that is red on a recorded, owned state
+            # teaches people to ignore it. That state closed on 2026-09-10 when
+            # all four were hashed, so from here a missing integrity attribute
+            # is a REGRESSION, and a note is the wrong signal for a regression.
+            problems.append('no Subresource Integrity on %s (loaded by %s) -- a '
+                            'host allowed by CSP is a statement about where a '
+                            'file may come from, not about which file arrived'
+                            % (name, where))
+        ver = cdn_version(url)
+        if ver is None:
+            problems.append('%s is loaded with NO version in the URL (%s) -- '
+                            'whatever the CDN serves today is what runs' % (name, where))
+        elif '.' not in ver:
+            problems.append('%s is pinned to `@%s`, a FLOATING major (%s) -- any '
+                            'future publish under that major, including a '
+                            'compromised one, runs here unreviewed' % (name, ver, where))
+        elif ver not in reg:
+            problems.append('%s is loaded at %s and the register does not name '
+                            'that version -- an entry written against a different '
+                            'version is a claim about software nobody is running'
+                            % (name, ver))
 
     # The other direction: an entry for something that is gone. A register that
     # only grows is a register that starts lying about what is running.
-    for m in re.finditer(r'^\| `([^`]+)` \|', reg, re.M):
-        name = m.group(1)
+    #
+    # SCOPED TO THE TWO COMPONENT TABLES, and it was not on day one. This walked
+    # every `| `name` |` row in the whole file, so the first prose table added
+    # below -- a breakdown of tesseract's sub-resources -- was read as a
+    # component entry and reported as a stale one. Same family as the
+    # split-on-`|` lesson in CLAUDE.md: a row's meaning comes from the table it
+    # is in, and a matcher that ignores the table gets it wrong eventually.
+    for name in register_rows(reg):
         if name in deps:
             continue
         if any(package_name(u) == name for u in cdn):
