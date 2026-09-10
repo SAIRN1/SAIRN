@@ -242,8 +242,12 @@ and it does not exist yet.
   checkers in `tools/`. Those shape what ships without running in production,
   and they are a deliberate second pass, not an oversight.
 - **It has no CVE feed of its own.** Dependabot is the only automated watch, it
-  covers npm only, and it sees none of the three CDN components. One moderate
-  Dependabot alert is open and untriaged as of 2026-09-10.
+  covers npm only, and it sees none of the three CDN components. **TWO moderate
+  Dependabot alerts are open and untriaged as of 2026-09-10** — corrected from
+  "one", which is what the previous entry and the 2026-09-09 handoff both said.
+  The real count came from GitHub's own push output (`GitHub found 2
+  vulnerabilities on SAIRN1/SAIRN's default branch (2 moderate)`), not from
+  `gh`, which is not installed in this clone. **Nobody has read either alert.**
 - **It does not cover a script element built by any loader shape other than a
   literal `document.createElement('script')`.** That is stated in the checker's
   own docstring too. The gap that let `tesseract.js` sit here unrecorded was
