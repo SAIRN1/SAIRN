@@ -93,11 +93,23 @@ MUTATIONS = [
      "      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {",
      "      const locStamped = dntLocation.stampLocation(payload);\n"
      "      const r = await fetch(rest(resource), {"),
+    # ── ANCHOR WIDENED 2026-09-10, and the widening is the finding ──────────
+    # This anchor stopped one token short of the thing that tells the two
+    # SAIRNdental write branches apart, so when the VENDOR branch was added
+    # with the identical Prefer header the anchor matched BOTH and the probe
+    # reported ANCHOR-2 rather than mutating whichever came first. That refusal
+    # is the probe working -- arm 14's comment already records why it must not
+    # guess -- but it meant this arm proved nothing from the day the vendor
+    # branch landed until it was read.
+    #
+    # `[idCol]` is what distinguishes them: the generic DNT_RESOURCES branch
+    # uses idCol, the DNT_VENDOR_OBJECTS branch uses vIdCol. Anchoring on it
+    # cannot match the vendor branch even if every other line is identical.
     ("15. the server keeps on_conflict but stops merging duplicates", API,
      "        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),\n"
-     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental',",
+     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id),",
      "        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),\n"
-     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental',"),
+     "        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [idCol]: String(payload.id),"),
 ]
 
 
@@ -141,9 +153,31 @@ def main():
         same = after == before[t]
         ok = ok and same
         print('%-24s restored byte-identical: %s  %s' % (t, same, before[t][:16]))
-    bad = [n for n, v in results if v not in ('BITES', 'GREEN')]
-    print('PROBES THAT DID NOT BITE:', bad if bad else 'none')
-    return 1 if (bad or not ok) else 0
+    # ── TWO DIFFERENT PROBLEMS, REPORTED AS TWO (2026-09-10) ────────────────
+    # Both fail the run, and both should. But they send the reader to opposite
+    # places, and lumping them under one heading cost real time once already:
+    #
+    #   SILENT   the mutation landed and the suite stayed green. THE CODE IS
+    #            UNPROTECTED -- go and write the assertion.
+    #   ANCHOR-n the mutation never landed, because the anchor matched n places
+    #            instead of one. THE PROBE IS STALE -- the code may be perfectly
+    #            well covered, and nothing here has been measured either way.
+    #            Widen the anchor until it is unique; do NOT let it guess.
+    #
+    # Arm 15 spent an unknown stretch reported as "DID NOT BITE" while the
+    # actual state was ANCHOR-2 -- a stale anchor reading like a coverage hole.
+    silent = [n for n, v in results if v == 'SILENT']
+    stale = [(n, v) for n, v in results if v.startswith('ANCHOR-')]
+    other = [n for n, v in results if v not in ('BITES', 'GREEN', 'SILENT')
+             and not v.startswith('ANCHOR-')]
+    print('MUTATIONS THAT WENT UNNOTICED (the code is unprotected):',
+          silent if silent else 'none')
+    print('ANCHORS THAT NO LONGER MATCH EXACTLY ONCE (the probe is stale, '
+          'nothing was measured):',
+          ['%s -> %s' % (n, v) for n, v in stale] if stale else 'none')
+    if other:
+        print('OTHER:', other)
+    return 1 if (silent or stale or other or not ok) else 0
 
 
 if __name__ == '__main__':
