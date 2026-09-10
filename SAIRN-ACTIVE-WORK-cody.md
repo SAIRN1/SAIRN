@@ -1260,3 +1260,54 @@ its probes MUTATE, and every checker here is read-only. If a mutating tool ever
 joins the registry that reasoning stops holding, and the file says so.
 
 **25 checkers still unwired.** CC holds the ones they are editing.
+
+## 2026-09-10 (Cody) -- a cleanup file that cannot answer "did it run?"
+
+CLAIMED and released: `cleanup-sql-confirm-query-convention`.
+`tools/cleanup_confirm_check.py` + `tests/run_cleanup_confirm_probe.py`
+(`f1af957d`), promoted as the fourth checker in the report-only registry.
+
+**The rule existed since 2026-08-26 and nothing enforced it.** Two files had no
+confirm query of any kind -- `sairndesign_synctest_cleanup.sql` and
+`sairnlegacy_synctest_cleanup.sql`, three live deletes each. Both now carry a
+per-statement confirm with the expected answer **and a control**, because three
+zeroes prove nothing if the rows were never reachable by that predicate.
+
+**What it cannot do, and its header says so: it cannot tell you whether a file
+was RUN.** Nothing in this repo can. What it tells you is whether the file could
+ever answer that.
+
+**The matcher is calibrated against hand-reading, not guessed.** My first
+version called **17 of 26** files non-compliant. I read three; **two were false
+positives** -- an expectation written mid-sentence, and a `select` with its
+`count(*)` on the next line. Rebuilt: multi-line, counts a confirm inside a `--`
+comment (that is how every compliant file here ships one), separates a COMMENTED
+statement from a live one, and accepts verification through the live endpoint,
+which CLAUDE.md **prefers** over a re-select. Two more false positives died and
+became fixtures. **4 flags became 2, both hand-read, both real.**
+
+### Two things that went wrong on my side, recorded rather than smoothed over
+
+1. **I pushed a `PROBE seam violation` commit to origin/main.** A probe left it
+   on HEAD between my `git log` and my `git push -q`, and the quiet push carried
+   it. It deleted `service_methods: body.service_methods` from
+   `api/legal-deadlines.js` -- **the exact field whose absence made SAIRNlaw
+   compute Florida deadlines five days late.** Another session (`c7295822`) had
+   already reverted it by the time I built a worktree to do it myself, so I
+   stood down rather than duplicate. **The lesson is mine: never `push -q`. Read
+   `git log --oneline -1` immediately before pushing, and treat a `PROBE`
+   subject as a stop.**
+2. **I created a git worktree inside the repo** because `$TMPDIR` was empty in
+   that shell and the relative path resolved into the clone. A registered
+   worktree is invisible to `git status`, so it left no trace to notice.
+   Removed. **Use an absolute path outside the clone.**
+
+**The worktree technique itself is the right answer to the churn** and is worth
+keeping: with probes constantly dirtying this tree, `git rebase` refuses and a
+push cannot land. Cherry-picking onto a detached worktree at `origin/main` and
+pushing from there is race-proof and does not touch the working tree at all.
+
+**Also corrected: a stale index row nearly cost a duplicate build.** I claimed
+`sairnbiz sb_incidents` off the index, then found Hank had already closed the
+display half in `37e409e2` with a 10/10 test. Released the claim immediately.
+The row had been updated on origin between my read and my claim.
