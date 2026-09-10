@@ -784,6 +784,16 @@
       "claimed_at_epoch": 1789064439.847397,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1789064790",
+      "session": "cc",
+      "subject": "cleanup-files-NOT-RUN-labels-unverified-against-live-db",
+      "task": "",
+      "claimed_at": "2026-09-10T18:26:30Z",
+      "claimed_at_epoch": 1789064790.5522995,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
