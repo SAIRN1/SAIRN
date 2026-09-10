@@ -835,6 +835,16 @@
       "claimed_at_epoch": 1789048264.9924889,
       "status": "released",
       "released_at": "2026-09-10T14:30:00Z"
+    },
+    {
+      "id": "hank-1789050662",
+      "session": "hank",
+      "subject": "independent-review-55889165",
+      "task": "sairnvet sairnfreedom server backup",
+      "claimed_at": "2026-09-10T14:31:02Z",
+      "claimed_at_epoch": 1789050662.1767967,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
