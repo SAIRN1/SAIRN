@@ -758,6 +758,16 @@
       "claimed_at_epoch": 1788965326.736443,
       "status": "released",
       "released_at": "2026-09-10T13:19:36Z"
+    },
+    {
+      "id": "cody-1789046425",
+      "session": "cody",
+      "subject": "sairnbiz-sb-incidents-kpi-with-no-write-path",
+      "task": "",
+      "claimed_at": "2026-09-10T13:20:25Z",
+      "claimed_at_epoch": 1789046425.8596544,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
