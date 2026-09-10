@@ -859,6 +859,16 @@
       "claimed_at_epoch": 1789067771.7528682,
       "status": "released",
       "released_at": "2026-09-10T19:35:47Z"
+    },
+    {
+      "id": "cody-1789069897",
+      "session": "cody",
+      "subject": "fault-injection-harness",
+      "task": "world-failures not logic bugs",
+      "claimed_at": "2026-09-10T19:51:37Z",
+      "claimed_at_epoch": 1789069897.769517,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
