@@ -1505,6 +1505,29 @@ function freeIsQuotaError(e){
       || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
       || e.code===22 || e.code===1014;
 }
+// The server-backup hook's own failure reporter, lifted out of st() on
+// 2026-09-10. Same shape and same reason as StoneDesk's sdBackupHookFailed():
+// the two failures say DIFFERENT things -- the outer catch in st() means the
+// record was NOT saved, this one means it WAS saved locally and only the backup
+// hook threw -- so collapsing them would tell somebody their work was lost when
+// it was not. The try/catch inside is the logger guard: a logger that throws
+// must not turn a successful save into an exception.
+//
+// WHY IT MOVED. tests/st_reports_failure.js counts BARE catches inside each
+// app's st() wrapper and pins SAIRNfreedom at exactly ONE -- the logger guard in
+// st()'s own failure path. The backup hook added by 55889165 brought a second
+// one, and the suite went red on a count ABOVE the app's number, which is the
+// assertion working: a new silent catch cannot be added to any wrapper without
+// somebody deciding it is allowed and naming it. The alternative was to raise
+// SAIRNfreedom's expected count to 2 the way SAIRNbuild's is; that is the
+// escape hatch for a guard that genuinely has to live inline, and this one does
+// not -- it is a logger, and a logger belongs in a named function.
+function sfBackupHookFailed(k,e){
+  try{ console.error('SAIRNfreedom: the server backup hook threw for "'+k+
+    '" -- the record IS saved on this device; only the backup did not run. '+
+    ((e&&e.message)||e)); }catch(_e){}
+}
+window.sfBackupHookFailed=sfBackupHookFailed;
 function st(k,v){
   try{
     /* THE PREVIOUS VALUE IS READ BEFORE THE WRITE so sfSyncCollection() can
@@ -1521,11 +1544,7 @@ function st(k,v){
        DID succeed, so this must neither return false nor stay silent. */
     if(_sfSynced){
       try{ sfSyncCollection(k, v, _sfPrev); }
-      catch(e2){
-        try{ console.error('SAIRNfreedom: the server backup hook threw for "'+k+
-          '" -- the record IS saved on this device; only the backup did not run. '+
-          ((e2&&e2.message)||e2)); }catch(_e){}
-      }
+      catch(e2){ sfBackupHookFailed(k, e2); }
     }
     return true;
   }catch(e){
