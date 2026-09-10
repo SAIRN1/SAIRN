@@ -794,6 +794,16 @@
       "claimed_at_epoch": 1789064790.5522995,
       "status": "released",
       "released_at": "2026-09-10T18:53:04Z"
+    },
+    {
+      "id": "cc-1789066396",
+      "session": "cc",
+      "subject": "sairnmechanical",
+      "task": "cheque number key decision",
+      "claimed_at": "2026-09-10T18:53:16Z",
+      "claimed_at_epoch": 1789066396.1948035,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
