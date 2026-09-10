@@ -9164,10 +9164,16 @@ module.exports = async (req, res) => {
     // here is "a signed-in employee of this licence"; which panels each role
     // may open is decided by sairnbiz.html's own access layer, and who may
     // sign in at all by api/sb-auth.js.
+    // sb_incidents joined 2026-09-10 with the OSHA Form 300 log. It was left
+    // out on 2026-09-04 because nothing in the app wrote it; saveIncident() is
+    // that write path now. The session gate argued above covers it for the
+    // same reason it covers sb_perf: an injury log names an employee, a body
+    // part and a privacy-case flag, and the licence key is a string the app
+    // documents as not being auth.
     const SB_RESOURCES = {
       sb_invs: 'inv_id', sb_exps: 'exp_id', sb_ap: 'ap_id', sb_vends: 'vend_id',
       sb_payruns: 'payrun_id', sb_train: 'train_id', sb_perf: 'perf_id',
-      sb_hire: 'hire_id', sb_bud: 'bud_id'
+      sb_hire: 'hire_id', sb_bud: 'bud_id', sb_incidents: 'incident_id'
     };
     if (SB_RESOURCES[resource]) {
       const sbBizSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');

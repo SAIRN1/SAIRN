@@ -481,6 +481,48 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 </div>
+<div class="modal" id="incmodal">
+  <div class="mbox">
+    <div class="mtitle">Log Injury or Illness</div>
+    <div style="font-size:12px;color:var(--muted,#666);margin-bottom:10px;">
+      These are the OSHA Form 300 columns (29 CFR 1904.29). <strong>Whether this case is recordable, and which
+      classification is the most serious outcome, is your determination</strong> &mdash; this form stores it and does
+      not decide it. The case number is assigned for you, in order within the calendar year of the date below.
+    </div>
+    <div class="fr"><div class="fg"><label>Date of injury or onset of illness</label><input id="incdate" type="date"></div><div class="fg"><label>Employee</label><input id="incemp" placeholder="Marcus Thompson"></div></div>
+    <div class="fr"><div class="fg"><label>Job title</label><input id="incjob" placeholder="Shop Foreman"></div><div class="fg"><label>Where the event occurred</label><input id="incwhere" placeholder="Fabrication bay 2"></div></div>
+    <div class="fg"><label>Describe the injury or illness, parts of body affected, and the object or substance involved</label><input id="incdesc" placeholder="Laceration to left forearm from slab edge while loading"></div>
+    <div class="fr">
+      <div class="fg"><label>Classification &mdash; the MOST SERIOUS outcome, one only</label><select id="incclass">
+        <option value="other">Other recordable case</option>
+        <option value="restricted">Job transfer or restriction</option>
+        <option value="away">Days away from work</option>
+        <option value="death">Death</option>
+      </select></div>
+      <div class="fg"><label>Type</label><select id="inctype">
+        <option value="injury">Injury</option>
+        <option value="skin">Skin disorder</option>
+        <option value="respiratory">Respiratory condition</option>
+        <option value="poisoning">Poisoning</option>
+        <option value="hearing">Hearing loss</option>
+        <option value="other_illness">All other illnesses</option>
+      </select></div>
+    </div>
+    <div class="fr"><div class="fg"><label>Days away from work</label><input id="incaway" type="number" min="0" placeholder="0"></div><div class="fg"><label>Days on job transfer or restriction</label><input id="increst" type="number" min="0" placeholder="0"></div></div>
+    <label class="chk" style="display:block;margin-top:6px;font-size:13px"><input type="checkbox" id="incpriv" style="width:auto"> Privacy case &mdash; do not print the employee's name on the log</label>
+    <div style="font-size:12px;color:var(--muted,#666);margin-top:6px;">
+      1904.29(b)(6)&ndash;(9) lists the case types where the name must not appear on the log. Ticking this shows
+      &ldquo;Privacy Case&rdquo; in the table instead of the name. <strong>Stated plainly rather than implied: the name
+      you type is still stored on this record.</strong> OSHA requires a SEPARATE confidential list of case numbers and
+      names, and this app does not keep one &mdash; so ticking this box hides the name from the log view and is not by
+      itself the separate list the rule asks for.
+    </div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeIncModal()">Cancel</button>
+      <button class="btn bp" onclick="saveIncident()">Save Incident</button>
+    </div>
+  </div>
+</div>
 <div class="modal" id="certmodal">
   <div class="mbox">
     <div class="mtitle">Record Certification Renewal</div>
@@ -637,7 +679,7 @@ textarea{resize:vertical;min-height:80px;}
 <!-- TRAINING -->
 <div class="panel" id="panel-training">
   <div class="ph"><div><div class="ptitle">Training &amp; Certifications</div><div class="psub">Compliance, skills, and safety training</div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('training')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="pa"><button class="btn bp bs" onclick="openIncModal()">+ Log Incident</button><button class="btn bo bs" onclick="csv('training')">Export CSV</button><button class="btn bo bs" onclick="window.print()">Print</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Certs Active</div><div class="kval" id="tr-cert">0</div><div class="kt">All employees</div></div>
     <div class="kpi"><div class="klbl">Expiring 90 Days</div><div class="kval" id="tr-exp">0</div><div class="kt d">Needs renewal</div></div>
@@ -648,6 +690,17 @@ textarea{resize:vertical;min-height:80px;}
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Training / Cert</th><th>Completed</th><th>Expires</th><th>Provider</th><th>Cost</th><th>Status</th><th></th></tr></thead>
     <tbody id="trtbody"></tbody></table></div>
+  </div></div>
+  <div class="card"><div class="ch"><span class="ct">Injury &amp; Illness Log</span></div><div class="cb">
+    <div style="color:var(--muted);font-size:12px;margin-bottom:12px">
+      Recorded in the columns of the OSHA Form 300 log (29 CFR 1904.29) so the entries line up with the form your
+      records are kept on. <strong>This is a record-keeping aid, not a filed form and not a compliance
+      determination.</strong> Whether a case is recordable at all, and which classification is the most serious one,
+      is the employer's decision under Part 1904 &mdash; this app stores what you decide and never decides it for you.
+      Case numbers are assigned in order within each calendar year.
+    </div>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Case</th><th>Date</th><th>Employee</th><th>Job Title</th><th>Where</th><th>Description</th><th>Classification</th><th>Away</th><th>Restricted</th><th>Type</th></tr></thead>
+    <tbody id="inctbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -3264,38 +3317,152 @@ function sbNormalizeTrain(tr){
   return tr;
 }
 
-// Flip to true in the SAME change that adds an add-incident path. See the
-// note inside rTrain(); tests/sairnbiz_incidents_kpi.js checks this against
-// the real writer count in this file, so it cannot quietly disagree with it.
-var SB_INCIDENTS_HAVE_A_WRITE_PATH=false;
+// Flipped true 2026-09-10 in the same change that added saveIncident(), which
+// is the rule this line carried while it was false. tests/sairnbiz_incidents_kpi.js
+// checks it against the real writer count in this file, so it cannot quietly
+// disagree with the code.
+var SB_INCIDENTS_HAVE_A_WRITE_PATH=true;
+
+// ── THE INJURY & ILLNESS LOG (2026-09-10) ─────────────────────────────────
+// Built on Michael's decision after the Safety Incidents tile was found
+// showing a "0" nothing could change: `st('sb_incidents',[])` ran once in
+// sbSeedRows() and nothing wrote it again. The honest-messaging fix landed
+// first (the tile said "Not recorded here yet"); this is the feature that
+// makes the tile a measurement.
+//
+// THE COLUMNS ARE OSHA FORM 300's (29 CFR 1904.29) AND THAT IS THE ONLY
+// CLAIM MADE. This app does not decide recordability, does not pick the
+// classification, does not produce Form 300A, and does not file anything.
+// Those are the employer's determinations under Part 1904 and the panel says
+// so on screen rather than only here.
+//
+// CLASSIFICATION IS A SELECT, NOT FOUR CHECKBOXES, because the form's own
+// instruction is to check ONE -- the most serious outcome. Four booleans can
+// hold a state the form cannot, and a record that cannot be transcribed onto
+// the form it names is worse than no record.
+var SB_INCIDENT_CLASS={death:'Death',away:'Days away from work',
+  restricted:'Job transfer or restriction',other:'Other recordable case'};
+var SB_INCIDENT_TYPE={injury:'Injury',skin:'Skin disorder',
+  respiratory:'Respiratory condition',poisoning:'Poisoning',
+  hearing:'Hearing loss',other_illness:'All other illnesses'};
+
+// Column A. Assigned rather than typed, and scoped to the calendar year of
+// the incident date because the log itself is per-year. Derived from the
+// records already stored, so two incidents entered in either order still get
+// stable, non-colliding numbers within their own year.
+function sbNextCaseNo(list,year){
+  var n=0;
+  (Array.isArray(list)?list:[]).forEach(function(r){
+    if(!r||String(r.year)!==String(year))return;
+    var v=parseInt(r.case_no,10);
+    if(!isNaN(v)&&v>n)n=v;
+  });
+  return n+1;
+}
+
+// The tile beside this log is labelled "YTD OSHA log", so the count is YTD.
+// An all-time count under a YTD label is the same shape as the "0" this
+// feature replaced: a real number under a sentence that means something else.
+function sbIncidentsYTD(list,year){
+  return (Array.isArray(list)?list:[]).filter(function(r){
+    return r&&String(r.year)===String(year);
+  }).length;
+}
+
+// Newest first, and a genuinely empty log says so in words. An empty table
+// body under a heading reads as "failed to load" -- the distinction ld() was
+// taught to make on 2026-09-04 and the panel should make too.
+function rIncidents(list){
+  var el=$('inctbody');if(!el)return;
+  var rows=(Array.isArray(list)?list.slice():[]).sort(function(a,b){
+    return String(b.date||'').localeCompare(String(a.date||''));
+  });
+  el.innerHTML=rows.length?rows.map(function(r){
+    // PRIVACY CASE: 1904.29(b)(6)-(9). The name is NOT rendered here. It is
+    // still on the record and the modal says so in as many words -- hiding it
+    // from a reader while telling the person who typed it that it is stored is
+    // the honest half of a rule this app cannot fully satisfy, because OSHA
+    // wants a SEPARATE confidential list and there is not one.
+    var who=r.privacy?'<em>Privacy Case</em>':H(r.emp||'--');
+    return '<tr><td>'+H(String(r.year||'')+'-'+String(r.case_no||''))+'</td>'+
+      '<td>'+fdate(r.date)+'</td><td><strong>'+who+'</strong></td>'+
+      '<td>'+H(r.job||'--')+'</td><td>'+H(r.where||'--')+'</td>'+
+      '<td>'+H(r.desc||'')+'</td>'+
+      '<td>'+H(SB_INCIDENT_CLASS[r.classification]||r.classification||'--')+'</td>'+
+      '<td style="text-align:center">'+(r.days_away||0)+'</td>'+
+      '<td style="text-align:center">'+(r.days_restricted||0)+'</td>'+
+      '<td>'+H(SB_INCIDENT_TYPE[r.type]||r.type||'--')+'</td></tr>';
+  }).join(''):'<tr><td colspan="10" style="text-align:center;color:var(--muted);padding:24px">No injuries or illnesses recorded. Use <strong>Log Incident</strong> above to add one.</td></tr>';
+}
+
+function openIncModal(){
+  $('incdate').value=sbLocalToday();
+  ['incemp','incjob','incwhere','incdesc','incaway','increst'].forEach(function(f){$(f).value='';});
+  $('incclass').value='other';$('inctype').value='injury';$('incpriv').checked=false;
+  $('incmodal').classList.add('on');
+}
+function closeIncModal(){ $('incmodal').classList.remove('on'); }
+
+function saveIncident(){
+  var date=$('incdate').value,emp=$('incemp').value.trim(),desc=$('incdesc').value.trim();
+  // Three refusals, and each one is a field the form cannot be transcribed
+  // without. Everything else on Form 300 can legitimately be blank.
+  if(!date){toast('The date of injury or onset of illness is required');return;}
+  if(!emp){toast("The employee's name is required, even on a privacy case -- it is stored, and shown on the log only when this is not a privacy case");return;}
+  if(!desc){toast('A description is required -- column F is what makes the entry usable');return;}
+  var cls=$('incclass').value,away=Math.max(0,parseInt($('incaway').value,10)||0),
+      rest=Math.max(0,parseInt($('increst').value,10)||0);
+  // A day count that contradicts the classification is a typo, not a record.
+  // Refused rather than stored, the same standard saveCertRenewal() applies to
+  // an expiry before its completion date: a stored contradiction makes the
+  // panel look broken later for no visible cause.
+  if(cls==='away'&&away<1){toast('Classified as days away from work, so the day count must be at least 1');return;}
+  if(cls==='restricted'&&rest<1){toast('Classified as job transfer or restriction, so that day count must be at least 1');return;}
+  var list=ld('sb_incidents',[]);
+  if(!Array.isArray(list))list=[];
+  var year=String(date).slice(0,4);
+  var rec={id:'IN'+Date.now().toString(36),year:year,case_no:sbNextCaseNo(list,year),
+    date:date,emp:emp,job:$('incjob').value.trim(),where:$('incwhere').value.trim(),
+    desc:desc,classification:cls,type:$('inctype').value,days_away:away,days_restricted:rest,
+    privacy:!!$('incpriv').checked,created_at:sbLocalToday()};
+  list.push(rec);
+  // st() returns false when the browser refused to store it, and reports that
+  // itself. The toast below must not claim a save that did not happen -- the
+  // shape that made runPayroll() announce ACH transfers it never sent.
+  if(!st('sb_incidents',list))return;
+  closeIncModal();rTrain();
+  toast('Recorded as case '+year+'-'+rec.case_no+(rec.privacy?' (privacy case)':' -- '+rec.emp),4000);
+}
 
 function rTrain(){
   var tr=sbNormalizeTrain(ld('sb_train',[]));
   var exp=tr.filter(function(t){return sbCertStatus(t)==='Expiring Soon';}).length;
   var hrs=tr.reduce(function(s,t){return s+(t.hrs||0);},0);
   var spend=tr.reduce(function(s,t){return s+(t.cost||0);},0);
-  var incidents=ld('sb_incidents',[]).length;
+  var incidentList=ld('sb_incidents',[]);
+  if(!Array.isArray(incidentList))incidentList=[];
+  var incidents=sbIncidentsYTD(incidentList,String(sbLocalToday()).slice(0,4));
   $('tr-cert').textContent=tr.length;$('tr-exp').textContent=exp;$('tr-hrs').textContent=hrs;$('tr-bud').textContent=fmt(spend);
   // ── A ZERO NOBODY CAN CHANGE IS NOT A MEASUREMENT (2026-09-09) ──────────
   // This tile read "0" under the subtitle "YTD OSHA log", which tells a
-  // customer their year-to-date OSHA log is clean. It is not a fabricated
-  // number -- the count is real and the array is really empty -- so it is not
-  // a Check 0b violation. It is worse in one specific way: `st('sb_incidents',
-  // [])` appears exactly once, in seed(), and NOTHING in this file writes it
-  // again. There is no add-incident path anywhere, so the tile could only ever
-  // say 0. "No incidents" and "no way to record one" rendered identically, and
-  // the more reassuring of the two is the one that showed.
+  // customer their year-to-date OSHA log is clean. It was not a fabricated
+  // number -- the count was real and the array really was empty -- so it was
+  // never a Check 0b violation. It was worse in one specific way:
+  // `st('sb_incidents',[])` ran once in sbSeedRows() and NOTHING in this file
+  // wrote it again, so the tile could only ever say 0. "No incidents" and "no
+  // way to record one" rendered identically, and the reassuring one showed.
   //
-  // The count is still read and still displayed the moment a write path
-  // exists. What changed is that the app now says which of the two it means.
-  // SB_INCIDENTS_HAVE_A_WRITE_PATH is the single place to flip, and
-  // tests/sairnbiz_incidents_kpi.js DERIVES the truth from the number of
-  // st('sb_incidents') writers in the file rather than trusting this flag --
-  // so building the feature and forgetting this line fails loudly instead of
-  // leaving a real count hidden behind a dash.
+  // THE WRITE PATH NOW EXISTS (2026-09-10, Michael's decision): saveIncident()
+  // above, the Injury & Illness Log in this panel, and sb_incidents registered
+  // in SB_SYNCED / api/_resources/sairnbiz.js. The branch below is KEPT rather
+  // than deleted with the flag hardcoded, because it is what makes the claim
+  // checkable: tests/sairnbiz_incidents_kpi.js counts the real
+  // st('sb_incidents') writers in this file and fails if the flag disagrees.
+  // If the feature is ever removed, the dash comes back instead of a 0 that
+  // means nothing.
   //
-  // Whether to build incident recording at all is a product decision and is
-  // deliberately NOT taken here; the open-work row stays open for it.
+  // The count is YTD because the subtitle says YTD. An all-time number under
+  // that label would be the same defect in a quieter form.
   if(SB_INCIDENTS_HAVE_A_WRITE_PATH){
     $('tr-safe').textContent=incidents;
     $('tr-safe-note').textContent='YTD OSHA log';
@@ -3303,6 +3470,7 @@ function rTrain(){
     $('tr-safe').textContent='--';
     $('tr-safe-note').textContent='Not recorded here yet';
   }
+  rIncidents(incidentList);
   $('trtbody').innerHTML=tr.map(function(t){var stt=sbCertStatus(t);var sc={Active:'bg','Expiring Soon':'bw','No Expiry':'bx'}[stt]||'br';return'<tr><td>'+H(t.emp)+'</td><td><strong>'+H(t.cert)+'</strong></td><td>'+fdate(t.done)+'</td><td>'+fdate(t.exp)+'</td><td>'+H(t.prov)+'</td><td>'+(t.cost?fmt(t.cost):'Internal')+'</td><td><span class="badge '+sc+'">'+H(stt)+'</span></td><td><button class="btn bo bs" onclick="openCertRenew(\''+H(t.id)+'\')">Record Renewal</button></td></tr>';}).join('');
 }
 
@@ -4047,7 +4215,13 @@ window.recordSbSharedTopics = recordSbSharedTopics;
 // the first one -- deliberately, because a badge saying "Backed up" that is
 // wrong would be worse than the gap it replaced. (The Settings panel's
 // existing "Synced / Not Synced" badge is about syncEmps(), not this.)
-var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud'];
+// sb_incidents joined 2026-09-10, when it stopped being a collection nothing
+// wrote. It was excluded on 2026-09-04 for a reason that was true then and is
+// stated in api/_resources/sairnbiz.js: "nothing in the app writes it after
+// seed() ... syncing a collection with no write path would back up an empty
+// array forever and read as coverage." saveIncident() is that write path, and
+// an injury log is the last record a shop should keep on one workstation.
+var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud','sb_incidents'];
 var _sbSyncOn={};
 SB_SYNCED.forEach(function(k){_sbSyncOn[k]=true;});
 // Set while seed() runs and while hydration writes merged rows back. Seeding
@@ -4100,7 +4274,7 @@ function sbBackupFetch(action,resource,payload){
 // (an invoice number, a vendor code, the handle a Pay button names a row by).
 // Minting one there would put a generated string in front of a customer, so a
 // missing id is reported instead and left alone.
-var SB_ID_PREFIX={sb_exps:'EX',sb_perf:'PF',sb_hire:'HR',sb_bud:'BD'};
+var SB_ID_PREFIX={sb_exps:'EX',sb_perf:'PF',sb_hire:'HR',sb_bud:'BD',sb_incidents:'IN'};
 // Latched per key. Unlike a failed write, which is an EVENT worth recording
 // every time, a record with no id is a STANDING condition -- it would repeat
 // on every repaint for the life of the session and bury everything else.

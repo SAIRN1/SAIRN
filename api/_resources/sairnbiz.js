@@ -64,6 +64,20 @@ module.exports = {
     'sb_hire',
   // Annual budget by category, with actuals synced from recorded expenses.
     'sb_bud',
+  // OSHA Form 300 injury and illness log. ADDED 2026-09-10, and it was
+  // DELIBERATELY EXCLUDED here until that date -- the note this replaces read:
+  // "nothing in the app writes it after seed() ... syncing a collection with no
+  // write path would back up an empty array forever and read as coverage."
+  // That reasoning was right and it expired the moment sairnbiz.html grew
+  // saveIncident(). Recorded rather than quietly rewritten, because the
+  // exclusion was a judgement and this is a different judgement on new facts,
+  // not a correction of a mistake.
+  //
+  // An injury log is the last record a shop should keep on one workstation:
+  // the retention period is five years (29 CFR 1904.33) and it is the record a
+  // regulator asks for, so losing the browser loses exactly the thing that
+  // cannot be reconstructed from anything else in the app.
+    'sb_incidents',
   // DELIBERATELY NOT SYNCED, and why -- so the next reader does not have to
   // re-derive the judgement or assume it was an oversight:
   //   sb_emps -- ALREADY synced, by the bespoke `employees` branch, which
@@ -77,9 +91,6 @@ module.exports = {
   //   sb_cfg -- fiscal year / overtime rule / default payment terms. Same
   //     single-object shape as sb_co, and it is configuration rather than a
   //     business record.
-  //   sb_incidents -- nothing in the app writes it after seed(). It is set to
-  //     [] once and read only for a count. Syncing a collection with no write
-  //     path would back up an empty array forever and read as coverage.
   //   sb_lic -- the licence key itself.
   //   sb_role -- a client-side display value. The real role comes from the
   //     session token.

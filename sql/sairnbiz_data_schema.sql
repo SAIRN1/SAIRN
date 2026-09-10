@@ -212,10 +212,46 @@ create index if not exists idx_sb_bud_license on public.sb_bud(license_hash);
 alter table public.sb_bud enable row level security;
 revoke all on public.sb_bud from service_role;
 grant select, insert, update on public.sb_bud to service_role;
+-- OSHA Form 300 injury and illness log (29 CFR 1904.29). ADDED 2026-09-10 with
+-- sairnbiz.html's saveIncident(); this table did not exist in the 2026-09-04
+-- pass because nothing in the app wrote the collection.
+--
+-- WHY IT IS THE SHARPEST OMISSION OF THE ORIGINAL NINE, now that it has a
+-- writer: 29 CFR 1904.33 requires these records to be retained for FIVE YEARS
+-- following the year they cover, and this is the record a regulator asks to
+-- see. Every other collection here can be partly reconstructed from the ledger
+-- or from paper; an injury log kept in one browser cannot be reconstructed
+-- from anything.
+--
+-- SAME jsonb-blob shape as the nine above, no special-casing. The id column
+-- follows the same mechanical rule the header states -- strip sb_,
+-- singularise: sb_incidents -> incident_id.
+--
+-- THE ROW CONTENT IS NOT MODELLED IN COLUMNS, deliberately and consistently
+-- with every other table in this file. It carries a privacy-case flag and an
+-- employee name; splitting those into columns here would imply this table is
+-- the "separate confidential list" 1904.29(b)(9) asks for, and it is not.
+-- sairnbiz.html says so on screen rather than letting the schema imply it.
+create table if not exists public.sb_incidents (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnbiz',
+  incident_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, incident_id),
+  constraint sb_incidents_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_sb_incidents_license on public.sb_incidents(license_hash);
+alter table public.sb_incidents enable row level security;
+revoke all on public.sb_incidents from service_role;
+grant select, insert, update on public.sb_incidents to service_role;
 
--- Verify after running. Expect exactly 10 rows -- the nine above plus the
+-- Verify after running. Expect exactly 11 rows -- the TEN above plus the
 -- pre-existing sb_employee_auth -- each with INSERT / SELECT / UPDATE and
--- nothing else:
+-- nothing else. (Was 10 before sb_incidents was added on 2026-09-10; a stale
+-- expected count is a verification step that passes while missing a table.)
 --
 --   select table_name, string_agg(privilege_type, ', ' order by privilege_type) as privs
 --     from information_schema.role_table_grants

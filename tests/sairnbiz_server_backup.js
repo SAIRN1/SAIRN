@@ -126,11 +126,16 @@ const INV_B = { id: 'INV-2602', cust: 'Lakewood', amt: 3890, status: 'Sent' };
 const RUN_A = { id: 'PR1a2b3c', run_on: '2026-09-04', employees: 8, gross: 12000 };
 
 // ═══════════════════════════════════════════════════════════════════════════
-section('the nine collections agree across all four files');
+section('the ten collections agree across all four files');
 
-test('registry, server handler, client list and SQL declare the same nine', () => {
+test('registry, server handler, client list and SQL declare the same ten', () => {
+  // NINE until 2026-09-10, when sb_incidents got a write path (the OSHA Form
+  // 300 log) and moved out of the excluded list below. The number is asserted
+  // rather than derived on purpose: a resource silently appearing in three of
+  // the four files and not the fourth is the failure this whole section is
+  // for, and a self-adjusting count would not catch it.
   const declared = registry.resources.slice().sort();
-  assert.strictEqual(declared.length, 9, 'registry should declare 9 resources');
+  assert.strictEqual(declared.length, 10, 'registry should declare 10 resources');
 
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const handled = (handlerBlock.match(/\bsb_[a-z_]+(?=:)/g) || []).sort();
@@ -149,7 +154,7 @@ test('registry, server handler, client list and SQL declare the same nine', () =
 test('every id column in the handler exists in the SQL table it names', () => {
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const pairs = handlerBlock.match(/sb_[a-z_]+:\s*'[a-z_]+'/g) || [];
-  assert.strictEqual(pairs.length, 9);
+  assert.strictEqual(pairs.length, 10);
   pairs.forEach((p) => {
     const [res, col] = p.split(':').map((s) => s.trim().replace(/'/g, ''));
     const table = slice(schema, 'create table if not exists public.' + res + ' (', ');');
@@ -169,9 +174,12 @@ test('no sb_ resource collides with another app', () => {
   assert.strictEqual(new Set(merged.RESOURCE_NAMES).size, merged.RESOURCE_NAMES.length, 'duplicate resource names');
 });
 
-test('the eight excluded collections carry a written reason, not silence', () => {
+test('the seven excluded collections carry a written reason, not silence', () => {
+  // sb_incidents left this list on 2026-09-10 -- it is a synced resource now.
+  // Its exclusion note was REMOVED rather than left to contradict the entry,
+  // and the entry carries the reason the exclusion expired.
   const src = fs.readFileSync(path.join(ROOT, 'api', '_resources', 'sairnbiz.js'), 'utf8');
-  ['sb_emps', 'sb_co', 'sb_cfg', 'sb_incidents', 'sb_lic', 'sb_role', 'sb_seeded', 'sb_sync']
+  ['sb_emps', 'sb_co', 'sb_cfg', 'sb_lic', 'sb_role', 'sb_seeded', 'sb_sync']
     .forEach((k) => assert.ok(new RegExp('//\\s*' + k + ' --').test(src), 'no recorded reason for excluding ' + k));
 });
 
@@ -296,7 +304,10 @@ section('what is deliberately NOT backed up');
 
 test('app state is not synced -- licence, role, seed marker, sync stamp', async () => {
   const c = harness();
-  ['sb_role', 'sb_seeded', 'sb_sync', 'sb_cfg', 'sb_co', 'sb_incidents'].forEach((k) => c.st(k, [{ id: 'x-1' }]));
+  // sb_incidents was in this list until 2026-09-10. It is a business record
+  // with a real writer now, so it SHOULD push -- leaving it here would have
+  // asserted the opposite of the feature.
+  ['sb_role', 'sb_seeded', 'sb_sync', 'sb_cfg', 'sb_co'].forEach((k) => c.st(k, [{ id: 'x-1' }]));
   await flush();
   assert.strictEqual(writesOf(c).length, 0);
 });
@@ -375,7 +386,7 @@ test('the alarm fires once per key, not once per repaint', () => {
 // ═══════════════════════════════════════════════════════════════════════════
 section('an unprovisioned backup goes quiet after one failure, not 300');
 
-test('NOT_PROVISIONED latches, so a nine-collection save is one warning', async () => {
+test('NOT_PROVISIONED latches, so a ten-collection save is one warning', async () => {
   const c = harness({ notProvisioned: true });
   c.st('sb_invs', [INV_A, INV_B]);
   await flush();
@@ -428,14 +439,14 @@ test('a FAILED read leaves local data untouched and is counted as failed', async
   const c = harness({ store: { sb_invs: JSON.stringify([INV_A]) }, readFails: true });
   const r = await c.sbHydrateAll();
   assert.strictEqual(r.merged, 0);
-  assert.strictEqual(r.failed, 9, 'a failed read was not counted');
+  assert.strictEqual(r.failed, 10, 'a failed read was not counted');
   assert.strictEqual(r.notProvisioned, 0, 'a failure was miscounted as an unprovisioned backup');
   assert.deepStrictEqual(JSON.parse(c.__store.sb_invs), [INV_A], 'a failed read modified local data');
 });
 
 test('a failed read TELLS THE USER, and does not say the backup is empty', () => {
   const c = harness({ readFails: true });
-  c.sbReportHydrate({ merged: 0, failed: 9, notProvisioned: 0 }, true);
+  c.sbReportHydrate({ merged: 0, failed: 10, notProvisioned: 0 }, true);
   assert.strictEqual(c.__toasts.length, 1, 'a failed read was silent -- this is the "No jobs yet" shape');
   assert.ok(/Could not read/i.test(c.__toasts[0]));
   assert.ok(!/no records|nothing|empty/i.test(c.__toasts[0]), 'the message implies an empty backup: ' + c.__toasts[0]);
@@ -444,7 +455,7 @@ test('a failed read TELLS THE USER, and does not say the backup is empty', () =>
 test('provisioned:false is counted as not-provisioned, not as an empty backup', async () => {
   const c = harness({ notProvisioned: true });
   const r = await c.sbHydrateAll();
-  assert.strictEqual(r.notProvisioned, 9);
+  assert.strictEqual(r.notProvisioned, 10);
   assert.strictEqual(r.failed, 0);
 });
 
@@ -452,7 +463,7 @@ test('an unprovisioned backup warns the operator and does NOT alarm the user', (
   // A shop owner cannot run a SQL file. An alarm with no available action is
   // noise; the console line is for whoever deploys.
   const c = harness();
-  c.sbReportHydrate({ merged: 0, failed: 0, notProvisioned: 9 }, true);
+  c.sbReportHydrate({ merged: 0, failed: 0, notProvisioned: 10 }, true);
   assert.strictEqual(c.__toasts.length, 0);
   assert.ok(c.__warns.some((w) => /sairnbiz_data_schema\.sql/.test(w)), 'the operator was not told which file to run');
   assert.strictEqual(c.sbBackupUnavailable, true, 'reads did not latch the flag, so writes will keep retrying');
@@ -561,7 +572,7 @@ const probes = [
     async () => {
       const c = harness({ readFails: true }, probeSrc);
       const r = await c.sbHydrateAll();
-      assert.strictEqual(r.failed, 9);
+      assert.strictEqual(r.failed, 10);
     }],
   ['hydration overwrites local edits instead of merging additively',
     (s) => s.replace('if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);added++;}', 'if(r&&r.id!=null){local.push(r);added++;}'),
