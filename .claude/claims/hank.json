@@ -875,6 +875,15 @@
       "claimed_at_epoch": 1789062944.1889875,
       "status": "released",
       "released_at": "2026-09-10T18:08:36Z"
+    },
+    {
+      "id": "hank-1789064078",
+      "session": "hank",
+      "subject": "tool-wrapper-heuristic-false-clean",
+      "task": "local_only_collection_check.py excuses any one-line saveX wrapper in a hooked app -- narrow to the function's own body. Lexical block on CC's app-level claim, said out loud.",
+      "claimed_at": "2026-09-10T18:14:38Z",
+      "claimed_at_epoch": 1789064078.706302,
+      "status": "active"
     }
   ]
 }
