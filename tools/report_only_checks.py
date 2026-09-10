@@ -194,6 +194,97 @@ REGISTRY = [
                     'delete, and a menu-only file. 26 files, 0 gaps now. Held '
                     'in both directions by tests/run_cleanup_confirm_probe.py',
     },
+    # ── SECOND BATCH, 2026-09-10 ────────────────────────────────────────────
+    # Same rule as the first: each one RUN against real code, every finding
+    # hand-read, and anything the run exposed fixed before promotion rather
+    # than promoted broken.
+    {
+        'tool': 'md_table_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a markdown row whose prose pipes broke its own columns, so '
+                   'trailing cells fall off and an edit-by-index writes into '
+                   'the wrong one',
+        'why_it_matters': 'docs/SAIRN-OPEN-WORK-INDEX.md is the file every '
+                          'session reads to choose work; a status landing where '
+                          'an owner belongs is silent. It caught the author of '
+                          'this registry doing exactly that on 2026-09-09',
+        'evidence': 'real run 2026-09-10: 0 malformed rows across the standing docs',
+    },
+    {
+        'tool': 'div_balance_check.py',
+        'mode': 'apps',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'an unbalanced <div> tree -- the safe-editing rules say run '
+                   'it after EVERY edit and nothing ever did',
+        'why_it_matters': 'an unclosed div silently swallows every panel after '
+                          'it into the wrong parent',
+        'evidence': 'real run 2026-09-10 over all 22 app files: 0 findings',
+    },
+    {
+        'tool': 'duplicate_global_check.py',
+        'mode': 'apps',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, after its one real-run finding turned out to '
+                    'be a deliberate wrapper',
+        'catches': 'a second top-level declaration of the same global -- the '
+                   'later one silently wins and the earlier becomes dead code '
+                   'that still reads correctly (Guardian check 13)',
+        'why_it_matters': 'hit four times in one session on StoneDesk, every '
+                          'time found by a live browser test rather than by '
+                          'reading the code',
+        'evidence': 'first real run flagged rBids on sairnbuild.html. HAND-READ: '
+                    'a deliberate wrapper -- `var _origRBids = window.rBids;` '
+                    'then a redefinition that CALLS it -- with a comment at the '
+                    'site saying "Do NOT fix this by deleting either half". '
+                    'Acting on the report would have deleted a live feature. The '
+                    'checker now tests whether the original is saved AND called, '
+                    'prints every pair it excused, and reports 0 across 22 apps',
+    },
+    {
+        'tool': 'panel_nesting_check.py',
+        'mode': 'apps',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, after three defects found by running it',
+        'catches': 'a panel that is not a sibling of the others, so the '
+                   'show/hide CSS cannot reach it',
+        'why_it_matters': 'this is how panel-crm went undetected -- structurally '
+                          'present, permanently invisible',
+        'evidence': 'first real run FAILED on 7 of 22 files, every one for having '
+                    'NOTHING TO CHECK. Three defects: NO_PANELS exited 1 (a '
+                    'failure for an empty question); `page-` containers were '
+                    'unmatched; and the name part excluded hyphens, so '
+                    '`panel-check-register` and every hyphenated id was invisible '
+                    'even under the convention it did support. Now 0 failures and '
+                    '1 disclosed SKIP (sairncash, 2 camelCase shell containers)',
+    },
+    {
+        'tool': 'fail_open_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a read that turns "I could not ask" into "there is none" -- '
+                   'an absent record and an unreachable server rendering the same',
+        'why_it_matters': 'the silent-failure class this platform keeps '
+                          'rediscovering; a fail-open read is indistinguishable '
+                          'from an honest empty state',
+        'evidence': 'real run 2026-09-10: 0 findings, exit 0',
+    },
+    {
+        'tool': 'discarded_verdict_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a refusal that is computed and then not read -- the gate '
+                   'runs and its answer is thrown away',
+        'why_it_matters': 'a verdict nobody consults is an authorisation check '
+                          'that does not authorise anything',
+        'evidence': 'real run 2026-09-10: 0 findings, exit 0. Its own header '
+                    'says it cannot see across files; the cross-module half is '
+                    'tools/discarded_verdict_crossfile.py, not yet promoted',
+    },
 ]
 
 

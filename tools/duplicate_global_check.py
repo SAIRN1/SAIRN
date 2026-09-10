@@ -214,9 +214,45 @@ def main():
 
     dupes = {name: entries for name, entries in by_name.items() if len(entries) > 1}
 
+    # ── A DELIBERATE WRAPPER IS NOT A SHADOWED DUPLICATE (2026-09-10) ────────
+    # The defect this tool exists for is a second declaration that SILENTLY
+    # replaces the first, leaving dead code that still reads correctly. A
+    # wrapper does the opposite: it saves the original and calls it.
+    #
+    #     var _origRBids = window.rBids;
+    #     window.rBids = function() { if (_origRBids) _origRBids(); more(); };
+    #
+    # `sairnbuild.html` carries exactly that, with a comment at the site saying
+    # "Do NOT 'fix' this by deleting either half: deleting the wrapper removes
+    # the insights panel, and deleting the declaration removes rBids()." The
+    # tool flagged it anyway on its first real run -- and acting on that report
+    # would have deleted a live feature to satisfy a checker.
+    #
+    # Same shape as sairnmechanical's toast-only functions read the same day:
+    # an INTENTIONAL pattern that a heuristic cannot tell from the defect it
+    # resembles. So the test is behavioural -- is the original saved and
+    # called? -- and every excluded pair is PRINTED, never silently dropped.
+    wrapped = {}
+    for name in list(dupes):
+        saved = re.findall(
+            r'(?:var|let|const)\s+(\w+)\s*=\s*window\.%s\s*;' % re.escape(name),
+            html)
+        if not saved:
+            continue
+        # The saved handle must actually be CALLED, or this is just a copy of
+        # the reference and the second definition really does shadow the first.
+        if any(re.search(r'\b%s\s*(?:\.(?:call|apply))?\s*\(' % re.escape(h), html)
+               for h in saved):
+            wrapped[name] = saved[0]
+            del dupes[name]
+
     print("TOTAL_DEPTH0_GLOBALS:%d" % len(all_globals))
     print("DISTINCT_NAMES:%d" % len(by_name))
     print("DUPLICATE_NAMES:%d" % len(dupes))
+    for name in sorted(wrapped):
+        print("WRAPPER_NOT_DUPLICATE: %s -- the later definition saves the "
+              "original as %s and calls it, so nothing is shadowed"
+              % (name, wrapped[name]))
     for name in sorted(dupes):
         entries = dupes[name]
         print("DUPLICATE: %s -> %s" % (name, ', '.join('%s@%d' % (k, l) for k, l in entries)))

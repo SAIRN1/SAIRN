@@ -47,6 +47,22 @@ NO_SIDEBAR_BUTTON_OK = {
 }
 
 
+def looks_navigated(html):
+    """(fn, n) if some function is called with a string literal from n>=2
+    element handlers -- i.e. this file HAS a panel system -- else (None, 0).
+
+    Kept here and IMPORTED by tools/panel_nesting_check.py rather than copied.
+    A line that was fixed in one copy and left in the other is a failure this
+    repo has recorded twice (sairn_claim.py vs sairn_claim_hook.py, and the
+    C:/SAIRN/tools mirrors nothing points at).
+    """
+    handlers = Counter()
+    for m in re.finditer(r'on\w+="\s*(\w+)\(\s*[\'"][a-zA-Z0-9_-]+[\'"]', html):
+        handlers[m.group(1)] += 1
+    top = handlers.most_common(1)
+    return (top[0][0], top[0][1]) if top and top[0][1] >= 2 else (None, 0)
+
+
 def resolve_panel(arg, panel_ids):
     """Map a nav argument onto a real panel id, whatever prefix either uses.
 
@@ -435,17 +451,13 @@ if __name__ == '__main__':
         # So: does ANY function get called with two or more distinct string
         # literals from an element handler? That is a panel system, whatever it
         # is called and whatever its containers look like.
-        handlers = Counter()
-        for m in re.finditer(r'on\w+="\s*(\w+)\(\s*[\'"]([a-zA-Z0-9_-]+)[\'"]',
-                             html):
-            handlers[m.group(1)] += 1
-        top = handlers.most_common(1)
-        if top and top[0][1] >= 2:
+        fn, n = looks_navigated(html)
+        if fn:
             print("SKIPPED: a nav system exists here -- %s() is called from %d "
                   "element handlers with string arguments -- and NO container "
                   "convention matched, so nothing was reconciled. This is the "
                   "checker failing to recognise the app, not the app being "
-                  "clean." % (top[0][0], top[0][1]))
+                  "clean." % (fn, n))
             sys.exit(3)
 
     for f in fails:

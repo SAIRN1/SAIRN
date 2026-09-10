@@ -54,7 +54,20 @@ from collections import Counter
 from html.parser import HTMLParser
 
 VOID_ELEMENTS = {'area','base','br','col','embed','hr','img','input','link','meta','param','source','track','wbr'}
-PANEL_ID_RE = re.compile(r'^(.*?)panel-([a-zA-Z0-9_]+)$', re.IGNORECASE)
+# `page-`, HYPHENATED NAMES and camelCase, added 2026-09-10 -- three silent
+# misses in one line. The name part was [a-zA-Z0-9_]+, so
+# `panel-check-register` and every other HYPHENATED container id was
+# invisible even under the convention this tool did support; `page-` was not
+# matched at all, which is how sairnmechanical (17 containers) and
+# stonedesk-hr (15) came back NO_PANELS_FOUND; and SAIRNcash marks its two
+# containers id="homePage"/"appPage" with no separator at all. The same
+# family of blind spots nav_panel_check.py was corrected for the same day --
+# this is its sibling and nobody had looked at it.
+from nav_panel_check import looks_navigated
+
+PANEL_ID_RE = re.compile(r'^(.*?)(panel|page)-([a-zA-Z0-9_-]+)$', re.IGNORECASE)
+CAMEL_ID_RE = re.compile(r'^[a-zA-Z][a-zA-Z0-9_]*(?:Page|Panel)$')
+CAMEL_KEY = 'camelCase'
 
 
 class PanelPrefixScanner(HTMLParser):
@@ -74,7 +87,9 @@ class PanelPrefixScanner(HTMLParser):
         pid = dict(attrs).get('id', '')
         m = PANEL_ID_RE.match(pid)
         if m:
-            self.prefix_counts[m.group(1)] += 1
+            self.prefix_counts[m.group(1) + m.group(2) + '-'] += 1
+        elif CAMEL_ID_RE.match(pid):
+            self.prefix_counts[CAMEL_KEY] += 1
 
     def handle_endtag(self, tag):
         if tag.lower() == 'script':
@@ -87,7 +102,7 @@ def detect_panel_prefix(html):
     if not scanner.prefix_counts:
         return None
     prefix, _ = scanner.prefix_counts.most_common(1)[0]
-    return prefix + 'panel-'
+    return prefix
 
 
 class PanelDepthMapper(HTMLParser):
@@ -97,6 +112,12 @@ class PanelDepthMapper(HTMLParser):
         self.panels = {}  # panel_id -> (depth, line, parent_desc)
         self.in_script = False
         self.panel_id_prefix = panel_id_prefix
+        # A MATCHER rather than a string prefix: a camelCase convention has
+        # no prefix to start with, and hardcoding one is the assumption this
+        # tool's sibling has now been corrected for five times.
+        self.panel_id_match = (CAMEL_ID_RE.match
+                               if panel_id_prefix == CAMEL_KEY
+                               else (lambda pid: pid.startswith(panel_id_prefix)))
 
     def handle_starttag(self, tag, attrs):
         line = self.getpos()[0]
@@ -108,7 +129,7 @@ class PanelDepthMapper(HTMLParser):
         pid = d.get('id', '')
         if tag.lower() in VOID_ELEMENTS:
             return
-        if pid.startswith(self.panel_id_prefix):
+        if self.panel_id_match(pid):
             parent_desc = '%s#%s' % self.stack[-1] if self.stack else '(document root)'
             self.panels[pid] = (len(self.stack), line, parent_desc)
         ident = pid or ('.' + d.get('class', '').split(' ')[0] if d.get('class') else tag)
@@ -126,6 +147,34 @@ class PanelDepthMapper(HTMLParser):
             self.stack.pop()
 
 
+
+def _no_panels(html):
+    """NO PANELS IS NOT A FAILURE -- corrected 2026-09-10.
+
+    This exited 1, so SEVEN of twenty-two app files reported a FAILING
+    nesting check for having nothing to nest. Five are genuinely
+    single-purpose pages (the booking form, the complaint form, the intake
+    and catalog pages); the other two had a container convention this tool
+    could not see, which is the defect fixed above. Neither is a nesting
+    defect, and a checker that cries wolf on a third of the portfolio is one
+    nobody reads.
+
+    Exit 3 SKIPPED where a nav system clearly EXISTS and was not recognised;
+    exit 0 where there is genuinely nothing to check. Same rule as its
+    sibling nav_panel_check.py, and the predicate is IMPORTED from it rather
+    than copied -- a line fixed in one copy and left in the other is a
+    failure this repo has recorded twice.
+    """
+    print('NO_PANELS_FOUND')
+    fn, n = looks_navigated(html)
+    if fn:
+        print('SKIPPED: %s() is called from %d element handlers, so this '
+              'file HAS a panel system and no container convention matched '
+              'it. Nothing was checked for nesting.' % (fn, n))
+        sys.exit(3)
+    print('Nothing to check: no containers and no nav system. Not a defect.')
+    sys.exit(0)
+
 def main():
     path = sys.argv[1] if len(sys.argv) > 1 else 'stonedesk.html'
     with open(path, encoding='utf-8', errors='replace') as f:
@@ -133,15 +182,13 @@ def main():
 
     panel_id_prefix = detect_panel_prefix(html)
     if panel_id_prefix is None:
-        print("NO_PANELS_FOUND")
-        sys.exit(1)
+        _no_panels(html)
 
     parser = PanelDepthMapper(panel_id_prefix)
     parser.feed(html)
 
     if not parser.panels:
-        print("NO_PANELS_FOUND")
-        sys.exit(1)
+        _no_panels(html)
 
     print("DETECTED_PANEL_ID_PREFIX:%r" % panel_id_prefix)
 

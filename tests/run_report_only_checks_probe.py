@@ -190,6 +190,100 @@ rc, out = nav_on('<!doctype html><html><body><h1>Booking</h1>'
                  '<form><input name="x"></form></body></html>')
 check('D3d a single-purpose page with no nav system still passes', rc, 0)
 
+# ── D4. duplicate_global_check: a wrapper is not a shadowed duplicate ──────
+# Its first real run flagged `rBids` on sairnbuild.html. Hand-read: a DELIBERATE
+# wrapper -- `var _origRBids = window.rBids;` then a redefinition that CALLS it
+# -- with a comment at the site saying "Do NOT fix this by deleting either
+# half". Acting on the report would have deleted a live feature to satisfy a
+# checker. Same shape as sairnmechanical's toast-only refusals: an intentional
+# pattern a heuristic cannot tell from the defect it resembles.
+DUP = os.path.join(REPO, 'tools', 'duplicate_global_check.py')
+
+
+def dup_on(html):
+    fd, path = tempfile.mkstemp(suffix='.html')
+    with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+        fh.write(html)
+    try:
+        p = subprocess.run([sys.executable, DUP, path], cwd=REPO,
+                           capture_output=True, text=True, timeout=120)
+        return p.returncode, (p.stdout or '') + (p.stderr or '')
+    finally:
+        os.remove(path)
+
+
+rc, out = dup_on('<html><body><script>\n'
+                 'function rBids(){ return 1; }\n'
+                 'var _origRBids = window.rBids;\n'
+                 'window.rBids = function(){ if(_origRBids) _origRBids(); extra(); };\n'
+                 '</script></body></html>')
+check('D4a a wrapper that saves and CALLS the original is not a duplicate', rc, 0)
+check('D4b and the exclusion is printed, not silent',
+      'WRAPPER_NOT_DUPLICATE' in out, True)
+
+# THE OTHER DIRECTION, because excusing every second definition would turn this
+# checker off. Saving the reference without calling it still shadows.
+rc, out = dup_on('<html><body><script>\n'
+                 'function rBids(){ return 1; }\n'
+                 'var _origRBids = window.rBids;\n'
+                 'window.rBids = function(){ return 2; };\n'
+                 '</script></body></html>')
+check('D4c saving the original but never calling it IS still a duplicate', rc, 1)
+
+rc, out = dup_on('<html><body><script>\n'
+                 'function escHtml(s){ return s; }\n'
+                 'function escHtml(s){ return s + "!"; }\n'
+                 '</script></body></html>')
+check('D4d a plain redeclaration is still reported', rc, 1)
+check('D4e and named', 'escHtml' in out, True)
+
+# ── D5. panel_nesting_check: nothing to nest is not a failure ──────────────
+# Its first real run FAILED on 7 of 22 app files, every one for having nothing
+# to check. Three defects: NO_PANELS exited 1; `page-` was unmatched; and the
+# name part excluded hyphens, so `panel-check-register` was invisible even
+# under the convention it did support.
+NEST = os.path.join(REPO, 'tools', 'panel_nesting_check.py')
+
+
+def nest_on(html):
+    fd, path = tempfile.mkstemp(suffix='.html')
+    with os.fdopen(fd, 'w', encoding='utf-8') as fh:
+        fh.write(html)
+    try:
+        p = subprocess.run([sys.executable, NEST, path], cwd=REPO,
+                           capture_output=True, text=True, timeout=120)
+        return p.returncode, (p.stdout or '') + (p.stderr or '')
+    finally:
+        os.remove(path)
+
+
+rc, out = nest_on('<!doctype html><html><body><h1>Booking</h1>'
+                  '<form><input name="x"></form></body></html>')
+check('D5a a single-purpose page is not a nesting FAILURE', rc, 0)
+check('D5b and says why', 'Nothing to check' in out, True)
+
+rc, out = nest_on('<!doctype html><html><body>'
+                  '<div onclick="goTo(\'a\')">A</div><div onclick="goTo(\'b\')">B</div>'
+                  '<section id="zone-a">a</section></body></html>')
+check('D5c an unrecognised container convention is SKIPPED, exit 3', rc, 3)
+
+# HYPHENATED and `page-` ids are seen, under a shared parent, so they pass.
+rc, out = nest_on('<!doctype html><html><body><div class="wrap">'
+                  '<div id="page-check-register" class="page">a</div>'
+                  '<div id="page-blueprint-ai" class="page">b</div>'
+                  '</div></body></html>')
+check('D5d hyphenated page- containers are found', rc, 0)
+check('D5e and both counted', 'NO_PANELS_FOUND' in out, False)
+
+# ...and a trapped one is still reported, so the widening did not buy silence.
+rc, out = nest_on('<!doctype html><html><body><div class="wrap">'
+                  '<div id="page-alpha" class="page">a</div>'
+                  '<div id="page-beta" class="page">b</div>'
+                  '<div class="inner"><div id="page-trapped" class="page">t</div></div>'
+                  '</div></body></html>')
+check('D5f a trapped container is still reported', rc, 1)
+check('D5g and named', 'trapped' in out, True)
+
 # ── E. the runner: registry integrity ──────────────────────────────────────
 missing = [e['tool'] for e in roc.REGISTRY
            if not os.path.isfile(os.path.join(REPO, 'tools', e['tool']))]
