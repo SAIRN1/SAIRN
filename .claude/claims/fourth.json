@@ -710,8 +710,8 @@
       "task": "syncEmps-end-to-end-authenticated-write-never-observed",
       "claimed_at": "2026-09-10T18:51:46Z",
       "claimed_at_epoch": 1789066306.1380455,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T19:05:43Z"
     }
   ]
 }
