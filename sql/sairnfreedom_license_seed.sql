@@ -1,0 +1,44 @@
+-- sql/sairnfreedom_license_seed.sql
+-- Provisions a demo license_keys row for SAIRNfreedom.
+--
+-- WHY THIS EXISTS: SAIRNfreedom had NO licence row of any kind. Measured
+-- 2026-09-09 while building its server backup -- `grep -rn sairnfreedom sql/`
+-- returned nothing, and the app's only server call is /api/claude, which
+-- takes an app_id and no licence at all. So there was nothing to provision
+-- because nothing had ever needed one.
+--
+-- WITHOUT THIS ROW THE BACKUP IS INERT. api/sd-data.js authenticates on the
+-- licence key and scopes every row by sha256(key), so sql/sairnfreedom_data_
+-- schema.sql's thirty-five tables would sit empty while every write answered
+-- 401 INVALID_LICENSE. Run both files, in either order.
+--
+-- THE KEY NAME IS A CONVENTION, NOT A DECISION I OWN. `SF-PINNACLE-2026`
+-- follows every other app's demo-key shape (SV-PINNACLE-2026,
+-- LAW-PINNACLE-2026, RF-PINNACLE-2026). Change it here before running if a
+-- real customer key is wanted instead; nothing in the code hardcodes it --
+-- sairnfreedom.html stores whatever the gate is given under `sf_license_key`.
+--
+-- THE APP'S GATE DOES NOT VALIDATE THIS, AND THAT IS UNCHANGED BY THIS FILE.
+-- sairnfreedom.html:6088 opens the app on `if (ld(K_LIC,null))` -- any
+-- non-empty value. So a wrong key still opens the app and simply gets a 401
+-- from the backup, which surfaces as the honest "this device only" console
+-- warning rather than as a silent no-op. Making the gate real is a separate
+-- change and is not smuggled in here.
+--
+-- Uses ON CONFLICT (key) DO NOTHING, matching every other licence seed here:
+-- an existing row wins, so a re-run cannot reactivate or overwrite one.
+-- The UNIQUE constraint behind it is license_keys_key_key, UNIQUE (key).
+--
+-- Verify after running -- 401 INVALID_LICENSE means the row is still absent,
+-- a 200 or a 503 NOT_PROVISIONED means the licence is good (the 503 then
+-- means only that sairnfreedom_data_schema.sql has not been run yet, which
+-- is a different and useful answer):
+--
+--   curl -s -X POST https://sairn.vercel.app/api/sd-data \
+--     -H 'Content-Type: application/json' \
+--     -H 'Authorization: Bearer SF-PINNACLE-2026' \
+--     -d '{"action":"read","resource":"sf_members","app_id":"sairnfreedom"}'
+
+insert into public.license_keys (key, status, customer_email, app_id, plan, stripe_subscription_id)
+values ('SF-PINNACLE-2026', 'active', 'demo@pinnaclepost.example', 'sairnfreedom', 'demo', null)
+on conflict (key) do nothing;

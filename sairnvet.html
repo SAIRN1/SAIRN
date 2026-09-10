@@ -1928,8 +1928,30 @@ function st(key,data){
       }
       _svKeyVerified[key]=true;
     }
+    // THE PREVIOUS VALUE IS READ BEFORE THE WRITE so svSyncCollection() can
+    // push only what actually changed -- see its own comment for why hooking
+    // st() is only affordable with that. `typeof` GUARDED and not assumed
+    // present: st() is defined ABOVE SV_SYNCED_ON, and a bare reference would
+    // make the wrapper throw where it used to work.
+    var _svSynced=(typeof SV_SYNCED_ON!=='undefined')&&SV_SYNCED_ON[key];
+    var _svPrev=null;
+    if(_svSynced){ try{ _svPrev=JSON.parse(localStorage.getItem(key)||'null'); }catch(e){ _svPrev=null; } }
     localStorage.setItem(key,JSON.stringify(data));
     _svWriteFailed=null;                 // a real write clears the latch
+    // ONLY AFTER THE LOCAL WRITE SUCCEEDED. A failed localStorage write must
+    // not push a value this device does not itself hold.
+    if(_svSynced){
+      // NOT A BARE CATCH. The backup failing is a different fact from the save
+      // failing, and the save DID succeed -- so this must neither return false
+      // nor stay silent. Same split st() already makes between its
+      // corrupt-store refusal and its ordinary write failure.
+      try{ svSyncCollection(key,data,_svPrev); }
+      catch(e){
+        try{ console.error('SAIRNvet: the server backup hook threw for "'+key+
+          '" -- the record IS saved on this device; only the backup did not run. '+
+          ((e&&e.message)||e)); }catch(_e){}
+      }
+    }
     return true;
   }catch(e){
     // ── THE OUTER CATCH USED TO BE SILENT (2026-09-04) ─────────────────
@@ -1961,6 +1983,138 @@ function svIsQuotaError(e){
       || e.name==='NS_ERROR_DOM_QUOTA_REACHED'
       || e.code===22 || e.code===1014;
 }
+
+// ══ THE CLINICAL RECORD REACHES A SERVER (2026-09-09) ══════════════════════
+// tools/local_only_collection_check.py measured this file at 42 of 42
+// collections with NO route to a server -- the worst ratio on the platform,
+// on the app carrying the most regulated content. svData() had existed for
+// months and named exactly ONE resource, `shared_knowledge`, an AI context
+// sink. Patients, SOAP notes, lab results, imaging, invoicing, the compliance
+// register and the CONTROLLED-SUBSTANCE log lived in one browser and nowhere
+// else. A browser-data clear took the clinical record with it.
+//
+// FORTY-ONE BACKED UP, ONE EXCLUDED. sv_examrooms_turnover is a flat array of
+// NUMBERS (`log.push(minutes)`), not records -- its reason is written down in
+// api/_resources/sairnvet.js rather than left as an absence.
+//
+// IT IS A BACKUP, NOT TWO-WAY SYNC. Per-record last-write-wins, additive-only
+// hydration, and deletions do NOT propagate -- api/sd-data.js has no delete
+// path outside the sc_* family. Stated here rather than discovered later.
+//
+// REQUIRES sql/sairnvet_data_schema.sql to have been run. Until then every
+// write answers 503 NOT_PROVISIONED naming the file and every read answers
+// provisioned:false, so the app degrades honestly instead of claiming a backup
+// it does not have.
+//
+// WHAT THIS DOES NOT DO, said plainly because of what is in these tables: it
+// does not make SAIRNvet compliant. The gate is the LICENCE KEY only, because
+// that is the whole authentication this app has -- `role` is a self-selected
+// dropdown, never server-verified. sv_controlled is a DEA-relevant register
+// and sv_audit_log is its dosing trail; both are in scope of the open-work row
+// for SAIRNvet's missing auth subsystem. Not backing them up guaranteed they
+// were lost with the browser profile; backing them up does not close that row.
+var SV_SYNCED=[
+  'sv_audit_log','sv_billing','sv_boarding','sv_clients','sv_coggins',
+  'sv_comms','sv_compliance','sv_conservation','sv_controlled','sv_dental',
+  'sv_documents','sv_equinedental','sv_examrooms','sv_farmcalls',
+  'sv_financials','sv_herdhealth','sv_imaging','sv_invoicing',
+  'sv_labresults','sv_lameness','sv_mobilevet','sv_multisite','sv_patients',
+  'sv_peerconsults','sv_petinsurance','sv_portal','sv_prepurchase',
+  'sv_referrals','sv_reminders','sv_reports','sv_reproduction',
+  'sv_scheduling','sv_soapnotes','sv_speciesref','sv_staff','sv_surgery',
+  'sv_teleconsults','sv_vitals','sv_wellness','sv_whiteboard',
+  'sv_wildliferehab'
+];
+var SV_SYNCED_ON={};
+SV_SYNCED.forEach(function(k){SV_SYNCED_ON[k]=true;});
+
+// ONE COLLECTION IS NOT KEYED ON `id`, AND MINTING ONE WOULD BE A MIGRATION.
+// sv_controlled's records have no id field and never have: the app finds a
+// drug with `list.find(function(d){return d.drug===drugName;})`, so the DRUG
+// NAME is the record's identity. Adding ids would be a data migration on a
+// live controlled-substance register to satisfy a naming convention. The map
+// is one entry rather than a special case buried in the loop, so a second one
+// is a line of data instead of a branch.
+var SV_ID_FIELD={ sv_controlled:'drug' };
+
+// Set while seeding or hydrating. Seeding writes many arrays of demo rows in
+// one pass and demo data is not the clinic's record; hydration writes rows
+// that CAME from the server, so echoing them back is pure noise.
+var svSyncSuppressed=false;
+
+function svSyncCollection(key,next,prev){
+  if(svSyncSuppressed) return;
+  if(typeof svData!=='function') return;
+  if(typeof svLoad!=='function'||!svLoad('license','')) return;
+  if(!Array.isArray(next)) return;      // single objects are not this pattern
+  var idField=SV_ID_FIELD[key]||'id';
+  // ONLY WHAT CHANGED. Hooking st() is only affordable because of this: a
+  // panel that re-saves a 300-row array on every keystroke would otherwise
+  // push 300 records each time.
+  var before={};
+  (Array.isArray(prev)?prev:[]).forEach(function(r){
+    if(r&&r[idField]!==undefined&&r[idField]!==null){ try{ before[String(r[idField])]=JSON.stringify(r); }catch(e){} }
+  });
+  // A RECORD WITH NO IDENTITY IS COUNTED AND REPORTED, NOT SILENTLY DROPPED.
+  // StoneDesk's equivalent skips these without a word, which makes a
+  // collection that is not being backed up look exactly like one that is.
+  var skipped=0;
+  next.forEach(function(r){
+    if(!r||r[idField]===undefined||r[idField]===null||r[idField]===''){ skipped++; return; }
+    var now; try{ now=JSON.stringify(r); }catch(e){ skipped++; return; }
+    if(before[String(r[idField])]===now) return;
+    svData('write',key,Object.assign({},r,{id:r[idField]})).then(function(saved){
+      // A failed push is NOT reported as success. The local write has already
+      // happened, so the clinic is never worse off than before this existed --
+      // but silence would make a backup that is not happening look like one
+      // that is, which is the defect class this whole change exists to fix.
+      if(saved===null){
+        try{ console.warn('SAIRNvet backup: "'+key+'" record '+r[idField]+
+          ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
+      }
+    });
+  });
+  if(skipped){
+    try{ console.warn('SAIRNvet backup: '+skipped+' record(s) in "'+key+
+      '" have no "'+idField+'" and were NOT backed up. They are saved on this '+
+      'device only.'); }catch(e){}
+  }
+}
+
+// ── HYDRATION ──────────────────────────────────────────────────────────────
+// Additive-only merge by id: a server record not already present locally is
+// appended, and a locally present id is NEVER overwritten. Deliberately not
+// full conflict resolution -- the same disclosed limitation sdHydrateAll() and
+// bldHydrateAll() carry. A second workstation sees the first one's records and
+// neither clobbers the other's in-progress edit.
+//
+// provisioned:false comes back as null from svData(), so a read against an
+// un-migrated table leaves local data untouched rather than emptying anything.
+function svHydrateAll(){
+  if(typeof svData!=='function') return Promise.resolve(0);
+  if(typeof svLoad!=='function'||!svLoad('license','')) return Promise.resolve(0);
+  var merged=0;
+  return Promise.all(SV_SYNCED.map(function(key){
+    var idField=SV_ID_FIELD[key]||'id';
+    return svData('read',key,null).then(function(rows){
+      if(!rows||!Array.isArray(rows)||!rows.length) return;
+      var local=null;
+      try{ local=JSON.parse(localStorage.getItem(key)||'null'); }catch(e){ return; }
+      if(!Array.isArray(local)) return;   // never written yet, or not a list
+      var have={};
+      local.forEach(function(r){ if(r&&r[idField]!=null) have[String(r[idField])]=true; });
+      var added=0;
+      rows.forEach(function(r){ if(r&&r[idField]!=null&&!have[String(r[idField])]){ local.push(r); added++; } });
+      if(added){
+        merged+=added;
+        svSyncSuppressed=true;
+        st(key,local);
+        svSyncSuppressed=false;
+      }
+    }).catch(function(){});
+  })).then(function(){ return merged; });
+}
+
 // Every value under an sv_ key is written by st()/svStore() through
 // JSON.stringify, or by the three direct String(n) counters (sv_trial_start,
 // sv_speciesref_lookups, sv_analytics_scans) whose values are bare numbers
@@ -7083,6 +7237,20 @@ function logDoseAudit(entry){
   try{
     var log = JSON.parse(localStorage.getItem('sv_audit_log')||'[]');
     entry.timestamp = new Date().toISOString();
+    // AN ID, ADDED 2026-09-09 SO THE AUDIT TRAIL CAN BE BACKED UP AT ALL.
+    // These entries had no identity of any kind, and the server backup keys
+    // every record on one -- so without this the controlled-substance dosing
+    // trail would have been the ONE thing in this app still living only on the
+    // device. The timestamp alone was not enough: two entries written in the
+    // same millisecond (a refusal and the action that caused it) would collide
+    // and one would silently overwrite the other in a compliance record.
+    //
+    // ENTRIES WRITTEN BEFORE TODAY HAVE NO id AND ARE NOT BACKED UP. They stay
+    // on the device and are readable exactly as before; svSyncCollection()
+    // counts and reports them rather than skipping them silently. Backfilling
+    // ids into an existing audit trail would be rewriting it, which is the one
+    // thing an audit trail must not have done to it.
+    entry.id = 'au' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     log.push(entry);
     if(log.length>500) log = log.slice(log.length-500);
     ok = st('sv_audit_log', log);
@@ -8466,6 +8634,29 @@ function buildSvSharedCompanyContext() {
 loadSvSharedKnowledge();
 window.buildSvSharedCompanyContext = buildSvSharedCompanyContext;
 window.recordSvSharedTopics = recordSvSharedTopics;
+
+// PULL THE SERVER'S COPY IN (2026-09-09). Placed HERE, beside the other
+// svData() caller and BELOW its definition, rather than in a DOMContentLoaded
+// handler: hydration writes through st(), which suppresses the sync echo while
+// it runs, and it must not race the boot integrity gate that decides whether
+// the app opens at all. It is fire-and-forget by design -- a workstation with
+// no network still opens with everything it holds locally.
+//
+// THE MERGE IS ADDITIVE ONLY. A record already present locally is never
+// overwritten, so a second workstation sees the first one's records without
+// clobbering an edit in progress here. Deletions do not propagate either.
+svHydrateAll().then(function(n){
+  if(n){ try{ console.info('SAIRNvet: hydrated '+n+' record(s) from the server backup.'); }catch(e){} }
+}).catch(function(e){
+  // A failed hydrate leaves local data untouched. Reported rather than
+  // swallowed: silence here would make "the server had nothing" and "the
+  // server could not be reached" look identical, which is the exact
+  // distinction the rest of this file spent 2026-09-04 fixing.
+  try{ console.warn('SAIRNvet: the server backup could not be read, so nothing '+
+    'was hydrated. Local records are unaffected. '+((e&&e.message)||e)); }catch(_e){}
+});
+window.svHydrateAll = svHydrateAll;
+window.svSyncCollection = svSyncCollection;
 
 // BOOT INTEGRITY GATE (2026-09-04) -- runs before setupPinPad() and before
 // any render*() call, because by the time a panel renders its get*() has

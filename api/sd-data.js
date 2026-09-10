@@ -8926,6 +8926,137 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- SAIRNVET: THE CLINICAL RECORD REACHES A SERVER (2026-09-09) ---------
+    // tools/local_only_collection_check.py measured sairnvet.html at 42 of 42
+    // collections with NO route to a server -- the worst ratio on the platform,
+    // on the app carrying the most regulated content. svData() had existed for
+    // months and named exactly ONE resource, `shared_knowledge`, an AI context
+    // sink. Patients, SOAP notes, lab results, imaging, invoicing, the
+    // compliance register and the CONTROLLED-SUBSTANCE log lived in one browser
+    // and nowhere else; a browser-data clear took the clinical record with it.
+    //
+    // Forty-one here, one generic read/write pair -- same shape and reasoning
+    // as BLD_RESOURCES and SD_LOCAL_RESOURCES above. sv_examrooms_turnover is
+    // excluded with its reason in api/_resources/sairnvet.js.
+    //
+    // NO SESSION GATE, and it is not an omission: SAIRNvet has no per-employee
+    // authentication at all -- `role` is a self-selected dropdown, never
+    // server-verified. A session gate here would gate on a session that does
+    // not exist. The licence is the whole boundary this app has, and the
+    // open-work row for its missing auth subsystem is where that changes, for
+    // all forty-one at once.
+    //
+    // sv_controlled's ID IS THE DRUG NAME, not a minted id, because that is
+    // what the app has always keyed on (`list.find(d => d.drug === drugName)`).
+    // The client sends it as payload.id via a per-resource id-field map; this
+    // branch is unchanged by that and simply stores what it is given.
+    const SV_RESOURCES = {
+      sv_audit_log: 'audit_log_id', sv_billing: 'billing_id', sv_boarding: 'boarding_id',
+      sv_clients: 'client_id', sv_coggins: 'coggins_id', sv_comms: 'comm_id',
+      sv_compliance: 'compliance_id', sv_conservation: 'conservation_id',
+      sv_controlled: 'controlled_id', sv_dental: 'dental_id', sv_documents: 'document_id',
+      sv_equinedental: 'equinedental_id', sv_examrooms: 'examroom_id',
+      sv_farmcalls: 'farmcall_id', sv_financials: 'financial_id',
+      sv_herdhealth: 'herdhealth_id', sv_imaging: 'imaging_id', sv_invoicing: 'invoicing_id',
+      sv_labresults: 'labresult_id', sv_lameness: 'lameness_id',
+      sv_mobilevet: 'mobilevet_id', sv_multisite: 'multisite_id', sv_patients: 'patient_id',
+      sv_peerconsults: 'peerconsult_id', sv_petinsurance: 'petinsurance_id',
+      sv_portal: 'portal_id', sv_prepurchase: 'prepurchase_id', sv_referrals: 'referral_id',
+      sv_reminders: 'reminder_id', sv_reports: 'report_id',
+      sv_reproduction: 'reproduction_id', sv_scheduling: 'scheduling_id',
+      sv_soapnotes: 'soapnote_id', sv_speciesref: 'speciesref_id', sv_staff: 'staff_id',
+      sv_surgery: 'surgery_id', sv_teleconsults: 'teleconsult_id', sv_vitals: 'vital_id',
+      sv_wellness: 'wellness_id', sv_whiteboard: 'whiteboard_id',
+      sv_wildliferehab: 'wildliferehab_id'
+    };
+    if (SV_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // 404/400 means the table does not exist yet. An honest empty WITH
+      // provisioned:false, so the client can tell "nothing saved yet" from
+      // "this was never migrated" and leaves local data alone for the second.
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (SV_RESOURCES[resource] && action === 'write') {
+      const idCol = SV_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnvet', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // -- SAIRNFREEDOM: THE POST'S RECORDS REACH A SERVER (2026-09-09) --------
+    // This app's FIRST appearance on this endpoint. Before today its only
+    // server call was /api/claude, which takes an app_id and no licence, so it
+    // had no registry module and no licence row -- and the Guardian App File
+    // Map had never listed it either. 35 of 35 collections reached no server:
+    // membership, the ledger, gaming sessions, gaming expenses and CHARITABLE
+    // DISBURSEMENTS, which is the ORC 2915 reportable side of post gaming.
+    //
+    // REQUIRES sql/sairnfreedom_license_seed.sql AS WELL AS THE SCHEMA. Without
+    // the licence row every write here answers 401 INVALID_LICENSE before this
+    // branch is ever reached; without the schema it answers 503 NOT_PROVISIONED
+    // from inside it. Two different honest failures, two different fixes.
+    //
+    // NO SESSION GATE: SAIRNfreedom has no per-employee authentication either.
+    const SF_RESOURCES = {
+      sf_accounts: 'account_id', sf_bottle_fills: 'bottle_fill_id',
+      sf_ceremonial_items: 'ceremonial_item_id', sf_disbursements: 'disbursement_id',
+      sf_district_imports: 'district_import_id', sf_documents: 'document_id',
+      sf_donations: 'donation_id', sf_donor_awards: 'donor_award_id',
+      sf_donor_tiers: 'donor_tier_id', sf_events: 'event_id',
+      sf_gaming_expenses: 'gaming_expense_id', sf_honor_details: 'honor_detail_id',
+      sf_inventory_counts: 'inventory_count_id', sf_ledger: 'ledger_id',
+      sf_members: 'member_id', sf_national_categories: 'national_category_id',
+      sf_officers: 'officer_id', sf_operators: 'operator_id',
+      sf_permit_flags: 'permit_flag_id', sf_products: 'product_id', sf_rentals: 'rental_id',
+      sf_service_appointments: 'service_appointment_id', sf_service_hours: 'service_hour_id',
+      sf_service_referrals: 'service_referral_id', sf_sessions: 'session_id',
+      sf_shifts: 'shift_id', sf_signatures: 'signature_id', sf_staff: 'staff_id',
+      sf_tickets: 'ticket_id', sf_vehicle_service: 'vehicle_service_id',
+      sf_vehicles: 'vehicle_id', sf_vendor_prices: 'vendor_price_id',
+      sf_vendors: 'vendor_id', sf_waivers: 'waiver_id',
+      sf_youth_participants: 'youth_participant_id'
+    };
+    if (SF_RESOURCES[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (SF_RESOURCES[resource] && action === 'write') {
+      const idCol = SF_RESOURCES[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnfreedom', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNfreedom data tables are not set up yet — run sql/sairnfreedom_data_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // PLACED AFTER the SD_LOCAL_RESOURCES declaration, not before it. The
     // first version sat above the `const` and every request to any resource
     // died on a TDZ ReferenceError -- `Cannot access 'SD_LOCAL_RESOURCES'

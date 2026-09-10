@@ -1507,7 +1507,26 @@ function freeIsQuotaError(e){
 }
 function st(k,v){
   try{
+    /* THE PREVIOUS VALUE IS READ BEFORE THE WRITE so sfSyncCollection() can
+       push only what actually changed. `typeof` GUARDED and not assumed
+       present: st() is defined ABOVE SF_SYNCED_ON, and a bare reference would
+       make the wrapper throw where it used to work. */
+    var _sfSynced=(typeof SF_SYNCED_ON!=='undefined')&&SF_SYNCED_ON[k];
+    var _sfPrev=null;
+    if(_sfSynced){ try{ _sfPrev=JSON.parse(localStorage.getItem(k)||'null'); }catch(_e){ _sfPrev=null; } }
     localStorage.setItem(k, JSON.stringify(v));
+    /* ONLY AFTER THE LOCAL WRITE SUCCEEDED -- a failed localStorage write must
+       not push a value this device does not itself hold. NOT A BARE CATCH: the
+       backup failing is a different fact from the save failing, and the save
+       DID succeed, so this must neither return false nor stay silent. */
+    if(_sfSynced){
+      try{ sfSyncCollection(k, v, _sfPrev); }
+      catch(e2){
+        try{ console.error('SAIRNfreedom: the server backup hook threw for "'+k+
+          '" -- the record IS saved on this device; only the backup did not run. '+
+          ((e2&&e2.message)||e2)); }catch(_e){}
+      }
+    }
     return true;
   }catch(e){
     // A non-quota failure must NOT be blamed on the quota: sending someone to
@@ -1590,6 +1609,136 @@ function addMonthsLocal(s, months){
   d.setMonth(d.getMonth()+months);
   if(d.getDate()<day) d.setDate(0); // clamp, e.g. 31 Jan + 1 month
   return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0');
+}
+
+
+/* ══ THE POST'S RECORDS REACH A SERVER (2026-09-09) ═══════════════════════
+   tools/local_only_collection_check.py measured this file at 35 of 35
+   collections with NO route to a server. Membership, the ledger, gaming
+   sessions, gaming expenses and CHARITABLE DISBURSEMENTS -- the ORC 2915
+   reportable side of a post's gaming -- lived in one browser and nowhere else.
+   Clearing it took the post's records with it, and a disbursement record that
+   only ever existed on one laptop is not a record a post can produce to a
+   regulator.
+
+   THIS APP HAD NEVER CALLED api/sd-data.js AT ALL. Its only server call was
+   /api/claude, which takes an app_id and no licence. So this is the first
+   licence-scoped write SAIRNfreedom has ever made, and it needs THREE things
+   that did not exist yesterday: a registry module
+   (api/_resources/sairnfreedom.js), a schema (sql/sairnfreedom_data_schema.sql)
+   and A LICENCE ROW (sql/sairnfreedom_license_seed.sql). Missing the licence
+   gives 401 INVALID_LICENSE; missing the schema gives 503 NOT_PROVISIONED.
+   Two different honest failures with two different fixes, and neither is
+   silent.
+
+   IT IS A BACKUP, NOT TWO-WAY SYNC. Per-record last-write-wins, additive-only
+   hydration, deletions do not propagate. Stated here rather than discovered.
+
+   THE GATE ON THIS APP DOES NOT VALIDATE THE LICENCE and that is unchanged:
+   the DOMContentLoaded handler opens the app on any non-empty `sf_license_key`.
+   A wrong key therefore opens the app and gets a 401 from the backup, which
+   surfaces as the console warning below rather than as a silent no-op. */
+var SF_SYNCED=[
+  'sf_accounts','sf_bottle_fills','sf_ceremonial_items','sf_disbursements',
+  'sf_district_imports','sf_documents','sf_donations','sf_donor_awards',
+  'sf_donor_tiers','sf_events','sf_gaming_expenses','sf_honor_details',
+  'sf_inventory_counts','sf_ledger','sf_members','sf_national_categories',
+  'sf_officers','sf_operators','sf_permit_flags','sf_products','sf_rentals',
+  'sf_service_appointments','sf_service_hours','sf_service_referrals',
+  'sf_sessions','sf_shifts','sf_signatures','sf_staff','sf_tickets',
+  'sf_vehicle_service','sf_vehicles','sf_vendor_prices','sf_vendors',
+  'sf_waivers','sf_youth_participants'
+];
+var SF_SYNCED_ON={};
+SF_SYNCED.forEach(function(k){ SF_SYNCED_ON[k]=true; });
+
+var SF_DATA_API='https://sairn.vercel.app/api/sd-data';
+/* The first and only sd-data caller in this file. Returns null on ANY failure
+   -- the platform contract every app's xData() implements -- and the callers
+   below all read the null rather than discarding it. */
+function sfData(action, resource, payload){
+  var lic = ld(K_LIC, '');
+  if(!lic) return Promise.resolve(null);
+  return fetch(SF_DATA_API, {
+    method:'POST',
+    headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+lic },
+    body:JSON.stringify({ action:action, resource:resource, app_id:'sairnfreedom', payload:payload||{} })
+  }).then(function(r){
+    return r.json().then(function(d){
+      if(!r.ok || !d || !d.ok){
+        try{ console.warn('sfData '+resource+' failed ('+r.status+'): '+
+          ((d&&d.error&&(d.error.code||d.error.message))||'unknown')); }catch(e){}
+        return null;
+      }
+      return d.data;
+    });
+  }).catch(function(e){
+    try{ console.warn('sfData network error: '+((e&&e.message)||e)); }catch(_e){}
+    return null;
+  });
+}
+
+/* Set while hydrating: those rows CAME from the server, so echoing them back
+   is pure noise. */
+var sfSyncSuppressed=false;
+
+function sfSyncCollection(key, next, prev){
+  if(sfSyncSuppressed) return;
+  if(!ld(K_LIC,'')) return;
+  if(!Array.isArray(next)) return;          /* single objects are not this pattern */
+  /* ONLY WHAT CHANGED. Hooking st() is only affordable because of this: a
+     panel that re-saves the whole array on every keystroke would otherwise
+     push every row each time. */
+  var before={};
+  (Array.isArray(prev)?prev:[]).forEach(function(r){
+    if(r&&r.id!==undefined&&r.id!==null){ try{ before[String(r.id)]=JSON.stringify(r); }catch(e){} }
+  });
+  /* A RECORD WITH NO id IS COUNTED AND REPORTED, NOT SILENTLY DROPPED --
+     otherwise a collection that is not being backed up looks exactly like one
+     that is, which is the defect class this whole change exists to fix. */
+  var skipped=0;
+  next.forEach(function(r){
+    if(!r||r.id===undefined||r.id===null||r.id===''){ skipped++; return; }
+    var now; try{ now=JSON.stringify(r); }catch(e){ skipped++; return; }
+    if(before[String(r.id)]===now) return;
+    sfData('write', key, r).then(function(saved){
+      if(saved===null){
+        try{ console.warn('SAIRNfreedom backup: "'+key+'" record '+r.id+
+          ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
+      }
+    });
+  });
+  if(skipped){
+    try{ console.warn('SAIRNfreedom backup: '+skipped+' record(s) in "'+key+
+      '" have no id and were NOT backed up. They are saved on this device only.'); }catch(e){}
+  }
+}
+
+/* Additive-only merge by id: a server record not already present locally is
+   appended, a locally present id is NEVER overwritten. Not full conflict
+   resolution -- the same disclosed limitation sdHydrateAll() and svHydrateAll()
+   carry. provisioned:false comes back as null, so a read against an un-migrated
+   table leaves local data untouched rather than emptying anything. */
+function sfHydrateAll(){
+  if(!ld(K_LIC,'')) return Promise.resolve(0);
+  var merged=0;
+  return Promise.all(SF_SYNCED.map(function(key){
+    return sfData('read', key, null).then(function(rows){
+      if(!rows||!Array.isArray(rows)||!rows.length) return;
+      var local=ld(key,null);
+      if(!Array.isArray(local)) return;
+      var have={};
+      local.forEach(function(r){ if(r&&r.id!=null) have[String(r.id)]=true; });
+      var added=0;
+      rows.forEach(function(r){ if(r&&r.id!=null&&!have[String(r.id)]){ local.push(r); added++; } });
+      if(added){
+        merged+=added;
+        sfSyncSuppressed=true;
+        st(key, local);
+        sfSyncSuppressed=false;
+      }
+    }).catch(function(){});
+  })).then(function(){ return merged; });
 }
 
 /* ---- ORG TYPES ---------------------------------------------------------
@@ -5918,7 +6067,12 @@ function sfImportReports(){
             var imports=getImports().filter(function(x){
               return !(x.entityId===eid && x.year===doc.report.period.year);
             });
-            imports.push({ entityId:eid, year:doc.report.period.year, fingerprint:v.fingerprint,
+            /* A DETERMINISTIC id, ADDED 2026-09-09 so this record can be backed up.
+               Its identity is the district entity plus the report year, which is
+               why it is NOT a Date.now() id: re-importing the same district-year
+               must UPDATE its row, not add a second one. */
+            imports.push({ id:String(eid)+'-'+String(doc.report.period.year),
+                           entityId:eid, year:doc.report.period.year, fingerprint:v.fingerprint,
                            importedOn:localToday(), report:doc.report });
             st(K_IMPORTS, imports);
             results.push({ name:file.name, ok:true, entityId:eid, year:doc.report.period.year,
@@ -6087,6 +6241,23 @@ function sfRenderAll(){
 document.addEventListener('DOMContentLoaded', function(){
   if(ld(K_LIC,null)){ $('gate').style.display='none'; $('app').classList.add('on'); }
   sfRenderAll();
+  /* PULL THE SERVER'S COPY IN (2026-09-09), after the first render rather than
+     before it: hydration is additive and fire-and-forget, so a post with no
+     network still opens with everything it holds locally, and a slow or absent
+     server never delays the app appearing. Re-renders only if something new
+     actually arrived. */
+  sfHydrateAll().then(function(n){
+    if(n){
+      try{ console.info('SAIRNfreedom: hydrated '+n+' record(s) from the server backup.'); }catch(e){}
+      sfRenderAll();
+    }
+  }).catch(function(e){
+    /* Reported rather than swallowed: silence would make "the server had
+       nothing" and "the server could not be reached" look identical, which is
+       the distinction ld()'s own 2026-09-04 header spent its length on. */
+    try{ console.warn('SAIRNfreedom: the server backup could not be read, so '+
+      'nothing was hydrated. Local records are unaffected. '+((e&&e.message)||e)); }catch(_e){}
+  });
 });
 </script>
 </body>

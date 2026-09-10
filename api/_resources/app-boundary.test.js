@@ -81,11 +81,56 @@ test('an UNATTRIBUTABLE licence is allowed through, deliberately', () => {
   });
 });
 
-test('SAIRNvet and SAIRNcash are registered, with the empty lists that are true', () => {
-  ['sairnvet', 'sairncash'].forEach((app) => {
-    assert.ok(reg.isKnownApp(app), app + ' is still unattributable');
-    assert.deepStrictEqual(reg.RESOURCE_NAMES_BY_APP[app], [],
-      app + ' registered resources it does not use -- a claim nothing backs');
+test('SAIRNcash is registered, with the empty list that is still true', () => {
+  // WAS 'SAIRNvet AND SAIRNcash' UNTIL 2026-09-09, and it FIRED when SAIRNvet's
+  // backup landed, which is the tripwire working rather than a stale test.
+  // SAIRNvet now owns 41 resources and sairnvet.html really does request them;
+  // sairncash.html still does not call this endpoint at all, so its list is
+  // still the measured answer. What the assertion was protecting -- "registered
+  // resources it does not use, a claim nothing backs" -- is now enforced for
+  // BOTH apps by the next test, against the app HTML rather than against zero.
+  assert.ok(reg.isKnownApp('sairncash'), 'sairncash is still unattributable');
+  assert.deepStrictEqual(reg.RESOURCE_NAMES_BY_APP.sairncash, [],
+    'sairncash registered resources it does not use -- a claim nothing backs');
+  assert.ok(reg.isVisibleTo('shared_knowledge', 'sairncash'), 'sairncash cannot reach shared');
+  assert.ok(!reg.isVisibleTo('law_matters', 'sairncash'), 'sairncash can reach another app');
+});
+
+test('every resource the two NEW registries claim is really requested by its app', () => {
+  // The converse of "every resource an app HTML asks for is its own or shared",
+  // and the half that actually replaces the empty-list assertion: a registered
+  // name with no caller passes the allowlist and then falls through to
+  // "Unsupported action/resource combination", which is a WORSE failure than
+  // not registering it -- the exact trap api/_resources/sairnlaw.js records for
+  // law_deadline_rules. Scoped to the two registries written on 2026-09-09
+  // rather than to every app, because the older ones predate the convention and
+  // widening this is its own pass with its own evidence.
+  const fs = require('fs');
+  const path = require('path');
+  const root = path.join(__dirname, '..', '..');
+  // MATCHED AGAINST THE SYNC LIST, NOT AGAINST THE FILE TEXT. Both apps name
+  // their resources with the localStorage key verbatim, so `src.includes(name)`
+  // would pass on the storage key alone and prove nothing about whether the
+  // backup is wired -- a green check over a resource nothing pushes, which is
+  // the shape this test replaced.
+  [['sairnvet', 'sairnvet.html', 'SV_SYNCED'],
+   ['sairnfreedom', 'sairnfreedom.html', 'SF_SYNCED']].forEach(([app, file, listName]) => {
+    const src = fs.readFileSync(path.join(root, file), 'utf8');
+    const m = src.match(new RegExp('var ' + listName + '\\s*=\\s*\\[([^\\]]*)\\]'));
+    assert.ok(m, file + ' has no ' + listName + ' -- the backup is not wired');
+    const synced = (m[1].match(/'([a-z0-9_]+)'/g) || []).map((s) => s.slice(1, -1));
+    const registered = reg.RESOURCE_NAMES_BY_APP[app];
+    assert.ok(registered.length > 0, app + ' registry went empty');
+    const unregistered = synced.filter((n) => !registered.includes(n));
+    assert.deepStrictEqual(unregistered, [],
+      listName + ' pushes names the registry does not allow (they 400 at the gate): '
+      + unregistered.join(', '));
+    const unpushed = registered.filter((n) => !synced.includes(n));
+    assert.deepStrictEqual(unpushed, [],
+      app + ' registers names ' + listName + ' never pushes -- these pass the '
+      + 'allowlist and then fall through to "Unsupported action/resource '
+      + 'combination", which is worse than not registering them: '
+      + unpushed.join(', '));
     assert.ok(reg.isVisibleTo('shared_knowledge', app), app + ' cannot reach shared');
     assert.ok(!reg.isVisibleTo('law_matters', app), app + ' can reach another app');
   });

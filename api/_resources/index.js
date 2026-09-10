@@ -69,7 +69,21 @@ const REGISTRY_MODULES = [
   // correction that sairncash.html does not call this endpoint at all.
   require('./sairnvet'),
   require('./sairncash'),
+  // SAIRNfreedom joined 2026-09-09 -- its FIRST appearance on this endpoint.
+  // It had no module because it had never called sd-data.js at all: its only
+  // server call was /api/claude, which takes an app_id and no licence. The
+  // same absence showed up on the Guardian side the same day (it was missing
+  // from the App File Map), which is what "an app nothing has ever checked"
+  // looks like from two different directions.
+  require('./sairnfreedom'),
 ];
+
+// sairnvet.js STOPPED BEING EMPTY on 2026-09-09. The note above says SAIRNvet
+// and SAIRNcash joined "with EMPTY resource lists, which is the measured
+// answer and not a placeholder" -- still true of sairncash.js, no longer true
+// of sairnvet.js, which now owns 41 resources. Corrected here rather than
+// edited out of the paragraph above, because the reason those two were
+// registered while empty is the part worth keeping.
 
 // Fail loudly at load rather than silently letting one app shadow another's
 // resource. A duplicate here means two apps would share a table route, which
