@@ -772,8 +772,8 @@
       "task": "",
       "claimed_at": "2026-09-10T17:54:20Z",
       "claimed_at_epoch": 1789062860.0572813,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T18:13:04Z"
     }
   ]
 }
