@@ -113,6 +113,83 @@ rc, out = nav_on(
 check('D1 a button+anchor app still passes', rc, 0)
 check('D2 and both tags are counted', "'a': 1" in out and "'button': 1" in out, True)
 
+# ── D2. the `page-` convention, and the two defects hiding behind it ───────
+# nav_panel_check matched `panel` only, so SAIRNmechanical (17 `page-`
+# containers, showPage) and stonedesk-hr (15) reported ZERO panels and
+# **RESULT:PASS**. Five earlier versions of this bug all failed LOUD -- a
+# working app reported broken. This one failed SILENT, which is worse, and the
+# report-only registry then counted it as a passing checker.
+PAGE_APP = (
+    '<!doctype html><html><body>'
+    '<div class="sidebar-item" onclick="showPage(\'jobs\', this)">Jobs</div>'
+    '<div class="sidebar-item" onclick="showPage(\'quotes\', this)">Quotes</div>'
+    '<div id="page-jobs" class="page">j</div>'
+    '<div id="page-quotes" class="page">q</div>'
+    '%s'
+    '<script>function showPage(k,el){document.getElementById("page-"+k);}</script>'
+    '</body></html>')
+
+rc, out = nav_on(PAGE_APP % '')
+check('D2a a page-/showPage app is reconciled, not reported as 0 panels',
+      'PANEL_COUNT:2' in out, True)
+check('D2b and passes', rc, 0)
+
+# A nav call with a TRAILING ARGUMENT. `showPage('dashboard', this)` was
+# invisible: the matcher demanded the closing paren immediately after the
+# quoted argument, so stonedesk-hr's fifteen working sidebar items counted as
+# zero and every page came back unreachable.
+check('D2c a nav call with a second argument is seen',
+      'SIDEBAR_NAV_CONTROLS:2' in out, True)
+
+# THE FINDING THE CONVENTION EXISTS TO SURFACE must still surface. The first
+# attempt adopted only the `page-` ids something CALLS by name, which is
+# self-defeating: an unreachable container is by definition one nothing calls.
+rc, out = nav_on(PAGE_APP % '<div id="page-orphan" class="page">o</div>')
+check('D2d an unreachable page- container is REPORTED', rc, 1)
+check('D2e and named', "'orphan'" in out, True)
+
+# A camelCase container: SAIRNcash switches id="homePage" with
+# showPage('home'). A fifth live naming convention, and the reason resolve_panel
+# derives rather than assumes -- every version of this file that picked a side
+# reported a working app as broken.
+#
+# THIS ARM REPLACED ONE THAT ASSERTED THE OPPOSITE, and the correction is worth
+# recording. It read "an app SHELL container is not a panel, so `page-` ids
+# nothing navigates to must not be adopted" -- written while the tool was
+# reporting SAIRNcash's homePage/appPage as unreachable. That turned out to be
+# the WRONG diagnosis: those two shells ARE navigated, by showPage('home') and
+# showPage('app'), and the real defect was that resolve_panel could not map the
+# argument onto the camelCase id. An unreachable container IS the finding this
+# tool exists for, so refusing to adopt one would have been a silent miss
+# dressed up as a fix. Measured across all 22 app files afterwards: zero false
+# positives, one documented suppression.
+rc, out = nav_on(
+    '<!doctype html><html><body>'
+    '<div class="nav-item" onclick="showPage(\'home\')">Home</div>'
+    '<div class="nav-item" onclick="showPage(\'app\')">App</div>'
+    '<div id="homePage" class="page active">home</div>'
+    '<div id="appPage" class="page">app</div>'
+    '<script>function showPage(p){}</script></body></html>')
+check('D2f a camelCase id is resolved from a bare nav argument', rc, 0)
+check('D2g and both containers are counted', 'PANEL_COUNT:2' in out, True)
+
+# ── D3. a panel system this tool cannot recognise is SKIPPED, not PASSED ───
+rc, out = nav_on(
+    '<!doctype html><html><body>'
+    '<div class="tab" onclick="goTo(\'alpha\')">A</div>'
+    '<div class="tab" onclick="goTo(\'beta\')">B</div>'
+    '<section id="zone-alpha">a</section><section id="zone-beta">b</section>'
+    '<script>function goTo(k){document.getElementById("zone-"+k);}</script>'
+    '</body></html>')
+check('D3a an unrecognised container convention exits 3, not 0', rc, 3)
+check('D3b and says nothing was reconciled', 'SKIPPED' in out, True)
+check('D3c and does not claim PASS', 'RESULT:PASS' in out, False)
+
+# ...but a genuinely single-purpose page has nothing to reconcile and passes.
+rc, out = nav_on('<!doctype html><html><body><h1>Booking</h1>'
+                 '<form><input name="x"></form></body></html>')
+check('D3d a single-purpose page with no nav system still passes', rc, 0)
+
 # ── E. the runner: registry integrity ──────────────────────────────────────
 missing = [e['tool'] for e in roc.REGISTRY
            if not os.path.isfile(os.path.join(REPO, 'tools', e['tool']))]
@@ -147,6 +224,32 @@ check('G4 a zero section is not a finding',
 check('G5 by_exit reports nothing on 0', roc.by_exit(0, 'PASS')[0], [])
 check('G6 by_exit reports something on non-zero',
       len(roc.by_exit(1, 'FAIL: 1 issue(s)\n  - too long')[0]) > 0, True)
+
+# ── G7. exit 3 is COULD NOT RUN, not a finding and not a pass ──────────────
+# Without this the runner would file the bare string "exit 3" under findings,
+# which reads as a defect in the app rather than the checker failing to
+# recognise it. Driven through run_one() rather than asserted on the constant.
+_saved_reg, _saved_files = roc.REGISTRY, roc.app_files
+_fd, _fixture = tempfile.mkstemp(suffix='.html')
+with os.fdopen(_fd, 'w', encoding='utf-8') as _fh:
+    _fh.write('<!doctype html><html><body>'
+              '<div class="tab" onclick="goTo(\'alpha\')">A</div>'
+              '<div class="tab" onclick="goTo(\'beta\')">B</div>'
+              '<section id="zone-alpha">a</section>'
+              '<script>function goTo(k){}</script></body></html>')
+try:
+    roc.REGISTRY = [{'tool': 'nav_panel_check.py', 'mode': 'apps',
+                     'verdict': roc.by_exit, 'promoted': 'probe',
+                     'catches': 'probe', 'why_it_matters': 'probe',
+                     'evidence': 'probe'}]
+    roc.app_files = lambda verbose=False: [_fixture]
+    f, u = roc.sweep(quiet=True)
+    check('G7 an exit-3 checker lands in unrun, NOT in findings', len(f), 0)
+    check('G8 and the reason is carried through',
+          len(u) == 1 and 'SKIPPED' in u[0], True)
+finally:
+    roc.REGISTRY, roc.app_files = _saved_reg, _saved_files
+    os.remove(_fixture)
 
 # ── H. the hook gates on the COMMAND TEXT, in code ─────────────────────────
 def hook(cmd):

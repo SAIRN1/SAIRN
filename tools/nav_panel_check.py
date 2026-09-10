@@ -27,7 +27,24 @@ from collections import Counter
 # StoneDesk-specific allowances. Harmless for other apps (they subtract ids that
 # do not exist there); documented rather than silently applied everywhere.
 PAGE_SYSTEM_IDS = {'doc-scan', 'check-register', 'field-quote'}
-NO_SIDEBAR_BUTTON_OK = {'client'}
+# Every entry is a KNOWN, RECORDED finding that is suppressed on purpose, and
+# each one is PRINTED on every run rather than silently subtracted -- the same
+# rule tools/reachability_exemptions.json holds itself to. An entry that stops
+# matching anything is dead weight; an entry nobody can see is a hidden defect.
+NO_SIDEBAR_BUTTON_OK = {
+    'client': 'StoneDesk: reached from the client list, not the sidebar',
+    # Found 2026-09-10 by the first run of this tool that could see `page-`
+    # containers at all. It is REAL and it is already recorded: sairnmechanical
+    # names it in its own source -- "page-sairnbiz-connector, which has NO nav
+    # item and no showPage() caller anywhere -- an unreachable panel, reported
+    # separately and deliberately not deleted here" -- and its three buttons
+    # were wired anyway so the defect cannot ship the day somebody adds the
+    # missing nav row. Suppressed so a standing, known finding does not fire on
+    # every push and teach people to ignore this checker; DELETE THIS LINE the
+    # moment the connector is either wired or removed.
+    'sairnbiz-connector': 'SAIRNmechanical: quarantined dormant panel, '
+                          'recorded in the app source and the open-work index',
+}
 
 
 def resolve_panel(arg, panel_ids):
@@ -49,6 +66,13 @@ def resolve_panel(arg, panel_ids):
             return pid
         if arg.endswith('-' + pid) or arg.startswith('panel-') and arg[len('panel-'):] == pid:
             return pid
+        # camelCase suffix: SAIRNcash's showPage('home') switches id="homePage".
+        # A fifth live convention, and the reason this function derives rather
+        # than assumes -- each one of them is somebody's perfectly ordinary
+        # naming choice, and every version of this file that picked a side
+        # reported a working app as broken.
+        if pid == arg + 'Page' or pid == arg + 'Panel':
+            return pid
     return None
 
 
@@ -59,7 +83,47 @@ def detect_panels(html):
     SAIRNscape and SAIRNcash mark panels with class="panel" and a bare id.
     Hardcoding the panel- prefix reported both as having ZERO panels, which
     then made every one of their nav buttons look dead."""
+    # ── `page-` IS THE FIFTH HARDCODED ASSUMPTION, REMOVED 2026-09-10 ───────
+    # SAIRNmechanical marks its containers id="page-x" on class="page" and
+    # navigates with showPage('x') -- 17 real pages, 24 call sites. This file
+    # matched only `panel`, found ZERO containers, and printed **RESULT:PASS**.
+    # That is the dangerous direction of the same bug this file has now
+    # corrected five times: the class, the id, the nav-function name and the
+    # element all failed LOUD, reporting a working app as broken. This one
+    # failed SILENT, reporting an app it had not looked at as clean -- and the
+    # report-only registry then counted it as a passing checker.
+    #
+    # It matters beyond the count: `page-sairnbiz-connector` is an unreachable
+    # container that sairnmechanical's own source calls out by name, and this
+    # tool is the thing meant to find that class. It could not see the panel
+    # system at all.
     prefixed = set(re.findall(r'id="panel-([a-zA-Z0-9_-]+)"', html))
+    # ADOPTED ONLY IF THE APP NAVIGATES TO THEM. Taking every `page-` id was
+    # the first attempt and it broke three apps at once, because `page` marks
+    # two different things: a nav-switched panel (SAIRNmechanical) and an app
+    # SHELL container (SAIRNcash's homePage/appPage, StoneDesk's doc-scan /
+    # check-register / field-quote page system, which this file already keeps
+    # an allowance list for). Counting shells as panels reported StoneDesk's
+    # `field-quote` and SAIRNcash's `homePage` as unreachable -- two working
+    # apps, exactly the false-alarm class this file exists to have stopped
+    # making. So the test is behavioural rather than nominal: a container is a
+    # panel if something CALLS it by name. Two or more, so one incidental
+    # string cannot adopt a whole convention.
+    # THE CONVENTION IS ADOPTED, NOT THE ADDRESSED MEMBERS. The first version
+    # took only the ids something calls by name, and that is self-defeating:
+    # an UNREACHABLE container is by definition one nothing calls, so filtering
+    # to addressed ids guarantees the tool can never report the finding it
+    # exists for. It made SAIRNmechanical pass with 16 panels by dropping the
+    # seventeenth -- `page-sairnbiz-connector`, the one that is actually
+    # unreachable and that the app's own source names.
+    #
+    # So the ≥2 test decides whether THIS FILE navigates by `page-` at all, and
+    # if it does, every `page-` container is in scope.
+    page_ids = set(re.findall(r'id="page-([a-zA-Z0-9_-]+)"', html))
+    addressed = {n for n in page_ids
+                 if re.search(r'\w+\(\s*[\'"]%s[\'"]' % re.escape(n), html)}
+    if len(addressed) >= 2:
+        prefixed |= page_ids
     # UNION, not either/or. SAIRNvet uses BOTH conventions in one file: 81
     # panels as id="panel-x", and dashboard/billing/reports/settings as bare
     # id="x" on class="panel". Returning early on the prefixed set reported
@@ -83,7 +147,14 @@ def detect_panels(html):
         m_cls = re.search(r'class="([^"]*)"', tag)
         if not m_cls:
             continue
-        toks = [t for t in m_cls.group(1).split() if t == 'panel' or t.endswith('-panel')]
+        # `page` is here alongside `panel` for SAIRNcash, whose two containers
+        # are class="page" with id="homePage"/"appPage" and showPage('home').
+        # It is safe here and was NOT safe in the id branch, and the difference
+        # is worth stating: an id prefix is a naming habit, but a CLASS token
+        # is what the app's own CSS and its showPage() both key on, so a
+        # class="page" element really is one of the things being switched.
+        toks = [t for t in m_cls.group(1).split()
+                if t in ('panel', 'page') or t.endswith(('-panel', '-page'))]
         if toks:
             tag_tokens.append((toks, tag))
     counts = Counter(t for toks, _ in tag_tokens for t in toks)
@@ -96,7 +167,11 @@ def detect_panels(html):
         m = re.search(r'id="([a-zA-Z0-9_-]+)"', tag)
         if m:
             name = m.group(1)
-            bare.add(name[len('panel-'):] if name.startswith('panel-') else name)
+            for p in ('panel-', 'page-'):
+                if name.startswith(p):
+                    name = name[len(p):]
+                    break
+            bare.add(name)
     both = prefixed | bare
     return sorted(both), 'panel-' if prefixed else ''
 
@@ -146,7 +221,21 @@ def nav_call_re(fn):
     """Match fn('x') but never a call whose name merely ENDS with fn -- without
     the lookbehind, sbNav('x') also matches a bare nav( pattern and inflates
     every count in a StoneDesk-shaped file."""
-    return re.compile(r"(?<![A-Za-z0-9_$])" + fn + r"\('([a-zA-Z0-9_-]+)'\)")
+    # ── TRAILING ARGUMENTS, added 2026-09-10 ────────────────────────────────
+    # This required the closing paren IMMEDIATELY after the quoted argument, so
+    # a nav function that takes anything else was invisible. `stonedesk-hr.html`
+    # navigates with `showPage('dashboard', this)` from fifteen
+    # `<div class="sidebar-item">` controls, and this tool saw ZERO of them:
+    # it fell back to the default `nav`, matched nothing, and reported all
+    # fifteen pages unreachable on an app whose sidebar works.
+    #
+    # It surfaced only because adopting the `page-` convention made those
+    # containers visible at all -- before that the file had 0 panels and
+    # reported a vacuous PASS, so the defect was invisible behind another one.
+    # That is the sixth hardcoded assumption in this file and the second found
+    # in a day.
+    return re.compile(r"(?<![A-Za-z0-9_$])" + fn +
+                      r"\(\s*'([a-zA-Z0-9_-]+)'\s*(?:,[^)]*)?\)")
 
 
 if __name__ == '__main__':
@@ -290,8 +379,20 @@ if __name__ == '__main__':
         return any(pid != other and pid.startswith(other + '-') for other in panel_ids)
 
     subs = sorted(p for p in panel_ids if p not in wired and is_sub_container(p))
-    no_button = sorted(p for p in panel_ids
-                       if p not in wired and p not in NO_SIDEBAR_BUTTON_OK and not is_sub_container(p))
+    # PAGE_SYSTEM_IDS is subtracted from BOTH sides as of 2026-09-10. It was
+    # only ever taken off `unresolved` (a nav call with no panel), which was
+    # enough while `page-` containers were invisible to this tool. Adopting the
+    # `page-` convention brought StoneDesk's page SYSTEM into the panel set,
+    # and `field-quote` -- one of the three ids this allowance exists for --
+    # came back as an unreachable panel on a working app. The allowance means
+    # "not a sidebar panel", which is a statement about both directions.
+    unreached = [p for p in sorted(panel_ids)
+                 if p not in wired and not is_sub_container(p)]
+    suppressed = [p for p in unreached if p in NO_SIDEBAR_BUTTON_OK]
+    no_button = [p for p in unreached
+                 if p not in NO_SIDEBAR_BUTTON_OK and p not in PAGE_SYSTEM_IDS]
+    for p in suppressed:
+        print("SUPPRESSED:%s -- %s" % (p, NO_SIDEBAR_BUTTON_OK[p]))
     if subs:
         print(f"INFO:SUB_CONTAINERS_NOT_NAV_TARGETS:{len(subs)} "
               f"(e.g. {subs[:3]}) -- nested inside a parent panel, not orphans")
@@ -303,10 +404,49 @@ if __name__ == '__main__':
     if dead:
         fails.append(f"NAV_BUTTONS_WITH_NO_PANEL:{dead}")
 
+    # ── "COULD NOT TELL" IS NOT A PASS -- EXIT 3, added 2026-09-10 ──────────
+    # This printed the INFO line below and then RESULT:PASS, exit 0. A caller
+    # reads the exit code, so a file whose panel system this tool did not
+    # recognise counted as a clean check -- and once it was wired into the
+    # report-only registry, as a passing checker.
+    #
+    # THE DISTINCTION IS DERIVED, NOT ASSUMED, because most of the 0-container
+    # files are legitimately single-purpose pages (the booking form, the
+    # complaint form, the intake page) with nothing to reconcile, and marking
+    # those SKIPPED every push is the notice nobody reads. So: a file with no
+    # containers AND no nav function taking panel-shaped arguments has genuinely
+    # nothing to check and still passes. A file where a nav system CLEARLY
+    # EXISTS -- a nav function called with two or more distinct string
+    # arguments -- and no container matched is a checker failure, not a clean
+    # app, and says so.
+    #
+    # Exit 3 is the same "a precondition is not a pass" code check4_probe and
+    # run_all_tests.py already use, and the same rule as the SQL preflight's
+    # fail-closed and --require-live's exit 2.
     if not panel_ids:
         print("INFO:NO_PANELS_FOUND -- this app may use a different container "
-              "convention entirely (e.g. showPage/class=page). Reconciliation "
-              "is vacuous here; confirm by hand before reading PASS as coverage.")
+              "convention entirely. Reconciliation is vacuous here; confirm by "
+              "hand before reading PASS as coverage.")
+        # THE SIGNAL IS INDEPENDENT OF nav_fn DETECTION, deliberately. Keying
+        # it on `unresolved` was the first attempt and it could not fire: when
+        # the container convention is unrecognised, detect_nav_fn scores every
+        # candidate at zero and falls back to `nav`, so nothing resolves and
+        # nothing is unresolved either. The two failures are the same failure.
+        # So: does ANY function get called with two or more distinct string
+        # literals from an element handler? That is a panel system, whatever it
+        # is called and whatever its containers look like.
+        handlers = Counter()
+        for m in re.finditer(r'on\w+="\s*(\w+)\(\s*[\'"]([a-zA-Z0-9_-]+)[\'"]',
+                             html):
+            handlers[m.group(1)] += 1
+        top = handlers.most_common(1)
+        if top and top[0][1] >= 2:
+            print("SKIPPED: a nav system exists here -- %s() is called from %d "
+                  "element handlers with string arguments -- and NO container "
+                  "convention matched, so nothing was reconciled. This is the "
+                  "checker failing to recognise the app, not the app being "
+                  "clean." % (top[0][0], top[0][1]))
+            sys.exit(3)
 
     for f in fails:
         print(f"FAIL:{f}")

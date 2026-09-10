@@ -210,6 +210,16 @@ def run_one(entry, show_all, verbose=False):
             unrun.append('%s %s -- %s' % (tool, t or '', e))
             continue
         out = (r.stdout or '') + (r.stderr or '')
+        # EXIT 3 IS "COULD NOT RUN", NOT A FINDING AND NOT A PASS -- the same
+        # code check4_probe and run_all_tests.py use. Added 2026-09-10 with
+        # nav_panel_check's SKIPPED path: without this it would land in
+        # `findings` as the bare string "exit 3", which reads as a defect in
+        # the app rather than as the checker failing to recognise it.
+        if r.returncode == 3:
+            why = next((l for l in out.splitlines() if l.startswith('SKIPPED')),
+                       'SKIPPED')
+            unrun.append('%s %s -- %s' % (tool, t or '', why.strip()))
+            continue
         got, _ = entry['verdict'](r.returncode, out)
         for g in got:
             findings.append('%s %s -- %s' % (tool, t or '', g.strip()))
