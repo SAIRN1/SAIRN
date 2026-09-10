@@ -742,8 +742,8 @@
       "task": "server backup",
       "claimed_at": "2026-09-10T14:04:21Z",
       "claimed_at_epoch": 1789049061.6145644,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T14:24:24Z"
     }
   ]
 }
