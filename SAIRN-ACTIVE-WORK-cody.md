@@ -1194,3 +1194,69 @@ the two source assertions) with `stonedesk.html` restored byte-identical.
    unwired checkers. **It is one of the 28 unwired checkers and I only ran it
    because I had just inventoried it.** Rebuilt the row whole. That is the
    strongest argument in the inventory, and I did not have to look for it.
+
+## 2026-09-09 (Cody) -- the report-only promotion path, and three checkers wired
+
+CLAIMED and released: `report-only-hook-mechanism`. **Scoped deliberately around
+CC**, who holds `unwired-checkers-run-against-real-code` and is editing
+`write_without_readback_check.py`, `sairn_app_map_check.py` and the guardian
+skill. Michael's call was option (b): CC keeps those, I take the mechanism plus
+the three I had already tested. No overlap.
+
+`tools/report_only_checks.py` -- **one runner with a REGISTRY, not 28 hook
+entries.** Promoting the next checker is a registry entry carrying when it was
+promoted, what it catches, why it matters, and **the evidence from its real
+run**. Twenty-eight hook entries would be twenty-eight places to keep in step
+and twenty-eight chances to repeat the `"if": "Bash(git push*)"` mistake.
+
+**Three promoted, each with its real run recorded:**
+
+| Checker | Real run | Note |
+|---|---|---|
+| `vercel_config_check.py` | PASS, buildCommand 92/256 | clean first time |
+| `sairn_dead_button_audit.py` | A=0 B=0 C2=0 over 22 apps; D1=1 | **it ALWAYS EXITS 0** -- it cannot be wired by exit code, which is a fair part of why it sat unwired while Guardian check 27 named it as required |
+| `nav_panel_check.py` | 22 PASS / 0 FAIL **after a fix** | see below |
+
+**`nav_panel_check.py` was broken and I did not promote it broken.** Its first
+real run reported **all 26 sairnfreedom panels unreachable** -- it scanned
+`<button>` and that app navigates with
+`<div class="nitem" onclick="sfNav('x')">`. Blocking, it would have refused
+every SAIRNfreedom push while the app was fine. That is the **fourth** instance
+of that file's own recurring bug; it had already stopped hardcoding the class,
+the id and the function name, and the element was the last assumption left.
+
+**The widening is MEASURED, because trading a false alarm for a silent miss is
+the easy mistake here.** My first widened pattern matched the JS comparison
+`if(days<TRIAL_DAYS)return true;` as an opening tag, ran `[^>]*` across a dozen
+lines, and swallowed a real nav call -- a phantom control on sairnvet and
+sairnlegacy. Tightened (an HTML tag name cannot contain `_`), then **both**
+patterns run over all 22 app files: the tight one loses exactly those two
+phantoms and **not one real control**. The probe drives it in both directions
+on synthetic fixtures -- a div-navigated app must pass, **a genuinely
+unreachable panel must still FAIL**, and a JS `<` must not count as an element.
+
+**A second finding came from wiring it, not from looking for it.** My first
+`app_files()` was a bare `git ls-files '*.html'` and swept
+`archive/branch-lucid-ptolemy-b73vu0/` -- the preserved ancestor branch
+CLAUDE.md says explicitly must not be run. 13 findings, 12 of them in code
+nobody deploys. That is precisely how a report-only checker earns the
+reputation that gets it switched off before it is ever promoted. Top-level only
+now (vercel.json routes every app from the repo root) and **the exclusion is
+printed**, not silent.
+
+**One real defect fixed:** `sairnmechanical.html` carried two `mechEsc`
+declarations in one script block (`94034ed1`). The later hoisted over the
+earlier, so the first had never run. Proven equivalent over ten inputs before
+anything was touched -- it is an HTML escaper and Guardian 25 is not a place to
+reason from "they look the same". Live-verified: 1 definition, 27 references,
+200.
+
+**Verified:** 29/29 probe checks, full sweep CLEAN across three checkers, and
+Hank's `run_all_tests_hook_gate_probe.py` still ALL PASS -- which is what
+proves my new hook entry carries no unrecognised key either.
+
+**Deliberately no lock** on this runner: `run_all_tests.py` needs one because
+its probes MUTATE, and every checker here is read-only. If a mutating tool ever
+joins the registry that reasoning stops holding, and the file says so.
+
+**25 checkers still unwired.** CC holds the ones they are editing.
