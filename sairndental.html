@@ -5224,6 +5224,10 @@ async function dntSyncFromServer(){
   // the network kind existed. A resource whose server read SUCCEEDED and whose
   // local write then failed was indistinguishable from a clean sync.
   var storageFailures=[];
+  // Keys whose local copy was KEPT because its last write never reached the
+  // server. Reported, never silent: a sync that deliberately did not take the
+  // server's answer has to say so, or it looks like a sync that agreed.
+  var unconfirmedHeld=[];
   for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
     var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
     var serverData=await sdnData('read',resource,{});
@@ -5262,9 +5266,20 @@ async function dntSyncFromServer(){
   // level and that is deliberate: the pricing object IS the record, so it is
   // spread onto the row, while the contacts MAP is nested under `vendors`
   // because its keys are vendor names and would otherwise collide with `id`.
+  // ── AN UNCONFIRMED LOCAL WRITE IS NOT OVERWRITTEN (2026-09-10) ─────────
+  // These two are replaced WHOLESALE, so this line is server-wins. If the
+  // last local write never reached the server, hydrating here puts the old
+  // value back and the edit disappears with no error -- which for a
+  // negotiated vendor discount is money. The local copy is then the ONLY
+  // copy, so it is authoritative until a push confirms otherwise.
+  //
+  // It skips the OVERWRITE, not the READ: the read still runs, so a genuine
+  // network failure is still counted and reported.
   var vcData=await sdnData('read','dnt_vendor_contacts',{});
   if(Array.isArray(vcData)){
-    if(vcData.length){
+    if(dntIsUnconfirmed('dnt_vendor_contacts')){
+      unconfirmedHeld.push('dnt_vendor_contacts');
+    }else if(vcData.length){
       var vcRow=vcData.find(function(x){return x&&x.id==='default';})||vcData[0];
       if(vcRow&&vcRow.vendors){
         if(st('dnt_vendor_contacts',vcRow.vendors)) changed=true;
@@ -5276,7 +5291,9 @@ async function dntSyncFromServer(){
   }
   var vpData=await sdnData('read','dnt_vendor_pricing_rules',{});
   if(Array.isArray(vpData)){
-    if(vpData.length){
+    if(dntIsUnconfirmed('dnt_vendor_pricing_rules')){
+      unconfirmedHeld.push('dnt_vendor_pricing_rules');
+    }else if(vpData.length){
       var vpRow=vpData.find(function(x){return x&&x.id==='default';})||vpData[0];
       if(vpRow){
         var vpOut={vendorDiscounts:vpRow.vendorDiscounts||{},
@@ -5310,7 +5327,8 @@ async function dntSyncFromServer(){
     if($('panel-credentials')&&$('panel-credentials').classList.contains('on'))refreshCredentialBoard();
   }
   return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2,
-          storage_failures:storageFailures, storage_full:dntQuotaHit};
+          storage_failures:storageFailures, storage_full:dntQuotaHit,
+          unconfirmed_held:unconfirmedHeld};
 }
 
 // The honest sentence for a sync that reached the server and could not keep
@@ -5350,6 +5368,14 @@ async function dntRefreshPending(){
       // screen is showing what it had before. Reported for longer than a normal
       // toast because it needs an action, not an acknowledgement.
       toast(dntStorageFailureMessage(result), 12000);
+    }else if(result&&result.unconfirmed_held&&result.unconfirmed_held.length){
+      // NOT 'Refreshed from server'. The refresh ran and DELIBERATELY did not
+      // take the server's copy of these, because this device holds a change the
+      // server never acknowledged. Saying 'refreshed' here would be the same
+      // class of false success the unchecked push already was.
+      toast('Refreshed, BUT '+result.unconfirmed_held.length+' vendor record set(s) '+
+            'on this device have NOT reached the server, so the server copy was not '+
+            'applied over them. They exist HERE ONLY until a save succeeds.', 10000);
     }else{
       toast('Refreshed from server');
     }
@@ -5515,9 +5541,9 @@ function vSetVendorDiscount(){
   var rules=dntVendorPricingRules();
   rules.vendorDiscounts[_dntActiveVendor]=pct;
   st('dnt_vendor_pricing_rules',rules);
-  dntPushVendorPricing(rules);
+  var _msg=DNT_VENDORS[_dntActiveVendor].name+' vendor discount set to '+pct+'%';
+  dntPushVendorPricing(rules).then(function(ok){ dntVendorSaveToast(ok,_msg); });
   rVendorCat();
-  toast(DNT_VENDORS[_dntActiveVendor].name+' vendor discount set to '+pct+'%');
 }
 function vSetCategoryDiscount(){
   var cat=$('vp-cat-select').value,pct=parseFloat($('vp-cat-discount').value);
@@ -5526,9 +5552,9 @@ function vSetCategoryDiscount(){
   rules.categoryDiscounts=rules.categoryDiscounts.filter(function(r){return !(r.vendor===_dntActiveVendor&&r.category===cat);});
   rules.categoryDiscounts.push({vendor:_dntActiveVendor,category:cat,discount:pct});
   st('dnt_vendor_pricing_rules',rules);
-  dntPushVendorPricing(rules);
+  var _msg=DNT_VCAT_LABELS[cat]+' discount set to '+pct+'% for '+DNT_VENDORS[_dntActiveVendor].name;
+  dntPushVendorPricing(rules).then(function(ok){ dntVendorSaveToast(ok,_msg); });
   rVendorCat();
-  toast(DNT_VCAT_LABELS[cat]+' discount set to '+pct+'% for '+DNT_VENDORS[_dntActiveVendor].name);
 }
 function vSetProductOverride(){
   var sku=$('vp-sku').value.trim(),price=parseFloat($('vp-override-price').value);
@@ -5537,9 +5563,8 @@ function vSetProductOverride(){
   var rules=dntVendorPricingRules();
   rules.productOverrides[sku]=price;
   st('dnt_vendor_pricing_rules',rules);
-  dntPushVendorPricing(rules);
+  dntPushVendorPricing(rules).then(function(ok){ dntVendorSaveToast(ok,'Price override set for '+sku); });
   rVendorCat();
-  toast('Price override set for '+sku);
 }
 
 async function vCompareAI(productId){
@@ -5712,9 +5737,9 @@ function vEditContact(){
   if(email===null)return;
   contacts[_dntActiveVendor]={rep_name:repName.trim(),phone:phone.trim(),email:email.trim()};
   st('dnt_vendor_contacts',contacts);
-  dntPushVendorContacts(contacts);
+  var _msg='Contact saved for '+DNT_VENDORS[_dntActiveVendor].name;
+  dntPushVendorContacts(contacts).then(function(ok){ dntVendorSaveToast(ok,_msg); });
   vRenderContactBox();
-  toast('Contact saved for '+DNT_VENDORS[_dntActiveVendor].name);
 }
 
 function vendorOrderHistory(){return ld('dnt_vendor_order_history',[]);}
@@ -5736,23 +5761,83 @@ function vendorOrderHistory(){return ld('dnt_vendor_order_history',[]);}
 // failure and every helper below reads that null -- silence would make a
 // backup that is not happening look like one that is, which is the defect
 // class this whole change exists to remove.
-function dntPushOne(resource,rec){
+// ── AN UNCONFIRMED WRITE IS REMEMBERED, NOT JUST LOGGED (2026-09-10) ────────
+// The two WHOLESALE vendor objects are replaced entire on both sides, which is
+// what makes a removal expressible and is the right call. It also means
+// dntSyncFromServer() writes the server's copy straight over the local one --
+// server-wins with no guard. Combined with a push whose result nobody read,
+// that gave: set a discount, push fails, toast says "set to 12%", and the NEXT
+// SYNC silently puts the old number back.
+//
+// dnt_settings is the precedent for wholesale-write and there this costs a
+// preference. HERE IT IS A NEGOTIATED VENDOR DISCOUNT, so it changes what the
+// practice pays -- and sql/sairndental_vendor_schema.sql has been RUN, so this
+// was live, not theoretical.
+//
+// The flag is deliberately PERSISTED. A reload must not turn "the server never
+// took this" back into "the server agrees", which is exactly the state the old
+// console.warn left behind the moment the tab closed.
+//
+// It is NOT itself synced and must never be: it is a fact about THIS device's
+// relationship to the server, and a merged copy of it would be meaningless.
+var DNT_UNCONFIRMED_KEY='dnt_unconfirmed_writes';
+function dntUnconfirmed(){
+  try{ var o=JSON.parse(localStorage.getItem(DNT_UNCONFIRMED_KEY)||'{}');
+       return (o&&typeof o==='object'&&!Array.isArray(o))?o:{}; }
+  catch(e){ return {}; }
+}
+function dntMarkUnconfirmed(storeKey,pending){
+  var o=dntUnconfirmed();
+  if(pending) o[storeKey]=new Date().toISOString(); else delete o[storeKey];
+  // Written with the RAW setter, not st(): st() is the hooked path and this
+  // key is not a record collection. A failure here is reported rather than
+  // swallowed -- if the flag itself cannot be stored, the guard below cannot
+  // protect anything and saying so is the only honest option.
+  try{ localStorage.setItem(DNT_UNCONFIRMED_KEY,JSON.stringify(o)); return true; }
+  catch(e){ try{ console.warn('SAIRNdental: could not record the unconfirmed-write '+
+    'flag for "'+storeKey+'", so the next sync may overwrite it.'); }catch(_e){}
+    return false; }
+}
+function dntIsUnconfirmed(storeKey){
+  return Object.prototype.hasOwnProperty.call(dntUnconfirmed(),storeKey);
+}
+
+// storeKey is the localStorage key the record came from, so a failed push can
+// be tied to the thing hydration would otherwise overwrite. Callers that have
+// no wholesale object to protect pass nothing and behave exactly as before.
+function dntPushOne(resource,rec,storeKey){
   return sdnData('write',resource,rec).then(function(r){
     if(r===null){
       try{ console.warn('SAIRNdental backup: "'+resource+'" record '+(rec&&rec.id)+
         ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
+      if(storeKey) dntMarkUnconfirmed(storeKey,true);
+    }else if(storeKey){
+      dntMarkUnconfirmed(storeKey,false);
     }
     return r;
   });
+}
+
+// The one sentence every vendor-object writer says, so a second wording cannot
+// under-state it. The toast is now DERIVED FROM THE RESULT rather than printed
+// before it is known.
+function dntVendorSaveToast(ok,doneMsg){
+  if(ok===null){
+    toast('NOT SAVED TO THE SERVER — '+doneMsg+' on THIS DEVICE only. Another '+
+          'workstation will not see it, and it will not survive this browser '+
+          'being cleared. Try again when the connection is back.',7000);
+  }else{
+    toast(doneMsg);
+  }
 }
 // The two single-object resources are stored as ONE row, id 'default', and
 // written WHOLESALE -- see the branch in api/sd-data.js for why a merge would
 // be wrong here (a discount taken off could never be expressed).
 function dntPushVendorPricing(rules){
-  return dntPushOne('dnt_vendor_pricing_rules',Object.assign({id:'default'},rules));
+  return dntPushOne('dnt_vendor_pricing_rules',Object.assign({id:'default'},rules),'dnt_vendor_pricing_rules');
 }
 function dntPushVendorContacts(contacts){
-  return dntPushOne('dnt_vendor_contacts',{id:'default',vendors:contacts});
+  return dntPushOne('dnt_vendor_contacts',{id:'default',vendors:contacts},'dnt_vendor_contacts');
 }
 
 
