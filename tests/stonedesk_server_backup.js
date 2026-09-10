@@ -232,10 +232,33 @@ test("the verb is 'soft_delete', not 'delete'", () => {
   // 'delete' already exists on this platform and means a real DELETE -- the
   // SAIRNcode branch issues the only method:'DELETE' in api/sd-data.js. Two
   // verbs that destroy different amounts of data must not share a name.
+  // ── SCOPE CORRECTED 2026-09-10, and the correction is the interesting part ──
+  // This counted `soft_delete` across the PLATFORM-WIDE registry aggregate and
+  // asserted 21, which is StoneDesk's number. It read as a StoneDesk assertion
+  // and was not one. eb640ae8 gave `dnt_supplies` the verb -- a deliberate,
+  // reviewed decision in another app -- and this went red on a CORRECT change,
+  // which is the shape that gets an assertion loosened or deleted rather than
+  // fixed.
+  //
+  // So it is split. The StoneDesk family is counted on its own, and the verb's
+  // spread beyond it is asserted BY NAME rather than by a number: a new family
+  // taking `soft_delete` now has to be written down here, which is the guard the
+  // original count was reaching for. "Who may delete" is not the same question
+  // as "who may write", and the answer belongs somewhere a reader can find it.
   const granted = Object.keys(reg.EXTRA_ACTIONS)
     .filter((k) => (reg.EXTRA_ACTIONS[k] || []).indexOf('soft_delete') !== -1);
-  assert.strictEqual(granted.length, 21, 'soft_delete is granted to ' + granted.length + ' resources, not 21');
-  granted.forEach((k) => {
+  const sdGranted = granted.filter((k) => k.indexOf('sd_') === 0 || k.indexOf('stonedesk') === 0);
+  const elsewhere = granted.filter((k) => sdGranted.indexOf(k) === -1);
+  assert.strictEqual(sdGranted.length, 21,
+    'soft_delete is granted to ' + sdGranted.length + ' StoneDesk resources, not 21');
+  assert.deepStrictEqual(elsewhere.sort(), ['dnt_supplies'],
+    'a family outside StoneDesk gained or lost soft_delete: ' + JSON.stringify(elsewhere)
+    + '. That is a real decision about who may delete -- record it here rather than '
+    + 'widening a count past it.');
+  // Same scope correction: handlerMap() is StoneDesk's SD_LOCAL_RESOURCES, so
+  // this can only speak for StoneDesk's grants. dnt_supplies is backed by
+  // SAIRNdental's own map and is checked by SAIRNdental's own suite.
+  sdGranted.forEach((k) => {
     assert.ok(handlerMap()[k], k + ' has soft_delete but is not a backed-up resource');
     assert.ok((reg.EXTRA_ACTIONS[k] || []).indexOf('delete') === -1,
       k + ' grants the HARD delete verb as well -- the two must not both be reachable here');
