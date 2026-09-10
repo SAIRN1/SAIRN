@@ -38729,46 +38729,38 @@ function itaImportPrompt(){var inp=document.createElement('input');inp.type='fil
 function itaClearData(){if(!confirm('This will clear all DEMO data. Your real data will NOT be affected unless this is a demo account. Continue?'))return;var keep=['sd_owner_pin','sd_license_key','sd_plan',ITA_USERS_KEY,ITA_AUDIT_KEY];Object.keys(localStorage).filter(function(k){return k.startsWith('sd_')&&!keep.includes(k);}).forEach(function(k){localStorage.removeItem(k);});itaAudit('Demo data cleared');showToast('Demo data cleared');itaRender();}
 
 // ================================================================
-// DAMAGE CLAIMS
+// DAMAGE CLAIMS -- orphaned duplicate removed (canonical is the
+// panel-damage IIFE on the sd_damage key, feeding dmg-open /
+// dmg-total-cost / dmg-recovered / dmg-ytd and rendering #dmg-list).
+//
+// Removed 2026-09-09. This was a SECOND, COMPLETE damage-claim system on
+// its own sd_damage_claims key: dmgAddClaim, dmgSave, dmgSetFilter,
+// dmgUpdateStatus, dmgDelete and dmgRender, plus the dmgClaims and
+// dmgFilter globals. Every reference to all eight names was inside the
+// block itself -- measured across the whole file, not assumed -- so
+// nothing called it and nothing was broken by its removal.
+//
+// WHY IT WAS DELETED RATHER THAN LEFT DORMANT, which is the part worth
+// keeping: BOTH SYSTEMS WROTE #dmg-list. Wiring up any one of those six
+// would have rendered the orphan's own empty store over the live claim
+// list, and a shop would watch its damage claims vanish on a click. It
+// read four ids the live panel really has (#dmg-job, #dmg-type,
+// #dmg-fault, #dmg-desc) alongside eight that do not exist, so it looked
+// wired enough for someone to finish connecting. A dormant twin that
+// shares an output element is not dormant; it is one onclick away from
+// being live.
+//
+// ONE CORRECTION TO THE OPEN-WORK ROW, checked rather than repeated: it
+// said dmgSetFilter() "looks like it belongs on the panel's filter
+// tabs". #panel-damage has NO filter tabs -- zero .vendor-tab elements
+// -- so that selector matched nothing and the hazard was one step
+// further off than the row implied. The hazard itself was real; the
+// named route into it was not.
+//
+// Same shape and same fix as the TRAINING twin immediately below, and as
+// the NPS twin an earlier session neutralised. Held by
+// tests/stonedesk_damage_no_twin.js.
 // ================================================================
-var dmgClaims=sdLoad('sd_damage_claims',[]);var dmgFilter='all';
-function dmgAddClaim(){document.getElementById('dmg-form').style.display='block';var d=document.getElementById('dmg-date');if(d)d.value=sdLocalToday();}
-function dmgSave(){
-  var cust=((document.getElementById('dmg-cust')||{}).value||'').trim();if(!cust){showToast('Customer required');return;}
-  var claim={id:'DMG'+Date.now(),customer:cust,job:((document.getElementById('dmg-job')||{}).value||'').trim(),date:(document.getElementById('dmg-date')||{}).value||'',type:(document.getElementById('dmg-type')||{}).value||'',fault:(document.getElementById('dmg-fault')||{}).value||'',cost:parseFloat((document.getElementById('dmg-cost')||{}).value)||0,material:((document.getElementById('dmg-mat')||{}).value||'').trim(),assigned:((document.getElementById('dmg-assigned')||{}).value||'').trim(),status:(document.getElementById('dmg-status')||{}).value||'open',description:((document.getElementById('dmg-desc')||{}).value||'').trim(),resolution:((document.getElementById('dmg-resolution')||{}).value||'').trim(),createdAt:new Date().toISOString()};
-  dmgClaims.unshift(claim);sdStore('sd_damage_claims',dmgClaims);document.getElementById('dmg-form').style.display='none';dmgRender();showToast('Claim logged');
-}
-function dmgSetFilter(f,btn){dmgFilter=f;document.querySelectorAll('#panel-damage .vendor-tab').forEach(function(b){b.classList.remove('active');});if(btn)btn.classList.add('active');dmgRender();}
-function dmgUpdateStatus(id,status){var c=dmgClaims.find(function(x){return x.id===id;});if(!c)return;c.status=status;c.updatedAt=new Date().toISOString();sdStore('sd_damage_claims',dmgClaims);dmgRender();showToast('Updated');}
-function dmgDelete(id){if(!confirm('Delete claim?'))return;dmgClaims=dmgClaims.filter(function(x){return x.id!==id;});sdStore('sd_damage_claims',dmgClaims);dmgRender();}
-function dmgRender(){
-  function sv(id,v){var e=document.getElementById(id);if(e)e.textContent=v;}
-  var open=dmgClaims.filter(function(c){return c.status==='open'||c.status==='repair'||c.status==='customer';});
-  var resolved=dmgClaims.filter(function(c){return c.status==='resolved';});
-  var yr=new Date().getFullYear();
-  var ytdCost=dmgClaims.filter(function(c){return c.createdAt&&c.createdAt.startsWith(yr+'');}).reduce(function(s,c){return s+c.cost;},0);
-  sv('dmg-kpi-open',open.length);sv('dmg-kpi-cost',sdFmt(ytdCost));sv('dmg-kpi-pending',dmgClaims.filter(function(c){return c.status==='repair'||c.status==='customer';}).length);sv('dmg-kpi-resolved',resolved.length);
-  var list=dmgFilter==='all'?dmgClaims:dmgClaims.filter(function(c){return dmgFilter==='resolved'?c.status==='resolved':c.status===dmgFilter||dmgFilter==='open'&&(c.status==='open'||c.status==='repair'||c.status==='customer');});
-  var sc={open:'#dc2626',repair:'#ca8a04',customer:'#0891b2',resolved:'#16a34a',denied:'#6b7280'};
-  var el=document.getElementById('dmg-list');if(!el)return;
-  el.innerHTML=list.length?list.map(function(c){return '<div style="background:var(--card);border:1px solid var(--border);border-left:4px solid '+(sc[c.status]||'#6b7280')+';border-radius:12px;padding:16px;margin-bottom:12px">'+
-    '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;flex-wrap:wrap">'+
-      '<div style="flex:1"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">'+
-        '<span style="font-size:14px;font-weight:700">'+escHtml(c.customer)+'</span>'+
-        (c.job?'<span style="font-size:11px;color:var(--muted)">'+escHtml(c.job)+'</span>':'')+
-        '<span style="font-size:10px;font-weight:700;background:'+(sc[c.status]||'#6b7280')+';color:#fff;padding:2px 8px;border-radius:100px">'+c.status+'</span>'+
-      '</div>'+
-      '<div style="font-size:12px;color:var(--muted);margin-bottom:4px">'+escHtml(c.type)+(c.fault?' · Fault: '+c.fault:'')+(c.cost?' · Est: '+sdFmt(c.cost):'')+'</div>'+
-      (c.description?'<div style="font-size:12px;line-height:1.6;margin-bottom:4px">'+escHtml(c.description)+'</div>':'')+
-      (c.resolution?'<div style="font-size:12px;color:#16a34a;font-weight:600">Resolution: '+escHtml(c.resolution)+'</div>':'')+
-    '</div>'+
-    '<div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">'+
-      '<select onchange="dmgUpdateStatus(\''+escAttrJs(c.id)+'\',this.value)" style="font-size:11px;padding:4px 8px;border:1px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);outline:none">'+
-        ['open','repair','customer','resolved','denied'].map(function(s){return '<option value="'+escHtml(s)+'"'+(s===c.status?' selected':'')+'>'+escHtml(s)+'</option>';}).join('')+
-      '</select>'+
-      '<button onclick="dmgDelete(\''+escAttrJs(c.id)+'\')" style="padding:4px 8px;background:rgba(220,38,38,0.1);color:#dc2626;border:none;border-radius:6px;font-size:11px;cursor:pointer">Delete</button>'+
-    '</div></div></div>';}).join(''):'<div style="text-align:center;color:var(--muted);padding:40px">No damage claims. Keep it that way.</div>';
-}
 
 // ================================================================
 // TRAINING & CERTIFICATIONS — orphaned duplicate removed (canonical is
