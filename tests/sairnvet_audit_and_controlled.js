@@ -102,7 +102,23 @@ function build(opts) {
   const api = new Function(
     'localStorage', 'document', 'showToast', 'console',
     fn('function escHtml(s){') + '\n' +
-    'var _svKeyVerified = {};\nvar _svUnreadable = {};\n' +
+    // ── THE HARNESS MUST CARRY WHAT THE SLICED FUNCTIONS CALL (2026-09-10) ──
+    // getControlledLog() was wrapped in svSeedStore() by the seed-leak sweep,
+    // and this sandbox did not include it, so every test in this file died on
+    // `ReferenceError: svSeedStore is not defined` before asserting anything.
+    //
+    // TAKEN FROM THE FILE, NOT STUBBED. A stub returning `saver(rows)` would
+    // pass and would silently stop testing the suppression: the real one sets
+    // svSyncSuppressed and clears it in a finally, and that is precisely the
+    // behaviour a seeding test should be exercising. Same reason st() is
+    // sliced rather than faked.
+    //
+    // svSyncSuppressed is declared here because the sandbox has no module
+    // scope to hoist it from -- svSeedStore reads and writes it, and without a
+    // binding the first assignment would throw in strict-mode-adjacent Function
+    // bodies and leak to the global otherwise.
+    'var _svKeyVerified = {};\nvar _svUnreadable = {};\nvar svSyncSuppressed = false;\n' +
+    fn('function svSeedStore(saver, rows){') + '\n' +
     fn('function st(key,data){') + '\n' +
     fn('function svIntegrityScan(){') + '\n' +
     fn('function svBlockForCorruptStore(keys){') + '\n' +
