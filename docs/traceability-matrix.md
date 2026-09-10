@@ -84,6 +84,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~The report-only suite hook runs after every `git push`~~ &mdash; **it ran after every BASH TOOL CALL, because `"if": "Bash(git push*)"` is not a field a Claude Code hook has** | **FIXED 2026-09-09 (Hank)** &mdash; root cause found by watching processes, not by reading | `tests/run_all_tests_hook_gate_probe.py` |
 | **A RELEASED claim gave no signal, so `check` said CLEAR on work another session had finished minutes earlier &mdash; twice in one day, in both directions** | **FIXED 2026-09-10 (Hank)** | `tests/claims/run_released_visibility_probe.py` |
 | **SOUP register &mdash; every third-party component, with a real stated reason it is trusted** | **BUILT 2026-09-10 (Hank)**, and it is a standing practice, not a one-off. **Widened 2026-09-10 (Hank) after its own checker reported CLEAN over an unregistered component** | `tests/run_soup_register_probe.py` |
+| **The `NOT RUN` label on 29 cleanup SQL files is a claim about the FILE, not the database &mdash; and the checker written to doubt it shipped its own false CLEAN** | **BUILT 2026-09-10 (CC)** &mdash; `b3e92a8d`, `tools/cleanup_residue_check.py` + `tests/cleanup_residue_probe.py`. **Answers 0 of 29 today** and says so | `tests/cleanup_residue_probe.py` |
 | **A mutation arm that had stopped proving anything, reported under a headline that pointed the reader the wrong way** | **FIXED 2026-09-10 (Fourth), `8366aa89`** — all 15 arms of `tests/sairndental_outbound_queue_probe.py` bite again | `tests/sairndental_outbound_queue_probe.py` |
 | ~~The `employees` read refused THREE different facts with one sentence, and the sentence blamed the role~~ | **FIXED AND LIVE-VERIFIED 2026-09-10 (Fourth), `6213c339`** | `api/sd-data-employees-refusal.test.js` |
 | **Criticality tiering -- the third standing discipline, and the one nothing on this platform had** | **BUILT 2026-09-10 (Fourth), `0cc22581`** -- `docs/CRITICALITY-TIERS.md`, checked by `tools/criticality_tier_check.py`, held by `tests/run_criticality_tier_probe.py` | `tests/run_criticality_tier_probe.py` |
@@ -159,6 +160,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **ENGINE CHANGE, PRIORITIZED: a per-jurisdiction WEEKEND-ROLLOVER flag — its own dedicated pass, not a rush job to unblock one state** | **✅ BUILT AND LIVE 2026-09-01 (Hank), `cc68b87`. Deployment `dpl_6aDUvL8W5BEGAstXFT6SXFCCbZZd` READY in production, confirmed against the Vercel API rather than inferred from a clean push.** `weekend_ | `api/_lib/deadline-weekend-days.test.js` |
 | `us-federal` answer-to-complaint row grants an FRCP 6(d) extension for service of PROCESS | **CLOSED — fixed in `5d7330b`, verified 2026-09-03 (Hank) by reading the code, not the row.** `frcp-12a1Ai-answer-after-service` carries no `service_extension`, and `api/_lib/deadline-us-federal-servi | `api/_lib/deadline-us-federal-service-extension.test.js` |
 
+### sairnmechanical
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| ~~**REVIEWED: the cheque number is NOT a safe key, and the SQL has not run yet**~~ &mdash; **CLOSED: check_id is a minted per-record id, the number stays data, and a repeat is REPORTED** | **CLOSED 2026-09-10 (CC)**, `bcee0215`. Built `6ddb8154` (CC), independently reviewed the same day (Hank), fixed by the author on the reviewer's finding | `tests/mech_check_register_identity.js` |
+
 ### sairnroofing
 
 | Requirement | Status | Proved by |
@@ -196,7 +203,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**80 of 271 test files are traced to a stated requirement. 191 are not.**
+**82 of 271 test files are traced to a stated requirement. 189 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -322,7 +329,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/base_prompt_single_source.js`
 - `tests/claims/run_matcher_probe.py`
 - `tests/claims/run_push_verify_probe.py`
-- `tests/cleanup_residue_probe.py`
 - `tests/composite_context.js`
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`
@@ -337,7 +343,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/intake_link_no_credential.js`
 - `tests/intake_no_false_success.js`
 - `tests/invoice_panel_kpis.js`
-- `tests/mech_check_register_identity.js`
 - `tests/nesting_dxf.js`
 - `tests/prompt_budget.js`
 - `tests/push_gate/check4_probe.py`
