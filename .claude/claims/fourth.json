@@ -640,8 +640,8 @@
       "task": "dnt_procedure_types write-validation cdt effective window",
       "claimed_at": "2026-09-09T14:16:07Z",
       "claimed_at_epoch": 1788963367.3604164,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T13:11:45Z"
     }
   ]
 }
