@@ -1055,23 +1055,52 @@ async function main() {
     });
   }
 
-  // ── 8. RECORDED, NOT FIXED: write has no financial role gate ─────────────
-  //      dnt_payments is READ-gated to owner/frontdesk. The WRITE path gates
-  //      only dnt_providers. So a provider can write a payment they are not
-  //      allowed to read back. Asserted as it IS rather than as it should be,
-  //      so the asymmetry is visible and a deliberate change to it fails here
-  //      instead of surprising someone. See the open-work index row.
-  await test('a provider CAN write a payment it cannot read -- asserted as-is, see the index row', async () => {
+  // ── 8. THE ASYMMETRY IS CLOSED (2026-09-10) ────────────────────────
+  //      This test used to assert the DEFECT: dnt_payments was READ-gated to
+  //      owner/frontdesk while the write path gated only dnt_providers, so a
+  //      provider could write a payment they could not read back. It was
+  //      asserted as-is, on purpose, so that changing it would fail here rather
+  //      than surprise someone -- and it did exactly that when the gate landed.
+  //      UPDATED, NOT RELAXED, which is what its own message asked for.
+  //
+  //      BOTH HALVES ARE STILL ASSERTED. Flipping the write to 403 and deleting
+  //      the read assertion would leave the pair untested and a future
+  //      one-sided change invisible again, which is the whole failure this test
+  //      was written around.
+  await test('a provider can NEITHER write NOR read a payment -- the tier is symmetric now', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
     await handler(mockReq({ action: 'write', resource: 'dnt_payments', payload: { id: 'PM-9', patient_id: 'PT-1', amount: 125 } }, tokenFor('provider')), res);
-    assert.strictEqual(res.statusCode, 200, 'if this is now 403 the write-side role gate was added -- update the index row');
-    assert.ok(wrote);
+    assert.strictEqual(res.statusCode, 403, 'the write side is gated now -- api/sd-data.js DNT_FINANCIAL_RESOURCES on the write branch');
+    assert.strictEqual(res.body && res.body.error && res.body.error.code, 'ROLE_NOT_PERMITTED');
+    assert.strictEqual(wrote, false, 'REFUSED BEFORE THE STORE, not after -- a 403 that already wrote is not a gate');
     const readRes = mockRes();
     const readHandler = loadHandler(NO_FETCH);
     await readHandler(mockReq({ action: 'read', resource: 'dnt_payments' }, tokenFor('provider')), readRes);
-    assert.strictEqual(readRes.statusCode, 403, 'the read side is the gated half');
+    assert.strictEqual(readRes.statusCode, 403, 'the read side was always the gated half and still is');
+  });
+
+  // NEGATIVE CONTROL. A gate that refuses everyone is not a tier, and a test
+  // that only proves the refusal cannot tell the two apart.
+  await test('CONTROL: front desk can still write a payment', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_payments', payload: { id: 'PM-10', patient_id: 'PT-1', amount: 125 } }, tokenFor('frontdesk')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(wrote);
+  });
+
+  // CONTROL: a NON-financial resource is untouched by the new gate, so this is
+  // a tier and not a blanket provider write ban.
+  await test('CONTROL: a provider can still write a non-financial resource', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_appointments', payload: { id: 'AP-1', patient_id: 'PT-1' } }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, 'dnt_appointments is not in DNT_FINANCIAL_RESOURCES');
+    assert.ok(wrote);
   });
 
   console.log('\n' + passed + ' / ' + total + ' passed');

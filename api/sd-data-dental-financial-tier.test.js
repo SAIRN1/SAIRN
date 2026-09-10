@@ -174,19 +174,38 @@ async function main() {
     assert.strictEqual(res.body.error.code, 'NO_SESSION');
   });
 
-  // --- 5. write is UNCHANGED this pass, and the test says so out loud ---
-  // Not an aspiration: this asserts the disclosed asymmetry really is what
-  // shipped, so nobody later reads the financial tier as a complete
-  // authorisation model. If write is narrowed in a future pass, THIS TEST
-  // SHOULD FAIL and be updated deliberately.
-  await test('DISCLOSED ASYMMETRY: a provider can still WRITE a financial resource (read-scope-only pass)', async () => {
+  // --- 5. THE DISCLOSED ASYMMETRY IS CLOSED (2026-09-10) ---
+  // This arm used to assert that a provider could still WRITE a financial
+  // resource, so nobody would read the read-only tier as a complete
+  // authorisation model, and it said that if write were ever narrowed THIS TEST
+  // SHOULD FAIL and be updated deliberately. It failed; this is that update.
+  // The financial tier is now checked on the write branch of api/sd-data.js
+  // with the SAME list and the SAME roles as the read branch.
+  await test('a provider is refused a financial WRITE, same list and roles as the read gate', async () => {
+    let reached = false;
     const handler = loadHandler(async function () {
+      reached = true;
       return { ok: true, status: 200, json: async () => [{ data: { id: 'RV1', amount: 5 } }] };
     });
     const res = mockRes();
     await handler(mockReq({ action: 'write', resource: 'dnt_revenue', payload: { id: 'RV1', amount: 5 } }, tokenFor('provider')), res);
-    assert.strictEqual(res.statusCode, 200, 'write is deliberately unchanged this pass -- got ' + res.statusCode);
+    assert.strictEqual(res.statusCode, 403, 'financial write is gated now -- got ' + res.statusCode);
+    assert.strictEqual(res.body.error.code, 'ROLE_NOT_PERMITTED');
+    assert.strictEqual(reached, false, 'refused BEFORE the store -- a 403 that already wrote is not a gate');
+  });
+
+  // NEGATIVE CONTROL: the gate is a tier, not a refusal of everyone.
+  await test('CONTROL: the owner can still WRITE the same financial resource', async () => {
+    let reached = false;
+    const handler = loadHandler(async function () {
+      reached = true;
+      return { ok: true, status: 200, json: async () => [{ data: { id: 'RV1', amount: 5 } }] };
+    });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_revenue', payload: { id: 'RV1', amount: 5 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200);
     assert.strictEqual(res.body.ok, true);
+    assert.strictEqual(reached, true);
   });
 
   console.log('\n' + passed + '/' + total + ' passed');

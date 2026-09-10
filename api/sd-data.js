@@ -9707,6 +9707,37 @@ module.exports = async (req, res) => {
     if (DNT_RESOURCES[resource] && action === 'write') {
       const dntWSess = dntGate(res);
       if (!dntWSess) return;
+      // ── THE FINANCIAL TIER NOW GATES WRITES TOO (2026-09-10) ─────────────
+      // It gated READS only. DNT_FINANCIAL_RESOURCES was checked on the read
+      // branch and NOWHERE on this one, so a `provider` session could POST a
+      // dnt_payments, dnt_charges or dnt_denial row and then take a 403 reading
+      // the same resource back. A role permitted to create a financial record
+      // it may not read is not a tier, and the record it creates is one nobody
+      // in that role can check, correct, or even see is wrong.
+      //
+      // THIS IS THE APP'S OWN STATED POLICY, not a new one. sairndental.html
+      // tells the user, in the product: "A provider's feed carries only their
+      // own patients and NO FINANCIAL DATA." The read gate has enforced that
+      // since 2026-09-04; this half was simply missing.
+      //
+      // SAME LIST AND SAME ROLES AS THE READ GATE, DELIBERATELY. Two lists
+      // would drift, and the drift would be invisible in exactly this
+      // direction again. dnt_txplans and dnt_gfe are on that list for reasons
+      // written where it is declared -- a treatment plan is a priced proposal
+      // and a good faith estimate is a priced document issued under 45 CFR
+      // 149.610 by the people who issue estimates -- so they are gated here for
+      // the same reason they are gated there, rather than carved out silently.
+      //
+      // BEHAVIOUR CHANGE, SAID OUT LOUD. This was found 2026-09-04 and left
+      // unfixed on purpose because it is a behaviour change, not a validation.
+      // What changes: a provider posting one of these now gets 403 instead of
+      // 200. What does not: they could never READ any of them, so no working
+      // provider-facing view is lost -- the write was already producing records
+      // its own author could not open.
+      if (DNT_FINANCIAL_RESOURCES[resource] && !DNT_FINANCIAL_ROLES[dntWSess.role]) {
+        res.status(403).json({ error: { code: 'ROLE_NOT_PERMITTED', message: 'Financial records are limited to the practice owner and front desk' } });
+        return;
+      }
       // PROVIDER REGISTRY IS OWNER-ONLY TO WRITE (2026-08-27). Found while
       // building the link: rProviders/addProvider had no role check at all, so
       // any authenticated role could add or alter the practice's provider roster
