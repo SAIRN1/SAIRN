@@ -662,6 +662,16 @@
       "claimed_at_epoch": 1789049316.8570275,
       "status": "released",
       "released_at": "2026-09-10T14:25:34Z"
+    },
+    {
+      "id": "fourth-1789052399",
+      "session": "fourth",
+      "subject": "guard-seam-tests-blocking-push-gate",
+      "task": "check9",
+      "claimed_at": "2026-09-10T14:59:59Z",
+      "claimed_at_epoch": 1789052399.5306745,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
