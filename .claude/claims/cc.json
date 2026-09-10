@@ -764,6 +764,16 @@
       "claimed_at_epoch": 1789060422.237907,
       "status": "released",
       "released_at": "2026-09-10T17:25:57Z"
+    },
+    {
+      "id": "cc-1789062860",
+      "session": "cc",
+      "subject": "sairnmechanical-five-local-only-collections",
+      "task": "",
+      "claimed_at": "2026-09-10T17:54:20Z",
+      "claimed_at_epoch": 1789062860.0572813,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
