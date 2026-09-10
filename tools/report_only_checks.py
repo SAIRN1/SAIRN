@@ -248,6 +248,16 @@ def hook_main():
     # other hooks here hold.
     if payload and not pushes(cmd):
         return 0
+    # A DENIED PUSH IS NOT A PUSH -- added 2026-09-10, in the same pass that
+    # added it to run_all_tests.py. PostToolUse fires whether or not the
+    # command succeeded, so a push the PRE-tool gate refused still ran the
+    # whole sweep. This repo denies pushes routinely, so that is not an edge
+    # case. Fixed in BOTH copies deliberately: a fix verified on one of two
+    # files that carry the same line is not verified, which is the lesson
+    # tools/sairn_claim_hook.py taught on 2026-09-04.
+    resp = payload.get('tool_response') or {}
+    if isinstance(resp, dict) and resp.get('success') is False:
+        return 0
     findings, unrun = sweep(quiet=True)
     if not findings and not unrun:
         return 0

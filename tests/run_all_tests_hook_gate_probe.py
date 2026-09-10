@@ -160,6 +160,29 @@ print('4. an UNREADABLE payload fails OPEN and runs -- a decision, not an accide
 check('no stdin at all runs the suite', ran('')[0], True)
 check('malformed stdin runs the suite', ran('not json')[0], True)
 
+print('4b. A DENIED PUSH IS NOT A PUSH')
+# PostToolUse fires whether or not the command succeeded. The command gate
+# above was necessary and not sufficient: every push the PRE-tool push gate
+# refused still launched the whole suite, which then commits fixtures on
+# `main` and dirties the tree -- so the denial that was meant to protect the
+# branch is what dirtied it, and the next attempt raced the probe commit and
+# was denied again. Observed 2026-09-10: two concurrent runs at 09:28 and
+# 09:32 with no successful push between them.
+def with_response(cmd, success):
+    return json.dumps({'hook_event_name': 'PostToolUse', 'tool_name': 'Bash',
+                       'tool_input': {'command': cmd},
+                       'tool_response': {'success': success, 'stdout': '', 'stderr': ''}})
+
+
+check('a push whose tool_response says success=false does not run the suite',
+      ran(with_response('git push origin main', False))[0], False)
+check('a push whose tool_response says success=true DOES run it',
+      ran(with_response('git push origin main', True))[0], True)
+check('a push with no tool_response at all still runs it (fail-open)',
+      ran(payload('git push origin main'))[0], True)
+check('and a non-push with success=true is still not a push',
+      ran(with_response('git status', True))[0], False)
+
 print('5. the gate reads the command, not the tool name')
 # A non-Bash tool cannot have pushed anything. Nothing else in the payload
 # should be able to satisfy the gate.
@@ -181,6 +204,16 @@ check('the binary exits 0 on a non-push payload', p.returncode, 0)
 check('the binary prints nothing on a non-push payload', p.stdout.strip(), '')
 # The suite is minutes of work; returning in seconds is proof it did not start.
 check('the binary returns without running the suite (< 20s)', elapsed < 20, True)
+
+print('6b. THE SECOND COPY -- report_only_checks.py carries the same two gates')
+# tools/sairn_claim_hook.py taught this on 2026-09-04: a fix verified on the
+# copy a human invokes is not verified for the one that runs unattended. Both
+# of these are PostToolUse Bash hooks in the same settings block.
+_roc = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'), encoding='utf-8').read()
+check('it imports the same push matcher rather than keeping its own',
+      'pushes(' in _roc, True)
+check('it declines a denied push too',
+      "get('success') is False" in _roc, True)
 
 print('7. `.claude/settings.json` must not carry an `if` on a hook again')
 # The field that never existed. It read as a gate to three sessions.

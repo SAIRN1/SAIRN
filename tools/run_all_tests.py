@@ -237,6 +237,23 @@ def hook_main():
     # call and this is the line to look at.
     if payload and not pushes(cmd):
         return 0
+    # ── A DENIED PUSH IS NOT A PUSH -- added 2026-09-10, hours after the gate
+    # above. The command gate was necessary and not sufficient: PostToolUse
+    # fires whether or not the command succeeded, so every push the PRE-tool
+    # push gate DENIED still launched the whole suite. Observed the same day --
+    # two concurrent runs at 09:28 and 09:32 with no successful push between
+    # them, and this repo denies pushes routinely (seed drift, pre-auth
+    # disclosure, a probe's own fixture). The suite then commits fixtures on
+    # `main` and mutates tracked files, so the denial that was supposed to
+    # protect the branch is what dirtied it, and the next push attempt raced
+    # the probe commit and was denied again. A loop that feeds itself.
+    #
+    # tools/deploy_verify_notify.py:61 has had this guard from the start, for
+    # the same reason stated there: "a failed push has nothing new to verify
+    # against". Second time today that file was already right.
+    resp = payload.get('tool_response') or {}
+    if isinstance(resp, dict) and resp.get('success') is False:
+        return 0
     # A second concurrent run does not queue -- it declines and SAYS SO. Running
     # it would corrupt the first one's snapshots (see the LOCK block above), and
     # staying silent about declining would make "the suite ran after that push"
