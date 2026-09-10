@@ -798,6 +798,16 @@
       "claimed_at_epoch": 1789050231.9426637,
       "status": "released",
       "released_at": "2026-09-10T15:34:06Z"
+    },
+    {
+      "id": "cody-1789054591",
+      "session": "cody",
+      "subject": "promote-third-batch",
+      "task": "report-only checkers strict-args dead-function stale-snapshot ai-fact-scan literal-drift orphan-register",
+      "claimed_at": "2026-09-10T15:36:31Z",
+      "claimed_at_epoch": 1789054591.8842573,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
