@@ -88,9 +88,21 @@ if os.path.exists(LOCK):
     sys.exit(3)
 
 ORIGINAL = io.open(TARGET, encoding='utf-8', newline='').read()
-if NEEDLE not in ORIGINAL:
-    print('SKIPPED: the fixture anchor is not in api/legal-deadlines.js -- either the')
-    print('field moved or it is already broken. Read it before trusting this probe.')
+# ── EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10) ─────────────────────────
+# This checked `NEEDLE not in ORIGINAL`, which catches an anchor that has GONE
+# and says nothing about one that matches SEVERAL places -- `.replace(..., 1)`
+# below would then delete whichever came first and arm 2 would be planting a
+# break nobody chose. Written the day after arm 15 of
+# tests/sairndental_outbound_queue_probe.py was found in exactly that state,
+# and it had the same hole: an anchor is a string match against code somebody
+# else keeps editing, so going ambiguous is how it AGES, not an accident.
+_anchor_hits = ORIGINAL.count(NEEDLE)
+if _anchor_hits != 1:
+    print('SKIPPED: the fixture anchor matches %d places in api/legal-deadlines.js, '
+          'not 1.' % _anchor_hits)
+    print('At 0 the field moved or is already broken; above 1 this probe would plant')
+    print('its break in whichever came first. Nothing about check 9 was verified --')
+    print('read the file and widen NEEDLE until it is unique.')
     sys.exit(3)
 
 try:

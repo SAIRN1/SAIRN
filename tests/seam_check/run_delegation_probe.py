@@ -82,8 +82,14 @@ results = {}
 
 # ── ARM 1: the delegated dependency set is live ────────────────────────────
 src = read(EP)
-assert 'warn_days: gateWarn' in src, \
-    'fixture invalid: the canAssign call site does not forward warn_days today'
+# EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10) -- see the note on
+# anchor_once() in tests/push_gate/check7_probe.py. `in` catches an anchor that
+# has GONE and misses one that has become AMBIGUOUS, and .replace(..., 1) then
+# plants in whichever came first. An anchor is a string match against code
+# somebody else keeps editing, so going ambiguous is how it ages.
+_n = src.count(', warn_days: gateWarn }')
+assert _n == 1, ('fixture invalid: the canAssign anchor matches %d places in %s, '
+                 'not 1 -- widen it rather than letting replace() pick' % (_n, EP))
 write(EP, src.replace(', warn_days: gateWarn }', ' }', 1))
 rc, out = tool()
 named = [l.strip() for l in out.splitlines() if 'warn_days' in l]
@@ -97,7 +103,10 @@ assert clean(EP), 'ARM 1 restore failed'
 
 # ── ARM 2: an unreadable delegate PROPAGATES, it does not pass ─────────────
 lib = read(LIB)
-assert 'function evaluateSubcontractor(input) {' in lib, 'fixture invalid: delegate signature moved'
+_n2 = lib.count('function evaluateSubcontractor(input) {')
+assert _n2 == 1, ('fixture invalid: the delegate signature matches %d places in %s, '
+                  'not 1 -- moved, or duplicated; either way this arm would be '
+                  'planting somewhere nobody chose' % (_n2, LIB))
 write(LIB, lib.replace('function evaluateSubcontractor(input) {',
                        'function evaluateSubcontractor({ subcontractor, today, warn_days, required }) {\n  const input = { subcontractor, today, warn_days, required };', 1))
 rc2, out2 = tool()

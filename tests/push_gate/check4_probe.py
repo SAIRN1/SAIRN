@@ -97,6 +97,28 @@ os.remove(p)
 # ---- ARM 2: PLANTED seam violation must block ----
 path = os.path.join(REPO, EP)
 src = open(path, encoding='utf-8').read()
+# ── EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10) ─────────────────────────
+# `assert patched != src` catches an anchor that has DISAPPEARED and says
+# nothing about one that now matches SEVERAL places -- re.sub(count=1) would
+# quietly mutate whichever came first, and the arm would then be asserting
+# something about a line nobody chose. That is not hypothetical: arm 15 of
+# tests/sairndental_outbound_queue_probe.py went ambiguous the day a second
+# SAIRNdental write branch landed with an identical header, and it only
+# survived as a real guard because it counted.
+#
+# An anchor is a string match against code somebody else keeps editing, so
+# going ambiguous is how it AGES rather than an accident.
+#
+# COUNTED WITHOUT THE SURROUNDING NEWLINES, and the first version of this line
+# was vacuous for the one case that matters most. `\n...\n` cannot match two
+# ADJACENT copies: the trailing newline of the first is the leading newline of
+# the second, and re.findall does not return overlapping matches, so two
+# identical lines in a row counted as ONE. A control that duplicated the line
+# caught it -- the assertion was already the shape it exists to forbid.
+_hits = len(re.findall(r'^\s*service_methods\s*:[^\n]*$', src, re.M))
+assert _hits == 1, ('fixture invalid: the anchor matches %d places in %s, not 1 -- '
+                    'widen it until it is unique rather than letting re.sub pick'
+                    % (_hits, EP))
 patched = re.sub(r'\n\s*service_methods\s*:[^\n]*\n', '\n', src, count=1)
 assert patched != src, 'fixture invalid'
 open(path, 'w', encoding='utf-8').write(patched)

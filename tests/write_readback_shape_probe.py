@@ -189,7 +189,16 @@ SD = os.path.join(REPO, 'stonedesk.html')
 orig = io.open(SD, 'rb').read()
 try:
     anchor = b"function sdData("
-    assert anchor in orig, 'probe fixture invalid -- sdData() changed shape'
+    # EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10) -- see the note on
+    # anchor_once() in tests/push_gate/check7_probe.py. `in` catches an anchor
+    # that has GONE and misses one that has become AMBIGUOUS; .replace(..., 1)
+    # would then plant the fixture in whichever came first, in a 2MB file where
+    # nobody would notice which. An anchor is a string match against code
+    # somebody else keeps editing, so going ambiguous is how it ages.
+    _n = orig.count(anchor)
+    assert _n == 1, ('probe fixture invalid -- the sdData() anchor matches %d places '
+                     'in stonedesk.html, not 1; widen it rather than letting the '
+                     'probe pick' % _n)
     io.open(SD, 'wb').write(orig.replace(
         anchor, b"function zzProbeWrite(r){return sdData('write','zz_probe_res',r);}\n"
                 b"zzProbeWrite(1);\nsdData('write','zz_probe_res2',{});\n" + anchor, 1))

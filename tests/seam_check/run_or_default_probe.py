@@ -74,7 +74,18 @@ lib_orig = io.open(LIB, 'rb').read()
 ep_orig = io.open(EP, 'rb').read()
 try:
     marker = b"  if (!isMinorDob(r.dob)) return null;"
-    assert marker in lib_orig, 'probe fixture invalid -- guardianProblem changed shape'
+    # EXACTLY ONCE, NOT MERELY PRESENT (2026-09-10). `in` catches an anchor
+    # that has GONE and says nothing about one that now matches several
+    # places -- .replace(..., 1) would then plant in whichever came first
+    # and the arm would assert something about a line nobody chose. An
+    # anchor is a string match against code somebody else keeps editing, so
+    # going ambiguous is how it AGES; arm 15 of
+    # tests/sairndental_outbound_queue_probe.py did exactly that and survived
+    # as a real guard only because it counted.
+    _n = lib_orig.count(marker)
+    assert _n == 1, ('probe fixture invalid -- the guardianProblem anchor matches '
+                     '%d places, not 1; widen it rather than letting the probe pick'
+                     % _n)
     planted = lib_orig.replace(
         marker,
         b"  if (r.zz_probe_field) return 'probe';\n" + marker, 1)

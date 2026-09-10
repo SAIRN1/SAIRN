@@ -84,10 +84,34 @@ def dry_push():
 path = os.path.join(REPO, EP)
 original = open(path, encoding='utf-8').read()
 
+
+def anchor_once(hay, needle, what):
+    """Refuse an anchor that does not match EXACTLY ONCE (2026-09-10).
+
+    Arm 1 asserted nothing at all -- a `.replace(x, y, 1)` whose x had gone
+    would have committed the file UNCHANGED and reported that a clean change
+    was allowed, which is true of any file and proves nothing. Arm 2 used
+    .index(), which throws when the anchor is gone and silently takes the FIRST
+    of several when it is ambiguous.
+
+    Both directions matter and only one of them was covered. An anchor is a
+    string match against code somebody else keeps editing, so going ambiguous
+    is how it AGES rather than an accident: arm 15 of
+    tests/sairndental_outbound_queue_probe.py went ambiguous the day a second
+    SAIRNdental write branch landed with an identical header, and it survived
+    as a real guard only because it counted.
+    """
+    n = hay.count(needle)
+    assert n == 1, ('fixture invalid: %s matches %d places in %s, not 1 -- widen '
+                    'the anchor until it is unique rather than letting the probe '
+                    'pick one' % (what, n, EP))
+    return needle
+
 try:
     # ── ARM 1: a CLEAN change to the same endpoint must be allowed ──────────
     # Not a change to an unrelated file: the arm has to prove the check let a
     # touched endpoint through, or it proves only that the scope filter works.
+    anchor_once(original, 'module.exports = async (req, res) => {', 'the handler opening')
     open(path, 'w', encoding='utf-8', newline='').write(
         original.replace('module.exports = async (req, res) => {',
                          '// probe: a comment, and nothing else\nmodule.exports = async (req, res) => {', 1))
@@ -101,6 +125,8 @@ try:
     # The exact defect, not an invented one: move the envelope gate back above
     # validateLicenseKey, which is what all fifteen looked like before
     # 2026-09-08.
+    anchor_once(original, '  let body = req.body;', 'the envelope gate opening')
+    anchor_once(original, '  let lic;\n  try {', 'the licence-validation opening')
     body_at = original.index('  let body = req.body;')
     body_end = original.index('\n  }\n', original.index('.indexOf(action)', body_at)) + len('\n  }\n')
     block = original[body_at:body_end]
