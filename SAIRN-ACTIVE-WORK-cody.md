@@ -1673,3 +1673,51 @@ suite rather than after.
 patch that made the refresh toast honest. Rewritten as a script file. The rule
 is now unambiguous for me -- **any patch containing quotes or escapes goes in a
 file, never a heredoc.**
+
+## 2026-09-10 (Cody) -- fourth batch: 15 -> 16, and one checker held back on purpose
+
+CLAIMED and released: `promote-fourth-batch`. `5abfcdba`.
+
+`write_without_readback_check.py` is clean on real code (0 findings, 0
+could-not-tell) and goes in. **Its sibling does not, and that is the point.**
+
+**`local_only_collection_check.py`'s exit code was wrong and is fixed.** It
+returned **1** for a real finding AND for "I could not read this app". On
+2026-09-10 it reported `local-only: 0` in **all eighteen apps** and still
+exited 1 -- a checker announcing a failure while reporting that nothing is
+wrong. Wired as it stood, the registry would have filed *"sairncash.html could
+not be read"* as **a defect in SAIRNcash**. Now 3 for could-not-tell, 1 only
+for a real finding, plus a canonical `SKIPPED:` line so the runner quotes the
+reason rather than a bare "SKIPPED".
+
+**Two of CC's probe arms asserted the literal 1 for a could-not-tell.** Their
+NAMES said *"exits non-zero"* -- which is their purpose, and which 3 still
+satisfies; the literal 1 was written when 1 was the only non-zero code the tool
+had. They now pin **3** while the existing arm pins **1** for a real finding.
+That is **strictly stronger** than before: the two states can no longer be
+confused in either direction. I did not relax an assertion to get past a red.
+
+### The part worth keeping: I tried the third option and reverted it
+
+Those two apps report could-not-tell, so wiring the checker means a notice on
+**every push**. Hand-checked: every `localStorage.setItem` in `sairncash.html`
+and `sairnroofing.html` is device state -- device id, subscription, trial,
+usage counter, licence fingerprint. **There is genuinely nothing to find, and
+the tool cannot prove it.**
+
+Earlier today, faced with the same choice on `panel_nesting_check`, the right
+answer was to teach the tool the real convention. **Here it was not.**
+Classifying those five keys as device state made both files resolve and the
+notice vanish -- and **broke two arms of CC's `local_only_shape_probe.py`**.
+Reverted.
+
+**Changing a classifier to silence a notice is how a checker starts lying.**
+The difference from the panel_nesting case is that there I taught the tool
+something true about a convention it did not know; here I would have been
+widening a device-state list to make an inconvenient output go away, in
+somebody else's tool, against their fixtures. Same-looking action, opposite
+character -- and the probe is what told me which one it was.
+
+Held back with the precondition recorded in `NOT_PROMOTED`, printed by
+`--list`: promote it when it can tell **absence** from **blindness**. Same
+standing as `waf_rule_check.py`.
