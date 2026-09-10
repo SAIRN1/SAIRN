@@ -46,6 +46,12 @@ function test(name, fn) {
 function section(t) { console.log('--- ' + t + ' ---'); }
 
 // Top-level functions here are 0-indented and terminated by a bare `}`.
+// The single place this file splits a line out of the source. Repeating a
+// regex literal at each call site is how one of them ends up wrong.
+function firstLine(sig) {
+  return SRC.slice(SRC.indexOf(sig)).split(/\r?\n/)[0];
+}
+
 function grab(sig) {
   const i = SRC.indexOf(sig);
   assert.ok(i > 0, sig + ' not found in ' + FILE);
@@ -157,6 +163,17 @@ function pushCtx(result) {
   const ctx = makeCtx();
   ctx.sdnData = () => Promise.resolve(result);
   ctx.Promise = Promise;
+  // dntPushOne gained a TIMEOUT and two sentinels on 2026-09-10, when fault
+  // injection found that a dropped socket and a hang both produced silence.
+  // The harness has to supply what the real function now needs: omitting
+  // setTimeout made every arm below CRASH rather than fail, which reads as a
+  // broken suite instead of a missing dependency -- and a crash after the last
+  // printed `ok` is easy to mistake for a pass.
+  ctx.setTimeout = setTimeout;
+  ['var DNT_PUSH_TIMEOUT =', 'var DNT_PUSH_REJECTED =',
+   'var DNT_PUSH_TIMEOUT_MS ='].forEach((sig) => {
+    vm.runInContext(firstLine(sig), ctx);
+  });
   vm.runInContext(grab('function dntPushOne('), ctx);
   return ctx;
 }

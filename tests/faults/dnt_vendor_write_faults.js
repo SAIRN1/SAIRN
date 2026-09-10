@@ -27,7 +27,9 @@ const K = require('./faultkit');
 const assert = K.assert;
 
 const FILE = 'sairndental.html';
-const SIGS = ['var DNT_UNCONFIRMED_KEY=', 'function dntUnconfirmed(',
+const SIGS = ['var DNT_UNCONFIRMED_KEY=', 'var DNT_PUSH_TIMEOUT =',
+              'var DNT_PUSH_REJECTED =', 'var DNT_PUSH_TIMEOUT_MS =',
+              'function dntUnconfirmed(',
               'function dntMarkUnconfirmed(', 'function dntIsUnconfirmed(',
               'function dntVendorSaveToast(', 'function dntPushOne('];
 
@@ -56,87 +58,115 @@ test('a refused write: the user is told, and the key is held', async () => {
 
 section('THE DROPPED SOCKET -- a rejection, not a null');
 
-test('dntPushOne REJECTS when the transport does', async () => {
-  // Establishing the shape before asserting anything about the caller: this is
-  // what the world does, and the question is what the app does with it.
-  const ctx = world({ transport: 'throw' });
-  const out = await K.within(2000, ctx.dntPushOne(
-    'dnt_vendor_pricing_rules', { id: 'default' }, 'dnt_vendor_pricing_rules'));
-  assert.strictEqual(out.settled, true, 'it hung instead of rejecting');
-  assert.strictEqual(out.rejected, true,
-    'a dropped socket resolved instead of rejecting -- the caller would treat '
-    + 'it as a successful write');
-});
+test('dntPushOne does NOT reject -- it converts the drop into a refusal',
+  async () => {
+    // INVERTED with the fix. This arm established the raw shape: the transport
+    // REJECTS, and a rejection never reaches a `.then(ok => ...)`. That was
+    // true of dntPushOne too, so two callers that attach no handler at all
+    // (dnt_supplies, dnt_vendor_orders) produced UNHANDLED REJECTIONS as well
+    // as silence.
+    //
+    // It now settles to `null` -- the one shape every caller already
+    // understands. Asserting "does not reject" is the load-bearing half: a
+    // caller cannot be blind to a value it is handed.
+    const ctx = world({ transport: 'throw' });
+    const out = await K.within(2000, ctx.dntPushOne(
+      'dnt_vendor_pricing_rules', { id: 'default' }, 'dnt_vendor_pricing_rules'));
+    assert.strictEqual(out.settled, true, 'it hung instead of settling');
+    assert.ok(!out.rejected,
+      'a dropped socket still rejects, so a .then-only caller sees nothing');
+    assert.strictEqual(out.value, null, 'the drop did not arrive as a refusal');
+  });
 
-test('a dropped socket does NOT leave the key silently confirmed', async () => {
-  // THE REAL QUESTION. On a rejection the `.then` never runs, so neither the
-  // mark-unconfirmed branch NOR the clear-it branch executes. The key must not
-  // end up looking confirmed, because hydration would then overwrite a change
-  // the server never took -- which is the exact defect this path was fixed for
-  // on 2026-09-10, arriving through a different door.
-  const ctx = world({ transport: 'throw' });
-  try {
+test('an unkeyed caller survives a drop too -- no unhandled rejection',
+  async () => {
+    // dnt_supplies and dnt_vendor_orders call dntPushOne and attach NOTHING.
+    // Before the fix that was an unhandled rejection on every dropped
+    // connection; now it is a resolved null they are free to ignore.
+    const ctx = world({ transport: 'throw' });
+    const out = await K.within(2000, ctx.dntPushOne('dnt_supplies', { id: 'x' }));
+    assert.strictEqual(out.settled, true);
+    assert.ok(!out.rejected, 'an unkeyed caller still gets an unhandled rejection');
+    assert.strictEqual(out.value, null);
+  });
+
+test('a dropped socket leaves the key UNCONFIRMED, so hydration cannot overwrite',
+  async () => {
+    // Also inverted. Before the fix neither branch ran on a rejection, so the
+    // key kept whatever state it had -- which for a first edit is "confirmed",
+    // and hydration was then free to replace a change the server never took.
+    const ctx = world({ transport: 'throw' });
     await ctx.dntPushOne('dnt_vendor_contacts', { id: 'default' },
                          'dnt_vendor_contacts');
-  } catch (e) { /* expected */ }
-  assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_contacts'), false,
-    'flagged unconfirmed on a rejection -- fine, but assert the real behaviour');
-});
-
-test('...and the user is NOT told anything at all -- REPORTED, not asserted clean',
-  async () => {
-    // A rejection skips the caller's .then(ok => dntVendorSaveToast(...)), so
-    // no toast fires: the user clicks Save on a dropped connection and sees
-    // NOTHING. That is a genuine gap and this arm exists to state it rather
-    // than to pass quietly. It is asserted as the CURRENT behaviour so the day
-    // somebody adds a .catch, this arm goes red and gets updated deliberately
-    // instead of the fix landing unnoticed.
-    const ctx = world({ transport: 'throw' });
-    let toasted = false;
-    try {
-      await ctx.dntPushOne('dnt_vendor_contacts', { id: 'default' },
-                           'dnt_vendor_contacts')
-        .then((ok) => { toasted = true; ctx.dntVendorSaveToast(ok, 'saved'); });
-    } catch (e) { /* the rejection the caller does not catch */ }
-    assert.strictEqual(toasted, false,
-      'a .catch has been added -- GOOD. Update this arm to assert the refusal '
-      + 'message instead of the silence.');
-    assert.strictEqual(ctx._state.toasts.length, 0,
-      'a toast fired on a rejection; this arm is out of date');
+    assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_contacts'), true,
+      'a dropped socket left the key confirmed');
   });
 
 section('THE HANG -- a gateway timeout with no response');
 
-test('a hung write never settles, so no toast can fire', async () => {
-  const ctx = world({ transport: 'hang' });
-  const out = await K.within(600, ctx.dntPushOne(
-    'dnt_vendor_pricing_rules', { id: 'default' }, 'dnt_vendor_pricing_rules'));
-  assert.strictEqual(out.settled, false, 'the hang resolved -- fixture is wrong');
-  assert.strictEqual(ctx._state.toasts.length, 0);
-  // Same class as the rejection above and stated for the same reason: the app
-  // has no timeout on this path, so a hung connection is indistinguishable
-  // from a user who has not clicked yet.
+test('a hung write TIMES OUT into a refusal instead of never settling',
+  async () => {
+    // ALSO INVERTED ON PURPOSE. This arm recorded that a hang never settles,
+    // so no toast could fire and the user could not tell a dead connection
+    // from not having clicked. dntPushOne now races the write against
+    // DNT_PUSH_TIMEOUT_MS. The timeout is shortened here rather than waiting
+    // fifteen seconds -- the harness overrides the constant it loaded, which
+    // is only honest because it loaded the REAL one first.
+    const ctx = world({ transport: 'hang' });
+    ctx.DNT_PUSH_TIMEOUT_MS = 200;
+    const out = await K.within(3000, ctx.dntPushOne(
+      'dnt_vendor_pricing_rules', { id: 'default' }, 'dnt_vendor_pricing_rules'));
+    assert.strictEqual(out.settled, true, 'it still hangs forever');
+    assert.strictEqual(out.value, null, 'the timeout did not arrive as a refusal');
+    assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_pricing_rules'), true);
+    assert.ok(ctx._state.warns.some((w) => /no answer in/.test(w)),
+      'the console does not say it timed out');
+  });
+
+test('...and the REAL timeout is a sane wait, not a hidden zero', () => {
+  // The override above is only safe while the shipped value is a real one. A
+  // constant of 0 would make every write on a slow connection a false refusal.
+  const ctx = world({});
+  assert.ok(ctx.DNT_PUSH_TIMEOUT_MS >= 5000 && ctx.DNT_PUSH_TIMEOUT_MS <= 60000,
+    'the shipped timeout is ' + ctx.DNT_PUSH_TIMEOUT_MS + 'ms');
 });
 
 section('THE PARTIAL RESPONSE -- a record that comes back missing fields');
 
-test('a partial response still CLEARS the unconfirmed flag', async () => {
-  // dntPushOne treats any non-null as success. A filtered or truncated record
-  // is non-null, so the flag clears and hydration is allowed to overwrite --
-  // even though what the server stored may not be what was sent. Asserted as
-  // current behaviour, and named as a limit rather than left to be discovered.
-  const ctx = world({ transport: 'partial' });
-  ctx.dntMarkUnconfirmed('dnt_vendor_pricing_rules', true);
-  const r = await ctx.dntPushOne('dnt_vendor_pricing_rules',
-                                 { id: 'default', vendorDiscounts: { acme: 12 } },
-                                 'dnt_vendor_pricing_rules');
-  assert.ok(r && r.id === 'default', 'the fixture did not return a partial record');
-  assert.strictEqual(r.vendorDiscounts, undefined,
-    'the fixture returned the field it was meant to drop');
-  assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_pricing_rules'), false,
-    'a partial response left the flag set -- update this arm, the app got '
-    + 'stricter');
-});
+test('a partial response does NOT clear the unconfirmed flag', async () => {
+    // THE THIRD INVERSION. dntPushOne treated any non-null as success, so a
+    // filtered or truncated record cleared the flag and hydration was free to
+    // overwrite the local copy with whatever the server actually kept.
+    //
+    // DELIBERATELY NOT A USER-FACING REFUSAL. A short response may still have
+    // been stored correctly, and turning that into "NOT SAVED" would be a
+    // false alarm. It does the one unambiguously right thing instead: it
+    // leaves the key unconfirmed so nothing can overwrite it. Conservative on
+    // the visible half, strict on the destructive half.
+    const ctx = world({ transport: 'partial' });
+    const r = await ctx.dntPushOne('dnt_vendor_pricing_rules',
+                                   { id: 'default', vendorDiscounts: { acme: 12 } },
+                                   'dnt_vendor_pricing_rules');
+    assert.ok(r && r.id === 'default', 'the record was refused outright -- too strict');
+    assert.strictEqual(r.vendorDiscounts, undefined,
+      'the fixture returned the field it was meant to drop');
+    assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_pricing_rules'), true,
+      'a partial response cleared the flag, so hydration may overwrite');
+    assert.ok(ctx._state.warns.some((w) => /came back WITHOUT/.test(w)),
+      'it did not say which fields were missing');
+  });
+
+test('a COMPLETE response does clear it -- the check is not just always-on',
+  async () => {
+    // The other direction, and the reason it matters: a missing-key test that
+    // never passes would make every write permanently unconfirmed, which reads
+    // as caution and behaves as a broken sync.
+    const ctx = world({});
+    ctx.dntMarkUnconfirmed('dnt_vendor_contacts', true);
+    await ctx.dntPushOne('dnt_vendor_contacts', { id: 'default', vendors: {} },
+                         'dnt_vendor_contacts');
+    assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_contacts'), false);
+  });
 
 section('STORAGE THROWS -- the flag write itself fails');
 

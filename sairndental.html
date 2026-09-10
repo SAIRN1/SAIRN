@@ -5805,15 +5805,79 @@ function dntIsUnconfirmed(storeKey){
 // storeKey is the localStorage key the record came from, so a failed push can
 // be tied to the thing hydration would otherwise overwrite. Callers that have
 // no wholesale object to protect pass nothing and behave exactly as before.
+// How long to wait before a write that has not answered is treated as one
+// that did not arrive. A gateway timeout produces NO response at all, and
+// without this the promise simply never settles -- so the caller's
+// .then(ok => toast) never runs and the user, who clicked Save, cannot tell
+// the difference between a hung connection and not having clicked yet.
+// Object identities, never strings: a sentinel that a server could
+// plausibly return is a sentinel that will one day be mistaken for data.
+var DNT_PUSH_TIMEOUT = {dntPushTimeout:true};
+var DNT_PUSH_REJECTED = {dntPushRejected:true};
+var DNT_PUSH_TIMEOUT_MS = 15000;
+
+// ── EVERY WAY A WRITE CAN FAIL ARRIVES AS ONE SHAPE (2026-09-10) ──────────
+// Found by tests/faults/dnt_vendor_write_faults.js, the first fault-injection
+// run on this platform. The refusal path -- sdnData resolving null -- was
+// handled. Three others were not, and each one is silent in a different way:
+//
+//   A DROPPED SOCKET rejects. A rejection never reaches a `.then(ok => ...)`
+//   handler, so the vendor writers' toast never fired at all: the user
+//   clicked Save on a dead connection and saw NOTHING. Two other callers
+//   attach no handler whatever, so it was an unhandled rejection as well.
+//
+//   A HANG never settles, with the same result and no timeout anywhere on
+//   the path.
+//
+//   A PARTIAL RESPONSE -- a record that comes back missing fields that were
+//   sent -- was treated as success, because any non-null was. That CLEARED
+//   the unconfirmed flag, so hydration was then free to overwrite the local
+//   copy with whatever the server actually kept.
+//
+// `null` is the one shape every caller already understands, so a rejection
+// and a timeout are both mapped onto it rather than inventing a second
+// failure vocabulary the callers would have to learn.
+//
+// THE PARTIAL CASE IS DELIBERATELY NOT A REFUSAL. A response that came back
+// short may still have been stored correctly, and turning that into a
+// user-facing 'NOT SAVED' would be a false alarm on a path that may be
+// perfectly fine. It does the one thing that is unambiguously right: it
+// does NOT clear the unconfirmed flag, so hydration cannot overwrite a local
+// copy the server never confirmed. Conservative on the visible half, strict
+// on the destructive half.
 function dntPushOne(resource,rec,storeKey){
-  return sdnData('write',resource,rec).then(function(r){
-    if(r===null){
-      try{ console.warn('SAIRNdental backup: "'+resource+'" record '+(rec&&rec.id)+
-        ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
-      if(storeKey) dntMarkUnconfirmed(storeKey,true);
-    }else if(storeKey){
-      dntMarkUnconfirmed(storeKey,false);
+  function refused(why){
+    try{ console.warn('SAIRNdental backup: "'+resource+'" record '+(rec&&rec.id)+
+      ' did NOT reach the server ('+why+'). It is saved on this device only.'); }catch(e){}
+    if(storeKey) dntMarkUnconfirmed(storeKey,true);
+    return null;
+  }
+  var settled=false;
+  var timed=new Promise(function(res){
+    setTimeout(function(){ if(!settled) res(DNT_PUSH_TIMEOUT); }, DNT_PUSH_TIMEOUT_MS);
+  });
+  var call=Promise.resolve().then(function(){ return sdnData('write',resource,rec); })
+    .then(function(r){ settled=true; return r; },
+          function(e){ settled=true; return DNT_PUSH_REJECTED; });
+  return Promise.race([call,timed]).then(function(r){
+    if(r===DNT_PUSH_REJECTED) return refused('the connection failed');
+    if(r===DNT_PUSH_TIMEOUT)  return refused('no answer in '+(DNT_PUSH_TIMEOUT_MS/1000)+'s');
+    if(r===null)              return refused('the server refused it');
+    // A response that does not carry back what was sent is not a
+    // confirmation. Compared against the keys of THIS record rather than a
+    // fixed list, so a new field is covered the day it is added.
+    var missing=[];
+    if(rec&&typeof rec==='object'&&r&&typeof r==='object'){
+      for(var k in rec){ if(Object.prototype.hasOwnProperty.call(rec,k)&&!(k in r)) missing.push(k); }
     }
+    if(missing.length){
+      try{ console.warn('SAIRNdental backup: "'+resource+'" came back WITHOUT '+
+        missing.join(', ')+'. Treated as unconfirmed, so a later sync will not '+
+        'overwrite this device\'s copy.'); }catch(e){}
+      if(storeKey) dntMarkUnconfirmed(storeKey,true);
+      return r;
+    }
+    if(storeKey) dntMarkUnconfirmed(storeKey,false);
     return r;
   });
 }
