@@ -905,6 +905,16 @@
       "claimed_at_epoch": 1789065723.6079,
       "status": "released",
       "released_at": "2026-09-10T18:49:23Z"
+    },
+    {
+      "id": "hank-1789066369",
+      "session": "hank",
+      "subject": "independent-review-eb640ae8",
+      "task": "sairndental vendor supply delete semantics reviewer not author",
+      "claimed_at": "2026-09-10T18:52:49Z",
+      "claimed_at_epoch": 1789066369.0499067,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
