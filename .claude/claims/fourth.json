@@ -652,6 +652,16 @@
       "claimed_at_epoch": 1789046971.5246491,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789049316",
+      "session": "fourth",
+      "subject": "sairnfreedom",
+      "task": "st-wrapper-second-bare-catch backup-hook",
+      "claimed_at": "2026-09-10T14:08:36Z",
+      "claimed_at_epoch": 1789049316.8570275,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
