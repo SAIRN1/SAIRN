@@ -843,8 +843,8 @@
       "task": "sairnvet sairnfreedom server backup",
       "claimed_at": "2026-09-10T14:31:02Z",
       "claimed_at_epoch": 1789050662.1767967,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T15:34:50Z"
     }
   ]
 }
