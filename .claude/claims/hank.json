@@ -923,8 +923,8 @@
       "task": "provenance and stated reason to trust",
       "claimed_at": "2026-09-10T19:33:28Z",
       "claimed_at_epoch": 1789068808.5848215,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T19:40:20Z"
     }
   ]
 }
