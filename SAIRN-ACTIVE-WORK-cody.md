@@ -1425,3 +1425,56 @@ not leave it and I did not silence it -- I taught the tool the camelCase
 convention so it now gives a real answer. A standing notice is how a
 report-only checker teaches people to ignore it, and hiding the notice is
 worse; the third option is to make the tool able to answer.
+
+## 2026-09-10 (Cody) -- third promotion batch: 10 -> 15, and the rest decided
+
+CLAIMED and released: `promote-third-batch`.
+
+**Clean on the first real run and promoted as they stood:**
+`discarded_verdict_crossfile.py`, `literal_drift_check.py`,
+`orphan_register_check.py`, `key_collision_check.py`.
+
+**One was not, and it is the FOURTH instance in three days of a checker's first
+real run flagging a deliberate pattern.** `sairn_strict_args_check.py` --
+Guardian check 31, the class where six `window.fetch` patches shipped doing
+nothing at all -- reported `stonedesk.html:3391`. **It is correct code.** The
+`apply(this, arguments)` is an early return for a NON-PROXY url, before
+anything is touched; the mutating path ends in an explicit
+`saSecureClaudeCall(url, opts, _saInnerFetch)`. Mutually exclusive paths. And
+Guardian 31 says in its own text not to "fix" a pass-through that has nothing
+to forward -- it is correct that way and BETTER, since it preserves extra
+arguments.
+
+The checker asked *"does this body mutate anywhere and forward anywhere"*,
+which is not the bug. **The bug is a forward that comes AFTER the mutation.**
+Now ordered, with the limit stated rather than implied (textual order, not
+control flow), and driven three ways: mutate-then-forward still fires, an early
+pass-through does not, and the same shape in SLOPPY mode is still ignored
+because there `arguments` IS linked and the mutation really does carry through.
+
+**The four instances so far, so the next session expects it rather than
+discovering it:**
+
+| Checker | Flagged | Actually |
+|---|---|---|
+| `sairn_dead_button_audit` C1 | `syncAll`, `mechNotLive` | deliberate honest refusals |
+| `duplicate_global_check` | `rBids` | a wrapper that CALLS the original |
+| `panel_nesting_check` | 7 files | nothing to nest |
+| `sairn_strict_args_check` | `stonedesk:3391` | correct forward on another path |
+
+**Every one of them would have made the code WORSE if acted on.** Two would
+have deleted a live feature; one would have turned an honest refusal into a
+fabricated one.
+
+**The NOT-PROMOTED decision is now recorded, not left as a default** -- which
+is exactly what the inventory row asked for. `--list` prints nine entries with
+reasons. Four are READ-LISTS rather than gates **and say so in their own
+output**. `waf_rule_check.py` is clean and gate-shaped but makes a live API
+call, so a transient network failure would read as a finding on a push; it goes
+in once it can distinguish *drifted* from *could not ask* the way the SQL
+preflight does.
+
+**One thing to watch:** the sweep is now ~2m8s of CPU per push, async. Fine for
+one clone; four clones pushing is real load. If it becomes a problem the answer
+is scoping the `apps`-mode checkers to files the push actually touched, not
+dropping checkers.
