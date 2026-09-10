@@ -722,6 +722,16 @@
       "claimed_at_epoch": 1789067239.444426,
       "status": "released",
       "released_at": "2026-09-10T19:37:39Z"
+    },
+    {
+      "id": "fourth-1789069494",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "criticality-tier-register-for-verticals third-leg-of-the-standard",
+      "claimed_at": "2026-09-10T19:44:54Z",
+      "claimed_at_epoch": 1789069494.486734,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
