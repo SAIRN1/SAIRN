@@ -804,6 +804,16 @@
       "claimed_at_epoch": 1789066396.1948035,
       "status": "released",
       "released_at": "2026-09-10T20:41:16Z"
+    },
+    {
+      "id": "cc-1789082403",
+      "session": "cc",
+      "subject": "sairndental",
+      "task": "financial tier gates writes for nobody",
+      "claimed_at": "2026-09-10T23:20:03Z",
+      "claimed_at_epoch": 1789082403.2464519,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
