@@ -350,6 +350,53 @@ def age_str(c):
     return '%.1fh ago' % h
 
 
+# ── A RELEASED CLAIM GIVES NO SIGNAL, AND THAT COST REAL TIME (2026-09-10) ──
+# `check` reported CLEAR on work another session had FINISHED minutes earlier,
+# twice in one day and in both directions: cody claimed
+# `sairnbiz-sb-incidents-kpi-with-no-write-path` 57 seconds after that work was
+# pushed and released, and hank had a claim written for the local-only wrapper
+# false-clean while reading the code that cc had already fixed hours before.
+# Neither was caught by this tool. Both were caught by reading `git log`.
+#
+# The gap is structural, not a bug: an ACTIVE claim blocks, an EXPIRED one is
+# reported -- and the SUCCESSFUL case, a claim properly released the moment the
+# work landed, is the one that says nothing at all. The better a session
+# behaves, the less its finished work warns anybody.
+#
+# So a recently-released overlapping claim is REPORTED. It does not block:
+# follow-on work on the same subject is legitimate and common, and this tool's
+# own rule is that it flags for a human read rather than deciding. What it must
+# not do is stay silent.
+RECENT_RELEASE_HOURS = float(
+    os.environ.get('SAIRN_CLAIM_RECENT_RELEASE_HOURS', '24'))
+
+
+def released_hours_ago(c):
+    """Hours since this claim was released, or None if it was not or cannot be read.
+
+    Tolerant on purpose. `released_at` is an ISO-Z string with no companion
+    epoch field, and this runs inside a tool every session invokes constantly --
+    a parse failure here must degrade to "say nothing" rather than take the
+    claim tool down for four clones.
+    """
+    if c.get('status') != 'released':
+        return None
+    raw = c.get('released_at')
+    if not raw:
+        return None
+    try:
+        txt = str(raw).strip().replace('Z', '+0000')
+        if '+' not in txt and '-' not in txt[10:]:
+            txt += '+0000'
+        stamp = time.mktime(time.strptime(txt[:19], '%Y-%m-%dT%H:%M:%S'))
+        # strptime gives local time for a UTC string; correct for the offset so
+        # a fresh release does not read as hours old on a non-UTC machine.
+        stamp -= time.timezone if not time.daylight else time.altzone
+        return (now() - stamp) / 3600.0
+    except Exception:                                       # noqa: BLE001
+        return None
+
+
 def overlaps(c, subj, task):
     """Shared significant token between the two claims. Conservative on
     purpose: it flags for a human read, it does not decide."""
@@ -552,7 +599,40 @@ def cmd_check(args, quiet=False):
                                                c.get('task'), age_str(c)))
             print('An expired claim can mean the session died, or that the work '
                   'was DONE and never released. Check before repeating it.')
+        _report_recent_releases(load_all(from_origin=not args.no_fetch),
+                                me, subj, task)
     return 0
+
+
+def _report_recent_releases(claims, me, subj, task):
+    """Name overlapping work another session FINISHED recently. Never blocks.
+
+    See RECENT_RELEASE_HOURS for why this exists: a properly released claim was
+    the one state this tool said nothing about, and it is the state that means
+    "somebody just did this".
+    """
+    recent = []
+    for c in claims:
+        if c.get('session') == me:
+            continue
+        hrs = released_hours_ago(c)
+        if hrs is None or hrs < 0 or hrs > RECENT_RELEASE_HOURS:
+            continue
+        if not overlaps(c, subj, task):
+            continue
+        recent.append((hrs, c))
+    if not recent:
+        return
+    recent.sort(key=lambda x: x[0])
+    print('\nNote: %d overlapping claim(s) were RELEASED in the last %g hours. '
+          'Not blocking -- follow-on work is normal -- but READ THE COMMIT '
+          'before repeating any of it:' % (len(recent), RECENT_RELEASE_HOURS))
+    for hrs, c in recent:
+        print('  %s: %s -- %s  (finished %.1fh ago)'
+              % (c.get('session'), c.get('subject'), c.get('task') or '(no task)', hrs))
+    print('This tool said CLEAR on finished work twice on 2026-09-10, in both '
+          'directions. `git log --oneline -15` is the check that caught it both '
+          'times; this note is so it does not depend on remembering.')
 
 
 def cmd_claim(args):
