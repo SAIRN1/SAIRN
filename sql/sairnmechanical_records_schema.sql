@@ -31,10 +31,28 @@
 -- the same shape SAIRNdental's DNT_SYNC_RESOURCES uses, and what makes the
 -- coverage readable to the checker instead of a permanent could-not-tell.
 --
--- ONE ID COLUMN IS NOT A MINTED ID. mech_checks keys on the CHECK NUMBER, which
--- is what the register has always keyed on and what makes a duplicate visible.
--- The client sends it through a per-resource id-field map rather than minting a
--- second identity for a document that already has one.
+-- CORRECTED 2026-09-10, BEFORE ANY ROW EXISTED. This note used to read "ONE ID
+-- COLUMN IS NOT A MINTED ID -- mech_checks keys on the CHECK NUMBER ... what
+-- makes a duplicate visible." The independent review of 6ddb8154 showed the
+-- cheque number is NOT a safe key and the mechanism is reachable on any second
+-- workstation: crNum starts at 1001 on a device with no local `_crnum`, `_crnum`
+-- is deliberately not synced, and the write below is an UPSERT on
+-- (license_hash, check_id). So device B's #1001 OVERWRITES device A's #1001 in
+-- the durable record while both survive locally and neither ever pulls the
+-- other's -- the audit trail being the copy that loses a cheque.
+--
+-- check_id NOW HOLDS A MINTED PER-RECORD ID (`CHK-<uuid>`), and the cheque
+-- number is an ordinary field inside `data`, unchanged and still what the user
+-- sees. The old note's objection -- that a second identity HIDES a duplicate --
+-- was right about the risk and wrong about the cause: hiding was never a
+-- property of the id, it was a property of having no report. sairnmechanical.html
+-- renderCR() now reports a repeated number at the top of the register on every
+-- render, and saveCheck() says so in the toast at the moment it happens.
+--
+-- THE TABLE DEFINITION DID NOT CHANGE. `check_id text` with
+-- `unique (license_hash, check_id)` was already correct for a minted id; only
+-- what the client puts in it changed. Verified empty on MECH-PINNACLE-2026
+-- before the change, so there is nothing to migrate.
 --
 -- SECURITY MODEL: licence key only, matching mechData()'s existing calls. RLS
 -- enabled with no anon policy -- api/sd-data.js is the only door in. 64KB per
@@ -68,7 +86,9 @@ create policy "svc only mech_quotes" on public.mech_quotes
 revoke all on public.mech_quotes from service_role;
 grant select, insert, update on public.mech_quotes to service_role;
 
--- THE CHECK REGISTER: payee, amount, memo and check number. check_id holds the check NUMBER, not a minted id -- see the id-column note.
+-- THE CHECK REGISTER: payee, amount, memo and check number. check_id holds a
+-- MINTED per-record id (`CHK-<uuid>`), never the cheque number -- see the
+-- id-column note above for why that changed and what reports a repeat instead.
 create table if not exists public.mech_checks (
   id uuid primary key default gen_random_uuid(),
   license_hash text not null,

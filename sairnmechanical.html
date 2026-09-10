@@ -1068,6 +1068,9 @@ function showPage(id){
   const pg=document.getElementById('page-'+id);if(pg)pg.classList.add('active');
   const navEl=document.getElementById('nav-'+id)||Array.from(document.querySelectorAll('.ni')).find(function(el){return (el.getAttribute('onclick')||'').indexOf(id)!==-1;});if(navEl)navEl.classList.add('active');
   document.getElementById('main').scrollTop=0;
+  // NOTE: this showPage is SHADOWED. A second declaration further down assigns
+  // itself to window.showPage, and every nav path goes through that one -- the
+  // on-show loaders live there, not here. Adding one here would be dead code.
 }
 function openFQ(){showPage('field-quote');fqStep(1);}
 function fqStep(s){
@@ -1173,19 +1176,61 @@ function numWords(n){
   const r=di%100;if(r>=20)w+=t[Math.floor(r/10)]+(r%10?' '+o[r%10]:'');else if(r>0)w+=o[r];
   if(ci>0)w+=' and '+ci+'/100';return w.trim();
 }
+// ── THE CHEQUE NUMBER IS NOT AN IDENTITY (2026-09-10) ─────────────────────
+// The register used to key on `num` all the way to the server, and the review
+// of 6ddb8154 was right that it is not safe. crNum starts at 1001 on any device
+// with no local _crnum, _crnum is deliberately not synced, and the server write
+// is an UPSERT on (license_hash, check_id) -- so a second workstation issues its
+// own #1001 and OVERWRITES the first device's #1001 in the durable record while
+// both survive locally and neither ever pulls the other's.
+//
+// WHAT WAS CHOSEN, AND WHY IT IS NOT ANY OF THE THREE OPTIONS THE REVIEW LISTED.
+// A chequebook is a physical, pre-numbered artefact. Two stations working from
+// two books legitimately both hold a #1001, and software that mints a unique
+// number, syncs a counter, or prefixes per device is inventing a uniqueness the
+// paper does not have and changing what is printed on a cheque. So the number
+// stays exactly what it is -- an ordinary data field, unchanged, still shown to
+// the user -- and the SERVER key becomes a per-record id that nothing else can
+// collide with. No cheque record can destroy another.
+//
+// THE OBJECTION IN THE OLD COMMENT IS ANSWERED, NOT IGNORED. It said minting a
+// second identity for a document that already has one would HIDE a duplicate.
+// True only if nothing reports the duplicate -- so renderCR() reports it, at
+// the top of the register, every render. Hiding was never a property of the id;
+// it was a property of having no report.
+//
+// _crnum STAYS LOCAL AND UNSYNCED. Syncing it trades a possible failure (a
+// stale counter restored from a backup repeats a number) for a certain one, and
+// an offline station could not mint a number at all.
+function mechCheckId(){
+  try{ if(window.crypto&&typeof crypto.randomUUID==='function') return 'CHK-'+crypto.randomUUID(); }catch(e){}
+  // Fallback for a browser without randomUUID. NOT Date.now() alone, which is
+  // what the sibling savers use: two devices saving in the same millisecond,
+  // or one with a skewed clock, collide -- the exact failure being removed.
+  return 'CHK-'+Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,12);
+}
+// Cheques written before this change have no id. Backfilled locally so the
+// merge below has something to key on; NOT pushed, because a row that was never
+// on the server is not a row this device may decide is canonical.
+function mechEnsureCheckIds(checks){
+  var changed=false;
+  (checks||[]).forEach(function(c){ if(c&&!c.id){ c.id=mechCheckId(); changed=true; } });
+  return changed;
+}
 function saveCheck(){
-  const entry={num:crNum++,date:document.getElementById('cr-date')?.value||new Date().toLocaleDateString(),
+  const entry={id:mechCheckId(),num:crNum++,date:document.getElementById('cr-date')?.value||new Date().toLocaleDateString(),
     payee:document.getElementById('cr-payee')?.value||'',amount:document.getElementById('cr-amount')?.value||'0',
     memo:document.getElementById('cr-memo')?.value||''};
   const checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');
+  mechEnsureCheckIds(checks);
   checks.unshift(entry);
   // THE NUMBER IS PUT BACK IF THE WRITE FAILS. crNum was already incremented
   // when `entry` was built above; leaving it advanced over a check that was
   // never stored is how two checks end up sharing a number.
   if(!mechSt(APP_ID+'_checks',checks)){crNum=entry.num;return;}
-  // The register reaches the server keyed on the CHECK NUMBER -- see
-  // MECH_ID_FIELD. Fire-and-forget by design: the cheque IS recorded on this
-  // device, and a failed backup says so in the console rather than undoing it.
+  // Keyed on entry.id, not entry.num -- see mechCheckId(). Fire-and-forget by
+  // design: the cheque IS recorded on this device, and a failed backup says so
+  // in the console rather than undoing it.
   if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_checks',entry);
   if(!mechSt(APP_ID+'_crnum',crNum)){
     // The check IS saved; only the counter is not, so the next one would
@@ -1196,15 +1241,49 @@ function saveCheck(){
   }
   renderCR(checks);
   const n=document.getElementById('cr-num');if(n)n.textContent=crNum;
-  showToast('Check #'+entry.num+' saved');
+  // Said at the moment it happens, not only in the banner. The record is kept
+  // either way -- nothing was overwritten -- which is what the message has to
+  // convey, because the old behaviour silently discarded one of the two.
+  const repeat=checks.filter(function(c){return c!==entry&&String(c.num)===String(entry.num);}).length;
+  if(repeat)showToast('Check #'+entry.num+' saved, but that number is already in this register — both records are kept, none overwritten. Check which cheque was actually written.',9000);
+  else showToast('Check #'+entry.num+' saved');
 }
 function renderCR(checks){
   const h=document.getElementById('cr-history');if(!h)return;
   if(!checks||!checks.length){h.innerHTML='<div class="empty"><div class="empty-icon">📄</div><div class="empty-title">No checks yet</div></div>';return;}
-  h.innerHTML='<div class="tw"><table><thead><tr><th>Check#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'
-    +checks.slice(0,20).map(c=>'<tr><td>'+c.num+'</td><td>'+c.date+'</td><td>'+c.payee+'</td><td style="text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td>'+c.memo+'</td></tr>').join('')
+  // A REPEATED NUMBER IS REPORTED, NEVER RESOLVED. Two records sharing a cheque
+  // number are two real records -- a second workstation's book, or a number set
+  // by hand after a failed counter write. The app cannot know which is right, so
+  // it says so instead of picking. This is the half that makes keying on a
+  // minted id safe: the id stops one record destroying another, this stops the
+  // duplicate becoming invisible. Counted over ALL checks, not the 20 shown.
+  var seen={},dups={};
+  checks.forEach(function(c){var n=String(c&&c.num);if(seen[n])dups[n]=(dups[n]||1)+1;else seen[n]=true;});
+  var dupNums=Object.keys(dups);
+  var banner='';
+  if(dupNums.length){
+    banner='<div style="background:#fee2e2;color:#991b1b;border:1px solid #fca5a5;border-radius:6px;padding:10px 12px;margin-bottom:10px;font-size:13px">'
+      +'<strong>Repeated check number'+(dupNums.length>1?'s':'')+': '+dupNums.sort(function(a,b){return a-b;}).map(function(n){return '#'+n;}).join(', ')+'.</strong> '
+      +'Every record below is kept — none has been overwritten. Two entries share a number, which usually means a second workstation issued it from its own book. '
+      +'Check which cheque was actually written before relying on this register.</div>';
+  }
+  h.innerHTML=banner+'<div class="tw"><table><thead><tr><th>Check#</th><th>Date</th><th>Payee</th><th>Amount</th><th>Memo</th></tr></thead><tbody>'
+    +checks.slice(0,20).map(c=>'<tr'+(dups[String(c.num)]?' style="background:#fef2f2"':'')+'><td>'+c.num+'</td><td>'+c.date+'</td><td>'+c.payee+'</td><td style="text-align:right">$'+parseFloat(c.amount||0).toLocaleString()+'</td><td>'+c.memo+'</td></tr>').join('')
     +'</tbody></table></div>';
 }
+// The register had NO loader. renderCR() was called only from saveCheck(), so
+// the panel showed "No checks yet" on every visit no matter what was stored --
+// and a hydrated cheque could never appear. Third zero-caller of this shape in
+// this file, after loadPricing() and mechRestore().
+function loadCR(){
+  var checks=[];
+  try{checks=JSON.parse(localStorage.getItem(APP_ID+'_checks')||'[]');}catch(e){checks=[];}
+  if(!Array.isArray(checks))checks=[];
+  if(mechEnsureCheckIds(checks))mechSt(APP_ID+'_checks',checks);
+  renderCR(checks);
+  var n=document.getElementById('cr-num');if(n)n.textContent=crNum;
+}
+window.loadCR=loadCR;
 function getPricing(){try{return JSON.parse(localStorage.getItem(APP_ID+'_pricing'))||defaultPricing();}catch(e){return defaultPricing();}}
 function defaultPricing(){
   return {company:'SAIRNmechanical',laborRates:{standard:85,lead:120},materialMarkup:.30,profitPercent:.20,quoteValidDays:30,minimumJob:500,depositPct:.33,
@@ -1520,6 +1599,13 @@ async function runBlueprintAI(input){
     if (id === 'equipment' && typeof mechAssetRefresh === 'function') {
       try { mechAssetRefresh(); } catch (e) {}
     }
+    // Same load-on-show reason, plus one specific to this panel: renderCR()
+    // used to run ONLY from saveCheck(), so the register showed "No checks yet"
+    // on every visit regardless of what was stored, and a hydrated cheque had
+    // no path onto the screen at all.
+    if (id === 'check-register' && typeof window.loadCR === 'function') {
+      try { window.loadCR(); } catch (e) {}
+    }
   }
   window.showPage = showPage;
   window.openFQ   = function() { showPage('field-quote'); };
@@ -1590,10 +1676,14 @@ async function runBlueprintAI(input){
     ['mech_docs',     APP_ID + '_docs'],
     ['mech_takeoffs', APP_ID + '_takeoffs']
   ];
-  // mech_checks KEYS ON THE CHECK NUMBER. That is what the register has always
-  // keyed on and what makes a duplicate visible; minting a second identity for
-  // a document that already has one would hide it.
-  var MECH_ID_FIELD = { mech_checks: 'num' };
+  // MECH_ID_FIELD USED TO SAY `{ mech_checks: 'num' }`, AND IT WAS WRONG.
+  // Keying the server record on the cheque number made the upsert on
+  // (license_hash, check_id) silently overwrite one workstation's #1001 with
+  // another's. Every resource here now keys on a minted per-record `id` -- see
+  // mechCheckId() and the note above saveCheck() for why the NUMBER stays an
+  // ordinary field and the duplicate is reported instead of resolved. The map
+  // stays as the seam: a resource whose id column is not `id` belongs here.
+  var MECH_ID_FIELD = {};
 
   // REQUIRES sql/sairnmechanical_records_schema.sql. Until it runs, a write
   // answers 503 NOT_PROVISIONED naming the file and a read answers
@@ -2007,6 +2097,23 @@ async function runBlueprintAI(input){
     // -- calling it behind the login screen would prompt for location before the
     // user has any reason to grant it.
     if(typeof window.loadWeather==='function'){try{window.loadWeather();}catch(e){}}
+    // mechHydrateAll() HAD ZERO CALLERS -- defined, attached to window, and
+    // never invoked by anything in this file. The server backup added in
+    // 6ddb8154 was therefore WRITE-ONLY: four collections pushed on save and
+    // nothing ever read back, so a reinstalled or second device saw an empty
+    // register while the rows sat on the server. Exactly the
+    // write-without-readback class being swept platform-wide, in the commit
+    // that introduced the writes. Called here rather than at load because it
+    // needs a licence, which only exists past login.
+    try {
+      if (typeof mechHydrateAll === 'function') {
+        mechHydrateAll().then(function (n) {
+          // Re-render only what actually gained rows, and only the register --
+          // the other three have their own renderers and are not touched here.
+          if (n && typeof window.loadCR === 'function') window.loadCR();
+        }).catch(function () {});
+      }
+    } catch (e) {}
   }
 
   // ── ACCESS / CREDENTIAL LIFECYCLE (2026-08-28) ─────────────────────────
