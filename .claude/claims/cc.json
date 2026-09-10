@@ -752,8 +752,8 @@
       "task": "heuristic false clean on st-hooked wrapper",
       "claimed_at": "2026-09-10T14:35:42Z",
       "claimed_at_epoch": 1789050942.9119437,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T17:05:31Z"
     }
   ]
 }
