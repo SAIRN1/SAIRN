@@ -869,6 +869,16 @@
       "claimed_at_epoch": 1789069897.769517,
       "status": "released",
       "released_at": "2026-09-10T20:12:26Z"
+    },
+    {
+      "id": "cody-1789082074",
+      "session": "cody",
+      "subject": "dnt-push-dropped-socket-hang-and-partial",
+      "task": "",
+      "claimed_at": "2026-09-10T23:14:34Z",
+      "claimed_at_epoch": 1789082074.6604557,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
