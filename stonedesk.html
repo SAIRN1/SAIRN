@@ -26388,41 +26388,15 @@ function renderRemakes(){
   if(typeF) list=list.filter(r=>r.type===typeF);
   if(statF) list=list.filter(r=>r.status===statF);
   var el=document.getElementById('rm-list');if(!el) return;
-  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No remakes on record.</div>';return;}
-  var typeLabels={remake:'Standard Remake',shower:'Shower Piece',repair:'Repair',rework:'Rework'};
+  // ── WHOLE-LOG STATS MOVED ABOVE THE EMPTY-LIST RETURN (2026-09-10) ──
+  // Everything below reads sdRemakes, NOT the filtered `list`, so none of it
+  // depends on the filter -- but all of it sat AFTER `if(!list.length) return`.
+  // Filter to a status with no matches and all seven KPIs froze at their
+  // previous values while the log below said "No remakes on record": two
+  // adjacent displays of one fact disagreeing, with the stale one stating
+  // numbers. Found by a test written for the Cause Breakdown card, whose
+  // empty-state branch turned out to be unreachable for the same reason.
   var reasonLabels={measure_error:'Measure Error',cut_error:'Cut Error',edge_error:'Edge Error',customer_change:'Customer Change',material_defect:'Material Defect',installer_damage:'Installer Damage',design_change:'Design Change',other:'Other'};
-  el.innerHTML=list.map(r=>{
-    var urg=remakeUrgency(r);
-    var hrs=remakeHoursElapsed(r);
-    var limit=remakeHoursLimit(r.type);
-    var max=remakeMaxHours(r.type);
-    var hrsStr=hrs<1?Math.round(hrs*60)+'m':Math.round(hrs*10)/10+'h';
-    var limitLabel=r.type==='shower'?'2-3 day (48-72h)':'24h';
-    return '<div class="remake-row '+(urg==='done'?'green':urg==='approved'?'approved':urg)+'">' +
-      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
-        '<div style="flex:1">' +
-          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
-            '<span style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(r.customer)+'</span>' +
-            (r.jobNum?'<span style="font-size:11px;color:var(--muted)">'+escHtml(r.jobNum)+'</span>':'') +
-            '<span style="font-size:11px;padding:1px 8px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:700">'+typeLabels[r.type]+'</span>' +
-            (urg==='red'?'<span class="item-urgency red">OVERDUE '+hrsStr+'</span>':urg==='yellow'?'<span class="item-urgency yellow">'+hrsStr+' elapsed</span>':urg==='approved'?'<span class="item-urgency green">Approved by '+escHtml(r.approvedBy)+'</span>':urg==='done'?'<span class="item-urgency green">Complete</span>':'<span class="item-urgency green">'+hrsStr+'</span>') +
-          '</div>' +
-          '<div style="font-size:12px;color:var(--muted)">' +
-            (r.material?escHtml(r.material)+' · ':'')+(r.sqft?r.sqft+'sqft · ':'')+
-            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' · '+escHtml(r.assignedTo):'') +
-          '</div>' +
-          (r.notes?'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escHtml(r.notes)+'</div>':'') +
-          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' · Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
-        '</div>' +
-        '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
-          (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
-            '<button onclick="remakeApprove(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
-          (r.status==='open'?'<button onclick="remakeComplete(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
-          '<button onclick="remakeDelete(\'' + escAttrJs(r.id) + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
   // KPIs
   var open=sdRemakes.filter(r=>r.status==='open');
   var sv=(id,v)=>{var el=document.getElementById(id);if(el)el.textContent=v;};
@@ -26462,6 +26436,81 @@ function renderRemakes(){
   sdRemakes.forEach(r=>{if(r.reason)reasonCounts[r.reason]=(reasonCounts[r.reason]||0)+1;});
   var topReason=Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1])[0];
   sv('rm-top',topReason?(reasonLabels[topReason[0]]||topReason[0]):'—');
+  // ── "Cause Breakdown" WAS A TITLED CARD WITH NOTHING IN IT (2026-09-10) ──
+  // #rm-causes has been empty since the old IIFE render was removed. It is not
+  // invisible: it is a bordered card headed "Cause Breakdown" that a shop owner
+  // sees, permanently blank, sitting beside a Remake Log that fills. Adjacent
+  // live and dead displays is the shape this platform keeps finding, and the
+  // dead one reads as broken rather than as absent.
+  //
+  // NOTHING IS COMPUTED HERE THAT WAS NOT ALREADY COMPUTED. reasonCounts is
+  // built two lines above and only its TOP entry was ever used; the rest was
+  // discarded. So this renders real data by construction -- there is no figure
+  // to fabricate, which is what Check 0b asks of any number on a panel.
+  var causesEl=document.getElementById('rm-causes');
+  if(causesEl){
+    var ranked=Object.entries(reasonCounts).sort((a,b)=>b[1]-a[1]);
+    var totalReasoned=ranked.reduce(function(s,e){return s+e[1];},0);
+    if(!ranked.length){
+      // An empty state SAYS it is empty. A blank card and "no remakes yet"
+      // look identical to the user and mean different things.
+      causesEl.innerHTML='<div style="color:var(--muted);font-size:13px">'+
+        (sdRemakes.length
+          ? 'No cause recorded on any remake yet.'
+          : 'No remakes logged yet.')+'</div>';
+    }else{
+      causesEl.innerHTML=ranked.map(function(e){
+        var pct=Math.round(e[1]/totalReasoned*100);
+        return '<div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">'+
+          '<div style="flex:0 0 150px;font-size:13px">'+escHtml(reasonLabels[e[0]]||e[0])+'</div>'+
+          '<div style="flex:1;background:var(--border);border-radius:6px;height:10px;overflow:hidden">'+
+            // --brand2 (#16C762) is StoneDesk's real accent. My first version
+            // used var(--brand), which does not exist in this file -- the bar
+            // would have rendered invisible. Caught by grepping the custom
+            // properties actually declared rather than assuming the name.
+            '<div style="width:'+pct+'%;height:100%;background:var(--brand2)"></div>'+
+          '</div>'+
+          '<div style="flex:0 0 64px;text-align:right;font-size:12px;color:var(--muted)">'+
+            e[1]+' · '+pct+'%</div>'+
+        '</div>';
+      }).join('');
+    }
+  }
+
+  if(!list.length){el.innerHTML='<div style="text-align:center;color:var(--muted);padding:32px">No remakes on record.</div>';return;}
+  var typeLabels={remake:'Standard Remake',shower:'Shower Piece',repair:'Repair',rework:'Rework'};
+  el.innerHTML=list.map(r=>{
+    var urg=remakeUrgency(r);
+    var hrs=remakeHoursElapsed(r);
+    var limit=remakeHoursLimit(r.type);
+    var max=remakeMaxHours(r.type);
+    var hrsStr=hrs<1?Math.round(hrs*60)+'m':Math.round(hrs*10)/10+'h';
+    var limitLabel=r.type==='shower'?'2-3 day (48-72h)':'24h';
+    return '<div class="remake-row '+(urg==='done'?'green':urg==='approved'?'approved':urg)+'">' +
+      '<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:10px">' +
+        '<div style="flex:1">' +
+          '<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:4px">' +
+            '<span style="font-size:14px;font-weight:700;color:var(--text)">'+escHtml(r.customer)+'</span>' +
+            (r.jobNum?'<span style="font-size:11px;color:var(--muted)">'+escHtml(r.jobNum)+'</span>':'') +
+            '<span style="font-size:11px;padding:1px 8px;border-radius:20px;background:rgba(27,58,107,0.1);color:var(--a);font-weight:700">'+typeLabels[r.type]+'</span>' +
+            (urg==='red'?'<span class="item-urgency red">OVERDUE '+hrsStr+'</span>':urg==='yellow'?'<span class="item-urgency yellow">'+hrsStr+' elapsed</span>':urg==='approved'?'<span class="item-urgency green">Approved by '+escHtml(r.approvedBy)+'</span>':urg==='done'?'<span class="item-urgency green">Complete</span>':'<span class="item-urgency green">'+hrsStr+'</span>') +
+          '</div>' +
+          '<div style="font-size:12px;color:var(--muted)">' +
+            (r.material?escHtml(r.material)+' · ':'')+(r.sqft?r.sqft+'sqft · ':'')+
+            'Cause: '+reasonLabels[r.reason]+(r.assignedTo?' · '+escHtml(r.assignedTo):'') +
+          '</div>' +
+          (r.notes?'<div style="font-size:12px;color:var(--muted);margin-top:3px">'+escHtml(r.notes)+'</div>':'') +
+          '<div style="font-size:11px;color:var(--muted);margin-top:4px">Limit: '+limitLabel+' · Started: '+new Date(r.startTime).toLocaleString()+'</div>' +
+        '</div>' +
+        '<div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end;flex-shrink:0">' +
+          (r.status==='open'&&!r.approvedExtension&&document.body.classList.contains('is-exec')?
+            '<button onclick="remakeApprove(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(22,163,74,0.12);color:#16a34a;border:1.5px solid #16a34a;border-radius:6px;font-size:11px;font-weight:700;cursor:pointer">✓ Approve Ext.</button>':'') +
+          (r.status==='open'?'<button onclick="remakeComplete(\'' + escAttrJs(r.id) + '\')" style="padding:4px 10px;background:rgba(27,58,107,0.1);color:var(--a);border:1px solid var(--border);border-radius:6px;font-size:11px;cursor:pointer">Mark Done</button>':'') +
+          '<button onclick="remakeDelete(\'' + escAttrJs(r.id) + '\')" style="padding:3px 8px;background:rgba(100,100,100,0.08);color:var(--muted);border:none;border-radius:5px;font-size:10px;cursor:pointer">×</button>' +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }).join('');
 }
 
 function runRemakeAlerts(){
