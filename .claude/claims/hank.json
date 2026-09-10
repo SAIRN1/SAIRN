@@ -915,6 +915,16 @@
       "claimed_at_epoch": 1789066369.0499067,
       "status": "released",
       "released_at": "2026-09-10T18:59:32Z"
+    },
+    {
+      "id": "hank-1789068808",
+      "session": "hank",
+      "subject": "soup-third-party-dependency-register",
+      "task": "provenance and stated reason to trust",
+      "claimed_at": "2026-09-10T19:33:28Z",
+      "claimed_at_epoch": 1789068808.5848215,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
