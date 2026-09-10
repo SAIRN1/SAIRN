@@ -1514,3 +1514,56 @@ count could have been right while one getter slipped past.
 **Worth keeping: a guard added with a `finally` next to one without it is the
 shape to look for.** The fix and the defect were in the same function body,
 written the same day, and the difference between them is three characters.
+
+## 2026-09-10 (Cody) -- a PROBE commit reached origin THREE HOURS after the gate that stops it shipped
+
+CLAIMED and released: `push-gate-check8-did-not-stop-a-probe-commit-that-reached-origin`.
+Check 10 added, report-only (`eef3f4b6`).
+
+**Check 8 was not broken, and my first measurement said it was.** Driven
+directly with a PROBE commit in range it fires and exits 1. My first run
+reported exit 0 -- I was reading `${PIPESTATUS[0]}` of
+`printf | python | tail`, which is **printf's** exit code. I nearly filed "the
+gate prints Blocked and then exits 0" as the defect. **A wrong instrument reads
+exactly like a wrong gate**, and the only thing that separated them was
+re-measuring without the pipeline.
+
+**The real mechanism, and it is general.** The hook runs
+`$(git rev-parse --show-toplevel)/tools/sairn_push_gate_hook.py` -- the
+**working tree** copy. Check 8 landed at 10:08; `8fa974f9` reached origin at
+13:24. A session running since before 10:08 that has not synced executes the
+pre-check-8 gate, which contains no check 8 at all. All four clones have
+`core.hooksPath` installed (checked, not assumed), so the hook fires -- it just
+runs an older gate.
+
+**This applies to every check in the file.** A gate shipped at 10:08 protects
+nobody who last synced at 09:00, and nothing said so. Check 8 is the example,
+not the finding.
+
+Check 10 compares the running gate against `origin/main`'s copy. Report-only:
+a stale gate is a could-not-tell about how much was checked, and denying would
+block a legitimate push over somebody else's commit. **Does not fetch** --
+latency and a new failure mode on every push -- so it under-reports right after
+a gate change, which is the correct direction for a staleness check. Fails OPEN
+and SILENT. **A CRLF-only difference does not fire**, because four false
+"files differ" alarms in this repo came from line endings alone and a notice
+that fires every push is worth less than none, on the one check whose whole job
+is to be believed.
+
+### Two setup errors in my own probe, both corrected in place
+
+1. It first drove the worktree's gate **at origin/main** -- the OLD one -- so
+   the check-10 arms passed on the **absence** of the thing they test. That is
+   the same shape as an assertion checking existence where the requirement is
+   use.
+2. With the gate copied in, "in sync" could not be true while the fix was
+   uncommitted, so two arms went red **for the setup, not the check**. The
+   worktree now commits the copied gate and points its own `origin/main` at it,
+   making the baseline true by construction rather than by whether I have
+   pushed yet.
+
+**Probe arm E drives check 8 in the same harness** -- a notice that the gate
+may be old is worth nothing unless the checks it vouches for still bite.
+
+The escaped commit itself I reverted in `2a0378f5`; it added
+`api/_lib/zz_probe_clean.js` to the production tree.
