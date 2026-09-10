@@ -174,6 +174,26 @@ REGISTRY = [
                     'already were; re-run over all 22 apps: 22 PASS, 0 FAIL. '
                     'Held in BOTH directions by tests/run_report_only_checks_probe.py',
     },
+    {
+        'tool': 'cleanup_confirm_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, written the same day for a rule that existed '
+                    'since 2026-08-26 with no mechanism behind it',
+        'catches': 'a cleanup or migration file whose destructive statements '
+                   'carry no confirm query and no expected answer -- so nobody '
+                   'can ever establish what it did',
+        'why_it_matters': 'the Supabase editor returns SUCCESS for the '
+                          'statements it DID run, so a multi-statement paste '
+                          'that stops halfway is indistinguishable from a '
+                          'complete one. Two real cases on 2026-08-26',
+        'evidence': 'first real run flagged 4 of 26 files; hand-reading every '
+                    'one showed 2 real (sairndesign/sairnlegacy synctest, both '
+                    'since given confirm blocks) and 2 false positives that '
+                    'became fixtures -- a commented "not this run\'s debris" '
+                    'delete, and a menu-only file. 26 files, 0 gaps now. Held '
+                    'in both directions by tests/run_cleanup_confirm_probe.py',
+    },
 ]
 
 
