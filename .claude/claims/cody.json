@@ -768,6 +768,16 @@
       "claimed_at_epoch": 1789046425.8596544,
       "status": "released",
       "released_at": "2026-09-10T13:21:22Z"
+    },
+    {
+      "id": "cody-1789046559",
+      "session": "cody",
+      "subject": "cleanup-sql-confirm-query-convention",
+      "task": "",
+      "claimed_at": "2026-09-10T13:22:39Z",
+      "claimed_at_epoch": 1789046559.3580081,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
