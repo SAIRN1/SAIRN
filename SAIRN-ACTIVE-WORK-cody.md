@@ -1721,3 +1721,60 @@ character -- and the probe is what told me which one it was.
 Held back with the precondition recorded in `NOT_PROMOTED`, printed by
 `--list`: promote it when it can tell **absence** from **blindness**. Same
 standing as `waf_rule_check.py`.
+
+## 2026-09-10 (Cody) -- the verification programme: part 1 built, parts 2-4 scoped
+
+CLAIMED and released: `requirements-to-test-traceability`. `10a0aa67`, plus
+`docs/2026-09-10-verification-programme-plan.md`.
+
+**Part 1 is DERIVED, not written**, and that is the whole design. A
+hand-written matrix here would be wrong within hours -- measured, not assumed:
+the Guardian app map has been corrected six times and CLAUDE.md carries a
+standing instruction to re-count rather than trust its own numbers. Four
+sources in descending authority (GUARD_TESTS, the numbered push-gate checks
+parsed from source, the report-only REGISTRY, index rows citing a test), every
+row naming the source it came from so an auditor checks THAT file, not this
+document.
+
+**Its first run is the baseline everything else gets measured against:**
+
+| Measure | Value |
+|---|---|
+| Test files on disk | 261 |
+| Traced to a stated requirement | 77 |
+| **Untraced** | **184** |
+| Citations pointing at a file that does not exist | **2** |
+
+The two broken citations are a real finding: a row names a test as its proof
+and the file is not there, so the requirement is UNPROVED however the row
+reads. One is probably a prose placeholder; the tool cannot tell and says so
+rather than picking.
+
+**It states what it cannot tell you** -- that a traced test actually PROVES its
+requirement (only the mutation probes answer that, and only some tests have
+one), and anything at all about code nobody wrote a requirement for, which is
+the largest unknown on the page.
+
+**And it cannot go quietly stale.** CLAUDE.md is explicit that a generated
+artefact needing regeneration after every edit reproduces the silent-failure
+shape it exists to catch. `--check` regenerates in memory and compares, wired
+as report-only checker 17. **It fired on its own first run, against me:** adding
+its own registry entry changed a source and `--check` went red.
+
+**Parts 2-4 scoped, with the order argued rather than assumed.** Part 3 (fault
+injection) goes BEFORE part 2 (mock audit): it needs no second session, and it
+has four concrete targets from tonight. **Every live finding today was a WORLD
+failure, not a logic bug** -- a missing `finally`, a stuck suppression flag, a
+refused push showing success, a seed leak on a fresh device. Mutating logic
+could not have found any of them. Part 4 is last and says why: a register built
+before there is anything to put in it becomes a file nobody updates, and its
+emptiness reads as "no defects".
+
+**Fourth heredoc casualty today** -- a quoted registry entry broke on insert.
+Repaired from a script file. I have now hit this four times in one session and
+it is filed platform-wide.
+
+**One decision for Michael, in the plan:** whether the mock auditor may read
+`docs/` at all. Fully blind is a stronger test and costs real time re-deriving
+what the repo already knows; blind to the worklogs but allowed the index and
+the matrix is cheaper and still adversarial. I would start with the second.
