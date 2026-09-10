@@ -58,6 +58,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded | `sairn_strict_args_check.py` | first real run flagged stonedesk.html:3391. HAND-READ: correct code -- its `apply(this, arguments)` is an early return for a non-proxy URL, BEFORE anything is touched, and the mutating path ends in an explicit `saSecureClaudeCall(url, opts, _saInnerFetch)`. Guardian 31 says in its own text not to "fix" a pass-through that has nothing to forward. The checker now requires the forward to come AFTER the mutation; driven both ways, and 0 across 22 files |
 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from | `write_without_readback_check.py` | real run 2026-09-10: 0 findings, 0 could-not-tell, exit 0 |
 | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not | `traceability_matrix.py` | built and wired the same day: 21-check probe including the one that matters -- add a GUARD_TESTS entry and --check goes RED, regenerate and it agrees again |
+| a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice | `defect_register.py` | built and wired the same day: 24-check probe that ATTACKS it -- a nonexistent commit, an invented method, an invented layer and a duplicate are each refused, and a record whose commit is deleted makes --check go red |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -203,7 +204,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**85 of 271 test files are traced to a stated requirement. 186 are not.**
+**85 of 272 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -350,6 +351,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
+- `tests/run_defect_register_probe.py`
 - `tests/run_md_table_check_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`

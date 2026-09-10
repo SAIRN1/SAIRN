@@ -394,6 +394,27 @@ REGISTRY = [
                     'one that matters -- add a GUARD_TESTS entry and --check '
                     'goes RED, regenerate and it agrees again',
     },
+    {
+        'tool': 'defect_register.py',
+        'mode': 'once',
+        'args': ['--check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-10, the day it was built',
+        'catches': 'a record in docs/defect-density-register.json that has '
+                   'stopped being true -- a commit that no longer resolves, '
+                   'a detection method outside the vocabulary, or the same '
+                   'defect counted twice',
+        'why_it_matters': 'the register LENGTH reads as evidence of '
+                          'thoroughness, so a record pointing at nothing is '
+                          'worse than no register at all -- and a free-text '
+                          'detection method makes the coverage matrix, '
+                          'which is the only honest signal in it, '
+                          'meaningless',
+        'evidence': 'built and wired the same day: 24-check probe that '
+                    'ATTACKS it -- a nonexistent commit, an invented method, '
+                    'an invented layer and a duplicate are each refused, and '
+                    'a record whose commit is deleted makes --check go red',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
