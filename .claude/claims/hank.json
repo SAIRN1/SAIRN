@@ -895,6 +895,16 @@
       "claimed_at_epoch": 1789064969.975594,
       "status": "released",
       "released_at": "2026-09-10T18:34:13Z"
+    },
+    {
+      "id": "hank-1789065723",
+      "session": "hank",
+      "subject": "claim-tool-released-claims-invisible-to-check",
+      "task": "",
+      "claimed_at": "2026-09-10T18:42:03Z",
+      "claimed_at_epoch": 1789065723.6079,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
