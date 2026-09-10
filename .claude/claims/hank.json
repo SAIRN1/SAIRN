@@ -935,6 +935,16 @@
       "claimed_at_epoch": 1789069584.6003199,
       "status": "released",
       "released_at": "2026-09-10T23:14:12Z"
+    },
+    {
+      "id": "hank-1789082676",
+      "session": "hank",
+      "subject": "dependabot-triage",
+      "task": "qs transitive advisories reachability",
+      "claimed_at": "2026-09-10T23:24:36Z",
+      "claimed_at_epoch": 1789082676.0660324,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
