@@ -124,4 +124,18 @@ module.exports = {
   // IF AN EDITOR IS EVER ADDED, THIS FLIPS. The moment a firm can change its
   // own code list, the list becomes the firm's record and belongs here.
   ],
+  // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
+  // The same decisions already written in prose above, in a form the checker
+  // can read. tools/local_only_collection_check.py had been CLEARING these
+  // through a bug -- a one-line save wrapper matched its own signature as the
+  // server call -- so they never appeared. With that fixed they surfaced all
+  // at once and read like a regression, when every one of them is a choice
+  // somebody made and recorded.
+  //
+  // A DECLARATION IS NOT COVERAGE. These keys still reach no server; what this
+  // changes is whether that is news. Absent means UNDECIDED, not exempt, so a
+  // new local-only key still shows up in the findings section where it belongs.
+  notSynced: [
+    'law_billingcodes',    // the published UTBMS code set, shipping inside the file; reference data, not a firm record
+  ],
 };

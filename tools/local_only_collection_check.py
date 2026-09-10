@@ -411,7 +411,7 @@ def _server_calling_functions(src):
     return reaches, bodies
 
 
-def covered_keys(src, local_keys, known_names):
+def covered_keys(src, local_keys, known_names, setters=()):
     """Every route this platform actually uses to get a local key to a server.
 
     Each route is one the apps really use, read off them rather than imagined.
@@ -481,11 +481,39 @@ def covered_keys(src, local_keys, known_names):
     # Anything the window suggests but the variable does not confirm is a
     # COULD NOT TELL, reported and exiting non-zero -- never a quiet pass.
     reaches, bodies = _server_calling_functions(src)
+    # ── THE STORAGE SETTER IS NOT A SERVER CALL, EVEN ONCE IT HOOKS ONE ─────
+    # (2026-09-10.) Once st() gained a sync hook -- SAIRNvet, SAIRNfreedom and
+    # StoneDesk all now push from inside it -- st() joined `reaches` through the
+    # one-hop rule. And then EVERY one-line `saveX(){ return st('key', list); }`
+    # wrapper cleared itself: the `shares` test looks for a server-calling
+    # function called with the same variable, and `st('key', list)` IS that,
+    # because st is now in the set. The LOCAL WRITE was matching as its own
+    # server call.
+    # MEASURED: it cleared sv_examrooms_turnover, a key deliberately EXCLUDED
+    # from SV_SYNCED and pushed by nothing, and a live 400 from the deployed
+    # allowlist proves it is not backed up. A false CLEAN, which is the one
+    # direction this route's own header says it must not fail in.
+    #
+    # AND THE DEEPER HALF, WHICH THE st() HOOK ONLY EXPOSED: A ONE-LINE WRAPPER
+    # WAS CLEARING ITSELF ON ITS OWN SIGNATURE. _body() includes the
+    # declaration line, so for
+    #     function saveExamRoomTurnoverLog(list){ return st('sv_...', list); }
+    # the window contains `saveExamRoomTurnoverLog(list)` -- the PARAMETER LIST
+    # -- and the `shares` test, which looks for a server-calling function called
+    # with the same variable, matched the function's own header. Any wrapper
+    # that reached `reaches` therefore excused every key it wrote, by existing.
+    #
+    # Two exclusions, both narrow: the app's own storage SETTER is not a server
+    # call however many hooks it grows, and A FUNCTION IS NOT EVIDENCE ABOUT
+    # ITSELF. Removed here rather than inside _server_calling_functions() so
+    # that broad-by-design set stays broad for every other route.
+    reaches = reaches - set(setters)
     near = re.compile(r"\w*Data\(\s*'(?:read|write)'|action:\s*'(?:read|write)'\s*,\s*resource:|\.from\(")
     unsure = {}
     for fname, body in bodies.items():
         if fname not in reaches:
             continue
+        others = reaches - {fname}
         for k in local_keys:
             if k in covered:
                 continue
@@ -494,11 +522,11 @@ def covered_keys(src, local_keys, known_names):
                 lo, hi = max(0, m.start() - WINDOW), m.end() + WINDOW
                 window = body[lo:hi]
                 if not (near.search(window) or any(
-                        re.search(r'\b' + re.escape(o) + r'\s*\(', window) for o in reaches)):
+                        re.search(r'\b' + re.escape(o) + r'\s*\(', window) for o in others)):
                     continue
-                shares = re.search(
-                    r'\b(?:' + '|'.join(sorted(map(re.escape, reaches), key=len, reverse=True)) +
-                    r')\s*\([^)]*\b' + re.escape(var) + r'\b', window) or re.search(
+                shares = (others and re.search(
+                    r'\b(?:' + '|'.join(sorted(map(re.escape, others), key=len, reverse=True)) +
+                    r')\s*\([^)]*\b' + re.escape(var) + r'\b', window)) or re.search(
                     r'\b' + re.escape(var) + r'\s*=\s*(?:await\s+)?\w*(?:Data|Fetch|Sync|Load)\s*\(', body)
                 if shares:
                     covered[k] = 'same data as a server call in %s()' % fname
@@ -536,6 +564,48 @@ def registered_names(path):
     return set(re.findall(r"'([\w.-]+)'", body or '')), True
 
 
+def declared_not_synced(path):
+    """Storage keys the app's registry DECLARES it deliberately does not sync.
+
+    ADDED 2026-09-10, and the reason is a fix that told the truth and read like
+    a regression. The sibling-sync route had been clearing a wrapper on its own
+    signature; correcting that surfaced seven keys at once -- SAIRNbuild's
+    bld_settings/bld_integrations/bld_ai_chat, StoneDesk's sd_settings/
+    sd_alert_settings/sd_ai_counts, SAIRNvet's sv_examrooms_turnover -- and
+    EVERY ONE of them is a decision somebody had already written down, in prose,
+    in the registry:
+
+        //   bld_ai_chat -- an unbounded conversation transcript, not a
+        //                  business record.
+
+    Prose is not machine-readable, so the checker had no way to tell a decision
+    from an oversight and reported both as "kept on the device and sent
+    nowhere". That is accurate and useless: a checker that lists seven
+    deliberate choices as findings is one people stop reading, which is how the
+    eighth -- a real one -- gets missed.
+
+    So the decisions become a DECLARATION the tool reads, the same move
+    `extraActions` already makes in these files. Same rules as the resources
+    array: comments stripped first, because these registries carry long prose
+    and reading quoted words out of it is how an earlier version cleared
+    sd_jobs on a sentence.
+
+    AN APP WITH NO DECLARATION GETS AN EMPTY SET, which is the honest default:
+    absent means undecided, not exempt.
+    """
+    app = os.path.splitext(os.path.basename(path))[0]
+    reg = os.path.join(os.path.dirname(os.path.abspath(path)),
+                       'api', '_resources', app + '.js')
+    if not os.path.exists(reg):
+        return set()
+    text = strip_comments(open(reg, encoding='utf-8', errors='replace').read())
+    m = re.search(r'notSynced\s*:\s*\[', text)
+    if not m:
+        return set()
+    body = _body(text, m.start(), opener='[')
+    return set(re.findall(r"'([\w.-]+)'", body or ''))
+
+
 def scan(path):
     src = strip_comments(open(path, encoding='utf-8', errors='replace').read())
     setters = find_setter(src)
@@ -546,8 +616,22 @@ def scan(path):
     named = set(WRITE_LIT_RE.findall(src)) | set(WRITE_OBJ_RE.findall(src))
     named |= set(READ_LIT_RE.findall(src))
     named |= set(re.findall(r"action:\s*'read'\s*,\s*resource:\s*'(\w+)'", src))
-    covered, unsure = covered_keys(src, local, reg | named)
-    uncovered = sorted(k for k in local if k not in covered and k not in unsure)
+    covered, unsure = covered_keys(src, local, reg | named, setters)
+    not_synced = declared_not_synced(path)
+    all_uncovered = [k for k in local if k not in covered and k not in unsure]
+    # DECLARED IS NOT THE SAME AS COVERED, and they are reported separately
+    # rather than merged. A declared key still reaches no server; what the
+    # declaration changes is whether that is news.
+    declared = sorted(set(k for k in all_uncovered if k in not_synced)
+                      | set(k for k in unsure if k in not_synced))
+    uncovered = sorted(k for k in all_uncovered if k not in not_synced)
+    # A DECLARED KEY IS NOT A COULD-NOT-TELL EITHER. bld_ai_chat and
+    # sd_ai_counts land in `unsure` rather than `uncovered` -- they sit beside a
+    # real server call that happens not to share their variable -- and leaving
+    # them there would keep the exit code non-zero forever on two keys somebody
+    # already decided. sd_intake stays a could-not-tell, correctly: it is NOT
+    # declared, because it really is server-backed by a route this cannot see.
+    unsure = {k: v for k, v in unsure.items() if k not in not_synced}
     return {
         'file': os.path.basename(path),
         'setters': setters,
@@ -556,6 +640,7 @@ def scan(path):
         'covered': covered,
         'unsure': unsure,
         'uncovered': uncovered,
+        'declared': declared,
         'unclassified': sorted(unclassified),
     }
 
@@ -607,6 +692,21 @@ def main(argv):
         for k in r['uncovered']:
             print('      %s' % k)
     if not found:
+        print('  none')
+
+    print()
+    print('=== DECLARED NOT SYNCED -- a decision on file, not a finding ===')
+    print('    (each key below reaches no server AND its app registry says so')
+    print('     in a notSynced list. Still local; just not news. A key that is')
+    print('     local and NOT declared is in the section above.)')
+    shown = False
+    for r in rows:
+        if not r.get('declared'):
+            continue
+        shown = True
+        print('  %s -- %d declared: %s' % (r['file'], len(r['declared']),
+                                           ', '.join(r['declared'])))
+    if not shown:
         print('  none')
 
     print()

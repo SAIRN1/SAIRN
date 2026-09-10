@@ -109,14 +109,26 @@ results['arm4_bare_mention_is_not'] = not L.WRITE_LIT_RE.findall(MENTION)
 # ── ARM 5: every other app is untouched ────────────────────────────────────
 # Measured immediately before and after the change; identical. Anchors the fix
 # to the files whose shape it was about.
+# RE-MEASURED 2026-09-10, TWICE, and both moves were real work rather than
+# drift -- so the numbers are restated with what changed rather than relaxed:
+#   sairndental 22/18/4 -> 22/22/0   the four vendor collections were backed up
+#   sairnbiz    11/10/1 -> 11/11/0   sb_incidents gained a real writer (Hank)
+#   sairnlaw    20/19/1 -> 20/19/0   law_billingcodes is now DECLARED not-synced
+#   sairnbuild  34/34/0 -> 34/31/0   three keys stopped being falsely cleared
+#                                    and are now declared
+#   sairnvet    42/42/0 -> 42/41/0   sv_examrooms_turnover likewise
+#   stonedesk   37/34/3 -> 37/30/0   six declared; the three that were already
+#                                    reported are among them
+# The local-only column is now 0 everywhere except SAIRNmechanical, which is
+# the one app with genuinely undeclared local collections.
 BASELINE = {
-    'sairnbiz.html': ('11', '10', '1'), 'sairnbuild.html': ('34', '34', '0'),
-    'sairncare.html': ('6', '6', '0'), 'sairndental.html': ('22', '18', '4'),
+    'sairnbiz.html': ('11', '11', '0'), 'sairnbuild.html': ('34', '31', '0'),
+    'sairncare.html': ('6', '6', '0'), 'sairndental.html': ('22', '22', '0'),
     'sairndesign.html': ('18', '18', '0'), 'sairnfreedom.html': ('35', '35', '0'),
-    'sairngrounds.html': ('30', '30', '0'), 'sairnlaw.html': ('20', '19', '1'),
+    'sairngrounds.html': ('30', '30', '0'), 'sairnlaw.html': ('20', '19', '0'),
     'sairnlegacy.html': ('36', '36', '0'), 'sairnmechanical.html': ('5', '0', '5'),
     'sairnscape.html': ('12', '12', '0'), 'sairnsenior.html': ('14', '14', '0'),
-    'sairnvet.html': ('42', '42', '0'), 'stonedesk.html': ('37', '34', '3'),
+    'sairnvet.html': ('42', '41', '0'), 'stonedesk.html': ('37', '30', '0'),
 }
 drift = []
 for app, want in sorted(BASELINE.items()):
@@ -129,9 +141,25 @@ if drift:
 
 # ── ARM 6: the genuinely local-only findings survive ───────────────────────
 # A resolver can always be "fixed" by making everything look covered.
-for key in ('sb_incidents', 'law_billingcodes', 'dnt_supplies_list',
-            'sairnmechanical_quotes', 'sd_market_history'):
+# THE KEYS CHECKED HERE MOVED, and saying which is the point. sb_incidents,
+# law_billingcodes, dnt_supplies_list and sd_market_history have all since been
+# BACKED UP or DECLARED -- so asserting they still appear as findings would be
+# asserting that real work did not happen. SAIRNmechanical's five are the ones
+# that remain genuinely local and declared by nobody, and they are what this arm
+# guards: a resolver can always be "fixed" by making everything look covered.
+for key in ('sairnmechanical_quotes', 'sairnmechanical_takeoffs',
+            'sairnmechanical_checks', 'sairnmechanical_docs',
+            'sairnmechanical_memory'):
     results['arm6_still_reports_%s' % key] = key in out
+# ...and the ones that moved are accounted for rather than dropped: each is now
+# either covered or declared, never silently absent.
+for key in ('sb_incidents', 'dnt_supplies_list'):
+    results['arm6_%s_no_longer_a_finding' % key] = (
+        key not in out.split('KEPT ON THE DEVICE AND SENT NOWHERE ===')[1]
+        .split('=== DECLARED')[0])
+for key in ('law_billingcodes', 'sd_market_history'):
+    results['arm6_%s_is_declared' % key] = (
+        key in out.split('=== DECLARED NOT SYNCED')[1].split('=== COULD NOT TELL')[0])
 
 print('--- results ---')
 bad = 0

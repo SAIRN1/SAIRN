@@ -96,9 +96,17 @@ def git_show(rev, path, dest):
 # ═══════════════════════════════════════════════════════════════════════════
 def historical(tmp):
     print('-- the two real incidents, before and after the commit that fixed them --')
+    # CORRECTED 2026-09-10, and the correction is the finding rather than a
+    # loosened expectation. sairnbuild's after-state was `set()`, and that was
+    # the sibling-sync route CLEARING TWO KEYS ON A WRAPPER'S OWN SIGNATURE --
+    # `function saveInteg(){...}`'s parameter list matched as a server call.
+    # At commit 1f1705e those two really did reach no server, and the registry
+    # did not yet carry the notSynced declaration that records the decision, so
+    # the correct historical answer is TWO. Widening this to `set()` again would
+    # be re-asserting the bug.
     for app, commit, expect_before_min, expect_after in (
             ('sairnbiz', '48c122df', 10, {'sb_incidents'}),
-            ('sairnbuild', '1f1705e', 29, set())):
+            ('sairnbuild', '1f1705e', 29, {'bld_integrations', 'bld_settings'})):
         for side, rev in (('before', commit + '^'), ('after', commit)):
             base = os.path.join(tmp, side)
             got_html = git_show(rev, app + '.html', os.path.join(base, app + '.html'))

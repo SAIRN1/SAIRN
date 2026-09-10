@@ -160,10 +160,15 @@ results['arm4_negative_gate_still_works'] = {'zz_a', 'zz_b'} <= W.resolve_generi
 # ── ARM 5: every other app is untouched ──────────────────────────────────────
 # Measured before and after the change; identical. Anchors the fix to the one
 # file whose shape it was about.
+# RE-MEASURED 2026-09-10. Two apps moved and BOTH moves are real work, so the
+# numbers are restated with what changed rather than the arm being loosened:
+#   sairnbiz    9 -> 10   sb_incidents gained a real writer (Hank's OSHA log)
+#   sairndental 16 -> 20  the four vendor/supply resources were registered
+# Every app is still N writes / N read back, which is what this arm is for.
 BASELINE = {
-    'sairnbiz.html': ('9', '9'), 'sairnbuild.html': ('32', '32'),
+    'sairnbiz.html': ('10', '10'), 'sairnbuild.html': ('32', '32'),
     'sairncare.html': ('9', '9'), 'sairncode.html': ('28', '28'),
-    'sairndental.html': ('16', '16'), 'sairndesign.html': ('18', '18'),
+    'sairndental.html': ('20', '20'), 'sairndesign.html': ('18', '18'),
     'sairngrounds.html': ('30', '30'), 'sairnlaw.html': ('19', '19'),
     'sairnlegacy.html': ('36', '36'), 'sairnmechanical.html': ('2', '2'),
     'sairnscape.html': ('12', '12'), 'sairnsenior.html': ('15', '15'),

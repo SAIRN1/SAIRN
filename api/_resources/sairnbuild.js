@@ -122,4 +122,20 @@ module.exports = {
   //   bld_integrations -- connection configuration. Syncing config across devices needs its own conflict story, and this is not it.
   //   bld_ai_chat -- an unbounded conversation transcript, not a business record.
   ],
+  // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
+  // The same decisions already written in prose above, in a form the checker
+  // can read. tools/local_only_collection_check.py had been CLEARING these
+  // through a bug -- a one-line save wrapper matched its own signature as the
+  // server call -- so they never appeared. With that fixed they surfaced all
+  // at once and read like a regression, when every one of them is a choice
+  // somebody made and recorded.
+  //
+  // A DECLARATION IS NOT COVERAGE. These keys still reach no server; what this
+  // changes is whether that is news. Absent means UNDECIDED, not exempt, so a
+  // new local-only key still shows up in the findings section where it belongs.
+  notSynced: [
+    'bld_settings',        // app configuration, not a business record
+    'bld_integrations',    // connection configuration -- syncing config across devices needs its own conflict story
+    'bld_ai_chat',         // an unbounded conversation transcript, not a business record
+  ],
 };

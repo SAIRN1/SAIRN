@@ -147,4 +147,18 @@ module.exports = {
   // inside the existing jsonb and the write is an UPDATE.
     dnt_supplies: ['soft_delete'],
   },
+  // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
+  // The same decisions already written in prose above, in a form the checker
+  // can read. tools/local_only_collection_check.py had been CLEARING these
+  // through a bug -- a one-line save wrapper matched its own signature as the
+  // server call -- so they never appeared. With that fixed they surfaced all
+  // at once and read like a regression, when every one of them is a choice
+  // somebody made and recorded.
+  //
+  // A DECLARATION IS NOT COVERAGE. These keys still reach no server; what this
+  // changes is whether that is news. Absent means UNDECIDED, not exempt, so a
+  // new local-only key still shows up in the findings section where it belongs.
+  notSynced: [
+    'dnt_vendor_cart',     // a shopping cart -- device state between opening the panel and placing the order
+  ],
 };
