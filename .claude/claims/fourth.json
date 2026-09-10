@@ -670,8 +670,8 @@
       "task": "check9",
       "claimed_at": "2026-09-10T14:59:59Z",
       "claimed_at_epoch": 1789052399.5306745,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T17:20:14Z"
     }
   ]
 }
