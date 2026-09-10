@@ -855,6 +855,16 @@
       "claimed_at_epoch": 1789059720.931445,
       "status": "released",
       "released_at": "2026-09-10T17:25:01Z"
+    },
+    {
+      "id": "hank-1789061513",
+      "session": "hank",
+      "subject": "seed-pushes-to-server-sweep",
+      "task": "every app with a storage sync hook",
+      "claimed_at": "2026-09-10T17:31:53Z",
+      "claimed_at_epoch": 1789061513.0604248,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
