@@ -975,3 +975,17 @@ four**; a static-markup grep is not a survey of what a page loads.
 traceability (Cody, `10a0aa67`), SOUP tracking (Hank) — all three legs are
 owned. New third-party components I add carry a SOUP note inline from now on;
 the two CDN entries above are written that way.
+
+**`ddbd1f2c` — SAIRNdental's financial tier gates writes now.** A provider could
+POST a `dnt_payments` row and take a 403 reading it back. Found by me
+2026-09-04 and left open then because it is a behaviour change; closed now
+because the app already tells the user *"a provider's feed carries ... no
+financial data"* — this was not a new policy, it was the missing half of one.
+Both tests that asserted the defect were **updated, not relaxed**, which is what
+their own failure messages demanded, and both keep both halves of the pair.
+
+**Three suite failures are PRE-EXISTING, verified against a stashed clean tree
+rather than assumed:** `tests/sairn_storage_wrapper_honesty.js`,
+`tests/run_report_only_checks_probe.py`,
+`tests/push_gate/refspec_and_override_probe.py`. Not mine, not investigated,
+recorded so the next session does not attribute them to `ddbd1f2c`.
