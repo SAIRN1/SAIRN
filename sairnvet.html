@@ -2075,6 +2075,42 @@ function svSeedStore(saver, rows){
   finally { svSyncSuppressed = false; }
 }
 
+// ── A FIELD THAT CANNOT FIT THE ROW MUST NOT BE SENT (2026-09-10) ──────────
+// Found by the same independent review. sv_peerconsults records carry
+// `image: pcCapturedB64` -- a FULL base64 JPEG from a camera capture or a file
+// upload, routinely hundreds of KB to several MB -- and every table in
+// sql/sairnvet_data_schema.sql caps a row at 64KB
+// (`check (octet_length(data::text) <= 65536)`).
+//
+// So every consult with a photo would have been REFUSED by the constraint.
+// Worse than the refusal: PostgREST answers a constraint violation with 400,
+// and api/sd-data.js maps 400 to 503 NOT_PROVISIONED -- so an oversized row
+// reported as "the tables are not set up yet", which is a different problem
+// with a different fix and sends the reader in the wrong direction.
+//
+// THE PHOTO STAYS ON THE DEVICE THAT TOOK IT, AND THE RECORD SAYS SO. Dropping
+// it silently would be the same class of defect this whole change exists to
+// close, so the pushed copy carries `image_local_only:true` and pcOpenDetail()
+// renders a line saying which device holds it. The LOCAL record is untouched --
+// the photo still displays where it was captured.
+//
+// Not solved by raising the cap: 64KB is the platform-wide uniform limit
+// matching api/sd-data.js's MAX_PAYLOAD_BYTES, and a multi-megabyte base64
+// blob in a jsonb column is the wrong shape for object storage regardless of
+// what the constraint says. Recorded as its own open-work row.
+var SV_LOCAL_ONLY_FIELDS={ sv_peerconsults:['image'] };
+
+function svOutbound(key,record,idField){
+  var out=Object.assign({},record,{id:record[idField]});
+  var drop=SV_LOCAL_ONLY_FIELDS[key];
+  if(drop){
+    var dropped=false;
+    drop.forEach(function(f){ if(out[f]!==undefined&&out[f]!==null&&out[f]!==''){ delete out[f]; dropped=true; } });
+    if(dropped) out.image_local_only=true;
+  }
+  return out;
+}
+
 function svSyncCollection(key,next,prev){
   if(svSyncSuppressed) return;
   if(typeof svData!=='function') return;
@@ -2096,7 +2132,7 @@ function svSyncCollection(key,next,prev){
     if(!r||r[idField]===undefined||r[idField]===null||r[idField]===''){ skipped++; return; }
     var now; try{ now=JSON.stringify(r); }catch(e){ skipped++; return; }
     if(before[String(r[idField])]===now) return;
-    svData('write',key,Object.assign({},r,{id:r[idField]})).then(function(saved){
+    svData('write',key,svOutbound(key,r,idField)).then(function(saved){
       // A failed push is NOT reported as success. The local write has already
       // happened, so the clinic is never worse off than before this existed --
       // but silence would make a backup that is not happening look like one
@@ -8201,7 +8237,14 @@ function pcOpenDetail(id){
     '<div class="card" id="pc-detail-card" style="border:2px solid var(--primary);">'
     +'<h3>Consult: '+escHtml(c.patient||c.species||'Untitled')+'</h3>'
     +'<p style="color:var(--muted);font-size:13px;margin-bottom:10px;">'+escHtml(c.from)+' → '+escHtml(c.to)+' · '+escHtml(new Date(c.timestamp).toLocaleString())+'</p>'
-    +(c.image ? '<img src="data:image/jpeg;base64,'+c.image+'" style="max-width:100%;border-radius:8px;margin-bottom:12px;">' : '')
+    +(c.image
+        ? '<img src="data:image/jpeg;base64,'+c.image+'" style="max-width:100%;border-radius:8px;margin-bottom:12px;">'
+        // A consult that HAD a photo and reached this device through the server
+        // backup does not carry it -- see SV_LOCAL_ONLY_FIELDS. Said out loud
+        // rather than rendered as a consult that never had one.
+        : (c.image_local_only
+            ? '<p style="font-size:13px;color:var(--muted);margin-bottom:12px;">📷 A photo was attached to this consult and is stored only on the device it was taken on — it is too large for the server backup.</p>'
+            : ''))
     +(c.note ? '<p style="margin-bottom:10px;"><strong>Case note:</strong> '+escHtml(c.note)+'</p>' : '')
     +body
     +'<button class="btn btn-secondary" style="margin-top:10px;" onclick="document.getElementById(\'pc-detail-card\').remove()">Close</button>'
@@ -8679,7 +8722,26 @@ window.recordSvSharedTopics = recordSvSharedTopics;
 // overwritten, so a second workstation sees the first one's records without
 // clobbering an edit in progress here. Deletions do not propagate either.
 svHydrateAll().then(function(n){
-  if(n){ try{ console.info('SAIRNvet: hydrated '+n+' record(s) from the server backup.'); }catch(e){} }
+  if(n){
+    try{ console.info('SAIRNvet: hydrated '+n+' record(s) from the server backup.'); }catch(e){}
+    // ── THE MERGE IS ADDITIVE ONLY, AND THE USER IS NOW TOLD (2026-09-10) ──
+    // Raised by the independent review of the backup work. "A locally present
+    // id is NEVER overwritten" is the right rule for two devices editing
+    // different records, and it has a consequence nobody had been told about:
+    // a CORRECTION made on one workstation never reaches another that already
+    // holds that record. On sv_controlled and sv_audit_log that is a corrected
+    // dosing entry or a corrected audit row staying wrong everywhere except
+    // where it was fixed -- silently, because the hydrate looks like it
+    // worked and, for new records, did.
+    //
+    // Fixing it properly needs conflict resolution this app does not have and
+    // should not grow by accident on a regulated register. So it is DISCLOSED
+    // rather than quietly carried: only when something actually merged, so it
+    // is not a notice that fires every load and stops being read.
+    try{ showToast(n+' record(s) pulled in from another device. Records already on '+
+      'this device are NOT updated from the server — a correction made elsewhere '+
+      'will not appear here.', 'info', 8000); }catch(e){}
+  }
 }).catch(function(e){
   // A failed hydrate leaves local data untouched. Reported rather than
   // swallowed: silence here would make "the server had nothing" and "the

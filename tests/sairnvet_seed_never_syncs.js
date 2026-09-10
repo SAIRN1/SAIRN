@@ -105,7 +105,7 @@ function harness() {
       key: (i) => Object.keys(store)[i],
     },
     svLoad: (k, d) => (k === 'license' ? 'SV-PINNACLE-2026' : d),
-    svData: (a, r, p) => { writes.push({ action: a, resource: r, id: p && p.id }); return Promise.resolve({}); },
+    svData: (a, r, p) => { writes.push({ action: a, resource: r, id: p && p.id, payload: p }); return Promise.resolve({}); },
     showToast() {}, document: { getElementById: () => null, addEventListener() {} },
     svBlockForCorruptStore() {}, localToday: () => '2026-09-10',
     __writes: writes, __store: store,
@@ -116,6 +116,8 @@ function harness() {
     + decl('var SV_ID_FIELD={') + '\n'
     + 'var svSyncSuppressed=false,_svUnreadable={},_svKeyVerified={},_svWriteFailed=null;\n'
     + fn('function svIsQuotaError(') + '\n'
+    + decl('var SV_LOCAL_ONLY_FIELDS={') + '\n'
+    + fn('function svOutbound(') + '\n'
     + fn('function svSyncCollection(') + '\n'
     + fn('function st(key,data){') + '\n';
   if (html.indexOf('function svSeedStore(') > -1) src += fn('function svSeedStore(') + '\n';
@@ -190,6 +192,57 @@ test('a saver that THROWS does not leave the backup suppressed', () => {
   c.__writes.length = 0;
   c.st('sv_controlled', [{ drug: 'AFTER THROW', schedule: 'IV', onHand: 1, unit: 'mg', lastTransaction: '', witness: '' }]);
   assert.strictEqual(c.__writes.length, 1, 'a throwing seed left svSyncSuppressed true');
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+section('2b. a field too large for the row is not sent, and is not sent SILENTLY');
+
+test('a peer-consult photo is stripped from what goes to the server', () => {
+  // Every table caps a row at 64KB; a base64 JPEG is hundreds of KB to several
+  // MB, so the whole record would have been refused by the CHECK -- and
+  // api/sd-data.js maps PostgREST's 400 to 503 NOT_PROVISIONED, so it would
+  // have reported as "the tables are not set up yet".
+  const c = harness();
+  c.__writes.length = 0;
+  const big = 'A'.repeat(200000);
+  c.st('sv_peerconsults', [{ id: 'pc1', patient: 'Bella', note: 'lesion', image: big }]);
+  assert.strictEqual(c.__writes.length, 1, 'the consult was not pushed at all');
+  const sent = c.__writes[0].payload;
+  assert.strictEqual(sent.image, undefined, 'the base64 image was still sent');
+  assert.strictEqual(sent.image_local_only, true, 'the record does not say the photo is missing');
+  assert.strictEqual(sent.note, 'lesion', 'the rest of the record was dropped too');
+  assert.ok(JSON.stringify(sent).length < 65536, 'the outbound row still exceeds the 64KB cap');
+});
+
+test('the LOCAL record keeps its photo -- only the outbound copy loses it', () => {
+  const c = harness();
+  const big = 'A'.repeat(1000);
+  c.st('sv_peerconsults', [{ id: 'pc1', image: big }]);
+  const local = JSON.parse(c.__store['sv_peerconsults']);
+  assert.strictEqual(local[0].image, big, 'the photo was stripped from the device that took it');
+  assert.strictEqual(local[0].image_local_only, undefined, 'the local record was mutated');
+});
+
+test('a consult with NO photo is not marked as if it had one', () => {
+  const c = harness();
+  c.__writes.length = 0;
+  c.st('sv_peerconsults', [{ id: 'pc2', note: 'no photo' }]);
+  assert.strictEqual(c.__writes[0].payload.image_local_only, undefined,
+    'a consult that never had a photo claims one is held elsewhere');
+});
+
+test('every other resource is passed through untouched', () => {
+  const c = harness();
+  c.__writes.length = 0;
+  c.st('sv_controlled', [{ drug: 'D', schedule: 'IV', onHand: 1, image: 'not-a-photo-field' }]);
+  assert.strictEqual(c.__writes[0].payload.image, 'not-a-photo-field',
+    'the strip list leaked to a resource it does not name');
+});
+
+test('the detail view SAYS the photo is elsewhere rather than showing none', () => {
+  const detail = fn('function pcOpenDetail(');
+  assert.ok(/image_local_only/.test(detail),
+    'pcOpenDetail renders a photo-less consult identically to one that never had a photo');
 });
 
 // ═══════════════════════════════════════════════════════════════════════════

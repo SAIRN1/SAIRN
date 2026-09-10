@@ -8991,7 +8991,36 @@ module.exports = async (req, res) => {
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
         body: JSON.stringify({ license_hash: licHash, app_id: 'sairnvet', [idCol]: String(payload.id), data: payload, updated_at: nowISO() })
       });
-      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.' } }); return; }
+      // ── A REFUSED ROW IS NOT AN UNPROVISIONED TABLE (2026-09-10) ─────────
+      // This read `404 || 400 -> NOT_PROVISIONED` and nothing else. PostgREST
+      // answers a missing table with 404, and a CONSTRAINT VIOLATION with 400
+      // — so a row rejected by `check (octet_length(data::text) <= 65536)`
+      // reported as "the tables are not set up yet", which is a different
+      // problem with a different fix and sends the reader to the SQL editor to
+      // re-run a file that is already there.
+      //
+      // Found by the independent review of this app's backup, on
+      // sv_peerconsults, whose records carry a full base64 JPEG against that
+      // 64KB cap. The record itself is fixed at the client (see
+      // SV_LOCAL_ONLY_FIELDS in sairnvet.html); this is the belt, for the next
+      // oversized row nobody has thought of yet.
+      //
+      // 23xxx is Postgres's integrity-constraint-violation class: 23514 check,
+      // 23505 unique, 23502 not-null, 23503 foreign key. Any of them means the
+      // table EXISTS and refused this row. SCOPED TO THIS BRANCH deliberately —
+      // the sibling blocks above and below carry the same conflation, and
+      // widening it is its own change with its own blast radius.
+      if (r.status === 404 || r.status === 400) {
+        let why = null;
+        try { why = await r.json(); } catch (e) { why = null; }
+        const pgCode = (why && why.code) ? String(why.code) : '';
+        if (pgCode.slice(0, 2) === '23') {
+          res.status(400).json({ error: { code: 'ROW_REFUSED', message: 'The database refused this record (' + pgCode + '). The table exists — the row itself was rejected, most often for exceeding the 64KB row cap.' } });
+          return;
+        }
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNvet data tables are not set up yet — run sql/sairnvet_data_schema.sql in Supabase first.' } });
+        return;
+      }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
