@@ -1,0 +1,70 @@
+# SAIRN custom Semgrep rules.
+#
+# Run:      semgrep scan --config tools/semgrep --metrics=off .
+# Test:     semgrep --test tools/semgrep
+#
+# MOVED OUT OF `.semgrep/` 2026-09-10, AND THE REASON IS THE POINT. The rule
+# below was added in 391cb7c0 with a TDD scaffold, in a directory whose name
+# starts with a dot. `semgrep --test .semgrep` does not find tests there --
+# it prints "No unit tests found" AND EXITS 0, which is indistinguishable from
+# passing in any script that checks the exit code. Measured both ways the same
+# minute: identical fixture, `--test .semgrep` -> "No unit tests found", exit 0;
+# `--test tools/semgrep` -> "2/2: All tests passed", exit 0. A rule nothing
+# proves is a rule nobody has seen go red.
+#
+# Everything here must encode a bug class that has actually bitten this repo.
+
+rules:
+  - id: verify-session-token-missing-expected-app
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      verifySessionToken() called without its third argument (expectedApp).
+      Without it, a valid token from ONE SAIRN app can pass ANOTHER app's gate
+      whenever their role vocabularies overlap — e.g. both StoneDesk and
+      SAIRNbiz have an 'owner' role, so a SAIRNbiz owner token could pass a
+      StoneDesk-only check. The check inside is
+      `if (expectedApp && payload.app !== expectedApp)` (api/_lib/auth.js:309),
+      so omitting the argument does not weaken the check, it REMOVES it — same
+      HMAC secret, same license_hash, a role that is legitimate in its own app.
+      Always scope it: verifySessionToken(token, license_hash, 'stonedesk').
+      This is the exact bug class found and fixed in api/sd-auth.js's setup
+      action and api/sd-data.js's employees read gate on 2026-08-03; this rule
+      exists so it cannot regress silently.
+    patterns:
+      # Semgrep matches argument arity exactly unless `...` is written, so these
+      # match a two-argument call and nothing else.
+      - pattern-either:
+          - pattern: verifySessionToken($TOKEN, $HASH)
+          - pattern: $LIB.verifySessionToken($TOKEN, $HASH)
+      # The declaration is not a call site. Excluding it by PATTERN rather than
+      # by path, because api/_lib/auth.js is exactly the file most worth
+      # scanning and `paths.exclude` would drop all of it.
+      - pattern-not: function verifySessionToken($A, $B)
+    paths:
+      # NO `include:` FILTER, deliberately. The previous version scoped this to
+      # `**/api/**/*.js`, so a call site anywhere else was invisible. There are
+      # none today — verified 2026-09-10, every live caller is under api/ — but
+      # the include bought nothing and silently bounded the guard.
+      exclude:
+        - archive/**
+        - docs/skill-backups/**
+
+  - id: verify-preauth-token-missing-expected-app
+    languages: [javascript, typescript]
+    severity: ERROR
+    message: >-
+      verifyPreAuthToken() called without its third argument (expectedApp).
+      Same shape and same consequence as the session-token rule above, one step
+      earlier in the login: a pre-auth token is issued after PIN success and
+      BEFORE the MFA code is verified, so an unscoped check here sits directly
+      in front of the MFA gate. Pass the endpoint's own app id.
+    patterns:
+      - pattern-either:
+          - pattern: verifyPreAuthToken($TOKEN, $HASH)
+          - pattern: $LIB.verifyPreAuthToken($TOKEN, $HASH)
+      - pattern-not: function verifyPreAuthToken($A, $B)
+    paths:
+      exclude:
+        - archive/**
+        - docs/skill-backups/**
