@@ -853,7 +853,8 @@
       "task": "suppress seeding on every getX -- SQL IS RUN, this is live",
       "claimed_at": "2026-09-10T17:02:00Z",
       "claimed_at_epoch": 1789059720.931445,
-      "status": "active"
+      "status": "released",
+      "released_at": "2026-09-10T17:25:01Z"
     }
   ]
 }
