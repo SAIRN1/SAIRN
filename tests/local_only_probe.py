@@ -232,7 +232,18 @@ function saveBoth(){var cust=ld('x_cust',[]);var pics=ld('x_pics',[]);
     rc, out = run(tmp + '/j/app.html')
     check('an unrelated neighbouring write is a COULD NOT TELL',
           findings(out, 'COULD NOT TELL'), {'x_pics'})
-    check('...and a could-not-tell exits non-zero too', rc, 1)
+    # EXIT 3, NOT 1, as of 2026-09-10. This arm's NAME is 'exits non-zero' and
+    # that is its purpose: a could-not-tell must never read as clean. It
+    # asserted the literal 1 because 1 was the only non-zero code the tool had.
+    # It now separates them -- 1 is a real local-only collection, 3 is 'I could
+    # not read this app' -- because the report-only registry reads the exit
+    # code and was filing 'sairncash.html could not be read' as a DEFECT IN
+    # SAIRNCASH while every app reported local-only: 0.
+    #
+    # STRICTLY STRONGER, not relaxed: it pins the could-not-tell code AND the
+    # arm below pins that a real finding still exits 1, so the two can no
+    # longer be confused in either direction.
+    check('...and a could-not-tell exits 3 -- not clean, and not a finding', rc, 3)
 
     # DEVICE STATE IS NOT A BUSINESS COLLECTION.
     show(tmp + '/k/app.html', APP % """
@@ -318,7 +329,7 @@ function get(){try{var s=localStorage.getItem('z_claims');if(s)return JSON.parse
 function put(d){localStorage.setItem('z_claims',JSON.stringify(d));}
 </script></html>""", None)
     rc, out = run(tmp + '/s/app.html')
-    check('an app that writes storage but resolves nothing exits non-zero', rc, 1)
+    check('an app that writes storage but resolves nothing exits 3', rc, 3)
     check('...and is named, with the reason', 'RESOLVED NO COLLECTIONS' in out, True)
 
     # THE SETTER IS DISCOVERED, NOT ASSUMED. An app that does not call it st()

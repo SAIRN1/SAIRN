@@ -767,10 +767,42 @@ def main(argv):
     blind = [r['file'] for r in rows if not r['total'] and r['unclassified']]
     if blind:
         print()
+        # A CANONICAL `SKIPPED:` LINE, added 2026-09-10. The report-only
+        # registry quotes the first line starting with SKIPPED as the reason a
+        # checker could not run; without one it filed a bare 'SKIPPED' and the
+        # reason -- which is the whole value of a could-not-tell -- was lost.
+        print('SKIPPED: %d file(s) wrote storage and resolved NO collections, so '
+              'this could not tell "nothing to find" from "nothing I can see": %s'
+              % (len(blind), ', '.join(blind)))
         print('WROTE STORAGE, RESOLVED NO COLLECTIONS -- could not read these, NOT a pass:')
         for f in blind:
             print('  ' + f)
-    return 1 if (found or unsure_any or blind) else 0
+    # ── COULD-NOT-TELL IS EXIT 3, NOT EXIT 1 (2026-09-10) ───────────────────
+    # `found` is the defect this exists for: a business COLLECTION that reaches
+    # no server. `unsure_any` and `blind` are the checker failing to read the
+    # app, which is a different fact with a different fix, and collapsing them
+    # into one exit code makes a clean codebase indistinguishable from a broken
+    # one.
+    #
+    # It matters as soon as this is wired: the report-only registry reads the
+    # exit code, so exit 1 filed "sairncash.html could not be read" as a DEFECT
+    # IN SAIRNCASH. On 2026-09-10 the real numbers were `local-only: 0` in all
+    # eighteen apps and exit 1 -- a checker announcing a failure while reporting
+    # that nothing is wrong.
+    #
+    # AND THE TWO BLIND FILES ARE NOT DEFECTS, checked by hand rather than
+    # assumed: every localStorage.setItem in sairnroofing.html is the licence
+    # fingerprint, the licence key or the session, and in sairncash.html the
+    # device id, subscription, trial and usage counter. Both apps genuinely
+    # keep no record collections on the device. The tool cannot yet PROVE that
+    # -- it cannot tell "no collections" from "collections I failed to see" --
+    # so reporting could-not-tell is honest and exit 3 is the honest code.
+    #
+    # Exit 3 is the same "a precondition is not a pass" code check4_probe,
+    # run_all_tests.py, nav_panel_check.py and panel_nesting_check.py use.
+    if found:
+        return 1
+    return 3 if (unsure_any or blind) else 0
 
 
 if __name__ == '__main__':

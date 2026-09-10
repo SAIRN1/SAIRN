@@ -356,6 +356,25 @@ REGISTRY = [
                     'come AFTER the mutation; driven both ways, and 0 across 22 '
                     'files',
     },
+    # ── FOURTH BATCH, 2026-09-10 ────────────────────────────────────────────
+    # Both were held out of earlier batches because CC was editing them. CC has
+    # released; run against real code, and one needed a fix first.
+    # ── FOURTH BATCH, 2026-09-10 ────────────────────────────────────
+    # Held out of earlier batches because CC was editing these two. CC has
+    # released. Its sibling local_only_collection_check.py is NOT here -- see
+    # NOT_PROMOTED below for why, and it is not because it is broken.
+    {
+        'tool': 'write_without_readback_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10',
+        'catches': 'a resource an app WRITES to the server and never reads back '
+                   '-- a backup nobody could restore from',
+        'why_it_matters': 'a write path with no read path is indistinguishable '
+                          'from a working sync until the day somebody needs the '
+                          'data. SAIRNlaw wrote 20 resources and read ONE back',
+        'evidence': 'real run 2026-09-10: 0 findings, 0 could-not-tell, exit 0',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
@@ -390,8 +409,11 @@ NOT_PROMOTED = [
     ('missing_dom_target_check.py', 'its 137 findings are an OPEN, OWNED row '
      '(Fourth). Promoting it now would fire on every push against work already '
      'in progress.'),
-    ('write_without_readback_check.py, local_only_collection_check.py, '
-     'sairn_app_map_check.py', 'held by CC.'),
+    ('local_only_collection_check.py', 'its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see".'),
+    ('sairn_app_map_check.py', 'CLEAN, but it makes a LIVE HTTP request per app '
+     'route -- same reason waf_rule_check.py is held out. Its network half is '
+     'the point of the tool, so it wants a could-not-tell code before it can '
+     'be wired, not just a promotion.'),
 ]
 
 
