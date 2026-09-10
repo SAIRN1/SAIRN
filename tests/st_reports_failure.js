@@ -33,13 +33,25 @@ const APPS = [
   // ignore that boolean, and the catch logged nothing. A refused write
   // produced a `false` no code read and no console recorded.
   { file: 'sairncare.html', name: 'SAIRNcare', prefix: 'care' },
-  // SAIRNfreedom 2 -- NAMED rather than waved through, per the note at the
-  // assertion below. Both bare catches are `catch(_e){}` around a
-  // `console.error`, the same logger guard the default 1 allows: this app has
-  // TWO logger sites inside st(), one for the localStorage write failure and
-  // one for the backup hook throwing. Read on 2026-09-10 before changing the
-  // number -- neither swallows a write failure, and the count still fails at 3.
-  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free', bareCatches: 2 },
+  // SAIRNfreedom is back on the DEFAULT of 1 as of 2026-09-10, and the round
+  // trip is worth keeping because two sessions answered the same red suite
+  // within the hour and both answers were defensible.
+  //
+  // It briefly carried `bareCatches: 2`, named with its reason the way
+  // SAIRNbuild's is: the app really did have TWO logger sites inside st() --
+  // one for the localStorage write failure, one for the backup hook throwing --
+  // both `catch(_e){}` around a `console.error`, and neither swallowing a write
+  // failure. That read was correct about the code as it stood, and the number
+  // was verified to still bite at 3 before it was changed.
+  //
+  // IT IS SUPERSEDED RATHER THAN WRONG. The second logger moved out of st()
+  // into sfBackupHookFailed() (8572e8ce/649cd9c7), the same shape as StoneDesk's
+  // sdBackupHookFailed(), so there is one logger site in the wrapper again and
+  // the default holds. Naming a higher count is the escape hatch for a guard
+  // that genuinely has to live INLINE; a logger does not, and moving it keeps
+  // this fixture measuring the thing it was built to measure instead of
+  // recording where the loggers happen to sit.
+  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free' },
   // Added 2026-09-04 (Cody) -- the last three on the open-work row's list.
   // Measured per file rather than assumed from the siblings: sairnsenior's st()
   // has 32 call sites and ALL 32 ignore the return; sairnbuild's has 86 with 44
