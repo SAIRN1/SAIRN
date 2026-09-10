@@ -865,6 +865,16 @@
       "claimed_at_epoch": 1789061513.0604248,
       "status": "released",
       "released_at": "2026-09-10T17:51:58Z"
+    },
+    {
+      "id": "hank-1789062944",
+      "session": "hank",
+      "subject": "stonedesk-dead-unguarded-dom-reads",
+      "task": "guardian 0d delete or quarantine the 18 functions",
+      "claimed_at": "2026-09-10T17:55:44Z",
+      "claimed_at_epoch": 1789062944.1889875,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
