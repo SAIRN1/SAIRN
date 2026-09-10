@@ -32,6 +32,43 @@ module.exports = {
   // is a description of a physical thing whose serial gets corrected and whose
   // location changes. It carries an UPDATE grant; it still carries no DELETE.
     'mech_site_assets',
+  // ── THE LAST LOCAL-ONLY COLLECTIONS ON THE PLATFORM (2026-09-10) ────────
+  // tools/local_only_collection_check.py reported this app as 5 of 5 with NO
+  // route to a server -- the only one left undeclared after that day's sweep.
+  // Not a pre-server app: mechData() works, mech_credentials and
+  // mech_site_assets are live, and the licence is real. These were never wired.
+  //
+  // THE CHECK REGISTER IS THE SHARP ONE. saveCheck() stores {num, date, payee,
+  // amount, memo} -- a business's record of money it paid out, on one browser.
+  // The app's own comment beside it notes that a lost write is how two checks
+  // end up sharing a number; losing the register loses the audit trail for
+  // every cheque written.
+  //
+  // NAMES ARE NOT THE STORAGE KEYS HERE. This app's keys are APP_ID + '_quotes'
+  // and its resources carry the established `mech_` prefix, so MECH_SYNCED in
+  // sairnmechanical.html is a [resource, storage-key] PAIR list -- the shape
+  // SAIRNdental's DNT_SYNC_RESOURCES already uses, and what makes the coverage
+  // readable to the checker rather than a permanent could-not-tell.
+  //
+  // mech_checks KEYS ON THE CHECK NUMBER, not a minted id. That is what the
+  // register has always keyed on and what makes a duplicate visible; minting a
+  // second identity for a document that already has one would hide it.
+  //
+  // Licence-gated only, matching mechData()'s existing calls. See
+  // sql/sairnmechanical_records_schema.sql.
+    'mech_quotes',
+    'mech_checks',
+    'mech_docs',
+    'mech_takeoffs',
+  ],
+  // ── DECLARED NOT SYNCED ─────────────────────────────────────────────────
+  // Storage keys this app deliberately keeps on the device, in the form
+  // tools/local_only_collection_check.py reads. A declaration is NOT coverage:
+  // these still reach no server. What it changes is whether that is news.
+  notSynced: [
+    'sairnmechanical_memory',   // AI conversation memory -- 30 truncated strings, no records and no ids
+    'sairnmechanical_crnum',    // the next check number; a counter, and a stale one restored from a backup would REPEAT a number
+    'sairnmechanical_pricing',  // the rate card the quote engine prices against; configuration
   ],
   // 'eligibility' (mech_credentials, 2026-09-02) answers "who may be dispatched
   // to THIS job", against the credentials the job actually requires. It is

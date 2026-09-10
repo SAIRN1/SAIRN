@@ -1129,7 +1129,12 @@ async function fqGenQuote(){
   }catch(e){el.textContent='Quote generation failed. Check connection.';}
 }
 function fqShare(){if(navigator.share)navigator.share({title:'SAIRNmechanical Quote',text:fqQuoteTxt}).catch(()=>{});else{navigator.clipboard.writeText(fqQuoteTxt);showToast('Quote copied!');}}
-function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});var ok=mechSt(APP_ID+'_quotes',q);if(ok)showToast('Quote saved');return ok;}
+function saveQuote(){var q=[];try{q=JSON.parse(localStorage.getItem(APP_ID+'_quotes')||'[]');}catch(e){q=[];}q.unshift({id:Date.now(),date:new Date().toLocaleDateString(),trade:fqTrade,text:fqQuoteTxt});var ok=mechSt(APP_ID+'_quotes',q);
+  // ONE RECORD, NOT THE WHOLE ARRAY, and only after the local write succeeded.
+  // window.* because mechPushRecord lives in the controller IIFE further down
+  // the file; `typeof` guarded so a save still works if that block never ran.
+  if(ok&&typeof window.mechPushRecord==='function')window.mechPushRecord('mech_quotes',q[0]);
+  if(ok)showToast('Quote saved');return ok;}
 // fqClose() said 'Signed quote saved' unconditionally. It now defers to
 // saveQuote(): on a failed write mechSt() has already said what happened, and
 // the step is NOT reset, so the signature and the quote text are still on
@@ -1178,6 +1183,10 @@ function saveCheck(){
   // when `entry` was built above; leaving it advanced over a check that was
   // never stored is how two checks end up sharing a number.
   if(!mechSt(APP_ID+'_checks',checks)){crNum=entry.num;return;}
+  // The register reaches the server keyed on the CHECK NUMBER -- see
+  // MECH_ID_FIELD. Fire-and-forget by design: the cheque IS recorded on this
+  // device, and a failed backup says so in the console rather than undoing it.
+  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_checks',entry);
   if(!mechSt(APP_ID+'_crnum',crNum)){
     // The check IS saved; only the counter is not, so the next one would
     // reuse this number. Say exactly that rather than reporting a clean save.
@@ -1329,6 +1338,7 @@ function saveDoc(){
   arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:txt});
   try{localStorage.setItem(APP_ID+'_docs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}
+  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_docs',arr[0]);
   showToast('Saved on this device');
 }
 function saveTakeoff(){
@@ -1339,6 +1349,7 @@ function saveTakeoff(){
   arr.unshift({id:Date.now(),date:new Date().toLocaleString(),text:txt});
   try{localStorage.setItem(APP_ID+'_takeoffs',JSON.stringify(arr.slice(0,50)));}
   catch(e){showToast('Could not save -- local storage may be full');return;}
+  if(typeof window.mechPushRecord==='function')window.mechPushRecord('mech_takeoffs',arr[0]);
   showToast('Saved on this device');
 }
 // Real navigation, replacing ten tiles that only toasted "Opening <app>".
@@ -1554,6 +1565,102 @@ async function runBlueprintAI(input){
       return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, body: d }; });
     }).catch(function () { return { status: 0, body: null }; });
   }
+
+
+  // ══ THE LAST LOCAL-ONLY RECORDS REACH A SERVER (2026-09-10) ══════════════
+  // tools/local_only_collection_check.py reported this app as 5 of 5
+  // collections with NO route to a server -- the only one left undeclared
+  // after that day's platform sweep. NOT a pre-server app: mechData() works,
+  // mech_credentials and mech_site_assets are live, the licence is real.
+  // These four were simply never wired.
+  //
+  // THE CHECK REGISTER IS THE SHARP ONE. saveCheck() stores {num, date, payee,
+  // amount, memo} -- a business's record of money it paid out, on one browser.
+  // The comment beside it already notes that a lost write is how two checks
+  // share a number; losing the register loses the audit trail entirely.
+  //
+  // A PAIR LIST, NOT A NAME MATCH. This app's storage keys are APP_ID +
+  // '_quotes' while its resources carry the established `mech_` prefix, so the
+  // mapping has to be stated. Same shape as SAIRNdental's DNT_SYNC_RESOURCES,
+  // and it is what makes the coverage readable to the checker rather than a
+  // permanent could-not-tell.
+  var MECH_SYNCED = [
+    ['mech_quotes',   APP_ID + '_quotes'],
+    ['mech_checks',   APP_ID + '_checks'],
+    ['mech_docs',     APP_ID + '_docs'],
+    ['mech_takeoffs', APP_ID + '_takeoffs']
+  ];
+  // mech_checks KEYS ON THE CHECK NUMBER. That is what the register has always
+  // keyed on and what makes a duplicate visible; minting a second identity for
+  // a document that already has one would hide it.
+  var MECH_ID_FIELD = { mech_checks: 'num' };
+
+  // REQUIRES sql/sairnmechanical_records_schema.sql. Until it runs, a write
+  // answers 503 NOT_PROVISIONED naming the file and a read answers
+  // provisioned:false, so this degrades honestly rather than claiming a backup.
+  //
+  // A FAILED PUSH IS REPORTED, NOT SWALLOWED. mechData() returns {status, body}
+  // and both are read -- silence would make a backup that is not happening look
+  // like one that is, which is the defect class this exists to remove.
+  function mechPushOne(resource, rec) {
+    var idField = MECH_ID_FIELD[resource] || 'id';
+    if (!rec || rec[idField] === undefined || rec[idField] === null || rec[idField] === '') {
+      try {
+        console.warn('SAIRNmechanical backup: a "' + resource + '" record has no "' +
+          idField + '" and was NOT backed up. It is saved on this device only.');
+      } catch (e) {}
+      return Promise.resolve(null);
+    }
+    var payload = Object.assign({}, rec, { id: rec[idField] });
+    return mechData('write', resource, payload).then(function (r) {
+      if (!r || r.status !== 200 || !r.body || !r.body.ok) {
+        try {
+          console.warn('SAIRNmechanical backup: "' + resource + '" record ' + rec[idField] +
+            ' did NOT reach the server (' + ((r && r.status) || 'no response') + '). ' +
+            'It is saved on this device only.');
+        } catch (e) {}
+        return null;
+      }
+      return r.body.data;
+    });
+  }
+  window.mechPushRecord = mechPushOne;
+
+  // ── HYDRATION ────────────────────────────────────────────────────────────
+  // Additive-only merge by id: a server record not already present locally is
+  // appended, a locally present id is NEVER overwritten. Not full conflict
+  // resolution -- the same disclosed limitation svHydrateAll() and
+  // sdHydrateAll() carry. provisioned:false leaves local data untouched rather
+  // than emptying anything.
+  //
+  // THE LOCAL CAPS ARE NOT REAPPLIED HERE ON PURPOSE. saveDoc() and
+  // saveTakeoff() keep the newest 50 for LOCAL storage; the server keeps every
+  // row, which is the point of an archive, and re-trimming on hydrate would
+  // make a display bound look like a deletion.
+  function mechHydrateAll() {
+    if (!mechLic()) return Promise.resolve(0);
+    var merged = 0;
+    return Promise.all(MECH_SYNCED.map(function (pair) {
+      var resource = pair[0], key = pair[1];
+      var idField = MECH_ID_FIELD[resource] || 'id';
+      return mechData('read', resource, {}).then(function (r) {
+        if (!r || r.status !== 200 || !r.body || !r.body.ok) return;
+        var rows = r.body.data;
+        if (!Array.isArray(rows) || !rows.length) return;
+        var local = [];
+        try { local = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { return; }
+        if (!Array.isArray(local)) return;
+        var have = {};
+        local.forEach(function (x) { if (x && x[idField] != null) have[String(x[idField])] = true; });
+        var added = 0;
+        rows.forEach(function (x) {
+          if (x && x[idField] != null && !have[String(x[idField])]) { local.push(x); added++; }
+        });
+        if (added && mechSt(key, local)) merged += added;
+      }).catch(function () {});
+    })).then(function () { return merged; });
+  }
+  window.mechHydrateAll = mechHydrateAll;
 
   var MECH_TYPE_LABELS = {
     epa_608: 'EPA 608', nate: 'NATE', state_license: 'State licence',

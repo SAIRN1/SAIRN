@@ -126,7 +126,7 @@ BASELINE = {
     'sairncare.html': ('6', '6', '0'), 'sairndental.html': ('22', '22', '0'),
     'sairndesign.html': ('18', '18', '0'), 'sairnfreedom.html': ('35', '35', '0'),
     'sairngrounds.html': ('30', '30', '0'), 'sairnlaw.html': ('20', '19', '0'),
-    'sairnlegacy.html': ('36', '36', '0'), 'sairnmechanical.html': ('5', '0', '5'),
+    'sairnlegacy.html': ('36', '36', '0'), 'sairnmechanical.html': ('5', '4', '0'),
     'sairnscape.html': ('12', '12', '0'), 'sairnsenior.html': ('14', '14', '0'),
     'sairnvet.html': ('42', '41', '0'), 'stonedesk.html': ('37', '30', '0'),
 }
@@ -141,25 +141,40 @@ if drift:
 
 # ── ARM 6: the genuinely local-only findings survive ───────────────────────
 # A resolver can always be "fixed" by making everything look covered.
-# THE KEYS CHECKED HERE MOVED, and saying which is the point. sb_incidents,
-# law_billingcodes, dnt_supplies_list and sd_market_history have all since been
-# BACKED UP or DECLARED -- so asserting they still appear as findings would be
-# asserting that real work did not happen. SAIRNmechanical's five are the ones
-# that remain genuinely local and declared by nobody, and they are what this arm
-# guards: a resolver can always be "fixed" by making everything look covered.
-for key in ('sairnmechanical_quotes', 'sairnmechanical_takeoffs',
-            'sairnmechanical_checks', 'sairnmechanical_docs',
-            'sairnmechanical_memory'):
-    results['arm6_still_reports_%s' % key] = key in out
+# THE SURVIVAL CONTROL IS NOW A FIXTURE, NOT A LIVE DEFECT, and the second
+# rewrite of this arm is the reason. It first named sb_incidents,
+# law_billingcodes, dnt_supplies_list and sd_market_history; those were backed
+# up or declared, so it was re-pointed at SAIRNmechanical's five -- and on
+# 2026-09-10 those were backed up too. THERE ARE NOW ZERO local-only findings
+# on the platform, which is the goal and which leaves a defect-pinned control
+# with nothing to stand on. tools/run_all_tests.py's own header records exactly
+# this: "a probe pinned to a current defect rots the moment that defect is
+# fixed". So the control is synthetic and cannot rot.
+FIXTURE_LOCAL = """
+function st(k,v){localStorage.setItem(k,JSON.stringify(v));return true;}
+function saveZzRecords(list){ return st('zz_records', list); }
+"""
+_keys, _unc = L.collection_keys(FIXTURE_LOCAL, ['st'])
+results['arm6_a_local_collection_is_still_seen'] = 'zz_records' in _keys
+_cov, _uns = L.covered_keys(FIXTURE_LOCAL, set(_keys), set(), ['st'])
+results['arm6_and_is_NOT_cleared_by_anything'] = 'zz_records' not in _cov
+
+# ...and the keys that MOVED are accounted for rather than dropped: every one is
+# now either covered or declared, never silently absent from both sections.
+_findings = out.split('KEPT ON THE DEVICE AND SENT NOWHERE ===')[1].split('=== DECLARED')[0]
+_declared = out.split('=== DECLARED NOT SYNCED')[1].split('=== COULD NOT TELL')[0]
+for key in ('sb_incidents', 'dnt_supplies_list', 'sairnmechanical_quotes',
+            'sairnmechanical_checks'):
+    results['arm6_%s_no_longer_a_finding' % key] = key not in _findings
+for key in ('law_billingcodes', 'sd_market_history', 'sairnmechanical_memory'):
+    results['arm6_%s_is_declared' % key] = key in _declared
+# The findings section is EMPTY platform-wide, and that is asserted rather than
+# assumed -- it is the whole point of the sweep and the thing a future
+# regression would break first.
+results['arm6_no_local_only_anywhere'] = _findings.strip() == 'none'
 # ...and the ones that moved are accounted for rather than dropped: each is now
 # either covered or declared, never silently absent.
-for key in ('sb_incidents', 'dnt_supplies_list'):
-    results['arm6_%s_no_longer_a_finding' % key] = (
-        key not in out.split('KEPT ON THE DEVICE AND SENT NOWHERE ===')[1]
-        .split('=== DECLARED')[0])
-for key in ('law_billingcodes', 'sd_market_history'):
-    results['arm6_%s_is_declared' % key] = (
-        key in out.split('=== DECLARED NOT SYNCED')[1].split('=== COULD NOT TELL')[0])
+
 
 print('--- results ---')
 bad = 0

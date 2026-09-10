@@ -68,12 +68,23 @@ results['arm1_not_in_covered_section'] = (
 results['arm1_reported_as_declared'] = re.search(
     r'sairnvet\.html -- \d+ declared:[^\n]*sv_examrooms_turnover', out) is not None
 
-# ── ARM 2: the one real finding survives ───────────────────────────────────
-# A resolver can always be "fixed" into silence. SAIRNmechanical's five are
-# genuinely local and declared by nobody.
-for k in ('sairnmechanical_quotes', 'sairnmechanical_takeoffs'):
-    results['arm2_still_reports_%s' % k] = k in out
+# ── ARM 2: a real finding still survives -- ON A FIXTURE ───────────────────
+# A resolver can always be "fixed" into silence, so this arm has to prove one
+# still gets through. It named SAIRNmechanical's five until 2026-09-10, when
+# they were backed up and the platform reached ZERO local-only findings. A
+# control pinned to a live defect dies with the defect; this one cannot.
+FIXTURE_LOCAL = """
+function st(k,v){localStorage.setItem(k,JSON.stringify(v));return true;}
+function saveZzRecords(list){ return st('zz_records', list); }
+"""
+_k, _u = L.collection_keys(FIXTURE_LOCAL, ['st'])
+_c, _s2 = L.covered_keys(FIXTURE_LOCAL, set(_k), set(), ['st'])
+results['arm2_a_local_collection_is_seen'] = 'zz_records' in _k
+results['arm2_and_is_not_cleared'] = 'zz_records' not in _c
+# The live run's own exit code still has to be non-zero for a real reason --
+# stonedesk's sd_intake could-not-tell -- rather than because nothing ran.
 results['arm2_exit_nonzero'] = code != 0
+results['arm2_reason_is_a_could_not_tell'] = 'sd_intake' in out
 
 # ── ARM 3 (CONTROL): reproduce the self-signature trap, then refute it ─────
 # The fixture is the exact shape: a one-line wrapper whose parameter list looks
@@ -120,11 +131,15 @@ results['arm5_absent_declaration_is_empty'] = L.declared_not_synced(
 # ── ARM 6 (CONTROL): a declaration cannot launder an undeclared key ────────
 # SAIRNmechanical has no registry declaration, so its five must stay findings
 # no matter what any other app declares.
-results['arm6_mechanical_not_declared'] = not (
-    L.declared_not_synced(os.path.join(REPO, 'sairnmechanical.html'))
-    & {'sairnmechanical_quotes'})
-results['arm6_mechanical_still_in_findings'] = re.search(
-    r'KEPT ON THE DEVICE AND SENT NOWHERE ===\n(?:.*\n)*?\s*sairnmechanical\.html', out) is not None
+# CORRECTED 2026-09-10: SAIRNmechanical's four are now BACKED UP and its fifth
+# is DECLARED, so "still in findings" would assert that real work did not
+# happen. What this arm is actually for -- a declaration must not launder a key
+# nothing covers -- is proven directly instead, on a key no registry mentions.
+results['arm6_undeclared_key_is_not_laundered'] = 'zz_records' not in L.declared_not_synced(
+    os.path.join(REPO, 'sairnmechanical.html'))
+results['arm6_declaration_is_narrow'] = L.declared_not_synced(
+    os.path.join(REPO, 'sairnmechanical.html')) == {
+        'sairnmechanical_memory', 'sairnmechanical_crnum', 'sairnmechanical_pricing'}
 
 # ── ARM 7: every app's covered count is unchanged except the four fixed ────
 # Measured immediately before and after. Only the apps whose setter pushes --
@@ -132,7 +147,7 @@ results['arm6_mechanical_still_in_findings'] = re.search(
 BASELINE = {
     'sairnbiz.html': '11', 'sairncare.html': '6', 'sairncode.html': '27',
     'sairndental.html': '22', 'sairndesign.html': '18', 'sairnfreedom.html': '35',
-    'sairngrounds.html': '30', 'sairnlegacy.html': '36', 'sairnmechanical.html': '0',
+    'sairngrounds.html': '30', 'sairnlegacy.html': '36', 'sairnmechanical.html': '4',
     'sairnscape.html': '12', 'sairnsenior.html': '14', 'stonedesk-hr.html': '2',
 }
 drift = []

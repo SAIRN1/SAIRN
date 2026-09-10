@@ -10075,6 +10075,60 @@ module.exports = async (req, res) => {
       return;
     }
 
+    // -- SAIRNMECHANICAL: THE LAST LOCAL-ONLY RECORDS (2026-09-10) -----------
+    // tools/local_only_collection_check.py reported sairnmechanical as 5 of 5
+    // collections with NO route to a server -- the only app left undeclared
+    // after that day's sweep. Not a pre-server app: mechData() works,
+    // mech_credentials and mech_site_assets are live and the licence is real.
+    // These four were simply never wired.
+    //
+    // THE CHECK REGISTER IS THE SHARP ONE. saveCheck() stores {num, date,
+    // payee, amount, memo} -- a business's record of money it paid out, on one
+    // browser. Losing it loses the audit trail for every cheque written.
+    //
+    // mech_checks KEYS ON THE CHECK NUMBER. `check_id` holds `num`, which is
+    // what the register has always keyed on and what makes a duplicate
+    // visible; the client sends it through a per-resource id-field map rather
+    // than minting a second identity for a document that already has one. This
+    // branch is unchanged by that and stores what it is given.
+    //
+    // Licence-gated only, matching this app's existing mechData() calls, and
+    // NOT session-gated: mech_credentials and mech_site_assets have their own
+    // bespoke branches with their own rules, and a quote or a cheque stub is
+    // not a credential. See sql/sairnmechanical_records_schema.sql.
+    const MECH_RECORDS = {
+      mech_quotes: 'quote_id', mech_checks: 'check_id',
+      mech_docs: 'doc_id', mech_takeoffs: 'takeoff_id'
+    };
+    if (MECH_RECORDS[resource] && action === 'read') {
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // 404/400 means the table does not exist yet. An honest empty WITH
+      // provisioned:false, so the client can tell "nothing saved yet" from
+      // "this was never migrated" and leaves local data alone for the second.
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (MECH_RECORDS[resource] && action === 'write') {
+      const mIdCol = MECH_RECORDS[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + mIdCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairnmechanical', [mIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNmechanical record tables are not set up yet \u2014 run sql/sairnmechanical_records_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
     // dnt_settings (2026-08-10) -- own dedicated handler, not the generic
     // DNT_RESOURCES block above, because booking_slug is a real promoted
     // column (unique index, resolved by the public booking endpoints)

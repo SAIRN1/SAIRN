@@ -432,6 +432,33 @@ def covered_keys(src, local_keys, known_names, setters=()):
         if a in local_keys and b in known_names:
             covered.setdefault(a, "pair list with '%s'" % b)
 
+    # THE SAME PAIR LIST WITH THE KEY BUILT FROM A CONSTANT PREFIX (2026-09-10).
+    #     [ 'mech_quotes', APP_ID + '_quotes' ]
+    # collection_keys() ALREADY resolves this shape on the WRITE side -- this
+    # file's own header cites SAIRNmechanical as the reason it exists ("writes
+    # every one of its collections as mechSt(APP_ID+'_quotes', ...)"). The pair
+    # route did not, so an app that states its mapping honestly and builds the
+    # key from its single prefix constant read as UNCOVERED anyway, and the only
+    # way to satisfy the checker was to hardcode the prefix it already owns.
+    # Making a tool answerable only to a duplicated constant is how a convention
+    # gets bent to fit an instrument.
+    #
+    # Same evidence, same strength: the resource must still be a registered or
+    # server-named resource, and the assembled key must still be one this file
+    # actually writes.
+    prefix_const = {}
+    for m in re.finditer(r'\b(?:var|let|const)\s', src):
+        stmt = src[m.end():m.end() + 4000].split(';', 1)[0]
+        for cname, cval in re.findall(r'([A-Z][A-Z0-9_]*)\s*=\s*[\'"]([\w.-]+)[\'"]', stmt):
+            prefix_const.setdefault(cname, cval)
+    for a, head, tail in re.findall(
+            r"\[\s*'([\w.-]+)'\s*,\s*([A-Z][A-Z0-9_]*)\s*\+\s*'([\w.-]+)'\s*\]", src):
+        if head not in prefix_const or a not in known_names:
+            continue
+        b = prefix_const[head] + tail
+        if b in local_keys:
+            covered.setdefault(b, "pair list with '%s' (%s + '%s')" % (a, head, tail))
+
     # SYNCED LIST -- a declared list whose members gate a generic write hook.
     # SAIRNbuild's BLD_SYNCED and SAIRNbiz's SB_SYNCED are both this shape; the
     # list IS the write set, and the same constant drives the read.
