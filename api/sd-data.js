@@ -9542,8 +9542,27 @@ module.exports = async (req, res) => {
       dnt_coverage_rules: 'coverage_rule_id', dnt_charges: 'charge_id',
       dnt_payments: 'payment_id', dnt_denial: 'denial_id', dnt_ar: 'ar_id', dnt_revenue: 'revenue_id',
       dnt_referrals: 'referral_id', dnt_gfe: 'gfe_id',
-      dnt_recall_outreach: 'outreach_id', dnt_txplans: 'txplan_id'
+      dnt_recall_outreach: 'outreach_id', dnt_txplans: 'txplan_id',
+      // ── THE LAST FOUR LOCAL-ONLY COLLECTIONS (2026-09-10) ────────────────
+      // Two of the four are lists and belong here; the other two are single
+      // OBJECTS and get their own branch further down, the same split
+      // dnt_settings already occupies. See sql/sairndental_vendor_schema.sql.
+      //
+      // Not added to DNT_FINANCIAL_RESOURCES or DNT_PATIENT_SCOPED_RESOURCES,
+      // deliberately: the financial gate exists to keep patient charges,
+      // payments and priced treatment plans behind owner/front-desk, and a
+      // supply cupboard and a purchase order are practice operations worked by
+      // whoever orders the gloves. Neither names a patient.
+      dnt_supplies: 'supply_id', dnt_vendor_orders: 'vendor_order_id'
     };
+    // Resources whose read hides soft-deleted rows. dnt_supplies is the only
+    // one of the four with a delete path (removeSupply()), and without this
+    // filter the hydrate would merge a removed supply straight back in by id --
+    // a backup that resurrects deleted records, which is worse than no backup.
+    // Scoped to this ONE resource rather than applied to the whole generic
+    // block: the other fifteen have no delete path and no `_deleted_at` key, so
+    // widening the filter would change behaviour for them to no purpose.
+    const DNT_SOFT_DELETE_RESOURCES = { dnt_supplies: true };
     // Patient-scoped resources: the record itself is about a specific patient.
     // dnt_referrals is here deliberately -- it carries patient_id and a clinical
     // reason, so leaving it practice-wide would have leaked exactly what scoping
@@ -9597,7 +9616,14 @@ module.exports = async (req, res) => {
         dntScopeIds = await dntPatientIdsForProvider(link.providerId);
         if (!dntScopeIds) { res.status(502).json({ error: { code: 'SCOPE_LOOKUP_FAILED', message: 'Could not determine your patient list. Try again.' } }); return; }
       }
-      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      // The soft-delete filter is on the jsonb field rather than a column, and
+      // a row that has never been soft-deleted has no `_deleted_at` key at all,
+      // so `->>` yields NULL for it and `is.null` matches every pre-existing
+      // row -- this changes nothing for data written before it existed. Same
+      // shape as the StoneDesk branch above.
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+        (DNT_SOFT_DELETE_RESOURCES[resource] ? '&data->>_deleted_at=is.null' : '') +
+        '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
@@ -9909,6 +9935,108 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // -- SAIRNDENTAL VENDOR: TWO SINGLE OBJECTS AND A SOFT DELETE (2026-09-10)
+    // The other half of the last-four-local-only fix. dnt_supplies and
+    // dnt_vendor_orders are lists and ride the generic DNT_RESOURCES block
+    // above; these two are single OBJECTS -- dnt_vendor_contacts is a map keyed
+    // by vendor, dnt_vendor_pricing is one settings object
+    // ({vendorDiscounts, categoryDiscounts, productOverrides}) -- so they get
+    // their own branch, exactly as dnt_settings does below and for the same
+    // reason: a merge-by-id over something with no per-record id would append
+    // the whole object on every sync.
+    //
+    // ONE ROW EACH, id 'default'. The read still answers array-shaped like
+    // every other resource here, because the client's sync loop expects that
+    // and dnt_settings already set the precedent.
+    //
+    // SESSION-GATED like every other dnt_* branch. NOT financial-gated: the
+    // financial roles exist to keep patient charges and priced plans behind
+    // owner/front-desk, and a vendor price list is practice operations.
+    const DNT_VENDOR_OBJECTS = {
+      dnt_vendor_contacts: 'vendor_contact_id',
+      dnt_vendor_pricing_rules: 'vendor_pricing_rule_id'
+    };
+    if (DNT_VENDOR_OBJECTS[resource] && action === 'read') {
+      if (!dntGate(res)) return;
+      const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (rows || []).map((x) => x.data), provisioned: true });
+      return;
+    }
+    if (DNT_VENDOR_OBJECTS[resource] && action === 'write') {
+      if (!dntGate(res)) return;
+      const vIdCol = DNT_VENDOR_OBJECTS[resource];
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: resource + ' payload.id is required' } });
+        return;
+      }
+      // WHOLESALE, NOT MERGED, and that is the correct half of the trade here.
+      // dnt_settings merges because a caller sends a PATCH of a few keys and
+      // the rest must survive. These two are always written as the COMPLETE
+      // object -- vEditContact() rewrites the whole contacts map, and each
+      // vSet*Discount() rewrites the whole rules object -- so a merge would
+      // make a genuine removal (a discount taken off, a rep contact cleared)
+      // impossible to express. Stated because the two branches sit together
+      // and look like they should match.
+      const r = await fetch(rest(resource + '?on_conflict=license_hash,' + vIdCol), {
+        method: 'POST',
+        headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
+        body: JSON.stringify({ license_hash: licHash, app_id: 'sairndental', [vIdCol]: String(payload.id), data: payload, updated_at: nowISO() })
+      });
+      if (r.status === 404 || r.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.' } }); return; }
+      const rows = await r.json();
+      if (!r.ok) return upstream(res, rows);
+      res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // -- dnt_supplies SOFT DELETE (2026-09-10) --------------------------------
+    // WITHOUT THIS THE BACKUP WOULD BE A BUG. removeSupply() drops an item from
+    // dnt_supplies_list; dntSyncFromServer() merges the server's rows back in
+    // BY ID, so a supply the practice removed would REAPPEAR on the next sync.
+    // A backup that resurrects deleted records is worse than no backup: it
+    // looks like the app losing track of a deletion the user watched succeed.
+    //
+    // Mirrors the StoneDesk soft-delete branch exactly, including the parts
+    // that matter: READ-MODIFY-WRITE rather than a blind upsert of the caller's
+    // copy, so a delete cannot double as an opportunity to overwrite the stored
+    // record with a stale one; 404 when there is nothing to delete, rather than
+    // a success for a deletion that did not happen; and NO new database
+    // privilege, because the marker lives inside the existing jsonb and the
+    // write is an UPDATE.
+    if (resource === 'dnt_supplies' && action === 'soft_delete') {
+      if (!dntGate(res)) return;
+      if (!payload || payload.id === undefined || payload.id === null || payload.id === '') {
+        res.status(400).json({ error: { message: 'dnt_supplies payload.id is required' } });
+        return;
+      }
+      const supId = String(payload.id);
+      const cur = await fetch(rest('dnt_supplies?license_hash=eq.' + enc(licHash) +
+        '&supply_id=eq.' + enc(supId) + '&select=data'), { headers });
+      if (cur.status === 404 || cur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'SAIRNdental vendor tables are not set up yet \u2014 run sql/sairndental_vendor_schema.sql in Supabase first.' } }); return; }
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+      if (!Array.isArray(curRows) || curRows.length === 0) {
+        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No dnt_supplies record with that id \u2014 nothing was deleted' } });
+        return;
+      }
+      const supStored = curRows[0].data || {};
+      if (supStored._deleted_at) { res.status(200).json({ ok: true, data: supStored, already_deleted: true }); return; }
+      const supMarked = Object.assign({}, supStored, { _deleted_at: nowISO() });
+      const w = await fetch(rest('dnt_supplies?license_hash=eq.' + enc(licHash) +
+        '&supply_id=eq.' + enc(supId)), {
+        method: 'PATCH',
+        headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ data: supMarked, updated_at: nowISO() })
+      });
+      const wRows = await w.json().catch(function () { return null; });
+      if (!w.ok) return upstream(res, wRows);
+      res.status(200).json({ ok: true, data: supMarked });
       return;
     }
 

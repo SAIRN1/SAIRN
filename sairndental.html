@@ -5192,7 +5192,11 @@ var DNT_SYNC_RESOURCES=[
   ['dnt_gfe','dnt_gfe_list'],
   ['dnt_recall_outreach','dnt_recall_outreach_list'],
   ['dnt_txplans','dnt_txplans_list'],
-  ['dnt_denial','dnt_denial_list']
+  ['dnt_denial','dnt_denial_list'],
+  // The two LIST-shaped vendor collections (2026-09-10). The other two are
+  // single objects and are hydrated wholesale below, beside dnt_settings.
+  ['dnt_supplies','dnt_supplies_list'],
+  ['dnt_vendor_orders','dnt_vendor_order_history']
 ];
 // dnt_cred_rules is NOT in the list above, deliberately. dntMergeById() keys on
 // a record's `id`; a rule row has `rule_id` and no `id`, so every sync would
@@ -5247,6 +5251,39 @@ async function dntSyncFromServer(){
       if(serverSettings){
         if(st('dnt_settings_obj',serverSettings)) changed=true;
         else storageFailures.push('dnt_settings_obj');
+      }
+    }
+  }else{
+    failureCount++;
+  }
+  // dnt_vendor_contacts and dnt_vendor_pricing: single-object resources, one
+  // 'default' row each, replaced wholesale for the same reason dnt_settings is
+  // -- there is no per-record id to merge on. The stored shapes differ by one
+  // level and that is deliberate: the pricing object IS the record, so it is
+  // spread onto the row, while the contacts MAP is nested under `vendors`
+  // because its keys are vendor names and would otherwise collide with `id`.
+  var vcData=await sdnData('read','dnt_vendor_contacts',{});
+  if(Array.isArray(vcData)){
+    if(vcData.length){
+      var vcRow=vcData.find(function(x){return x&&x.id==='default';})||vcData[0];
+      if(vcRow&&vcRow.vendors){
+        if(st('dnt_vendor_contacts',vcRow.vendors)) changed=true;
+        else storageFailures.push('dnt_vendor_contacts');
+      }
+    }
+  }else{
+    failureCount++;
+  }
+  var vpData=await sdnData('read','dnt_vendor_pricing_rules',{});
+  if(Array.isArray(vpData)){
+    if(vpData.length){
+      var vpRow=vpData.find(function(x){return x&&x.id==='default';})||vpData[0];
+      if(vpRow){
+        var vpOut={vendorDiscounts:vpRow.vendorDiscounts||{},
+                   categoryDiscounts:vpRow.categoryDiscounts||[],
+                   productOverrides:vpRow.productOverrides||{}};
+        if(st('dnt_vendor_pricing_rules',vpOut)) changed=true;
+        else storageFailures.push('dnt_vendor_pricing_rules');
       }
     }
   }else{
@@ -5478,6 +5515,7 @@ function vSetVendorDiscount(){
   var rules=dntVendorPricingRules();
   rules.vendorDiscounts[_dntActiveVendor]=pct;
   st('dnt_vendor_pricing_rules',rules);
+  dntPushVendorPricing(rules);
   rVendorCat();
   toast(DNT_VENDORS[_dntActiveVendor].name+' vendor discount set to '+pct+'%');
 }
@@ -5488,6 +5526,7 @@ function vSetCategoryDiscount(){
   rules.categoryDiscounts=rules.categoryDiscounts.filter(function(r){return !(r.vendor===_dntActiveVendor&&r.category===cat);});
   rules.categoryDiscounts.push({vendor:_dntActiveVendor,category:cat,discount:pct});
   st('dnt_vendor_pricing_rules',rules);
+  dntPushVendorPricing(rules);
   rVendorCat();
   toast(DNT_VCAT_LABELS[cat]+' discount set to '+pct+'% for '+DNT_VENDORS[_dntActiveVendor].name);
 }
@@ -5498,6 +5537,7 @@ function vSetProductOverride(){
   var rules=dntVendorPricingRules();
   rules.productOverrides[sku]=price;
   st('dnt_vendor_pricing_rules',rules);
+  dntPushVendorPricing(rules);
   rVendorCat();
   toast('Price override set for '+sku);
 }
@@ -5672,11 +5712,49 @@ function vEditContact(){
   if(email===null)return;
   contacts[_dntActiveVendor]={rep_name:repName.trim(),phone:phone.trim(),email:email.trim()};
   st('dnt_vendor_contacts',contacts);
+  dntPushVendorContacts(contacts);
   vRenderContactBox();
   toast('Contact saved for '+DNT_VENDORS[_dntActiveVendor].name);
 }
 
 function vendorOrderHistory(){return ld('dnt_vendor_order_history',[]);}
+
+// ══ THE LAST FOUR LOCAL-ONLY COLLECTIONS REACH A SERVER (2026-09-10) ══════
+// tools/local_only_collection_check.py reported this app as 18 of 22
+// collections covered and FOUR with no route to a server: dnt_supplies_list,
+// dnt_vendor_contacts, dnt_vendor_order_history and dnt_vendor_pricing_rules.
+// Everything clinical has been server-backed since 2026-09-05, so a
+// browser-data clear left the chart intact and took the purchasing history and
+// the negotiated vendor discounts with it. That SELECTIVE shape is worse than
+// a uniformly local app -- what survives looks authoritative.
+//
+// REQUIRES sql/sairndental_vendor_schema.sql. Until it runs, every write
+// answers 503 NOT_PROVISIONED naming the file and every read answers
+// provisioned:false, so this degrades honestly rather than claiming a backup.
+//
+// A FAILED PUSH IS REPORTED, NOT SWALLOWED. sdnData() returns null on any
+// failure and every helper below reads that null -- silence would make a
+// backup that is not happening look like one that is, which is the defect
+// class this whole change exists to remove.
+function dntPushOne(resource,rec){
+  return sdnData('write',resource,rec).then(function(r){
+    if(r===null){
+      try{ console.warn('SAIRNdental backup: "'+resource+'" record '+(rec&&rec.id)+
+        ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
+    }
+    return r;
+  });
+}
+// The two single-object resources are stored as ONE row, id 'default', and
+// written WHOLESALE -- see the branch in api/sd-data.js for why a merge would
+// be wrong here (a discount taken off could never be expressed).
+function dntPushVendorPricing(rules){
+  return dntPushOne('dnt_vendor_pricing_rules',Object.assign({id:'default'},rules));
+}
+function dntPushVendorContacts(contacts){
+  return dntPushOne('dnt_vendor_contacts',{id:'default',vendors:contacts});
+}
+
 
 function supplies(){return ld('dnt_supplies_list',[]);}
 function vLowStockItem(sku){
@@ -5712,6 +5790,7 @@ function addSupply(){
     unit_cost:parseFloat($('sp-add-cost').value)||0,vendor_sku:$('sp-add-sku').value.trim(),
     created_at:dntLocalToday()};
   var list=supplies();list.push(rec);st('dnt_supplies_list',list);
+  dntPushOne('dnt_supplies',rec);
   rSupplies();
   ['sp-add-name','sp-add-qty','sp-add-threshold','sp-add-cost','sp-add-sku'].forEach(function(id){$(id).value=id==='sp-add-qty'||id==='sp-add-threshold'?'0':'';});
   toast('Supply item added');
@@ -5719,6 +5798,21 @@ function addSupply(){
 function removeSupply(id){
   var list=supplies().filter(function(s){return s.id!==id;});
   st('dnt_supplies_list',list);rSupplies();
+  // SOFT DELETE ON THE SERVER TOO, or the next sync brings it back. The
+  // hydrate merges the server's rows in BY ID, so a local-only removal would
+  // be undone silently -- which is why this is the one of the four vendor
+  // collections that needed a delete verb at all.
+  sdnData('soft_delete','dnt_supplies',{id:id}).then(function(r){
+    if(r===null){
+      // dntLastErrText() takes ONE argument and returns '' when the server
+      // never answered, so the fallback sentence is built here rather than
+      // passed in -- a second argument would be silently ignored and the
+      // message would trail off mid-sentence.
+      var why=dntLastErrText('dnt_supplies');
+      toast('Removed on this device only -- the server was not updated, so it '+
+            'may come back on the next sync.'+(why?' '+why:''),5000);
+    }
+  });
   toast('Supply item removed');
 }
 
@@ -5751,6 +5845,10 @@ function vPlaceOrder(){
     var hist=vendorOrderHistory();hist.unshift(order);
     if(hist.length>200)hist=hist.slice(0,200);
     st('dnt_vendor_order_history',hist);
+    // ONE RECORD, NOT THE TRIMMED LIST. The 200 cap is a LOCAL storage bound;
+    // the server keeps every order, which is the whole point of an archive.
+    // Pushing the trimmed array would make the cap look like a deletion.
+    dntPushOne('dnt_vendor_orders',order);
   });
   // Stock auto-increment, confirm-prompted -- matches StoneDesk's real
   // vendorPlaceOrder() convention exactly (design spec's "Supplies panel"

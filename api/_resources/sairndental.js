@@ -72,6 +72,55 @@ module.exports = {
   // registered as BOTH financial (it prices what the patient is being asked to
   // accept) and patient-scoped (it names one patient and their proposed care).
     'dnt_txplans',
+  // ── THE LAST FOUR LOCAL-ONLY COLLECTIONS (2026-09-10) ───────────────────
+  // tools/local_only_collection_check.py reported this app as 18 of 22
+  // collections covered and four with NO route to a server:
+  // dnt_supplies_list, dnt_vendor_contacts, dnt_vendor_order_history and
+  // dnt_vendor_pricing_rules. Everything clinical has been server-backed
+  // since 2026-09-05, so a browser-data clear left the chart intact and took
+  // the purchasing history and the negotiated vendor discounts with it. That
+  // SELECTIVE shape is worse than a uniformly local app -- what survives
+  // looks authoritative. See sql/sairndental_vendor_schema.sql.
+  //
+  // THE TWO LIST-SHAPED NAMES ARE NOT THEIR STORAGE KEYS, following this
+  // app's existing [resource, storage-key] pair convention in
+  // DNT_SYNC_RESOURCES rather than inventing a second one. The two OBJECT
+  // ones match their keys exactly, and the reason is in the note below:
+  //   dnt_supplies        <-> dnt_supplies_list
+  //   dnt_vendor_orders   <-> dnt_vendor_order_history
+  //   dnt_vendor_contacts <-> dnt_vendor_contacts
+  //   dnt_vendor_pricing_rules <-> dnt_vendor_pricing_rules  (same name:
+  //     the checker resolves coverage by matching a resource name against
+  //     the storage key, and a differing pair is only visible to it when
+  //     it appears in a [resource, key] literal. These two objects are
+  //     hydrated in their own block, not through DNT_SYNC_RESOURCES, so
+  //     naming them identically is what makes the coverage MEASURABLE
+  //     rather than a permanent could-not-tell.)
+  //
+  // TWO ARE SINGLE OBJECTS AND ARE STORED AS ONE ROW EACH, id 'default' --
+  // dnt_vendor_contacts is a map keyed by vendor, dnt_vendor_pricing_rules is
+  // one settings object. Same treatment dnt_settings already gets here, and
+  // for the stated reason: merge-by-id over something with no per-record id
+  // appends the whole object every sync.
+  //
+  // SESSION-GATED like every other dnt_* resource -- sdnData() sends BOTH the
+  // licence and the employee session, and every dnt_* branch in
+  // api/sd-data.js has refused without the second since 2026-08-27. Not
+  // FINANCIAL-gated, though, and that is a decision rather than an oversight:
+  // DNT_FINANCIAL_RESOURCES exists to keep patient charges, payments and
+  // priced treatment plans behind the owner/front-desk roles. A supply
+  // cupboard and a vendor price list are practice operations, worked by
+  // whoever orders the gloves. Not patient-scoped either -- none of the four
+  // names a patient.
+    'dnt_supplies',
+    'dnt_vendor_orders',
+    'dnt_vendor_contacts',
+    'dnt_vendor_pricing_rules',
+  // NOT REGISTERED, deliberately: dnt_vendor_cart. It is a shopping cart --
+  // device state that exists between opening the vendor panel and placing the
+  // order, cleared by vCartClear() the moment the order is placed. The
+  // checker already classifies it as device state; it is named here so
+  // "absent" reads as "decided" rather than "missed".
   ],
   // 'evaluate' computes the expiry/CE alert board from stored records and the
   // seeded rules. It READS ONLY and writes nothing -- looking at who is about
@@ -81,5 +130,21 @@ module.exports = {
   // change: the verb belongs next to the resource that owns it.
   extraActions: {
     dnt_credentials: ['evaluate'],
+  // SOFT DELETE ON dnt_supplies ONLY, AND WITHOUT IT THE BACKUP WOULD BE A BUG
+  // (2026-09-10). removeSupply() drops an item from dnt_supplies_list. The
+  // hydrate merges the server's rows back in BY ID, so a supply the practice
+  // removed would REAPPEAR on the next sync -- a backup that resurrects
+  // deleted records is worse than no backup, because it looks like the app
+  // losing track of a deletion the user watched succeed.
+  //
+  // The other three need nothing: the two object resources are replaced
+  // wholesale, and dnt_vendor_orders is append-only (the client's 200-row cap
+  // is a local display bound, not a deletion -- the server keeps all of them,
+  // which is the point).
+  //
+  // 'soft_delete', not 'delete': the record is marked and hidden, the row
+  // stays, and no new database privilege is needed because the marker lives
+  // inside the existing jsonb and the write is an UPDATE.
+    dnt_supplies: ['soft_delete'],
   },
 };

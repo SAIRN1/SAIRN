@@ -101,5 +101,27 @@ module.exports = {
     'law_clecredits',
   // CLE requirements per jurisdiction -- hours and period.
     'law_clerequirements',
+  // ── NOT REGISTERED, AND THE REASON IS THE POINT (2026-09-10) ────────────
+  // tools/local_only_collection_check.py reports sairnlaw.html as 19 of 20
+  // collections covered, with `law_billingcodes` kept on the device and sent
+  // nowhere. That is TRUE and is deliberately being left true.
+  //
+  // MEASURED BEFORE DECIDING, not assumed from the name: the key has exactly
+  // TWO references in sairnlaw.html. One reads it --
+  // `function billingCodes(){return ld('law_billingcodes',LAW_BILLING_CODES);}`
+  // -- and one writes it, inside seed(), as `st('law_billingcodes',
+  // LAW_BILLING_CODES)`. Both name the same hardcoded constant. There is no
+  // add, edit or delete path anywhere in the file.
+  //
+  // So it is REFERENCE DATA THAT ALREADY SHIPS IN THE FILE, not a firm record:
+  // the published UTBMS litigation code set, with the panel's own on-screen
+  // disclosure that it was entered from the standard and should be verified
+  // against the official list. Backing it up would copy a constant to a server
+  // so the same constant could be copied back -- and it would make a code set
+  // that is identical for every firm look like something a firm owns and can
+  // lose, which is a worse claim than the gap it closes.
+  //
+  // IF AN EDITOR IS EVER ADDED, THIS FLIPS. The moment a firm can change its
+  // own code list, the list becomes the firm's record and belongs here.
   ],
 };
