@@ -33,7 +33,13 @@ const APPS = [
   // ignore that boolean, and the catch logged nothing. A refused write
   // produced a `false` no code read and no console recorded.
   { file: 'sairncare.html', name: 'SAIRNcare', prefix: 'care' },
-  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free' },
+  // SAIRNfreedom 2 -- NAMED rather than waved through, per the note at the
+  // assertion below. Both bare catches are `catch(_e){}` around a
+  // `console.error`, the same logger guard the default 1 allows: this app has
+  // TWO logger sites inside st(), one for the localStorage write failure and
+  // one for the backup hook throwing. Read on 2026-09-10 before changing the
+  // number -- neither swallows a write failure, and the count still fails at 3.
+  { file: 'sairnfreedom.html', name: 'SAIRNfreedom', prefix: 'free', bareCatches: 2 },
   // Added 2026-09-04 (Cody) -- the last three on the open-work row's list.
   // Measured per file rather than assumed from the siblings: sairnsenior's st()
   // has 32 call sites and ALL 32 ignore the return; sairnbuild's has 86 with 44
