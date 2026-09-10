@@ -847,8 +847,8 @@
       "task": "report-only local-only-collection write-without-readback",
       "claimed_at": "2026-09-10T18:28:36Z",
       "claimed_at_epoch": 1789064916.6655426,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T19:10:23Z"
     }
   ]
 }
