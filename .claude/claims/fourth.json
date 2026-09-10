@@ -690,8 +690,8 @@
       "task": "arm15-mutation-does-not-bite",
       "claimed_at": "2026-09-10T17:49:37Z",
       "claimed_at_epoch": 1789062577.1991713,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T18:00:12Z"
     }
   ]
 }
