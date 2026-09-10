@@ -4,7 +4,17 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>SAIRNbiz - Business Operations</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<!-- SOUP: @supabase/supabase-js 2.116.0, MIT, from jsDelivr. PINNED AND HASHED
+     2026-09-10. It was `@2`, a FLOATING major with no integrity attribute --
+     every future 2.x publish, including a compromised one, would have executed
+     with full access to a page holding payroll and employee records. The
+     integrity hash is sha384 over the exact bytes of 2.116.0; crossorigin is
+     required or the browser refuses to check SRI at all and blocks the script.
+     Bumping the version means recomputing the hash -- that is the cost of the
+     guarantee, and it is the point. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"
+        integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp"
+        crossorigin="anonymous" referrerpolicy="no-referrer"></script>
 <style>
 :root{--p:#14B8A6;--pd:#0F766E;--pt:#F0FDFA;--pb:#5EEAD4;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
 *{box-sizing:border-box;margin:0;padding:0;}

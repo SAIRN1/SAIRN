@@ -2989,9 +2989,25 @@ document.addEventListener('DOMContentLoaded', function() {
   document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
     var src = el.src || el.href;
     if (src && !src.startsWith(location.origin) && !el.integrity) {
-      var dom = new URL(src).hostname;
-      var trusted = ['cdn.jsdelivr.net','cdnjs.cloudflare.com','fonts.googleapis.com','fonts.gstatic.com'];
-      if (!trusted.includes(dom)) {
+      // THE ALLOWLIST THAT USED TO SIT HERE EXCUSED THE ONLY TWO VIOLATIONS
+      // THIS PAGE HAD. cdn.jsdelivr.net and cdnjs.cloudflare.com were both on
+      // it, and both script tags at the foot of this file lacked `integrity`
+      // -- so Layer 12 reported clean for as long as it has existed while the
+      // exact thing it checks for was true twice, a few thousand lines below.
+      // Both are hashed now (2026-09-10), so the allowlist protects nothing
+      // and would only excuse the NEXT unhashed script from those hosts. A
+      // host being allowed by CSP says where a file may come from; it says
+      // nothing about which file arrived, which is the whole point of SRI.
+      //
+      // ONE EXCEPTION SURVIVES, and it is a stylesheet, not a script. Google
+      // Fonts serves DIFFERENT CSS per browser (it varies the @font-face
+      // srcs by UA), so no fixed hash can exist for it -- an allowlist entry
+      // here records a real impossibility rather than excusing an omission.
+      // It stays narrow on purpose: this host only, and only for a
+      // stylesheet, so a SCRIPT from it would still be reported.
+      var isUnhashableFontCss = el.tagName === 'LINK' &&
+        new URL(src).hostname === 'fonts.googleapis.com';
+      if (!isUnhashableFontCss) {
         saLog('L12-SRI', 'External resource without SRI: ' + src, 'medium');
       }
     }
@@ -27419,8 +27435,25 @@ setTimeout(function(){if(typeof showClientEstimate==="function"){}},2000);
 // one deliberately rather than assuming this was doing it.
 </script>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<!-- SOUP, PINNED AND HASHED 2026-09-10. Both of these were loaded with NO
+     integrity attribute, and supabase-js on a FLOATING `@2` -- so any future
+     2.x publish, including a compromised one, executed with full access to a
+     page holding customer, quote and payroll data. The CSP above allows these
+     two hosts; an allowed host is not a trusted FILE, which is the gap SRI
+     closes. crossorigin is required or the browser will not check the hash at
+     all. Bumping a version means recomputing its hash.
+       @supabase/supabase-js 2.116.0 -- MIT -- jsDelivr
+       qrcodejs 1.0.0 -- MIT -- cdnjs; sha384 recomputed here and cross-checked
+         against the sha512 cdnjs publishes for the same file, byte-identical.
+         UNMAINTAINED UPSTREAM (last release 2016) and trusted on that basis:
+         it renders a QR code from a string, touches no network and no
+         credentials, and is pinned to a hash so it cannot change under us. -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.116.0"
+        integrity="sha384-JBR+x8blGwjDRO63aHCGiZMD4VNiTR4ZUGA+N6ZKLf3zNt1fK8IBpcgPaMrxqWBp"
+        crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
+        crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 <script>
 // === STONEDESK SUPABASE + AI MEMORY ENGINE ===
 // Mirrors SAIRNbiz pattern — Business Profile + AI Memory + cross-device sync
