@@ -928,3 +928,50 @@ docs/superpowers/specs/2026-08-27-sairnmechanical-platform-spec.md (NEW) + docs/
   **EVERY APP IS NOW 0 LOCAL-ONLY.** Findings section reads `none` platform-wide; **12 keys declared with a reason each**; one honest could-not-tell remains (`sd_intake`, genuinely server-backed by a route the checker cannot see). That is the end of the sweep that started this morning with SAIRNvet at 42 of 42.
   **TWO SIBLING PROBES FAILED AND I REBUILT THEIR CONTROLS RATHER THAN RELAXING THEM.** Both used SAIRNmechanical's five as the *"a real finding survives"* control -- **the second subject to be backed up out from under them**, after `sb_incidents`, `law_billingcodes`, `dnt_supplies_list` and `sd_market_history`. With zero findings left platform-wide a defect-pinned control has nothing to stand on, which is precisely what `run_all_tests.py`'s own header records: *"a probe pinned to a current defect rots the moment that defect is fixed."* **Both controls are now synthetic fixtures and cannot rot**, and both probes additionally assert the findings section is EMPTY -- the thing a regression would break first.
   **SQL WRITTEN, NOT RUN.** No `delete` grant: none of the four has a delete path in the product. **VERIFIED:** `node --check` clean on all six script blocks; 0 local-only every app; write-readback clean; seam 75; preauth 0; reachability clean; discarded-verdict 0; key-collision clean; all `sd-data`, `_resources` and mech suites green; SQL preflight clean. **NOT VERIFIED, PLAINLY:** no live write -- the tables do not exist yet. 2026-09-10
+
+---
+
+## 2026-09-10 (CC) — Semgrep, three real fixes, and two checks that were green while not looking
+
+**Closed, all live-verified after deploy rather than assumed from the push:**
+
+- **`b3e92a8d`** — `tools/cleanup_residue_check.py`. **It shipped a false CLEAN
+  and that is the whole lesson.** Three files with no parsed delete and no read
+  were reported CLEAN because the count was `len(report) - residue - unread`.
+  **Nothing is clean by subtraction.** It still answers 0 of 29 and says so —
+  the blocker is `NO_SESSION`, a real limit, not a parse failure.
+- **`29e82fb6`** — Semgrep, installed and wired. **The custom rule for the
+  `verifySessionToken` bug class already existed (`391cb7c0`) and had never
+  run:** `semgrep --test` does not discover tests inside a dot-directory, prints
+  *"No unit tests found"* and **exits 0**. Measured both ways with an identical
+  fixture the same minute.
+- **`9139d626`** — GCM auth tag pinned to 16 bytes on both encrypt-at-rest
+  paths. Node would otherwise accept a 4-byte tag.
+- **`5424bc73`** — all three CDN scripts pinned and hashed. **StoneDesk's Layer
+  12 already checked for exactly this and allowlisted the only two hosts it
+  could ever have fired on.**
+- **`bcee0215`** — the cheque register. `check_id` is a minted id, the number
+  stays data, a repeat is reported. **Found while wiring it: `mechHydrateAll()`
+  had zero callers**, so the backup I added in `6ddb8154` was write-only across
+  all four collections, and `renderCR()` ran only from `saveCheck()`. Third
+  zero-caller of that shape in that one file.
+
+**The index row said the mechanical SQL had not run. It had** — `provisioned:true`
+on all four tables. The buffer that row was counting on was gone; the table
+being empty is what made the key change free.
+
+**I flagged the SOUP checker gap and Hank had already closed it — better, and
+in the direction I had not looked.** `tools/soup_register_check.py` reported
+CLEAN while `docs/SOUP-REGISTER.md` still said *"no Subresource Integrity hash
+on either"*, both false by then: it checked presence and removal, not the
+Version or SRI columns. My correction to the register collided on rebase with
+`98af8f9b`, which fixes the checker **and finds a FOURTH CDN script my scan
+never saw** — `tesseract.js`, injected by JS in `sairnlaw.html`, invisible to a
+grep for `<script src=`. I took Hank's register wholesale and dropped my
+superseded index row. **My scan said "three static tags" and it was three of
+four**; a static-markup grep is not a survey of what a page loads.
+
+**Standing practice noted:** criticality tiering (Fourth), requirements-to-test
+traceability (Cody, `10a0aa67`), SOUP tracking (Hank) — all three legs are
+owned. New third-party components I add carry a SOUP note inline from now on;
+the two CDN entries above are written that way.
