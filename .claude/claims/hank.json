@@ -833,8 +833,8 @@
       "task": "real writer table registry form",
       "claimed_at": "2026-09-10T13:51:04Z",
       "claimed_at_epoch": 1789048264.9924889,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T14:30:00Z"
     }
   ]
 }
