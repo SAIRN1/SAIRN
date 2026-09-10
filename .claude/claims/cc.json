@@ -802,8 +802,8 @@
       "task": "cheque number key decision",
       "claimed_at": "2026-09-10T18:53:16Z",
       "claimed_at_epoch": 1789066396.1948035,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T20:41:16Z"
     }
   ]
 }
