@@ -752,6 +752,16 @@
       "claimed_at_epoch": 1789083035.3072536,
       "status": "released",
       "released_at": "2026-09-10T23:44:04Z"
+    },
+    {
+      "id": "fourth-1789084611",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "criticality-retier-per-resource-405-resources stage1",
+      "claimed_at": "2026-09-10T23:56:51Z",
+      "claimed_at_epoch": 1789084611.6274278,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
