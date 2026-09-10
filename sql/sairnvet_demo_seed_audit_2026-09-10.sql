@@ -1,3 +1,30 @@
+-- ══════════════════════════════════════════════════════════════════════════
+-- VERIFIED 2026-09-10 (CC), READ-ONLY, AFTER THIS FILE WAS WRITTEN:
+-- THIS QUERY RETURNS NOTHING. THERE IS NOTHING TO DELETE.
+--
+-- Every one of the 38 tables below was read through api/sd-data.js on
+-- SV-PINNACLE-2026: 0 rows total, 0 of the 96 seed ids present. The rows this
+-- file exists to find were never written.
+--
+-- AND THE LICENCE GAP IS CLOSED RATHER THAN ASSUMED. A read is scoped to
+-- license_hash = sha256(the key used), so rows under a DIFFERENT SAIRNvet
+-- licence would be invisible. There is no other licence: SV-PINNACLE-2026 is
+-- the only SV- key in the repository, and an unknown key answers
+-- 401 INVALID_LICENSE, so no row can exist under any other hash.
+--
+-- WHY THE FILE WAS RIGHT TO EXIST ANYWAY. Its author measured the CLIENT --
+-- driving every seeded getter gave 38-of-39 pushing before the fix and 0 after
+-- -- which is a measurement of behaviour, not of the database. "The rows
+-- already written still need removing" followed from it by inference. The
+-- inference was sound and the window was genuinely open; nobody opened
+-- SAIRNvet with a licence during it, so nothing was written. A write needs a
+-- non-empty svLoad('license',''), and no device had one in that window.
+--
+-- DO NOT hand-write a delete from this. Run it if you want the confirmation
+-- against the database directly rather than through the endpoint, but the
+-- expected result is zero rows.
+-- ══════════════════════════════════════════════════════════════════════════
+
 -- ── THE PUSH GATE DENIED THIS FILE, AND THE OVERRIDE WAS USED. SAID OUT LOUD.
 -- tools/sairn_sql_preflight.py refused it with MISSING_TABLE on all 38 tables,
 -- checked against db/schema_snapshot.json. That snapshot was last committed on
