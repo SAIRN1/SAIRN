@@ -788,6 +788,16 @@
       "claimed_at_epoch": 1789048217.532668,
       "status": "released",
       "released_at": "2026-09-10T14:19:41Z"
+    },
+    {
+      "id": "cody-1789050231",
+      "session": "cody",
+      "subject": "promote-second-batch",
+      "task": "report-only checkers md-table div-balance duplicate-global panel-nesting fail-open",
+      "claimed_at": "2026-09-10T14:23:51Z",
+      "claimed_at_epoch": 1789050231.9426637,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
