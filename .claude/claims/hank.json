@@ -845,6 +845,15 @@
       "claimed_at_epoch": 1789050662.1767967,
       "status": "released",
       "released_at": "2026-09-10T15:34:50Z"
+    },
+    {
+      "id": "hank-1789059720",
+      "session": "hank",
+      "subject": "sairnvet-demo-seed-reaching-live-server",
+      "task": "suppress seeding on every getX -- SQL IS RUN, this is live",
+      "claimed_at": "2026-09-10T17:02:00Z",
+      "claimed_at_epoch": 1789059720.931445,
+      "status": "active"
     }
   ]
 }
