@@ -808,7 +808,6 @@ module.exports = async (req, res) => {
         // updated -- and the guard against a third instance is
         // api/_lib/deadline-endpoint-inputs.test.js, which diffs the fields
         // the engine reads against the fields this payload sends.
-        service_methods: body.service_methods,
         // WHICH DOCUMENT the supplied trigger_date came from, for the 48 rows
         // whose trigger is a term of art naming one specific document. Four
         // states start the appeal clock four different ways -- Texas from the
