@@ -106,9 +106,25 @@ try:
     # -- but only if it says what would settle it. Otherwise it is a permanent
     # shrug that looks like a decision. This arm was written after the checker
     # caught exactly that in two rows of the register's own first draft.
-    shrug = re.sub(r'(^\| `stonedesk-catalog\.html` \| \*\*UNTIERED\*\* \| [^|]*\|)[^|]*\|',
-                   r'\1 read-only surface |', ORIGINAL, count=1, flags=re.M)
-    assert shrug != ORIGINAL, 'fixture invalid: the catalog row did not match'
+    #
+    # ANCHOR MOVED 2026-09-10 and the move is stated rather than quietly edited.
+    # It pointed at `stonedesk-catalog.html`, which was UNTIERED until Michael's
+    # tier-inheritance decision made it A. The fixture assertion caught that
+    # LOUDLY on the next run -- which is the probe working, and is why the
+    # assertion is there. It now points at `sairncash.html`, the one row that is
+    # UNTIERED by design rather than by accident: it becomes A the day a Stripe
+    # key is set. If that ever lands, move this again and add a line.
+    #
+    # COUNTED, NOT MERELY PRESENT, per the platform anchor sweep: `!= ORIGINAL`
+    # catches an anchor that has GONE and says nothing about one matching
+    # several places, where re.sub(count=1) would rewrite whichever came first.
+    UNTIERED_ROW = r'^\| `sairncash\.html` \| \*\*UNTIERED\*\* \| [^|]*\|[^|]*\|'
+    _n = len(re.findall(UNTIERED_ROW, ORIGINAL, flags=re.M))
+    assert _n == 1, ('fixture invalid: the sairncash UNTIERED row matches %d places, '
+                     'not 1 -- widen the anchor rather than letting re.sub pick' % _n)
+    shrug = re.sub(r'(^\| `sairncash\.html` \| \*\*UNTIERED\*\* \| [^|]*\|)[^|]*\|',
+                   r'\1 nothing moves today |', ORIGINAL, count=1, flags=re.M)
+    assert shrug != ORIGINAL, 'fixture invalid: the sairncash row did not match'
     mutate(shrug, 'an UNTIERED row that does not say what would SETTLE it is refused',
            'OPEN WITH NO EXIT')
 
