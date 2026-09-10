@@ -885,6 +885,16 @@
       "claimed_at_epoch": 1789064078.706302,
       "status": "released",
       "released_at": "2026-09-10T18:24:28Z"
+    },
+    {
+      "id": "hank-1789064969",
+      "session": "hank",
+      "subject": "independent-review-6ddb8154",
+      "task": "sairnmechanical check register reviewer not author",
+      "claimed_at": "2026-09-10T18:29:29Z",
+      "claimed_at_epoch": 1789064969.975594,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
