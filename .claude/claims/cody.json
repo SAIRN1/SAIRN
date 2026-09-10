@@ -806,8 +806,8 @@
       "task": "report-only checkers strict-args dead-function stale-snapshot ai-fact-scan literal-drift orphan-register",
       "claimed_at": "2026-09-10T15:36:31Z",
       "claimed_at_epoch": 1789054591.8842573,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-10T17:14:42Z"
     }
   ]
 }
