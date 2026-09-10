@@ -61,6 +61,14 @@
             "statusMessage": "Running the full test suite (report only)...",
             "async": true,
             "asyncRewake": true
+          },
+          {
+            "type": "command",
+            "command": "python tools/report_only_checks.py --hook",
+            "timeout": 300,
+            "statusMessage": "Running the promoted report-only checkers...",
+            "async": true,
+            "asyncRewake": true
           }
         ]
       }

@@ -181,30 +181,74 @@ if __name__ == '__main__':
     # ── panels (detected above, before nav-fn scoring needed them) ───────────
     print(f"PANEL_COUNT:{len(panel_ids)}")
 
-    # ── sidebar nav buttons ──────────────────────────────────────────────────
-    # A nav button is a <button> whose onclick calls the nav function. An
+    # ── sidebar nav controls ─────────────────────────────────────────────────
+    # A nav control is ANY element whose onclick calls the nav function. An
     # id="sb-X" is checked when present but NOT required -- SAIRNvet's buttons
     # carry no id, and demanding one reported all 81 of its panels unreachable.
     # The nav argument may or may not already carry the panel- prefix
     # (nav('trust') vs svNav('panel-trust')), so both are normalised to a bare
     # panel key before anything is compared.
-    buttons_with_nav, sb_id_pairs, wired, unresolved = 0, [], set(), set()
-    for btn in re.findall(r'<button\b[^>]*>', html):
-        m_nav = call_re.search(btn)
+    #
+    # ── THE ELEMENT IS DERIVED TOO, AS OF 2026-09-09 ────────────────────────
+    # This scanned `<button>` only, and that is the FOURTH instance of this
+    # file's own recurring bug -- it has already stopped hardcoding the class
+    # (`sb-btn`), the id (`sb-X`) and the function name, each time after
+    # reporting a whole working app as unreachable. The element was the last
+    # hardcoded assumption left.
+    #
+    # FOUND ON ITS FIRST REAL RUN, 2026-09-09, in the report-only promotion
+    # pass: sairnfreedom.html came back RESULT:FAIL with all 26 panels listed
+    # as having no nav button and SIDEBAR_NAV_BUTTONS:0, because its sidebar is
+    #     <div class="nitem" id="nav-members" onclick="sfNav('members')">
+    # Every panel is wired. Promoted blocking as it stood, it would have
+    # refused every SAIRNfreedom push while the app was fine -- which is
+    # exactly why the promotion path is report-only first.
+    #
+    # ACCEPTED WIDENING, STATED RATHER THAN QUIET: this counts a nav call on
+    # any element anywhere in the file, including one inside a panel (a "back
+    # to dashboard" link) and one inside a JS template string. So a panel
+    # reachable ONLY from deep inside another panel now counts as wired. That
+    # looseness already existed for <button> -- nothing ever checked that the
+    # button was in the sidebar -- so this widens the element set, not the
+    # rule. The tag breakdown is printed so a reader can see what matched
+    # instead of taking the count on trust.
+    #
+    # The output key changed from SIDEBAR_NAV_BUTTONS to SIDEBAR_NAV_CONTROLS
+    # because a key named BUTTONS counting <div>s is the quiet kind of wrong
+    # this file keeps correcting itself about.
+    controls_with_nav, sb_id_pairs, wired, unresolved = 0, [], set(), set()
+    tags = Counter()
+    # THE TAG PATTERN IS TIGHT FOR A MEASURED REASON, not a guessed one. The
+    # first version was `<([a-zA-Z][\w-]*)\b[^>]*>` and it matched the JS
+    # comparison `if(days<TRIAL_DAYS)return true;` as an opening tag, then ran
+    # `[^>]*` across a dozen lines until it found a `>`, swallowing a real nav
+    # call and counting a phantom control on sairnvet and sairnlegacy.
+    #   * an HTML tag name cannot contain `_`, so [a-zA-Z0-9-] excludes it;
+    #   * the name must be followed by whitespace, `/` or `>`;
+    #   * a tag body cannot contain `<` or span a newline here.
+    # Checked both patterns over all 22 app files: the tight one loses exactly
+    # those two phantoms and NOT ONE real control anywhere. That comparison is
+    # the evidence -- a tightening nobody measures is how a false alarm becomes
+    # a silent miss.
+    for m_el in re.finditer(r'<([a-zA-Z][a-zA-Z0-9-]*)(?=[\s/>])[^<>\n]*>', html):
+        el = m_el.group(0)
+        m_nav = call_re.search(el)
         if not m_nav:
             continue
-        buttons_with_nav += 1
+        controls_with_nav += 1
+        tags[m_el.group(1).lower()] += 1
         raw = m_nav.group(1)
         target = resolve_panel(raw, panel_ids)
         if target:
             wired.add(target)
         else:
             unresolved.add(raw)
-        m_id = re.search(r'id="sb-([a-zA-Z0-9_-]+)"', btn)
+        m_id = re.search(r'id="sb-([a-zA-Z0-9_-]+)"', el)
         if m_id and target:
             sb_id_pairs.append((m_id.group(1), target))
     sb_ids = {i for i, _ in sb_id_pairs}
-    print(f"SIDEBAR_NAV_BUTTONS:{buttons_with_nav}")
+    print(f"SIDEBAR_NAV_CONTROLS:{controls_with_nav}")
+    print(f"NAV_CONTROL_TAGS:{dict(sorted(tags.items()))}")
     print(f"SIDEBAR_BUTTONS_CARRYING_AN_ID:{len(sb_ids)}")
 
     # Only meaningful where ids exist; a mismatch means the button is labelled
