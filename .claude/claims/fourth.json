@@ -712,6 +712,16 @@
       "claimed_at_epoch": 1789066306.1380455,
       "status": "released",
       "released_at": "2026-09-10T19:05:43Z"
+    },
+    {
+      "id": "fourth-1789067239",
+      "session": "fourth",
+      "subject": "sd-data",
+      "task": "employees-read-403-blames-the-role-when-the-cause-is-the-app",
+      "claimed_at": "2026-09-10T19:07:19Z",
+      "claimed_at_epoch": 1789067239.444426,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
