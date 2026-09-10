@@ -1621,3 +1621,55 @@ after.
 
 **Minimum bar:** check the push result before the success toast, and do not let
 hydration overwrite an object whose last local write has not been confirmed.
+
+## 2026-09-10 (Cody) -- SAIRNdental vendor writes: CLOSED, and it was live
+
+CLAIMED and released: `sairndental-vendor-object-write-confirmation`.
+`d22ce106`. The SQL had already been run, so the exposure I filed "before
+provisioning" was in fact already open.
+
+**Wholesale-replace was RIGHT and is not what changed.** It is what makes a
+removal expressible, which a merge cannot do. The missing half was **confirming
+the write before trusting it**.
+
+1. **The toast is derived from the push result** at all four writers. A refusal
+   names the consequence -- *"on THIS DEVICE only ... another workstation will
+   not see it"* -- for 7s, rather than a status word for 3s.
+2. **Hydration will not overwrite an unconfirmed write.** A refused push
+   records the store key in `dnt_unconfirmed_writes`; a later success clears
+   it; both wholesale branches consult it; and the refresh **reports what it
+   held back** instead of saying "Refreshed from server", which would be the
+   same false success one layer out.
+
+**The flag is persisted deliberately:** a reload must not turn *"the server
+never took this"* back into *"the server agrees"* -- exactly what a
+`console.warn` left behind the moment the tab closed. It is **not synced and
+must never be**, or one workstation could silence another's guard. It skips the
+OVERWRITE, not the READ, so a genuine network failure is still counted.
+
+**Verified live twice over.** Source checks against the deployed bytes (4
+result-derived toasts, both hydration guards, no unconditional toast left, flag
+absent from the sync registry) **and the deployed bytes DRIVEN**: a refused push
+does not report success, says NOT SAVED, holds the key; the hold survives a
+reload; a later success releases it.
+
+### The probe earned its keep on its first run, against me
+
+**Three of my own source assertions survived a mutation that removed the
+behaviour.** They matched what came AFTER `dntIsUnconfirmed(...)` rather than
+the guard's POSITION, so `if(false&&dntIsUnconfirmed(...))` left them green.
+That is scrubber item 16 shape B -- asserting a mechanism EXISTS where the
+requirement is that it is CONSULTED. Anchored on `if(` now.
+
+A fourth control reported **ANCHOR-2**: two writers share a line verbatim, so
+my anchor was not unique and that control silently probed nothing. Re-anchored
+on the unique third writer.
+
+**Both were found by the mutation controls, not by reading the assertions.**
+That is the whole argument for writing the controls at the same time as the
+suite rather than after.
+
+**And a third heredoc casualty today:** a quote inside a heredoc broke the
+patch that made the refresh toast honest. Rewritten as a script file. The rule
+is now unambiguous for me -- **any patch containing quotes or escapes goes in a
+file, never a heredoc.**
