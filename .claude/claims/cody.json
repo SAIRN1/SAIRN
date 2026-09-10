@@ -879,6 +879,16 @@
       "claimed_at_epoch": 1789082074.6604557,
       "status": "released",
       "released_at": "2026-09-10T23:27:58Z"
+    },
+    {
+      "id": "cody-1789083265",
+      "session": "cody",
+      "subject": "defect-density-register",
+      "task": "part-4 derived-from-git",
+      "claimed_at": "2026-09-10T23:34:25Z",
+      "claimed_at_epoch": 1789083265.517821,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
