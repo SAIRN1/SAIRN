@@ -96,9 +96,23 @@ try:
     # ── ARM 5: A TIER WITH NOTHING TO CHECK IT AGAINST ─────────────────────
     # A tier with no evidence is a label. This is the arm that keeps the
     # register auditable rather than merely present.
-    noev = re.sub(r'(^\| `sairnscape\.html` \| \*\*B\*\* \| [^|]*\|)[^|]*\|',
+    #
+    # ANCHOR MOVED 2026-09-10, the second time in one day, and both moves are
+    # the probe working rather than rotting. It pointed at `sairnscape.html`
+    # while that row was **B**; measuring the eight B rows moved every one of
+    # them to A and the fixture assertion failed loudly on the next run.
+    #
+    # It now points at `sairnlaw.html`, chosen because its A is backed by a
+    # recorded incident rather than by a classification that could be revised --
+    # the tier most likely to still be there next time. COUNTED, not merely
+    # found, per the platform anchor sweep.
+    EVIDENCE_ROW = r'^\| `sairnlaw\.html` \| \*\*A\*\* \| [^|]*\|[^|]*\|'
+    _ne = len(re.findall(EVIDENCE_ROW, ORIGINAL, flags=re.M))
+    assert _ne == 1, ('fixture invalid: the sairnlaw row matches %d places, not 1'
+                      % _ne)
+    noev = re.sub(r'(^\| `sairnlaw\.html` \| \*\*A\*\* \| [^|]*\|)[^|]*\|',
                   r'\1  |', ORIGINAL, count=1, flags=re.M)
-    assert noev != ORIGINAL, 'fixture invalid: the sairnscape row did not match'
+    assert noev != ORIGINAL, 'fixture invalid: the sairnlaw row did not match'
     mutate(noev, 'a tier with an EMPTY evidence cell is refused', 'NO EVIDENCE')
 
     # ── ARM 6: AN OPEN QUESTION WITH NO WAY TO CLOSE IT ────────────────────
