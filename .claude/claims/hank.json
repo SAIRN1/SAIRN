@@ -925,6 +925,16 @@
       "claimed_at_epoch": 1789068808.5848215,
       "status": "released",
       "released_at": "2026-09-10T19:40:20Z"
+    },
+    {
+      "id": "hank-1789069584",
+      "session": "hank",
+      "subject": "sairnlaw-ocr",
+      "task": "tesseract script integrity and soup register drift",
+      "claimed_at": "2026-09-10T19:46:24Z",
+      "claimed_at_epoch": 1789069584.6003199,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
