@@ -190,6 +190,90 @@
       "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence"
     },
     {
+      "commit": "4ff6bc3758c7",
+      "date": "2026-09-10",
+      "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairngrounds.html",
+        "tests/faults/grd_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 785,
+      "lines_removed": 12,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all"
+    },
+    {
+      "commit": "4ff6bc3758c7",
+      "date": "2026-09-10",
+      "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairngrounds.html",
+        "tests/faults/grd_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 785,
+      "lines_removed": 12,
+      "app": "sairngrounds",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured"
+    },
+    {
+      "commit": "4ff6bc3758c7",
+      "date": "2026-09-10",
+      "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairngrounds.html",
+        "tests/faults/grd_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 785,
+      "lines_removed": 12,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction"
+    },
+    {
+      "commit": "4ff6bc3758c7",
+      "date": "2026-09-10",
+      "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairngrounds.html",
+        "tests/faults/grd_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 785,
+      "lines_removed": 12,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps"
+    },
+    {
       "commit": "5abfcdbacbb4",
       "date": "2026-09-10",
       "subject": "fix(tools): a could-not-tell is exit 3, and one checker is held back rather than silenced",
