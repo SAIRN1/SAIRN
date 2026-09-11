@@ -38,7 +38,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/html_script_check.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/html_script_check.py\"",
             "timeout": 30
           }
         ]
@@ -48,7 +48,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/deploy_verify_notify.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/deploy_verify_notify.py\"",
             "timeout": 90,
             "statusMessage": "Verifying live deploy...",
             "async": true,
@@ -56,7 +56,7 @@
           },
           {
             "type": "command",
-            "command": "python tools/report_only_checks.py --hook",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/report_only_checks.py\" --hook",
             "timeout": 300,
             "statusMessage": "Running the promoted report-only checkers...",
             "async": true,
@@ -71,12 +71,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/git_push_master_guard.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/git_push_master_guard.py\"",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python tools/sairn_push_gate_hook.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_push_gate_hook.py\"",
             "timeout": 150,
             "statusMessage": "Checking seed load state and credential guards..."
           }
@@ -87,7 +87,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/redaction_check.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/redaction_check.py\"",
             "timeout": 10
           }
         ]
@@ -110,12 +110,12 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/session_lock_check.py start",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/session_lock_check.py\" start",
             "timeout": 10
           },
           {
             "type": "command",
-            "command": "python tools/sairn_claim_hook.py",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/sairn_claim_hook.py\"",
             "timeout": 12
           }
         ]
@@ -126,7 +126,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python tools/session_lock_check.py heartbeat",
+            "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/session_lock_check.py\" heartbeat",
             "timeout": 5
           }
         ]

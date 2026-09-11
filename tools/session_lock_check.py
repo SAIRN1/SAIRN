@@ -55,7 +55,23 @@ def clone_name():
     # folder name -- no hardcoded list of the four, so a fifth/ad-hoc clone
     # still gets a real, distinct lock rather than erroring or colliding
     # with an unrelated directory.
-    base = os.path.basename(os.getcwd())
+    #
+    # ── FROM THIS FILE'S OWN LOCATION, NOT THE WORKING DIRECTORY (2026-09-11)
+    # It read os.path.basename(os.getcwd()), and this runs as a SessionStart
+    # and UserPromptSubmit hook, which inherit whatever directory the session's
+    # Bash tool is sitting in. Measured: from `tools/` it returned 'tools' and
+    # from `docs/` it returned 'docs'.
+    #
+    # THAT IS THE WORST POSSIBLE FAILURE FOR THIS PARTICULAR FUNCTION, because
+    # EVERY clone has a `tools/` and a `docs/`. The lock is per-clone by name,
+    # so a drifted cwd does not merely mislabel the session -- it makes four
+    # separate clones all claim the SAME lock and report each other as a
+    # duplicate session in the one directory where they are guaranteed to
+    # collide. Silent, and exactly backwards from what the lock is for.
+    #
+    # The repo root is a fact about where this file lives; the cwd is not.
+    base = os.path.basename(
+        os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
     if base.upper().startswith('SAIRN-'):
         name = base[len('SAIRN-'):]
     else:
