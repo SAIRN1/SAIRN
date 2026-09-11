@@ -909,6 +909,16 @@
       "claimed_at_epoch": 1789085265.950646,
       "status": "released",
       "released_at": "2026-09-11T00:55:00Z"
+    },
+    {
+      "id": "cody-1789089859",
+      "session": "cody",
+      "subject": "sairngrounds-write-path-blind-sites",
+      "task": "eight fire-and-forget server writes fault injection",
+      "claimed_at": "2026-09-11T01:24:19Z",
+      "claimed_at_epoch": 1789089859.09671,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
