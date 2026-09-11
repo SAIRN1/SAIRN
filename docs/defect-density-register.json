@@ -38,7 +38,7 @@
       "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\""
     },
     {
-      "commit": "06d1ff732ae0",
+      "commit": "5b98fd27209b",
       "date": "2026-09-10",
       "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
       "files": [
@@ -55,7 +55,7 @@
       "summary": "Three source assertions matched what came AFTER the guard rather than its position, so if(false && dntIsUnconfirmed(...)) left them green"
     },
     {
-      "commit": "06d1ff732ae0",
+      "commit": "5b98fd27209b",
       "date": "2026-09-10",
       "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
       "files": [
@@ -72,7 +72,7 @@
       "summary": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing"
     },
     {
-      "commit": "0869ac1d673b",
+      "commit": "6fde9cea7b84",
       "date": "2026-09-10",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
       "files": [
@@ -94,7 +94,7 @@
       "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so"
     },
     {
-      "commit": "0869ac1d673b",
+      "commit": "6fde9cea7b84",
       "date": "2026-09-10",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
       "files": [
@@ -116,7 +116,7 @@
       "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site"
     },
     {
-      "commit": "0869ac1d673b",
+      "commit": "6fde9cea7b84",
       "date": "2026-09-10",
       "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
       "files": [
@@ -138,7 +138,7 @@
       "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
     },
     {
-      "commit": "08e85577d4ba",
+      "commit": "3f09a48eed54",
       "date": "2026-09-10",
       "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
       "files": [
@@ -156,7 +156,7 @@
       "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
     },
     {
-      "commit": "08e85577d4ba",
+      "commit": "3f09a48eed54",
       "date": "2026-09-10",
       "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
       "files": [
@@ -190,7 +190,7 @@
       "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence"
     },
     {
-      "commit": "4ff6bc3758c7",
+      "commit": "bfe591a24c6a",
       "date": "2026-09-10",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
       "files": [
@@ -211,7 +211,7 @@
       "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all"
     },
     {
-      "commit": "4ff6bc3758c7",
+      "commit": "bfe591a24c6a",
       "date": "2026-09-10",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
       "files": [
@@ -232,7 +232,7 @@
       "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured"
     },
     {
-      "commit": "4ff6bc3758c7",
+      "commit": "bfe591a24c6a",
       "date": "2026-09-10",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
       "files": [
@@ -253,7 +253,7 @@
       "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction"
     },
     {
-      "commit": "4ff6bc3758c7",
+      "commit": "bfe591a24c6a",
       "date": "2026-09-10",
       "subject": "fix(sairngrounds,tools): forty-three writes, no timeout, and a weather message said otherwise",
       "files": [
@@ -424,7 +424,7 @@
       "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays"
     },
     {
-      "commit": "4a35ab471fce",
+      "commit": "f75e046a736b",
       "date": "2026-09-11",
       "subject": "fix(tests): narrow the delegation hop to catch bodies -- and the hole it does not close",
       "files": [

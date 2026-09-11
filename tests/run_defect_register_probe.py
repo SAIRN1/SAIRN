@@ -116,13 +116,92 @@ try:
     check('D3 one commit CAN carry several distinct defects', after2, before + 1)
 
     # ── E. --check catches a register that has stopped being true ──────────
+    # A RECORD POINTING AT NOTHING IS BOTH HALVES GONE (2026-09-11). This arm
+    # used to plant `commit='000000000000'` while copying records[0], which
+    # carried records[0]'s SUBJECT -- so the planted record still named a real
+    # commit and only its hash was wrong. That is the REBASE case, not the
+    # points-at-nothing case, and the two now behave differently on purpose.
+    # The subject is blanked here so the record really resolves to nothing.
     p = os.path.join(wt, REG.replace('/', os.sep))
     doc = json.load(io.open(p, encoding='utf-8'))
-    doc['records'].append(dict(doc['records'][0], commit='000000000000'))
+    doc['records'].append(dict(doc['records'][0], commit='000000000000',
+                               subject='no commit on this platform says this'))
     io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, indent=2))
     rc, out = run(wt, '--check')
     check('E1 a record pointing at no commit FAILS --check', rc, 1)
     check('E2 and names it', '000000000000' in out, True)
+    check('E3 and says both halves are gone, not just the hash',
+          'neither the commit nor its subject' in out, True)
+
+    # ── E4-E8. A REBASED SHA IS NOT A RECORD POINTING AT NOTHING ───────────
+    # The register sat permanently red because `--add` derives the SHA from the
+    # commit in front of it and four clones rebase before they reach origin, so
+    # the recorded hash never existed on `main`. Every post-push report-only
+    # sweep carried a finding, which is how a checker gets switched off.
+    doc = json.load(io.open(p, encoding='utf-8'))
+    doc['records'] = [r for r in doc['records'] if r['commit'] != '000000000000']
+    real_subject = doc['records'][0]['subject']
+    doc['records'][0]['commit'] = 'aaaaaaaaaaaa'      # a rebase moved it
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, indent=2))
+    rc, out = run(wt, '--check')
+    check('E4 a SHA a rebase moved does NOT fail --check', rc, 0)
+    check('E5 it is reported rather than swallowed', 'RE-SEATABLE' in out, True)
+    check('E6 and the old and new hashes are both named',
+          'aaaaaaaaaaaa ->' in out, True)
+
+    # AMBIGUITY IS A FAILURE, NOT A GUESS. Two records cannot disambiguate a
+    # subject that matches two commits, and picking one is the thing a register
+    # must never do.
+    # THE AMBIGUITY IS MANUFACTURED RATHER THAN HOPED FOR. The first version of
+    # this arm planted a subject that happened to exist and SKIPPED itself when
+    # it turned out to be unique -- a skipped arm is an untested branch wearing
+    # a green tick. Two empty commits with the same subject are made HERE, in
+    # the detached throwaway worktree, so the fixture is guaranteed and nothing
+    # is committed on any branch of this clone.
+    DUP = 'PROBE ambiguous-subject fixture -- not a real commit'
+    for _ in range(2):
+        git(wt, '-c', 'user.name=probe', '-c', 'user.email=probe@local',
+            'commit', '--allow-empty', '-q', '-m', DUP)
+    n_same = git(wt, 'log', '--format=%s', 'HEAD').stdout.count(DUP)
+    doc2 = json.load(io.open(p, encoding='utf-8'))
+    doc2['records'][0]['subject'] = DUP
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc2, indent=2))
+    rc, amb = run(wt, '--check')
+    check('E7a the fixture really is ambiguous -- two commits, one subject',
+          n_same, 2)
+    check('E7 an ambiguous subject FAILS rather than picking one', rc, 1)
+    check('E8 and says why', 'more than one commit' in amb, True)
+
+    # ── E9-E11. --reseat writes them back, and does not reorder the file ────
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc, indent=2))
+    order_before = [r['summary'] for r in
+                    json.load(io.open(p, encoding='utf-8'))['records']]
+    rc, out = run(wt, '--reseat')
+    check('E9 --reseat succeeds', rc, 0)
+    after_doc = json.load(io.open(p, encoding='utf-8'))
+    check('E10 the moved SHA was rewritten',
+          [r for r in after_doc['records'] if r['commit'] == 'aaaaaaaaaaaa'], [])
+    check('E11 and the file was NOT reordered -- a 12-line repair must not '
+          'produce a 157-line diff',
+          [r['summary'] for r in after_doc['records']], order_before)
+    check('E12 the rewritten record still names the same commit subject',
+          after_doc['records'][0]['subject'], real_subject)
+    rc, out = run(wt, '--check')
+    check('E13 and --check is clean afterwards, with nothing re-seatable',
+          rc == 0 and 'RE-SEATABLE' not in out, True)
+
+    # ── E14. THE VOCABULARY CHECKS RUN EVEN ON A RECORD WHOSE SHA IS STALE ──
+    # They used to sit after a `continue`, so a stale SHA silently stopped the
+    # rest of that record from being checked at all.
+    doc3 = json.load(io.open(p, encoding='utf-8'))
+    doc3['records'][0]['commit'] = 'aaaaaaaaaaaa'
+    doc3['records'][0]['detection_method'] = 'vibes'
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(doc3, indent=2))
+    rc, out = run(wt, '--check')
+    check('E14 a bad field is still caught on a record with a moved SHA',
+          rc == 1 and 'unknown detection method' in out, True)
+    # Put the register back so section F reads a sane file.
+    io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(after_doc, indent=2))
 
     # ── F. THE REPORT REFUSES TO BE QUOTED BARE ────────────────────────────
     rc, out = run(wt, '--report')

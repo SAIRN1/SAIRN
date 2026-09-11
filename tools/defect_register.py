@@ -2,6 +2,7 @@
 
     python tools/defect_register.py --report
     python tools/defect_register.py --check
+    python tools/defect_register.py --reseat   # rewrite SHAs a rebase moved
     python tools/defect_register.py --add --commit SHA --app X --layer product \\
         --severity high --method fault-injection --summary "..."
 
@@ -145,15 +146,76 @@ def cmd_add(argv):
     return 0
 
 
-def cmd_check():
+def subject_index():
+    """subject -> [sha]. Built once, because a record that lost its SHA to a
+    rebase kept its message: `git rebase` rewrites the hash and preserves the
+    subject, which is precisely why the subject is the durable half."""
+    out = git('log', '--format=%H%x1f%s', 'HEAD') or ''
+    idx = {}
+    for line in out.split('\n'):
+        if '\x1f' not in line:
+            continue
+        sha, subj = line.split('\x1f', 1)
+        idx.setdefault(subj, []).append(sha)
+    return idx
+
+
+def resolve(rec, idx):
+    """(sha, how) -- how is 'sha', 'subject', 'ambiguous' or None.
+
+    ── A REBASED SHA IS NOT A RECORD POINTING AT NOTHING (2026-09-11) ────────
+    This used to fail outright on any SHA that would not resolve, and the
+    register then sat permanently red: 5 problems when it was first noticed,
+    12 hours later, growing because the cause is STRUCTURAL rather than
+    anybody's mistake. `--add` derives the SHA from the commit in front of it,
+    and with four clones pushing, most commits are rebased onto somebody
+    else's work before they reach origin. The SHA recorded is the pre-rebase
+    one; the commit it named never existed on `main`.
+
+    That matters more than a stale field. This tool is one of the promoted
+    report-only checkers, so **every post-push sweep in every clone carried a
+    finding**, which is exactly how a report-only checker earns the reputation
+    that gets it switched off before it is ever promoted to a gate.
+
+    So the SHA is treated as what it actually is -- a convenience pointer --
+    and the record's identity is its SUBJECT, which survives the rebase. A
+    record still FAILS when neither resolves, because that is the real case
+    this check exists for: a register pointing at nothing, whose length reads
+    as evidence. An AMBIGUOUS subject fails too rather than picking one, since
+    guessing which of two commits a record meant is the thing a register must
+    never do.
+    """
+    if git('rev-parse', '--verify', rec['commit'] + '^{commit}'):
+        return rec['commit'], 'sha'
+    hits = idx.get(rec.get('subject') or '\x00absent', [])
+    if len(hits) == 1:
+        return hits[0][:12], 'subject'
+    if len(hits) > 1:
+        return None, 'ambiguous'
+    return None, None
+
+
+def cmd_check(argv=()):
     """Every record must still resolve. A register pointing at nothing is worse
     than none, because its length reads as evidence."""
     reg = load()
-    bad = []
+    bad, reseat = [], []
+    idx = subject_index()
     for r in reg['records']:
-        if not git('rev-parse', '--verify', r['commit'] + '^{commit}'):
-            bad.append('%s -- commit not in this repo' % r['commit'])
-            continue
+        sha, how = resolve(r, idx)
+        if how == 'subject':
+            reseat.append((r['commit'], sha, r['subject']))
+        elif how == 'ambiguous':
+            bad.append('%s -- its subject matches more than one commit, so the '
+                       'record cannot be re-seated without guessing: %r'
+                       % (r['commit'], r['subject']))
+        elif how is None:
+            bad.append('%s -- neither the commit nor its subject is in this '
+                       'repo: %r' % (r['commit'], r.get('subject')))
+        # THE VOCABULARY CHECKS RUN REGARDLESS. They used to sit after a
+        # `continue`, so the moment a SHA went stale the rest of that record
+        # stopped being checked at all -- a second, quieter hole underneath the
+        # loud one, and it would have outlived the fix for the loud one.
         if r['detection_method'] not in METHODS:
             bad.append('%s -- unknown detection method %r'
                        % (r['commit'], r['detection_method']))
@@ -165,13 +227,51 @@ def cmd_check():
         if k in seen:
             bad.append('%s -- duplicate record' % r['commit'])
         seen.add(k)
+    # REPORTED, NOT SILENT, AND NOT A FAILURE. A re-seated record is sound --
+    # the commit is really there under a new hash -- but a reader deserves to
+    # know the register's SHAs have drifted from `main`, and `--reseat` is one
+    # command away. Saying nothing here would trade a false alarm for a silent
+    # rot, which is the swap this repo keeps recording against itself.
+    if reseat:
+        print('RE-SEATABLE (%d): the SHA was rewritten by a rebase and the '
+              'subject still resolves.' % len(reseat))
+        for old, new, subj in reseat:
+            print('    %s -> %s  %s' % (old, new, subj[:66]))
+        print('    Not a failure. Run `python tools/defect_register.py '
+              '--reseat` to write them back.')
     if bad:
         print('FAIL: %d register problem(s)' % len(bad))
         for b in bad:
             print('  ' + b)
         return 1
     print('OK: %d record(s), every commit resolves and every field is in '
-          'vocabulary.' % len(reg['records']))
+          'vocabulary.%s' % (len(reg['records']),
+                             ' %d by subject.' % len(reseat) if reseat else ''))
+    return 0
+
+
+def cmd_reseat():
+    """Write re-seated SHAs back. A separate command on purpose: `--check` is
+    read-only, and a checker that edits the thing it checks is not a checker."""
+    reg = load()
+    idx = subject_index()
+    n = 0
+    for r in reg['records']:
+        sha, how = resolve(r, idx)
+        if how == 'subject':
+            print('  %s -> %s  %s' % (r['commit'], sha, r['subject'][:66]))
+            r['commit'] = sha
+            n += 1
+    if not n:
+        print('nothing to re-seat -- every SHA resolves as recorded.')
+        return 0
+    # DELIBERATELY NOT RE-SORTED. The sort key is (date, commit), so re-seating
+    # twelve SHAs reorders the file and produces a 157-line diff for a 12-line
+    # change -- measured, not guessed, because the first version did sort and
+    # that is what it produced. A repair nobody can review is a repair nobody
+    # checks.
+    save(reg)
+    print('re-seated %d record(s).' % n)
     return 0
 
 
@@ -238,7 +338,9 @@ def main(argv):
     if '--add' in argv:
         return cmd_add(argv)
     if '--check' in argv:
-        return cmd_check()
+        return cmd_check(argv)
+    if '--reseat' in argv:
+        return cmd_reseat()
     return cmd_report()
 
 
