@@ -880,8 +880,8 @@
       "task": "check4 and check7 plant fixtures on the working branch",
       "claimed_at": "2026-09-11T14:08:08Z",
       "claimed_at_epoch": 1789135688.591746,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T15:22:22Z"
     }
   ]
 }
