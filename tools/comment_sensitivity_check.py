@@ -48,6 +48,7 @@ import glob
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -77,8 +78,17 @@ def run(tool, path):
     # The path appears in some outputs and legitimately differs between the real
     # file and the temp copy; normalise it out or every checker looks sensitive.
     out = (p.stdout or '') + (p.stderr or '')
-    return p.returncode, out.replace(path, '<TARGET>').replace(
-        path.replace('\\', '/'), '<TARGET>')
+    out = out.replace(path, '<TARGET>').replace(path.replace(chr(92), '/'), '<TARGET>')
+    # LINE NUMBERS ARE METADATA, NOT THE ANSWER, and leaving them in made this
+    # tool report two checkers as comment-sensitive when nothing about their
+    # verdict had moved. Blanking a comment to spaces changes what HTMLParser
+    # emits, so a checker taking positions from getpos() reports the SAME
+    # finding one line off -- identical keys, identical collisions, identical
+    # exit code. Normalised out, the same way the path already is. A harness
+    # that flags its own side effects is measuring itself.
+    out = re.sub(r'line \d+', 'line <N>', out)
+    out = re.sub(r'^\s*\d+:', '<N>:', out, flags=re.M)
+    return p.returncode, out
 
 
 def main(argv):

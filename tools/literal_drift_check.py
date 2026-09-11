@@ -26,10 +26,28 @@ fine. Read every line before acting on it.
 """
 
 import io, re, sys, difflib
+import os
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from collections import defaultdict
 
 path = sys.argv[1]
 src = io.open(path, encoding='utf-8').read().replace('\r\n', '\n')
+
+# COMMENTS ARE BLANKED BEFORE ANYTHING IS COUNTED (2026-09-11).
+# This checker's whole verdict is "this literal appears in N places and
+# two of them disagree", and a commented-out copy is NOT a place. It was
+# counting comment prose as live literals: measured on sairnbiz.html,
+# 370 literals >= 30 chars raw vs 358 with comments blanked -- TWELVE of
+# them comment text, including "benefits cost is always $0 in this app"
+# and "did we run payroll this period?". The dangerous case is not the
+# inflated count: it is a live literal plus an out-of-date commented-out
+# copy reading as two places that disagree, which is exactly the drift
+# this file exists to report. Found by tools/comment_sensitivity_check.py.
+#
+# Offsets are PRESERVED -- the span is overwritten with spaces, not removed
+# -- so every line number this file reports still points at the real file.
+from comment_quote_check import strip_comments
+src = strip_comments(src)
 
 blocks = [(m.start(1), m.group(1)) for m in
           re.finditer(r'<script\b[^>]*>(.*?)</script>', src, re.S | re.I)]
