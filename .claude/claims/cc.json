@@ -912,8 +912,8 @@
       "task": "entitlement gates referencing columns not in the schema snapshot",
       "claimed_at": "2026-09-11T13:59:56Z",
       "claimed_at_epoch": 1789135196.8017335,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T14:09:35Z"
     }
   ]
 }
