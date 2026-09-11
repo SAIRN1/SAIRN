@@ -1054,7 +1054,7 @@ triaged, so the index row says unknown, not leaking. Filed unassigned.
 tree** — including Cody's new `run_defect_register_probe.py`, which appeared on
 origin mid-session. Not mine, not investigated.
 
-**`a41ed794` — finished the sweep, and corrected my own scope claim in the
+**`08e7c8d5` — finished the sweep, and corrected my own scope claim in the
 process.** My earlier index row said *"twelve apps, untriaged."* That counted
 apps with **per-employee auth**, which is the wrong signal. The right one is the
 **read itself**: `api/sd-data.js` has exactly **nine** branches filtering rows
