@@ -822,8 +822,8 @@
       "task": "checkers that exit clean while silently not looking",
       "claimed_at": "2026-09-10T23:50:16Z",
       "claimed_at_epoch": 1789084216.002908,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:11:26Z"
     }
   ]
 }
