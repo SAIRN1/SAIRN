@@ -1203,3 +1203,34 @@ patched.
 **Standing lesson: grep is the wrong instrument for "does this code do X".**
 Every one of the three instances was a regex matching text that only *described*
 the thing. Parse, or strip, but do not grep raw source and call it a check.
+
+**`b8e21568` — asked the comment-quoting question of the whole checker fleet,
+and the first thing it found was my own tool from yesterday.**
+
+**The obvious audit is a grep, and it was wrong twice in one pass.** Grepping
+each checker for a comment-stripping idiom called `duplicate_global_check` and
+`key_collision_check` unsafe — both hand-write full character-level scanners
+skipping comments, strings and regex literals, using no idiom a grep would
+recognise. **Two of the most careful tools in the repo, misclassified.** That is
+the fourth time in two days grep was the wrong instrument for *"does this code
+do X"*, and the first time it was in my audit rather than in a tool.
+
+So the checker is **behavioural**: run each checker twice, real file vs
+comment-blanked copy, compare. It does not care how a checker handles comments,
+only whether its answer depends on them.
+
+**It immediately found a defect in `strip_comments()`, which I shipped
+yesterday.** The SQL `--` branch ran on every file type, and this repo writes
+`--` in prose constantly — so `<title>SAIRNmechanical -- HVAC & Mechanical
+</title>` lost everything from the dashes on, **including the closing tag**.
+Real markup destroyed. `panel_nesting_check` reporting `NO_PANELS_FOUND` on a
+stripped copy is what surfaced it. Gated to `sql=True`; two checkers drop to
+zero differences once fixed, which is how I confirmed it rather than assumed it.
+
+**Two findings survive the fix and are FILED, not fixed** — they are other
+tools' internals and deserve their own pass: `literal_drift_check` counts 12
+comment literals as real on sairnbiz (273 vs 261, differs on 17 of 22 apps), and
+`key_collision_check` counts one key write from a comment on stonedesk (93 vs
+92) **despite having a tokenizer** — its scanner is JS-oriented and does not
+know about HTML comments. **A partial tokenizer that looks complete is harder to
+distrust than none at all.**
