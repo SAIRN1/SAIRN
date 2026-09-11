@@ -1336,8 +1336,103 @@ async function main() {
     assert.strictEqual(res.statusCode, 200, 'a role vocabulary was added -- read the reasoning in dental-ledger.js first');
   });
 
+  // -- 5g. dnt_referrals, THE NINTH (2026-09-11) ---------------------------
+  // A clinical record naming a patient, an outside practice and a REASON --
+  // and the reason is not decoration: the panel's own header records that a
+  // referral must never carry a fee or a resource in exchange, which is
+  // illegal under the Anti-Kickback Statute and state dental board ethics
+  // rules. Every rule below is one addReferral() already refuses on.
+  const RF_OK = {
+    id: 'RF-1', direction: 'incoming', patient_name: 'Alice Smith',
+    external_party: 'Dr Jones Oral Surgery', date: '2026-09-11',
+    reason: 'surgical extraction', status: 'Pending',
+  };
+
+  // DIRECTION IS THE SHARP ONE. rReferrals() renders
+  // `H(r.direction === 'incoming' ? 'Incoming' : 'Outgoing')` -- one strict
+  // literal with an unconditional else -- so each of these displayed as
+  // OUTGOING, the opposite of the truth, with no unknown state available.
+  // Measured in node against that expression.
+  for (const bad of ['Incoming', 'in', 'INCOMING', '', undefined]) {
+    await test('direction ' + JSON.stringify(bad) + ' is refused -- it would render as OUTGOING', async () => {
+      let posted = false;
+      const handler = loadHandler(async function (url, opts) {
+        if (opts && opts.method === 'POST') posted = true;
+        return OK_WRITE();
+      });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: Object.assign({}, RF_OK, { direction: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'INVALID_REFERRAL');
+      assert.ok(!posted, 'REFUSED AND STILL POSTED');
+    });
+  }
+
+  // An unrecognised status marks NOTHING selected, and a <select> with no
+  // selected option displays its FIRST -- Pending. So a Declined referral
+  // reads as Pending, and that same dropdown is what writes the status back.
+  for (const bad of ['declined', 'weird', '', undefined]) {
+    await test('status ' + JSON.stringify(bad) + ' is refused -- it would read as PENDING', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: Object.assign({}, RF_OK, { status: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  for (const field of ['patient_name', 'external_party', 'reason']) {
+    await test('a referral with no ' + field + ' is refused -- it blank-renders, and patient_name is the record identity', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: Object.assign({}, RF_OK, { [field]: '   ' }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, field + ' -> ' + res.statusCode);
+      assert.ok(res.body.error.message.indexOf(field) !== -1, 'the message must name the field: ' + res.body.error.message);
+    });
+  }
+
+  for (const bad of ['next tuesday', '2026-02-31', '', undefined, '2026-9-1']) {
+    await test('date ' + JSON.stringify(bad) + ' is refused -- the column is rendered to a clinician as typed', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: Object.assign({}, RF_OK, { date: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  // THE ACCEPT SIDE. A validator that refuses everything passes every arm
+  // above and breaks the referrals panel (Guardian check 29).
+  await test('ACCEPT: the record addReferral() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    // Field for field, including patient_id: '' -- "Link to Existing Patient"
+    // is OPTIONAL in the form, so a validator that required it would refuse a
+    // shape the app deliberately produces.
+    await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: { id: 'RF-9', direction: 'outgoing', patient_name: 'Bob Reyes', patient_id: '', external_party: 'Dr Patel Endodontics', internal_provider_id: '', date: '2026-09-11', reason: 'root canal', status: 'Pending', created_at: '2026-09-11' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: both directions and all four statuses', async () => {
+    for (const direction of ['incoming', 'outgoing']) {
+      for (const status of ['Pending', 'Scheduled', 'Completed', 'Declined']) {
+        const handler = loadHandler(OK_WRITE);
+        const res = mockRes();
+        await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: Object.assign({}, RF_OK, { direction, status }) }, tokenFor('owner')), res);
+        assert.strictEqual(res.statusCode, 200, direction + '/' + status + ' -> ' + JSON.stringify(res.body));
+      }
+    }
+  });
+
+  await test('no session + a bad referral -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: { id: 'RF-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
+  });
+
   // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_referrals with a junk shape still goes through -- SEVEN resources remain', async () => {
+  await test('dnt_recall_outreach with a junk shape still goes through -- SIX remain, and TWO of those are deliberately unwritten', async () => {
     // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
     // resource, not a claim that it is next -- nothing has been measured about
     // it yet.
@@ -1348,33 +1443,50 @@ async function main() {
     // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
     // 2026-09-10 with the vendor-collections work.
     //
-    // NOW: DNT_RESOURCES holds SEVENTEEN. NINE are validated --
-    // dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
-    // dnt_procedure_types, dnt_txplans, dnt_provider_hours and dnt_providers
-    // -- plus dnt_gfe's issue-time check. So SEVEN have no domain check:
-    // dnt_operatories, dnt_ar, dnt_revenue, dnt_referrals,
-    // dnt_recall_outreach, dnt_supplies, dnt_vendor_orders.
+    // NOW: DNT_RESOURCES holds SEVENTEEN. TEN are validated -- dnt_patients,
+    // dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
+    // dnt_procedure_types, dnt_txplans, dnt_provider_hours, dnt_providers and
+    // dnt_referrals -- plus dnt_gfe's issue-time check. So SIX have no domain
+    // check: dnt_operatories, dnt_ar, dnt_revenue, dnt_recall_outreach,
+    // dnt_supplies, dnt_vendor_orders.
+    //
+    // AND TWO OF THOSE SIX ARE DELIBERATELY UNWRITTEN, which narrows the real
+    // remainder to FOUR. Measured 2026-09-11 off every
+    // `sdnData('write','<literal>',...)` call in sairndental.html: dnt_ar and
+    // dnt_revenue have ZERO writers, and the app says why in its own comments
+    // -- "deliberately no write to dnt_ar: a stored ageing row is stale the
+    // next [time]... charges and payments that really exist. dnt_ar stays
+    // registered and unwritten", and "dnt_revenue has no client accessor".
+    // A validator for a resource nothing writes is dead code; if either ever
+    // gains a writer, that is when it needs one.
     //
     // dnt_provider_hours came off on 2026-09-11 -- the only one that fed an
     // UNAUTHENTICATED, PATIENT-FACING surface (public-availability.js
     // generates public booking slots from it). dnt_providers came off the same
-    // day -- the roster IS the access-control table for patient scoping.
+    // day -- the roster IS the access-control table for patient scoping. And
+    // dnt_referrals, because its render asserts a DIRECTION it does not know:
+    // anything but the exact literal 'incoming' displays as Outgoing.
     //
     // If this ever fails, either the scope grew -- fine, say so here as the
     // previous four boundaries did -- or a rule leaked across resources.
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: { id: 'RF-1', patient_id: 'PT-1', title: '', status: 'weird', items: 'not-an-array' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the treatment-plan rules leaked onto dnt_referrals');
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', title: '', status: 'weird', items: 'not-an-array', direction: 'Incoming' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a rule leaked onto dnt_recall_outreach');
     assert.ok(wrote);
   });
 
-  await test('a dnt_referrals row with no amount at all is unaffected', async () => {
+  // THE NEIGHBOUR MOVED, stated rather than quietly edited. This used
+  // dnt_referrals; that resource GAINED A VALIDATOR on 2026-09-11, so a row
+  // with only an id and a patient_id is now correctly refused by its own rules
+  // and the test began failing for the right reason. dnt_recall_outreach is
+  // the replacement: still unvalidated, and still carries no amount.
+  await test('a dnt_recall_outreach row with no amount at all is unaffected', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: { id: 'RF-1', patient_id: 'PT-1' } }, tokenFor('owner')), res);
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1' } }, tokenFor('owner')), res);
     assert.strictEqual(res.statusCode, 200);
     assert.ok(wrote);
   });
@@ -1453,6 +1565,12 @@ async function main() {
     // dnt_providers (2026-09-11).
     ['dnt_providers', { id: 'PV-1', name: '', linked_employee_id: '' }],
     ['dnt_providers', { id: 'PV-1', name: 'Dr Ada Chen', linked_employee_id: 1001 }],
+    // dnt_referrals (2026-09-11). The first is the one that matters: pre-fix a
+    // capitalised direction reached the store and the table then rendered it as
+    // Outgoing -- the opposite of the truth.
+    ['dnt_referrals', { id: 'RF-1', direction: 'Incoming', patient_name: 'Alice', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'Pending' }],
+    ['dnt_referrals', { id: 'RF-1', direction: 'incoming', patient_name: '', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'Pending' }],
+    ['dnt_referrals', { id: 'RF-1', direction: 'incoming', patient_name: 'Alice', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'declined' }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

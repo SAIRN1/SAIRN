@@ -46,6 +46,7 @@ const {
   txPlanProblem: dntTxPlanProblem,
   providerHoursProblem: dntProviderHoursProblem,
   providerProblem: dntProviderProblem,
+  referralProblem: dntReferralProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -10082,6 +10083,31 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_providers') {
         const pvp = dntProviderProblem(payload);
         if (pvp) { res.status(400).json({ error: { code: 'INVALID_PROVIDER', message: pvp } }); return; }
+      }
+      // dnt_referrals, the NINTH (2026-09-11). A clinical record naming a
+      // patient, an outside practice and a REASON -- and the reason is not
+      // decoration: the panel's own header records that a referral must never
+      // carry a fee or a resource in exchange, which is illegal under the
+      // Anti-Kickback Statute and state dental board ethics rules.
+      //
+      // THE DIRECTION SHAPE IS THE ONE THAT MATTERS, measured in node against
+      // the real render. rReferrals() does
+      // `H(r.direction === 'incoming' ? 'Incoming' : 'Outgoing')` -- one strict
+      // literal with an unconditional else -- so 'Incoming' capitalised, 'in',
+      // or a MISSING direction each display as OUTGOING, the opposite of the
+      // truth, with no unknown state available.
+      //
+      // And an unrecognised status reads as PENDING: the dropdown marks
+      // selected only on ===, a <select> with nothing selected shows its first
+      // option, and that same dropdown is what writes the status back.
+      //
+      // Full reasoning, plus the separate finding that a referral with no
+      // patient_id is INVISIBLE to every scoped provider role (fails closed,
+      // measured, filed rather than enforced because the form makes the link
+      // optional), is in api/_lib/dental-ledger.js.
+      if (resource === 'dnt_referrals') {
+        const rfp = dntReferralProblem(payload);
+        if (rfp) { res.status(400).json({ error: { code: 'INVALID_REFERRAL', message: rfp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

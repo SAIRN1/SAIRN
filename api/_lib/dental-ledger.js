@@ -853,9 +853,104 @@ function providerProblem(record) {
   return null;
 }
 
+// -- NINTH RESOURCE: dnt_referrals (2026-09-11) ----------------------------
+// A referral is a CLINICAL record naming a patient, an outside practice, and a
+// reason -- and the reason is not decoration: the panel's own header records
+// that a referral must never carry a fee or a resource in exchange, which is
+// illegal under the Anti-Kickback Statute and state dental board ethics rules.
+// The written reason is what makes a referral defensible.
+//
+// SIX RULES, ALL OF THEM ALREADY ENFORCED BY addReferral() IN THE BROWSER AND
+// BY NOTHING ELSE. Measured against rReferrals() in node rather than reasoned
+// about:
+//
+//   DIRECTION IS THE ONE THAT MATTERS. The render is
+//       H(r.direction === 'incoming' ? 'Incoming' : 'Outgoing')
+//   -- a strict comparison against ONE literal with an unconditional else. So
+//   'Incoming' (capitalised), 'in', and a MISSING direction all render as
+//   **Outgoing**, the opposite of the truth, on a clinical referral. There is
+//   no unknown state: the table asserts a direction it does not know. The
+//   <select> only emits 'incoming'/'outgoing'; this handler took anything.
+//
+//   STATUS SHOWS "Pending" FOR ANYTHING IT DOES NOT RECOGNISE. rReferrals()
+//   builds the status dropdown as
+//       ['Pending','Scheduled','Completed','Declined'].map(s => ... s === r.status ? ' selected' : '')
+//   so a status of 'declined' (lowercase) or anything else marks NOTHING
+//   selected -- and a <select> with no selected option displays its FIRST,
+//   which is Pending. Measured: 0 of 4 options match. A Declined referral
+//   reads as Pending, and because that same <select> carries
+//   onchange="setReferralStatus(...)", the wrong value shown is the one a user
+//   would confirm by touching the row.
+//
+//   patient_name, external_party, date AND reason are each rendered directly
+//   and each blank-render when empty. patient_name is the record's IDENTITY
+//   here, because linking a real patient is optional in the form -- so an
+//   empty name is a referral attached to nobody.
+//
+// A SEPARATE FINDING, NOT A RULE, AND DELIBERATELY NOT FIXED HERE. dnt_referrals
+// is in DNT_PATIENT_SCOPED_RESOURCES, and the scoped read filters
+//     d[key] != null && dntScopeIds[String(d[key])] === true
+// while dntScopeIds is built with `if (x.data.patient_id)`, so an empty id is
+// never a key. Measured: a referral with patient_id '' or absent is INVISIBLE
+// to every scoped provider role. That fails CLOSED -- no leak -- but the front
+// desk can create a referral the treating provider never sees, and nothing says
+// so. Requiring patient_id here would refuse a shape the form deliberately
+// produces ("Link to Existing Patient (optional)"), so it is filed rather than
+// enforced.
+//
+// A LEGACY-ROW COST, checked for this resource: setReferralStatus() re-sends an
+// EXISTING record (it mutates the found row and writes it), so a stored
+// referral that violates one of these rules becomes unwritable until fixed --
+// its status can no longer be changed. addReferral() has always refused four of
+// the six, so only a direction or status outside vocabulary could realistically
+// be on file.
+const REFERRAL_DIRECTIONS = Object.assign(Object.create(null),
+  { incoming: true, outgoing: true });
+const REFERRAL_STATUSES = Object.assign(Object.create(null),
+  { Pending: true, Scheduled: true, Completed: true, Declined: true });
+
+function referralProblem(record) {
+  const r = record || {};
+  const direction = typeof r.direction === 'string' ? r.direction.trim() : '';
+  if (!REFERRAL_DIRECTIONS[direction]) {
+    return 'direction must be exactly "incoming" or "outgoing" (got '
+         + JSON.stringify(r.direction) + '). rReferrals() renders '
+         + 'r.direction === \'incoming\' ? \'Incoming\' : \'Outgoing\', so any '
+         + 'other value -- including a capitalised "Incoming" or a missing one '
+         + '-- displays as OUTGOING, the opposite of the truth, with no unknown '
+         + 'state available.';
+  }
+  for (const field of ['patient_name', 'external_party', 'reason']) {
+    if (String(r[field] == null ? '' : r[field]).trim() === '') {
+      return field + ' is required. It is rendered directly and blank-renders '
+           + 'when empty; patient_name is this record\'s identity because '
+           + 'linking a real patient is optional, and the reason is what makes '
+           + 'a referral defensible under the anti-kickback rules the panel\'s '
+           + 'own header cites. All three are rules addReferral() already '
+           + 'refuses on.';
+    }
+  }
+  if (!isCalendarDate(r.date)) {
+    return 'date must be a YYYY-MM-DD calendar date (got '
+         + JSON.stringify(r.date) + '). The form sends an <input type="date"> '
+         + 'value and refuses an empty one; the column is rendered as typed, so '
+         + 'anything else is displayed to a clinician as though it were a date.';
+  }
+  const status = typeof r.status === 'string' ? r.status.trim() : '';
+  if (!REFERRAL_STATUSES[status]) {
+    return 'status must be one of Pending, Scheduled, Completed or Declined '
+         + '(got ' + JSON.stringify(r.status) + '). rReferrals() marks an '
+         + 'option selected only on ===, and a <select> with nothing selected '
+         + 'displays its FIRST option -- so an unrecognised status reads as '
+         + 'PENDING, and that same dropdown is what writes the status back.';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
   procedureTypeProblem, txPlanProblem, providerHoursProblem, providerProblem,
+  referralProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
   // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
   // availability.js declared its own copy; a validator with a second copy

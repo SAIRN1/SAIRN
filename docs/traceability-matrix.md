@@ -115,7 +115,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | `discarded_verdict_check.py` finds only SAME-FILE cases — a verdict returned by a required module and dropped elsewhere is missed | **ANSWERED 2026-09-04 (Cody) — MEASURED AT ZERO, so the pass is deliberately NOT built** | `tests/run_discarded_verdict_crossfile_probe.py` |
 | ~~`git_push_master_guard` denies on the SUBSTRING `master`, including inside a filename~~ | **CLOSED 2026-09-04 (Cody)** in `2c1ed4c0` — anchored on the destination refspec, live-verified in BOTH directions through the real hook | `tests/run_push_master_guard_probe.py` |
 | ~~`license_keys` grants need their own dedicated review — excluded from every sweep until then~~ | **CLOSED 2026-09-05 — RUN END TO END BY MICHAEL AND VERIFIED AT EVERY STEP, not 'SQL sent'** | `tests/sql_preflight/run_probe.py` |
-| **PATTERN 13's TRIAL-EXPIRY GATE HAS NEVER FIRED ON ANY LICENCE — the column it reads does not exist** | Open — **found 2026-09-05 (Cody)** while doing the `license_keys` code review above; **not urgent, but it must be known BEFORE billing is switched on** | `api/license-trial-gate.test.js`, `tests/license_trial_gate_probe.py` |
+| **PATTERN 13's TRIAL-EXPIRY GATE HAS NEVER FIRED ON ANY LICENCE — the column it reads does not exist** | Open &mdash; **found 2026-09-05 (Cody)**; **NOW MECHANICALLY DETECTED 2026-09-11 (CC)** &mdash; `2d74cd4b`, a promoted checker fails while this row is open. The fix itself is still a billing decision | `api/license-trial-gate.test.js`, `tests/license_trial_gate_probe.py`, `tests/run_gate_column_probe.py` |
 | ~~`tests/refusal_not_empty.js` has been FAILING &mdash; 6 of 14 assertions, `_sdReadFailed is not defined`~~ &mdash; **and it was FOUR red tests, not one** | **CLOSED 2026-09-04 (Hank)** &mdash; all four repaired, suite green but for one live tripwire | `api/_lib/sairnlaw-define-tool.test.js`, `api/sd-data-appointments-photos.test.js`, `api/sd-data-complaints-readonly.test.js`, `tests/refusal_not_empty.js` |
 | ~~Push-gate check 6 (the credential scan) reported itself UNCHECKED every time a push lost a race with another clone~~ | **FIXED 2026-09-04 (CC)** &mdash; root cause read out of the reflog, not reasoned; held by `tests/push_gate/redaction_base_probe.py` | `tests/push_gate/redaction_base_probe.py` |
 | ~~`tests/dnt_vendor_write_confirmation_probe.py` reports two controls that DO NOT BITE~~ &mdash; **CLOSED, and re-anchoring one of them exposed a real coverage gap** | **CLOSED 2026-09-11 (CC)** &mdash; `95047c69`. All 9 controls bite, target restored byte-identical, suite 17/17 | `tests/dnt_vendor_write_confirmation_probe.py` |
@@ -155,7 +155,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| The generic `DNT_RESOURCES` write validates `payload.id` and nothing else &mdash; **SEVENTEEN resources, not fifteen** | Open &mdash; **10 of 17 CLOSED, SEVEN REMAIN.** `dnt_providers`, `dnt_provider_hours` and `dnt_txplans` 2026-09-11 (Hank). `dnt_procedure_types` 2026-09-09 (Fourth). `dnt_denial` 2026-09-05 (Cody). `d | `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-provider-scope.test.js` |
+| The generic `DNT_RESOURCES` write validates `payload.id` and nothing else &mdash; **SEVENTEEN resources, not fifteen** | Open &mdash; **11 of 17 CLOSED, SIX REMAIN &mdash; and TWO of those six are DELIBERATELY UNWRITTEN, so the real remainder is FOUR.** `dnt_referrals`, `dnt_providers`, `dnt_provider_hours` and `dnt_txp | `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-provider-scope.test.js` |
 | ~~A coverage rule cannot be changed or removed once written — `removeCoverageRule()` is local-only and there is no update path~~ | **CLOSED 2026-09-04 (CC)** — an EDIT path exists; removal is still not a delete and the message now says so | `api/sd-data-dental-ledger-validation.test.js`, `tests/sairndental_coverage_edit.js`, `tests/suite_control_backfill_probe.py` |
 | ~~Every write failure was reported as *"server sync not yet enabled for this app"*, which is FALSE — and it was swallowing the refusals added the same day~~ | **CLOSED 2026-09-04 (CC)** for SAIRNdental. **SAIRNlaw (29) and SAIRNlegacy (58) still carry it — see the row below** | `tests/sairndental_write_failure_voice.js` |
 | ~~The financial tier gates READS to owner/frontdesk and gates WRITES for nobody &mdash; a provider can write a payment it is not allowed to read back~~ &mdash; **CLOSED: the same list and the same roles now gate the write branch** | **CLOSED 2026-09-10 (CC)** &mdash; `ddbd1f2c`. Found 2026-09-04 (CC) and left open on purpose because it is a behaviour change, not a validation | `api/sd-data-dental-financial-tier.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `tests/push_gate/refspec_and_override_probe.py`, `tests/run_report_only_checks_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
@@ -238,7 +238,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**106 of 293 test files are traced to a stated requirement. 187 are not.**
+**107 of 293 test files are traced to a stated requirement. 186 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -382,7 +382,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
-- `tests/run_gate_column_probe.py`
 - `tests/run_md_table_check_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`
