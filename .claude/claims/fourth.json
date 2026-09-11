@@ -842,6 +842,16 @@
       "claimed_at_epoch": 1789126585.17239,
       "status": "released",
       "released_at": "2026-09-11T11:58:31Z"
+    },
+    {
+      "id": "fourth-1789127933",
+      "session": "fourth",
+      "subject": "checker-cwd-anchoring",
+      "task": "default target globs relative to current directory scan nothing report clean",
+      "claimed_at": "2026-09-11T11:58:53Z",
+      "claimed_at_epoch": 1789127933.0626843,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
