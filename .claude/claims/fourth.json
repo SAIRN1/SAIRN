@@ -860,8 +860,8 @@
       "task": "unresolvable base arm passes only when clone is ahead of origin",
       "claimed_at": "2026-09-11T12:54:21Z",
       "claimed_at_epoch": 1789131261.4965363,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T13:05:37Z"
     }
   ]
 }
