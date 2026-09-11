@@ -830,8 +830,8 @@
       "task": "self-referential-subject-sweep-second-half",
       "claimed_at": "2026-09-11T01:07:17Z",
       "claimed_at_epoch": 1789088837.2774515,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T11:20:11Z"
     }
   ]
 }
