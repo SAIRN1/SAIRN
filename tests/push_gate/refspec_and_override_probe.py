@@ -79,8 +79,54 @@ check("range base..base is empty -- the commit is not outgoing from itself",
 # sha from git's pre-push stdin and a clone that has not fetched may not hold
 # that object. Returning [] for an unresolvable base would mean "no seed
 # touched" on a real push -- fail-OPEN on a blocking gate.
-check("an UNRESOLVABLE base still widens -- [] there would fail open on a real push",
-      bool(H.outgoing_files(REPO, '0' * 40, head)), True)
+# ── THE FIXTURE IS MANUFACTURED, NOT HOPED FOR -- 2026-09-11 ────────────────
+# This arm ran against REPO and asserted the widening fallback returns
+# something. The fallback widens to `@{u}..tip` and then `origin/main..tip`, so
+# it can only return something WHEN THIS CLONE IS AHEAD OF ORIGIN -- and the
+# clone is in sync immediately after a push and BEHIND whenever another of the
+# four pushes next. Observed failing that way minutes after a successful push,
+# with HEAD an ancestor of origin/main and both fallback ranges empty.
+#
+# THE CODE UNDER TEST WAS NOT WRONG, AND THAT IS WHY THIS MATTERS. On a real
+# push HEAD is ahead of origin by definition -- you are pushing something -- so
+# the widening does fire where it counts. The arm was reporting a fail-open
+# that cannot occur in the scenario it names, which is the mirror image of the
+# flakiness the comment 20 lines above documents for the A2 arm: same file,
+# same root cause, same session's sync state standing in for a fact about code.
+#
+# So the "ahead" precondition is BUILT: a detached throwaway worktree with one
+# empty commit on top, which makes `origin/main..HEAD` non-empty by
+# construction. Nothing is committed on any branch of this clone, and the
+# worktree is removed in the finally.
+_ahead = os.path.join(tempfile.gettempdir(), 'pushgate-ahead-%d' % os.getpid())
+subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', _ahead, 'HEAD'],
+               capture_output=True)
+try:
+    # THE FIXTURE COMMIT MUST TOUCH A FILE, and the first version did not.
+    # outgoing_files() widens on `git log <ref>..<tip> --name-only`, so an
+    # `--allow-empty` commit produces no filenames, the output is falsy, and it
+    # falls straight through to `return []` -- the arm failed against correct
+    # code for a second, different reason. An empty commit proves the range is
+    # non-empty and proves nothing about a function that reports PATHS.
+    io.open(os.path.join(_ahead, 'PROBE-ahead-fixture.txt'), 'w',
+            encoding='utf-8').write('probe fixture\n')
+    subprocess.run(['git', '-C', _ahead, 'add', 'PROBE-ahead-fixture.txt'],
+                   capture_output=True)
+    subprocess.run(['git', '-C', _ahead, '-c', 'user.name=probe',
+                    '-c', 'user.email=probe@local', 'commit',
+                    '-q', '-m', 'PROBE ahead-of-origin fixture'], capture_output=True)
+    _widen = subprocess.run(['git', '-C', _ahead, 'log', 'origin/main..HEAD',
+                             '--name-only', '--pretty=format:'],
+                            capture_output=True, text=True).stdout
+    check("fixture is valid: the worktree is ahead of origin/main AND the "
+          "outgoing range names a file",
+          bool(_widen.strip()), True)
+    check("an UNRESOLVABLE base still widens -- [] there would fail open on a real push",
+          bool(H.outgoing_files(_ahead, '0' * 40, 'HEAD')), True)
+finally:
+    subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', _ahead],
+                   capture_output=True)
+    subprocess.run(['git', '-C', REPO, 'worktree', 'prune'], capture_output=True)
 check("...and a resolvable base is trusted even when its range is empty",
       H.outgoing_files(REPO, head, head), [])
 
