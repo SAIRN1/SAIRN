@@ -42,12 +42,31 @@ MUTATIONS = [
     ("2. a refused push no longer says NOT SAVED",
      "    toast('NOT SAVED TO THE SERVER",
      "    toast('Saved. ('NOT SAVED TO THE SERVER"),
+    # RE-ANCHORED 2026-09-11, and this one is the sharper of the two. The old
+    # anchor carried SIX leading spaces, which is the MISSING-FIELDS branch of
+    # dntPushOne(), not the refused branch this arm is named for. It still
+    # matched EXACTLY ONCE, so the harness raised no ANCHOR-n error -- it just
+    # quietly probed a different branch and reported SILENT. AN ANCHOR THAT IS
+    # UNIQUE IS NOT THE SAME AS AN ANCHOR THAT IS RIGHT, and uniqueness is the
+    # only half this harness can check. The anchor now includes the line that
+    # follows it, which is what distinguishes the two branches.
     ("3. a refused push stops marking the key unconfirmed",
-     "      if(storeKey) dntMarkUnconfirmed(storeKey,true);",
-     "      if(false) dntMarkUnconfirmed(storeKey,true);"),
+     "    if(storeKey) dntMarkUnconfirmed(storeKey,true);\n    return null;",
+     "    if(false) dntMarkUnconfirmed(storeKey,true);\n    return null;"),
+    # The branch the old anchor had drifted ONTO deserves its own control:
+    # nothing covered it once arm 3 was moved back where it belongs, and a
+    # response that comes back without the fields that were sent is exactly the
+    # case this suite exists for.
+    ("3b. a response MISSING fields stops marking the key unconfirmed",
+     "      if(storeKey) dntMarkUnconfirmed(storeKey,true);\n      return r;",
+     "      if(false) dntMarkUnconfirmed(storeKey,true);\n      return r;"),
+    # RE-ANCHORED 2026-09-11. The old anchor expected an else-if that no longer
+    # exists: dntPushOne() was refactored and the branch collapsed into a flat
+    # if. That one DID report ANCHOR-0 and fail the probe, which is the harness
+    # working as designed -- it had simply never been fixed.
     ("4. a successful push stops CLEARING the key, so the guard never lifts",
-     "    }else if(storeKey){\n      dntMarkUnconfirmed(storeKey,false);",
-     "    }else if(false){\n      dntMarkUnconfirmed(storeKey,false);"),
+     "    if(storeKey) dntMarkUnconfirmed(storeKey,false);\n    return r;",
+     "    if(false) dntMarkUnconfirmed(storeKey,false);\n    return r;"),
     ("5. contacts hydration overwrites an unconfirmed local write again",
      "    if(dntIsUnconfirmed('dnt_vendor_contacts')){",
      "    if(false&&dntIsUnconfirmed('dnt_vendor_contacts')){"),
@@ -112,6 +131,22 @@ def main():
           % (TARGET, after == before, before[:16]))
     bad = [n for n, v in results if v not in ('BITES', 'GREEN')]
     print('CONTROLS THAT DID NOT BITE:', bad if bad else 'none')
+    # SILENT HAS TWO CAUSES AND THEY NEED OPPOSITE FIXES. Said here because
+    # getting this wrong cost a real arm: on 2026-09-11 arm 3's anchor had
+    # drifted onto a DIFFERENT branch of dntPushOne(), still matched exactly
+    # once so the harness raised nothing, and reported SILENT -- which reads as
+    # "the suite is weak here" when it actually meant "this anchor is no longer
+    # pointing at what its name says". Check the anchor BEFORE adding an
+    # assertion; an anchor that is unique is not the same as an anchor that is
+    # right, and uniqueness is the only half this harness can check.
+    if any(v == 'SILENT' for _, v in results):
+        print('')
+        print('A SILENT control means ONE OF TWO THINGS, and they need opposite fixes:')
+        print('  (a) the suite genuinely does not assert this behaviour  -> add the assertion;')
+        print('  (b) the ANCHOR has drifted onto different code that the suite')
+        print('      does not cover -> re-anchor it. It can still match exactly')
+        print('      once while pointing at the wrong branch, which is what')
+        print('      happened to arm 3 on 2026-09-11. Read the anchor first.')
     return 1 if (bad or after != before) else 0
 
 

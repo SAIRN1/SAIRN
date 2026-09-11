@@ -195,6 +195,42 @@ test('a later SUCCESS clears it -- the guard must not be permanent', async () =>
     'a successful write did not clear the flag, so hydration would be blocked forever');
 });
 
+// ADDED 2026-09-11, and it was found by a PROBE ANCHOR THAT HAD DRIFTED. The
+// probe's arm 3 was aimed at the refused branch and its anchor had moved onto
+// THIS branch instead -- the response-came-back-incomplete one. The anchor still
+// matched exactly once, so the harness saw no error; it silently probed a branch
+// this suite never asserted. Re-anchoring arm 3 back where it belonged left this
+// branch uncovered and the probe immediately said SILENT, which is how the gap
+// surfaced at all.
+//
+// THE BRANCH MATTERS AS MUCH AS THE OTHER TWO. dntPushOne() compares the keys of
+// the record it SENT against the object that came back, and a reply that is
+// missing any of them is not a confirmation. Without this the flag would be
+// cleared on a 200 that silently dropped a field, and the next hydration would
+// overwrite the local copy with a server row that never received it.
+test('a reply MISSING a field that was sent does not count as confirmation', async () => {
+  // 200, well-formed, and short one key. This is the shape a partial write or a
+  // schema drift produces -- not an error, just an answer that agrees with less
+  // than it was asked to store.
+  const ctx = pushCtx(null);
+  ctx.sdnData = () => Promise.resolve({ id: 'default' });
+  await ctx.dntPushOne('dnt_vendor_pricing_rules',
+                       { id: 'default', discount: 12 }, 'dnt_vendor_pricing_rules');
+  assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_pricing_rules'), true,
+    'a reply without `discount` was treated as a confirmation, so the next sync would overwrite it');
+});
+
+test('CONTROL: a reply carrying every field sent DOES confirm', async () => {
+  // The control that makes the test above mean something: if the flag were set
+  // on every write regardless, the assertion would pass while checking nothing.
+  const ctx = pushCtx(null);
+  ctx.sdnData = () => Promise.resolve({ id: 'default', discount: 12 });
+  await ctx.dntPushOne('dnt_vendor_pricing_rules',
+                       { id: 'default', discount: 12 }, 'dnt_vendor_pricing_rules');
+  assert.strictEqual(ctx.dntIsUnconfirmed('dnt_vendor_pricing_rules'), false,
+    'a complete reply left the key unconfirmed, which would block hydration forever');
+});
+
 test('a caller that passes no store key is unaffected', async () => {
   // Every other dntPushOne caller in the file has no wholesale object to
   // protect and must behave exactly as before.
