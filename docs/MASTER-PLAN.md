@@ -56,7 +56,53 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 1. **⚠ THREE VERTICALS HAVE NO DEDICATED TEST SUITE AT ALL: `sairndesign`, `sairnfreedom`, `sairngrounds`.** Between them that is 83 registered resources reaching a server with nothing named for them. They are not untested in the sense of being unexercised — platform-wide suites like `tests/st_reports_failure.js` cover their storage wrappers — but no file states what THEY are supposed to do. **This is the largest single gap on the platform and it is the first thing to close.**
 2. **Fault testing is concentrated, not spread.** 14 probes plant into real source, and eight of them are SAIRNdental's. `sairnfreedom`, `sairnroofing` have none. Gate 4 is the one most likely to be quietly skipped, because a suite that passes looks identical to a suite that cannot fail.
 3. **Traceability is 86 of 273 across the platform** (`docs/traceability-matrix.md`). An untraced test is not a bad test; it means no source states what it is for in a form a machine can read. The fix is one line in the open-work index or a `GUARD_TESTS` entry — not a new document.
-4. **Gate 1 cannot be answered from the repo for every app.** Several verticals have schema files whose live state is unknown to this session. `tools/sairn_load_state_check.py` answers it for the four reference apps; the rest need a real read against the live licence, and **this document does not guess it** — the table reports what is in the repo and says so.
+4. **Gate 1 is PARTLY ANSWERED as of 2026-09-10 — see the gate 1 section below.** Seven migrations are confirmed run, attested directly by Michael, and the two largest are confirmed only in PART: `stonedesk_data_schema.sql` covers the 21 backup tables and not StoneDesk's original schema, and `sairndental_vendor_schema.sql` covers the vendor tables only. **SAIRNlaw, SAIRNbiz, SAIRNbuild and StoneDesk's original schema remain unverified and are named as such** rather than left to read as fine by omission.
+
+---
+
+## Gate 1 — live migration status
+
+**This is the one gate that is ATTESTED, not derived.** Everything else in this
+document is read from the repo; whether a migration has actually been run against
+a live licence cannot be. So this section names who confirmed it and when, and it
+does not extend past what they said.
+
+### Confirmed RUN — Michael, directly, 2026-09-10
+
+| SQL file | Covers | Scope of the confirmation |
+|---|---|---|
+| `sql/stonedesk_data_schema.sql` | `stonedesk` | The 21 backup tables. **Not** StoneDesk's original schema |
+| `sql/sairnvet_data_schema.sql` | `sairnvet` | Its data schema |
+| `sql/sairnfreedom_data_schema.sql` | `sairnfreedom` | Its data schema |
+| `sql/sairnfreedom_license_seed.sql` | `sairnfreedom` | Its licence seed |
+| `sql/sairndental_vendor_schema.sql` | `sairndental` | The **vendor** tables only |
+| `sql/sairnmechanical_records_schema.sql` | `sairnmechanical` | Its records schema |
+| `sql/license_keys_grant_review_2026-09-05.sql` | platform | The `license_keys` grant review, run end to end |
+
+### Still UNVERIFIED, and named rather than assumed
+
+**The confirmation above covers 2026-09-10 only.** Anything applied in an earlier
+session needs its own check — from that session's records or a fresh live read.
+Named explicitly, because an app absent from both lists reads as "probably fine":
+
+- **SAIRNlaw** — its deadline engine runs on live per-licence tables, and
+  `tools/sairn_load_state_check.py --app sairnlaw` can answer it with a key
+- **SAIRNbiz** — though ONE live write through its path was observed on
+  2026-09-10 (`syncEmps()` returned 200 with `written: 1`), which proves the
+  `employees` table exists and is writable; that is narrower than "its schemas
+  are run"
+- **StoneDesk's ORIGINAL schema** — distinct from the 21 backup tables above
+- **SAIRNbuild**
+- **Every app not named in either list**, which is most of them
+
+### How to close this gate without guessing
+
+`tools/sairn_load_state_check.py --app <app> --key <key>` answers it for the four
+reference apps from any clone. For the rest it is one read per app by somebody
+holding the licence keys. **A table cell here must never be filled from
+inference** — an app whose code looks complete tells you nothing about whether
+its migration ran, and that gap is precisely what this gate exists to close.
+
 
 ---
 
@@ -69,7 +115,7 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 | Dedicated suites for the three verticals with none | 3 apps, each needing its first suite — the biggest and least optional item |
 | Fault probes for the verticals with none | 2 apps |
 | Untraced tests | 187 platform-wide, each closable by one line naming its requirement |
-| Live-state confirmation for gate 1 | one read per app against its live licence, by someone holding the keys |
+| Live-state confirmation for gate 1 | **7 migrations confirmed 2026-09-10**; the rest is one read per app against its live licence, by someone holding the keys |
 
 **The honest shape:** gates 2 and 3 are mechanised and cheap to keep true. Gate 4 is the expensive one, and gate 1 is the one that needs somebody with live access rather than more code.
 
