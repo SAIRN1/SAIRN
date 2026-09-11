@@ -975,6 +975,16 @@
       "claimed_at_epoch": 1789087409.259693,
       "status": "released",
       "released_at": "2026-09-11T01:03:39Z"
+    },
+    {
+      "id": "hank-1789088661",
+      "session": "hank",
+      "subject": "tier-a-resources-with-no-removal-path",
+      "task": "burn-down order",
+      "claimed_at": "2026-09-11T01:04:21Z",
+      "claimed_at_epoch": 1789088661.281152,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
