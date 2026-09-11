@@ -1899,3 +1899,71 @@ call site, because repeating it is how one of them ends up wrong.
 the same patch. I restored from git and redid it from a script file. The rule
 is not "prefer a file" -- it is **any patch containing a quote, a backslash or
 a regex goes in a file, full stop.**
+
+## 2026-09-10 (Cody) -- Part 4 (defect register) and the portfolio-wide hazard sweep
+
+CLAIMED and released: `defect-density-register`, `write-path-fault-hazard-sweep`.
+`1818e05f` and the sweep commit.
+
+### Part 4 -- the register, and why the number is not the signal
+
+**Deliberately not a commit log.** `git log --grep '^fix('` returns thirty
+entries for 2026-09-10 alone and most are NOT product defects -- harness
+corrections, checkers whose first run needed tightening, my own probe mistakes.
+Auto-ingesting them would make the density large and meaningless, **and the
+number would then be quoted.**
+
+So a record carries the judgement nobody can derive -- layer, severity, and
+above all **how it was found** -- while git supplies the mechanical half (date,
+files, lines, whether the commit resolves). Seeded with **14 defects I can
+personally attest to**, and not one line further back: a register padded with
+guesses is worse than a short one, because its SIZE implies completeness.
+
+**What the first report already shows is the whole point:**
+
+| app | lines | defects | per 1k | methods |
+|---|---:|---:|---:|---|
+| sairndental | 6,047 | 4 | 0.66 | 4 |
+| sairnmechanical | 2,420 | 1 | 0.41 | 1 |
+| sairnvet | 8,866 | 3 | 0.34 | 1 |
+| stonedesk | 40,246 | 1 | **0.02** | 1 |
+
+**StoneDesk is not the cleanest app. It is the least swept.** The density ranks
+ATTENTION, not quality, and reading it the other way is exactly the mistake the
+register would otherwise cause -- so `--report` refuses to be quoted bare and
+says so on every run.
+
+24-check probe that ATTACKS it: a nonexistent commit, an invented method, an
+invented layer and a duplicate are each refused; deleting a record's commit
+makes `--check` go red; and **one commit CAN carry several distinct defects**,
+because `5b98fd27` fixed three and collapsing them would undercount by two.
+
+### The hazard sweep -- where the fault harness goes next
+
+Fifteen apps write to a server. A dynamic suite for each is weeks, so
+`tools/write_path_fault_scan.py` finds where the hazard IS first.
+
+**36 write call sites across fifteen apps read their result on the success path
+only or not at all, and ELEVEN OF FIFTEEN APPS HAVE NO TIMEOUT ANYWHERE.**
+
+**Hand-verified before shipping**, because a first run that over-reports gets a
+checker switched off. Both SAIRNvet flags are real and **both are open**:
+
+- `sairnvet.html:2135` -- **the same defect I fixed in SAIRNdental this
+  evening.** The server-backup push handles `saved===null` with a careful
+  comment about not reporting a failed push as success, and has **no `.catch`**.
+  A dropped socket skips that handler entirely.
+- `sairnvet.html:8721` -- a `shared_knowledge` write inside a `try/catch` whose
+  catch is synchronous and cannot catch a promise rejection.
+
+**Task 3 was taken by CC while I worked.** They claimed
+`tool-blind-spot-audit -- checkers that exit clean while silently not looking`,
+which is the third-party tool audit verbatim. Not duplicated.
+
+**And a process failure of my own, twice in one session:** I ran
+`git reset --hard origin/main` after a push loop that had silently failed,
+which DISCARDED the register commit. Recovered from the reflog both times.
+**Verify the push landed BEFORE resetting** -- the loop returning is not the
+same as the commit arriving. The second recovery also hit a cherry-pick
+conflict in `docs/traceability-matrix.md`, and the right resolution there was
+neither side: it is GENERATED, so I regenerated it in the worktree.
