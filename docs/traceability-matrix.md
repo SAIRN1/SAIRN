@@ -93,6 +93,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~**The server scoped the read; the LOCAL CACHE outlived the person it was fetched for**~~ &mdash; **CLOSED for every app that carries a scoped read except one, and the scope is DERIVED rather than estimated** | **CLOSED 2026-09-10 (CC)** &mdash; `b50c2e2f` (care, senior, dental) then ``08e7c8d5`` (build, stonedesk, roofing), all live-verified. **`sairndesign` remains &mdash; flagged BY NAME for Fourth, who h | `tests/phi_cache_scoped_to_user.js` |
 | **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
 | **324 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
+| **A checker whose ANSWER changes when the target's comments are removed &mdash; asked of the whole fleet instead of waiting for a fourth instance** | **BUILT 2026-09-11 (CC)** &mdash; `b8e21568`, `tools/comment_sensitivity_check.py`. **Two real findings filed below, open** | `tests/run_comment_sensitivity_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
 | **A probe can assert on the target's COMMENTS instead of its code &mdash; and the dangerous direction is SILENT** | **BUILT 2026-09-11 (CC)** &mdash; `ba70ec12`, `tools/comment_quote_check.py`, wired as a promoted report-only checker; rule in CLAUDE.md | `tests/run_comment_quote_probe.py`, `tests/sairndental_write_failure_voice.js`, `tests/sairnlaw_csp.js`, `tests/sd_security_status_is_measured.js` |
@@ -235,7 +236,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**104 of 291 test files are traced to a stated requirement. 187 are not.**
+**105 of 291 test files are traced to a stated requirement. 186 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -379,7 +380,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
-- `tests/run_comment_sensitivity_probe.py`
 - `tests/run_md_table_check_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`
