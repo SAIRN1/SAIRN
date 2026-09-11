@@ -929,6 +929,16 @@
       "claimed_at_epoch": 1789123834.3360038,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789124291",
+      "session": "cody",
+      "subject": "platform-write-transport-unbounded",
+      "task": "fetch timeout every app transport AbortSignal",
+      "claimed_at": "2026-09-11T10:58:11Z",
+      "claimed_at_epoch": 1789124291.1249554,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
