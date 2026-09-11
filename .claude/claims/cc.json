@@ -914,6 +914,16 @@
       "claimed_at_epoch": 1789135196.8017335,
       "status": "released",
       "released_at": "2026-09-11T14:09:35Z"
+    },
+    {
+      "id": "cc-1789136326",
+      "session": "cc",
+      "subject": "index-superseded-duplicate-rows",
+      "task": "two rows for one subject with different counts",
+      "claimed_at": "2026-09-11T14:18:46Z",
+      "claimed_at_epoch": 1789136326.1539955,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
