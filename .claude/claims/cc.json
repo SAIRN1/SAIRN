@@ -834,6 +834,16 @@
       "claimed_at_epoch": 1789085622.0945961,
       "status": "released",
       "released_at": "2026-09-11T00:50:08Z"
+    },
+    {
+      "id": "cc-1789087984",
+      "session": "cc",
+      "subject": "phi-cache-scoping-audit",
+      "task": "remaining apps per-employee-auth stale cache triage",
+      "claimed_at": "2026-09-11T00:53:04Z",
+      "claimed_at_epoch": 1789087984.118043,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
