@@ -919,6 +919,16 @@
       "claimed_at_epoch": 1789089859.09671,
       "status": "released",
       "released_at": "2026-09-11T10:48:12Z"
+    },
+    {
+      "id": "cody-1789123834",
+      "session": "cody",
+      "subject": "wrapper-honesty-delegation-hop",
+      "task": "narrow to callees called from inside a catch",
+      "claimed_at": "2026-09-11T10:50:34Z",
+      "claimed_at_epoch": 1789123834.3360038,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
