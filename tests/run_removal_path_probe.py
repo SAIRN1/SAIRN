@@ -192,7 +192,38 @@ rc, out = run(d)
 check('a registry that will not load is an ERROR, not CLEAN', rc != 0, True)
 check('and it says why', 'could not load' in out, True)
 
-# ── 9. and the REAL repo is clean, since that is what it is for ───────────
+# ── 9. the criticality tier is READ, and a missing register is not a tier ─
+n[0] += 1
+d = os.path.join(tmp, '%02d-tiers' % n[0])
+os.makedirs(os.path.join(d, 'docs'))
+build(d, names=['a_money', 'b_pref', 'c_absent'], extra={},
+      sd_data=(KEYED % ('a_money', 'a_money')) + (KEYED % ('b_pref', 'b_pref'))
+              + (KEYED % ('c_absent', 'c_absent')),
+      app_js=APP % "  'a_money',\n  'b_pref',\n  'c_absent',",
+      baseline={'a_money': 'x', 'b_pref': 'x', 'c_absent': 'x'})
+io.open(os.path.join(d, 'docs', 'CRITICALITY-TIERS.md'), 'w',
+        encoding='utf-8').write(
+    '| Resource | Tier | Worst | Evidence |\n|---|---|---|---|\n'
+    '| `a_money` | **A** | money billed wrongly | fixture |\n'
+    '| `b_pref` | C | a preference resets | fixture |\n')
+rc, out = run(d, '--burn-down')
+check('tiers are read from the register', rc, 0)
+check('and the counts are reported', 'A=1' in out and 'C=1' in out, True)
+check('a resource ABSENT from the register is UNTIERED, not mis-tiered',
+      'UNTIERED=1' in out, True)
+check('and Tier A is listed FIRST in the burn-down',
+      out.index('Tier A') < out.index('Tier C'), True)
+
+n[0] += 1
+d2 = os.path.join(tmp, '%02d-notiers' % n[0])
+os.makedirs(d2)
+build(d2, names=['a_money'], extra={}, sd_data=KEYED % ('a_money', 'a_money'),
+      app_js=APP % "  'a_money',", baseline={'a_money': 'x'})
+rc, out = run(d2, '--burn-down')
+check('a MISSING tier register does not crash and does not invent a tier',
+      (rc, 'UNTIERED=1' in out), (0, True))
+
+# ── 10. and the REAL repo is clean, since that is what it is for ──────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
                    text=True)
 check('the real SAIRN baseline currently accounts for every one', r.returncode, 0)

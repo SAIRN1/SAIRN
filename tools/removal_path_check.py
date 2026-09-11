@@ -213,8 +213,37 @@ def append_only_labels():
     return out
 
 
+TIER_ROW = re.compile(r'^\|\s*`([a-z][a-z0-9_]*)`\s*\|\s*\*{0,2}([ABC])\*{0,2}\s*\|')
+
+
+def tiers():
+    """resource -> criticality tier, from docs/CRITICALITY-TIERS.md.
+
+    READ, not re-decided. That register is hand-verified per resource and
+    derived-checked by `tools/criticality_tier_check.py`; a second opinion on
+    the tier computed here would be a second source of truth for the judgement
+    that took two stages of work.
+
+    It covers 382 resources against this tool's 389. The seven are the `shared`
+    registry -- `employees`, `employee_profile`, `memory`, `profile`,
+    `render_usage`, `slabs`, `exec_context` -- which that document scopes per
+    app and so does not tier. They come back UNTIERED here rather than being
+    quietly folded into a tier nobody assigned them.
+    """
+    path = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
+    if not os.path.exists(path):
+        return {}
+    out = {}
+    for line in read(path).split('\n'):
+        m = TIER_ROW.match(line.strip())
+        if m:
+            out.setdefault(m.group(1), m.group(2))
+    return out
+
+
 def classify():
     reg = registry()
+    tier = tiers()
     api = read(os.path.join(REPO, 'api', 'sd-data.js'))
     sh = shapes(api)
     ao = append_only_labels()
@@ -233,12 +262,32 @@ def classify():
             'removal': removal,
             'append_only': name in ao,
             'append_only_note': ao.get(name, ''),
+            'tier': tier.get(name, 'UNTIERED'),
         })
     return rows
 
 
+def burn_down(rows, stuck):
+    """The stuck set ordered by consequence, not by app size.
+
+    The open-work row asks for the burn-down to be ordered by consequence.
+    Crossing the stuck set with `docs/CRITICALITY-TIERS.md` is DERIVATION, not
+    a product decision -- it says which of these matter most to fix, and says
+    nothing about whether any of them SHOULD become deletable, which is exactly
+    the judgement this tool refuses to make.
+
+    A Tier A resource with no removal path is the sharp case: money moves
+    wrongly, a regulated record is corrupted, or authentication is bypassed --
+    and the wrong record cannot be taken back through the product.
+    """
+    order = {'A': 0, 'B': 1, 'C': 2, 'UNTIERED': 3}
+    return sorted(stuck, key=lambda r: (order.get(r['tier'], 9), r['app'],
+                                        r['resource']))
+
+
 def main(argv):
     quiet, full = '--quiet' in argv, '--full' in argv
+    burn = '--burn-down' in argv
     rows = classify()
     baseline = {}
     if os.path.exists(BASELINE):
@@ -286,13 +335,29 @@ def main(argv):
             print('  shape UNRESOLVED and no removal verb: %d -- the SHAPE '
                   'could not be read; these are still judged on their removal '
                   'verb, which is authoritative' % len(unresolved))
+        from collections import Counter
+        tc = Counter(r['tier'] for r in stuck)
+        print('  by criticality tier            : %s'
+              % ', '.join('%s=%d' % (t, tc[t])
+                          for t in ('A', 'B', 'C', 'UNTIERED') if tc[t]))
         if full:
             print('\n--- every resource ---')
             for r in rows:
-                print('  %-16s %-30s %-12s %-11s %s'
+                print('  %-16s %-30s %-12s %-11s %-9s %s'
                       % (r['app'], r['resource'], r['shape'],
-                         r['removal'] or '-',
+                         r['removal'] or '-', r['tier'],
                          'append-only' if r['append_only'] else ''))
+        if burn:
+            print('\n--- BURN-DOWN ORDER: no removal path, by consequence ---')
+            print('    Tier A first. This says which matter most to FIX; it '
+                  'says nothing\n    about whether any of them SHOULD become '
+                  'deletable.')
+            last = None
+            for r in burn_down(rows, stuck):
+                if r['tier'] != last:
+                    print('\n  == Tier %s (%d) ==' % (r['tier'], tc[r['tier']]))
+                    last = r['tier']
+                print('    %-16s %s' % (r['app'], r['resource']))
         if findings:
             print('\n%d FINDING(S) -- keyed, no removal path, and NOT in the '
                   'baseline:' % len(findings))
