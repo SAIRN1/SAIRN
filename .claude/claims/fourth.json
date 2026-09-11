@@ -762,6 +762,16 @@
       "claimed_at_epoch": 1789084611.6274278,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789085149",
+      "session": "fourth",
+      "subject": "platform",
+      "task": "criticality-stage2-retier-15-apps",
+      "claimed_at": "2026-09-11T00:05:49Z",
+      "claimed_at_epoch": 1789085149.2153099,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
