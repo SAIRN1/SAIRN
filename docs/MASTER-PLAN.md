@@ -36,7 +36,7 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 | `sairncode` | 28 | ✅ | 8 | 2 | 1 | — |
 | `sairndental` | 24 | ✅ | 25 | 8 | 8 | — |
 | `sairndesign` | 18 | ✅ | 0 | 0 | 1 | **no dedicated suite** |
-| `sairnfreedom` | 35 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
+| `sairnfreedom` | 35 | ✅ | 2 | 2 | 1 | — |
 | `sairngrounds` | 30 | ✅ | 0 | 0 | 1 | **no dedicated suite** |
 | `sairnlaw` | 19 | ✅ | 46 | 12 | 3 | — |
 | `sairnlegacy` | 36 | ✅ | 1 | 1 | 1 | — |
@@ -53,7 +53,7 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 
 ## The gaps, in the order they deserve attention
 
-1. **⚠ THREE VERTICALS HAVE NO DEDICATED TEST SUITE AT ALL: `sairndesign`, `sairnfreedom`, `sairngrounds`.** Between them that is 83 registered resources reaching a server with nothing named for them. They are not untested in the sense of being unexercised — platform-wide suites like `tests/st_reports_failure.js` cover their storage wrappers — but no file states what THEY are supposed to do. **This is the largest single gap on the platform and it is the first thing to close.**
+1. **⚠ TWO VERTICALS HAVE NO DEDICATED TEST SUITE AT ALL: `sairndesign`, `sairngrounds`.** (`sairnfreedom` was the third and was closed 2026-09-10 -- `tests/sairnfreedom_server_backup.js` and `tests/sairnfreedom_fault_probe.py`.) Between them that is 48 registered resources reaching a server with nothing named for them. They are not untested in the sense of being unexercised — platform-wide suites like `tests/st_reports_failure.js` cover their storage wrappers — but no file states what THEY are supposed to do. **This is the largest single gap on the platform and it is the first thing to close.**
 2. **Fault testing is concentrated, not spread.** 14 probes plant into real source, and eight of them are SAIRNdental's. `sairnfreedom`, `sairnroofing` have none. Gate 4 is the one most likely to be quietly skipped, because a suite that passes looks identical to a suite that cannot fail.
 3. **Traceability is 86 of 273 across the platform** (`docs/traceability-matrix.md`). An untraced test is not a bad test; it means no source states what it is for in a form a machine can read. The fix is one line in the open-work index or a `GUARD_TESTS` entry — not a new document.
 4. **Gate 1 is PARTLY ANSWERED as of 2026-09-10 — see the gate 1 section below.** Seven migrations are confirmed run, attested directly by Michael, and the two largest are confirmed only in PART: `stonedesk_data_schema.sql` covers the 21 backup tables and not StoneDesk's original schema, and `sairndental_vendor_schema.sql` covers the vendor tables only. **SAIRNlaw, SAIRNbiz, SAIRNbuild and StoneDesk's original schema remain unverified and are named as such** rather than left to read as fine by omission.

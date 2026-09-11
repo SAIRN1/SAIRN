@@ -145,6 +145,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Independent review of `569b2689` (CC's write-failure voice fix) found four things: a raw browser exception could REPLACE the sentence saying nothing was saved, the ledger dropped rows on an UNREACHABLE server, `submitCompleteVisit()` announced success when the appointment write failed, and the suite had two holes | **CLOSED 2026-09-08 (CC)** &mdash; all four fixed, and running the mutation probe found a fifth and a sixth that reading had not | `tests/sairndental_write_failure_probe.py` |
 | ~~`dnt_settings` is a whole-record PUT, so two workstations saving inside one round trip still end last-write-wins~~ | **CLOSED 2026-09-04 (CC) on Michael's decision** — switched to PATCH, and the race is proven closed rather than argued closed | `api/sd-data-dental-settings-patch.test.js`, `tests/suite_control_backfill_probe.py` |
 
+### sairnfreedom
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| ~~No dedicated test suite at all, and no fault probe -- 35 registered resources reaching a server with nothing named for them~~ | **CLOSED 2026-09-10 (Fourth), `4cc3831d`** -- `tests/sairnfreedom_server_backup.js` (14 assertions) and `tests/sairnfreedom_fault_probe.py` (8 arms) | `tests/sairnfreedom_fault_probe.py`, `tests/sairnfreedom_server_backup.js` |
+
 ### sairnlaw
 
 | Requirement | Status | Proved by |
@@ -206,7 +212,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**86 of 273 test files are traced to a stated requirement. 187 are not.**
+**88 of 275 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
