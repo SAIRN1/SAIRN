@@ -138,6 +138,42 @@
       "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
     },
     {
+      "commit": "08e85577d4ba",
+      "date": "2026-09-10",
+      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 268,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
+    },
+    {
+      "commit": "08e85577d4ba",
+      "date": "2026-09-10",
+      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 268,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper"
+    },
+    {
       "commit": "1348466a2e73",
       "date": "2026-09-10",
       "subject": "fix(sairnvet): a throw mid-hydrate suppressed every later backup for the session, invisibly -- and a synced consult still said it could not travel",
