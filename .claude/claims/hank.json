@@ -1005,6 +1005,16 @@
       "claimed_at_epoch": 1789124409.3502908,
       "status": "released",
       "released_at": "2026-09-11T11:30:15Z"
+    },
+    {
+      "id": "hank-1789126571",
+      "session": "hank",
+      "subject": "append-only-documenting-pass",
+      "task": "tier-a removal queue registry comments",
+      "claimed_at": "2026-09-11T11:36:11Z",
+      "claimed_at_epoch": 1789126571.067311,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
