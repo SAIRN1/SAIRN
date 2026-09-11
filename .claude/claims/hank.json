@@ -1023,8 +1023,8 @@
       "task": "scoping table payload shape",
       "claimed_at": "2026-09-11T13:07:07Z",
       "claimed_at_epoch": 1789132027.001805,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T13:46:03Z"
     }
   ]
 }
