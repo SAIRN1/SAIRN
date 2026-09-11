@@ -2111,6 +2111,78 @@ function svOutbound(key,record,idField){
   return out;
 }
 
+// ── THE WRITE BOUNDARY, AND THE FAULT THE FEATURE'S OWN REPORTING COULD NOT SEE
+// Added 2026-09-10. tools/write_path_fault_scan.py flagged the push below for
+// having no `.catch`, and the note written with it said "a dropped socket skips
+// that handler entirely". THAT MECHANISM IS WRONG and the correction is why this
+// helper is shaped the way it is rather than copied wholesale from SAIRNdental.
+// svData() ends in `.catch(function(e){ console.warn(...); return null; })`, so a
+// dropped socket, a DNS failure, a CORS rejection and a non-JSON body (Vercel's
+// bot-mitigation challenge page, which this platform really does get served) are
+// ALL converted to a resolved null before any caller sees them. The handler did
+// run. There was no unhandled rejection to find. A checker reading a call site
+// cannot see that the callee already catches -- the flag was right about the
+// shape and the conclusion drawn from it was not.
+//
+// THE FAULT THAT IS REAL IS THE HANG, and nothing in this file could observe it:
+// `setTimeout` appeared ONCE in 8,866 lines and not on this path. fetch() against
+// a black-holed connection or a gateway that accepts and never answers neither
+// resolves nor rejects, so svData()'s catch never fires either, the `.then`
+// below never runs, the careful saved===null warning never prints, and the
+// clinic's record sits on one device with NOTHING SAYING SO. That is the exact
+// defect class this backup feature exists to close, arriving through the one
+// door the feature's own reporting was blind to.
+//
+// A REJECTION IS STILL MAPPED, not because the app can produce one today but
+// because a boundary that is only correct while its callee keeps its `.catch`
+// is one edit away from the original claim becoming true. It costs one line.
+//
+// DELIBERATELY NARROWER THAN SAIRNdental's dntPushOne(), which also treats a
+// PARTIAL response as unconfirmed and latches a flag. It needs that because
+// dntHydrate overwrites local rows, so an unconfirmed local copy can be
+// clobbered. svHydrateAll() is additive-only and never overwrites a locally
+// present id -- see its own comment -- so there is no destructive path here for
+// such a flag to protect, and inventing one would be machinery with no failure
+// behind it. tests/faults/sv_backup_write_faults.js asserts that narrowing and
+// the reason, so the next reader does not "finish" the port.
+//
+// `null` is the one shape every caller here already understands, so all three
+// refusals are mapped onto it rather than inventing a second vocabulary.
+var SV_PUSH_TIMEOUT  = {svPushTimeout:true};
+var SV_PUSH_REJECTED = {svPushRejected:true};
+var SV_PUSH_TIMEOUT_MS = 15000;
+function svPushOne(key,rec,label){
+  function refused(why){
+    try{ console.warn('SAIRNvet backup: "'+key+'" record '+label+
+      ' did NOT reach the server ('+why+'). It is saved on this device only.'); }catch(e){}
+    return null;
+  }
+  var settled=false;
+  var timed=new Promise(function(res){
+    setTimeout(function(){ if(!settled) res(SV_PUSH_TIMEOUT); }, SV_PUSH_TIMEOUT_MS);
+  });
+  // svData() IS CALLED SYNCHRONOUSLY, deliberately. The first version wrapped it
+  // in Promise.resolve().then() to catch a synchronous throw, which also deferred
+  // the call by a microtask -- and tests/sairnvet_seed_never_syncs.js caught that
+  // immediately, because six of its arms read what reached the server on the line
+  // after the save. They were right to: a backup that fires a tick later is a
+  // behaviour change nobody asked for, and the deferral was a side effect of the
+  // guard rather than the point of it. try/catch gets the same protection against
+  // svLoad() failing or JSON.stringify() hitting a circular record, with no
+  // change to when the request leaves.
+  var call;
+  try{ call=Promise.resolve(svData('write',key,rec)); }
+  catch(e){ call=Promise.reject(e); }
+  call=call.then(function(r){ settled=true; return r; },
+                 function(e){ settled=true; return SV_PUSH_REJECTED; });
+  return Promise.race([call,timed]).then(function(r){
+    if(r===SV_PUSH_REJECTED) return refused('the connection failed');
+    if(r===SV_PUSH_TIMEOUT)  return refused('no answer in '+(SV_PUSH_TIMEOUT_MS/1000)+'s');
+    if(r===null)             return refused('the server refused it');
+    return r;
+  });
+}
+
 function svSyncCollection(key,next,prev){
   if(svSyncSuppressed) return;
   if(typeof svData!=='function') return;
@@ -2132,16 +2204,15 @@ function svSyncCollection(key,next,prev){
     if(!r||r[idField]===undefined||r[idField]===null||r[idField]===''){ skipped++; return; }
     var now; try{ now=JSON.stringify(r); }catch(e){ skipped++; return; }
     if(before[String(r[idField])]===now) return;
-    svData('write',key,svOutbound(key,r,idField)).then(function(saved){
-      // A failed push is NOT reported as success. The local write has already
-      // happened, so the clinic is never worse off than before this existed --
-      // but silence would make a backup that is not happening look like one
-      // that is, which is the defect class this whole change exists to fix.
-      if(saved===null){
-        try{ console.warn('SAIRNvet backup: "'+key+'" record '+r[idField]+
-          ' did NOT reach the server. It is saved on this device only.'); }catch(e){}
-      }
-    });
+    // A failed push is NOT reported as success. The local write has already
+    // happened, so the clinic is never worse off than before this existed --
+    // but silence would make a backup that is not happening look like one
+    // that is, which is the defect class this whole change exists to fix.
+    // The reporting moved INTO svPushOne() so a refusal, a dropped connection
+    // and a hang all produce the same sentence with the reason named; the
+    // pushes stay independent, so one dead record cannot stall the rest of
+    // the collection behind it.
+    svPushOne(key,svOutbound(key,r,idField),r[idField]);
   });
   if(skipped){
     try{ console.warn('SAIRNvet backup: '+skipped+' record(s) in "'+key+
@@ -8718,7 +8789,16 @@ function recordSvSharedTopics(text) {
     if (!text) return;
     var words = (String(text).toLowerCase().match(/\b[a-z]{5,}\b/g) || []).slice(0, 60);
     if (!words.length) return;
-    svData('write', 'shared_knowledge', { words: words });
+    // THE SECOND SITE THE HAZARD SCAN FLAGGED, and here too the recorded reason
+    // was wrong: this synchronous catch cannot catch a promise rejection, but
+    // svData() does not produce one. A REFUSAL was not silent either -- svData()
+    // warns on its own non-ok branch. What WAS silent is the hang, identically
+    // to svSyncCollection(): nothing read the result, nothing bounded the wait,
+    // and a gateway that accepts and never answers left this pending for the
+    // life of the page. Routed through the same helper so the hang is
+    // observable. The try/catch stays, because svLoad() and JSON.stringify()
+    // inside svData() can still throw before any promise exists.
+    svPushOne('shared_knowledge', { words: words }, 'topics');
   } catch (e) {}
 }
 // "Recurring case patterns" -- computed LIVE from real getScheduleAppts()

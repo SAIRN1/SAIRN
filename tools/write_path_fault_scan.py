@@ -57,6 +57,54 @@ def apps(argv):
     return [f for f in r.stdout.split('\n') if f.strip() and '/' not in f]
 
 
+def then_takes_reject_handler(tail):
+    """Does the first `.then(` in `tail` pass a SECOND argument?
+
+    `.then(onFulfilled, onRejected)` handles a rejection exactly as `.catch`
+    does, and the first version of this tool only looked for the literal
+    `.catch(`. So it reported `then-no-catch` on two sites that are the FIXES
+    for this very hazard -- svPushOne() in sairnvet.html and dntPushOne() in
+    sairndental.html, both of which map a rejection onto null through the
+    two-argument form. A checker that flags the repair is how a checker gets
+    switched off, so the distinction is made here rather than in a reader's head.
+
+    Found 2026-09-10 by the SAIRNvet fix landing on its own report.
+
+    Brace/paren balanced rather than regex, because the comma that matters is
+    the one at the TOP level of the argument list -- `.then(function(r){
+    foo(a,b); })` has a comma and takes one argument. String literals are
+    skipped so a comma inside a message does not count. LIMIT, stated rather
+    than discovered: a regex literal containing an unbalanced bracket or quote
+    would confuse the scan. None exists on any current write path, and this is
+    a pointer tool, not a parser.
+    """
+    i = tail.find('.then(')
+    if i < 0:
+        return False
+    i += len('.then(')
+    depth, quote = 1, None
+    while i < len(tail):
+        c = tail[i]
+        if quote:
+            if c == '\\':
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in '"\'`':
+            quote = c
+        elif c in '([{':
+            depth += 1
+        elif c in ')]}':
+            depth -= 1
+            if depth == 0:
+                return False          # argument list closed, one argument only
+        elif c == ',' and depth == 1:
+            return True
+        i += 1
+    return False
+
+
 def classify(src, m):
     """What does the code do with this write's result?
 
@@ -69,7 +117,7 @@ def classify(src, m):
     # Cut at the first statement boundary that is not inside the chain.
     tail = src[m.end():m.end() + 600]
     has_then = '.then(' in tail[:400]
-    has_catch = '.catch(' in tail[:400]
+    has_catch = '.catch(' in tail[:400] or then_takes_reject_handler(tail[:400])
     assigned = bool(re.search(r'(?:var|let|const)\s+\w+\s*=\s*$|return\s+$|await\s+$',
                               src[max(0, m.start() - 40):m.start()]))
     if has_then and has_catch:

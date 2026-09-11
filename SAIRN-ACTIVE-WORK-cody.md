@@ -1967,3 +1967,80 @@ which DISCARDED the register commit. Recovered from the reflog both times.
 same as the commit arriving. The second recovery also hit a cherry-pick
 conflict in `docs/traceability-matrix.md`, and the right resolution there was
 neither side: it is GENERATED, so I regenerated it in the worktree.
+
+## 2026-09-10 (Cody) -- the two SAIRNvet write paths, and the mechanism I wrote
+## down for both of them was wrong
+
+Skill used: `sairn-silent-failure-sweep`, then `sairn-guardian-v2` before the
+push. Claim held from the previous session: `sairnvet-write-path-rejection-
+blindness`.
+
+**BOTH FINDINGS WERE REAL SITES AND BOTH RECORDED REASONS WERE FALSE.** The
+entry above this one says `sairnvet.html:2135` "has **no `.catch`** -- a dropped
+socket skips that handler entirely", and that `:8721` is "a promise rejection a
+synchronous try/catch cannot catch". `svData()` at `sairnvet.html:8698` ends in:
+
+    .catch(function(e){ console.warn('svData network error:', e.message); return null; })
+
+So a dropped socket, a DNS failure, a CORS rejection and a non-JSON body --
+Vercel's bot-mitigation challenge page, which this platform really does get
+served -- are **all** converted to a resolved `null` before any caller sees
+them. The `.then(saved => ...)` handler ran. It warned. There was no unhandled
+rejection on either line.
+
+**THE HAND-VERIFICATION WAS DONE AND STILL PRODUCED A WRONG MECHANISM.** That is
+the part worth keeping, because the previous entry's own defence was that it had
+been hand-verified before shipping. Reading a call site cannot see that its
+callee already catches. A flag is a lead; the proof is an injected fault.
+
+**WHAT WAS GENUINELY SILENT: THE HANG.** `grep -c setTimeout sairnvet.html`
+returned **1** for 8,866 lines, and that one is not on this path. A gateway that
+accepts and never answers neither resolves nor rejects, so `svData()`'s own
+catch never fires either: the `.then` never runs, the careful `saved===null`
+warning never prints, and the clinic's record sits on one device with **nothing
+saying so**. The exact defect class the backup feature exists to close, arriving
+through the one door the feature's own reporting was blind to.
+
+**REPRODUCED BEFORE FIXING, not after.** `tests/faults/sv_backup_write_faults.js`
+against the pre-fix file: the hang arm failed with **0 warnings**, and the
+rejection arm crashed the suite outright as an unhandled rejection at the
+harness boundary. Then `svPushOne()` -- a 15s timer raced against the call,
+with hang, rejection and refusal all mapped onto the single `null` every caller
+here already understands and the reason named in each message. 12 arms pass.
+**4 mutation controls all bite**, with `sairnvet.html` restored
+byte-identical (sha256 compared, not assumed): dropping the race kills 2 arms,
+a 0ms timeout kills 1, reverting the shared-knowledge write to bare `svData`
+kills 2, and dropping the reason from the message kills 2.
+
+**DELIBERATELY NARROWER THAN SAIRNdental's `dntPushOne()`, and an arm asserts
+the reason.** No unconfirmed flag here: `dntHydrate` overwrites local rows, so
+an unconfirmed copy can be clobbered, but `svHydrateAll()` is additive-only and
+never overwrites a locally present id. There is no destructive path for such a
+flag to protect, and porting it would be machinery with no failure behind it.
+The arm fails if that hydration comment ever disappears -- so if hydration
+starts overwriting, the narrowing stops being justified and says so.
+
+**THE SCANNER FLAGGED ITS OWN FIX, and that is its own defect.**
+`write_path_fault_scan.py` looked for a literal `.catch(`, so the two-argument
+`.then(onOk, onErr)` form reported as `then-no-catch` -- in `svPushOne` and, since
+the evening before, in `dntPushOne`. **A checker that flags the repair is one a
+session switches off.** It now recognises the second argument by brace balance
+(string-aware, stated limit on regex literals), held by
+`tests/run_write_path_scan_probe.py`, 13 arms. The probe deliberately asserts
+the opposite direction too -- a ONE-argument `.then` must still be a finding --
+because a fix that stopped reporting the real defect would be worse than the
+false positive it removed. Portfolio blind-site count **36 -> 33**.
+
+**A PRE-EXISTING INCONSISTENCY IN `docs/traceability-matrix.md`, found by
+regenerating it.** The committed file's own sentence said *"85 of 272 test files
+are traced ... 187 are not"* while **its own list enumerated 188**. The file is
+GENERATED and its header says a hand-edit "will look authoritative until it is";
+a count line and a list that disagree is what a cherry-pick resolution taking one
+side's sentence and the other side's body looks like. My regeneration corrects it
+as a side effect; recording it because the artefact was internally inconsistent
+and nothing would have surfaced that except running `--check`.
+
+**Session-lock note.** The SessionStart hook warned another session claimed this
+clone (PID 13668). `Get-Process -Id 13668` returned nothing -- the process was
+gone, the lock was stale, and the `cody` claim on this subject was my own
+previous session's. No duplication.

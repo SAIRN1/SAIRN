@@ -62,6 +62,14 @@ function fn(sig) {
 }
 function decl(open) { const a = html.indexOf(open); return html.slice(a, html.indexOf('};', a) + 2); }
 function arr(open) { const a = html.indexOf(open); return html.slice(a, html.indexOf('];', a) + 2); }
+// One whole statement, for a declaration that is NOT an object or array literal.
+// decl() slices to the next `};`, which on `var SV_PUSH_TIMEOUT_MS = 15000;`
+// would swallow everything up to some unrelated object far below.
+function stmt(open) {
+  const a = html.indexOf(open);
+  assert.ok(a > 0, open + ' not found -- the app file moved');
+  return html.slice(a, html.indexOf(';', a) + 1);
+}
 
 // EVERY getter that writes a seed, and the saver it writes through, DERIVED
 // FROM THE FILE. A hardcoded list here would pass forever while the app grew
@@ -96,6 +104,13 @@ function harness() {
   const store = {}, writes = [];
   const ctx = {
     JSON, Object, Array, String, Number, Date, Math, parseFloat, parseInt, isNaN,
+    // setTimeout is REQUIRED, not decoration: svPushOne() arms its timeout inside
+    // a Promise executor, and without it the executor throws, that promise
+    // rejects, and every push leaves an unhandled rejection behind while these
+    // arms still pass -- they read __writes synchronously and never touch the
+    // race. A green suite quietly generating unhandled rejections is the shape
+    // this file's own header warns about.
+    setTimeout, clearTimeout, Promise,
     console: { warn() {}, error() {}, log() {} },
     localStorage: {
       getItem: (k) => (k in store ? store[k] : null),
@@ -118,6 +133,16 @@ function harness() {
     + fn('function svIsQuotaError(') + '\n'
     + decl('var SV_LOCAL_ONLY_FIELDS={') + '\n'
     + fn('function svOutbound(') + '\n'
+    // svPushOne() and its sentinels, added 2026-09-10 when svSyncCollection()
+    // stopped calling svData() directly. Loaded from the real file rather than
+    // stubbed -- a stub here would let the helper's own rejection and timeout
+    // mapping rot while these arms stayed green. SV_PUSH_TIMEOUT_MS is left at
+    // its real value: nothing in this suite waits for the timer, and shortening
+    // it would be a fixture quietly testing different code.
+    + stmt('var SV_PUSH_TIMEOUT ') + '\n'
+    + stmt('var SV_PUSH_REJECTED ') + '\n'
+    + stmt('var SV_PUSH_TIMEOUT_MS ') + '\n'
+    + fn('function svPushOne(') + '\n'
     + fn('function svSyncCollection(') + '\n'
     + fn('function st(key,data){') + '\n';
   if (html.indexOf('function svSeedStore(') > -1) src += fn('function svSeedStore(') + '\n';
