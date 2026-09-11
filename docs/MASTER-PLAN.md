@@ -35,9 +35,9 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 | `sairncash` | 0 | ✅ | 2 | 0 | 0 | — |
 | `sairncode` | 28 | ✅ | 8 | 2 | 1 | — |
 | `sairndental` | 24 | ✅ | 25 | 8 | 8 | — |
-| `sairndesign` | 18 | ✅ | 0 | 0 | 1 | **no dedicated suite** |
+| `sairndesign` | 18 | ✅ | 1 | 1 | 1 | — |
 | `sairnfreedom` | 35 | ✅ | 2 | 2 | 1 | — |
-| `sairngrounds` | 30 | ✅ | 0 | 0 | 1 | **no dedicated suite** |
+| `sairngrounds` | 30 | ✅ | 1 | 1 | 1 | — |
 | `sairnlaw` | 19 | ✅ | 46 | 12 | 3 | — |
 | `sairnlegacy` | 36 | ✅ | 1 | 1 | 1 | — |
 | `sairnmechanical` | 6 | ✅ | 5 | 1 | 1 | — |
@@ -53,7 +53,9 @@ A vertical is **FINISHED** when all four are true of it. Each is checkable by so
 
 ## The gaps, in the order they deserve attention
 
-1. **⚠ TWO VERTICALS HAVE NO DEDICATED TEST SUITE AT ALL: `sairndesign`, `sairngrounds`.** (`sairnfreedom` was the third and was closed 2026-09-10 -- `tests/sairnfreedom_server_backup.js` and `tests/sairnfreedom_fault_probe.py`.) Between them that is 48 registered resources reaching a server with nothing named for them. They are not untested in the sense of being unexercised — platform-wide suites like `tests/st_reports_failure.js` cover their storage wrappers — but no file states what THEY are supposed to do. **This is the largest single gap on the platform and it is the first thing to close.**
+1. **~~Three verticals with no dedicated test suite~~ — ALL THREE CLOSED 2026-09-10.** `sairnfreedom`, `sairndesign` and `sairngrounds` each now have a first suite and a fault probe. **The gap that replaced it is smaller and sharper:** each of those suites is a SOURCE-AGREEMENT suite. None of them makes a live write, so gate 1 is still the open one for all three.
+
+  **⚠ And one finding from building them is worth more than the suites: a by-name guard that iterates the REGISTRY can be switched off by removing the resource from the registry.** The first version of both suites did exactly that — the fault probe's arm reported no failure because the test had stopped existing, not because the suite tolerated the defect. They now read Tier A from `docs/CRITICALITY-TIERS.md` instead. **Any other guard on this platform that derives its own subject from the thing it is guarding has the same hole.**
 2. **Fault testing is concentrated, not spread.** 14 probes plant into real source, and eight of them are SAIRNdental's. `sairnfreedom`, `sairnroofing` have none. Gate 4 is the one most likely to be quietly skipped, because a suite that passes looks identical to a suite that cannot fail.
 3. **Traceability is 86 of 273 across the platform** (`docs/traceability-matrix.md`). An untraced test is not a bad test; it means no source states what it is for in a form a machine can read. The fix is one line in the open-work index or a `GUARD_TESTS` entry — not a new document.
 4. **Gate 1 is PARTLY ANSWERED as of 2026-09-10 — see the gate 1 section below.** Seven migrations are confirmed run, attested directly by Michael, and the two largest are confirmed only in PART: `stonedesk_data_schema.sql` covers the 21 backup tables and not StoneDesk's original schema, and `sairndental_vendor_schema.sql` covers the vendor tables only. **SAIRNlaw, SAIRNbiz, SAIRNbuild and StoneDesk's original schema remain unverified and are named as such** rather than left to read as fine by omission.
