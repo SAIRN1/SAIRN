@@ -154,12 +154,12 @@ invisible in every case: an empty subject list produces a report that is
 | `tools/run_all_tests.py` | `os.walk('tests')` + `api/*.test.js` | ❌ → **fixed** — see below |
 | `tools/report_only_checks.py` | `git ls-files '*.html'` | ❌ → **fixed** — see below |
 | `tools/preauth_oracle_check.py` | `os.walk('api')` | ⚠ → **two gaps closed** |
-| `tools/write_without_readback_check.py` | `*.html` in the **current directory** | ⚠ → **coverage now disclosed** |
+| `tools/write_without_readback_check.py` | `*.html` in the **current directory** | ⚠ → **coverage disclosed, then anchored** — part three |
 | `tools/criticality_tier_check.py` | `api/_resources/*.js` | ✅ safe — the rollup pins the counts |
 | `tools/traceability_matrix.py` | `tests/`, `api/`, registries | ✅ safe — `--check` diffs against the committed doc |
-| `tools/sairn_strict_args_check.py` | `glob('*.html')`, cwd-relative | ✅ prints `in 0 file(s)` |
-| `tools/sairn_seam_check.py` | `glob('api/*.js')`, cwd-relative | ✅ prints `0 clean, 0 not-forwarded, 0 could-not-tell` |
-| `tools/sairn_stale_snapshot_scan.py` | `glob('*.html')`, cwd-relative | ✅ three zeros on one line — thin, but visible |
+| `tools/sairn_strict_args_check.py` | `glob('*.html')`, cwd-relative | ✅ printed `in 0 file(s)` → **anchored**, part three |
+| `tools/sairn_seam_check.py` | `glob('api/*.js')`, cwd-relative | ✅ printed three zeros → **anchored in TWO places**, part three |
+| `tools/sairn_stale_snapshot_scan.py` | `glob('*.html')`, cwd-relative | ✅ three zeros — thin → **anchored + a file count**, part three |
 
 **The cwd-relative class was measured, not reasoned about.** All four were run
 from `docs/` and their real output read. Three disclose a zero somewhere;
@@ -266,12 +266,8 @@ a legitimate act.
 
 ## ⚠ What this half did NOT do, said plainly
 
-- **`write_without_readback_check.py`, `sairn_strict_args_check.py`,
-  `sairn_stale_snapshot_scan.py` and `sairn_seam_check.py` still default to a
-  CWD-relative glob.** Only the coverage disclosure was fixed, not the
-  anchoring. Run via `report_only_checks.py` they are safe (it passes
-  `cwd=REPO`); run by hand from a subdirectory they scan nothing. Anchoring
-  each to a `REPO` constant is a real fix and it is not done here.
+- ~~**Four checkers still default to a CWD-relative glob.**~~ **CLOSED
+  2026-09-11**, see *Part three* below.
 - **The remaining ~75 files in `tools/` were not individually read.** The
   candidates were selected by grepping for filesystem discovery, and every
   candidate that grep produced was opened — but a checker that derives its
@@ -282,3 +278,69 @@ a legitimate act.
   problems** — two commit SHAs recorded in the register are not in this repo
   after a fetch. Found while verifying this work, unrelated to it, not fixed
   here.
+
+---
+
+# Part three — the CWD class, closed (2026-09-11)
+
+Part two measured four checkers by running them from `docs/` and reading the
+real output. All four defaulted to a glob relative to the **current directory**,
+so from anywhere but the repo root they scanned nothing:
+
+| Checker | what it printed after scanning nothing |
+|---|---|
+| `write_without_readback_check.py` | an empty table, `none`, `none`, exit 0 — no count anywhere |
+| `sairn_seam_check.py` | `0 clean, 0 not-forwarded, 0 could-not-tell` |
+| `sairn_stale_snapshot_scan.py` | `0 UTC \| 0 stale-snapshot \| 0 re-read` |
+| `sairn_strict_args_check.py` | `clean -- no ... sites` / `in 0 file(s)` |
+
+**This is the third row of part two's table — the subject list going empty for a
+reason nobody chose** — and the trigger is not hypothetical. On 2026-09-10 a
+single `cd tools` left a session's shell in a subdirectory for the rest of the
+turn, and because every hook command in `.claude/settings.json` is a relative
+path resolved against that same working directory, even `cd ..` was blocked.
+Any checker run by hand in that state would have answered about nothing.
+
+## What was changed, and what deliberately was not
+
+**The DEFAULT target list is anchored to the repo.** Each of the four now
+derives `REPO` from its own `__file__` — the convention ~20 other tools here
+already follow — and globs against it.
+
+**An explicit path argument stays CWD-relative.** A path a human types means
+what they typed, from where they typed it, and the probe asserts it: the same
+relative name that works from the repo root must *fail* from `docs/` rather
+than silently resolving to the repo copy.
+
+**`report_only_checks.py` was never exposed**, because it passes `cwd=REPO` to
+every subprocess. That is the same fix, applied one layer up, and it is why the
+promoted sweep was unaffected while the hand runs were not.
+
+## The one that took two passes, and why that matters
+
+`sairn_seam_check.py` failed the probe *after* its glob was anchored. A second
+`os.path.isfile()` further down took a repo-relative name and asked the current
+directory about it, so every delegate resolved to `False` and the tool still
+printed three zeros. **Two places, one assumption; fixing the loud one and
+stopping is the shape this repo keeps recording against itself.** It was caught
+because the probe asserts byte-identical output rather than "it looks anchored
+now."
+
+A limitation is **named rather than fixed**: under `--ref`, that `isfile()`
+still asks the working tree, so a helper present in the ref but absent on disk
+is skipped. Pre-existing, and it makes the check miss a seam rather than invent
+one.
+
+## What holds it
+
+`tests/checker_cwd_anchoring_probe.py`. The assertion is **differential** —
+the same checker, run from the repo root and from `docs/`, must produce
+byte-identical output — which a tool that anchors its paths passes trivially
+and a tool that does not cannot. Paired with a **non-triviality** arm, because
+identical-but-empty would satisfy equality while meaning the opposite.
+
+That second arm is worth a note of its own: it first used one loose regex
+hunting the word *file*, and it **failed `sairn_seam_check.py` for the wrong
+reason** — that tool discloses its coverage as `75 clean, …` and names no files
+at all. Four exact patterns replaced the heuristic. A checker's own output
+format is not something to guess at from three siblings.

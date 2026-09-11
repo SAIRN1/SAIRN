@@ -530,8 +530,22 @@ def audit(path):
     }
 
 
+# ── THE DEFAULT TARGET LIST IS ANCHORED TO THE REPO, NOT THE CWD (2026-09-11)
+# `os.listdir('.')` is relative to wherever this is run from. From `docs/` it
+# returned nothing and this tool printed an empty table, `none` under WRITTEN
+# AND NEVER READ BACK, `none` under COULD NOT TELL, and exit 0 -- the only one
+# of four cwd-relative checkers tried that way with no count anywhere in its
+# output. The FILES SCANNED line below closed the disclosure half; this closes
+# the cause. An explicit path argument stays CWD-relative on purpose.
+#
+# Display is unaffected: records carry `os.path.basename(path)`, so an absolute
+# target still prints as `stonedesk.html`.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def main(argv):
-    targets = argv[1:] or sorted(f for f in os.listdir('.') if f.endswith('.html'))
+    targets = argv[1:] or sorted(
+        os.path.join(REPO, f) for f in os.listdir(REPO) if f.endswith('.html'))
     results = [r for r in (audit(t) for t in targets) if r]
     bad, unsure = [], []
     print('SCANNED-BY-NAME: only calls to a wrapper matching \\w*Data( are seen.')

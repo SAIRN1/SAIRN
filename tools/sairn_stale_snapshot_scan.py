@@ -63,6 +63,8 @@ import sys
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import jscomments as _jscomments
 
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
 
 UTC_CAL = re.compile(r"new Date\(\)\.toISOString\(\)\.slice\(\s*0\s*,\s*(?:10|7)\s*\)")
 UTC_INSTANT = re.compile(r"new Date\(\)\.toISOString\(\)(?!\s*\.slice)")
@@ -200,7 +202,14 @@ def main():
     ap.add_argument("--quiet-clean", action="store_true", help="omit files with nothing to report")
     args = ap.parse_args()
 
-    paths = args.paths or sorted(glob.glob("*.html"))
+    # ── THE DEFAULT TARGET LIST IS ANCHORED TO THE REPO, NOT THE CWD ─────────
+    # (2026-09-11) `glob.glob("*.html")` is relative to wherever this is run
+    # from, so from any subdirectory it matched nothing and the summary line
+    # read `0 UTC calendar derivations | 0 stale-snapshot sites to judge | 0
+    # appear already re-read` -- three zeros that look like a clean platform.
+    # Measured from `docs/`, not reasoned about. An explicit path argument is
+    # still CWD-relative on purpose: a path a human types means what they typed.
+    paths = args.paths or sorted(glob.glob(os.path.join(REPO, "*.html")))
     results = [r for r in (scan_file(p) for p in paths if os.path.isfile(p)) if r]
 
     total_utc = 0
@@ -216,7 +225,9 @@ def main():
         if args.quiet_clean and not r["utc"] and not open_hits and not (args.show_mitigated and mit_hits):
             continue
 
-        print("\n== %s" % r["path"])
+        shown = (os.path.relpath(r["path"], REPO)
+                 if os.path.isabs(r["path"]) else r["path"])
+        print("\n== %s" % shown)
         if r["utc"]:
             print("   UTC calendar derivations: %d  (local-date helper present: %s)"
                   % (len(r["utc"]), "yes" if r["helper"] else "NO"))
@@ -237,6 +248,14 @@ def main():
                 print("     line %-6d %-28s writes %s" % (h["line"], h["function"] or "(anonymous)", h["key"]))
 
     print("\n" + "-" * 72)
+    # THE FILE COUNT SITS BESIDE THE HIT COUNTS. Three zeros mean nothing
+    # without it -- they read as a clean platform whether this scanned 22 files
+    # or none.
+    print("%d file(s) scanned" % len(results))
+    if not results:
+        print("ZERO files were scanned, so the zeros below are not a pass. "
+              "Name paths explicitly, or run with no arguments to scan the "
+              "repo root.")
     print("%d UTC calendar derivations | %d stale-snapshot sites to judge | %d appear already re-read"
           % (total_utc, total_open, total_mitigated))
     print("""

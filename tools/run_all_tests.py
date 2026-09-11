@@ -198,7 +198,7 @@ def release_lock():
 # A rebase cannot deliver one without the other. Re-measure with
 # `python -c "import sys;sys.path.insert(0,'tools');import run_all_tests as
 # r;js,py,_=r.discover();print(len(js)+len(py))"`.
-MIN_TEST_FILES = 184
+MIN_TEST_FILES = 185
 
 def discover():
     js, py, unrun = [], [], []

@@ -116,10 +116,24 @@ def _git(*args):
     return r.stdout
 
 
+# ── PATHS ARE REPO-RELATIVE NAMES, RESOLVED AGAINST THE REPO (2026-09-11) ───
+# The names here do double duty: with `--ref` they are `git show` arguments,
+# which are repo-relative by definition, and without it they were handed
+# straight to `open()`, which is CWD-relative. So running this from any
+# subdirectory globbed nothing and printed `0 clean, 0 not-forwarded, 0
+# could-not-tell` -- three zeros that read as a clean surface. Measured from
+# `docs/` during the tools/ half of the self-referential-guard sweep.
+#
+# The names stay repo-relative, because that is what the `--ref` half and the
+# whole output format already assume; only the RESOLUTION is anchored.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def read(p):
     if REF:
         return _git('show', '%s:%s' % (REF, norm(p))).decode('utf-8', 'replace')
-    return open(p, encoding='utf-8', errors='replace').read()
+    full = p if os.path.isabs(p) else os.path.join(REPO, p)
+    return open(full, encoding='utf-8', errors='replace').read()
 
 
 def list_api_js():
@@ -127,7 +141,9 @@ def list_api_js():
     if REF:
         out = _git('ls-tree', '-r', '--name-only', REF, 'api/').decode('utf-8', 'replace')
         return [q for q in out.split(chr(10)) if q.endswith('.js') and q.count('/') <= 2]
-    return [norm(q) for q in glob.glob('api/*.js') + glob.glob('api/*/*.js')]
+    return [norm(os.path.relpath(q, REPO))
+            for q in glob.glob(os.path.join(REPO, 'api', '*.js'))
+            + glob.glob(os.path.join(REPO, 'api', '*', '*.js'))]
 
 
 def strip_comments(s):
@@ -178,7 +194,18 @@ def discover_pairs(root='.'):
         for alias, lib in reqs.items():
             if not lib.endswith('.js'):
                 lib += '.js'
-            if not os.path.isfile(lib):
+            # ANCHORED, 2026-09-11: `lib` is a repo-relative name, so a bare
+            # isfile() was CWD-relative and every delegate resolved to False
+            # from any subdirectory -- which is why anchoring the glob above
+            # alone still produced `0 clean, 0 not-forwarded, 0 could-not-tell`
+            # from `docs/`. Two places, one assumption; fixing the loud one and
+            # stopping is the shape this repo keeps recording.
+            #
+            # NAMED LIMITATION, not fixed here: under `--ref` this still asks
+            # the WORKING TREE whether the lib exists. A helper that exists in
+            # the ref but not on disk is skipped. Pre-existing, and it makes
+            # the check miss a seam rather than invent one.
+            if not os.path.isfile(os.path.join(REPO, lib)):
                 continue
             for m in re.finditer(re.escape(alias) + r'\.([A-Za-z_$][\w$]*)\s*\(\s*\{', src):
                 out.append((ep, lib, m.group(1)))

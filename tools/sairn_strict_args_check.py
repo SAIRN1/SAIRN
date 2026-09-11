@@ -138,15 +138,30 @@ def scan(path):
     return findings
 
 
+# ── THE DEFAULT TARGET LIST IS ANCHORED TO THE REPO, NOT THE CWD (2026-09-11)
+# `glob.glob('*.html')` is relative to wherever this happens to be run from, so
+# from any subdirectory it matched nothing and the tool printed `clean -- no
+# mutate-then-forward-arguments sites` and exited 0. Measured from `docs/`
+# during the tools/ half of the self-referential-guard sweep, not reasoned
+# about. It was the LEAST bad of the four checkers tried that way, because it
+# also prints `in 0 file(s)` -- but a zero buried under the word "clean" is
+# still a false clean, and `report_only_checks.py` only reads the exit code.
+#
+# AN EXPLICIT ARGUMENT IS STILL CWD-RELATIVE, deliberately: a path a human
+# types means what they typed, from where they typed it.
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
 def main(argv):
-    targets = argv[1:] or sorted(glob.glob('*.html'))
+    targets = argv[1:] or sorted(glob.glob(os.path.join(REPO, '*.html')))
     total = 0
     for path in targets:
+        shown = os.path.relpath(path, REPO) if os.path.isabs(path) else path
         for line, name, p1, p2 in scan(path):
             print('%s:%d  %s = function(%s, %s) mutates `%s` then forwards '
                   '`arguments` under strict mode -- the mutation is DISCARDED. '
                   'Forward explicitly: .call(this, %s, %s)'
-                  % (path, line, name, p1, p2, p2, p1, p2))
+                  % (shown, line, name, p1, p2, p2, p1, p2))
             total += 1
     print('')
     if total:
