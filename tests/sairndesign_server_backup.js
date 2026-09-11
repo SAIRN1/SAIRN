@@ -82,6 +82,25 @@ console.log('sairndesign -- registry, client and schema must agree');
 
 section('1. the three sides agree, PAIRWISE');
 
+
+// ── THE COUNT IS PINNED, NOT JUST CHECKED FOR BEING NON-EMPTY (2026-09-10) ──
+// `length > 0` is blind to the defect that matters here: a resource REMOVED
+// from the registry takes its own per-resource assertions with it, because
+// every loop in this file iterates the registry. That is the self-referential
+// hole the fault probe found in the by-name section, and the platform sweep
+// that followed showed every other derived-subject suite on the platform
+// already pins a count -- these three were the exception because they were the
+// newest.
+//
+// The number is deliberate and must be changed BY HAND when a resource is
+// genuinely added or removed. That edit is the point: it makes the change
+// visible in a diff instead of silently shrinking the test surface.
+
+test('the registry still holds exactly 18 resources', () => {
+  assert.strictEqual(REG.resources.length, 18,
+    'the sairndesign registry has ' + REG.resources.length + ' resources, not 18 -- if that is deliberate, change this number in the same commit; if it is not, a resource has been removed and every per-resource assertion in this file went with it');
+});
+
 test('the registry is non-empty and every name carries the sdn_ prefix', () => {
   assert.ok(REG.resources.length > 0, 'the registry has no resources');
   // The registry's own comment says why: a bare `schedule`/`invoices` would

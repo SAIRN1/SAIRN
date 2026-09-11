@@ -109,6 +109,25 @@ console.log('sairngrounds -- registry, client and three schema files must agree'
 
 section('1. every schema file is read, not just the first');
 
+
+// ── THE COUNT IS PINNED, NOT JUST CHECKED FOR BEING NON-EMPTY (2026-09-10) ──
+// `length > 0` is blind to the defect that matters here: a resource REMOVED
+// from the registry takes its own per-resource assertions with it, because
+// every loop in this file iterates the registry. That is the self-referential
+// hole the fault probe found in the by-name section, and the platform sweep
+// that followed showed every other derived-subject suite on the platform
+// already pins a count -- these three were the exception because they were the
+// newest.
+//
+// The number is deliberate and must be changed BY HAND when a resource is
+// genuinely added or removed. That edit is the point: it makes the change
+// visible in a diff instead of silently shrinking the test surface.
+
+test('the registry still holds exactly 30 resources', () => {
+  assert.strictEqual(REG.resources.length, 30,
+    'the sairngrounds registry has ' + REG.resources.length + ' resources, not 30 -- if that is deliberate, change this number in the same commit; if it is not, a resource has been removed and every per-resource assertion in this file went with it');
+});
+
 test('all three schema files exist', () => {
   SCHEMA_FILES.forEach((f) => {
     assert.ok(fs.existsSync(path.join(ROOT, 'sql', f)), f + ' is gone');
