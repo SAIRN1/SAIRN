@@ -162,15 +162,28 @@ def release_lock():
 # RUNNER, which derives the largest subject list on the platform, pinned
 # nothing.
 #
-# A FLOOR AT RUNTIME, AN EQUALITY AT COMMIT TIME, and the split is deliberate
-# because the two ends want opposite things. At RUNTIME a floor never
-# false-alarms on a clone that is mid-addition or on a branch with an extra
-# test, so nobody learns to ignore it. At COMMIT time a floor sitting below the
-# real count is a dead zone nothing can see, so
-# `tests/run_all_tests_floor_probe.py` pins it to the measured count and fails
-# in BOTH directions -- growth is housekeeping and says so, shrinkage is the
-# defect. Lowering it is a deliberate edit that shows up in a diff, which is
-# exactly the moment somebody should be asked why the suite is smaller.
+# IT IS A FLOOR AT BOTH ENDS -- `count >= pin`, never an equality.
+# MICHAEL'S DECISION, 2026-09-11, and the history is kept because the tradeoff
+# is the part worth knowing.
+#
+# It shipped for a few hours with `tests/run_all_tests_floor_probe.py`
+# asserting EQUALITY, on the reasoning that a pin below the real count is a
+# dead zone nothing can see. IT FIRED ON THE VERY FIRST REBASE AFTER IT WAS
+# WRITTEN -- 181 became 184 because other clones had added tests -- failing the
+# suite for a session that had added nothing. With four clones pushing, that is
+# not an edge case, it is the normal night.
+#
+# The call: a floor keeps all of the real protection, because any silent
+# DELETION still fails immediately, and drops the only false-positive shape,
+# which was a legitimate ADDITION arriving by rebase. A stale floor after
+# growth is cosmetic -- it leaves a window in which that many deletions would
+# be quiet -- and it is bumped as housekeeping. Friction on every rebase is
+# what gets a gate switched off out of annoyance, and a switched-off gate
+# protects nothing.
+#
+# Growth is still PRINTED by the probe, with the number to write. Lowering the
+# pin is a deliberate edit that shows up in a diff, which is exactly the moment
+# somebody should be asked why the suite is smaller.
 #
 # THE NUMBER IS THE MEASURED COUNT AT THIS COMMIT, NOT AN ESTIMATE WITH
 # HEADROOM -- corrected 2026-09-10, hours after the floor was first written at
@@ -178,14 +191,6 @@ def release_lock():
 # been deleted with the guard silent, which is 85% of the twenty-file example
 # its own comment uses. A floor set below the real count is not a cautious
 # floor; it is a dead zone, and an unmeasured one.
-#
-# THE COST OF THE EQUALITY HALF IS REAL AND IS NOT HIDDEN: with four clones
-# pushing, a rebase brings other sessions' test files and the probe then fails
-# for a session that added nothing. It happened on the FIRST rebase after this
-# was written -- 181 became 184. The bump is one line and the probe prints the
-# number to write, but this is the shape that gets a gate switched off, so it
-# is Michael's call to keep or relax. Relaxing it means accepting a dead zone
-# that grows silently, which is the defect this was written for.
 #
 # THERE IS NO SKEW TO LEAVE HEADROOM FOR, and that was checked rather than
 # assumed: this constant travels in the same commit as the test files it

@@ -179,12 +179,22 @@ pinned nothing.
 `MIN_TEST_FILES` is the pin. Two things about it are worth more than the pin
 itself:
 
-**It is a floor at runtime and an equality at commit time**, because the two
-ends want opposite things. A floor never false-alarms on a clone mid-addition,
-so nobody learns to route around it; an equality, enforced by
-`tests/run_all_tests_floor_probe.py`, leaves no dead zone between the pin and
-reality. Growth is reported as housekeeping with the new number to write;
-shrinkage is the defect.
+**It is a floor at both ends — `count >= pin`, never an equality — and that was
+decided the hard way.** It shipped for a few hours with
+`tests/run_all_tests_floor_probe.py` asserting *equality*, on the reasoning that
+a pin below the real count is a dead zone nothing can see. **It fired on the
+very first rebase after it was written** — 181 became 184 because other clones
+had added tests — failing the suite for a session that had added nothing. With
+four clones pushing, that is the normal night, not an edge case.
+
+**Michael's call, 2026-09-11: keep the floor, drop the equality.** A floor keeps
+all of the real protection, because any silent *deletion* still fails
+immediately, and drops the only false-positive shape, which was a legitimate
+*addition* arriving by rebase. A stale floor after growth is cosmetic — it
+leaves a window in which that many deletions would be quiet — and it is bumped
+as housekeeping. Friction on every rebase is what gets a gate switched off out
+of annoyance, and a switched-off gate protects nothing. Growth is still printed
+with the number to write; only shrinkage fails.
 
 **The first version of the pin was wrong in both of the ways this document is
 about, and neither was visible in its diff:**

@@ -24,6 +24,18 @@ Both are the same standing lesson CLAUDE.md records for sairn_claim_hook.py:
 a fix verified on the copy a human invokes is not verified if a second copy
 runs on its own.
 
+A FLOOR AT BOTH ENDS -- MICHAEL'S DECISION, 2026-09-11. Arm 1 first shipped as
+an EQUALITY, on the reasoning that a pin below the real count is an unmeasured
+dead zone. It fired on the very first rebase after it was written -- 181 became
+184 because other clones had added tests -- failing the suite for a session that
+had added nothing. The call: **count >= pin, never an equality.** It keeps all
+of the real protection, since any silent DELETION still fails immediately, and
+drops the only false-positive shape, which was a legitimate ADDITION from
+another clone. A stale floor after growth is cosmetic and gets bumped as
+housekeeping; friction on every rebase is what gets a gate switched off out of
+annoyance. Growth is still PRINTED with the number to write -- reported, not
+enforced.
+
 EVERY ARM IS MUTATION-PROVED. An arm that asserts a guard fires is worth
 nothing unless the matching arm shows it stays quiet when it should -- a
 `return 1` on every path would pass half of this file.
@@ -80,25 +92,33 @@ def capture(fn):
     return rc, buf.getvalue()
 
 
-print('1. THE PIN MATCHES THE REAL COUNT')
-# Both directions fail. Growth is housekeeping and the message says so; only
-# shrinkage is a defect, and by the time this arm sees shrinkage the runner
-# has already said so itself.
+print('1. THE REAL COUNT IS AT OR ABOVE THE PIN')
+# ONE DIRECTION FAILS. Shrinkage is the defect and fails here; growth is
+# reported with the number to write and passes. See the header for why this is
+# not an equality -- it was one, for a few hours, and the cost landed on the
+# first rebase.
+#
+# THE MUTATION PROOF FOR THIS ARM IS ARMS 2-6, not a line here. This comparison
+# cannot be driven short without deleting real files; arms 2-6 patch discover()
+# and prove the SAME constant makes both bodies fire and exit non-zero. What
+# this arm adds on top of them is the case they cannot see: a pin written
+# ABOVE the real count, which would false-alarm every run forever.
 js, py, _ = R.discover()
 real = len(js) + len(py)
 if real > R.MIN_TEST_FILES:
-    print('     the suite GREW: %d files discovered, MIN_TEST_FILES says %d.'
-          % (real, R.MIN_TEST_FILES))
-    print('     This is HOUSEKEEPING, not a defect -- raise MIN_TEST_FILES to '
-          '%d in the same' % real)
-    print('     commit that added the tests. The gap is a dead zone: until you '
-          'do, that many')
-    print('     test files can be deleted with every guard silent.')
+    print('     NOTE the suite GREW: %d files discovered, MIN_TEST_FILES says '
+          '%d.' % (real, R.MIN_TEST_FILES))
+    print('     HOUSEKEEPING, NOT A FAILURE -- raise MIN_TEST_FILES to %d when '
+          'you are next' % real)
+    print('     editing this area. Until then %d test file(s) could be deleted '
+          'with the' % (real - R.MIN_TEST_FILES))
+    print('     guard silent, which is the accepted cost of not failing a '
+          'session that added nothing.')
 elif real < R.MIN_TEST_FILES:
     print('     the suite SHRANK: %d discovered, %d expected. Test files were '
           'deleted.' % (real, R.MIN_TEST_FILES))
-check(real == R.MIN_TEST_FILES,
-      'MIN_TEST_FILES (%d) == discovered (%d)' % (R.MIN_TEST_FILES, real))
+check(real >= R.MIN_TEST_FILES,
+      'discovered (%d) >= MIN_TEST_FILES (%d)' % (real, R.MIN_TEST_FILES))
 
 print('')
 print('2. _main_body() -- THE COPY A HUMAN RUNS')
