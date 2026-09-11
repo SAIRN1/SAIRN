@@ -1175,3 +1175,31 @@ for anchor multiplicity. The two with a resolvable TARGET are clean (9 and 12
 arms). The other four use a different convention my check could not resolve —
 they pass in the full suite, which is weaker than "anchors verified", and I
 recorded it as the weaker claim.
+
+**`986eef83` — the weaker claim is now the stronger one, and the tool nearly
+became its own subject three times.** Yesterday I could only verify two of six
+mutation probes' anchors and recorded "they pass in the full suite" as the
+honest ceiling. Now: **6 probes, 70 anchors, 0 bad.**
+
+**The build produced a live incident, which is the part worth keeping.** v1 of
+the checker IMPORTED each probe to read its `MUTATIONS`. Most probes have no
+`__main__` guard, so an import RUNS them — mutating a real source file and
+restoring it at the end. It hung, got killed mid-probe, and **left
+`api/_lib/dental-guardian.js` modified on disk.** Found by `git status`,
+restored, verified. **A read-only checker must not be able to change the thing
+it inspects** — it parses with `ast` now, and five probes refuse an import
+outright.
+
+**Three versions of the guard detection, and the middle one is the lesson.**
+v1 flagged any `open(x,'wb')` and caught six probes writing only into a temp
+worktree — the safe pattern, and exactly the crying-wolf I keep criticising in
+other people's checkers. v2 narrowed to `REPO`-derived targets and then flagged
+**its own probe**, because that probe carries the unsafe pattern as a *fixture
+string*. That is the comment-quoting class again — **third instance in two
+days, this time inside the tool I wrote the same week for it.** v3 parses; `ast`
+cannot see inside a string literal, so the class is gone rather than the symptom
+patched.
+
+**Standing lesson: grep is the wrong instrument for "does this code do X".**
+Every one of the three instances was a regex matching text that only *described*
+the thing. Parse, or strip, but do not grep raw source and call it a check.
