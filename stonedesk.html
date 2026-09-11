@@ -12060,10 +12060,50 @@ async function dbLoadAll(){
 // instant on localhost, potentially much longer on a real network with no CORS short-circuit.
 // Showing the login screen first and firing the legacy call in the background (never awaited,
 // errors swallowed) makes Sign Out instant regardless of that host's state.
+// ── THE CACHE IS NOT SCOPED, ONLY THE READ IS (2026-09-10) ──────────────
+// Fifth app with this defect, and found by DERIVING the list rather than by
+// noticing another one: api/sd-data.js holds exactly nine read branches that
+// filter rows by the caller's own employee id, across six apps. StoneDesk's is
+// `sd_crm` (api/sd-data.js:2208) -- a non-management role sees only the CRM
+// rows assigned to them.
+//
+// That read is scoped. `sd_crm` is a localStorage key, and doLogout() below
+// cleared only `sd_exec_role` and the in-memory role. So on a shared shop
+// terminal the leads and customers the previous rep hydrated were still there
+// for the next one.
+//
+// NARROW ON PURPOSE. Only the assignment-scoped key is purged. Every other
+// sd_* collection is practice-wide data every role may read, and clearing them
+// on a shift change would discard offline work to protect nothing -- the same
+// judgement recorded in the other four apps' unscoped lists.
+var SD_SCOPED_CACHES = ['sd_crm'];
+var SD_CACHE_OWNER_KEY = 'sd_cache_owner';
+function sdPurgeScopedCaches() {
+  SD_SCOPED_CACHES.forEach(function (k) { try { localStorage.removeItem(k); } catch (e) {} });
+}
+// Called from BOTH sign-in paths -- the PIN login and sdApplyLoggedInSession(),
+// which the passkey module uses. Wiring only one would have left the other
+// unprotected while reading, from the diff, as though the job were done: the
+// same mistake the Layer 16-24 wiring note at the top of this file records.
+window.sdCacheOwnerCheck = function () {
+  var who = '';
+  try {
+    who = (sessionStorage.getItem('sd_session_employee_id') || '') + '|' +
+          (sessionStorage.getItem('sd_session_role') || '');
+  } catch (e) {}
+  var prev = null;
+  try { prev = localStorage.getItem(SD_CACHE_OWNER_KEY); } catch (e) {}
+  try { localStorage.setItem(SD_CACHE_OWNER_KEY, who); } catch (e) {}
+  if (prev !== null && prev !== who) sdPurgeScopedCaches();
+};
 function doLogout() {
   // Legacy Railway logout call removed -- that backend is decommissioned and
   // PIN auth never went through it; sign-out is purely local state.
   currentUser = null;
+  // AND THE ASSIGNMENT-SCOPED CRM CACHE, which this used to leave behind for
+  // whoever signed in next. See sdPurgeScopedCaches().
+  sdPurgeScopedCaches();
+  try { localStorage.removeItem(SD_CACHE_OWNER_KEY); } catch (e) {}
   document.getElementById('auth-screen').style.display='flex';
   document.getElementById('app').classList.remove('visible');
   document.body.classList.remove('is-admin');
@@ -35353,6 +35393,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
         sessionStorage.setItem(SD_EMPLOYEE_KEY, res.body.employee_id);
       } catch (e) {}
       currentRole = res.body.role;
+      if (typeof window.sdCacheOwnerCheck === 'function') window.sdCacheOwnerCheck();
       if (pinEl) pinEl.value = '';
       showApp();
       if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
@@ -35376,6 +35417,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
   // 'function'` and silently no-ops when it's absent).
   window.sdApplyLoggedInSession = function(role) {
     currentRole = role;
+    if (typeof window.sdCacheOwnerCheck === 'function') window.sdCacheOwnerCheck();
     showApp();
     if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
     if (typeof loadMyEmployeeProfile === 'function') loadMyEmployeeProfile();
@@ -35623,6 +35665,7 @@ function fqClearSig() { if(fqSigCtx) fqSigCtx.clearRect(0,0,560,110); }
         sessionStorage.setItem(SD_EMPLOYEE_KEY, res.body.employee_id);
       } catch (e) {}
       currentRole = res.body.role;
+      if (typeof window.sdCacheOwnerCheck === 'function') window.sdCacheOwnerCheck();
       showApp();
       if (typeof sdRefreshLoginAccessGate === 'function') sdRefreshLoginAccessGate();
     }).catch(function() {

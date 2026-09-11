@@ -1349,6 +1349,22 @@ function rfRestoreSession(){
 
 function doLogout(){
   rfSession=null;
+  // ── THE IN-MEMORY JOB LIST IS SCOPED TOO (2026-09-10) ────────────────
+  // rf_jobs is assignment-scoped on READ -- a non-broad-read role sees only
+  // jobs whose assigned_employee_id is theirs (api/sd-data.js:4712). Sixth and
+  // last app in the derived list of nine such read branches.
+  //
+  // THIS ONE IS NARROWER THAN THE OTHER FIVE AND THE DIFFERENCE IS WHY IT IS
+  // FIXED HERE RATHER THAN WITH A PURGE LIST. Roofing writes only
+  // `rf_license_key` and `rf_session` to localStorage -- checked, not assumed --
+  // so there is no persisted copy to leak. The scoped rows live in the module
+  // variable `currentJobs`, which this function did not reset. The window is a
+  // sign-out and sign-in in the SAME TAB without a reload: until rfLoadJobs()
+  // returns, the new person is looking at the previous person's board.
+  // Transient and self-correcting, and still the previous user's jobs on
+  // screen. One line closes it.
+  currentJobs=[];
+  rfJobsLoadFailed=false;
   try{localStorage.removeItem('rf_session');}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');
   rfLoginReset();

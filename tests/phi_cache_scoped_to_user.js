@@ -115,10 +115,33 @@ const APPS = [
     purgeFn: 'dntPurgeScopedCaches', changedFn: 'dntCacheOwnerChanged',
     ownerKey: 'dnt_cache_owner', phi: 'dnt_patients_list', unscopedName: 'DNT_UNSCOPED_CACHES',
     roles: ['owner', 'provider'],
-    promise: 'only the owner can add a provider or change which sign-in is linked to one' }
+    promise: 'only the owner can add a provider or change which sign-in is linked to one' },
+  // FOUND BY DERIVING THE LIST, not by noticing a fourth. api/sd-data.js holds
+  // exactly nine read branches that filter rows by the caller's own employee
+  // id; bld_bids (:3516) and bld_tna (:3590) are two of them, and bld_tna is an
+  // employee's OWN training-needs assessment.
+  { name: 'SAIRNbuild', file: 'sairnbuild.html', prefix: 'bld_', listName: 'BLD_SCOPED_CACHES',
+    purgeFn: 'bldPurgeScopedCaches', changedFn: 'bldCacheOwnerChanged',
+    ownerKey: 'bld_cache_owner', phi: 'bld_bids', unscopedName: 'BLD_UNSCOPED_CACHES',
+    roles: ['owner', 'field'],
+    promise: 'superseded versions stay visible, never overwritten' }
 ];
 
-console.log('SAIRNcare / SAIRNsenior -- the cache is scoped to the person, not just the read\n');
+console.log('The cache is scoped to the person, not just the read\n');
+
+// -- ARM 0: THE SCOPE ITSELF IS DERIVED, NOT REMEMBERED --------------------
+// api/sd-data.js is the only place that scopes a read to the caller's own
+// employee id. Counting those branches is what turned "twelve apps, untriaged"
+// into six apps and a finite list -- and it is what stops this suite silently
+// falling behind a NEW scoped read added tomorrow. If this number moves, an app
+// gained or lost a scoped read and this file must be revisited, not adjusted.
+const API = fs.readFileSync(path.join(__dirname, '..', 'api', 'sd-data.js'), 'utf8');
+const SCOPED_READS = (API.match(/out = out\.filter\(\(r\) => r\.(?:assigned|subject)_employee_id === session\.employee_id\)/g) || []).length;
+eq('0a  api/sd-data.js scoped-read branches across six apps', SCOPED_READS, 9);
+ok('0b  and every app carrying one is covered here, or named as another session\'s',
+   SCOPED_READS === 9,
+   'care x2, senior x2, build x2, stonedesk, roofing; sairndesign is Fourth\'s file');
+
 
 APPS.forEach(function (app) {
   const OWNER = { employee_id: 'EMP-OWNER', role: 'owner' };
@@ -207,6 +230,29 @@ APPS.forEach(function (app) {
      w.src.indexOf(promise) !== -1,
      'if this is ever deleted, delete this guard too -- or find out why it was untrue');
 });
+
+
+// STONEDESK AND SAIRNROOFING ARE ASSERTED SEPARATELY, because neither fits the
+// shape above and saying so is better than bending them into it:
+//   StoneDesk has ONE assignment-scoped key (sd_crm) among many practice-wide
+//     ones, and THREE sign-in paths rather than one enter function.
+//   SAIRNroofing persists NOTHING scoped -- checked, not assumed -- so its
+//     exposure is an in-memory list across a same-tab re-login.
+const SD = fs.readFileSync(path.join(__dirname, '..', 'stonedesk.html'), 'utf8');
+ok('7a  StoneDesk purges the assignment-scoped CRM cache',
+   /var SD_SCOPED_CACHES = \['sd_crm'\];/.test(SD), '');
+eq('7b  StoneDesk wires the check into EVERY sign-in path, not one',
+   (SD.match(/window\.sdCacheOwnerCheck === 'function'\) window\.sdCacheOwnerCheck\(\)/g) || []).length, 3);
+ok('7c  and doLogout purges it',
+   /currentUser = null;[\s\S]{0,260}sdPurgeScopedCaches\(\);/.test(SD), '');
+
+const RF = fs.readFileSync(path.join(__dirname, '..', 'sairnroofing.html'), 'utf8');
+ok('8a  SAIRNroofing clears the in-memory job list on sign-out',
+   /rfSession=null;[\s\S]{0,1600}currentJobs=\[\];/.test(RF), '');
+const rfKeys = [...new Set((RF.match(/localStorage\.(?:setItem|getItem|removeItem)\('rf_[a-z_]+'/g) || [])
+  .map((m) => m.replace(/^.*'(rf_[a-z_]+)'$/, '$1')))].sort();
+eq('8b  CONTROL: SAIRNroofing persists nothing scoped, which is why 8a is the whole fix',
+   rfKeys, ['rf_license_key', 'rf_session']);
 
 console.log('\n%d passed, %d failed', pass, fail);
 process.exit(fail ? 1 : 0);

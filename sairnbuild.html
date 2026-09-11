@@ -2616,7 +2616,62 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
+// ── THE CACHE IS NOT SCOPED, ONLY THE READ IS (2026-09-10) ──────────────
+// Fourth app with this defect, and found by DERIVING the list rather than by
+// noticing another one. api/sd-data.js contains exactly nine read branches that
+// filter rows by the caller's own employee id; six apps carry them. Three were
+// closed earlier today (b50c2e2f). This is one of the remainder.
+//
+// bld_bids is assignment-scoped on read -- a non-management role sees only bids
+// whose assigned_employee_id is theirs (api/sd-data.js:3516) -- and bld_tna is
+// scoped to subject_employee_id, i.e. an employee's OWN training-needs
+// assessment (:3590). Both arrive through an ADDITIVE hydrate into localStorage,
+// and doLogout() cleared only `bld_session`. So on a shared site trailer laptop
+// the bids and assessments the previous person hydrated were still there for
+// the next one.
+//
+// Same fix and same reasoning as SAIRNcare/SAIRNsenior/SAIRNdental: cleared when
+// the PERSON changes and on sign-out, never mid-session, because the additive
+// merge exists so an offline device does not lose rows the server has not seen.
+// Keyed on employee AND role.
+// DERIVED FROM THE KEYS THAT EXIST. The first draft named
+// `bld_tna_assessments`, which is the SERVER resource name and not a key this
+// app writes -- the same phantom-entry mistake as `alf_careplans` earlier
+// today, and caught the same way, by the probe comparing this list against the
+// real `ld('bld_*')`/`st('bld_*')` set instead of trusting it.
+var BLD_SCOPED_CACHES = ['bld_bids','bld_sub_bids','bld_ai_chat','bld_jobs',
+                         'bld_subs','bld_timesheet','bld_costs','bld_draws','bld_pos',
+                         'bld_change_orders','bld_rfis','bld_submittals','bld_punchlist',
+                         'bld_daily_logs','bld_incidents','bld_inspections','bld_deliveries',
+                         'bld_documents','bld_schedule_entries','bld_selections','bld_tasks',
+                         'bld_lien_waivers','bld_warranty','bld_toolbox_talks','bld_equipment',
+                         'bld_suppliers','bld_price_points','bld_referrals','bld_reviews',
+                         'bld_comm_log','bld_checks','bld_photo_analyses'];
+// DELIBERATELY NOT PURGED, written down rather than omitted -- the probe fails
+// if a `bld_*` key is in neither list.
+//   bld_role     rewritten on every sign-in.
+//   bld_session  already cleared by doLogout().
+//   bld_cache_owner  this guard's own bookkeeping.
+//   bld_company_profile / bld_settings / bld_integrations  company-wide
+//                configuration, identical for every user and editable offline;
+//                purging would discard an unsynced settings edit to protect
+//                nothing.
+//   bld_seeded   a one-time demo-seed marker, not data.
+var BLD_UNSCOPED_CACHES = ['bld_role','bld_session','bld_cache_owner',
+                           'bld_company_profile','bld_settings','bld_integrations',
+                           'bld_seeded'];
+function bldPurgeScopedCaches(){
+  BLD_SCOPED_CACHES.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+}
+function bldCacheOwnerChanged(d){
+  var who=(d&&d.employee_id||'')+'|'+(d&&d.role||'');
+  var prev=null;
+  try{prev=localStorage.getItem('bld_cache_owner');}catch(e){}
+  try{localStorage.setItem('bld_cache_owner',who);}catch(e){}
+  return prev !== null && prev !== who;
+}
 function bldEnterApp(d){
+  if(bldCacheOwnerChanged(d))bldPurgeScopedCaches();
   bldSession={token:d.token,role:d.role,employee_id:d.employee_id};
   prole=d.role;
   try{localStorage.setItem('bld_session',JSON.stringify(bldSession));}catch(e){}
@@ -2667,6 +2722,10 @@ function doLogout(){
   prole='';
   bldSession=null;
   try{localStorage.removeItem('bld_session');}catch(e){}
+  // AND THE ASSIGNMENT-SCOPED CACHES. The comment above is right that clearing
+  // the session alone is not enough; the same sentence is true of the data.
+  bldPurgeScopedCaches();
+  try{localStorage.removeItem('bld_cache_owner');}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');
   bldLoginReset();
   toast('Logged out');
