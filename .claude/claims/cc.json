@@ -872,8 +872,8 @@
       "task": "stale mutation anchors controls that do not bite",
       "claimed_at": "2026-09-11T11:07:19Z",
       "claimed_at_epoch": 1789124839.8376575,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T11:17:28Z"
     }
   ]
 }
