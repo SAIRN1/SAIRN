@@ -188,6 +188,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The security status panel ASSERTED what it should have measured &mdash; second instance of the Layer 12 shape, found by auditing all 30 layers for it** | **CLOSED 2026-09-10 (CC)** &mdash; `3f3d429d`, live-verified on `sairn.vercel.app/stonedesk` | `tests/sd_security_status_is_measured.js` |
 | **`missing_dom_target_check` reports 137 absent element ids (was 149 &mdash; 12 came off 2026-09-09 with the damage-claim orphan) — 41 are UNGUARDED property reads that throw, and one of them is reachable from a real onclick** | **`setMode` DISPROVEN as reachable and a DIFFERENT, REAL live crash found and fixed 2026-09-08 (Fourth)** — the 40 dead reads remain as Guardian 0d | `tests/stonedesk_dead_dom_readers.js`, `tests/stonedesk_followup_chip.js` |
 | ~~AWAITING INDEPENDENT VERIFICATION &mdash; the timesheet pay-rate fix is NOT closed on the author's own proof~~ &mdash; **REVIEWED. One real defect found, in the figure a shop owner reads first** | **REVIEW DONE 2026-09-08 (CC), not Hank.** All six items answered; the defect is FIXED. &#9888; The ROW STAYS OPEN for one bounded reason: the correction touches the same printed page, so under the st | `tests/sd_timesheet_pay_est_probe.py` |
 | ~~The timesheet AI panel prices labour independently of the pay-rate helpers and discloses nothing~~ | **CLOSED 2026-09-09 (Cody)** &mdash; `tsAIRows()` + `tsAIScope()`; `checkblocks.py` 130 blocks / 0 failed, `node tests/sd_timesheet_pay_est.js` 27/27 with 6 new arms, and ALL 12 mutation controls BITE | `tests/sd_timesheet_pay_est.js` |
@@ -205,7 +206,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**85 of 272 test files are traced to a stated requirement. 187 are not.**
+**86 of 273 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -384,7 +385,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnvet_audit_and_controlled.js`
 - `tests/sb_sync_badge_honesty.js`
 - `tests/schema_provisioning_probe.py`
-- `tests/sd_security_status_is_measured.js`
 - `tests/seam_check/run_delegation_probe.py`
 - `tests/seam_check/run_or_default_probe.py`
 - `tests/seam_check/run_probe.py`
