@@ -1113,3 +1113,35 @@ comment's own words — failing a correct file. Both now strip comments first.
 **Twice in one day is a pattern, not a slip:** when a fix's comment quotes the
 thing the fix removes, any probe that greps for that thing will find its own
 documentation. Strip comments before counting, always.
+
+**`ba70ec12` — the comment-quoting pattern is mechanical now, not a note.**
+Michael's call: two isolated corrections hours apart is a pattern, so it gets a
+tool and a CLAUDE.md rule.
+
+**The half that justified building it is not the half that bit me.** Both my
+failures were *loud* — a probe grepping for a literal the fix's own comment
+quotes fails a correct file, and you notice within a minute. **The silent
+direction is the one nothing was watching:** an assertion of PRESENCE goes GREEN
+when the only surviving mention of the thing is a comment describing the feature
+that was deleted. Arm 4 of the probe is exactly that case.
+
+**The repo is clean — 5 assertions inspected, 4 comment-only and all four
+deliberate.** That statement is only worth making because every probe arm plants
+a defect on a throwaway fixture and demands the tool see it. A checker that finds
+nothing is indistinguishable from one that looks at nothing, and I was not going
+to ship the first kind on a night spent finding the second.
+
+**Prior art found while building it, and it is the model:**
+`tests/sairndental_write_failure_voice.js` already searched a comment-stripped
+copy for the absence AND asserted separately that the comment record survived —
+both halves deliberate, before any rule existed.
+
+**My tool's first version committed the error it hunts, twice over.** It blanked
+from any `//` to end of line, so every `https://` swallowed the rest of its line:
+16 "findings" before, 3 after, and the 13 that vanished were all lines following
+a URL. Its second version then flagged two probes that were already correct —
+one searching a comment-stripped copy it had made itself, one searching a
+substring — so it now considers only the variable bound to the raw file.
+**Two rounds of the tool being wrong in the direction of confident noise.**
+Worth remembering before trusting any comment-stripper: URLs and `//` inside a
+string are what break the naive one.
