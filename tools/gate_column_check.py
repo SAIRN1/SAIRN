@@ -57,7 +57,7 @@ SNAPSHOT = os.path.join(REPO, 'db', 'schema_snapshot.json')
 # attributed three files and called the rest unattributable, which understates
 # the coverage rather than the risk, but understating coverage is still a wrong
 # number.
-REST_RE = re.compile(r"/rest/v1/([a-z_][a-z0-9_]*)|rest(?:Url)?\(\s*'([a-z_][a-z0-9_]*)")
+REST_RE = re.compile(r"/rest/v1/([a-z_][a-z0-9_]*)|\brest(?:Url)?\(\s*'([a-z_][a-z0-9_]*)")
 # `const row = rows[0];` / `const r = rows[0]` -- the row variable, and then any
 # property read off it.
 ROWVAR_RE = re.compile(r"(?:const|let|var)\s+(\w+)\s*=\s*\w+\[0\]\s*;")
@@ -91,6 +91,7 @@ def main(argv):
         return 2
 
     findings, unattributed, checked = [], [], []
+    absent_tables = set()
     files = sorted(glob.glob(os.path.join(REPO, 'api', '**', '*.js'), recursive=True))
     for f in files:
         if f.endswith('.test.js'):
@@ -101,7 +102,12 @@ def main(argv):
         # name in prose is not a query. Strip before attributing.
         code = '\n'.join(l for l in src.split('\n') if not l.strip().startswith('//'))
         code = re.sub(r'/\*[\s\S]*?\*/', '', code)
-        tables = sorted({a or b for a, b in REST_RE.findall(code)})
+        # `rest('rpc/name')` is a PostgREST FUNCTION call, not a table, and
+        # capturing it as one made api/_lib/ai-rate-limit.js report "queries a
+        # table absent from the snapshot" -- a finding about nothing. Dropped
+        # by name because `rpc` is a reserved path segment, not a table anyone
+        # could legitimately create.
+        tables = sorted({a or b for a, b in REST_RE.findall(code)} - {'rpc'})
         if not tables:
             continue
         if len(tables) != 1:
@@ -109,6 +115,7 @@ def main(argv):
             continue
         table = tables[0]
         if table not in cols:
+            absent_tables.add(table)
             unattributed.append((rel, 0))
             continue
         known = set(cols[table])
@@ -156,6 +163,16 @@ def main(argv):
                 why = ('queries %d tables -- attribution needs real dataflow' % n) if n else \
                       'queries a table absent from the snapshot'
                 print('      %-44s %s' % (rel, why))
+        if absent_tables:
+            print('')
+            print('  THE SNAPSHOT MAY BE STALE, and that is not a detail.')
+            print('  %d table(s) queried by api/ are absent from it: %s'
+                  % (len(absent_tables), ', '.join(sorted(absent_tables))))
+            print('  A table missing from a capture is indistinguishable from a table')
+            print('  that does not exist -- and the same is true one level down, of a')
+            print('  COLUMN. Demonstrated, not hypothetical: mech_checks answered')
+            print('  provisioned:true on MECH-PINNACLE-2026 on 2026-09-11 and is NOT in')
+            print('  this snapshot. Re-capture before treating an absence as a finding.')
         print('\n  NOTE: this answers "does the column exist", not "does anything write')
         print('  to it". A column that exists and is never populated fails the same way.')
 

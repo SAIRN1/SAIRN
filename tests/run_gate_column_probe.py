@@ -134,6 +134,31 @@ check('6a  a missing snapshot exits 2, not 0', rc == 2, 'exit %d' % rc)
 check('6b  and says nothing was checked', 'NOT a pass' in out, '')
 shutil.rmtree(tmp, ignore_errors=True)
 
+# ── 6b. TWO DEFECTS THIS TOOL SHIPPED WITH, both found by other checkers on
+# 2026-09-11 and both permanent arms now.
+#
+# (i) a literal 0x08 BACKSPACE where a word boundary was meant. The alternation
+#     read `<BS>rest(` instead of `rest(`, so the second URL form NEVER
+#     matched and the widening that was committed as working did nothing --
+#     attribution stayed at 3 files and the commit message said it covered both
+#     forms. Found by tools/control_char_check.py, not by reading it.
+# (ii) `rest('rpc/name')` captured as a table. PostgREST's rpc path is a
+#     function call, and treating it as a table made ai-rate-limit.js report
+#     "queries a table absent from the snapshot" -- a finding about nothing.
+src_tool = io.open(TOOL, encoding='utf-8', errors='replace').read()
+check('6c  no raw control bytes in the tool itself',
+      chr(8) not in src_tool and chr(0) not in src_tool,
+      'a literal backspace silently disabled an alternation here once')
+check('6d  the second URL form really is live',
+      'rest(?:Url)?' in src_tool and chr(92) + 'b' in src_tool,
+      'the word boundary is an escape, not a control character')
+tmp = fixture("const rows = await res.json();\n" "const row = rows[0];\n" "const u = rest('rpc/do_a_thing');\n" "out.plan = row.plan;\n")
+rc, out = run(tmp)
+check('6e  a PostgREST rpc/ call is not treated as a table',
+      'absent from the snapshot' not in out,
+      'rpc is a function path, not a table')
+shutil.rmtree(tmp, ignore_errors=True)
+
 # ── 7. the real repo
 p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True,
                    encoding='utf-8', errors='replace', cwd=REPO,
