@@ -822,6 +822,16 @@
       "claimed_at_epoch": 1789088216.6865063,
       "status": "released",
       "released_at": "2026-09-11T01:02:56Z"
+    },
+    {
+      "id": "fourth-1789088837",
+      "session": "fourth",
+      "subject": "tools-checkers",
+      "task": "self-referential-subject-sweep-second-half",
+      "claimed_at": "2026-09-11T01:07:17Z",
+      "claimed_at_epoch": 1789088837.2774515,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
