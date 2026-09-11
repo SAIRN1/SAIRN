@@ -86,6 +86,39 @@
 -- set_active's last-admin guard, which blocks removing the last one and is
 -- unaffected by adding.
 
+-- ── TRANSACTION AND RECOVERABILITY GUARD, ADDED 2026-09-11 ──────────────
+-- This file shipped UNGUARDED and was the only one of 228 SQL files that
+-- tools/employee_auth_guard_check.py refuses: "no guard, no transaction (a
+-- guard here could not roll back)". It was never grandfathered, because it is
+-- not old enough to be -- the guard tool and push-gate check 2 both landed in
+-- 4cada6a7 on 2026-08-29 and this file landed in bfd47c91 on 2026-08-30 05:01,
+-- a day later, and nothing stopped it.
+--
+-- WHAT LET IT THROUGH CANNOT BE DETERMINED RETROACTIVELY and is not asserted
+-- here. The push gate's own comments record that prepush mode was silently
+-- failing open on an UnboundLocalError until 2026-09-01, which is the likeliest
+-- explanation; SAIRN_SEED_GATE=off and the unresolvable-base fail-open closed in
+-- d12ed127 are both candidates. It was found by that fix: widening an
+-- unresolvable base from [] to the real range put this file in front of the
+-- guard for the first time.
+--
+-- THE GUARD CANNOT REFUSE WHAT THIS FILE DOES, and that is worth stating rather
+-- than discovering. The insert below ADDS an active `admin`, and StoneDesk's
+-- PROVISIONING_ROLES is ['owner','admin'] -- read from api/sd-auth.js:46, not
+-- from the comment above -- so this file can only ever raise the active
+-- provisioner count. The guard exists for the opposite shape: a writer that
+-- leaves credential rows behind with zero active provisioners, which is
+-- unrecoverable through the API because bootstrap refuses 409 while any row
+-- exists and both setup and set_active need an active provisioner.
+--
+-- THE ROLE ARRAY IS PER APP. A guard hardcoding `owner` would pass SAIRNcode
+-- clean forever while checking nothing; StoneDesk genuinely has both.
+--
+-- Re-running remains safe and idempotent exactly as the header describes --
+-- begin/commit changes nothing about the single upsert, it only gives the guard
+-- something to roll back.
+begin;
+
 insert into public.sd_employee_auth
   (license_hash, employee_id, display_name, role, pin_hash, pin_salt, active)
 values (
@@ -102,6 +135,28 @@ on conflict (license_hash, employee_id) do update
       pin_salt = excluded.pin_salt,
       role     = excluded.role,
       active   = true;
+
+-- Run LAST, inside the transaction, so a refusal rolls the insert back.
+do $$
+declare
+  lh   text;
+  rows int;
+  prov int;
+begin
+  lh := encode(digest('SD-AUDIT-2026', 'sha256'), 'hex');
+  select count(*) into rows from public.sd_employee_auth where license_hash = lh;
+  select count(*) into prov from public.sd_employee_auth
+   where license_hash = lh and active = true and role = any (array['owner','admin']);
+  if rows > 0 and prov = 0 then
+    raise exception
+      'ABORTED: SD-AUDIT-2026 would be left with % credential row(s) and ZERO active provisioners. '
+      'Delete EVERY row for this licence, or leave at least one active '
+      'provisioner. Never a subset of the provisioners.', rows;
+  end if;
+  raise notice 'SD-AUDIT-2026: % row(s), % active provisioner(s).', rows, prov;
+end $$;
+
+commit;
 
 -- ── CONFIRM IT LANDED ───────────────────────────────────────────────────
 -- Run these SEPARATELY, not as one paste -- the Supabase editor reports
