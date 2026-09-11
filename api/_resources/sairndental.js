@@ -31,7 +31,23 @@ module.exports = {
     'dnt_procedure_types',
     'dnt_coverage_rules',
     'dnt_appointments',
+  // APPEND-ONLY BY DESIGN, and that is a statement about the code, verified
+  // 2026-09-11 rather than asserted from the table name. `dnt_charges` has
+  // exactly ONE write call in sairndental.html -- addChargeEntry(), which does
+  // `list.push(rec)` and nothing else. There is no edit path and no remover. A
+  // billing correction is a second row, not a rewritten one, which is what
+  // makes patientBalance() and dnAging() reconstructable from the ledger.
+  // api/_lib/dental-ledger.js records the same fact from the other direction:
+  // the payment and charge validators note the resource is "append-only in
+  // fact", which is why neither can block an existing row.
+  //
+  // So the absence of a delete verb here is the CORRECT design, not an
+  // omission -- recorded because tools/removal_path_check.py reads this comment
+  // and would otherwise carry the resource as unassessed silence.
     'dnt_charges',
+  // `dnt_payments` is APPEND-ONLY BY DESIGN, same verification and the same
+  // date. One write call, addPaymentEntry(), push only, no edit path, no
+  // remover. A refund or a correction is a further row.
     'dnt_payments',
     'dnt_denial',
     'dnt_ar',

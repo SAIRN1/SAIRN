@@ -171,6 +171,17 @@ def append_only_labels():
 
     So a multi-resource block only labels the names that appear in a CLAUSE
     containing "append-only". A single-resource block labels its one name.
+
+    NAME THE RESOURCE IN THE SENTENCE, and this is the practical advice rather
+    than a detail -- it cost a round trip on 2026-09-11. A comment block that
+    LOOKS single-resource usually is not: the resource lists in these files run
+    on for dozens of names with no further comment, so the block covers every
+    name below it until the next comment. Writing
+    "`dnt_payments` is APPEND-ONLY BY DESIGN because..." labels it;
+    "APPEND-ONLY BY DESIGN because..." directly above the same line does not.
+    That is deliberate -- the strictness is what stopped a MUTABLE money record
+    inheriting its neighbour's exemption -- and naming the resource you are
+    describing is better documentation anyway.
     """
     out, d = {}, os.path.join(REPO, 'api', '_resources')
     for f in sorted(os.listdir(d)):

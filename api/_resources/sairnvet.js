@@ -46,6 +46,23 @@
 module.exports = {
   app: 'sairnvet',
   resources: [
+  // `sv_audit_log` is APPEND-ONLY BY DESIGN, and the app says so itself --
+  // verified 2026-09-11 by reading the writer, not the name. logDoseAudit() in
+  // sairnvet.html is the only thing that writes this: it pushes an entry and
+  // nothing else, and its own comment states the rule outright -- backfilling
+  // ids into an existing trail "would be rewriting it, which is the one thing
+  // an audit trail must not have done to it." Entries written before ids
+  // existed are deliberately left un-backfilled for that reason.
+  //
+  // So having no delete verb is the CORRECT design for a controlled-substance
+  // dosing trail, not an omission. Recorded because
+  // tools/removal_path_check.py reads this comment and would otherwise carry
+  // the resource as unassessed silence.
+  //
+  // ONE HONEST LIMIT: logDoseAudit() caps the LOCAL copy at the last 500
+  // entries (`log.slice(log.length-500)`). That is a client-side ring buffer,
+  // not a server-side delete -- rows already backed up stay -- but it means
+  // the device's own view of the trail is not complete on a busy practice.
     'sv_audit_log',
     'sv_billing',
     'sv_boarding',
