@@ -1033,8 +1033,8 @@
       "task": "patient scoped clinical payload shape",
       "claimed_at": "2026-09-11T13:48:24Z",
       "claimed_at_epoch": 1789134504.8364053,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T15:08:21Z"
     }
   ]
 }
