@@ -1053,3 +1053,32 @@ triaged, so the index row says unknown, not leaking. Filed unassigned.
 **Four suite failures, all four confirmed pre-existing against a stashed clean
 tree** — including Cody's new `run_defect_register_probe.py`, which appeared on
 origin mid-session. Not mine, not investigated.
+
+**`a41ed794` — finished the sweep, and corrected my own scope claim in the
+process.** My earlier index row said *"twelve apps, untriaged."* That counted
+apps with **per-employee auth**, which is the wrong signal. The right one is the
+**read itself**: `api/sd-data.js` has exactly **nine** branches filtering rows
+by the caller's own employee id, across **six** apps. Six other apps with
+per-employee auth have no scoped read at all — nothing to leak.
+
+Counting the gate instead of the login turned an open-ended sweep into a finite
+list in about ten minutes, and **arm 0 of the probe now asserts the count is
+still 9**, so a scoped read added tomorrow cannot land outside the guard
+silently. That generalizes: *when a sweep looks open-ended, I was probably
+counting the wrong thing.*
+
+**Two of the three did not fit the first pass's shape and are asserted
+separately rather than bent into it.** StoneDesk has **three sign-in paths**
+(PIN, passkey via `sdApplyLoggedInSession`, bootstrap) — wiring one would have
+read from the diff as done; the probe asserts all three. SAIRNroofing persists
+**nothing** scoped, so its exposure was `currentJobs` surviving a same-tab
+re-login — transient, self-correcting, one line.
+
+**`sairndesign` / `sdn_clients` is the last one and it is FOURTH's file** —
+flagged by name in the index, not left as an unknown. It has 21 `sdn_*` keys and
+a `doLogout()` that clears only `sdn_session`, same as the five now fixed.
+
+**The dnt_vendor probe failure is a stale mutation ANCHOR, not a regression** —
+its arm-4 anchor matches zero times in `sairndental.html` at HEAD, at
+`b50c2e2f~1` and at `ddbd1f2c~1`. Counted in all three revisions rather than
+waved away as "not my file".
