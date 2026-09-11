@@ -1082,3 +1082,34 @@ a `doLogout()` that clears only `sdn_session`, same as the five now fixed.
 its arm-4 anchor matches zero times in `sairndental.html` at HEAD, at
 `b50c2e2f~1` and at `ddbd1f2c~1`. Counted in all three revisions rather than
 waved away as "not my file".
+
+**`1b6c3746` — SAIRNlaw gets a CSP, and the verification is the point.** Hank's
+row was right: `tesseract.min.js` is hashed and that covers one of four fetches;
+the worker, the wasm core and the traineddata cannot carry SRI at all. **SRI
+answers "is this the file I expected"; only a CSP answers "which hosts may this
+page talk to".** The file had no policy of any kind.
+
+**Delivered as a `<meta>` tag rather than assembled in JS like StoneDesk's** —
+a meta CSP binds from the moment the parser reaches it; a JS-built one cannot
+bind anything the page did before that script ran.
+
+**Verified in a real browser twice, and the negative controls are what make the
+zero meaningful.** Locally on `127.0.0.1`: load clean, OCR returned "MOTION",
+which exercises all three unhashable fetches. Then `fetch` to example.com
+blocked, foreign `<script>` blocked, `new Function()` blocked. **The local API
+failure was CORS, not CSP** — proven by a `no-cors` request to the same host
+going out with no violation recorded, rather than read off the error text. Then
+on the live page after deploy: CSP present, `/api/sd-data` reached (401 as
+expected), OCR returned "AFFIDAVIT", zero violations.
+
+**`'wasm-unsafe-eval'` is the trap worth remembering.** Omitting it produces a
+policy that reads as stricter and silently breaks OCR — the exact
+looks-right-does-nothing shape this session has been chasing all day, except
+inverted: the control would have been real and the feature dead.
+
+**MY PROBE MADE THE SAME MISTAKE AS THE LAYER 30 PROBE, HOURS APART.** It
+substring-counted `eval(` across the whole file and matched the new CSP
+comment's own words — failing a correct file. Both now strip comments first.
+**Twice in one day is a pattern, not a slip:** when a fix's comment quotes the
+thing the fix removes, any probe that greps for that thing will find its own
+documentation. Strip comments before counting, always.
