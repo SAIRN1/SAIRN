@@ -1035,6 +1035,16 @@
       "claimed_at_epoch": 1789134504.8364053,
       "status": "released",
       "released_at": "2026-09-11T15:08:21Z"
+    },
+    {
+      "id": "hank-1789139492",
+      "session": "hank",
+      "subject": "sairndental-unlinked-referral-queue",
+      "task": "visibility and resolve action",
+      "claimed_at": "2026-09-11T15:11:32Z",
+      "claimed_at_epoch": 1789139492.078,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
