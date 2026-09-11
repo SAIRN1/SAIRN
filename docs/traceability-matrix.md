@@ -58,6 +58,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded | `sairn_strict_args_check.py` | first real run flagged stonedesk.html:3391. HAND-READ: correct code -- its `apply(this, arguments)` is an early return for a non-proxy URL, BEFORE anything is touched, and the mutating path ends in an explicit `saSecureClaudeCall(url, opts, _saInnerFetch)`. Guardian 31 says in its own text not to "fix" a pass-through that has nothing to forward. The checker now requires the forward to come AFTER the mutation; driven both ways, and 0 across 22 files |
 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from | `write_without_readback_check.py` | real run 2026-09-10: 0 findings, 0 could-not-tell, exit 0 |
 | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not | `traceability_matrix.py` | built and wired the same day: 21-check probe including the one that matters -- add a GUARD_TESTS entry and --check goes RED, regenerate and it agrees again |
+| db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database | `schema_snapshot_freshness.py` | real run 2026-09-11: 444 tables created in sql/, 258 in the snapshot, 210 absent and 39 of those queried by api/. BOTH readings are real and both were measured live the same day -- mech_checks provisioned:true (snapshot behind) and grd_rounds provisioned:false (SQL never run), in the same list. The tool reports the question and refuses to pick, which arm 4 of its probe asserts |
 | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current | `index_duplicate_check.py` | both stale rows removed the same day; the checker goes from 2 pairs to 0 across 323 rows. Held by a 13-arm probe whose arm 2 is the case that prompted it -- a pair differing ONLY by a moving count must still match, which is why numbers are stripped before comparing |
 | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire | `gate_column_check.py` | real run 2026-09-11: 3 files attributed, 1 finding -- the known trial_ends_at read -- and 3 multi-table files NAMED as not-checked rather than counted clean. Held by a 15-arm probe whose arm 2 proves the answer follows the SNAPSHOT and not a hardcoded name: add the column to a fixture schema and the same read goes silent |
 | a mutation probe whose anchor no longer matches its target exactly once -- so the arm plants nothing and the control stops testing -- and a probe that mutates a tracked file in place without refusing an import | `mutation_anchor_check.py` | real run 2026-09-11: 6 probes, 70 anchors, 0 bad, 0 unreadable. The import hazard is not hypothetical -- the first version of this very tool imported the probes, hung, was killed, and left api/_lib/dental-guardian.js modified with an injected probe field. Rewritten to parse with ast |
@@ -239,7 +240,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**107 of 294 test files are traced to a stated requirement. 187 are not.**
+**107 of 295 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -385,6 +386,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_cleanup_confirm_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_md_table_check_probe.py`
+- `tests/run_snapshot_freshness_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`

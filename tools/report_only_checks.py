@@ -417,6 +417,32 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'schema_snapshot_freshness.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'db/schema_snapshot.json no longer knowing a table that sql/ '
+                   'creates -- either that SQL has never been run, or the '
+                   'snapshot is behind the database',
+        'why_it_matters': 'the snapshot is a PASTED capture: run the query, '
+                          'copy the JSON cell, save the file. The save step is '
+                          'a human action with nothing behind it, and on '
+                          '2026-09-11 it was measurably skipped -- the query '
+                          'had been run the night before and the committed file '
+                          'was still the 2026-09-02 capture, byte-identical to '
+                          'HEAD. tools/gate_column_check.py reads this file to '
+                          'answer "does this column exist", so a stale capture '
+                          'turns into a confident wrong answer one level down',
+        'evidence': 'real run 2026-09-11: 444 tables created in sql/, 258 in '
+                    'the snapshot, 210 absent and 39 of those queried by api/. '
+                    'BOTH readings are real and both were measured live the '
+                    'same day -- mech_checks provisioned:true (snapshot behind) '
+                    'and grd_rounds provisioned:false (SQL never run), in the '
+                    'same list. The tool reports the question and refuses to '
+                    'pick, which arm 4 of its probe asserts',
+    },
+    {
         'tool': 'index_duplicate_check.py',
         'mode': 'once',
         'args': [],

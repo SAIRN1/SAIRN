@@ -1353,3 +1353,33 @@ is wired into the registry, and reports a real finding can still have half of it
 switched off by one invisible byte — and I wrote the commit message asserting
 the widening worked **from reading the diff**, which showed nothing, because a
 backspace renders as nothing.
+
+**`schema_snapshot_freshness.py` — the capture step that goes missing is now
+detected, and the flag for Michael is a named assignment with the steps in it.**
+
+**Confirmed rather than assumed:** the working copy of `db/schema_snapshot.json`
+is **byte-identical to HEAD**, so the re-capture run on 2026-09-10 was never
+saved. `git diff` empty, mtime touched, content unchanged.
+
+**444 tables created in `sql/`, 258 in the snapshot, 210 absent — 39 of those
+queried by `api/`.**
+
+**Both explanations are true at once, and I proved one of each live rather than
+arguing it:**
+- `mech_checks` → `provisioned:true` on MECH-PINNACLE-2026 — **the table exists,
+  the snapshot is behind.**
+- `grd_rounds` → `provisioned:false` on GRD-PINNACLE-2026 — **the table does not
+  exist**, `sairngrounds_caddie_schema.sql` has never been run.
+
+Same list, opposite causes. **Anyone who resolves all 39 with one explanation
+will be wrong about the other kind**, so the checker reports the question and
+refuses to pick — arm 4 of the probe asserts that wording stays.
+
+**Why this is not tidiness:** `gate_column_check.py` reads this file to answer
+*"does this column exist"*, and its one live finding IS a missing column. A
+stale capture turns into a confident wrong answer one level down.
+
+**After the re-capture, re-run the checker** — whatever still shows absent is
+the genuine never-run set, which is a real work queue rather than a measurement
+artefact. That is the useful by-product: this flag also converts 39 unknowns
+into two sorted piles.
