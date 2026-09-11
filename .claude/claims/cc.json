@@ -832,8 +832,8 @@
       "task": "prose promising a guarantee the code must actually make",
       "claimed_at": "2026-09-11T00:13:42Z",
       "claimed_at_epoch": 1789085622.0945961,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:50:08Z"
     }
   ]
 }
