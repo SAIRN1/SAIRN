@@ -949,6 +949,16 @@
       "claimed_at_epoch": 1789132157.6863227,
       "status": "released",
       "released_at": "2026-09-11T15:29:28Z"
+    },
+    {
+      "id": "cody-1789140727",
+      "session": "cody",
+      "subject": "stonedesk-write-path-blind-sites",
+      "task": "six sites fault injection read each before touching",
+      "claimed_at": "2026-09-11T15:32:07Z",
+      "claimed_at_epoch": 1789140727.557791,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
