@@ -1234,3 +1234,34 @@ comment literals as real on sairnbiz (273 vs 261, differs on 17 of 22 apps), and
 92) **despite having a tokenizer** — its scanner is JS-oriented and does not
 know about HTML comments. **A partial tokenizer that looks complete is harder to
 distrust than none at all.**
+
+**`d5f7bc49` — fixed one of yesterday's two findings and RETRACTED the other.
+The retraction is the more useful half.**
+
+**`literal_drift_check` was real.** It counted comment prose as live literals —
+sairnbiz: 370 raw vs 358 stripped, and I confirmed **each** of the twelve sits
+inside a blanked span rather than inferring it from the count. The inflated
+count was never the danger: a live literal plus an out-of-date commented-out
+copy reads as two places that *disagree*, which is the drift it exists to
+report. Strips first now, offsets preserved. 17 of 22 apps differed before, 6
+after.
+
+**`key_collision_check` was NOT real. My harness was wrong.** Traced to the
+individual write instead of stopping at the count: stonedesk 93 vs 92, and the
+missing one is `stRaw('sd_demo_cleared','1')` at line 5902 — **real code,
+present in both files**. The RAW answer is right; blanking the block comment
+above it breaks the scan. That checker skips comments, strings and regex
+literals correctly and always did.
+
+**Two harness defects had been inflating my numbers**, both found by pushing on
+a result I didn't believe: stripped copies written with `newline='\n'` turned
+CRLF into LF (checkers taking positions from HTMLParser count differently), and
+the comparison included **line numbers**, so the same finding one line off
+looked like a changed answer. Those two alone took key_collision from 3
+"findings" to 1 — and that 1 was the retraction.
+
+**The standing lesson, and it is not about comments:** I filed two findings
+yesterday off a first measurement. One was real; one was my own instrument. **A
+harness that flags its own side effects is measuring itself** — and the way I
+caught it was refusing to stop at the aggregate and going to the individual
+write. The count told me *something* differed; only the write told me *what*.
