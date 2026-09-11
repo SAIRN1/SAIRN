@@ -897,8 +897,8 @@
       "task": "every-app",
       "claimed_at": "2026-09-10T23:59:24Z",
       "claimed_at_epoch": 1789084764.0866559,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:02:54Z"
     }
   ]
 }
