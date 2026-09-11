@@ -158,10 +158,17 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | ~~No dedicated test suite at all, and no fault probe -- 35 registered resources reaching a server with nothing named for them~~ | **CLOSED 2026-09-10 (Fourth), `4cc3831d`** -- `tests/sairnfreedom_server_backup.js` (14 assertions) and `tests/sairnfreedom_fault_probe.py` (8 arms) | `tests/sairnfreedom_fault_probe.py`, `tests/sairnfreedom_server_backup.js` |
 
+### sairngrounds
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| Forty-three server writes and **NO TIMEOUT ANYWHERE** &mdash; and the hazard scan reported the app as bounded on the strength of two user-facing sentences | **CLOSED 2026-09-10 (Cody)** &mdash; bounded inside `grdData()`, 18 fault arms in `tests/faults/grd_write_faults.js`, 7 mutation controls bite with the file restored byte-identical; scan count 33 &rar | `tests/faults/grd_write_faults.js` |
+
 ### sairnlaw
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| ~~**Three of tesseract's four run-time fetches cannot be hashed, and `sairnlaw.html` has no Content-Security-Policy to bound where they come from**~~ &mdash; **CLOSED: a CSP now bounds them, verified in a real browser on the live page** | **CLOSED 2026-09-10 (CC)** &mdash; `1b6c3746`. Found 2026-09-10 (Hank) while closing the SRI row | `tests/sairnlaw_csp.js` |
 | ~~AWAITING INDEPENDENT VERIFICATION &mdash; `b5a76cf`, the AI Chain of Custody matter-attribution fix~~ &mdash; **REVIEWED. The four states were three, and the panel put a FALSE reason in front of a reviewer of a legal audit trail** | **REVIEW DONE 2026-09-08 (CC), not Hank.** All six items answered; the defect is FIXED. &#9888; The ROW STAYS OPEN for one bounded reason, the same as the StoneDesk row above: the correction is mine,  | `tests/law_custody_attribution_probe.py` |
 | `law_billingcodes` is kept on the device and sent nowhere — **left that way on purpose, measured before deciding** | **CLOSED-AS-DECIDED 2026-09-10 (CC)** — reason recorded in `api/_resources/sairnlaw.js` | `tests/dnt_vendor_backup_probe.py` |
 | ~~`law_billingcodes` is seeded once and read by the billing panel, and reaches no server~~ &mdash; **the sync half is RETRACTED; a silent empty-dropdown path was real and is fixed** | **CLOSED 2026-09-09 (Hank)** | `tests/sairnlaw_billing_codes.js` |
@@ -221,7 +228,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**95 of 284 test files are traced to a stated requirement. 189 are not.**
+**97 of 285 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -396,7 +403,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairndesign_sairngrounds_fault_probe.py`
 - `tests/sairndesign_server_backup.js`
 - `tests/sairngrounds_server_backup.js`
-- `tests/sairnlaw_csp.js`
 - `tests/sairnscape_memory.js`
 - `tests/sairnsenior/test-evv-readiness.js`
 - `tests/sairnvet_audit_and_controlled.js`

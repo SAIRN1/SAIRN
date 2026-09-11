@@ -37,6 +37,7 @@ standing tools/sairn_reachability_probe.py gives itself.
    finds where it is worth pointing one.
  * Anything about writes that do not go through a `*Data('write', ...)` call.
 """
+import bisect
 import io
 import os
 import re
@@ -44,9 +45,103 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import jscomments                                              # noqa: E402
+
 WRITE = re.compile(r"\b([a-zA-Z_]\w*[Dd]ata)\(\s*'write'")
 # A timeout on the write path: a race against a timer, or an AbortController.
-TIMEOUT = re.compile(r'Promise\.race\s*\(|AbortController|signal\s*:')
+TIMEOUT = re.compile(r'Promise\.race\s*\(|AbortController|AbortSignal|signal\s*:')
+FN_OPEN = re.compile(r'\bfunction\s+(\w+)\s*\(')
+
+# ── THE TIMEOUT COLUMN WAS WRONG IN THE OPTIMISTIC DIRECTION, 2026-09-10 ────
+# The first version ran TIMEOUT over RAW SOURCE and reported yes/no for the
+# whole file. Both halves of that were wrong, and both made an unprotected app
+# look protected -- the one direction a hazard scan must never fail in:
+#
+#   * STRING LITERALS COUNTED. `sairngrounds.html` was reported `yes` on the
+#     strength of two user-facing sentences -- "Weather Command Engine signal: "
+#     -- matching `signal\s*:`. That file contains no timer race, no
+#     AbortController and no AbortSignal anywhere. It has EIGHT fire-and-forget
+#     writes and was reading as the one thing that made them survivable.
+#
+#   * A READ-PATH TIMEOUT COUNTED AS A WRITE-PATH TIMEOUT. This is a
+#     WRITE-path hazard table, and `sairnbiz.html`'s only race bounds
+#     `sbFirstDeviceHydrate()` (a hydrate, documented at the site as bounding
+#     first paint), while `stonedesk.html`'s only `AbortSignal.timeout(8000)` is
+#     on `/api/knowledge`, a read. Neither protects a single write.
+#
+# So the portfolio line "eleven of fifteen apps have NO TIMEOUT anywhere" was
+# itself too kind: measured properly it is THIRTEEN of fifteen, and only
+# sairndental and sairnvet have a real one. The column is now three-state, and
+# `read-only` is deliberately not spelled `yes` -- an app whose reads are
+# bounded and whose writes can hang forever is the NO case for this table.
+def inside_string_on_line(code, pos):
+    r"""Is `pos` inside a quoted literal, judged from the START OF ITS LINE?
+
+    DELIBERATELY LINE-LOCAL, and the first attempt is why. Blanking every string
+    in the file desynced on sairnvet.html -- one quote-state slip early on and
+    `Promise.race` at line 2178 vanished from the scan entirely, turning a real
+    write-path timeout into `NO`. A whole-file quote walk that goes wrong goes
+    wrong for the REST OF THE FILE, which is the worst possible failure mode for
+    a detector. Scanning from the line start cannot drift further than one line.
+
+    It also cannot be done on a string-blanked copy of the source at all, because
+    the thing this tool searches for IS a string: `*Data('write'`. Blanking
+    literals erased every write call site. Comments are stripped globally (safe,
+    length-preserving); strings are judged here, per hit.
+
+    LIMIT, stated: a `signal:` inside a MULTI-LINE template literal reads as
+    code. The real false positive this closes is a one-line user-facing message
+    -- sairngrounds' "Weather Command Engine signal: " -- and no multi-line
+    template on any current write path contains a timeout token.
+    """
+    bol = code.rfind(chr(10), 0, pos) + 1
+    quote, i = None, bol
+    while i < pos:
+        c = code[i]
+        if quote:
+            if c == chr(92):          # backslash escape
+                i += 2
+                continue
+            if c == quote:
+                quote = None
+        elif c in ('"', chr(39), '`'):
+            quote = c
+        i += 1
+    return quote is not None
+
+
+def timeout_state(src):
+    """'write', 'read-only' or 'none' -- measured on code, never on prose."""
+    code = jscomments.strip_comments(src)
+    hits = [m.start() for m in TIMEOUT.finditer(code)
+            if not inside_string_on_line(code, m.start())]
+    if not hits:
+        return 'none'
+    # A hit or a write belongs to the last `function NAME(` opening before it.
+    # Crude, and crude is the right amount here: the question is "is the timer in
+    # the same function as a write", not "is it reachable on the call graph".
+    opens = [(m.start(), m.group(1)) for m in FN_OPEN.finditer(code)]
+    starts = [o[0] for o in opens]
+
+    def owner(pos):
+        k = bisect.bisect_right(starts, pos) - 1
+        return opens[k][1] if k >= 0 else None
+
+    # Two ways a timeout can be on the write path, and the second was missed at
+    # first. (a) the timer sits in the same function as a write call -- SAIRNvet's
+    # svPushOne(), SAIRNdental's dntPushOne(). (b) THE TIMER SITS IN THE SHARED
+    # TRANSPORT the write calls, which protects all 43 of SAIRNgrounds' writes at
+    # once and is in the same function as none of them. Reporting (b) as
+    # `read-only` called the broadest possible fix the weakest -- the same
+    # flags-its-own-repair shape the `.then(ok, err)` blindness had.
+    writing = set(owner(m.start()) for m in WRITE.finditer(code))
+    transports = set(m.group(1) for m in WRITE.finditer(code))
+    for h in hits:
+        own = owner(h)
+        if own in writing or own in transports:
+            return 'write'
+    return 'read-only'
 
 
 def apps(argv):
@@ -105,6 +200,43 @@ def then_takes_reject_handler(tail):
     return False
 
 
+COLLECT = re.compile(r'(?:await|return|=)\s*Promise\.'
+                     r'(?:all|allSettled|race|any)\s*\(\s*\[?\s*$')
+
+
+def inside_awaited_collection(src, pos):
+    r"""Is this write an ELEMENT of an awaited or returned Promise.all([...])?
+
+    FIVE OF THE EIGHT SAIRNgrounds "fire-and-forget" sites were this, and all
+    five were safe -- found 2026-09-10 by reading every flagged site before
+    starting work on them, which is the rule this tool prints on every run.
+    `await Promise.all([grdData('write',...), ...])` then inspects `results[i]`
+    and names in a toast exactly which records did not sync. That is the most
+    careful write-reporting on the platform, and it was being reported as the
+    least.
+
+    The `assigned` regex below looks 40 characters behind the call for
+    `var x =` / `return` / `await`, so it cannot see an `await` that sits before
+    a `Promise.all([` and a line break. Over-reporting is the direction that
+    gets a checker switched off, which is why this is fixed rather than noted.
+
+    Walks back from the call to the opening bracket of the enclosing argument
+    list and checks what introduces it. Bounded at 400 characters: a collection
+    literal longer than that is not a shape this platform writes.
+    """
+    i, depth, window = pos - 1, 0, max(0, pos - 400)
+    while i >= window:
+        c = src[i]
+        if c in ')]}':
+            depth += 1
+        elif c in '([{':
+            if depth == 0:                      # the bracket this call sits in
+                return bool(COLLECT.search(src[max(0, i - 80):i + 1]))
+            depth -= 1
+        i -= 1
+    return False
+
+
 def classify(src, m):
     """What does the code do with this write's result?
 
@@ -124,13 +256,21 @@ def classify(src, m):
         return 'handled'
     if has_then:
         return 'then-no-catch'
-    if assigned:
+    if assigned or inside_awaited_collection(src, m.start()):
         return 'awaited-or-returned'
     return 'fire-and-forget'
 
 
 def scan(path):
-    src = io.open(os.path.join(REPO, path), encoding='utf-8', errors='replace').read()
+    raw = io.open(os.path.join(REPO, path), encoding='utf-8', errors='replace').read()
+    # COMMENTS STRIPPED BEFORE FINDING WRITE SITES, added 2026-09-10 the moment it
+    # bit. The SAIRNgrounds fix carried a comment explaining the house pattern and
+    # quoting it -- `var syncResult = await grdData('write', ...)` -- and the scan
+    # dutifully reported a fire-and-forget write inside a comment, at a line where
+    # no code exists. Same shape as the wrapper-honesty check counting a comment as
+    # a log: prose satisfying a code detector. strip_comments() is length- and
+    # newline-preserving, so every reported line number stays true.
+    src = jscomments.strip_comments(raw)
     counts = {'handled': 0, 'then-no-catch': 0, 'awaited-or-returned': 0,
               'fire-and-forget': 0}
     lines = []
@@ -139,7 +279,7 @@ def scan(path):
         counts[k] += 1
         if k in ('then-no-catch', 'fire-and-forget'):
             lines.append((src[:m.start()].count('\n') + 1, k, m.group(1)))
-    return counts, lines, bool(TIMEOUT.search(src))
+    return counts, lines, timeout_state(src)
 
 
 def main(argv):
@@ -151,7 +291,7 @@ def main(argv):
     total_blind = 0
     detail = []
     for t in sorted(targets):
-        counts, lines, has_timeout = scan(t)
+        counts, lines, tstate = scan(t)
         if not any(counts.values()):
             continue
         blind = counts['then-no-catch'] + counts['fire-and-forget']
@@ -159,7 +299,7 @@ def main(argv):
         print('%-28s %7d %9d %9d %9d  %s'
               % (t, counts['handled'], counts['awaited-or-returned'],
                  counts['then-no-catch'], counts['fire-and-forget'],
-                 'yes' if has_timeout else 'NO'))
+                 {'write': 'yes', 'read-only': 'read-only', 'none': 'NO'}[tstate]))
         if lines:
             detail.append((t, lines))
     print('')

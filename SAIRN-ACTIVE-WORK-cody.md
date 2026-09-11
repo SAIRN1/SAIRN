@@ -2139,3 +2139,107 @@ two controls that do not bite, for two different reasons.
 - Worth a decision: the probe **exits 0** while printing `CONTROLS THAT DID NOT
   BITE`, so `run_all_tests.py` is the only thing surfacing it. A dead control
   arguably belongs in the exit code.
+
+## 2026-09-10 (Cody) -- SAIRNgrounds had no timeout at all, and my own scan said
+## it did, because of a weather message
+
+Skill used: `sairn-silent-failure-sweep`, `sairn-guardian-v2` before the push.
+Claim: `sairngrounds-write-path-blind-sites`. Picked because 8 fire-and-forget
+writes was the largest blind cluster in the portfolio and nobody held it.
+
+**THE FIRST THING I FOUND WAS THAT MY OWN TOOL WAS LYING IN THE OPTIMISTIC
+DIRECTION**, which is the only direction a hazard scan must never fail in.
+`write_path_fault_scan.py` printed `timeout? yes` for SAIRNgrounds. The file
+contains no timer race, no `AbortController` and no `AbortSignal` in 324KB. The
+`yes` came from `signal\s*:` matching two USER-FACING SENTENCES:
+
+    'Weather Command Engine signal: '+src.textContent+...   (lines 3077, 3414)
+
+Forty-three server writes, and the one thing that would make a hang survivable
+was a string in a weather message. **Same defect class as the comment-counts-as-
+a-log bug I had fixed in `sairn_storage_wrapper_honesty.js` an hour earlier --
+a detector run over raw source instead of over code.** Twice in one session,
+two different tools, found by two different routes.
+
+**AND THE COLUMN WAS WRONG A SECOND WAY.** It was file-wide, so a READ-path
+timeout counted as protecting writes. `sairnbiz.html`'s only race bounds
+`sbFirstDeviceHydrate()`; `stonedesk.html`'s only `AbortSignal.timeout(8000)` is
+on `/api/knowledge`. Neither protects a single write. So the portfolio line
+**"eleven of fifteen apps have no timeout anywhere" was itself too kind -- it
+was thirteen of fifteen**, and only SAIRNdental and SAIRNvet had a real one.
+The column is now three-state; `read-only` is deliberately not spelled `yes`.
+
+**THE FAULT IS WORSE HERE THAN A REFUSAL, BECAUSE THE REFUSAL PATH IS ALREADY
+GOOD.** Forty of the 43 writes read `var syncResult = await grdData(...)` and
+toast exactly what failed to sync. But `fetch` against a black-holed connection
+neither resolves nor rejects, so the `await` never returns, `grdData()`'s catch
+never runs, and **the toast never fires at all.** Click Save, screen says
+nothing, indistinguishable from not having clicked. Careful reporting attached
+to a promise that never settles reports nothing.
+
+**ONE EDIT RATHER THAN A PUSH HELPER, and that was a deliberate call.** SAIRNvet
+and SAIRNdental needed `svPushOne`/`dntPushOne` because their callers had no
+shared failure vocabulary. This file already has one: `null` means "did not reach
+the server", understood at all 43 sites. So `AbortSignal.timeout(15000)` went
+INSIDE `grdData()`, where an AbortError lands in the catch that already returns
+null. A hang arrives as the refusal every caller is written for -- no new shape,
+no routing, and no chance of missing a site. Feature-detected, and **it bounds
+reads too**, which is intended rather than incidental: a hung read leaves a panel
+waiting forever and `null` is already the fall-back-to-localStorage signal.
+
+**FIVE OF THE EIGHT FLAGGED SITES WERE SAFE**, which I only learned by reading
+every one before touching any -- the rule the tool prints on every run.
+`await Promise.all([grdData('write',...), ...])` then names each record that
+failed to sync. **The most careful write-reporting on the platform was being
+reported as the least**, because the classifier looked 40 characters behind the
+call for an `await` and could not see one sitting before a `Promise.all([` and a
+line break. Fixed, with an arm asserting a BARE `Promise.all` is still blind --
+a fix that stopped reporting the real hazard would be worse than the
+over-report.
+
+**OF THE THREE REAL ONES, ONE IS A FIX AND TWO ARE CONFIRMED DECISIONS:**
+
+- `cmSavePoints()` -- **fixed.** Its three callers toast *"Point captured (±4m)"*
+  and *"N point(s) placed via AR"* unconditionally, so a course point that never
+  reached the server was announced as captured. Now `async`/`await` matching the
+  other forty sites verbatim, with the honest message raised in the saver: `toast()`
+  is `textContent = m`, so a later message REPLACES an earlier one and the
+  optimistic toast is superseded when the push resolves null.
+- `gcdSaveRound()` -- **silence KEPT, and it was already accepted and recorded in
+  the file**: it fires on every shot and hole arrival, so a per-call failure toast
+  would run continuously while the server is down and drown the cart-order
+  messages somebody is actually waiting on. **"Do not tell the user" was decided;
+  "record nothing" was not**, and was only ever a side effect of reading no
+  result. The transport now logs. An arm asserts both the silence AND that the
+  reason is still stated at the site, so the next reader does not file it as a
+  defect and "fix" it.
+- `recordGrdSharedTopics()` -- best-effort AI telemetry, console only, same call
+  and same reasoning as SAIRNvet's.
+
+**THE SCAN ALSO COUNTED ITS OWN COMMENTS, AND I CAUGHT IT BY WRITING ONE.** The
+`grdData` comment quotes the house pattern -- and the tool reported a
+fire-and-forget write at a line holding nothing but prose. Write sites are now
+found on comment-stripped source (length- and newline-preserving, so reported
+line numbers stay true). **That cleared two OTHER sessions' phantoms as well:**
+`sairndental.html:4839` and `sairndesign.html:2292` both read *"Was
+sdnData('write',...)"* about code that no longer exists, and both had been in
+the portfolio count since the scan shipped. 33 -> 25.
+
+**18 fault arms pass. 7 mutation controls, all biting, file restored
+byte-identical by sha256** -- removing the signal, widening the timeout past
+platform, silencing the transport, silencing `cmSavePoints`, moving the local
+write after the push, adding a per-shot toast to `gcdSaveRound`, and removing
+both feature-detect guards.
+
+**ONE MUTATION DELIBERATELY SURVIVED AND IS RECORDED RATHER THAN PATCHED
+AROUND.** Deleting the `typeof AbortSignal !== 'undefined'` guard changes nothing,
+because the inner try/catch catches both the TypeError and the ReferenceError.
+The guard is kept for readability -- a normal expected condition should not be
+signalled by an exception -- and the arms prove the BEHAVIOUR rather than the
+line that delivers it. Said in the suite, because a surviving mutation nobody
+explains reads as a hole.
+
+**Pre-existing and untouched, verified by running both checkers against
+`git show HEAD:sairngrounds.html`:** 4 key-collisions (distinct local variable
+names writing one key, which the tool itself calls a pointer not a verdict) and
+1 informational D2 dead-button finding. Identical before and after.

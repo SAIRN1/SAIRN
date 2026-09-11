@@ -86,6 +86,132 @@ check('a bare statement is fire-and-forget',
 check('a returned promise is awaited-or-returned',
       classify("return svData('write','k',r);") == 'awaited-or-returned')
 
+print('--- an element of an awaited Promise.all is NOT fire-and-forget ---')
+# FIVE of SAIRNgrounds' eight flagged sites were this, and all five were safe --
+# `await Promise.all([...])` whose results drive a toast naming exactly which
+# records failed to sync. The most careful write-reporting on the platform was
+# being reported as the least. Over-reporting is the direction that gets a
+# checker switched off, which is why this is fixed rather than footnoted.
+
+check('a write inside await Promise.all([...]) is awaited-or-returned',
+      classify("var results=await Promise.all([\n"
+               "  gData('write','a',x),\n  gData('write','b',y)\n]);")
+      == 'awaited-or-returned')
+
+check('...and so is the SECOND element, not just the first',
+      (lambda s: W.classify(s, list(W.WRITE.finditer(s))[1]))(
+          "var results=await Promise.all([\n"
+          "  gData('write','a',x),\n  gData('write','b',y)\n]);")
+      == 'awaited-or-returned')
+
+check('...through a .concat() on the array literal, as sairngrounds writes it',
+      classify("var r=await Promise.all([gData('write','msb_sales',rec)]"
+               ".concat(invLogPromises));") == 'awaited-or-returned')
+
+check('return Promise.all([...]) counts too',
+      classify("return Promise.all([gData('write','a',x)]);")
+      == 'awaited-or-returned')
+
+check('a BARE Promise.all -- nobody awaits or returns it -- is still blind',
+      classify("Promise.all([gData('write','a',x)]);") == 'fire-and-forget',
+      'an unawaited collection reports nothing and is exactly the hazard; the '
+      'fix must not swallow it')
+
+check('a plain array literal that nobody awaits is still blind',
+      classify("var jobs=[gData('write','a',x)];") == 'fire-and-forget')
+
+print('--- the TIMEOUT column, which was wrong in the OPTIMISTIC direction ---')
+# Found 2026-09-10 the moment the SAIRNgrounds work started: the column ran the
+# timeout regex over RAW SOURCE, file-wide. Two separate errors, both of which
+# made an unprotected app read as protected.
+
+
+def tstate(src):
+    return W.timeout_state(src)
+
+
+check('a user-facing STRING mentioning signal: is not a timeout',
+      tstate("function f(){ el.textContent='Weather Command Engine signal: '+x;"
+             " gData('write','k',r); }") == 'none',
+      'the sairngrounds false positive is back -- that file has eight '
+      'fire-and-forget writes and was reading as bounded')
+
+check('...and a COMMENT mentioning AbortController is not one either',
+      tstate("function f(){ /* an AbortController would fix this */"
+             " gData('write','k',r); }") == 'none')
+
+check('a real race in the same function as the write is a WRITE-path timeout',
+      tstate("function push(){ return Promise.race([gData('write','k',r),t]); }")
+      == 'write')
+
+check('a race in a function that does NOT write is read-only, not yes',
+      tstate("function hydrate(){ return Promise.race([readAll(),t]); }\n"
+             "function save(){ gData('write','k',r); }") == 'read-only',
+      'a read-path timeout is being counted as protecting a write; sairnbiz and '
+      'stonedesk both bound only a READ')
+
+check('AbortSignal.timeout counts as a timeout construct',
+      tstate("function push(){ return gData('write','k',r,"
+             "{signal:AbortSignal.timeout(8000)}); }") == 'write')
+
+check('no timeout token anywhere is none',
+      tstate("function save(){ gData('write','k',r); }") == 'none')
+
+check('a timeout in the SHARED TRANSPORT the write calls is a write-path timeout',
+      tstate("async function gData(a,r,p){ return fetch(u,"
+             "{signal:AbortSignal.timeout(15000)}); }\n"
+             "async function save(){ var x=await gData('write','k',r); }")
+      == 'write',
+      'SAIRNgrounds bounds all 43 of its writes inside grdData(); reporting that '
+      'as read-only calls the broadest possible fix the weakest')
+
+print('--- comments are not code, here either ---')
+# Bit the same day: the SAIRNgrounds fix carried a comment QUOTING the house
+# pattern, and the scan reported a fire-and-forget write at a line holding only
+# prose. Two other apps carried the same phantom -- sairndental:4839 and
+# sairndesign:2292 both say "Was sdnData('write',...)" about code that is gone.
+
+check('a write call inside a // comment is not a write site',
+      len([m for m in W.WRITE.finditer(W.jscomments.strip_comments(
+          "// var x = await gData('write','k',r);\nfoo();"))]) == 0)
+
+check('...nor inside a block comment',
+      len([m for m in W.WRITE.finditer(W.jscomments.strip_comments(
+          "/* gData('write','k',r) */ foo();"))]) == 0)
+
+check('a REAL write beside a comment still counts',
+      len([m for m in W.WRITE.finditer(W.jscomments.strip_comments(
+          "// see gData('write',...) below\ngData('write','k',r);"))]) == 1)
+
+check('stripping preserves line numbers, or every reported line is wrong',
+      (lambda s: W.jscomments.strip_comments(s).count(chr(10)) == s.count(chr(10))
+       and len(W.jscomments.strip_comments(s)) == len(s))(
+          "a();\n// gone\n/* also\ngone */\nb();"))
+
+print('--- and the real files, measured rather than asserted ---')
+
+EXPECTED_TSTATE = {
+    # The only two apps with a genuine write-path timeout, both added 2026-09-10.
+    'sairnvet.html': 'write',
+    'sairndental.html': 'write',
+    # A timeout exists but bounds a READ. sairnbiz races sbFirstDeviceHydrate();
+    # stonedesk's only AbortSignal is on /api/knowledge. Neither protects a write.
+    'sairnbiz.html': 'read-only',
+    'stonedesk.html': 'read-only',
+    # Bounded inside grdData() 2026-09-10, which protects all 43 of its writes.
+    'sairngrounds.html': 'write',
+}
+for app, want in sorted(EXPECTED_TSTATE.items()):
+    path = os.path.join(REPO, app)
+    if not os.path.exists(path):
+        check(app + ' present', False, 'app file missing; this arm tests nothing')
+        continue
+    with open(path, encoding='utf-8', errors='replace') as f:
+        got = W.timeout_state(f.read())
+    check('%-22s timeout state is %s' % (app, want), got == want,
+          'got %r, expected %r -- if a timeout was deliberately added or removed, '
+          'update this map in the same commit and say which' % (got, want))
+
 print('--- against the REAL files, which is what produced the false positive ---')
 
 for app, fn in (('sairnvet.html', 'svPushOne'), ('sairndental.html', 'dntPushOne')):

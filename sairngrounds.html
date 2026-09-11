@@ -1589,20 +1589,71 @@ function grdSetActive(employee_id,nextActive){
   });
 }
 
+// ── BOUNDED, 2026-09-10 ────────────────────────────────────────────────────
+// THIS FILE HAD NO TIMEOUT ON ANY PATH, and it read as if it did.
+// tools/write_path_fault_scan.py reported `timeout? yes` for SAIRNgrounds on
+// the strength of two USER-FACING SENTENCES -- "Weather Command Engine signal:
+// " at lines 3077 and 3414 -- matching its `signal\s*:` probe against raw
+// source. There was no timer race, no AbortController and no AbortSignal in the
+// file. Forty-three server writes, and the one thing that would make a hang
+// survivable was a string.
+//
+// WHAT A HANG DID HERE. Forty of those writes are `var syncResult = await
+// grdData('write', ...)` followed by a toast derived from the result -- careful,
+// correct code. But `fetch` against a black-holed connection or a gateway that
+// accepts and never answers neither resolves nor rejects, so the `await` never
+// returns, the catch below never runs, and THE TOAST NEVER FIRES AT ALL. The
+// user clicks Save, the local write has already happened, and the screen says
+// nothing -- indistinguishable from not having clicked. That is strictly worse
+// than the refusal path this app already handles well.
+//
+// ONE EDIT RATHER THAN A PUSH HELPER, deliberately. SAIRNvet and SAIRNdental
+// needed a wrapper because their callers had no shared failure vocabulary; this
+// file already has one -- `null` means "did not reach the server", understood at
+// all 43 sites. AbortSignal.timeout() lands an AbortError in the catch below,
+// which already returns null, so a hang now arrives as the refusal every caller
+// is written for. No new shape to learn, nothing to route through, and no risk
+// of a site being missed.
+//
+// IT BOUNDS READS TOO, and that is intended rather than incidental: a hung read
+// leaves a panel waiting forever with no message, and `null` is already the
+// "fall back to the localStorage copy" signal documented above. 15s matches
+// SAIRNvet's and SAIRNdental's push timeout so the platform has one number.
+var GRD_FETCH_TIMEOUT_MS = 15000;
 async function grdData(action, resource, payload) {
   var licKey = ld('grd_lic', null);
   if (!licKey) return null;
   try {
     var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
     try { var tok = sessionStorage.getItem(GRD_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
-    var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+    var opts = {
       method: 'POST', headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })
-    });
+    };
+    // Feature-detected, not assumed. An older engine without AbortSignal.timeout
+    // keeps the previous unbounded behaviour rather than throwing a TypeError
+    // that would break every write in the app -- same feature-detect discipline
+    // the AR and WebXR paths in this file already use.
+    try {
+      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
+        opts.signal = AbortSignal.timeout(GRD_FETCH_TIMEOUT_MS);
+      }
+    } catch (e) {}
+    var res = await fetch('https://sairn.vercel.app/api/sd-data', opts);
     if (!res.ok) return null;
     var j = await res.json();
     return (j && j.ok) ? j : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    // An AbortError arrives here exactly like a dropped socket. Recorded rather
+    // than only returned, because three call sites in this file read nothing.
+    try {
+      console.warn('SAIRNgrounds: ' + action + ' "' + resource + '" did NOT reach '
+        + 'the server (' + ((e && e.name === 'TimeoutError') || (e && e.name === 'AbortError')
+          ? 'no answer in ' + (GRD_FETCH_TIMEOUT_MS / 1000) + 's'
+          : (e && e.message) || e) + ').');
+    } catch (_e) {}
+    return null;
+  }
 }
 
 
@@ -2379,10 +2430,30 @@ function cmCaptureGps(){
     );
   });
 }
-function cmSavePoints(z){
+// THE THREE CALLERS TOAST SUCCESS UNCONDITIONALLY -- "Point captured (±4m)",
+// "3 point(s) placed via AR" -- and this push read nothing, so a point that
+// never reached the server was announced as captured. Unlike gcdSaveRound()
+// below, there is no accepted-and-recorded reason for that: these are single
+// deliberate actions, not per-shot telemetry, and the forty other writes in
+// this file all derive their message from the result.
+//
+// THE MESSAGE IS RAISED HERE rather than in the three callers, because toast()
+// is `textContent = m` -- a later message REPLACES an earlier one. So the
+// optimistic "Point captured" still appears immediately, and is replaced by the
+// honest one when the push resolves. Reporting from the callers instead would
+// mean making removeCoursePoint() and an AR `.then` callback async for no gain.
+// The promise is returned as well, so a future caller can await it.
+// `async`/`await` rather than a `.then` chain, to match the forty other writes
+// in this file verbatim. The local write and re-render still run synchronously
+// before the first await, so the three callers are unaffected.
+async function cmSavePoints(z){
   var zones=ld('grd_golf_zones',[]).map(function(x){return x.id===z.id?z:x;});
   st('grd_golf_zones',zones);rGolf();
-  grdData('write','golf_zones',z);
+  var syncResult=await grdData('write','golf_zones',z);
+  if(!syncResult)toast('Point saved on this device only -- the course map did not '
+    +'sync to the server, so another device will not see it. Try again with a '
+    +'connection.',7000);
+  return syncResult;
 }
 async function addCoursePoint(){
   var z=cmCurrentZone();if(!z)return;
@@ -2600,6 +2671,17 @@ function gcdSaveRound(round){
   var i = list.findIndex(function(r){return r.id===round.id;});
   if(i>=0){list[i]=round;}else{list.push(round);}
   st('grd_rounds', list);
+  // NO TOAST, AND THAT DECISION STANDS -- see the note above rCaddie(): this
+  // fires on every shot and every hole arrival, so a per-call failure toast
+  // would run continuously while the server is unreachable and drown the cart-
+  // order messages, which are the ones somebody is waiting on.
+  //
+  // "The user must not be told" was decided. "Nothing should be recorded" was
+  // not, and was only ever a side effect of reading no result. grdData()'s catch
+  // now logs a failure for every path including a timeout, so a round that is
+  // not reaching the server leaves a trail without costing the user a single
+  // toast. Kept as a bare call deliberately: a handler here would only be able
+  // to repeat what grdData() already said.
   grdData('write','grd_rounds',round);
 }
 function gcdCurrentHole(round){
@@ -4757,6 +4839,11 @@ function loadGrdSharedKnowledge(){
 }
 function recordGrdSharedTopics(msg){
   var words=(msg||'').toLowerCase().match(/[a-z]{5,40}/g)||[];
+  // Best-effort AI-context telemetry, so no toast -- the same call made in
+  // SAIRNvet for the same resource and the same reason. Until 2026-09-10 a hang
+  // here was completely unobservable: nothing read the result and nothing
+  // bounded the wait, so the request sat pending for the life of the page.
+  // grdData() now times out and logs, which is the whole fix this site needs.
   grdData('write','shared_knowledge',{words:words.slice(0,200)});
 }
 function buildGrdSharedCompanyContext(){
