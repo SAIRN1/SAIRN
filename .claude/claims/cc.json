@@ -892,8 +892,8 @@
       "task": "checkers that search raw source without stripping comments or strings",
       "claimed_at": "2026-09-11T12:39:06Z",
       "claimed_at_epoch": 1789130346.351095,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T13:07:26Z"
     }
   ]
 }
