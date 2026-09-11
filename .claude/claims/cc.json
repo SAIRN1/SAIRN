@@ -934,6 +934,16 @@
       "claimed_at_epoch": 1789140005.4410005,
       "status": "released",
       "released_at": "2026-09-11T15:27:34Z"
+    },
+    {
+      "id": "cc-1789140579",
+      "session": "cc",
+      "subject": "schema-snapshot-staleness",
+      "task": "capture step never saved and nothing detects it",
+      "claimed_at": "2026-09-11T15:29:39Z",
+      "claimed_at_epoch": 1789140579.412549,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
