@@ -842,8 +842,8 @@
       "task": "remaining apps per-employee-auth stale cache triage",
       "claimed_at": "2026-09-11T00:53:04Z",
       "claimed_at_epoch": 1789087984.118043,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T01:28:01Z"
     }
   ]
 }
