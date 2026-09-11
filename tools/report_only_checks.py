@@ -442,6 +442,30 @@ REGISTRY = [
                     'exit 3 that would have printed on every push in every '
                     'clone forever. Caught by running it, not by reading it',
     },
+    {
+        'tool': 'control_char_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, the day it was built',
+        'catches': 'a raw C0 control byte in any tracked text file -- an '
+                   'escape sequence typed as its literal character',
+        'why_it_matters': 'TWO OF THE FOUR FOUND WERE DEAD REGEXES. '
+                          '/grant[^;]*<BS>delete<BS>/i is the assertion "the '
+                          'schema still grants no delete privilege" and it '
+                          'returns false on a grant that includes delete, so '
+                          'it could never fail. And a raw NUL makes the file '
+                          'UNSEARCHABLE: grep answered "Binary file '
+                          'api/sd-data.js matches" with no lines, on the '
+                          'central API handler serving every app, which looks '
+                          'like "no matches" rather than like a tool giving up',
+        'evidence': 'real negative control against the real tree, not a '
+                    'fixture: run against the pre-fix files it exits 1 and '
+                    'names all SIX bytes with file, line and offset; after the '
+                    'fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- '
+                    '.gitattributes marks the repo text so diffs were readable '
+                    'the whole time, verified rather than assumed, and the '
+                    'first draft of the finding had that wrong',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

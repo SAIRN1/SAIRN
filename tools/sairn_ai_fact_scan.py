@@ -133,7 +133,7 @@ BENIGN_LITERAL = re.compile(
 
 # (2) A line building markup is rendering to a screen, not talking to a model.
 HTML_BUILD = re.compile(
-    r"innerHTML|outerHTML|<div|<span|<td|<tr|<p|<b>|<strong|class=|style=|badge")
+    r"innerHTML|outerHTML|<div|<span|<td|<tr|<p\b|<b>|<strong|class=|style=|badge")
 
 # SHAPE A: an assertion about what the app is or has.
 ASSERTION = re.compile(

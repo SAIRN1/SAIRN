@@ -60,6 +60,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not | `traceability_matrix.py` | built and wired the same day: 21-check probe including the one that matters -- add a GUARD_TESTS entry and --check goes RED, regenerate and it agrees again |
 | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice | `defect_register.py` | built and wired the same day: 24-check probe that ATTACKS it -- a nonexistent commit, an invented method, an invented layer and a duplicate are each refused, and a record whose commit is deleted makes --check go red |
 | a known advisory against a package in the committed lockfile, direct or transitive, with the advisory URL | `npm_audit_check.py` | real negative control, not a fixture: run against the PRE-BUMP lockfile it exits 1 and names both qs advisories by URL; against the fixed lockfile it exits 0. Its first version reported `SKIPPED: npm is not on PATH` on this machine because npm is npm.cmd on Windows -- an honest exit 3 that would have printed on every push in every clone forever. Caught by running it, not by reading it |
+| a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `control_char_check.py` | real negative control against the real tree, not a fixture: run against the pre-fix files it exits 1 and names all SIX bytes with file, line and offset; after the fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- .gitattributes marks the repo text so diffs were readable the whole time, verified rather than assumed, and the first draft of the finding had that wrong |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -86,6 +87,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~The report-only suite hook runs after every `git push`~~ &mdash; **it ran after every BASH TOOL CALL, because `"if": "Bash(git push*)"` is not a field a Claude Code hook has** | **FIXED 2026-09-09 (Hank)** &mdash; root cause found by watching processes, not by reading | `tests/run_all_tests_hook_gate_probe.py` |
 | **A RELEASED claim gave no signal, so `check` said CLEAR on work another session had finished minutes earlier &mdash; twice in one day, in both directions** | **FIXED 2026-09-10 (Hank)** | `tests/claims/run_released_visibility_probe.py` |
 | **SOUP register &mdash; every third-party component, with a real stated reason it is trusted** | **BUILT 2026-09-10 (Hank)**, and it is a standing practice, not a one-off. **Widened 2026-09-10 (Hank) after its own checker reported CLEAN over an unregistered component** | `tests/run_soup_register_probe.py` |
+| **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
 | **The `NOT RUN` label on 29 cleanup SQL files is a claim about the FILE, not the database &mdash; and the checker written to doubt it shipped its own false CLEAN** | **BUILT 2026-09-10 (CC)** &mdash; `b3e92a8d`, `tools/cleanup_residue_check.py` + `tests/cleanup_residue_probe.py`. **Answers 0 of 29 today** and says so | `tests/cleanup_residue_probe.py` |
 | **A mutation arm that had stopped proving anything, reported under a headline that pointed the reader the wrong way** | **FIXED 2026-09-10 (Fourth), `8366aa89`** — all 15 arms of `tests/sairndental_outbound_queue_probe.py` bite again | `tests/sairndental_outbound_queue_probe.py` |
 | ~~The `employees` read refused THREE different facts with one sentence, and the sentence blamed the role~~ | **FIXED AND LIVE-VERIFIED 2026-09-10 (Fourth), `6213c339`** | `api/sd-data-employees-refusal.test.js` |
@@ -212,7 +214,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**88 of 275 test files are traced to a stated requirement. 187 are not.**
+**89 of 276 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 

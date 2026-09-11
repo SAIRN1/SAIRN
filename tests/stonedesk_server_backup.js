@@ -307,7 +307,7 @@ test('reads EXCLUDE soft-deleted rows, and the filter is null-safe for old rows'
 
 test('the schema still grants no delete privilege -- soft delete needed none', () => {
   const sqlCode = sql.split(String.fromCharCode(10)).filter((l) => l.trim().indexOf('--') !== 0).join(String.fromCharCode(10));
-  assert.ok(!/grant[^;]*delete/i.test(sqlCode));
+  assert.ok(!/grant[^;]*\bdelete\b/i.test(sqlCode));
   assert.ok(/grant select, insert, update/.test(sqlCode));
 });
 

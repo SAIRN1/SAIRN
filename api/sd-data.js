@@ -506,7 +506,7 @@ module.exports = async (req, res) => {
       // log entry per probe -- on the endpoint that just gained a rate limiter
       // for exactly that amplification shape. The first occurrence of each
       // (app, resource) is the whole signal; the thousandth is only cost.
-      const seenKey = String(lic.app_id) + ' ' + resource;
+      const seenKey = String(lic.app_id) + '\x00' + resource;
       if (!BOUNDARY_LOGGED.has(seenKey)) {
         if (BOUNDARY_LOGGED.size < 2000) BOUNDARY_LOGGED.add(seenKey);
         console.warn('sd-data: APP BOUNDARY refused "' + resource + '" (owned by ' +
