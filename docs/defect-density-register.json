@@ -38,6 +38,75 @@
       "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\""
     },
     {
+      "commit": "1348466a2e73",
+      "date": "2026-09-10",
+      "subject": "fix(sairnvet): a throw mid-hydrate suppressed every later backup for the session, invisibly -- and a synced consult still said it could not travel",
+      "files": [
+        "sairnvet.html",
+        "tests/sairnvet_seed_never_syncs.js"
+      ],
+      "lines_added": 121,
+      "lines_removed": 8,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence"
+    },
+    {
+      "commit": "3f09a48eed54",
+      "date": "2026-09-10",
+      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 268,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
+    },
+    {
+      "commit": "3f09a48eed54",
+      "date": "2026-09-10",
+      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 268,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper"
+    },
+    {
+      "commit": "5abfcdbacbb4",
+      "date": "2026-09-10",
+      "subject": "fix(tools): a could-not-tell is exit 3, and one checker is held back rather than silenced",
+      "files": [
+        "tests/local_only_probe.py",
+        "tools/local_only_collection_check.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 70,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero"
+    },
+    {
       "commit": "5b98fd27209b",
       "date": "2026-09-10",
       "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
@@ -70,6 +139,57 @@
       "severity": "low",
       "detection_method": "probe-control",
       "summary": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing"
+    },
+    {
+      "commit": "5b98fd27209b",
+      "date": "2026-09-10",
+      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
+      "files": [
+        "sairndental.html",
+        "tests/dnt_vendor_write_confirmation.js",
+        "tests/faults/dnt_vendor_write_faults.js"
+      ],
+      "lines_added": 187,
+      "lines_removed": 76,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "A dropped socket produced NO toast at all, because a rejection never reaches a .then(ok => ...) handler -- and two callers attach none, so it was an unhandled rejection"
+    },
+    {
+      "commit": "5b98fd27209b",
+      "date": "2026-09-10",
+      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
+      "files": [
+        "sairndental.html",
+        "tests/dnt_vendor_write_confirmation.js",
+        "tests/faults/dnt_vendor_write_faults.js"
+      ],
+      "lines_added": 187,
+      "lines_removed": 76,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "A hung write never settled and there was no timeout anywhere on the path, so it was indistinguishable from not having clicked"
+    },
+    {
+      "commit": "5b98fd27209b",
+      "date": "2026-09-10",
+      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
+      "files": [
+        "sairndental.html",
+        "tests/dnt_vendor_write_confirmation.js",
+        "tests/faults/dnt_vendor_write_faults.js"
+      ],
+      "lines_added": 187,
+      "lines_removed": 76,
+      "app": "sairndental",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "A partial response counted as success and CLEARED the unconfirmed flag, letting hydration overwrite the local copy"
     },
     {
       "commit": "6fde9cea7b84",
@@ -138,56 +258,52 @@
       "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
     },
     {
-      "commit": "3f09a48eed54",
+      "commit": "94034ed14279",
       "date": "2026-09-10",
-      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
+      "subject": "fix(sairnmechanical): a dead second mechEsc, found by the first real run of check 27",
       "files": [
-        "SAIRN-ACTIVE-WORK-cody.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md",
-        "tests/sairn_storage_wrapper_honesty.js"
+        "sairnmechanical.html"
       ],
-      "lines_added": 268,
-      "lines_removed": 11,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
+      "lines_added": 15,
+      "lines_removed": 5,
+      "app": "sairnmechanical",
+      "layer": "product",
+      "severity": "low",
+      "detection_method": "static-checker",
+      "summary": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper"
     },
     {
-      "commit": "3f09a48eed54",
+      "commit": "a858cab7cb17",
       "date": "2026-09-10",
-      "subject": "fix(tests): the platform wrapper test was crashing, and a COMMENT counted as a report",
-      "files": [
-        "SAIRN-ACTIVE-WORK-cody.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md",
-        "tests/sairn_storage_wrapper_honesty.js"
-      ],
-      "lines_added": 268,
-      "lines_removed": 11,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "mutation-testing",
-      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper"
-    },
-    {
-      "commit": "1348466a2e73",
-      "date": "2026-09-10",
-      "subject": "fix(sairnvet): a throw mid-hydrate suppressed every later backup for the session, invisibly -- and a synced consult still said it could not travel",
+      "subject": "fix(sairnvet): a demo seed was pushing invented records to the live server, including the controlled-substance register",
       "files": [
         "sairnvet.html",
         "tests/sairnvet_seed_never_syncs.js"
       ],
-      "lines_added": 121,
-      "lines_removed": 8,
+      "lines_added": 296,
+      "lines_removed": 39,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path"
+    },
+    {
+      "commit": "ad588e6c5dc3",
+      "date": "2026-09-10",
+      "subject": "fix(sairnvet): a peer-consult photo cannot fit the row, so it is not sent -- and not sent silently",
+      "files": [
+        "api/sd-data.js",
+        "sairnvet.html",
+        "tests/sairnvet_seed_never_syncs.js"
+      ],
+      "lines_added": 149,
+      "lines_removed": 5,
       "app": "sairnvet",
       "layer": "product",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence"
+      "summary": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning"
     },
     {
       "commit": "bfe591a24c6a",
@@ -274,122 +390,6 @@
       "summary": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps"
     },
     {
-      "commit": "5abfcdbacbb4",
-      "date": "2026-09-10",
-      "subject": "fix(tools): a could-not-tell is exit 3, and one checker is held back rather than silenced",
-      "files": [
-        "tests/local_only_probe.py",
-        "tools/local_only_collection_check.py",
-        "tools/report_only_checks.py"
-      ],
-      "lines_added": 70,
-      "lines_removed": 5,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero"
-    },
-    {
-      "commit": "5b98fd27209b",
-      "date": "2026-09-10",
-      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
-      "files": [
-        "sairndental.html",
-        "tests/dnt_vendor_write_confirmation.js",
-        "tests/faults/dnt_vendor_write_faults.js"
-      ],
-      "lines_added": 187,
-      "lines_removed": 76,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "fault-injection",
-      "summary": "A dropped socket produced NO toast at all, because a rejection never reaches a .then(ok => ...) handler -- and two callers attach none, so it was an unhandled rejection"
-    },
-    {
-      "commit": "5b98fd27209b",
-      "date": "2026-09-10",
-      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
-      "files": [
-        "sairndental.html",
-        "tests/dnt_vendor_write_confirmation.js",
-        "tests/faults/dnt_vendor_write_faults.js"
-      ],
-      "lines_added": 187,
-      "lines_removed": 76,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "fault-injection",
-      "summary": "A hung write never settled and there was no timeout anywhere on the path, so it was indistinguishable from not having clicked"
-    },
-    {
-      "commit": "5b98fd27209b",
-      "date": "2026-09-10",
-      "subject": "fix(sairndental): a dropped socket, a hang and a partial response were all silent",
-      "files": [
-        "sairndental.html",
-        "tests/dnt_vendor_write_confirmation.js",
-        "tests/faults/dnt_vendor_write_faults.js"
-      ],
-      "lines_added": 187,
-      "lines_removed": 76,
-      "app": "sairndental",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "fault-injection",
-      "summary": "A partial response counted as success and CLEARED the unconfirmed flag, letting hydration overwrite the local copy"
-    },
-    {
-      "commit": "94034ed14279",
-      "date": "2026-09-10",
-      "subject": "fix(sairnmechanical): a dead second mechEsc, found by the first real run of check 27",
-      "files": [
-        "sairnmechanical.html"
-      ],
-      "lines_added": 15,
-      "lines_removed": 5,
-      "app": "sairnmechanical",
-      "layer": "product",
-      "severity": "low",
-      "detection_method": "static-checker",
-      "summary": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper"
-    },
-    {
-      "commit": "a858cab7cb17",
-      "date": "2026-09-10",
-      "subject": "fix(sairnvet): a demo seed was pushing invented records to the live server, including the controlled-substance register",
-      "files": [
-        "sairnvet.html",
-        "tests/sairnvet_seed_never_syncs.js"
-      ],
-      "lines_added": 296,
-      "lines_removed": 39,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "critical",
-      "detection_method": "code-review",
-      "summary": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path"
-    },
-    {
-      "commit": "ad588e6c5dc3",
-      "date": "2026-09-10",
-      "subject": "fix(sairnvet): a peer-consult photo cannot fit the row, so it is not sent -- and not sent silently",
-      "files": [
-        "api/sd-data.js",
-        "sairnvet.html",
-        "tests/sairnvet_seed_never_syncs.js"
-      ],
-      "lines_added": 149,
-      "lines_removed": 5,
-      "app": "sairnvet",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning"
-    },
-    {
       "commit": "caa5bb7cb6b2",
       "date": "2026-09-10",
       "subject": "fix(nav_panel_check): it reported PASS on two apps whose panel system it could not see",
@@ -422,6 +422,70 @@
       "severity": "high",
       "detection_method": "independent-review",
       "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays"
+    },
+    {
+      "commit": "133f5587a597",
+      "date": "2026-09-11",
+      "subject": "fix(tools): the register pointed at commits that never existed on main",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/defect-density-register.json",
+        "docs/traceability-matrix.md",
+        "tests/run_defect_register_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 23,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "The defect register recorded pre-rebase SHAs, so records pointed at commits that never existed on main and the one promoted report-only checker was permanently red in every clone"
+    },
+    {
+      "commit": "133f5587a597",
+      "date": "2026-09-11",
+      "subject": "fix(tools): the register pointed at commits that never existed on main",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/defect-density-register.json",
+        "docs/traceability-matrix.md",
+        "tests/run_defect_register_probe.py",
+        "tools/defect_register.py"
+      ],
+      "lines_added": 206,
+      "lines_removed": 23,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "defect_register --check ran its vocabulary validation after a continue, so a record with an unresolvable SHA stopped having its method, layer and severity checked at all"
+    },
+    {
+      "commit": "d85b98efecb8",
+      "date": "2026-09-11",
+      "subject": "fix(tools): the second half of the sweep -- three checkers reported clean while scanning nothing",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-10-self-referential-guard-sweep.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_report_only_checks_probe.py",
+        "tools/preauth_oracle_check.py",
+        "tools/report_only_checks.py",
+        "tools/run_all_tests.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 602,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep"
     },
     {
       "commit": "f75e046a736b",

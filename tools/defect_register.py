@@ -270,6 +270,12 @@ def cmd_reseat():
     # change -- measured, not guessed, because the first version did sort and
     # that is what it produced. A repair nobody can review is a repair nobody
     # checks.
+    #
+    # THE KNOWN CONSEQUENCE, SAID RATHER THAN DISCOVERED LATER: the next
+    # `--add` DOES sort, so it normalises the order this left behind and its
+    # diff is correspondingly large. That is the right place for the churn --
+    # an add is a deliberate content change somebody is already reviewing,
+    # while a re-seat is a mechanical repair that must stay legible.
     save(reg)
     print('re-seated %d record(s).' % n)
     return 0
