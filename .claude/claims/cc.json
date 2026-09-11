@@ -874,6 +874,16 @@
       "claimed_at_epoch": 1789124839.8376575,
       "status": "released",
       "released_at": "2026-09-11T11:17:28Z"
+    },
+    {
+      "id": "cc-1789126240",
+      "session": "cc",
+      "subject": "mutation-anchor-sweep",
+      "task": "four probes whose target the check could not resolve",
+      "claimed_at": "2026-09-11T11:30:40Z",
+      "claimed_at_epoch": 1789126240.382808,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
