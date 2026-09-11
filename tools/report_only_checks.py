@@ -417,6 +417,33 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'gate_column_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'a server file reading a property off a queried row that is '
+                   'NOT a column of that table -- a read that can only ever '
+                   'produce undefined, and a gate built on it that can never '
+                   'fire',
+        'why_it_matters': 'three identical entitlement gates read '
+                          'lic.trial_ends_at and refuse with 402 on an expired '
+                          'trial. trial_ends_at is not a column on '
+                          'license_keys, so it is always null and the 402 has '
+                          'never been reachable on any licence -- the '
+                          'entitlement check for the whole StoneDesk data '
+                          'path, the paid render feature and the agent store. '
+                          'It survived because the code SAYS so in prose: a '
+                          'field initialised to null and a comment calling the '
+                          'column "newly-added", which it never was',
+        'evidence': 'real run 2026-09-11: 3 files attributed, 1 finding -- the '
+                    'known trial_ends_at read -- and 3 multi-table files NAMED '
+                    'as not-checked rather than counted clean. Held by a 15-arm '
+                    'probe whose arm 2 proves the answer follows the SNAPSHOT '
+                    'and not a hardcoded name: add the column to a fixture '
+                    'schema and the same read goes silent',
+    },
+    {
         'tool': 'mutation_anchor_check.py',
         'mode': 'once',
         'args': [],
