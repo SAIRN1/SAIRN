@@ -72,6 +72,72 @@
       "summary": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing"
     },
     {
+      "commit": "0869ac1d673b",
+      "date": "2026-09-10",
+      "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnvet.html",
+        "tests/faults/sv_backup_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tests/sairnvet_seed_never_syncs.js",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 599,
+      "lines_removed": 14,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so"
+    },
+    {
+      "commit": "0869ac1d673b",
+      "date": "2026-09-10",
+      "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnvet.html",
+        "tests/faults/sv_backup_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tests/sairnvet_seed_never_syncs.js",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 599,
+      "lines_removed": 14,
+      "app": "sairnvet",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site"
+    },
+    {
+      "commit": "0869ac1d673b",
+      "date": "2026-09-10",
+      "subject": "fix(sairnvet,tools): the hang was the silent one -- both recorded mechanisms were wrong",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnvet.html",
+        "tests/faults/sv_backup_write_faults.js",
+        "tests/run_write_path_scan_probe.py",
+        "tests/sairnvet_seed_never_syncs.js",
+        "tools/write_path_fault_scan.py"
+      ],
+      "lines_added": 599,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
+    },
+    {
       "commit": "1348466a2e73",
       "date": "2026-09-10",
       "subject": "fix(sairnvet): a throw mid-hydrate suppressed every later backup for the session, invisibly -- and a synced consult still said it could not travel",
