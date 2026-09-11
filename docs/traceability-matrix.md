@@ -88,7 +88,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~The report-only suite hook runs after every `git push`~~ &mdash; **it ran after every BASH TOOL CALL, because `"if": "Bash(git push*)"` is not a field a Claude Code hook has** | **FIXED 2026-09-09 (Hank)** &mdash; root cause found by watching processes, not by reading | `tests/run_all_tests_hook_gate_probe.py` |
 | **A RELEASED claim gave no signal, so `check` said CLEAR on work another session had finished minutes earlier &mdash; twice in one day, in both directions** | **FIXED 2026-09-10 (Hank)** | `tests/claims/run_released_visibility_probe.py` |
 | **SOUP register &mdash; every third-party component, with a real stated reason it is trusted** | **BUILT 2026-09-10 (Hank)**, and it is a standing practice, not a one-off. **Widened 2026-09-10 (Hank) after its own checker reported CLEAN over an unregistered component** | `tests/run_soup_register_probe.py` |
-| **The server scoped the read; the LOCAL CACHE outlived the person it was fetched for &mdash; PHI and financial records handed to whoever signed in next on a shared device** | **THREE APPS CLOSED 2026-09-10 (CC)** &mdash; `b50c2e2f`, live-verified on all three. **Twelve other apps have per-employee auth and NONE has the guard &mdash; open, untriaged** | `tests/phi_cache_scoped_to_user.js` |
+| ~~**The server scoped the read; the LOCAL CACHE outlived the person it was fetched for**~~ &mdash; **CLOSED for every app that carries a scoped read except one, and the scope is DERIVED rather than estimated** | **CLOSED 2026-09-10 (CC)** &mdash; `b50c2e2f` (care, senior, dental) then ``08e7c8d5`` (build, stonedesk, roofing), all live-verified. **`sairndesign` remains &mdash; flagged BY NAME for Fourth, who h | `tests/phi_cache_scoped_to_user.js` |
 | **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
 | **324 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
 | **The `NOT RUN` label on 29 cleanup SQL files is a claim about the FILE, not the database &mdash; and the checker written to doubt it shipped its own false CLEAN** | **BUILT 2026-09-10 (CC)** &mdash; `b3e92a8d`, `tools/cleanup_residue_check.py` + `tests/cleanup_residue_probe.py`. **Answers 0 of 29 today** and says so | `tests/cleanup_residue_probe.py` |
@@ -221,7 +221,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**95 of 283 test files are traced to a stated requirement. 188 are not.**
+**95 of 284 test files are traced to a stated requirement. 189 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -396,6 +396,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairndesign_sairngrounds_fault_probe.py`
 - `tests/sairndesign_server_backup.js`
 - `tests/sairngrounds_server_backup.js`
+- `tests/sairnlaw_csp.js`
 - `tests/sairnscape_memory.js`
 - `tests/sairnsenior/test-evv-readiness.js`
 - `tests/sairnvet_audit_and_controlled.js`

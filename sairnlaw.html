@@ -3,6 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<!-- CONTENT SECURITY POLICY (2026-09-10). This file had NONE, which is what the
+     open-work row said: tesseract.min.js is pinned and hashed, but it then
+     fetches worker.min.js, and that worker fetches tesseract.js-core (wasm) and
+     the language traineddata, all from jsDelivr, all with no supported way to
+     carry an integrity attribute. A hostile worker receives every client
+     document put through OCR -- privileged material -- and nothing narrowed
+     where those three fetches could go or where their results could be sent.
+     SRI answers "is this the file I expected"; only a CSP answers "which hosts
+     may this page talk to at all", and that is the half that was missing.
+
+     DELIVERED AS A META TAG, NOT FROM JS, and that is a deliberate difference
+     from stonedesk.html, which builds its policy in script at run time. A
+     meta CSP applies from the moment the parser reaches it; a JS-injected one
+     does not bind anything the page did before that script ran. Same policy,
+     strictly earlier.
+
+     EVERY SOURCE IS DERIVED FROM WHAT THIS FILE ACTUALLY USES, not copied:
+       connect-src  the seven https://sairn.vercel.app endpoints this file
+                    calls (PROXY, DATA_API, AUTH_API, CL_API, CITATOR_API,
+                    REFERENCE_API, DEADLINES_API) plus cdn.jsdelivr.net, which
+                    is where the OCR worker pulls the wasm core and the
+                    traineddata from. Nothing else -- law.cornell.edu appears in
+                    this file only as `source_url` link TEXT, never as a fetch,
+                    so it is deliberately NOT listed.
+       script-src   'unsafe-inline' is required and is not a shrug: this file
+                    carries 143 inline onclick handlers, and removing the
+                    directive would break the app rather than harden it.
+                    'wasm-unsafe-eval' is required by Chrome for the OCR core
+                    to instantiate -- omitting it would have left a policy that
+                    looked right and silently broke OCR. blob: is for the
+                    Worker tesseract.js creates.
+       worker-src   blob: and jsdelivr, the two ways tesseract.js v5 starts its
+                    worker depending on how it resolves its own paths.
+       object-src   'none'. This page embeds no plugins; there is no reason to
+                    leave the door open.
+       There is NO 'unsafe-eval': this file contains zero eval() and zero
+       new Function() -- counted, not assumed. -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' blob: https://cdn.jsdelivr.net; worker-src 'self' blob: https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://sairn.vercel.app https://cdn.jsdelivr.net; form-action 'self'; frame-ancestors 'none'; base-uri 'self'; object-src 'none'">
 <title>SAIRNlaw - Legal Practice Management</title>
 <style>
 :root{--p:#15803D;--pd:#14532D;--pt:#F0FDF4;--pb:#86EFAC;--bg:#F8FAFC;--card:#fff;--border:#E2E8F0;--text:#0F172A;--muted:#64748B;--danger:#EF4444;--warn:#F59E0B;--ok:#22C55E;--sh:0 1px 4px rgba(0,0,0,.08);}
