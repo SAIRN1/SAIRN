@@ -1020,3 +1020,36 @@ first arm was wrong in the opposite direction** — it substring-searched for th
 dead literals, which the new header deliberately quotes, so it failed a correct
 file. It strips comments now. A check that cannot tell a quoted example from a
 live string is the same class of wrong as the panel it was testing.
+
+**`b50c2e2f` — the server scoped the read; the cache outlived the person.**
+Audited the *claims the apps make on screen* against the code, on the theory
+that a product promise is a check like any other. Three apps promise scoping —
+SAIRNcare and SAIRNsenior about the AI, SAIRNdental through the financial tier
+and provider-scoped patient reads. **All three servers honoured it. All three
+caches did not.** Additive-only hydration plus a logout that cleared only the
+session key meant a shared device handed the first user's roster to the second,
+into both the panels and the outbound AI prompt.
+
+**SAIRNdental was the sharpest and it connects to my own work earlier today:**
+the cached keys are exactly the financial resources whose write gate I closed
+in `ddbd1f2c`. A stale cache defeated that tier and the patient scoping at once.
+
+**The rejected option is on the record.** Authoritative hydration also closes
+this and breaks why the merge is additive — an offline device holds rows the
+server has not seen, and a replace deletes a shift's work on the next read. The
+leak is the cache outliving the PERSON, so that is what is keyed on.
+
+**The two-list rule is the transferable part.** Every cached key is in the purge
+list or an explicit not-purged list with a reason beside it in the source, and
+the probe fails if a key is in neither. That is the direct lesson from Layer 12
+and the SOUP checker: *an exclusion must be a decision, not a silence.* It
+immediately earned itself — it caught `sen_evv_config` and `sen_training_rules`
+as genuinely-not-scoped, and a phantom `alf_careplans` I had invented.
+
+**Scope stated rather than implied: twelve other apps have per-employee auth and
+none has this guard.** Whether each also caches server-scoped data is NOT
+triaged, so the index row says unknown, not leaking. Filed unassigned.
+
+**Four suite failures, all four confirmed pre-existing against a stashed clean
+tree** — including Cody's new `run_defect_register_probe.py`, which appeared on
+origin mid-session. Not mine, not investigated.
