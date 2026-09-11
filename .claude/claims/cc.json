@@ -844,6 +844,16 @@
       "claimed_at_epoch": 1789087984.118043,
       "status": "released",
       "released_at": "2026-09-11T01:28:01Z"
+    },
+    {
+      "id": "cc-1789090201",
+      "session": "cc",
+      "subject": "sairnlaw",
+      "task": "content-security-policy tesseract worker fetches unbounded",
+      "claimed_at": "2026-09-11T01:30:01Z",
+      "claimed_at_epoch": 1789090201.6701093,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
