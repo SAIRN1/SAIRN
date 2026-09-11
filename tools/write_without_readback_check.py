@@ -560,6 +560,21 @@ def main(argv):
         for why in r['reasons']:
             print('  %-24s %s' % (r['file'], why))
 
+    # ── HOW MANY FILES THIS ACTUALLY LOOKED AT (2026-09-10) ──────────────────
+    # The default target list is `*.html` RELATIVE TO THE CURRENT DIRECTORY, so
+    # running this from anywhere but the repo root scans nothing -- and every
+    # line above then reads as good news: an empty table, "none" under WRITTEN
+    # AND NEVER READ BACK, "none" under COULD NOT TELL, exit 0. Measured from
+    # `docs/` during the tools/ half of the self-referential-guard sweep; it
+    # was the only one of four checkers tried that way with no count anywhere
+    # in its output. The two zeros here are what make the difference visible.
+    print('\nFILES SCANNED: %d (of %d target(s) named or globbed)'
+          % (len(results), len(targets)))
+    if not results:
+        print('      ZERO files were scanned, so nothing above is a pass. The '
+              'default target')
+        print('      list is `*.html` in the CURRENT directory -- run this from '
+              'the repo root.')
     print('\nNOTE: this cannot tell whether a read is ever CALLED. A hydrate that')
     print('      exists and is never invoked reads clean here -- see')
     print('      tools/sairn_reachability_check.py for that question.')

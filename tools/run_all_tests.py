@@ -149,6 +149,52 @@ def release_lock():
         pass
 
 
+# ── A SHRINKING SUITE MUST NOT REPORT "ALL N PASS" (2026-09-10) ────────────
+# discover() walks tests/ and counts what it finds, and NOTHING said what it
+# expected to find. Delete twenty test files and this runner reports
+# "ALL 161 TEST FILES PASS" -- a true sentence about a suite that just lost
+# twenty guards, and nothing anywhere says so.
+#
+# Found by the second half of the self-referential-guard sweep
+# (docs/2026-09-10-self-referential-guard-sweep.md): a guard that derives its
+# own SUBJECT from the thing it guards cannot see that subject disappear. The
+# suites were swept first and twelve of thirteen already pinned a count. The
+# RUNNER, which derives the largest subject list on the platform, pinned
+# nothing.
+#
+# A FLOOR AT RUNTIME, AN EQUALITY AT COMMIT TIME, and the split is deliberate
+# because the two ends want opposite things. At RUNTIME a floor never
+# false-alarms on a clone that is mid-addition or on a branch with an extra
+# test, so nobody learns to ignore it. At COMMIT time a floor sitting below the
+# real count is a dead zone nothing can see, so
+# `tests/run_all_tests_floor_probe.py` pins it to the measured count and fails
+# in BOTH directions -- growth is housekeeping and says so, shrinkage is the
+# defect. Lowering it is a deliberate edit that shows up in a diff, which is
+# exactly the moment somebody should be asked why the suite is smaller.
+#
+# THE NUMBER IS THE MEASURED COUNT AT THIS COMMIT, NOT AN ESTIMATE WITH
+# HEADROOM -- corrected 2026-09-10, hours after the floor was first written at
+# 163 while discover() actually returned 180. Seventeen test files could have
+# been deleted with the guard silent, which is 85% of the twenty-file example
+# its own comment uses. A floor set below the real count is not a cautious
+# floor; it is a dead zone, and an unmeasured one.
+#
+# THE COST OF THE EQUALITY HALF IS REAL AND IS NOT HIDDEN: with four clones
+# pushing, a rebase brings other sessions' test files and the probe then fails
+# for a session that added nothing. It happened on the FIRST rebase after this
+# was written -- 181 became 184. The bump is one line and the probe prints the
+# number to write, but this is the shape that gets a gate switched off, so it
+# is Michael's call to keep or relax. Relaxing it means accepting a dead zone
+# that grows silently, which is the defect this was written for.
+#
+# THERE IS NO SKEW TO LEAVE HEADROOM FOR, and that was checked rather than
+# assumed: this constant travels in the same commit as the test files it
+# counts, so a clone behind `main` has the older floor AND the older files.
+# A rebase cannot deliver one without the other. Re-measure with
+# `python -c "import sys;sys.path.insert(0,'tools');import run_all_tests as
+# r;js,py,_=r.discover();print(len(js)+len(py))"`.
+MIN_TEST_FILES = 184
+
 def discover():
     js, py, unrun = [], [], []
     for root, dirs, files in os.walk(os.path.join(REPO, 'tests')):
@@ -295,11 +341,33 @@ def hook_main():
 
 
 def _hook_body():
+    # ── THE FLOOR REACHES THE UNATTENDED COPY TOO (2026-09-10) ───────────────
+    # The floor was added to _main_body() first and this function was left
+    # alone, which is the exact shape CLAUDE.md records for
+    # tools/sairn_claim_hook.py: a defect fixed in the copy a human invokes and
+    # left in the copy that runs on its own. It is WORSE here than it looks,
+    # because the two copies are not equally important for this particular
+    # guard -- a deletion you made yourself is one you can see in your own
+    # diff, while a deletion that ARRIVES BY REBASE from another clone is
+    # invisible to you and this hook was the only thing positioned to notice.
+    # The half that could not see it was the half that mattered.
+    #
+    # It REPORTS and never blocks, the same standing decision as everything
+    # else in this hook (2026-09-08): the exit code stays 0 and the sentence is
+    # the whole mechanism.
     js, py, unrun = discover()
+    shrunk = (len(js) + len(py)) < MIN_TEST_FILES
     failures, skipped = _run(js, py, quiet=True)
-    if not failures and not skipped:
+    if not failures and not skipped and not shrunk:
         return 0
     lines = []
+    if shrunk:
+        lines.append(
+            'THE SUITE HAS SHRUNK: %d test files discovered, %d expected at '
+            'minimum. Files were DELETED or moved out of tests/ -- possibly not '
+            'by you, since a rebase carries another clone\'s deletion in '
+            'silently. Do not raise MIN_TEST_FILES to clear this; find out '
+            'which guards left.' % (len(js) + len(py), MIN_TEST_FILES))
     if failures:
         lines.append('%d test file(s) FAILING after this push:' % len(failures))
         lines += ['  %s -- %s' % (rel, tail) for _, rel, tail in failures[:12]]
@@ -309,9 +377,18 @@ def _hook_body():
     lines.append('Run `python tools/run_all_tests.py` to see the whole picture.')
     lines.append('REPORT ONLY -- this hook never blocks a push. It exists because '
                  'every session was running 53 of these files and calling it the suite.')
+    # THE HEADLINE CARRIES THE SHRINK, because it is the only line guaranteed
+    # to be read. "0 failing, 0 skipped" over an additionalContext saying the
+    # suite lost guards is two adjacent statements where one is reassuring and
+    # the other is the news -- the badge-beside-an-honest-field shape.
+    head = 'Full test suite after push: %d failing, %d skipped.' \
+           % (len(failures), len(skipped))
+    if shrunk:
+        head = 'Full test suite after push: SUITE HAS SHRUNK to %d files ' \
+               '(expected >= %d); %d failing, %d skipped.' \
+               % (len(js) + len(py), MIN_TEST_FILES, len(failures), len(skipped))
     print(json.dumps({
-        'systemMessage': 'Full test suite after push: %d failing, %d skipped.'
-                         % (len(failures), len(skipped)),
+        'systemMessage': head,
         'hookSpecificOutput': {
             'hookEventName': 'PostToolUse',
             'additionalContext': '\n'.join(lines),
@@ -385,6 +462,16 @@ def _main_body(quiet):
     print('')
     print('RAN: %d JS + %d PY = %d files (%d skipped)'
           % (len(js), len(py), len(js) + len(py), len(skipped)))
+    shrunk = (len(js) + len(py)) < MIN_TEST_FILES
+    if shrunk:
+        print('')
+        print('THE SUITE HAS SHRUNK: %d files discovered, %d expected at minimum.'
+              % (len(js) + len(py), MIN_TEST_FILES))
+        print('    Test files have been DELETED or moved out of tests/. A pass '
+              'below this line')
+        print('    would be a true sentence about a suite that has lost guards. If the '
+              'removal')
+        print('    was deliberate, lower MIN_TEST_FILES in the same commit and say why.')
     residue = [l for l in after if l not in before]
     if residue:
         print('')
@@ -423,11 +510,18 @@ def _main_body(quiet):
         print('all %d ran clean, but %d file(s) under tests/ were not recognised '
               '-- read the NOT RUN list' % (len(js) + len(py), len(surprises)))
     else:
-        print('ALL %d TEST FILES PASS' % (len(js) + len(py)))
+        if shrunk:
+            print('NOT ALL WELL: every discovered file passed, but the suite is '
+                  'smaller than it was.')
+        else:
+            print('ALL %d TEST FILES PASS' % (len(js) + len(py)))
     # An unrecognised file is a warning, not a failure: it may genuinely be a
     # fixture. It exits 0 so this never becomes the thing people switch off,
     # and it is printed every time so it cannot be missed either.
-    return 1 if failures else 0
+    # THE FLOOR REACHES THE EXIT CODE. A shrunken suite that still exits 0 is a
+    # sentence nobody acts on, which is the exact failure mode the sweep that
+    # added this is about.
+    return 1 if (failures or shrunk) else 0
 
 
 if __name__ == '__main__':

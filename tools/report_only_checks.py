@@ -78,10 +78,32 @@ def app_files(verbose=False):
 
     The exclusion is PRINTED rather than silent -- a category quietly dropped
     is how a real file hides, the same argument `run_all_tests.py` makes for
-    its UNRUN section.
+    its UNRUN section. SCOPED HONESTLY, 2026-09-10: printed on the HAND run
+    only. `hook_main()` calls `sweep(quiet=True)`, so `verbose` is False there
+    and the notice does not appear -- it cannot, because that path's stdout is
+    a single JSON payload and a stray line would corrupt it. That is accepted
+    rather than fixed, and the reason is that the exclusion is CORRECT in both
+    copies: `vercel.json` serves root files only, so an app moved into a
+    subdirectory is genuinely not deployed and genuinely should not be scanned.
+    The zero-target guard in run_one() is what covers the case that is NOT
+    benign.
+
+    GIT FAILING IS NOT AN EMPTY REPO -- added 2026-09-10 by the tools/ half of
+    the self-referential-guard sweep. The returncode was never read, so any
+    failure of `git ls-files` -- git absent from the hook's PATH, an index
+    locked by one of the four clones mid-rebase, a corrupt index -- produced an
+    empty stdout, an empty app list, and six promoted checkers reporting
+    exactly what they report after scanning all 22 apps and finding nothing.
+    Raising is deliberate: run_one() turns it into an `unrun` line, which is
+    the "could not run is not a pass" code the rest of this platform uses.
     """
     r = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
                        capture_output=True, text=True)
+    if r.returncode != 0:
+        raise RuntimeError(
+            'git ls-files failed (exit %d): %s -- the app list could not be '
+            'derived, so NOTHING was scanned. This is not a clean sweep.'
+            % (r.returncode, (r.stderr or '').strip()[:200]))
     every = sorted(f for f in r.stdout.split('\n') if f.strip())
     live = [f for f in every if '/' not in f]
     if verbose and len(every) != len(live):
@@ -562,8 +584,29 @@ NOT_PROMOTED = [
 
 def run_one(entry, show_all, verbose=False):
     tool = entry['tool']
-    targets = app_files(verbose) if entry['mode'] == 'apps' else [None]
+    # ── ZERO TARGETS IS NOT A CLEAN SWEEP (2026-09-10) ──────────────────────
+    # The subject list here is DERIVED from the thing being checked -- the app
+    # files themselves -- which is the shape the self-referential-guard sweep
+    # went looking for. When it came back empty the `for t in targets` loop
+    # simply did not execute, findings stayed [], unrun stayed [], and the hook
+    # printed nothing. Six of the twenty-one promoted checkers run in this mode
+    # across 22 apps, so 132 checker runs could vanish and the report was
+    # byte-identical to the report for a clean platform. Proved by forcing
+    # app_files() to [] before it was fixed.
+    #
+    # A DELETED APP IS NOT WHAT THIS GUARDS, and that distinction is the whole
+    # per-checker judgement the sweep exists to make: removing an app removes
+    # the risk along with the check, and it is loud in a diff. What this guards
+    # is the list going empty for a reason NOBODY CHOSE -- git failing, the
+    # tool run from the wrong directory, a glob that stopped matching.
+    try:
+        targets = app_files(verbose) if entry['mode'] == 'apps' else [None]
+    except Exception as e:                               # noqa: BLE001
+        return [], ['%s -- the target list could not be built: %s' % (tool, e)]
     findings, unrun = [], []
+    if not targets:
+        return [], ['%s -- ZERO targets. Nothing was scanned, which is not the '
+                    'same as nothing being wrong.' % tool]
     for t in targets:
         # `args` lets an entry run a tool in a specific MODE -- the matrix
         # is registered as `--check`, not as a regeneration, because a

@@ -31,6 +31,7 @@ Nothing here reads or writes a real app file, and the repo is never touched.
 import io
 import json
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -398,6 +399,72 @@ try:
           len(u) == 1 and 'SKIPPED' in u[0], True)
 finally:
     roc.REGISTRY, roc.app_files = _saved_reg, _saved_files
+    os.remove(_fixture)
+
+# ── I. AN EMPTY SUBJECT LIST IS NOT A CLEAN SWEEP ──────────────────────────
+# Added 2026-09-10 by the tools/ half of the self-referential-guard sweep. Six
+# of the promoted checkers derive their subject from the app files themselves,
+# so if that list comes back empty the per-target loop never runs and the
+# report is byte-identical to a clean sweep of all 22 apps. Every arm here was
+# written against the defect first and watched to fail.
+_saved_reg, _saved_files, _saved_repo = roc.REGISTRY, roc.app_files, roc.REPO
+_probe_entry = {'tool': 'nav_panel_check.py', 'mode': 'apps',
+                'verdict': roc.by_exit, 'promoted': 'probe',
+                'catches': 'probe', 'why_it_matters': 'probe',
+                'evidence': 'probe'}
+try:
+    roc.app_files = lambda verbose=False: []
+    f, u = roc.run_one(_probe_entry, False)
+    check('I1 zero targets produces NO findings', len(f), 0)
+    check('I2 and lands in unrun instead of passing silently',
+          len(u) == 1 and 'ZERO targets' in u[0], True)
+
+    # GIT FAILING IS NOT AN EMPTY REPO. A REAL git failure is forced rather
+    # than mocked: a `.git` FILE pointing at a gitdir that does not exist,
+    # which this git answers with exit 128 and `fatal: not a git repository`.
+    #
+    # THE OBVIOUS SETUP DOES NOT WORK ON THIS MACHINE, and finding that out is
+    # the reason this comment exists: a bare temp directory is NOT outside a
+    # repository here, because `C:/Users/marsh` is itself a git work tree and
+    # `AppData/Local/Temp` sits inside it. `git ls-files` there exits 0 with
+    # empty output -- the exact indistinguishable-from-clean shape this section
+    # is about, arriving from the environment rather than from the code.
+    roc.app_files = _saved_files
+    _nogit = tempfile.mkdtemp()
+    with io.open(os.path.join(_nogit, '.git'), 'w', encoding='utf-8') as _gh:
+        _gh.write('gitdir: ./definitely-not-a-git-dir\n')
+    roc.REPO = _nogit
+    _raised = ''
+    try:
+        roc.app_files()
+    except Exception as e:                               # noqa: BLE001
+        _raised = str(e)
+    check('I3 app_files RAISES when git ls-files fails, not returns []',
+          'could not be derived' in _raised, True)
+    f, u = roc.run_one(_probe_entry, False)
+    check('I4 and run_one turns that into unrun, never a clean pass',
+          len(f) == 0 and len(u) == 1 and 'target list could not be built' in u[0],
+          True)
+finally:
+    roc.REGISTRY, roc.app_files, roc.REPO = _saved_reg, _saved_files, _saved_repo
+    shutil.rmtree(_nogit, ignore_errors=True)
+
+# MUTATION PROOF: a real, non-empty target list must NOT trip either guard.
+# Without this arm an unconditional `return [], ['ZERO targets']` would pass
+# I1-I4 and disable the entire runner.
+_fd, _fixture = tempfile.mkstemp(suffix='.html')
+with os.fdopen(_fd, 'w', encoding='utf-8') as _fh:
+    _fh.write('<!doctype html><html><body>'
+              '<div class="tab" onclick="goTo(\'alpha\')">A</div>'
+              '<section id="zone-alpha">a</section>'
+              '<script>function goTo(k){}</script></body></html>')
+try:
+    roc.app_files = lambda verbose=False: [_fixture]
+    f, u = roc.run_one(_probe_entry, False)
+    check('I5 one real target: neither zero-target guard fires',
+          any('ZERO targets' in x or 'could not be built' in x for x in u), False)
+finally:
+    roc.app_files = _saved_files
     os.remove(_fixture)
 
 # ── H. the hook gates on the COMMAND TEXT, in code ─────────────────────────

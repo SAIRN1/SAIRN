@@ -303,8 +303,10 @@ def main(argv):
     files = [a for a in argv if not a.startswith('--')]
     disclosure = oracle = unbounded = undeclared = 0
     undeclared_names = []
+    scanned = []
     for path in handlers(files):
         rel, boundary, found = scan(path)
+        scanned.append(rel)
         if boundary is None:
             unbounded += 1
             if declared is None:
@@ -361,6 +363,31 @@ def main(argv):
                          ','.join(str(x) for x in sorted(e['lines'])),
                          ','.join(str(x) for x in sorted(e['lines_when_written']))))
         print('STALE_EXEMPTIONS:%d' % len(stale))
+        # ── THE SAME BOOKKEEPING, FOR THE DECLARATIONS FILE (2026-09-10) ─────
+        # The block above audits the ACCEPTED list for entries that matched
+        # nothing. The DECLARED list -- the one recording that a handler is
+        # public on purpose -- had no equivalent, so a declaration outlived its
+        # handler in silence. That is the same rot this file already decided
+        # was worth reporting; it simply reached one of the two lists.
+        #
+        # Found by the tools/ half of the self-referential-guard sweep. Like
+        # STALE EXEMPTION it does NOT change the verdict: a declaration for a
+        # file that no longer exists is a fact about the FILE, and deleting a
+        # handler is a legitimate act, not a defect.
+        if declared:
+            gone = sorted(set(declared) - set(scanned))
+            for rel in gone:
+                print('STALE DECLARATION  %s -- declared public in '
+                      'tools/public_endpoint_declarations.json and no longer '
+                      'scanned. Either the handler was deleted (delete this '
+                      'entry) or it moved somewhere this checker no longer '
+                      'walks, which is worse.' % rel)
+            print('STALE_DECLARATIONS:%d' % len(gone))
+    # HOW MANY HANDLERS WERE ACTUALLY LOOKED AT. Without this line a run that
+    # walked ZERO files printed the identical all-zeros report as a clean run
+    # over every endpoint -- the coverage-disclosure standard applied to this
+    # checker's own subject list.
+    print('HANDLERS_SCANNED:%d' % len(scanned))
     print('PREAUTH_DISCLOSURES:%d' % disclosure)
     print('PREAUTH_ORACLES:%d' % oracle)
     print('HANDLERS_WITH_NO_AUTH_BOUNDARY:%d' % unbounded)
