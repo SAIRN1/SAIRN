@@ -1145,3 +1145,33 @@ substring — so it now considers only the variable bound to the raw file.
 **Two rounds of the tool being wrong in the direction of confident noise.**
 Worth remembering before trusting any comment-stripper: URLs and `//` inside a
 string are what break the naive one.
+
+**`95047c69` — two vendor-write controls had stopped testing, and the silent one
+taught the lesson.** I diagnosed this probe's failure yesterday as a stale
+anchor and left it; came back and fixed it.
+
+**Arm 4 was loud** — `ANCHOR-0`, an `else if` that no longer exists after a
+refactor. The harness caught it; nobody had fixed it.
+
+**Arm 3 was silent and is the one that matters.** Its anchor had drifted onto a
+DIFFERENT branch of `dntPushOne()` — six leading spaces instead of four — and
+**still matched exactly once**, so the uniqueness guard raised nothing. It
+quietly probed a branch the suite never asserted and reported SILENT.
+**An anchor that is UNIQUE is not the same as an anchor that is RIGHT, and
+uniqueness is the only half the harness can check.**
+
+**Re-anchoring it is the only reason the real gap surfaced.** Put back where it
+belonged, the branch it had drifted onto was covered by nothing: `dntPushOne()`
+treats a reply missing a field it sent as unconfirmed, and nothing asserted
+that. Without it the flag clears on a 200 that dropped a field and the next
+hydration overwrites the local copy. Two arms added — the incomplete reply must
+not confirm, and the control that a complete one does.
+
+**SILENT now prints both of its causes** — suite gap vs drifted anchor — because
+reading it as the first when it was the second is what let this sit.
+
+**Swept the class rather than the complaint:** all six mutation probes checked
+for anchor multiplicity. The two with a resolvable TARGET are clean (9 and 12
+arms). The other four use a different convention my check could not resolve —
+they pass in the full suite, which is weaker than "anchors verified", and I
+recorded it as the weaker claim.
