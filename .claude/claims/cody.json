@@ -939,6 +939,16 @@
       "claimed_at_epoch": 1789124291.1249554,
       "status": "released",
       "released_at": "2026-09-11T12:32:28Z"
+    },
+    {
+      "id": "cody-1789132157",
+      "session": "cody",
+      "subject": "push-gate-unresolvable-base-failopen",
+      "task": "outgoing_files and outgoing_subjects return empty",
+      "claimed_at": "2026-09-11T13:09:17Z",
+      "claimed_at_epoch": 1789132157.6863227,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
