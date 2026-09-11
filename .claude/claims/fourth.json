@@ -810,8 +810,8 @@
       "task": "first-dedicated-suites-and-fault-probes",
       "claimed_at": "2026-09-11T00:41:25Z",
       "claimed_at_epoch": 1789087285.2285795,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:54:31Z"
     }
   ]
 }
