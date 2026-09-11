@@ -100,7 +100,7 @@ BIND_RE = re.compile(r"(?:const|let|var)\s+(\w+)\s*=\s*fs\.readFileSync\(")
 SEARCH_TMPL = "\\b%s\\.(?:indexOf|includes)\\(\\s*%s(.+?)%s"
 
 
-def strip_comments(text):
+def strip_comments(text, sql=False):
     """Blank out comment spans, preserving offsets so positions stay comparable.
 
     STRING-AWARE, AND THE FIRST VERSION WAS NOT -- which made this tool commit
@@ -158,7 +158,17 @@ def strip_comments(text):
             j = n if j < 0 else j
             blank(i, j, keep_newlines=False)
             i = j
-        elif text.startswith('--', i) and text[max(0, i - 1):i] in ('', '\n', ' '):
+        elif sql and text.startswith('--', i) and text[max(0, i - 1):i] in ('', chr(10), ' '):
+            # SQL LINE COMMENT, AND ONLY IN A SQL FILE. This branch used to run
+            # on every file type and it silently destroyed real markup: this
+            # repo writes ' -- ' in ordinary prose constantly, so
+            # "<title>SAIRNmechanical -- HVAC & Mechanical</title>" had
+            # everything from the dashes onward blanked, INCLUDING the closing
+            # tag. Found 2026-09-11 by tools/comment_sensitivity_check.py, which
+            # noticed panel_nesting_check.py giving a different answer on a
+            # stripped copy -- the tool built today catching a defect in the
+            # tool built yesterday, which is the system working rather than a
+            # coincidence worth glossing over.
             # SQL line comment, only at a line start or after whitespace.
             j = text.find('\n', i)
             j = n if j < 0 else j
