@@ -422,6 +422,23 @@
       "severity": "high",
       "detection_method": "independent-review",
       "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays"
+    },
+    {
+      "commit": "4a35ab471fce",
+      "date": "2026-09-11",
+      "subject": "fix(tests): narrow the delegation hop to catch bodies -- and the hole it does not close",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 177,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
     }
   ]
 }
