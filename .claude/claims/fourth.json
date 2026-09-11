@@ -832,6 +832,16 @@
       "claimed_at_epoch": 1789088837.2774515,
       "status": "released",
       "released_at": "2026-09-11T11:20:11Z"
+    },
+    {
+      "id": "fourth-1789126585",
+      "session": "fourth",
+      "subject": "defect-register-stale-shas",
+      "task": "two commit shas absent from repo report-only sweep permanently red",
+      "claimed_at": "2026-09-11T11:36:25Z",
+      "claimed_at_epoch": 1789126585.17239,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
