@@ -138,7 +138,7 @@ shutil.rmtree(tmp, ignore_errors=True)
 # 2026-09-11 and both permanent arms now.
 #
 # (i) a literal 0x08 BACKSPACE where a word boundary was meant. The alternation
-#     read `<BS>rest(` instead of `rest(`, so the second URL form NEVER
+#     read `<BS>rest(` instead of `\brest(`, so the second URL form NEVER
 #     matched and the widening that was committed as working did nothing --
 #     attribution stayed at 3 files and the commit message said it covered both
 #     forms. Found by tools/control_char_check.py, not by reading it.

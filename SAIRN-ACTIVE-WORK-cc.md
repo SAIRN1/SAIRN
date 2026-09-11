@@ -1322,3 +1322,34 @@ earlier and said so when I didn't. 2 pairs → 0 across 323 rows.
 different apps is two real pieces of work, not a duplicate (arm 4), and a
 struck-through row still counts if its subject is live elsewhere (arm 5) —
 markup is normalised away so strikethrough cannot hide a second answer.
+
+**`55cac90d` — three corrections to a tool I shipped two commits earlier, none
+of them found by reading it.**
+
+**A literal 0x08 where a word boundary was meant.** The alternation read
+`<BS>rest(` instead of the escape, so the second URL form **never matched** —
+the widening I committed as working did nothing, and the commit message said it
+covered both forms. Found by `control_char_check.py`. Fixed: unattributed files
+went 3 → 22. The coverage did not improve; **the honesty of the coverage number
+did.**
+
+**`rest('rpc/name')` counted as a table.** PostgREST's rpc path is a function
+call; treating it as a table produced a finding about nothing.
+
+**The snapshot the tool trusts is stale, and it now says so loudly.**
+`db/schema_snapshot.json` is from 2026-09-02. `mech_checks` answered
+`provisioned:true` on 2026-09-11 and is **not in it** — so staleness is
+demonstrated, not hypothetical. That matters more than it looks: a table missing
+from a capture is indistinguishable from a table that does not exist, **and the
+same is true one level down, of a COLUMN** — which is what this tool's one
+finding is. The caveat is in the output now, not only in the index row.
+
+**Then the fix's own probe comment contained a raw backspace**, because writing
+*about* `\b` in a heredoc is how you get a literal `\b`. Caught by the same
+checker on the next run. Three separate 0x08 bytes from one session's edits.
+
+**The standing lesson is not about regexes.** A tool that passes its own probe,
+is wired into the registry, and reports a real finding can still have half of it
+switched off by one invisible byte — and I wrote the commit message asserting
+the widening worked **from reading the diff**, which showed nothing, because a
+backspace renders as nothing.
