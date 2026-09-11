@@ -130,6 +130,67 @@ finally:
 check("...and a resolvable base is trusted even when its range is empty",
       H.outgoing_files(REPO, head, head), [])
 
+# ── A2b: THE FAIL-OPEN THE ARM ABOVE COULD NOT SEE -- 2026-09-11 ────────────
+# The arm above had to MANUFACTURE an "ahead of origin" worktree to test the
+# widening, and the comment explains why: on a real push HEAD is ahead by
+# definition. True, and it hid the case that matters. `@{u}..tip` and
+# `origin/main..tip` are BOTH EMPTY when the clone is level with origin -- the
+# state immediately after any fetch or pull -- and the ladder then fell off its
+# last rung into `[]`. `[]` is read by check 2 and the seed check as "nothing
+# changed", not as "could not determine what changed", so both ALLOWED exactly
+# when the gate could not verify anything.
+#
+# Measured in the real repo on 2026-09-11: 2 commits ahead -> widened to 26
+# files and the gate worked; LEVEL -> []. Michael's decision: fail closed.
+#
+# These arms run against REPO at whatever sync state it happens to be in, which
+# is the point -- the behaviour must not depend on it.
+print("\nA2b. an unresolvable base widens REGARDLESS of this clone's sync state")
+check("outgoing_files widens for an all-zero base (git's new-ref sentinel)",
+      bool(H.outgoing_files(REPO, '0' * 40, head)), True)
+check("outgoing_files widens for a base this clone does not hold",
+      bool(H.outgoing_files(REPO, 'deadbeef' * 5, head)), True)
+check("outgoing_subjects does too -- SAME HOLE, ten lines lower",
+      bool(H.outgoing_subjects(REPO, '0' * 40, head)), True)
+check("...and for an unfetched base",
+      bool(H.outgoing_subjects(REPO, 'deadbeef' * 5, head)), True)
+# The other direction, which is what stops the fix becoming a different bug: a
+# caller that supplies NO base is asking about a command rather than a real push
+# and must NOT be widened, or every no-op push gets gated against all history.
+check("NO base at all is still not widened -- pretooluse must stay narrow",
+      H.outgoing_files(REPO, None, head), [])
+check("...and outgoing_subjects agrees",
+      H.outgoing_subjects(REPO, None, head), [])
+
+# ── A2c: prepush_base() MUST NOT COLLAPSE A NEW REF TO None ─────────────────
+# The widening above was landed first and did not fire on the most common
+# trigger, because prepush_base() turned git's all-zero remote sha into `None`
+# with the reasoning "no base, let the caller fall back". `None` is
+# indistinguishable from "nobody supplied a base", which is the one case that
+# must stay narrow -- so the first push of every new branch still fell through
+# to []. Found by driving the hook binary rather than the two functions.
+print("\nA2c. prepush_base() keeps the fact that git called this ref NEW")
+
+
+def _base_from(line):
+    _saved = sys.stdin
+    try:
+        sys.stdin = io.StringIO(line + '\n')
+        return H.prepush_base()
+    finally:
+        sys.stdin = _saved
+
+
+_Z = '0' * 40
+_b, _d, _l = _base_from('refs/heads/feat abc123 refs/heads/feat ' + _Z)
+check("a NEW ref yields the all-zero sha, not None", _b, _Z)
+check("...and is not mistaken for a deletion", _d, False)
+check("...and still reports the local sha git named", _l, 'abc123')
+_b2, _d2, _l2 = _base_from('refs/heads/main abc123 refs/heads/main def456')
+check("an ordinary push still yields the remote sha", _b2, 'def456')
+_b3, _d3, _l3 = _base_from('refs/heads/feat %s refs/heads/feat def456' % _Z)
+check("a DELETION is still detected by its all-zero LOCAL sha", _d3, True)
+
 # ── A3: export_sql_at reproduces sql/ as of a commit ────────────────────────
 print("\nA3. export_sql_at() reads seeds from the commit, not the working tree")
 d, note = H.export_sql_at(REPO, 'HEAD')

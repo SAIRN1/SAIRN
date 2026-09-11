@@ -2418,3 +2418,121 @@ push on the whole branch. No harm this time -- both had already passed the full
 suite -- but **a tool whose stated job is to write a claim file can ship
 unverified work**, which routes around the push protocol's "run every check
 before pushing" step without anyone choosing to.
+
+## 2026-09-11 (Cody) -- the push-gate fail-open, closed at three sites, and the
+## violation the widening found on its first run
+
+Skill used: `sairn-silent-failure-sweep`. Claim:
+`push-gate-unresolvable-base-failopen`. Michael's decision: **fail closed, widen
+to the full range being pushed.** Top priority, so it jumped the queue.
+
+**THE HOLE.** `outgoing_files()` returned `[]` when `base` could not be resolved,
+and `[]` is read by check 2's credential-writer guard and by the seed-drift check
+as *"nothing changed"* rather than *"could not determine what changed"*. Both
+ALLOWED. `outgoing_subjects()` had the identical hole ten lines lower, feeding the
+PROBE-fixture check, so a stranded fixture commit could ride out unremarked.
+
+**WHEN IT BIT, measured in both directions rather than argued:**
+
+- `base` is the remote sha git hands a pre-push hook on stdin, and **git sends
+  forty zeros when the ref does not exist on the remote yet** -- so the first push
+  of every new branch arrives with an unresolvable base.
+- the rungs below it are `@{u}..tip` and `origin/main..tip`, and **both are EMPTY
+  whenever this clone is level with origin** -- the state immediately after any
+  fetch or pull. In this repo: 2 commits ahead -> widened to 26 files and the gate
+  worked; LEVEL -> `[]`.
+- a remote sha this clone does not hold (another clone force-pushed, or a fresh
+  clone) lands in the same place.
+
+**THE FIRST FIX DID NOT REACH THE MAIN TRIGGER, and only driving the hook BINARY
+showed it.** I added the widening rung to both functions, verified it against
+`outgoing_files(REPO, '0'*40, head)`, and it worked. Then I ran the actual hook
+with git's real stdin and the new-branch case still allowed. `prepush_base()` was
+collapsing the all-zero sha to `None` -- *"no base, let the caller fall back"* --
+and **`None` is indistinguishable from "nobody supplied a base"**, which is the
+one case that must stay narrow or every no-op push gets gated against all
+history. So the rung could not fire on the most common trigger. It now returns
+the zeros and the resolvable-check downstream widens past them.
+
+**That is the same lesson as the SAIRNvet hang and the SAIRNgrounds timeout
+column, a third time in two days: a fix verified against the function is not
+verified against the path.**
+
+**THE THIRD SITE NEEDED A DIFFERENT ANSWER, and it is written down rather than
+assumed.** The credential scan at check 8 resolves its own base the same way and
+had the same empty-range problem -- zero hits over zero lines reported as a clean
+scan. I measured widening it to full history: **7.5s and 101MB, which fits its
+60s timeout.** I did not do it. That check is BLOCKING, and its own comment says
+that is *"only defensible because it is clean"*, measured at zero findings across
+1,468 tracked files. **Full history is not clean and cannot be** -- this repo
+ships seed files whose headers state outright that the PIN is published in the
+file. Widening there would deny every new-branch push with a flood of historical
+findings, and a gate like that is switched off within the hour, which is the
+failure this repo keeps recording. So it takes that block's OWN route for a check
+that could not run: fail open and **say so loudly**, naming the base and telling
+the reader to fetch and push again.
+
+**VERIFIED END TO END BY DRIVING THE HOOK, not by reasoning about it.** Three real
+stdin lines:
+
+    new branch    (remote sha all zeros)  -> BLOCKED
+    unfetched base (sha not in this clone) -> BLOCKED
+    ordinary push                          -> allowed
+
+Both of the first two were **silent allows** before. 4 mutation controls all bite
+and the file is restored byte-identical: disabling the `outgoing_files` rung makes
+the hook **stop blocking** a new-branch push (the fail-open, reproduced);
+disabling the `outgoing_subjects` rung reds two arms; collapsing `prepush_base()`
+back to `None` makes the hook stop blocking again; and widening when NO base was
+supplied -- the opposite bug -- reds the arm that exists to stop it.
+
+**13 new probe arms in `tests/push_gate/refspec_and_override_probe.py`**, and they
+run against the repo at whatever sync state it is in, which is the point: the
+behaviour must not depend on it. The arm that was already there had to MANUFACTURE
+an "ahead of origin" worktree to test the widening, and that is exactly what hid
+this -- it tested the rung in the one state where the rungs beneath it already
+worked.
+
+### THE WIDENING FOUND A REAL VIOLATION ON ITS FIRST RUN
+
+`sql/stonedesk_recovery_admin_seed.sql` is an **unguarded credential writer with
+no transaction**, and it is **not grandfathered**. Of 228 SQL files in the widened
+scan it is the only refusal: 7 guarded, 19 grandfathered, 1 unguarded.
+
+**The dates are the finding.** The guard tool and push-gate check 2 both landed in
+`4cada6a7` on **2026-08-29**. This file landed in `bfd47c91` on **2026-08-30
+05:01** -- a day later -- and nothing stopped it. Which bypass carried it cannot
+be determined retroactively: the hook's own comment records that prepush mode was
+silently failing open on an `UnboundLocalError` until 2026-09-01, which is the
+likeliest explanation, but `SAIRN_SEED_GATE=off` and this empty-range fail-open
+are both candidates. **I am not claiming it was this one.** What is certain is
+that a guard which existed for a day did not catch a writer it was built for.
+
+**NEW-BRANCH PUSHES ARE NOW BLOCKED UNTIL THIS IS RESOLVED.** That is the
+fail-closed consequence Michael asked for, and it is working as intended. I did
+not fix the file: it seeds real credential rows on `SD-AUDIT-2026`, it may already
+have been applied, and adding the guard needs a transaction the file does not
+have -- so the change is about live credential data, not text. Filed as its own
+open row with the reasoning.
+
+### FLAGGED, NOT FIXED: `sairn_claim.py` pushes more than it claims
+
+Recorded here and in the index because it is a process gap rather than a bug, and
+nobody has decided what should happen about it.
+
+`claim` and `release` both run **fetch -> rebase -> push on the whole branch**, so
+they ship every commit sitting on it. Verified by timestamp, not inferred: the
+claim commit at **06:58** carried my register commit from **06:56** and the
+delegation fix with it. No harm that time -- both had already passed the full
+suite -- but **a tool whose stated job is writing a small JSON claim file can
+ship unverified work**, and it does so without anyone choosing to. It routes
+around the push protocol's *"run full Check 0 and every guardian check before
+pushing"* step invisibly, which is the same shape as every other
+tool-does-more-than-it-says entry in CLAUDE.md: `list` and `check` staging files,
+the hook carrying its own stale copy of a fixed line.
+
+Worth noting the mitigating half honestly: the push gate still runs on that push,
+so it is not unguarded, only unverified by the session. And the alternative --
+a claim tool that refuses to push while the branch has other commits -- would
+block claiming at the exact moment a session most needs to claim. That is why
+this is a decision and not a patch.
