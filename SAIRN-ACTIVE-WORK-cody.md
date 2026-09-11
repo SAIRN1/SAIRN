@@ -2243,3 +2243,68 @@ explains reads as a hole.
 `git show HEAD:sairngrounds.html`:** 4 key-collisions (distinct local variable
 names writing one key, which the tool itself calls a pointer not a verdict) and
 1 informational D2 dead-button finding. Identical before and after.
+
+## 2026-09-11 (Cody) -- narrowing the delegation hop, and the measurement that
+## said narrowing it was not enough
+
+Skill used: `sairn-silent-failure-sweep`. Claim:
+`wrapper-honesty-delegation-hop`. Michael's decision, with the explicit
+condition: measure the real impact before committing.
+
+**MEASURED, ACROSS ALL 17 WRAPPERS IN THE 17 APP FILES. ZERO VERDICTS FLIP.**
+Every wrapper keeps the result it had. The case the loose rule was built for is
+preserved exactly: `stonedesk.html`'s `st()` and `stRaw()` have **no console
+call of their own** -- they survive purely through `sdStorageFailed()` and
+`sdBackupHookFailed()`, and both of those are called **from inside a catch**, so
+the stricter rule still reaches them. The only delegations it drops are the ones
+that were never about a failed write: `svSyncCollection`, `sbSyncCollection`,
+`sfSyncCollection`, and each wrapper matching its own name recursively.
+
+**AND THE MEASUREMENT SAID SOMETHING I HAD NOT EXPECTED: NARROWING THE HOP DOES
+NOT CLOSE THE CASE THAT MOTIVATED IT.** `sairnvet.html`'s `st()` has TWO catch
+blocks -- one guarding the server-backup hook, one guarding the
+`localStorage.setItem`. Both log. So silencing the write-failure one leaves the
+backup-hook one talking, and `mute` stays green, because **`mute` asks whether
+the wrapper speaks ANYWHERE, not whether the failure path does.** The narrowing
+moves the hole one step; it does not fill it.
+
+I checked the intermediate step too, rather than assuming: narrowing the DIRECT
+test to catch bodies as well also measures 0 flips and **also does not close it**,
+because both of sairnvet's logs are inside catches. The variant that closes it is
+per-catch attribution -- does the catch that ENCLOSES the setItem speak -- and
+that measures 0 mute across all 17 as well.
+
+**SO BOTH LANDED, AND THE SECOND IS STATED AS MY ADDITION ON A CLEAN
+MEASUREMENT.** The delegation narrowing is Michael's decision, implemented as
+decided. The guarding-catch question is a SECOND, SEPARATE arm (`guardMute`),
+not a change to what `mute` means -- because changing the meaning of the
+platform-wide list is a further step and should be decided, not folded in. It
+asserts `[]`, which is the measured truth for all 17 today, so it cannot fire
+falsely; it fires the day a write-failure catch is silenced while some other
+catch in the same function keeps talking.
+
+**FOUR MUTATION CONTROLS, AND CONTROL 1 IS THE MOTIVATING CASE:**
+
+- **M1** -- silence sairnvet's write-failure catch, leave the backup-hook catch
+  logging. **The new arm goes RED.** This survived every previous version of this
+  file, including the one I shipped an hour earlier.
+- **M2** -- unmutated control: stonedesk, which relies *entirely* on the
+  delegation hop, still passes 52/52. Without this arm the narrowing could have
+  been silently too strict and looked like a success.
+- **M3** -- silence the shared `sdStorageFailed()`: both arms red, both stonedesk
+  wrappers named.
+- **M4** -- silence SAIRNcare's catch: three arms red.
+
+All three app files restored byte-identical by sha256. 52 arms pass.
+
+**Noted for CC, whose `comment-quoting-probe-blindness` claim is active on
+exactly this pattern:** this file already strips comments before every speaking
+test as of `3f09a48e` -- on the direct test, on the delegation hop, and inside
+its own duplicate `probe()` helper. It is the one checker in that sweep that
+needs nothing, and the stripper there is a local state machine rather than
+`tools/jscomments.py`, because this file is JS and that one is Python.
+
+**The standing pattern, now three sessions deep and worth naming as one thing:**
+a detector run over raw source counts its own explanatory prose. CC hit it twice
+tonight on a different tool, I hit it in `sairn_storage_wrapper_honesty.js` and
+again in `write_path_fault_scan.py` within the hour. It is not three incidents.

@@ -308,6 +308,8 @@ function stripJsComments(src) {
 }
 {
   const mute = [];
+  // The second, narrower list -- see the block comment at its push site.
+  const guardMute = [];
   fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
     const src = read(f);
     const re = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
@@ -336,26 +338,106 @@ function stripJsComments(src) {
       // calls, whose own body speaks, counts as speaking. One hop only, and
       // the callee must be defined in the same file -- a deeper chain would
       // let anything be argued into "speaking".
+      // ── NARROWED TO CATCH BODIES, 2026-09-11, by Michael's decision ───────
+      // The hop used to consider EVERY function the wrapper calls, anywhere in
+      // its body, which let a wrapper borrow the voice of something that says
+      // nothing about the write failing. `sairnvet.html`'s st() calls
+      // svSyncCollection(), whose console.warn is about a failed SERVER PUSH --
+      // a different fact entirely -- and that alone satisfied this check.
+      //
+      // MEASURED BEFORE LANDING, across all 17 wrappers in the 17 app files:
+      // ZERO verdicts flip. The case the loose rule was built for is preserved
+      // exactly -- stonedesk's st() and stRaw() both have `direct = false` and
+      // survive through sdStorageFailed() and sdBackupHookFailed(), and both are
+      // called from inside a catch. The only delegations the narrowing drops are
+      // the ones that were never about a failed write: svSyncCollection,
+      // sbSyncCollection, sfSyncCollection, and each wrapper reaching its own
+      // name recursively.
+      const catchBodies = (function () {
+        const out = [];
+        const cre = /\bcatch\s*(?:\([^)]*\))?\s*\{/g;
+        let cm;
+        while ((cm = cre.exec(code)) !== null) {
+          const o = code.indexOf('{', cm.index);
+          let d = 0, k = o;
+          for (; k < code.length; k++) {
+            if (code[k] === '{') d++;
+            else if (code[k] === '}' && --d === 0) break;
+          }
+          out.push(code.slice(o + 1, k));
+        }
+        return out;
+      })();
+      const calleeSpeaks = (nm) => {
+        const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src);
+        if (!dm) return false;
+        const o = src.indexOf('{', dm.index);
+        let d = 0, k = o;
+        for (; k < src.length && k - o < 4000; k++) {
+          if (src[k] === '{') d++;
+          else if (src[k] === '}' && --d === 0) break;
+        }
+        return /console\.|toast|Toast|alert\(/
+          .test(stripJsComments(src.slice(dm.index, k + 1)));
+      };
       if (!speaks) {
         // Call names read from the STRIPPED body, so a function name merely
         // MENTIONED in prose -- "see showToast() above", which sairnvet's st()
         // really does say -- is not treated as a call this wrapper makes.
-        const called = code.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
-        speaks = called.some((c) => {
-          const nm = c.replace(/\s*\($/, '');
-          const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src);
-          if (!dm) return false;
-          const o = src.indexOf('{', dm.index);
-          let d = 0, k = o;
-          for (; k < src.length && k - o < 4000; k++) {
-            if (src[k] === '{') d++;
-            else if (src[k] === '}' && --d === 0) break;
-          }
-          return /console\.|toast|Toast|alert\(/
-            .test(stripJsComments(src.slice(dm.index, k + 1)));
-        });
+        speaks = catchBodies.some((b) =>
+          (b.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [])
+            .some((c) => calleeSpeaks(c.replace(/\s*\($/, ''))));
       }
       if (!speaks) mute.push(f + ':' + m[1]);
+      // ── AND THE HOLE THE NARROWING DOES NOT CLOSE, measured and asserted ──
+      // Narrowing the hop is not enough on its own, which the measurement showed
+      // rather than the reasoning: sairnvet's st() has TWO catches, and the one
+      // guarding the backup hook logs. Silence the catch that actually guards
+      // `localStorage.setItem` and the wrapper STILL passes on the other one's
+      // voice. `mute` above cannot see that, because it asks whether the wrapper
+      // speaks anywhere.
+      //
+      // So this measures the narrower thing: does the catch that ENCLOSES the
+      // setItem say something? Measured across all 17 wrappers before landing --
+      // all 17 speak, so it cannot produce a false failure today. It is the arm
+      // that goes red if a write-failure catch is ever silenced while some other
+      // catch in the same function keeps talking.
+      //
+      // Promoting this from a second list to THE rule is a further step and a
+      // deliberate one -- it changes what `mute` means on a platform-wide gate --
+      // so it is reported separately rather than folded in silently.
+      const setAt = code.indexOf('localStorage.setItem');
+      let guarding = null;
+      const tre = /\btry\s*\{/g;
+      let tm;
+      while ((tm = tre.exec(code)) !== null) {
+        const o = code.indexOf('{', tm.index);
+        let d = 0, j2 = o;
+        for (; j2 < code.length; j2++) {
+          if (code[j2] === '{') d++;
+          else if (code[j2] === '}' && --d === 0) break;
+        }
+        if (o < setAt && setAt < j2) {
+          const after = code.slice(j2);
+          const cm2 = /^\s*\}?\s*catch\s*(?:\([^)]*\))?\s*\{/.exec(after);
+          if (cm2) {
+            const co = j2 + after.indexOf('{', cm2.index);
+            let dd = 0, k2 = co;
+            for (; k2 < code.length; k2++) {
+              if (code[k2] === '{') dd++;
+              else if (code[k2] === '}' && --dd === 0) break;
+            }
+            const cand = code.slice(co + 1, k2);
+            // innermost try enclosing the write
+            if (guarding === null || cand.length < guarding.length) guarding = cand;
+          }
+        }
+      }
+      const guardSpeaks = guarding !== null
+        && (/console\.|toast|Toast|alert\(/.test(guarding)
+            || (guarding.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [])
+                 .some((c) => calleeSpeaks(c.replace(/\s*\($/, ''))));
+      if (!guardSpeaks) guardMute.push(f + ':' + m[1]);
     }
   });
 
@@ -390,6 +472,21 @@ function stripJsComments(src) {
 
   check('no app writes to localStorage with a catch that says nothing',
     mute, KNOWN_MUTE);
+
+  // THE NARROWER LIST, added 2026-09-11. `mute` asks whether the wrapper speaks
+  // ANYWHERE; this asks whether the catch that actually GUARDS the
+  // `localStorage.setItem` speaks. Those are different questions and the gap
+  // between them is a real hiding place: sairnvet's st() has two catches, and
+  // silencing the write-failure one leaves the backup-hook one talking, so the
+  // list above stays green on a voice that is about something else.
+  //
+  // Measured across all 17 wrappers in the 17 app files before landing: ALL 17
+  // guarding catches speak, so this cannot produce a false failure today. It is
+  // the arm that goes red the day a write-failure catch is silenced while some
+  // other catch in the same function keeps talking -- the case that was
+  // previously invisible and was found by mutation, not by reading.
+  check('every wrapper\'s GUARDING catch -- the one around the setItem -- speaks',
+    guardMute, []);
   // The delegation hop must not become a way to argue anything into
   // "speaking". A wrapper calling a helper that is itself silent is still
   // silent, and a call to a function that does not exist in the file proves
