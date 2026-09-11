@@ -148,6 +148,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~A coverage rule cannot be changed or removed once written — `removeCoverageRule()` is local-only and there is no update path~~ | **CLOSED 2026-09-04 (CC)** — an EDIT path exists; removal is still not a delete and the message now says so | `api/sd-data-dental-ledger-validation.test.js`, `tests/sairndental_coverage_edit.js`, `tests/suite_control_backfill_probe.py` |
 | ~~Every write failure was reported as *"server sync not yet enabled for this app"*, which is FALSE — and it was swallowing the refusals added the same day~~ | **CLOSED 2026-09-04 (CC)** for SAIRNdental. **SAIRNlaw (29) and SAIRNlegacy (58) still carry it — see the row below** | `tests/sairndental_write_failure_voice.js` |
 | ~~The financial tier gates READS to owner/frontdesk and gates WRITES for nobody &mdash; a provider can write a payment it is not allowed to read back~~ &mdash; **CLOSED: the same list and the same roles now gate the write branch** | **CLOSED 2026-09-10 (CC)** &mdash; `ddbd1f2c`. Found 2026-09-04 (CC) and left open on purpose because it is a behaviour change, not a validation | `api/sd-data-dental-financial-tier.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `tests/push_gate/refspec_and_override_probe.py`, `tests/run_report_only_checks_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
+| `tests/dnt_vendor_write_confirmation_probe.py` reports two controls that DO NOT BITE &mdash; one anchors on code that no longer exists, the other is mislabelled and mutates the wrong branch | **OPEN &mdash; FLAGGED 2026-09-10 (Cody), not fixed: SAIRNdental is not this session's lane** | `tests/dnt_vendor_write_confirmation_probe.py`, `tests/dnt_vendor_write_faults.js` |
 | Independent review of `569b2689` (CC's write-failure voice fix) found four things: a raw browser exception could REPLACE the sentence saying nothing was saved, the ledger dropped rows on an UNREACHABLE server, `submitCompleteVisit()` announced success when the appointment write failed, and the suite had two holes | **CLOSED 2026-09-08 (CC)** &mdash; all four fixed, and running the mutation probe found a fifth and a sixth that reading had not | `tests/sairndental_write_failure_probe.py` |
 | ~~`dnt_settings` is a whole-record PUT, so two workstations saving inside one round trip still end last-write-wins~~ | **CLOSED 2026-09-04 (CC) on Michael's decision** — switched to PATCH, and the race is proven closed rather than argued closed | `api/sd-data-dental-settings-patch.test.js`, `tests/suite_control_backfill_probe.py` |
 
@@ -178,6 +179,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| `tests/sairn_storage_wrapper_honesty.js` CRASHED, so every app after SAIRNmechanical was covered by nothing &mdash; and the check that survived could be satisfied by a CODE COMMENT | **FIXED 2026-09-10 (Cody)** &mdash; 41 arms restored to life and 10 added, 51 pass; 3 mutation controls across three app files all bite, all restored byte-identical | `tests/sairn_storage_wrapper_honesty.js` |
 | ~~**REVIEWED: the cheque number is NOT a safe key, and the SQL has not run yet**~~ &mdash; **CLOSED: check_id is a minted per-record id, the number stays data, and a repeat is REPORTED** | **CLOSED 2026-09-10 (CC)**, `bcee0215`. Built `6ddb8154` (CC), independently reviewed the same day (Hank), fixed by the author on the reviewer's finding | `tests/mech_check_register_identity.js` |
 
 ### sairnroofing
@@ -219,7 +221,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**94 of 283 test files are traced to a stated requirement. 189 are not.**
+**95 of 283 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -347,7 +349,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`
 - `tests/dnt_vendor_write_confirmation.js`
-- `tests/dnt_vendor_write_confirmation_probe.py`
 - `tests/exec_role_gate.js`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
@@ -415,9 +416,10 @@ An untraced test is not a bad test. It means no source in this repo states what 
 
 ### Citations pointing at a file that does not exist
 
-**2.** A row names a test as its proof and the file is not there, so the requirement is UNPROVED however the row reads. Some of these are prose placeholders rather than real citations -- this cannot tell the difference, so it reports both and says so.
+**3.** A row names a test as its proof and the file is not there, so the requirement is UNPROVED however the row reads. Some of these are prose placeholders rather than real citations -- this cannot tell the difference, so it reports both and says so.
 
 - `tests/X_probe.py`
+- `tests/dnt_vendor_write_faults.js`
 - `tests/sairndental_settings_merge_base.js`
 
 ### What this matrix cannot tell you

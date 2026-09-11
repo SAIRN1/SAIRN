@@ -2044,3 +2044,98 @@ and nothing would have surfaced that except running `--check`.
 clone (PID 13668). `Get-Process -Id 13668` returned nothing -- the process was
 gone, the lock was stale, and the `cody` claim on this subject was my own
 previous session's. No duplication.
+
+## 2026-09-10 (Cody) -- the platform wrapper test that three sessions found red,
+## and the comment that was counting as a report
+
+Skill used: `sairn-silent-failure-sweep`. Assigned directly by Michael after
+Hank, CC and I each independently reported `tests/sairn_storage_wrapper_honesty.js`
+broken the same night and each deferred it as someone else's lane. **That is the
+finding underneath the finding: three correct deferrals leave a platform-wide
+test red, and it was being cited as coverage the whole time.**
+
+**THE CRASH.** `2a61b739` taught `saveCheck()` in `sairnmechanical.html` to mint
+an id. The test extracts `saveCheck` into a `new Function` realm and did not
+extract `mechCheckId()` or `mechEnsureCheckIds()`, and `saveCheck` also reads
+`window.mechPushRecord` -- where `typeof` does **not** guard an undeclared
+`window`, because typeof is only safe on a bare identifier and this touches a
+property. `ReferenceError`, thrown inside the SAIRNmechanical block, which sits
+**before** the blocks covering `stonedesk.html` and `sairnvet.html`. So the file
+was not "failing one arm"; everything after that point had never run.
+
+Helpers are now pulled from the real file, not stubbed. A stubbed `mechCheckId()`
+would let the cheque-number collision fix it exists for rot while the arms stayed
+green -- the fixture-supplies-the-thing-it-tests shape this repo has already been
+bitten by once.
+
+**THE SECOND DEFECT, AND MUTATION IS THE ONLY REASON IT WAS FOUND.** With the
+crash fixed I probed whether the restored arms actually bite. Silencing every
+real `console.error` in `sairnvet.html`'s `st()` left the file **GREEN**.
+
+The reason is two lines of PROSE in that function's body:
+
+    // Every non-success exit latches the key so the next success toast is
+    // corrected rather than believed -- see showToast() above.
+
+`speaks` was `/console\.|toast|Toast|alert\(/` run over **raw source**. So the
+one assertion this block exists for -- `mute` is empty, therefore NO app has a
+silent write wrapper -- **was satisfiable by a code comment**, in a repo whose
+comments deliberately quote the calls they describe. An assertion a comment can
+satisfy is close to unfalsifiable.
+
+**MEASURED BEFORE LANDING THE FIX, because the honest question is whether it was
+masking anything today:** across all 17 app files, **zero** wrappers speak only
+via prose. Every one has a real console or toast call in code, so stripping
+changes no verdict and `mute` stays empty either way. The defect was LATENT --
+it would have masked the next regression, which is the single thing the block is
+for. Fixed because a tripwire that cannot trip is worse than no tripwire, not
+because it was lying today. That measurement is now a standing arm rather than a
+sentence in a commit message, and it doubles as the sharper tripwire: a wrapper
+whose only mention of a console or toast is prose gets named there even when the
+`mute` list stays green.
+
+Stripper is a state machine, not a regex, for the reason `tools/jscomments.py`
+records at length -- three of seven regex strippers in `tools/` were destroying
+90% of their input and reporting CLEAN on what survived. Controls assert it
+leaves alone a `//` inside a URL string, a `/*` inside a string, a backtick
+template, and an escaped quote, and that a real block comment IS removed.
+The inline `probe()` helper in that file is a SECOND COPY of the detector logic,
+so it was taught the same thing in the same commit -- otherwise the arms would
+prove a function nothing runs.
+
+**51 arms pass, from 41 that could not all run. Three mutation controls across
+three different app files, all bite, all files restored byte-identical by
+sha256:** breaking SAIRNmechanical's check-number restore reds the mech arm that
+was previously dead; silencing SAIRNcare's `st()` catch reds both the `mute` list
+and the named per-app arm, neither of which had been reached in the crashing
+version; silencing SAIRNvet's reds the new prose arm.
+
+**STILL OPEN, and stated rather than quietly tightened.** The one-hop delegation
+rule lets `st()` borrow the voice of anything it calls. `sairnvet.html`'s `st()`
+calls `svSyncCollection()`, which logs about a failed SERVER push -- nothing to
+do with the localStorage write failing -- so with comments stripped the `mute`
+list *still* passes on a silenced write-failure path. The new prose arm catches
+that specific case, but narrowing delegation to callees invoked from inside a
+`catch` is a behaviour change to a platform-wide gate and could turn working apps
+red. Michael's call, not mine.
+
+**FLAGGED FOR WHOEVER IS NEXT IN `sairndental.html`, with the diagnosis done so
+it is not re-derived:** `tests/dnt_vendor_write_confirmation_probe.py` reports
+two controls that do not bite, for two different reasons.
+
+- **Control 4** anchors on `}else if(storeKey){` + `dntMarkUnconfirmed(storeKey,
+  false)`. **That shape exists nowhere in the file** -- zero hits for
+  `}else if(storeKey)`; `dntPushOne()` now ends in a flat
+  `if(storeKey) dntMarkUnconfirmed(storeKey,false);` at line 5931. Reported
+  honestly as `ANCHOR-0`, which is the probe working. The control tests nothing.
+- **Control 3** anchors on the SIX-space-indented
+  `if(storeKey) dntMarkUnconfirmed(storeKey,true);`. There are two such calls:
+  line **5903** in `refused()` at four spaces, and line **5928** in the
+  PARTIAL-RESPONSE branch at six. So the control mutates the partial-response
+  branch while its label claims the refusal branch -- **and no control mutates
+  the refusal path at all.** It returns `SILENT`, so no arm in
+  `tests/dnt_vendor_write_faults.js` covers the branch it does hit either. A
+  drifted anchor and a real coverage gap behind it, two separate facts.
+- Worth a decision: the probe **exits 0** while printing `CONTROLS THAT DID NOT
+  BITE`, so `run_all_tests.py` is the only thing surfacing it. A dead control
+  arguably belongs in the exit code.

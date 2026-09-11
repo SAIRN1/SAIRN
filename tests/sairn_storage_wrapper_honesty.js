@@ -107,17 +107,39 @@ function workingStore() {
   function mech(store, toasts, fields) {
     const els = {};
     Object.keys(fields || {}).forEach((id) => { els[id] = { value: fields[id], textContent: '' }; });
-    return new Function('localStorage', 'showToast', 'document', 'APP_ID', 'crNum',
+    // `window` IS REQUIRED, and its absence was a hard crash rather than a
+    // failure. Added 2026-09-10 along with the two helpers below, after
+    // `2a61b739` taught saveCheck() to mint an id: three separate sessions
+    // independently reported this file as broken the same night and each
+    // deferred it as somebody else's lane, so it sat red while being a
+    // PLATFORM-WIDE wrapper test -- it dies inside this block, before it ever
+    // reaches stonedesk.html or sairnvet.html, so every app after
+    // sairnmechanical was covered by nothing at all.
+    //
+    // `typeof window.mechPushRecord` does NOT guard an undeclared `window`:
+    // typeof is only safe on a bare identifier, so the property access threw
+    // ReferenceError. Supplied as an empty object, which is the honest
+    // fixture -- saveCheck() treats a missing mechPushRecord as "no backup
+    // wired" and carries on, which is exactly the state these arms are about.
+    return new Function('localStorage', 'showToast', 'document', 'APP_ID', 'crNum', 'window',
       fnFrom(src, 'function mechSt(key, value) {') + '\n' +
+      // saveCheck() has called these since 2a61b739. Extracted from the real
+      // file, never stubbed: a stub mechCheckId() would let the collision fix
+      // it exists for rot while these arms stayed green, which is the
+      // fixture-supplies-the-thing-it-tests shape this repo has already been
+      // bitten by once.
+      fnFrom(src, 'function mechCheckId(){') + '\n' +
+      fnFrom(src, 'function mechEnsureCheckIds(checks){') + '\n' +
       fnFrom(src, 'function saveCheck(){') + '\n' +
       fnFrom(src, 'function savePricing(){') + '\n' +
       fnFrom(src, 'function getPricing(){') + '\n' +
       fnFrom(src, 'function defaultPricing(){') + '\n' +
       'function renderCR(){}\n' +
       'return { mechSt: mechSt, saveCheck: saveCheck, savePricing: savePricing,' +
+      '         mechCheckId: mechCheckId,' +
       '         crNum: function(){ return crNum; } };'
     )(store, (m, d) => toasts.push(String(m)), { getElementById: (id) => els[id] || null },
-      'mech', 1001);
+      'mech', 1001, {});
   }
 
   const good = workingStore(), gt = [];
@@ -237,6 +259,53 @@ function workingStore() {
 // taking one argument or three is invisible here. A wrapper that TOASTS is
 // deliberately NOT listed: SAIRNgrounds, SAIRNmechanical and SAIRNscape tell
 // the user directly, which is the louder half, not the missing one.
+//
+// A COMMENT USED TO COUNT AS SPEAKING. Found 2026-09-10 (Cody) while fixing the
+// crash below, by mutation rather than by reading: silencing every real
+// `console.error` in `sairnvet.html`'s `st()` left this block GREEN, because two
+// lines of its body are PROSE mentioning "the next success toast" and
+// "showToast() above", and the `speaks` regex was run over raw source. So the
+// one assertion that matters here -- `mute` is empty, therefore NO app has a
+// silent write wrapper -- was satisfiable by a code comment, in a repo whose
+// comments are deliberately long and frequently quote the very calls they
+// describe. An assertion a comment can satisfy is close to unfalsifiable.
+//
+// MEASURED BEFORE AND AFTER, because the honest question is whether this was
+// masking anything today: across all 17 app files, ZERO wrappers speak only via
+// a comment. Every one has a real console or toast call in code, so stripping
+// changes no verdict right now and `mute` stays empty either way. The defect was
+// LATENT -- it would have masked the next regression, which is the single thing
+// this block exists to catch ("the next one added fails here by name"). Fixed
+// because a tripwire that cannot trip is worse than no tripwire, not because it
+// was lying today.
+//
+// The stripper is a state machine, not a regex, for the reason
+// tools/jscomments.py records at length: three of seven regex strippers in
+// tools/ were destroying 90% of their input and reporting CLEAN on what
+// survived. It is held by arms below, including the control that a `//` inside a
+// string literal (a URL) is NOT treated as a comment.
+const BACKSLASH = String.fromCharCode(92);
+function stripJsComments(src) {
+  let out = '', i = 0, quote = null;
+  const n = src.length;
+  while (i < n) {
+    const c = src[i], d = src[i + 1];
+    if (quote) {
+      if (c === BACKSLASH) { out += c + (d || ''); i += 2; continue; }
+      if (c === quote) quote = null;
+      out += c; i++; continue;
+    }
+    if (c === '"' || c === "'" || c === '`') { quote = c; out += c; i++; continue; }
+    if (c === '/' && d === '/') { while (i < n && src[i] !== '\n') i++; continue; }
+    if (c === '/' && d === '*') {
+      i += 2;
+      while (i < n && !(src[i] === '*' && src[i + 1] === '/')) i++;
+      i += 2; continue;
+    }
+    out += c; i++;
+  }
+  return out;
+}
 {
   const mute = [];
   fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
@@ -252,7 +321,12 @@ function workingStore() {
       }
       const body = src.slice(m.index, j + 1);
       if (body.indexOf('localStorage.setItem') === -1) continue;
-      let speaks = /console\.|toast|Toast|alert\(/.test(body);
+      // Comments stripped before ANY speaking test, here and on the delegation
+      // hop below. The brace-matching above still runs on raw source on purpose:
+      // a `{` or `}` inside a comment is vanishingly rare in this codebase and
+      // stripping first would shift every index out from under the match.
+      const code = stripJsComments(body);
+      let speaks = /console\.|toast|Toast|alert\(/.test(code);
       // DELEGATION COUNTS (2026-09-04). The first version looked for a literal
       // console/toast call inside the wrapper, so a catch that calls a NAMED
       // helper which logs read as silent. StoneDesk has two wrappers, st() and
@@ -263,7 +337,10 @@ function workingStore() {
       // the callee must be defined in the same file -- a deeper chain would
       // let anything be argued into "speaking".
       if (!speaks) {
-        const called = body.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
+        // Call names read from the STRIPPED body, so a function name merely
+        // MENTIONED in prose -- "see showToast() above", which sairnvet's st()
+        // really does say -- is not treated as a call this wrapper makes.
+        const called = code.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
         speaks = called.some((c) => {
           const nm = c.replace(/\s*\($/, '');
           const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src);
@@ -274,7 +351,8 @@ function workingStore() {
             if (src[k] === '{') d++;
             else if (src[k] === '}' && --d === 0) break;
           }
-          return /console\.|toast|Toast|alert\(/.test(src.slice(dm.index, k + 1));
+          return /console\.|toast|Toast|alert\(/
+            .test(stripJsComments(src.slice(dm.index, k + 1)));
         });
       }
       if (!speaks) mute.push(f + ':' + m[1]);
@@ -328,9 +406,14 @@ function workingStore() {
         else if (src2[j] === '}' && --d === 0) break;
       }
       const b = src2.slice(m.index, j + 1);
-      let speaks = /console\.|toast|Toast|alert\(/.test(b);
+      // Stripped at the same three points as the real detector above. This probe
+      // is a SECOND COPY of that logic, which is the drift this whole file exists
+      // to catch -- so when one side learns something the other has to, or the
+      // arms below end up proving a function nothing runs.
+      const bc = stripJsComments(b);
+      let speaks = /console\.|toast|Toast|alert\(/.test(bc);
       if (!speaks) {
-        const called = b.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
+        const called = bc.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
         speaks = called.some((c) => {
           const nm = c.replace(/\s*\($/, '');
           const dm = new RegExp('function\\s+' + nm + '\\s*\\(').exec(src2);
@@ -341,7 +424,8 @@ function workingStore() {
             if (src2[k] === '{') dd++;
             else if (src2[k] === '}' && --dd === 0) break;
           }
-          return /console\.|toast|Toast|alert\(/.test(src2.slice(dm.index, k + 1));
+          return /console\.|toast|Toast|alert\(/
+            .test(stripJsComments(src2.slice(dm.index, k + 1)));
         });
       }
       return speaks;
@@ -356,6 +440,80 @@ function workingStore() {
       probe('try{localStorage.setItem(a,b);}catch(e){elsewhere(e);}'), false);
     check('and a bare empty catch is still silent',
       probe('try{localStorage.setItem(a,b);}catch(e){}'), false);
+
+    // ── A COMMENT IS NOT A REPORT (2026-09-10) ──────────────────────────────
+    // The shape found live: sairnvet.html's st() body carries the lines
+    //   "// Every non-success exit latches the key so the next success toast is"
+    //   "// corrected rather than believed -- see showToast() above."
+    // and those two alone kept this block green after every real console call in
+    // that function was removed. Both directions are asserted -- a wrapper whose
+    // only mention of a toast is prose must be LISTED, and a wrapper that really
+    // speaks must still pass, or the strip would turn a false negative into a
+    // false positive and the list would go red on working code.
+    check('a catch whose only "toast" is a COMMENT is silent',
+      probe('try{localStorage.setItem(a,b);}catch(e){/* the success toast is '
+            + 'corrected next time -- see showToast() above */ return false;}'), false);
+    check('...including a line comment, which is how the real one was written',
+      probe('try{localStorage.setItem(a,b);}catch(e){\n'
+            + '  // the next success toast is corrected rather than believed\n'
+            + '  return false;}'), false);
+    check('a PROSE MENTION of a logging helper is not a call to it',
+      probe('try{localStorage.setItem(a,b);}catch(e){ // see oops() above\n return false;}',
+            'function oops(e){console.error(e);}'), false);
+    check('and a real call beside a comment still speaks',
+      probe('try{localStorage.setItem(a,b);}catch(e){ // see oops() above\n oops(e);}',
+            'function oops(e){console.error(e);}'), true);
+
+    // THE STRIPPER ITSELF, because a stripper that eats code would turn every
+    // working wrapper into a finding. tools/jscomments.py exists because three
+    // of seven regex strippers in tools/ were destroying 90% of their input.
+    check('the stripper does NOT treat a // inside a string as a comment',
+      /console\./.test(stripJsComments(
+        'var u = "https://x/y"; console.error(u);')), true);
+    check('...nor a /* inside a string',
+      /console\./.test(stripJsComments(
+        "var s = '/* not a comment */'; console.warn(s);")), true);
+    check('...nor one inside a template literal',
+      /toast/.test(stripJsComments('var t = `a // b`; toast(t);')), true);
+    check('an escaped quote does not end the string early',
+      /console\./.test(stripJsComments(
+        'var s = "it\\" // still a string"; console.log(s);')), true);
+    check('a real block comment IS removed',
+      /console\./.test(stripJsComments('/* console.error(1) */ return false;')), false);
+
+    // THE MEASUREMENT THAT MADE THE STRIP SAFE TO LAND, kept as a standing arm
+    // rather than a sentence in a commit message. Zero wrappers relied on prose
+    // the day it was added, so the strip changed no verdict.
+    //
+    // IT IS ALSO THE TRIPWIRE, and it is sharper than the `mute` list above.
+    // A wrapper listed here is one whose ONLY mention of a console or a toast is
+    // a comment -- it may still pass the list by DELEGATION (sairnvet's st()
+    // calls svSyncCollection(), which logs about a failed server push, nothing
+    // to do with the localStorage write), so the list can stay empty while the
+    // write-failure path has gone quiet. Verified that way: silencing every real
+    // console.error in sairnvet's st() turns THIS arm red and leaves the list
+    // green. If this fires, read the named wrapper's catch before anything else.
+    check('no wrapper speaks only in prose -- a comment is not a report', (() => {
+      const changed = [];
+      fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
+        const src = read(f);
+        const re2 = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
+        let mm;
+        while ((mm = re2.exec(src)) !== null) {
+          const open = src.indexOf('{', mm.index);
+          let d = 0, j2 = open;
+          for (; j2 < src.length && j2 - open < 4000; j2++) {
+            if (src[j2] === '{') d++;
+            else if (src[j2] === '}' && --d === 0) break;
+          }
+          const bd = src.slice(mm.index, j2 + 1);
+          if (bd.indexOf('localStorage.setItem') === -1) continue;
+          const sp = /console\.|toast|Toast|alert\(/;
+          if (sp.test(bd) !== sp.test(stripJsComments(bd))) changed.push(f + ':' + mm[1]);
+        }
+      });
+      return changed;
+    })(), []);
   }
   // The five fixed ones, named individually so a regression points at the app
   // rather than at a list diff.
