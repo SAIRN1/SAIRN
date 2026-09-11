@@ -955,6 +955,16 @@
       "claimed_at_epoch": 1789084862.7780695,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789085071",
+      "session": "hank",
+      "subject": "literal-control-chars-in-source",
+      "task": "raw NUL and backspace typed instead of escapes",
+      "claimed_at": "2026-09-11T00:04:31Z",
+      "claimed_at_epoch": 1789085071.3640728,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
