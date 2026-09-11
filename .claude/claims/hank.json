@@ -973,8 +973,8 @@
       "task": "collection-row vs keyed-row and append-only baseline",
       "claimed_at": "2026-09-11T00:43:29Z",
       "claimed_at_epoch": 1789087409.259693,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T01:03:39Z"
     }
   ]
 }
