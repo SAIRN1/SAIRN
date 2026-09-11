@@ -942,8 +942,8 @@
       "task": "capture step never saved and nothing detects it",
       "claimed_at": "2026-09-11T15:29:39Z",
       "claimed_at_epoch": 1789140579.412549,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T15:37:49Z"
     }
   ]
 }
