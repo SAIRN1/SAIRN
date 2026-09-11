@@ -882,8 +882,8 @@
       "task": "four probes whose target the check could not resolve",
       "claimed_at": "2026-09-11T11:30:40Z",
       "claimed_at_epoch": 1789126240.382808,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T12:24:35Z"
     }
   ]
 }
