@@ -1,36 +1,39 @@
-"""Every vertical on this platform must carry a criticality tier.
+"""Every registered resource in a re-tiered app must carry a criticality tier.
 
     python tools/criticality_tier_check.py            # report, exit 1 on drift
     python tools/criticality_tier_check.py --quiet    # exit code only
 
-WHY THIS EXISTS. `docs/CRITICALITY-TIERS.md` states, for each vertical, the WORST
-CONSEQUENCE of it being wrong -- and cites something already recorded in this
-repo as the evidence. It is the third of the three standing disciplines for
-vertical work, alongside the SOUP register and the traceability matrix.
+WHY THIS EXISTS. `docs/CRITICALITY-TIERS.md` states, for each RESOURCE, the worst
+consequence of it being wrong, and cites something already recorded in this repo
+as the evidence. Third of the three standing disciplines for vertical work,
+alongside the SOUP register and the traceability matrix.
 
-A register maintained by remembering goes stale, and this repo has that written
-down in more places than anyone would like: the Guardian App File Map was wrong
-seven times, the skill counts drifted three ways inside one file, and the
-cleanup files' NOT RUN labels were wrong on at least six. So the register is
-DERIVED-CHECKED rather than trusted.
+── IT USED TO CHECK APPS, AND THAT WAS THE DEFECT (2026-09-10) ─────────────
+The register tiered whole apps. Measuring the eight Tier B apps moved every one
+of them to A -- their B rested on an absence of RECORDING, not a measured
+absence -- and 21 of 22 verticals became Tier A, at which point the register had
+stopped discriminating. The measurement was honest; the GRANULARITY was wrong.
+A roofing app's invoicing panel and its colour-theme settings do not carry the
+same consequence, and one label per app forces them into one answer.
 
-IT REPORTS AND NEVER REWRITES, deliberately, and this is the whole design.
-The tier and the sentence explaining it are a JUDGEMENT. A tool that
-regenerated this file would delete exactly the part that matters and leave a
-table that looks authoritative because it is machine-produced. Same reasoning
-as tools/soup_register_check.py and tools/sairn_app_map_check.py.
+The unit is now `api/_resources/<app>.js`, the same unit the SOUP register and
+the traceability matrix already use.
+
+IT REPORTS AND NEVER REWRITES, deliberately. The tier and its sentence are a
+JUDGEMENT; a tool that regenerated this file would delete exactly the part that
+matters and leave a table that looks authoritative because a machine made it.
 
 WHAT IT CAN AND CANNOT SEE, said plainly because a checker that overstates its
 reach is worse than none:
 
-  IT CAN SEE        a vertical on disk with no row; a row naming a file that is
-                    gone; a row with no tier; a tier outside the A/B/C/UNTIERED
-                    vocabulary; an UNTIERED row that does not say what would
-                    settle it; a row with an empty evidence cell.
+  IT CAN SEE    an app with no rollup line; a re-tiered app whose rows and
+                registry disagree in either direction; a rollup count that does
+                not match the rows under it; a tier outside A/B/C; a Tier A row
+                with no evidence; resource rows under an app that claims not to
+                be re-tiered yet.
 
-  IT CANNOT SEE     whether a tier is RIGHT. Nothing mechanical can. That is
-                    what the evidence column is for, and why every cell names a
-                    source a reader can go and check instead of trusting this.
+  IT CANNOT SEE whether a tier is RIGHT. Nothing mechanical can. That is what
+                the evidence column is for.
 """
 import io
 import os
@@ -39,34 +42,13 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 REGISTER = os.path.join(REPO, 'docs', 'CRITICALITY-TIERS.md')
-
-# NOT A VERTICAL, and named here rather than filtered silently. piac.html is a
-# 138 KB saved copy of an Indiana Department of Health 404 page, untracked at the
-# repo root since 2026-08-28, with its own open-work row. A checker that quietly
-# skipped it would hide the fact that something non-app is sitting in the app
-# directory -- so the exclusion is declared, with its reason, and reported.
-NOT_A_VERTICAL = {
-    'piac.html': 'a saved 404 page, untracked since 2026-08-28; it has its own '
-                 'open-work row and is not a product',
-}
-
-VALID_TIERS = ('A', 'B', 'C', 'UNTIERED')
-
-
-def verticals_on_disk():
-    """Root *.html files. The app IS the file on this platform -- see
-    sairn-software-architect: single HTML file, inline CSS/JS, one per app."""
-    return sorted(f for f in os.listdir(REPO)
-                  if f.endswith('.html') and os.path.isfile(os.path.join(REPO, f)))
+RESOURCES = os.path.join(REPO, 'api', '_resources')
+VALID_TIERS = ('A', 'B', 'C')
 
 
 def cells(line):
-    """Split a markdown row, honouring an escaped pipe as CONTENT.
-
-    Not cosmetic: this repo has a standing rule about it. A cell whose prose
-    contains a pipe -- a regex alternation, a `||` in a code span -- adds
-    separators nobody intended, and splitting naively reads the wrong column.
-    """
+    """Split a markdown row, honouring an escaped pipe as CONTENT -- this repo
+    has a standing rule about it, and this file's own index row tripped it."""
     out, cur, i, bs = [], '', 0, chr(92)
     while i < len(line):
         if line[i] == bs and i + 1 < len(line) and line[i + 1] == '|':
@@ -81,97 +63,134 @@ def cells(line):
         cur += line[i]
         i += 1
     out.append(cur.strip())
-    return [c for c in out[1:-1]] if len(out) >= 2 else []
+    return out[1:-1] if len(out) >= 2 else []
 
 
-def register_rows():
-    """(file, tier, consequence, evidence) for each row of the register table.
+def apps_with_registries():
+    out = {}
+    if not os.path.isdir(RESOURCES):
+        return out
+    for f in sorted(os.listdir(RESOURCES)):
+        if not f.endswith('.js') or f.endswith('.test.js'):
+            continue
+        app = f[:-3]
+        if app in ('index', 'shared'):
+            continue
+        names = set()
+        for l in io.open(os.path.join(RESOURCES, f), encoding='utf-8'):
+            s = l.strip()
+            if s.startswith("'") and s.endswith("',") and s.count("'") == 2:
+                names.add(s.strip("',"))
+        out[app] = names
+    return out
 
-    Anchored on a row whose FIRST cell is a backticked .html name, so the tier
-    LEGEND table above it -- which has the same column count -- cannot be read
-    as register rows. Counting columns alone would have swallowed it.
-    """
-    try:
-        src = io.open(REGISTER, encoding='utf-8').read()
-    except IOError:
-        return None
-    rows = []
+
+def parse():
+    """(rollup, resource_rows). Rollup rows have 6 cells and a backticked app in
+    cell 0; resource rows have 4 and a backticked name. Anchored on shape AND on
+    the backtick so the TIER LEGEND above -- same column count -- is not read as
+    data. Counting columns alone would have swallowed it."""
+    src = io.open(REGISTER, encoding='utf-8').read()
+    rollup, rows = {}, []
     for line in src.split('\n'):
         if not line.startswith('|'):
             continue
         c = cells(line)
-        if len(c) != 4:
-            continue
-        m = re.match(r'^`([\w.-]+\.html)`$', c[0])
-        if not m:
-            continue
-        rows.append((m.group(1), re.sub(r'[*`]', '', c[1]).strip(), c[2], c[3]))
-    return rows
+        if len(c) == 6:
+            m = re.match(r'^`([\w.-]+)`$', c[0])
+            if m:
+                rollup[m.group(1)] = {
+                    'n': c[1], 'a': c[2], 'b': c[3], 'c': c[4], 'status': c[5]}
+        elif len(c) == 4:
+            m = re.match(r'^`([\w.-]+)`$', c[0])
+            if m:
+                rows.append((m.group(1), re.sub(r'[*`]', '', c[1]).strip(), c[2], c[3]))
+    return rollup, rows
 
 
 def main(argv):
     quiet = '--quiet' in argv
     problems = []
-    notes = []
 
-    rows = register_rows()
-    if rows is None:
-        print('docs/CRITICALITY-TIERS.md is missing or unreadable -- that is the '
-              'finding, not a reason to pass.')
+    if not os.path.isfile(REGISTER):
+        print('docs/CRITICALITY-TIERS.md is missing -- that is the finding, not a '
+              'reason to pass.')
         return 1
 
-    listed = {r[0] for r in rows}
-    on_disk = set(verticals_on_disk())
+    rollup, rows = parse()
+    reg = apps_with_registries()
+    by_name = {r[0]: r for r in rows}
 
-    for f in sorted(on_disk - listed):
-        if f in NOT_A_VERTICAL:
-            notes.append('EXCLUDED   %s -- %s' % (f, NOT_A_VERTICAL[f]))
-            continue
-        problems.append('NO TIER    %s is on disk and has no row. A vertical with no '
-                        'stated worst case is one nobody has decided about.' % f)
+    for app in sorted(reg):
+        if app not in rollup:
+            problems.append('NO ROLLUP    %s has a resource registry and no rollup line. '
+                            'An app nobody has even said "not yet" about is invisible.'
+                            % app)
+    for app in sorted(set(rollup) - set(reg)):
+        problems.append('GONE         %s has a rollup line and no resource registry.' % app)
 
-    for f in sorted(listed - on_disk):
-        problems.append('GONE       %s has a row and is not on disk. Either it was '
-                        'removed and the row should go, or it moved and the row is '
-                        'now pointing at nothing.' % f)
+    for app in sorted(set(rollup) & set(reg)):
+        retiered = 'NOT YET RE-TIERED' not in rollup[app]['status']
+        names = reg[app]
+        present = {n for n in names if n in by_name}
+        if retiered:
+            for n in sorted(names - present):
+                problems.append('NO TIER      %s/%s is registered and has no row.' % (app, n))
+            counts = {'A': 0, 'B': 0, 'C': 0}
+            for n in sorted(present):
+                t = by_name[n][1]
+                if t in counts:
+                    counts[t] += 1
+            for key, label in (('a', 'A'), ('b', 'B'), ('c', 'C')):
+                want = rollup[app][key]
+                got = str(counts[label])
+                if re.sub(r'[^0-9]', '', want) != got:
+                    problems.append('COUNT        %s rollup says %s=%s, the rows say %s. '
+                                    'A summary that disagrees with its own detail is worse '
+                                    'than no summary.' % (app, label, want, got))
+        else:
+            for n in sorted(present):
+                problems.append('HALF DONE    %s/%s has a resource row while the rollup '
+                                'says NOT YET RE-TIERED. One of the two is wrong, and a '
+                                'half-tiered app reads as an untiered one.' % (app, n))
 
-    for f in sorted(listed & on_disk):
-        if f in NOT_A_VERTICAL:
-            problems.append('EXCLUDED-BUT-LISTED  %s is declared not-a-vertical and '
-                            'also has a row. One of the two is wrong.' % f)
-
-    for f, tier, consequence, evidence in rows:
+    all_registered = set()
+    for names in reg.values():
+        all_registered |= names
+    for name, tier, worst, ev in rows:
+        if name not in all_registered:
+            problems.append('NOT A RESOURCE  %s has a row and is not registered in any '
+                            'api/_resources/*.js. The unit of this table is the registry.'
+                            % name)
         if tier not in VALID_TIERS:
-            problems.append('BAD TIER   %s has tier %r, which is not one of %s'
-                            % (f, tier, '/'.join(VALID_TIERS)))
-        if not consequence:
-            problems.append('NO WORST CASE  %s states no consequence' % f)
-        if not evidence:
-            problems.append('NO EVIDENCE    %s states a tier with nothing to check it '
-                            'against -- that is a label, not a tier.' % f)
-        # AN UNTIERED ROW MUST SAY WHAT WOULD SETTLE IT. Otherwise "UNTIERED" is
-        # just a permanent shrug, and the point of writing an open question down
-        # is that somebody can close it.
-        if tier == 'UNTIERED' and 'ettles' not in evidence:
-            problems.append('OPEN WITH NO EXIT  %s is UNTIERED and does not say what '
-                            'would settle it.' % f)
+            problems.append('BAD TIER     %s has tier %r, not one of %s'
+                            % (name, tier, '/'.join(VALID_TIERS)))
+        if not worst:
+            problems.append('NO WORST CASE  %s states no consequence' % name)
+        # A TIER A ROW MUST CARRY ITS OWN EVIDENCE. This is the line that stops
+        # the A tier degrading into rule-guessing: B and C are classified by the
+        # stated rule, A is hand-verified, and the difference has to be
+        # enforceable rather than promised.
+        if tier == 'A' and not ev:
+            problems.append('NO EVIDENCE  %s is Tier A with an empty evidence cell -- '
+                            'that is a label, not a tier.' % name)
 
     if not quiet:
-        for n in notes:
-            print(n)
         for p in problems:
             print(p)
         print('')
-        print('VERTICALS_ON_DISK:%d' % len(on_disk))
-        print('ROWS_IN_REGISTER:%d' % len(rows))
+        print('APPS_WITH_REGISTRIES:%d' % len(reg))
+        print('RESOURCES_REGISTERED:%d' % len(all_registered))
+        print('RESOURCE_ROWS:%d' % len(rows))
+        print('RETIERED_APPS:%d' % sum(
+            1 for a in rollup if 'NOT YET RE-TIERED' not in rollup[a]['status']))
         print('TIER_A:%d' % sum(1 for r in rows if r[1] == 'A'))
-        print('UNTIERED:%d' % sum(1 for r in rows if r[1] == 'UNTIERED'))
         print('PROBLEMS:%d' % len(problems))
         if not problems:
             print('')
-            print('NOTE: this says every vertical HAS a tier with evidence attached. '
-                  'It does not say the tier is right -- nothing mechanical can. Read '
-                  'the evidence column against its source.')
+            print('NOTE: this says every registered resource in a RE-TIERED app has a '
+                  'tier, and that every Tier A carries evidence. It does not say the '
+                  'tier is right -- nothing mechanical can.')
     return 1 if problems else 0
 
 
