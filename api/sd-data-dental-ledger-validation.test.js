@@ -100,6 +100,17 @@ function loadHandler(fetchImpl, noValidator) {
     const real = require('./_lib/dental-ledger');
     const stub = {};
     Object.keys(real).forEach(function (k) {
+      // NON-FUNCTION EXPORTS ARE CARRIED THROUGH UNCHANGED (2026-09-11). This
+      // loop used to replace EVERY key with a function. That was harmless
+      // while the module exported only functions, and dental-ledger.js gained
+      // its first DATA export -- DAY_NAMES, the day list shared with
+      // api/sairndental/public-availability.js -- with the provider-hours
+      // validator. A stub that turned a shared array into a function would
+      // hand the handler something it cannot iterate, and the mutation arm
+      // would fail with a TypeError that looks like the arm proving nothing
+      // rather than like a broken stub. Same defect class the derivation
+      // itself was written to end, one type down.
+      if (typeof real[k] !== 'function') { stub[k] = real[k]; return; }
       // *Problem() answers "what is wrong with this record", so a permissive
       // stub returns null (nothing wrong). The is*() predicates answer "is this
       // acceptable", so a permissive stub returns true. Getting these backwards
@@ -951,14 +962,22 @@ async function main() {
   });
 
   // The CDT rules must not have leaked onto neighbours that also carry dates
-  // and codes. dnt_provider_hours is the closest shape -- it has no validator
-  // and its rows carry times that look like the same family of field.
-  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_provider_hours with junk fields still writes', async () => {
+  // and codes.
+  //
+  // THE NEIGHBOUR MOVED, AND IT IS STATED HERE RATHER THAN QUIETLY EDITED --
+  // the same convention the boundary assertions below follow. This used to use
+  // dnt_provider_hours, chosen because its rows carry times that look like the
+  // same family of field. dnt_provider_hours GAINED A VALIDATOR on 2026-09-11,
+  // so the old payload -- no day_of_week, no times -- is now correctly refused
+  // 400 by its own rules, and the test began failing for the right reason.
+  // dnt_recall_outreach is the replacement: still unvalidated, and its rows
+  // carry dates.
+  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_recall_outreach with junk fields still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: { id: 'PH-1', provider_id: 'PV-1', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_provider_hours');
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_recall_outreach');
     assert.ok(wrote);
   });
 
@@ -1122,28 +1141,149 @@ async function main() {
     assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
   });
 
-  // ── 5e. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_referrals with a junk shape still goes through -- NINE resources remain, not eight', async () => {
+  // ── 5e. dnt_provider_hours, THE SEVENTH (2026-09-11) ────────────────────
+  // THE ONLY ONE OF THE NINE THAT FED AN UNAUTHENTICATED, PATIENT-FACING
+  // SURFACE. api/sairndental/public-availability.js reads every hours row for
+  // the licence and generates the booking slots a member of the public is
+  // offered. Every expectation below was measured against that real slot loop
+  // in node, on a Monday with 30-minute appointments: a good 09:00-11:00 block
+  // gives 4 slots.
+  const PH_OK = {
+    id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday',
+    start_time: '09:00', end_time: '11:00',
+  };
+
+  // THE SEVEN SILENT SHAPES. Each gives ZERO slots, so the provider reads as
+  // fully booked to every patient, permanently, with nothing logged. That
+  // outcome has already happened in production once from a different cause and
+  // public-availability.js still carries the comment recording it.
+  for (const [label, patch] of [
+    ['start_time "9" (no minutes -- Date.UTC gets undefined)', { start_time: '9' }],
+    ['start_time "abc"', { start_time: 'abc' }],
+    ['start_time absent (String(undefined) -> "undefined")', { start_time: undefined }],
+    ['end_time absent', { end_time: undefined }],
+    ['end before start', { start_time: '11:00', end_time: '09:00' }],
+    ['end equal to start', { end_time: '09:00' }],
+    ['day_of_week "monday" -- the filter is ===', { day_of_week: 'monday' }],
+    ['day_of_week "Mon"', { day_of_week: 'Mon' }],
+    ['no provider_id -- the block belongs to nobody', { provider_id: '' }],
+  ]) {
+    await test('SILENT ZERO SLOTS refused: ' + label, async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: Object.assign({}, PH_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'INVALID_PROVIDER_HOURS');
+      assert.ok(!wrote, 'REFUSED AND STILL WROTE -- the store is what this protects');
+    });
+  }
+
+  // THE ONE THAT FABRICATES INSTEAD OF HIDING, and the reason this resource
+  // was taken ahead of the other eight. Date.UTC(y,m,d,29,0) rolls into the
+  // NEXT DAY: measured, end_time "29:00" from a 22:00 start produced FOURTEEN
+  // slots, the last at 04:30 the following morning -- appointments offered to
+  // anonymous callers at times and on a day the practice is not open. An
+  // <input type="time"> cannot produce it; this handler accepted it.
+  for (const bad of ['29:00', '24:00', '09:60', '99:99']) {
+    await test('OUT-OF-RANGE time refused: ' + bad + ' -- it would offer slots on the WRONG DAY', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: Object.assign({}, PH_OK, { start_time: '22:00', end_time: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, bad + ' -> ' + res.statusCode);
+      assert.ok(!wrote);
+    });
+  }
+
+  // THE ACCEPT SIDE. A validator that refuses everything passes every negative
+  // test above and closes the practice's whole calendar (Guardian check 29).
+  await test('ACCEPT: the record addProviderHours() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    // Field for field what addProviderHours() sends: an <input type="time">
+    // value is HH:MM, and the day comes from a <select> of the seven names.
+    await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: { id: 'PH-9', provider_id: 'PV-1', day_of_week: 'Wednesday', start_time: '08:30', end_time: '17:00', created_at: '2026-09-11' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  // ALL SEVEN DAY NAMES, derived from the list the reader uses rather than
+  // retyped here -- a second copy could drift from public-availability.js and
+  // the drift would be invisible in the silent direction.
+  await test('ACCEPT: every one of the seven DAY_NAMES the reader compares against', async () => {
+    const { DAY_NAMES } = require('./_lib/dental-ledger');
+    assert.strictEqual(DAY_NAMES.length, 7);
+    for (const day of DAY_NAMES) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: Object.assign({}, PH_OK, { day_of_week: day }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, day + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  // ONE DAY LIST, NOT TWO. public-availability.js used to declare its own copy.
+  // This asserts the endpoint now takes it from the validator module, because a
+  // second copy is how the capitalisation rule above quietly stops matching.
+  await test('public-availability.js imports DAY_NAMES rather than declaring its own', async () => {
+    const src = require('fs').readFileSync(require('path').join(__dirname, 'sairndental', 'public-availability.js'), 'utf8');
+    // Comment-stripped, per CLAUDE.md: a probe that asserts something about
+    // CODE must not match the comment that explains the change. The comment
+    // above the import names DAY_NAMES several times.
+    const code = src.split('\n').filter((l) => !l.trim().startsWith('//')).join('\n');
+    assert.ok(/require\(['"]\.\.\/_lib\/dental-ledger['"]\)/.test(code),
+      'the endpoint no longer imports the shared day list');
+    assert.ok(!/const\s+DAY_NAMES\s*=\s*\[/.test(code),
+      'a second DAY_NAMES literal is back in the endpoint -- it can drift from the validator');
+  });
+
+  await test('ACCEPT: HH:MM:SS, a single-digit hour, and a block ending 23:59', async () => {
+    for (const patch of [
+      { start_time: '09:00:00', end_time: '11:00:00' },
+      { start_time: '9:00' },
+      { start_time: '23:00', end_time: '23:59' },
+      { start_time: '00:00', end_time: '00:30' },
+    ]) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: Object.assign({}, PH_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(patch) + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('no session + bad provider hours -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_provider_hours', payload: { id: 'PH-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
+  });
+
+  // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
+  await test('dnt_referrals with a junk shape still goes through -- EIGHT resources remain', async () => {
     // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
     // resource, not a claim that it is next -- nothing has been measured about
     // it yet.
     //
-    // COUNT CORRECTED, AND OFF THE CODE RATHER THAN OFF THIS COMMENT. The
-    // previous boundary said "EIGHT of the fifteen" and listed eight. Both
-    // halves are now wrong: DNT_RESOURCES holds SEVENTEEN, not fifteen --
-    // dnt_supplies and dnt_vendor_orders were added to it on 2026-09-10, the
-    // same day, by the vendor-collections work. Six are validated
-    // (dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules,
-    // dnt_denial, dnt_procedure_types) plus dnt_gfe's issue-time check, so
-    // NINE have no domain check: dnt_providers, dnt_operatories,
-    // dnt_provider_hours, dnt_ar, dnt_revenue, dnt_referrals,
-    // dnt_recall_outreach, dnt_supplies, dnt_vendor_orders.
+    // COUNTED OFF DNT_RESOURCES, NOT OFF THIS COMMENT, and the history is kept
+    // because the count has now moved three times and been wrong twice. It
+    // said "EIGHT of the fifteen" and listed eight; then SEVENTEEN and NINE,
+    // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
+    // 2026-09-10 with the vendor-collections work.
     //
-    // The index row's prose tally has now been wrong twice, in both
-    // directions. Count off DNT_RESOURCES.
+    // NOW: DNT_RESOURCES holds SEVENTEEN. Seven are validated --
+    // dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
+    // dnt_procedure_types and dnt_txplans -- plus dnt_gfe's issue-time check.
+    // So EIGHT have no domain check: dnt_providers, dnt_operatories,
+    // dnt_ar, dnt_revenue, dnt_referrals, dnt_recall_outreach, dnt_supplies,
+    // dnt_vendor_orders.
+    //
+    // dnt_provider_hours came off this list on 2026-09-11 -- the only one of
+    // the nine that fed an UNAUTHENTICATED, PATIENT-FACING surface
+    // (public-availability.js generates public booking slots from it).
     //
     // If this ever fails, either the scope grew -- fine, say so here as the
-    // previous three boundaries did -- or a rule leaked across resources.
+    // previous four boundaries did -- or a rule leaked across resources.
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
@@ -1223,6 +1363,15 @@ async function main() {
     ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: 'Plan', status: 'accepted', items: [{ fee: 100 }] }],
     ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: '', status: 'proposed', items: [{ fee: 100 }] }],
     ['dnt_txplans', { id: 'TP-1', title: 'Plan', status: 'proposed', items: [{ fee: 100 }] }],
+    // dnt_provider_hours (2026-09-11). The last entry is the one that matters
+    // most: pre-fix, end_time "29:00" reached the store and public-
+    // availability.js then offered fourteen slots ending at 04:30 the next
+    // morning, to anonymous callers.
+    ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'monday', start_time: '09:00', end_time: '11:00' }],
+    ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday', start_time: '9', end_time: '11:00' }],
+    ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday', start_time: '11:00', end_time: '09:00' }],
+    ['dnt_provider_hours', { id: 'PH-1', day_of_week: 'Monday', start_time: '09:00', end_time: '11:00' }],
+    ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday', start_time: '22:00', end_time: '29:00' }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

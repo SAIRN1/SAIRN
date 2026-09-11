@@ -12,8 +12,15 @@
 // enforced at write time by public-book.js's insert, not by anything here.
 
 const { resolveSlug, checkAndIncrementRateLimit, readRows } = require('../_lib/dental-public');
-
-const DAY_NAMES = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+// ONE DAY LIST, NOT TWO (2026-09-11). This file declared its own copy of
+// DAY_NAMES. The write-time validator for dnt_provider_hours has to compare
+// day_of_week against exactly this list -- the comparison here is `===` and
+// capitalised, so "monday" matches nothing and the provider shows as fully
+// booked to every patient with no error logged. A validator holding a second
+// copy could drift from the reader it protects, and the drift would be
+// invisible in precisely that silent direction. Imported from the pure
+// validator module (no I/O, no env) rather than the other way round.
+const { DAY_NAMES } = require('../_lib/dental-ledger');
 
 function supabaseHeaders() {
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;

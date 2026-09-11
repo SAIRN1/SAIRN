@@ -44,6 +44,7 @@ const {
   denialProblem: dntDenialProblem,
   procedureTypeProblem: dntProcedureTypeProblem,
   txPlanProblem: dntTxPlanProblem,
+  providerHoursProblem: dntProviderHoursProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -10013,6 +10014,35 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_txplans') {
         const tpp = dntTxPlanProblem(payload);
         if (tpp) { res.status(400).json({ error: { code: 'INVALID_TREATMENT_PLAN', message: tpp } }); return; }
+      }
+      // dnt_provider_hours, the SEVENTH (2026-09-11), and the only one of the
+      // nine that fed an UNAUTHENTICATED, PATIENT-FACING surface.
+      // api/sairndental/public-availability.js reads every hours row for the
+      // licence and generates the booking slots a member of the public is
+      // offered; nothing in that path validates a block, and
+      // addProviderHours() checks only that a provider is chosen and both
+      // times are non-empty.
+      //
+      // EIGHT SHAPES MEASURED AGAINST THE REAL SLOT LOOP, SEVEN SILENT AND ONE
+      // WORSE. A start time of "9", "abc" or absent, an end at or before the
+      // start, and a day_of_week of "monday" or "Mon" each give ZERO slots --
+      // so the provider reads as FULLY BOOKED to every patient, permanently,
+      // with nothing logged. That outcome has already happened in production
+      // once from a different cause, and public-availability.js still carries
+      // the comment recording it.
+      //
+      // The eighth fabricates instead of hiding: Date.UTC(y,m,d,29,0) rolls
+      // into the next day, so end_time "29:00" produced FOURTEEN slots ending
+      // at 04:30 the following morning -- appointments offered at times and on
+      // a day the practice is not open. An <input type="time"> cannot produce
+      // it; this handler accepted it.
+      //
+      // Full reasoning and the measured table are in api/_lib/dental-ledger.js,
+      // including why overlapping blocks and short blocks are deliberately
+      // left alone.
+      if (resource === 'dnt_provider_hours') {
+        const phh = dntProviderHoursProblem(payload);
+        if (phh) { res.status(400).json({ error: { code: 'INVALID_PROVIDER_HOURS', message: phh } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

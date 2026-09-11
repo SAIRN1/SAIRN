@@ -663,8 +663,130 @@ function txPlanProblem(record) {
   return null;
 }
 
+// ── SEVENTH RESOURCE: dnt_provider_hours (2026-09-11) ─────────────────────
+// THE ONLY ONE OF THE NINE THAT FEEDS AN UNAUTHENTICATED, PATIENT-FACING
+// SURFACE, which is why it was taken next. `api/sairndental/public-
+// availability.js` reads every `dnt_provider_hours` row for the licence and
+// generates the booking slots a member of the public is offered. Nothing in
+// that path validates a block; `addProviderHours()` checks only that a
+// provider is selected and that both times are non-empty.
+//
+// MEASURED AGAINST THE REAL SLOT LOOP, run in node rather than reasoned about.
+// Against a Monday, 30-minute appointments, a good block 09:00-11:00 gives 4
+// slots. Then:
+//
+//   start_time "9"         ->  0 slots   (sm is undefined, Date.UTC -> NaN)
+//   start_time "abc"       ->  0 slots
+//   start_time absent      ->  0 slots   (String(undefined) -> "undefined")
+//   end before start       ->  0 slots
+//   end equal to start     ->  0 slots
+//   day_of_week "monday"   ->  0 slots   (filter is ===, DAY_NAMES is capitalised)
+//   day_of_week "Mon"      ->  0 slots
+//   end_time "29:00"       -> 14 SLOTS, THE LAST AT 04:30 THE NEXT MORNING
+//
+// EIGHT SHAPES, SEVEN SILENT AND ONE WORSE THAN SILENT. The seven make the
+// provider look FULLY BOOKED to every patient, permanently, with nothing
+// logged and no error anywhere -- and that exact outcome has already happened
+// in production once: `public-availability.js` still carries the comment
+// recording that a malformed query "made every availability request return
+// zero slots regardless of real provider hours -- found live during the
+// end-to-end booking test."
+//
+// The eighth is the fabricate-in-the-wrong-direction case. `Date.UTC(y,m,d,29,0)`
+// rolls into the next day, so an out-of-range hour OFFERS APPOINTMENTS AT
+// TIMES AND ON A DAY THE PRACTICE IS NOT OPEN, to anonymous callers. An
+// `<input type="time">` cannot produce it; this handler accepted it.
+//
+// STRICTER THAN THE BROWSER ON ONE RULE, DELIBERATELY. `addProviderHours()`
+// does NOT check that end is after start, so the app itself can create an
+// inverted block -- which yields zero slots, i.e. it is already broken.
+// Refusing it with a message that names the problem beats storing a block that
+// silently closes a day.
+//
+// NO LEGACY-ROW COST, and that was checked rather than assumed:
+// `addProviderHours()` only ever pushes a new record, there is no edit path,
+// and `removeProviderHours()` is local-only -- `dnt_provider_hours` has no
+// removal verb at all, which is one of the 324 resources
+// tools/removal_path_check.py now tracks. So nothing re-sends an existing
+// block into this gate.
+//
+// ── WHAT IS DELIBERATELY NOT VALIDATED ────────────────────────────────────
+//   * OVERLAPPING blocks for one provider and day. They produce the same slot
+//     twice rather than a wrong time, and whether two blocks should merge is a
+//     product decision about how a practice describes a split shift.
+//   * A BLOCK SHORTER THAN THE APPOINTMENT LENGTH. It legitimately yields zero
+//     slots, the length is per-request, and a practice may keep a 15-minute
+//     block for 15-minute appointment types.
+//   * SECONDS. `<input type="time">` sends HH:MM, but HH:MM:SS parses
+//     identically in the slot loop (split(':') discards the third part), so it
+//     is accepted rather than refused for tidiness.
+const DAY_NAMES = [
+  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
+];
+const DAY_NAME_SET = Object.assign(Object.create(null),
+  DAY_NAMES.reduce(function (m, d) { m[d] = true; return m; }, {}));
+const HHMM_RE = /^([0-9]{1,2}):([0-9]{2})(:[0-9]{2})?$/;
+
+// Minutes since midnight, or null if the value is not a time the slot loop can
+// read. The range check is what catches "29:00" -- Date.UTC accepts it and
+// rolls into the next day, which is the one shape here that FABRICATES slots
+// instead of hiding them.
+function timeToMinutes(v) {
+  if (typeof v !== 'string') return null;
+  const m = HHMM_RE.exec(v.trim());
+  if (!m) return null;
+  const h = Number(m[1]);
+  const mi = Number(m[2]);
+  if (h > 23 || mi > 59) return null;
+  return (h * 60) + mi;
+}
+
+function providerHoursProblem(record) {
+  const r = record || {};
+  if (String(r.provider_id == null ? '' : r.provider_id).trim() === '') {
+    return 'An hours block must name a provider. public-availability.js '
+         + 'filters blocks with h.provider_id === providerId, so a block with '
+         + 'no provider_id belongs to nobody and can never produce a slot.';
+  }
+  const day = typeof r.day_of_week === 'string' ? r.day_of_week.trim() : '';
+  if (!DAY_NAME_SET[day]) {
+    return 'day_of_week must be exactly one of ' + DAY_NAMES.join(', ')
+         + ' (got ' + JSON.stringify(r.day_of_week) + '). '
+         + 'public-availability.js compares it with === against a capitalised '
+         + 'DAY_NAMES, so "monday" or "Mon" matches nothing and the provider '
+         + 'shows as FULLY BOOKED to every patient, permanently, with no error '
+         + 'logged anywhere.';
+  }
+  const start = timeToMinutes(r.start_time);
+  const end = timeToMinutes(r.end_time);
+  if (start === null || end === null) {
+    const bad = start === null ? 'start_time' : 'end_time';
+    return bad + ' must be a 24-hour HH:MM time with hours 00-23 and minutes '
+         + '00-59 (got ' + JSON.stringify(start === null ? r.start_time : r.end_time)
+         + '). The slot loop does String(t).split(\':\').map(Number) and feeds '
+         + 'the parts to Date.UTC -- an unparseable value gives NaN and SILENTLY '
+         + 'produces zero slots, and an out-of-range hour like "29:00" rolls '
+         + 'into the NEXT DAY and offers appointments the practice is not open '
+         + 'for.';
+  }
+  if (end <= start) {
+    return 'end_time must be after start_time (got ' + JSON.stringify(r.start_time)
+         + ' to ' + JSON.stringify(r.end_time) + '). The slot loop runs while '
+         + 'cursor + length <= blockEnd, so an inverted or empty block produces '
+         + 'zero slots and closes that day for that provider without saying so.';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
-  procedureTypeProblem, txPlanProblem,
+  procedureTypeProblem, txPlanProblem, providerHoursProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
+  // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
+  // availability.js declared its own copy; a validator with a second copy
+  // could drift from the reader it is protecting, and the drift would be
+  // invisible in exactly the silent direction above. Same argument the
+  // financial-tier gate makes for sharing one role list between its read and
+  // write halves.
+  DAY_NAMES, timeToMinutes,
 };
