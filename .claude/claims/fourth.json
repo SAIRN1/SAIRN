@@ -850,8 +850,8 @@
       "task": "default target globs relative to current directory scan nothing report clean",
       "claimed_at": "2026-09-11T11:58:53Z",
       "claimed_at_epoch": 1789127933.0626843,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T12:37:55Z"
     }
   ]
 }
