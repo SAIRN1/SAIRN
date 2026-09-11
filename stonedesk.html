@@ -2868,10 +2868,14 @@ window.saCleanPrompt = function(text) {
   return text;
 };
 
-// LAYER 8 — PII Scrubbing (24 patterns)
-window.saScrubPII = function(text) {
-  if (!text || typeof text !== 'string') return text;
-  var patterns = [
+// LAYER 8 — PII Scrubbing
+// THE COUNT IS NOT WRITTEN DOWN ANY MORE. This heading said "(24 patterns)" and
+// Layer 30's status report said "PII protection: 24 patterns active" -- two
+// hand-maintained copies of a number that lives in the array below, either of
+// which goes stale the moment a pattern is added. The array is hoisted out of
+// the function so the count can be MEASURED (and so it is not rebuilt on every
+// call, which it was).
+var SA_PII_PATTERNS = [
     { re: /\b\d{3}[-.\s]?\d{2}[-.\s]?\d{4}\b/g, rep: '[SSN-REDACTED]' },
     { re: /\b4[0-9]{12}(?:[0-9]{3})?\b/g, rep: '[CARD-REDACTED]' },
     { re: /\b5[1-5][0-9]{14}\b/g, rep: '[CARD-REDACTED]' },
@@ -2896,10 +2900,13 @@ window.saScrubPII = function(text) {
     { re: /(?:medical\s*record|mrn|patient\s*id)\s*:?\s*[A-Z0-9-]{5,}/gi, rep: '[MRN-REDACTED]' },
     { re: /\bhipaa\s*protected/gi, rep: '[PHI-REDACTED]' },
     { re: /\b(?:biometric|fingerprint|face\s*scan)\s*data/gi, rep: '[BIOMETRIC-REDACTED]' }
-  ];
-  patterns.forEach(function(p) { text = text.replace(p.re, p.rep); });
+];
+window.saScrubPII = function(text) {
+  if (!text || typeof text !== 'string') return text;
+  SA_PII_PATTERNS.forEach(function(p) { text = text.replace(p.re, p.rep); });
   return text;
 };
+window.saScrubPII.patternCount = SA_PII_PATTERNS.length;
 
 // LAYER 9 — Data Exfiltration Monitor
 var _origXHR = window.XMLHttpRequest;
@@ -3049,11 +3056,16 @@ document.addEventListener('copy', function(e) {
 
 // LAYER 16 — Rate Limiting (API calls per minute)
 var apiCallLog = [];
+// THE LIMIT IS READ, NOT RETYPED. It was a local `var limit = 30` and appeared
+// again as the literal "30 calls/min" in the rejection message and a third time
+// in Layer 30's status report. Three copies of one policy; changing the limit
+// would have left two of them lying. Exposed so both can read it.
+window.SA_RATE_LIMIT_PER_MIN = 30;
 window.saCheckRateLimit = function(appId) {
   var now = Date.now();
   apiCallLog = apiCallLog.filter(function(t) { return now - t < 60000; });
   apiCallLog.push(now);
-  var limit = 30;
+  var limit = window.SA_RATE_LIMIT_PER_MIN;
   if (apiCallLog.length > limit) {
     saLog('L16-RATELIMIT', 'Rate limit exceeded: ' + apiCallLog.length + ' calls/min', 'high');
     return false;
@@ -3355,20 +3367,76 @@ function saLog(layer, message, severity) {
 }
 
 // LAYER 30 — Security Status Dashboard (Admin only)
+//
+// IT USED TO ASSERT WHAT IT SHOULD HAVE MEASURED, AND THAT IS THE WHOLE POINT
+// OF THIS LAYER. Four of its lines were string literals:
+//   'Idle timeout: 30min', 'PII protection: 24 patterns active',
+//   'Prompt injection: Active', 'Rate limiting: 30 calls/min'
+// None of them read anything. A layer that was defined and never called
+// rendered here as "Active" exactly as loudly as one that worked -- and on
+// 2026-08-31 a sweep found TEN layers in precisely that state, six of which
+// were on the Claude request path this panel was calling Active. The security
+// status screen was the last place that should have been guessing.
+//
+// SAME SHAPE AS LAYER 12'S ALLOWLIST, one floor up: not a missing check, but a
+// check that could only ever return the reassuring answer. Every line below is
+// now derived from the thing it describes, and a layer that is not installed
+// reports NOT WIRED rather than silently reading as fine.
+function _saLayerState(name) {
+  return (typeof window[name] === 'function') ? null : 'NOT WIRED';
+}
 window.saShowSecurityStatus = function() {
-  var logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]');
+  var logs = [];
+  try { logs = JSON.parse(sessionStorage.getItem('sairn_audit') || '[]'); } catch (e) { logs = []; }
   var critical = logs.filter(function(l) { return l.sev === 'critical'; }).length;
   var high = logs.filter(function(l) { return l.sev === 'high'; }).length;
+
+  // Idle timeout: read from the config the timer actually uses.
+  var idleMin = Math.round((SAIRN_SEC.sessionTimeout || 0) / 60000);
+
+  // PII: the count of patterns that exist, not a number typed beside them.
+  var pii = _saLayerState('saScrubPII') ||
+    ((window.saScrubPII.patternCount || 0) + ' patterns active');
+
+  // Prompt injection: BOTH halves, because a layer being DEFINED is not the
+  // same as it being REACHED. saSecureClaudeCall is what scrubs; the outbound
+  // fetch wrapper is what puts it on every proxy call.
+  var inj = _saLayerState('saSecureClaudeCall') ||
+    (window.fetch && window.fetch._saOutboundWrapped
+      ? 'active on every /api/claude call'
+      : 'DEFINED BUT NOT ON THE REQUEST PATH');
+
+  // Rate limiting: the limit the limiter itself reads.
+  var rate = _saLayerState('saCheckRateLimit') ||
+    (window.SA_RATE_LIMIT_PER_MIN + ' calls/min');
+
+  // Layer 12, re-run live, so this reports what is true NOW rather than what
+  // was true at DOMContentLoaded. Same one narrow exception: Google Fonts
+  // serves per-UA CSS so no fixed hash can exist for it.
+  var unhashed = 0;
+  try {
+    document.querySelectorAll('script[src], link[rel=stylesheet]').forEach(function(el) {
+      var u = el.src || el.href;
+      if (!u || u.indexOf(location.origin) === 0 || el.integrity) return;
+      if (el.tagName === 'LINK' && new URL(u).hostname === 'fonts.googleapis.com') return;
+      unhashed++;
+    });
+  } catch (e) { unhashed = -1; }
+  var sri = unhashed < 0 ? 'could not check'
+          : unhashed === 0 ? 'every external resource is hashed'
+          : unhashed + ' external resource(s) with NO integrity hash';
+
   var report = 'SAIRN Security Status v' + SAIRN_SEC.version + '\n' +
     'App: ' + SAIRN_SEC.appName + '\n' +
     'Session violations: ' + SAIRN_SEC.violationCount + '\n' +
     'Critical events: ' + critical + '\n' +
     'High events: ' + high + '\n' +
     'Login attempts: ' + SAIRN_SEC.loginAttempts + '/' + SAIRN_SEC.maxLoginAttempts + '\n' +
-    'Idle timeout: 30min\n' +
-    'PII protection: 24 patterns active\n' +
-    'Prompt injection: Active\n' +
-    'Rate limiting: 30 calls/min\n\n' +
+    'Idle timeout: ' + idleMin + 'min\n' +
+    'PII protection: ' + pii + '\n' +
+    'Prompt injection: ' + inj + '\n' +
+    'Rate limiting: ' + rate + '\n' +
+    'Subresource integrity: ' + sri + '\n\n' +
     'Recent events:\n' + logs.slice(-5).map(function(l) { return l.ts.slice(11,19) + ' [' + l.layer + '] ' + l.msg; }).join('\n');
   showToast(report);
 };
@@ -3413,7 +3481,7 @@ window.fetch = function(url, opts) {
     if (typeof showToast === 'function') {
       showToast('Too many AI requests in the last minute. Wait a moment and try again.', 5000);
     }
-    return Promise.reject(new Error('SAIRN Security: rate limit exceeded (30 calls/min)'));
+    return Promise.reject(new Error('SAIRN Security: rate limit exceeded (' + window.SA_RATE_LIMIT_PER_MIN + ' calls/min)'));
   }
 
   // LAYER 21 — anomaly detection. Records and logs; deliberately does NOT
@@ -3467,6 +3535,11 @@ window.fetch = function(url, opts) {
     });
   });
 };
+// A MARK THAT THE WRAPPER IS ACTUALLY INSTALLED, not merely defined. Layer 30
+// reads this: without it the status panel can only say saSecureClaudeCall
+// EXISTS, which is the distinction that made ten layers read as Active while
+// they were dead (2026-08-31).
+window.fetch._saOutboundWrapped = true;
 
 // LAYER 24 — Data Minimization Checker, wired onto the localStorage write
 // helper. It was defined and never called, so nothing ever checked what this

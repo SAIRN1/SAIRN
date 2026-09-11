@@ -384,6 +384,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairnvet_audit_and_controlled.js`
 - `tests/sb_sync_badge_honesty.js`
 - `tests/schema_provisioning_probe.py`
+- `tests/sd_security_status_is_measured.js`
 - `tests/seam_check/run_delegation_probe.py`
 - `tests/seam_check/run_or_default_probe.py`
 - `tests/seam_check/run_probe.py`
