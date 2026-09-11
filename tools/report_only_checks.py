@@ -466,6 +466,33 @@ REGISTRY = [
                     'the whole time, verified rather than assumed, and the '
                     'first draft of the finding had that wrong',
     },
+    {
+        'tool': 'removal_path_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-10, the day it was built',
+        'catches': 'a NEWLY registered resource the product cannot remove a '
+                   'record from -- no delete and no soft_delete verb -- that is '
+                   'not in tools/removal_path_baseline.json with a reason',
+        'why_it_matters': '324 of 389 registered resources are in that state '
+                          'TODAY, and it is not a soft number: sd-data.js '
+                          'upserts on (license_hash, id) at 117 call sites '
+                          'against THREE single-row collections, so writing the '
+                          'collection without an item removes nothing. A row '
+                          'the product can create is a row only Michael can '
+                          'remove by hand in the SQL editor -- which is what '
+                          'the 15+ sql/*_cleanup.sql files across 11 apps are, '
+                          'and why that pile keeps growing',
+        'evidence': '18-arm probe, and the arm worth having is the FALSE '
+                    'EXEMPTION one: a shared registry comment reading "X is '
+                    'MUTABLE; Y is APPEND-ONLY" was attributed wholesale by the '
+                    'first version, labelling a money record its own comment '
+                    'calls MUTABLE as append-only and silently exempting it. '
+                    'The probe asserts the mutable sibling still fails. Also: '
+                    'a missing baseline turns every stuck resource into a '
+                    'finding rather than passing quietly, and an unloadable '
+                    'registry is an error rather than CLEAN. 0.3s',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
