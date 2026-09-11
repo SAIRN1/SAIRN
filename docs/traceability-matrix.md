@@ -235,13 +235,14 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~Saved-quote Load: overwrite confirm fires on a merely-opened Drawing Tool tab~~ | **CLOSED 2026-09-04 (Cody)** in `7da9b31e`, live-verified | `tests/stonedesk_quote_load_state.js` |
 | ~~`sdTSExport()` invents a $28/hr pay rate into a column headed "Pay Est."~~ — **it was SIX sites, and the worst one was in the record rather than the display** | **CLOSED 2026-09-05 (Hank)** — `fe16d5d`, live-verified; the row's own premise was wrong and is corrected below | `tests/sd_timesheet_pay_est.js` |
 | **"Pinnacle Stone & Design" is hardcoded across the app — every customer's exports, prints and AI greeting name one shop** | **FIXED 2026-09-08 (Fourth)** — 132 sites, not the dozen this row estimated | `tests/nesting_saw_ticket.js`, `tests/stonedesk_shop_identity.js` |
+| **The only transport of fifteen that reported NOTHING** &mdash; it set a READ-path flag and returned null, so a write that never reached the server left no trace at all | **CLOSED 2026-09-11 (Cody)** &mdash; `sdDataFailed()` on all three failure branches; 18 fault arms in `tests/faults/sd_write_faults.js`; 8 mutation controls bite with the file restored byte-identical | `tests/faults/sd_write_faults.js` |
 | **The 28 unwired checkers, run against real code for the first time — seven clean, ONE accused `stonedesk.html` FIFTY TIMES and every one was false, ONE found an app Guardian has never checked** | **CHECKER FIXED and MAP CORRECTED 2026-09-09 (CC)** — `613a14c7`, `df14a403` | `tests/write_readback_shape_probe.py` |
 | ~~**A SECOND, COMPLETE damage-claim module exists** &mdash; same shape as the orphaned NPS system a prior session already documented, and this twin was never written down~~ &mdash; **DELETED** | **CLOSED 2026-09-09 (Hank)** &mdash; and one detail of this row was wrong, see the cell | `tests/stonedesk_damage_no_twin.js` |
 | ~~Two parallel template modules with different storage keys~~ — **the duplication was resolved 2026-07-30; a REAL defect was found inside the migration that resolved it** | **CLOSED 2026-09-04 (Fourth)** | `tests/template_migration_orphaning.js` |
 
 ## 5. THE GAPS -- read this section first
 
-**108 of 296 test files are traced to a stated requirement. 188 are not.**
+**109 of 297 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 

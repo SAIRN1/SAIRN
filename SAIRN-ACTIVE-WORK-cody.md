@@ -2613,3 +2613,77 @@ reading a comment as evidence instead of a scanner doing it.
 **What I should have done first, and will next time:** before reporting a
 fail-open, construct the push that exploits it. One clone, one branch, one commit,
 five minutes. It would have come before the decision rather than after the fix.
+
+## 2026-09-11 (Cody) -- StoneDesk was the only transport on the platform that
+## said nothing, and my own sweep had cleared it the day before
+
+Skill used: `sairn-silent-failure-sweep`. Claim:
+`stonedesk-write-path-blind-sites`. Picked because six blind sites was the
+largest remaining cluster and because the defect register calls StoneDesk the
+LEAST SWEPT app, not the cleanest -- 2 records across 40,388 lines by two
+methods, and fault injection was not one of them.
+
+**FOUR OF THE SIX ARE SAFE, and I read all six before touching any** -- the rule
+that tool prints on every run, and the one that saved five of SAIRNgrounds'
+eight. `sdSyncCollection` logs on `saved===null`; `sdCRMAdd` and `sdCRMReassign`
+toast from the result; `sdSaveEmployeeProfile` shows an inline error. They are
+flagged only because the scan looks for a literal `.catch(` and `sdData()` cannot
+reject.
+
+**THE REAL DEFECT IS UNDERNEATH ALL SIX.** Measured across every app rather than
+inferred: **of fifteen transports, fourteen carry a `console.warn` on their
+failure branches. `sdData()` carried ZERO.** It set
+`_sdReadFailed[resource] = true` and returned null -- and that flag is consumed
+by READ-path UI, `sdReadFailedNote()` and the public-catalog guard. **It does
+nothing whatever for a write.**
+
+So a write that never reached the server left **no trace at all** on the two
+sites that read no result. One of them is `saveSD3Data`, whose own comment says
+an order-tracking link resolves to the SERVER copy -- so a stage changed locally
+and nowhere else leaves a **customer reading a status that is no longer true**,
+with nothing anywhere recording why.
+
+**A state flag is not a report.** The same sentence CLAUDE.md already carries for
+`st()`: *"a boolean nobody reads is not a report."*
+
+**AND IT SLIPPED MY OWN SWEEP THE DAY BEFORE.** `transport_timeout_sweep.js`
+asserts each transport *"reports a failure rather than swallowing it"* and I wrote
+its test as `console.(warn|error)` **OR** `LastErr|_sdReadFailed|provisioned =`.
+For fourteen apps the alternation never decided anything -- they all log too. For
+StoneDesk it decided everything. **The one app the arm had to catch is the one it
+cleared.** It now requires a console call or ONE hop to a named logger, with its
+own control asserting that a bare state flag FAILS and that a hop to a silent
+helper FAILS -- and I measured all 15 against the strict rule before changing it,
+so the tightening could not red a working app.
+
+**DELIBERATELY NOT A TOAST.** Three sites already toast from their own handlers;
+the two that do not are a best-effort topic counter and a render-path save
+documented as non-blocking. What was missing is the record, not the interruption.
+`_sdReadFailed` is left exactly as it was and two arms assert it still behaves
+identically, because "I only added a log" is a claim.
+
+**THE REPORTER CANNOT BREAK THE TRANSPORT, and the suite found that before it was
+a suite.** Driving `sdData()` in a realm that had not loaded `sdDataFailed()`
+made the catch throw a ReferenceError, which made the whole async function
+**REJECT** -- and a rejecting transport is the defect relocated, not fixed: every
+`await` caller would throw out of its own handler and skip the toast it exists to
+show. All three reporter calls are now guarded, and two arms drive it with the
+reporter deleted and with `console` itself throwing.
+
+**TWO OF MY OWN ARMS WERE TOO LOOSE AND MUTATION CAUGHT THEM.** Matching
+`showToast(` anywhere in a window let `if(!saved){showToast(...)}` become
+`if(false){...}` and survive all 18. And a phrase alternation
+(`render path|Fire-and-forget|fire-and-forget`) let the render-path sentence be
+deleted, because the words "Fire-and-forget" appear elsewhere in the same body.
+Both are now pinned to the RESULT and to the specific sentence.
+
+**That is the same "a mention is not a report" weakness I was fixing in the sweep
+arm, reproduced inside the suite written to fix it, in the same hour.** Worth
+naming: the failure is not carelessness about one regex, it is that *presence* is
+the easy thing to assert and *attribution* is the thing that matters. Eight
+mutation controls now, all biting, file restored byte-identical by sha256.
+
+**Pre-existing and untouched, verified by running both checkers against
+`git show HEAD:stonedesk.html`:** 137 `MISSING_TARGETS` (ids built by JS template
+strings -- the documented limit of that checker on this file), 2 informational
+dead-button flags, 4 acknowledged key collisions. Identical before and after.

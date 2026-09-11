@@ -27699,21 +27699,70 @@ async function sdData(action, resource, payload) {
       // fact again. Recorded here rather than only at the two auth statuses,
       // because the failure that is live on this app today is a 404.
       _sdReadFailed[resource] = true;
+      try { sdDataFailed(action, resource, 'the server answered ' + res.status); } catch (_e) {}
       return null;
     }
     _sdAuthRefused[resource] = false;
     const j = await res.json();
     // An HTTP 200 carrying `ok:false` is still a failure. It used to return the
     // same null as an empty resource.
-    if (!(j && j.ok)) { _sdReadFailed[resource] = true; return null; }
+    if (!(j && j.ok)) {
+      _sdReadFailed[resource] = true;
+      try { sdDataFailed(action, resource, 'the server answered 200 with ok:false'); } catch (_e) {}
+      return null;
+    }
     _sdReadFailed[resource] = false;
     return j.data;
   } catch (e) {
     // A network throw left the previous state in place, so a read that failed
     // after one that succeeded looked like a success that returned nothing.
     _sdReadFailed[resource] = true;
+    // THE REPORTER CALL IS ITSELF GUARDED, and the suite is why. Driving sdData()
+    // in a realm that had not loaded sdDataFailed() made the catch throw a
+    // ReferenceError, which made the whole async function REJECT -- and a
+    // rejecting transport is the defect relocated, not fixed: every `await`
+    // caller would throw out of its own handler and skip the toast it exists to
+    // show. A failure path that can itself fail is the shape this session has
+    // spent two days on, so it is not left to the reporter being present.
+    try {
+      sdDataFailed(action, resource,
+        (e && (e.name === 'TimeoutError' || e.name === 'AbortError'))
+          ? 'no answer in ' + (SD_FETCH_TIMEOUT_MS / 1000) + 's'
+          : ((e && e.message) || e));
+    } catch (_e) {}
     return null;
   }
+}
+
+// ── THE ONLY TRANSPORT ON THE PLATFORM THAT SAID NOTHING (2026-09-11) ──────
+// Measured, not asserted: of the fifteen apps that write to a server, fourteen
+// transports carry a console.warn on their failure branches. sdData() carried
+// ZERO. It set `_sdReadFailed[resource]`, which reads as reporting and is not --
+// that flag is consumed by READ-path UI (sdReadFailedNote, the public-catalog
+// guard) and does nothing whatever for a write.
+//
+// SO A WRITE THAT DID NOT REACH THE SERVER LEFT NO TRACE AT ALL on the two call
+// sites that read no result: recordSharedTopics(), and saveSD3Data()'s per-
+// customer push -- the one whose own comment notes that an order-tracking link
+// resolves to the SERVER copy, so a stage changed locally and nowhere else
+// leaves a customer reading a status that is no longer true.
+//
+// IT ALSO SLIPPED MY OWN SWEEP THE DAY BEFORE. tests/faults/transport_timeout_
+// sweep.js asserts each transport "reports a failure rather than swallowing it"
+// and accepted `_sdReadFailed` as evidence. StoneDesk was the one app that
+// passed on the flag alone, and the arm has been tightened so it cannot again.
+//
+// DELIBERATELY NOT A TOAST. Three of the six write sites already toast from
+// their own handlers, and the two that do not are a best-effort topic counter
+// and a render-path save that must not block -- both documented decisions. What
+// was missing is the record, not the interruption. `_sdReadFailed` is left
+// exactly as it was: read-path UI depends on it and this adds to it rather than
+// changing it.
+function sdDataFailed(action, resource, why) {
+  try {
+    console.warn('StoneDesk: ' + action + ' "' + resource + '" did NOT reach the '
+      + 'server (' + why + ').');
+  } catch (e) {}
 }
 
 // === BUSINESS PROFILE ===

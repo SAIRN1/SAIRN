@@ -182,17 +182,70 @@ test('every one is FEATURE-DETECTED, not assumed', () => {
 
 section('and every transport SAYS something when the world fails');
 
+// ── TIGHTENED 2026-09-11, BECAUSE THIS ARM LET ONE THROUGH THE DAY BEFORE ──
+// It accepted `_sdReadFailed|LastErr|provisioned =` as evidence that a transport
+// reports its failure. For fourteen apps that was harmless -- they all carry a
+// console.warn as well, so the alternation never decided anything. For StoneDesk
+// it decided everything: sdData() had ZERO console calls and passed on
+// `_sdReadFailed[resource] = true` alone, which is a READ-path flag consumed by
+// sdReadFailedNote() and the public-catalog guard and does NOTHING for a write.
+//
+// So the one app the arm actually had to catch was the one it cleared, and a
+// write that never reached the server left no trace at all on the two call sites
+// that read no result. Measured after tightening: all 15 pass, 14 directly and
+// StoneDesk through sdDataFailed().
+//
+// A STATE FLAG IS NOT A REPORT. That is the whole lesson, and it is the same one
+// CLAUDE.md already records for st(): "a boolean nobody reads is not a report."
+// This arm now requires a console call, or ONE hop to a named function in the
+// same file whose body makes one -- the same delegation rule
+// sairn_storage_wrapper_honesty.js uses, and narrowed the same way, because
+// StoneDesk's two wrappers legitimately share a reporter.
+function reportsFailure(src, fn) {
+  const body = transportBody(src, fn);
+  if (/console\.(warn|error)/.test(body)) return true;
+  const called = body.match(/(?<![\w.$])([A-Za-z_$][\w$]*)\s*\(/g) || [];
+  return called.some((c) => {
+    const nm = c.replace(/\s*\($/, '');
+    const dm = new RegExp('(?:async\\s+)?function\\s+' + nm + '\\s*\\(').exec(src);
+    if (!dm) return false;
+    const o = src.indexOf('{', dm.index);
+    let d = 0, k = o;
+    for (; k < src.length && k - o < 4000; k++) {
+      if (src[k] === '{') d++;
+      else if (src[k] === '}' && --d === 0) break;
+    }
+    return /console\.(warn|error)/.test(stripComments(src.slice(dm.index, k + 1)));
+  });
+}
+
 APPS.forEach(([app, fn]) => {
   test(app + ': ' + fn + '() reports a failure rather than swallowing it', () => {
-    // A timer is useless if the thing it fires into is silent. Two transports
-    // were: sairnscape's `catch (e) { return null; }` and sairnmechanical's
-    // `.catch(function () { ... })`, neither of which even took the error.
-    const body = transportBody(read(app), fn);
-    assert.ok(/console\.(warn|error)/.test(body)
-              || /LastErr|_sdReadFailed|provisioned\s*=/.test(body),
-      fn + ' discards its error -- the timeout added above would arrive and '
-      + 'vanish, which is worse than no timer because it reads as protection');
+    // A timer is useless if the thing it fires into is silent. Three transports
+    // were: sairnscape's `catch (e) { return null; }`, sairnmechanical's
+    // `.catch(function () { ... })` -- neither of which even took the error --
+    // and StoneDesk's, which looked like it reported and was setting a flag.
+    assert.ok(reportsFailure(read(app), fn),
+      fn + ' discards its error -- the timeout is then worse than no timer, '
+      + 'because it reads as protection. A state flag does not count: it is not '
+      + 'read on the write path.');
   });
+});
+
+test('a STATE FLAG alone does not satisfy the arm above', () => {
+  // The control that makes the tightening real rather than asserted. Without it
+  // the rule could silently loosen again and every app would still pass.
+  assert.strictEqual(
+    reportsFailure('function xData(a,r){ try{} catch(e){ _xReadFailed[r]=true; '
+                   + 'return null; } }', 'xData'), false);
+  assert.strictEqual(
+    reportsFailure('function xData(a,r){ try{} catch(e){ oops(r); return null; } }\n'
+                   + 'function oops(r){ return false; }', 'xData'), false,
+    'a hop to a helper that says nothing counts as speaking');
+  assert.strictEqual(
+    reportsFailure('function xData(a,r){ try{} catch(e){ oops(r); return null; } }\n'
+                   + 'function oops(r){ console.warn(r); }', 'xData'), true,
+    'the one hop StoneDesk actually uses stopped counting');
 });
 
 test('the two transports that DID swallow it now name the timeout', () => {
