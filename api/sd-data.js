@@ -45,6 +45,7 @@ const {
   procedureTypeProblem: dntProcedureTypeProblem,
   txPlanProblem: dntTxPlanProblem,
   providerHoursProblem: dntProviderHoursProblem,
+  providerProblem: dntProviderProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -9588,6 +9589,22 @@ module.exports = async (req, res) => {
       if (pr.status === 404 || pr.status === 400) return { provisioned: false, providerId: null };
       const prows = await pr.json();
       if (!pr.ok || !Array.isArray(prows)) return { provisioned: false, providerId: null };
+      // AN EMPTY SESSION employee_id MATCHES NOTHING, EXPLICITLY (2026-09-11).
+      // An UNLINKED provider row carries `linked_employee_id: ''` --
+      // saveProviderEdit() stores `$('pv-edit-login').value || ''` -- so a
+      // session whose employee_id were the empty string would match the FIRST
+      // unlinked provider by `'' === ''` and inherit its patient list.
+      //
+      // NOT REACHABLE TODAY, and that was checked rather than assumed:
+      // api/dnt-auth.js refuses an empty employee_id on bootstrap
+      // (`if (!employee_id || employee_id.length > 128 || ...)`) and the signin
+      // path takes it from the stored row. **But that is an incidental bound,
+      // not a control** -- it lives in a different file, for a different
+      // reason, and nothing here depends on it deliberately. One line makes it
+      // structural, which is the difference this platform keeps writing down.
+      const sessionEmployeeId = String(session && session.employee_id != null
+        ? session.employee_id : '').trim();
+      if (!sessionEmployeeId) return { provisioned: true, providerId: null };
       const match = prows.filter((x) => x && x.data && x.data.linked_employee_id === session.employee_id)[0];
       return { provisioned: true, providerId: match ? (match.data.id || match.provider_id) : null };
     };
@@ -10043,6 +10060,28 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_provider_hours') {
         const phh = dntProviderHoursProblem(payload);
         if (phh) { res.status(400).json({ error: { code: 'INVALID_PROVIDER_HOURS', message: phh } }); return; }
+      }
+      // dnt_providers, the EIGHTH (2026-09-11). THE ROSTER IS THE
+      // ACCESS-CONTROL TABLE -- dntLinkedProvider() above finds the caller's
+      // row by linked_employee_id and the result becomes the patient set a
+      // non-broad-read role may see.
+      //
+      // DELIBERATELY SMALL, because most of the risk here was already closed:
+      // this branch has role-gated dnt_providers to management since
+      // 2026-08-27 and refuses a duplicate linked_employee_id with 409. What
+      // was left is the payload shape -- a nameless provider (which the app
+      // refuses and this handler did not; it draws a BLANK cell in three
+      // render sites, not the labelled "(unknown provider)" a missing record
+      // gives) and a non-string linked_employee_id, which can never match the
+      // token's string employee_id so a genuinely linked provider reads as
+      // unlinked and every patient read answers 403 PROVIDER_NOT_LINKED.
+      //
+      // Full reasoning, including the empty-string collision that is latent
+      // rather than live and the guard added for it above, is in
+      // api/_lib/dental-ledger.js.
+      if (resource === 'dnt_providers') {
+        const pvp = dntProviderProblem(payload);
+        if (pvp) { res.status(400).json({ error: { code: 'INVALID_PROVIDER', message: pvp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

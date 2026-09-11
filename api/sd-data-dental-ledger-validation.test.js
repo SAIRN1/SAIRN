@@ -1259,8 +1259,85 @@ async function main() {
     assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
   });
 
+  // -- 5f. dnt_providers, THE EIGHTH (2026-09-11) ---------------------------
+  // THE ROSTER IS THE ACCESS-CONTROL TABLE: dntLinkedProvider() finds the
+  // caller's row by linked_employee_id and the result becomes the patient set
+  // a non-broad-read role may see.
+  //
+  // DELIBERATELY SMALL, and that is the honest framing. The role gate
+  // (management-only, 2026-08-27) and the duplicate-link 409 were already
+  // here, and api/sd-data-dental-provider-scope.test.js owns them. What these
+  // arms add is the payload shape.
+  const PV_OK = { id: 'PV-1', name: 'Dr Ada Chen', role: 'Dentist', linked_employee_id: '' };
+
+  for (const [label, patch] of [
+    ['no name', { name: '' }],
+    ['a whitespace-only name', { name: '   ' }],
+    ['name absent', { name: undefined }],
+  ]) {
+    await test('a provider with ' + label + ' is refused -- three render sites draw a BLANK cell', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_providers', payload: Object.assign({}, PV_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'INVALID_PROVIDER');
+      assert.ok(!wrote, 'REFUSED AND STILL WROTE');
+    });
+  }
+
+  // A non-string linked_employee_id can never match the token's string
+  // employee_id, so a provider who IS linked reads as UNLINKED and every
+  // patient read answers 403 PROVIDER_NOT_LINKED -- fail-closed, and a support
+  // incident with no diagnosable cause because the roster still shows the link.
+  // THE STUB HERE COUNTS ONLY POSTs, and that is not a convenience. A truthy
+  // linked_employee_id makes this branch legitimately READ dnt_providers first
+  // for the duplicate-link 409 check, so an arm that treats ANY fetch as a
+  // write reports "refused and still wrote" on a refusal that stored nothing.
+  // It did, on the first run of these four. The store is still what is being
+  // protected -- the assertion just has to name it.
+  for (const bad of [1001, { a: 1 }, true, ['x']]) {
+    await test('linked_employee_id ' + JSON.stringify(bad) + ' is refused -- === can never match it', async () => {
+      let posted = false;
+      const handler = loadHandler(async function (url, opts) {
+        if (opts && opts.method === 'POST') posted = true;
+        return OK_WRITE();
+      });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_providers', payload: Object.assign({}, PV_OK, { linked_employee_id: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'INVALID_PROVIDER');
+      assert.ok(!posted, 'REFUSED AND STILL POSTED -- the store is what this protects');
+    });
+  }
+
+  await test('ACCEPT: an unlinked provider, a linked one, and one with no role at all', async () => {
+    for (const patch of [
+      {},
+      { linked_employee_id: '1001' },
+      { linked_employee_id: undefined },
+      { linked_employee_id: null },
+      { role: undefined },
+    ]) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_providers', payload: Object.assign({}, PV_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(patch) + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  // role is DELIBERATELY not validated: the only reader is
+  // `$('pv-edit-role').value = p.role || 'Dentist'`, which tolerates anything.
+  // Asserted so nobody adds a rule the app itself defaults around.
+  await test('an out-of-vocabulary role is ALLOWED on purpose -- the app defaults around it', async () => {
+    const handler = loadHandler(OK_WRITE);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_providers', payload: Object.assign({}, PV_OK, { role: 'Chief Wizard' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a role vocabulary was added -- read the reasoning in dental-ledger.js first');
+  });
+
   // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_referrals with a junk shape still goes through -- EIGHT resources remain', async () => {
+  await test('dnt_referrals with a junk shape still goes through -- SEVEN resources remain', async () => {
     // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
     // resource, not a claim that it is next -- nothing has been measured about
     // it yet.
@@ -1271,16 +1348,17 @@ async function main() {
     // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
     // 2026-09-10 with the vendor-collections work.
     //
-    // NOW: DNT_RESOURCES holds SEVENTEEN. Seven are validated --
+    // NOW: DNT_RESOURCES holds SEVENTEEN. NINE are validated --
     // dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
-    // dnt_procedure_types and dnt_txplans -- plus dnt_gfe's issue-time check.
-    // So EIGHT have no domain check: dnt_providers, dnt_operatories,
-    // dnt_ar, dnt_revenue, dnt_referrals, dnt_recall_outreach, dnt_supplies,
-    // dnt_vendor_orders.
+    // dnt_procedure_types, dnt_txplans, dnt_provider_hours and dnt_providers
+    // -- plus dnt_gfe's issue-time check. So SEVEN have no domain check:
+    // dnt_operatories, dnt_ar, dnt_revenue, dnt_referrals,
+    // dnt_recall_outreach, dnt_supplies, dnt_vendor_orders.
     //
-    // dnt_provider_hours came off this list on 2026-09-11 -- the only one of
-    // the nine that fed an UNAUTHENTICATED, PATIENT-FACING surface
-    // (public-availability.js generates public booking slots from it).
+    // dnt_provider_hours came off on 2026-09-11 -- the only one that fed an
+    // UNAUTHENTICATED, PATIENT-FACING surface (public-availability.js
+    // generates public booking slots from it). dnt_providers came off the same
+    // day -- the roster IS the access-control table for patient scoping.
     //
     // If this ever fails, either the scope grew -- fine, say so here as the
     // previous four boundaries did -- or a rule leaked across resources.
@@ -1372,6 +1450,9 @@ async function main() {
     ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday', start_time: '11:00', end_time: '09:00' }],
     ['dnt_provider_hours', { id: 'PH-1', day_of_week: 'Monday', start_time: '09:00', end_time: '11:00' }],
     ['dnt_provider_hours', { id: 'PH-1', provider_id: 'PV-1', day_of_week: 'Monday', start_time: '22:00', end_time: '29:00' }],
+    // dnt_providers (2026-09-11).
+    ['dnt_providers', { id: 'PV-1', name: '', linked_employee_id: '' }],
+    ['dnt_providers', { id: 'PV-1', name: 'Dr Ada Chen', linked_employee_id: 1001 }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

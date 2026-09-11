@@ -778,9 +778,84 @@ function providerHoursProblem(record) {
   return null;
 }
 
+// ── EIGHTH RESOURCE: dnt_providers (2026-09-11) ───────────────────────────
+// THE ROSTER IS THE ACCESS-CONTROL TABLE. `dntLinkedProvider()` in
+// api/sd-data.js finds the caller's provider row by
+// `x.data.linked_employee_id === session.employee_id` and the resulting
+// providerId becomes the patient set a non-broad-read role may see. So this is
+// the one resource in the group where a bad row is a SCOPING question rather
+// than a money or calendar one.
+//
+// MOST OF THE RISK WAS ALREADY CLOSED, and saying so is the honest framing --
+// this validator is deliberately small. The write branch already role-gates
+// dnt_providers to DNT_MANAGEMENT_ROLES (2026-08-27, because anyone who can
+// edit the roster can grant themselves a patient list) and already refuses a
+// duplicate `linked_employee_id` with 409, because two matching rows would let
+// `[0]` pick a scope by row order. What was left is the payload shape:
+//
+//   1. NAME. The app refuses a nameless save ("Provider name required") and
+//      this handler did not. Three render sites do
+//      `H(pv ? pv.name : '(unknown provider)')` -- the hours table and both
+//      appointment tables -- so a row that EXISTS with an empty name renders a
+//      BLANK cell, which is a different and worse thing than the labelled
+//      "(unknown provider)" that a MISSING record produces. The roster row
+//      then cannot be identified in order to fix it.
+//
+//   2. linked_employee_id MUST BE A STRING when it is present. `===` against
+//      the token's string employee_id can never match a number or an object,
+//      so a provider who genuinely IS linked reads as unlinked and every
+//      patient read answers 403 PROVIDER_NOT_LINKED. That fails CLOSED, which
+//      is the right direction -- and it is a support incident with no
+//      diagnosable cause, because the roster panel will show the link.
+//
+// A LATENT COLLISION, REPORTED AS LATENT RATHER THAN LIVE because I checked
+// both auth paths before writing it down. An unlinked provider row carries
+// `linked_employee_id: ''` -- saveProviderEdit() stores
+// `$('pv-edit-login').value || ''` -- so a session whose `employee_id` were the
+// empty string would match the FIRST unlinked provider and inherit its patient
+// list. It is NOT reachable today: api/dnt-auth.js refuses an empty
+// employee_id on bootstrap (`if (!employee_id || ...)`) and the signin path
+// takes it from the stored row. **That is an incidental bound, not a control**,
+// so dntLinkedProvider() now also refuses an empty session employee_id
+// outright. Recorded here because the next reader of this comparison should
+// know the empty-string case was considered rather than missed.
+//
+// A REAL LEGACY-ROW COST, small: saveProviderEdit() EDITS
+// (`providers().map(x => x.id === id ? updated : x)`), so an existing row with
+// no name becomes unwritable until a name is given. The app has always refused
+// to CREATE one, so such a row can only have arrived another way.
+//
+// ── WHAT IS DELIBERATELY NOT VALIDATED ────────────────────────────────────
+//   * role. The select offers Dentist and Hygienist, but the only reader is
+//     `$('pv-edit-role').value = p.role || 'Dentist'`, which tolerates absence
+//     and anything else by design. Refusing a value the app itself defaults
+//     around would be inventing a rule rather than moving one server-side.
+//   * operatory_id. Optional in the form, and an unknown one leaves the
+//     default-operatory dropdown unselected rather than mis-scoping anything.
+function providerProblem(record) {
+  const r = record || {};
+  if (String(r.name == null ? '' : r.name).trim() === '') {
+    return 'A provider must have a name. This is the rule saveProvider() '
+         + 'already refuses on, and without it three render sites -- the hours '
+         + 'table and both appointment tables -- draw a BLANK provider cell '
+         + 'rather than the "(unknown provider)" a missing record produces, so '
+         + 'the roster row cannot be identified in order to correct it.';
+  }
+  if (r.linked_employee_id !== undefined && r.linked_employee_id !== null
+      && typeof r.linked_employee_id !== 'string') {
+    return 'linked_employee_id must be a string (empty means not linked, and '
+         + 'that is fine). dntLinkedProvider() matches it with === against the '
+         + 'session token\'s string employee_id, so a '
+         + typeof r.linked_employee_id + ' can never match: the provider reads '
+         + 'as UNLINKED and every patient read answers 403 '
+         + 'PROVIDER_NOT_LINKED, while the roster panel still shows the link.';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
-  procedureTypeProblem, txPlanProblem, providerHoursProblem,
+  procedureTypeProblem, txPlanProblem, providerHoursProblem, providerProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
   // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
   // availability.js declared its own copy; a validator with a second copy

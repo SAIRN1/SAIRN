@@ -230,6 +230,64 @@ async function main() {
     assert.strictEqual(res.statusCode, 200, 'editing a provider must not collide with itself -- got ' + JSON.stringify(res.body));
   });
 
+  // ── THE EMPTY-STRING COLLISION (2026-09-11) ─────────────────────────────
+  // An UNLINKED provider row carries `linked_employee_id: ''` --
+  // saveProviderEdit() stores `$('pv-edit-login').value || ''`. dntLinkedProvider()
+  // matches on `x.data.linked_employee_id === session.employee_id`, so a
+  // session whose employee_id were the empty string would match the FIRST
+  // unlinked provider by `'' === ''` and inherit its patient list.
+  //
+  // IT WAS NOT REACHABLE, AND THAT IS WHY THIS TEST EXISTS RATHER THAN A
+  // BUG REPORT. api/dnt-auth.js refuses an empty employee_id on bootstrap and
+  // the signin path takes it from the stored row -- but that bound lives in a
+  // different file for a different reason, and nothing in the scoping code
+  // depended on it deliberately. An incidental bound is not a control. The
+  // guard is now in dntLinkedProvider() and this arm holds it.
+  //
+  // The token is signed DIRECTLY rather than through tokenFor(), because that
+  // helper falls back to 'emp-' + role on a falsy id and so cannot express the
+  // case under test.
+  await test('an EMPTY session employee_id matches no provider, not the first unlinked one', async () => {
+    const emptyIdToken = signSessionToken({
+      app: 'sairndental', employee_id: '', role: 'provider', license_hash: LIC_HASH,
+    });
+    const rowsWithEmptyLink = [
+      { provider_id: 'PV-1', data: { id: 'PV-1', name: 'Dr Linked', linked_employee_id: 'emp-provider' } },
+      // exactly what an unlinked row looks like on disk
+      { provider_id: 'PV-2', data: { id: 'PV-2', name: 'Dr Unlinked', linked_employee_id: '' } },
+    ];
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', rowsWithEmptyLink],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+      ['dnt_patients?', PATIENT_ROWS],
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, emptyIdToken), res);
+    assert.strictEqual(res.statusCode, 403,
+      'an empty employee_id inherited a scope instead of being refused -- got '
+      + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.strictEqual(res.body.error.code, 'PROVIDER_NOT_LINKED');
+  });
+
+  // CONTROL: the same rows, a REAL employee_id, still resolve normally. Without
+  // this the arm above would pass on a guard that refused everybody.
+  await test('CONTROL: a real employee_id still links against the same rows', async () => {
+    const rowsWithEmptyLink = [
+      { provider_id: 'PV-1', data: { id: 'PV-1', name: 'Dr Linked', linked_employee_id: 'emp-provider' } },
+      { provider_id: 'PV-2', data: { id: 'PV-2', name: 'Dr Unlinked', linked_employee_id: '' } },
+    ];
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', rowsWithEmptyLink],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+      ['dnt_patients?', PATIENT_ROWS],
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, tokenFor('provider')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.ok(Array.isArray(res.body.data) && res.body.data.length > 0,
+      'the linked provider lost their patient list -- the guard is too wide');
+  });
+
   console.log('\n' + passed + '/' + total + ' passed');
   if (passed !== total) process.exitCode = 1;
 }
