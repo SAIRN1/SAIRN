@@ -894,6 +894,16 @@
       "claimed_at_epoch": 1789130346.351095,
       "status": "released",
       "released_at": "2026-09-11T13:07:26Z"
+    },
+    {
+      "id": "cc-1789132202",
+      "session": "cc",
+      "subject": "checker-comment-blindness",
+      "task": "literal-drift and key-collision count comment text as code",
+      "claimed_at": "2026-09-11T13:10:02Z",
+      "claimed_at_epoch": 1789132202.3328724,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
