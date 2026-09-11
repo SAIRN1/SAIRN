@@ -417,6 +417,31 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'index_duplicate_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the '
+                   'same subject -- a superseded row that was never removed, so '
+                   'the file every session reads to choose work gives two '
+                   'answers and the reader cannot tell which is current',
+        'why_it_matters': 'this is the CLAIMS problem at the document level. '
+                          'sairn_claim.py stops two sessions doing the same '
+                          'work; nothing stopped the index describing the same '
+                          'work twice. On the day it was built the index held '
+                          'TWO such pairs, both Hank rows superseded and left '
+                          'in place -- "324 of 389 ... no removal path" beside '
+                          '"321 of 389", and "56 TIER A resources" beside "53 '
+                          '(was 56)". The tool answers 321 and 53, verified by '
+                          'running it rather than trusting either row',
+        'evidence': 'both stale rows removed the same day; the checker goes '
+                    'from 2 pairs to 0 across 323 rows. Held by a 13-arm probe '
+                    'whose arm 2 is the case that prompted it -- a pair '
+                    'differing ONLY by a moving count must still match, which '
+                    'is why numbers are stripped before comparing',
+    },
+    {
         'tool': 'gate_column_check.py',
         'mode': 'once',
         'args': [],

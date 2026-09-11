@@ -1296,3 +1296,29 @@ row carries no literal `|`, the count stayed at 9, and I verified every cell
 after the fact. **Verifying afterwards is not the same as the technique being
 sound** — the rule is to anchor on a unique substring and replace the row whole,
 and I should have.
+
+**`index_duplicate_check.py` — the claims problem, at the document level.**
+`sairn_claim.py` stops two sessions doing the same work. Nothing stopped the
+**index** describing the same work twice — and it was, twice over:
+
+- `324 of 389 registered resources have no removal path` beside `321 of 389`
+- `56 TIER A resources have no removal path` beside `53 (was 56)`
+
+All four rows open, unassigned, citing the same command. **I ran the tool rather
+than trusting any of them:** `registered 389, NO REMOVAL PATH 321, A=53`. So the
+two older rows were stale, and a session reading either would have taken a wrong
+count as current — or picked up work the newer row already tracks.
+
+**Numbers are stripped before comparing, and that is the whole design.** The
+pair that prompted this differs ONLY by a count; a comparison that kept the
+digits would have scored them as different subjects and missed the case it
+exists for. Arm 2 of the probe is exactly that.
+
+Both stale rows removed — **anchored on a unique substring and dropped whole,
+not split on `|`**, which is what I should have done on the trial-gate row
+earlier and said so when I didn't. 2 pairs → 0 across 323 rows.
+
+**The controls matter more than the finding here:** the same defect in two
+different apps is two real pieces of work, not a duplicate (arm 4), and a
+struck-through row still counts if its subject is live elsewhere (arm 5) —
+markup is normalised away so strikethrough cannot hide a second answer.
