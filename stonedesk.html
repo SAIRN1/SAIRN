@@ -27651,6 +27651,31 @@ function sdAuthRefusedNote(what) {
     '</div>';
 }
 
+// ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var SD_FETCH_TIMEOUT_MS = 15000;
+function sdFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(SD_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
 async function sdData(action, resource, payload) {
   const licKey = sdLicenseKey();
   if (!licKey) return null;
@@ -27661,6 +27686,7 @@ async function sdData(action, resource, payload) {
       if (tok) headers['X-SD-Auth'] = tok;
     } catch (e) {}
     const res = await fetch('/api/sd-data', {
+    signal: sdFetchTimeoutSignal(),
       method: 'POST',
       headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })

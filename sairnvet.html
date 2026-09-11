@@ -8766,10 +8766,36 @@ function renderSchedulePredictiveInsights() {
 // checking whether it is.
 // ================================================================
 var SV_DATA_API = 'https://sairn.vercel.app/api/sd-data';
+// ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var SV_FETCH_TIMEOUT_MS = 15000;
+function svFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(SV_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
 function svData(action, resource, payload) {
   var lic = svLoad('license', '');
   if (!lic) return Promise.resolve(null);
   return fetch(SV_DATA_API, {
+    signal: svFetchTimeoutSignal(),
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic },
     body: JSON.stringify({ action: action, resource: resource, app_id: 'sairnvet', payload: payload || {} })

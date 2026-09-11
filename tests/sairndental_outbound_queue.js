@@ -95,6 +95,14 @@ function harness(opts) {
   };
   vm.createContext(ctx);
   vm.runInContext([
+    // sdnData() gained `signal: dntFetchTimeoutSignal()` in the 2026-09-11
+    // portfolio transport sweep, so the helper has to be in scope. Loaded from
+    // the real file rather than stubbed -- a stub would let the feature-detect it
+    // contains rot while these arms stayed green. `AbortSignal` is deliberately
+    // absent from the realm, so this also exercises the graceful-degradation
+    // path: the helper returns undefined and fetch sees no signal.
+    "var DNT_FETCH_TIMEOUT_MS = 15000;",
+    fnBody('function dntFetchTimeoutSignal('),
     fnBody('function sdnData('),
     fnBody('function dntLastErrCode('),
     fnBody('function dntLastErrText('),

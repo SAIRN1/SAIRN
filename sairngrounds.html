@@ -1620,26 +1620,31 @@ function grdSetActive(employee_id,nextActive){
 // "fall back to the localStorage copy" signal documented above. 15s matches
 // SAIRNvet's and SAIRNdental's push timeout so the platform has one number.
 var GRD_FETCH_TIMEOUT_MS = 15000;
+// Refactored 2026-09-11 into the SAME helper shape the other fourteen apps got
+// in the portfolio sweep. It was inline here because this file was fixed first
+// and alone; leaving it different would mean the one app that proved the
+// mechanism is the one app a portfolio-wide check has to special-case, which is
+// how a sweep grows an exception list.
+function grdFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(GRD_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
 async function grdData(action, resource, payload) {
   var licKey = ld('grd_lic', null);
   if (!licKey) return null;
   try {
     var headers = { 'Content-Type': 'application/json', Authorization: 'Bearer ' + licKey };
     try { var tok = sessionStorage.getItem(GRD_SESSION_KEY); if (tok) headers['X-SD-Auth'] = tok; } catch (e) {}
-    var opts = {
+    // Feature-detected inside grdFetchTimeoutSignal(), not assumed: an engine
+    // without AbortSignal.timeout keeps the previous unbounded behaviour rather
+    // than throwing a TypeError that would break every write in the app -- the
+    // same discipline the AR and WebXR paths in this file already use.
+    var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+      signal: grdFetchTimeoutSignal(),
       method: 'POST', headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })
-    };
-    // Feature-detected, not assumed. An older engine without AbortSignal.timeout
-    // keeps the previous unbounded behaviour rather than throwing a TypeError
-    // that would break every write in the app -- same feature-detect discipline
-    // the AR and WebXR paths in this file already use.
-    try {
-      if (typeof AbortSignal !== 'undefined' && AbortSignal.timeout) {
-        opts.signal = AbortSignal.timeout(GRD_FETCH_TIMEOUT_MS);
-      }
-    } catch (e) {}
-    var res = await fetch('https://sairn.vercel.app/api/sd-data', opts);
+    });
     if (!res.ok) return null;
     var j = await res.json();
     return (j && j.ok) ? j : null;

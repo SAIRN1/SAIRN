@@ -106,6 +106,12 @@ function ctxFor(opts) {
   };
   K.vm.createContext(ctx);
   K.vm.runInContext(SRC.slice(SRC.indexOf('var GRD_FETCH_TIMEOUT_MS')).split(/\r?\n/)[0], ctx);
+  // The signal helper, extracted from the real file. It was inline in grdData()
+  // when this suite was written and became a named function on 2026-09-11 so the
+  // one app that proved the mechanism stopped being the one a portfolio-wide
+  // check has to special-case. Loaded rather than stubbed: a stub would let the
+  // feature-detect it contains rot while the arms below stayed green.
+  K.vm.runInContext(K.grab(SRC, 'function grdFetchTimeoutSignal(', ''), ctx);
   K.vm.runInContext(K.grab(SRC, 'async function grdData(', ''), ctx);
   K.vm.runInContext(K.grab(SRC, 'async function cmSavePoints(', ''), ctx);
   return ctx;

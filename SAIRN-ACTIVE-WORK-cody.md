@@ -2308,3 +2308,113 @@ needs nothing, and the stripper there is a local state machine rather than
 a detector run over raw source counts its own explanatory prose. CC hit it twice
 tonight on a different tool, I hit it in `sairn_storage_wrapper_honesty.js` and
 again in `write_path_fault_scan.py` within the hour. It is not three incidents.
+
+## 2026-09-11 (Cody) -- the portfolio transport sweep: twelve apps with no
+## timeout anywhere, and two that would have swallowed one
+
+Skill used: `sairn-silent-failure-sweep`, `sairn-guardian-v2` before the push.
+Claim: `platform-write-transport-unbounded`.
+
+**MEASURED FIRST, AND THE MEASUREMENT IS WHAT MADE A ONE-MECHANISM SWEEP
+POSSIBLE: every app has exactly ONE write transport making exactly ONE `fetch`.**
+Fifteen apps, fifteen functions, fifteen fetches. Twelve had no timer at all.
+`sairnbiz` raced only `sbFirstDeviceHydrate()` and `stonedesk` put
+`AbortSignal.timeout(8000)` only on `/api/knowledge`, so neither protected a
+single write. Only `sairngrounds` was bounded, from hours earlier.
+
+**WHAT A HANG DID, AND WHY THE GOOD APPS WERE THE WORST CASE.** A hung fetch
+neither resolves nor rejects, so the transport's own catch never runs. Roughly
+260 call sites across the platform read `var syncResult = await xxData(...)` and
+derive a toast naming exactly what failed to sync -- careful, correct code. **The
+toast never fires.** The user clicks Save and the screen says nothing, which is
+indistinguishable from not having clicked. The refusal path being GOOD is what
+hid it: all that reporting was attached to a promise that never settled.
+
+**ONE LINE PER TRANSPORT, NOT FOURTEEN PUSH HELPERS.** SAIRNvet and SAIRNdental
+needed `svPushOne`/`dntPushOne` because their callers had no shared failure
+vocabulary. Everyone else already has one -- `null`, or `{status:0}` in
+SAIRNmechanical -- understood at every call site, so an AbortError landing in the
+catch the transport already has arrives as the failure those callers are written
+for. Nothing to route through, and **no call site that can be missed**, which is
+the property that matters at 260 sites.
+
+Each is a named `xxFetchTimeoutSignal()` helper rather than an inline ternary, so
+a portfolio-wide check has one shape to look for. Feature-detect is both halves:
+`typeof` for an absent GLOBAL (ReferenceError) and `try` for an absent METHOD on
+a present one (TypeError), plus an explicit `return undefined` so fetch sees no
+signal rather than `null`.
+
+**AND TWO TRANSPORTS WOULD HAVE SWALLOWED THE TIMEOUT ENTIRELY.** This is the
+part that would have made the sweep worse than useless in two apps:
+
+    sairnscape    catch (e) { return null; }
+    sairnmech     .catch(function () { return { status: 0, body: null }; })
+
+**Neither even took the error as an argument.** A timer firing into silence is
+worse than no timer, because it reads as protection on a dashboard. Found by
+reading all fifteen catches rather than assuming the fourteen were alike -- they
+were not. Both now name the failure, and the timeout case by name.
+
+**`sairngrounds` was refactored to the same helper shape.** It was inline because
+that file was fixed first and alone. Leaving it different would make the one app
+that proved the mechanism the one app a portfolio check has to special-case,
+which is how a sweep grows an exception list.
+
+**78 arms across 15 apps in `tests/faults/transport_timeout_sweep.js`, driving
+the REAL transports.** 6 mutation controls, all biting, 5 app files restored
+byte-identical by sha256: dropping the signal, a helper that returns undefined
+unconditionally, a timeout drifting off the platform number, each silenced catch,
+and the feature-detect removed.
+
+**THE HARNESS ITSELF TAUGHT ME SOMETHING I HAD JUST LEARNED ELSEWHERE.** Its
+first version stripped comments from the WHOLE app file before looking for the
+transport, and `mechData` and `scpData` vanished from the stripped copy while
+being plainly present in the file -- one quote-state slip (an apostrophe in a
+regex literal is the usual culprit) swallows everything after it. **A whole-file
+quote walk that goes wrong goes wrong for the rest of the file.** Same lesson the
+timeout column in `write_path_fault_scan.py` learned the same day. It now finds
+the declaration in RAW source and strips only the body.
+
+It also guessed stub shapes from identifier suffixes and got two wrong in one run
+-- `dntLicenseKey` is CALLED, `lawSessionToken` is READ. It now decides from how
+the transport actually uses the name.
+
+**THE SWEEP BROKE SEVEN EXISTING SUITES. ALL SEVEN ARE FIXED, NOT SKIPPED:**
+`refusal_not_empty.js`, `public_catalog_no_false_empty.js`,
+`sairndental_outbound_queue.js`, `sairndental_write_failure_voice.js`, and three
+python probes that only needed a clean tree. Each drives the real transport in a
+vm realm and needed the helper in scope; **every one loads it from the real file
+rather than stubbing it**, with `AbortSignal` deliberately ABSENT from the realm
+so they now also exercise the graceful-degradation path.
+
+**And `tests/run_write_path_scan_probe.py` went red on `sairnbiz` and
+`stonedesk`, which is the arm working.** Its expectation map exists precisely so
+a timeout being added or removed has to be written down rather than noticed
+later. Updated deliberately, with the reason beside each entry.
+
+### Two things for Michael, both found incidentally and neither mine to decide
+
+**1. A FAIL-OPEN IN THE BLOCKING PUSH GATE, reproduced against the hook itself.**
+`tests/push_gate/refspec_and_override_probe.py` has been reporting this and
+exiting 0, so only `run_all_tests.py` surfaces it:
+
+    outgoing_files(REPO, '0'*40, head)  ->  []
+
+`base` is the remote sha git hands a pre-push hook on stdin, and **git sends all
+zeros when the ref does not exist on the remote yet** -- i.e. every first push of
+a new branch. An unresolvable base falls through `@{u}` and `origin/main`, both of
+which are empty when the clone is level, and returns `[]`. `[]` means "no seed
+file touched" and "no credential writer touched", so **the seed gate and the
+employee-auth recoverability guard both see nothing and allow.** The probe's own
+comment already states the required behaviour -- *"an unresolvable base must still
+widen"* -- but not what to widen TO, and that is a gate-semantics decision rather
+than a typo. `outgoing_subjects()` carries the identical hole ten lines below,
+which is the two-copies lesson CLAUDE.md already records about the claim hook.
+
+**2. `sairn_claim.py claim` PUSHED TWO OF MY WORK COMMITS as a side effect.**
+Verified by timestamp: the claim commit at 06:58 carried the register commit from
+06:56 and the delegation fix with it, because `claim` does fetch -> rebase ->
+push on the whole branch. No harm this time -- both had already passed the full
+suite -- but **a tool whose stated job is to write a claim file can ship
+unverified work**, which routes around the push protocol's "run every check
+before pushing" step without anyone choosing to.

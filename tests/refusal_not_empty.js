@@ -82,6 +82,15 @@ const src =
   'var _sdAuthRefused = {};\n' +
   'var _sdReadFailed = {};\n' +
   oneLiner + '\n' +
+  // sdData() gained `signal: sdFetchTimeoutSignal()` in the 2026-09-11 portfolio
+  // transport sweep, so the helper has to be in scope or every arm below dies on
+  // a ReferenceError. Loaded from the real file rather than stubbed -- a stub
+  // would let the feature-detect it contains rot while these arms stayed green.
+  // `AbortSignal` is deliberately ABSENT from the realm, so this also exercises
+  // the graceful-degradation path: the helper returns undefined and fetch sees no
+  // signal, exactly as on an engine without it.
+  'var SD_FETCH_TIMEOUT_MS = 15000;\n' +
+  grab('function sdFetchTimeoutSignal(){', /\r?\n\}/) + '\n}\n' +
   grab('function sdReadFailedNote(what)', /\r?\n\}/) + '\n}\n' +
   grab('function sdAuthRefusedNote(what)', /\r?\n\}/) + '\n}\n' +
   grab('async function sdData(action, resource, payload) {', /\r?\n\}/) + '\n}\n';

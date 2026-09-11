@@ -194,10 +194,13 @@ EXPECTED_TSTATE = {
     # The only two apps with a genuine write-path timeout, both added 2026-09-10.
     'sairnvet.html': 'write',
     'sairndental.html': 'write',
-    # A timeout exists but bounds a READ. sairnbiz races sbFirstDeviceHydrate();
-    # stonedesk's only AbortSignal is on /api/knowledge. Neither protects a write.
-    'sairnbiz.html': 'read-only',
-    'stonedesk.html': 'read-only',
+    # WERE 'read-only' UNTIL 2026-09-11 and the change is deliberate: both had a
+    # timer on a READ only -- sairnbiz raced sbFirstDeviceHydrate(), stonedesk put
+    # AbortSignal.timeout(8000) on /api/knowledge -- and the portfolio sweep put a
+    # real one in each transport. This arm is what forced that to be written down
+    # rather than noticed later, which is the only reason the map is here.
+    'sairnbiz.html': 'write',
+    'stonedesk.html': 'write',
     # Bounded inside grdData() 2026-09-10, which protects all 43 of its writes.
     'sairngrounds.html': 'write',
 }

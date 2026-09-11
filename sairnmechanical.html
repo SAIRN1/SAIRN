@@ -1641,15 +1641,56 @@ async function runBlueprintAI(input){
   // was hardcoded to mech_credentials when that was the app's only resource;
   // leaving it and adding a second near-identical helper is how two call paths
   // drift apart on headers or error handling.
-  function mechData(action, resource, payload) {
+  // ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var MECH_FETCH_TIMEOUT_MS = 15000;
+function mechFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(MECH_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
+function mechData(action, resource, payload) {
     if (!mechLic()) return Promise.resolve({ status: 0, body: null });
     return fetch(MECH_DATA_API, {
+    signal: mechFetchTimeoutSignal(),
       method: 'POST',
       headers: mechHeaders(true),
       body: JSON.stringify({ action: action, resource: resource, payload: payload || {} })
     }).then(function (r) {
       return r.json().catch(function () { return {}; }).then(function (d) { return { status: r.status, body: d }; });
-    }).catch(function () { return { status: 0, body: null }; });
+    // THIS CATCH TOOK NO ARGUMENT AND SAID NOTHING until 2026-09-11. It threw the
+    // error away entirely, so every network failure on this app's only server
+    // path was unreported -- and the timeout added above would have inherited
+    // that silence, which would have made the timer useless: the one fault it
+    // exists to surface would arrive and vanish. `{status:0}` is still what
+    // callers get, because the three `then-only` sites in this file read
+    // `r.status`; the reason is now recorded beside it.
+    }).catch(function (e) {
+      try {
+        console.warn('SAIRNmechanical: ' + action + ' "' + resource + '" did NOT reach '
+          + 'the server (' + ((e && (e.name === 'TimeoutError' || e.name === 'AbortError'))
+              ? 'no answer in ' + (MECH_FETCH_TIMEOUT_MS / 1000) + 's'
+              : (e && e.message) || e) + ').');
+      } catch (_e) {}
+      return { status: 0, body: null };
+    });
   }
 
 

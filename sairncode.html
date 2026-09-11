@@ -12173,7 +12173,32 @@ How to answer:
         // cannot accept them, one 503 per row, silently. null = not yet known.
         var _scLastProvisioned = null;
         function scLastProvisioned() { return _scLastProvisioned; }
-        function scData(action, resource, payload) {
+        // ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var SC_FETCH_TIMEOUT_MS = 15000;
+function scFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(SC_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
+function scData(action, resource, payload) {
             _scLastDataError = null;
             _scLastProvisioned = null;
             var lic = null, sessionToken = null;
@@ -12191,6 +12216,7 @@ How to answer:
             var reqHeaders = { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + lic };
             if (sessionToken) reqHeaders['X-SD-Auth'] = sessionToken;
             return fetch('https://sairn.vercel.app/api/sd-data', {
+    signal: scFetchTimeoutSignal(),
                 method: 'POST',
                 headers: reqHeaders,
                 body: JSON.stringify({ action: action, resource: resource, app_id: 'sairncode', payload: payload || {} })

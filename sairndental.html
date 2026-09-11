@@ -1355,6 +1355,31 @@ function newId(prefix){return prefix+'-'+Date.now()+'-'+Math.floor(Math.random()
 function dntLicenseKey(){ return localStorage.getItem('dnt_license_key') || ''; }
 
 // sdnData()-equivalent, matches every other app's pattern exactly.
+// ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var DNT_FETCH_TIMEOUT_MS = 15000;
+function dntFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(DNT_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
 function sdnData(action,resource,payload){
   var lic=dntLicenseKey();
   // NO LICENCE IS ITS OWN REASON, AND IT USED TO INHERIT SOMEBODY ELSE'S.
@@ -1366,6 +1391,7 @@ function sdnData(action,resource,payload){
   // stay quiet and the caller's own fallback must be what speaks.
   if(!lic){dntLastErr[resource]={code:'NO_LICENCE',message:''};return Promise.resolve(null);}
   return fetch(DATA_API,{
+    signal: dntFetchTimeoutSignal(),
     method:'POST',
     // TWO secrets, TWO headers, deliberately: the licence identifies the
     // practice, the session identifies the employee. Every dnt_* branch in

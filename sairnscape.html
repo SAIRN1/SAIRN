@@ -1975,6 +1975,31 @@ function scpToast(m,d){var t=scp$('scp-toast');t.textContent=m;t.classList.add('
 // Same shape as grdData()/sdData()/sbData() elsewhere on the platform.
 // Returns null on any failure so callers fall back to the existing
 // localStorage copy rather than hard-failing a panel.
+// ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
+// Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
+// and two more had one only on a READ. A hung fetch -- a black-holed connection,
+// or a gateway that accepts and never answers -- neither resolves nor rejects,
+// so the transport's own catch never runs and every caller waiting on it waits
+// forever. The careful `if (!result) toast(...)` at the call site never fires:
+// the user clicks Save, the screen says nothing, and that is indistinguishable
+// from not having clicked.
+//
+// Proven live on sairngrounds first (7cd70f83) before being applied here.
+//
+// ONE LINE IN THE TRANSPORT rather than a push helper per app. Every caller in
+// this file already understands what this transport returns on failure, so an
+// AbortError landing in the catch below arrives as the failure they are already
+// written for. Nothing to route through and no call site that can be missed.
+//
+// Feature-detected: an engine without AbortSignal.timeout keeps the previous
+// unbounded behaviour rather than throwing and breaking every call in the app.
+// 15s is the platform number, matching svPushOne and dntPushOne.
+var SCP_FETCH_TIMEOUT_MS = 15000;
+function scpFetchTimeoutSignal(){
+  try{ if(typeof AbortSignal!=='undefined'&&AbortSignal.timeout)
+    return AbortSignal.timeout(SCP_FETCH_TIMEOUT_MS); }catch(e){}
+  return undefined;
+}
 async function scpData(action, resource, payload, appId) {
   var licKey = scpLd('scp_lic', null);
   if (!licKey) return null;
@@ -1988,13 +2013,29 @@ async function scpData(action, resource, payload, appId) {
     var reqBody = { action: action, resource: resource, payload: payload };
     if (appId) reqBody.app_id = appId;
     var res = await fetch('https://sairn.vercel.app/api/sd-data', {
+    signal: scpFetchTimeoutSignal(),
       method: 'POST', headers: headers,
       body: JSON.stringify(reqBody)
     });
     if (!res.ok) return null;
     var j = await res.json();
     return (j && j.ok) ? j : null;
-  } catch (e) { return null; }
+  } catch (e) {
+    // THIS CATCH SAID NOTHING AT ALL until 2026-09-11 -- `catch(e){return null;}`
+    // discarded the error entirely. Every network failure on this app's only
+    // server path was unreported, and the timeout added above would have
+    // inherited that silence: the one fault the timer exists to surface would
+    // have arrived and vanished. `null` is still what callers get, because that
+    // is the vocabulary they are written for; the reason is now recorded beside
+    // it. Same treatment grdData() got, for the same reason.
+    try {
+      console.warn('SAIRNscape: ' + action + ' "' + resource + '" did NOT reach the server ('
+        + ((e && (e.name === 'TimeoutError' || e.name === 'AbortError'))
+            ? 'no answer in ' + (SCP_FETCH_TIMEOUT_MS / 1000) + 's'
+            : (e && e.message) || e) + ').');
+    } catch (_e) {}
+    return null;
+  }
 }
 
 // -- CLOUD MEMORY, ON THE REAL DATA PATH (2026-09-03) ----------------------

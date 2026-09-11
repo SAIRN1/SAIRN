@@ -86,8 +86,15 @@ const LAYER = [
   'function sdAuthWasRefused(resource) {',
   'function sdReadFailed(resource) {',
   'function sdReadFailedNote(what) {',
+  // sdData() gained `signal: sdFetchTimeoutSignal()` in the 2026-09-11 portfolio
+  // transport sweep, so the helper has to be in scope. Loaded from the real file
+  // rather than stubbed -- a stub would let the feature-detect it contains rot
+  // while these arms stayed green. `AbortSignal` is deliberately absent from the
+  // realm, so this also exercises the graceful-degradation path.
+  'function sdFetchTimeoutSignal(){',
   'async function sdData(action, resource, payload) {'
-].map(sig => grabAt(sig, '')).join('\n\n');
+].map(sig => grabAt(sig, '')).join('\n\n')
+  + '\n\nvar SD_FETCH_TIMEOUT_MS = 15000;\n';
 
 // The panel, two spaces in (it lives inside an IIFE).
 const PANEL = [
