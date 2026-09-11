@@ -862,6 +862,16 @@
       "claimed_at_epoch": 1789131261.4965363,
       "status": "released",
       "released_at": "2026-09-11T13:05:37Z"
+    },
+    {
+      "id": "fourth-1789134778",
+      "session": "fourth",
+      "subject": "hook-command-cwd-brick",
+      "task": "relative hook paths resolved against bash tool working directory settings.json",
+      "claimed_at": "2026-09-11T13:52:58Z",
+      "claimed_at_epoch": 1789134778.5157027,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
