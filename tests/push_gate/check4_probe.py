@@ -7,6 +7,28 @@ probe arms returned the right code for the wrong reason.
 """
 import subprocess, os, sys, re
 
+# ── RUN THIS, DO NOT IMPORT IT (2026-09-11) ────────────────────────────────
+# This probe MUTATES A TRACKED SOURCE FILE in place and restores it at the end.
+# It has no `if __name__ == "__main__"` guard, so an import runs the whole
+# thing -- and an import that is interrupted leaves the mutation on disk.
+#
+# THAT IS NOT HYPOTHETICAL. On 2026-09-11 a read-only checker walked
+# tests/**/*_probe.py and imported each one to read its MUTATIONS list. It hung,
+# was killed mid-probe, and left api/_lib/dental-guardian.js modified with an
+# injected `if (r.zz_probe_field) return "probe";`. Found by `git status`,
+# restored by hand, and the checker rewritten to PARSE rather than import.
+#
+# The cheap half of the fix is this: refuse the import loudly instead of
+# mutating a live file silently. Three lines, no restructuring, and it turns the
+# dangerous failure into an obvious one.
+if __name__ != '__main__':
+    raise RuntimeError(
+        __file__ + ' mutates a tracked source file in place. Run it as a script; '
+        'do not import it. To read its structure, parse it with ast -- see '
+        'tools/mutation_anchor_check.py.')
+
+
+
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 EP = 'api/legal-deadlines.js'

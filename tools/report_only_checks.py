@@ -417,6 +417,31 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'mutation_anchor_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'a mutation probe whose anchor no longer matches its target '
+                   'exactly once -- so the arm plants nothing and the control '
+                   'stops testing -- and a probe that mutates a tracked file in '
+                   'place without refusing an import',
+        'why_it_matters': 'each probe already checks its OWN anchors, but only '
+                          'when something runs it, and on 2026-09-11 four of the '
+                          'six could not be swept at all because they declare '
+                          'their target differently -- so "they pass in the full '
+                          'suite" was the strongest claim available, which is '
+                          'not the same as "their anchors were verified". The '
+                          'import half is worse: importing an unguarded probe '
+                          'RUNS it, and an interrupted import leaves a mutated '
+                          'source file on disk',
+        'evidence': 'real run 2026-09-11: 6 probes, 70 anchors, 0 bad, 0 '
+                    'unreadable. The import hazard is not hypothetical -- the '
+                    'first version of this very tool imported the probes, hung, '
+                    'was killed, and left api/_lib/dental-guardian.js modified '
+                    'with an injected probe field. Rewritten to parse with ast',
+    },
+    {
         'tool': 'comment_quote_check.py',
         'mode': 'once',
         'args': [],
