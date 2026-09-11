@@ -130,66 +130,84 @@ finally:
 check("...and a resolvable base is trusted even when its range is empty",
       H.outgoing_files(REPO, head, head), [])
 
-# ── A2b: THE FAIL-OPEN THE ARM ABOVE COULD NOT SEE -- 2026-09-11 ────────────
-# The arm above had to MANUFACTURE an "ahead of origin" worktree to test the
-# widening, and the comment explains why: on a real push HEAD is ahead by
-# definition. True, and it hid the case that matters. `@{u}..tip` and
-# `origin/main..tip` are BOTH EMPTY when the clone is level with origin -- the
-# state immediately after any fetch or pull -- and the ladder then fell off its
-# last rung into `[]`. `[]` is read by check 2 and the seed check as "nothing
-# changed", not as "could not determine what changed", so both ALLOWED exactly
-# when the gate could not verify anything.
+# ── A2b: WHAT `[]` FROM AN UNRESOLVABLE BASE ACTUALLY MEANS -- 2026-09-11 ───
+# THIS SECTION EXISTS BECAUSE I GOT IT WRONG, and the wrong version was believed
+# long enough to be acted on. The arm above says "[] there would fail open on a
+# real push", and I read that as a live security hole: an unresolvable base (git
+# sends forty zeros for a ref that does not exist on the remote yet) falling
+# through to [], which check 2 and the seed check read as "nothing changed". I
+# fixed it by adding a last rung that widened to the tip's whole reachable
+# history, and reported a critical fail-open.
 #
-# Measured in the real repo on 2026-09-11: 2 commits ahead -> widened to 26
-# files and the gate worked; LEVEL -> []. Michael's decision: fail closed.
+# THEN I BUILT THE ACTUAL SCENARIO IN A REAL CLONE AND IT DOES NOT EXIST:
 #
-# These arms run against REPO at whatever sync state it happens to be in, which
-# is the point -- the behaviour must not depend on it.
-print("\nA2b. an unresolvable base widens REGARDLESS of this clone's sync state")
-check("outgoing_files widens for an all-zero base (git's new-ref sentinel)",
-      bool(H.outgoing_files(REPO, '0' * 40, head)), True)
-check("outgoing_files widens for a base this clone does not hold",
-      bool(H.outgoing_files(REPO, 'deadbeef' * 5, head)), True)
-check("outgoing_subjects does too -- SAME HOLE, ten lines lower",
-      bool(H.outgoing_subjects(REPO, '0' * 40, head)), True)
-check("...and for an unfetched base",
-      bool(H.outgoing_subjects(REPO, 'deadbeef' * 5, head)), True)
-# The other direction, which is what stops the fix becoming a different bug: a
-# caller that supplies NO base is asking about a command rather than a real push
-# and must NOT be widened, or every no-op push gets gated against all history.
-check("NO base at all is still not widened -- pretooluse must stay narrow",
-      H.outgoing_files(REPO, None, head), [])
-check("...and outgoing_subjects agrees",
-      H.outgoing_subjects(REPO, None, head), [])
+#   new branch WITH its own commits   -> `origin/main..tip` already names them.
+#                                        The existing rung catches it. Measured:
+#                                        the new sql/ file was reported, with
+#                                        base = forty zeros, in a clone level
+#                                        with its origin.
+#   new branch at the SAME commit as origin/main -> [] , and [] IS CORRECT:
+#                                        that push creates a ref and ships no
+#                                        new content at all.
+#
+# So `[]` only appears when the push has nothing to check, and the widening
+# turned an accurate empty answer into a 1,671-file scan of repo history. It
+# denied on historical files no push was sending: check 2 on a real but
+# unrelated unguarded writer, then check 3's SQL preflight on a historical
+# object the live snapshot does not have. Reverted. The only thing kept from
+# that pass is the genuine violation it surfaced on the way through
+# (sql/stonedesk_recovery_admin_seed.sql, fixed in its own commit).
+#
+# THE ARMS BELOW PIN THE REAL BEHAVIOUR so the wrong diagnosis cannot be made a
+# second time from the same wording. They build their own clone: asserting this
+# against REPO would depend on this session's sync state, which is the mistake
+# the two comments above this one already document twice in this same file.
+print("\nA2b. an unresolvable base: what [] does and does not mean")
+_sand = tempfile.mkdtemp(prefix='pushgate-newbranch-')
+_clone = os.path.join(_sand, 'clone')
+try:
+    _c = subprocess.run(['git', 'clone', '--quiet', '--local', REPO, _clone],
+                        capture_output=True, text=True)
+    if _c.returncode != 0:
+        print('  SKIP  could not clone: ' + (_c.stderr.strip() or '?'))
+    else:
+        def _g(*a):
+            return subprocess.run(['git', '-C', _clone] + list(a),
+                                  capture_output=True, text=True)
+        _g('config', 'user.email', 'probe@local')
+        _g('config', 'user.name', 'probe')
+        check("fixture is valid: the clone is LEVEL with its origin/main, which is "
+              "the only state where the fallback rungs are empty",
+              _g('rev-list', '--count', 'origin/main..HEAD').stdout.strip(), '0')
 
-# ── A2c: prepush_base() MUST NOT COLLAPSE A NEW REF TO None ─────────────────
-# The widening above was landed first and did not fire on the most common
-# trigger, because prepush_base() turned git's all-zero remote sha into `None`
-# with the reasoning "no base, let the caller fall back". `None` is
-# indistinguishable from "nobody supplied a base", which is the one case that
-# must stay narrow -- so the first push of every new branch still fell through
-# to []. Found by driving the hook binary rather than the two functions.
-print("\nA2c. prepush_base() keeps the fact that git called this ref NEW")
+        # THE CASE THAT WOULD BE DANGEROUS IF IT WERE REAL: a brand-new branch
+        # carrying a new sql/ file, pushed with git's new-ref sentinel as base.
+        _g('checkout', '-q', '-b', 'probe-feat')
+        io.open(os.path.join(_clone, 'sql', 'PROBE_new_branch.sql'), 'w',
+                encoding='utf-8').write('-- probe fixture\nselect 1;\n')
+        _g('add', 'sql/PROBE_new_branch.sql')
+        _g('commit', '-q', '-m', 'PROBE: a new sql file on a new branch')
+        _tip = _g('rev-parse', 'HEAD').stdout.strip()
+        _got = H.outgoing_files(_clone, '0' * 40, _tip)
+        check("a NEW BRANCH WITH COMMITS is seen with base = git's forty zeros, "
+              "in a clone that is level -- there is no fail-open here",
+              'sql/PROBE_new_branch.sql' in _got, True)
+        check("...and it is the NARROW range, not the whole history",
+              len(_got) < 50, True)
+        check("outgoing_subjects sees that commit too",
+              any('PROBE: a new sql file' in s for _sha, s
+                  in H.outgoing_subjects(_clone, '0' * 40, _tip)), True)
 
-
-def _base_from(line):
-    _saved = sys.stdin
-    try:
-        sys.stdin = io.StringIO(line + '\n')
-        return H.prepush_base()
-    finally:
-        sys.stdin = _saved
-
-
-_Z = '0' * 40
-_b, _d, _l = _base_from('refs/heads/feat abc123 refs/heads/feat ' + _Z)
-check("a NEW ref yields the all-zero sha, not None", _b, _Z)
-check("...and is not mistaken for a deletion", _d, False)
-check("...and still reports the local sha git named", _l, 'abc123')
-_b2, _d2, _l2 = _base_from('refs/heads/main abc123 refs/heads/main def456')
-check("an ordinary push still yields the remote sha", _b2, 'def456')
-_b3, _d3, _l3 = _base_from('refs/heads/feat %s refs/heads/feat def456' % _Z)
-check("a DELETION is still detected by its all-zero LOCAL sha", _d3, True)
+        # AND THE CASE THAT RETURNS [] -- which is correct, not a hole.
+        _g('checkout', '-q', 'origin/main')
+        _g('checkout', '-q', '-b', 'probe-empty')
+        _tip2 = _g('rev-parse', 'HEAD').stdout.strip()
+        check("a new branch at the SAME commit as origin/main yields [] -- and that "
+              "is RIGHT: the push creates a ref and ships no new content",
+              H.outgoing_files(_clone, '0' * 40, _tip2), [])
+finally:
+    import shutil as _sh
+    _sh.rmtree(_sand, ignore_errors=True)
 
 # ── A3: export_sql_at reproduces sql/ as of a commit ────────────────────────
 print("\nA3. export_sql_at() reads seeds from the commit, not the working tree")

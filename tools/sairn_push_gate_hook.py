@@ -392,38 +392,6 @@ def outgoing_files(repo, base=None, tip='HEAD'):
         out = git(repo, 'log', ref + '..' + tip, '--name-only', '--pretty=format:')
         if out.strip():
             return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
-    # ── THE LAST RUNG, AND IT WAS MISSING: AN UNRESOLVABLE BASE FELL OFF THE
-    #    LADDER INTO [] -- FAIL-OPEN ON A BLOCKING GATE (fixed 2026-09-11) ─────
-    # The docstring above already said the fallbacks "get progressively wider
-    # rather than narrower" and that an empty list means "no seed touched". They
-    # simply ran out: every rung above can legitimately return nothing, and then
-    # this returned [], which the callers read as "nothing changed" instead of
-    # "could not determine what changed". Check 2's credential-writer guard and
-    # the seed-drift check both saw no files and ALLOWED -- precisely when the
-    # gate could not verify anything.
-    #
-    # WHEN IT BITES, measured both ways rather than reasoned about:
-    #   * `base` is the remote sha git hands a pre-push hook on stdin, and git
-    #     sends FORTY ZEROS when the ref does not exist on the remote yet -- so
-    #     EVERY FIRST PUSH OF A NEW BRANCH arrives with an unresolvable base.
-    #   * the rungs above it are `@{u}..tip` and `origin/main..tip`, both of which
-    #     are EMPTY whenever this clone is level with origin, which is the state
-    #     immediately after any fetch or pull. Measured in this repo: 2 commits
-    #     ahead -> widened to 26 files and the gate worked; level -> [].
-    #   * a remote sha this clone does not hold (someone force-pushed, or a fresh
-    #     clone) lands in the same place.
-    #
-    # FAIL CLOSED: Michael's decision, 2026-09-11. An unresolvable base means the
-    # range is UNKNOWN, and a new remote ref really does send every commit
-    # reachable from the tip -- so that is the honest widest answer rather than a
-    # guess. Deliberately NOT applied when `base` is None: that is a caller
-    # asking about a command rather than a real push, it makes no claim about a
-    # remote, and an empty `@{u}..tip` there genuinely does mean nothing is
-    # outgoing. Widening that case would deny ordinary no-op pushes.
-    if base:
-        out = git(repo, 'log', tip, '--name-only', '--pretty=format:')
-        if out.strip():
-            return sorted({ln.strip().replace('\\', '/') for ln in out.splitlines() if ln.strip()})
     return []
 
 
@@ -444,16 +412,6 @@ def outgoing_subjects(repo, base=None, tip='HEAD'):
         out = git(repo, 'log', ref + '..' + tip, '--pretty=format:%H %s')
         if out.strip():
             return [tuple(ln.split(' ', 1)) for ln in out.splitlines() if ' ' in ln]
-    # SAME LAST RUNG AS outgoing_files(), AND IT IS HERE BECAUSE IT IS THE SAME
-    # HOLE TEN LINES LOWER. CLAUDE.md already records the lesson from the claim
-    # hook: a fix verified on the copy a human invokes is not verified if a second
-    # copy runs unattended. This one feeds the PROBE-fixture check -- an
-    # unresolvable base meant no commits, so a stranded PROBE fixture commit rode
-    # out on the first push of a new branch without a word.
-    if base:
-        out = git(repo, 'log', tip, '--pretty=format:%H %s')
-        if out.strip():
-            return [tuple(ln.split(' ', 1)) for ln in out.splitlines() if ' ' in ln]
     return []
 
 
@@ -461,22 +419,9 @@ def prepush_base():
     """Remote sha for the ref being pushed, read from git's pre-push stdin.
 
     Format per `git help hooks`: '<local ref> <local sha> <remote ref> <remote
-    sha>' per line.
-
-    ── AN ALL-ZERO REMOTE SHA IS RETURNED AS THE ZEROS, NOT AS None (2026-09-11)
-    This function used to collapse a brand-new branch to `None` -- "no base, let
-    the caller fall back" -- and that threw away the one fact the caller needed.
-    `None` is indistinguishable from "nobody supplied a base", which is what
-    pretooluse mode passes when it is merely inspecting a command. So the
-    widening rung added to outgoing_files() for an unresolvable base could not
-    fire on THE most common trigger: the first push of a new branch.
-    Measured, not reasoned about: the new rung closed the force-push and
-    fresh-clone cases while the new-branch case stayed at [].
-
-    The zeros are safe to pass on because every consumer resolves a base before
-    using it -- `cat-file -e`, `rev-parse --verify` -- so the sha that does not
-    exist is detected and widened past rather than diffed against. Returning it
-    is what makes "git told us this ref is new" survive the call.
+    sha>' per line. An all-zero remote sha means a brand-new branch, which has
+    no base -- return None and let the caller fall back rather than diffing
+    against a sha that does not exist.
 
     A push that only DELETES refs ships no content and is exempt: git sends an
     all-zero LOCAL sha for a deletion. Without this, `git push origin --delete
@@ -503,9 +448,7 @@ def prepush_base():
     for parts in refs:
         if set(parts[3]) != {'0'}:
             return parts[3], False, local
-    # A new ref. Hand back git's own all-zero sha so the caller can tell this
-    # apart from "no base supplied" and widen instead of allowing.
-    return (refs[0][3] if refs else None), False, local
+    return None, False, local
 
 
 # The override line every deny message ends with. It is a single constant
@@ -1100,36 +1043,6 @@ def main():
         # same way as the first -- by driving the probe branch rather than
         # reasoning about it. Per-commit patches see every line every commit
         # introduced, which is the only view that matches what a push sends.
-        # ── AN EMPTY RANGE FROM AN UNRESOLVABLE BASE IS NOT A CLEAN SCAN ──────
-        # The THIRD site with the 2026-09-11 fail-open, and the one that needed a
-        # different answer from the other two. `base` is unresolvable on the first
-        # push of a new branch (git sends forty zeros) or when another clone has
-        # pushed; `_base` then falls back to `@{u}` or `origin/main`, and when this
-        # clone is level with origin that range is EMPTY. Zero hits over zero
-        # lines was being reported as a clean credential scan.
-        #
-        # DELIBERATELY NOT WIDENED TO FULL HISTORY, unlike outgoing_files(). It was
-        # measured: `git log -p` over this repo's whole history is 7.5s and 101MB,
-        # which fits the timeout -- but this check is BLOCKING, and its own comment
-        # above says that is "only defensible because it is clean", measured at
-        # zero findings across 1,468 tracked files. Full history is not clean and
-        # cannot be: this repo ships seed files whose headers state outright that
-        # the PIN is published in the file. Widening here would deny every
-        # new-branch push with a flood of historical findings, and a gate like that
-        # is switched off within the hour -- the failure this file keeps recording.
-        #
-        # So it takes this block's OWN established route for a check that could not
-        # run: fail open and SAY SO. An unchecked push must not read as a clean one.
-        if (base
-                and subprocess.run(
-                    ['git', '-C', repo, 'cat-file', '-e', base + '^{commit}'],
-                    capture_output=True, timeout=20).returncode != 0
-                and not git(repo, 'log', _base + '..' + tip, '--pretty=format:%H').strip()):
-            raise RuntimeError(
-                'the base git named (%s) is not in this clone and every fallback '
-                'range is empty, so there was nothing to scan -- which is not the '
-                'same as nothing to find. Fetch and push again, or scan the branch '
-                'by hand before trusting this' % base[:12])
         _dr = subprocess.run(
             ['git', '-C', repo, 'log', '--unified=0', '--no-color', '-p',
              '--pretty=format:', _base + '..' + tip],

@@ -464,47 +464,6 @@
       "summary": "defect_register --check ran its vocabulary validation after a continue, so a record with an unresolvable SHA stopped having its method, layer and severity checked at all"
     },
     {
-      "commit": "d85b98efecb8",
-      "date": "2026-09-11",
-      "subject": "fix(tools): the second half of the sweep -- three checkers reported clean while scanning nothing",
-      "files": [
-        "SAIRN-ACTIVE-WORK-fourth.md",
-        "docs/2026-09-10-self-referential-guard-sweep.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md",
-        "tests/run_all_tests_floor_probe.py",
-        "tests/run_report_only_checks_probe.py",
-        "tools/preauth_oracle_check.py",
-        "tools/report_only_checks.py",
-        "tools/run_all_tests.py",
-        "tools/write_without_readback_check.py"
-      ],
-      "lines_added": 602,
-      "lines_removed": 15,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "high",
-      "detection_method": "code-review",
-      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep"
-    },
-    {
-      "commit": "f75e046a736b",
-      "date": "2026-09-11",
-      "subject": "fix(tests): narrow the delegation hop to catch bodies -- and the hole it does not close",
-      "files": [
-        "SAIRN-ACTIVE-WORK-cody.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "tests/sairn_storage_wrapper_honesty.js"
-      ],
-      "lines_added": 177,
-      "lines_removed": 14,
-      "app": "PLATFORM",
-      "layer": "test",
-      "severity": "moderate",
-      "detection_method": "mutation-testing",
-      "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
-    },
-    {
       "commit": "8f9a727f008c",
       "date": "2026-09-11",
       "subject": "fix(platform): every write transport is bounded -- twelve had no timeout anywhere",
@@ -620,6 +579,62 @@
       "severity": "moderate",
       "detection_method": "code-review",
       "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished"
+    },
+    {
+      "commit": "d85b98efecb8",
+      "date": "2026-09-11",
+      "subject": "fix(tools): the second half of the sweep -- three checkers reported clean while scanning nothing",
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md",
+        "docs/2026-09-10-self-referential-guard-sweep.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_all_tests_floor_probe.py",
+        "tests/run_report_only_checks_probe.py",
+        "tools/preauth_oracle_check.py",
+        "tools/report_only_checks.py",
+        "tools/run_all_tests.py",
+        "tools/write_without_readback_check.py"
+      ],
+      "lines_added": 602,
+      "lines_removed": 15,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep"
+    },
+    {
+      "commit": "dd95a5cf6c0e",
+      "date": "2026-09-11",
+      "subject": "fix(sql): the one unguarded credential writer, found by the push-gate fix",
+      "files": [
+        "sql/stonedesk_recovery_admin_seed.sql"
+      ],
+      "lines_added": 55,
+      "lines_removed": 0,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sql/stonedesk_recovery_admin_seed.sql wrote credential rows with no recoverability guard and no transaction, landing a day after the guard tool and check 2 shipped and never being stopped"
+    },
+    {
+      "commit": "f75e046a736b",
+      "date": "2026-09-11",
+      "subject": "fix(tests): narrow the delegation hop to catch bodies -- and the hole it does not close",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "tests/sairn_storage_wrapper_honesty.js"
+      ],
+      "lines_added": 177,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
     }
   ]
 }

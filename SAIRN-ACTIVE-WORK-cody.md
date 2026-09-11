@@ -2536,3 +2536,80 @@ so it is not unguarded, only unverified by the session. And the alternative --
 a claim tool that refuses to push while the branch has other commits -- would
 block claiming at the exact moment a session most needs to claim. That is why
 this is a decision and not a patch.
+
+## 2026-09-11 (Cody) -- I REPORTED A CRITICAL PUSH-GATE FAIL-OPEN AND IT DOES
+## NOT EXIST. Reverted in the same session, by building the scenario.
+
+**This correction matters more than anything else I did today, because Michael
+made an urgent security decision on my report.**
+
+**WHAT I REPORTED.** `outgoing_files()` returns `[]` when `base` cannot be
+resolved -- git sends forty zeros for a ref not yet on the remote -- and `[]` is
+read by check 2's credential guard and the seed check as *"nothing changed"*
+rather than *"could not determine what changed"*. I called it a fail-open on a
+blocking gate. The existing probe arm says the same thing in its own wording:
+*"an UNRESOLVABLE base still widens -- [] there would fail open on a real push"*.
+
+Michael decided **fail closed**. I implemented it at three sites, added 13 probe
+arms, mutation-proved it four ways, drove the hook binary with real git stdin, and
+watched it BLOCK two pushes that previously passed silently. Every one of those
+checks passed. **None of them was the scenario.**
+
+**THEN I BUILT THE SCENARIO IN A REAL CLONE, LEVEL WITH ITS ORIGIN -- the only
+state in which the fallback rungs are empty -- AND THERE IS NO HOLE:**
+
+    new branch WITH its own commits:
+        `origin/main..tip` already names them. The EXISTING rung reported the new
+        sql/ file, with base = forty zeros. Nothing was missed.
+
+    new branch at the SAME commit as origin/main:
+        [] -- and [] IS CORRECT. That push creates a ref and ships no new
+        content at all. There is nothing to check.
+
+So `[]` appears only when the push has nothing in it. The "fail-open" was an
+accurate empty answer.
+
+**WHAT MY FIX ACTUALLY DID.** It turned that accurate `[]` into a **1,671-file
+scan of the repo's whole history**, handed to every SQL-consuming check, which
+then judged files no push was sending. Check 2 denied on a real but unrelated
+unguarded writer. I fixed that writer -- correctly, it was a genuine violation --
+and then **check 3's SQL preflight denied on a historical object the live schema
+snapshot does not have.** That is the shape of a gate that can never pass: one
+whack-a-mole per check, and at the end of it **no new branch could ever be
+pushed.** Which is precisely how a gate gets switched off, the failure this repo
+records over and over.
+
+**REVERTED.** `tools/sairn_push_gate_hook.py` is restored to `9c75a8d9` -- the
+widening rung in both functions, the `prepush_base()` change, and the
+credential-scan note are all out. Verified: the hook allows both conditions again
+and `redaction_base_probe.py` is back to 0 failures.
+
+**WHAT IS KEPT, and it is the one good thing from the pass:**
+`sql/stonedesk_recovery_admin_seed.sql` was a genuinely unguarded credential
+writer -- the only refusal out of 228 SQL files, never grandfathered, landed a
+day AFTER the guard tool shipped. Fixed on its own merits in `dd95a5cf`. The
+`sql/` directory is now 0 unguarded.
+
+**AND 5 PROBE ARMS THAT PIN BOTH DIRECTIONS**, built in their own clone rather
+than asserted against this repo -- because asserting against REPO depends on this
+session's sync state, which is the mistake that file's own comments already
+document twice. They assert that a new branch with commits IS seen, that the
+range stays NARROW rather than becoming history, and that `[]` on a
+nothing-to-ship push is right. The same wording cannot produce the same wrong
+diagnosis again.
+
+**THE LESSON, AND IT IS MINE.** I verified the fix against the function. Then
+against the hook binary with real stdin. Both passed, and I still had not
+verified the **scenario** -- whether the condition the fix is for can actually
+occur and do harm. Three layers of verification, all pointed at the mechanism,
+none at the premise.
+
+And the premise came from a comment. **A probe arm's prose is a claim like any
+other**, and this one had been sitting in the file asserting a fail-open for days.
+That is the same defect class as a detector counting its own comments, which I
+hit twice yesterday in two different tools -- arriving this time as a HUMAN
+reading a comment as evidence instead of a scanner doing it.
+
+**What I should have done first, and will next time:** before reporting a
+fail-open, construct the push that exploits it. One clone, one branch, one commit,
+five minutes. It would have come before the decision rather than after the fix.
