@@ -1584,7 +1584,53 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
+// ── THE CACHE IS NOT SCOPED, ONLY THE READ IS (2026-09-10) ──────────────
+// Identical defect and identical fix to SAIRNcare's alfEnterApp(); found in
+// both the same hour because both make the same promise on screen. This app's
+// wording: "a caregiver's AI answers never include another caregiver's
+// clients."
+//
+// THE SERVER HONOURS THAT. The local cache did not. Every senHydrateX() is an
+// ADDITIVE merge that never removes a row, and doLogout() dropped only
+// `sen_session` -- so on a shared device (the ordinary case for a home-care
+// agency: one office machine, several coordinators) the client list an
+// administrator hydrated was still in `sen_clients` when a caregiver signed in.
+// clients() reads that cache and the AI prompt is built from it.
+//
+// Cleared when the PERSON changes, never mid-session, because the additive
+// merge exists so an offline device does not lose rows the server has not seen.
+// Keyed on employee AND role: a role change narrows the server's answer exactly
+// like a different login does.
+var SEN_SCOPED_CACHES = ['sen_clients','sen_caregivers','sen_visits','sen_claims',
+                         'sen_referrals','sen_referral_sources','sen_training_records',
+                         'sen_authorizations','sen_applicants','sen_pay_rates',
+                         'sen_payer_contracts','sen_franchise_agreements',
+                         'sen_branches','sen_agency'];
+// DELIBERATELY NOT PURGED, WRITTEN DOWN RATHER THAN OMITTED. Every `sen_*` key
+// this app writes is in exactly one of these two lists, and
+// tests/phi_cache_scoped_to_user.js fails if a new one appears in neither --
+// which is what caught these two, and what caught a phantom `alf_careplans` in
+// the first draft of SAIRNcare's list.
+//   sen_evv_config    agency-wide EVV settings, identical for every user, and
+//                     editable offline -- purging it on a shift change would
+//                     throw away an unsynced settings edit to protect nothing.
+//   sen_training_rules jurisdiction rules with public citations. Not personal,
+//                     not scoped by the server, the same for every role.
+//   sen_role          rewritten on every sign-in.
+//   sen_cache_owner   this guard's own bookkeeping.
+var SEN_UNSCOPED_CACHES = ['sen_evv_config','sen_training_rules','sen_role','sen_cache_owner'];
+function senPurgeScopedCaches(){
+  SEN_SCOPED_CACHES.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+}
+function senCacheOwnerChanged(d){
+  var who=(d&&d.employee_id||'')+'|'+(d&&d.role||'');
+  var prev=null;
+  try{prev=localStorage.getItem('sen_cache_owner');}catch(e){}
+  try{localStorage.setItem('sen_cache_owner',who);}catch(e){}
+  return prev !== null && prev !== who;
+}
 function senEnterApp(d){
+  if(senCacheOwnerChanged(d))senPurgeScopedCaches();
   senSession={token:d.token,role:d.role,employee_id:d.employee_id};
   prole=d.role;
   try{localStorage.setItem('sen_session',JSON.stringify(senSession));}catch(e){}
@@ -1629,6 +1675,11 @@ function doLogout(){
   prole='';
   senSession=null;
   try{localStorage.removeItem('sen_session');}catch(e){}
+  // AND THE CLIENT DATA. The comment above is right that clearing the session
+  // alone is not enough; the same sentence is true of the cache. A logged-out
+  // device still holding the client list hands it to whoever signs in next.
+  senPurgeScopedCaches();
+  try{localStorage.removeItem('sen_cache_owner');}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');
   senLoginReset();
   toast('Logged out');

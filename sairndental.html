@@ -1591,7 +1591,54 @@ function dntAuth(action,payload,withSession){
 function dntShowBootstrap(){$('pin').classList.remove('on');$('bootstrap').style.display='';}
 function dntShowLogin(){$('bootstrap').style.display='none';$('pin').classList.add('on');}
 
+// ── THE CACHE IS NOT SCOPED, ONLY THE READ IS (2026-09-10) ──────────────
+// Third app with this defect, found the same hour as SAIRNcare's and
+// SAIRNsenior's, and THE SHARPEST OF THE THREE because of what this one caches.
+//
+// api/sd-data.js scopes a dental read two ways: DNT_FINANCIAL_RESOURCES is
+// owner/front-desk only, and DNT_PATIENT_SCOPED_RESOURCES limits a provider to
+// their own linked patients. Both are enforced on the server and both were
+// undone by a cache that outlived the person it was fetched for -- dntLogout()
+// dropped only `dnt_session` and `dnt_role`, leaving `dnt_payments_list`,
+// `dnt_charges_list`, `dnt_denial_list`, `dnt_gfe_list`, `dnt_txplans_list` and
+// `dnt_patients_list` sitting in localStorage.
+//
+// ON A SHARED OPERATORY TABLET -- which is how a practice actually works -- an
+// owner signs in, the caches fill, a provider signs in next, and every panel
+// reads the previous user's copy. That defeats the write-side financial gate
+// closed earlier today in ddbd1f2c and the patient scoping it sits beside.
+//
+// Cleared when the PERSON changes and on sign-out, never mid-session. Keyed on
+// employee AND role for the same reason as the other two: a narrowed role
+// narrows the server's answer exactly like a different login does.
+var DNT_SCOPED_CACHES = ['dnt_patients_list','dnt_providers_list','dnt_appointments_list',
+                         'dnt_charges_list','dnt_payments_list','dnt_denial_list',
+                         'dnt_gfe_list','dnt_txplans_list','dnt_coverage_list',
+                         'dnt_credentials_list','dnt_referrals_list','dnt_recall_outreach_list',
+                         'dnt_complaints_list','dnt_hours_list','dnt_operatories_list',
+                         'dnt_procedures_list','dnt_supplies_list','dnt_settings_obj',
+                         'dnt_vendor_cart','dnt_vendor_contacts','dnt_vendor_order_history',
+                         'dnt_vendor_pricing_rules'];
+// DELIBERATELY NOT PURGED, written down rather than omitted. The probe fails if
+// a `dnt_*` key appears in neither list.
+//   dnt_cred_rules_list  licensure requirements with public citations -- not
+//                        personal, not server-scoped, identical for every role.
+//   dnt_role             rewritten on every sign-in.
+//   dnt_session          already cleared by dntLogout().
+//   dnt_cache_owner      this guard's own bookkeeping.
+var DNT_UNSCOPED_CACHES = ['dnt_cred_rules_list','dnt_role','dnt_session','dnt_cache_owner'];
+function dntPurgeScopedCaches(){
+  DNT_SCOPED_CACHES.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+}
+function dntCacheOwnerChanged(d){
+  var who=(d&&d.employee_id||'')+'|'+(d&&d.role||'');
+  var prev=null;
+  try{prev=localStorage.getItem('dnt_cache_owner');}catch(e){}
+  try{localStorage.setItem('dnt_cache_owner',who);}catch(e){}
+  return prev !== null && prev !== who;
+}
 function dntEnterApp(){
+  if(dntCacheOwnerChanged(dntSession))dntPurgeScopedCaches();
   prole=dntSession.role;
   st('dnt_session',dntSession);
   if(!checkTrialGate())return;
@@ -1676,6 +1723,10 @@ window.checkTrialGate=checkTrialGate;
 function dntLogout(){
   dntSession=null;
   try{localStorage.removeItem('dnt_session');localStorage.removeItem('dnt_role');}catch(e){}
+  // AND THE PATIENT AND FINANCIAL CACHES, which this used to leave behind for
+  // whoever signed in next. See dntPurgeScopedCaches().
+  dntPurgeScopedCaches();
+  try{localStorage.removeItem('dnt_cache_owner');}catch(e){}
   $('app').classList.remove('on');$('bootstrap').style.display='none';$('pin').classList.add('on');
   if($('au-pin'))$('au-pin').value='';
   toast('Logged out');

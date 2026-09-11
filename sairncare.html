@@ -1488,7 +1488,65 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
+// ── THE CACHE IS NOT SCOPED, ONLY THE READ IS (2026-09-10) ──────────────
+// This app tells the user, on screen: "a Med Aide's AI answers never include a
+// resident assigned to someone else", and "Visible to you only where you're
+// assigned". THE SERVER HONOURS THAT. The local cache did not.
+//
+// Every alfHydrateX() is an ADDITIVE merge -- it pushes server rows the cache
+// does not have and NEVER removes one it does. Nothing cleared those keys on
+// sign-out either; alfSignOut only dropped `alf_session`. So on a device where
+// two people sign in, which in assisted living is the ordinary case and not an
+// edge case -- one station tablet at the nurses' desk -- the roster the OWNER
+// hydrated was still sitting in `alf_clients` when the Med Aide signed in.
+// residents() reads that cache, and BOTH the Residents panel and aiAsk()'s
+// prompt are built from it. The prompt even told the model the list was
+// "already scoped server-side to what they are allowed to see."
+//
+// PHI from residents the next user is not assigned to, on screen and in an
+// outbound AI request. Same shape as Layer 12 and Layer 30 in StoneDesk the
+// same day: the control existed, and the surface that reported it was safe
+// could not have known otherwise.
+//
+// WHY PURGE-ON-IDENTITY-CHANGE AND NOT AUTHORITATIVE HYDRATION. Making the
+// merge replace-not-add would fix this and break the reason the merge is
+// additive: a device that writes offline keeps rows the server has not seen
+// yet, and a replace would delete a shift's work on the next successful read.
+// The leak is not the merge, it is the cache OUTLIVING THE PERSON it was
+// fetched for. So it is cleared when the person changes, and never mid-session.
+//
+// KEYED ON EMPLOYEE *AND* ROLE. A role change on the same login narrows what
+// the server returns in exactly the same way a different login does.
+// DERIVED FROM THE KEYS THAT EXIST, not from the hydrate list -- the first
+// version of this array named `alf_careplans`, which is not a key this app ever
+// writes. A purge list with a phantom entry is harmless; one MISSING an entry is
+// the bug again, so it is checked against the real `ld('alf_*')`/`st('alf_*')`
+// set by tests/phi_cache_scoped_to_user.js rather than maintained by hand.
+// `alf_facility` is here because its server read is REDACTED for non-management
+// -- a manager's cached copy carries the rate card.
+// `alf_role` is deliberately NOT here: it is rewritten on every sign-in.
+var ALF_SCOPED_CACHES = ['alf_clients','alf_staff','alf_mar','alf_billing',
+                         'alf_incidents','alf_activities','alf_facility'];
+// DELIBERATELY NOT PURGED, written down rather than omitted -- see the same
+// list in sairnsenior.html. Every `alf_*` key this app writes is in exactly one
+// of these two, and the probe fails if a new one appears in neither.
+//   alf_role         rewritten on every sign-in.
+//   alf_cache_owner  this guard's own bookkeeping.
+var ALF_UNSCOPED_CACHES = ['alf_role','alf_cache_owner'];
+function alfPurgeScopedCaches(){
+  ALF_SCOPED_CACHES.forEach(function(k){try{localStorage.removeItem(k);}catch(e){}});
+}
+function alfCacheOwnerChanged(d){
+  var who=(d&&d.employee_id||'')+'|'+(d&&d.role||'');
+  var prev=null;
+  try{prev=localStorage.getItem('alf_cache_owner');}catch(e){}
+  try{localStorage.setItem('alf_cache_owner',who);}catch(e){}
+  // A FIRST sign-in on a fresh device has no marker and nothing cached that
+  // could belong to anyone else, so it is not treated as a change.
+  return prev !== null && prev !== who;
+}
 function alfEnterApp(d){
+  if(alfCacheOwnerChanged(d))alfPurgeScopedCaches();
   alfSession={token:d.token,role:d.role,employee_id:d.employee_id};
   prole=d.role;
   try{localStorage.setItem('alf_session',JSON.stringify(alfSession));}catch(e){}
@@ -1539,6 +1597,14 @@ function doLogout(){
   prole='';
   alfSession=null;
   try{localStorage.removeItem('alf_session');}catch(e){}
+  // AND THE RESIDENT DATA, which is the half this used to leave behind. The
+  // comment above is right that clearing the session alone is not enough, and
+  // it was written about `prole`; the same sentence is true of the cache. A
+  // logged-out device that still holds the roster hands it to whoever signs in
+  // next. See alfPurgeScopedCaches() for why this is safe to do here and not
+  // mid-session.
+  alfPurgeScopedCaches();
+  try{localStorage.removeItem('alf_cache_owner');}catch(e){}
   $('app').classList.remove('on');$('pin').classList.add('on');
   alfLoginReset();
   toast('Logged out');
