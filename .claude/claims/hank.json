@@ -985,6 +985,16 @@
       "claimed_at_epoch": 1789088661.281152,
       "status": "released",
       "released_at": "2026-09-11T01:08:01Z"
+    },
+    {
+      "id": "hank-1789090075",
+      "session": "hank",
+      "subject": "sairndental-generic-write-validation",
+      "task": "remaining eight resources payload shape",
+      "claimed_at": "2026-09-11T01:27:55Z",
+      "claimed_at_epoch": 1789090075.0062487,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
