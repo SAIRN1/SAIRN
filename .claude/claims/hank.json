@@ -965,6 +965,16 @@
       "claimed_at_epoch": 1789085071.3640728,
       "status": "released",
       "released_at": "2026-09-11T00:38:06Z"
+    },
+    {
+      "id": "hank-1789087409",
+      "session": "hank",
+      "subject": "resource-removal-path-classification",
+      "task": "collection-row vs keyed-row and append-only baseline",
+      "claimed_at": "2026-09-11T00:43:29Z",
+      "claimed_at_epoch": 1789087409.259693,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
