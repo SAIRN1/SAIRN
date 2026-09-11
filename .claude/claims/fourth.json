@@ -872,6 +872,16 @@
       "claimed_at_epoch": 1789134778.5157027,
       "status": "released",
       "released_at": "2026-09-11T14:05:59Z"
+    },
+    {
+      "id": "fourth-1789135688",
+      "session": "fourth",
+      "subject": "push-gate-probes-commit-to-main",
+      "task": "check4 and check7 plant fixtures on the working branch",
+      "claimed_at": "2026-09-11T14:08:08Z",
+      "claimed_at_epoch": 1789135688.591746,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
