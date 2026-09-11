@@ -884,6 +884,16 @@
       "claimed_at_epoch": 1789126240.382808,
       "status": "released",
       "released_at": "2026-09-11T12:24:35Z"
+    },
+    {
+      "id": "cc-1789130346",
+      "session": "cc",
+      "subject": "checker-grep-vs-parse",
+      "task": "checkers that search raw source without stripping comments or strings",
+      "claimed_at": "2026-09-11T12:39:06Z",
+      "claimed_at_epoch": 1789130346.351095,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
