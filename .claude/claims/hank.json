@@ -963,8 +963,8 @@
       "task": "raw NUL and backspace typed instead of escapes",
       "claimed_at": "2026-09-11T00:04:31Z",
       "claimed_at_epoch": 1789085071.3640728,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:38:06Z"
     }
   ]
 }
