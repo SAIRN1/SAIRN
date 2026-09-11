@@ -800,8 +800,8 @@
       "task": "first-dedicated-test-suite no-suite-no-fault-probe",
       "claimed_at": "2026-09-11T00:28:34Z",
       "claimed_at_epoch": 1789086514.6121113,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T00:34:44Z"
     }
   ]
 }
