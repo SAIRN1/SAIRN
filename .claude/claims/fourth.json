@@ -852,6 +852,16 @@
       "claimed_at_epoch": 1789127933.0626843,
       "status": "released",
       "released_at": "2026-09-11T12:37:55Z"
+    },
+    {
+      "id": "fourth-1789131261",
+      "session": "fourth",
+      "subject": "push-gate-probe-sync-dependence",
+      "task": "unresolvable base arm passes only when clone is ahead of origin",
+      "claimed_at": "2026-09-11T12:54:21Z",
+      "claimed_at_epoch": 1789131261.4965363,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
