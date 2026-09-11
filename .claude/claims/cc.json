@@ -904,6 +904,16 @@
       "claimed_at_epoch": 1789132202.3328724,
       "status": "released",
       "released_at": "2026-09-11T13:57:09Z"
+    },
+    {
+      "id": "cc-1789135196",
+      "session": "cc",
+      "subject": "gate-reads-nonexistent-column",
+      "task": "entitlement gates referencing columns not in the schema snapshot",
+      "claimed_at": "2026-09-11T13:59:56Z",
+      "claimed_at_epoch": 1789135196.8017335,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
