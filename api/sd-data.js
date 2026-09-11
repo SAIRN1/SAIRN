@@ -43,6 +43,7 @@ const {
   coverageRuleProblem: dntCoverageRuleProblem,
   denialProblem: dntDenialProblem,
   procedureTypeProblem: dntProcedureTypeProblem,
+  txPlanProblem: dntTxPlanProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -9982,6 +9983,36 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_procedure_types') {
         const ptp = dntProcedureTypeProblem(payload);
         if (ptp) { res.status(400).json({ error: { code: 'INVALID_PROCEDURE_TYPE', message: ptp } }); return; }
+      }
+      // dnt_txplans, the SIXTH (2026-09-10). A treatment plan is a priced
+      // proposal -- the money a patient is asked to accept -- which is why it
+      // was already on DNT_FINANCIAL_RESOURCES and why the criticality register
+      // tiers it A. What was missing is the payload shape.
+      //
+      // IT IS THE FIRST OF THESE WHERE A BAD ROW BLANKS A PANEL RATHER THAN
+      // MOVING A NUMBER, and that is why it was taken next. tpPlanTotals()
+      // does `(plan.items||[]).forEach(...)` INSIDE the .map() that builds the
+      // table body, so a non-array `items` throws there and NO treatment plans
+      // render at all -- one bad row, whole panel. Measured in node against
+      // the real expression: "abc", {a:1}, 42 and true each give
+      // `TypeError: forEach is not a function`.
+      //
+      // The other four shapes are wrong numbers and are traced to their
+      // readers in api/_lib/dental-ledger.js: a negative item fee reduces the
+      // open-value KPI with no clamp anywhere (items [100, -500] -> -400), a
+      // non-numeric fee contributes 0 while the item still shows, a status
+      // outside the four-value <select> vocabulary falls out of BOTH KPI
+      // filters, and an accepted plan with no decided_on sits in the
+      // case-acceptance denominator with no decision date.
+      //
+      // A REAL LEGACY-ROW COST, unlike dnt_payments and dnt_charges, and
+      // re-checked for this resource rather than carried over: saveTxPlan()
+      // EDITS as well as creates, so an existing accepted plan with no
+      // decided_on becomes unwritable until it is fixed. Same trade the
+      // guardian rule took, flagged rather than buried.
+      if (resource === 'dnt_txplans') {
+        const tpp = dntTxPlanProblem(payload);
+        if (tpp) { res.status(400).json({ error: { code: 'INVALID_TREATMENT_PLAN', message: tpp } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

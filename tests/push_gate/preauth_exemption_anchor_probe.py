@@ -115,24 +115,77 @@ try:
     check('the refusal was located in the raw source for the swap', m is not None)
     if m is not None:
         swapped_src = body[:m.start(2)] + swapped_text + body[m.end(2):]
-        swapped = os.path.join(tmp, 'swapped.js')
-        io.open(swapped, 'w', encoding='utf-8', newline='').write(swapped_src)
-        _r2, _b2, swapped_found = PC.scan(swapped)
-        planted = [f for f in swapped_found if 'ZZ_PROBE_DIFFERENT' in f[3]]
-        check('the planted refusal is detected at all', len(planted) == 1,
-              str([f[:3] for f in swapped_found][:5]))
-        if planted:
-            p_line, p_tier, p_code, p_text = planted[0]
-            check('...and it is NOT exempt -- a different refusal cannot inherit '
-                  'somebody else\'s pass',
-                  PC.accepted_entry(accepted, TARGET, p_code, p_text) is None)
-            old_key = {(e['file'], ln) for e in accepted
-                       for ln in e['lines_when_written']}
-            check('CONTROL: the OLD line key WOULD have exempted it -- this is the '
-                  'silent hole the change closes',
-                  (TARGET, p_line) in old_key,
-                  'planted at %d; exempted lines for this file: %s'
-                  % (p_line, sorted(ln for f, ln in old_key if f == TARGET)))
+        # ── THE PLANTED REFUSAL IS PINNED TO A RECORDED LEGACY LINE ─────────
+        # This arm's claim is about the OLD rule, so it has to be tested at an
+        # OLD line. It used to swap in place and assert that TODAY's line was
+        # still one of `lines_when_written` -- which held only until anything
+        # above it moved. It broke on 2026-09-10 for a one-line import added
+        # 390 lines higher up: planted at 390, recorded legacy line 389.
+        #
+        # THAT IS THE DEFECT THIS PROBE EXISTS TO GUARD AGAINST, IN THE PROBE.
+        # It asserts that a line number is a bad key for a refusal, while being
+        # keyed on a line number itself.
+        #
+        # `lines_when_written` is NOT refreshed to fix this, deliberately: the
+        # `reason` strings in tools/preauth_oracle_accepted.json cite those
+        # numbers ("L225:", "See line 107."), so rewriting the field would
+        # break the provenance every reason depends on. It is a historical
+        # record and it stays one.
+        #
+        # Instead the fixture is rebuilt so the planted refusal sits at a
+        # recorded legacy line exactly: pad to L-1 newlines, then everything
+        # from the refusal's own line onward. Dropping the lines ABOVE it is
+        # safe for a PRE-auth refusal -- the authentication boundary is below
+        # it by definition, which is what made it pre-auth.
+        legacy = sorted(ln for e in accepted if e['file'] == TARGET
+                        for ln in e['lines_when_written'])
+        raw_lines = swapped_src.split('\n')
+        here = next((i + 1 for i, ln in enumerate(raw_lines)
+                     if 'ZZ_PROBE_DIFFERENT' in ln), None)
+        check('the planted refusal is locatable for the pin', here is not None)
+        target_line = legacy[0] if legacy else None
+        check('the accepted file records at least one legacy line for %s' % TARGET,
+              target_line is not None)
+        if here is not None and target_line is not None:
+            pinned_src = ('\n' * (target_line - 1)) + '\n'.join(raw_lines[here - 1:])
+            swapped = os.path.join(tmp, 'swapped.js')
+            io.open(swapped, 'w', encoding='utf-8', newline='').write(pinned_src)
+            _r2, _b2, swapped_found = PC.scan(swapped)
+            planted = [f for f in swapped_found if 'ZZ_PROBE_DIFFERENT' in f[3]]
+            check('the planted refusal is detected at all', len(planted) == 1,
+                  str([f[:3] for f in swapped_found][:5]))
+            if planted:
+                p_line, p_tier, p_code, p_text = planted[0]
+                check('...and it landed on the recorded legacy line',
+                      p_line == target_line,
+                      'planted at %d, meant %d' % (p_line, target_line))
+                check('...and it is NOT exempt -- a different refusal cannot '
+                      'inherit somebody else\'s pass',
+                      PC.accepted_entry(accepted, TARGET, p_code, p_text) is None)
+                old_key = {(e['file'], ln) for e in accepted
+                           for ln in e['lines_when_written']}
+                # TRUE BY CONSTRUCTION NOW, AND LABELLED AS SUCH. Pinning the
+                # plant to a legacy line makes this a demonstration, not a
+                # measurement -- it used to be empirical and was also brittle,
+                # and pretending it is still empirical would be the more
+                # flattering description of a weaker check. The load-bearing
+                # arm is the one above: the NEW key refuses this refusal.
+                check('BY CONSTRUCTION: the OLD line key WOULD have exempted it',
+                      (TARGET, p_line) in old_key,
+                      'planted at %d; exempted lines for this file: %s'
+                      % (p_line, sorted(ln for f, ln in old_key if f == TARGET)))
+                # THE STRUCTURAL VERSION, which IS a measurement: the old rule
+                # had nothing but (file, line) to key on, so it could not have
+                # told these two refusals apart at any line. Asserted against
+                # the real accepted file rather than argued.
+                check('MEASURED: no accepted entry carries a line-scoped code or '
+                      'message, so the old key could not distinguish two '
+                      'refusals sharing a line',
+                      all('lines_when_written' in e and 'match' in e
+                          and not any(isinstance(v, dict) for v in e.values())
+                          for e in accepted),
+                      'an entry pairs a line with its own match -- the old key '
+                      'was narrower than this arm assumes')
 finally:
     shutil.rmtree(tmp, ignore_errors=True)
 

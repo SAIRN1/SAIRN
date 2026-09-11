@@ -104,6 +104,17 @@ function isNonNegativeMoney(v) {
   return Number.isFinite(n) && n >= 0;
 }
 
+// The four values tp-status can emit. It is a <select> in the browser, so the
+// app cannot produce a fifth -- and the generic write accepted any string.
+// Kept as an object rather than an array so the lookup cannot be fooled by a
+// prototype member: `TX_PLAN_STATUSES['constructor']` is undefined here and
+// ['proposed',...].includes is fine too, but a bare {} literal would inherit
+// one. Object.create(null) would also do; this matches how DNT_* gate maps are
+// written in the handler.
+const TX_PLAN_STATUSES = Object.assign(Object.create(null), {
+  proposed: true, presented: true, accepted: true, declined: true,
+});
+
 // ── dnt_charges, THE SECOND OF THE FIFTEEN (2026-09-04) ───────────────────
 // Recorded as the next one when dnt_payments shipped, with the reason: a bad
 // charge is clamped by dnAging()'s `if (owed < 0) owed = 0`, so it corrupts
@@ -507,8 +518,153 @@ function procedureTypeProblem(record) {
   return null;
 }
 
+// ── SIXTH RESOURCE: dnt_txplans (2026-09-10) ──────────────────────────────
+// A treatment plan is a PRICED PROPOSAL -- the money a patient is being asked
+// to accept -- which is why the write branch already gates it behind
+// DNT_FINANCIAL_ROLES and why the criticality register tiers it A. What was
+// missing is the payload shape: every rule below is one `saveTxPlan()` already
+// enforces in the BROWSER and nothing else, the same shape as the guardian
+// rule and 45 CFR 149.610(c)(1).
+//
+// FIVE FAILURE SHAPES, EACH MEASURED AGAINST THE REAL READERS RATHER THAN
+// REASONED ABOUT. Run in node against the actual expressions from
+// sairndental.html:
+//
+//   1. A NON-ARRAY `items` TAKES THE WHOLE PANEL DOWN, not just its own row.
+//      rTxPlans() maps over every plan and calls tpPlanTotals(), which does
+//      `(plan.items||[]).forEach(...)`. Measured: items "abc", {a:1}, 42 and
+//      true each throw `TypeError: forEach is not a function` -- and the throw
+//      happens inside the .map() building the table body, so ONE bad row
+//      renders no treatment plans at all. Every other shape here is a wrong
+//      number; this one is a blank screen.
+//
+//   2. A NEGATIVE ITEM FEE REDUCES THE OPEN-VALUE KPI. tpItemMoney() is
+//      `Number(item.fee)||0` and there is NO clamp anywhere in the plan path
+//      -- not in tpPlanTotals(), not in rTxPlans()'s
+//      `open.reduce((s,p) => s + tpPlanTotals(p).fee, 0)`. Measured: items
+//      [100, -500] give an open value of -400. Same family as the negative
+//      payment that opened this file, and unlike dnt_charges there is no
+//      second view that floors at zero -- so nothing disagrees and nothing
+//      flags it.
+//
+//   3. A NON-NUMERIC FEE CONTRIBUTES 0 WHILE THE ITEM STILL SHOWS. Measured:
+//      [100, 'abc'] totals 100, and the row's "Items" cell still counts 2.
+//      An item visible in the plan and absent from its total, on one screen --
+//      the same shape as the charges case.
+//
+//   4. A STATUS OUTSIDE THE FOUR-VALUE VOCABULARY FALLS OUT OF BOTH KPIs.
+//      rTxPlans() filters `status==='proposed'||status==='presented'` for open
+//      and `accepted||declined` for decided. Measured on
+//      ['Accepted','accepted','proposed','weird']: open=1, decided=1, and TWO
+//      plans in neither. So the plan lists in the table, contributes to no
+//      KPI, and is invisible to the case-acceptance rate. The browser can only
+//      produce the four because tp-status is a <select>; this handler accepts
+//      any string, and TP_STATUS_LABELS falls back to rendering it raw.
+//
+//   5. AN ACCEPTED PLAN WITH NO decided_on SITS IN THE ACCEPTANCE DENOMINATOR
+//      WITH NO DECISION DATE. saveTxPlan() refuses exactly this and says why:
+//      "it would sit in the case-acceptance denominator with an unknowable
+//      one. Asked for rather than back-filled with today." The `decided`
+//      filter is on STATUS ALONE, so server-side the row counts regardless.
+//
+// A LEGACY-ROW COST, AND UNLIKE dnt_payments AND dnt_charges IT IS REAL HERE.
+// Re-checked for THIS resource rather than carried over: saveTxPlan() does
+// `if (tpEditId) { list = list.map(x => x.id === tpEditId ? rec : x); }`, so
+// plans are EDITED, not only created. An existing plan that predates a rule --
+// an accepted one with no decided_on -- becomes unwritable until it is fixed.
+//
+// BUT THE COST IS BOUNDED, AND THAT WAS CHECKED RATHER THAN ASSUMED. There is
+// no bulk re-upload path to walk old rows into this gate: `dnt_txplans`
+// appears in `DNT_SYNC_RESOURCES`, but sairndental.html states at that map
+// that "dntSyncFromServer() only READS", and the only
+// `sdnData('write','dnt_txplans',...)` call in the app is saveTxPlan(). So the
+// refusal reaches exactly one place -- a human editing that one plan, with a
+// message naming what to fix -- and never a background sweep.
+// Same trade-off the guardian rule took and flagged, and the same judgement:
+// refusing loudly with a message that names the fix beats quietly persisting a
+// shape the practice's own form forbids. Flagged rather than buried.
+//
+// ── WHAT IS DELIBERATELY NOT VALIDATED ────────────────────────────────────
+//   * A FUTURE decided_on. saveTxPlan() refuses it against dntLocalToday();
+//     this module has no way to know the practice's timezone, and refusing
+//     against UTC would reject a plan decided on the correct local day west of
+//     UTC in the evening. That is the UTC-midnight trap, and it is the same
+//     call denialProblem() made above for denied_on -- not a fresh decision,
+//     and recorded so nobody adds it thinking it was forgotten.
+//   * provider_id. The modal sends `$('tp-provider').value`, which can be
+//     empty, so requiring it would refuse a shape the form itself produces.
+//   * item.phase. tpPhases() reads `Number(it.phase)||1`, so a bad phase
+//     merges into phase 1 -- a mis-grouped item, not a wrong total.
+//   * item.procedure_type_id. Absent, the item still totals from its own fee
+//     and tpIsStarted() simply never matches it. Requiring it would block a
+//     plan item the practice priced by hand.
+function txPlanProblem(record) {
+  const r = record || {};
+  if (String(r.patient_id == null ? '' : r.patient_id).trim() === '') {
+    return 'A treatment plan must name a patient. Without patient_id the plan '
+         + 'renders as "(unknown patient)" and tpItemMoney() is handed an empty '
+         + 'payer, so every item silently falls to uncovered and the insurance '
+         + 'estimate reads 0 rather than unknown.';
+  }
+  if (String(r.title == null ? '' : r.title).trim() === '') {
+    return 'A treatment plan needs a title -- a patient shown two untitled '
+         + 'plans cannot tell them apart. This is the rule saveTxPlan() '
+         + 'already refuses on.';
+  }
+  if (!Array.isArray(r.items)) {
+    return 'items must be an array. tpPlanTotals() does '
+         + '(plan.items||[]).forEach(...) inside the .map() that builds the '
+         + 'table, so a non-array value throws there and NO treatment plans '
+         + 'render at all -- one bad row blanks the whole panel.';
+  }
+  if (r.items.length === 0) {
+    return 'A plan with no items is not a plan -- add at least one procedure. '
+         + 'An empty accepted plan counts in the case-acceptance numerator '
+         + 'while contributing nothing to open value.';
+  }
+  for (let i = 0; i < r.items.length; i += 1) {
+    const it = r.items[i] || {};
+    if (it.fee === undefined || it.fee === null || it.fee === '') continue;
+    if (!isNonNegativeMoney(it.fee)) {
+      return 'Item ' + (i + 1) + ' has fee ' + JSON.stringify(it.fee)
+           + '. A plan item fee must be a number and cannot be negative: '
+           + 'tpItemMoney() reads Number(item.fee)||0 with no clamp anywhere '
+           + 'in the plan path, so a negative fee REDUCES the open treatment '
+           + 'value, and a non-numeric one contributes 0 while the item still '
+           + 'shows in the plan.';
+    }
+  }
+  const status = String(r.status == null ? '' : r.status).trim();
+  if (!TX_PLAN_STATUSES[status]) {
+    return 'status must be one of proposed, presented, accepted or declined '
+         + '(got ' + JSON.stringify(r.status) + '). rTxPlans() filters open on '
+         + 'proposed/presented and decided on accepted/declined, so any other '
+         + 'value puts the plan in NEITHER -- it lists in the table and '
+         + 'contributes to no KPI, including the case-acceptance rate.';
+  }
+  if (status === 'accepted' || status === 'declined') {
+    if (!isCalendarDate(r.decided_on)) {
+      return 'An accepted or declined plan needs decided_on as a YYYY-MM-DD '
+           + 'date, and it is not assumed to be today. The decided filter is '
+           + 'on status alone, so without it the plan sits in the '
+           + 'case-acceptance denominator with an unknowable decision date.';
+    }
+  } else if (r.decided_on !== undefined && r.decided_on !== null
+             && String(r.decided_on).trim() !== '') {
+    // saveTxPlan() stores '' for a plan that is not decided. A malformed value
+    // carried on an undecided plan becomes the denominator problem above the
+    // moment somebody marks it accepted, so it is refused now rather than
+    // later.
+    if (!isCalendarDate(r.decided_on)) {
+      return 'decided_on must be empty or a YYYY-MM-DD date (got '
+           + JSON.stringify(r.decided_on) + ').';
+    }
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
-  procedureTypeProblem,
+  procedureTypeProblem, txPlanProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
 };

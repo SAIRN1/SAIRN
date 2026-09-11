@@ -962,23 +962,193 @@ async function main() {
     assert.ok(wrote);
   });
 
-  // ── 5c. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_txplans with an absurd amount still goes through -- eight resources remain', async () => {
-    // The current edge of the change, and dnt_txplans is a REPRESENTATIVE
-    // unvalidated resource here, not a claim that it is next -- nothing has
-    // been measured about it yet. EIGHT of the fifteen still have no domain
-    // check, down from nine when dnt_procedure_types closed on 2026-09-09:
-    // dnt_providers, dnt_operatories, dnt_provider_hours,
-    // dnt_ar, dnt_revenue, dnt_referrals, dnt_recall_outreach and this one.
-    // Counted off DNT_RESOURCES rather than tracked in prose, because a prose
-    // tally in the index row was already wrong once by one.
-    // If this ever fails, either the scope grew -- fine, say so here as the
-    // previous two boundaries did -- or a rule leaked across resources.
+  // ── 5d. dnt_txplans, THE SIXTH (2026-09-10) ─────────────────────────────
+  // A priced proposal -- the money a patient is asked to accept. Already on
+  // DNT_FINANCIAL_RESOURCES and tiered A in docs/CRITICALITY-TIERS.md; the
+  // payload shape was the part missing.
+  //
+  // IT IS THE FIRST OF THE SIX WHERE A BAD ROW BLANKS A PANEL RATHER THAN
+  // MOVING A NUMBER, and that is why it was taken next. Every rule below is
+  // one saveTxPlan() already refuses in the browser and nothing else.
+  const TP_OK = {
+    id: 'TP-1', patient_id: 'PT-1', title: 'Crown and two fillings',
+    status: 'proposed', items: [{ fee: 900, procedure_type_id: 'PR-1' }],
+  };
+
+  // The shape that takes the whole panel down. tpPlanTotals() does
+  // (plan.items||[]).forEach(...) INSIDE the .map() that builds the table
+  // body, so a non-array items throws there and NO plans render at all.
+  // Measured in node: "abc", {a:1}, 42 and true each give
+  // `TypeError: forEach is not a function`.
+  for (const bad of ['abc', { a: 1 }, 42, true]) {
+    await test('items ' + JSON.stringify(bad) + ' is refused -- it would blank the whole panel, not one row', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { items: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+      assert.strictEqual(res.body.error.code, 'INVALID_TREATMENT_PLAN');
+      assert.ok(!wrote, 'REFUSED AND STILL WROTE -- the store is what this exists to protect');
+    });
+  }
+
+  // A negative item fee REDUCES the open-value KPI. There is no clamp anywhere
+  // in the plan path -- not tpItemMoney(), not tpPlanTotals(), not
+  // rTxPlans()'s open.reduce(). Measured: items [100, -500] -> -400. Unlike
+  // dnt_charges there is no second view that floors at zero, so nothing
+  // disagrees and nothing flags it.
+  await test('a negative item fee is refused -- it reduces open treatment value with no clamp', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: { id: 'TX-1', patient_id: 'PT-1', amount: -9999 } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the ledger rules leaked onto dnt_txplans');
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { items: [{ fee: 100 }, { fee: -500 }] }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.ok(/negative/i.test(res.body.error.message), 'the message must name the shape: ' + res.body.error.message);
+    assert.ok(/Item 2/.test(res.body.error.message), 'it must say WHICH item: ' + res.body.error.message);
+    assert.ok(!wrote);
+  });
+
+  await test('a non-numeric item fee is refused -- it contributes 0 while the item still shows', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { items: [{ fee: 'abc' }] }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.ok(!wrote);
+  });
+
+  // A status outside the four-value <select> vocabulary falls out of BOTH KPI
+  // filters. Measured on ['Accepted','accepted','proposed','weird']: open=1,
+  // decided=1, and TWO plans in neither -- listed in the table, counted in no
+  // KPI, invisible to the case-acceptance rate. 'Accepted' is in this list on
+  // purpose: a capitalised value is the realistic accident and it fails the
+  // strict comparison the app makes.
+  for (const bad of ['Accepted', 'weird', '', undefined]) {
+    await test('status ' + JSON.stringify(bad) + ' is refused -- it would count in NEITHER KPI', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { status: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, 'got ' + res.statusCode);
+      assert.ok(!wrote);
+    });
+  }
+
+  // saveTxPlan() refuses this and says why: it "would sit in the
+  // case-acceptance denominator with an unknowable one. Asked for rather than
+  // back-filled with today." The decided filter is on STATUS ALONE.
+  for (const st of ['accepted', 'declined']) {
+    await test('a ' + st + ' plan with no decided_on is refused -- the acceptance denominator would have no date', async () => {
+      let wrote = false;
+      const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { status: st }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400);
+      assert.ok(/decided_on/.test(res.body.error.message));
+      assert.ok(!wrote);
+    });
+  }
+
+  await test('an empty items array is refused -- an empty accepted plan counts in the numerator for nothing', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { items: [] }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  await test('a plan with no patient is refused -- it renders as "(unknown patient)" and every item falls to uncovered', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { patient_id: '' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  await test('a blank title is refused -- a patient shown two untitled plans cannot tell them apart', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { title: '   ' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  // ── THE ACCEPT SIDE. A validator that refuses everything passes every
+  //    negative test above and breaks the app (Guardian check 29).
+  await test('ACCEPT: the record saveTxPlan() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    // Field for field what saveTxPlan() sends for an undecided plan, including
+    // decided_on: '' -- the form stores empty string, not undefined, and a
+    // validator that rejected that would break every ordinary save.
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: { id: 'TP-9', patient_id: 'PT-1', provider_id: '', title: 'Plan', status: 'presented', decided_on: '', note: '', items: [{ fee: 250, procedure_type_id: 'PR-1', phase: 1 }], created_at: '2026-09-10' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: an accepted plan WITH a decision date goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { status: 'accepted', decided_on: '2026-09-01' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: an item with no fee at all, and a fee of zero, both go through', async () => {
+    for (const items of [[{ procedure_type_id: 'PR-1' }], [{ fee: 0 }], [{ fee: '900' }]]) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { items }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(items) + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  // A FUTURE decided_on is DELIBERATELY allowed. saveTxPlan() refuses it
+  // against the browser's local today; this module cannot know the practice's
+  // timezone, and refusing against UTC would reject a plan decided on the
+  // correct local day west of UTC in the evening. Same call denialProblem()
+  // made for denied_on -- asserted so nobody "fixes" it later without reading
+  // why. THE UTC-MIDNIGHT TRAP IS REAL ON THIS PLATFORM.
+  await test('a FUTURE decided_on is allowed on purpose -- the UTC-midnight trap', async () => {
+    const handler = loadHandler(OK_WRITE);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: Object.assign({}, TP_OK, { status: 'accepted', decided_on: '2099-01-01' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a UTC-based future check was added -- read the reasoning in dental-ledger.js first');
+  });
+
+  await test('no session + a bad treatment plan -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_txplans', payload: { id: 'TP-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
+  });
+
+  // ── 5e. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
+  await test('dnt_referrals with a junk shape still goes through -- NINE resources remain, not eight', async () => {
+    // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
+    // resource, not a claim that it is next -- nothing has been measured about
+    // it yet.
+    //
+    // COUNT CORRECTED, AND OFF THE CODE RATHER THAN OFF THIS COMMENT. The
+    // previous boundary said "EIGHT of the fifteen" and listed eight. Both
+    // halves are now wrong: DNT_RESOURCES holds SEVENTEEN, not fifteen --
+    // dnt_supplies and dnt_vendor_orders were added to it on 2026-09-10, the
+    // same day, by the vendor-collections work. Six are validated
+    // (dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules,
+    // dnt_denial, dnt_procedure_types) plus dnt_gfe's issue-time check, so
+    // NINE have no domain check: dnt_providers, dnt_operatories,
+    // dnt_provider_hours, dnt_ar, dnt_revenue, dnt_referrals,
+    // dnt_recall_outreach, dnt_supplies, dnt_vendor_orders.
+    //
+    // The index row's prose tally has now been wrong twice, in both
+    // directions. Count off DNT_RESOURCES.
+    //
+    // If this ever fails, either the scope grew -- fine, say so here as the
+    // previous three boundaries did -- or a rule leaked across resources.
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_referrals', payload: { id: 'RF-1', patient_id: 'PT-1', title: '', status: 'weird', items: 'not-an-array' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the treatment-plan rules leaked onto dnt_referrals');
     assert.ok(wrote);
   });
 
@@ -1044,6 +1214,15 @@ async function main() {
     ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', effective_to: '2026-02-31' }],
     ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', effective_from: '2026-06-01', effective_to: '2026-01-01' }],
     ['dnt_procedure_types', { id: 'PR-1', cdt_code: 'D2740', description: 'Crown', default_fee: 'abc' }],
+    // dnt_txplans (2026-09-10). The first entry here is the one that matters
+    // most: pre-fix, a non-array `items` reached the store, and every later
+    // render of the Treatment Plans panel threw on it.
+    ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: 'Plan', status: 'proposed', items: 'abc' }],
+    ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: 'Plan', status: 'proposed', items: [{ fee: -500 }] }],
+    ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: 'Plan', status: 'Accepted', items: [{ fee: 100 }] }],
+    ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: 'Plan', status: 'accepted', items: [{ fee: 100 }] }],
+    ['dnt_txplans', { id: 'TP-1', patient_id: 'PT-1', title: '', status: 'proposed', items: [{ fee: 100 }] }],
+    ['dnt_txplans', { id: 'TP-1', title: 'Plan', status: 'proposed', items: [{ fee: 100 }] }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;
