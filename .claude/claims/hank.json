@@ -945,6 +945,16 @@
       "claimed_at_epoch": 1789082676.0660324,
       "status": "released",
       "released_at": "2026-09-10T23:58:01Z"
+    },
+    {
+      "id": "hank-1789084862",
+      "session": "hank",
+      "subject": "delete-path-coverage",
+      "task": "resources writable but not deletable derived audit",
+      "claimed_at": "2026-09-11T00:01:02Z",
+      "claimed_at_epoch": 1789084862.7780695,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
