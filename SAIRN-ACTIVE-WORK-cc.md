@@ -989,3 +989,34 @@ rather than assumed:** `tests/sairn_storage_wrapper_honesty.js`,
 `tests/run_report_only_checks_probe.py`,
 `tests/push_gate/refspec_and_override_probe.py`. Not mine, not investigated,
 recorded so the next session does not attribute them to `ddbd1f2c`.
+
+**`3f3d429d` — the Layer 12 shape has a second instance, and I went looking for
+it rather than waiting to trip over it.** After finding that StoneDesk's SRI
+check allowlisted the only two hosts it could ever have caught, I audited all 30
+in-app security layers for the same shape: *a check that can only ever return
+the reassuring answer.*
+
+**Layer 30, the panel that reports whether the protections are on, was the
+worst possible place for it.** Four lines were string literals — idle timeout,
+PII pattern count, "Prompt injection: Active", "Rate limiting: 30 calls/min" —
+and none read anything. The 2026-08-31 sweep found ten layers defined-and-never-
+called; this panel called them Active throughout. Every line is derived now, and
+**DEFINED is reported separately from REACHED**, because that was the actual
+distinction: all six layers wired that day already existed.
+
+**The method is the reusable part, not the finding.** Extract every layer block,
+count external references to the functions it declares, then grep the blocks for
+allowlist-shaped constructs (`indexOf(...) < 0`, `.includes(`, `trusted`,
+`hostname`) and read only those. Nine of thirty had one; seven were legitimate.
+Layers 1 and 9 cleared because `allowedDomains` holds seven exact hosts and no
+bare eTLD, so `endsWith('.' + d)` cannot be widened.
+
+**Two near-misses worth recording.** Layer 18's `saAutoPurge` has zero external
+references and looked dead — it is an IIFE, and its `saLog` call resolves only
+because both sit in the same script block (block 5 of 130). Checked, not
+assumed; a different block would have meant a ReferenceError swallowed by its
+own `try/catch` and a 90-day data purge that never ran. And **my own probe's
+first arm was wrong in the opposite direction** — it substring-searched for the
+dead literals, which the new header deliberately quotes, so it failed a correct
+file. It strips comments now. A check that cannot tell a quoted example from a
+live string is the same class of wrong as the panel it was testing.
