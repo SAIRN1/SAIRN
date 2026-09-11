@@ -937,8 +937,8 @@
       "task": "fetch timeout every app transport AbortSignal",
       "claimed_at": "2026-09-11T10:58:11Z",
       "claimed_at_epoch": 1789124291.1249554,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T12:32:28Z"
     }
   ]
 }
