@@ -19,14 +19,58 @@ can -- the same standard check7_probe was written to.
 
 Run: python tests/push_gate/check8_probe.py
 """
+import atexit
 import json
 import os
 import subprocess
 import sys
+import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
-HOOK = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
+
+# ── THE FIXTURE IS PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ────────────
+# THIS FILE WAS NOT ON THE LIST AND HAD THE DEFECT IT TESTS.
+# `docs/2026-09-10-run-all-tests-hook-PAUSED.md` names check4_probe.py and
+# check7_probe.py as the two probes that commit fixtures onto the working
+# branch. There are THREE: this one plants `PROBE check8 planted fixture` the
+# same way, on the same branch, and it is the probe for the gate that exists
+# because a stranded PROBE commit shipped to production.
+#
+# Found by grepping every `tests/**/*.py` that runs `git commit` rather than
+# trusting the document's list -- CLAUDE.md's standing lesson, that a fix
+# verified on the copies somebody wrote down is not verified on the ones they
+# did not. The other two hits (tests/claims/run_push_verify_probe.py and
+# tests/push_gate/redaction_base_probe.py) build their own throwaway repos and
+# were already safe.
+#
+# A detached worktree has no branch tip for a lost `reset` race to strand a
+# commit on. The pre-push hook still fires from it -- `core.hooksPath` is
+# `.githooks` and worktrees share the common git dir -- which this probe
+# depends on absolutely, since its entire subject is what that hook decides.
+WT = os.path.join(tempfile.gettempdir(), 'check8-probe-%d' % os.getpid())
+_add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
+                       WT, 'HEAD'], capture_output=True, text=True)
+if _add.returncode != 0:
+    print('SKIPPED: could not create the throwaway worktree this probe needs, so')
+    print('nothing about check 8 was verified: %s' % (_add.stderr or '').strip()[:200])
+    sys.exit(3)
+
+
+@atexit.register
+def _remove_worktree():
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'remove', '--force', WT],
+                   capture_output=True)
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'prune'], capture_output=True)
+
+
+REPO = WT
+# THE HOOK IS LOADED FROM THE CLONE, NOT THE WORKTREE, and that is deliberate:
+# the worktree is a checkout of HEAD, so a hook edit that is not yet committed
+# would be invisible there and the probe would test the committed gate while
+# reporting on the working one. Same reasoning redaction_base_probe.py states
+# for its own clone.
+HOOK = os.path.join(MAIN, 'tools', 'sairn_push_gate_hook.py')
 FIXTURE = 'zz_check8_fixture.txt'
 
 # Deliberately WITHOUT SAIRN_PROBE_PUSH: this probe's whole job is to see check
@@ -44,15 +88,19 @@ def clean_tree():
     return run('git', 'status', '--porcelain').stdout.strip()
 
 
-# A PRECONDITION IS NOT A FAILURE -- exit 3 is SKIPPED, the convention its two
-# siblings already use. Untracked files are not dirt: this probe adds a NAMED
-# path, so nothing of anybody's can be swept into its commit.
-dirty = [l for l in clean_tree().split('\n') if l.strip() and not l.startswith('??')]
-if dirty:
-    print('SKIPPED: this probe commits a fixture and resets, so it needs a clean')
-    print('tracked tree. Nothing about check 8 was verified. Modified:')
-    print('\n'.join(dirty))
-    sys.exit(3)
+# ── THE CLEAN-TREE PRECONDITION IS GONE -- SEE THE WORKTREE BLOCK ABOVE ────
+# It was exit 3 for SKIPPED, the convention its two siblings use, and it
+# existed because `git add` in the clone could sweep uncommitted work into the
+# probe's commit. A worktree built from HEAD never contains the clone's
+# uncommitted files. The guard had been skipping this probe -- the only proof
+# check 8 can deny anything -- on every run in any clone with a modified
+# tracked file, which is most of them most of the time.
+MAIN_TREE_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'status', '--porcelain'],
+    capture_output=True, text=True).stdout
+MAIN_HEAD_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+    capture_output=True, text=True).stdout.strip()
 
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 START_UNTRACKED = {l for l in clean_tree().split('\n') if l.startswith('??')}
@@ -99,7 +147,19 @@ try:
     run('git', 'add', FIXTURE)
     run('git', 'commit', '-q', '-m', 'test(check8): an ordinary commit subject')
     R['normal'] = dry_push()
-    R['normal_pretooluse'] = pretooluse('git push origin main')
+    # ── `HEAD:main`, NOT `main`, SINCE THE WORKTREE CHANGE (2026-09-11) ─────
+    # pushed_tip() resolves the tip from the COMMAND TEXT, and in a detached
+    # worktree `main` is the CLONE's branch -- not this checkout's HEAD, which
+    # is where the planted commit lives. Driving `git push origin main` here
+    # diffs a range with no fixture in it, so the planted arm reported NOT
+    # DENIED and the control arm reported ALLOWED for a reason that had nothing
+    # to do with check 8. The control was passing for the wrong reason, which
+    # is the more dangerous half.
+    #
+    # `HEAD:main` exercises the same code path -- pushed_tip() returns 'HEAD' --
+    # and actually points at the commit under test. The refspec form is
+    # incidental to what check 8 reads, which is the commit SUBJECT.
+    R['normal_pretooluse'] = pretooluse('git push origin HEAD:main')
     run('git', 'reset', '--mixed', '-q', start)
 
     # ── ARM 2: a PROBE-subject commit IS blocked ────────────────────────────
@@ -107,7 +167,7 @@ try:
     run('git', 'commit', '-q', '-m', 'PROBE check8 planted fixture')
     R['sha'] = run('git', 'rev-parse', 'HEAD').stdout.strip()
     R['planted'] = dry_push()
-    R['planted_pretooluse'] = pretooluse('git push origin main')
+    R['planted_pretooluse'] = pretooluse('git push origin HEAD:main')
 
     # ── ARM 3: the two exemptions, on the SAME commit ───────────────────────
     # Same planted commit, so any difference is the exemption and nothing else.
@@ -170,6 +230,16 @@ check('`git push -n` is exempt too -- the short form is the same thing',
 
 check('the repo was restored', R['restored'])
 check('...and HEAD is back where it started', R['head_restored'])
+# ── AND THE CLONE ITSELF WAS NEVER TOUCHED (2026-09-11) ────────────────────
+# The two above are about the WORKTREE. This is the claim check 8 exists
+# because somebody violated -- a PROBE commit surviving in a real clone -- and
+# it is the one this probe was quietly not making about itself.
+check('and the CLONE was never touched -- no commit, no modified file',
+      subprocess.run(['git', '-C', MAIN, 'status', '--porcelain'],
+                     capture_output=True, text=True).stdout == MAIN_TREE_BEFORE
+      and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+                         capture_output=True, text=True).stdout.strip()
+      == MAIN_HEAD_BEFORE)
 
 print('\n%s  check8_probe: %d failed' % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)

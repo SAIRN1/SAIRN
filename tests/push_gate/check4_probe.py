@@ -5,33 +5,84 @@ Driven from Python so nothing depends on Bash command text, and every arm
 asserts on the refusal REASON, not just the exit code -- three of tonight's
 probe arms returned the right code for the wrong reason.
 """
-import subprocess, os, sys, re
+import atexit, subprocess, os, sys, re, tempfile
 
 # ── RUN THIS, DO NOT IMPORT IT (2026-09-11) ────────────────────────────────
-# This probe MUTATES A TRACKED SOURCE FILE in place and restores it at the end.
-# It has no `if __name__ == "__main__"` guard, so an import runs the whole
-# thing -- and an import that is interrupted leaves the mutation on disk.
+# This probe commits fixtures and mutates a source file. Since the worktree
+# change below, it does both in a THROWAWAY WORKTREE rather than in the clone
+# -- so an interrupted import no longer leaves a tracked file modified. What it
+# does leave is a stray worktree and a half-finished push attempt, which is
+# still worth refusing loudly.
 #
-# THAT IS NOT HYPOTHETICAL. On 2026-09-11 a read-only checker walked
-# tests/**/*_probe.py and imported each one to read its MUTATIONS list. It hung,
-# was killed mid-probe, and left api/_lib/dental-guardian.js modified with an
-# injected `if (r.zz_probe_field) return "probe";`. Found by `git status`,
-# restored by hand, and the checker rewritten to PARSE rather than import.
-#
-# The cheap half of the fix is this: refuse the import loudly instead of
-# mutating a live file silently. Three lines, no restructuring, and it turns the
-# dangerous failure into an obvious one.
+# THE HISTORY IS KEPT BECAUSE IT IS WHY THE GUARD EXISTS. On 2026-09-11 a
+# read-only checker walked tests/**/*_probe.py and imported each one to read its
+# MUTATIONS list. It hung, was killed mid-probe, and left
+# api/_lib/dental-guardian.js modified with an injected
+# `if (r.zz_probe_field) return "probe";`. Found by `git status`, restored by
+# hand, and the checker rewritten to PARSE rather than import.
 if __name__ != '__main__':
     raise RuntimeError(
-        __file__ + ' mutates a tracked source file in place. Run it as a script; '
-        'do not import it. To read its structure, parse it with ast -- see '
+        __file__ + ' commits fixtures and pushes. Run it as a script; do not '
+        'import it. To read its structure, parse it with ast -- see '
         'tools/mutation_anchor_check.py.')
 
 
-
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 EP = 'api/legal-deadlines.js'
+
+# ── THE FIXTURES ARE PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ──────────
+# This probe used to `git commit` its fixtures ONTO THE WORKING BRANCH and
+# `git reset --mixed` back. That is safe for one runner on a quiet branch and
+# was not safe here: when `run_all_tests.py --hook` fired on every Bash tool
+# call, several copies ran at once, copy A reset to ITS OWN start while copy B's
+# commit sat on the branch, and whoever pushed next published it.
+#
+# FIVE STRANDED `PROBE` COMMITS REACHED origin/main IN ONE DAY. One of them
+# deleted `service_methods: body.service_methods,` from api/legal-deadlines.js
+# -- the exact line whose absence made SAIRNlaw compute Florida answer deadlines
+# five days late for five days. The fixture this probe plants deliberately, to
+# prove the gate catches it, shipped to production because the RESET lost a
+# race. `docs/2026-09-10-run-all-tests-hook-PAUSED.md` records the whole thing
+# and names this file and check7_probe.py as needing exactly this treatment.
+#
+# A detached worktree has no branch tip to strand a commit on, and it is deleted
+# at the end. Two consequences beyond the obvious one:
+#
+#   * THE CLEAN-TREE PRECONDITION IS GONE, deliberately. The old exit-3 guard
+#     existed because `git add` here could sweep somebody's uncommitted work
+#     into a probe commit. It cannot: the worktree is created from HEAD and
+#     never contains the clone's uncommitted files. That guard had been
+#     SKIPPING this probe on every run in any clone with a modified tracked
+#     file -- verifying nothing about a BLOCKING gate -- so removing it is a
+#     coverage gain, not a relaxation.
+#   * The pre-push hook still fires. `core.hooksPath` is `.githooks` and
+#     worktrees share the common git dir, so `git push --dry-run` from the
+#     worktree runs the real gate. Measured before this was written, not
+#     assumed: a planted seam violation blocked with the real refusal text.
+WT = os.path.join(tempfile.gettempdir(), 'check4-probe-%d' % os.getpid())
+_add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
+                       WT, 'HEAD'], capture_output=True, text=True)
+if _add.returncode != 0:
+    print('SKIPPED: could not create the throwaway worktree this probe needs, so')
+    print('nothing about check 4 was verified: %s' % (_add.stderr or '').strip()[:200])
+    sys.exit(3)
+
+
+# ATEXIT RATHER THAN try/finally, because wrapping 120 lines of heavily
+# commented arms in a try block would reindent all of it and make the diff
+# unreadable. atexit runs on a normal exit, on sys.exit(), and after an
+# unhandled exception; a hard kill skips it, exactly as the old reset did.
+@atexit.register
+def _remove_worktree():
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'remove', '--force', WT],
+                   capture_output=True)
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'prune'], capture_output=True)
+
+
+# Every git and filesystem operation below now happens in the worktree. The
+# name is kept so the arms read unchanged.
+REPO = WT
 
 
 # ── THIS PROBE DECLARES ITSELF TO PUSH-GATE CHECK 8 (2026-09-10) ──────────
@@ -56,38 +107,28 @@ def clean_tree():
     return run('git', 'status', '--porcelain').stdout.strip()
 
 
-# ── A PRECONDITION IS NOT A FAILURE (2026-09-08) ──────────────────────────
-# This was `assert clean_tree() == ''`, which exits 1 -- indistinguishable
-# from "check 4 is broken". It is neither. This probe COMMITS planted
-# fixtures and then `git reset --mixed` back, so running it against a dirty
-# tree would sweep somebody's uncommitted work into a probe commit and then
-# unstage it. The guard protects real work and must stay.
+# ── THE CLEAN-TREE PRECONDITION IS GONE -- SEE THE WORKTREE BLOCK ABOVE ────
+# Two earlier corrections lived here and both are now moot, but they are the
+# reason the guard could be removed safely rather than hopefully, so the
+# reasoning is kept: it existed because `git add` in the clone could sweep
+# somebody's uncommitted work into a probe commit (2026-09-08, exit 3 rather
+# than exit 1, because a precondition is not a failure), and it compared the
+# WHOLE porcelain output so a single untracked file skipped the probe entirely
+# (2026-09-09 -- one had been sitting in a clone since 2026-08-28, so this
+# BLOCKING gate went unverified there on every run).
 #
-# What was wrong is the SIGNAL. On 2026-09-08 an unrelated probe left one
-# tracked file byte-modified and this exited 1, which read as a failing
-# push-gate check and sent a reader looking at check 4. Exit 3 now means
-# SKIPPED -- tools/run_all_tests.py lists it under SKIPPED with this reason
-# and never counts it as a pass, because "could not run" is not "ran clean".
+# The worktree removes the danger itself: it is created from HEAD and never
+# contains the clone's uncommitted files, so there is nothing to sweep.
 #
-# ── AND AN UNTRACKED FILE IS NOT DIRT (2026-09-09) ────────────────────────
-# This compared the WHOLE porcelain output, so a single untracked file skipped
-# it -- and one has been sitting in a clone since 2026-08-28, which means this
-# probe had been reporting SKIPPED on every run in that clone and verifying
-# nothing about a BLOCKING gate. Its sibling check7_probe.py already filters
-# `??` for exactly this reason; the two guards were written to the same
-# intention and only one of them implemented it.
-#
-# It is safe: the danger this guard exists for is `git add` sweeping somebody's
-# uncommitted work into a probe commit, and this probe adds NAMED PATHS. An
-# untracked file elsewhere cannot be swept by that, and `git reset --mixed`
-# does not touch it either.
-dirty = [l for l in clean_tree().split('\n') if l.strip() and not l.startswith('??')]
-if dirty:
-    print('SKIPPED: this probe commits fixtures and resets, so it needs a clean')
-    print('tree -- running it now would sweep uncommitted work into a probe')
-    print('commit. Nothing about check 4 was verified. Modified:')
-    print('\n'.join(dirty))
-    sys.exit(3)
+# WHAT THIS PROBE MUST STILL PROVE IS THAT IT LEFT THE CLONE ALONE, which is a
+# stronger claim than the old one and is asserted at the bottom against these:
+MAIN_TREE_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'status', '--porcelain'],
+    capture_output=True, text=True).stdout
+MAIN_HEAD_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+    capture_output=True, text=True).stdout.strip()
+
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 # The untracked files that were here BEFORE this probe ran. The restore check at
 # the bottom compares against this rather than against an empty tree.
@@ -168,11 +209,24 @@ _after_tracked = [l for l in clean_tree().split('\n')
 R['restored'] = (not _after_tracked and _after_untracked == START_UNTRACKED)
 R['head_restored'] = (run('git', 'rev-parse', 'HEAD').stdout.strip() == start)
 
+# ── AND THE CLONE ITSELF WAS NEVER TOUCHED (2026-09-11) ────────────────────
+# The two checks above are about the WORKTREE, and they still matter: the arms
+# depend on each reset landing, so a probe whose own cleanup is broken is a
+# probe whose later arms measured the wrong tree. But neither of them is the
+# claim that was actually violated when five PROBE commits reached origin/main.
+# That claim is this one, and until now nothing asserted it.
+R['clone_untouched'] = (
+    subprocess.run(['git', '-C', MAIN, 'status', '--porcelain'],
+                   capture_output=True, text=True).stdout == MAIN_TREE_BEFORE
+    and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+                       capture_output=True, text=True).stdout.strip()
+    == MAIN_HEAD_BEFORE)
+
 for k, v in R.items():
     print('%-20s %s' % (k, v))
 print()
 ok = (R['planted_violation']['blocked_by_seam'] and R['planted_violation']['names_field']
       and not R['clean_api_change']['blocked_by_seam']
-      and R['restored'] and R['head_restored'])
+      and R['restored'] and R['head_restored'] and R['clone_untouched'])
 print('CHECK 4 VERIFIED (planted blocks by seam + names the field, clean not blocked by seam):', ok)
 sys.exit(0 if ok else 1)

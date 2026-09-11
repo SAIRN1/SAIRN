@@ -14,13 +14,47 @@ same standard tools/discarded_verdict_check.py was held to.
 Driven from Python so nothing depends on Bash command text. Restores the repo
 in a `finally`, and asserts the tree is clean before it starts.
 """
+import atexit
 import os
 import subprocess
 import sys
+import tempfile
 
-REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
+MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 EP = 'api/sb-auth.js'
+
+# ── THE FIXTURES ARE PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ──────────
+# Same change, same day and the same reason as check4_probe.py, which
+# `docs/2026-09-10-run-all-tests-hook-PAUSED.md` names alongside this file:
+# both committed fixtures ONTO THE WORKING BRANCH and `git reset --mixed` back.
+# That is safe for one runner on a quiet branch, and when the full-suite hook
+# fired on every Bash tool call it was not -- several copies ran at once, each
+# reset to its own start, and five stranded `PROBE` commits reached origin/main
+# in a day. One of this pair's fixtures shipped to production.
+#
+# A detached worktree has no branch tip to strand a commit on. The pre-push
+# hook still fires from it: `core.hooksPath` is `.githooks` and worktrees share
+# the common git dir -- measured, not assumed.
+WT = os.path.join(tempfile.gettempdir(), 'check7-probe-%d' % os.getpid())
+_add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
+                       WT, 'HEAD'], capture_output=True, text=True)
+if _add.returncode != 0:
+    print('SKIPPED: could not create the throwaway worktree this probe needs, so')
+    print('nothing about check 7 was verified: %s' % (_add.stderr or '').strip()[:200])
+    sys.exit(3)
+
+
+@atexit.register
+def _remove_worktree():
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'remove', '--force', WT],
+                   capture_output=True)
+    subprocess.run(['git', '-C', MAIN, 'worktree', 'prune'], capture_output=True)
+
+
+# Every git and filesystem operation below happens in the worktree. The name is
+# kept so the arms and the existing `finally` read unchanged.
+REPO = WT
 
 
 # ── THIS PROBE DECLARES ITSELF TO PUSH-GATE CHECK 8 (2026-09-10) ──────────
@@ -45,20 +79,24 @@ def clean_tree():
     return run('git', 'status', '--porcelain').stdout.strip()
 
 
-dirty = [l for l in clean_tree().split('\n') if l.strip() and not l.startswith('??')]
-# ── A PRECONDITION IS NOT A FAILURE (2026-09-08) ──────────────────────────
-# Same change and same reason as check4_probe.py. The guard stays: this probe
-# commits planted fixtures and `git reset --mixed` back, so a dirty TRACKED
-# tree would put somebody's work into a probe commit. But exiting 1 said
-# "check 7 is broken" when nothing about check 7 had been examined. Exit 3 is
-# SKIPPED, which tools/run_all_tests.py reports separately and never counts
-# as a pass.
-if dirty:
-    print('SKIPPED: this probe commits fixtures and resets, so it needs a clean')
-    print('tracked tree -- running it now would sweep uncommitted work into a')
-    print('probe commit. Nothing about check 7 was verified. Modified:')
-    print('\n'.join(dirty))
-    sys.exit(3)
+# ── THE CLEAN-TREE PRECONDITION IS GONE -- SEE THE WORKTREE BLOCK ABOVE ────
+# It existed (2026-09-08, exit 3 rather than exit 1, because a precondition is
+# not a failure) because `git add` in the clone could sweep somebody's
+# uncommitted work into a probe commit. The worktree is created from HEAD and
+# never contains the clone's uncommitted files, so there is nothing to sweep --
+# and the guard had been SKIPPING this BLOCKING gate's only proof on every run
+# in any clone with a modified tracked file.
+#
+# WHAT MUST STILL BE PROVED IS THAT THE CLONE WAS LEFT ALONE, which is the
+# claim that was actually violated when a fixture from this pair shipped. It is
+# asserted at the bottom against these.
+MAIN_TREE_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'status', '--porcelain'],
+    capture_output=True, text=True).stdout
+MAIN_HEAD_BEFORE = subprocess.run(
+    ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+    capture_output=True, text=True).stdout.strip()
+
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 R = {}
 
@@ -170,9 +208,11 @@ finally:
     run('git', 'checkout', '--', EP)
 
 fails = []
+RAN = [0]
 
 
 def check(name, cond, detail=''):
+    RAN[0] += 1
     print(('  ok   ' if cond else '  FAIL ') + name + ('' if cond else '  ' + detail))
     if not cond:
         fails.append(name)
@@ -202,6 +242,22 @@ check('...and the probe endpoint was removed',
 check('...and HEAD is back where it started',
       run('git', 'rev-parse', 'HEAD').stdout.strip() == start)
 
+# ── AND THE CLONE ITSELF WAS NEVER TOUCHED (2026-09-11) ────────────────────
+# The three above are about the WORKTREE and still matter -- a probe whose own
+# cleanup is broken measured the wrong tree in its later arms. None of them is
+# the claim that was violated when a fixture from this file reached origin/main
+# and shipped to production, and until now nothing asserted that one.
+check('and the CLONE was never touched -- no commit, no modified file',
+      subprocess.run(['git', '-C', MAIN, 'status', '--porcelain'],
+                     capture_output=True, text=True).stdout == MAIN_TREE_BEFORE
+      and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
+                         capture_output=True, text=True).stdout.strip()
+      == MAIN_HEAD_BEFORE)
+
+# COUNTED, NOT HARDCODED. This printed a literal `10` regardless of how many
+# checks actually ran -- the same derived-subject blindness the 2026-09-10
+# sweep went looking for, in the one line a reader uses to judge coverage.
+# Adding a check would have left it reporting 10 of 11.
 print('\n%s  check7_probe: %d checks, %d failed'
-      % ('FAILED' if fails else 'ok', 10, len(fails)))
+      % ('FAILED' if fails else 'ok', RAN[0], len(fails)))
 sys.exit(1 if fails else 0)
