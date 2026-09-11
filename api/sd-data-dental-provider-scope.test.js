@@ -230,6 +230,75 @@ async function main() {
     assert.strictEqual(res.statusCode, 200, 'editing a provider must not collide with itself -- got ' + JSON.stringify(res.body));
   });
 
+  // ── THE UNLINKED-REFERRAL QUEUE (2026-09-11) ────────────────────────────
+  // Michael's call after the gap was measured and filed: do NOT require the
+  // link, make the unlinked ones findable. An unlinked referral used to be
+  // filtered out for every scoped role -- the front desk saw it, the clinician
+  // who had to act on it did not, and nothing said so. It failed closed, so
+  // nothing leaked; the cost ran the other way, and a referral nobody can see
+  // is a patient who does not get seen.
+  //
+  // THE THREE ARMS THAT MATTER ARE THE SECOND AND THIRD. Making unlinked rows
+  // visible is easy; not widening anything else is the part worth pinning.
+  await test('an UNLINKED referral is visible to a scoped provider, not invisible to everyone', async () => {
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+      ['dnt_referrals?', [
+        { data: { id: 'RF-1', patient_id: 'PT-1' } },            // my patient
+        { data: { id: 'RF-2', patient_id: '' } },                 // unlinked
+        { data: { id: 'RF-3' } },                                 // no key at all
+        { data: { id: 'RF-4', patient_id: '   ' } },              // whitespace
+      ]],
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_referrals' }, tokenFor('provider', 'emp-provider')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.deepStrictEqual(res.body.data.map((r) => r.id).sort(),
+      ['RF-1', 'RF-2', 'RF-3', 'RF-4'],
+      'an unlinked referral is still hidden from the clinician who must act on it');
+  });
+
+  await test('AND IT DID NOT WIDEN ANYTHING: another provider\'s patient is still hidden', async () => {
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+      ['dnt_referrals?', [
+        { data: { id: 'RF-1', patient_id: 'PT-1' } },
+        { data: { id: 'RF-9', patient_id: 'PT-3' } },   // somebody else's patient
+        { data: { id: 'RF-2', patient_id: '' } },
+      ]],
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_referrals' }, tokenFor('provider', 'emp-provider')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.ok(res.body.data.every((r) => r.id !== 'RF-9'),
+      'a LINKED referral for another provider\'s patient leaked: ' + JSON.stringify(res.body.data));
+    assert.deepStrictEqual(res.body.data.map((r) => r.id).sort(), ['RF-1', 'RF-2']);
+  });
+
+  // THE SCOPING OF THE CHANGE ITSELF. An unlinked REFERRAL belongs to no
+  // patient yet, so it cannot be somebody else's patient -- which is exactly
+  // why it is safe there and nowhere else. dnt_patients is keyed on 'id', and
+  // a row with an empty key must STILL be filtered out, or the same one-line
+  // relaxation would make unlinked patient records practice-wide.
+  await test('dnt_patients is NOT widened -- an empty scope key there is still filtered out', async () => {
+    const handler = loadHandler(routedFetch([
+      ['dnt_providers?', PROVIDER_ROWS],
+      ['dnt_appointments?', APPOINTMENT_ROWS_PV1],
+      ['dnt_patients?', [
+        { data: { id: 'PT-1', name: 'Alice' } },
+        { data: { id: '', name: 'Orphan row' } },
+        { data: { name: 'No id at all' } },
+      ]],
+    ]));
+    const res = mockRes();
+    await handler(mockReq({ action: 'read', resource: 'dnt_patients' }, tokenFor('provider', 'emp-provider')), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.deepStrictEqual(res.body.data.map((r) => r.name), ['Alice'],
+      'the unlinked-visible relaxation leaked onto dnt_patients');
+  });
+
   // ── THE EMPTY-STRING COLLISION (2026-09-11) ─────────────────────────────
   // An UNLINKED provider row carries `linked_employee_id: ''` --
   // saveProviderEdit() stores `$('pv-edit-login').value || ''`. dntLinkedProvider()

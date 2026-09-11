@@ -331,6 +331,7 @@ label.chk input{width:auto;}
           <button class="btn bp" onclick="addReferral()">Add Referral</button>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">On File</div></div><div class="cb" style="padding:0">
+          <div id="rf-unlinked-note" style="display:none"></div>
           <table id="referrals-table"><thead><tr><th>Direction</th><th>Patient</th><th>External Party</th><th>Provider</th><th>Date</th><th>Reason</th><th>Status</th></tr></thead><tbody id="referrals-tbody"></tbody></table>
         </div></div>
       </div>
@@ -4934,18 +4935,82 @@ async function setReferralStatus(id,status){
   var syncResult=await sdnData('write','dnt_referrals',r);
   toast(syncResult?('Referral marked '+status):dntWriteFailText('dnt_referrals','Saved on this device only -- the server did not accept it, so it is not on any other workstation'),syncResult?3000:7000);
 }
+// -- THE UN'Referral linked to '-REFERRAL QUEUE (2026-09-11) -----------------------------
+// A referral may legitimately be filed without linking a patient record --
+// "Link to Existing Patient (optional)" is deliberate and stays. What was
+// wrong is what happened afterwards: api/sd-data.js scopes dnt_referrals by
+// patient_id, and an '' id matched nothing, so an unlinked referral was
+// filtered out for every provider role. The front desk saw it; the clinician
+// who had to act on it did not, and nothing said so.
+//
+// Michael's call: do not require the link, make the unlinked ones FINDABLE.
+// The server half is DNT_UN'Referral linked to '_VISIBLE_'dnt_referrals'OURCES in api/sd-data.js; this is
+// the half that presents them as work rather than as ordinary rows.
+//
+// THE COUNT IS DERIVED FROM THE LIST IT SITS ABOVE, never stored -- a stored
+// count is the fabricated-KPI shape Guardian check 0b exists for. The note
+// hides at zero rather than rendering "0 unlinked", because a banner that is
+// always present stops being read.
+//
+// COLOUR: the amber `bw` badge and amber text, NOT the app's brand blue. This
+// is a warning state, and the client-facing design standard is explicit that
+// semantic colours stay semantic instead of collapsing into the one brand hue.
+function rfUnlinked(list){
+  return (list||[]).filter(function(r){
+    return !String((r&&r.patient_id)||'').trim();
+  });
+}
 function rReferrals(){
   var list=referrals(),pats=patients(),provs=providers();
+  var unlinked=rfUnlinked(list);
+  var note=$('rf-unlinked-note');
+  if(note){
+    if(unlinked.length){
+      note.style.display='block';
+      note.innerHTML='<div style="padding:12px 16px;background:#FEF3C7;color:#92400E;font-size:13px;line-height:1.5;border-bottom:1px solid var(--border)"><strong>'+unlinked.length+' referral'+(unlinked.length===1?'':'s')+' not linked to a patient record.</strong> A linked referral appears in that patient\'s provider feed; an unlinked one shows here for everyone instead, so it is not lost \u2014 but nobody owns it until it is linked. Use the Link control in the Patient column.</div>';
+    }else{
+      note.style.display='none';
+      note.innerHTML='';
+    }
+  }
   var tbody=$('referrals-tbody');
+  var patOpts='<option value="">Link patient\u2026</option>'+pats.map(function(p){
+    return '<option value="'+H(p.id)+'">'+H(p.name)+'</option>';
+  }).join('');
   tbody.innerHTML=list.map(function(r){
     var prov=provs.find(function(p){return p.id===r.internal_provider_id;});
     var statusOpts=['Pending','Scheduled','Completed','Declined'].map(function(s){
       return '<option value="'+s+'"'+(s===r.status?' selected':'')+'>'+s+'</option>';
     }).join('');
-    return '<tr><td>'+H(r.direction==='incoming'?'Incoming':'Outgoing')+'</td><td>'+H(r.patient_name)+'</td>'+
-      '<td>'+H(r.external_party)+'</td><td>'+H(prov?prov.name:'--')+'</td><td>'+H(r.date)+'</td><td>'+H(r.reason)+'</td>'+
+    var isUnlinked=!String(r.patient_id||'').trim();
+    // The Patient cell carries the badge and the resolve control, so the table
+    // stays at SEVEN columns -- dntEmptyRow('dnt_referrals',7,...) below reads
+    // that number, and an eighth column would have left the empty state
+    // rendering short without anything failing.
+    var patientCell=H(r.patient_name)+(isUnlinked?' <span class="badge bw">Unlinked</span>'+'<div style="margin-top:6px"><select onchange="linkReferralPatient(\''+r.id+'\',this.value)" style="font-size:12px">'+patOpts+'</select></div>':'');
+    return '<tr><td>'+H(r.direction==='incoming'?'Incoming':'Outgoing')+'</td><td>'+patientCell+'</td><td>'+
+      H(r.external_party)+'</td><td>'+H(prov?prov.name:'--')+'</td><td>'+H(r.date)+'</td><td>'+H(r.reason)+'</td>'+
       '<td><select onchange="setReferralStatus(\''+r.id+'\',this.value)">'+statusOpts+'</select></td></tr>';
   }).join('')||dntEmptyRow('dnt_referrals',7,'No referrals on file yet');
+}
+// Resolving one item of the queue. Shaped exactly like setReferralStatus():
+// mutate the found row, persist locally, re-render, then push -- and report the
+// server's own words when it refuses, rather than claiming a save.
+async function linkReferralPatient(id,patientId){
+  if(!patientId)return;
+  var list=referrals();
+  var r=list.find(function(x){return x.id===id;});
+  if(!r){toast('Referral not found');return;}
+  var p=patients().find(function(x){return x.id===patientId;});
+  if(!p){toast('That patient is not on file');return;}
+  r.patient_id=patientId;
+  // The typed name is NOT overwritten with the patient record's name. They can
+  // legitimately differ -- a referral letter may name someone by a former or
+  // shortened name -- and silently rewriting what the front desk typed would
+  // destroy the only record of what the outside practice actually sent.
+  st('dnt_referrals_list',list);rReferrals();
+  var syncResult=await sdnData('write','dnt_referrals',r);
+  toast(syncResult?('Referral linked to '+p.name):dntWriteFailText('dnt_referrals','Linked on this device only -- the server did not accept it, so the referral is still unlinked everywhere else'),syncResult?3000:7000);
 }
 
 function cpBadgeCount(){return complaints().filter(function(c){return c.status==='New';}).length;}

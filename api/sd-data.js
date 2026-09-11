@@ -9652,6 +9652,10 @@ module.exports = async (req, res) => {
     // block: the other fifteen have no delete path and no `_deleted_at` key, so
     // widening the filter would change behaviour for them to no purpose.
     const DNT_SOFT_DELETE_RESOURCES = { dnt_supplies: true };
+    // Patient-scoped resources whose UNLINKED rows stay visible to every
+    // authenticated role rather than being filtered out for all of them. One
+    // entry, deliberately -- see the reasoning on the scoped-read filter.
+    const DNT_UNLINKED_VISIBLE_RESOURCES = { dnt_referrals: true };
     // Patient-scoped resources: the record itself is about a specific patient.
     // dnt_referrals is here deliberately -- it carries patient_id and a clinical
     // reason, so leaving it practice-wide would have leaked exactly what scoping
@@ -9719,7 +9723,37 @@ module.exports = async (req, res) => {
       let dntOut = (rows || []).map((x) => x.data);
       if (dntScopeIds) {
         const key = DNT_PATIENT_SCOPED_RESOURCES[resource];
-        dntOut = dntOut.filter((d) => d && d[key] != null && dntScopeIds[String(d[key])] === true);
+        // ── AN UNLINKED ROW IS VISIBLE, NOT INVISIBLE (2026-09-11) ─────────
+        // Michael's call, after this was measured and filed: the scope filter
+        // required `dntScopeIds[String(d[key])] === true`, and dntScopeIds is
+        // built with `if (x.data.patient_id)` -- so an EMPTY id was never a key
+        // and a row with no linked patient was filtered out for EVERY scoped
+        // role. It failed closed, so nothing leaked; the cost ran the other
+        // way. dnt_referrals' own form says "Link to Existing Patient
+        // (optional)", so the front desk can file a referral FOR a patient
+        // without linking the record -- and the treating provider then never
+        // saw it, while the front desk's own view showed it fine. Two roles
+        // disagreeing about whether a referral exists.
+        //
+        // THE STAKE IS WHY THE DEFAULT FLIPS: a referral nobody can see is a
+        // patient who does not get seen. Invisibility is the wrong default for
+        // a clinical hand-off even when the link is legitimately optional.
+        //
+        // SCOPED TO dnt_referrals ONLY, and that is the whole point of the
+        // separate map. Widening this to dnt_patients would make every
+        // unlinked patient record practice-wide, which is the opposite of what
+        // the scoping exists for. An unlinked REFERRAL belongs to no patient
+        // yet, so it cannot be somebody else's patient -- which is exactly why
+        // it is safe here and nowhere else. Requiring the link was considered
+        // and rejected: it would refuse a shape the app produces on purpose.
+        const unlinkedVisible = DNT_UNLINKED_VISIBLE_RESOURCES[resource] === true;
+        dntOut = dntOut.filter((d) => {
+          if (!d) return false;
+          const v = d[key];
+          const empty = v == null || String(v).trim() === '';
+          if (empty) return unlinkedVisible;
+          return dntScopeIds[String(v)] === true;
+        });
       }
       res.status(200).json({ ok: true, data: dntOut, provisioned: true });
       return;
