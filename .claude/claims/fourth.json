@@ -802,6 +802,16 @@
       "claimed_at_epoch": 1789086514.6121113,
       "status": "released",
       "released_at": "2026-09-11T00:34:44Z"
+    },
+    {
+      "id": "fourth-1789087285",
+      "session": "fourth",
+      "subject": "sairndesign-sairngrounds",
+      "task": "first-dedicated-suites-and-fault-probes",
+      "claimed_at": "2026-09-11T00:41:25Z",
+      "claimed_at_epoch": 1789087285.2285795,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
