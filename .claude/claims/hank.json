@@ -995,6 +995,16 @@
       "claimed_at_epoch": 1789090075.0062487,
       "status": "released",
       "released_at": "2026-09-11T10:56:38Z"
+    },
+    {
+      "id": "hank-1789124409",
+      "session": "hank",
+      "subject": "sairndental-provider-hours-validation",
+      "task": "public availability slots",
+      "claimed_at": "2026-09-11T11:00:09Z",
+      "claimed_at_epoch": 1789124409.3502908,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
