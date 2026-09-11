@@ -395,6 +395,31 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'comment_quote_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'a probe whose assertion matches the target file COMMENTS '
+                   'rather than its code -- a literal that exists only inside '
+                   'a comment, undeclared',
+        'why_it_matters': 'it happened twice on 2026-09-10, hours apart, in '
+                          'the harmless direction: a probe searched for a '
+                          'literal the fix own comment quotes and FAILED a '
+                          'correct file, which is loud. The dangerous '
+                          'direction is silent -- an assertion of PRESENCE '
+                          '("the guard is still there") goes GREEN when the '
+                          'only surviving mention is a comment describing the '
+                          'feature that was deleted. Nothing else would catch '
+                          'that',
+        'evidence': 'real run 2026-09-11: 5 assertions inspected, 4 '
+                    'comment-only and every one of them DELIBERATE and '
+                    'declared with a reason, 0 undeclared. Its own first '
+                    'version committed the error it hunts -- it blanked from '
+                    'any // to end of line, so every https:// swallowed the '
+                    'rest of its line and it reported real code as comment',
+    },
+    {
         'tool': 'defect_register.py',
         'mode': 'once',
         'args': ['--check'],

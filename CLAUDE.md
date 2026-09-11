@@ -286,6 +286,45 @@ a `--fix` and its own probe caught that fixer escaping the *real* separator
 and merging two genuine columns, so the repair is by hand and the tool only
 tells you where. Held by `tests/run_md_table_check_probe.py`.
 
+### A probe must not grep for something the fix's own comment quotes — added 2026-09-11
+
+It happened **twice on 2026-09-10, hours apart**, in two unrelated probes. Both
+searched a source file for a literal and matched the fix's own COMMENT rather
+than its code, and both **failed a correct file**:
+
+- `tests/sd_security_status_is_measured.js` looked for `'Prompt injection: Active'`
+  to prove the hardcoded assurance was gone. The new Layer 30 header *quotes all
+  four dead literals* to record what they were.
+- `tests/sairnlaw_csp.js` counted `eval(` to prove the file has none. The new CSP
+  comment says *"this file contains zero `eval()`"*.
+
+**That direction is loud and self-correcting. The other direction is silent and
+nothing was looking for it:** an assertion of PRESENCE — *"the guard is still
+there"* — goes **green** when the only surviving mention of the thing is a
+comment describing the feature that was deleted. A probe passing off a comment
+is a check that has stopped checking.
+
+**The rule:** a probe that asserts something about a source file's CODE must
+search a **comment-stripped copy**. If the subject genuinely IS the comment —
+asserting a historical record survives, or locating a block by its heading —
+that is fine and must be **declared**, not left to look accidental.
+
+**The mechanism, because a rule that depends on remembering is the failure mode
+this file keeps recording:** `python tools/comment_quote_check.py` finds every
+probe assertion whose literal exists ONLY inside the target's comments. It is
+report-only and wired as a promoted checker. Deliberate cases live in
+`EXPECTED_COMMENT_ASSERTIONS` with a reason each — the same two-list discipline
+as the cache-purge guards: **an exclusion is a decision with a reason beside it,
+never a silence.** Held by `tests/run_comment_quote_probe.py`, which plants the
+defect on throwaway fixtures and demands the tool see it, because a checker that
+finds nothing is indistinguishable from one that looks at nothing.
+
+**The tool's own first version committed the error it hunts** — it blanked from
+any `//` to end of line, so every `https://` swallowed the rest of its line and
+it reported real code as comment. Arm 5 of the probe is a permanent guard on
+that. Worth knowing before trusting any comment-stripper: URLs, and `//` inside
+a string, are the two cases that break the naive one.
+
 ## Known resolved issues (don't rediscover these)
 - `sairn-app-scaffold` was falsely claimed built in an earlier session's
   handoff (before 2026-07-30); it was actually created 2026-07-30 and is
