@@ -927,8 +927,8 @@
       "task": "narrow to callees called from inside a catch",
       "claimed_at": "2026-09-11T10:50:34Z",
       "claimed_at_epoch": 1789123834.3360038,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-11T12:32:33Z"
     },
     {
       "id": "cody-1789124291",
