@@ -1,0 +1,19 @@
+{
+  "_comment": "Copy to testint.config.json and point it at your repo. Globs are relative to `root`; a relative `root` is relative to THIS FILE, never to the current working directory.",
+  "root": "../..",
+  "tests": [
+    "tests/**/*.js",
+    "tests/**/*.py",
+    "api/**/*.test.js"
+  ],
+  "sources": [
+    "*.html",
+    "api/**/*.js",
+    "tools/**/*.py",
+    "sql/**/*.sql"
+  ],
+  "checkers": [
+    "tools/*_check.py"
+  ],
+  "allow": "testint.allow.example.json"
+}

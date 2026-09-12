@@ -1,0 +1,15 @@
+{
+  "_comment": "Assertions that really ARE about a comment. Every entry needs a reason -- the loader refuses an empty one. An exclusion with a reason is a decision; an exclusion without one is a silence.",
+  "expected": [
+    {
+      "file": "tests/example_csp.js",
+      "literal": "zero eval() and zero",
+      "reason": "the arm's subject IS the comment: it asserts the record that this file has no eval() survives."
+    },
+    {
+      "file": "tests/example_locator.js",
+      "literal": "  // -- SECTION HEADING",
+      "reason": "block locator, not an assertion; the miss is asserted separately at start > 0, so a reworded heading fails loudly instead of testing an empty slice."
+    }
+  ]
+}
