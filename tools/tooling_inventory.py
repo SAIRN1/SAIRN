@@ -100,6 +100,7 @@ PURPOSES = {
     'rf_claim_gate_live_probe.py': ('LIVE', "SAIRNroofing's claim gate, against the deployed endpoint"),
     'rf_roundtrip_probe.py': ('LIVE', 'a SAIRNroofing write read back through the real API'),
     'probe_public_book_guardian.py': ('LIVE', "the public booking endpoint's guards, live"),
+    'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
     'sairn_ai_fact_scan.py': ('CHECKER', 'a number an AI panel states that no function computes'),
     'sairn_app_map_check.py': ('LIVE', "an app absent from Guardian's own app map, and a route that 404s"),
     'sairn_dead_function_sweep.py': ('CHECKER', 'a function with no caller anywhere'),

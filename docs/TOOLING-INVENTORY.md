@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**98 files in `tools/`.** By what actually invokes them:
+**99 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 30 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **SUITE-ONLY** | 15 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 42 | nothing runs these at all |
+| **UNWIRED** | 43 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -36,7 +36,7 @@ By what they are, independent of wiring:
 | CHECKER | 52 |
 | GENERATOR | 15 |
 | LIBRARY | 19 |
-| LIVE | 12 |
+| LIVE | 13 |
 
 **The number to act on: 13 checker(s) that answer a question about this
 codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 8
@@ -62,7 +62,7 @@ The 13, by name, so this is actionable rather than a statistic:
 | `verify_review_gates.py` | UNWIRED | review-gate evidence in a claims ledger -- referenced by NOTHING in this repo |
 | `write_path_fault_scan.py` | SUITE-ONLY | a server write whose result is read on the success path only, or not at all |
 
-**Separately, 11 tool(s) make a LIVE network or database request.** Those are
+**Separately, 12 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -189,7 +189,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (42)
+## UNWIRED (43)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -235,6 +235,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `sairn_reachability_probe.py` | CHECKER | the rendered-DOM half of reachability, from a browser snapshot | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
 | `sairnlaw_citation_audit.py` | LIVE | a legal citation whose source no longer says what the rule claims | &mdash; |
+| `stonedesk_storefront_live_check.py` | LIVE | whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
 | `va_rule_currency.py` | LIVE | a Virginia rule whose published source has moved on | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
