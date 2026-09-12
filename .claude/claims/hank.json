@@ -1085,6 +1085,16 @@
       "claimed_at_epoch": 1789218134.6946793,
       "status": "released",
       "released_at": "2026-09-12T13:50:23Z"
+    },
+    {
+      "id": "hank-1789221404",
+      "session": "hank",
+      "subject": "wip-rollup-null-summed-as-zero",
+      "task": "retainage missing is not zero",
+      "claimed_at": "2026-09-12T13:56:44Z",
+      "claimed_at_epoch": 1789221404.9558032,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
