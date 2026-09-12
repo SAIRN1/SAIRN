@@ -957,8 +957,8 @@
       "task": "six sites fault injection read each before touching",
       "claimed_at": "2026-09-11T15:32:07Z",
       "claimed_at_epoch": 1789140727.557791,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T10:33:46Z"
     }
   ]
 }
