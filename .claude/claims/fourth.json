@@ -922,6 +922,16 @@
       "claimed_at_epoch": 1789212015.924955,
       "status": "released",
       "released_at": "2026-09-12T13:17:25Z"
+    },
+    {
+      "id": "fourth-1789219059",
+      "session": "fourth",
+      "subject": "marketplace-package",
+      "task": "inventory and structure for the genericized tools package",
+      "claimed_at": "2026-09-12T13:17:39Z",
+      "claimed_at_epoch": 1789219059.0722675,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
