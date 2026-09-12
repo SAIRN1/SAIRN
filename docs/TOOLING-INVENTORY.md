@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**99 files in `tools/`.** By what actually invokes them:
+**100 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 30 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 31 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **SUITE-ONLY** | 15 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 43 | nothing runs these at all |
@@ -33,7 +33,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 52 |
+| CHECKER | 53 |
 | GENERATOR | 15 |
 | LIBRARY | 19 |
 | LIVE | 13 |
@@ -108,7 +108,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (30)
+## REPORT-ONLY (31)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -142,6 +142,7 @@ quiet in practice.
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
 | `tooling_inventory.py` | 2026-09-12, the day it was built | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated |
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
+| `truthy_sum_check.py` | 2026-09-11, the day it was built | a NEW `+ (x || 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding |
 | `vercel_config_check.py` | 2026-09-09 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies |
 | `write_without_readback_check.py` | 2026-09-10 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from |
 

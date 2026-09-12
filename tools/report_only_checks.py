@@ -643,6 +643,34 @@ REGISTRY = [
                     'first draft of the finding had that wrong',
     },
     {
+        'tool': 'truthy_sum_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-11, the day it was built',
+        'catches': 'a NEW `+ (x || 0)` in a numeric fold with no Number() '
+                   'around it -- the guard never fires on a non-empty string, '
+                   'so `+` CONCATENATES instead of adding',
+        'why_it_matters': 'measured: 0 + ("500" || 0) is the STRING "0500". '
+                          'From a real 350 baseline a total of "abc" renders '
+                          '"350abc" and somebody asks; "500" renders "350500", '
+                          'a believable $350,500 where the truth is $850, and '
+                          'nobody asks. THE PLAUSIBLE CASE IS THE DANGEROUS '
+                          'ONE -- and in SAIRNdental that figure was handed to '
+                          'Claude by vSpendAI() under a prompt calling it '
+                          '"real, already-computed", so the fabrication would '
+                          'have propagated into an AI answer as fact',
+        'evidence': '135 occurrences across 10 files on the first real run, 80 '
+                    'distinct file+field keys, all grandfathered so a NEW one '
+                    'fails. 24-arm probe, and the arms worth having are the '
+                    'ones that keep it trustworthy: MULTIPLICATION IS NOT '
+                    'REPORTED (2 * ("3"||0) is 6; only + concatenates), '
+                    'Number/parseFloat/parseInt go silent, and the pattern '
+                    'quoted in a COMMENT or a STRING is not code -- that last '
+                    'arm exists because the first version reported 193 and '
+                    'FIFTY-TWO were prose explaining the defect, including the '
+                    'refusal message of this checker\'s own subject. 3.1s',
+    },
+    {
         'tool': 'removal_path_check.py',
         'mode': 'once',
         'verdict': by_exit,
