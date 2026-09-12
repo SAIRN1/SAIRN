@@ -1115,6 +1115,16 @@
       "claimed_at_epoch": 1789223009.3301055,
       "status": "released",
       "released_at": "2026-09-12T14:33:39Z"
+    },
+    {
+      "id": "hank-1789224340",
+      "session": "hank",
+      "subject": "schema-drift",
+      "task": "tables queried by api absent from the fresh live snapshot",
+      "claimed_at": "2026-09-12T14:45:40Z",
+      "claimed_at_epoch": 1789224340.6452582,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
