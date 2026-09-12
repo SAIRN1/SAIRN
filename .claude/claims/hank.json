@@ -1133,8 +1133,8 @@
       "task": "package the schema files for the 31 live-queried tables",
       "claimed_at": "2026-09-12T15:47:03Z",
       "claimed_at_epoch": 1789228023.2080994,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T15:57:33Z"
     }
   ]
 }
