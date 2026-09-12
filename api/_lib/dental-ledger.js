@@ -947,10 +947,116 @@ function referralProblem(record) {
   return null;
 }
 
+// -- TENTH RESOURCE: dnt_recall_outreach (2026-09-11) ----------------------
+// The practice's record of HAVING CONTACTED a patient about overdue recall
+// care. It is read by rcLastOutreach(patientId, procId), which picks the row
+// with the greatest `on` and hands it to the recall table as "last contact" --
+// so this resource decides who the practice believes it still owes a call.
+//
+// TWO SHAPES, BOTH MEASURED AGAINST THAT REAL READER IN NODE, and both do the
+// same damage: they make a patient LOOK contacted.
+//
+//   A FUTURE `on` SUPPRESSES RECALL INDEFINITELY. rcLastOutreach keeps the
+//   greatest date, so a row dated 2099-01-01 is the "last contact" forever and
+//   the patient stops appearing as due. Measured: with a real 2026-09-10 row
+//   and a 2099-01-01 row, the reader returns 2099-01-01. saveRecallOutreach()
+//   refuses this and says why in its own words -- "A future date would claim a
+//   contact that has not happened. Refused rather than clamped, because
+//   clamping changes what was recorded without saying so."
+//
+//   A NON-ZERO-PADDED DATE WINS THE COMPARISON WRONGLY. The reader compares
+//   with `>` on strings, which is right for zero-padded ISO and silently wrong
+//   for anything else. Measured: '2026-9-1' > '2026-09-10' is TRUE, so a
+//   September 1 contact beats a September 10 one and becomes "last contact".
+//   Same defect class as the CDT effective_from string compare in
+//   procedureTypeProblem above -- found there first, and it recurs here
+//   because the reader is the same shape.
+//
+// ── WHY THIS ONE GETS A FUTURE-DATE CHECK WHEN denialProblem AND
+//    txPlanProblem DELIBERATELY DO NOT. That is a real inconsistency and it is
+//    a decision, not an oversight.
+//
+//    For denied_on and decided_on a future date is a WRONG RECORD: somebody
+//    reads a bad date. Refusing it against UTC would reject a legitimate
+//    same-day entry west of UTC in the evening -- the UTC-midnight trap this
+//    platform has been bitten by -- and a wrong date is the smaller harm, so
+//    those two allow it and say so.
+//
+//    Here a future date is not a wrong record, it is a SUPPRESSION: the
+//    patient silently stops being recalled, and nothing anywhere reports it.
+//    So the check is worth having -- and it is made timezone-safe by a ONE DAY
+//    TOLERANCE rather than by comparing to UTC today. The largest real UTC
+//    offset is +14h, comfortably inside a day, so no legitimate same-day entry
+//    from any timezone is ever refused, while a suppression is bounded to a
+//    day instead of decades. The tolerance is the whole reason this check is
+//    safe where the other two would not have been.
+//
+// CHANNEL AND OUTCOME are validated too, and their consequence is HONESTLY
+// WEAKER than the dates: the recall table renders
+// `RC_CHANNEL_LABELS[x] || x`, so an unrecognised value shows raw rather than
+// lying. They are refused because both are closed <select>s in the app and the
+// values also reach an exported CSV column a human reads as the record of how
+// a patient was contacted -- not because anything misreports them.
+//
+// NO LEGACY-ROW COST: saveRecallOutreach() only ever pushes a new record,
+// there is no edit path, and nothing re-sends an existing row.
+const RC_CHANNELS = Object.assign(Object.create(null),
+  { phone: true, email: true, text: true, mail: true, in_person: true });
+const RC_OUTCOMES = Object.assign(Object.create(null),
+  { no_answer: true, booked: true, declined: true, bad_contact: true, other: true });
+
+// UTC today plus the tolerance, as YYYY-MM-DD. `today` is injectable so the
+// suite can pin it -- a test whose expected value moves with the wall clock is
+// a test that will fail on some future morning for no reason.
+function latestAllowedContactDate(today) {
+  const base = today instanceof Date ? new Date(today.getTime()) : new Date();
+  base.setUTCDate(base.getUTCDate() + 1);
+  return base.toISOString().slice(0, 10);
+}
+
+function recallOutreachProblem(record, today) {
+  const r = record || {};
+  for (const field of ['patient_id', 'procedure_type_id']) {
+    if (String(r[field] == null ? '' : r[field]).trim() === '') {
+      return field + ' is required. rcLastOutreach() matches on both, so a row '
+           + 'missing either is a contact record attached to no patient or no '
+           + 'procedure -- it can never be found again and never counts.';
+    }
+  }
+  if (!isCalendarDate(r.on)) {
+    return 'on must be a zero-padded YYYY-MM-DD date (got '
+         + JSON.stringify(r.on) + '). rcLastOutreach() picks the latest '
+         + 'contact by comparing these as STRINGS, which is correct for '
+         + 'zero-padded ISO and silently wrong otherwise: "2026-9-1" compares '
+         + 'GREATER than "2026-09-10", so a September 1 contact would become '
+         + 'the last one on file.';
+  }
+  const limit = latestAllowedContactDate(today);
+  if (r.on > limit) {
+    return 'on is in the future (' + r.on + ', and the latest accepted is '
+         + limit + '). A future contact date does not just record a wrong day '
+         + '-- rcLastOutreach() keeps the GREATEST date, so it becomes the '
+         + '"last contact" indefinitely and the patient silently stops being '
+         + 'recalled. One day of tolerance is allowed so a same-day entry from '
+         + 'any timezone is never refused.';
+  }
+  const channel = typeof r.channel === 'string' ? r.channel.trim() : '';
+  if (!RC_CHANNELS[channel]) {
+    return 'channel must be one of phone, email, text, mail or in_person (got '
+         + JSON.stringify(r.channel) + ').';
+  }
+  const outcome = typeof r.outcome === 'string' ? r.outcome.trim() : '';
+  if (!RC_OUTCOMES[outcome]) {
+    return 'outcome must be one of no_answer, booked, declined, bad_contact or '
+         + 'other (got ' + JSON.stringify(r.outcome) + ').';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
   procedureTypeProblem, txPlanProblem, providerHoursProblem, providerProblem,
-  referralProblem,
+  referralProblem, recallOutreachProblem, latestAllowedContactDate,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
   // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
   // availability.js declared its own copy; a validator with a second copy

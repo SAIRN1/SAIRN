@@ -771,16 +771,22 @@ async function main() {
     assert.strictEqual(res.body.error.code, 'INVALID_DENIAL');
   });
 
-  // The denial rule must not have leaked onto its neighbours. dnt_referrals is
-  // checked at the end of this section for the amount rules; this checks the
-  // DATE rule specifically, which is new to this pass and the likeliest to leak
-  // because several resources carry a date field.
-  await test('the DATE rule is scoped to dnt_denial -- dnt_recall_outreach with a junk date still writes', async () => {
+  // The denial rule must not have leaked onto its neighbours. This checks the
+  // DATE rule specifically, which is the likeliest to leak because several
+  // resources carry a date field.
+  //
+  // NEIGHBOUR MOVED 2026-09-11, stated rather than quietly edited: this used
+  // dnt_recall_outreach, which gained its own date rules the same day -- and a
+  // 2026-02-31 there is now correctly refused, so the arm failed for the right
+  // reason. dnt_supplies is the replacement: still unvalidated, and it carries
+  // no date field of its own, which is exactly what makes it a clean control
+  // for "did the denial rule leak".
+  await test('the DATE rule is scoped to dnt_denial -- dnt_supplies with a junk date still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', denied_on: 'not a date', due: '2026-02-31' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the denial date rule leaked onto dnt_recall_outreach');
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', denied_on: 'not a date', due: '2026-02-31' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the denial date rule leaked onto dnt_supplies');
     assert.ok(wrote);
   });
 
@@ -970,14 +976,15 @@ async function main() {
   // same family of field. dnt_provider_hours GAINED A VALIDATOR on 2026-09-11,
   // so the old payload -- no day_of_week, no times -- is now correctly refused
   // 400 by its own rules, and the test began failing for the right reason.
-  // dnt_recall_outreach is the replacement: still unvalidated, and its rows
-  // carry dates.
-  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_recall_outreach with junk fields still writes', async () => {
+  // MOVED AGAIN 2026-09-11: dnt_recall_outreach gained its own validator the
+  // same day, so the replacement is now dnt_supplies -- still unvalidated, and
+  // it tolerates the junk date and code fields this arm plants.
+  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_supplies with junk fields still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_recall_outreach');
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_supplies');
     assert.ok(wrote);
   });
 
@@ -1431,8 +1438,113 @@ async function main() {
     assert.strictEqual(res.statusCode, 401, 'the validation refusal ran before the session check');
   });
 
+  // -- 5h. dnt_recall_outreach, THE TENTH (2026-09-11) ---------------------
+  // The practice's record of HAVING CONTACTED a patient about overdue recall
+  // care. rcLastOutreach() keeps the row with the greatest `on` and the recall
+  // table calls it "last contact", so this resource decides who the practice
+  // believes it still owes a call. BOTH bad shapes make a patient LOOK
+  // CONTACTED -- measured in node against that reader.
+  const RC_OK = {
+    id: 'RC-1', patient_id: 'PT-1', procedure_type_id: 'PR-1',
+    on: '2026-09-10', channel: 'phone', outcome: 'no_answer',
+  };
+
+  // A FUTURE date is not a wrong day, it is a SUPPRESSION: 2099-01-01 becomes
+  // the last contact indefinitely and the patient stops being recalled.
+  for (const bad of ['2099-01-01', '2027-01-01']) {
+    await test('a FUTURE contact date ' + bad + ' is refused -- it suppresses recall indefinitely', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { on: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, bad + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'INVALID_RECALL_OUTREACH');
+      assert.ok(/recalled/.test(res.body.error.message), res.body.error.message);
+    });
+  }
+
+  // THE TOLERANCE IS THE REASON THIS CHECK IS SAFE AT ALL, so it is asserted
+  // rather than left implicit. denialProblem and txPlanProblem deliberately do
+  // NOT refuse a future date, because refusing against UTC would reject a
+  // legitimate same-day entry west of UTC. One day of slack removes that
+  // objection -- the largest real offset is +14h -- while still bounding a
+  // suppression to a day instead of decades.
+  await test('TODAY and TOMORROW are accepted -- the one-day timezone tolerance', async () => {
+    const { latestAllowedContactDate } = require('./_lib/dental-ledger');
+    const tomorrow = latestAllowedContactDate();
+    const today = new Date(); today.setUTCDate(today.getUTCDate());
+    for (const on of [today.toISOString().slice(0, 10), tomorrow]) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { on }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, on + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  // A NON-ZERO-PADDED DATE WINS THE COMPARISON WRONGLY. The reader compares
+  // strings, so '2026-9-1' > '2026-09-10' is TRUE and a September 1 contact
+  // becomes the latest. Same defect class as the CDT effective_from compare.
+  for (const bad of ['2026-9-1', '2026-02-31', 'last tuesday', '', undefined]) {
+    await test('contact date ' + JSON.stringify(bad) + ' is refused -- the reader compares these as STRINGS', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { on: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  for (const field of ['patient_id', 'procedure_type_id']) {
+    await test('a recall record with no ' + field + ' is refused -- rcLastOutreach matches on both', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { [field]: '  ' }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, field + ' -> ' + res.statusCode);
+      assert.ok(res.body.error.message.indexOf(field) !== -1, res.body.error.message);
+    });
+  }
+
+  for (const [field, bad] of [['channel', 'Phone'], ['channel', 'carrier pigeon'],
+    ['outcome', 'weird'], ['outcome', undefined]]) {
+    await test(field + ' ' + JSON.stringify(bad) + ' is refused', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { [field]: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, field + '=' + JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  await test('ACCEPT: the record saveRecallOutreach() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RC-9', patient_id: 'PT-1', procedure_type_id: 'PR-1', on: '2026-09-01', channel: 'text', outcome: 'booked', note: '', created_at: '2026-09-01' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: all five channels and all five outcomes', async () => {
+    for (const channel of ['phone', 'email', 'text', 'mail', 'in_person']) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { channel }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, channel + ' -> ' + JSON.stringify(res.body));
+    }
+    for (const outcome of ['no_answer', 'booked', 'declined', 'bad_contact', 'other']) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: Object.assign({}, RC_OK, { outcome }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, outcome + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('no session + a bad recall record -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RC-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401);
+  });
+
   // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_recall_outreach with a junk shape still goes through -- SIX remain, and TWO of those are deliberately unwritten', async () => {
+  await test('dnt_supplies with a junk shape still goes through -- FIVE remain, and TWO of those are deliberately unwritten', async () => {
     // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
     // resource, not a claim that it is next -- nothing has been measured about
     // it yet.
@@ -1443,12 +1555,12 @@ async function main() {
     // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
     // 2026-09-10 with the vendor-collections work.
     //
-    // NOW: DNT_RESOURCES holds SEVENTEEN. TEN are validated -- dnt_patients,
+    // NOW: DNT_RESOURCES holds SEVENTEEN. ELEVEN are validated -- dnt_patients,
     // dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
-    // dnt_procedure_types, dnt_txplans, dnt_provider_hours, dnt_providers and
-    // dnt_referrals -- plus dnt_gfe's issue-time check. So SIX have no domain
-    // check: dnt_operatories, dnt_ar, dnt_revenue, dnt_recall_outreach,
-    // dnt_supplies, dnt_vendor_orders.
+    // dnt_procedure_types, dnt_txplans, dnt_provider_hours, dnt_providers,
+    // dnt_referrals and dnt_recall_outreach -- plus dnt_gfe's issue-time
+    // check. So FIVE have no domain check: dnt_operatories, dnt_ar,
+    // dnt_revenue, dnt_supplies, dnt_vendor_orders.
     //
     // AND TWO OF THOSE SIX ARE DELIBERATELY UNWRITTEN, which narrows the real
     // remainder to FOUR. Measured 2026-09-11 off every
@@ -1466,27 +1578,32 @@ async function main() {
     // day -- the roster IS the access-control table for patient scoping. And
     // dnt_referrals, because its render asserts a DIRECTION it does not know:
     // anything but the exact literal 'incoming' displays as Outgoing.
+    // dnt_recall_outreach came off last, because both of its bad shapes make a
+    // patient LOOK CONTACTED and silently drop out of recall.
     //
     // If this ever fails, either the scope grew -- fine, say so here as the
     // previous four boundaries did -- or a rule leaked across resources.
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1', title: '', status: 'weird', items: 'not-an-array', direction: 'Incoming' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'a rule leaked onto dnt_recall_outreach');
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', title: '', status: 'weird', items: 'not-an-array', direction: 'Incoming', on: '2099-01-01' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a rule leaked onto dnt_supplies');
     assert.ok(wrote);
   });
 
   // THE NEIGHBOUR MOVED, stated rather than quietly edited. This used
   // dnt_referrals; that resource GAINED A VALIDATOR on 2026-09-11, so a row
   // with only an id and a patient_id is now correctly refused by its own rules
-  // and the test began failing for the right reason. dnt_recall_outreach is
-  // the replacement: still unvalidated, and still carries no amount.
-  await test('a dnt_recall_outreach row with no amount at all is unaffected', async () => {
+  // and the test began failing for the right reason. MOVED TWICE: the first
+  // replacement, dnt_recall_outreach, gained its own validator hours later, so
+  // it is now dnt_supplies -- still unvalidated, and still carries no amount.
+  // The boundary keeps moving because the sweep keeps closing what it points
+  // at, which is the sweep working rather than churn.
+  await test('a dnt_supplies row with no amount at all is unaffected', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_recall_outreach', payload: { id: 'RO-1', patient_id: 'PT-1' } }, tokenFor('owner')), res);
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves' } }, tokenFor('owner')), res);
     assert.strictEqual(res.statusCode, 200);
     assert.ok(wrote);
   });
@@ -1571,6 +1688,12 @@ async function main() {
     ['dnt_referrals', { id: 'RF-1', direction: 'Incoming', patient_name: 'Alice', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'Pending' }],
     ['dnt_referrals', { id: 'RF-1', direction: 'incoming', patient_name: '', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'Pending' }],
     ['dnt_referrals', { id: 'RF-1', direction: 'incoming', patient_name: 'Alice', external_party: 'Dr Jones', date: '2026-09-11', reason: 'extraction', status: 'declined' }],
+    // dnt_recall_outreach (2026-09-11). The first is the one that matters:
+    // pre-fix a 2099 contact date reached the store and rcLastOutreach() then
+    // treated it as the last contact, dropping the patient out of recall.
+    ['dnt_recall_outreach', { id: 'RC-1', patient_id: 'PT-1', procedure_type_id: 'PR-1', on: '2099-01-01', channel: 'phone', outcome: 'no_answer' }],
+    ['dnt_recall_outreach', { id: 'RC-1', patient_id: 'PT-1', procedure_type_id: 'PR-1', on: '2026-9-1', channel: 'phone', outcome: 'no_answer' }],
+    ['dnt_recall_outreach', { id: 'RC-1', procedure_type_id: 'PR-1', on: '2026-09-10', channel: 'phone', outcome: 'no_answer' }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

@@ -47,6 +47,7 @@ const {
   providerHoursProblem: dntProviderHoursProblem,
   providerProblem: dntProviderProblem,
   referralProblem: dntReferralProblem,
+  recallOutreachProblem: dntRecallOutreachProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -10142,6 +10143,29 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_referrals') {
         const rfp = dntReferralProblem(payload);
         if (rfp) { res.status(400).json({ error: { code: 'INVALID_REFERRAL', message: rfp } }); return; }
+      }
+      // dnt_recall_outreach, the TENTH (2026-09-11). The practice's record of
+      // HAVING CONTACTED a patient about overdue recall care, read by
+      // rcLastOutreach(), which keeps the row with the greatest `on` and hands
+      // it to the recall table as "last contact". So this resource decides who
+      // the practice believes it still owes a call.
+      //
+      // BOTH BAD SHAPES MAKE A PATIENT LOOK CONTACTED, measured in node against
+      // that reader. A FUTURE `on` becomes the last contact indefinitely and
+      // the patient silently stops being recalled -- 2099-01-01 beats a real
+      // 2026-09-10 row. And a non-zero-padded date wins the comparison wrongly,
+      // because the reader compares STRINGS: '2026-9-1' > '2026-09-10' is true,
+      // so a September 1 contact becomes the latest.
+      //
+      // THE FUTURE-DATE CHECK IS DELIBERATELY INCONSISTENT WITH denialProblem
+      // AND txPlanProblem, and the reason is in api/_lib/dental-ledger.js:
+      // there a future date is a wrong record, here it is a SUPPRESSION. A ONE
+      // DAY TOLERANCE makes it timezone-safe -- the largest real UTC offset is
+      // +14h, so no legitimate same-day entry is ever refused, while the
+      // suppression is bounded to a day instead of decades.
+      if (resource === 'dnt_recall_outreach') {
+        const rop = dntRecallOutreachProblem(payload);
+        if (rop) { res.status(400).json({ error: { code: 'INVALID_RECALL_OUTREACH', message: rop } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate
