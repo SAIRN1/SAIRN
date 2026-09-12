@@ -1095,6 +1095,16 @@
       "claimed_at_epoch": 1789221404.9558032,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789222215",
+      "session": "hank",
+      "subject": "standing-lessons-rulebook",
+      "task": "split CLAUDE.md by audience and merge the comment-quoting entries",
+      "claimed_at": "2026-09-12T14:10:15Z",
+      "claimed_at_epoch": 1789222215.1256964,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
