@@ -969,6 +969,16 @@
       "claimed_at_epoch": 1789209439.3360531,
       "status": "released",
       "released_at": "2026-09-12T11:07:12Z"
+    },
+    {
+      "id": "cody-1789211378",
+      "session": "cody",
+      "subject": "tooling-inventory-refresh",
+      "task": "current gate status per tool",
+      "claimed_at": "2026-09-12T11:09:38Z",
+      "claimed_at_epoch": 1789211378.3667638,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
