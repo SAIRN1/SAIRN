@@ -912,6 +912,16 @@
       "claimed_at_epoch": 1789210692.8323584,
       "status": "released",
       "released_at": "2026-09-12T11:16:57Z"
+    },
+    {
+      "id": "fourth-1789212015",
+      "session": "fourth",
+      "subject": "cross-file-notes",
+      "task": "a warning written in the file that hit the bug not the file that has it",
+      "claimed_at": "2026-09-12T11:20:15Z",
+      "claimed_at_epoch": 1789212015.924955,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
