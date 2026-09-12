@@ -92,11 +92,31 @@ def strip_sql_comments(text):
     return ''.join(out)
 
 
-def captured_when():
-    r = subprocess.run(['git', 'log', '-1', '--format=%cs (%cr)', '--',
+def captured_when(snap):
+    """When the snapshot was CAPTURED, preferring the capture's own stamp.
+
+    The first version read the git commit date, and that is the wrong field for
+    exactly the reason this tool exists. On 2026-09-11 a fresh capture sat
+    uncommitted in the working tree while git still reported 2026-09-02, so the
+    header said "10 days ago" about a file generated minutes earlier. A tool
+    whose job is detecting staleness must not take its own freshness reading
+    from metadata that lags the thing it describes.
+
+    `_generated_at` comes out of the query itself. The commit date is still
+    printed beside it, because a capture that exists only in one clone is not
+    yet a fact for anyone else -- and that gap is the failure this tool was
+    built for.
+    """
+    gen = str(snap.get('_generated_at') or '').strip() or 'no _generated_at in the file'
+    r = subprocess.run(['git', 'log', '-1', '--format=%cs', '--',
                         'db/schema_snapshot.json'],
                        cwd=REPO, capture_output=True, text=True)
-    return (r.stdout or '').strip() or 'unknown'
+    committed = (r.stdout or '').strip() or 'never committed'
+    dirty = subprocess.run(['git', 'status', '--porcelain', '--',
+                            'db/schema_snapshot.json'],
+                           cwd=REPO, capture_output=True, text=True)
+    pending = ' -- UNCOMMITTED, so no other clone has it yet' if (dirty.stdout or '').strip() else ''
+    return '%s (generated); last committed %s%s' % (gen, committed, pending)
 
 
 def main(argv):
@@ -126,6 +146,7 @@ def main(argv):
             queried.add(a or b)
     queried.discard('rpc')
 
+    real_tables = sum(1 for k in snap if not k.startswith('_'))
     missing = sorted(t for t in created if t not in snap)
     high = [t for t in missing if t in queried]
     undecided = [t for t in missing if t not in queried]
@@ -136,8 +157,11 @@ def main(argv):
                           'created_in': {t: created[t] for t in missing}}, indent=1))
     else:
         print('SCHEMA SNAPSHOT FRESHNESS -- report only, nothing was written')
-        print('  snapshot captured : %s' % captured_when())
-        print('  tables in snapshot: %d' % len(snap))
+        print('  snapshot captured : %s' % captured_when(snap))
+        # Real tables only. `_constraints` and `_generated_at` are metadata, and
+        # counting them inflated every "tables in snapshot" figure this tool has
+        # printed -- 258 where the truth was 254, 379 where it is 375.
+        print('  tables in snapshot: %d' % real_tables)
         print('  tables created in sql/: %d' % len(created))
         print('  created in sql/ but ABSENT from the snapshot: %d' % len(missing))
         print('    of those, also QUERIED by api/ : %d  <- live code expects these'
