@@ -2861,7 +2861,7 @@ already existed caught all three.
    carries that flag for exactly this reason and I registered beside it without
    reading its entry closely enough.
 2. **A literal `0x08` BACKSPACE at `tools/tooling_inventory.py:231`** -- I wrote
-   `r''` for a word boundary and an edit pass collapsed it into the control
+   `r'\b'` for a word boundary and an edit pass collapsed it into the control
    character, so the regex matched a backspace and the word-boundary check did
    nothing. **This is the identical defect `55cac90d` fixed in
    `gate_column_check.py` the day before**, and CC's `control_char_check.py`,
@@ -2880,3 +2880,15 @@ somebody else built yesterday, and the mutation-anchor principle each fired on
 their own. That is the safety net working -- and it is also the argument for the
 13 unpointed checkers in the new document: these three were caught because the
 tools that catch them RUN.
+**And it happened a FOURTH time, in the sentence describing it.** The worklog
+entry above, written to record defect 2, contained a literal `0x08` at
+`SAIRN-ACTIVE-WORK-cody.md:2864` -- the prose about a backspace carried a
+backspace, because the heredoc that wrote it collapsed the escape exactly as the
+edit pass had collapsed it in the tool. `control_char_check.py` caught that one
+too, on the next suite run. The byte is now written as two explicit bytes.
+
+The standing lesson, and it is narrower and more useful than "be careful": **on
+this machine, an escape sequence typed into a Python heredoc does not survive.**
+Build `\b` as `chr(92) + 'b'` in code, and write it with an explicit byte
+sequence in prose. Three of the four instances were mine in one hour, and none of
+them was caught by reading.
