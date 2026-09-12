@@ -118,6 +118,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~14 storage loaders across 13 apps cannot tell a CORRUPT record from an absent one, and none of them say so~~ | **CLOSED 2026-09-05 (Hank)** — all fourteen fixed and live-verified; `fail_open_check`'s browser pass reports **0** | `tests/ld_reports_unreadable.js`, `tests/sv_storage_guard.js` |
 | `discarded_verdict_check.py` finds only SAME-FILE cases — a verdict returned by a required module and dropped elsewhere is missed | **ANSWERED 2026-09-04 (Cody) — MEASURED AT ZERO, so the pass is deliberately NOT built** | `tests/run_discarded_verdict_crossfile_probe.py` |
 | ~~`git_push_master_guard` denies on the SUBSTRING `master`, including inside a filename~~ | **CLOSED 2026-09-04 (Cody)** in `2c1ed4c0` — anchored on the destination refspec, live-verified in BOTH directions through the real hook | `tests/run_push_master_guard_probe.py` |
+| Cross-file notes: a warning written in the file that *hit* the bug, not the file that *has* it | **MEASURED AND CLOSED 2026-09-12 (Fourth)** &mdash; a check is not viable, and the two live stale notes are corrected | `api/_lib/roofing-credentials-endpoint.test.js` |
 | ~~`license_keys` grants need their own dedicated review — excluded from every sweep until then~~ | **CLOSED 2026-09-05 — RUN END TO END BY MICHAEL AND VERIFIED AT EVERY STEP, not 'SQL sent'** | `tests/sql_preflight/run_probe.py` |
 | **PATTERN 13's TRIAL-EXPIRY GATE HAS NEVER FIRED ON ANY LICENCE — the column it reads does not exist** | Open &mdash; **found 2026-09-05 (Cody)**; **NOW MECHANICALLY DETECTED 2026-09-11 (CC)** &mdash; `2d74cd4b`, a promoted checker fails while this row is open. The fix itself is still a billing decision | `api/license-trial-gate.test.js`, `tests/license_trial_gate_probe.py`, `tests/run_gate_column_probe.py` |
 | ~~`tests/refusal_not_empty.js` has been FAILING &mdash; 6 of 14 assertions, `_sdReadFailed is not defined`~~ &mdash; **and it was FOUR red tests, not one** | **CLOSED 2026-09-04 (Hank)** &mdash; all four repaired, suite green but for one live tripwire | `api/_lib/sairnlaw-define-tool.test.js`, `api/sd-data-appointments-photos.test.js`, `api/sd-data-complaints-readonly.test.js`, `tests/refusal_not_empty.js` |
@@ -250,7 +251,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**111 of 299 test files are traced to a stated requirement. 188 are not.**
+**112 of 299 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -313,7 +314,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/roofing-claims-endpoint.test.js`
 - `api/_lib/roofing-claims.test.js`
 - `api/_lib/roofing-consolidation.test.js`
-- `api/_lib/roofing-credentials-endpoint.test.js`
 - `api/_lib/roofing-credentials.test.js`
 - `api/_lib/roofing-crew-capacity.test.js`
 - `api/_lib/roofing-damage-assessment-endpoint.test.js`

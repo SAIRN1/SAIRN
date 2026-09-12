@@ -3,10 +3,29 @@
 // api/sd-data.js, through the REAL exported handler with a stubbed Supabase.
 // Run: node api/_lib/roofing-credentials-endpoint.test.js
 //
-// A SUBSTITUTE for the live round trip, not a replacement:
-// sql/sairnroofing_certifications_schema.sql has not been run in Supabase.
+// A SUBSTITUTE for the live round trip, not a replacement.
 // This proves the handler's own logic -- role gating, self-read narrowing,
 // append-only insert, the expiry-unspecified refusal, evaluate wiring.
+//
+// ── THE REASON GIVEN FOR THE SUBSTITUTION WAS TRUE AND IS NOT ANY MORE ────
+// This header said `sql/sairnroofing_certifications_schema.sql has not been
+// run in Supabase`, which was the whole justification for stubbing rather than
+// round-tripping. **It has since been run.** Both tables it declares,
+// `rf_certifications` and `rf_cert_rules`, are present in the live capture
+// `db/schema_snapshot.json` re-taken 2026-09-11 (`3d603dd0`, 254 tables to
+// 375). Checked 2026-09-12.
+//
+// SO THE LIVE ROUND TRIP IS NOW AVAILABLE AND IS NOT WRITTEN. That is stated
+// rather than quietly dropped: this suite still proves what it says it proves,
+// and the gap it names -- nobody has exercised these branches against the real
+// database -- is now a gap by choice instead of by circumstance.
+//
+// The stale line is recorded rather than deleted because of HOW it went stale:
+// the note about the unapplied schema lived HERE, in the file that worked
+// around it, and nothing in `sql/sairnroofing_certifications_schema.sql` said
+// anything. Nobody running that migration had a reason to come back and
+// correct this sentence. See the cross-file-notes row in
+// `docs/SAIRN-OPEN-WORK-INDEX.md`.
 //
 // The role gate is the part most worth testing here rather than live: it
 // decides who may assert a qualification about whom, and a live test would
