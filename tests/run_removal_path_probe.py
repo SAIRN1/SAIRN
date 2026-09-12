@@ -223,6 +223,108 @@ rc, out = run(d2, '--burn-down')
 check('a MISSING tier register does not crash and does not invent a tier',
       (rc, 'UNTIERED=1' in out), (0, True))
 
+# ── 11. THE BRANCH REGION IS BOUNDED BY THE NEXT BRANCH, NOT BY A NUMBER ──
+# shapes() used to read `api[m.start():m.start() + 2500]`. That arbitrary
+# window was wrong in BOTH directions against the real api/sd-data.js on
+# 2026-09-12, and the two failures need separate arms because they fail in
+# opposite ways. The dangerous one is B: it produced a SILENT EXEMPTION.
+def pad(n_chars):
+    return '// ' + ('x' * 70) + '\n' * 0 + ('\n// ' + 'x' * 70) * (n_chars // 74)
+
+
+# A. TOO SMALL. sd_public_shop's own write sits at offset +2499 and the string
+#    SINGLE_Q matches runs past 2500, so it missed BY ONE CHARACTER and the
+#    resource came back UNRESOLVED -- a false entry in a 321-item queue.
+FAR_SINGLE = ("if (resource === '%s' && action === 'write') {\n"
+              + pad(3000) + "\n"
+              "  await fetch(rest('%s?on_conflict=license_hash'),"
+              " { method: 'POST' });\n}\n")
+n[0] += 1
+_d = os.path.join(tmp, '%02d-farwrite' % n[0])
+os.makedirs(_d)
+build(_d, names=['a_thing', 'b_far'], extra={},
+      sd_data=(KEYED % ('a_thing', 'a_thing')) + (FAR_SINGLE % ('b_far', 'b_far')),
+      app_js=APP % "  'a_thing',\n  'b_far',",
+      baseline={'a_thing': 'grandfathered fixture'})
+rc, out = run(_d, '--full')
+check('11A a write 3000 chars into its own branch is still read',
+      'b_far' in out and 'single-row' in out.split('b_far')[1][:40], True)
+check('11A and it is therefore NOT a finding', rc, 0)
+
+# B. TOO LARGE, AND THIS IS THE ONE THAT HID A REAL DEFECT. msb_food_cost_log's
+#    first dispatch is READ-ONLY; 2,322 chars later, inside a DIFFERENT branch,
+#    msb_sale_hours does a genuine single-row write. SINGLE_Q is tested first
+#    and searches the whole window, so the neighbour's write won -- and a TIER A
+#    resource was silently exempted from the stuck list by another resource's
+#    code. A false exemption never appears anywhere to be argued with.
+READ_ONLY = ("if (resource === '%s' && action === 'read') {\n"
+             "  await fetch(rest('%s?license_hash=eq.' + enc(h)));\n}\n")
+n[0] += 1
+_d = os.path.join(tmp, '%02d-neighbour-single' % n[0])
+os.makedirs(_d)
+build(_d, names=['a_thing', 'b_log', 'c_hours'], extra={},
+      sd_data=(KEYED % ('a_thing', 'a_thing'))
+              + (READ_ONLY % ('b_log', 'b_log'))
+              + (SINGLE % ('c_hours', 'c_hours'))
+              + (KEYED % ('b_log', 'b_log')),
+      app_js=APP % "  'a_thing',\n  'b_log',\n  'c_hours',",
+      baseline={'a_thing': 'grandfathered fixture'})
+rc, out = run(_d, '--full')
+check('11B a read-only branch does NOT inherit the next branch\'s single-row '
+      'write', 'single-row' in out.split('b_log')[1][:40], False)
+check('11B and the resource is reported as the finding it really is', rc, 1)
+check('11B and it is named', 'b_log' in out.split('FINDING')[-1], True)
+check('11B while the genuine single-row neighbour is still exempt',
+      'c_hours' in out.split('FINDING')[-1], False)
+
+# C. The same over-reach in the KEYED direction, and the honest answer is to
+#    say NOTHING rather than to borrow. sd_quote_requests' branch holds no
+#    on_conflict at all -- staff PATCH by id and the INSERT lives in
+#    api/stonedesk-public.js, a different file -- and the first on_conflict
+#    within 2500 chars belonged to sd_crm, the NEXT branch. A resource with no
+#    readable write of its own must come back UNRESOLVED, which this tool's own
+#    header says is "not a finding and not a pass", NOT keyed on a neighbour's
+#    id column. Raising the window instead would have made that wrong answer
+#    more confident rather than less.
+READ_ONLY_ONLY = ("if (resource === '%s' && action === 'read') {\n"
+                  "  await fetch(rest('%s?license_hash=eq.' + enc(h)));\n}\n")
+n[0] += 1
+_d = os.path.join(tmp, '%02d-neighbour-keyed' % n[0])
+os.makedirs(_d)
+build(_d, names=['a_noread', 'b_keyed'], extra={},
+      sd_data=(READ_ONLY_ONLY % ('a_noread', 'a_noread'))
+              + (KEYED % ('b_keyed', 'b_keyed')),
+      app_js=APP % "  'a_noread',\n  'b_keyed',",
+      baseline={'a_noread': 'x', 'b_keyed': 'x'})
+rc, out = run(_d, '--full')
+_row_a = [l for l in out.splitlines() if ' a_noread ' in l]
+check('11C a branch with no write of its own says UNRESOLVED, it does not '
+      "borrow the next branch's shape",
+      len(_row_a) == 1 and 'UNRESOLVED' in _row_a[0], True)
+check('11C and the neighbour is still read correctly',
+      any(' b_keyed ' in l and 'keyed' in l for l in out.splitlines()), True)
+
+# D. The grouping that makes the bound safe. `resource === 'a' || resource ===
+#    'b'` is ONE dispatch -- five such pairs exist in the real file. Without
+#    grouping they would bound each other at zero length and BOTH come back
+#    UNRESOLVED, which is a regression dressed as caution. Asserted on the two
+#    resource ROWS, not on the word appearing anywhere: the summary prints
+#    "shape UNRESOLVED : 0" on every run, so a bare substring test passes on
+#    the header and proves nothing.
+PAIR_BRANCH = ("if (resource === 'a_left' || resource === 'b_right') {\n"
+               "  await fetch(rest('t?on_conflict=license_hash,thing_id'),"
+               " { method: 'POST' });\n}\n")
+n[0] += 1
+_d = os.path.join(tmp, '%02d-pairdispatch' % n[0])
+os.makedirs(_d)
+build(_d, names=['a_left', 'b_right'], extra={}, sd_data=PAIR_BRANCH,
+      app_js=APP % "  'a_left',\n  'b_right',",
+      baseline={'a_left': 'x', 'b_right': 'x'})
+rc, out = run(_d, '--full')
+_rows = [l for l in out.splitlines() if ' a_left ' in l or ' b_right ' in l]
+check('11D both halves of a shared dispatch are classified keyed',
+      len(_rows) == 2 and all('keyed' in l for l in _rows), True)
+
 # ── 10. and the REAL repo is clean, since that is what it is for ──────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
                    text=True)

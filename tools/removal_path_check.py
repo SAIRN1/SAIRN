@@ -34,8 +34,16 @@ removal verb, a record genuinely cannot be removed through the product.
 WHAT IS A LEGITIMATE REASON, AND IT IS A REAL ONE. Plenty of these are
 **append-only by design**: signed agreements, claim photo evidence, audit logs,
 credential history. For those the absence of a delete is the correct design and
-needs a written reason, not a fix. 46 resources are labelled APPEND-ONLY in
-their own registry comment, and that label is read here rather than re-decided.
+needs a written reason, not a fix. Resources labelled APPEND-ONLY in their own
+registry comment are read here rather than re-decided.
+
+THE COUNT THAT USED TO BE ON THAT LINE SAID 46 AND WAS NEVER TRUE -- corrected
+2026-09-12, no number put back in its place. It was written when the label
+reader attributed a shared comment block wholesale, which is the defect that
+produced 79 and was then narrowed to 13 by attributing clause by clause; today
+it is 16, after a burn-down added three. A count in a header goes stale the
+next time anyone burns one down, and this one outlived two corrections to the
+thing it was counting. Run the tool: it prints the current figure.
 
 HOW THE SHAPE IS DERIVED, and where it stops. For each resource this reads
 `api/sd-data.js` -- the map that registers it, or its `resource === '<name>'`
@@ -132,21 +140,69 @@ def shapes(api):
     # (b) bespoke branches, found by the resource's own dispatch line. The
     #     TABLE name is frequently not the resource name (golf_zones ->
     #     grd_golf_zones), so this anchors on the branch, never on the table.
+    #
+    # ── THE REGION IS BOUNDED BY THE NEXT BRANCH, NOT BY A CHARACTER COUNT ───
+    # It used to be `api[m.start():m.start() + 2500]`, and that arbitrary number
+    # was wrong in BOTH directions at once, measured on 2026-09-12 against the
+    # real api/sd-data.js:
+    #
+    #   TOO SMALL -- `sd_public_shop`'s write sits at offset +2499 and the
+    #   matched string `on_conflict=license_hash'` runs past 2500, so SINGLE_Q
+    #   missed it BY ONE CHARACTER. The resource came back UNRESOLVED and landed
+    #   in the burn-down queue as a stuck Tier B resource. It is single-row: a
+    #   shop's own public profile, one row per licence, where blanking the form
+    #   releases the slug and unpublishes. A false entry in a 321-item queue,
+    #   invisible because UNRESOLVED is a legitimate answer this tool prints
+    #   often and honestly.
+    #
+    #   TOO LARGE -- `sd_quote_requests`' branch contains no `on_conflict` at
+    #   all (staff PATCH by id; the row is INSERTed by api/stonedesk-public.js,
+    #   a different file). The first `on_conflict` within 2500 chars of it is
+    #   `on_conflict=license_hash,lead_id` -- which belongs to **sd_crm**, the
+    #   NEXT branch. So simply raising the number would have produced a
+    #   confident WRONG shape keyed on another table's id column.
+    #
+    # Both failures are the same defect: a fixed window has no idea where the
+    # branch ends. The bound is now the next dispatch, which is where the branch
+    # actually ends. Matches on the SAME LINE are ONE dispatch
+    # (`resource === 'a' || resource === 'b'`, five such pairs in the real
+    # file) and share a region -- without that they would bound each other at
+    # zero length and every one would come back UNRESOLVED.
+    #
+    # SAME LINE, NOT "within N characters", and that distinction cost an arm.
+    # A proximity threshold of 200 was tried first and it MERGED TWO GENUINELY
+    # SEPARATE BRANCHES whose bodies happened to be short -- the second one's
+    # keyed write was then attributed to the first, which is the exact
+    # over-reach this whole change removes, reintroduced one line below the fix
+    # for it. Caught by probe arm 11C on a fixture whose read-only branch is
+    # 110 characters long. A magic number replaced by a smaller magic number is
+    # not a fix; a line break is a fact about the source.
+    dispatches = []
+    last_end = 0
     for m in re.finditer(r"resource === '([a-z][a-z0-9_]*)'", api):
-        res = m.group(1)
-        if res in out:
-            continue
-        region = api[m.start():m.start() + 2500]
+        if dispatches and '\n' not in api[last_end:m.start()]:
+            dispatches[-1][1].append(m.group(1))
+        else:
+            dispatches.append((m.start(), [m.group(1)]))
+        last_end = m.end()
+    for i, (start, names) in enumerate(dispatches):
+        end = dispatches[i + 1][0] if i + 1 < len(dispatches) else len(api)
+        region = api[start:end]
         if SINGLE_Q.search(region):
-            out[res] = ('single-row', 'one row per licence -- a write replaces '
-                                      'the whole collection, so removal is a write')
+            shape = ('single-row', 'one row per licence -- a write replaces '
+                                   'the whole collection, so removal is a write')
         elif 'on_conflict=license_hash,' in region:
-            out[res] = ('keyed', 'upserts on (license_hash, id)')
+            shape = ('keyed', 'upserts on (license_hash, id)')
         elif re.search(r"method:\s*'POST'", region):
-            out[res] = ('insert-only', 'POST with no on_conflict -- appends, '
-                                       'never replaces')
+            shape = ('insert-only', 'POST with no on_conflict -- appends, '
+                                    'never replaces')
         elif re.search(r"method:\s*'PATCH'", region):
-            out[res] = ('keyed', 'PATCH by id')
+            shape = ('keyed', 'PATCH by id')
+        else:
+            continue
+        for res in names:
+            if res not in out:
+                out[res] = shape
     return out
 
 
