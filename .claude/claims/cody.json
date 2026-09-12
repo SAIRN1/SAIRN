@@ -987,8 +987,8 @@
       "task": "run each against the real codebase",
       "claimed_at": "2026-09-12T13:27:08Z",
       "claimed_at_epoch": 1789219628.4323976,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:36:53Z"
     }
   ]
 }
