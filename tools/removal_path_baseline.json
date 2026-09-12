@@ -96,8 +96,8 @@
     "grandfathered_entries_in_this_file": 322,
     "of_those_still_stuck": 320,
     "listed_here_but_no_longer_stuck": 2,
-    "with_stated_reason": 2,
-    "still_unassessed": 320,
+    "with_stated_reason": 5,
+    "still_unassessed": 317,
     "measured": "2026-09-12, python tools/removal_path_check.py"
   },
   "by_app": {
@@ -434,10 +434,10 @@
     "sd_bundles": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
     "sd_crm": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
     "sd_customers": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
-    "sd_hr_certs": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
-    "sd_hr_employees": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
+    "sd_hr_certs": "ASSESSED 2026-09-12 (CC) -- NOT append-only (a cert is renewed in place, upserted on (license_hash, cert_key)), but DELETION IS FORBIDDEN BY REGULATION, same framing as law_trusttx and alf_incidents. OSHA 1910.1053(k)(3) requires the employer to MAKE AND MAINTAIN the silica training record; a record the product can delete is not maintained. sql/sd_hr_schema.sql:84 grants service_role select/insert/update only, so no delete path exists to call. VERIFIED FROM THE CODE AND THE GRANT, not from the sd-data.js comment that claims it.",
+    "sd_hr_employees": "ASSESSED 2026-09-12 (CC) -- NOT append-only (upserted on (license_hash, employee_key)); removal is a STATUS CHANGE by design. stonedesk-hr.html:1166 removeEmployee() sets status='Inactive' and inactivatedAt and asks 'Mark this employee inactive? Their record and training history are kept.' The previous version spliced the record out and said 'cannot be undone', which destroyed the only copy of that person's OSHA silica training record along with them. Deleting an employee row would orphan or destroy their sd_hr_certs rows, which is the regulation above. Read from the client, not from the comment.",
     "sd_public_shop": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
-    "sd_quote_requests": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
+    "sd_quote_requests": "ASSESSED 2026-09-12 (CC) -- THIS ONE IS A REAL GAP, recorded as one rather than dressed as a design. The submitted text is evidence of what a customer asked for and api/sd-data.js correctly refuses to let staff EDIT it -- but that is an argument against editing, NOT against removal, and the two were being treated as the same answer. A shop cannot remove a quote request at all. DECLINING DOES NOT HIDE IT: pcRenderRequests() (stonedesk.html:~40262) renders every row newest-first with no status filter, so a declined request stays in the table permanently, red and button-less. The feed is an UNAUTHENTICATED PUBLIC FORM, so the inbox grows monotonically with anything anyone submits and the shop has no way to clear it. Not fixed here: whether the answer is a delete verb, a soft_delete, or a filter on the panel is a product decision.",
     "sd_slab_history": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
     "style_profile": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way.",
     "supplier_lead_times": "grandfathered 2026-09-10 -- NOT ASSESSED. No removal verb; no stated reason either way."
