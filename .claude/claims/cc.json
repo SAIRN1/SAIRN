@@ -962,8 +962,8 @@
       "task": "tier-a resources no removal verb",
       "claimed_at": "2026-09-12T13:20:44Z",
       "claimed_at_epoch": 1789219244.5702746,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T13:39:43Z"
     }
   ]
 }
