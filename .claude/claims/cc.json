@@ -972,8 +972,8 @@
       "task": "panel filter and recoverable removal",
       "claimed_at": "2026-09-12T13:53:39Z",
       "claimed_at_epoch": 1789221219.7329273,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:20:34Z"
     }
   ]
 }
