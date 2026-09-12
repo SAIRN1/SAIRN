@@ -1043,8 +1043,8 @@
       "task": "visibility and resolve action",
       "claimed_at": "2026-09-11T15:11:32Z",
       "claimed_at_epoch": 1789139492.078,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T10:21:31Z"
     }
   ]
 }
