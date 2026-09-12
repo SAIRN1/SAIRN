@@ -221,3 +221,16 @@ legal JavaScript. In HTML-embedded script `</div>` puts a `/` straight after a
 `<`; the scan then ran forward for a closing `/`, found it inside the *next HTML
 comment*, and 267 characters of comment survived as code. Reading the code would
 not have found it. Measuring against a real file did.
+
+---
+
+## Licence
+
+**Proprietary. Copyright (c) 2026 SAIRN Tech LLC. All rights reserved.**
+See `LICENSE`. No licence is granted by possession; use requires a separate
+written agreement.
+
+Recorded because the choice is one-way: a proprietary work can later be released
+under an open licence, and source once released under an open licence cannot be
+recalled from anyone who already holds a copy. Starting here keeps both options
+open.
