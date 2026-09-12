@@ -1540,3 +1540,35 @@ assumed.
 **A collateral repair, same lesson as this week's snapshot anchors:** `tests/public_catalog_no_false_empty.js` hand-declared the panel's IIFE variables in its own sandbox and threw `ReferenceError` on a **correct** file the moment `pcShowHandled` existed. A suite failing because its own copy of a declaration went stale. It now grabs that line from the real file, as it already did for `_sdAuthRefused`.
 
 **This is the FIRST of the 320 stuck resources to be FIXED rather than given a reason.** Removal verbs 50 → 51, stuck 320 → 319, **Tier A 54 → 53**.
+
+---
+
+## 2026-09-12 -- a delete that undid itself, found by reading the writer
+
+**Claimed `stonedesk-removal-queue` and the second thing I read was a live defect.** Pushed `75b98d12`, live-verified against the deployed file.
+
+**`custDelete()` removed the customer locally and nothing else.** `saveSD3Data()` writes the **survivors** through one row at a time, so the deleted row on the server was never touched, and `sdHydrateCustomers()` **merges the server's rows back in BY ID** on the next load. **The customer came back, and the confirm said "Delete this customer?" with no caveat** -- which is the expensive part: nobody had a reason to check.
+
+**IT REACHED A CUSTOMER.** `api/stonedesk-track.js` resolves a live **order-tracking link** against `sd_customers` by `customer_id`. In the window between the local delete and the resurrection, a customer could still read their job status from a record the shop believed was gone.
+
+**The READ filter is the half that makes a deletion stick, and the client cannot supply it** -- a record it has deleted is a record it no longer knows to skip. Only the query can.
+
+**THREE OUTCOMES, NOT TWO.** Confirmed → remove locally. **404/503 → there is no server row, so the local removal is the whole deletion and it sticks** -- and 503 is the **live** path today, because `sd_customers` does not exist until the public-surface migration runs, so treating it as failure would have shipped a dead delete button. Anything else → **keep the record and say so**, because removing it locally is exactly what lets it return. `undefined` is deliberately not a failure: no licence means no server rows to resurrect from.
+
+**A third transport map, `_sdLastStatus`, for the same reason there were already two** -- *which* could-not-ask it was is the fact the decision needs. **That one line broke FIVE suites and every one failed on a correct file**, because each hand-lists the transport's declarations in its own sandbox: the real `sdData()` threw `ReferenceError` inside the vm and the catch turned it into a null return. **Third time this week a hand-written mirror of a declaration has gone stale.**
+
+**The count guard in `stonedesk_server_backup.js` did its job** -- failed at 21 vs 23 and forced both additions to be written down instead of slipping under a widened number, which is what its own comment says it is for. Its "every soft-deletable resource is in `SD_LOCAL_RESOURCES`" loop is no longer true; the two bespoke branches are listed **by name** and asserted on their **dispatch line** (code by construction), rather than loosened to a wildcard that would delete the guard while looking like it kept it.
+
+### A near-miss that was worth more than the fix would have been
+
+`exec_context` is a **false entry** -- read-only, **no table at all**. I nearly taught the tool to classify read-only resources automatically. **My first scan for "never writes" called FOURTEEN SAIRNdental resources read-only, including `dnt_patients`, `dnt_charges` and `dnt_payments`**, because they write through a generic map rather than a `resource === 'x'` branch. **Acting on that blind zero would have silently exempted three Tier A money resources** -- the identical failure the 2500-char window caused this morning. Caught by spot-checking one name I did not believe, not by the count. **Recorded, not automated.**
+
+### New, unresolved, and it makes the row's headline optimistic
+
+**DECLARING A REMOVAL VERB IS NOT CALLING ONE.** Measured across every app HTML: **52 declare a verb, 30 have a client caller, 22 have none -- 21 of them StoneDesk.** Not a matcher artefact: `soft_delete` appears in `stonedesk.html` **exactly twice** and both are calls I added today. Twenty-one verbs wired into the API that nothing invokes, each with a local-only `*Delete()` that leaves the server row behind -- **the same class as the 15 hand-written cleanup SQL files.** The 22nd (`sc_settings`) is **not claimed**; that app may dispatch by variable and a bare zero there would repeat the blind-zero mistake.
+
+### My own mistake, said out loud
+
+**I committed conflict markers into `docs/SAIRN-OPEN-WORK-INDEX.md`** -- the exact defect the "table checker was reading 31% of it and printing OK" row describes, reproduced in the same document. **Nothing reached origin:** caught on the next rebase, the bad commit was rebuilt on origin's version and the row re-applied on top. The lesson is that `git add -A` after a rebase is how markers get committed, in the one file every session reads to choose work.
+
+**Queue: 321 → 318 stuck, removal verbs 50 → 52.**
