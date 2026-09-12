@@ -76,6 +76,10 @@ DEFAULT_FILES = [
 UNESCAPED = re.compile(r'(?<!\\)\|')
 SEPARATOR = re.compile(r'^\s*\|?[\s:\-|]+\|[\s:\-|]*$')
 
+# An unresolved VCS conflict marker at the start of a line. Added 2026-09-12,
+# see ORPHAN ROWS below.
+CONFLICT = re.compile(r'^(<{7}|={7}|>{7})(\s|$)')
+
 
 def _resolve(path):
     """Repo-relative by default; absolute paths pass through so the probe can
@@ -121,19 +125,87 @@ def scan(path):
     return bad
 
 
+def orphans(path):
+    """Return (line_no, kind, text) for every line this checker CANNOT judge.
+
+    ── WHY THIS EXISTS, AND WHY IT IS NOT AN AFTERTHOUGHT ──────────────────
+    `blocks()` starts a table at a header+separator pair and ends it at the
+    first line that does not start with `|`. That is correct markdown, and it
+    means ANY interruption silently severs every row after it: the rows are
+    still there, still read by a human, and no longer checked by anything.
+
+    MEASURED on docs/SAIRN-OPEN-WORK-INDEX.md the day this was written: 350
+    lines look like table rows, this checker was examining 110 of them, and it
+    printed `OK`. THIRTY-ONE PERCENT COVERAGE, REPORTED AS A PASS. The cause
+    was three unresolved `<<<<<<<`/`=======`/`>>>>>>>` markers committed to
+    origin/main on 2026-09-11 -- after which no header+separator pair occurs
+    again, so `blocks()` yields nothing for the remainder of the file.
+
+    Second instance of that shape found the same night in a different tool
+    (`gate_column_check.py`, reading 4% of its subject), which is why the
+    disclosure is a first-class output here rather than a comment.
+
+    So: a checker that cannot see part of its subject must SAY SO. See
+    docs/SAIRN-PROCESS-RULES.md section 1.7 -- a scan that covered 31% and
+    reports "clean" is a wrong answer, not a partial one.
+
+    Two kinds, because they need different repairs:
+      conflict  an unresolved VCS marker. Resolve it; both sides are real.
+      orphan    a line starting with `|` that is inside no table. Usually a row
+                split across two lines by a newline inside a code span, which
+                also breaks rendering.
+    """
+    with io.open(_resolve(path), encoding='utf-8') as fh:
+        lines = fh.read().split('\n')
+    covered = set()
+    for header, body in blocks(lines):
+        covered.add(header)
+        covered.update(body)
+    out = []
+    for i, line in enumerate(lines):
+        if CONFLICT.match(line):
+            out.append((i + 1, 'conflict', line))
+        elif is_row(line) and i not in covered and not SEPARATOR.match(line):
+            out.append((i + 1, 'orphan', line))
+    return out
+
+
+def coverage(path):
+    """(rows_checked, rows_that_look_like_rows) -- the honest denominator."""
+    with io.open(_resolve(path), encoding='utf-8') as fh:
+        lines = fh.read().split('\n')
+    # The header counts as checked -- it is what every body row is measured
+    # against. Omitting it made a clean file report "4/5 rows checked", which
+    # reads as an unread remainder that does not exist.
+    checked = sum(1 + len(body) for _, body in blocks(lines))
+    looks = sum(1 for l in lines if is_row(l) and not SEPARATOR.match(l))
+    return checked, looks
+
+
 def main(argv):
     files = [a for a in argv if not a.startswith('--')] or DEFAULT_FILES
     total = 0
+    unseen = 0
     for path in files:
         bad = scan(path)
         for line_no, got, want, text in bad:
             print('%s:%d  %d cells, header says %d  %s'
                   % (path, line_no, got, want, text[:90]))
+        orph = orphans(path)
+        for line_no, kind, text in orph:
+            print('%s:%d  %-8s %s' % (path, line_no, kind.upper(), text[:90]))
+        checked, looks = coverage(path)
         total += len(bad)
-        if not bad:
-            print('%s: OK' % path)
+        unseen += len(orph)
+        if not bad and not orph:
+            print('%s: OK  (%d/%d rows checked)' % (path, checked, looks))
+        else:
+            # Never print a bare pass beside an unread remainder.
+            print('%s: %d malformed, %d unreadable  (%d/%d rows checked)'
+                  % (path, len(bad), len(orph), checked, looks))
     print('TOTAL_MALFORMED_ROWS:%d' % total)
-    return 1 if total else 0
+    print('TOTAL_UNCHECKABLE_LINES:%d' % unseen)
+    return 1 if (total or unseen) else 0
 
 
 if __name__ == '__main__':

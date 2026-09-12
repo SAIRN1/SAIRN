@@ -101,10 +101,60 @@ check('and it still reports the row', len(mt.scan(ro)), 1)
 check('the tool exposes no repair entry point at all',
       hasattr(mt, 'fix_row'), False)
 
-# The real document must be clean, since that is the file this exists for.
+# ── WHAT THE CHECKER CANNOT SEE MUST BE REPORTED, NOT PASSED OVER ──────────
+# Added 2026-09-12. blocks() ends a table at the first line not starting with
+# `|`, so ANY interruption severs every row after it -- they stay in the file,
+# stay read by humans, and stop being checked. On the real index three
+# unresolved conflict markers had been on origin/main since 2026-09-11, and
+# this checker examined 110 of 346 rows and printed OK. These arms plant both
+# shapes on fixtures and demand they be seen, because a checker that finds
+# nothing is indistinguishable from one that looks at nothing.
+
+conflict = write('conflict.md',
+                 HEADER + '| A | B | C |\n'
+                 '<<<<<<< HEAD\n| D | E | F |\n=======\n| G | H | I |\n'
+                 '>>>>>>> abc1234 (some commit)\n| J | K | L |\n')
+orph = mt.orphans(conflict)
+check('all three conflict markers are reported',
+      sorted(k for _, k, _ in orph if k == 'conflict'),
+      ['conflict'] * 3)
+check('and the rows the markers severed are reported as orphans, not silently dropped',
+      len([1 for _, k, _ in orph if k == 'orphan']), 3)
+check('the severed rows are genuinely invisible to scan() -- which is the point',
+      len(mt.scan(conflict)), 0)
+check('coverage says so out loud rather than claiming a clean pass',
+      mt.coverage(conflict), (2, 5))
+
+# A row split across two lines by a newline inside a code span: the second
+# half does not start with `|`, so it ends the table exactly like a marker.
+split = write('split.md',
+              HEADER + "| A | `newline='\n' here` | C |\n| D | E | F |\n")
+check('a row split by an embedded newline leaves an orphan behind',
+      len([1 for _, k, _ in mt.orphans(split) if k == 'orphan']), 1)
+
+# THE CONTROL THAT MATTERS. Without it, an orphan reporter that flagged every
+# row would pass every arm above.
+clean = write('clean.md', HEADER + '| A | B | C |\n| D | E | F |\n')
+check('CONTROL: a clean table has no orphans and no conflicts',
+      mt.orphans(clean), [])
+check('CONTROL: and it reports full coverage, header included',
+      mt.coverage(clean), (3, 3))
+
+# A `|` inside a fenced code block is NOT a table row. This is the false
+# positive that would make the new reporting unusable if it existed.
+check('a pipe line outside any table in ordinary prose is reported once',
+      len(mt.orphans(write('prose.md', 'text\n| stray |\nmore text\n'))), 1)
+
+# The real document must be clean, since that is the file this exists for --
+# and "clean" now means every row was READ, not merely that the read ones
+# passed.
 check('the live open-work index passes',
       len(mt.scan('docs/SAIRN-OPEN-WORK-INDEX.md')), 0)
+check('the live open-work index has nothing this checker cannot read',
+      mt.orphans('docs/SAIRN-OPEN-WORK-INDEX.md'), [])
+_checked, _looks = mt.coverage('docs/SAIRN-OPEN-WORK-INDEX.md')
+check('and every row in it is actually checked', _checked, _looks)
 
 print(('FAILED  ' if fails else 'ok  ') +
-      'md-table-check: %d cases, %d failed' % (len(CASES) + 8, fails))
+      'md-table-check: %d cases, %d failed' % (len(CASES) + 18, fails))
 sys.exit(1 if fails else 0)
