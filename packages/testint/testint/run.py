@@ -111,5 +111,15 @@ def main(argv):
     return worst
 
 
-if __name__ == '__main__':
+def cli():
+    """Console entry point: `testint` after a pip install.
+
+    A separate function because `pyproject.toml`'s [project.scripts] needs a
+    callable taking no arguments, and `main()` takes argv so the tests can drive
+    it without touching sys.argv.
+    """
     sys.exit(main(sys.argv[1:]))
+
+
+if __name__ == '__main__':
+    cli()

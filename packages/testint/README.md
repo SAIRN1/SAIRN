@@ -39,6 +39,36 @@ two runs unless it sets out to.
 
 ---
 
+## Does it apply to YOUR codebase? Measured, per check
+
+The three checks have **materially different reach**, and saying otherwise would
+be an overclaim the measurement does not support. Run against two codebases
+nobody here wrote — CPython's standard library (1,131 test files) and
+third-party npm packages — this is what came back:
+
+| Check | Applies when | Reach |
+|---|---|---|
+| **`check_determinism`** | you run checkers, linters or generators whose output something reads | **broadest.** No assumptions about test style at all, and it ships a `--self-test` that proves the method can see the defect |
+| **`check_mutation_anchor`** | you write mutation controls | **a discipline you have or you do not.** Where controls exist this is immediately useful; where they do not it has nothing to read, and says so |
+| **`check_comment_quote`** | **your tests read your source as text** | **narrowest, and honestly so** |
+
+**The honest pitch for `check_comment_quote` is: *if your tests read your source
+as text, this finds the assertions that have stopped checking.*** Not *"works on
+any test suite"*.
+
+The number behind that. Share of test files that read a file as text:
+
+| Corpus | share |
+|---|---:|
+| the codebase this came from, JavaScript | **67.3%** (167 of 248) |
+| the codebase this came from, Python | **53.0%** (35 of 66) |
+| CPython standard library | **17.3%** (196 of 1,131) |
+
+And the CPython reads are of *fixture data*, not of source — so on that corpus
+the check reports **COULD NOT RUN**, which is the correct answer and not a clean
+one. See `validation/README.md`, including the two false cleans this check
+committed on first contact with foreign code before that was fixed.
+
 ## Why this suite and not another linter
 
 Every one of the three above was found in a codebase that already had: a full

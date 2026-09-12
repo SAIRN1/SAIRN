@@ -1,0 +1,47 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "testint"
+version = "0.1.0"
+description = "Does your test suite actually check anything? Finds assertions that match comments, mutation controls whose anchors no longer match, and checkers that answer differently on the same input."
+readme = "README.md"
+requires-python = ">=3.8"
+
+# NO RUNTIME DEPENDENCIES, DELIBERATELY. This is a tool people install to audit
+# a codebase they already do not fully trust; every dependency it drags in is
+# another thing they have to trust to run it. Everything here is stdlib.
+dependencies = []
+
+keywords = [
+    "testing", "test-quality", "mutation-testing", "static-analysis",
+    "determinism", "code-audit",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Topic :: Software Development :: Quality Assurance",
+    "Topic :: Software Development :: Testing",
+]
+
+# LICENCE IS DELIBERATELY UNSET. It is a commercial decision, not a default to
+# be picked by whoever wrote the packaging file, and a wrong one is expensive to
+# walk back once the package is distributed. Set `license` and add the file
+# before publishing; a build without it is fine for local install.
+
+[project.scripts]
+testint = "testint.run:cli"
+
+[project.urls]
+Documentation = "https://example.invalid/testint"
+
+[tool.setuptools]
+packages = ["testint"]
+
+# The validation configs point at absolute paths on the machine that ran them.
+# They are kept in the repo as the reproducible record of what was measured, and
+# excluded from the wheel because they are evidence rather than product.
+[tool.setuptools.package-data]
+testint = []
