@@ -1514,3 +1514,29 @@ assumed.
 ### Collision flagged, not discovered late
 
 **The marketplace/tools package consolidation Michael suggested is already claimed by Fourth** (`marketplace-package inventory and structure for the genericized tools package`, claimed minutes before I looked). Said so before starting rather than after. Picked the removal-path burn-down instead; `sairn_claim.py check` returned CLEAR and it was claimed before any work began.
+
+---
+
+## 2026-09-12 -- the public inbox a shop could never clear
+
+**Michael's decision, implemented and live-verified: soft delete plus a default panel filter on `sd_quote_requests`.** Pushed `dc04f2ea`; confirmed against the file Vercel actually serves (all six markers present on the second poll, 2,539,027 bytes).
+
+**The gap was a CONFLATION, not an oversight.** `api/sd-data.js` correctly refuses to let staff EDIT the submitted text -- it is evidence of what a customer asked for -- and **that argument had been standing in for an argument against REMOVAL.** They are not the same argument and only one of them had ever been decided. Declining did not stand in for removal either: `pcRenderRequests()` rendered every row with no status filter, so a declined request stayed in the table permanently.
+
+**Why it matters more here than on the other twenty-one soft-deletable resources:** this is the only one fed by an **unauthenticated public form**, so its volume is bounded by what strangers submit rather than by staff effort.
+
+**THE TEXT IS STILL UNEDITABLE, and that is the arm most worth keeping.** The handler does a **read-modify-write of the STORED record**, adding `_deleted_at`/`_deleted_by` and nothing else. The test sends a payload full of overwriting fields (`message:'REWRITTEN'`) and asserts **none** of them reach the database -- a delete must not double as the edit path this resource refuses to have. No new database privilege either: the marker is inside the existing jsonb.
+
+**The API is the boundary, not the panel.** A status change on a soft-deleted request answers **409 DELETED** and writes nothing. *"The UI does not show it"* has never been an access rule here, and promoting a deleted request would resurrect it in every count computed from status.
+
+**The filter states what it hides.** A filter that silently removed rows is the same class of thing as an empty state that is really a failed read. The flag is **deliberately not persisted** -- a shop that ticked it once six weeks ago would silently be back to the unbounded list with no sign of why. **"Nothing waiting on you" and "No quote requests yet" stay different sentences**, so the 2026-09-04 false-empty fix is re-asserted rather than assumed to survive.
+
+**A failed delete leaves the row on screen.** This panel has no local cache, so an optimistic removal would show a deletion that did not happen and the next load would bring it back unexplained.
+
+**30 arms, both halves driving real code:** `api/sd-data-quote-request-soft-delete.test.js` (14, the real handler) and `tests/quote_request_soft_delete_panel.js` (16, the real panel functions, including a mutation restoring the unfiltered render).
+
+**One arm was written wrong and the failure was mine, not the code's:** the failed-delete arm asserted the row was still on screen against a table that had never been rendered, so it would have passed on an empty string. It now renders first and asserts the precondition.
+
+**A collateral repair, same lesson as this week's snapshot anchors:** `tests/public_catalog_no_false_empty.js` hand-declared the panel's IIFE variables in its own sandbox and threw `ReferenceError` on a **correct** file the moment `pcShowHandled` existed. A suite failing because its own copy of a declaration went stale. It now grabs that line from the real file, as it already did for `_sdAuthRefused`.
+
+**This is the FIRST of the 320 stuck resources to be FIXED rather than given a reason.** Removal verbs 50 → 51, stuck 320 → 319, **Tier A 54 → 53**.
