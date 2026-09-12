@@ -1075,6 +1075,16 @@
       "claimed_at_epoch": 1789213515.7927818,
       "status": "released",
       "released_at": "2026-09-12T12:28:44Z"
+    },
+    {
+      "id": "hank-1789218134",
+      "session": "hank",
+      "subject": "truthy-coercion-sum-checker",
+      "task": "string concatenation in numeric folds",
+      "claimed_at": "2026-09-12T13:02:14Z",
+      "claimed_at_epoch": 1789218134.6946793,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
