@@ -2142,7 +2142,12 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: Object.assign({ shop_slug: rawSlug, published: payload.published === true }, shopData) });
       return;
     }
-    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write')) {
+    // 'soft_delete' SHARES THIS BRANCH'S GATE RATHER THAN GETTING ITS OWN.
+    // The session check and the owner/admin check below are the same two
+    // decisions for all three verbs, and a second copy of them beside this one
+    // is a copy that can drift -- which is how dnt_supplies ended up with a
+    // separate branch carrying its own `dntGate`. One gate, three actions.
+    if (resource === 'sd_quote_requests' && (action === 'read' || action === 'write' || action === 'soft_delete')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (!CRM_MANAGEMENT_ROLES[session.role]) {
@@ -2150,12 +2155,60 @@ module.exports = async (req, res) => {
         return;
       }
       if (action === 'read') {
-        const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&select=request_id,status,created_at,data'), { headers });
+        // SOFT-DELETED REQUESTS ARE NOT RETURNED, same filter and same reason
+        // as SD_LOCAL_RESOURCES: the marker lives inside `data`, so the filter
+        // is on the jsonb field rather than a column, and a row that has never
+        // been soft-deleted has no `_deleted_at` key at all -- `->>` yields
+        // NULL for it, so `is.null` matches every request written before this
+        // existed. Nothing already in the table changes visibility.
+        const r = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&data->>_deleted_at=is.null&select=request_id,status,created_at,data'), { headers });
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
         res.status(200).json({ ok: true, provisioned: true,
           data: (rows || []).map((x) => Object.assign({ id: x.request_id, status: x.status, received_at: x.created_at }, x.data || {})) });
+        return;
+      }
+      // -- SOFT DELETE (2026-09-12) -----------------------------------------
+      // Michael's decision. THE SUBMITTED TEXT REMAINS UNEDITABLE: this adds
+      // `_deleted_at` and changes nothing else, so what the customer wrote
+      // survives a deletion exactly as written and the row stays recoverable.
+      //
+      // READ-MODIFY-WRITE, NOT A BLIND UPSERT OF THE CALLER'S COPY, for the
+      // reason the SD_LOCAL_RESOURCES branch already gives: a delete must not
+      // double as an opportunity to overwrite the stored record with a stale
+      // one. Here that is not merely hygiene -- the stored record IS the
+      // evidence, and a client round-trip is exactly the edit path this
+      // resource refuses to have.
+      //
+      // 404 IS AN HONEST ANSWER and 'already deleted' is reported as itself,
+      // rather than a second deletion being reported as a first.
+      if (action === 'soft_delete') {
+        if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_quote_requests payload.id is required' } }); return; }
+        const dcur = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+        if (dcur.status === 404 || dcur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The public catalog tables are not set up yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } }); return; }
+        // The same distinction the status write above had to be taught on
+        // 2026-09-04: a failed READ is not a missing request, and telling
+        // staff it is gone is the one answer that stops them looking for it.
+        if (!dcur.ok) {
+          console.error('sd-data: sd_quote_requests soft_delete read failed, HTTP', dcur.status);
+          res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that quote request, so nothing was deleted. It is still there -- try again.' } });
+          return;
+        }
+        const drows = await dcur.json().catch(function () { return null; });
+        if (!Array.isArray(drows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that quote request, so nothing was deleted.' } }); return; }
+        if (!drows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No quote request with that id -- nothing was deleted' } }); return; }
+        const dstored = drows[0].data || {};
+        if (dstored._deleted_at) { res.status(200).json({ ok: true, data: dstored, already_deleted: true }); return; }
+        const dmarked = Object.assign({}, dstored, { _deleted_at: nowISO(), _deleted_by: String(session.employee_id || '') });
+        const dw = await fetch(rest('sd_quote_requests?license_hash=eq.' + enc(licHash) + '&request_id=eq.' + enc(String(payload.id))), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: dmarked, updated_at: nowISO() })
+        });
+        const dwrows = await dw.json().catch(function () { return null; });
+        if (!dw.ok) return upstream(res, dwrows);
+        res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, dmarked) });
         return;
       }
       // WRITE IS A STATUS DECISION ONLY. Staff mark a request promoted or
@@ -2180,6 +2233,15 @@ module.exports = async (req, res) => {
       if (!Array.isArray(curRows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that quote request, so nothing was changed.' } }); return; }
       if (!curRows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'That quote request no longer exists' } }); return; }
       const curData = curRows[0].data || {};
+      // A SOFT-DELETED REQUEST CANNOT BE PROMOTED OR DECLINED. The read filter
+      // above hides it, so no panel can offer the button -- but the API is the
+      // boundary, not the panel, and "the UI does not show it" has never been
+      // an access rule on this platform. Promoting a deleted request would
+      // also resurrect it in every count computed from status.
+      if (curData._deleted_at) {
+        res.status(409).json({ error: { code: 'DELETED', message: 'That quote request was deleted, so its status cannot be changed' } });
+        return;
+      }
       const merged = Object.assign({}, curData, {
         promoted_at: qrStatus === 'promoted' ? nowISO() : (curData.promoted_at || ''),
         promoted_by: qrStatus === 'promoted' ? String(session.employee_id || '') : (curData.promoted_by || ''),

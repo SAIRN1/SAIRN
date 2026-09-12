@@ -171,6 +171,15 @@ function build(opts) {
   vm.runInContext(
     LAYER + '\n\n(function(){\n' +
     '  var pcShop=null, pcRequests=[], pcLinks=[];\n' +
+    // TAKEN FROM THE REAL FILE, not re-declared here (2026-09-12). The three
+    // lines around this one are hand-written mirrors of the panel's own
+    // declarations, and when pcRenderRequests() gained `pcShowHandled` on
+    // 2026-09-12 this sandbox threw ReferenceError on a correct file -- a
+    // suite failing because its own copy of a declaration had gone stale,
+    // which is the same shape as an anchor that stops matching. Grabbed the
+    // way _sdAuthRefused already is, so the next variable added beside it
+    // arrives here on its own.
+    '  ' + grabLine('var pcShowHandled=false;').trim() + '\n' +
     '  var pcShopLoadFailed=false, pcRequestsLoadFailed=false, pcLinksLoadFailed=false;\n' +
     '  var TRACK_API="/api/stonedesk-track";\n' +
     PC_HTML + '\n' + panel + '\n' +

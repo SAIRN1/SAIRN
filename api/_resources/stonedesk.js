@@ -247,6 +247,31 @@ module.exports = {
     'sd_photos': ['soft_delete'],
     'sd_templates': ['soft_delete'],
     'sd_email_threats': ['soft_delete'],
+  // SOFT DELETE ON sd_quote_requests (2026-09-12), Michael's decision, and it
+  // is the ONLY one of these twenty-two that is fed by an UNAUTHENTICATED
+  // PUBLIC FORM. Everything above is written by a signed-in employee, so its
+  // volume is bounded by staff effort; this one is bounded by whatever a
+  // stranger submits.
+  //
+  // The gap it closes, found 2026-09-12 by reading the writer for the
+  // removal-path burn-down: api/sd-data.js correctly refuses to let staff EDIT
+  // the submitted text, because it is evidence of what a customer asked for --
+  // but that is an argument against EDITING and it had been standing in for an
+  // argument against REMOVAL. The two are not the same, and only one of them
+  // was ever decided.
+  //
+  // Declining did NOT stand in for removal either: pcRenderRequests() rendered
+  // every row with no status filter, so a declined request stayed in the table
+  // permanently and the inbox could only grow.
+  //
+  // 'soft_delete', not 'delete', for the reason the platform decision already
+  // gives: the row stays and stays recoverable, the marker lives in the
+  // existing jsonb, and no new database privilege is needed --
+  // sql/stonedesk_public_surface_schema.sql grants select/insert/update and
+  // that stays true. THE SUBMITTED TEXT IS STILL NOT EDITABLE: soft delete
+  // adds `_deleted_at` and changes nothing else, so what the customer wrote
+  // survives a deletion exactly as written.
+    'sd_quote_requests': ['soft_delete'],
   },
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker

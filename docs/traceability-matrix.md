@@ -103,6 +103,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | `literal_drift_check.py` reports a near-duplicate PAIR in an unstable order &mdash; same lines, same ratio, opposite A/B labels between runs | **CLOSED 2026-09-12 (Fourth)** &mdash; `tools/literal_drift_check.py` sorts on a total order now; `tests/run_literal_drift_determinism_probe.py` (11 arms) | `tests/run_literal_drift_determinism_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
+| **53 TIER A resources have no removal path** (was 56) &mdash; the burn-down order for the 324, derived by crossing them with the criticality register rather than guessed | Open &mdash; **DERIVED 2026-09-10 (Hank)**, `python tools/removal_path_check.py --burn-down`. **This is a review queue ordered by consequence, NOT 56 defects** | `api/sd-data-quote-request-soft-delete.test.js`, `tests/public_catalog_no_false_empty.js`, `tests/quote_request_soft_delete_panel.js` |
 | **A probe can assert on the target's COMMENTS instead of its code &mdash; and the dangerous direction is SILENT** | **BUILT 2026-09-11 (CC)** &mdash; `ba70ec12`, `tools/comment_quote_check.py`, wired as a promoted report-only checker; rule in CLAUDE.md | `tests/run_comment_quote_probe.py`, `tests/sairndental_write_failure_voice.js`, `tests/sairnlaw_csp.js`, `tests/sd_security_status_is_measured.js` |
 | **The `NOT RUN` label on 29 cleanup SQL files is a claim about the FILE, not the database &mdash; and the checker written to doubt it shipped its own false CLEAN** | **BUILT 2026-09-10 (CC)** &mdash; `b3e92a8d`, `tools/cleanup_residue_check.py` + `tests/cleanup_residue_probe.py`. **Answers 0 of 29 today** and says so | `tests/cleanup_residue_probe.py` |
 | **A mutation arm that had stopped proving anything, reported under a headline that pointed the reader the wrong way** | **FIXED 2026-09-10 (Fourth), `8366aa89`** — all 15 arms of `tests/sairndental_outbound_queue_probe.py` bite again | `tests/sairndental_outbound_queue_probe.py` |
@@ -255,7 +256,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**113 of 301 test files are traced to a stated requirement. 188 are not.**
+**115 of 303 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 

@@ -28781,7 +28781,13 @@ document.addEventListener('DOMContentLoaded', function() {
 
   <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:16px">
     <div style="font-weight:700;margin-bottom:4px">Quote requests</div>
-    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">These land here, not in your CRM. An anonymous submitter must never write straight into the record the business runs on, so a request waits until someone promotes it. What the customer typed is kept exactly as typed and cannot be edited here &mdash; it is the evidence of what was asked for.</div>
+    <div style="font-size:12px;color:var(--muted);line-height:1.7;margin-bottom:12px">These land here, not in your CRM. An anonymous submitter must never write straight into the record the business runs on, so a request waits until someone promotes it. What the customer typed is kept exactly as typed and cannot be edited here &mdash; it is the evidence of what was asked for. Deleting one hides it and keeps it: the text is never altered and the record can be brought back.</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <label style="font-size:12px;display:flex;align-items:center;gap:6px;cursor:pointer">
+        <input type="checkbox" id="pc-show-handled" onchange="pcToggleHandled()"> Show promoted and declined
+      </label>
+      <span id="pc-requests-hidden" style="font-size:12px;color:var(--muted)"></span>
+    </div>
     <div class="tw"><table style="width:100%;border-collapse:collapse;font-size:13px">
       <thead><tr style="background:#f8f9fa">
         <th style="padding:8px;text-align:left;border-bottom:1px solid var(--border)">Received</th>
@@ -40007,6 +40013,10 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
 //      plainly when a slab is marked for a catalog that is switched off.
 (function(){
   var pcShop=null, pcRequests=[];
+  // Default FALSE: the inbox opens on what is waiting, not on the archive.
+  // Deliberately NOT persisted -- a shop that ticked this once six weeks ago
+  // would silently be back to the unbounded list with no sign of why.
+  var pcShowHandled=false;
   // ── A READ THAT FAILED IS NOT A SHOP WITH NO SETTINGS (2026-09-04) ────────
   // Every read in this panel turned a failure into a confident empty answer:
   // the shop record became {shop_slug:'',published:false} and the panel said
@@ -40252,13 +40262,40 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
         '</td></tr>';
       return;
     }
+    var hiddenNote=pcEl('pc-requests-hidden');
     if(!pcRequests.length){
+      if(hiddenNote) hiddenNote.textContent='';
       tb.innerHTML='<tr><td colspan="7" style="padding:14px;color:var(--muted);text-align:center">No quote requests yet</td></tr>';
       return;
     }
-    var sorted=pcRequests.slice().sort(function(a,b){
-      return String(b.received_at||'').localeCompare(String(a.received_at||''));
-    });
+    // ── THE DEFAULT VIEW IS THE WORK, NOT THE ARCHIVE (2026-09-12) ─────────
+    // This rendered EVERY request with no filter, so a declined one stayed in
+    // the table for ever and the inbox could only grow -- and unlike every
+    // other collection in this app the feed is an UNAUTHENTICATED PUBLIC FORM,
+    // so its volume is bounded by whatever strangers submit rather than by
+    // staff effort.
+    //
+    // FILTERED, NOT DELETED, and the difference is stated on screen. A hidden
+    // request is one keystroke away and the count below says how many there
+    // are, because a filter that silently removes rows is the same class of
+    // thing as an empty state that is really a failed read: the screen stops
+    // matching the data and nothing says so.
+    var handled=pcRequests.filter(function(q){return q.status!=='pending';});
+    var sorted=(pcShowHandled?pcRequests:pcRequests.filter(function(q){return q.status==='pending';}))
+      .slice().sort(function(a,b){
+        return String(b.received_at||'').localeCompare(String(a.received_at||''));
+      });
+    if(hiddenNote){
+      hiddenNote.textContent=(!pcShowHandled&&handled.length)
+        ? handled.length+' promoted or declined '+(handled.length===1?'request is':'requests are')+' hidden'
+        : '';
+    }
+    if(!sorted.length){
+      tb.innerHTML='<tr><td colspan="7" style="padding:14px;color:var(--muted);text-align:center">'+
+        'Nothing waiting on you. '+handled.length+' handled '+(handled.length===1?'request':'requests')+
+        ' &mdash; tick &ldquo;Show promoted and declined&rdquo; to see '+(handled.length===1?'it':'them')+'.</td></tr>';
+      return;
+    }
     tb.innerHTML=sorted.map(function(q){
       var contact=[q.phone,q.email].filter(Boolean).map(pcHtml).join('<br>');
       var proj=[q.project_type,q.sqft?(q.sqft+' sqft'):'',q.timeline].filter(Boolean).map(pcHtml).join(' &middot; ');
@@ -40274,11 +40311,44 @@ sdSyncColorInputs('sd-brand-secondary', 'sd-brand-secondary-hex');
         '<td style="padding:8px;border-bottom:1px solid var(--border)">'+
           (q.status==='pending'
             ? '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'promoted\')">Promote</button> '+
-              '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'declined\')">Decline</button>'
+              '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcSetRequest(\''+escAttrJs(String(q.id))+'\',\'declined\')">Decline</button> '
             : '')+
+          '<button class="q-btn" style="padding:5px 9px;font-size:11px" onclick="pcDeleteRequest(\''+escAttrJs(String(q.id))+'\')">Delete</button>'+
         '</td></tr>';
     }).join('');
   }
+
+  window.pcToggleHandled=function(){
+    var box=pcEl('pc-show-handled');
+    pcShowHandled=!!(box&&box.checked);
+    pcRenderRequests();
+  };
+
+  // ── DELETE IS A SOFT DELETE AND THE CONFIRM SAYS SO ───────────────────────
+  // The server marks `_deleted_at` inside the existing jsonb and changes
+  // nothing else, so what the customer typed survives exactly as typed. A
+  // confirm that said "cannot be undone" would be false here -- and
+  // stonedesk-hr.html already carries the note about the last time this app
+  // told someone that about a record it was in fact keeping.
+  //
+  // A FAILED DELETE LEAVES THE ROW ON SCREEN. This panel has no local cache --
+  // pcRequests is what the server last returned -- so removing the row
+  // optimistically would show a deletion that did not happen, and the next
+  // load would bring it back with no explanation. Same reason pcSetRequest()
+  // refuses to patch its local copy when the write returns null.
+  window.pcDeleteRequest=async function(id){
+    if(!confirm('Delete this quote request?\n\nIt is hidden, not destroyed -- what the customer wrote is kept and the record can be restored.')) return;
+    if(typeof sdData!=='function') return;
+    var r=null;
+    try{ r=await sdData('soft_delete','sd_quote_requests',{id:id}); }catch(e){ r=null; }
+    if(!r){
+      if(typeof notify==='function') notify('Could not delete that request -- nothing changed, it is still there','err');
+      return;
+    }
+    pcRequests=pcRequests.filter(function(q){return String(q.id)!==String(id);});
+    pcRenderRequests();
+    if(typeof notify==='function') notify('Request deleted. It is kept on the server and can be restored.','ok');
+  };
 
   window.pcSetRequest=async function(id,status){
     var r=await pcWrite('sd_quote_requests',{id:id,status:status});
