@@ -892,6 +892,16 @@
       "claimed_at_epoch": 1789208928.5482256,
       "status": "released",
       "released_at": "2026-09-12T10:36:40Z"
+    },
+    {
+      "id": "fourth-1789209655",
+      "session": "fourth",
+      "subject": "literal-drift-unstable-pair-order",
+      "task": "near-duplicate pair A B labels swap between runs",
+      "claimed_at": "2026-09-12T10:40:55Z",
+      "claimed_at_epoch": 1789209655.908698,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
