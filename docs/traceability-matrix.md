@@ -97,6 +97,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
 | **&#9888; MICHAEL: `db/schema_snapshot.json` is 9 days stale and provably missing LIVE tables &mdash; the capture was run and never saved** | Open &mdash; **NEEDS MICHAEL (one Supabase query + one file save + one commit)**. Detected mechanically 2026-09-11 (CC), `tools/schema_snapshot_freshness.py` | `tests/run_snapshot_freshness_probe.py` |
 | **A checker whose ANSWER changes when the target's comments are removed &mdash; asked of the whole fleet instead of waiting for a fourth instance** | **BUILT 2026-09-11 (CC)** &mdash; `b8e21568`, `tools/comment_sensitivity_check.py`. **Two real findings filed below, open** | `tests/run_comment_sensitivity_probe.py` |
+| `literal_drift_check.py` reports a near-duplicate PAIR in an unstable order &mdash; same lines, same ratio, opposite A/B labels between runs | **CLOSED 2026-09-12 (Fourth)** &mdash; `tools/literal_drift_check.py` sorts on a total order now; `tests/run_literal_drift_determinism_probe.py` (11 arms) | `tests/run_literal_drift_determinism_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
 | **A probe can assert on the target's COMMENTS instead of its code &mdash; and the dangerous direction is SILENT** | **BUILT 2026-09-11 (CC)** &mdash; `ba70ec12`, `tools/comment_quote_check.py`, wired as a promoted report-only checker; rule in CLAUDE.md | `tests/run_comment_quote_probe.py`, `tests/sairndental_write_failure_voice.js`, `tests/sairnlaw_csp.js`, `tests/sd_security_status_is_measured.js` |
@@ -242,7 +243,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**109 of 297 test files are traced to a stated requirement. 188 are not.**
+**110 of 298 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 

@@ -90,7 +90,23 @@ for t, ls in sorted(ex.items(), key=lambda kv: -len(kv[0]))[:25]:
     print('       %s' % t[:120])
 
 print('\n=== A2. NEAR-DUPLICATE PROSE (similar, NOT identical) ===')
-uniq = sorted(set(t for _, t in prose), key=len, reverse=True)
+# ── A TOTAL ORDER, BECAUSE `key=len` ALONE LEFT SET ITERATION SHOWING THROUGH
+# (2026-09-12) This was `sorted(set(...), key=len, reverse=True)`. `sorted` is
+# stable, so equal-length strings kept the order they came out of the SET in --
+# and set iteration order for strings depends on PYTHONHASHSEED, which varies
+# between processes. Reproduced by running this file at three seeds: seeds 2 and
+# 12345 disagree with seed 1.
+#
+# IT IS WORSE THAN THE A/B SWAP THE INDEX ROW RECORDS. The row describes "same
+# lines, same ratio, opposite A/B labels", which is harmless. Measured here, the
+# PAIR NUMBERING moves too: at one seed `pair 5` is 63-vs-52 chars at ratio
+# 0.904, at another it is 63-vs-42 at 0.800 -- a different finding under the
+# same label. Anything that cites a pair number, or diffs two runs of this
+# checker, is reading noise.
+#
+# Sorting by (-len, text) is a total order over distinct strings, so the result
+# no longer depends on anything the interpreter is free to vary.
+uniq = sorted(set(t for _, t in prose), key=lambda t: (-len(t), t))
 found = 0
 for i, a in enumerate(uniq):
     for b in uniq[i + 1:]:
