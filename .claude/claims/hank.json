@@ -1123,8 +1123,8 @@
       "task": "tables queried by api absent from the fresh live snapshot",
       "claimed_at": "2026-09-12T14:45:40Z",
       "claimed_at_epoch": 1789224340.6452582,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:59:40Z"
     }
   ]
 }
