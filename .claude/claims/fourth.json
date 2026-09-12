@@ -882,6 +882,16 @@
       "claimed_at_epoch": 1789135688.591746,
       "status": "released",
       "released_at": "2026-09-11T15:22:22Z"
+    },
+    {
+      "id": "fourth-1789208928",
+      "session": "fourth",
+      "subject": "pushgate-docstring-drift",
+      "task": "outgoing_files docstring names a HEAD~1 fallback the code does not implement",
+      "claimed_at": "2026-09-12T10:28:48Z",
+      "claimed_at_epoch": 1789208928.5482256,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
