@@ -339,6 +339,30 @@ function portfolio(input) {
     // jobs nobody has stated a percent complete for.
     not_computable: uncomputable.map(function (r) {
       return { job_id: r.job_id, reasons: r.problems };
+    }),
+    // ── AND THE SAME FAILURE ONE LEVEL DOWN, CLOSED 2026-09-11 ────────────
+    // `not_computable` only carries jobs whose over/under could not be worked
+    // out. A job can be FULLY COMPUTABLE and still carry a job-level problem
+    // -- and the loudest of those is jobWip()'s own
+    // "N draw(s) have no usable retainage percentage -- the retainage total is
+    // an undercount". That job lands in `rows`, contributes an UNDERSTATED
+    // retainage figure to the totals above, and its disclosure was dropped
+    // here because over_under was a number.
+    //
+    // CONSTRUCTED AND MEASURED, not reasoned about: one job, contract 100000,
+    // a priced draw and one with no retainage_pct. over_under computes to
+    // 10000, retainage_held reports 4000, and not_computable came back EMPTY
+    // -- a total that reads as complete while a job-level statement that it is
+    // an undercount exists and is discarded.
+    //
+    // That is precisely what the comment above refuses to do, one level down,
+    // in the same function. `not_computable` is left untouched -- the file's
+    // own rule is that these names are load-bearing and a caller reading it
+    // must not silently start receiving a different set.
+    computed_with_problems: rows.filter(function (r) {
+      return r.over_under !== null && r.problems && r.problems.length;
+    }).map(function (r) {
+      return { job_id: r.job_id, reasons: r.problems };
     })
   };
 }

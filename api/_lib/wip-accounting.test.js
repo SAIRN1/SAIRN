@@ -289,4 +289,60 @@ test('the portfolio carries released and outstanding, not just the gross total',
     'one job paid its retainage out; a lifetime accrual would still say 20000');
 });
 
+// ── A TOTAL THAT READS AS COMPLETE WHILE A JOB SAYS IT IS NOT (2026-09-11) ──
+// `not_computable` only carries jobs whose over/under could not be worked out.
+// A job can be FULLY COMPUTABLE and still carry jobWip()'s own disclosure that
+// its retainage total is an undercount -- and that disclosure used to be
+// dropped here, so the portfolio reported a clean figure while the job-level
+// statement contradicting it existed and went nowhere.
+const UC_JOB = { job_id: 'UC1', contract_value: 100000 };
+const UC_DRAWS = [
+  // priced, and enough to make over/under computable
+  { draw_id: 'UCa', job_id: 'UC1', amount: 40000, retainage_pct: 10, pct_complete: 50,
+    period_end: '2026-08-01', status: 'paid', received: 36000 },
+  // NO retainage_pct -- jobWip() calls this an undercount
+  { draw_id: 'UCb', job_id: 'UC1', amount: 20000, pct_complete: 50,
+    period_end: '2026-09-01', status: 'submitted' }
+];
+
+test('the job itself says the retainage total is an undercount', () => {
+  const j = w.jobWip({ job: UC_JOB, draws: UC_DRAWS, today: TODAY });
+  assert.notStrictEqual(j.over_under, null, 'this fixture must be COMPUTABLE, or it proves nothing');
+  assert.ok(j.problems.some((x) => /undercount/.test(x)), JSON.stringify(j.problems));
+});
+
+test('and the portfolio now carries that disclosure instead of dropping it', () => {
+  const p = w.portfolio({ jobs: [UC_JOB], draws: UC_DRAWS, today: TODAY });
+  assert.deepStrictEqual(p.not_computable, [],
+    'the job IS computable -- if it lands here the fixture is wrong, not the code');
+  assert.strictEqual(p.computed_with_problems.length, 1,
+    'a total that reads as complete while a job says it is an undercount');
+  assert.strictEqual(p.computed_with_problems[0].job_id, 'UC1');
+  assert.ok(p.computed_with_problems[0].reasons.some((x) => /undercount/.test(x)),
+    JSON.stringify(p.computed_with_problems));
+});
+
+test('CONTROL: a clean computable job does NOT appear in computed_with_problems', () => {
+  const clean = { job_id: 'CL1', contract_value: 100000 };
+  const cleanDraws = [
+    { draw_id: 'CLa', job_id: 'CL1', amount: 40000, retainage_pct: 10, pct_complete: 50,
+      period_end: '2026-08-01', status: 'paid', received: 36000 }
+  ];
+  const p = w.portfolio({ jobs: [clean], draws: cleanDraws, today: TODAY });
+  assert.notStrictEqual(p.jobs[0].over_under, null);
+  assert.deepStrictEqual(p.computed_with_problems, [],
+    'without this the arm above would pass on a field that lists every job');
+});
+
+test('not_computable is UNCHANGED -- an uncomputable job still lands there and not in the new field', () => {
+  // no contract value and no percent complete anywhere: over_under cannot compute
+  const j = { job_id: 'NC1', contract_value: null };
+  const d = [{ draw_id: 'NCa', job_id: 'NC1', amount: 1000, retainage_pct: 10,
+               period_end: '2026-08-01', status: 'submitted' }];
+  const p = w.portfolio({ jobs: [j], draws: d, today: TODAY });
+  assert.strictEqual(p.not_computable.length, 1, JSON.stringify(p.not_computable));
+  assert.deepStrictEqual(p.computed_with_problems, [],
+    'a job cannot be in both -- the two fields must partition, or a reader double-counts');
+});
+
 console.log(passed + ' passed');
