@@ -952,8 +952,8 @@
       "task": "five tables never run flagship storefront",
       "claimed_at": "2026-09-12T10:33:14Z",
       "claimed_at_epoch": 1789209194.0566418,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T11:31:51Z"
     }
   ]
 }
