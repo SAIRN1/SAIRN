@@ -1093,8 +1093,8 @@
       "task": "retainage missing is not zero",
       "claimed_at": "2026-09-12T13:56:44Z",
       "claimed_at_epoch": 1789221404.9558032,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:45:07Z"
     },
     {
       "id": "hank-1789222215",
