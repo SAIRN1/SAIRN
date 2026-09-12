@@ -2980,3 +2980,73 @@ it), and section D's "delete a purpose and demand a refusal" arm picked a victim
 that was ALSO in REGISTRY, so `purpose()` fell back and the refusal never fired --
 **an arm passing because the mutation was invisible.** The victim is now chosen
 from PURPOSES-only.
+
+## 2026-09-12 (Cody) -- do the BLOCKING checks actually refuse? Four of ten had
+## never been asked
+
+Skill used: `sairn-silent-failure-sweep`. Claim:
+`blocking-checkers-can-actually-fail`.
+
+**THE QUESTION CAME FROM `checkblocks.py`.** It printed `FAILED_BLOCKS:1` and
+exited 0 -- it HAD the finding and lacked the SIGNAL. So *"does this checker have
+a non-zero exit path"* is the wrong question, and *"does the gate refuse when
+given something to refuse"* is the right one.
+
+**MY FIRST HYPOTHESIS WAS WRONG AND THE CHECK WAS CHEAP.** I scanned the nine
+BLOCKING tools for a non-zero exit and three had none:
+`git_push_master_guard.py`, `redaction_check.py`, `preauth_oracle_check.py`. All
+three are correct as they are -- the first two are Claude Code hooks, which signal
+a deny by printing JSON to stdout and exiting 0, and check 7 **imports**
+`preauth_oracle_check` and calls `scan()` directly rather than reading an exit
+code. A static scan for exit codes answers the wrong question here too.
+
+**WHAT WAS REAL: four of the ten numbered checks had no probe that plants a
+finding and asserts a deny.** Measured by reading every probe in
+`tests/push_gate/`: 4, 6, 7, 8, 9 and 10 had one; **1, 2, 3 and 5 did not.**
+`refspec_and_override_probe.py` mentions 1, 2 and 3 and that is the whole of it --
+it is about refspec parsing and the override, not about whether those checks
+refuse.
+
+**CHECK 2 and CHECK 5 ARE NOW PROVEN.** A planted `sql/` file writing
+`*_employee_auth` rows with no recoverability guard is refused, naming the guard
+and the file -- the exact shape `sql/stonedesk_recovery_admin_seed.sql` carried
+until yesterday. A feature whose only entry point is appended into a
+`display:none` stub is refused -- the 2026-08-30 StoneDesk shape. And a control
+asserts a push touching neither `sql/` nor `.html` is allowed, because without it
+neither deny arm means anything.
+
+**MY FIRST TWO FIXTURES PROVED NOTHING AND BOTH ARMS PASSED ANYWAY.** Worth
+writing out, because it is the sharpest version of this failure I have hit:
+
+1. The fixture commit subjects began with **"PROBE"** -- which is exactly what
+   **check 8** refuses. So the gate denied, my arms accepted any non-zero exit,
+   and **two arms reported checks 2 and 5 as proven when check 8 had answered.**
+2. The check-5 fixture did not reproduce the finding at all. `APPEND` requires
+   `getElementById(...)` and `.appendChild(` in ONE expression with no `;` or
+   newline between, within 120 characters. My first version used `innerHTML`; my
+   second split them across two statements. The checker exited 0 both times.
+
+So the fixture tested nothing AND the arm could not tell which check answered --
+two independent reasons a green result meant nothing. The arms now assert the deny
+REASON and explicitly that it is **not** the PROBE-fixture check answering
+instead.
+
+**CHECKS 1 AND 3 ARE LEFT UNPROVEN, and the probe header says so rather than
+letting their absence imply coverage.** Check 1 compares LIVE seed content against
+the repo and needs a licence key; check 3 runs the SQL preflight with
+`--require-live`. A probe that cannot tell *"the gate refused"* from *"the gate
+could not run"* asserts nothing, and that is exactly the could-not-tell-reported-
+as-a-pass shape the gate itself has a paragraph about. They need a live-state
+probe, which is a different job.
+
+**2 mutation controls bite** -- emptying `sql_changed` so check 2 never looks, and
+discarding the reachability result so check 5 never denies -- with
+`sairn_push_gate_hook.py` restored byte-identical.
+
+**ONE MUTATION SURVIVED AND IS RECORDED RATHER THAN PATCHED AROUND.** Changing
+check 5's `if rr.returncode == 1:` to `!= 0` passes every arm, and that is not a
+hole: `!= 0` denies on could-not-tell as well, which is MORE strict, so it is a
+behaviour change. It also cannot be pinned cheaply from the other side -- tried
+rather than assumed: the reachability checker exits 0 on a file with no panels and
+on an almost-empty file, so there is no reachable could-not-tell exit to build a
+fixture from. Inventing one would be fabricating the fault.
