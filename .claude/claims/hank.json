@@ -1045,6 +1045,16 @@
       "claimed_at_epoch": 1789139492.078,
       "status": "released",
       "released_at": "2026-09-12T10:21:31Z"
+    },
+    {
+      "id": "hank-1789208943",
+      "session": "hank",
+      "subject": "sairndental-recall-outreach-validation",
+      "task": "contact log date suppression",
+      "claimed_at": "2026-09-12T10:29:03Z",
+      "claimed_at_epoch": 1789208943.7233512,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
