@@ -55,14 +55,36 @@ The suite is small on purpose. It does one thing that nothing else does.
 No dependencies beyond Python 3.8+.
 
 ```
+python -m testint.run --config testint.config.json          # all three
+python -m testint.run --config testint.config.json --only comment_quote
+python -m testint.run --self-test                           # prove it can see
+
 python -m testint.check_comment_quote   --config testint.config.json
 python -m testint.check_mutation_anchor --config testint.config.json
 python -m testint.check_determinism     --config testint.config.json
 ```
 
-Each exits `0` clean, `1` on findings, `3` when it could not run — and **3 is
-never collapsed into 0**. "Could not tell" reported as a pass is the same defect
-class this suite exists to find, so the suite refuses to commit it itself.
+**The runner exists because three scripts in a directory is not a mechanism.**
+In the codebase this package came from, an inventory found **43 of 99 tools
+invoked by nothing at all** — every one written for a real incident, committed,
+and never pointed at the codebase again. A tool that exists is not a mechanism;
+a tool that runs is.
+
+It deliberately does **not** aggregate findings into a score. A count across
+three different questions is a number nobody can act on, and the moment a number
+exists somebody drives it to zero by the cheapest route — which for a checker is
+switching it off.
+
+| exit | meaning |
+|---:|---|
+| `0` | ran, found nothing |
+| `1` | found something |
+| `2` | **could not read** part of its subject |
+| `3` | **could not run** at all |
+
+**2 and 3 are never folded into 0.** "We could not check it" and "it is fine"
+are the two answers this suite exists to keep apart, and a runner that collapses
+them undoes every check underneath it.
 
 ---
 
@@ -141,6 +163,18 @@ out *before* trusting a clean result rather than after.
 ---
 
 ## How this suite is verified
+
+**`tests/test_checks.py` — 24 arms, one per check, in both directions.** Each
+builds a complete throwaway project in a temp directory, plants the defect, and
+asserts the check reports it — then plants the clean version and asserts it stays
+quiet. **Both halves are required:** a check that always reports passes the first
+alone, a check that never reports passes the second alone. Only the pair says
+anything. The fixtures double as the clearest documentation of what each check
+catches, because each is the smallest project in which the defect is real.
+
+One of those arms asserts something no other test can: `check_mutation_anchor`
+**parses** controls and never imports them. The fixture is a control that writes
+a file at import time; the arm passes only if that file never appears.
 
 `tests/test_comments.py` — 29 arms, and they come in two kinds, both of which
 matter: *a comment really is removed*, and **_code really is not removed_**. The
