@@ -1411,3 +1411,69 @@ with the repo's own SQL. It is not a byte-for-byte diff against the paste**, and
 no check available in-repo could be. If a future checker disagrees with the
 database about one specific column, a transcription slip in a table I did not
 spot-check is still the first thing to suspect.
+
+---
+
+## 2026-09-12 -- StoneDesk public storefront: verified ready, the run is Michael's
+
+**The dispatched task was to drive `sql/stonedesk_public_surface_schema.sql` to a
+live state. I could not, and the reason is checked rather than assumed:** no
+`SUPABASE_SERVICE_ROLE_KEY`, no `DATABASE_URL`, no `.env` in the clone, no `psql`
+or `supabase` CLI on the machine, and Supabase's REST API executes no DDL. The
+index row's owner column has correctly said **Michael** since 2026-09-04.
+
+**So the deliverable is everything up to the run, and proof the run will be
+correct.** Full working in
+`docs/2026-09-12-stonedesk-storefront-schema-readiness.md`; commit `58465572`.
+
+**Still true today, from two sources that do not share a mechanism.** Live probes
+answer `503 UNAVAILABLE` / `503 NOT_PROVISIONED`, AND all five tables are absent
+from the snapshot **re-captured 2026-09-11**. A 503 alone is consistent with an
+outage; an absence alone with a stale capture. Neither explanation survives the
+other.
+
+**Every column, filter, `on_conflict` target and grant verb traced to a
+declaration, across all four consumers. Zero mismatches.** The expensive failure
+for a hand-run migration is not *"it did not run"* -- it is *"it ran and one
+column is spelled differently"*, and nothing had checked that.
+
+**`tools/stonedesk_storefront_live_check.py` confirms THREE of five and says so
+on every run including a passing one.** It separates **NOT ASKED** from
+**ABSENT** -- the limiter runs first and fails closed, so while the counter is
+down the catalog probe never asks about `sd_public_shop`. My first version
+printed that as ABSENT, a not-asked rendered as a measured absence, **found by
+reading the tool's own output rather than its code.**
+
+### The thing I broke last session, and what caught it
+
+**Re-capturing `db/schema_snapshot.json` (`3d603dd0`) changed its FORMATTING to
+pretty-printed, and that silently disarmed the only tripwire on the trial gate.**
+`tests/license_trial_gate_probe.py` text-anchors into the snapshot; both anchors
+died in that commit, so arms 1 and 2 mutated nothing and the suite's central
+claim was verified by a control that no longer touched anything.
+
+**The design caught it, not luck** -- a dead anchor is reported as `ANCHOR-0` and
+FAILS rather than skipping. `run_mutation_anchor_probe.py` caught the same thing
+from the other side and needed no separate fix; repairing the anchors cleared
+both. All 9 arms now BITES. Fixed in `48a0c844`.
+
+**The generalising lesson: re-capturing a data file can change its formatting,
+and every text anchor into that file is a consumer nobody thinks of as one.**
+This probe was the repo's only text anchor into the snapshot -- checked, not
+assumed.
+
+### Left open, diagnosed but deliberately not fixed
+
+- **`tests/run_report_only_checks_probe.py` arm H6 is mis-specified.** It asserts
+  *"a clean sweep stays silent"* but does not CREATE a clean sweep -- it runs the
+  real hook against the real repo and hopes no report-only checker has a finding.
+  Two legitimately do (`schema_snapshot_freshness.py`, 89 absent tables;
+  `gate_column_check.py`, the `trial_ends_at` finding), both registered by my own
+  earlier commits. **It will fail for as long as any report-only checker reports
+  anything, which is the normal and intended state for those checkers.** Fixing
+  it means deciding how H6 isolates from real repo state -- a design call, not a
+  typo, which is why it is reported rather than patched.
+- **`rf_draws.rfdraw_released_not_negative`** is declared in `sql/` and absent on
+  the live table -- the only finding `sql_preflight --live` reports repo-wide.
+  SAIRNroofing, a money table, a constraint about a released draw amount not
+  going negative. Not mine, not touched, named so it is not lost.
