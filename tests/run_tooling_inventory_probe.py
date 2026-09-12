@@ -14,6 +14,7 @@ fail is indistinguishable from one that looks at nothing.
 import importlib.util
 import io
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -128,8 +129,18 @@ print('\nF. --check really fails when the repo moves')
 doc_path = os.path.join(REPO, 'docs', 'TOOLING-INVENTORY.md')
 orig = io.open(doc_path, encoding='utf-8', newline='').read()
 try:
-    io.open(doc_path, 'w', encoding='utf-8', newline='').write(
-        orig.replace('**97 files in `tools/`.**', '**77 files in `tools/`.**', 1))
+    # THE ANCHOR IS DERIVED, NOT TYPED. The first version hardcoded
+    # '**97 files in `tools/`.**'. Adding tools/tooling_inventory.py itself made
+    # that 98, the replace became a NO-OP, and both arms went green against an
+    # UNMUTATED document -- a probe passing because it changed nothing, which is
+    # precisely what tools/mutation_anchor_check.py exists to catch. Caught here
+    # by the same suite run that caught it, one commit after writing it.
+    m = re.search(r'\*\*(\d+) files in `tools/`\.\*\*', orig)
+    ok('the count anchor still matches the document', bool(m),
+       'the headline wording changed; this arm would silently test nothing')
+    mutated = orig.replace(m.group(0), '**%d files in `tools/`.**' % (int(m.group(1)) - 20), 1)
+    ok('the mutation really changed the document', mutated != orig)
+    io.open(doc_path, 'w', encoding='utf-8', newline='').write(mutated)
     rc = subprocess.run([sys.executable, TOOL, '--check'],
                         capture_output=True, text=True, cwd=REPO)
     ok('a stale count makes --check exit non-zero', rc.returncode != 0,

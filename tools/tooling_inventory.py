@@ -228,7 +228,7 @@ def suite_refs(tools):
                 invoked = (
                     ('tools/' + t) in txt
                     or re.search(r"'tools'\s*,\s*'" + esc + r"'", txt)
-                    or re.search(r'(?:^|' + chr(10) + r')\s*import\s+' + stem + r'', txt)
+                    or re.search(r'(?:^|' + chr(10) + r')\s*import\s+' + stem + (chr(92) + 'b'), txt)
                     or re.search(r'spec_from_file_location\([^)]*' + esc, txt)
                     or re.search(r"require\(['\"][^'\"]*" + stem, txt))
                 if invoked:

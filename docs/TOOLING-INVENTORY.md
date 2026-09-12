@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**97 files in `tools/`.** By what actually invokes them:
+**98 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 29 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 30 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **SUITE-ONLY** | 15 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 42 | nothing runs these at all |
@@ -33,7 +33,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 51 |
+| CHECKER | 52 |
 | GENERATOR | 15 |
 | LIBRARY | 19 |
 | LIVE | 12 |
@@ -108,7 +108,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (29)
+## REPORT-ONLY (30)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with

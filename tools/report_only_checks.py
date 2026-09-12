@@ -419,6 +419,14 @@ REGISTRY = [
     {
         'tool': 'tooling_inventory.py',
         'mode': 'once',
+        # --check, NOT bare. Without it the hook runs the GENERATOR on every push
+        # and REWRITES the document -- a report-only checker mutating a tracked
+        # file, which is the one thing report-only must never do. Caught within
+        # the hour by run_all_tests.py's own dirty-tree detector reporting
+        # `M docs/TOOLING-INVENTORY.md` after a clean run. traceability_matrix.py
+        # carries the same flag for the same reason; I registered this one without
+        # reading that entry closely enough.
+        'args': ['--check'],
         'verdict': by_exit,
         'promoted': '2026-09-12, the day it was built',
         'catches': 'docs/TOOLING-INVENTORY.md no longer matching the wiring -- a '

@@ -2845,3 +2845,38 @@ at nothing.
 every promoted checker output stable across hash seeds`. This registers a new
 promoted checker, so their sweep will pick it up; different mechanism, same
 registry. No overlap in files.
+
+### Three defects in the inventory, all found within the hour, all by the repo's
+### own tooling rather than by me re-reading it
+
+Recorded because the pattern is the point: a tool built to catch
+claim-in-two-places failures shipped with three of them, and the mechanisms that
+already existed caught all three.
+
+1. **I registered it WITHOUT `'args': ['--check']`**, so the report-only hook ran
+   the GENERATOR on every push and **rewrote the document** -- a report-only
+   checker mutating a tracked file, the one thing report-only must never do.
+   Caught by `run_all_tests.py`'s own dirty-tree detector reporting
+   `M docs/TOOLING-INVENTORY.md` after a clean run. `traceability_matrix.py`
+   carries that flag for exactly this reason and I registered beside it without
+   reading its entry closely enough.
+2. **A literal `0x08` BACKSPACE at `tools/tooling_inventory.py:231`** -- I wrote
+   `r''` for a word boundary and an edit pass collapsed it into the control
+   character, so the regex matched a backspace and the word-boundary check did
+   nothing. **This is the identical defect `55cac90d` fixed in
+   `gate_column_check.py` the day before**, and CC's `control_char_check.py`,
+   built for it, caught mine on its first real run against my file. Repaired as
+   `chr(92) + 'b'`, which no edit pass can collapse.
+3. **My own probe's mutation anchor went stale in one commit.** Section F
+   hardcoded `**97 files in `tools/`.**`; adding `tooling_inventory.py` itself made
+   it 98, the replace became a **no-op**, and both arms went green **against an
+   unmutated document** -- a probe passing because it changed nothing, which is
+   precisely what `mutation_anchor_check.py` exists to catch. The anchor is now
+   derived by regex, and two new arms assert the anchor still matches AND that the
+   mutation really changed the file.
+
+**None of these needed a human to notice.** The dirty-tree detector, a checker
+somebody else built yesterday, and the mutation-anchor principle each fired on
+their own. That is the safety net working -- and it is also the argument for the
+13 unpointed checkers in the new document: these three were caught because the
+tools that catch them RUN.
