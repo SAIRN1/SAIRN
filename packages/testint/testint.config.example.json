@@ -13,7 +13,21 @@
     "sql/**/*.sql"
   ],
   "checkers": [
-    "tools/*_check.py"
+    "tools/control_char_check.py",
+    "tools/literal_drift_check.py",
+    "tools/md_table_check.py"
   ],
-  "allow": "testint.allow.example.json"
+  "allow": "testint.allow.example.json",
+  "determinism": {
+    "seeds": [
+      "1",
+      "7",
+      "12345"
+    ],
+    "targets": [
+      "sairnvet.html",
+      "sairncode.html"
+    ],
+    "timeout": 600
+  }
 }
