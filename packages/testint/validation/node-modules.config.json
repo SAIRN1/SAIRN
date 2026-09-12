@@ -1,0 +1,13 @@
+{
+  "root": "../../../node_modules",
+  "tests": [
+    "*/test/**/*.js",
+    "*/*/test/**/*.js"
+  ],
+  "sources": [
+    "*/lib/**/*.js",
+    "*/src/**/*.js",
+    "*/index.js",
+    "*/*/lib/**/*.js"
+  ]
+}

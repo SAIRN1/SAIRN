@@ -43,10 +43,23 @@ PROFILES = {
         # src = open(p).read() / io.open(p, ...).read() / Path(p).read_text()
         'bind': r"(\w+)\s*=\s*(?:io\.)?open\s*\(([^;]*?)\)\s*\.read\s*\(\s*\)"
                 r"|(\w+)\s*=\s*Path\s*\(([^;]*?)\)\s*\.read_text\s*\(",
+        # ── THE `with` FORM, ADDED AFTER THE FIRST OUTSIDE CORPUS (2026-09-12)
+        # Measured across 400 files of CPython's own test suite: `with open(...)`
+        # appears **750** times and the one-line `x = open(...).read()` the
+        # pattern above matches appears **ZERO** times. Without this the check
+        # inspected 0 assertions across 1,131 real test files and reported
+        # exit 0 -- a false clean on the first codebase nobody here wrote.
+        #
+        # Two hops, joined: `with open(EXPR) as F:` ... `VAR = F.read()`.
+        'bind_with': (r"with\s+(?:io\.)?open\s*\(([^\n]*?)\)\s*as\s+(\w+)\s*:",
+                      r"(\w+)\s*=\s*\b%s\.read\s*\(\s*\)"),
         'search': [
             r"(['\"])(.+?)\1\s+in\s+\b%s\b",
             r"\b%s\.count\s*\(\s*(['\"])(.+?)\1",
             r"\b%s\.find\s*\(\s*(['\"])(.+?)\1",
+            # unittest's own idiom, and by far the commonest assertion in real
+            # Python test suites: 1,714 occurrences in the same 400 files.
+            r"assert(?:In|NotIn)\s*\(\s*(['\"])(.+?)\1\s*,\s*\b%s\b",
         ],
     },
     'go': {

@@ -122,6 +122,17 @@ def bindings(src, profile):
         groups = [g for g in m.groups() if g is not None]
         if len(groups) >= 2:
             out[groups[0]] = groups[1]
+    # THE TWO-HOP FORM. `with open(EXPR) as F:` ... `VAR = F.read()` is the
+    # dominant idiom in real Python test suites -- 750 occurrences against ZERO
+    # of the one-liner in 400 files of CPython's own tests -- and missing it is
+    # what made this check inspect nothing at all on its first outside corpus.
+    pair = profile.get('bind_with')
+    if pair:
+        open_re, read_re = pair
+        for m in re.finditer(open_re, src):
+            expr, handle = m.group(1), m.group(2)
+            for r in re.finditer(read_re % re.escape(handle), src):
+                out.setdefault(r.group(1), expr)
     return out
 
 
@@ -217,6 +228,33 @@ def main(argv):
     if result is None:
         print('COULD NOT RUN: %s' % why)
         print('A check with nothing to look at has not passed.')
+        return 3
+
+    # ── ZERO *RESOLVED* IS NOT CLEAN, AND THIS TOOL LEARNED IT TWICE ────────
+    # First it inspected 0 assertions across 1,131 foreign test files and
+    # printed a clean line. That was fixed. The very next run inspected 21 and
+    # SKIPPED all 21 -- so nothing was classified, and it printed a clean line
+    # again. `inspected` counts ATTEMPTS; only `inspected - skipped` counts
+    # answers, and a guard on the wrong one of those two is no guard.
+    # Run against 1,131 real test files from a codebase nobody here wrote, it
+    # inspected 0 assertions and printed "No undeclared comment-only assertion"
+    # with exit 0. That is the exact false-clean this suite is sold against,
+    # committed by the suite itself, and found only by pointing it at foreign
+    # code. A check that inspected nothing has not passed.
+    resolved = result['inspected'] - result['skipped']
+    if resolved == 0:
+        print('COULD NOT RUN: %d test file(s) matched, %d assertion(s) found, and '
+              'NOT ONE had a resolvable target.'
+              % (result['tests'], result['inspected']))
+        if result['unreadable']:
+            print('  %d of them are in a language this tool cannot parse.'
+                  % len(result['unreadable']))
+        print('  Either these tests do not read source files, or they read them '
+              'in a form')
+        print('  `assertions.py` does not know, or the files they read are not in '
+              '`sources`.')
+        print('  NOTHING WAS CLASSIFIED. A clean line here would be a lie about '
+              'coverage.')
         return 3
 
     rows = result['rows']

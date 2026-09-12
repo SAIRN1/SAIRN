@@ -1,0 +1,9 @@
+{
+  "root": "C:/Python314/Lib",
+  "tests": [
+    "test/**/*.py"
+  ],
+  "sources": [
+    "**/*.py"
+  ]
+}
