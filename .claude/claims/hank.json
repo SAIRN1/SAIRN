@@ -1103,8 +1103,8 @@
       "task": "split CLAUDE.md by audience and merge the comment-quoting entries",
       "claimed_at": "2026-09-12T14:10:15Z",
       "claimed_at_epoch": 1789222215.1256964,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:23:20Z"
     }
   ]
 }
