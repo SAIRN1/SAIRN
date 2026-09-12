@@ -111,19 +111,46 @@ def strip(path, src):
     return _jscomments.strip_comments(src)
 
 
+# How far from a mention of the checker an assertion may sit and still count as
+# evidence about THAT checker.
+#
+# ── WHY A WINDOW, AND WHY THIS TOOL NEEDED ONE WITHIN AN HOUR OF SHIPPING ────
+# The first version attributed evidence at FILE level: once a test file
+# mentioned a checker anywhere, every fires/silent assertion in that file
+# counted for it. Then the very first control file written against this tool
+# named five checkers in its DOCSTRING while actually testing three -- and all
+# five came back BOTH EVIDENCED. NO CONTROL went 5 -> 0 and two of those were a
+# lie.
+#
+# That is this tool producing false reassurance ABOUT false reassurance, which
+# is the worst outcome available to it. A Python docstring is a STRING, not a
+# comment, so comment-stripping does not remove it and never would have.
+#
+# 15 lines is deliberately tight: a control's assertions sit beside the call
+# that produced them. A mention with no assertion within 15 lines is a MENTION,
+# and the verdict for that is REFERENCED ONLY -- which does not pass.
+WINDOW = 15
+
+
 def evidence(code, checker):
-    """(fires, silent) evidence lines for one checker in one comment-free test."""
+    """(fires, silent) evidence lines attributable to ONE checker.
+
+    Attribution is by proximity to a line naming the checker. See WINDOW.
+    """
+    lines = code.splitlines()
+    at = [i for i, l in enumerate(lines) if checker in l]
+    if not at:
+        return [], []
+    near = set()
+    for i in at:
+        near.update(range(max(0, i - WINDOW), min(len(lines), i + WINDOW + 1)))
     fires, silent = [], []
-    for i, line in enumerate(code.splitlines(), 1):
-        window = line
-        if checker not in code:
-            break
-        # Look at every line; a control's assertions rarely sit on the same line
-        # as the checker's name, so the whole file counts once it references it.
-        if any(r.search(window) for r in FIRES_RE):
-            fires.append((i, line.strip()[:90]))
-        if any(r.search(window) for r in SILENT_RE):
-            silent.append((i, line.strip()[:90]))
+    for i in sorted(near):
+        line = lines[i]
+        if any(r.search(line) for r in FIRES_RE):
+            fires.append((i + 1, line.strip()[:90]))
+        if any(r.search(line) for r in SILENT_RE):
+            silent.append((i + 1, line.strip()[:90]))
     return fires, silent
 
 

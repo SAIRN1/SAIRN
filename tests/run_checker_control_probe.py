@@ -117,6 +117,33 @@ check(rc == 1, 'the JavaScript comment path is stripped too (exit %d)' % rc)
 check('BOTH EVIDENCED    : 0' in out, '...and is not counted as BOTH EVIDENCED')
 
 print('')
+print('4b. A MENTION IS NOT A CONTROL -- evidence is attributed BY PROXIMITY')
+# THE DEFECT THIS TOOL SHIPPED WITH, FOR ABOUT AN HOUR. Attribution was at FILE
+# level: once a file mentioned a checker anywhere, every assertion in that file
+# counted for it. The first control file written against the tool named five
+# checkers in its DOCSTRING while testing three, and all five came back BOTH
+# EVIDENCED -- NO CONTROL went 5 to 0 and two of those were a lie. A Python
+# docstring is a STRING, not a comment, so comment-stripping neither did nor
+# could remove it.
+MENTION_FAR_AWAY = (
+    '"""This file tests tools/tested_check.py and mentions tools/unrelated_check.py.\n'
+    '"""\n'
+    + '\n' * 40 +
+    "import subprocess, sys\n"
+    "r = subprocess.run([sys.executable, 'tools/tested_check.py', 'defect.js'])\n"
+    "assert r.returncode == 1\n"
+    "r = subprocess.run([sys.executable, 'tools/tested_check.py', 'clean.js'])\n"
+    "assert r.returncode == 0\n")
+rc, out = rc_of(['tested_check.py', 'unrelated_check.py'],
+                {'far_probe.py': MENTION_FAR_AWAY})
+check(rc == 1, 'a file testing one checker and MENTIONING another does not '
+               'certify both (exit %d)' % rc)
+check('BOTH EVIDENCED    : 1' in out,
+      'exactly ONE is BOTH EVIDENCED, not both')
+check('REFERENCED ONLY' in out and 'unrelated_check.py' in out,
+      'the merely-mentioned one is REFERENCED ONLY, which does not pass')
+
+print('')
 print('5. AN EXEMPTION MUST CARRY A REASON')
 check(all(isinstance(v, str) and len(v.strip()) > 30 for v in M.EXEMPT.values()),
       'every EXEMPT entry has a real reason, not a placeholder')
