@@ -490,7 +490,79 @@ check('H4 a prose mention is not a push', out.strip(), '')
 
 rc, out, secs = hook('SAIRN_SEED_GATE=off git push origin HEAD:main')
 check('H5 a real push runs the sweep and STILL exits 0', rc, 0)
-check('H6 and a clean sweep stays silent', out.strip(), '')
+
+# ── H6/H7: SILENCE IS TESTED AGAINST A FIXTURE, NOT AGAINST THE REAL REPO ───
+# H6 used to be `check('H6 and a clean sweep stays silent', out.strip(), '')`
+# on the line above -- the REAL hook, sweeping the REAL repo. It asserted a
+# clean sweep without ever CREATING one: it hoped no promoted checker had a
+# finding.
+#
+# That is not a property this repo holds or should hold. Report-only checkers
+# exist in order to report; two of them legitimately did on 2026-09-12
+# (schema_snapshot_freshness.py, 89 tables absent; gate_column_check.py, the
+# trial_ends_at column), so the arm failed permanently. A test that fails for a
+# correct reason, forever, is one people learn to scroll past -- and then the
+# genuine failure beside it gets scrolled past too. Decided by Michael on
+# 2026-09-12: fix the isolation, not the assertion.
+#
+# So the sweep mechanism is exercised against a synthetic REPO holding
+# throwaway checkers with known exit codes. Same pattern as section I above,
+# which already stubs roc.REPO/REGISTRY/app_files rather than arranging the
+# real repo into the state it wants.
+#
+# H7 IS NOT OPTIONAL AND IS THE REASON H6 MEANS ANYTHING. Silence is what a
+# hook that never ran also produces. Without a fixture that MUST make it speak,
+# `return 0` at the top of hook_main() passes H6 forever -- a checker that
+# finds nothing being indistinguishable from one that looks at nothing, which
+# is the failure this whole file exists to hold shut.
+def _hook_against(fixture_checkers, cmd):
+    """Run roc.hook_main() in-process over a synthetic tools/ directory.
+
+    Returns (rc, stdout). fixture_checkers maps filename -> python source.
+    """
+    tmp = tempfile.mkdtemp()
+    os.mkdir(os.path.join(tmp, 'tools'))
+    for name, src in fixture_checkers.items():
+        with io.open(os.path.join(tmp, 'tools', name), 'w',
+                     encoding='utf-8') as fh:
+            fh.write(src)
+    saved = (roc.REPO, roc.REGISTRY, sys.stdin, sys.stdout)
+    try:
+        roc.REPO = tmp
+        # mode 'once' so app_files() is never consulted -- the target list is
+        # section I's subject, not this one's, and borrowing it here would
+        # couple two independent arms.
+        roc.REGISTRY = [{'tool': name, 'mode': 'once', 'verdict': roc.by_exit,
+                         'promoted': 'fixture', 'catches': 'fixture',
+                         'why_it_matters': 'fixture', 'evidence': 'fixture'}
+                        for name in sorted(fixture_checkers)]
+        sys.stdin = io.StringIO(json.dumps(
+            {'tool_name': 'Bash', 'tool_input': {'command': cmd}}))
+        sys.stdout = io.StringIO()
+        rc_ = roc.hook_main()
+        return rc_, sys.stdout.getvalue()
+    finally:
+        roc.REPO, roc.REGISTRY, sys.stdin, sys.stdout = saved
+        shutil.rmtree(tmp, ignore_errors=True)
+
+
+CLEAN_CHECKER = 'import sys\nsys.exit(0)\n'
+# Exit 1 with no parseable detail lines, so by_exit falls back to 'exit 1' --
+# the same shape the two real findings took on 2026-09-12.
+DIRTY_CHECKER = 'import sys\nprint("something is wrong")\nsys.exit(1)\n'
+
+_rc, _out = _hook_against({'zz_clean_checker.py': CLEAN_CHECKER}, 'git push origin HEAD:main')
+check('H6 a genuinely clean sweep stays silent', (_rc, _out.strip()), (0, ''))
+
+_rc, _out = _hook_against({'zz_clean_checker.py': CLEAN_CHECKER,
+                           'zz_dirty_checker.py': DIRTY_CHECKER},
+                          'git push origin HEAD:main')
+check('H7 a finding makes it SPEAK -- silence is not proof it ran',
+      _out.strip() != '', True)
+check('H7a and it names the checker that found something',
+      'zz_dirty_checker.py' in _out, True)
+check('H7b and does NOT name the clean one', 'zz_clean_checker.py' in _out, False)
+check('H7c and it still exits 0 -- report-only never blocks a push', _rc, 0)
 
 for k in sorted(R):
     ok, actual, expected = R[k]
