@@ -1113,8 +1113,8 @@
       "task": "committed conflict markers and the table checker blind to them",
       "claimed_at": "2026-09-12T14:23:29Z",
       "claimed_at_epoch": 1789223009.3301055,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T14:33:39Z"
     }
   ]
 }
