@@ -982,8 +982,8 @@
       "task": "finish every stonedesk stuck resource",
       "claimed_at": "2026-09-12T14:21:46Z",
       "claimed_at_epoch": 1789222906.000356,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T15:57:51Z"
     }
   ]
 }
