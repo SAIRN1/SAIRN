@@ -1053,10 +1053,100 @@ function recallOutreachProblem(record, today) {
   return null;
 }
 
+// -- ELEVENTH RESOURCE: dnt_supplies (2026-09-11) --------------------------
+// The practice's supply cupboard, and the resource with the widest blast
+// radius per bad row of any in this file: rSupplies() computes TWO
+// practice-wide KPIs by folding every item together, so one malformed row does
+// not spoil its own line -- it spoils the number above the table.
+//
+// MEASURED AGAINST THOSE REAL EXPRESSIONS IN NODE, from a baseline of two good
+// items (1 low, stock value 262.5):
+//
+//   qty "abc"                 -> stock value NaN
+//   qty absent                -> stock value NaN
+//   unit_cost "free"          -> stock value NaN
+//   reorder_threshold "soon"  -> the item DROPS OUT of Low Stock, value fine
+//   qty -50                   -> stock value -4737.5
+//   unit_cost -100            -> stock value -737.5
+//
+// TWO DISTINCT FAILURES, and the second is the quieter one.
+//
+//   1. `value = list.reduce((s,i) => s + Number(i.qty)*Number(i.unit_cost||0), 0)`
+//      has no guard, so ONE non-numeric field turns the whole Stock Value KPI
+//      into NaN. A practice-wide figure destroyed by a single row.
+//
+//   2. `low = list.filter(s => Number(s.qty) <= Number(s.reorder_threshold))`
+//      compares NaN, and every comparison with NaN is FALSE -- so an item with
+//      a junk qty or a junk threshold is NEVER FLAGGED LOW. It silently stops
+//      being reordered, and unlike the NaN above there is no other symptom at
+//      all: the Stock Value KPI still reads fine when only the threshold is
+//      bad. That is the one worth catching, because nothing else would.
+//
+// NEGATIVES ARE REFUSED TOO, and not for tidiness: the form's inputs are
+// `type="number" min="0"`, so the app cannot produce one, and a negative
+// quantity or unit cost drives the Stock Value KPI DOWN -- a practice reading
+// a smaller number than it holds, which is the wrong direction for a figure
+// used to decide whether to order.
+//
+// CATEGORY IS VALIDATED, WITH THE CONSEQUENCE STATED AS WEAKER. The table
+// renders `DNT_VCAT_LABELS[s.category] || s.category`, so an unknown value
+// shows raw rather than lying -- the same honest degradation as the recall
+// channel. It is refused because the field is a closed <select> built from
+// exactly this list, and because the supplies panel FILTERS by category, so a
+// value outside it makes the item unreachable through the filter.
+//
+// NO LEGACY-ROW COST: addSupply() only pushes, and removeSupply() is the one
+// delete path here -- it soft-deletes rather than editing, so nothing re-sends
+// an existing row into this gate.
+const DNT_SUPPLY_CATEGORIES = Object.assign(Object.create(null), {
+  ppe: true, impression: true, restorative: true, sterilization: true,
+  disposables: true, instruments: true, anesthetics: true, preventive: true,
+});
+
+function supplyProblem(record) {
+  const r = record || {};
+  if (String(r.name == null ? '' : r.name).trim() === '') {
+    return 'A supply item must have a name -- it is the only thing identifying '
+         + 'the row, and addSupply() already refuses an empty one.';
+  }
+  for (const field of ['qty', 'reorder_threshold']) {
+    if (!isNonNegativeMoney(r[field])) {
+      return field + ' must be a number and cannot be negative (got '
+           + JSON.stringify(r[field]) + '). Two readers break on this and only '
+           + 'one of them is visible: the Stock Value KPI is a reduce with no '
+           + 'guard, so a non-numeric qty turns the whole practice-wide figure '
+           + 'into NaN -- and the Low Stock filter compares Number(qty) <= '
+           + 'Number(reorder_threshold), where EVERY comparison with NaN is '
+           + 'false, so the item is never flagged low and silently stops being '
+           + 'reordered with no other symptom at all.';
+    }
+  }
+  if (r.unit_cost !== undefined && r.unit_cost !== null && r.unit_cost !== ''
+      && !isNonNegativeMoney(r.unit_cost)) {
+    return 'unit_cost must be a number and cannot be negative (got '
+         + JSON.stringify(r.unit_cost) + '). It is multiplied into the Stock '
+         + 'Value KPI with no guard, so a non-numeric value makes that figure '
+         + 'NaN and a negative one drives it DOWN -- a practice reading less '
+         + 'stock value than it holds, which is the wrong direction for a '
+         + 'number used to decide whether to order.';
+  }
+  const category = typeof r.category === 'string' ? r.category.trim() : '';
+  if (!DNT_SUPPLY_CATEGORIES[category]) {
+    return 'category must be one of ppe, impression, restorative, '
+         + 'sterilization, disposables, instruments, anesthetics or preventive '
+         + '(got ' + JSON.stringify(r.category) + '). The table renders an '
+         + 'unknown value raw rather than lying, but the supplies panel FILTERS '
+         + 'by category, so an item outside the list cannot be found through '
+         + 'the filter.';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
   procedureTypeProblem, txPlanProblem, providerHoursProblem, providerProblem,
   referralProblem, recallOutreachProblem, latestAllowedContactDate,
+  supplyProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
   // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
   // availability.js declared its own copy; a validator with a second copy

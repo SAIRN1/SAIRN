@@ -778,15 +778,16 @@ async function main() {
   // NEIGHBOUR MOVED 2026-09-11, stated rather than quietly edited: this used
   // dnt_recall_outreach, which gained its own date rules the same day -- and a
   // 2026-02-31 there is now correctly refused, so the arm failed for the right
-  // reason. dnt_supplies is the replacement: still unvalidated, and it carries
-  // no date field of its own, which is exactly what makes it a clean control
-  // for "did the denial rule leak".
-  await test('the DATE rule is scoped to dnt_denial -- dnt_supplies with a junk date still writes', async () => {
+  // reason. MOVED AGAIN the same day, when dnt_supplies was validated too --
+  // it is now dnt_operatories, which holds only {id, name} and so carries no
+  // date of its own, which is what makes it a clean control for "did the
+  // denial rule leak".
+  await test('the DATE rule is scoped to dnt_denial -- dnt_operatories with a junk date still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', denied_on: 'not a date', due: '2026-02-31' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the denial date rule leaked onto dnt_supplies');
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-1', name: 'Op 1', denied_on: 'not a date', due: '2026-02-31' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the denial date rule leaked onto dnt_operatories');
     assert.ok(wrote);
   });
 
@@ -976,15 +977,26 @@ async function main() {
   // same family of field. dnt_provider_hours GAINED A VALIDATOR on 2026-09-11,
   // so the old payload -- no day_of_week, no times -- is now correctly refused
   // 400 by its own rules, and the test began failing for the right reason.
-  // MOVED AGAIN 2026-09-11: dnt_recall_outreach gained its own validator the
-  // same day, so the replacement is now dnt_supplies -- still unvalidated, and
-  // it tolerates the junk date and code fields this arm plants.
-  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_supplies with junk fields still writes', async () => {
+  // MOVED AGAIN 2026-09-11, twice in one day: dnt_recall_outreach gained its
+  // own validator, then so did dnt_supplies. The replacement is now
+  // dnt_operatories, which holds only {id, name} and therefore tolerates
+  // every junk field this arm plants.
+  //
+  // THE BOUNDARY IS ON ITS LAST MOVE, and that is worth saying now rather
+  // than discovering it. Once dnt_operatories and dnt_vendor_orders are
+  // validated there is NO unvalidated resource left to use as a control,
+  // and the premise of these arms -- "the resources not yet reached are
+  // proven untouched" -- expires with the sweep. The replacement is an
+  // invariant that does not need a victim: send resource A's payload as
+  // resource B and assert B judges it by B's rules. That conversion belongs
+  // in the commit that closes the last one, not here.
+
+  await test('the CDT rules are scoped to dnt_procedure_types -- dnt_operatories with junk fields still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_supplies');
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-1', name: 'Op 1', effective_from: '2026-6-1', effective_to: '2026-1-1', cdt_code: '' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'the procedure-type rules leaked onto dnt_operatories');
     assert.ok(wrote);
   });
 
@@ -1543,8 +1555,132 @@ async function main() {
     assert.strictEqual(res.statusCode, 401);
   });
 
+  // -- 5i. dnt_supplies, THE ELEVENTH (2026-09-11) -------------------------
+  // The widest blast radius per bad row in the group. rSupplies() folds EVERY
+  // item into two practice-wide KPIs, so a malformed row does not spoil its
+  // own line -- it spoils the number above the table. Measured in node against
+  // those real expressions, from a baseline of two good items (1 low, stock
+  // value 262.5).
+  const SUP_OK = {
+    id: 'SUP-1', name: 'Nitrile gloves', category: 'ppe',
+    qty: 5, reorder_threshold: 10, unit_cost: 12.5, vendor_sku: 'NG-100',
+  };
+
+  // NaN POISONS THE PRACTICE-WIDE FIGURE. `value = list.reduce((s,i) => s +
+  // Number(i.qty)*Number(i.unit_cost||0), 0)` has no guard.
+  for (const [label, patch] of [
+    ['qty "abc"', { qty: 'abc' }],
+    ['qty absent', { qty: undefined }],
+    ['unit_cost "free"', { unit_cost: 'free' }],
+  ]) {
+    await test('NaN REFUSED: ' + label + ' -- it turns the whole Stock Value KPI into NaN', async () => {
+      let posted = false;
+      const handler = loadHandler(async function (url, opts) {
+        if (opts && opts.method === 'POST') posted = true;
+        return OK_WRITE();
+      });
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, label + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'INVALID_SUPPLY');
+      assert.ok(!posted, 'REFUSED AND STILL POSTED');
+    });
+  }
+
+  // THE QUIETER ONE, AND THE REASON THIS RESOURCE WAS WORTH DOING. The Low
+  // Stock filter is Number(qty) <= Number(reorder_threshold), and every
+  // comparison with NaN is FALSE -- so a junk threshold drops the item out of
+  // the low-stock warning while the Stock Value KPI still reads perfectly
+  // fine. Nothing else in the app would surface it.
+  await test('a junk reorder_threshold is refused -- the item would SILENTLY stop being reordered', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { reorder_threshold: 'soon' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.ok(/never flagged low/.test(res.body.error.message), res.body.error.message);
+  });
+
+  // Negatives: the inputs are type="number" min="0", so the app cannot produce
+  // one, and both drive the Stock Value KPI DOWN -- a practice reading less
+  // stock than it holds, the wrong direction for a number used to decide
+  // whether to order.
+  for (const [label, patch] of [
+    ['qty -50', { qty: -50 }],
+    ['reorder_threshold -1', { reorder_threshold: -1 }],
+    ['unit_cost -100', { unit_cost: -100 }],
+  ]) {
+    await test('NEGATIVE refused: ' + label, async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, label + ' -> ' + res.statusCode);
+    });
+  }
+
+  await test('a supply with no name is refused -- it is the only thing identifying the row', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { name: '  ' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  for (const bad of ['PPE', 'gloves', '', undefined]) {
+    await test('category ' + JSON.stringify(bad) + ' is refused -- the panel FILTERS by it', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { category: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  // THE ACCEPT SIDE. A validator that refuses everything passes every arm above
+  // and empties the supply cupboard (Guardian check 29).
+  await test('ACCEPT: the record addSupply() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    // addSupply() coerces with parseInt/parseFloat || 0, so it always sends
+    // numbers -- including ZERO for a brand new item, which must be accepted.
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SUP-9', name: 'Cotton rolls', category: 'disposables', qty: 0, reorder_threshold: 0, unit_cost: 0, vendor_sku: '', created_at: '2026-09-11' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'got ' + res.statusCode + ' ' + JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: numeric STRINGS, because the readers do Number() on them anyway', async () => {
+    const handler = loadHandler(OK_WRITE);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { qty: '5', reorder_threshold: '10', unit_cost: '12.50' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+  });
+
+  await test('ACCEPT: unit_cost absent or empty -- the reader already defaults it with || 0', async () => {
+    for (const unit_cost of [undefined, '']) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { unit_cost }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(unit_cost) + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('ACCEPT: all eight categories', async () => {
+    for (const category of ['ppe', 'impression', 'restorative', 'sterilization',
+      'disposables', 'instruments', 'anesthetics', 'preventive']) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: Object.assign({}, SUP_OK, { category }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, category + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  await test('no session + a bad supply -> 401 NO_SESSION, not 400', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SUP-1' } }, null), res);
+    assert.strictEqual(res.statusCode, 401);
+  });
+
   // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_supplies with a junk shape still goes through -- FIVE remain, and TWO of those are deliberately unwritten', async () => {
+  await test('dnt_operatories with a junk shape still goes through -- FOUR remain, and TWO of those are deliberately unwritten', async () => {
     // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
     // resource, not a claim that it is next -- nothing has been measured about
     // it yet.
@@ -1555,12 +1691,13 @@ async function main() {
     // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
     // 2026-09-10 with the vendor-collections work.
     //
-    // NOW: DNT_RESOURCES holds SEVENTEEN. ELEVEN are validated -- dnt_patients,
+    // NOW: DNT_RESOURCES holds SEVENTEEN. TWELVE are validated -- dnt_patients,
     // dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
     // dnt_procedure_types, dnt_txplans, dnt_provider_hours, dnt_providers,
-    // dnt_referrals and dnt_recall_outreach -- plus dnt_gfe's issue-time
-    // check. So FIVE have no domain check: dnt_operatories, dnt_ar,
-    // dnt_revenue, dnt_supplies, dnt_vendor_orders.
+    // dnt_referrals, dnt_recall_outreach and dnt_supplies -- plus dnt_gfe's
+    // issue-time check. So FOUR have no domain check: dnt_operatories, dnt_ar,
+    // dnt_revenue, dnt_vendor_orders -- and two of those four are the
+    // deliberately-unwritten pair, so TWO are real.
     //
     // AND TWO OF THOSE SIX ARE DELIBERATELY UNWRITTEN, which narrows the real
     // remainder to FOUR. Measured 2026-09-11 off every
@@ -1586,8 +1723,8 @@ async function main() {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves', title: '', status: 'weird', items: 'not-an-array', direction: 'Incoming', on: '2099-01-01' } }, tokenFor('owner')), res);
-    assert.strictEqual(res.statusCode, 200, 'a rule leaked onto dnt_supplies');
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-1', name: 'Op 1', title: '', status: 'weird', items: 'not-an-array', direction: 'Incoming', on: '2099-01-01', qty: 'abc' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, 'a rule leaked onto dnt_operatories');
     assert.ok(wrote);
   });
 
@@ -1596,14 +1733,15 @@ async function main() {
   // with only an id and a patient_id is now correctly refused by its own rules
   // and the test began failing for the right reason. MOVED TWICE: the first
   // replacement, dnt_recall_outreach, gained its own validator hours later, so
-  // it is now dnt_supplies -- still unvalidated, and still carries no amount.
-  // The boundary keeps moving because the sweep keeps closing what it points
-  // at, which is the sweep working rather than churn.
-  await test('a dnt_supplies row with no amount at all is unaffected', async () => {
+  // then dnt_supplies gained one hours later, so it is now dnt_operatories --
+  // still unvalidated, and still carries no amount. The boundary keeps moving
+  // because the sweep keeps closing what it points at, which is the sweep
+  // working rather than churn.
+  await test('a dnt_operatories row with no amount at all is unaffected', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
-    await handler(mockReq({ action: 'write', resource: 'dnt_supplies', payload: { id: 'SU-1', name: 'Gloves' } }, tokenFor('owner')), res);
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-1', name: 'Op 1' } }, tokenFor('owner')), res);
     assert.strictEqual(res.statusCode, 200);
     assert.ok(wrote);
   });
@@ -1694,6 +1832,14 @@ async function main() {
     ['dnt_recall_outreach', { id: 'RC-1', patient_id: 'PT-1', procedure_type_id: 'PR-1', on: '2099-01-01', channel: 'phone', outcome: 'no_answer' }],
     ['dnt_recall_outreach', { id: 'RC-1', patient_id: 'PT-1', procedure_type_id: 'PR-1', on: '2026-9-1', channel: 'phone', outcome: 'no_answer' }],
     ['dnt_recall_outreach', { id: 'RC-1', procedure_type_id: 'PR-1', on: '2026-09-10', channel: 'phone', outcome: 'no_answer' }],
+    // dnt_supplies (2026-09-11). The first two are the ones that matter: pre-fix
+    // each of these reached the store, and rSupplies() then rendered the whole
+    // practice's Stock Value KPI as NaN -- or, for the junk threshold, silently
+    // stopped flagging the item as low.
+    ['dnt_supplies', { id: 'SUP-1', name: 'Gloves', category: 'ppe', qty: 'abc', reorder_threshold: 10, unit_cost: 1 }],
+    ['dnt_supplies', { id: 'SUP-1', name: 'Gloves', category: 'ppe', qty: 1, reorder_threshold: 'soon', unit_cost: 1 }],
+    ['dnt_supplies', { id: 'SUP-1', name: 'Gloves', category: 'ppe', qty: -50, reorder_threshold: 10, unit_cost: 1 }],
+    ['dnt_supplies', { id: 'SUP-1', name: '', category: 'ppe', qty: 1, reorder_threshold: 10, unit_cost: 1 }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

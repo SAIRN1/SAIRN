@@ -48,6 +48,7 @@ const {
   providerProblem: dntProviderProblem,
   referralProblem: dntReferralProblem,
   recallOutreachProblem: dntRecallOutreachProblem,
+  supplyProblem: dntSupplyProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -10166,6 +10167,29 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_recall_outreach') {
         const rop = dntRecallOutreachProblem(payload);
         if (rop) { res.status(400).json({ error: { code: 'INVALID_RECALL_OUTREACH', message: rop } }); return; }
+      }
+      // dnt_supplies, the ELEVENTH (2026-09-11), and the widest blast radius
+      // per bad row in the group: rSupplies() folds EVERY item into two
+      // practice-wide KPIs, so one malformed row does not spoil its own line,
+      // it spoils the number above the table.
+      //
+      // Measured in node against those real expressions, from a baseline of
+      // two good items (1 low, stock value 262.5): a qty of "abc" or an absent
+      // qty or a unit_cost of "free" each turn the Stock Value KPI into NaN,
+      // and a negative qty took it to -4737.5.
+      //
+      // THE QUIETER FAILURE IS THE ONE WORTH CATCHING. The Low Stock filter is
+      // Number(qty) <= Number(reorder_threshold), and EVERY comparison with
+      // NaN is false -- so an item with a junk threshold is never flagged low
+      // and silently stops being reordered, while the Stock Value KPI still
+      // reads perfectly fine. Nothing else would surface it.
+      //
+      // Full reasoning, including why negatives are refused and why category
+      // is validated with a weaker stated consequence, is in
+      // api/_lib/dental-ledger.js.
+      if (resource === 'dnt_supplies') {
+        const sup = dntSupplyProblem(payload);
+        if (sup) { res.status(400).json({ error: { code: 'INVALID_SUPPLY', message: sup } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate
