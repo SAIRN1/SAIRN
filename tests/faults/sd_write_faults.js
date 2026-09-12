@@ -84,7 +84,10 @@ function ctxFor(opts) {
     sessionStorage: { getItem: () => null },
     sdLicenseKey: () => 'SD-TEST-2026',
     showToast: (m) => state.toasts.push(String(m)),
-    _sdAuthRefused: {}, _sdReadFailed: {},
+    // _sdLastStatus added 2026-09-12 with the map itself. sdData() writes it on
+    // every path, so without it the transport dies on a ReferenceError before
+    // reaching any branch this file asserts on.
+    _sdAuthRefused: {}, _sdReadFailed: {}, _sdLastStatus: {},
     fetch: function (url, o) {
       state.lastOpts = o;
       if (opts.mode === 'timeout') {

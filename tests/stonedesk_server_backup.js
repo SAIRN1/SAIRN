@@ -249,8 +249,21 @@ test("the verb is 'soft_delete', not 'delete'", () => {
     .filter((k) => (reg.EXTRA_ACTIONS[k] || []).indexOf('soft_delete') !== -1);
   const sdGranted = granted.filter((k) => k.indexOf('sd_') === 0 || k.indexOf('stonedesk') === 0);
   const elsewhere = granted.filter((k) => sdGranted.indexOf(k) === -1);
-  assert.strictEqual(sdGranted.length, 21,
-    'soft_delete is granted to ' + sdGranted.length + ' StoneDesk resources, not 21');
+  // 21 -> 23 on 2026-09-12, and this arm did exactly what its comment above
+  // says it is for: it made the two additions get written down rather than
+  // slipping in under a widened number. Both are Michael's decisions and
+  // neither is part of the SD_LOCAL_RESOURCES backup family this file is
+  // otherwise about -- they have bespoke branches with their own gates.
+  //
+  //   sd_quote_requests -- an UNAUTHENTICATED PUBLIC FORM feeds it, so its
+  //     volume is bounded by what strangers submit; a shop could not remove a
+  //     request at all, and declining one did not hide it either.
+  //   sd_customers -- the delete UNDID ITSELF: custDelete() removed the row
+  //     locally, saveSD3Data() wrote the survivors through so the server row
+  //     survived, and sdHydrateCustomers() merged it back in by id. The user
+  //     watched a deletion succeed that was already scheduled to reverse.
+  assert.strictEqual(sdGranted.length, 23,
+    'soft_delete is granted to ' + sdGranted.length + ' StoneDesk resources, not 23');
   assert.deepStrictEqual(elsewhere.sort(), ['dnt_supplies'],
     'a family outside StoneDesk gained or lost soft_delete: ' + JSON.stringify(elsewhere)
     + '. That is a real decision about who may delete -- record it here rather than '
@@ -258,8 +271,27 @@ test("the verb is 'soft_delete', not 'delete'", () => {
   // Same scope correction: handlerMap() is StoneDesk's SD_LOCAL_RESOURCES, so
   // this can only speak for StoneDesk's grants. dnt_supplies is backed by
   // SAIRNdental's own map and is checked by SAIRNdental's own suite.
+  // NOT EVERY SOFT-DELETABLE STONEDESK RESOURCE GOES THROUGH THIS FAMILY, as
+  // of 2026-09-12. Two have BESPOKE branches with their own gates, because
+  // SD_LOCAL_RESOURCES is licence-scoped and these are not: sd_quote_requests
+  // and sd_customers are owner/admin only. Listed BY NAME rather than the
+  // assertion being loosened -- the guard is that a new one has to be written
+  // down here, and "or it is bespoke" written as a wildcard would delete that
+  // guard while looking like it kept it.
+  const BESPOKE = ['sd_quote_requests', 'sd_customers'];
   sdGranted.forEach((k) => {
-    assert.ok(handlerMap()[k], k + ' has soft_delete but is not a backed-up resource');
+    if (BESPOKE.indexOf(k) !== -1) {
+      // Asserted on the DISPATCH LINE, which is code by construction -- a
+      // branch condition cannot be a comment. Checking the file for the string
+      // `soft_delete` anywhere would be satisfied by the paragraph above it.
+      const line = api.split('\n').filter((l) => l.indexOf("resource === '" + k + "'") !== -1
+                                              && l.indexOf('if (') !== -1)[0];
+      assert.ok(line, k + ' is listed as bespoke but has no dispatch line in api/sd-data.js');
+      assert.ok(line.indexOf("action === 'soft_delete'") !== -1,
+        k + " is granted soft_delete but its own branch does not accept the verb: " + line.trim());
+    } else {
+      assert.ok(handlerMap()[k], k + ' has soft_delete but is not a backed-up resource');
+    }
     assert.ok((reg.EXTRA_ACTIONS[k] || []).indexOf('delete') === -1,
       k + ' grants the HARD delete verb as well -- the two must not both be reachable here');
   });

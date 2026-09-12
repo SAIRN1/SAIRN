@@ -272,6 +272,23 @@ module.exports = {
   // adds `_deleted_at` and changes nothing else, so what the customer wrote
   // survives a deletion exactly as written.
     'sd_quote_requests': ['soft_delete'],
+  // SOFT DELETE ON sd_customers (2026-09-12), and unlike the twenty-two above
+  // this one closes a defect that was VISIBLE TO THE USER AND UNDID ITSELF.
+  //
+  // custDelete() filtered the record out of the local array and stopped there.
+  // saveSD3Data() writes the SURVIVORS through one row at a time, so the
+  // deleted customer's server row was never touched -- and
+  // sdHydrateCustomers() merges the server's rows back in BY ID on the next
+  // load. The customer came back. The confirm said "Delete this customer?"
+  // with no caveat, so staff watched a deletion succeed that was already
+  // scheduled to undo itself.
+  //
+  // The same shape api/_resources/sairndental.js records about dnt_supplies,
+  // and StoneDesk is the app that has it worst: api/stonedesk-track.js
+  // resolves a live ORDER TRACKING LINK against this table by customer_id, so
+  // in the window between the local delete and the resurrection a customer
+  // could still read their job status from a record the shop believed gone.
+    'sd_customers': ['soft_delete'],
   },
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker

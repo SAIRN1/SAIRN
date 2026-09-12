@@ -2027,11 +2027,21 @@ module.exports = async (req, res) => {
     // to see whose job is on the saw; changing a customer's quote value or
     // stage is a management action. Same read-broad/write-narrow split
     // api/sd-data.js already applies to SAIRNsenior's caregiver roster.
-    if (resource === 'sd_customers' && (action === 'read' || action === 'write')) {
+    // 'soft_delete' shares this branch's session gate; the management check
+    // below is applied to it alongside write, because deleting a customer is
+    // at least as consequential as editing one.
+    if (resource === 'sd_customers' && (action === 'read' || action === 'write' || action === 'soft_delete')) {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
       if (action === 'read') {
-        const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) + '&select=customer_id,data'), { headers });
+        // SOFT-DELETED CUSTOMERS ARE NOT RETURNED, and here that filter is
+        // load-bearing rather than cosmetic. sdHydrateCustomers() merges the
+        // server's rows into the local list BY ID and never deletes -- so
+        // before this existed, a customer deleted in the browser was pushed
+        // straight back in on the next load. Filtering at the query is what
+        // makes the deletion stick; the client cannot do it, because a record
+        // it has deleted is a record it no longer knows to skip.
+        const r = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) + '&data->>_deleted_at=is.null&select=customer_id,data'), { headers });
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
@@ -2044,6 +2054,58 @@ module.exports = async (req, res) => {
         return;
       }
       if (!payload || !payload.id) { res.status(400).json({ error: { message: 'sd_customers payload.id is required' } }); return; }
+      // -- SOFT DELETE (2026-09-12) -----------------------------------------
+      // THE DEFECT THIS CLOSES WAS A DELETION THAT UNDID ITSELF, and the user
+      // watched it succeed. custDelete() filtered the record out of the local
+      // array, saveSD3Data() wrote the SURVIVORS through (so the deleted row
+      // on the server was never touched), and sdHydrateCustomers() merges the
+      // server's rows back in BY ID on the next load -- so the customer
+      // reappeared. The confirm said "Delete this customer?" with no caveat.
+      // Exactly the shape api/_resources/sairndental.js already records about
+      // dnt_supplies: a backup that resurrects deleted records is worse than
+      // no backup, because it looks like the app losing track of a deletion.
+      //
+      // AND IT REACHED A CUSTOMER. api/stonedesk-track.js resolves an order
+      // tracking link against THIS table by customer_id, so between the local
+      // delete and the resurrection a customer holding a live link still saw
+      // their job while the shop believed the record was gone.
+      //
+      // Read-modify-write of the STORED record, same as sd_quote_requests: a
+      // delete must not double as an edit. The marker lives in the existing
+      // jsonb, so no new database privilege is needed.
+      if (action === 'soft_delete') {
+        const ccur = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
+          '&customer_id=eq.' + enc(String(payload.id)) + '&select=data&limit=1'), { headers });
+        if (ccur.status === 404 || ccur.status === 400) {
+          res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Customer records are not set up on the server yet - run sql/stonedesk_public_surface_schema.sql in Supabase first.' } });
+          return;
+        }
+        if (!ccur.ok) {
+          console.error('sd-data: sd_customers soft_delete read failed, HTTP', ccur.status);
+          res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that customer, so nothing was deleted. The record is still there -- try again.' } });
+          return;
+        }
+        const crows = await ccur.json().catch(function () { return null; });
+        if (!Array.isArray(crows)) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read that customer, so nothing was deleted.' } }); return; }
+        // NOT A SILENT SUCCESS. A customer that exists only in this browser has
+        // no server row, and saying "deleted" would be reporting work that did
+        // not happen -- the caller needs to know the local removal is all there
+        // was, because nothing else will ever tell it.
+        if (!crows[0]) { res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No customer record with that id on the server -- nothing was deleted there' } }); return; }
+        const cstored = crows[0].data || {};
+        if (cstored._deleted_at) { res.status(200).json({ ok: true, data: cstored, already_deleted: true }); return; }
+        const cmarked = Object.assign({}, cstored, { _deleted_at: nowISO(), _deleted_by: String(session.employee_id || '') });
+        const cw = await fetch(rest('sd_customers?license_hash=eq.' + enc(licHash) +
+          '&customer_id=eq.' + enc(String(payload.id))), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: cmarked, updated_at: nowISO() })
+        });
+        const cwrows = await cw.json().catch(function () { return null; });
+        if (!cw.ok) return upstream(res, cwrows);
+        res.status(200).json({ ok: true, data: Object.assign({ id: payload.id }, cmarked) });
+        return;
+      }
       const custData = Object.assign({}, payload);
       delete custData.id;
       const w = await fetch(rest('sd_customers?on_conflict=license_hash,customer_id'), {

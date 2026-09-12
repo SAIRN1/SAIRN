@@ -81,7 +81,14 @@ function grabLine(sig) {
 // this suite pass while testing a different variable.
 const LAYER = [
   grabLine('var _sdAuthRefused = {};'),
-  grabLine('var _sdReadFailed  = {};')
+  grabLine('var _sdReadFailed  = {};'),
+  // ADDED 2026-09-12 WITH THE MAP ITSELF. sdData() sets _sdLastStatus on
+  // every path, so leaving it out of this list makes the real transport
+  // throw ReferenceError inside the vm -- and the catch turns that into a
+  // null return, i.e. every call in this suite silently 'failing'. A
+  // hand-listed mirror of the layer's declarations is a mirror that goes
+  // stale; this is the third suite this week to be broken by one.
+  grabLine('var _sdLastStatus  = {};')
 ].join('\n') + '\n\n' + [
   'function sdAuthWasRefused(resource) {',
   'function sdReadFailed(resource) {',

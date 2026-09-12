@@ -301,7 +301,7 @@ function driveCtx(app, fn, mode) {
   };
   // per-app scaffolding the transport reads
   ['_bldBackup', '_scLastDataError', '_scLastProvisioned', 'dntLastErr', 'lawLastErr',
-   'legLastErr', '_sdAuthRefused', '_sdReadFailed', 'sbSession', 'bldSession',
+   'legLastErr', '_sdAuthRefused', '_sdReadFailed', '_sdLastStatus', 'sbSession', 'bldSession',
    'alfSession', 'sdnSession', 'senSession'].forEach((n) => { ctx[n] = {}; });
   K.vm.createContext(ctx);
   const src = read(app);

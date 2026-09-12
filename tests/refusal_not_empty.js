@@ -81,6 +81,13 @@ const oneLiner = oneLinerFn('function sdAuthWasRefused(resource)') + '\n'
 const src =
   'var _sdAuthRefused = {};\n' +
   'var _sdReadFailed = {};\n' +
+  // _sdLastStatus joined them 2026-09-12. sdData() writes it on EVERY path, so
+  // omitting it here makes the real transport throw ReferenceError inside the
+  // vm -- and the catch turns that into a null return, i.e. every arm in this
+  // file "failing" for a reason that is about this sandbox rather than about
+  // the transport. Five suites broke this way in one afternoon; a hand-listed
+  // mirror of another file's declarations is a mirror that goes stale.
+  'var _sdLastStatus = {};\n' +
   oneLiner + '\n' +
   // sdData() gained `signal: sdFetchTimeoutSignal()` in the 2026-09-11 portfolio
   // transport sweep, so the helper has to be in scope or every arm below dies on

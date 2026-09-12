@@ -23545,12 +23545,58 @@ function custUpdateStatus(id, newStatus) {
   }
 }
 
-function custDelete(id) {
-  if (!confirm('Delete this customer?')) return;
+// ── THIS DELETION USED TO UNDO ITSELF, AND THE USER WATCHED IT SUCCEED ─────
+// It filtered the record out of the local array and stopped there.
+// saveSD3Data() writes the SURVIVORS through one row at a time, so the deleted
+// customer's server row was never touched -- and sdHydrateCustomers() merges
+// the server's rows back in BY ID on the next load. The customer came back.
+// The confirm said "Delete this customer?" with no caveat.
+//
+// It also reached a customer: api/stonedesk-track.js resolves a live order
+// tracking link against sd_customers by customer_id, so in the window between
+// the local delete and the resurrection a customer could still read their job
+// status from a record the shop believed was gone.
+//
+// THREE OUTCOMES, NOT TWO, because collapsing them forces a choice between a
+// deletion that silently undoes itself and a delete button that stops working:
+//   server confirmed  -- remove locally; the server will not return it again
+//   404 / 503         -- there is no server row (or no table yet, which is the
+//                        state sd_customers is in until the public-surface
+//                        migration runs). The local removal IS the whole
+//                        deletion and nothing can resurrect it. Proceed.
+//   anything else     -- the row may well be there. KEEP IT and say so, since
+//                        removing it locally is what lets it come back.
+async function custDelete(id) {
+  if (!confirm('Delete this customer?\n\nThe record is hidden on the server and kept, not destroyed.')) return;
+  var r = null;
+  if (typeof sdData === 'function') {
+    try { r = await sdData('soft_delete', 'sd_customers', { id: id }); } catch (e) { r = null; }
+  }
+  if (!r) {
+    var st = (typeof sdLastStatus === 'function') ? sdLastStatus('sd_customers') : undefined;
+    // UNDEFINED IS NOT A FAILURE. sdData() returns null without calling
+    // anything when there is no licence key, so the status is never recorded --
+    // an unlicensed or transport-less install has no server rows at all and
+    // must still be able to delete. 0 is a different thing entirely: the
+    // request went out and the server never answered, so the row may be there.
+    var localOnly = (st === undefined);
+    var noServerRow = (st === 404 || st === 503);
+    if (!localOnly && !noServerRow) {
+      if (typeof notify === 'function') {
+        notify((st === 401 || st === 403)
+          ? 'Not signed in with permission to delete a customer, so nothing was changed.'
+          : 'Could not delete that customer on the server, so nothing was changed -- '
+            + 'deleting it here alone would bring it back on the next load. Try again.', 'err');
+      }
+      return;
+    }
+  }
   sdCustomers = sdCustomers.filter(x => x.id !== id);
   saveSD3Data();
   renderCustomers();
   runAlertScan();
+  try { custCloseDetail(); } catch (e) {}
+  if (typeof notify === 'function') notify('Customer deleted.', 'ok');
 }
 
 // -- CUSTOMER DETAIL MODAL -------------------------------------
@@ -23643,7 +23689,12 @@ function custOpenDetail(id) {
       '<div style="font-size:13px;line-height:1.6">'+escHtml(c.notes)+'</div>'+
     '</div>':'')+
     '<div style="display:flex;justify-content:flex-end;margin-top:8px">'+
-      '<button class="q-btn" onclick="custDelete(\'' + escAttrJs(id) + '\');custCloseDetail();" style="color:#dc2626;border-color:#dc2626">&#128465;&#65039; Delete</button>'+
+      // custCloseDetail() moved INSIDE custDelete(), on the success path only
+      // (2026-09-12). custDelete became async when it started confirming the
+      // deletion with the server; chained here it fired immediately, so a
+      // REFUSED delete still shut the modal and left the customer sitting in
+      // the list behind it as though the click had half-worked.
+      '<button class="q-btn" onclick="custDelete(\'' + escAttrJs(id) + '\')" style="color:#dc2626;border-color:#dc2626">&#128465;&#65039; Delete</button>'+
     '</div>';
   document.getElementById('cust-detail-modal').style.display='flex';
 }
@@ -27628,9 +27679,26 @@ function getSDSupabase() {
 // same reason the public endpoints answer 503 for an outage instead of 429.
 var _sdAuthRefused = {};   // resource -> true, most recent state
 var _sdReadFailed  = {};   // resource -> true if the LAST call did not return data
+// resource -> the HTTP status of the last call; 0 when the server never
+// answered at all.
+//
+// A THIRD FACT, added 2026-09-12 for the same reason there are two maps rather
+// than one: "you may not have this", "there is none of this" and "we could not
+// ask" are different sentences, and so is WHICH could-not-ask it was. The
+// caller that needed it is custDelete(): a 404 or a 503 means there is no
+// server row, so removing the record locally is the whole deletion and it
+// sticks -- while a 500 or a network throw means the row may well be there,
+// and removing it locally would let sdHydrateCustomers() put it straight back.
+// Collapsing those two into "it failed" forces a choice between a deletion
+// that silently undoes itself and a delete button that stops working entirely
+// until a migration is run.
+var _sdLastStatus  = {};
 
 function sdAuthWasRefused(resource) { return !!_sdAuthRefused[resource]; }
 function sdReadFailed(resource) { return !!_sdReadFailed[resource]; }
+// undefined means this resource has not been called yet -- which is NOT the
+// same as 0, and neither is the same as a status. Returned as-is.
+function sdLastStatus(resource) { return _sdLastStatus[resource]; }
 
 // The line an empty state should show when the call failed for a reason that is
 // NOT an auth refusal. Kept beside sdAuthRefusedNote() so the two cannot drift
@@ -27691,6 +27759,7 @@ async function sdData(action, resource, payload) {
       headers: headers,
       body: JSON.stringify({ action: action, resource: resource, payload: payload })
     });
+    _sdLastStatus[resource] = res.status;
     if (!res.ok) {
       // 401/403 is "you may not have this", which is a different fact from
       // "there is none of this", and the two must not render the same.
@@ -27717,6 +27786,9 @@ async function sdData(action, resource, payload) {
     // A network throw left the previous state in place, so a read that failed
     // after one that succeeded looked like a success that returned nothing.
     _sdReadFailed[resource] = true;
+    // 0, not a stale status from the last call. The server never answered, and
+    // leaving the previous 200 in place would tell the next caller it did.
+    _sdLastStatus[resource] = 0;
     // THE REPORTER CALL IS ITSELF GUARDED, and the suite is why. Driving sdData()
     // in a realm that had not loaded sdDataFailed() made the catch throw a
     // ReferenceError, which made the whole async function REJECT -- and a
