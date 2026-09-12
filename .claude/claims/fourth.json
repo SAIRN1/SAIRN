@@ -902,6 +902,16 @@
       "claimed_at_epoch": 1789209655.908698,
       "status": "released",
       "released_at": "2026-09-12T10:55:53Z"
+    },
+    {
+      "id": "fourth-1789210692",
+      "session": "fourth",
+      "subject": "checker-output-determinism",
+      "task": "every promoted checker output stable across hash seeds",
+      "claimed_at": "2026-09-12T10:58:12Z",
+      "claimed_at_epoch": 1789210692.8323584,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
