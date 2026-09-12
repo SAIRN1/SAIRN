@@ -581,6 +581,46 @@
       "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished"
     },
     {
+      "commit": "d77321dfbe21",
+      "date": "2026-09-11",
+      "subject": "fix(stonedesk): the only transport on the platform that said nothing",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html",
+        "tests/faults/sd_write_faults.js",
+        "tests/faults/transport_timeout_sweep.js"
+      ],
+      "lines_added": 498,
+      "lines_removed": 10,
+      "app": "stonedesk",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result"
+    },
+    {
+      "commit": "d77321dfbe21",
+      "date": "2026-09-11",
+      "subject": "fix(stonedesk): the only transport on the platform that said nothing",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "stonedesk.html",
+        "tests/faults/sd_write_faults.js",
+        "tests/faults/transport_timeout_sweep.js"
+      ],
+      "lines_added": 498,
+      "lines_removed": 10,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "mutation-testing",
+      "summary": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result"
+    },
+    {
       "commit": "d85b98efecb8",
       "date": "2026-09-11",
       "subject": "fix(tools): the second half of the sweep -- three checkers reported clean while scanning nothing",
