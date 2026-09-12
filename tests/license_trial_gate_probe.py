@@ -28,15 +28,36 @@ MUTATIONS = [
     # THE TRIPWIRE, which is the whole reason this suite exists. If it does not
     # bite, the "column is absent" assertion proves nothing and the day somebody
     # adds the column nothing says so. The anchor was WRONG on the first run --
-    # the snapshot keeps each table's columns on ONE line, not pretty-printed --
     # and it was only noticed because a dead anchor is reported, not skipped.
+    #
+    # ── AND IT WENT WRONG A SECOND TIME, THE OTHER WAY (2026-09-12) ──────────
+    # The comment here used to read "the snapshot keeps each table's columns on
+    # ONE line, not pretty-printed". That stopped being true on 2026-09-11 when
+    # db/schema_snapshot.json was re-captured (3d603dd0) in a PRETTY-PRINTED
+    # form: one column per line, eight-space indent. Both SNAP anchors below
+    # died in the same commit and arms 1 and 2 stopped mutating anything.
+    #
+    # WHAT SAVED IT IS THE DESIGN, NOT LUCK. main() reports ANCHOR-0 and fails
+    # rather than skipping, so a re-capture that silently disarmed the only
+    # tripwire on a live security gate announced itself on the next full run.
+    # Recorded because the lesson generalises past this file: RE-CAPTURING A
+    # DATA FILE CAN CHANGE ITS FORMATTING, and every text anchor into that file
+    # is a consumer nobody thinks of as one. This probe was the only text
+    # anchor into the snapshot in the repo -- checked on 2026-09-12; every
+    # other consumer parses it as JSON and was unaffected.
     ("1. the column APPEARS in the live schema snapshot",
-     SNAP, '"license_keys": ["id",', '"license_keys": ["trial_ends_at","id",'),
+     SNAP, '"license_keys": [\n        "id",',
+     '"license_keys": [\n        "trial_ends_at",\n        "id",'),
     # The sentinel the SUITE checks is stripe_subscription_id, not app_id --
     # renaming app_id left the guard satisfied and this arm came back SILENT.
     # A control has to break the thing the assertion reads.
+    #
+    # The trailing ",\n  ...\"plan\"" is load-bearing and not decoration:
+    # "stripe_subscription_id" alone appears 3 times in the snapshot, so a bare
+    # anchor would be ambiguous and main() requires a count of exactly 1.
     ("2. the snapshot stops looking like license_keys at all",
-     SNAP, '"stripe_subscription_id","plan"', '"zz_subscription_id","plan"'),
+     SNAP, '"stripe_subscription_id",\n        "plan"',
+     '"zz_subscription_id",\n        "plan"'),
     ("3. the licence normaliser stops defaulting the field to null",
      LIB, "  out.trial_ends_at = row.trial_ends_at || null;",
      "  out.trial_ends_at = row.trial_ends_at;"),
