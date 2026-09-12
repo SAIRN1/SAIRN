@@ -1142,11 +1142,102 @@ function supplyProblem(record) {
   return null;
 }
 
+// -- TWELFTH RESOURCE: dnt_operatories (2026-09-11) ------------------------
+// The smallest record in the group -- {id, name, created_at} -- and the
+// validator is one rule, which is the honest size for it. addOperatory()
+// refuses an empty name and this handler did not.
+//
+// WHAT A NAMELESS OPERATORY DOES, read rather than guessed: the roster table
+// renders H(o.name) into a cell, and fillDentalSelects() renders
+// '<option value="'+o.id+'">'+H(o.name)+'</option>' into the appointment and
+// provider forms. So it becomes a BLANK OPTION in a dropdown -- selectable,
+// indistinguishable from its neighbours, and it silently assigns appointments
+// to a room nobody can name.
+//
+// NOTHING ELSE IS VALIDATED because there is nothing else: no dates, no money,
+// no vocabulary. Inventing rules to make the validator look substantial would
+// be worse than a one-rule validator that says why it is one rule.
+function operatoryProblem(record) {
+  const r = record || {};
+  if (String(r.name == null ? '' : r.name).trim() === '') {
+    return 'An operatory must have a name. It is rendered straight into an '
+         + '<option> in the appointment and provider forms, so an empty one is '
+         + 'a BLANK, still-selectable dropdown entry that assigns appointments '
+         + 'to a room nobody can name.';
+  }
+  return null;
+}
+
+// -- THIRTEENTH RESOURCE: dnt_vendor_orders (2026-09-11) -------------------
+// The purchase-order archive, and the last of the seventeen. Two readers, and
+// the numbers they produce do not stay on screen: vShowSpendReport() computes
+// a YTD Spend KPI and a Spend-by-Vendor breakdown, and vSpendAI() sends that
+// same YTD figure and the order COUNT to Claude under a system prompt that
+// says the numbers are "real, already-computed" and that it must "never invent
+// additional figures".
+//
+// MEASURED IN NODE AGAINST THOSE REAL EXPRESSIONS, baseline two orders
+// totalling 350:
+//
+//   total "abc"          -> YTD becomes the STRING "350abc"
+//   total "500"          -> YTD becomes the STRING "350500"
+//   total -9999          -> YTD -9649
+//   date "garbage"       -> the order DROPS OUT of YTD but still appears under
+//                           Spend by Vendor, so the two panels disagree
+//   date absent          -> same
+//   vendor absent        -> a vendor row literally labelled "undefined"
+//
+// THE NUMERIC STRING IS THE WORST OF THEM, and it is worth being precise about
+// why. `(o.total||0)` treats any non-empty string as truthy, so the reduce
+// CONCATENATES: "abc" gives "350abc", which is visibly broken. "500" gives
+// "350500" -- a plausible $350,500 where the truth is $850. A visibly broken
+// figure gets questioned; a plausible one gets believed, and this one is then
+// handed to an AI as a verified fact.
+//
+// date IS AN ISO DATETIME HERE, NOT A CALENDAR DATE, so isCalendarDate() is
+// deliberately not reused: placeVendorOrder() writes
+// `new Date().toISOString()`. The check is that `new Date(date)` yields a real
+// time, which is exactly what the reader depends on -- it calls
+// .getFullYear() on it and silently drops the order when that is NaN.
+function vendorOrderProblem(record) {
+  const r = record || {};
+  if (String(r.vendor == null ? '' : r.vendor).trim() === '') {
+    return 'A purchase order must name a vendor. The Spend by Vendor breakdown '
+         + 'keys on it directly, so a missing one renders a spend row labelled '
+         + '"undefined".';
+  }
+  const when = typeof r.date === 'string' ? r.date.trim() : '';
+  const parsed = when === '' ? NaN : new Date(when).getTime();
+  if (!Number.isFinite(parsed)) {
+    return 'date must be a parseable timestamp (got ' + JSON.stringify(r.date)
+         + '). placeVendorOrder() writes new Date().toISOString(); the spend '
+         + 'report calls new Date(o.date).getFullYear() and compares it to this '
+         + 'year, so an unparseable date makes the order VANISH from YTD Spend '
+         + 'while still counting in Spend by Vendor -- two panels disagreeing '
+         + 'about the same order.';
+  }
+  if (typeof r.total !== 'number' || !Number.isFinite(r.total) || r.total < 0) {
+    return 'total must be a finite non-negative NUMBER, not a string (got '
+         + JSON.stringify(r.total) + '). The YTD reduce is s + (o.total || 0), '
+         + 'and a non-empty string is truthy -- so it CONCATENATES rather than '
+         + 'adds. "abc" gives a visibly broken "350abc"; "500" gives "350500", '
+         + 'a plausible figure where the truth was 850. The plausible one is '
+         + 'worse, and vSpendAI() then sends it to Claude as a real, '
+         + 'already-computed number.';
+  }
+  if (r.items !== undefined && r.items !== null && !Array.isArray(r.items)) {
+    return 'items must be an array when present (got ' + typeof r.items + '). '
+         + 'The order archive is the record of WHAT was bought; a non-array '
+         + 'cannot be read back as line items.';
+  }
+  return null;
+}
+
 module.exports = {
   paymentProblem, chargeProblem, coverageRuleProblem, denialProblem,
   procedureTypeProblem, txPlanProblem, providerHoursProblem, providerProblem,
   referralProblem, recallOutreachProblem, latestAllowedContactDate,
-  supplyProblem,
+  supplyProblem, operatoryProblem, vendorOrderProblem,
   isPositiveMoney, isNonNegativeMoney, isCalendarDate,
   // EXPORTED SO THERE IS ONE DAY LIST, NOT TWO. api/sairndental/public-
   // availability.js declared its own copy; a validator with a second copy

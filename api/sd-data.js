@@ -49,6 +49,8 @@ const {
   referralProblem: dntReferralProblem,
   recallOutreachProblem: dntRecallOutreachProblem,
   supplyProblem: dntSupplyProblem,
+  operatoryProblem: dntOperatoryProblem,
+  vendorOrderProblem: dntVendorOrderProblem,
 } = require('./_lib/dental-ledger');
 const dntGfe = require('./_lib/dental-gfe');
 const payerRouting = require('./_lib/payer-routing');
@@ -10190,6 +10192,34 @@ module.exports = async (req, res) => {
       if (resource === 'dnt_supplies') {
         const sup = dntSupplyProblem(payload);
         if (sup) { res.status(400).json({ error: { code: 'INVALID_SUPPLY', message: sup } }); return; }
+      }
+      // dnt_operatories, the TWELFTH (2026-09-11). One rule, because the record
+      // is {id, name, created_at} and there is nothing else to check --
+      // inventing rules to make the validator look substantial would be worse.
+      // A nameless operatory renders as a BLANK, still-selectable <option> in
+      // the appointment and provider forms, silently assigning appointments to
+      // a room nobody can name.
+      if (resource === 'dnt_operatories') {
+        const opp = dntOperatoryProblem(payload);
+        if (opp) { res.status(400).json({ error: { code: 'INVALID_OPERATORY', message: opp } }); return; }
+      }
+      // dnt_vendor_orders, the THIRTEENTH and LAST of the seventeen
+      // (2026-09-11). Its numbers do not stay on screen: vShowSpendReport()
+      // builds a YTD Spend KPI and a Spend-by-Vendor breakdown, and vSpendAI()
+      // sends that YTD figure to Claude under a system prompt calling it
+      // "real, already-computed" and forbidding invented figures.
+      //
+      // MEASURED: `(o.total || 0)` treats a non-empty string as truthy, so the
+      // reduce CONCATENATES. total "abc" gives the string "350abc" -- visibly
+      // broken. total "500" gives "350500", a plausible $350,500 where the
+      // truth is $850. THE PLAUSIBLE ONE IS WORSE: a broken figure gets
+      // questioned, a believable one gets believed, and this one is handed to
+      // an AI as verified fact. An unparseable date makes the order vanish from
+      // YTD while still counting under Spend by Vendor -- two panels
+      // disagreeing about one order.
+      if (resource === 'dnt_vendor_orders') {
+        const vop = dntVendorOrderProblem(payload);
+        if (vop) { res.status(400).json({ error: { code: 'INVALID_VENDOR_ORDER', message: vop } }); return; }
       }
       // ── 45 CFR 149.610(c)(1), ON THE SERVER (2026-09-04) ─────────────────
       // sairndental.html's issueGfe() has always refused to mark an estimate

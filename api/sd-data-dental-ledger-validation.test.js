@@ -778,10 +778,9 @@ async function main() {
   // NEIGHBOUR MOVED 2026-09-11, stated rather than quietly edited: this used
   // dnt_recall_outreach, which gained its own date rules the same day -- and a
   // 2026-02-31 there is now correctly refused, so the arm failed for the right
-  // reason. MOVED AGAIN the same day, when dnt_supplies was validated too --
-  // it is now dnt_operatories, which holds only {id, name} and so carries no
-  // date of its own, which is what makes it a clean control for "did the
-  // denial rule leak".
+  // reason. It now uses dnt_operatories with a VALID operatory payload plus
+  // the foreign date fields -- dnt_operatories has no date rule of its own,
+  // which is what makes it a clean control for "did the denial rule leak".
   await test('the DATE rule is scoped to dnt_denial -- dnt_operatories with a junk date still writes', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
@@ -977,10 +976,24 @@ async function main() {
   // same family of field. dnt_provider_hours GAINED A VALIDATOR on 2026-09-11,
   // so the old payload -- no day_of_week, no times -- is now correctly refused
   // 400 by its own rules, and the test began failing for the right reason.
-  // MOVED AGAIN 2026-09-11, twice in one day: dnt_recall_outreach gained its
-  // own validator, then so did dnt_supplies. The replacement is now
-  // dnt_operatories, which holds only {id, name} and therefore tolerates
-  // every junk field this arm plants.
+  // MOVED THREE TIMES IN ONE DAY as the sweep closed each target in turn:
+  // dnt_referrals, then dnt_recall_outreach, then dnt_supplies. It now uses
+  // dnt_operatories -- which IS validated, and that is fine, because the
+  // payload below is a VALID operatory plus the foreign junk fields.
+  //
+  // CONVERTED 2026-09-11 WHEN THE SWEEP FINISHED, and the honest version of
+  // what happened is that these arms were ALREADY in their durable form and
+  // only the prose was wrong. The plan recorded here was to replace
+  // "send junk to an unvalidated resource" with "send resource A's payload
+  // as resource B and assert B judges it by B's rules" -- and every one of
+  // these already carried a VALID dnt_operatories record plus the foreign
+  // junk, so validating dnt_operatories broke none of them. What was false
+  // was the sentence calling the target unvalidated. That is corrected here
+  // rather than left to read as a claim nobody re-checked.
+  //
+  // So the invariant these now state is the durable one: a rule belonging to
+  // resource A does not fire on resource B, proven with a payload B accepts.
+
   //
   // THE BOUNDARY IS ON ITS LAST MOVE, and that is worth saying now rather
   // than discovering it. Once dnt_operatories and dnt_vendor_orders are
@@ -1679,25 +1692,140 @@ async function main() {
     assert.strictEqual(res.statusCode, 401);
   });
 
+  // -- 5j. dnt_operatories, THE TWELFTH (2026-09-11) -----------------------
+  // One rule, because the record is {id, name, created_at} and there is
+  // nothing else to check. A validator padded with invented rules would be
+  // worse than a one-rule validator that says why it is one rule.
+  await test('an operatory with no name is refused -- it becomes a BLANK selectable dropdown option', async () => {
+    let posted = false;
+    const handler = loadHandler(async function (url, opts) {
+      if (opts && opts.method === 'POST') posted = true;
+      return OK_WRITE();
+    });
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-1', name: '  ' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+    assert.strictEqual(res.body.error.code, 'INVALID_OPERATORY');
+    assert.ok(!posted);
+  });
+
+  await test('ACCEPT: the record addOperatory() actually builds goes through', async () => {
+    const handler = loadHandler(OK_WRITE);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_operatories', payload: { id: 'OP-9', name: 'Operatory 2', created_at: '2026-09-11' } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+  });
+
+  // -- 5k. dnt_vendor_orders, THE THIRTEENTH AND LAST ----------------------
+  // Its numbers do not stay on screen. vShowSpendReport() builds a YTD Spend
+  // KPI and a Spend-by-Vendor breakdown, and vSpendAI() sends that YTD figure
+  // and the order count to Claude under a system prompt calling them "real,
+  // already-computed" and forbidding invented figures.
+  const VO_OK = {
+    id: 'VORD-1', date: '2026-09-11T10:00:00.000Z', vendor: 'Henry Schein Dental',
+    vendorKey: 'henryschein', items: [{ sku: 'NG-100', qty: 2 }], total: 250,
+  };
+
+  // THE STRING TOTAL IS THE FINDING, and the numeric one is worse than the
+  // junk one. `(o.total || 0)` treats a non-empty string as truthy, so the
+  // reduce CONCATENATES: measured from a 350 baseline, "abc" gives "350abc"
+  // and "500" gives "350500". A visibly broken figure gets questioned; a
+  // plausible $350,500 gets believed -- and then handed to an AI as fact.
+  for (const bad of ['500', 'abc', '', -99, undefined, null]) {
+    await test('total ' + JSON.stringify(bad) + ' is refused -- the YTD reduce CONCATENATES a string', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: Object.assign({}, VO_OK, { total: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+      assert.strictEqual(res.body.error.code, 'INVALID_VENDOR_ORDER');
+    });
+  }
+
+  // An unparseable date makes the order VANISH from YTD Spend while still
+  // counting under Spend by Vendor -- two panels disagreeing about one order.
+  for (const bad of ['garbage', '', undefined]) {
+    await test('date ' + JSON.stringify(bad) + ' is refused -- the order would vanish from YTD but not from Spend by Vendor', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: Object.assign({}, VO_OK, { date: bad }) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 400, JSON.stringify(bad) + ' -> ' + res.statusCode);
+    });
+  }
+
+  await test('a purchase order with no vendor is refused -- the breakdown renders a row labelled "undefined"', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: Object.assign({}, VO_OK, { vendor: '' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  await test('items must be an array when present -- the archive is the record of WHAT was bought', async () => {
+    const handler = loadHandler(NO_FETCH);
+    const res = mockRes();
+    await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: Object.assign({}, VO_OK, { items: 'not an array' }) }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 400);
+  });
+
+  await test('ACCEPT: the record placeVendorOrder() actually builds goes through', async () => {
+    let wrote = false;
+    const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
+    const res = mockRes();
+    // Field for field, including the ISO datetime it really writes -- a
+    // validator reusing isCalendarDate() here would refuse every real order.
+    await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: { id: 'VORD-9', date: new Date('2026-09-11T14:22:05.123Z').toISOString(), vendor: 'Patterson Dental', vendorKey: 'patterson', items: [{ sku: 'X', qty: 1, name: 'Thing', effectivePrice: 10 }], total: 10 } }, tokenFor('owner')), res);
+    assert.strictEqual(res.statusCode, 200, JSON.stringify(res.body));
+    assert.ok(wrote);
+  });
+
+  await test('ACCEPT: a zero-total order, and one with no items key at all', async () => {
+    for (const patch of [{ total: 0 }, { items: undefined }]) {
+      const handler = loadHandler(OK_WRITE);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource: 'dnt_vendor_orders', payload: Object.assign({}, VO_OK, patch) }, tokenFor('owner')), res);
+      assert.strictEqual(res.statusCode, 200, JSON.stringify(patch) + ' -> ' + JSON.stringify(res.body));
+    }
+  });
+
+  for (const resource of ['dnt_operatories', 'dnt_vendor_orders']) {
+    await test('no session + a bad ' + resource + ' -> 401 NO_SESSION, not 400', async () => {
+      const handler = loadHandler(NO_FETCH);
+      const res = mockRes();
+      await handler(mockReq({ action: 'write', resource, payload: { id: 'X' } }, null), res);
+      assert.strictEqual(res.statusCode, 401);
+    });
+  }
+
   // ── 5f. THE BOUNDARY, MOVED ONE RESOURCE ALONG AGAIN ────────────────────
-  await test('dnt_operatories with a junk shape still goes through -- FOUR remain, and TWO of those are deliberately unwritten', async () => {
-    // The current edge, and dnt_referrals is a REPRESENTATIVE unvalidated
-    // resource, not a claim that it is next -- nothing has been measured about
-    // it yet.
+  await test('THE SWEEP IS COMPLETE: a valid operatory carrying every other resource\'s junk fields still writes', async () => {
+    // THIS ARM'S ORIGINAL PREMISE HAS EXPIRED, AND THAT IS RECORDED RATHER
+    // THAN QUIETLY REWRITTEN. From 2026-09-04 it asserted "the resources not
+    // yet reached are proven untouched", and it named a representative
+    // UNVALIDATED resource. There are none left: all thirteen written
+    // DNT_RESOURCES now have a domain check. An assertion whose premise has
+    // quietly expired is worse than no assertion, so it now states the
+    // invariant that outlives the sweep -- every OTHER resource's rules stay
+    // scoped to that resource, proven against a payload the target accepts.
     //
     // COUNTED OFF DNT_RESOURCES, NOT OFF THIS COMMENT, and the history is kept
-    // because the count has now moved three times and been wrong twice. It
-    // said "EIGHT of the fifteen" and listed eight; then SEVENTEEN and NINE,
-    // after dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on
-    // 2026-09-10 with the vendor-collections work.
+    // because the count moved five times and was wrong twice. It said "EIGHT
+    // of the fifteen" and listed eight; then SEVENTEEN and NINE, after
+    // dnt_supplies and dnt_vendor_orders joined DNT_RESOURCES on 2026-09-10
+    // with the vendor-collections work; then eight, seven, six, five, four.
     //
-    // NOW: DNT_RESOURCES holds SEVENTEEN. TWELVE are validated -- dnt_patients,
-    // dnt_payments, dnt_charges, dnt_coverage_rules, dnt_denial,
-    // dnt_procedure_types, dnt_txplans, dnt_provider_hours, dnt_providers,
-    // dnt_referrals, dnt_recall_outreach and dnt_supplies -- plus dnt_gfe's
-    // issue-time check. So FOUR have no domain check: dnt_operatories, dnt_ar,
-    // dnt_revenue, dnt_vendor_orders -- and two of those four are the
-    // deliberately-unwritten pair, so TWO are real.
+    // FINAL STATE: DNT_RESOURCES holds SEVENTEEN. FIFTEEN have a domain check
+    // -- dnt_patients, dnt_payments, dnt_charges, dnt_coverage_rules,
+    // dnt_denial, dnt_procedure_types, dnt_txplans, dnt_provider_hours,
+    // dnt_providers, dnt_referrals, dnt_recall_outreach, dnt_supplies,
+    // dnt_operatories and dnt_vendor_orders, plus dnt_gfe's issue-time check.
+    //
+    // THE REMAINING TWO ARE dnt_ar AND dnt_revenue, AND THEY ARE NOT A GAP.
+    // Measured off every sdnData('write','<literal>',...) call in
+    // sairndental.html: both have ZERO writers, and the app says why in its own
+    // comments -- "deliberately no write to dnt_ar: a stored ageing row is
+    // stale the next [time]... dnt_ar stays registered and unwritten", and
+    // "dnt_revenue has no client accessor". A validator for a resource nothing
+    // writes is dead code. IF EITHER EVER GAINS A WRITER, THAT IS WHEN IT NEEDS
+    // ONE -- and this comment is the record of that decision.
     //
     // AND TWO OF THOSE SIX ARE DELIBERATELY UNWRITTEN, which narrows the real
     // remainder to FOUR. Measured 2026-09-11 off every
@@ -1718,8 +1846,9 @@ async function main() {
     // dnt_recall_outreach came off last, because both of its bad shapes make a
     // patient LOOK CONTACTED and silently drop out of recall.
     //
-    // If this ever fails, either the scope grew -- fine, say so here as the
-    // previous four boundaries did -- or a rule leaked across resources.
+    // If this ever fails, a rule leaked across resources. The payload below is
+    // a VALID operatory carrying one junk field borrowed from nearly every
+    // other validator in this file; each of those rules must ignore it.
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
     const res = mockRes();
@@ -1734,9 +1863,8 @@ async function main() {
   // and the test began failing for the right reason. MOVED TWICE: the first
   // replacement, dnt_recall_outreach, gained its own validator hours later, so
   // then dnt_supplies gained one hours later, so it is now dnt_operatories --
-  // still unvalidated, and still carries no amount. The boundary keeps moving
-  // because the sweep keeps closing what it points at, which is the sweep
-  // working rather than churn.
+  // which is validated too, and the payload is a VALID operatory. It carries
+  // no amount, which is the property this arm needs.
   await test('a dnt_operatories row with no amount at all is unaffected', async () => {
     let wrote = false;
     const handler = loadHandler(async function () { wrote = true; return OK_WRITE(); });
@@ -1840,6 +1968,14 @@ async function main() {
     ['dnt_supplies', { id: 'SUP-1', name: 'Gloves', category: 'ppe', qty: 1, reorder_threshold: 'soon', unit_cost: 1 }],
     ['dnt_supplies', { id: 'SUP-1', name: 'Gloves', category: 'ppe', qty: -50, reorder_threshold: 10, unit_cost: 1 }],
     ['dnt_supplies', { id: 'SUP-1', name: '', category: 'ppe', qty: 1, reorder_threshold: 10, unit_cost: 1 }],
+    // dnt_operatories and dnt_vendor_orders (2026-09-11), the last two. The
+    // vendor-order string total is the one that matters: pre-fix it reached the
+    // store and the YTD reduce concatenated it into a plausible wrong figure
+    // that vSpendAI() then sent to Claude as a real computed number.
+    ['dnt_operatories', { id: 'OP-1', name: '' }],
+    ['dnt_vendor_orders', { id: 'VORD-1', date: '2026-09-11T10:00:00.000Z', vendor: 'Henry Schein Dental', total: '500' }],
+    ['dnt_vendor_orders', { id: 'VORD-1', date: 'garbage', vendor: 'Henry Schein Dental', total: 250 }],
+    ['dnt_vendor_orders', { id: 'VORD-1', date: '2026-09-11T10:00:00.000Z', vendor: '', total: 250 }],
   ]) {
     await test('MUTATION (validator stubbed to null): ' + resource + ' ' + JSON.stringify(bad) + ' reaches the store', async () => {
       let wrote = false;

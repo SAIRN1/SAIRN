@@ -167,7 +167,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| The generic `DNT_RESOURCES` write validates `payload.id` and nothing else &mdash; **SEVENTEEN resources, not fifteen** | Open &mdash; **13 of 17 CLOSED, FOUR REMAIN &mdash; and TWO of those four are DELIBERATELY UNWRITTEN, so the real remainder is TWO.** `dnt_supplies`, `dnt_recall_outreach`, `dnt_referrals`, `dnt_provi | `api/sd-data-dental-ledger-validation.test.js`, `api/sd-data-dental-provider-scope.test.js` |
+| ~~The generic `DNT_RESOURCES` write validates `payload.id` and nothing else~~ &mdash; **COMPLETE. Every resource the app writes now has a domain check** | **CLOSED 2026-09-11 (Hank)** &mdash; **15 of 17 validated, and the other two are the deliberately-unwritten pair.** Derived, not counted by hand: 17 members in `DNT_RESOURCES`, 15 with a `resource === | `api/sd-data-dental-ledger-validation.test.js` |
 | ~~A coverage rule cannot be changed or removed once written — `removeCoverageRule()` is local-only and there is no update path~~ | **CLOSED 2026-09-04 (CC)** — an EDIT path exists; removal is still not a delete and the message now says so | `api/sd-data-dental-ledger-validation.test.js`, `tests/sairndental_coverage_edit.js`, `tests/suite_control_backfill_probe.py` |
 | ~~Every write failure was reported as *"server sync not yet enabled for this app"*, which is FALSE — and it was swallowing the refusals added the same day~~ | **CLOSED 2026-09-04 (CC)** for SAIRNdental. **SAIRNlaw (29) and SAIRNlegacy (58) still carry it — see the row below** | `tests/sairndental_write_failure_voice.js` |
 | ~~The financial tier gates READS to owner/frontdesk and gates WRITES for nobody &mdash; a provider can write a payment it is not allowed to read back~~ &mdash; **CLOSED: the same list and the same roles now gate the write branch** | **CLOSED 2026-09-10 (CC)** &mdash; `ddbd1f2c`. Found 2026-09-04 (CC) and left open on purpose because it is a behaviour change, not a validation | `api/sd-data-dental-financial-tier.test.js`, `api/sd-data-dental-ledger-validation.test.js`, `tests/push_gate/refspec_and_override_probe.py`, `tests/run_report_only_checks_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
@@ -251,7 +251,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**112 of 299 test files are traced to a stated requirement. 187 are not.**
+**111 of 299 test files are traced to a stated requirement. 188 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -356,6 +356,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sairncash-ai.test.js`
 - `api/sc-credentials.test.js`
 - `api/sd-data-approvals.test.js`
+- `api/sd-data-dental-provider-scope.test.js`
 - `api/sd-data-exec-context.test.js`
 - `api/sd-data-food-temp-unevaluated.test.js`
 - `api/sd-data-locations.test.js`
