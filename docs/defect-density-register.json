@@ -694,6 +694,75 @@
       "severity": "high",
       "detection_method": "code-review",
       "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels"
+    },
+    {
+      "commit": "9d5c85e205fd",
+      "date": "2026-09-12",
+      "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_tooling_inventory_probe.py",
+        "tools/checkblocks.py",
+        "tools/key_collision_check.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 408,
+      "lines_removed": 75,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse"
+    },
+    {
+      "commit": "9d5c85e205fd",
+      "date": "2026-09-12",
+      "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_tooling_inventory_probe.py",
+        "tools/checkblocks.py",
+        "tools/key_collision_check.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 408,
+      "lines_removed": 75,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived"
+    },
+    {
+      "commit": "9d5c85e205fd",
+      "date": "2026-09-12",
+      "subject": "fix(tools): Guardian Check 0a ran nowhere, and the tool for it could not fail",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_tooling_inventory_probe.py",
+        "tools/checkblocks.py",
+        "tools/key_collision_check.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 408,
+      "lines_removed": 75,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
     }
   ]
 }
