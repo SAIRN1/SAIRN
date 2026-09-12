@@ -959,6 +959,16 @@
       "claimed_at_epoch": 1789140727.557791,
       "status": "released",
       "released_at": "2026-09-12T10:33:46Z"
+    },
+    {
+      "id": "cody-1789209439",
+      "session": "cody",
+      "subject": "read-path-failure-indistinguishable-from-empty",
+      "task": "eight apps null means both",
+      "claimed_at": "2026-09-12T10:37:19Z",
+      "claimed_at_epoch": 1789209439.3360531,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
