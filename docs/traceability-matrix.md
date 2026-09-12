@@ -106,8 +106,10 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
 | **&#9888; MICHAEL: `db/schema_snapshot.json` is 9 days stale and provably missing LIVE tables &mdash; the capture was run and never saved** | Open &mdash; **NEEDS MICHAEL (one Supabase query + one file save + one commit)**. Detected mechanically 2026-09-11 (CC), `tools/schema_snapshot_freshness.py` | `tests/run_snapshot_freshness_probe.py` |
 | **A checker whose ANSWER changes when the target's comments are removed &mdash; asked of the whole fleet instead of waiting for a fourth instance** | **BUILT 2026-09-11 (CC)** &mdash; `b8e21568`, `tools/comment_sensitivity_check.py`. **Two real findings filed below, open** | `tests/run_comment_sensitivity_probe.py` |
+| **Every promoted checker must have a control that PROVES it can fire &mdash; and five have none at all** | **BUILT 2026-09-12 (Fourth)** &mdash; `tools/checker_control_check.py` + `tests/run_checker_control_probe.py` (14 arms). Michael's initiative; Cody owns the gate-tool half under `blocking-checkers-can | `tests/run_checker_control_probe.py` |
 | **Checker determinism &mdash; a checker whose output depends on `PYTHONHASHSEED` gives a different answer on the same input, and no single run can show it** | **SWEPT 2026-09-12 (Fourth)** &mdash; `docs/2026-09-12-checker-determinism-sweep.md` | `tests/run_literal_drift_determinism_probe.py` |
 | `literal_drift_check.py` reports a near-duplicate PAIR in an unstable order &mdash; same lines, same ratio, opposite A/B labels between runs | **CLOSED 2026-09-12 (Fourth)** &mdash; `tools/literal_drift_check.py` sorts on a total order now; `tests/run_literal_drift_determinism_probe.py` (11 arms) | `tests/run_literal_drift_determinism_probe.py` |
+| **&#9888; MICHAEL: 89 tables declared in `sql/` do not exist in the live database, and 31 of them are QUERIED BY LIVE `api/` CODE** &mdash; the snapshot-staleness excuse is now excluded | **Open &mdash; NEEDS A DECISION.** Tool sharpened 2026-09-12 (Hank); the migrations themselves cannot be run from a session | `tests/run_schema_verdict_probe.py` |
 | **The table checker written to protect the open-work index was reading 31% of it and printing `OK`** &mdash; three unresolved conflict markers, committed to `origin/main` | **CLOSED 2026-09-12 (Hank)** &mdash; `tools/md_table_check.py`, `docs/SAIRN-OPEN-WORK-INDEX.md` | `tests/run_md_table_check_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
@@ -265,7 +267,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**116 of 304 test files are traced to a stated requirement. 188 are not.**
+**118 of 305 test files are traced to a stated requirement. 187 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -410,7 +412,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
 - `tests/run_index_duplicate_probe.py`
-- `tests/run_schema_verdict_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/sairn_http_challenge.py`
 - `tests/sairn_http_response_shape.py`
