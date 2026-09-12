@@ -675,6 +675,25 @@
       "severity": "moderate",
       "detection_method": "mutation-testing",
       "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
+    },
+    {
+      "commit": "978df7ae8d27",
+      "date": "2026-09-12",
+      "subject": "fix(sairncare): a failed rule read rendered as an empty rule set, and advised the seed",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairncare.html",
+        "tests/faults/alf_rule_read_faults.js"
+      ],
+      "lines_added": 427,
+      "lines_removed": 6,
+      "app": "sairncare",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels"
     }
   ]
 }
