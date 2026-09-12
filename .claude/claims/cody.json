@@ -989,6 +989,16 @@
       "claimed_at_epoch": 1789219628.4323976,
       "status": "released",
       "released_at": "2026-09-12T14:36:53Z"
+    },
+    {
+      "id": "cody-1789224484",
+      "session": "cody",
+      "subject": "blocking-checkers-can-actually-fail",
+      "task": "plant a finding per gate tool confirm non-zero exit",
+      "claimed_at": "2026-09-12T14:48:04Z",
+      "claimed_at_epoch": 1789224484.3038647,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
