@@ -890,8 +890,8 @@
       "task": "outgoing_files docstring names a HEAD~1 fallback the code does not implement",
       "claimed_at": "2026-09-12T10:28:48Z",
       "claimed_at_epoch": 1789208928.5482256,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T10:36:40Z"
     }
   ]
 }
