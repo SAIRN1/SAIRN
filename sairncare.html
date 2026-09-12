@@ -2812,9 +2812,37 @@ var _prRules=null,_prCoverage=null;
 // the server refuses to route them. Counting a rule the app will not route as
 // coverage would tell a biller the opposite of what was actually found.
 var ALF_CLAIMED_HCBS_STATES=['OH','IN','MI','PA'];
+// ── A FAILED READ IS NOT AN EMPTY RULE SET (fixed 2026-09-11) ─────────────
+// THE GUARD BELOW WAS ALREADY WRITTEN AND COULD NOT FIRE. `_prRules===null`
+// means "never loaded this session" and prints "Coverage: not loaded" -- but the
+// refresh coalesced a failed read to `[]` BEFORE the guard ran, so after any
+// click of Refresh Rules the null branch was unreachable and a failure rendered
+// as an authoritative empty rule set:
+//
+//     HCBS coverage: 0 of 4 states routable
+//     No billing rules are loaded yet. Until they are, this app cannot route a
+//     claim -- run sql/sairncare_payer_rules_schema.sql and load ..._seed.json.
+//
+// So a timeout, a 401 without an employee session, a 503 or a 200 carrying
+// ok:false all told a BILLER that no Medicaid HCBS rules exist and sent them to
+// run SQL that is very probably already loaded. The authors' intent is visible
+// in the dead branch and in its wording; the coalesce defeated it.
+//
+// Exactly the defect StoneDesk was taught in sdData() -- "you may not see this"
+// and "there is none of this" must not render identically -- and the only two
+// instances of this shape on the platform, found by sweeping for a coalesce whose
+// variable is tested for null elsewhere. The companion is cqRefresh() below.
+//
+// THREE STATES, NOT TWO, because the existing two messages are both correct for
+// their own case and neither is correct for a failure:
+//   null  + !failed -> never loaded this session   -> "Click Refresh Rules"
+//   null  +  failed -> the read did not come back  -> say so, and do NOT advise SQL
+//   []              -> the server really has none  -> the run-the-SQL advice
+var _prReadFailed=false;
 function prRefresh(){
   return alfData('read','alf_payer_rules',{claimed_states:ALF_CLAIMED_HCBS_STATES},true).then(function(rows){
-    _prRules=Array.isArray(rows)?rows:[];
+    _prReadFailed=!Array.isArray(rows);
+    _prRules=Array.isArray(rows)?rows:null;
     rPayerRouting();
     return _prRules;
   });
@@ -2823,6 +2851,13 @@ function rPayerRouting(){
   var box=$('pr-rules'),cov=$('pr-coverage');
   if(!box||!cov)return;
   if(_prRules===null){
+    if(_prReadFailed){
+      cov.textContent='Coverage: COULD NOT BE READ';
+      box.innerHTML='<span style="color:var(--danger,#b91c1c)">The billing rules could not be read from the server, so nothing is shown. '+
+        '<b>This is not an empty rule set</b> &mdash; do not take it as a sign the rules need loading. '+
+        'Check the connection and your sign-in, then press Refresh Rules again.</span>';
+      return;
+    }
     cov.textContent='Coverage: not loaded';
     box.innerHTML='<span style="color:var(--muted)">Click Refresh Rules to load the billing rules from the server.</span>';
     return;
@@ -3238,7 +3273,16 @@ function cqPopulateClasses(){
 function rJurisdiction(){
   cqPopulateSelectors();
   var cov=$('cq-coverage');if(!cov)return;
-  if(_cqRules===null){cov.textContent='Coverage: not loaded';return;}
+  if(_cqRules===null){
+    // Same dead guard as rPayerRouting() above, same fix, and the stakes here are
+    // higher: "Coverage: 0 of 4 states fully loaded" next to "No compliance rules
+    // are loaded yet -- run sql/..." told an assisted-living operator that the
+    // state staffing, training and licensure requirements are absent, when the
+    // read had simply failed. An uncovered state must read as an explicit gap,
+    // which this panel's own header says -- and a failure is not a gap.
+    cov.textContent=_cqReadFailed?'Coverage: COULD NOT BE READ':'Coverage: not loaded';
+    return;
+  }
   var byState={};
   _cqRules.forEach(function(r){(byState[r.state]=byState[r.state]||{})[r.requirement_type]=true;});
   var complete=ALF_COMPLIANCE_STATES.filter(function(s){
@@ -3246,20 +3290,30 @@ function rJurisdiction(){
   });
   cov.textContent='Coverage: '+complete.length+' of '+ALF_COMPLIANCE_STATES.length+' states fully loaded';
 }
+var _cqReadFailed=false;
 function cqRefresh(){
   return alfData('read','alf_compliance_rules',{claimed_states:ALF_COMPLIANCE_STATES},true).then(function(rows){
-    _cqRules=Array.isArray(rows)?rows:[];
+    _cqReadFailed=!Array.isArray(rows);
+    _cqRules=Array.isArray(rows)?rows:null;
     rJurisdiction();
     var box=$('cq-result');
     if(box){
-      box.innerHTML=_cqRules.length
+      // THE RUN-THE-SQL ADVICE IS THE PART THAT HAD TO MOVE. It is right when the
+      // server really holds no rules and actively wrong when the read failed --
+      // it sends an operator to re-run a seed that is probably already loaded,
+      // and it does it on the panel that tells them what their state requires.
+      box.innerHTML=_cqReadFailed
+        ?'<div style="color:var(--danger,#b91c1c)">The compliance rules could not be read from the server, so nothing is shown. '
+          +'<b>This is not an empty rule set</b> &mdash; do not take it as a sign the seed needs loading. '
+          +'Check the connection and your sign-in, then press Load Rules again.</div>'
+        :(_cqRules.length
         ?'<div class="tw"><table><thead><tr><th>Rule</th><th>State</th><th>Type</th><th>Class</th><th>Authority</th></tr></thead><tbody>'+
           _cqRules.map(function(r){
             var a=(r.data&&r.data.authority)||{};
             return '<tr><td>'+H(r.rule_id)+'</td><td>'+H(r.state)+'</td><td>'+H(r.requirement_type)+'</td><td>'+H(r.facility_class||'any')+'</td>'+
               '<td>'+(a.url?('<a href="'+H(a.url)+'" target="_blank" rel="noopener noreferrer">'+H(a.citation||'source')+'</a>'):H(a.citation||'--'))+'</td></tr>';
           }).join('')+'</tbody></table></div>'
-        :'<div style="color:var(--muted)">No compliance rules are loaded yet — run sql/sairncare_compliance_schema.sql and load sql/sairncare_compliance_seed.json.</div>';
+        :'<div style="color:var(--muted)">No compliance rules are loaded yet — run sql/sairncare_compliance_schema.sql and load sql/sairncare_compliance_seed.json.</div>');
     }
     return _cqRules;
   });

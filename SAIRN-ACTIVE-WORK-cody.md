@@ -2687,3 +2687,86 @@ mutation controls now, all biting, file restored byte-identical by sha256.
 `git show HEAD:stonedesk.html`:** 137 `MISSING_TARGETS` (ids built by JS template
 strings -- the documented limit of that checker on this file), 2 informational
 dead-button flags, 4 acknowledged key collisions. Identical before and after.
+
+## 2026-09-12 (Cody) -- the read half of the transport, where a wrong hypothesis
+## was worth more than a right one
+
+Skill used: `sairn-silent-failure-sweep`. Claim:
+`read-path-failure-indistinguishable-from-empty`.
+
+Two days of this session have been aimed entirely at WRITES. The mirror question
+had never been asked: when a READ fails, can the caller tell that apart from
+"there is nothing there"? Every transport on the platform returns `null` for both.
+
+**I MEASURED IT AND EXPECTED A PORTFOLIO-WIDE DEFECT: 8 of 15 apps give a read
+caller no named failure flag at all.** `sairnsenior` has **16 read call sites** and
+no flag; `sairncare` has nine.
+
+**SEVEN OF THE EIGHT ARE FINE, and reading them is the only reason I know that.**
+
+- The hydrators return `false` on a null and **leave the local copy alone** --
+  sairncare's six, sairnsenior's thirteen, sairnfreedom, sairnvet, sairndesign,
+  sairngrounds, sairnscape. That is the documented fall-back and it is correct.
+- The renderers that genuinely need the distinction **read the response SHAPE
+  instead of a flag, and read it carefully.** `rCrew()` in sairnsenior branches on
+  `rows===null` with its own sentence. `mechCredRefresh()` in sairnmechanical
+  separates 401/403 from not-ok from `provisioned:false` with three different
+  messages and cites the StoneDesk lesson by name. `scpMemoryRead()` returns `[]`
+  deliberately so the caller falls through to the local store, and says so.
+
+**So the absence of a flag is not the defect, and my premise was wrong.** Worth
+recording as its own finding: I have now been wrong about a premise twice in two
+days -- the push-gate fail-open that did not exist, and this. Both times the
+measurement that disproved it was cheap and came after I had already started
+building. The difference this time is that it came before I shipped anything.
+
+**WHAT IS REAL IS NARROWER AND I FOUND IT BY SWEEPING FOR THE WRONG THING'S
+SHAPE:** a coalesce whose variable is tested for null somewhere else -- a guard
+that was written and cannot fire. **Exactly two instances on the platform**, both
+in `sairncare.html`:
+
+    _prRules = Array.isArray(rows) ? rows : [];   // null -> []
+    ...
+    if (_prRules === null) { cov.textContent = 'Coverage: not loaded'; ... }
+
+The coalesce runs first. After ANY click of Refresh Rules or Load Rules the null
+branch is unreachable, and a failed read renders:
+
+    HCBS coverage: 0 of 4 states routable
+    No billing rules are loaded yet ... run sql/..._schema.sql and load ..._seed.json
+
+    Coverage: 0 of 4 states fully loaded
+    No compliance rules are loaded yet -- run sql/..._schema.sql and load ..._seed.json
+
+**THE REMEDIATION ADVICE IS THE HARMFUL HALF, not the count.** A timeout, a 401
+without an employee session, a 503, or a 200 carrying `ok:false` told an
+assisted-living operator that their state's **staffing, training and licensure
+requirements are absent**, and told a biller that **no Medicaid HCBS rules
+exist** -- then sent both to re-run a seed that is very probably already loaded.
+The panel's own header says *"an uncovered state must read as an explicit gap,
+never as 'no requirements'"*. A failure is not a gap either.
+
+The authors' intent is plainly visible in the dead branch and in its wording.
+This is not a missing guard; it is a guard defeated by the line above it.
+
+**THREE STATES NOW, because the two existing messages are each right for their
+own case and neither is right for a failure:**
+
+    null + !failed  -> never loaded this session  -> "Click Refresh Rules"
+    null +  failed  -> the read did not come back -> say so, advise NO SQL
+    []              -> the server really has none -> keep the run-the-SQL advice
+
+An arm asserts each, including that a genuinely empty set **keeps** the advice --
+otherwise the fix would quietly take it away from the case where it is correct.
+
+**13 arms, 6 mutation controls, all biting, `sairncare.html` restored
+byte-identical by sha256.** The controls include both coalesces returning, both
+failure flags being stubbed to false, the failed-read box advising the SQL again,
+and the null guard being removed so a never-loaded panel claims 0 of 4.
+
+**One design note worth keeping:** the flag is set from the SAME `Array.isArray`
+test that decides the value, and an arm pins that. Two independent tests of
+`rows` could drift and produce a fourth, incoherent state -- a null cache with
+`failed=false`, which would render the click-refresh message after a real
+failure. Deriving both from one test makes that unrepresentable rather than
+merely unlikely.

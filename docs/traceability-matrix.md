@@ -155,6 +155,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | ~~AI Budget Early Warning: `f072765` fixed 5 review findings and was never independently re-reviewed~~ | **CLOSED 2026-09-04 (Cody)** in `1fc666ec` — reviewed, one real defect found and fixed, two reported for decision | `tests/sairnbuild_budget_early_warning.js` |
 
+### sairncare
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| **A failed rule read rendered as an authoritative EMPTY RULE SET on the compliance and billing panels &mdash; and told the operator to re-run the seed.** The guard against it was already written and could not fire | **CLOSED 2026-09-11 (Cody)** &mdash; 13 fault arms in `tests/faults/alf_rule_read_faults.js`, 6 mutation controls bite, file restored byte-identical; the first suite on this platform aimed at the READ | `tests/faults/alf_rule_read_faults.js` |
+
 ### sairndental
 
 | Requirement | Status | Proved by |
