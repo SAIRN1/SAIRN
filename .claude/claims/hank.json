@@ -1125,6 +1125,16 @@
       "claimed_at_epoch": 1789224340.6452582,
       "status": "released",
       "released_at": "2026-09-12T14:59:40Z"
+    },
+    {
+      "id": "hank-1789228023",
+      "session": "hank",
+      "subject": "never-run-migrations",
+      "task": "package the schema files for the 31 live-queried tables",
+      "claimed_at": "2026-09-12T15:47:03Z",
+      "claimed_at_epoch": 1789228023.2080994,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
