@@ -1477,3 +1477,40 @@ assumed.
   the live table -- the only finding `sql_preflight --live` reports repo-wide.
   SAIRNroofing, a money table, a constraint about a released draw amount not
   going negative. Not mine, not touched, named so it is not lost.
+
+---
+
+## 2026-09-12 -- H6's isolation, and a 2500-character window that hid a Tier A resource
+
+**H6 fixed as Michael directed: the isolation, not the assertion.** `run_report_only_checks_probe.py` arm H6 ran the REAL hook over the REAL repo and asserted silence -- it never CREATED a clean sweep, it hoped for one. Report-only checkers exist in order to report, so it failed permanently. **A test that fails for a correct reason, forever, is one people learn to scroll past -- and then the genuine failure beside it gets scrolled past too.** H6 now sweeps a synthetic repo of throwaway checkers with known exit codes, the same way section I already stubs `roc.REPO`/`REGISTRY`.
+
+**H7 is new and is the reason H6 means anything.** Silence is also what a hook that never ran produces, so a bare `return 0` at the top of `hook_main()` would have passed the old H6 forever. H7 plants a fixture that MUST make it speak; H7a/b/c assert it names the dirty checker, not the clean one, and still exits 0. **66 checks, 0 failed.**
+
+**Also closed: the snapshot re-capture I made last session had silently disarmed the trial-gate tripwire.** Pretty-printing killed both text anchors in `license_trial_gate_probe.py`, so arms 1 and 2 mutated nothing. The design caught it -- a dead anchor FAILS rather than skipping -- and repairing it also cleared `run_mutation_anchor_probe.py`. **All three full-suite failures are now zero, from two causes.**
+
+### The removal-path queue was measuring itself wrong
+
+**`shapes()` read a fixed 2500-character window from each dispatch. Wrong in BOTH directions at once.**
+
+**TOO LARGE, and this is the one that hid something.** `msb_food_cost_log`'s first dispatch is READ-ONLY; 2,322 characters downstream, in a **different branch**, `msb_sale_hours` does a genuine single-row write. `SINGLE_Q` is tested first and searched the whole window, so **the neighbour's write won and a TIER A resource was classified single-row and dropped out of the stuck list entirely.** Its own write is `on_conflict=license_hash,costlog_id` -- keyed, no removal verb. **A false EXEMPTION never appears anywhere to be argued with, which is why it outlived a false finding would have.**
+
+**TOO SMALL.** `sd_public_shop`'s own write sits at **+2499** and the matched string runs past 2500 -- **missed by one character**, came back UNRESOLVED, sat in a 321-item queue it does not belong in.
+
+**AND THE FIX IS NOT A BIGGER NUMBER.** Raising it would have made `sd_quote_requests` keyed on `lead_id` -- **sd_crm's** id column, another table -- because its own branch holds no `on_conflict` at all. The region is now bounded by the **next dispatch**.
+
+**MY FIRST ATTEMPT REINTRODUCED THE BUG ONE LINE BELOW ITS OWN FIX.** Grouping `resource === 'a' || resource === 'b'` by "within 200 characters" merged two genuinely separate short branches. Caught by my own new arm 11C on a 110-character fixture. **A magic number replaced by a smaller magic number is not a fix; a line break is a fact about the source.**
+
+**Measured: UNRESOLVED 87 → 58, "UNRESOLVED with no removal verb" 60 → 30, single-row 2 → 3.** That last one is the cleanest confirmation available -- the tool's header has **always** named three single-row collection upserts and the derivation had two of them plus a wrong one. **Prose and derivation agree for the first time.**
+
+**Two stale numbers corrected alongside, because both would be quoted:** the docstring claimed 46 append-only labels (it is 16, and 46 predates two corrections to the label reader -- **no new number put in its place**, run the tool); `by_app` summed to 324 against 321 entries and the recount's deltas are sairndental −2, sairnvet −1, **exactly Hank's recorded three from 2026-09-11**.
+
+**The baseline diff is 46 lines, not 846** -- rebuilt on its ORIGINAL key order rather than re-serialised sorted, so the one real addition is readable instead of buried.
+
+### Burn-down: 320 → 317, all three labelled from the writer
+
+- **`sd_hr_certs` / `sd_hr_employees`** -- NOT append-only (upserted in place, so that label would be FALSE of them), but deletion forbidden: **OSHA 1910.1053(k)(3)** requires the employer to MAKE AND MAINTAIN the silica training record. Verified from `sql/sd_hr_schema.sql:84` (select/insert/update only) and `stonedesk-hr.html:1166` (`status='Inactive'`), **not** from the sd-data.js comment asserting it.
+- **`sd_quote_requests` came out the other way and is recorded as a REAL GAP.** Refusing to let staff EDIT the text is an argument against editing, **not against removal**. **Declining does not hide it** -- `pcRenderRequests()` has no status filter, so a declined request stays in the table forever, and the feed is an unauthenticated public form: the inbox grows monotonically and the shop cannot clear it. Not fixed -- delete verb vs soft delete vs panel filter is a product decision.
+
+### Collision flagged, not discovered late
+
+**The marketplace/tools package consolidation Michael suggested is already claimed by Fourth** (`marketplace-package inventory and structure for the genericized tools package`, claimed minutes before I looked). Said so before starting rather than after. Picked the removal-path burn-down instead; `sairn_claim.py check` returned CLEAR and it was claimed before any work began.
