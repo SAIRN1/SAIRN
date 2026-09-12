@@ -979,6 +979,16 @@
       "claimed_at_epoch": 1789211378.3667638,
       "status": "released",
       "released_at": "2026-09-12T12:49:07Z"
+    },
+    {
+      "id": "cody-1789219628",
+      "session": "cody",
+      "subject": "point-the-unwired-checkers",
+      "task": "run each against the real codebase",
+      "claimed_at": "2026-09-12T13:27:08Z",
+      "claimed_at_epoch": 1789219628.4323976,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
