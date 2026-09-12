@@ -417,6 +417,24 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'tooling_inventory.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-12, the day it was built',
+        'catches': 'docs/TOOLING-INVENTORY.md no longer matching the wiring -- a '
+                   'tool added, promoted, wired or removed without the inventory '
+                   'being regenerated',
+        'why_it_matters': "the document it replaces was hand-derived, correct on "
+                          "2026-09-09 and STALE BY 2026-09-12: it said 77 tools, 3 "
+                          "report-only and 28 unwired checkers, against 97 and 29 "
+                          "three days later. A tool that does not run produces no "
+                          "output to contradict an inventory, which makes this the "
+                          "one document whose staleness is hardest to notice -- so "
+                          "the only thing that keeps it true is a check that fails",
+        'evidence': 'real run 2026-09-12: OK, and its probe mutates the committed '
+                    'document and confirms --check exits non-zero',
+    },
+    {
         'tool': 'schema_snapshot_freshness.py',
         'mode': 'once',
         'args': [],

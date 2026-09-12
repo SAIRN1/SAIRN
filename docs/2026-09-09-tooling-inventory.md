@@ -1,3 +1,21 @@
+> **SUPERSEDED 2026-09-12 by `docs/TOOLING-INVENTORY.md`, which is GENERATED.**
+> Kept as the record of the first pass and of what it cost, not as a current
+> source. **Every count below is now wrong:** it says 77 tools, 3 report-only and
+> 28 unwired checkers; measured 2026-09-12 the repo has **97 tools, 29
+> report-only and 13 checkers pointed at nothing**. Nine were promoted and twelve
+> more were built in the three days after this was written, and nothing about
+> this file knew -- which is exactly why the replacement is derived from
+> `.claude/settings.json`, the push gate, `report_only_checks.py`'s own REGISTRY
+> and `git ls-files`, with a `--check` that fails when the repo moves.
+>
+> **The one claim in here that was WRONG on the day, not just stale:** it listed
+> `verify_review_gates.py` among the tools the push gate invokes. Nothing in this
+> repo references that file at all. Gate check 9 runs the test files named in the
+> gate's own `GUARD_TESTS` list directly.
+>
+> Read this for the method and for the original finding. Read the generated file
+> for what is true now.
+
 # The tooling inventory — what exists, what it catches, and what actually runs
 
 **Built 2026-09-09 (Cody).** First real inventory of `tools/`. Every number

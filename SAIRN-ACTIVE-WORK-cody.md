@@ -2770,3 +2770,78 @@ test that decides the value, and an arm pins that. Two independent tests of
 `failed=false`, which would render the click-refresh message after a real
 failure. Deriving both from one test makes that unrepresentable rather than
 merely unlikely.
+
+## 2026-09-12 (Cody) -- the tooling inventory, generated, because the last one
+## was stale in three days
+
+Skill used: `sairn-memory-curator` (where a fact belongs, and the tense/
+verification rules that keep it true). Claim: `tooling-inventory-refresh`.
+Michael's task.
+
+**THE OLD DOC'S NUMBERS WERE ALL WRONG BY THE TIME I READ IT.**
+`docs/2026-09-09-tooling-inventory.md` said 77 tools, 3 report-only, 28 unwired
+checkers. Measured 2026-09-12: **97 tools, 29 report-only, 13 unpointed
+checkers.** Nine checkers were promoted and twelve more were built in the three
+days after it was written.
+
+**Why that is worse here than anywhere else, and the reason the replacement is
+generated:** a tool that does not run produces no output to contradict an
+inventory. Every other stale document in this repo eventually gets caught by the
+thing it describes behaving differently. This one cannot be. So
+`docs/TOOLING-INVENTORY.md` is derived every run from `.claude/settings.json`,
+the push gate's own numbered `CHECK n:` blocks, `report_only_checks.py`'s
+REGISTRY, `tests/`, and `git ls-files tools/` -- never from a prior inventory --
+and `--check` fails when the repo moves. Wired as report-only checker 27, so it
+runs on every push.
+
+**ONE CLAIM IN THE OLD DOC WAS WRONG ON THE DAY, not merely stale.** It listed
+`verify_review_gates.py` among the tools the push gate invokes. **Nothing in
+this repo references that file at all** -- gate check 9 runs the test files named
+in the gate's own `GUARD_TESTS` list directly. I had copied that claim into my
+first draft of the generator before checking it. A wrong claim about what guards
+a push is the exact failure this document exists to stop, so it is corrected in
+the generator and called out in the superseded header on the old file.
+
+**THE HAND-WRITTEN HALF IS KEPT MINIMAL AND CANNOT DRIFT SILENTLY.** `catches`
+for the 26 report-only tools is read straight out of REGISTRY -- the copy that
+actually runs -- so the two cannot disagree. Everything else carries a one-line
+`PURPOSES` entry, and the generator **REFUSES to run** if a tool has no entry, or
+if an entry names a tool that is gone. Both directions are errors rather than
+blank cells.
+
+**ITS OWN PROBE FOUND TWO DEFECTS IN IT, and both are the defect it exists to
+prevent:**
+
+1. `sairn_strict_args_check.py` was described in BOTH REGISTRY and `PURPOSES` --
+   **the claim-in-two-places failure, inside the tool built to end it.** It
+   existed for exactly one commit. REGISTRY wins; the duplicate is gone.
+2. `SUITE-ONLY` accepted ANY MENTION of a tool under `tests/`, which
+   over-classified three LIVE tools named inside a *list* in
+   `tests/sairn_http_challenge.py`. **SUITE-ONLY reads as coverage and UNWIRED
+   reads as a gap, so that over-counted in the OPTIMISTIC direction** -- the one
+   this document must not fail in. Measured before tightening: exactly those
+   three moved, SUITE-ONLY 18 -> 15, UNWIRED 39 -> 42. Their verdict was
+   unchanged (unwired is correct for a LIVE tool) but the COUNT was wrong, and
+   the count is what the file exists to state.
+
+**THE ACTIONABLE OUTPUT, listed BY NAME rather than as a statistic**, because a
+count is not something anybody can act on: **5 checkers wired nowhere** --
+`checkblocks.py`, `sairn_ai_fact_scan.py`, `sairn_dead_function_sweep.py`,
+`sairn_reachability_probe.py`, `verify_review_gates.py` -- **and 8 the suite runs
+against FIXTURES only**, including `write_path_fault_scan.py`, which is mine.
+**A green probe on an unpointed checker is the most convincing possible form of
+"we are covered", and it is coverage of the tool rather than of the code.**
+
+11 further tools make a LIVE network or database request. Those are correctly
+manual -- wiring one into a hook would make every push talk to the outside world
+-- and the document says so explicitly so they are not miscounted as a gap.
+
+**22 probe arms**, including the one that matters: it mutates the committed
+document, confirms `--check` exits non-zero, and restores it byte-identical.
+A generator that cannot be made to fail is indistinguishable from one that looks
+at nothing.
+
+**Adjacent claim, said out loud:** Fourth holds `checker-output-determinism --
+every promoted checker output stable across hash seeds`. This registers a new
+promoted checker, so their sweep will pick it up; different mechanism, same
+registry. No overlap in files.
