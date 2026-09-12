@@ -420,6 +420,80 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'checkblocks.py',
+        'mode': 'apps',
+        'verdict': by_exit,
+        'promoted': '2026-09-12, after being given an exit code it never had',
+        'catches': 'a <script> block in an app file that no longer PARSES -- '
+                   'Guardian Check 0a, extracted per block with an HTML parser '
+                   'and run through node --check',
+        'why_it_matters': "CLAUDE.md calls this check non-negotiable and says it "
+                          "hard blocks everything else, and NOTHING ON THIS "
+                          "PLATFORM PARSED APP JAVASCRIPT ON A PUSH. "
+                          "html_script_check.py is the PostToolUse hook whose NAME "
+                          "suggests it does, and its own header says in capitals "
+                          "that it does not -- 'There is no `node --check` here and "
+                          "never has been'. So the syntax gate was a habit, not a "
+                          "mechanism. Worse, this tool printed FAILED_BLOCKS:1 and "
+                          "exited 0, so wiring it on exit code before 2026-09-12 "
+                          "would have reported a clean pass on a file that does not "
+                          "parse -- proven with a planted `function zz({ {{{ ;`",
+        'evidence': 'real run 2026-09-12: all 22 root .html files exit 0; a planted '
+                    'SyntaxError exits 1; a file with no script block exits 2, '
+                    'which is could-not-tell and NOT a pass',
+    },
+    {
+        'tool': 'comment_sensitivity_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-12, once its one real finding was fixed',
+        'catches': "a checker whose ANSWER changes when the target's comments are "
+                   'stripped -- it is matching text that describes code rather '
+                   'than code',
+        'why_it_matters': 'three separate tools were counting their own '
+                          'documentation within two days (write_path_fault_scan.py, '
+                          'sairn_storage_wrapper_honesty.js, and the two probes '
+                          'CLAUDE.md records), and the direction that matters is '
+                          'the quiet one: an assertion of PRESENCE goes GREEN when '
+                          'the only surviving mention of the thing is a comment '
+                          'describing the feature that was deleted',
+        'evidence': 'real run 2026-09-12 found ONE: key_collision_check.py counted '
+                    '93 key writes on stonedesk.html raw and 92 stripped -- one was '
+                    'a line of prose. Verdict unchanged either way, which is why it '
+                    'survived. Fixed in the same commit; 0 findings after, across 22 '
+                    'targets and 6 checkers',
+    },
+    {
+        'tool': 'criticality_tier_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-12',
+        'catches': 'a registered resource in a re-tiered app with no criticality '
+                   'tier, a tier row naming a resource that no longer exists, and '
+                   'a Tier A resource with no evidence line',
+        'why_it_matters': 'the tiering is the input to every other priority call '
+                          'on this platform, and it is 382 rows maintained by hand '
+                          'across 17 apps. A resource added without a tier is '
+                          'invisible to that judgement rather than low-priority',
+        'evidence': 'real run 2026-09-12: 382 registered, 382 rows, 17 re-tiered '
+                    'apps, 78 Tier A, PROBLEMS:0',
+    },
+    {
+        'tool': 'soup_register_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-12',
+        'catches': 'a third-party component the product RUNS that is absent from '
+                   'the SOUP register, and a register entry for something no '
+                   'longer running',
+        'why_it_matters': 'SOUP tracking is a standing discipline rather than a '
+                          'one-time task, and a register nobody checks is a list '
+                          'rather than a control -- the same shape as every other '
+                          'hand-maintained claim in this repo',
+        'evidence': 'real run 2026-09-12: 3 npm direct dependencies, 3 CDN scripts '
+                    'in root apps, CLEAN both directions',
+    },
+    {
         'tool': 'tooling_inventory.py',
         'mode': 'once',
         # --check, NOT bare. Without it the hook runs the GENERATOR on every push
@@ -708,6 +782,25 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('cleanup_residue_check.py', 'it needs a LIVE licence key and a database '
+     'reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with '
+     '"CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on '
+     'every push trains people to ignore it, and its own output already says a '
+     'clean result does NOT mean the file was run. Promote it the day it can tell '
+     '"the rows are gone" from "I could not look".'),
+    ('verify_review_gates.py', 'it takes a PLAN FILE and a ledger as arguments and '
+     '**nothing in this repo references it at all** -- checked by grep across '
+     'tools/, tests/, .claude/ and the docs, where the only mention was the old '
+     'hand-written inventory claiming the push gate invoked it. It does not. The '
+     'workflow it serves either never landed or is gone; deciding that is a '
+     'separate call from wiring it, so it is recorded here rather than promoted or '
+     'deleted.'),
+    ('write_path_fault_scan.py', 'a POINTER, not a gate, and its own output says so '
+     'on every run: "THIS IS NOT A LIST OF DEFECTS." Of the eight sites it flagged '
+     'in sairngrounds, FIVE were safe, and of the six in stonedesk, FOUR were. '
+     'Promoting it would put a standing 25-line report on every push whose entries '
+     'are candidates to read. Same class as sairn_ai_fact_scan.py above and '
+     'recorded for the same reason.'),
     ('sairn_ai_fact_scan.py', 'a READ-LIST, not a gate. Its own output says '
      '"every one is a candidate to READ, not a confirmed defect: a legitimate '
      'default (role || \'user\') and a fabricated one (city || \'Westlake\') are '

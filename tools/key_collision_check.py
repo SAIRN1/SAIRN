@@ -69,6 +69,7 @@ from collections import defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 from extract_scripts import ScriptExtractor
+import jscomments
 
 FUNC_DECL_RE = re.compile(r'function\s+([A-Za-z_$][\w$]*)\s*\(')
 FUNC_EXPR_RE = re.compile(r'([A-Za-z_$][\w$.]*)\s*=\s*function\s*\(')
@@ -434,6 +435,24 @@ def main():
     path = sys.argv[1] if len(sys.argv) > 1 else 'stonedesk.html'
     with open(path, encoding='utf-8', errors='replace') as f:
         html = f.read()
+
+    # ── COMMENTS STRIPPED BEFORE COUNTING ANYTHING (2026-09-12) ─────────────
+    # Found by tools/comment_sensitivity_check.py on its first run against the
+    # real tree: this file answered TOTAL_KEY_WRITES:93 on stonedesk.html raw and
+    # 92 on a comment-blanked copy. One of the "key writes" it was counting is a
+    # line of PROSE describing a write.
+    #
+    # The VERDICT did not change -- COLLISIONS:4, exit 0 either way -- which is
+    # exactly why it survived: the number was wrong and the answer was right, so
+    # nothing contradicted it. A COLLISION sourced from a comment would be the
+    # same shape and would be a false finding on a checker that runs on every
+    # push.
+    #
+    # strip_comments() is length- and newline-preserving, so every line number
+    # this file reports stays true. Same treatment, same day, as
+    # write_path_fault_scan.py and sairn_storage_wrapper_honesty.js -- all three
+    # were counting their own documentation.
+    html = jscomments.strip_comments(html)
 
     wrappers = detect_storage_wrappers(html)
     SETITEM_RE = make_setitem_re(wrappers)

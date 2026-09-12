@@ -2892,3 +2892,91 @@ this machine, an escape sequence typed into a Python heredoc does not survive.**
 Build `\b` as `chr(92) + 'b'` in code, and write it with an explicit byte
 sequence in prose. Three of the four instances were mine in one hour, and none of
 them was caught by reading.
+
+## 2026-09-12 (Cody) -- pointing the unwired checkers, and the syntax gate that
+## was a habit rather than a mechanism
+
+Skill used: `sairn-silent-failure-sweep`. Claim: `point-the-unwired-checkers`.
+Follow-on from my own inventory: it named 13 checkers pointed at nothing, and a
+count nobody acts on is a statistic.
+
+**RECONCILED FIRST, as asked:** CC's `48a0c844` (07:29) fixed
+`license_trial_gate_probe.py`'s dead snapshot anchors, and it now reports
+`PROBES THAT DID NOT BITE: none`. `run_mutation_anchor_probe.py` passes too. My
+earlier report was a timing gap -- my suite run started before that commit
+reached my tree. Nothing to reconcile in substance. Only
+`run_report_only_checks_probe.py` still fails, on the two remaining stale-snapshot
+reporters, which is CC's open claim.
+
+**THE BIGGEST FINDING WAS ONE I HAD ALREADY ASSUMED AWAY.** My inventory listed
+`checkblocks.py` as unwired and I had written that `html_script_check.py` -- the
+PostToolUse hook -- covered it. **It does not.** Its own header says in capitals:
+*"IT DOES NOT VERIFY JAVASCRIPT SYNTAX. There is no `node --check` here and never
+has been."* I read it instead of assuming, which is the only reason this is in the
+log rather than in the inventory as a wrong claim.
+
+**So Guardian Check 0a -- which CLAUDE.md calls non-negotiable and says "hard
+blocks everything else" -- ran NOWHERE automatically.** It was a habit: a human
+running it per file and reading the number.
+
+**AND THE TOOL COULD NOT FAIL.** `checkblocks.py` printed `FAILED_BLOCKS:1` and
+exited **0**. Proven, not read: a planted `function zz({ {{{ ;` in a copy of
+`sairnvet.html` produced one failed block and exit 0. **Wiring it on exit code
+before this would have reported a clean pass on a file that does not parse** --
+the storage-wrapper-returning-a-boolean-nobody-read shape, applied to the syntax
+gate. It now exits 1 on a failure and **2 on could-not-tell**: no `node` on PATH,
+or no script block found at all, which on an app file means the extractor failed
+rather than the file being clean. All 22 root `.html` files exit 0.
+
+**A THIRD FINDING CAME OUT OF PROMOTING THE SECOND.**
+`comment_sensitivity_check.py` on its first real run against the tree reported
+`key_collision_check.py` counting **93 key writes on `stonedesk.html` raw and 92
+on a comment-blanked copy** -- one "key write" was a line of prose.
+
+**The verdict was identical either way -- `COLLISIONS:4`, exit 0 -- which is
+exactly why it survived.** The number was wrong and the answer was right, so
+nothing ever contradicted it. A *collision* sourced from a comment would be the
+same shape and would be a false finding on a checker that runs on every push.
+Fixed by stripping comments first, and verified the careful way: the HEAD copy and
+the fixed copy run side by side across **all 22 files -- zero verdicts changed,
+exactly one count corrected.** That comparison needed the old copy placed inside
+`tools/` so its sibling imports resolved; run from a temp directory it crashed and
+reported "no verdict" for every file, which would have read as 22 changes.
+
+**PROMOTED (4), each measured clean first:** `checkblocks.py`,
+`comment_sensitivity_check.py`, `criticality_tier_check.py` (382 registered, 382
+rows, 17 re-tiered apps, PROBLEMS:0), `soup_register_check.py` (3 npm deps, 3 CDN
+scripts, clean both directions).
+
+**RECORDED AS DELIBERATE (3), with the reason in `NOT_PROMOTED` rather than left
+as an open gap:** `cleanup_residue_check.py` exits 2 could-not-tell without a live
+licence, and a tool that reports could-not-tell on every push trains people to
+ignore it; `verify_review_gates.py` is referenced by **nothing** -- the only
+mention anywhere was the old inventory's wrong claim -- and deciding whether its
+workflow should exist is a separate call from wiring it; `write_path_fault_scan.py`
+is mine and is a POINTER whose own output says *"THIS IS NOT A LIST OF DEFECTS"*,
+with 5 of 8 sairngrounds sites and 4 of 6 stonedesk sites safe on reading.
+
+**AND MY INVENTORY'S HEADLINE NUMBER WAS WRONG BY SIX.** It said 13 unpointed
+checkers without reading `report_only_checks.py`'s `NOT_PROMOTED` list, where six
+already carried a recorded reason -- in the file the generator was already
+importing.
+
+**That is the mirror of the SUITE-ONLY error in the same file, one day apart:
+there the count OVERSTATED coverage, here it OVERSTATED the gap. Same root cause
+both times -- a source of truth that existed and was not read.** A number that
+calls a deliberate decision an unaddressed gap is how a reader stops believing the
+number. There is a `DECIDED` status now, and it prints each reason.
+
+**The actionable count is 0, and the document says plainly that ZERO IS NOT
+"COVERED"** -- it means nothing is unexamined. A promoted checker reports; it does
+not block, and several DECIDED entries are decisions to look later. Writing that
+into the generator rather than the commit message is deliberate: the number will
+be read again by somebody who did not do this pass.
+
+**Two more defects in my own probe, both from the promotion:** four tools moved
+into REGISTRY and their `PURPOSES` entries became duplicates (section C caught
+it), and section D's "delete a purpose and demand a refusal" arm picked a victim
+that was ALSO in REGISTRY, so `purpose()` fell back and the refusal never fired --
+**an arm passing because the mutation was invisible.** The victim is now chosen
+from PURPOSES-only.

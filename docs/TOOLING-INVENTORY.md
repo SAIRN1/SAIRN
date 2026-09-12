@@ -24,10 +24,11 @@ makes this the one inventory whose staleness is hardest to notice.
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 31 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 35 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **SUITE-ONLY** | 15 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 43 | nothing runs these at all |
+| **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **SUITE-ONLY** | 6 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 30 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -38,31 +39,24 @@ By what they are, independent of wiring:
 | LIBRARY | 19 |
 | LIVE | 13 |
 
-**The number to act on: 13 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 5 wired nowhere at all, and 8
-that the suite runs against FIXTURES only. The second group is the worse one:
-a green probe on an unpointed checker is the most convincing possible form of
-"we are covered", and it is coverage of the tool rather than of the code.
+**18 tool(s) are DECIDED -- deliberately not promoted, with the reason
+recorded in `report_only_checks.py`.** They are listed below with those
+reasons and are NOT counted as gaps. The first version of this document did
+not read that list and reported six of them as unaddressed.
 
-The 13, by name, so this is actionable rather than a statistic:
+**The number to act on: ZERO.** Every checker that answers a question
+about this codebase is now either promoted to report-only or carries a
+recorded reason for not being. That was 13 on 2026-09-12 before the
+pass that closed it: four were promoted (`checkblocks.py`,
+`comment_sensitivity_check.py`, `criticality_tier_check.py`,
+`soup_register_check.py`), three were recorded as deliberate, and six
+had already been decided in a list this document was not reading.
 
-| Tool | Status | What it catches |
-|---|---|---|
-| `checkblocks.py` | UNWIRED | every script block in an app file, parsed independently -- Guardian Check 0a |
-| `cleanup_residue_check.py` | SUITE-ONLY | rows a cleanup SQL file claims to have removed and did not |
-| `comment_sensitivity_check.py` | SUITE-ONLY | a checker whose verdict changes when comments are stripped |
-| `criticality_tier_check.py` | SUITE-ONLY | a resource in no criticality tier, and a tier naming a resource that is gone |
-| `local_only_collection_check.py` | SUITE-ONLY | a collection written only to localStorage that never reaches a server |
-| `missing_dom_target_check.py` | SUITE-ONLY | a getElementById target that appears as no id in the file |
-| `sairn_ai_fact_scan.py` | UNWIRED | a number an AI panel states that no function computes |
-| `sairn_dead_function_sweep.py` | UNWIRED | a function with no caller anywhere |
-| `sairn_reachability_probe.py` | UNWIRED | the rendered-DOM half of reachability, from a browser snapshot |
-| `sairn_stale_snapshot_scan.py` | SUITE-ONLY | a panel rendering from a snapshot nothing refreshes |
-| `soup_register_check.py` | SUITE-ONLY | a third-party dependency absent from the SOUP register, and a register entry that is gone |
-| `verify_review_gates.py` | UNWIRED | review-gate evidence in a claims ledger -- referenced by NOTHING in this repo |
-| `write_path_fault_scan.py` | SUITE-ONLY | a server write whose result is read on the success path only, or not at all |
+**That is not the same as being covered.** It means nothing is
+unexamined. A promoted checker reports; it does not block, and several
+of the DECIDED entries are decisions to look later.
 
-**Separately, 12 tool(s) make a LIVE network or database request.** Those are
+**Separately, 3 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -108,7 +102,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (31)
+## REPORT-ONLY (35)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -117,9 +111,12 @@ quiet in practice.
 
 | Tool | Promoted | What it catches |
 |---|---|---|
+| `checkblocks.py` | 2026-09-12, after being given an exit code it never had | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check |
 | `cleanup_confirm_check.py` | 2026-09-10, written the same day for a rule that existed since 2026-08-26 with no mechanism behind it | a cleanup or migration file whose destructive statements carry no confirm query and no expected answer -- so nobody can ever establish what it did |
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
+| `comment_sensitivity_check.py` | 2026-09-12, once its one real finding was fixed | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code |
 | `control_char_check.py` | 2026-09-10, the day it was built | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
+| `criticality_tier_check.py` | 2026-09-12 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line |
 | `defect_register.py` | 2026-09-10, the day it was built | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice |
 | `discarded_verdict_check.py` | 2026-09-10 | a refusal that is computed and then not read -- the gate runs and its answer is thrown away |
 | `discarded_verdict_crossfile.py` | 2026-09-10 | the CROSS-MODULE half: a verdict returned by a required module and dropped in another file |
@@ -140,6 +137,7 @@ quiet in practice.
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
+| `soup_register_check.py` | 2026-09-12 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running |
 | `tooling_inventory.py` | 2026-09-12, the day it was built | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated |
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
 | `truthy_sum_check.py` | 2026-09-11, the day it was built | a NEW `+ (x || 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding |
@@ -156,6 +154,38 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
+## DECIDED -- not promoted, on purpose (18)
+
+**These are not gaps.** Each carries a recorded reason in
+`tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
+output refuses to be quoted bare, a tool needing a browser snapshot, one with
+an open owned finding, a live network probe. The first version of this
+document did not read that list and counted six of them as unaddressed, which
+is how a reader stops believing the number.
+
+| Tool | Kind | Why not promoted |
+|---|---|---|
+| `cleanup_residue_check.py` | CHECKER | it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look". |
+| `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `local_only_collection_check.py` | CHECKER | its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see". |
+| `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
+| `probe_public_book_guardian.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `reclassification_sweep.py` | LIVE | one-off audits against a point in time, not standing checks. |
+| `rf_claim_gate_live_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `rf_roundtrip_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
+| `sairn_ai_fact_scan.py` | CHECKER | a READ-LIST, not a gate. Its own output says "every one is a candidate to READ, not a confirmed defect: a legitimate default (role || 'user') and a fabricated one (city || 'Westlake') are the same shape and only a human can tell them apart." 14 hits today. |
+| `sairn_app_map_check.py` | LIVE | CLEAN, but it makes a LIVE HTTP request per app route -- same reason waf_rule_check.py is held out. Its network half is the point of the tool, so it wants a could-not-tell code before it can be wired, not just a promotion. |
+| `sairn_dead_function_sweep.py` | CHECKER | a research sweep: 99 dead functions today, and its own line is "verify each site by hand before deleting". C1 and C2 are opposite fixes and the caller list decides. |
+| `sairn_reachability_probe.py` | CHECKER | its header says "This is a PROBE, not a gate. It over-reports by construction ... so it prints its own caveat rather than a verdict." |
+| `sairn_stale_snapshot_scan.py` | CHECKER | says in its own output "do not treat this total as a score, and do not drive it to zero" -- a rising number can mean the code got better. A gate cannot be built on a number like that. |
+| `sairnlaw_citation_audit.py` | LIVE | one-off audits against a point in time, not standing checks. |
+| `va_rule_currency.py` | LIVE | one-off audits against a point in time, not standing checks. |
+| `verify_review_gates.py` | CHECKER | it takes a PLAN FILE and a ledger as arguments and **nothing in this repo references it at all** -- checked by grep across tools/, tests/, .claude/ and the docs, where the only mention was the old hand-written inventory claiming the push gate invoked it. It does not. The workflow it serves either never landed or is gone; deciding that is a separate call from wiring it, so it is recorded here rather than promoted or deleted. |
+| `waf_rule_check.py` | LIVE | CLEAN today, and gate-shaped -- but it makes a LIVE API call, so a transient network failure would read as a finding on a push. That is the false alarm that gets a report-only checker switched off. Run it by hand, or promote it once it distinguishes "drifted" from "could not ask" the way the SQL preflight does. |
+| `write_path_fault_scan.py` | CHECKER | a POINTER, not a gate, and its own output says so on every run: "THIS IS NOT A LIST OF DEFECTS." Of the eight sites it flagged in sairngrounds, FIVE were safe, and of the six in stonedesk, FOUR were. Promoting it would put a standing 25-line report on every push whose entries are candidates to read. Same class as sairn_ai_fact_scan.py above and recorded for the same reason. |
+
+---
+
 ## ADVISORY (2)
 
 | Tool | Kind | What it catches | Probe under tests/ |
@@ -165,32 +195,23 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## SUITE-ONLY (15)
+## SUITE-ONLY (6)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `cleanup_residue_check.py` | CHECKER | rows a cleanup SQL file claims to have removed and did not | `cleanup_residue_probe.py` |
-| `comment_sensitivity_check.py` | CHECKER | a checker whose verdict changes when comments are stripped | `run_comment_sensitivity_probe.py`, `run_literal_drift_determinism_probe.py` |
-| `criticality_tier_check.py` | CHECKER | a resource in no criticality tier, and a tier naming a resource that is gone | `run_criticality_tier_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `sairn_storage_wrapper_honesty.js` |
-| `local_only_collection_check.py` | CHECKER | a collection written only to localStorage that never reaches a server | `dnt_vendor_backup_probe.py`, `local_only_probe.py` |
-| `missing_dom_target_check.py` | CHECKER | a getElementById target that appears as no id in the file | `stonedesk_dead_dom_readers.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `faultkit.js`, `live_mode_probe.py` |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | `run_traceability_matrix_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_matcher_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
-| `sairn_stale_snapshot_scan.py` | CHECKER | a panel rendering from a snapshot nothing refreshes | `checker_cwd_anchoring_probe.py` |
 | `schema_provisioning_check.py` | LIVE | a resource the app writes to whose table was never created | `schema_provisioning_probe.py` |
-| `soup_register_check.py` | CHECKER | a third-party dependency absent from the SOUP register, and a register entry that is gone | `run_soup_register_probe.py` |
-| `waf_rule_check.py` | LIVE | a WAF rule that would block a real request the product makes | `run_waf_rule_check_probe.py` |
-| `write_path_fault_scan.py` | CHECKER | a server write whose result is read on the success path only, or not at all | `grd_write_faults.js`, `run_write_path_scan_probe.py` |
 
 ---
 
-## UNWIRED (43)
+## UNWIRED (30)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -198,7 +219,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `checkblocks.py` | CHECKER | every script block in an app file, parsed independently -- Guardian Check 0a | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
@@ -220,27 +240,15 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `install_git_hooks.py` | LIBRARY | points core.hooksPath at .githooks -- per clone, once | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
-| `licence_recoverability_check.py` | LIVE | a licence with credential rows and zero active provisioners | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
-| `probe_public_book_guardian.py` | LIVE | the public booking endpoint's guards, live | &mdash; |
-| `reclassification_sweep.py` | LIVE | a statutory rule whose source has been reclassified | &mdash; |
-| `rf_claim_gate_live_probe.py` | LIVE | SAIRNroofing's claim gate, against the deployed endpoint | &mdash; |
-| `rf_roundtrip_probe.py` | LIVE | a SAIRNroofing write read back through the real API | &mdash; |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | &mdash; |
-| `sairn_ai_fact_scan.py` | CHECKER | a number an AI panel states that no function computes | &mdash; |
-| `sairn_app_map_check.py` | LIVE | an app absent from Guardian's own app map, and a route that 404s | &mdash; |
-| `sairn_dead_function_sweep.py` | CHECKER | a function with no caller anywhere | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
-| `sairn_reachability_probe.py` | CHECKER | the rendered-DOM half of reachability, from a browser snapshot | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
-| `sairnlaw_citation_audit.py` | LIVE | a legal citation whose source no longer says what the rule claims | &mdash; |
 | `stonedesk_storefront_live_check.py` | LIVE | whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised | &mdash; |
 | `strict_args_harness.js` | LIBRARY | proves the engine really discards a mutated parameter under strict mode | &mdash; |
-| `va_rule_currency.py` | LIVE | a Virginia rule whose published source has moved on | &mdash; |
 | `verify-session-token-app-scope.js` | LIBRARY | the semgrep rule body for the app-scope check | &mdash; |
-| `verify_review_gates.py` | CHECKER | review-gate evidence in a claims ledger -- referenced by NOTHING in this repo | &mdash; |
 
 ---
 

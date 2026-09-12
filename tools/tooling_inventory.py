@@ -89,10 +89,7 @@ PURPOSES = {
     # about what guards a push is the exact failure this document exists to stop.
     'verify_review_gates.py': ('CHECKER', 'review-gate evidence in a claims ledger -- referenced by NOTHING in this repo'),
     # --- checkers nothing invokes ------------------------------------------
-    'checkblocks.py': ('CHECKER', 'every script block in an app file, parsed independently -- Guardian Check 0a'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
-    'comment_sensitivity_check.py': ('CHECKER', 'a checker whose verdict changes when comments are stripped'),
-    'criticality_tier_check.py': ('CHECKER', 'a resource in no criticality tier, and a tier naming a resource that is gone'),
     'licence_recoverability_check.py': ('LIVE', 'a licence with credential rows and zero active provisioners'),
     'local_only_collection_check.py': ('CHECKER', 'a collection written only to localStorage that never reaches a server'),
     'missing_dom_target_check.py': ('CHECKER', 'a getElementById target that appears as no id in the file'),
@@ -108,7 +105,6 @@ PURPOSES = {
     'sairn_stale_snapshot_scan.py': ('CHECKER', 'a panel rendering from a snapshot nothing refreshes'),
     'sairnlaw_citation_audit.py': ('LIVE', 'a legal citation whose source no longer says what the rule claims'),
     'schema_provisioning_check.py': ('LIVE', 'a resource the app writes to whose table was never created'),
-    'soup_register_check.py': ('CHECKER', 'a third-party dependency absent from the SOUP register, and a register entry that is gone'),
     'va_rule_currency.py': ('LIVE', 'a Virginia rule whose published source has moved on'),
     'waf_rule_check.py': ('LIVE', 'a WAF rule that would block a real request the product makes'),
     'write_path_fault_scan.py': ('CHECKER', 'a server write whose result is read on the success path only, or not at all'),
@@ -189,14 +185,44 @@ def gate_checks():
     return [(n, found[n]) for n in sorted(found)]
 
 
-def registry():
+def _roc():
     import importlib.util
     spec = importlib.util.spec_from_file_location(
         'roc', os.path.join(REPO, 'tools', 'report_only_checks.py'))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
+    return mod
+
+
+def registry():
     return [(r['tool'], r.get('promoted', '?'), ' '.join(str(r.get('catches', '')).split()))
-            for r in mod.REGISTRY]
+            for r in _roc().REGISTRY]
+
+
+def not_promoted():
+    r"""{tool: why} from report_only_checks.py's NOT_PROMOTED list.
+
+    ADDED 2026-09-12, because the first version of this file DID NOT READ IT and
+    the headline number was wrong as a result. It counted 13 checkers as "pointed
+    at by nobody"; SIX of those are on this list with a recorded reason -- a
+    read-list whose own output refuses to be quoted bare, a tool needing a browser
+    snapshot, two with open owned findings. Somebody had already decided each one,
+    in writing, in the file this generator was already importing.
+
+    That is the mirror of the SUITE-ONLY mistake in the same file: there the count
+    OVERSTATED coverage, here it OVERSTATED the gap. Same root cause both times --
+    a source of truth that existed and was not read. A number that calls a
+    deliberate decision an unaddressed gap is how a reader stops believing the
+    number.
+
+    Entries can name several tools separated by commas; split so each is findable.
+    """
+    out = {}
+    for tools_str, why in _roc().NOT_PROMOTED:
+        for name in [s.strip() for s in tools_str.split(',')]:
+            if name:
+                out[name] = ' '.join(str(why).split())
+    return out
 
 
 def suite_refs(tools):
@@ -244,6 +270,8 @@ def classify():
     reg = dict((t, (p, c)) for t, p, c in registry())
     suite = suite_refs(tools)
 
+    nop = not_promoted()
+
     cls = {}
     for t in tools:
         evs = hk.get(t, [])
@@ -253,6 +281,12 @@ def classify():
             cls[t] = 'REPORT-ONLY'
         elif evs:
             cls[t] = 'ADVISORY'
+        elif t in nop:
+            # A RECORDED DECISION IS NOT A GAP. Checked before SUITE-ONLY and
+            # UNWIRED on purpose: several of these also have a probe, and
+            # reporting one as "the suite runs it on fixtures" buries the fact
+            # that somebody already decided not to wire it, and why.
+            cls[t] = 'DECIDED'
         elif t in suite:
             cls[t] = 'SUITE-ONLY'
         else:
@@ -287,7 +321,7 @@ def build():
             lines += ['    ' + t for t in extra]
         return None, '\n'.join(lines)
 
-    order = ['BLOCKING', 'REPORT-ONLY', 'ADVISORY', 'SUITE-ONLY', 'UNWIRED']
+    order = ['BLOCKING', 'REPORT-ONLY', 'ADVISORY', 'DECIDED', 'SUITE-ONLY', 'UNWIRED']
     counts = dict((k, sum(1 for t in tools if cls[t] == k)) for k in order)
     kinds = {}
     for t in tools:
@@ -325,6 +359,7 @@ def build():
         'REPORT-ONLY': 'runs automatically on every push, never blocks',
         'ADVISORY': 'session-start or prompt hooks, informational',
         'SUITE-ONLY': 'run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase',
+        'DECIDED': 'deliberately NOT promoted, with a reason recorded in report_only_checks.py',
         'UNWIRED': 'nothing runs these at all',
     }
     for k in order:
@@ -343,22 +378,46 @@ def build():
                       and purpose(t, reg)[0] == 'CHECKER']
     live_unwired = [t for t in tools if cls[t] in ('UNWIRED', 'SUITE-ONLY')
                     and purpose(t, reg)[0] == 'LIVE']
-    A('**The number to act on: %d checker(s) that answer a question about this'
-      % (len(unwired_checkers) + len(suite_checkers)))
-    A('codebase and are pointed at it by nobody** -- %d wired nowhere at all, and %d'
-      % (len(unwired_checkers), len(suite_checkers)))
-    A('that the suite runs against FIXTURES only. The second group is the worse one:')
-    A('a green probe on an unpointed checker is the most convincing possible form of')
-    A('"we are covered", and it is coverage of the tool rather than of the code.')
+    A('**%d tool(s) are DECIDED -- deliberately not promoted, with the reason'
+      % counts['DECIDED'])
+    A('recorded in `report_only_checks.py`.** They are listed below with those')
+    A('reasons and are NOT counted as gaps. The first version of this document did')
+    A('not read that list and reported six of them as unaddressed.')
     A('')
-    A('The %d, by name, so this is actionable rather than a statistic:' % (
-        len(unwired_checkers) + len(suite_checkers)))
-    A('')
-    A('| Tool | Status | What it catches |')
-    A('|---|---|---|')
-    for t in sorted(unwired_checkers + suite_checkers):
-        A('| `%s` | %s | %s |' % (t, cls[t], purpose(t, reg)[1]))
-    A('')
+    _act = len(unwired_checkers) + len(suite_checkers)
+    if _act == 0:
+        # THE ZERO CASE GETS ITS OWN WORDING. A document that reads as broken at
+        # zero -- "The 0, by name" under a sentence about which group is worse --
+        # is one people stop trusting at exactly the moment it has good news.
+        A('**The number to act on: ZERO.** Every checker that answers a question')
+        A('about this codebase is now either promoted to report-only or carries a')
+        A('recorded reason for not being. That was 13 on 2026-09-12 before the')
+        A('pass that closed it: four were promoted (`checkblocks.py`,')
+        A('`comment_sensitivity_check.py`, `criticality_tier_check.py`,')
+        A('`soup_register_check.py`), three were recorded as deliberate, and six')
+        A('had already been decided in a list this document was not reading.')
+        A('')
+        A('**That is not the same as being covered.** It means nothing is')
+        A('unexamined. A promoted checker reports; it does not block, and several')
+        A('of the DECIDED entries are decisions to look later.')
+        A('')
+    else:
+        A('**The number to act on: %d checker(s) that answer a question about this'
+          % _act)
+        A('codebase and are pointed at it by nobody** -- %d wired nowhere at all, and %d'
+          % (len(unwired_checkers), len(suite_checkers)))
+        A('that the suite runs against FIXTURES only. The second group is the worse one:')
+        A('a green probe on an unpointed checker is the most convincing possible form of')
+        A('"we are covered", and it is coverage of the tool rather than of the code.')
+        A('')
+    if _act:
+        A('The %d, by name, so this is actionable rather than a statistic:' % _act)
+        A('')
+        A('| Tool | Status | What it catches |')
+        A('|---|---|---|')
+        for t in sorted(unwired_checkers + suite_checkers):
+            A('| `%s` | %s | %s |' % (t, cls[t], purpose(t, reg)[1]))
+        A('')
     A('**Separately, %d tool(s) make a LIVE network or database request.** Those are' % len(live_unwired))
     A('correctly manual: wiring one into a hook would make every push talk to the')
     A('outside world. Unwired is the right state for them and is not a finding.')
@@ -415,6 +474,24 @@ def build():
     for t in _ro_hooks:
         k, c = purpose(t, reg)
         A('| `%s` | %s | %s |' % (t, k, c))
+    A('')
+    A('---')
+    A('')
+    A('## DECIDED -- not promoted, on purpose (%d)' % counts['DECIDED'])
+    A('')
+    A('**These are not gaps.** Each carries a recorded reason in')
+    A("`tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own")
+    A('output refuses to be quoted bare, a tool needing a browser snapshot, one with')
+    A('an open owned finding, a live network probe. The first version of this')
+    A('document did not read that list and counted six of them as unaddressed, which')
+    A('is how a reader stops believing the number.')
+    A('')
+    A('| Tool | Kind | Why not promoted |')
+    A('|---|---|---|')
+    _nop = not_promoted()
+    for t in sorted(t for t in tools if cls[t] == 'DECIDED'):
+        kind = purpose(t, reg)[0]
+        A('| `%s` | %s | %s |' % (t, kind, _nop.get(t, '?')))
     A('')
     A('---')
     A('')

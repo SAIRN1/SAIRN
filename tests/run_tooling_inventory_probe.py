@@ -75,7 +75,11 @@ print('\nD. the hand-written half cannot drift in either direction')
 saved = dict(ti.PURPOSES)
 try:
     # A tool with no entry must REFUSE, not render a blank cell.
-    victim = next(t for t in tools if t in ti.PURPOSES)
+    # The victim must be in PURPOSES ONLY. Picking one that is ALSO in REGISTRY
+    # makes the deletion invisible -- purpose() falls back to REGISTRY and the
+    # refusal never fires. That happened the moment four tools were promoted.
+    _regnames = {n for n, _p, _c in ti.registry()}
+    victim = next(t for t in tools if t in ti.PURPOSES and t not in _regnames)
     del ti.PURPOSES[victim]
     doc, err = ti.build()
     ok('a tool with no PURPOSES entry refuses to generate', doc is None and bool(err),
