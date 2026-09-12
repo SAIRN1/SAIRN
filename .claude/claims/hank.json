@@ -1053,8 +1053,8 @@
       "task": "contact log date suppression",
       "claimed_at": "2026-09-12T10:29:03Z",
       "claimed_at_epoch": 1789208943.7233512,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-12T10:50:34Z"
     }
   ]
 }
