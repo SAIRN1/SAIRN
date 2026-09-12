@@ -932,6 +932,16 @@
       "claimed_at_epoch": 1789219059.0722675,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789225182",
+      "session": "fourth",
+      "subject": "checker-control-registry",
+      "task": "meta-checker every promoted checker needs a plant-defect plant-clean control pair",
+      "claimed_at": "2026-09-12T14:59:42Z",
+      "claimed_at_epoch": 1789225182.8666952,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
