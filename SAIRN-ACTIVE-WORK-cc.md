@@ -1383,3 +1383,31 @@ stale capture turns into a confident wrong answer one level down.
 the genuine never-run set, which is a real work queue rather than a measurement
 artefact. That is the useful by-product: this flag also converts 39 unknowns
 into two sorted piles.
+
+**Transcription of the 2026-09-11 snapshot VERIFIED, and the method matters
+because the original paste exists only in a chat message — there is no file to
+diff against.** So the checks were built against sources that did NOT come from
+my typing:
+
+- **Internal consistency:** 337 constraint groups, **0** naming a table that does
+  not exist; **0** columns referenced inside a `CHECK` that are absent from their
+  own table's column list; **0** duplicate column names; **0** empty column
+  lists. A transcription slip in a column name would almost certainly break one
+  of those, because the constraint bodies name columns independently of the
+  column arrays.
+- **Cross-check against `sql/`:** 353 tables appear in both the snapshot and a
+  `create table` body. **Zero near-miss columns** — no snapshot column is an
+  0.82-similarity neighbour of a real declared column, which is precisely the
+  signature a typo leaves. That is the load-bearing result.
+- **274 columns showed as "not declared in sql/", and all of it is MY PARSER,
+  traced by hand rather than assumed:** `dnt_ar` declares every column on one
+  comma-separated line, which a line-anchored regex misses; `sd_subs.coi_expiry`
+  arrives via `alter table ... add column if not exists` in a later file, and the
+  first version only caught the first `add` in a multi-add statement. Both
+  confirmed by reading the actual SQL.
+
+**Stated plainly: this verifies the snapshot is internally coherent and agrees
+with the repo's own SQL. It is not a byte-for-byte diff against the paste**, and
+no check available in-repo could be. If a future checker disagrees with the
+database about one specific column, a transcription slip in a table I did not
+spot-check is still the first thing to suspect.
