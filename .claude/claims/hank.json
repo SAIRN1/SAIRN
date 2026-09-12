@@ -1105,6 +1105,16 @@
       "claimed_at_epoch": 1789222215.1256964,
       "status": "released",
       "released_at": "2026-09-12T14:23:20Z"
+    },
+    {
+      "id": "hank-1789223009",
+      "session": "hank",
+      "subject": "open-work-index",
+      "task": "committed conflict markers and the table checker blind to them",
+      "claimed_at": "2026-09-12T14:23:29Z",
+      "claimed_at_epoch": 1789223009.3301055,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
