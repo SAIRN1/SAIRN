@@ -1,5 +1,11 @@
 """Does a probe's assertion match the target's COMMENTS instead of its code?
 
+CANONICAL RULE: docs/SAIRN-PROCESS-RULES.md section 1.2, "Grep cannot tell code
+from text that describes code". This file, comment_sensitivity_check.py and
+literal_drift_check.py are three tools for one lesson; that section says it once
+and names which tool asks which question. Keep the measured detail below here,
+and put any NEW general statement of the rule there rather than a fourth copy.
+
 WHY. Twice on 2026-09-10, hours apart, a probe searched a source file for a
 literal and matched the fix's own comment rather than the code:
 

@@ -407,9 +407,12 @@ REGISTRY = [
                    'sources it is derived from -- a guard test, a gate '
                    'check, a registry entry or an index row moved and the '
                    'matrix did not',
-        'why_it_matters': 'CLAUDE.md records that a GENERATED artefact which '
-                          'must be regenerated after every edit reproduces the '
-                          'silent-failure shape it exists to catch. This is the '
+        'why_it_matters': 'docs/SAIRN-PROCESS-RULES.md section 1.8 records that '
+                          'a GENERATED artefact which must be regenerated after '
+                          'every edit reproduces the silent-failure shape it '
+                          'exists to catch -- the distinguishing question being '
+                          'what it does when stale, since an inventory is '
+                          'visibly wrong and a gate simply passes. This is the '
                           'document an outside auditor would read, so it going '
                           'quietly stale is the worst version of that',
         'evidence': 'built and wired the same day: 21-check probe including the '

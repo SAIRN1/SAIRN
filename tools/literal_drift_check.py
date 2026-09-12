@@ -1,5 +1,10 @@
 """tools/literal_drift_check.py -- find duplicated literals that have DIVERGED.
 
+This file is a CONSUMER of the comment-quoting lesson, not an instance of it:
+it blanks comments before counting (see the note above strip_comments below).
+Canonical rule: docs/SAIRN-PROCESS-RULES.md section 1.2, "Grep cannot tell code
+from text that describes code", which names all three tools and says it once.
+
 Promoted from a scratch script to a real tool on 2026-09-03, after THREE drift
 bugs surfaced in stonedesk.html in a single session and Michael called it a
 pattern rather than three coincidences. A fourth turned up the moment this pass

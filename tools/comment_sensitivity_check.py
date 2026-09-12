@@ -1,5 +1,11 @@
 """Does any checker's answer CHANGE when the target's comments are removed?
 
+CANONICAL RULE: docs/SAIRN-PROCESS-RULES.md section 1.2, "Grep cannot tell code
+from text that describes code". This file, comment_quote_check.py and
+literal_drift_check.py are three tools for one lesson; that section says it once
+and names which tool asks which question. Keep the measured detail below here,
+and put any NEW general statement of the rule there rather than a fourth copy.
+
 WHY. Three times in two days a check matched text that only DESCRIBED code
 rather than code: two probes greping for a literal their own fix's comment
 quoted, and then the mutation-anchor tool flagging its own probe for carrying

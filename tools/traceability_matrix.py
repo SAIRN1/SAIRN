@@ -38,9 +38,12 @@ Nothing here is invented. Every row carries the source it came from so a reader
 can check the claim against the file rather than against this document.
 
 ── THE STALENESS TRAP, AND HOW THIS AVOIDS IT ──────────────────────────────
-CLAUDE.md is explicit that a GENERATED gate which must be regenerated after
-every edit reproduces the silent-failure shape it exists to catch -- see the
-superseded header on tools/sairn_build_load_gates.py. So this ships with
+docs/SAIRN-PROCESS-RULES.md section 1.8 is explicit that a GENERATED gate which
+must be regenerated after every edit reproduces the silent-failure shape it
+exists to catch -- see the superseded header on tools/sairn_build_load_gates.py.
+The distinguishing question that section names: what does the artefact do when
+it is out of date? A stale inventory is visibly wrong; a stale gate PASSES. So
+generate the first and never the second. Accordingly this ships with
 `--check`, which regenerates in memory and compares: if the committed document
 no longer matches its sources, that is a finding, not a document somebody
 forgot. It is registry-shaped so it can be promoted to report-only.

@@ -65,6 +65,11 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 # default glob would drag in every doc that ever used a pipe in prose.
 DEFAULT_FILES = [
     'docs/SAIRN-OPEN-WORK-INDEX.md',
+    # Added 2026-09-12 with the primer/process split. Both carry a table every
+    # session reads -- the clone-to-worklog mapping, and the three-tools-for-one
+    # -lesson table -- and both sit in files where prose pipes are common.
+    'CLAUDE.md',
+    'docs/SAIRN-PROCESS-RULES.md',
 ]
 
 # A pipe not preceded by a backslash. Markdown treats `\|` as literal content.

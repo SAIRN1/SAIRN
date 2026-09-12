@@ -133,11 +133,13 @@ print('4. NO SORT OVER A SET IS LEFT KEYED ON LENGTH ALONE')
 # not for every conceivable nondeterminism -- because arm 3 is the real check
 # and this one only makes a regression obvious at the point it is written.
 #
-# ── SEARCHED WITH COMMENTS STRIPPED, PER CLAUDE.md'S COMMENT-QUOTE RULE ────
+# ── SEARCHED WITH COMMENTS STRIPPED, PER PROCESS RULES SECTION 1.2 ─────────
 # The first version searched the raw source and FAILED A CORRECT FILE, because
-# the fix's own comment quotes `key=len` while explaining why it is wrong. That
-# rule was added to CLAUDE.md on 2026-09-11 after it happened twice in one day;
-# this is the third, written by somebody who had read the rule an hour earlier.
+# the fix's own comment quotes `key=len` while explaining why it is wrong. The
+# rule -- "grep cannot tell code from text that describes code" -- was written
+# down on 2026-09-11 after it happened twice in one day; this is the third,
+# written by somebody who had read the rule an hour earlier. It now lives at
+# docs/SAIRN-PROCESS-RULES.md section 1.2, moved out of CLAUDE.md 2026-09-12.
 # The direction is the loud one -- a correct file failing -- which is why it was
 # caught immediately rather than passing quietly.
 code = '\n'.join(l for l in src.splitlines() if not l.lstrip().startswith('#'))

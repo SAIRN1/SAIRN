@@ -1,5 +1,11 @@
 """Does every mutation probe's anchor still match its target EXACTLY ONCE?
 
+CANONICAL RULE: docs/SAIRN-PROCESS-RULES.md section 1.3, "An anchor that still
+matches is not an anchor that still points at the right thing". That section
+carries the durable form -- a string anchor verifies UNIQUENESS, never
+CORRECTNESS -- and applies it to standing-document edits as well as to probes.
+It was written 2026-09-12 because this lesson lived only in this docstring.
+
 WHY. A mutation probe reintroduces a defect, asserts the suite goes red, and
 restores the file. Its anchor is an exact string. When the target is refactored
 the anchor stops matching, and the arm stops testing:

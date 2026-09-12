@@ -1,594 +1,204 @@
-# StoneDesk Development Guidelines
+# SAIRN Development Guidelines — the fresh-session primer
 
-## SYNTAX RULE
-**Run Node --check before touching any file. Zero errors before any changes. Zero errors before any push. Never bulk replace.**
+**This file is the concrete facts and what to check before you start work.**
+The discipline and judgment half — how checks fail silently, how to edit a
+standing document, what each push-protocol step actually means, why the claim
+system is shaped the way it is — lives in **`docs/SAIRN-PROCESS-RULES.md`**.
 
-Always:
-1. Extract and test each script block with `node --check` individually
-2. Fix one error at a time, then recheck
-3. Verify zero errors before committing changes
-4. Use targeted, precise edits — never bulk find-replace across the codebase
+Split 2026-09-12. One file was serving two audiences and the start-of-session
+facts were buried inside incident narratives. Section numbers below in the form
+**PR §x.y** point into the process rules.
 
-## Project Context
-- Codebase: stonedesk.html (~2.0MB single-file app, grows over time)
-- Script block count and pass-rate change every session — **do not hardcode
-  a number here.** Re-verify against the file directly (HTML-parser-based
-  extraction, not `grep -c '<script'` — see sairn-guardian-v2 Check 0a for why)
-  and check the most recent StoneDesk handoff for current status (find it
-  by date — see Session Handoffs below, not by a counter)
-  before assuming anything about pass rate or known-broken script indices.
-  A hardcoded "known issues" list here went stale within hours once already
-  (2026-07-26) — this file listing specific broken script numbers is exactly
-  the kind of claim that needs re-verification, not trust.
+**Read the process rules when:** you are about to write a check, probe, hook or
+tool; you are editing a standing document; a gate blocked you; a check passed and
+you are not sure it tested anything; or something failed and said nothing.
 
-## Branch — resolved 2026-07-26
-Repo default branch is **main**. All real work lands there. `master` fell
-behind and should be treated as stale unless independently re-verified —
-and re-verify that independently each session rather than trusting this
-line indefinitely, the same way this line itself corrects an earlier wrong
-claim about which branch was stale.
+---
 
-## Session Handoffs — lookup rule CORRECTED 2026-08-23
-Before starting any work, read the most recent handoff first — CLAUDE.md
-is static and only reflects what was true when last edited; the handoff
-carries the latest verified state, open items, and corrections.
+## Before you touch anything
 
-**Find it by DATE, not by a counter.** Handoffs are named
-`APP-YYYY-MM-DD-subject-handoff.md` (e.g.
-`SAIRNLAW-2026-08-23-lemaj-handoff.md`). Sort by the date in the filename,
-then **confirm the subject matches the work you were actually sent to
-do** — if the content doesn't match your task, say so immediately rather
-than proceeding on the wrong document.
+1. **Read the most recent handoff.** This file is static and only reflects what
+   was true when last edited; the handoff carries the latest verified state.
+   Find it by **DATE**, not by a counter — handoffs are named
+   `APP-YYYY-MM-DD-subject-handoff.md`. Sort by the date in the filename, then
+   **confirm the subject matches the work you were actually sent to do**; if it
+   does not, say so immediately rather than proceeding on the wrong document.
+   (Why not a counter: PR §6.)
+2. **Read all four `SAIRN-ACTIVE-WORK-*.md` files** for the app or subject you
+   were sent at. Not for write conflicts — for *"is somebody already doing
+   this."*
+3. **Check the claim record**, then claim before you begin:
 
-**Do not take the highest N.** This file previously said to find the
-latest handoff as the highest-numbered `SAIRN-SESSION-N-HANDOFF.md`. That
-rule failed in production on 2026-08-23: two different real
-`SAIRNLAW-SESSION6-HANDOFF.md` files existed at once (trust-disbursement
-2026-08-18, LeMAJ 2026-08-23), and a session sent to continue the second
-read the first and found none of its work. A counter cannot stay unique
-across concurrent sessions in separate clones. Older files keep their
-existing names and are **not** renamed — so both patterns are on disk;
-that is expected, not drift.
+       python tools/sairn_claim.py check   <app> <task words>
+       python tools/sairn_claim.py claim   <app> <task words>
+       python tools/sairn_claim.py release <app>
+       python tools/sairn_claim.py list
 
-Handoffs live only in a real clone — there are **four**, corrected
-2026-08-24 (this line previously listed three and omitted
-`SAIRN-fourth`): `Documents\SAIRN-hank`, `Documents\SAIRN-cc`,
-`Documents\SAIRN-cody`, `Documents\SAIRN-fourth`. All four verified on
-disk that date as separate clones of `SAIRN1/SAIRN` on `main`. Handoffs
-are **not written until committed in the same action** — a local-only
-handoff is invisible to every other clone. Never write one to
-`C:\Users\marsh\` directly.
+   Claim **before** you start, not after you finish. A claim that is not
+   committed is invisible to every other clone (PR §2.2). A block is a claim to
+   verify, not a fact — and never reword your task string to slip past the
+   matcher (PR §4.3).
+4. **Verify before you report.** A status report is a claim, not a fact, until
+   checked against real current state (PR §5).
 
-## Active work is logged per session — 2026-08-24
+## Where things live
 
-`SAIRN-ACTIVE-WORK.md` is no longer an append target. Four sessions
-appending to one file's end produced repeated merge conflicts in a single
-night, so each clone now has its own file:
+- **Branch:** `main`. All real work lands there. `master` is stale — re-verify
+  independently rather than trusting this line indefinitely.
+- **Four clones**, each a separate clone of `SAIRN1/SAIRN` on `main`:
+  `Documents\SAIRN-hank`, `Documents\SAIRN-cc`, `Documents\SAIRN-cody`,
+  `Documents\SAIRN-fourth`. Handoffs live only in a real clone — never write one
+  to `C:\Users\marsh\` directly.
+- **Active-work log — append only to your own file:**
 
-| Session | Clone | File |
-|---|---|---|
-| Hank   | `Documents\SAIRN-hank`   | `SAIRN-ACTIVE-WORK-hank.md` |
-| CC     | `Documents\SAIRN-cc`     | `SAIRN-ACTIVE-WORK-cc.md` |
-| Cody   | `Documents\SAIRN-cody`   | `SAIRN-ACTIVE-WORK-cody.md` |
-| Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
+  | Session | Clone | File |
+  |---|---|---|
+  | Hank | `Documents\SAIRN-hank` | `SAIRN-ACTIVE-WORK-hank.md` |
+  | CC | `Documents\SAIRN-cc` | `SAIRN-ACTIVE-WORK-cc.md` |
+  | Cody | `Documents\SAIRN-cody` | `SAIRN-ACTIVE-WORK-cody.md` |
+  | Fourth | `Documents\SAIRN-fourth` | `SAIRN-ACTIVE-WORK-fourth.md` |
 
-Append only to your own file; **read all four** before starting work — the
-split removes the write collision, not the need to know what another
-session is touching. The shared file keeps every pre-split entry as the
-historical record (code comments and SQL headers cite it by name).
+- **Open work:** `docs/SAIRN-OPEN-WORK-INDEX.md`. **Never edit a row by
+  splitting on `|`** — rebuild the row whole (PR §2.1).
+- **Claims:** `.claude/claims/<session>.json`, one file per clone. Expire after
+  4 hours.
+- **Tool inventory:** `docs/TOOLING-INVENTORY.md` — generated, not hand-written
+  (PR §1.8).
 
-### Claim a gate before you run it — added 2026-08-30, after four hours of duplication
+## Project context
 
-"Read all four before starting work" was already the rule and it was not
-enough, because it was understood as **collision avoidance on files** rather
-than **collision avoidance on work**. Two sessions can run the same research
-without touching a single common file, and nothing catches it.
+- **Codebase:** `stonedesk.html`, a single-file app around 2.0MB and growing.
+- **Do not hardcode the script-block count or a known-broken list here.** Both
+  change every session; a hardcoded list went stale within hours in 2026-07-26.
+  Re-verify against the file directly using **HTML-parser-based extraction, not
+  `grep -c '<script'`** — see `sairn-guardian-v2` Check 0a for why — and check
+  the most recent StoneDesk handoff for current status.
 
-That happened on 2026-08-30. Two sessions independently ran all three
-SAIRNfreedom pre-build gates the same night — the ORC Chapter 2915 read, the
-competitive/patent scan, and the service-hour research. Neither knew. It was
-discovered only when a rebase pulled three unexpected `docs(sairnfreedom)`
-commits into an unrelated push, by which point both were finished. Roughly
-four hours, duplicated.
+## Tech stack
 
-**There is now a tool for this — `tools/sairn_claim.py`.** It is the mechanism
-behind the rule below; the rule stands on its own if the tool is unavailable.
-
-    python tools/sairn_claim.py check   sairnfreedom competitive scan
-    python tools/sairn_claim.py claim   sairnfreedom competitive scan
-    python tools/sairn_claim.py release sairnfreedom
-    python tools/sairn_claim.py list
-
-`check` fetches, compares against every session's claims and **exits 1 if
-another session holds an overlapping active claim**. `claim` runs `check` first
-and refuses if blocked, then writes, commits and pushes. Claims live in
-`.claude/claims/<session>.json` — one file per clone, so writes cannot conflict
-(the same reason `SAIRN-ACTIVE-WORK.md` was split per clone on 2026-08-24).
-Claims expire after 4 hours so a crashed session cannot block forever.
-
-**It is not a lock.** Claims travel by git, so two sessions starting within the
-same minute can still both claim. It narrows a four-hour window to about a
-one-fetch window. Read `.claude/claims/README.md` for the full limits.
-
-**The rule, stated so it cannot be read as being about files:**
-
-> Before starting any research or build **gate** that the coordinating chat
-> session did not explicitly assign you — a statutory read, a competitive or
-> patent scan, a market/requirements research pass, a new app's scaffolding —
-> **grep all four `SAIRN-ACTIVE-WORK-*.md` files for the app or subject name
-> first.** Not for write conflicts. For *"is somebody already doing this."*
->
-> Then **append a one-line claim to your own file and commit it before you
-> begin**, not after you finish:
->
-> `- CLAIMING: <app> <gate name> -- starting now (<session>, <date>). Will log the result here.`
->
-> An uncommitted claim is invisible to every other clone, exactly like an
-> uncommitted handoff. The claim is worth more than the result is: a result
-> tells the next session what was found, a claim stops them finding it again.
-
-**Why a claim and not just a check.** A check only works if the other session
-has already written something down, and the expensive window is precisely the
-hours *before* anyone has results to log. The claim closes that window.
-
-**Honest scope of this fix.** It reduces the odds, it does not eliminate them
-— two sessions can still claim within minutes of each other. It is a cheap
-mitigation for an expensive failure, not a lock. The genuine fix is the
-coordinating chat session assigning gates explicitly, and this rule exists for
-the cases where it did not.
-
-**Worth recording: the duplication was not a total loss that night.** The two
-passes caught each other's errors, and a real factual mistake about ORC
-2915.01(V)(2) vs (V)(3) — which would have shipped one shared
-charitable-purpose enum and been wrong for every fraternal lodge in the
-product — was only found because two readers hit the same statute
-independently. That is a defence of the *outcome*, not of the process. Do not
-use it as an argument for running gates twice on purpose.
-
-### Check claims BEFORE dispatching a session — added 2026-09-01
-
-The line above says "the genuine fix is the coordinating chat session
-assigning gates explicitly." On 2026-09-01 that was tested and it is not
-enough on its own, because **an explicit assignment made without reading the
-claims is the same collision with a clearer author.** One session was
-dispatched four times in a row — stonedesk.html, sairncode.html,
-sairnfreedom.html, sairnvet.html — and **the first three were already claimed
-by other sessions.** Nothing was lost, only because the session checked before
-starting each time and bounced it back. Four round-trips bought what one
-`sairn_claim.py list` before the first dispatch would have.
-
-**The rule, for whoever is doing the dispatching:** run `list` and name the
-FILE before sending a session at it. "SAIRNvet is untouched tonight" is a
-claim about a file and needs the same verification as any other claim about
-state. Two of the three collisions above were also invisible to a
-pre-dispatch check by the receiving session — the other session's claim
-appeared *after* its check came back clear.
-
-**Two real defects in `sairn_claim.py`, both found the same night. ONE IS NOW
-FIXED and one is not — know which before you trust its output:**
-
-1. ~~**The overlap matcher fires on any shared word.**~~ **FIXED 2026-09-02 in
-   `3f9d50a`** (Cody) — a generic token can no longer block on its own, and
-   `tests/claims/run_matcher_probe.py` holds it. Verified, not assumed: the
-   exact task string that was blocked on the preposition *"per"* earlier that
-   night now returns CLEAR, and the probe passes with 0 failures.
-
-   **The history is kept because the DISCIPLINE it produced still stands and is
-   still needed.** The matcher was blocking `sairnvet ... audit` against
-   `stonedesk safehtml audit` on the word "audit", and `sairnfreedom phase 2`
-   against `phase 3` on "phase". Three sessions hit it in one night.
-
-   **A block is still a claim to verify, not a fact**, and false positives are
-   narrower now rather than impossible — a SUBJECT-level block still fires on
-   the namespace (`platform`, `accounting`) even when the files do not overlap
-   at all, which happened twice more on 2026-09-02/03. Read the named session's
-   actual task and file. If it is lexical, say so out loud and proceed — **do
-   not reword your task string to slip past the matcher.** That is trivially
-   easy and is exactly how a gate gets hollowed out; write the claim directly
-   with a note recording why, the same standard as saying so when you use
-   `SAIRN_SEED_GATE=off`. **Naming the subject accurately** (`live-verify-tooling`
-   rather than `platform`) is the honest fix for a namespace collision and is
-   not the same thing as gaming the matcher — say which one you did.
-
-2. ~~**`list` and `check` DESTROY an uncommitted claim.**~~ **FIXED 2026-09-04
-   (Fourth), and it was worse than this entry said.** Both ran
-   `git checkout origin/main -- .claude/claims` to read claims as they exist on
-   origin. That overwrites the working tree, so a claim written but not yet
-   committed was **silently gone** — a read-only-sounding command that mutates.
-   **The half this entry missed: `git checkout <ref> -- path` also STAGES what
-   it writes.** Observed in the real repo that day — running `list` left
-   `M .claude/claims/fourth.json` staged, holding origin's *older* copy, i.e. a
-   staged revert of a claim this clone had already committed. Any later
-   `git commit` sweeping the index would have deleted the record of a claim.
-   Both commands now read the same bytes with `git show origin/main:<path>`,
-   which cannot write anything. Held by
-   `tests/claims/run_push_verify_probe.py`, which asserts an uncommitted
-   hand-written claim survives `list` and `check` and that neither stages
-   anything.
-
-   **And it was worse AGAIN. The same fix did not reach the hook — closed
-   later on 2026-09-04 (Fourth).** `tools/sairn_claim_hook.py` carried its own
-   copy of the identical `git checkout origin/main -- .claude/claims` line. So
-   the pass above fixed the tool a session runs *by hand* and left the one that
-   runs **unattended at every session start, in every clone** — meaning the
-   danger this entry describes was never actually closed, only closed in the
-   copy you are less likely to hit. Found the next session by a plain
-   `git status` showing `M .claude/claims/hank.json` staged, which nobody had
-   staged. The hook now fetches and reads with `git show`, and probe section 8
-   runs the **hook binary itself**, asserting it stages nothing, leaves an
-   uncommitted edit to a *tracked* claim file intact, and still reports a claim
-   that exists only on origin. All six of those checks fail against the old
-   hook — verified by running the probe against it, not assumed.
-
-   **The standing lesson, which outlives this tool: a fix verified on the copy
-   a human invokes is not verified if a second copy runs unattended.** When you
-   fix a defect, `grep` the whole repo for the defective line before calling it
-   closed. Related: `C:/SAIRN/tools/` holds byte-identical stale mirrors of
-   several hooks, and **no settings file points at any of them** — every hook
-   command in `.claude/settings.json` is a relative `tools/...` path resolving
-   inside the clone. Editing a mirror there changes nothing.
-
-3. **A claim whose push failed was still reported as CLAIMED.** Fixed the same
-   day, same commit; recorded because the shape recurs. `save_mine()` printed a
-   failure line and returned `None`, and both callers printed `CLAIMED.`
-   regardless — so a non-fast-forward, which is the *ordinary* case when two of
-   the four clones claim within seconds of each other, left the claim committed
-   locally and **invisible to every other clone while the tool said it was
-   claimed.** The collision this tool exists to prevent, happening inside the
-   tool. Reproduced live: `error: failed to push some refs` immediately
-   followed by `CLAIMED.`
-
-   It now retries the fetch→rebase→push (a race is normal, not exceptional —
-   one file per clone means there is nothing to conflict over), aborts a failed
-   rebase instead of leaving the tree mid-rebase, and **verifies the commit is
-   an ancestor of `origin/main` before reporting success**. `claim` and
-   `release` exit non-zero and say `NOT CLAIMED` / `NOT RELEASED` otherwise.
-   A second, quieter instance was found by its own probe: after a release whose
-   push failed, the local file already said *released*, so re-running `release`
-   matched nothing, exited 0, and never pushed the waiting commit. That path
-   now publishes pending commits too.
-
-   **The standing lesson, which is not about this tool:** the expensive part of
-   a false success is never the error — it is the confident line printed after
-   it. Same shape as the post-push watcher that swallowed a 403 and said
-   nothing.
-
-See the `sairn-session-handoff` skill for the full convention, the
-reasoning, and the template.
-
-### Never edit an index row by splitting on `|` — added 2026-09-04
-
-`docs/SAIRN-OPEN-WORK-INDEX.md` is the file every session reads to choose work
-and edits to record the outcome. Rows get updated by splitting the line on
-`|`, replacing a cell by index, and joining it back. **That is only safe while
-every pipe in the row is a column separator, and it is not.** A cell whose
-prose contains one — a hook matcher written `Write|Edit`, a `||` inside a code
-span, a regex alternation — adds separators nobody intended. Two consequences,
-both real:
-
-- **markdown renders extra columns**, so the trailing cells fall off the end.
-  On both rows found on 2026-09-04 the **Sz** column was gone and narrative
-  text was rendering where a column value belongs;
-- **an edit by cell index writes into the wrong cell.** CC hit exactly this.
-  A status can land where an owner belongs, silently, in the file every
-  session trusts to say who is doing what.
-
-**The rule: rebuild a row whole. Do not split and rejoin by index.** Anchor on
-a unique substring of the row, assert the anchor appears exactly once, and
-replace it.
-
-**The mechanism, because a rule that depends on remembering is the failure
-mode this file keeps recording:** `python tools/md_table_check.py` checks
-every table in the standing docs, per table rather than per file (that
-document holds three tables of different widths), honouring `\|` as content
-the way markdown does. It **reports and never writes** — its first version had
-a `--fix` and its own probe caught that fixer escaping the *real* separator
-and merging two genuine columns, so the repair is by hand and the tool only
-tells you where. Held by `tests/run_md_table_check_probe.py`.
-
-### A probe must not grep for something the fix's own comment quotes — added 2026-09-11
-
-It happened **twice on 2026-09-10, hours apart**, in two unrelated probes. Both
-searched a source file for a literal and matched the fix's own COMMENT rather
-than its code, and both **failed a correct file**:
-
-- `tests/sd_security_status_is_measured.js` looked for `'Prompt injection: Active'`
-  to prove the hardcoded assurance was gone. The new Layer 30 header *quotes all
-  four dead literals* to record what they were.
-- `tests/sairnlaw_csp.js` counted `eval(` to prove the file has none. The new CSP
-  comment says *"this file contains zero `eval()`"*.
-
-**That direction is loud and self-correcting. The other direction is silent and
-nothing was looking for it:** an assertion of PRESENCE — *"the guard is still
-there"* — goes **green** when the only surviving mention of the thing is a
-comment describing the feature that was deleted. A probe passing off a comment
-is a check that has stopped checking.
-
-**The rule:** a probe that asserts something about a source file's CODE must
-search a **comment-stripped copy**. If the subject genuinely IS the comment —
-asserting a historical record survives, or locating a block by its heading —
-that is fine and must be **declared**, not left to look accidental.
-
-**The mechanism, because a rule that depends on remembering is the failure mode
-this file keeps recording:** `python tools/comment_quote_check.py` finds every
-probe assertion whose literal exists ONLY inside the target's comments. It is
-report-only and wired as a promoted checker. Deliberate cases live in
-`EXPECTED_COMMENT_ASSERTIONS` with a reason each — the same two-list discipline
-as the cache-purge guards: **an exclusion is a decision with a reason beside it,
-never a silence.** Held by `tests/run_comment_quote_probe.py`, which plants the
-defect on throwaway fixtures and demands the tool see it, because a checker that
-finds nothing is indistinguishable from one that looks at nothing.
-
-**The tool's own first version committed the error it hunts** — it blanked from
-any `//` to end of line, so every `https://` swallowed the rest of its line and
-it reported real code as comment. Arm 5 of the probe is a permanent guard on
-that. Worth knowing before trusting any comment-stripper: URLs, and `//` inside
-a string, are the two cases that break the naive one.
-
-## Known resolved issues (don't rediscover these)
-- `sairn-app-scaffold` was falsely claimed built in an earlier session's
-  handoff (before 2026-07-30); it was actually created 2026-07-30 and is
-  real and active in `.claude/skills/` as of 2026-08-07 — re-verify its
-  existence before trusting either the old "false" claim or this update.
-- The old `SAIRN1/Fabricor` repo on Railway is an abandoned duplicate
-  codebase — StoneDesk's real, current code lives only in `stonedesk.html`
-  on `SAIRN1/SAIRN` (Vercel). Don't resurrect or reference Fabricor without
-  a specific new reason to.
-
-## Skills — read these, don't just rely on trigger-word matching
-
-**Precedence when several skills cover one job: see
-`docs/2026-08-30-skill-precedence.md`.** A 2026-08-30 audit found 52 skills on
-disk (23 SAIRN; 29 general and user-level only) with four apparently-overlapping
-groups. **Re-counted 2026-09-03 (Hank): 60 on disk — 32 SAIRN, mirrored in this
-repo and verified content-identical to the user store, plus 28 general and
-user-level only.** Nine SAIRN skills were added after that audit and are not in
-its count: `sairn-build-lifecycle`, `sairn-contract-drafter`,
-`sairn-differential-review`, `sairn-employee-auth-scaffold`,
-`sairn-grant-sweep`, `sairn-minimalism`, `sairn-perf-profiler`,
-`sairn-portfolio-triage`, `sairn-precommit-gate`. **Re-count rather than trust
-either number** — this line has now been wrong once.
-Twelve of the 32 mirrors differ from the user store by CRLF-vs-LF **only**; a
-bare `diff` reports them as changed and that is a false alarm, not drift —
-compare after `tr -d '\r'` before reporting a mirror as diverged.
-`grill-me` is on disk but carries `disable-model-invocation: true`, so it is
-absent from the model-facing skill list by design and is not missing.
-Three of the four overlapping groups turned out to be correctly-separated tools that a
-name-and-size scan made look like duplicates — notably `perf-profiler`, which is
-the only **server-side** profiling skill in the store and the one most SAIRN
-performance questions actually want. The short version:
-
-- **Design** — `sairn-client-facing-design` wins on any existing SAIRN app;
-  `frontend-design` for genuinely new UI; `design-taste-frontend` is scoped to
-  marketing sites and rarely applies here; `ui-ux-pro-max` is a lookup table,
-  not a competitor.
-- **Performance** — pick by layer: `perf-profiler` (backend/queries),
-  `performance` (frontend broad), `core-web-vitals` (a named metric).
-- **Security** — `sairn-guardian-v2` and `sairn-code-scrubber` run first;
-  `owasp-security` is the canonical general layer. `security-auditor` was
-  flagged here as superseded and stale (its Top 10 was the 2017 list); it has
-  since been **removed** — verified 2026-09-03 as absent from both
-  `~/.claude/skills/` and this repo's `.claude/skills/`. Nothing to do; do not
-  reinstate it.
-- **Skill management** — not duplicates, a pipeline:
-  `self-improving-agent` harvests → `skill-creator` authors → `skill-vetter`
-  admits third-party skills.
-
-This project has a full skill set covering more than syntax. At minimum,
-be aware these exist and read them when the situation matches, even if you
-arrived here through this file rather than a trigger word:
-- `sairn-guardian-v2` — the full mechanical check (syntax, fabricated-KPI
-  detection, coverage-disclosure standard, dormant-code rule, multi-codebase
-  drift, safe-editing rules). This replaced the old `sairn-code-guardian`
-  entirely. **Corrected 2026-08-24:** that skill is not a deprecation stub —
-  there is no `sairn-code-guardian` directory in `~/.claude/skills/`, in
-  `C:/SAIRN/skills/sairn/`, or in any clone's `.claude/skills/`.
-  **Corrected again 2026-08-28 — the 2026-08-24 line said "do not go looking
-  for it" and that was wrong.** It was true of the skill stores and false of
-  the repo: 1,230 lines of it were on an unmerged branch the whole time. It is
-  now at `archive/branch-lucid-ptolemy-b73vu0/skills/sairn-code-guardian/` on
-  `main`, with its full history under the tag `archive/lucid-ptolemy-b73vu0`.
-  **Completed 2026-08-28 (CC), verified against the files on disk:** that
-  directory holds TWO artefacts, not one — `SKILL.md` (1,230 lines, 81,757
-  bytes) **and `sairn_static_checks.py` (32,555 bytes)**, the executable half.
-  The earlier description named only the skill, so a reader looking for the
-  ancestor's actual check implementations would not have known they survived.
-  **The tag is the only thing preserving the history** — it reaches 901 commits,
-  every one of them unreachable from `main`, so deleting the source branch was
-  safe *because* that tag exists and for no other reason. It is not fetched by
-  default: run `git fetch origin tag archive/lucid-ptolemy-b73vu0` before
-  expecting to see it locally.
-  It is Guardian v2's ancestor and the origin of the duplicate-global check
-  now numbered 13, *"added after the June 2026 StoneDesk outage."*
-  **Still do not recreate or run it** — v2 supersedes it and the archived copy
-  predates every current discipline. Read it for provenance, nothing else.
-  The lesson worth keeping: "it does not exist" was a claim about three
-  directories, stated as a claim about the whole repo.
-- `sairn-decision-gate` — run before any RFP/proposal work, before claiming
-  "production/complete/live" to anyone outside the team, or before any
-  AI-governance-related question (uses NIST AI RMF, Shipley Bid/No-Bid,
-  Gary Klein's Premortem).
-- `sairn-software-architect` — the reference architecture standard (file
-  size ceiling, data model conventions, Bridge+Proxy pattern) and the
-  judgment layer above code quality.
-- `sairn-mobile-sync` — the standard pattern for any phone/field/POS/
-  real-time feature, used identically across every SAIRN app.
-- `sairn-training-needs-assessment` — the standard pattern for an employee
-  training-needs / skills-gap tool (Hennessy-Hicks-style importance/
-  performance-gap methodology, two-perspective self+management structure,
-  optional DISC-style module), extracted from SAIRNbuild's real,
-  live-verified build. Reusable across every SAIRN app; per-app role
-  vocabulary and item-bank wording still need an explicit judgment call
-  each time, not silently copied.
-- `sairn-code-scrubber` — SAIRN-specific bug-pattern scanner, with the same
-  Step 0 reality-check additions as Guardian. **Name corrected 2026-08-24:**
-  this line previously said `code-scrubber` and described it as the generic
-  non-SAIRN pass. No skill by that name exists on disk; the real directory is
-  `sairn-code-scrubber`, and its content is SAIRN-specific, not generic.
-
-## Tech Stack
-- Frontend: Vanilla JavaScript
+- Frontend: vanilla JavaScript
 - Backend: SAIRN API Proxy (Claude integration)
 - Deployment: Vercel
 
-## Environment Notes
-- Use `python`, not `python3`, on this machine — python3 resolves to the
-  Microsoft Store stub, not the real install at C:\Python314\python.exe.
+## Environment
 
-### Line endings — ONE-TIME step per clone, added 2026-09-03
+- Use `python`, **not** `python3` — `python3` resolves to the Microsoft Store
+  stub, not the real install at `C:\Python314\python.exe`.
+- **Line endings, ONE-TIME per clone.** `.gitattributes` is repo-wide so stored
+  blobs are LF, but the working-tree half is **not retroactive** and `git
+  status` stays clean the whole time, so nothing will ever prompt you. Run once,
+  with nothing uncommitted:
 
-`.gitattributes` went repo-wide in `2e31819`, so the stored blobs are now LF
-and `git check-attr` reports zero unspecified paths. **The working-tree half is
-not retroactive.** Files already on disk keep CRLF until git next writes them,
-and `git status` stays clean the whole time, because the clean filter converts
-on the way in and the result already matches the blob — so nothing will ever
-prompt you to do this.
+      git rm --cached -r -q . && git reset --hard
 
-**Run once per clone, with nothing uncommitted:**
+  Until you do, byte comparisons against anything outside the repo report
+  phantom differences. **A CRLF-vs-LF difference is not drift** — compare after
+  `tr -d '\r'` before reporting one. That mistake produced three separate false
+  alarms in a single session on 2026-09-03.
 
-    git rm --cached -r -q . && git reset --hard
+## Syntax rule
 
-Until you do, a byte comparison between this repo and anything outside it still
-reports phantom differences — that is what produced three separate false alarms
-in one session on 2026-09-03 (a skill-store mirror diff naming 12 identical
-skills, the push gate's seed-divergence note naming all 72 seed files on a
-clean checkout, and the standing deploy-mismatch hook fires). **A CRLF-vs-LF
-difference is not drift.** Compare after `tr -d '\r'` before reporting one.
+**Run `node --check` before touching any file. Zero errors before any change,
+zero errors before any push. Never bulk replace.**
 
-## Response Style
-- No narration before or after actions — act, then report only the result
-- No "let me check / good news / confirmed" commentary
-- On error: state what failed and what's needed, nothing more
-- Enforcement note (2026-07-29): silent output style stays active — no
-  hook can mechanically block narration text, so compliance is self-checked
-  every turn; don't swap styles (e.g. caveman) to fix drift, it won't help.
+1. Extract and check each script block individually.
+2. Fix one error at a time, then recheck.
+3. Verify zero errors before committing.
+4. Targeted, precise edits — never bulk find-replace across the codebase.
 
-## Push Protocol — standing rule, both directions, no exceptions
-1. **Before pushing:** run full Check 0 + all 30 sairn-guardian-v2 checks
-   (**count corrected 2026-08-25** — this line said 26, the loaded global
-   copy of the skill said 28, and the committed skill said 30. Three live
-   numbers at once. **Do not trust this number either** — re-read the
-   skill's own heading, `## The N Checks`, which is the only source that
-   moves when a check is added.)
-   locally against the changed file(s). Do not push on a partial check or
-   on "syntax passed" alone — syntax-clean is necessary, not sufficient.
-2. **After pushing:** live-verify the specific fix against
-   `sairn.vercel.app/stonedesk` directly, never assumed from the push itself
-   succeeding. A clean `git push` output is not proof the live app reflects
-   the change.
+## Push protocol — both directions, no exceptions
 
-   **NOT with bare `curl` — corrected 2026-09-03.** Vercel's platform bot
-   mitigation answers an automated-looking User-Agent with **403 +
-   `X-Vercel-Mitigated: challenge`**, and on 2026-09-02 four sessions
-   live-verifying at once tripped it. **That is not an outage and not a failed
-   deploy** — real browsers were unaffected and the project's deployment
-   protection is off. Measured, same second, same URL: `python-urllib` default
-   UA → 403; a browser UA → 200. Two consequences:
-   - **From a script**, fetch through `tools/sairn_http.py`, which sends
-     browser-shaped headers and raises a distinct `Challenged` rather than
-     letting a block look like an answer.
-   - **From a Claude turn**, `mcp__claude_ai_Vercel__web_fetch_vercel_url`
-     authenticates past it and is the reliable check.
+Full detail in **PR §3**. The short form:
 
-   **A 403 here means UNVERIFIED, which is not the same as verified-good.** The
-   post-push watcher used to swallow it and exit silently, so every push during
-   that window got a check that did not run and said nothing.
-Neither step is optional, going forward, regardless of how small the change looks.
+1. **Before pushing** — run full Check 0 plus **every** `sairn-guardian-v2`
+   check against the changed files. **Do not write the number of checks
+   anywhere**; re-read the skill's own `## The N Checks` heading, which is the
+   only source that moves when a check is added. That count has been wrong in
+   three places at once before (PR §2.3). Syntax-clean is necessary, not
+   sufficient.
+2. **After pushing** — live-verify the specific fix against the real deployed
+   URL. A clean `git push` is not proof. **Not with bare `curl`**: use
+   `tools/sairn_http.py` from a script, or
+   `mcp__claude_ai_Vercel__web_fetch_vercel_url` from a Claude turn. A 403 means
+   **UNVERIFIED**, not verified-good (PR §3.2).
+3. **Seed files** must already match the live licence — the push gate enforces
+   this mechanically and DENIES on drift. "Could not tell" is not a pass.
+   Override is `SAIRN_SEED_GATE=off` at the **front of the push command itself**,
+   and **say so out loud when you use it** (PR §3.3).
+4. **SQL that writes credential rows** must carry the recoverability guard — two
+   end states are safe and only two. Read the app's own `PROVISIONING_ROLES`;
+   SAIRNcode's is `admin`, not `owner` (PR §3.4).
 
-3. **If the push touches a reference SEED file, the live licence must already
-   match it.** Added 2026-08-29 after the failure that made it necessary: on
-   2026-08-27 two committed SAIRNlaw corrections were never LOADED, and
-   `LAW-PINNACLE-2026` — the canonical customer licence — computed federal
-   answer deadlines three days late for a day. Step 2 above covers deployed
-   CODE; a seed-file change is **inert until a loader runs**, and nothing
-   covered that.
+Neither of the first two steps is optional, regardless of how small the change
+looks.
 
-   This step is **mechanical, not remembered.** `tools/sairn_push_gate_hook.py`
-   runs as a PreToolUse Bash hook on every `git push`, looks at the commits
-   actually being pushed, and only acts if one touches a seed file. Then:
-   - live matches the repo → allows silently (the normal case if you loaded
-     first, which is why a correct workflow feels no friction);
-   - **drift → the push is DENIED**, naming the app, the rule id, and the
-     reload command;
-   - could not tell (no key, endpoint unreachable) → allows with a loud note.
-     **That is not a pass.** Run
-     `python tools/sairn_load_state_check.py --app <app> --key <key>` and
-     report the real result rather than treating silence as agreement.
+## Skills — read them, don't rely on trigger-word matching
 
-   Load-then-push and push-then-load both end with live == repo; the hook only
-   cares that they agree by the time you push. Load first anyway — a denied
-   push costs nothing, a shipped-but-unloaded correction costs a wrong legal
-   date.
+**Precedence when several skills cover one job:
+`docs/2026-08-30-skill-precedence.md`.**
 
-   `SAIRN_SEED_GATE=off` overrides it. **Say so out loud when you use it** — an
-   override nobody mentions is how a gate gets hollowed out. The hook fails
-   OPEN on any internal error, same standard as the other hooks, because one
-   that crashes closed gets disabled and then protects nothing.
+**Do not trust any skill count written down anywhere, including here.** That
+number has been wrong more than once. Count the directories when you need the
+figure. The repo mirrors the SAIRN skills from the user store; **compare after
+`tr -d '\r'` before reporting a mirror as diverged** — the user store is CRLF
+and the repo is LF, so a bare `diff` reports content-identical files as changed.
+`grill-me` carries `disable-model-invocation: true`, so it is absent from the
+model-facing list **by design** and is not missing.
 
-   **Put it at the FRONT of the push command itself** —
-   `SAIRN_SEED_GATE=off git push ...` — not in a separate `export` line.
-   Corrected 2026-09-03, because between 2026-09-01 and that date **this
-   override did not work at all from a Bash tool call** and this line said it
-   did. The hook read the variable from `os.environ`; as a PreToolUse hook it
-   runs inside Claude Code's process and inherits Claude Code's environment,
-   not the environment of the command it is inspecting, so an inline prefix
-   set the variable in a child shell the hook never saw and the push was
-   denied identically. It now reads the assignment out of the command text.
-   A mention inside a quoted string — a commit message quoting the flag, which
-   this repo's messages really do — deliberately does **not** count.
+Picking between overlapping skills:
 
-   Also corrected 2026-09-03: the gate used to check `origin/main..HEAD`
-   regardless of what the push actually sent, so `git push origin <sha>:main`
-   could be **denied for seed rules in a later commit it was not pushing**.
-   It now scopes to the ref being pushed and reads seed files as of that
-   commit rather than off disk. The workaround the old index row recommended
-   (checking out the engine commit detached and pushing from there) is no
-   longer needed.
+- **Design** — `sairn-client-facing-design` wins on any existing SAIRN app;
+  `frontend-design` for genuinely new UI; `design-taste-frontend` is scoped to
+  marketing sites and rarely applies; `ui-ux-pro-max` is a lookup table, not a
+  competitor.
+- **Performance** — pick by layer: `perf-profiler` (backend/queries),
+  `performance` (frontend broad), `core-web-vitals` (a named metric).
+- **Security** — `sairn-guardian-v2` and `sairn-code-scrubber` run first;
+  `owasp-security` is the canonical general layer.
+- **Skill management** — a pipeline, not duplicates: `self-improving-agent`
+  harvests → `skill-creator` authors → `skill-vetter` admits third-party skills.
 
-4. **If the push adds or changes a SQL file that writes credential rows, it
-   must carry the recoverability guard.** Added 2026-08-29. A licence with
-   `*_employee_auth` rows and ZERO rows that are both `active` and in that
-   app's `PROVISIONING_ROLES` is **unrecoverable through the API**: `bootstrap`
-   refuses 409 while any row exists, `setup` and `set_active` both need an
-   active provisioner. RF-PINNACLE-2026 sat in that state and nothing noticed.
+Know these exist and read them when the situation matches, even if you arrived
+here without a trigger word:
 
-   **The API cannot create it** — `set_active` refuses self-deactivation,
-   refuses the last active provisioner, and re-reads that the caller's own row
-   is still active, so the count cannot cross 1 → 0. **SQL is the only door**,
-   which is why the guard lives in the SQL file and not in the app.
+- `sairn-guardian-v2` — the full mechanical check: syntax, fabricated-KPI
+  detection, coverage disclosure, dormant code, multi-codebase drift, safe
+  editing. It replaced `sairn-code-guardian` entirely (PR §6).
+- `sairn-decision-gate` — before any RFP or proposal, before claiming
+  "production / complete / live" to anyone outside the team, and before any
+  AI-governance question.
+- `sairn-software-architect` — reference architecture: file-size ceiling, data
+  model conventions, Bridge+Proxy, and the judgment layer above code quality.
+- `sairn-code-scrubber` — SAIRN-specific bug-pattern scanner.
+- `sairn-context-budget` — before reading or quoting from anything large. **A
+  truncated read is indistinguishable from a complete one** (PR §1.7).
+- `sairn-memory-curator` — before writing a fact into any standing document.
+- `sairn-mobile-sync` — any phone/field/POS/real-time feature.
+- `sairn-app-scaffold` — starting a new app from zero.
+- `sairn-training-needs-assessment` — employee training-needs / skills-gap
+  tooling. Per-app role vocabulary still needs an explicit judgment call each
+  time, not a silent copy.
 
-   `tools/employee_auth_guard_check.py` enforces it, and runs automatically as
-   check 2 of the same push hook. Two end states are safe and only two:
-   **zero rows** (this RE-ARMS `bootstrap` — it is recovery, not lockout), or
-   **at least one active provisioner**. Deleting or deactivating *some*
-   provisioners while leaving others is the only dangerous shape.
+## Response style
 
-   **Read the app's own `PROVISIONING_ROLES` — SAIRNcode's is `admin`, not
-   `owner`.** A guard that hardcodes `owner` passes SAIRNcode clean forever
-   while checking nothing. Nineteen pre-2026-08-29 writers are grandfathered in
-   an explicit list in that tool; they are not fixed, only visible, and the list
-   is meant to be burned down rather than added to.
+- No narration before or after actions — act, then report only the result.
+- No "let me check / good news / confirmed" commentary.
+- On error: state what failed and what is needed, nothing more.
+- No hook can mechanically block narration text, so this is self-checked every
+  turn. Do not swap output styles to fix drift; it will not help.
 
-   The gate itself is `tools/sairn_load_state_check.py` (`--app sairnlaw |
-   sairncare | sairndental | sairnroofing`), which reads the seed files at run
-   time so it cannot go stale. **Do not reintroduce a GENERATED gate** — a file
-   that must be regenerated after every seed edit reproduces this exact
-   silent-failure shape inside the thing meant to catch it. See the superseded
-   header on `tools/sairn_build_load_gates.py`.
+## Model selection
 
-## Verification Discipline (added 2026-08-18)
-A status report is a claim, not a fact, until checked against the real current state:
-- Never report a migration, config change, or prior fix as "already done" from memory or a prior session's summary — verify it live (query the DB, curl the real deployed endpoint, re-read the current file) before saying so.
-- When re-confirming something already marked done, check the CURRENT file/state, not a cached read from earlier in the session — code can change between when you last saw it and now, including from a parallel session.
-- A claim of "verified" needs the actual evidence in the report (the command run, the real output), not just the conclusion.
-- If a discrepancy between assumed and actual state turns up, report it plainly rather than downplaying or auto-correcting silently — the correction itself is often the most valuable part of the report.
-
-## Model Selection
-- Default: Sonnet 5 High for all routine work (implementation, debugging, most fixes)
-- Proactively recommend switching to Opus 4.8 for: hard debugging with an unclear root cause, or security-critical code
-- Proactively recommend opusplan mode for: architecture/design decisions (new systems, schema design, anything with real tradeoffs to weigh)
-- Once the Opus/opusplan-level work is done, proactively recommend switching back to Sonnet 5 High for the routine implementation that follows — don't stay on Opus by default
-- State the recommendation clearly (e.g. "This looks like a hard-debugging case — worth switching to Opus 4.8") rather than silently staying on whatever model is currently active
+- **Default: Sonnet 5 High** for routine work — implementation, debugging, most
+  fixes.
+- **Recommend Opus** for hard debugging with an unclear root cause, or
+  security-critical code.
+- **Recommend opusplan** for architecture and design decisions with real
+  tradeoffs.
+- When the hard part is done, **recommend switching back** to Sonnet 5 High for
+  the routine implementation that follows.
+- State the recommendation out loud rather than silently staying on whatever
+  model is active.
 
 ---
-*Last Updated: 2026-08-24*
+*Primer last updated 2026-09-12. Process rules: `docs/SAIRN-PROCESS-RULES.md`.*
