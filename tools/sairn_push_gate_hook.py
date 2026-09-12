@@ -347,11 +347,41 @@ def pushed_tip(repo, cmd):
 def outgoing_files(repo, base=None, tip='HEAD'):
     """Files changed by the commits this push would actually send.
 
-    Falls back through three references rather than assuming an upstream is
-    configured: @{u} is right when it exists, origin/main is right in this repo,
-    and HEAD~1 is a last resort that at least sees the newest commit. Returning
-    an EMPTY list means 'no seed touched', so a wrong answer here fails open --
-    which is why the fallbacks get progressively wider rather than narrower.
+    Falls back through TWO references rather than assuming an upstream is
+    configured: @{u} is right when it exists, and origin/main is right in this
+    repo.
+
+    ── THIS DOCSTRING NAMED A THIRD ONE THAT WAS NEVER IMPLEMENTED (2026-09-12)
+    It said "three references ... and HEAD~1 is a last resort that at least sees
+    the newest commit." **There is no HEAD~1 in `refs`** -- when that was found,
+    grepping the whole file for the name returned exactly one hit, that sentence
+    itself. (It returns more now, from this correction, which is why the durable
+    claim is about `refs` and not about a grep count.) So a reader checking
+    whether an empty range could be a blind spot was told a backstop existed
+    that does not.
+
+    AND ON `main` THE TWO ARE ONE. `@{u}` resolves to `origin/main` when the
+    branch being pushed is `main`, which is nearly every push here, so the
+    chain is one reference tried twice. That is not a defect -- see below -- but
+    it is worth a reader knowing rather than discovering.
+
+    RETURNING AN EMPTY LIST MEANS 'NO SEED TOUCHED', AND THAT IS CORRECT RATHER
+    THAN A FAIL-OPEN. This was reported as a critical fail-open on 2026-09-11 by
+    two sessions independently -- Cody implemented a fail-closed widening on
+    Michael's decision, then REVERTED it in `014953aa` after building the
+    scenario in a real clone and finding it does not exist. The range is empty
+    only when `tip` is an ancestor of what origin already has, and then the push
+    ships no new objects: to `main` it is a non-fast-forward the remote rejects,
+    and to a NEW branch it creates a ref over commits origin already holds, so
+    no seed content is newly published. The widening turned an accurate empty
+    answer into a 1,671-file scan of the whole history handed to every
+    SQL-consuming check, which then judged files no push was sending -- one
+    whack-a-mole per check and no new branch ever pushable.
+
+    Fourth's half of that report is withdrawn in the same place it was made:
+    `docs/SAIRN-OPEN-WORK-INDEX.md`. The three factual observations behind it
+    stand (base is only set in prepush mode, the two rungs are one on `main`,
+    and the missing HEAD~1) -- the SEVERITY did not.
 
     `base` is the remote sha git hands a PRE-PUSH hook on stdin. It is strictly
     better than origin/main when present, because it is what the REMOTE has

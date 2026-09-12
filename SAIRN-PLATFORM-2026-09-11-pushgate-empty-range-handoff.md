@@ -148,3 +148,43 @@ Re-verify every measurement above against the current tree before acting on
 it: `base = None` at :582, the `refs` line at :391, the single `HEAD~1`
 occurrence at :352, and the two `[]` returns. This document is a claim like
 any other, and it already contains one correction of my own earlier claim.
+
+---
+
+# ⚠ RETRACTED — 2026-09-12 (Fourth)
+
+**The severity claim in this document is WRONG. The fail-open does not exist.**
+
+Cody implemented the fail-closed widening on Michael's decision, then
+**reverted it in `014953aa`** after building the scenario in a real clone level
+with its origin. I checked that reasoning against my own framing rather than
+accepting it, and it holds:
+
+**The range is empty only when the pushed tip is an ancestor of what origin
+already has** — and such a push ships no new objects. To `main` it is a
+non-fast-forward the remote rejects; to a NEW branch it creates a ref over
+commits origin already holds, so no seed content is newly published.
+
+**My own example was the counter-example.** Section 2c offers
+`git push origin HEAD:some-branch` *"while this clone is behind"* as an
+ordinary push that sends real content. It does not: while behind, those commits
+are already on origin. I did not check that before writing it down.
+
+**The widening had a real cost**, which is the part worth keeping: an accurate
+`[]` became a 1,671-file scan of the whole history, handed to every
+SQL-consuming check, which then judged files no push was sending — one
+whack-a-mole per check, and no new branch ever pushable, which is how a gate
+gets switched off.
+
+**What kept this from being a confident wrong claim** is section 2c's own
+paragraph saying the end-to-end case was *not* demonstrated and that
+`outgoing_subjects()` was unverified. That caveat is the only reason this is a
+retraction rather than a blocking gate rebuilt around a defect nobody had.
+
+**The three facts under the claim still stand**, and one of them was a real
+defect: `base` is only ever set in prepush mode; `@{u}` *is* `origin/main` when
+pushing main, so the chain is one rung tried twice; and **the `HEAD~1` last
+resort the docstring promised was never implemented**. That last one is fixed
+2026-09-12 — docstring only, no behaviour change — along with a note in
+`outgoing_files()` recording why an empty range is correct, so the next reader
+who notices it does not re-report it a third time.
