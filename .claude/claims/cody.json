@@ -1037,8 +1037,8 @@
       "task": "pre-push hook installation is never verified per clone",
       "claimed_at": "2026-09-13T14:00:24Z",
       "claimed_at_epoch": 1789308024.5208523,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T15:13:50Z"
     }
   ]
 }
