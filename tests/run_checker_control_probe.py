@@ -6,12 +6,23 @@ A tool that demands a control pair from every checker and has none itself is
 the joke that writes itself. So this plants each verdict the tool can reach and
 asserts it reaches it, and plants the opposite and asserts it does not.
 
-THE ARM THAT MATTERS MOST IS THE COMMENT ONE. The whole finding this tool
-produces is "nothing has ever seen this checker fail", and the cheapest way to
-fake that evidence is a comment saying `# expect exit 1` next to no assertion at
-all. This platform recorded that exact class three times in two days, twice in
-its own probes. If the tool ever counts a comment as proof, it is producing
-false reassurance about false reassurance.
+THE ARMS THAT MATTER MOST ARE 4 AND 4c. The whole finding this tool produces is
+"nothing has ever seen this checker fail", and the cheapest way to fake that
+evidence is prose sitting next to no assertion at all. This platform recorded
+that exact class three times in two days, twice in its own probes. If the tool
+ever counts prose as proof, it is producing false reassurance about false
+reassurance.
+
+  4  plants `#` comments -- the shape the tool was built to refuse.
+  4c plants everything that is NOT a comment and was being counted anyway: a
+     DOCSTRING, a PATH CONSTANT naming the tool, a PRINT, a JavaScript test
+     NAME, and `CONTROLS_FOR` itself. Added 2026-09-13, when fail_open_check.py
+     was found BOTH EVIDENCED on six fires and two silents of which NONE was an
+     assertion -- declaring a control had created the evidence that it worked.
+  4d drives the other direction of the same rebuild, because a reader that
+     excluded prose and nothing else would have made the tool blinder rather
+     than sharper. The `check('label', actual, expected)` idiom this repo
+     writes most of its assertions in must still be READ.
 
 Exit 0 pass, 1 fail.
 """
@@ -138,6 +149,100 @@ rc, out = rc_of(['fake_js_check.py'], {'fake_probe.js': COMMENT_ONLY_JS})
 check(rc == 1, 'the JavaScript comment path is stripped too (exit %d)' % rc)
 check(verdict_row(out, 'DECLARED, NO ASSERTIONS', 'fake_js_check.py'),
       '...same verdict on its own row, via the other stripper')
+
+print('')
+print('4c. NOR IS A DOCSTRING, A PATH CONSTANT, A PRINT, OR THE DECLARATION')
+# THE DEFECT FOUND 2026-09-13, and the reason evidence now comes from a parse
+# tree. Section 4 above only ever planted `#` comments, which the tool stripped.
+# Everything below survives comment-stripping because none of it IS a comment,
+# and every line of it was being counted as proof:
+#
+#   * a DOCSTRING is a string expression, not a comment
+#   * a PATH CONSTANT naming the tool -- and a checker with `fail` in its name
+#     therefore matched the FIRES pattern on the line that names its own file
+#   * a PRINT in the reporting loop, printing the words ok/FAIL
+#   * `CONTROLS_FOR = ['fail_open_check.py']` itself -- DECLARING a control
+#     created the evidence that it worked
+#
+# Measured on the real tree that day: fail_open_check.py came back BOTH
+# EVIDENCED on six fires and two silents, and not one of the eight was an
+# assertion. The fixture below is that file's shape, reduced.
+PROSE_ONLY = (
+    '"""Probe zz_fail_check.py -- it must FAIL on a defect and stay CLEAN.\n'
+    '\n'
+    'Run: python tests/zz_prose_probe.py\n'
+    'A finding here means exit 1; no finding means exit 0 and it stays silent.\n'
+    '"""\n'
+    "CONTROLS_FOR = ['zz_fail_check.py']\n"
+    "import os\n"
+    "TOOL = os.path.join('tools', 'zz_fail_check.py')\n"
+    "results = {}\n"
+    "print('  %s' % ('ok' if results else 'FAIL'))\n"
+    "print('0 findings -- CLEAN')\n")
+rc, out = rc_of(['zz_fail_check.py'], {'zz_prose_probe.py': PROSE_ONLY})
+check(rc == 1, 'prose, a path constant, a print and the declaration line are '
+               'not a control pair (exit %d)' % rc)
+check(verdict_row(out, 'DECLARED, NO ASSERTIONS', 'zz_fail_check.py'),
+      '...it asserted NOTHING, and says so on its own row')
+
+# THE OTHER DIRECTION, because a reader that saw nothing anywhere would pass
+# this arm while being useless. The SAME file plus one real assertion must flip.
+rc, out = rc_of(['zz_fail_check.py'],
+                {'zz_prose_probe.py': PROSE_ONLY +
+                 "rc = 1\n"
+                 "assert rc == 1\n"
+                 "assert rc == 0\n"})
+check(verdict_row(out, 'BOTH EVIDENCED', 'zz_fail_check.py') or
+      re.search(r'BOTH EVIDENCED\s*:\s*1', out) is not None,
+      '...and two REAL assertions in the same file are still read')
+
+# The JavaScript half. A test NAME and an assertion MESSAGE are string
+# literals, so `test('a verdict that IS read is not reported', ...)` read as
+# proof that the checker stays silent. It is a label.
+PROSE_ONLY_JS = (
+    "// zz_js_check.py probe\n"
+    "const CONTROLS_FOR = ['zz_js_check.py'];\n"
+    "const path = require('path');\n"
+    "const TOOL = path.join('tools', 'zz_js_check.py');\n"
+    "test('a defect must be reported as a FINDING', () => {});\n"
+    "test('and clean input is not reported, it stays silent', () => {});\n"
+    "console.log('0 findings -- CLEAN');\n")
+rc, out = rc_of(['zz_js_check.py'], {'zz_prose_probe.js': PROSE_ONLY_JS})
+check(rc == 1, 'a JS test NAME is a label, not an assertion (exit %d)' % rc)
+check(verdict_row(out, 'DECLARED, NO ASSERTIONS', 'zz_js_check.py'),
+      '...and the JavaScript path says so too')
+
+print('')
+print('4d. THE POSITIONAL ASSERT-EQUAL IDIOM IS READ -- widening did not buy silence')
+# The other half of the same rebuild. This repo writes most of its assertions as
+# `check('label', actual, expected)`, which no pattern could read: the expected
+# value is a bare positional argument, so
+# tests/run_traceability_matrix_probe.py asserted exit 0 three separate times
+# and came back silent=0. A reader that only excluded prose would have made
+# that WORSE, not better, so both halves are driven here.
+POSITIONAL = (
+    "CONTROLS_FOR = ['zz_pos_check.py']\n"
+    "def check(label, actual, expected):\n"
+    "    assert actual == expected, label\n"
+    "rc = 1\n"
+    "check('a planted defect is reported', rc, 1)\n"
+    "rc = 0\n"
+    "check('and clean input is not', rc, 0)\n")
+rc, out = rc_of(['zz_pos_check.py'], {'zz_pos_probe.py': POSITIONAL})
+check(rc == 0, 'check(label, actual, expected) is read in both directions '
+               '(exit %d)' % rc)
+check(re.search(r'BOTH EVIDENCED\s*:\s*1', out) is not None,
+      '...and counted as BOTH EVIDENCED')
+
+# A CONTROL THAT DOES NOT PARSE IS NOT A CONTROL THAT ASSERTS NOTHING. Reading
+# zero assertions out of a broken file looks identical to reading zero out of an
+# empty one, and only one of those is a broken control.
+rc, out = rc_of(['zz_broken_check.py'],
+                {'zz_broken_probe.py': "CONTROLS_FOR = ['zz_broken_check.py']\n"
+                                       "def oops(   :::\n"})
+check(rc == 1, 'a control that does not parse is not a pass (exit %d)' % rc)
+check(verdict_row(out, 'CONTROL DOES NOT PARSE', 'zz_broken_check.py'),
+      '...and it is named as UNPARSEABLE, not as asserting nothing')
 
 print('')
 print('4b. A MENTION IS NOT A CONTROL -- attribution is DECLARED, not inferred')

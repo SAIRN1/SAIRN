@@ -114,6 +114,107 @@ def strip_comments(src):
     return ''.join(out)
 
 
+def blank_string_bodies(src):
+    r"""Blank the CONTENTS of every string and template literal, keeping quotes.
+
+    WHAT IT IS FOR. A scanner looking for evidence in CODE must not find it in
+    PROSE, and in JavaScript the prose lives inside string literals -- a test
+    NAME, an assertion message, a path constant. `strip_comments` deliberately
+    leaves those alone because it is answering a different question.
+
+        test('a verdict that IS read is not reported', ...)
+
+    reads, to any regex, exactly like an assertion about a verdict not being
+    reported. It is a label. On 2026-09-13 `tools/checker_control_check.py` was
+    found crediting nine such lines as proof that a checker can fire, including
+    the line that DECLARES which checker the file controls.
+
+    Quotes and backticks are kept so the literal is still visibly a literal and
+    every byte offset and line number stays true -- the same contract
+    `strip_comments` holds. Interpolations inside a template literal are blanked
+    with the rest: `${x}` is code, but a scanner that wanted it should be
+    reading the AST, not this.
+
+    THIS DUPLICATES THE WALK IN strip_comments RATHER THAN REFACTORING IT.
+    Deliberate: that function is imported by tools across this repo and its
+    behaviour is pinned by the probe below. Adding a second entry point cannot
+    change what the first one returns; extracting a shared scanner could, and a
+    stripper that quietly starts destroying input is the exact failure this
+    whole file exists to have ended.
+    """
+    out = list(src)
+    i, n = 0, len(src)
+    prev = ''
+
+    while i < n:
+        c = src[i]
+        nxt = src[i + 1] if i + 1 < n else ''
+        # Comments are skipped, not blanked -- this function's contract is
+        # strings only. Callers that want both run strip_comments first.
+        if src.startswith('<!--', i):
+            j = src.find('-->', i)
+            i = n if j == -1 else j + 3
+            continue
+        if c == '/' and nxt == '*':
+            j = src.find('*/', i + 2)
+            i = n if j == -1 else j + 2
+            continue
+        if c == '/' and nxt == '/':
+            j = src.find('\n', i)
+            i = n if j == -1 else j
+            continue
+        if c in '"\'`':
+            q = c
+            j = i + 1
+            end = None                      # index of the CLOSING delimiter
+            while j < n:
+                if src[j] == '\\':
+                    j += 2
+                    continue
+                if src[j] == q:
+                    end = j
+                    j += 1
+                    break
+                if q != '`' and src[j] == '\n':
+                    break
+                j += 1
+            # Blank strictly BETWEEN the delimiters, by index. An earlier
+            # version skipped any char equal to the quote, which left the
+            # BACKSLASH-ESCAPED quote in `'it\'s'` standing and turned one
+            # string into a closed string followed by garbage code. Escaped
+            # delimiters are interior bytes like any other.
+            stop = end if end is not None else min(j, n)
+            for k in range(i + 1, stop):
+                if out[k] != '\n':
+                    out[k] = ' '
+            i = j
+            prev = q
+            continue
+        if c == '/' and prev in _REGEX_OK:
+            j = i + 1
+            ok = False
+            while j < n and src[j] != '\n':
+                if src[j] == '\\':
+                    j += 2
+                    continue
+                if src[j] == '[':
+                    while j < n and src[j] not in ']\n':
+                        j += 2 if src[j] == '\\' else 1
+                if src[j] == '/':
+                    ok = True
+                    j += 1
+                    break
+                j += 1
+            if ok:
+                i = j
+                prev = '/'
+                continue
+        if not c.isspace():
+            prev = c
+        i += 1
+    return ''.join(out)
+
+
 def mask_scripts(src):
     """Blank <script> bodies so an HTML-side scan does not see JS."""
     out = list(src)
@@ -162,6 +263,48 @@ _CASES = [
      lambda o: len(o) == len("a\n// x\nb\n") and o.count('\n') == 3),
 ]
 
+# blank_string_bodies() is the OPPOSITE question and needs its own cases: the
+# prose lives inside the literals, and the code around them must survive.
+_STRING_CASES = [
+    ('a test NAME is blanked, the call around it is not',
+     "test('a verdict that IS read is not reported', fn);",
+     lambda o: 'not reported' not in o and 'test(' in o and ', fn);' in o),
+    ('an assertion MESSAGE goes, the compared values stay',
+     "assert.strictEqual(r.code, 1, 'a finding must exit non-zero');",
+     lambda o: 'must exit' not in o and 'r.code, 1,' in o),
+    ('a path constant naming a tool is blanked',
+     "const T = path.join(ROOT, 'tools', 'fail_open_check.py');",
+     lambda o: 'fail_open_check' not in o and 'path.join(ROOT,' in o),
+    ('the declaration line itself is blanked',
+     "const CONTROLS_FOR = ['discarded_verdict_check.py'];",
+     lambda o: 'discarded_verdict' not in o and 'CONTROLS_FOR = [' in o),
+    # An earlier version skipped any interior char equal to the quote, which
+    # left the ESCAPED quote standing and turned one string into a closed
+    # string followed by garbage. `var u = 2;` must still be there afterwards.
+    ("a BACKSLASH-ESCAPED quote does not end the string",
+     r"var s = 'it\'s escaped'; var u = 2;",
+     lambda o: 'escaped' not in o and 'var u = 2;' in o and o.count("'") == 2),
+    ('an escaped double quote likewise',
+     'var d = "say \\"hi\\""; var v = 3;',
+     lambda o: 'hi' not in o and 'var v = 3;' in o and o.count('"') == 2),
+    ('a template literal is blanked, interpolation included',
+     "var t = `hi ${x} there`; var w = 5;",
+     lambda o: '${x}' not in o and 'var w = 5;' in o),
+    ('a regex literal is NOT a string and survives',
+     "var r = /a[/]b/; var q = 2;",
+     lambda o: '/a[/]b/' in o and 'var q = 2;' in o),
+    ('an UNTERMINATED string stops at the newline',
+     "var m = 'oops\nvar w = 4;",
+     lambda o: 'var w = 4;' in o),
+    ('a comment is skipped, not blanked -- strings only',
+     "// remRender() was deleted\nvar b = 2;",
+     lambda o: 'remRender' in o and 'var b = 2;' in o),
+    ('length and newlines are preserved',
+     "var s = 'a\\nb';\nvar t = 1;\n",
+     lambda o: len(o) == len("var s = 'a\\nb';\nvar t = 1;\n")
+     and o.count('\n') == 2),
+]
+
 
 def probe():
     bad = 0
@@ -169,6 +312,14 @@ def probe():
         out = strip_comments(src)
         good = ok(out)
         print('  %s %s' % ('ok  ' if good else 'FAIL', name))
+        if not good:
+            print('       got: %r' % out[:90])
+            bad += 1
+    print('')
+    for name, src, ok in _STRING_CASES:
+        out = blank_string_bodies(src)
+        good = ok(out)
+        print('  %s blank_string_bodies: %s' % ('ok  ' if good else 'FAIL', name))
         if not good:
             print('       got: %r' % out[:90])
             bad += 1
