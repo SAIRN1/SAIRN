@@ -952,6 +952,16 @@
       "claimed_at_epoch": 1789296440.2891998,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789310929",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "report-only registry verdict readers can a promoted checker finding reach the report",
+      "claimed_at": "2026-09-13T14:48:49Z",
+      "claimed_at_epoch": 1789310929.6194785,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
