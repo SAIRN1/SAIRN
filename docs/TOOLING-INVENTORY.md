@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**113 files in `tools/`.** By what actually invokes them:
+**114 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,13 +28,13 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 18 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 30 | nothing runs these at all |
+| **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 65 |
+| CHECKER | 66 |
 | GENERATOR | 16 |
 | LIBRARY | 19 |
 | LIVE | 13 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 11 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 11
+**The number to act on: 12 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 11
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 11, by name, so this is actionable rather than a statistic:
+The 12, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -60,6 +60,7 @@ The 11, by name, so this is actionable rather than a statistic:
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
 | `fmea_prediction_check.py` | SUITE-ONLY | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows |
 | `idempotency_check.py` | SUITE-ONLY | a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run |
+| `independence_check.py` | UNWIRED | an index row claiming an INDEPENDENT review that names only a second READER, or names no method at all -- a second read shares the assumptions of the first, so it cannot break a shared blind spot; also reports that the defect register is not capturing independent-review at all, which blocks the fraction-caught measurement |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
@@ -234,7 +235,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (30)
+## UNWIRED (31)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -261,6 +262,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
+| `independence_check.py` | CHECKER | an index row claiming an INDEPENDENT review that names only a second READER, or names no method at all -- a second read shares the assumptions of the first, so it cannot break a shared blind spot; also reports that the defect register is not capturing independent-review at all, which blocks the fraction-caught measurement | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
@@ -301,7 +303,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      113   git ls-files tools/
+  tools on disk                      114   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                7   tools\sairn_push_gate_hook.py
   report-only registry                33   report_only_checks.REGISTRY
