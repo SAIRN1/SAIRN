@@ -1104,6 +1104,16 @@
       "claimed_at_epoch": 1789335905.1725004,
       "status": "released",
       "released_at": "2026-09-13T21:54:49Z"
+    },
+    {
+      "id": "cc-1789338065",
+      "session": "cc",
+      "subject": "cc",
+      "task": "26 never-run tables severity triage against production traffic",
+      "claimed_at": "2026-09-13T22:21:05Z",
+      "claimed_at_epoch": 1789338065.0338478,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
