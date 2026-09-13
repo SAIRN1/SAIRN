@@ -1,0 +1,534 @@
+{
+ "checkers": {
+  "checkblocks.py": {
+   "observations": [
+    {
+     "digest": "76a2372dbdb8aa61",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "76a2372dbdb8aa61",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "76a2372dbdb8aa61",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "cleanup_confirm_check.py": {
+   "observations": [
+    {
+     "digest": "7cd890530b25e0a2",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "7cd890530b25e0a2",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "7cd890530b25e0a2",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "comment_quote_check.py": {
+   "observations": [
+    {
+     "digest": "45908db221721174",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "45908db221721174",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "45908db221721174",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "comment_sensitivity_check.py": {
+   "observations": [
+    {
+     "digest": "006ad3167b38ee9e",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "006ad3167b38ee9e",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "006ad3167b38ee9e",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "control_char_check.py": {
+   "observations": [
+    {
+     "digest": "bc82942d254ed3de",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "bc82942d254ed3de",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "bc82942d254ed3de",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "criticality_tier_check.py": {
+   "observations": [
+    {
+     "digest": "30a30b08d4010381",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "30a30b08d4010381",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "30a30b08d4010381",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "defect_register.py": {
+   "observations": [
+    {
+     "digest": "921f1ffe6c8f5463",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "921f1ffe6c8f5463",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "921f1ffe6c8f5463",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "discarded_verdict_check.py": {
+   "observations": [
+    {
+     "digest": "a7674440405b49b5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "a7674440405b49b5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "a7674440405b49b5",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "discarded_verdict_crossfile.py": {
+   "observations": [
+    {
+     "digest": "83015c21ffd4d54e",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "83015c21ffd4d54e",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "83015c21ffd4d54e",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "div_balance_check.py": {
+   "observations": [
+    {
+     "digest": "00d85f94eb6dd69b",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "00d85f94eb6dd69b",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "00d85f94eb6dd69b",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "duplicate_global_check.py": {
+   "observations": [
+    {
+     "digest": "f1e56a90ca186eb9",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "f1e56a90ca186eb9",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "f1e56a90ca186eb9",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "fail_open_check.py": {
+   "observations": [
+    {
+     "digest": "8ad6436f6e97cb69",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8ad6436f6e97cb69",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8ad6436f6e97cb69",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "gate_column_check.py": {
+   "observations": [
+    {
+     "digest": "04d0c4b8eb272fc3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "04d0c4b8eb272fc3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "04d0c4b8eb272fc3",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "index_duplicate_check.py": {
+   "observations": [
+    {
+     "digest": "21ef1936016526d3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "21ef1936016526d3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "21ef1936016526d3",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "install_git_hooks.py": {
+   "observations": [
+    {
+     "digest": "5a35245695b54220",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "5a35245695b54220",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "5a35245695b54220",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "key_collision_check.py": {
+   "observations": [
+    {
+     "digest": "e539a38ed01feee3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "e539a38ed01feee3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "e539a38ed01feee3",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "literal_drift_check.py": {
+   "observations": [
+    {
+     "digest": "3a3b4e1fd7b1b864",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3a3b4e1fd7b1b864",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3a3b4e1fd7b1b864",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "md_table_check.py": {
+   "observations": [
+    {
+     "digest": "8a083f216b4ba26f",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8a083f216b4ba26f",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8a083f216b4ba26f",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "mutation_anchor_check.py": {
+   "observations": [
+    {
+     "digest": "3b94af1c0e998160",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3b94af1c0e998160",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3b94af1c0e998160",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "nav_panel_check.py": {
+   "observations": [
+    {
+     "digest": "3c5140c75be81f2d",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3c5140c75be81f2d",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "3c5140c75be81f2d",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "npm_audit_check.py": {
+   "observations": [
+    {
+     "digest": "fa55633b0989bb16",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "fa55633b0989bb16",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "fa55633b0989bb16",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "orphan_register_check.py": {
+   "observations": [
+    {
+     "digest": "f26dacdfe963f6b6",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "f26dacdfe963f6b6",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "f26dacdfe963f6b6",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "panel_nesting_check.py": {
+   "observations": [
+    {
+     "digest": "05767b86e99c5c25",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "05767b86e99c5c25",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "05767b86e99c5c25",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "removal_path_check.py": {
+   "observations": [
+    {
+     "digest": "8908986e4c1e101a",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8908986e4c1e101a",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "8908986e4c1e101a",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "sairn_dead_button_audit.py": {
+   "observations": [
+    {
+     "digest": "fea59fead1876dd3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "fea59fead1876dd3",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "fea59fead1876dd3",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "sairn_strict_args_check.py": {
+   "observations": [
+    {
+     "digest": "209d34c907d50ab6",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "209d34c907d50ab6",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "209d34c907d50ab6",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "schema_snapshot_freshness.py": {
+   "observations": [
+    {
+     "digest": "e112228fbe9c1d10",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "e112228fbe9c1d10",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "e112228fbe9c1d10",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "soup_register_check.py": {
+   "observations": [
+    {
+     "digest": "9e3e9fe1e5adce22",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "9e3e9fe1e5adce22",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "9e3e9fe1e5adce22",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "tooling_inventory.py": {
+   "observations": [
+    {
+     "digest": "4a6c6c0a063327a5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "4a6c6c0a063327a5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "4a6c6c0a063327a5",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "traceability_matrix.py": {
+   "observations": [
+    {
+     "digest": "823d946bba5b8625",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "823d946bba5b8625",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "823d946bba5b8625",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "truthy_sum_check.py": {
+   "observations": [
+    {
+     "digest": "c1a3f9ab668ee67f",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "c1a3f9ab668ee67f",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "c1a3f9ab668ee67f",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "vercel_config_check.py": {
+   "observations": [
+    {
+     "digest": "a863d842964ba412",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "a863d842964ba412",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "a863d842964ba412",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  },
+  "write_without_readback_check.py": {
+   "observations": [
+    {
+     "digest": "2d8eed9b6d980da5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "2d8eed9b6d980da5",
+     "tree": "6aaec6af403a467f"
+    },
+    {
+     "digest": "2d8eed9b6d980da5",
+     "tree": "6aaec6af403a467f"
+    }
+   ]
+  }
+ },
+ "quarantine": {},
+ "version": "2026-09-13.1"
+}

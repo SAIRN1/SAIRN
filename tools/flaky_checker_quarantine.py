@@ -1,7 +1,7 @@
 """Does a checker give the SAME verdict on UNCHANGED code, run after run?
 
     python tools/flaky_checker_quarantine.py --fixtures     # the blind lock alone
-    python tools/flaky_checker_quarantine.py --measure      # run the fleet N times
+    python tools/flaky_checker_quarantine.py --measure --runs 6   # one tree, N runs
     python tools/flaky_checker_quarantine.py                # read the ledger, report
     python tools/flaky_checker_quarantine.py --json
 
@@ -248,10 +248,21 @@ def main(argv):
 
     led = load_ledger()
     if '--measure' in argv:
-        n = measure(led)
+        # --runs N lets ONE invocation gather enough observations in ONE tree
+        # state. Without it, accumulating across invocations needs a tree that
+        # nobody touches in between -- and on a repo with four active sessions
+        # that never happens, so the classifier answered TOO-FEW-RUNS forever.
+        # This is NOT loosening the threshold to get a number: MIN_RUNS_TO_JUDGE
+        # is unchanged. It is letting a single measurement be big enough to
+        # reach it honestly.
+        runs = RUNS_PER_MEASURE
+        if '--runs' in argv:
+            i = argv.index('--runs')
+            runs = max(1, int(argv[i + 1])) if i + 1 < len(argv) else runs
+        n = measure(led, runs)
         save_ledger(led)
         print('  measured %d registered checker(s), %d run(s) each, tree %s'
-              % (n, RUNS_PER_MEASURE, tree_hash()))
+              % (n, runs, tree_hash()))
 
     rows = []
     for tool, e in sorted(led.get('checkers', {}).items()):
