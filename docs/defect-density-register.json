@@ -1330,6 +1330,28 @@
       ],
       "citation_confidence": "arguable",
       "citation_note": "an exact scan count pinned as an anchor went red on the first ordinary commit that added a matching line -- the anchor still matched something, just not the thing it was pinned for"
+    },
+    {
+      "commit": "e414b563f0f9",
+      "date": "2026-09-13",
+      "subject": "feat(api): item 8 -- the three untested proxy guardrails, and garbage was buying the ceiling",
+      "files": [
+        "api/claude-guardrail-probes.test.js",
+        "api/claude.js",
+        "docs/SOUP-REGISTER.md"
+      ],
+      "lines_added": 401,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "fault-injection",
+      "summary": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case"
     }
   ]
 }
