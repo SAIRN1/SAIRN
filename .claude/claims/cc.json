@@ -1082,8 +1082,8 @@
       "task": "entity name sweep to SAIRN Tech LLC across 34 live sites",
       "claimed_at": "2026-09-13T17:26:31Z",
       "claimed_at_epoch": 1789320391.1118639,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T20:09:27Z"
     }
   ]
 }
