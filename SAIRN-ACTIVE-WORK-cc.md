@@ -1572,3 +1572,34 @@ assumed.
 **I committed conflict markers into `docs/SAIRN-OPEN-WORK-INDEX.md`** -- the exact defect the "table checker was reading 31% of it and printing OK" row describes, reproduced in the same document. **Nothing reached origin:** caught on the next rebase, the bad commit was rebuilt on origin's version and the row re-applied on top. The lesson is that `git add -A` after a rebase is how markers get committed, in the one file every session reads to choose work.
 
 **Queue: 321 → 318 stuck, removal verbs 50 → 52.**
+
+---
+
+## 2026-09-13 -- twenty-one delete buttons that only deleted locally
+
+**Michael's decision: wire the 21 uncalled `soft_delete` verbs as real capability.** Pushed `bc27f1fb`, `ab0a43fe`, `71ef8357`; live-verified against the deployed file.
+
+**It was the `sd_customers` defect twenty-one times over.** `sdSyncCollection()` pushed **writes and nothing else**, so a row removed in a panel simply stopped being pushed and its server row was never touched -- and `sdHydrateAll()` merges the server's rows back in **BY ID** and never deletes. Every one of those deletions reappeared on the next load. The `soft_delete` branch and its read filter had existed since 2026-09-08; **only the call was missing.**
+
+**Done in ONE place.** `sdSyncCollection()` is already the seam every write goes through, keyed by the same storage key, computing the same diff. Twenty-one handler edits would have been the bulk find-replace CLAUDE.md forbids, would miss the twenty-second, and would put the same five lines in twenty-one places to drift apart.
+
+### The regression I shipped, and how I found it
+
+**An hour after pushing, I asked why five collections had no delete button. The answer was the bug.** They have none because they are not curated lists -- they are **capped logs**. Drawings trim to 20, snapshots to 90, order history to 200, nests to 50, threats to 100. **Those caps are localStorage QUOTA bounds, not retention policy** -- `sd_drawings`' own comment says the 50→20 cut "costs history depth" and was pulled to fit "a bound that actually holds on a shared origin". **The server has no such bound and had been quietly keeping the deeper archive.** My sweep turned every trim into a server-side deletion, silently, on every save.
+
+**A diff cannot tell a cap from a deletion** -- both are ids in `prev` and not in `next` -- so the trimming site now says which. `sdCapLocal()` registers the dropped ids; the next sweep skips them and **the registration is consumed**, because an exemption that outlived its sweep would silence real deletions of that id for ever. **Not `sdSyncSuppressed` at those sites**: that would also suppress the write of the row just added, which is the record the user is trying to back up.
+
+A derived arm fails if a **sixth** cap appears -- proven to bite by reverting one site. Its first version used a ±60-line proximity window and produced three false positives on `today.slice(0,7)` plus two real caps on unsynced keys; it now follows each self-assignment to its **own** `st()` call.
+
+### Honest coverage, because "wired" and "usable" are different claims
+
+- **19 of the 21 are arrays** and the sweep carries their removals.
+- **2 are OBJECTS** -- `sd_negotiated_prices`, `sd_pricing_rules` -- and `sdSyncCollection()` returns early on a non-array. **Those two have never been backed up at all, writes or deletes**, despite sitting in `SD_SYNCED`.
+- **Nine of the 19 have a confirmed user-facing delete path**, one of them added today: **Saved Drawings**, where the only way to lose a drawing had been to push it off the 20-entry cap.
+- **The rest are append-only streams with no list UI to hang a button on**, and `stonedesk_quote_history` is rendered only by `renderHistory()` into `history-list` -- an element the file's own comment says was never built.
+
+**Found and deliberately not fixed:** `commsDelete()` filters `sdCommsThreads`, which `saveSD5()` does not save and which the file already records as diverged from the `sd_comms` store. That button has never persisted anything, before or after this change.
+
+### A line I wrote and then deleted
+
+I added `if(typeof drawings!=='undefined') drawings=next;` to keep a module copy in step. **There is no module copy** -- `sdDrawSave()`'s `drawings` is a function-local re-read from localStorage on every save, so the guard is always false and the line was **a no-op with a comment claiming it mattered**. Checked rather than assumed; the comment now records which way round it is.
