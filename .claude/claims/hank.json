@@ -1335,6 +1335,16 @@
       "claimed_at_epoch": 1789331728.8879893,
       "status": "released",
       "released_at": "2026-09-13T20:39:33Z"
+    },
+    {
+      "id": "hank-1789332615",
+      "session": "hank",
+      "subject": "ledger-integer-cents",
+      "task": "exact money comparison in validateEntry",
+      "claimed_at": "2026-09-13T20:50:15Z",
+      "claimed_at_epoch": 1789332615.9928079,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
