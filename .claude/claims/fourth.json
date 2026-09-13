@@ -992,6 +992,16 @@
       "claimed_at_epoch": 1789318400.8122368,
       "status": "released",
       "released_at": "2026-09-13T17:11:10Z"
+    },
+    {
+      "id": "fourth-1789320021",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sairnvet per-employee auth and the sv_controlled witnessing lock",
+      "claimed_at": "2026-09-13T17:20:21Z",
+      "claimed_at_epoch": 1789320021.2412703,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
