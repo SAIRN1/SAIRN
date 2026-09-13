@@ -992,8 +992,8 @@
       "task": "wire the 21 uncalled soft delete verbs",
       "claimed_at": "2026-09-13T10:46:08Z",
       "claimed_at_epoch": 1789296368.8606985,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T11:48:59Z"
     }
   ]
 }
