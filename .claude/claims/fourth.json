@@ -972,6 +972,16 @@
       "claimed_at_epoch": 1789314292.484776,
       "status": "released",
       "released_at": "2026-09-13T15:50:45Z"
+    },
+    {
+      "id": "fourth-1789314829",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "generator closing-error refusal master-plan derivation and tooling-inventory cadence",
+      "claimed_at": "2026-09-13T15:53:49Z",
+      "claimed_at_epoch": 1789314829.6725008,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
