@@ -270,6 +270,84 @@ def _prose_removed(name, src):
     return '\n'.join(lines)
 
 
+_SHELLS = ('subprocess.', 'check_output', 'Popen', 'execFileSync')
+# The same declaration tools/checker_control_check.py reads, read the same way.
+_DECL_RE = re.compile(r"CONTROLS_FOR\s*=\s*[\[\(]([^\]\)]*)[\]\)]", re.S)
+_DECL_NAME_RE = re.compile(r"['\"]([\w.-]+\.py)['\"]")
+
+
+def _call_arg_names(src):
+    """Tool filenames passed as a direct argument to a call that RUNS things.
+
+    THE SHAPE THE PATTERN LIST COULD NOT SEE, found 2026-09-13 once prose
+    stopped providing false cover. A control that drives several checkers binds
+    the directory once and passes the filename:
+
+        TOOLS = os.path.join(REPO, 'tools')
+        def run(tool, *args):
+            subprocess.run([sys.executable, os.path.join(TOOLS, tool)] + ...)
+        run('checkblocks.py', p)                      <-- the invocation
+
+    `tests/run_uncontrolled_checkers_probe.py` drives FIVE promoted checkers
+    that way, and the inventory credited it for none of them. They had looked
+    covered only because other files MENTIONED them in prose, so removing the
+    prose turned a false "covered" into a false "no probe" -- a different lie,
+    not a fix.
+
+    THE RULE IS A WHITELIST, NOT A BLACKLIST, and the first draft got this
+    wrong. "Any direct call argument" also credited
+    `cls.get('md_table_check.py')` -- a DICTIONARY LOOKUP naming a tool inside
+    `tests/run_tooling_inventory_probe.py`, which asserts what this very file
+    classifies things as. Four tools were credited to a probe that reads their
+    NAME and never runs them. Blacklisting `get` would have been the start of
+    an endless list, so the question is inverted: which calls turn a string
+    into a PATH or a COMMAND?
+
+      * `os.path.join(...)` -- the string becomes a path
+      * a function DEFINED IN THIS FILE whose body shells out. That is the
+        `run(tool, *args)` helper above, and it is why the earlier
+        INVOCATION-proximity model failed: real controls wrap the subprocess
+        call, so the tool name never appears near it.
+
+    Anything else naming a tool is naming it, not running it.
+
+    `tests/sairn_http_challenge.py` names three tools inside `WIRED = [...]` and
+    a `for f in [...]` -- collection elements, never an argument to either kind
+    of call -- and that list is exactly the false positive the earlier
+    tightening removed. It stays removed.
+    """
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return set()
+
+    # Functions in THIS file that shell out. A control that drives several
+    # checkers has exactly one of these and passes the filename to it.
+    shells = set()
+    for node in ast.walk(tree):
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            body = ast.unparse(node)
+            if any(s in body for s in _SHELLS):
+                shells.add(node.name)
+
+    out = set()
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        fn = node.func
+        runs = (
+            (isinstance(fn, ast.Attribute) and fn.attr == 'join'
+             and isinstance(fn.value, ast.Attribute) and fn.value.attr == 'path')
+            or (isinstance(fn, ast.Name) and fn.id in shells)
+            or (isinstance(fn, ast.Attribute) and fn.attr in shells))
+        if not runs:
+            continue
+        for a in list(node.args) + [k.value for k in node.keywords]:
+            if isinstance(a, ast.Constant) and isinstance(a.value, str):
+                out.add(a.value)
+    return out
+
+
 def suite_refs(tools):
     r"""Tools a file under tests/ actually INVOKES or IMPORTS -- not merely names.
 
@@ -306,6 +384,18 @@ def suite_refs(tools):
             except IOError:
                 continue
             txt = _prose_removed(f, txt)
+            call_args = _call_arg_names(txt) if f.endswith('.py') else set()
+            # A DECLARATION BEATS EVERY HEURISTIC HERE, and one already exists.
+            # tools/checker_control_check.py made a control state which checkers
+            # it is the control for, in code, precisely because inferring it
+            # failed three different ways. `orphan_register_check.py` is driven
+            # through a generated shim -- its name appears only inside a string
+            # that BECOMES source -- so no amount of reading this file's calls
+            # can see it, while `CONTROLS_FOR` says it outright. Reading the
+            # declaration also stops this document and that one disagreeing
+            # about the same fact, which is the drift both exist to prevent.
+            for _decl in _DECL_RE.findall(txt):
+                call_args |= set(_DECL_NAME_RE.findall(_decl))
             for t in tools:
                 # THE PRE-FILTER IS ON THE STEM, NOT THE FILENAME. `import
                 # checker_control_check as M` never writes the `.py`, so a
@@ -323,7 +413,8 @@ def suite_refs(tools):
                     or re.search(r"'tools'\s*,\s*'" + esc + r"'", txt)
                     or re.search(r'(?:^|' + chr(10) + r')\s*import\s+' + stem + (chr(92) + 'b'), txt)
                     or re.search(r'spec_from_file_location\([^)]*' + esc, txt)
-                    or re.search(r"require\(['\"][^'\"]*" + stem, txt))
+                    or re.search(r"require\(['\"][^'\"]*" + stem, txt)
+                    or t in call_args)
                 if invoked:
                     refs.setdefault(t, set()).add(f)
     return {k: sorted(v) for k, v in refs.items()}

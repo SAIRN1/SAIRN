@@ -168,6 +168,98 @@ ok('the numbering has no gap up to its maximum',
    sorted(checks) == list(range(1, max(checks) + 1)) if checks else False,
    str(sorted(checks)))
 
+print('\nH. NAMING A TOOL IS NOT RUNNING IT -- suite_refs(), rebuilt 2026-09-13')
+# THE DEFECT. `'tools/' + name in txt` over the raw text meant a COMMENT or a
+# DOCSTRING naming a tool counted as invoking it. Every CONTROLS_FOR
+# declaration carries a comment naming checker_control_check.py, so all
+# twenty-five declaring controls became "files that run the meta-checker", and
+# the probes it printed for that tool were the two that sort first
+# alphabetically. Measured across the repo: 151 credited references, 52 of them
+# false.
+#
+# EACH ARM DRIVES BOTH WAYS. Removing prose alone would have swapped an
+# optimistic lie for a pessimistic one -- and briefly did: with the prose gone,
+# `checkblocks.py` reported NO PROBE while a thorough control drove it, because
+# the pre-filter tested the FILENAME and `import x as M` never writes `.py`.
+_SR = ti.suite_refs
+FIXTURE = 'zz_probe_fixture.py'
+TARGETS = ['zz_target_check.py', 'zz_other_check.py']
+
+
+def credits(body):
+    """Which TARGETS the PLANTED file is credited with invoking.
+
+    Scoped to the planted file on purpose. suite_refs() walks all of tests/,
+    and THIS file carries every fixture below as a string literal -- so an
+    unscoped `tool not in result` arm is credited by the probe's own source and
+    fails whatever the tool does. That is a vacuous check in the other
+    direction, and it cost four red arms before being seen.
+    """
+    p = os.path.join(REPO, 'tests', FIXTURE)
+    io.open(p, 'w', encoding='utf-8', newline='\n').write(body)
+    try:
+        refs = _SR(list(TARGETS))
+    finally:
+        os.remove(p)
+    return {t for t in TARGETS if FIXTURE in refs.get(t, [])}
+
+
+got = credits('"""This file tests tools/zz_target_check.py, thoroughly."""\n'
+              '# and see tools/zz_other_check.py for the sibling case\n'
+              'x = 1\n')
+ok('a DOCSTRING naming a tool is not an invocation',
+   'zz_target_check.py' not in got, str(got))
+ok('a COMMENT naming a tool is not an invocation',
+   'zz_other_check.py' not in got, str(got))
+
+got = credits('import subprocess, sys\n'
+              'cls = {}\n'
+              "v = cls.get('zz_target_check.py')\n")
+ok('a DICTIONARY LOOKUP naming a tool is not an invocation',
+   'zz_target_check.py' not in got,
+   'this over-credited four tools to a probe that reads their name')
+
+# ...and the three real shapes must all still be SEEN.
+got = credits('import subprocess, sys, os\n'
+              "subprocess.run([sys.executable, os.path.join('tools', "
+              "'zz_target_check.py')])\n")
+ok('os.path.join building the tool path IS an invocation',
+   'zz_target_check.py' in got, str(got))
+
+got = credits('import subprocess, sys, os\n'
+              "TOOLS = os.path.join('tools')\n"
+              'def run(tool, *args):\n'
+              '    return subprocess.run([sys.executable,\n'
+              '                           os.path.join(TOOLS, tool)] + list(args))\n'
+              "run('zz_target_check.py', 'x')\n")
+ok('a filename passed to a local helper that SHELLS OUT is an invocation',
+   'zz_target_check.py' in got,
+   'the wrapped-subprocess shape -- real controls all look like this')
+
+got = credits("CONTROLS_FOR = ['zz_target_check.py']\n"
+              'x = 1\n')
+ok('a CONTROLS_FOR declaration counts -- a declaration beats every heuristic',
+   'zz_target_check.py' in got,
+   'orphan_register_check.py is driven through a generated shim and is '
+   'visible no other way')
+
+# THE FALSE POSITIVE THE EARLIER TIGHTENING REMOVED MUST STAY REMOVED.
+got = credits("WIRED = ['zz_target_check.py', 'zz_other_check.py']\n"
+              'for f in WIRED:\n'
+              '    pass\n')
+ok('a name inside a LIST LITERAL is still not an invocation', not got,
+   'tests/sairn_http_challenge.py is the real instance of this shape')
+
+# And against the real repo, the two facts that changed.
+real = _SR(['checkblocks.py', 'npm_audit_check.py'])
+ok('the real tree: checkblocks.py IS driven by its control',
+   'run_uncontrolled_checkers_probe.py' in real.get('checkblocks.py', []),
+   str(real.get('checkblocks.py')))
+ok('the real tree: npm_audit_check.py is driven by NOTHING, correctly',
+   'npm_audit_check.py' not in real,
+   'its subject is the public npm advisory database -- it is the one EXEMPT '
+   'checker in checker_control_check.py, for the same reason')
+
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:
     print('  - ' + f)
