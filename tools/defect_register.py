@@ -211,7 +211,89 @@ def cmd_add(argv):
     reg['records'].sort(key=lambda r: (r['date'], r['commit']))
     save(reg)
     print('registered %s (%s, %s, %s)' % (d['commit'], app, sev, method))
+    fmea_loop(rec)
     return 0
+
+
+# ── THE FMEA LOOP, ASKED AT THE ONLY MOMENT THE ANSWER CHANGES ─────────────
+# Item 26, the FMEA-prediction branch, wired 2026-09-13.
+#
+# tools/fmea_prediction_check.py's own docstring says its cadence is the defect
+# register growing: "it recurs because the answer changes every time the defect
+# register grows." Nothing was asking it at that moment. Run by hand it reports
+# over the whole corpus and, today, correctly says nothing is scoreable yet --
+# a standing 25-line report that a person has to remember to run, about a
+# question that only becomes answerable one record at a time.
+#
+# So the question is asked HERE, about THIS record, while somebody is looking:
+#   * was there a draft for the file, and did it PREDATE the defect;
+#   * if so, did a risk in it cite the same standing rule;
+#   * if not, say which file has no draft, because that is the gap that keeps
+#     the corpus unscoreable and it is invisible from anywhere else.
+#
+# IT NEVER CHANGES THE EXIT CODE. --add succeeded or it did not; whether the
+# defect was foreseen is a separate fact and folding it into the return value
+# would make a registration fail for the wrong reason.
+#
+# ── AND IT FAILS LOUD WHEN THE CHECKER IS ABSENT, per PR 1.11 ─────────────
+# The tempting shape is `try: import ... except ImportError: pass`, which is a
+# check that silently does not run and is indistinguishable from one that ran
+# and found nothing. It says which module was missing and that the loop did NOT
+# close, and it says it every time.
+def fmea_loop(rec):
+    print('')
+    print('  FMEA LOOP -- was this one foreseen?')
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import fmea_prediction_check as fp
+    except Exception as e:                                     # noqa: BLE001
+        print('    COULD NOT RUN: tools/fmea_prediction_check.py did not import'
+              ' (%s). The loop did NOT close for this record -- this is not a'
+              ' "no draft" answer and must not be read as one.' % e)
+        return
+    try:
+        drafts = fp.load_drafts()
+    except Exception as e:                                     # noqa: BLE001
+        print('    COULD NOT RUN: the drafts under docs/fmea/ could not be read'
+              ' (%s). Not a pass.' % e)
+        return
+
+    by_target = {}
+    for dr in drafts:
+        by_target.setdefault(dr.get('target'), []).append(dr)
+
+    # A worklog or a doc cannot carry a code defect a draft could have
+    # predicted -- the checker's own NOT_A_CODE_TARGET rule, reused rather than
+    # re-typed so the two cannot drift apart.
+    files = [f for f in rec.get('files', []) if not fp.NOT_A_CODE_TARGET.search(f)]
+    if not files:
+        print('    no code target in this commit (%d file(s), all worklogs or'
+              ' docs) -- nothing a draft could have predicted'
+              % len(rec.get('files', [])))
+        return
+
+    for f in files:
+        cands = by_target.get(f) or []
+        if not cands:
+            print('    NO DRAFT: %s -- `python tools/fmea_draft.py %s --save`'
+                  ' would make the next defect here scoreable' % (f, f))
+            continue
+        older = [c for c in cands if c.get('_asof') and c['_asof'] <= rec['date']]
+        if not older:
+            print('    DRAFT NEWER than the defect: %s -- unscoreable by'
+                  ' construction, it cannot predict what already happened' % f)
+            continue
+        hit = None
+        for c in older:
+            how, risk = fp.matched(c, rec)
+            if how:
+                hit = (how, c, risk)
+                break
+        if hit:
+            print('    PREDICTED: %s -- %s, from %s' % (f, hit[0], hit[1]['_file']))
+        else:
+            print('    MISSED: %s -- %d draft(s) predate it and none cites %s'
+                  % (f, len(older), ', '.join(rec.get('rules') or ['(no rule)'])))
 
 
 def subject_index():
