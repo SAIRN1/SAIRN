@@ -1215,6 +1215,16 @@
       "claimed_at_epoch": 1789307989.3479862,
       "status": "released",
       "released_at": "2026-09-13T14:18:49Z"
+    },
+    {
+      "id": "hank-1789309742",
+      "session": "hank",
+      "subject": "testability-gate",
+      "task": "requirement must carry a falsifiable claim before entering the matrix",
+      "claimed_at": "2026-09-13T14:29:02Z",
+      "claimed_at_epoch": 1789309742.4909134,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
