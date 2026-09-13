@@ -1283,8 +1283,8 @@
       "task": "first real flip rates on a quiet tree",
       "claimed_at": "2026-09-13T17:14:00Z",
       "claimed_at_epoch": 1789319640.3549721,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T18:01:21Z"
     },
     {
       "id": "hank-1789319891",
@@ -1293,8 +1293,8 @@
       "task": "first real flip rates on a quiet tree",
       "claimed_at": "2026-09-13T17:18:11Z",
       "claimed_at_epoch": 1789319891.7887633,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T18:01:21Z"
     }
   ]
 }
