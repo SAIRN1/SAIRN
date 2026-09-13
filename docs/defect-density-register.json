@@ -1020,6 +1020,44 @@
       "summary": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline"
     },
     {
+      "commit": "a7ff2325890f",
+      "date": "2026-09-13",
+      "subject": "fix(tests): the identity probe poisoned the list it was testing",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "tests/run_committer_identity_probe.py"
+      ],
+      "lines_added": 83,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "a probe whose subject DERIVES its list by scanning tests/ poisoned that list by being committed: its own control identity became a throwaway identity, and the value it had to SET to exercise a fixture was found in the probe instead of the fixture, letting a mutation survive twice"
+    },
+    {
+      "commit": "bc32bed288b5",
+      "date": "2026-09-13",
+      "subject": "feat(tools): nothing on this platform read the committing identity, so 131 commits were a test fixture's",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_committer_identity_probe.py",
+        "tools/committer_identity_check.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 409,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days"
+    },
+    {
       "commit": "d6b3f6e929ec",
       "date": "2026-09-13",
       "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
