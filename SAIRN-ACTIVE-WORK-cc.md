@@ -1603,3 +1603,17 @@ A derived arm fails if a **sixth** cap appears -- proven to bite by reverting on
 ### A line I wrote and then deleted
 
 I added `if(typeof drawings!=='undefined') drawings=next;` to keep a module copy in step. **There is no module copy** -- `sdDrawSave()`'s `drawings` is a function-local re-read from localStorage on every save, so the guard is always false and the line was **a no-op with a comment claiming it mattered**. Checked rather than assumed; the comment now records which way round it is.
+
+### Follow-on the same day: two collections that had never synced at all
+
+**Found by checking honestly whether "all 21 wired" was true. It was not.** Two of the twenty-one are plain **objects**, not arrays, and `sdSyncCollection()` opened with `if(!Array.isArray(next)) return;`. `sd_negotiated_prices` and `sd_pricing_rules` went straight out of the function -- **no writes, no deletes, ever.**
+
+**So the shop's negotiated supplier prices and its whole discount rule set lived in one browser and died with its cache** -- the same state `sd_crm` and `sd_customers` were in before each got a real sync, except these sat on a list whose name says they are backed up, so nothing ever looked.
+
+**One row per licence, blob-wrapped, no server change.** `{id:'all', blob:<object>}` round-trips through the existing keyed branch. **Wrapped rather than spread** because these objects are keyed by SKU and spreading would collide with `id` the first time a vendor used that string -- pinned by an arm with a SKU literally called `id`.
+
+**Declared, not sniffed.** `SD_SYNCED_OBJECT` names the two; an empty array must not be mistaken for one, and a future object-shaped key has to be written down to be backed up at all.
+
+**Hydration is the riskier half and is guarded accordingly.** With no id to merge on the choice is adopt-or-leave, so the server copy is adopted **only on a device that has never written one** -- `getItem(key)!==null`, because *"this device has never written one"* is a fact while *"it looks like the default"* is a guess. Overwriting a shop's live discount rules from a second browser is exactly the clobber the array rule exists to prevent.
+
+**The suite had the same gap in miniature:** its extraction did not include `SD_SYNCED_OBJECT`, so every object arm would have thrown `ReferenceError` inside the vm **while the array arms stayed green**. It takes the line from the file now, like every other declaration it borrows. 36 arms, from 26. Pushed `d8733316`, live-verified.
