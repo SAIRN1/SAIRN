@@ -97,6 +97,7 @@ PURPOSES = {
     # Landed 2026-09-12 by another session, directly out of the checkblocks.py
     # finding: a checker that always exits 0 looks exactly like a codebase that
     # is always clean.
+    'master_plan.py': ('GENERATOR', "docs/MASTER-PLAN.md's numbers -- the only document compounding four gates into one FINISHED verdict, derived rather than hand-counted after it claimed 86-of-273 traced while the matrix it cited said 135-of-328"),
     'closing_error.py': ('LIBRARY', 'not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent'),
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),

@@ -155,6 +155,31 @@ def strip_md(s):
     return s.replace('|', '\\|').strip()
 
 
+def traced():
+    """{test file: [sources that cite it]} -- the ONE definition of "traced".
+
+    EXTRACTED 2026-09-13 SO A SECOND DOCUMENT CANNOT DISAGREE WITH THIS ONE.
+    `docs/MASTER-PLAN.md` quoted this matrix as its source and said
+    "Traceability is 86 of 273"; three days later the matrix said "135 of 328",
+    and the plan's own totals line said "53 of 186" -- a third population
+    presented as the same measurement. It had been computed by hand, once,
+    against a numerator and a denominator that both then moved. This repo's own
+    rule is to eliminate duplication at the SOURCE rather than to copy more
+    carefully, so there is one function and both documents call it.
+
+    Two citing sources, in the same order as this file's own authority list:
+    GUARD_TESTS in the push gate (a requirement with a recorded defect behind
+    it), and any open-work row that names a test file.
+    """
+    cited = {}
+    for t, _guards, _why in guard_tests():
+        cited.setdefault(t, []).append('GUARD_TESTS')
+    for _app, _item, _status, ts in rows_citing_tests():
+        for t in ts:
+            cited.setdefault(t, []).append('index')
+    return cited
+
+
 def build():
     app_names = apps()
     tests = all_tests()
@@ -188,7 +213,12 @@ def build():
     except closing_error.EmptyLeg as e:
         return None, 'REFUSING to generate -- the traverse did not close: %s' % e
 
-    cited, L = {}, []
+    # `cited` comes from traced(), which docs/MASTER-PLAN.md also calls. The
+    # sections below still APPEND to it as they render, which is harmless --
+    # the same keys, from the same two sources -- and the point is that the
+    # headline ratio and the one in the master plan now come from one function
+    # rather than from one function and one afternoon of hand-counting.
+    cited, L = traced(), []
     W = L.append
 
     W('# Requirements-to-test traceability matrix')

@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**110 files in `tools/`.** By what actually invokes them:
+**111 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 36 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 15 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 16 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 30 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | CHECKER | 63 |
-| GENERATOR | 15 |
+| GENERATOR | 16 |
 | LIBRARY | 19 |
 | LIVE | 13 |
 
@@ -204,7 +204,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (15)
+## SUITE-ONLY (16)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -220,6 +220,7 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_jscomments_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
+| `master_plan.py` | GENERATOR | docs/MASTER-PLAN.md's numbers -- the only document compounding four gates into one FINISHED verdict, derived rather than hand-counted after it claimed 86-of-273 traced while the matrix it cited said 135-of-328 | `run_master_plan_probe.py` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_fmea_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
@@ -296,11 +297,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      110   git ls-files tools/
+  tools on disk                      111   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                7   tools\sairn_push_gate_hook.py
   report-only registry                33   report_only_checks.REGISTRY
-  tools invoked by tests/             63   tests/**/*.py, *.js
+  tools invoked by tests/             64   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                10   tools\sairn_push_gate_hook.py
 ```
