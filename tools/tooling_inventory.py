@@ -45,6 +45,7 @@ from something that can refuse. It does not mean every one of its findings
 blocks -- the push gate has report-only checks INSIDE it (5 and 7 were promoted
 from exactly that state), and this cannot see which. Read the gate for that.
 """
+import ast
 import io
 import json
 import os
@@ -53,6 +54,9 @@ import subprocess
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import jscomments                                             # noqa: E402
+
 DOC = os.path.join('docs', 'TOOLING-INVENTORY.md')
 SETTINGS = os.path.join('.claude', 'settings.json')
 GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
@@ -230,6 +234,38 @@ def not_promoted():
     return out
 
 
+def _prose_removed(name, src):
+    """Source with COMMENTS and DOCSTRINGS blanked, and nothing else.
+
+    Not all string literals: an invocation genuinely IS a string literal here --
+    `subprocess.run([sys.executable, 'tools/x.py'])`,
+    `os.path.join(REPO, 'tools', 'x.py')`. Blanking those would turn this
+    document's optimistic failure into a pessimistic one, which is not an
+    improvement, only a different lie.
+
+    A DOCSTRING is the one string that is never an argument to anything, so it
+    can be removed with no such cost. `tests/key_collision_probe.py` opens with
+    "`tools/checker_control_check.py` asked every promoted checker for a file
+    that declares itself its control" -- prose about a tool, read as running it.
+    Length and newlines are preserved so nothing downstream shifts.
+    """
+    if not name.endswith('.py'):
+        return jscomments.strip_comments(src)
+    src = '\n'.join('' if l.lstrip().startswith('#') else l
+                    for l in src.splitlines())
+    try:
+        tree = ast.parse(src)
+    except SyntaxError:
+        return src
+    lines = src.split('\n')
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) \
+                and isinstance(node.value.value, str):
+            for i in range(node.lineno - 1, min(node.end_lineno, len(lines))):
+                lines[i] = ''
+    return '\n'.join(lines)
+
+
 def suite_refs(tools):
     r"""Tools a file under tests/ actually INVOKES or IMPORTS -- not merely names.
 
@@ -241,6 +277,19 @@ def suite_refs(tools):
     licence_recoverability_check.py, load_deadline_seed.py, sairn_app_map_check.py.
     Their verdict is unchanged (unwired is correct for a LIVE tool) but the COUNT
     was wrong, and the count is what this file exists to state.
+
+    COMMENTS ARE STRIPPED FIRST, added 2026-09-13, same direction and same
+    reason. `tools/checker_control_check.py` asks every control to declare
+    itself, and the standard declaration carries a comment naming the tool:
+
+        # Declares, for tools/checker_control_check.py, which checker(s) this
+        # file is the control for.
+
+    The `'tools/' + t in txt` rule read that as an invocation, so all
+    twenty-five declaring controls became "files that run the meta-checker" --
+    and the two it printed as that tool's probes were the two that sort first
+    alphabetically, neither of which is its probe. A comment naming a tool is a
+    MENTION. Only code invokes.
     """
     refs = {}
     for root, dirs, files in os.walk(os.path.join(REPO, 'tests')):
@@ -252,8 +301,16 @@ def suite_refs(tools):
                 txt = io.open(os.path.join(root, f), encoding='utf-8', errors='replace').read()
             except IOError:
                 continue
+            txt = _prose_removed(f, txt)
             for t in tools:
-                if t not in txt:
+                # THE PRE-FILTER IS ON THE STEM, NOT THE FILENAME. `import
+                # checker_control_check as M` never writes the `.py`, so a
+                # filename pre-filter dropped the file before the import
+                # pattern below could look -- and the tool came back UNWIRED
+                # while its own probe imported it. It passed only because the
+                # DOCSTRING happened to spell out `tools/<name>.py`, which is
+                # the prose this function now removes.
+                if t.rsplit('.', 1)[0] not in txt:
                     continue
                 stem = re.escape(t.rsplit('.', 1)[0])
                 esc = re.escape(t)

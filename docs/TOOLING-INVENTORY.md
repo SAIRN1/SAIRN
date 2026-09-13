@@ -27,8 +27,8 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 35 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 8 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 30 | nothing runs these at all |
+| **SUITE-ONLY** | 7 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -191,30 +191,29 @@ is how a reader stops believing the number.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_all_tests_hook_gate_probe.py`, `run_push_verify_probe.py` |
+| `sairn_claim_hook.py` | CHECKER | another session's active claim on the work about to start | `run_push_verify_probe.py` |
 | `session_lock_check.py` | CHECKER | a second session in the same clone, at start and on every prompt | &mdash; |
 
 ---
 
-## SUITE-ONLY (8)
+## SUITE-ONLY (7)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `discarded_verdict_check.test.js`, `fail_open_browser_probe.py` |
-| `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `sairn_storage_wrapper_honesty.js` |
+| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
+| `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_jscomments_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
-| `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `faultkit.js`, `live_mode_probe.py` |
-| `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | `run_traceability_matrix_probe.py` |
+| `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_matcher_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `schema_provisioning_check.py` | LIVE | a resource the app writes to whose table was never created | `schema_provisioning_probe.py` |
 
 ---
 
-## UNWIRED (30)
+## UNWIRED (31)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -247,6 +246,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
 | `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | &mdash; |
+| `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
 | `stonedesk_storefront_live_check.py` | LIVE | whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised | &mdash; |
