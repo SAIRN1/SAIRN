@@ -55,6 +55,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+import closing_error                                          # noqa: E402
 import jscomments                                             # noqa: E402
 
 DOC = os.path.join('docs', 'TOOLING-INVENTORY.md')
@@ -96,6 +97,7 @@ PURPOSES = {
     # Landed 2026-09-12 by another session, directly out of the checkblocks.py
     # finding: a checker that always exits 0 looks exactly like a codebase that
     # is always clean.
+    'closing_error.py': ('LIBRARY', 'not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent'),
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
     'flaky_checker_quarantine.py': ('CHECKER', 'a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard'),
@@ -474,6 +476,28 @@ def missing_purposes(tools, reg):
 
 def build():
     tools, cls, hk, gi, reg, suite = classify()
+
+    # ── THE TRAVERSE MUST CLOSE BEFORE ANYTHING IS WRITTEN ──────────────────
+    # `--check` compares this document to what this generator produces TODAY --
+    # both ends from the same instrument. It cannot see a source that has gone
+    # silent. On 2026-09-13 the pre-filter in suite_refs() tested a FILENAME
+    # while `import x as M` never writes the `.py`, and five promoted checkers
+    # with thorough controls briefly reported NO PROBE. `--check` was byte-clean
+    # throughout. The diff caught it; the check never could have.
+    tv = closing_error.Traverse(DOC)
+    tv.leg('tools on disk', len(tools), 'git ls-files tools/')
+    tv.leg('hook entries', len(hk), SETTINGS)
+    tv.leg('push-gate invocations', len(gi), GATE)
+    tv.leg('report-only registry', len(reg), 'report_only_checks.REGISTRY')
+    tv.leg('tools invoked by tests/', len(suite), 'tests/**/*.py, *.js')
+    tv.leg('recorded NOT-promoted decisions', len(not_promoted()),
+           'report_only_checks.NOT_PROMOTED')
+    tv.leg('numbered gate checks', len(dict(gate_checks())), GATE)
+    try:
+        traverse_rows = tv.close()
+    except closing_error.EmptyLeg as e:
+        return None, 'REFUSING to generate -- the traverse did not close: %s' % e
+
     absent, extra = missing_purposes(tools, reg)
     if absent or extra:
         lines = ['REFUSING to generate -- the hand-written half has drifted.', '']
@@ -696,6 +720,26 @@ def build():
     A('means a tool is reachable from something that can refuse. It does not mean')
     A('every one of its findings blocks -- the push gate carries report-only checks')
     A('INSIDE it, and checks 5 and 7 were promoted out of exactly that state.')
+    A('')
+    A('### Closing error -- what this document was derived FROM')
+    A('')
+    A('`--check` compares this file to what the generator produces today. Both')
+    A('ends of that comparison come from the same instrument, so it proves nobody')
+    A('hand-edited the file and proves nothing about whether the generator still')
+    A('reads what it used to. These are the sources it read on the run that wrote')
+    A('this, one row each. **Any of them reaching zero is a refusal, not a')
+    A('thinner document** -- a broken reader and an empty repo produce the same')
+    A('number, and only one of them is a document.')
+    A('')
+    A('```')
+    for row in traverse_rows:
+        A(row.rstrip())
+    A('```')
+    A('')
+    A('A closed traverse is **not** a correct survey: it means no source is')
+    A('MISSING, not that any source is RIGHT. On 2026-09-13 the probe column here')
+    A('named the wrong test file for 27 tools, and that was a non-zero count the')
+    A('whole time. Each source needs its own control; this is the floor.')
     return '\n'.join(W) + '\n', None
 
 

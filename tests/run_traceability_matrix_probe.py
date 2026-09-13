@@ -29,6 +29,12 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 TOOL = 'tools/traceability_matrix.py'
 OUT = 'docs/traceability-matrix.md'
+# Files the throwaway worktree needs that HEAD may not carry. The worktree is
+# created at HEAD, so anything this tool has newly started importing has to be
+# copied in beside it -- otherwise the probe fails with ModuleNotFoundError and
+# says nothing at all about the tool. Added 2026-09-13 when the generator began
+# importing the closing-error guard.
+CARRY = [TOOL, OUT, 'tools/closing_error.py']
 R = {}
 
 
@@ -52,7 +58,7 @@ add = git(REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD')
 check('A0 the throwaway worktree was created', add.returncode, 0)
 try:
     # The worktree is at HEAD, which may not carry the tool being tested.
-    for rel in (TOOL, OUT):
+    for rel in CARRY:
         src = os.path.join(REPO, rel.replace('/', os.sep))
         if os.path.isfile(src):
             dst = os.path.join(wt, rel.replace('/', os.sep))

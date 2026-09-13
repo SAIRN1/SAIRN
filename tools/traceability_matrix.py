@@ -57,6 +57,7 @@ import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
+import closing_error                                          # noqa: E402
 OUT = os.path.join('docs', 'traceability-matrix.md')
 INDEX = os.path.join('docs', 'SAIRN-OPEN-WORK-INDEX.md')
 TEST_RE = re.compile(r'(?:tests?/[\w/.-]+\.(?:js|py)|api/[\w/.-]+\.test\.js)')
@@ -157,6 +158,36 @@ def strip_md(s):
 def build():
     app_names = apps()
     tests = all_tests()
+
+    # ── THE TRAVERSE MUST CLOSE BEFORE ANYTHING IS WRITTEN ──────────────────
+    # `--check` here compares this document to what this generator produces
+    # today -- both ends from the same instrument. It cannot see a source that
+    # has gone silent, and this matrix's headline is a RATIO, so a source
+    # returning nothing does not make the document obviously wrong: it makes
+    # the denominator smaller and the percentage better.
+    tv = closing_error.Traverse(OUT)
+    # EVERY COUNT IS THE THING ITSELF, not the container holding it.
+    # registry() returns a PAIR -- (REGISTRY, NOT_PROMOTED) -- so `len()` on it
+    # is 2 whatever the registry contains, and a leg that reads 2 forever is a
+    # leg that cannot go empty. Caught while writing this, which is the whole
+    # argument for the counts being printed in the document.
+    _reg, _not_promoted = registry()
+    tv.leg('app files', len(app_names), "git ls-files '*.html'")
+    tv.leg('test files on disk', len(tests), 'tests/**, api/*.test.js')
+    tv.leg('open-work rows citing a test', len(rows_citing_tests()), INDEX)
+    tv.leg('GUARD_TESTS entries', len(guard_tests()),
+           'sairn_push_gate_hook.GUARD_TESTS')
+    tv.leg('report-only registry', len(_reg),
+           'report_only_checks.REGISTRY')
+    tv.leg('recorded NOT-promoted decisions', len(_not_promoted),
+           'report_only_checks.NOT_PROMOTED')
+    tv.leg('numbered gate checks', len(dict(gate_checks())),
+           'sairn_push_gate_hook.py')
+    try:
+        traverse_rows = tv.close()
+    except closing_error.EmptyLeg as e:
+        return None, 'REFUSING to generate -- the traverse did not close: %s' % e
+
     cited, L = {}, []
     W = L.append
 
@@ -292,11 +323,32 @@ def build():
       'written down anywhere is invisible here by construction, and that is '
       'the largest unknown on this page.')
     W('')
-    return '\n'.join(L) + '\n'
+    W('### Closing error -- what this document was derived FROM')
+    W('')
+    W('The headline on this page is a RATIO, which is the reason this section '
+      'exists. A source that goes silent does not make the document look '
+      'wrong -- it makes the denominator smaller and the percentage BETTER. '
+      '`--check` cannot see it either, because it compares this file to what '
+      'the generator produces today and both ends come from the same '
+      'instrument. These are the sources the run that wrote this actually '
+      'read; **any of them reaching zero is a refusal, not a smaller matrix.**')
+    W('')
+    W('```')
+    for row in traverse_rows:
+        W(row.rstrip())
+    W('```')
+    W('')
+    W('A closed traverse is **not** a correct survey: it means no source is '
+      'MISSING, not that any source is RIGHT.')
+    W('')
+    return '\n'.join(L) + '\n', None
 
 
 def main(argv):
-    doc = build()
+    doc, err = build()
+    if err:
+        print(err)
+        return 2
     path = os.path.join(REPO, OUT)
     if '--check' in argv:
         try:

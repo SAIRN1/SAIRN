@@ -99,7 +99,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
-| **Methodology piece 1: mutation-derived condition coverage &mdash; 48 of 146 operands in the Tier A financial engines are ones the suite does NOT notice being wrong** | **BUILT 2026-09-13 (Hank)** &mdash; `tools/condition_coverage.py`, 20 arms, `fb5a1884` | `tests/sairncare/test-care-charges.js` |
 | `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **OPEN 2026-09-13 (found by Fourth while declaring the file a control; deliberately NOT fixed)** — `python tests/run_snapshot_freshness_probe.py` reports `2 arm(s) failed`; the other 12 arms pass. Pre | `tests/run_snapshot_freshness_probe.py` |
 | `literal_drift_check.py` has a control that proves DETERMINISM and never proves it can FIRE | **OPEN 2026-09-13 (found by Fourth)** — the last `ONE DIRECTION` in `python tools/checker_control_check.py`; 30 of 32 promoted checkers are `BOTH EVIDENCED`, 1 exempt | `tests/run_literal_drift_determinism_probe.py` |
 | ~~Nothing runs 58% of the test suite, and two probes had rotted unnoticed inside it~~ — **`tools/run_all_tests.py` runs all 126 and NAMES what it did not run** | **CLOSED 2026-09-08 (Hank)** — `67e9a33` (the two rotted probes) and `5c439e6` (the runner); 126/126 pass on a clean tree | `tests/fail_open_browser_probe.py`, `tests/reachability/live_mode_probe.py` |
@@ -108,7 +107,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **SOUP register &mdash; every third-party component, with a real stated reason it is trusted** | **BUILT 2026-09-10 (Hank)**, and it is a standing practice, not a one-off. **Widened 2026-09-10 (Hank) after its own checker reported CLEAN over an unregistered component** | `tests/run_soup_register_probe.py` |
 | ~~**The server scoped the read; the LOCAL CACHE outlived the person it was fetched for**~~ &mdash; **CLOSED for every app that carries a scoped read except one, and the scope is DERIVED rather than estimated** | **CLOSED 2026-09-10 (CC)** &mdash; `b50c2e2f` (care, senior, dental) then ``08e7c8d5`` (build, stonedesk, roofing), all live-verified. **`sairndesign` remains &mdash; flagged BY NAME for Fourth, who h | `tests/phi_cache_scoped_to_user.js` |
 | **Four literal control bytes in source, all the same mistake, and TWO of them were regexes that could never match** &mdash; one of those guarded a database privilege | **CLOSED 2026-09-10 (Hank)** &mdash; all four replaced with their escape sequences, runtime strings identical; `tools/control_char_check.py` + `tests/run_control_char_probe.py` (17 arms) built and WIR | `tests/run_control_char_probe.py`, `tests/stonedesk_server_backup.js` |
-| **&#9888; `db/schema_snapshot.json` decays on a clock nobody was watching &mdash; and the "9 days stale" in this row was itself stale for a day** | **CAPTURE DONE 2026-09-12 (`3d603dd0`); THE DECAY MECHANISM BUILT 2026-09-13 (CC)**. Re-derived before editing: the file's own `_generated_at` is 2026-09-11 15:42 UTC, so it was **~48 hours old, not 9 | `tests/run_snapshot_freshness_probe.py` |
+| **&#9888; MICHAEL: `db/schema_snapshot.json` is 9 days stale and provably missing LIVE tables &mdash; the capture was run and never saved** | Open &mdash; **NEEDS MICHAEL (one Supabase query + one file save + one commit)**. Detected mechanically 2026-09-11 (CC), `tools/schema_snapshot_freshness.py` | `tests/run_snapshot_freshness_probe.py` |
 | **A checker whose ANSWER changes when the target's comments are removed &mdash; asked of the whole fleet instead of waiting for a fourth instance** | **BUILT 2026-09-11 (CC)** &mdash; `b8e21568`, `tools/comment_sensitivity_check.py`. **Two real findings filed below, open** | `tests/run_comment_sensitivity_probe.py` |
 | **Every promoted checker must have a control that PROVES it can fire &mdash; and five have none at all** | **BUILT 2026-09-12 (Fourth)** &mdash; `tools/checker_control_check.py` + `tests/run_checker_control_probe.py` (14 arms). Michael's initiative; Cody owns the gate-tool half under `blocking-checkers-can | `tests/run_checker_control_probe.py` |
 | **Checker determinism &mdash; a checker whose output depends on `PYTHONHASHSEED` gives a different answer on the same input, and no single run can show it** | **SWEPT 2026-09-12 (Fourth)** &mdash; `docs/2026-09-12-checker-determinism-sweep.md` | `tests/run_literal_drift_determinism_probe.py` |
@@ -149,7 +148,6 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Four of the ten push-gate checks had never been PROVEN to refuse anything** &mdash; checks 1, 2, 3 and 5 had no probe that plants a finding and asserts a deny | **CHECKS 2, 3 AND 5 NOW PROVEN, AND THE FAIL-OPEN CHECK 3'S PROBE FOUND IS CLOSED** &mdash; 2 and 5 on 2026-09-12, **3 on 2026-09-13 (Cody)** via `tests/push_gate/check3_probe.py`, 34 arms; **6 mutati | `tests/push_gate/check2_and_check5_probe.py`, `tests/push_gate/check3_probe.py` |
 | **FIVE MORE `is-the-tool-present` FAIL-OPENS IN THE BLOCKING PUSH GATE, one of which switched off NINE CHECKS** &mdash; found by reading the file for the shape check 3&#39;s probe had just exposed | **ALL FIVE CLOSED 2026-09-13 (Cody)** &mdash; `tests/push_gate/missing_checker_probe.py`, 34 arms; **4 mutation controls bite**, gate restored byte-identical; **1 recorded as SURVIVING rather than rep | `tests/push_gate/missing_checker_probe.py` |
 | **`install_git_hooks.py --check` REPORTED A CLONE PROTECTED WHILE ITS PRE-PUSH HOOK HAD NEVER ONCE EXECUTED** &mdash; and nothing ran it anyway | **CLOSED 2026-09-13 (Cody)** &mdash; `--check` widened to ask what `install` already asked, and PROMOTED to report-only; `tests/run_githook_install_probe.py`, 19 arms; **5 mutation controls bite**, to | `tests/run_githook_install_probe.py` |
-| **TWO TESTS WENT RED ON `main` WITHIN HOURS, AND BOTH WERE RIGHT ABOUT SOMETHING** &mdash; a storage wrapper that would blame the browser for a stamping failure, and a probe pinned to an exact count | **BOTH CLOSED 2026-09-13 (Cody)** &mdash; `tests/sairn_storage_wrapper_honesty.js` 65 arms, `tests/run_truthy_sum_probe.py` all pass; **5 mutation controls bite**, all three app files restored byte-id | `tests/run_truthy_sum_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
 | ~~**FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an empty file list**~~ &mdash; **CORRECTED: THE HOLE DOES NOT EXIST IN THAT FORM AND MY REPORT OF IT WAS WRONG** | **REVERTED 2026-09-11 (Cody), same session that wrote it.** The widening rung, the `prepush_base()` change and the credential-scan note are all out; `9c75a8d9` is the restored state of `tools/sairn_pu | `tests/push_gate/refspec_and_override_probe.py` |
 | Fourth promotion batch &mdash; and one checker HELD BACK rather than silenced | **PROMOTED 2026-09-10 (Cody), registry 15 &rarr; 16** &mdash; `5abfcdba`; sweep CLEAN with **no could-not-tell**, probe 57/57, all three `local_only` probes and `write_readback_probe` green | `tests/local_only_probe.py` |
 | The 28 unwired checkers have no way to be promoted, and none had ever run against real code | **REPORT-ONLY PATH BUILT, 3 PROMOTED 2026-09-09 (Cody)** &mdash; `408df818`; `tests/run_report_only_checks_probe.py` 29/29, full sweep CLEAN, and Hank's `run_all_tests_hook_gate_probe.py` still ALL PA | `tests/run_report_only_checks_probe.py` |
@@ -276,7 +274,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**136 of 331 test files are traced to a stated requirement. 195 are not.**
+**135 of 330 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -421,9 +419,8 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
-- `tests/run_condition_coverage_probe.py`
+- `tests/run_closing_error_probe.py`
 - `tests/run_financial_invariant_probe.py`
-- `tests/run_flaky_quarantine_probe.py`
 - `tests/run_fmea_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_jscomments_probe.py`
@@ -448,6 +445,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-alf-payer-rules.js`
 - `tests/sairncare/test-alf-phase3.js`
 - `tests/sairncare/test-alf-signals.js`
+- `tests/sairncare/test-care-charges.js`
 - `tests/sairncare/test-compliance-rules.js`
 - `tests/sairncare/test-invoice-proration.js`
 - `tests/sairncare/test-med-schedule.js`
@@ -488,4 +486,20 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - **That a traced test actually PROVES its requirement.** It reports that a source names the two together. Whether the assertion is strong enough is what the mutation probes answer, and only some tests have one.
 - **That an untraced test proves nothing.** Only that nothing says what it is for.
 - **Anything about code with no test at all.** A requirement nobody has written down anywhere is invisible here by construction, and that is the largest unknown on this page.
+
+### Closing error -- what this document was derived FROM
+
+The headline on this page is a RATIO, which is the reason this section exists. A source that goes silent does not make the document look wrong -- it makes the denominator smaller and the percentage BETTER. `--check` cannot see it either, because it compares this file to what the generator produces today and both ends come from the same instrument. These are the sources the run that wrote this actually read; **any of them reaching zero is a refusal, not a smaller matrix.**
+
+```
+  app files                           22   git ls-files '*.html'
+  test files on disk                 330   tests/**, api/*.test.js
+  open-work rows citing a test       117   docs\SAIRN-OPEN-WORK-INDEX.md
+  GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
+  report-only registry                33   report_only_checks.REGISTRY
+  recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
+  numbered gate checks                10   sairn_push_gate_hook.py
+```
+
+A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.
 
