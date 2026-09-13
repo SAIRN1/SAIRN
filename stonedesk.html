@@ -2067,12 +2067,28 @@ function sdSyncCollection(key,next,prev){
   // save site for these keys passes the FULL collection array, never a filtered
   // view, so a missing id is a real deletion and not a narrowed list.
   if(!Array.isArray(prev)) return;
+  // ── A LOCAL CAP IS NOT A DELETION (2026-09-13) ─────────────────────────
+  // Five of these collections trim themselves to a fixed length on every save
+  // -- drawings to 20, snapshots to 90, order history to 200, saved nests to
+  // 50, email threats to 100. Those caps exist for localStorage QUOTA and
+  // panel length, not as a retention policy: sd_drawings' own comment says the
+  // 50->20 change "costs history depth" and was pulled to fit "a bound that
+  // actually holds on a shared origin". The SERVER has no such bound, and
+  // before this sweep existed it quietly kept the deeper archive.
+  //
+  // A diff cannot tell a cap from a deletion -- both are ids that were in
+  // `prev` and are not in `next` -- so the site that does the trimming says so,
+  // by registering the ids it dropped. Each entry is consumed once, by the
+  // very next sweep for that key, so a stale registration cannot go on
+  // silencing real deletions afterwards.
+  var capped=(typeof _sdCapped!=='undefined'&&_sdCapped[key])||null;
   var present={};
   next.forEach(function(r){
     if(r&&r.id!==undefined&&r.id!==null&&r.id!==''){ present[String(r.id)]=true; }
   });
   Object.keys(before).forEach(function(id){
     if(present[id]) return;
+    if(capped&&capped[id]) return;     // dropped by a local cap, still on the server
     sdData('soft_delete',key,{id:id}).then(function(done){
       // A FAILED DELETE IS THE DANGEROUS DIRECTION HERE, not the harmless one.
       // The local removal has already happened, so this row is now absent here
@@ -2097,8 +2113,35 @@ function sdSyncCollection(key,next,prev){
       }
     });
   });
+  if(capped) delete _sdCapped[key];    // consumed -- one sweep, never a standing exemption
 }
 window.sdSyncCollection=sdSyncCollection;
+
+// ── LOCAL CAPS, DECLARED BY THE SITE THAT DOES THE TRIMMING ───────────────
+// sdCapLocal(key, arr, max) RETURNS a copy of `arr` cut to its first `max`
+// entries -- it does not mutate the argument -- and registers the dropped ids
+// so the next sdSyncCollection() sweep leaves their SERVER rows alone. The call
+// site assigns the result, which is exactly the `x = x.slice(0,max)` it
+// replaces.
+//
+// WHY A HELPER AND NOT A FLAG AT EACH SITE. Setting sdSyncSuppressed around the
+// save would also suppress the WRITE of the row just added -- which is the
+// record the user is actually trying to back up. The cap has to be exempted;
+// the save must not be.
+//
+// AN EMPTY OR MISSING ID IS NOT REGISTERED, so a capped row without an id
+// cannot mask a real deletion of a row that happens to share the empty key.
+var _sdCapped={};
+function sdCapLocal(key,arr,max){
+  if(!Array.isArray(arr)||arr.length<=max) return arr;
+  var dropped=arr.slice(max);
+  var bucket=_sdCapped[key]||(_sdCapped[key]={});
+  dropped.forEach(function(r){
+    if(r&&r.id!==undefined&&r.id!==null&&r.id!==''){ bucket[String(r.id)]=true; }
+  });
+  return arr.slice(0,max);
+}
+window.sdCapLocal=sdCapLocal;
 
 // ── HYDRATION ────────────────────────────────────────────────────────────
 // Additive-only merge by id: a server record not already present locally is
@@ -5018,7 +5061,12 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     // 50 -> 20. At the measured worst case this is ~1.2 MB rather than ~6.5 MB, which
     // is a bound that actually holds on a shared origin. Costs history depth and no
     // fidelity, which is why it is the lever pulled alongside the compression.
-    if(drawings.length>20)drawings=drawings.slice(0,20);
+    // A LOCAL CAP, NOT A DELETION -- see sdCapLocal(). The 20 is a
+    // localStorage quota bound (the comment above records the 50->20 cut and
+    // that it costs history depth); the server has no such bound and keeps
+    // the deeper archive. Before sdCapLocal() this trim would have told the
+    // server every dropped drawing had been deleted.
+    drawings=sdCapLocal('sd_drawings',drawings,20);
     var drawingSaved = st('sd_drawings',drawings);
     var status=document.getElementById('draw-save-status');
     if(status){
@@ -6086,7 +6134,8 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var snap={date:new Date().toISOString(),kpis:{}};
     document.querySelectorAll('#panel-business [data-metric]').forEach(function(el){snap.kpis[el.dataset.metric]=el.textContent;});
     snaps.unshift(snap);
-    if(snaps.length>90)snaps=snaps.slice(0,90);
+    // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
+    snaps=sdCapLocal('sd_business_snapshots',snaps,90);
     var snapSaved=st('sd_business_snapshots',snaps);
     var status=document.getElementById('biz-snap-status');
     if(status){
@@ -25526,7 +25575,8 @@ vendorPlaceOrder = function() {
     var total=items.reduce(function(s,i){return s+i.effectivePrice*i.qty;},0);
     var order={id:'ORD'+Date.now(),date:new Date().toISOString(),vendor:VENDORS[_activeVendor].name,items:items,total:total};
     sdOrderHistory.unshift(order);
-    if(sdOrderHistory.length>200) sdOrderHistory=sdOrderHistory.slice(0,200);
+    // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
+    sdOrderHistory=sdCapLocal('sd_order_history',sdOrderHistory,200);
     if(!st('sd_order_history',sdOrderHistory)){
       notify('Order placed, but the order-history record could not be saved -- storage may be full','warn',6000);
     }
@@ -26068,7 +26118,8 @@ function nestingSave() {
   var mat=(document.getElementById('nest-slab-mat')||{}).value||'Unknown Material';
   var layout={id:'NEST'+Date.now(),date:new Date().toISOString(),material:mat,slabW:sdNestingData.slabW,slabH:sdNestingData.slabH,cutouts:JSON.parse(JSON.stringify(sdNestingData.cutouts))};
   var saved=JSON.parse(localStorage.getItem('sd_nesting_saved')||'[]');
-  saved.unshift(layout);if(saved.length>50)saved=saved.slice(0,50);
+  // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
+  saved.unshift(layout);saved=sdCapLocal('sd_nesting_saved',saved,50);
   if(!st('sd_nesting_saved',saved)){ notify('Could not save layout -- storage may be full or unavailable, try again','warn'); return; }
   nestingRenderSaved();notify('Layout saved','');
 }
@@ -35328,7 +35379,8 @@ async function sdRunEmailScan() {
       if(risk!=='Low'){
         var threats=loadThreats();
         threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:sdLocalToday()});
-        if(threats.length>100)threats=threats.slice(0,100);
+        // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
+        threats=sdCapLocal('sd_email_threats',threats,100);
         saveThreats(threats);
         render();
       }

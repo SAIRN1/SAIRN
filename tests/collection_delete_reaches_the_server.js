@@ -70,6 +70,11 @@ function grabAt(sig, indent) {
   assert.ok(m, 'not terminated: ' + sig);
   return html.slice(s).slice(0, m.index + m[0].length);
 }
+function grabLine(sig) {
+  const s = html.indexOf(sig);
+  assert.ok(s > 0, 'not found in stonedesk.html: ' + sig);
+  return html.slice(s, html.indexOf('\n', s));
+}
 function grabBlock(startSig, endSig) {
   const s = html.indexOf(startSig);
   assert.ok(s > 0, 'not found: ' + startSig);
@@ -86,7 +91,9 @@ const UNIT = [
   grabBlock('var SD_SYNCED=[', 'SD_SYNCED.forEach(function(k){SD_SYNCED_ON[k]=true;});'),
   'var sdSyncSuppressed=false;',
   grabAt('function st(key,data){', ''),
-  grabAt('function sdSyncCollection(key,next,prev){', '')
+  grabAt('function sdSyncCollection(key,next,prev){', ''),
+  grabLine('var _sdCapped={};'),
+  grabAt('function sdCapLocal(key,arr,max){', '')
 ].join('\n\n');
 
 function build(opts) {
@@ -298,6 +305,83 @@ function seeded(key, prev, opts) {
     assert.strictEqual(b.notes.length, 0,
       'a failed write toasted the user -- it leaves the record on screen and re-saving retries, '
       + 'so it is a console matter; only a failed DELETE makes a record vanish while it survives');
+  });
+
+  // ══ 3b. a local cap is not a deletion ════════════════════════════════════
+  section('a length cap trims the DEVICE, not the archive');
+
+  test('rows dropped by sdCapLocal are not deleted on the server', () => {
+    const b = seeded('sd_drawings', ROWS);
+    const kept = b.ctx.sdCapLocal('sd_drawings', ROWS.slice(), 2);
+    save(b, 'sd_drawings', kept);
+    assert.strictEqual(dels(b).length, 0,
+      'the cap told the server the dropped row had been deleted: ' + JSON.stringify(dels(b)));
+  });
+
+  test('and the cap really did shorten the local list', () => {
+    const b = build({});
+    assert.deepStrictEqual(b.ctx.sdCapLocal('sd_drawings', ROWS.slice(), 2).length, 2);
+    // The argument is not mutated -- the call sites assign the result.
+    const src = ROWS.slice();
+    b.ctx.sdCapLocal('sd_drawings', src, 1);
+    assert.strictEqual(src.length, 3);
+  });
+
+  test('a REAL deletion in the same save is still sent', () => {
+    const b = seeded('sd_drawings', ROWS);
+    const kept = b.ctx.sdCapLocal('sd_drawings', ROWS.slice(), 2);   // drops C
+    save(b, 'sd_drawings', [kept[0]]);                               // and the user deletes B
+    assert.deepStrictEqual(dels(b).map(c => c.payload.id), ['B'],
+      'the cap exemption swallowed a real deletion, or failed to exempt the capped row');
+  });
+
+  // THE EXEMPTION IS CONSUMED, NOT STANDING. A registration that outlived its
+  // sweep would go on silencing real deletions of that id for ever -- an
+  // exemption nobody can see is worse than a missing one.
+  test('the exemption lasts exactly one sweep', () => {
+    const b = seeded('sd_drawings', ROWS);
+    const kept = b.ctx.sdCapLocal('sd_drawings', ROWS.slice(), 2);
+    save(b, 'sd_drawings', kept);              // sweep 1: C exempt
+    assert.strictEqual(dels(b).length, 0);
+    save(b, 'sd_drawings', [kept[0]]);         // sweep 2: user deletes B
+    assert.deepStrictEqual(dels(b).map(c => c.payload.id), ['B']);
+    // And C, re-added and then genuinely deleted, is no longer exempt.
+    save(b, 'sd_drawings', [kept[0], ROWS[2]]);
+    save(b, 'sd_drawings', [kept[0]]);
+    assert.ok(dels(b).map(c => c.payload.id).indexOf('C') !== -1,
+      'a stale cap registration is still silencing a real deletion of that id');
+  });
+
+  // A SIXTH CAP ADDED LATER MUST FAIL HERE rather than quietly deleting server
+  // history. Derived from the file, never from a list in this test.
+  //
+  // ATTRIBUTED BY THE CAP'S OWN SAVE, not by proximity. A +/-60-line window was
+  // tried first and produced three false positives on `today.slice(0,7)` --
+  // date strings, not array caps -- plus two real caps on keys that are NOT
+  // synced (sd_quote_history, sd_stonehub_log). A cap only matters if the array
+  // it trims is the one being saved under a SYNCED key, so the check follows
+  // the self-assignment to the next st() call and reads THAT key.
+  test('every cap on a SYNCED collection routes its trim through sdCapLocal', () => {
+    const lines = html.split('\n');
+    const synced = new Set(build({}).ctx.SD_SYNCED);
+    const offenders = [];
+    lines.forEach((l, i) => {
+      const m = l.match(/\b(\w+)\s*=\s*\1\.slice\(\s*0\s*,\s*\d+\s*\)/);
+      if (!m || /sdCapLocal/.test(l)) return;
+      const varName = m[1];
+      // the next save within the following 12 lines, which is where every one
+      // of these sits
+      for (let j = i; j < Math.min(lines.length, i + 12); j++) {
+        const s = lines[j].match(new RegExp("st\\(\\s*'([a-z_]+)'\\s*,\\s*" + varName + "\\b"));
+        if (s) {
+          if (synced.has(s[1])) offenders.push((i + 1) + ': ' + l.trim() + '  -> ' + s[1]);
+          break;
+        }
+      }
+    });
+    assert.deepStrictEqual(offenders, [],
+      'these trim a SYNCED collection without registering the drop, so the cap '
+      + 'would delete server history: ');
   });
 
   // ══ 4. coverage: the twenty-second cannot be added without a verb ════════
