@@ -4983,9 +4983,38 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         (reloadable
           ? '<button class="sairn-btn sairn-btn-primary" style="flex-shrink:0" onclick="sdDrawingsLoad(\''+escHtml(String(x.id))+'\')">Load onto Canvas</button>'
           : '<button class="sairn-btn" style="flex-shrink:0" disabled title="No measurements were stored with this drawing">Load onto Canvas</button>')+
+        // DELETE, ADDED 2026-09-13. The list is capped at 20 by sdDrawSave(),
+        // so before this the only way to lose a drawing was to push it off the
+        // end with twenty newer ones -- and that cap is a localStorage bound,
+        // not a way to remove something. A rep who saved the wrong canvas had
+        // no way to get rid of it.
+        '<button class="sairn-btn" style="flex-shrink:0;color:#dc2626;border-color:#dc2626" '+
+          'onclick="sdDrawingsDelete(\''+escHtml(String(x.id))+'\')">Delete</button>'+
         '</div>';
     }).join('');
   }
+  // The record is marked and hidden on the server rather than destroyed, so
+  // the confirm does not claim otherwise. The local removal goes through st(),
+  // which is what carries it to the server -- see sdSyncCollection()'s removal
+  // sweep. A failed delete is reported there, once, for every collection.
+  window.sdDrawingsDelete=function(id){
+    if(!confirm('Delete this saved drawing?\n\nIt is hidden and kept, not destroyed.')) return;
+    var d=sdDrawingsAll();
+    var next=d.filter(function(e){return String(e.id)!==String(id);});
+    if(next.length===d.length) return;      // nothing matched; do not write
+    if(!st('sd_drawings',next)){
+      showToast('Could not delete that drawing -- storage may be full or unavailable, try again');
+      return;
+    }
+    // NO IN-MEMORY COPY TO KEEP IN STEP, and that was checked rather than
+    // assumed: sdDrawSave()'s `drawings` is a function-local re-read from
+    // localStorage on every save, not a module-level array. A line syncing it
+    // would have been a no-op with a comment claiming it mattered -- which is
+    // worse than no line. (The comms module is the opposite case and says so:
+    // sdCommsThreads IS a stale module-level copy.)
+    sdDrawingsRender();
+    showToast('Drawing deleted.');
+  };
   window.sdDrawingsLoad=function(id){
     var x=sdDrawingsAll().find(function(e){return String(e.id)===String(id);});
     if(!x||!x.drawingState||x.drawingState.schemaVersion!==1){

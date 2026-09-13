@@ -202,6 +202,82 @@ function loadWith(rows, id, opts) {
     /id="sd-drawings-modal"/.test(src) && /id="sd-drawings-body"/.test(src), true);
 }
 
+// ── DELETE (2026-09-13) ───────────────────────────────────────────────────
+// Until this existed the only way to lose a saved drawing was to push it off
+// the end of sdDrawSave()'s 20-entry cap with twenty newer ones -- and that cap
+// is a localStorage bound, not a way to remove something. A rep who saved the
+// wrong canvas was stuck with it.
+//
+// The removal reaches the SERVER through st(): sdSyncCollection()'s removal
+// sweep turns a row that left the array into a soft_delete. That half is held
+// by tests/collection_delete_reaches_the_server.js; these arms are about the
+// panel doing the right thing locally and saying the right thing about it.
+function deleteWith(rows, id, opts) {
+  opts = opts || {};
+  const data = { sd_drawings: JSON.stringify(rows) };
+  const els = { 'sd-drawings-body': { innerHTML: '' } };
+  const out = { toasts: [], confirms: [], saved: null, rendered: 0 };
+  const w = {};
+  new Function('localStorage', 'document', 'escHtml', 'st', 'showToast', 'confirm', 'window',
+    fn('function sdDrawingsAll(){') + '\n' +
+    fn('function sdDrawingsRender(){') + '\n' +
+    '  var __r = sdDrawingsRender;\n' +
+    fn('window.sdDrawingsDelete=function(id){') + ';\n' +
+    'window.sdDrawingsDelete(' + JSON.stringify(id) + ');'
+  )(
+    { getItem: (k) => (k in data ? data[k] : null) },
+    { getElementById: (i) => els[i] || null },
+    (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+    (k, v) => { if (opts.saveFails) return false; out.saved = { k, v }; data[k] = JSON.stringify(v); return true; },
+    (m) => out.toasts.push(String(m)),
+    (m) => { out.confirms.push(String(m)); return opts.confirm !== false; },
+    w
+  );
+  return out;
+}
+
+{
+  const html = renderWith([WITH_STATE, LEGACY]);
+  check('every row offers Delete, the picture-only one included',
+    (html.match(/onclick="sdDrawingsDelete\(/g) || []).length, 2);
+  check('and a legacy row that cannot be LOADED can still be deleted',
+    /sdDrawingsDelete\('DRW-1'\)/.test(html), true);
+}
+{
+  const r = deleteWith([WITH_STATE, LEGACY], 'DRW-2');
+  check('deleting writes the survivors back under sd_drawings',
+    r.saved && r.saved.k, 'sd_drawings');
+  check('and the deleted entry is gone from what was written',
+    r.saved.v.map((x) => x.id).join(','), 'DRW-1');
+  check('and the user is told', /Drawing deleted/.test(r.toasts[0] || ''), true);
+}
+{
+  const r = deleteWith([WITH_STATE], 'DRW-2', { confirm: false });
+  check('declining the confirm writes nothing at all', r.saved, null);
+  check('the confirm says the record is KEPT, not destroyed',
+    /hidden and kept, not destroyed/.test(r.confirms[0] || ''), true);
+  check('and never claims it cannot be undone',
+    /cannot be undone/i.test(r.confirms[0] || ''), false);
+}
+{
+  // A FAILED LOCAL WRITE MUST NOT LOOK LIKE A DELETION. st() returns false when
+  // localStorage refuses; reporting success would leave the row on disk and off
+  // the screen until the next render put it back.
+  const r = deleteWith([WITH_STATE], 'DRW-2', { saveFails: true });
+  check('a storage failure is reported, not swallowed',
+    /Could not delete that drawing/.test(r.toasts[0] || ''), true);
+  check('and no success toast is shown',
+    r.toasts.some((t) => /Drawing deleted/.test(t)), false);
+}
+{
+  // An id that matches nothing must not write the whole array back: that would
+  // be a no-op save that still triggers a sync sweep.
+  const r = deleteWith([WITH_STATE], 'NO-SUCH-ID');
+  check('an unknown id writes nothing', r.saved, null);
+  check('and says nothing', r.toasts.length, 0);
+}
+
 console.log((fail ? 'FAILED' : 'ok') + '  stonedesk-saved-drawings: ' +
   pass + ' passed, ' + fail + ' failed');
 if (fail) process.exit(1);
