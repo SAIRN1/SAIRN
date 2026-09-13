@@ -1345,6 +1345,16 @@
       "claimed_at_epoch": 1789332615.9928079,
       "status": "released",
       "released_at": "2026-09-13T20:58:25Z"
+    },
+    {
+      "id": "hank-1789333363",
+      "session": "hank",
+      "subject": "sabotage-control-noop",
+      "task": "a negative control must prove it changed the target",
+      "claimed_at": "2026-09-13T21:02:43Z",
+      "claimed_at_epoch": 1789333363.9766774,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
