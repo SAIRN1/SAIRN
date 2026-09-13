@@ -6364,6 +6364,20 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
   <button class="q-btn" onclick="sdBizSnapshot()">📸 Save KPI Snapshot</button>
   <span id="biz-snap-status" style="font-size:11px;color:var(--brand2)"></span>
 </div>
+<!-- SAVED SNAPSHOTS (2026-09-13). sdBizSnapshot() has always written a KPI
+     capture to sd_business_snapshots and NOTHING read it back except a
+     "last snapshot" date. A shop could take ninety of them and never look at
+     one, and could not remove a snapshot taken by accident or mid-import while
+     the numbers were wrong -- which is exactly when somebody presses it twice. -->
+<div style="padding:12px 16px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden">
+    <div style="padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+      <div style="font-weight:800;font-size:13px;color:var(--text)">&#128248; Saved KPI snapshots</div>
+      <div style="font-size:11px;color:var(--muted)">What the dashboard said, on the day it said it</div>
+    </div>
+    <div id="biz-snap-list"></div>
+  </div>
+</div>
 <script>
 (function(){
   window.sdBizAI=function(){
@@ -6387,20 +6401,68 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     w.document.write('</body></html>');
     w.document.close();w.print();
   };
+  // IDLESS ROWS ARE NEVER BACKED UP -- sdSyncCollection() skips them, so every
+  // snapshot lived in one browser despite sd_business_snapshots sitting in
+  // SD_SYNCED. See sdEnsureRowIds() for why the id is derived, not minted.
+  function bizSnaps(){
+    var d=[];
+    try{ d=JSON.parse(localStorage.getItem('sd_business_snapshots')||'[]'); }catch(e){ d=[]; }
+    if(!Array.isArray(d)) return [];
+    if(sdEnsureRowIds(d,'BS',['date'])) st('sd_business_snapshots',d);
+    return d;
+  }
+  window.sdBizSnapRender=function(){
+    var el=document.getElementById('biz-snap-list');
+    if(!el) return;
+    var d=bizSnaps();
+    if(!d.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px 14px">No snapshots saved yet. Press Save KPI Snapshot to keep what this dashboard says today.</div>';
+      return;
+    }
+    el.innerHTML=d.map(function(x){
+      var keys=Object.keys(x.kpis||{});
+      var summary=keys.slice(0,3).map(function(k){return escHtml(k)+': '+escHtml(String(x.kpis[k]));}).join(' · ');
+      return '<div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:600;font-size:13px">'+escHtml(String(x.date||'').slice(0,16).replace('T',' '))+'</div>'
+          +'<div style="font-size:11px;color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+            +(summary||(keys.length+' metrics'))+'</div>'
+        +'</div>'
+        +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+          +'onclick="sdBizSnapDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button>'
+        +'</div>';
+    }).join('');
+  };
+  window.sdBizSnapDelete=function(id){
+    if(!id){ showToast('That snapshot has no id yet -- reopen the panel and try again.'); return; }
+    var d=bizSnaps();
+    if(!d.some(function(x){return String(x&&x.id)===String(id);})) return;
+    if(!confirm('Delete this KPI snapshot?\n\nIt is hidden and kept, not destroyed.')) return;
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(!st('sd_business_snapshots',next)){
+      showToast('Could not delete that snapshot -- storage may be full or unavailable, try again');
+      return;
+    }
+    window.sdBizSnapRender();
+    showToast('Snapshot deleted.');
+  };
   window.sdBizSnapshot=function(){
-    var snaps=[];
-    try{snaps=JSON.parse(localStorage.getItem('sd_business_snapshots')||'[]');}catch(e){}
+    var snaps=bizSnaps();
     var snap={date:new Date().toISOString(),kpis:{}};
     document.querySelectorAll('#panel-business [data-metric]').forEach(function(el){snap.kpis[el.dataset.metric]=el.textContent;});
     snaps.unshift(snap);
     // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
     snaps=sdCapLocal('sd_business_snapshots',snaps,90);
+    // Set on the way in, so a snapshot taken today is syncable and deletable
+    // immediately rather than waiting for a later pass.
+    sdEnsureRowIds(snaps,'BS',['date']);
     var snapSaved=st('sd_business_snapshots',snaps);
     var status=document.getElementById('biz-snap-status');
     if(status){
       status.textContent = snapSaved ? ('Snapshot saved '+new Date().toLocaleTimeString()) : 'Could not save snapshot -- storage may be full';
       setTimeout(function(){status.textContent='';},snapSaved?3000:6000);
     }
+    if(snapSaved) window.sdBizSnapRender();
   };
   // Auto-save snapshot daily
   var lastSnap=null;
@@ -35836,8 +35898,29 @@ async function sdRunEmailScan() {
   function saveChecklist(d){return st(CHECKLIST_KEY,d);}
   var rColors={Critical:'#fee2e2',High:'#fef3c7',Medium:'#dbeafe',Low:'#f3f4f6'};
 
+  // IDLESS ROWS ARE NEVER BACKED UP -- sdSyncCollection() skips them, so every
+  // flagged scan lived in one browser despite sd_email_threats sitting in
+  // SD_SYNCED. See sdEnsureRowIds() for why the id is derived, not minted.
+  function threatsEnsureIds(){
+    var d=loadThreats();
+    if(sdEnsureRowIds(d,'ET',['date','type','summary'])) saveThreats(d);
+    return d;
+  }
+  // A FLAGGED SCAN IS A SECURITY RECORD, so the confirm says what deleting
+  // actually does: hidden and kept, not destroyed. The Print Report above still
+  // lists everything for anyone who wants the log off the machine first.
+  window.sdEmailThreatDelete=function(id){
+    if(!id){ showToast('That scan has no id yet -- reopen the panel and try again.'); return; }
+    var d=threatsEnsureIds();
+    if(!d.some(function(x){return String(x&&x.id)===String(id);})) return;
+    if(!confirm('Delete this flagged scan?\n\nIt is hidden and kept, not destroyed.')) return;
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(!saveThreats(next)){ showToast('Could not delete that scan -- storage may be full or unavailable, try again'); return; }
+    render();
+    showToast('Flagged scan deleted.');
+  };
   function render(){
-    var threats=loadThreats();
+    var threats=threatsEnsureIds();
     document.getElementById('email-blocked').textContent=threats.length;
     document.getElementById('email-phish').textContent=threats.filter(function(x){return x.type==='Phishing';}).length;
     var cl=loadChecklist();
@@ -35851,7 +35934,10 @@ async function sdRunEmailScan() {
         +'<span style="background:'+(rColors[x.risk]||'#f3f4f6')+';font-size:10px;padding:2px 8px;border-radius:8px">'+x.risk+'</span>'
         +'</div>'
         +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.summary)+'</div>'
-        +'<div style="font-size:11px;color:var(--muted);margin-top:2px">Flagged: '+x.date+'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:2px">'
+        +'<span style="font-size:11px;color:var(--muted)">Flagged: '+x.date+'</span>'
+        +'<button class="q-btn" style="font-size:11px;padding:2px 8px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="sdEmailThreatDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button></div>'
         +'</div>';
     }).join(''):'<div style="color:var(--muted);font-size:13px;padding:12px 0">No scans flagged yet — use Scan Email to analyze a suspicious message.</div>';
     document.getElementById('email-checklist').innerHTML=CHECKLIST_ITEMS.map(function(x){
@@ -35886,8 +35972,11 @@ async function sdRunEmailScan() {
       out.style.border='1px solid '+(isHigh?'#fca5a5':'#86efac');
       out.innerHTML='<strong>🤖 Security Analysis:</strong><br>'+escHtml(result).replace(/\n/g,'<br>');
       if(risk!=='Low'){
-        var threats=loadThreats();
+        var threats=threatsEnsureIds();
         threats.unshift({type:lower.includes('phish')?'Phishing':'Suspicious',risk:risk,summary:txt.slice(0,120),date:sdLocalToday()});
+        // Set on the way in, so a scan flagged today is syncable and deletable
+        // immediately rather than waiting for a later render.
+        sdEnsureRowIds(threats,'ET',['date','type','summary']);
         // A LOCAL CAP, NOT A DELETION -- see sdCapLocal().
         threats=sdCapLocal('sd_email_threats',threats,100);
         saveThreats(threats);
@@ -37821,6 +37910,10 @@ function sbNav(id) {
     if(id==='itadmin'){if(typeof itaRender==='function')itaRender();if(typeof itaRenderAudit==='function')itaRenderAudit();if(typeof window.sdITRender==='function')window.sdITRender();}
     if(id==='template'&&typeof tmRender==='function'){tmRender();if(typeof tmUpdateKPIs==='function')tmUpdateKPIs();}
     if(id==='business'&&typeof calcBiz==='function')calcBiz();
+    // The saved-snapshot list, added 2026-09-13. Dispatched here rather than
+    // rendered once at load: it lives in the Business Intelligence panel and a
+    // list drawn before any snapshot exists would never refresh itself.
+    if(id==='business'&&typeof window.sdBizSnapRender==='function')window.sdBizSnapRender();
     // Shop Settings' Company Profile is re-populated on every open rather
     // than only at parse time: the fields feed fab_shop_* (used by every
     // proposal/agreement/order header), and another tab, the SAIRNbiz
