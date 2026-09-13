@@ -1,0 +1,114 @@
+"""tests/run_flaky_quarantine_probe.py -- quarantine is a process with a way
+back out, and the flip detector can be shown to fire and to stay quiet.
+
+    python tests/run_flaky_quarantine_probe.py
+
+The arms that matter are the two failure modes this discipline has, and they
+pull in opposite directions:
+
+  * TOO EAGER -- a detector that counts a changing duration or timestamp as a
+    flip quarantines the whole fleet on the first run. Section 2 pins the
+    things that legitimately vary, with CONTROLS asserting a real verdict
+    change still counts.
+  * TOO PERMANENT -- a quarantine list that only grows is a graveyard. Section 4
+    pins that a stable checker becomes READY TO REINTRODUCE on its own, and
+    that an overdue entry is reported as loudly as a flaky one.
+
+And the rule that keeps it honest either way: NEVER QUARANTINE ON A SINGLE RED.
+Section 3 pins that one disagreement is WATCH, and that too few runs is not a
+verdict at all.
+"""
+import io
+import json
+import os
+import subprocess
+import sys
+import tempfile
+
+REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import flaky_checker_quarantine as Q                            # noqa: E402
+
+failures = []
+
+
+def check(label, ok, detail=''):
+    print(('  PASS ' if ok else '  FAIL ') + label + (('   ' + str(detail)) if detail else ''))
+    if not ok:
+        failures.append(label)
+
+
+def obs(digests, tree='t'):
+    return {'observations': [{'digest': d, 'tree': tree} for d in digests]}
+
+
+print('1. the blind lock')
+check('1a  every fixture classifies as decided', Q.run_fixtures() == [], Q.run_fixtures())
+p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'flaky_checker_quarantine.py'),
+                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
+check('1c  it is stated as running BEFORE anything was measured',
+      'before any checker was measured' in (p.stdout or ''))
+
+print('2. what legitimately varies is NOT a flip')
+for name, a, b, want_same in Q.NORMALISE_FIXTURES:
+    check('2  ' + name, (Q.normalise(a) == Q.normalise(b)) == want_same)
+
+print('3. NEVER on a single red')
+check('3a  one disagreement in forty is WATCH, not QUARANTINE',
+      Q.classify(obs(['a'] * 39 + ['b']))[0] == 'WATCH')
+check('3b  two runs is TOO-FEW-RUNS -- not STABLE, which would be a claim',
+      Q.classify(obs(['a', 'a']))[0] == 'TOO-FEW-RUNS')
+check('3c  CONTROL: a genuinely stable checker over many runs IS stable -- or 3a '
+      'and 3b would pass on a classifier that never says STABLE',
+      Q.classify(obs(['a'] * 20))[0] == 'STABLE')
+check('3d  a checker flipping every other run is QUARANTINE',
+      Q.classify(obs(['a', 'b'] * 6))[0] == 'QUARANTINE')
+check('3e  the WATCH alarm is TIGHTER than the quarantine bar',
+      Q.WATCH_AT < Q.QUARANTINE_AT, '%s < %s' % (Q.WATCH_AT, Q.QUARANTINE_AT))
+
+print('4. a way BACK OUT -- the anti-graveyard half')
+led = {'checkers': {'x.py': obs(['a'] * Q.REENTRY_RUNS)},
+       'quarantine': {'x.py': {'owner': 'Hank', 'deadline': '2099-01-01',
+                               'evidence': 'flipped 3/10 on 2026-09-13'}}}
+tmp = tempfile.mkdtemp(prefix='flaky-')
+led_path = os.path.join(tmp, 'ledger.json')
+io.open(led_path, 'w', encoding='utf-8', newline=chr(10)).write(json.dumps(led))
+old = Q.LEDGER
+try:
+    Q.LEDGER = led_path
+    l2 = Q.load_ledger()
+    v = Q.classify(l2['checkers']['x.py'])
+    ready = bool(l2['quarantine'].get('x.py')) and v[0] == 'STABLE' \
+        and v[2] >= Q.REENTRY_RUNS
+    check('4a  a quarantined checker that is stable again is READY TO REINTRODUCE',
+          ready, v)
+    check('4b  re-entry needs a real run count, not one clean run',
+          Q.REENTRY_RUNS >= 10, Q.REENTRY_RUNS)
+finally:
+    Q.LEDGER = old
+
+print('5. a quarantine that cannot be recorded without an owner and a deadline')
+q = {'owner': 'Hank', 'deadline': '2026-09-20', 'evidence': 'flip rate 0.30 over 10 runs'}
+check('5a  the shape carries all three', all(k in q for k in ('owner', 'deadline', 'evidence')))
+src = io.open(os.path.join(REPO, 'tools', 'flaky_checker_quarantine.py'),
+              encoding='utf-8').read()
+code = '\n'.join(l for l in src.split('\n') if not l.strip().startswith('#'))
+check('5b  the tool reports OVERDUE entries -- a list that only grows is a graveyard',
+      'OVERDUE QUARANTINE' in code)
+check('5c  and it reports READY TO REINTRODUCE', 'READY TO REINTRODUCE' in code)
+
+print('6. ACCURACY -- runs from a different tree are discarded, not averaged')
+mixed = {'observations': [{'digest': 'a', 'tree': 't1'}, {'digest': 'b', 'tree': 't2'}]}
+kept = [o for o in mixed['observations'] if o['tree'] == 't1']
+check('6a  a flip across two trees is not a flip -- it is the tool noticing an edit',
+      len(kept) == 1)
+check('6b  the measure step filters by the CURRENT tree hash',
+      "o.get('tree') == th" in code)
+check('6c  and an empty ledger reports an honest zero rather than a clean fleet',
+      'NO EVIDENCE YET' in code and 'honest' in code)
+
+print('\n%d arm(s) failed' % len(failures))
+for f in failures:
+    print('  ' + f)
+sys.exit(1 if failures else 0)

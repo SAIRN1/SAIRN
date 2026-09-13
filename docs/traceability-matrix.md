@@ -99,6 +99,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Methodology piece 1: mutation-derived condition coverage &mdash; 48 of 146 operands in the Tier A financial engines are ones the suite does NOT notice being wrong** | **BUILT 2026-09-13 (Hank)** &mdash; `tools/condition_coverage.py`, 20 arms, `fb5a1884` | `tests/sairncare/test-care-charges.js` |
 | `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **OPEN 2026-09-13 (found by Fourth while declaring the file a control; deliberately NOT fixed)** — `python tests/run_snapshot_freshness_probe.py` reports `2 arm(s) failed`; the other 12 arms pass. Pre | `tests/run_snapshot_freshness_probe.py` |
 | `literal_drift_check.py` has a control that proves DETERMINISM and never proves it can FIRE | **OPEN 2026-09-13 (found by Fourth)** — the last `ONE DIRECTION` in `python tools/checker_control_check.py`; 30 of 32 promoted checkers are `BOTH EVIDENCED`, 1 exempt | `tests/run_literal_drift_determinism_probe.py` |
 | ~~Nothing runs 58% of the test suite, and two probes had rotted unnoticed inside it~~ — **`tools/run_all_tests.py` runs all 126 and NAMES what it did not run** | **CLOSED 2026-09-08 (Hank)** — `67e9a33` (the two rotted probes) and `5c439e6` (the runner); 126/126 pass on a clean tree | `tests/fail_open_browser_probe.py`, `tests/reachability/live_mode_probe.py` |
@@ -275,7 +276,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**135 of 330 test files are traced to a stated requirement. 195 are not.**
+**136 of 331 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -422,6 +423,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_cleanup_confirm_probe.py`
 - `tests/run_condition_coverage_probe.py`
 - `tests/run_financial_invariant_probe.py`
+- `tests/run_flaky_quarantine_probe.py`
 - `tests/run_fmea_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_jscomments_probe.py`
@@ -446,7 +448,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-alf-payer-rules.js`
 - `tests/sairncare/test-alf-phase3.js`
 - `tests/sairncare/test-alf-signals.js`
-- `tests/sairncare/test-care-charges.js`
 - `tests/sairncare/test-compliance-rules.js`
 - `tests/sairncare/test-invoice-proration.js`
 - `tests/sairncare/test-med-schedule.js`

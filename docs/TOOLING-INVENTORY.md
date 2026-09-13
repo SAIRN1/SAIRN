@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**110 files in `tools/`.** By what actually invokes them:
+**111 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 36 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 14 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 31 | nothing runs these at all |
+| **SUITE-ONLY** | 16 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 30 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 64 |
+| CHECKER | 65 |
 | GENERATOR | 15 |
 | LIBRARY | 18 |
 | LIVE | 13 |
@@ -44,18 +44,19 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 10 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 9
+**The number to act on: 11 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 11
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 10, by name, so this is actionable rather than a statistic:
+The 11, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
-| `condition_coverage.py` | UNWIRED | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
+| `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
+| `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
 | `fmea_prediction_check.py` | SUITE-ONLY | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows |
 | `idempotency_check.py` | SUITE-ONLY | a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run |
@@ -205,7 +206,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (14)
+## SUITE-ONLY (16)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -213,6 +214,8 @@ fixtures. Nothing points them at the real codebase.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
+| `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
+| `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
 | `fmea_prediction_check.py` | CHECKER | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows | `run_fmea_probe.py` |
 | `idempotency_check.py` | CHECKER | a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run | `run_financial_invariant_probe.py` |
@@ -229,7 +232,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (31)
+## UNWIRED (30)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -237,7 +240,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
