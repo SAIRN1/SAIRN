@@ -1012,6 +1012,16 @@
       "claimed_at_epoch": 1789334957.3726687,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789335007",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sv_controlled witnessing lock and master-plan worst-case bound",
+      "claimed_at": "2026-09-13T21:30:07Z",
+      "claimed_at_epoch": 1789335007.5961127,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
