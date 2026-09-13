@@ -3461,3 +3461,43 @@ mutation controls bite**, tool restored byte-identical, probe green first.
 
 **FLAG FOR FOURTH, INFORMATIONAL:** the config in their clone is corrected and
 no action is needed from them.
+
+### Follow-on the same day: the probe poisoned the list it was testing
+
+`tests/run_committer_identity_probe.py` went red on two CONTROL arms within a
+minute of being committed, and both failures were correct.
+
+**THE CHECKER DERIVES ITS LIST BY SCANNING `tests/`.** The moment this probe was
+committed, a fresh clone carried it -- and the control arms' own clean identity,
+written here as a literal `'user.email', 'a.person@example.com'` pair, became a
+"throwaway identity" the checker refused. The two arms that assert an ordinary
+identity PASSES are the ones that caught it.
+
+**AND THE SAME SHAPE HAD ALREADY LET A MUTATION SURVIVE TWICE.** To make the
+checker see a fixture value the probe must SET it with
+`git config user.email <value>` -- and that line, in this file, is itself an
+ARGUMENT-form pair the scanner reads. So the `-c user.email=x` arm was passing on
+the checker finding the value in the PROBE rather than in the fixture, and
+deleting the `-c` branch changed nothing. I chased it through two wrong
+hypotheses before instrumenting the tool directly; reading the regexes was not
+enough, running them was.
+
+**THE FIX IS THAT EVERY IDENTITY THIS PROBE USES IS ASSEMBLED AT RUN TIME**, so
+its only literal appearance is inside the generated fixture, in the spelling
+under test. That keeps the control honest without weakening the checker: a real
+probe writing a real throwaway identity still gets caught, because a real probe
+writes it as a literal.
+
+**THE PROBE ALSO COPIES ITSELF INTO THE CLONE NOW**, for the same reason it
+already copied the tool: `git clone` carries committed HEAD, so without it the
+arms were measured against the previous version of themselves and an edit could
+not be verified until after it was committed. That is exactly how the literal
+control identity went unnoticed -- correct in the working tree, wrong in the
+clone.
+
+**7 mutation controls bite**, all of them, tool restored byte-identical.
+
+This is the third time today a probe has been wrong about what it was measuring
+rather than the subject being wrong -- after the separator mismatch and the
+`git clone` carrying committed HEAD. Same family: **the harness is part of the
+system under test.**

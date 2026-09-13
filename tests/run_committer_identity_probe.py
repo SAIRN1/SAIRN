@@ -68,6 +68,30 @@ def rmtree(path):
     shutil.rmtree(path, onerror=onerror)
 
 
+# THE CONTROL IDENTITY IS ASSEMBLED AT RUN TIME, AND THAT IS NOT A FLOURISH.
+# The checker derives its throwaway list by scanning tests/ for
+# `'user.email', '<value>'` pairs. The moment THIS file was committed, a fresh
+# clone carried it -- and the control arms' own clean identity, written as a
+# literal pair right here, became a 'throwaway identity' the checker refused.
+# Two arms that assert an ordinary identity PASSES went red within a minute of
+# the commit landing. The probe had poisoned the list it was testing.
+#
+# Splitting the value so no source line contains the pair keeps the control
+# honest without weakening the checker: a real probe writing a real throwaway
+# identity still gets caught, because a real probe writes it as a literal.
+CLEAN_NAME = 'A' + ' Person'
+CLEAN_EMAIL = 'a.person' + '@' + 'example.com'
+# THE TWO FIXTURE VALUES ARE ASSEMBLED FOR A DIFFERENT REASON, and it is the
+# one that let a mutation survive twice. To make the checker see a value this
+# probe has to SET it with `git config user.email <value>` -- and that line,
+# in this file, is itself an ARGUMENT-form pair the checker scans. So the
+# `-c` arm was passing on the checker finding the value HERE rather than in
+# the fixture, and deleting the `-c` branch changed nothing. Assembling the
+# value means its only literal appearance is inside the generated fixture, in
+# the spelling under test.
+ARG_FIXTURE = 'brand.new' + '.fixture@invalid'
+DASHC_FIXTURE = 'dash.c' + '.fixture@invalid'
+
 print('\nA. this clone answers, and answering is read-only')
 before = (git(REPO, 'config', '--get', 'user.name').stdout.strip(),
           git(REPO, 'config', '--get', 'user.email').stdout.strip())
@@ -87,11 +111,19 @@ try:
        c.stderr[-300:])
     shutil.copy2(os.path.join(REPO, REL.replace('/', os.sep)),
                  os.path.join(CLONE, REL.replace('/', os.sep)))
+    # AND THIS FILE TOO, for the same reason and one more. The checker DERIVES
+    # its list by scanning tests/, and a fresh clone carries the COMMITTED copy
+    # of this probe -- so without this the arms below are measured against the
+    # previous version of themselves, and an edit made here cannot be verified
+    # until after it is committed. That is how the literal control identity went
+    # unnoticed: it was correct in the working tree and wrong in the clone.
+    shutil.copy2(os.path.abspath(__file__),
+                 os.path.join(CLONE, 'tests', os.path.basename(__file__)))
 
     print('\nB. CONTROL -- a clone with an ordinary identity PASSES')
     # Without this, every arm below is "the tool fails on anything".
-    git(CLONE, 'config', 'user.name', 'A Person')
-    git(CLONE, 'config', 'user.email', 'a.person@example.com')
+    git(CLONE, 'config', 'user.name', CLEAN_NAME)
+    git(CLONE, 'config', 'user.email', CLEAN_EMAIL)
     rc, out = run(CLONE)
     ok('an ordinary identity is CLEAN', rc == 0, 'exit=%d\n%s' % (rc, out[-300:]))
 
@@ -116,14 +148,14 @@ try:
     # version of these two arms refused for the NAME and passed while proving
     # nothing about the email under test. The `-c` mutation SURVIVED because
     # of exactly that. Only the value under test may be able to trigger.
-    git(CLONE, 'config', 'user.name', 'A Person')
+    git(CLONE, 'config', 'user.name', CLEAN_NAME)
     newprobe = os.path.join(CLONE, 'tests', 'zz_identity_fixture_probe.py')
     io.open(newprobe, 'w', encoding='utf-8', newline='\n').write(
-        "git('config', 'user.email', 'brand.new.fixture@invalid')\n")
-    git(CLONE, 'config', 'user.email', 'brand.new.fixture@invalid')
+        "git('config', 'user.email', '" + ARG_FIXTURE + "')\n")
+    git(CLONE, 'config', 'user.email', ARG_FIXTURE)
     rc, out = run(CLONE)
     ok('an identity introduced by a NEW probe is picked up with no edit here',
-       rc == 1 and 'brand.new.fixture@invalid' in out.split('COMPROMISED')[-1],
+       rc == 1 and ARG_FIXTURE in out.split('COMPROMISED')[-1],
        'exit=%d\n%s' % (rc, out[-400:]))
     ok('...and the source file is named',
        'zz_identity_fixture_probe.py' in out, out[-400:])
@@ -135,17 +167,17 @@ try:
     # nothing here -- while every push-gate probe in this repo uses exactly that
     # form. An untested branch of a checker is a branch that can be deleted.
     io.open(newprobe, 'w', encoding='utf-8', newline='\n').write(
-        "git(wt, '-c', 'user.email=dash.c.fixture@invalid', 'commit')\n")
-    git(CLONE, 'config', 'user.email', 'dash.c.fixture@invalid')
+        "git(wt, '-c', 'user.email=" + DASHC_FIXTURE + "', 'commit')\n")
+    git(CLONE, 'config', 'user.email', DASHC_FIXTURE)
     rc, out = run(CLONE)
     ok('the `-c user.email=x` spelling is picked up too',
-       rc == 1 and 'dash.c.fixture@invalid' in out.split('COMPROMISED')[-1],
+       rc == 1 and DASHC_FIXTURE in out.split('COMPROMISED')[-1],
        'exit=%d\n%s' % (rc, out[-400:]))
     os.remove(newprobe)
 
     print('\nE. THE HISTORY COUNT IS REPORTED AND NEVER FAILED ON')
-    git(CLONE, 'config', 'user.name', 'A Person')
-    git(CLONE, 'config', 'user.email', 'a.person@example.com')
+    git(CLONE, 'config', 'user.name', CLEAN_NAME)
+    git(CLONE, 'config', 'user.email', CLEAN_EMAIL)
     rc, out = run(CLONE)
     ok('a clone whose HISTORY carries the identity still passes once its config '
        'is fixed', rc == 0, 'exit=%d\n%s' % (rc, out[-300:]))
