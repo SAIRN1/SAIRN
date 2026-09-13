@@ -1112,8 +1112,8 @@
       "task": "26 never-run tables severity triage against production traffic",
       "claimed_at": "2026-09-13T22:21:05Z",
       "claimed_at_epoch": 1789338065.0338478,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T22:31:29Z"
     }
   ]
 }
