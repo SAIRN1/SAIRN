@@ -272,6 +272,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | ~~`sdTSExport()` invents a $28/hr pay rate into a column headed "Pay Est."~~ — **it was SIX sites, and the worst one was in the record rather than the display** | **CLOSED 2026-09-05 (Hank)** — `fe16d5d`, live-verified; the row's own premise was wrong and is corrected below | `tests/sd_timesheet_pay_est.js` |
 | **"Pinnacle Stone & Design" is hardcoded across the app — every customer's exports, prints and AI greeting name one shop** | **FIXED 2026-09-08 (Fourth)** — 132 sites, not the dozen this row estimated | `tests/nesting_saw_ticket.js`, `tests/stonedesk_shop_identity.js` |
 | **The only transport of fifteen that reported NOTHING** &mdash; it set a READ-path flag and returned null, so a write that never reached the server left no trace at all | **CLOSED 2026-09-11 (Cody)** &mdash; `sdDataFailed()` on all three failure branches; 18 fault arms in `tests/faults/sd_write_faults.js`; 8 mutation controls bite with the file restored byte-identical | `tests/faults/sd_write_faults.js` |
+| **A test pinned to the SHAPE of a cap went red on the commit that FIXED the cap &mdash; and its replacement would have gone green again on the bug** | **CLOSED 2026-09-13 (Cody)** &mdash; `tests/stonedesk_drawing_snapshot_budget.js` 15 arms; **4 mutation controls bite**, `stonedesk.html` restored byte-identical | `tests/stonedesk_drawing_snapshot_budget.js` |
 | **The 28 unwired checkers, run against real code for the first time — seven clean, ONE accused `stonedesk.html` FIFTY TIMES and every one was false, ONE found an app Guardian has never checked** | **CHECKER FIXED and MAP CORRECTED 2026-09-09 (CC)** — `613a14c7`, `df14a403` | `tests/write_readback_shape_probe.py` |
 | ~~**A SECOND, COMPLETE damage-claim module exists** &mdash; same shape as the orphaned NPS system a prior session already documented, and this twin was never written down~~ &mdash; **DELETED** | **CLOSED 2026-09-09 (Hank)** &mdash; and one detail of this row was wrong, see the cell | `tests/stonedesk_damage_no_twin.js` |
 | ~~Two parallel template modules with different storage keys~~ — **the duplication was resolved 2026-07-30; a REAL defect was found inside the migration that resolved it** | **CLOSED 2026-09-04 (Fourth)** | `tests/template_migration_orphaning.js` |
@@ -501,7 +502,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 334   tests/**, api/*.test.js
-  open-work rows citing a test       121   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       122   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                33   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

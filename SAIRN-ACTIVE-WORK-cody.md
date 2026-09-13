@@ -3372,3 +3372,36 @@ wrong quantity.
 **THREE DOCSTRING COUNTS CORRECTED** in the tool and in its report-only registry
 entry rather than left to be quoted -- the tool's own docstring already says a
 number in a docstring is a claim like any other.
+
+## 2026-09-13 (Cody) -- a test pinned to the SHAPE of a cap went red on the
+## commit that fixed the cap
+
+Skill used: `sairn-code-scrubber`. Claim: `stonedesk` --
+`drawing snapshot budget retention cap assertions stale`. The last red on
+`main`, and it had been red since `ab0a43fe` landed.
+
+**THE CODE WAS RIGHT AND THE TEST WAS STALE.** Two arms matched the INLINE trim,
+`if(drawings.length>20)` and `drawings=drawings.slice(0,20)`. `ab0a43fe`
+replaced that with the shared `sdCapLocal()` helper **because a raw slice told
+the server every dropped drawing had been DELETED** -- a length cap is not a
+deletion, and five collections were losing server history that way. The cap was
+still 20 and still enforced.
+
+**THE OBVIOUS REPAIR WOULD HAVE BEEN WORSE THAN THE FAILURE.** Re-pointing the
+arms at `drawings.slice(0,20)` makes them go GREEN again the day somebody
+reintroduces exactly the bug `ab0a43fe` fixed -- a test that would then be
+holding the defect in place while reading as coverage. They assert the PROPERTY
+instead, and more of it than before: the cap is 20, it is applied to
+`sd_drawings`, and **no raw slice reaches the server sync**.
+
+**ONE ARM WAS TIGHTENED TWICE.** My first rewrite of *"the old 50 is gone"*
+stripped `//` comments and looked for any `50`, which would go red on an
+unrelated number arriving in that function later and mangles a `//` inside a
+string. It names the two real spellings now. A broad regex passing today is not
+the same as a correct one.
+
+**4 MUTATION CONTROLS BITE**, `stonedesk.html` restored byte-identical, test
+green before mutating: the cap raised back to 50, the helper swapped back for
+the raw slice, the cap removed entirely, and the cap applied to the wrong key.
+The second of those is the one that matters -- it is the real bug, and it now
+fails 3 arms.

@@ -84,10 +84,29 @@ check('the fallback recognises the rgba(0,0,0,0) form getComputedStyle returns',
   /rgba\\\(\\s\*0\\s\*,\\s\*0\\s\*,\\s\*0\\s\*,\\s\*0\\s\*\\\)/.test(save), true);
 
 // The cap.
-check('the retention cap is 20', /drawings\.length>20/.test(save), true);
-check('and the old 50 is gone', /drawings\.length>50/.test(save), false);
-check('the slice matches the test, so the cap is not off by a stale number',
-  /drawings=drawings\.slice\(0,20\)/.test(save), true);
+//
+// ── THE SPELLING MOVED AND THESE TWO ARMS WENT RED ON A REAL FIX (2026-09-13) ─
+// They matched the INLINE trim, `if(drawings.length>20)` plus
+// `drawings=drawings.slice(0,20)`. ab0a43fe replaced that with the shared
+// sdCapLocal() helper, because a raw slice told the server every dropped drawing
+// had been DELETED -- a length cap is not a deletion, and five collections were
+// losing server history that way. The cap is still 20 and still enforced; the
+// test was pinned to the shape rather than to the property.
+//
+// So they assert the PROPERTY now, and more of it than before: the cap is 20,
+// it is applied to this key, and it goes through the helper that records the
+// drop as local-only. An arm matching `drawings.slice(0,20)` would go green
+// again the day somebody reintroduced the bug ab0a43fe fixed.
+check('the retention cap is 20, applied to sd_drawings',
+  /sdCapLocal\('sd_drawings',\s*drawings,\s*20\)/.test(save), true);
+// PRECISE, NOT A BARE `\b50\b` SWEEP. The first rewrite of this arm stripped
+// `//` comments and looked for any 50, which would go red on an unrelated
+// number arriving in this function later and would also mangle a `//` inside a
+// string. The claim is narrow: nothing caps this key at the old 50.
+check('and the old 50 is gone',
+  /sdCapLocal\('sd_drawings',\s*drawings,\s*50\)|drawings\.length>50/.test(save), false);
+check('it is a LOCAL cap, not a deletion -- no raw slice reaches the server sync',
+  /drawings\s*=\s*drawings\.slice\(/.test(save), false);
 
 // What must NOT change: the honest failure path this file already had.
 check('the write still goes through st(), whose boolean the caller reads',
