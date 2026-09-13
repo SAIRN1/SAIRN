@@ -1027,8 +1027,8 @@
       "task": "sibling fail-opens missing checker guards in the push gate",
       "claimed_at": "2026-09-13T12:51:10Z",
       "claimed_at_epoch": 1789303870.1869442,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T13:48:40Z"
     }
   ]
 }
