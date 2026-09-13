@@ -345,6 +345,16 @@ try:
     sh(sandbox, 'git', 'init', '-q', '-b', 'main')
     sh(sandbox, 'git', 'config', 'user.email', 'probe@example.invalid')
     sh(sandbox, 'git', 'config', 'user.name', 'probe')
+    # CHECK 11 RUNS BEFORE CHECK 1 AND NEEDS ITS OWN TOOL PRESENT (2026-09-13).
+    # This sandbox is a hand-built repo that stubs only the tools the arm under
+    # test cares about, and check 11 -- correctly -- refuses a push when the
+    # control-byte checker is absent rather than skipping it. Without this stub
+    # the gate denied before check 1 ever ran and four arms went red for a
+    # reason that had nothing to do with refspecs. Exit 0: this fixture ships no
+    # control bytes, and the arm under test is not about them. It prints
+    # nothing, so the gate's scanned-count version guard stays out of the way.
+    with open(os.path.join(sandbox, 'tools', 'control_char_check.py'), 'w') as f:
+        f.write("import sys\nsys.exit(0)\n")
     with open(os.path.join(sandbox, 'tools', 'sairn_load_state_check.py'), 'w') as f:
         # The stub records what it SAW, not just what it was told. The exported
         # dir is removed by the hook's atexit cleanup the moment it exits, so
