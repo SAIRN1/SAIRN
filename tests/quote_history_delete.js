@@ -224,6 +224,118 @@ function build(hist, ai, opts) {
     assert.ok(/onclick="sdHistoryDelete\(/.test(render), 'no Delete button in the history table');
   });
 
+  // ══ THE OTHER QUOTE STORE ════════════════════════════════════════════════
+  // THIS APP HAS TWO "SAVE A QUOTE" BUTTONS WRITING TWO DIFFERENT STORES.
+  // "Save to History" (sdQuoteSaveHistory) writes sd_quote_history and shows in
+  // the table above. "Save Quote" (saveQuote) writes stonedesk_quote_history
+  // and was rendered ONLY by renderHistory(), which targets #history-list -- an
+  // element this file's own comment records as never built. A shop pressing
+  // Save Quote got a confirmation and the quote appeared nowhere.
+  //
+  // LISTED, NOT MERGED, and that is the decision the arms below pin. Folding
+  // these into the table above would put them into Total Quotes, Total Value
+  // and Win Rate -- silently changing four money figures every existing shop
+  // already reads. Which store should be canonical is a product decision.
+  section('the Quote Builder store is visible, and stays out of the KPIs');
+
+  function qb(rows, opts) {
+    opts = opts || {};
+    const store = { stonedesk_quote_history: JSON.stringify(rows) };
+    const out = { toasts: [], confirms: [], writes: [], els: { 'sd-qb-saves': { innerHTML: '' } } };
+    const ctx = {};
+    const src =
+      balanced(html.indexOf('function sdRowId(prefix,row,fields){')) + '\n' +
+      balanced(html.indexOf('function sdEnsureRowIds(rows,prefix,fields){')) + '\n' +
+      fnAfter('  function qbLoad(){') + '\n' +
+      fnAfter('  window.sdQBRender=function(){') + '\n' +
+      fnAfter('  window.sdQBDelete=function(id){') + '\n' +
+      'ctx.qbLoad=qbLoad; ctx.render=window.sdQBRender; ctx.del=window.sdQBDelete;';
+    new Function('localStorage', 'st', 'document', 'escHtml', 'escAttrJs',
+                 'showToast', 'confirm', 'window', 'ctx', src)(
+      { getItem: k => (k in store ? store[k] : null) },
+      (k, v) => { out.writes.push(k); if (opts.saveFails) return false; store[k] = JSON.stringify(v); return true; },
+      { getElementById: id => out.els[id] || null },
+      s => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'),
+      s => String(s),
+      m => out.toasts.push(String(m)),
+      m => { out.confirms.push(String(m)); return opts.confirm !== false; },
+      {}, ctx
+    );
+    return { ctx, out, store };
+  }
+  const QB = [
+    { num: 'Q-101', client: 'Marcus Webb', project: 'Kitchen', total: 4850, date: '2026-09-10' },
+    { num: 'Q-102', client: 'Sarah Johnson', project: 'Vanity', total: 2100, date: '2026-09-11' }
+  ];
+
+  test('the Quote Builder saves are listed at all -- they never were', () => {
+    const b = qb(QB);
+    b.ctx.render();
+    const h = b.out.els['sd-qb-saves'].innerHTML;
+    assert.ok(h.indexOf('Marcus Webb') !== -1, 'still invisible: ' + h.slice(0, 160));
+    assert.strictEqual((h.match(/onclick="sdQBDelete\(/g) || []).length, 2);
+  });
+
+  test('their rows get ids, so they are syncable as well as deletable', () => {
+    const b = qb(QB);
+    b.ctx.qbLoad().forEach(x => assert.ok(String(x.id || '').startsWith('QB-'), String(x.id)));
+  });
+
+  test('an empty store says so rather than rendering nothing', () => {
+    const b = qb([]);
+    b.ctx.render();
+    assert.ok(/No Quote Builder saves yet/.test(b.out.els['sd-qb-saves'].innerHTML));
+  });
+
+  test('a client name containing markup is escaped', () => {
+    const b = qb([Object.assign({}, QB[0], { client: '<img src=x onerror=1>' })]);
+    b.ctx.render();
+    const h = b.out.els['sd-qb-saves'].innerHTML;
+    assert.ok(h.indexOf('<img src=x') === -1 && h.indexOf('&lt;img') !== -1);
+  });
+
+  test('deleting one writes the survivors back to ITS OWN store', () => {
+    const b = qb(QB);
+    const id = b.ctx.qbLoad()[0].id;
+    b.ctx.del(id);
+    assert.deepStrictEqual(JSON.parse(b.store.stonedesk_quote_history).map(x => x.num), ['Q-102']);
+  });
+
+  test('and never touches sd_quote_history', () => {
+    const b = qb(QB);
+    b.ctx.del(b.ctx.qbLoad()[0].id);
+    assert.ok(b.out.writes.indexOf('sd_quote_history') === -1,
+      'the Quote Builder delete reached into the other store');
+  });
+
+  test('an id matching nothing never asks and never writes', () => {
+    const b = qb(QB);
+    b.ctx.qbLoad();
+    b.out.writes.length = 0;
+    b.ctx.del('QB-NO-SUCH');
+    assert.strictEqual(b.out.confirms.length, 0);
+    assert.strictEqual(b.out.writes.length, 0);
+  });
+
+  test('a storage failure is reported, with no success toast', () => {
+    const b = qb(QB, { saveFails: true });
+    const id = b.ctx.qbLoad()[0].id;
+    b.out.toasts.length = 0;
+    b.ctx.del(id);
+    assert.ok(/Could not delete that quote/.test(b.out.toasts.join('|')), JSON.stringify(b.out.toasts));
+    assert.ok(!/save deleted/.test(b.out.toasts.join('|')));
+  });
+
+  // THE SEPARATION IS THE POINT. If these ever reach load(), the four KPIs
+  // above change for every existing shop without anyone deciding that.
+  test('the merged history loader still reads TWO stores, not three', () => {
+    const loader = fnBefore('  function load(){');
+    assert.ok(/sd_quote_history/.test(loader) && /sd_aiquotes/.test(loader));
+    assert.ok(!/stonedesk_quote_history/.test(loader),
+      'the Quote Builder store was folded into the KPI table -- that moves Total '
+      + 'Value and Win Rate for every existing shop and is a product decision');
+  });
+
   console.log('\n' + pass + ' passed, ' + fail + ' failed');
   if (fail) process.exit(1);
 })();

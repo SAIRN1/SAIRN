@@ -5525,6 +5525,29 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     </div>
     <div id="hist-empty" style="display:none;padding:32px;text-align:center;color:var(--muted)">No quotes match your search.</div>
 
+    <!-- QUOTE BUILDER SAVES (2026-09-13). THIS APP HAS TWO "SAVE A QUOTE"
+         BUTTONS WRITING TWO DIFFERENT STORES, and only one of them was ever
+         displayed:
+           "Save to History"  -> sdQuoteSaveHistory() -> sd_quote_history
+                                 -> the table above.
+           "Save Quote"       -> saveQuote()          -> stonedesk_quote_history
+                                 -> rendered ONLY by renderHistory(), which
+                                    writes into #history-list, an element this
+                                    file's own comment records as never built.
+         So a shop pressing Save Quote got a confirmation and the quote appeared
+         nowhere. Listed here, in the panel where a shop already goes to look at
+         quotes, rather than merged into the table above: merging would fold
+         these into Total Quotes, Total Value and Win Rate, silently changing
+         four money figures every existing shop already reads. Which store
+         should be canonical is a product decision, not a rendering one. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;margin-top:16px;overflow:hidden">
+      <div style="padding:12px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap">
+        <div style="font-weight:800;font-size:13px;color:var(--text)">&#128190; Quote Builder saves</div>
+        <div style="font-size:11px;color:var(--muted)">Saved with &ldquo;Save Quote&rdquo; on the Quote Builder &mdash; not counted in the KPIs above</div>
+      </div>
+      <div id="sd-qb-saves"></div>
+    </div>
+
     <!-- SIGNED APPROVALS (2026-09-02). esigApprove() captured a real customer
          signature and wrote it to localStorage, read back from NOWHERE in this
          file -- so "did the Smith quote get signed, and for how much?" had no
@@ -5646,6 +5669,57 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var okAi=(ai.length||removedWasAI)?st('sd_aiquotes',ai):true;
     return okHist&&okAi;
   }
+  // ── THE OTHER QUOTE STORE, FINALLY VISIBLE (2026-09-13) ──────────────────
+  // stonedesk_quote_history is written by saveQuote() on the Quote Builder and
+  // was rendered only by renderHistory(), which targets #history-list -- an
+  // element this file's own comment records as never built. Every quote saved
+  // with that button went somewhere the shop could not look.
+  //
+  // Rows here carry {num, client, project, total, date} and no id, so they were
+  // also skipped by sdSyncCollection() and never backed up. Back-filled through
+  // the shared helper on the same terms as the comms and SMS logs.
+  function qbLoad(){
+    var d=[];
+    try{ d=JSON.parse(localStorage.getItem('stonedesk_quote_history')||'[]'); }catch(e){ d=[]; }
+    if(!Array.isArray(d)) return [];
+    if(sdEnsureRowIds(d,'QB',['date','num','client'])) st('stonedesk_quote_history',d);
+    return d;
+  }
+  window.sdQBRender=function(){
+    var el=document.getElementById('sd-qb-saves');
+    if(!el) return;
+    var d=qbLoad();
+    if(!d.length){
+      el.innerHTML='<div style="font-size:12px;color:var(--muted);padding:12px">No Quote Builder saves yet.</div>';
+      return;
+    }
+    el.innerHTML=d.map(function(x){
+      var amt=Number(x.total||0);
+      return '<div style="display:flex;gap:10px;align-items:center;padding:10px 14px;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:600;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'
+            +escHtml(x.client||'')+' &mdash; '+escHtml(x.project||'')+'</div>'
+          +'<div style="font-size:11px;color:var(--muted)">'+escHtml(x.num||'')+' &bull; '+escHtml(x.date||'')+'</div>'
+        +'</div>'
+        +'<div style="font-weight:800;color:var(--brand2);font-size:13px;flex-shrink:0">$'+(isFinite(amt)?amt.toLocaleString():'0')+'</div>'
+        +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+          +'onclick="sdQBDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button>'
+        +'</div>';
+    }).join('');
+  };
+  window.sdQBDelete=function(id){
+    if(!id){ showToast('That quote has no id yet -- reopen the panel and try again.'); return; }
+    var d=qbLoad();
+    if(!d.some(function(x){return String(x&&x.id)===String(id);})) return;
+    if(!confirm('Delete this Quote Builder save?\n\nIt is hidden and kept, not destroyed.')) return;
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(!st('stonedesk_quote_history',next)){
+      showToast('Could not delete that quote -- storage may be full or unavailable, try again');
+      return;
+    }
+    window.sdQBRender();
+    showToast('Quote Builder save deleted.');
+  };
   // A quote is a business record, so this is a deliberate removal rather than
   // an edit: the status vocabulary already covers "Declined" and "Expired",
   // and a shop reaching for Delete means the row should not be in the tally at
@@ -5724,6 +5798,9 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     document.getElementById('hist-empty').style.display=rows.length?'none':'block';
     var sel=document.getElementById('hist-status-sel');
     sel.innerHTML='<option value="">Select quote...</option>'+d.map(function(x){return '<option value="'+x.id+'">'+escHtml(x.customer||'')+'</option>';}).join('');
+    // The second store, rendered in its own section rather than merged -- see
+    // the markup comment for why merging would move four money figures.
+    if(typeof window.sdQBRender==='function') window.sdQBRender();
   };
   window.sdHistoryView=function(id){
     var d=load();
