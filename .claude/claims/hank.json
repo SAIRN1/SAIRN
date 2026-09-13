@@ -1155,6 +1155,16 @@
       "claimed_at_epoch": 1789297151.591649,
       "status": "released",
       "released_at": "2026-09-13T11:06:25Z"
+    },
+    {
+      "id": "hank-1789298351",
+      "session": "hank",
+      "subject": "roofing-asset-registry",
+      "task": "portfolio forecast discards every section flag",
+      "claimed_at": "2026-09-13T11:19:11Z",
+      "claimed_at_epoch": 1789298351.6014767,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
