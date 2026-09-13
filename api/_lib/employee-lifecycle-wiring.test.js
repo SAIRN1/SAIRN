@@ -81,6 +81,43 @@ const PRE_EXISTING = ['sd-auth.js', 'sc-auth.js', 'dnt-auth.js', 'mech-auth.js',
 // obvious place to be recorded instead of being quietly missed.
 const STILL_OPEN = [];
 
+// ── A FOURTH CATEGORY, ADDED 2026-09-13, AND ITS EXISTENCE IS THE FINDING ──
+// `sv-auth.js` (SAIRNvet, shipped in 29b1f1d5) has a complete `set_active` and
+// does NOT require _lib/employee-lifecycle. It is a fifteenth endpoint, written
+// the day after the shared helper was the convention, carrying its own copy of
+// the lifecycle the helper exists to own.
+//
+// It fits none of the three lists above and I am not going to make it fit one.
+// WIRED asserts the helper is required and would be FALSE. PRE_EXISTING means
+// "already had its own set_active BEFORE the helper existed", which is false by
+// three weeks. STILL_OPEN means "no way to deactivate a credential at all",
+// which is also false -- the lifecycle is there, including the last-owner
+// refusal and the deactivated-caller re-check.
+//
+// Recording it honestly is what keeps the accounting assertion below able to
+// cover every endpoint -- which is the assertion that caught this at all, and
+// which blocked every clone's push from 29b1f1d5 landing until this line.
+//
+// THIS IS NOT A PARKING SPOT. The two assertions under it require that an entry
+// really does hand-write set_active and really does NOT use the helper, so a
+// migrated endpoint cannot sit here quietly and read as accounted for. Migrate
+// it and this list must shrink; the migration is SAIRNvet's owner's call, not
+// a bookkeeping decision to be taken inside a test file.
+const OWN_IMPLEMENTATION = [
+  { file: 'sv-auth.js', app: 'sairnvet', table: 'sairnvet_employee_auth' }
+];
+
+OWN_IMPLEMENTATION.forEach((e) => {
+  test(e.file + ' really does hand-write its own lifecycle -- it is not a migrated one parked here', () => {
+    const src = read(e.file);
+    assert.strictEqual(/require\('\.\/_lib\/employee-lifecycle'\)/.test(src), false,
+      e.file + ' now REQUIRES the shared helper -- move it to WIRED rather than ' +
+      'leaving it recorded as an own implementation');
+    assert.ok(src.indexOf("action === 'set_active'") !== -1,
+      e.file + ' has no set_active handler, so it belongs in STILL_OPEN, not here');
+  });
+});
+
 // Pull the roles a `setup` gate actually enforces, out of its own source.
 // Handles both shapes in the repo: `caller.role !== 'owner'` and
 // `(caller.role !== 'owner' && caller.role !== 'superintendent')`.
@@ -400,8 +437,10 @@ test('every app auth endpoint is accounted for in exactly one list', () => {
   const all = fs.readdirSync(API)
     .filter((f) => /-auth\.js$/.test(f) && !/\.test\.js$/.test(f))
     .filter((f) => f !== 'sd-sub-auth.js');   // subcontractor portal, not employees
-  const known = WIRED.map((e) => e.file).concat(PRE_EXISTING, STILL_OPEN).sort();
+  const known = WIRED.map((e) => e.file)
+    .concat(PRE_EXISTING, STILL_OPEN, OWN_IMPLEMENTATION.map((e) => e.file)).sort();
   assert.deepStrictEqual(all.sort(), known,
     'an auth endpoint exists that no list mentions — it is neither wired, ' +
-    'pre-existing, nor recorded as open, so nobody will ever look at it');
+    'pre-existing, recorded as open, nor recorded as carrying its own ' +
+    'implementation, so nobody will ever look at it');
 });
