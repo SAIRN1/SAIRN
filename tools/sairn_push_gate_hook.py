@@ -1520,6 +1520,99 @@ def main():
         if MODE == 'prepush':
             sys.stderr.write("\n" + guard_note + "\n\n")
 
+    # ── CHECK 11: RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) ───
+    # PROMOTED FROM REPORT-ONLY ON MICHAEL'S CALL, on a real track record: the
+    # 2026-09-10 sweep of 1,624 tracked files found FOUR, and on 2026-09-13 it
+    # caught a fifth within hours of the file shipping -- `/<BS>delete<BS>/i` in
+    # api/sv-auth.test.js, the assertion that SAIRNvet's auth endpoint deletes no
+    # credential row. Zero false positives across the fleet in either sweep.
+    #
+    # EVERY ONE IS THE SAME MISTAKE: an escape sequence typed as its literal
+    # control character. A `\b` that became a backspace byte is a regex that can
+    # NEVER MATCH, so the assertion around it passes on the exact input it exists
+    # to refuse -- two of the four were privilege guards in that state. A raw NUL
+    # is worse in a different way: grep answers `Binary file ... matches` and
+    # prints no lines, so the file stops being searchable and nobody is told.
+    #
+    # SCOPED TO THE FILES THIS PUSH SHIPS, and that is what makes blocking
+    # survivable. The whole-tree scan is the right question for a sweep and the
+    # wrong one for a gate: api/sv-auth.test.js carries a standing finding that is
+    # inside another session's active claim, and a tree-wide deny would refuse
+    # EVERY push until somebody else's file was fixed. That is the state check 5
+    # has been stuck in since 2026-09-01. Here, the finding blocks the push that
+    # carries the file and nobody else's.
+    #
+    # THE FIX IS ALWAYS A RUN-TIME NO-OP -- the escape produces the identical
+    # string. What changes is that the file becomes searchable and the intent
+    # becomes visible, which is why there is no exemption file for this one.
+    _cc = os.path.join(repo, 'tools', 'control_char_check.py')
+    _cc_files = [q for q in changed
+                 if not q.lower().endswith(('.zip', '.gz', '.png', '.jpg', '.jpeg',
+                                            '.gif', '.ico', '.webp', '.pdf', '.woff',
+                                            '.woff2', '.ttf', '.otf', '.mp4', '.mp3',
+                                            '.wav', '.xlsx', '.docx', '.pptx', '.pyc'))
+                 and os.path.isfile(os.path.join(repo, q))]
+    if _cc_files:
+        # A MISSING CHECKER IS NOT A CLEAN PUSH -- the same rule checks 2, 3, 4
+        # and 5 were corrected to on 2026-09-13.
+        if not os.path.isfile(_cc):
+            deny(chr(10).join([
+                "Blocked: this push ships source and the control-byte checker is not in",
+                "this clone, so nothing looked at it.",
+                "",
+                "  expected: %s" % _cc,
+                OVERRIDE_HINT,
+            ]))
+        try:
+            _r = subprocess.run([sys.executable, _cc]
+                                + [os.path.join(repo, q) for q in _cc_files],
+                                capture_output=True, text=True, timeout=120, cwd=repo)
+        except Exception as _e:
+            deny(chr(10).join([
+                "Blocked: the control-byte check could not be run, so this push is",
+                "unchecked.",
+                "",
+                "  %s: %s" % (type(_e).__name__, _e),
+                OVERRIDE_HINT,
+            ]))
+        # DID THE CHECKER ACTUALLY SCOPE ITSELF? A checker that predates the
+        # file-argument support ignores the list and scans the WHOLE TREE, so a
+        # standing finding in any file -- including one inside somebody else's
+        # claim -- would refuse this push under a message naming a file it does
+        # not ship. That is a wrong-reason deny, which is worse than either a
+        # right deny or a clean pass, and it is reachable today: a `git worktree`
+        # or a checkout at an older commit carries the older checker while the
+        # gate being run is this one. It reports the count, so ask.
+        _scanned = re.search(r'files scanned\s*:\s*(\d+)', _r.stdout or '')
+        if _scanned and int(_scanned.group(1)) != len(_cc_files):
+            deny(chr(10).join([
+                "Blocked: the control-byte checker in this clone is older than this",
+                "gate -- it scanned %s files when it was given %d, so it ignored the"
+                % (_scanned.group(1), len(_cc_files)),
+                "file list and answered about the whole tree.",
+                "",
+                "This is a COULD-NOT-TELL, not a finding about your push. Sync this",
+                "clone so tools/control_char_check.py and this gate come from the same",
+                "commit; a worktree or checkout pinned to an older commit does this.",
+                OVERRIDE_HINT,
+            ]))
+        if _r.returncode == 1:
+            deny(chr(10).join([
+                "Blocked: this push ships a file containing a RAW CONTROL BYTE.",
+                "",
+                _r.stdout.strip(),
+                "",
+                "This is almost always an escape sequence typed as its literal",
+                "character, and it is not cosmetic: a `\\b` that became a backspace",
+                "byte is a regex that can NEVER MATCH, so the assertion around it",
+                "passes on the exact input it exists to refuse. Two of the four",
+                "found on 2026-09-10 were privilege guards in exactly that state.",
+                "",
+                "The fix is a run-time no-op -- the escape produces the identical",
+                "string -- so there is no exemption file for this check. Type the",
+                "escape, and build the line with chr(92) if a heredoc keeps eating it.",
+                OVERRIDE_HINT,
+            ]))
     # ── CHECK 10: THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) ─
     # REPORT-ONLY. It reports the one thing no other check here can: that the
     # checks themselves may be out of date.

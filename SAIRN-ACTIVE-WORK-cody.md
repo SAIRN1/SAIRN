@@ -3501,3 +3501,55 @@ This is the third time today a probe has been wrong about what it was measuring
 rather than the subject being wrong -- after the separator mismatch and the
 `git clone` carrying committed HEAD. Same family: **the harness is part of the
 system under test.**
+
+## 2026-09-13 (Cody) -- control_char_check promoted to blocking, and a sixth
+## instance found on the way
+
+Skill used: `sairn-guardian-v2`. Claim: `tooling` --
+`promote control char check to blocking`. Michael's call, on a real track
+record: two fleet-wide sweeps, zero false positives, and a fifth instance caught
+within hours of the file shipping.
+
+**IT IS PUSH-GATE CHECK 11, SCOPED TO THE FILES THE PUSH SHIPS.** That scoping
+is the whole reason blocking is survivable. The whole-tree scan is the right
+question for a sweep and the wrong one for a gate: `api/sv-auth.test.js` carries
+a standing finding inside fourth's active claim, so a tree-wide deny would
+refuse EVERY push until somebody else's file was fixed -- the state check 5 has
+been stuck in since 2026-09-01. An arm pins it: a push shipping a CLEAN file is
+allowed **while that finding still exists in the tree**.
+
+**THE REPORT-ONLY ENTRY IS KEPT, NOT MOVED.** The two runs answer different
+questions and both are wanted: the gate blocks the push that carries the byte,
+and the whole-tree run keeps a standing finding VISIBLE rather than letting it
+sit unreported until somebody happens to touch that file. `checkblocks.py` is in
+both lists for the same reason.
+
+**NO EXEMPTION FILE, and that is a decision rather than an omission.** The fix
+is a run-time no-op -- the escape produces the identical string -- so there is
+never a defensible reason to keep the raw byte. Every other blocking check that
+can be argued with has an exemption path; this one cannot be argued with.
+
+**A SIXTH INSTANCE WAS FOUND AND FIXED ON THE WAY.** `51fe25e8` wrote a raw
+backspace into `docs/SAIRN-OPEN-WORK-INDEX.md`, inside a row whose own prose is
+about having shipped a literal backspace through a heredoc. Harmless in
+markdown, but the index is touched by nearly every commit, so left unfixed it
+would have denied every push the moment check 11 went in. The sentence now names
+the byte instead of printing it.
+
+**THE PROBE'S FIRST RUN MEASURED THE WRONG CODE, for the third time today.** A
+`git worktree` is at committed HEAD and the gate runs the WORKTREE'S copy of
+both itself and the checker, so the arms drove the previous versions -- and a
+CONTROL arm failed because the old checker still scanned the whole tree and hit
+fourth's standing finding. The probe copies its subject in now, and re-copies
+after every `git reset --hard`, because a reset silently reverts it.
+
+**5 MUTATION CONTROLS BITE**, gate and checker restored byte-identical, probe
+green first: the deny removed, the missing-checker deny removed, an
+unconditional deny (which must break the CONTROLS), the binary-extension filter
+dropped, and the tool's file-argument scoping reverted.
+
+**THE ONE REMAINING FINDING IS NOT MINE TO FIX.** `api/sv-auth.test.js:301` is
+inside fourth's active `sairnvet` claim -- `sairn_claim.py check` BLOCKED, and I
+verified the block rather than rewording past it. Check 11 will refuse the next
+push that touches that file, which is the correct outcome and puts the fix in
+front of its owner.

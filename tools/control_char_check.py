@@ -98,7 +98,29 @@ def scan(path):
 
 def main(argv):
     quiet = '--quiet' in argv
-    files, skipped, findings = tracked(), [], []
+    # FILE ARGUMENTS, ADDED 2026-09-13 FOR THE PUSH GATE. Scoping matters here:
+    # the whole-tree scan is the right question for a sweep and the wrong one
+    # for a gate. A standing finding anywhere would otherwise refuse EVERY push
+    # -- which is the state check 5 has been stuck in since 2026-09-01 -- so the
+    # gate passes the files that push actually ships and a finding blocks the
+    # push that carries it, not somebody else's.
+    #
+    # Paths may be absolute or repo-relative; they are reported repo-relative
+    # either way so the message reads the same from a hook and from a terminal.
+    given = [a for a in argv if not a.startswith('--')]
+    if given:
+        files = []
+        for a in given:
+            p = os.path.abspath(a)
+            try:
+                rel = os.path.relpath(p, REPO).replace('\\', '/')
+            except ValueError:
+                rel = a.replace('\\', '/')
+            files.append(rel)
+        skipped, findings = [], []
+    else:
+        files = tracked()
+        skipped, findings = [], []
     for f in files:
         if f.lower().endswith(BINARY_EXT):
             skipped.append(f)

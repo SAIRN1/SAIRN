@@ -34,6 +34,7 @@ Source: the numbered `CHECK n:` blocks in `tools/sairn_push_gate_hook.py`. Deriv
 | 8 | A PROBE FIXTURE COMMIT MUST NOT REACH ORIGIN (2026-09-10) |
 | 9 | THE NAMED GUARD AND SEAM TESTS BLOCK (2026-09-10) |
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
+| 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 
 ## 3. Enforced report-only
 
@@ -73,7 +74,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared | `comment_quote_check.py` | real run 2026-09-11: 5 assertions inspected, 4 comment-only and every one of them DELIBERATE and declared with a reason, 0 undeclared. Its own first version committed the error it hunts -- it blanked from any // to end of line, so every https:// swallowed the rest of its line and it reported real code as comment |
 | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice | `defect_register.py` | built and wired the same day: 24-check probe that ATTACKS it -- a nonexistent commit, an invented method, an invented layer and a duplicate are each refused, and a record whose commit is deleted makes --check go red |
 | a known advisory against a package in the committed lockfile, direct or transitive, with the advisory URL | `npm_audit_check.py` | real negative control, not a fixture: run against the PRE-BUMP lockfile it exits 1 and names both qs advisories by URL; against the fixed lockfile it exits 0. Its first version reported `SKIPPED: npm is not on PATH` on this machine because npm is npm.cmd on Windows -- an honest exit 3 that would have printed on every push in every clone forever. Caught by running it, not by reading it |
-| a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `control_char_check.py` | real negative control against the real tree, not a fixture: run against the pre-fix files it exits 1 and names all SIX bytes with file, line and offset; after the fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- .gitattributes marks the repo text so diffs were readable the whole time, verified rather than assumed, and the first draft of the finding had that wrong |
+| a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `control_char_check.py` | real negative control against the real tree, not a fixture: run against the pre-fix files it exits 1 and names all SIX bytes with file, line and offset; after the fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- .gitattributes marks the repo text so diffs were readable the whole time, verified rather than assumed, and the first draft of the finding had that wrong. THE TRACK RECORD IS WHAT PROMOTED IT: two fleet-wide sweeps, zero false positives, and on 2026-09-13 it caught a FIFTH within hours of the file shipping -- /<BS>delete<BS>/i in api/sv-auth.test.js, the assertion that SAIRNvet's auth endpoint deletes no credential row, which had never been capable of failing. Held as a gate by tests/push_gate/check11_probe.py, 20 arms, 5 mutation controls bite |
 | a NEW `+ (x \|\| 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding | `truthy_sum_check.py` | 82 candidate occurrences across 8 files, 51 distinct file+field keys, all grandfathered so a NEW one fails. It read 140 on the first real run and 58 of those were NOT folds: a STRING LITERAL on the left makes `+` concatenate, so `'$' + (x \|\| 0)` is a currency label and sums nothing. Classified separately 2026-09-13, COUNTED AND PRINTED rather than dropped, and the 31 baseline keys that existed only to excuse them removed -- before that, every price-display line anyone added tripped the check and was answered with an exemption. The tool now also reports baseline keys nothing matches any more. 33-arm probe, and the arms worth having are the ones that keep it trustworthy: MULTIPLICATION IS NOT REPORTED (2 * ("3"\|\|0) is 6; only + concatenates), Number/parseFloat/parseInt go silent, and the pattern quoted in a COMMENT or a STRING is not code -- that last arm exists because the first version reported 193 and FIFTY-TWO were prose explaining the defect, including the refusal message of this checker's own subject. 3.1s |
 | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason | `removal_path_check.py` | 18-arm probe, and the arm worth having is the FALSE EXEMPTION one: a shared registry comment reading "X is MUTABLE; Y is APPEND-ONLY" was attributed wholesale by the first version, labelling a money record its own comment calls MUTABLE as append-only and silently exempting it. The probe asserts the mutable sibling still fails. Also: a missing baseline turns every stuck resource into a finding rather than passing quietly, and an unloadable registry is an error rather than CLEAN. 0.3s |
 
@@ -160,6 +161,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **TWO TESTS WENT RED ON `main` WITHIN HOURS, AND BOTH WERE RIGHT ABOUT SOMETHING** &mdash; a storage wrapper that would blame the browser for a stamping failure, and a probe pinned to an exact count | **BOTH CLOSED 2026-09-13 (Cody)** &mdash; `tests/sairn_storage_wrapper_honesty.js` 65 arms, `tests/run_truthy_sum_probe.py` all pass; **5 mutation controls bite**, all three app files restored byte-id | `tests/run_truthy_sum_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
 | **`truthy_sum_check.py` COULD NOT TELL A NUMERIC FOLD FROM A STRING-LITERAL CONCATENATION, so it was teaching people to write exemptions** &mdash; 58 of its 140 matches were never folds | **CLOSED 2026-09-13 (Cody)** &mdash; the matcher classifies them, the count is PRINTED rather than dropped, 31 baseline keys that existed only to excuse them are gone, and the tool now reports baselin | `tests/run_truthy_sum_probe.py` |
 | **131 COMMITS ON `origin/main` WERE AUTHORED AND COMMITTED BY A TEST FIXTURE** &mdash; one clone had the probes&#39; throwaway identity in its LOCAL git config, and nothing on this platform reads the committing identity | **LEAK STOPPED AND HELD 2026-09-13 (Cody)** &mdash; `SAIRN-fourth` corrected, `tools/committer_identity_check.py` built and promoted report-only, `tests/run_committer_identity_probe.py` 20 arms; **7 m | `tests/run_committer_identity_probe.py` |
+| **`control_char_check.py` PROMOTED TO BLOCKING as push-gate check 11** &mdash; a raw control byte is an escape typed literally, and a `&#92;b` that became a backspace is a regex that can NEVER match | **PROMOTED 2026-09-13 (Michael's call, Cody)** &mdash; `tests/push_gate/check11_probe.py`, 20 arms; **5 mutation controls bite**, gate and checker restored byte-identical | `api/sv-auth.test.js`, `tests/push_gate/check11_probe.py` |
 | ~~**FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an empty file list**~~ &mdash; **CORRECTED: THE HOLE DOES NOT EXIST IN THAT FORM AND MY REPORT OF IT WAS WRONG** | **REVERTED 2026-09-11 (Cody), same session that wrote it.** The widening rung, the `prepush_base()` change and the credential-scan note are all out; `9c75a8d9` is the restored state of `tools/sairn_pu | `tests/push_gate/refspec_and_override_probe.py` |
 | Fourth promotion batch &mdash; and one checker HELD BACK rather than silenced | **PROMOTED 2026-09-10 (Cody), registry 15 &rarr; 16** &mdash; `5abfcdba`; sweep CLEAN with **no could-not-tell**, probe 57/57, all three `local_only` probes and `write_readback_probe` green | `tests/local_only_probe.py` |
 | The 28 unwired checkers have no way to be promoted, and none had ever run against real code | **REPORT-ONLY PATH BUILT, 3 PROMOTED 2026-09-09 (Cody)** &mdash; `408df818`; `tests/run_report_only_checks_probe.py` 29/29, full sweep CLEAN, and Hank's `run_all_tests_hook_gate_probe.py` still ALL PA | `tests/run_report_only_checks_probe.py` |
@@ -288,7 +290,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**143 of 338 test files are traced to a stated requirement. 195 are not.**
+**145 of 340 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -404,7 +406,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sd-sub-data-auth-ordering.test.js`
 - `api/stonedesk-public.test.js`
 - `api/stonedesk-track.test.js`
-- `api/sv-auth.test.js`
+- `api/sv-witness.test.js`
 - `tests/ai_auth_wrapper.test.js`
 - `tests/ai_shortcuts_reach_the_chat.js`
 - `tests/approval_persistence.js`
@@ -507,12 +509,12 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 338   tests/**, api/*.test.js
-  open-work rows citing a test       129   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 340   tests/**, api/*.test.js
+  open-work rows citing a test       130   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                35   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
-  numbered gate checks                10   sairn_push_gate_hook.py
+  numbered gate checks                11   sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.

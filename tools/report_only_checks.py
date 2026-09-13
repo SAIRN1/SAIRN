@@ -798,7 +798,14 @@ REGISTRY = [
         'tool': 'control_char_check.py',
         'mode': 'once',
         'verdict': by_exit,
-        'promoted': '2026-09-10, the day it was built',
+        # PROMOTED TO BLOCKING 2026-09-13 as push-gate CHECK 11, and KEPT
+        # HERE ON PURPOSE rather than moved. The two runs answer different
+        # questions and both are wanted: the gate scans only the files a
+        # push SHIPS, so a standing finding cannot refuse everybody's push,
+        # while this whole-tree run keeps that standing finding VISIBLE
+        # instead of letting it sit unreported until someone touches the
+        # file. checkblocks.py is in both lists for the same reason.
+        'promoted': '2026-09-10 report-only; BLOCKING 2026-09-13 (Michael) as push-gate check 11',
         'catches': 'a raw C0 control byte in any tracked text file -- an '
                    'escape sequence typed as its literal character',
         'why_it_matters': 'TWO OF THE FOUR FOUND WERE DEAD REGEXES. '
@@ -816,7 +823,13 @@ REGISTRY = [
                     'fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- '
                     '.gitattributes marks the repo text so diffs were readable '
                     'the whole time, verified rather than assumed, and the '
-                    'first draft of the finding had that wrong',
+                    'first draft of the finding had that wrong. THE TRACK RECORD IS WHAT '
+                    'PROMOTED IT: two fleet-wide sweeps, zero false positives, and on '
+                    '2026-09-13 it caught a FIFTH within hours of the file shipping -- '
+                    '/<BS>delete<BS>/i in api/sv-auth.test.js, the assertion that '
+                    "SAIRNvet's auth endpoint deletes no credential row, which had "
+                    'never been capable of failing. Held as a gate by '
+                    'tests/push_gate/check11_probe.py, 20 arms, 5 mutation controls bite',
     },
     {
         'tool': 'truthy_sum_check.py',
