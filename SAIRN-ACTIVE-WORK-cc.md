@@ -1897,3 +1897,55 @@ When `--rule` became required, `D1 a duplicate is not appended` stayed **green**
 The standing rule for "a gate that silently disables when its dependency tool is absent" is **PR 1.11**, written earlier today and repeated in CLAUDE.md rather than only linked. Checked before assuming, as asked; nothing to write.
 
 **Verified:** `defect_register --check` OK, 54 records, 48 cited / 6 not-citable, every id checked against the rules doc; `run_defect_register_probe` 59 checks 0 failed; `run_fmea_probe` 0 arms failed including five new date-logic arms with a control.
+
+
+---
+
+## 2026-09-13 -- the 26 never-run tables, triaged; and both hourly crons are down right now
+
+Full working: `docs/2026-09-13-never-run-tables-severity-triage.md`. **Nothing was changed and no migration was run** -- none can be, from a session.
+
+Re-derived against a snapshot **3.7 hours old**, not the 2026-09-11 capture the earlier never-run analysis had to be publicly corrected for. **85 tables declared in `sql/` are absent from the live schema; 26 are queried by live `api/` code.**
+
+### The finding that decides the triage is not about the tables
+
+**There is no measurable customer traffic on this platform**, so "is this table hit by real customer licence traffic" cannot be answered YES for any of the 26 -- and that is a fact about the traffic, not about the tables.
+
+Last 24 hours of production, by status: **30 x 200** -- of which **29 are the two hourly crons and the remaining ONE is a single `/api/claude`**; **19 x 502** -- both crons failing; **18 x 405** -- every one a `GET` against a POST-only route, all inside a **single 10-second burst** at 12:20, which is a route sweep of ours. **One successful non-cron request in twenty-four hours.**
+
+And the figure that looked most like real traffic dissolves on inspection: **`/api/sd-data`'s 71 hits over 72 hours** -- the largest non-cron count, and the endpoint serving **18 of these 26 tables** -- **resolve to those 405s.** Not resource reads. A GET on a POST-only route.
+
+### Axis 1 -- reachability: the unlaunched-feature hypothesis did not survive
+
+**None of the 26 is sitting behind an unlaunched feature.** Every one has a shipped caller in a live app file. Three classes instead:
+
+- **PUBLIC, NO LICENCE** -- `sd_quote_request_photos`, behind `api/stonedesk-public`, which the **public** `stonedesk-intake.html` calls. Anyone on the internet.
+- **AUTH GATE** -- `mech_credentials`, behind `api/mech-auth`. **If it is missing nobody can log in to SAIRNmechanical at all**, before anything else can be shown.
+- **LICENCE-GATED FEATURE** -- the other 24, reached by a signed-in employee inside a shipped panel.
+
+The six whose table name appears in no app HTML are not unreferenced. **A client names a ROUTE, never a table** -- and every one of those routes is called from `stonedesk.html`, `sairnscape.html`, `sairnbiz.html` or `stonedesk-intake.html`. Grepping for the table name would have reported them as dead.
+
+### Axis 2 -- failure loudness, the real severity driver
+
+`api/sd-data.js` carries **166 HARD `503 NOT_PROVISIONED`** guards, each naming the SQL file to run. **Six tables have only the SOFT shape** -- `200 OK` with `{ data: [], provisioned: false }` -- which renders as **an ordinary empty list** unless the client reads the flag:
+
+`ledger_entries`, `rf_bonding`, `rf_job_hazard_assessments`, `rf_prequal_documents`, `rf_safety_equipment`, `rf_warranty_tiers`.
+
+**`ledger_entries` is the sharpest. A LEDGER showing zero entries reads as "no transactions", not "not set up"** -- and `sairnbiz.html` reads a provisioned flag **twice in the whole file**. `sairnroofing.html` reads one **18 times**, which is why the five roofing rows rank below it, **but 18 reads is not proof that these five are among them.** That is the next check, and it is a READ, not a migration.
+
+**Caveat stated rather than buried:** guard proximity was measured with a +/-45/65-line window, so a HARD guard in an adjacent branch can be credited to its neighbour. The six above are the trustworthy half -- **no** HARD guard anywhere near them -- and `rf_bonding` was then read by hand and confirmed.
+
+### Verdict: ROUTINE, with two exceptions
+
+Routine because no customer traffic reaches any of them, none is abandoned code, and most fail loudly naming their own migration. The `sql/` files are all `create table if not exists`, so re-running is safe. **Exception 1: `mech_credentials`** -- an auth gate and a credentials table, PR 3.4's class. **Exception 2: the six SOFT-200 tables, `ledger_entries` above all** -- and there the fix may not be the migration at all, it may be confirming the client honours `provisioned: false`.
+
+### THE URGENT THING FOUND ON THE WAY IS NOT ANY OF THE 26
+
+**Both hourly crons are failing in production right now and have been for at least 24 hours.**
+
+    /api/sairndental/send-reminder 502   send-reminder: dnt_appointments list failed 504 {"message":"Gateway Timeout"}
+    /api/alf-alerts                502   alf-alerts: facility sweep read failed, HTTP 504
+
+**19 of 48 firings in 24 hours -- 40%.** The upstream status is **504 from Supabase**: not a missing table, not a code change, the database not answering in time.
+
+**Guardian check 30 exists because this exact cron sent ZERO reminders for months**, returning 500 every hour on a misnamed env var, while everyone believed the feature worked. The failure is loud in the logs and completely silent to anyone not reading them -- which is how the first one lasted months. **This outranks all 26 tables**, it is a separate row, and nothing in this repo can fix a gateway timeout.
