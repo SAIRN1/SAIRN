@@ -1285,6 +1285,16 @@
       "claimed_at_epoch": 1789319640.3549721,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789319891",
+      "session": "hank",
+      "subject": "flaky-fleet-measurement",
+      "task": "first real flip rates on a quiet tree",
+      "claimed_at": "2026-09-13T17:18:11Z",
+      "claimed_at_epoch": 1789319891.7887633,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
