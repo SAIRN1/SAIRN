@@ -1195,6 +1195,16 @@
       "claimed_at_epoch": 1789302013.4451985,
       "status": "released",
       "released_at": "2026-09-13T13:00:33Z"
+    },
+    {
+      "id": "hank-1789304828",
+      "session": "hank",
+      "subject": "record-modification-stamp",
+      "task": "per save site across dental grounds scape",
+      "claimed_at": "2026-09-13T13:07:08Z",
+      "claimed_at_epoch": 1789304828.385498,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
