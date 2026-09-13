@@ -57,7 +57,20 @@ const WIRED = [
 // and a refactor whose only benefit is tidiness is not worth a locked-out
 // customer. Listed so "why is this one different" has an answer on file, and so
 // the count below fails if somebody migrates one without updating this.
-const PRE_EXISTING = ['sd-auth.js', 'sc-auth.js', 'dnt-auth.js', 'mech-auth.js', 'rf-auth.js'];
+// sv-auth.js added 2026-09-13 (Hank) after it arrived by rebase from 29b1f1d5
+// and this suite's accounting assertion went red for EVERY session in every
+// clone -- an auth endpoint that no list mentions. That is the seam check
+// working: it reads the whole tree precisely so somebody else's change cannot
+// land unrecorded.
+//
+// PRE_EXISTING, NOT WIRED, AND THE SUITE IS WHAT DETERMINED THAT. Putting it in
+// WIRED first turned one red into SEVEN: it has its own `set_active`
+// (api/sv-auth.js:383, gated on its own PROVISIONING_ROLES at :310) but does
+// NOT route through api/_lib/employee-lifecycle.js -- `grep -c employee-lifecycle
+// api/sv-auth.js` returns 0. That is exactly the shape of the other five here.
+// The right list was read off the failures rather than guessed a second time.
+const PRE_EXISTING = ['sd-auth.js', 'sc-auth.js', 'dnt-auth.js', 'mech-auth.js',
+                      'rf-auth.js', 'sv-auth.js'];
 
 // Endpoints that still have no way to deactivate a credential at all. This list
 // is the remaining work, written down rather than described, so it can only
