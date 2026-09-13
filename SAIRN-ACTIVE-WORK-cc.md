@@ -1658,3 +1658,31 @@ It recognised only `slice(0,N)` and missed `sd_exec_msgs`' `slice(-500)`. And it
 - **Three extraction bugs in my own suites, all one class.** `function render(){`, `function load(){` and `function updateKPIs(){` each appear in many IIFEs; anchoring on the first match pulls a different panel's copy. Loud when the stubbed element ids differ, **silent when they happen to overlap.** Everything ambiguous is now anchored after each module's own unique `save()`.
 - **A suite that ran against an empty store while failing confidently:** `loadThreats()` reads `THREATS_KEY`, which my sandbox did not pass, so `getItem(undefined)` returned null.
 - **Two escaping bugs** from writing JS string concatenation through a shell heredoc -- `\'` collapsing to `''` and `\n\n` becoming a real line break inside a literal. Caught by `node --check`, not by reading.
+
+---
+
+## 2026-09-13 -- the two caps were already closed; the coverage behind one was not
+
+**Both items raised as open were fixed in `ef04c0ee`** -- `sd_exec_msgs` through `sdCapLocalTail()` and `sd_photos` through `sdCapLocal()`, both on origin and live. **Verified against the deployed file before touching anything**, not from memory. My earlier report said the rewrite *found* the seventh cap without saying plainly that the same commit *fixed* it; that reads as unclosed and it was my wording.
+
+**What was genuinely unclosed was the coverage behind one of them.** `sdCapLocal()` shipped with four behavioural arms. `sdCapLocalTail()`, added the same day, had **one, and it was source-level**: that `execSend()` calls it. **Nothing had ever watched it exempt a row.**
+
+**A helper with a source-level arm and no behavioural one is the same shape as a checker nobody has seen fail** -- it looks covered and is not, and the asymmetry with its own sibling is exactly how that goes unnoticed. Four arms added (`0f9dd05d`), one specific to the variant: it asserts the cap keeps the **NEWEST** entries, because getting that backwards would silently discard the most recent 498 messages in the executive channel while every other assertion in the file stayed green. Proven to bite by stripping the registration out.
+
+### The line that hid six collections is now loud, in the two apps that were silent
+
+Every app's sync seam skips rows with no `id`. Correct -- there is nothing to key an upsert on. **Two of five did it silently**, so a collection that had never once reached the server looked exactly like one backed up on every save. That is what cost StoneDesk six collections yesterday, found by reading writers one at a time -- **not a method that scales to the next one**.
+
+**Measured across all five before changing anything, and my first pass was wrong in the permissive direction again:** a keyword scan reported SAIRNbuild and SAIRNvet as having **no id guard at all**, and reading them showed both do. Another blind zero, caught by distrusting a result that looked too convenient.
+
+| app | mechanism | before |
+|---|---|---|
+| SAIRNfreedom | counts and warns | already covered |
+| SAIRNvet | counts and warns | already covered |
+| SAIRNbiz | back-fills ids | covered -- nothing is ever skipped |
+| **StoneDesk** | **neither** | **fixed** |
+| **SAIRNbuild** | **neither, 30 collections** | **fixed** |
+
+Copied from `sfSyncCollection()` rather than invented, so four apps say the same thing about the same condition. **One line per collection per save, not one per row** -- 400 idless rows would otherwise produce 400 identical warnings and get muted, which is its own way of saying nothing.
+
+**The last arm is the point of the file:** `tests/idless_rows_are_reported.js` **derives** the set of apps carrying a `*SyncCollection` seam from the files and fails if it disagrees with its own table -- so a sixth app cannot grow one and default to silence. Each app is checked against the mechanism it actually uses rather than a single shape it would have to be bent into. Assertions read a **comment-stripped** body: every one of these functions now carries a paragraph explaining the warning, and a check counting those would pass on a file whose code had lost the counter.
