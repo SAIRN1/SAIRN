@@ -2037,6 +2037,66 @@ function sdSyncCollection(key,next,prev){
       }
     });
   });
+  // ── REMOVALS (2026-09-13) ──────────────────────────────────────────────
+  // THE OTHER HALF OF A BACKUP, AND IT WAS MISSING FOR ALL TWENTY-ONE OF
+  // THESE COLLECTIONS. This function pushed writes and nothing else, so a row
+  // deleted in a panel simply stopped being pushed -- its server row was never
+  // touched. And sdHydrateAll() merges the server's rows back in BY ID and
+  // never deletes, so the record REAPPEARED on the next load. Every
+  // invDeleteInvoice(), photoDelete(), commsDelete(), finDeleteJob(),
+  // tmDeleteRecord() and the rest had that shape: a deletion the user watched
+  // succeed, already scheduled to undo itself. Identical to the sd_customers
+  // defect found 2026-09-12, twenty-one times over.
+  //
+  // The api/sd-data.js soft_delete branch and its `data->>_deleted_at=is.null`
+  // read filter have existed since 2026-09-08. Only the CALL was missing --
+  // twenty-one verbs declared in api/_resources/stonedesk.js that nothing in
+  // the product ever invoked.
+  //
+  // DONE HERE RATHER THAN IN TWENTY-ONE PANELS, deliberately. This is already
+  // the seam every write goes through, it is keyed by the same storage key, and
+  // the diff it needs is the one it already computes. Editing twenty-one
+  // handlers would be the bulk find-replace CLAUDE.md forbids, would miss the
+  // twenty-second when somebody adds it, and would put the same five lines in
+  // twenty-one places to drift apart.
+  //
+  // A REMOVAL IS ONLY A REMOVAL WHEN THIS DEVICE HELD THE ROW. `prev` null
+  // means localStorage had nothing -- a first run, or a cleared cache -- and
+  // treating that as "the user deleted everything" would wipe the server from
+  // a browser that had simply never loaded. Checked rather than assumed: every
+  // save site for these keys passes the FULL collection array, never a filtered
+  // view, so a missing id is a real deletion and not a narrowed list.
+  if(!Array.isArray(prev)) return;
+  var present={};
+  next.forEach(function(r){
+    if(r&&r.id!==undefined&&r.id!==null&&r.id!==''){ present[String(r.id)]=true; }
+  });
+  Object.keys(before).forEach(function(id){
+    if(present[id]) return;
+    sdData('soft_delete',key,{id:id}).then(function(done){
+      // A FAILED DELETE IS THE DANGEROUS DIRECTION HERE, not the harmless one.
+      // The local removal has already happened, so this row is now absent here
+      // and present on the server -- which is exactly the state sdHydrateAll()
+      // turns back into a resurrection on the next load. Silence would make
+      // that look like a deletion that worked.
+      if(done===null){
+        try{ console.warn('StoneDesk backup: "'+key+'" record '+id+' was deleted on this device but NOT on the server. It may reappear on the next load.'); }catch(e){}
+        // AND SAID ON SCREEN, which a failed WRITE deliberately is not. The two
+        // are not symmetric. A write that does not land leaves the record where
+        // the user can still see it, and re-saving retries -- so a console line
+        // is proportionate. A delete that does not land makes the record VANISH
+        // FROM THE SCREEN while it survives on the server, and the next load
+        // brings it back with nothing to explain it. The user has to be told
+        // while they still remember deleting it.
+        //
+        // Guarded rather than assumed: sdSyncCollection() is lifted out and
+        // driven on its own by the suites, where notify() is not in the realm,
+        // and a reporter that throws would reject the promise and lose the
+        // console line above it as well.
+        try{ if(typeof notify==='function'){ notify('That deletion did not reach the server, so it may come back on the next load.','warn'); } }catch(e){}
+      }
+    });
+  });
 }
 window.sdSyncCollection=sdSyncCollection;
 
@@ -5900,7 +5960,25 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     'sd_it_tickets','sd_it_licenses'];
   function sdClearSafeDemoData(){
     stRaw('sd_demo_cleared','1');
-    SAFE_DEMO_KEYS.forEach(function(k){st(k,[]);});
+    // ── SUPPRESSED, AND ONLY ONE KEY HERE IS EVEN AFFECTED ─────────────────
+    // sdSyncCollection() learned to propagate removals on 2026-09-13, and this
+    // loop writes `[]` over every demo key. Exactly ONE of the 33 is in
+    // SD_SYNCED -- `sd_comms` -- so without this guard, clearing demo data
+    // would soft-delete that collection's rows on the server too.
+    //
+    // A BULK WIPE IS NOT A USER DELETING A RECORD, which is the same
+    // distinction sdSyncSuppressed already draws for seeding and hydration:
+    // "demo data is not the customer's business record". Clearing the local
+    // demo set must not reach through and remove server rows that a real
+    // licence may legitimately hold under the same key.
+    //
+    // The flag is restored in a `finally` so a throw part-way through cannot
+    // leave every later save silently un-backed-up -- a suppression that stays
+    // on is a backup that has stopped without saying so.
+    var wasSuppressed=sdSyncSuppressed;
+    sdSyncSuppressed=true;
+    try{ SAFE_DEMO_KEYS.forEach(function(k){st(k,[]);}); }
+    finally{ sdSyncSuppressed=wasSuppressed; }
   }
   window.sdClearDemoDataConfirmed=function(){
     sdClearSafeDemoData();
