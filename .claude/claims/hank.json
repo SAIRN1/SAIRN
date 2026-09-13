@@ -1403,8 +1403,8 @@
       "task": "item 26 fmea prediction loop wiring on register add",
       "claimed_at": "2026-09-13T23:03:55Z",
       "claimed_at_epoch": 1789340635.6568356,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T23:17:32Z"
     }
   ]
 }
