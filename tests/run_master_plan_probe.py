@@ -195,6 +195,44 @@ try:
 finally:
     shutil.rmtree(d, ignore_errors=True)
 
+# ── 7. THE STACK-UP: A BOUND, NOT A SCORE ───────────────────────────────────
+# The itemized table names every contributor and still never says what the
+# CHAIN can be off by. These arms hold the two properties that make the bound
+# honest rather than decorative.
+print('')
+print('7. the worst-case bound, and RSS beside it')
+if doc:
+    check('WORST CASE:' in doc, 'the document publishes a worst-case bound')
+    check('RSS for context:' in doc, '...and an RSS figure beside it for context')
+    import re as _re
+    m = _re.search(r'\*\*WORST CASE: (\d+)\.\*\* RSS for context: (\d+)\.', doc)
+    check(m is not None, 'both numbers are readable from the document')
+    if m:
+        worst, rss = int(m.group(1)), int(m.group(2))
+        # THE INEQUALITY IS THE WHOLE POINT. RSS below the sum is what says the
+        # two are different combinations rather than the same number printed
+        # twice -- and if they ever coincide, one contributor dominates so
+        # completely that the others round away, which is worth seeing.
+        check(rss <= worst, 'RSS (%d) never exceeds the worst case (%d)' % (rss, worst))
+        check(worst > 0, 'a bound of zero would mean every classifier is exact, which none is')
+    # A BUDGET THAT FLATTERED THE PLATFORM WOULD BE WORTH LITTLE. Every
+    # contributor errs the same way, and the document must say so -- a reader
+    # who thinks the error is two-sided will read the table as a confidence
+    # interval, which it is not.
+    check('UNDER-count' in doc or 'UNDER-counts' in doc,
+          'the direction of every contributor is stated')
+    check('cannot overstate' in doc,
+          '...and that the document can only understate, never flatter')
+    # RSS PRESENTED AS THE ANSWER WOULD BE THE COLLAPSE THIS DOCUMENT REFUSES
+    # EVERYWHERE ELSE. It is context; the worst case is the number to act on.
+    check('is NOT the answer' in doc and 'act on the worst case' in doc,
+          'RSS is labelled as context, not as the verdict')
+    # A ZERO CONTRIBUTOR IS A FINDING, NOT AN OMISSION.
+    check('no contribution' in doc,
+          'a contributor of zero is listed rather than dropped')
+    check('contributes ZERO and is listed anyway' in doc,
+          '...and the reason it is listed is written down')
+
 print('')
 if fails:
     print('%d FAILING CHECK(S)' % len(fails))

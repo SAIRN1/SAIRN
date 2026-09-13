@@ -53,6 +53,7 @@ Exit 0 clean / 1 the document is out of date / 2 could not derive.
 """
 import io
 import json
+import math
 import os
 import re
 import subprocess
@@ -218,6 +219,109 @@ def suites_by_app(tests, names):
     return out
 
 
+
+# ── THE STACK-UP: A WORST-CASE BOUND, AND RSS BESIDE IT FOR CONTEXT ────────
+# Added 2026-09-13 on Michael's call, as a REAL GAP the itemized table does not
+# close. Convention 3 gets you a row per contributor, each naming its source.
+# That is necessary and it is not sufficient: a reader can see every
+# contributor and still not know what the CHAIN can be off by, which is the
+# question "is this vertical finished?" actually asks.
+#
+# WORST CASE IS THE BOUND. The four gates are a CONJUNCTION -- FINISHED means
+# all four -- so the honest statement about a vertical is the sum of what each
+# column could be wrong by, not an average of them. Every one of these
+# classifiers errs in ONE known direction, which is what makes a bound possible
+# at all:
+#
+#   suites    UNDER-counts. Path-name attribution only; a test covering an app
+#             without saying so in its filename is invisible.
+#   traced    UNDER-counts. A test proved by something that names neither it
+#             nor a requirement is not tied to one.
+#   fault     UNDER-counts. Declaration-only: a parseable MUTATIONS block or a
+#             *_fault_probe.py name. mutation_anchor_check records four of six
+#             probes it could not sweep for exactly this reason.
+#   tiered    Binary and complete -- criticality_tier_check either raised
+#             something for the app or did not. It contributes NOTHING to the
+#             bound, and saying so is the point of an itemized budget: a
+#             contributor of zero is a finding about where the error is NOT.
+#
+# ALL THREE ERR THE SAME WAY, WHICH IS THE FINDING. They under-count, so the
+# document UNDERSTATES coverage, never overstates it. A budget on a status
+# document that flattered the platform would be worth very little; this one can
+# only ever say "at least this good".
+#
+# RSS IS SHOWN, AND IS NOT THE ANSWER. Root-sum-square is the right combination
+# when contributors are INDEPENDENT and can cancel -- which is a statement about
+# measurement noise, not about these. A test missing from `suites` because of
+# its filename is very often the same test missing from `traced`, so the errors
+# CORRELATE and RSS understates. It is printed because the gap between the two
+# numbers is itself informative: a wide gap means one contributor dominates and
+# fixing that one moves the bound; a narrow gap means they are evenly spread.
+# **Where they disagree, the worst case is the one to act on.**
+#
+# THE UNITS ARE RESOURCES AND FILES, NOT A PERCENTAGE. A single combined
+# percentage is exactly the collapse this document refuses elsewhere.
+def _stackup(names, res, suites, cited, faults, tier_problems, tests):
+    """One row per contributor: what it could be understating, and by how much.
+
+    Every figure is COUNTABLE rather than estimated. `suites` and `traced` are
+    bounded by what is actually on disk and unattributed; `fault` by the probes
+    that mutate real source without declaring it in a form the parser reads.
+    Nothing here is a guess dressed as a measurement.
+    """
+    import os
+    import re
+    rows = []
+
+    # suites: test files on disk attributed to NO app. Every one of them is a
+    # file that could belong to a vertical and is not counted against it.
+    unattributed = [t for t in tests if TM.app_of(t, names) == 'PLATFORM']
+    rows.append(('suites', len(unattributed), 'under',
+                 'test files on disk attributed to no single app by path'))
+
+    # traced: files on disk that no source ties to a requirement. The matrix
+    # publishes this same number as its headline gap.
+    untraced = [t for t in tests if t not in cited]
+    rows.append(('traced', len(untraced), 'under',
+                 'test files no source ties to a stated requirement'))
+
+    # fault: probes that WRITE to a tracked app file but declare neither a
+    # parseable MUTATIONS block nor a *_fault_probe.py name. Counted, not
+    # assumed -- these are the ones the declaration rule provably cannot see.
+    undeclared = 0
+    root = os.path.join(REPO, 'tests')
+    WRITE = re.compile(r"open\([^)]*,\s*['\"]w[b]?['\"]")
+    declared = set()
+    for v in faults.values():
+        declared.update(v)
+    for dirpath, dirs, files in os.walk(root):
+        dirs[:] = [d for d in dirs if d != '__pycache__']
+        for f in files:
+            if not f.endswith(('.py', '.js')):
+                continue
+            rel = os.path.relpath(os.path.join(dirpath, f), REPO).replace(os.sep, '/')
+            if rel in declared:
+                continue
+            try:
+                body = io.open(os.path.join(dirpath, f), encoding='utf-8',
+                               errors='replace').read()
+            except IOError:
+                continue
+            if not (WRITE.search(body) or 'writeFileSync' in body):
+                continue
+            if any((a + '.html') in body for a in names):
+                undeclared += 1
+    rows.append(('fault', undeclared, 'under',
+                 'test files that write to a tracked app file and declare neither '
+                 'a MUTATIONS block nor a *_fault_probe.py name'))
+
+    # tiered contributes zero, and that is a result rather than an omission.
+    rows.append(('tiered', 0, 'none',
+                 'binary and complete -- criticality_tier_check either raised '
+                 'something for an app or did not'))
+    return rows
+
+
 def build():
     names = TM.apps()
     tests = TM.all_tests()
@@ -369,6 +473,46 @@ def build():
       % len(fault_declarers))
     W('- **`tiered` means `criticality_tier_check.py` raised nothing**, which '
       'is a completeness check, not a judgement about whether a tier is right.')
+    W('')
+    W('### The stack-up — a worst-case bound, with RSS beside it')
+    W('')
+    W('The table above names every contributor, which is necessary and is not '
+      'enough: a reader can see all four columns and still not know what the '
+      'CHAIN can be off by, which is the question "is this vertical finished?" '
+      'actually asks. FINISHED is a CONJUNCTION of four gates, so the honest '
+      'statement is the SUM of what each column could be wrong by — not an '
+      'average, and not a single combined percentage, which is the collapse '
+      'this document refuses everywhere else.')
+    W('')
+    W('| Contributor | Could be understating by | Direction | What that figure counts |')
+    W('|---|---|---|---|')
+    stack = _stackup(names, res, suites, cited, faults, tier_problems, tests)
+    for name, amount, direction, what in stack:
+        W('| `%s` | %d | %s | %s |'
+          % (name, amount, {'under': 'UNDER-counts', 'none': 'no contribution'}[direction], what))
+    W('')
+    worst = sum(a for _n, a, d, _w in stack if d != 'none')
+    rss = int(round(math.sqrt(sum(a * a for _n, a, d, _w in stack if d != 'none'))))
+    W('**WORST CASE: %d.** RSS for context: %d.' % (worst, rss))
+    W('')
+    W('**All three contributors err in the SAME direction — they UNDER-count — '
+      'so this document understates coverage and cannot overstate it.** A '
+      'budget on a status page that flattered the platform would be worth very '
+      'little; this one can only ever say "at least this good".')
+    W('')
+    W('**RSS is shown and is NOT the answer.** Root-sum-square is right when '
+      'contributors are independent and can cancel, which is a statement about '
+      'measurement noise rather than about these: a test missing from `suites` '
+      'because of its filename is very often the same test missing from '
+      '`traced`, so the errors correlate and RSS understates. It is printed '
+      'because the GAP between the two numbers is itself informative — wide '
+      'means one contributor dominates and fixing that one moves the bound, '
+      'narrow means they are evenly spread. **Where they disagree, act on the '
+      'worst case.**')
+    W('')
+    W('`tiered` contributes ZERO and is listed anyway. A contributor of nothing '
+      'is a finding about where the error is NOT, and dropping it would leave a '
+      'reader to assume it was forgotten.')
     W('')
     W('---')
     W('')

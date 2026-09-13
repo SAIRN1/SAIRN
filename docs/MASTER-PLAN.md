@@ -62,6 +62,25 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 - **`fault` is a FLOOR of 8 declared probes, not a census.** A probe counts only if it declares a parseable `MUTATIONS` block or is named `*_fault_probe.py`. A probe that mutates real source while declaring neither is not counted, and `tools/mutation_anchor_check.py` records that four of six could not be swept on 2026-09-11 for exactly that reason. **The previous hand-written figure of 14 was higher and rested on a rule nobody can reconstruct** — an early draft of this generator reproduced that kind of number by accident, crediting StoneDesk with 19 including a probe written that morning which plants nothing at all.
 - **`tiered` means `criticality_tier_check.py` raised nothing**, which is a completeness check, not a judgement about whether a tier is right.
 
+### The stack-up — a worst-case bound, with RSS beside it
+
+The table above names every contributor, which is necessary and is not enough: a reader can see all four columns and still not know what the CHAIN can be off by, which is the question "is this vertical finished?" actually asks. FINISHED is a CONJUNCTION of four gates, so the honest statement is the SUM of what each column could be wrong by — not an average, and not a single combined percentage, which is the collapse this document refuses everywhere else.
+
+| Contributor | Could be understating by | Direction | What that figure counts |
+|---|---|---|---|
+| `suites` | 263 | UNDER-counts | test files on disk attributed to no single app by path |
+| `traced` | 196 | UNDER-counts | test files no source ties to a stated requirement |
+| `fault` | 20 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
+| `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
+
+**WORST CASE: 479.** RSS for context: 329.
+
+**All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
+
+**RSS is shown and is NOT the answer.** Root-sum-square is right when contributors are independent and can cancel, which is a statement about measurement noise rather than about these: a test missing from `suites` because of its filename is very often the same test missing from `traced`, so the errors correlate and RSS understates. It is printed because the GAP between the two numbers is itself informative — wide means one contributor dominates and fixing that one moves the bound, narrow means they are evenly spread. **Where they disagree, act on the worst case.**
+
+`tiered` contributes ZERO and is listed anyway. A contributor of nothing is a finding about where the error is NOT, and dropping it would leave a reader to assume it was forgotten.
+
 ---
 
 ## Gate 1 — live migration status
