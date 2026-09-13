@@ -230,6 +230,13 @@ def measure(led, runs=RUNS_PER_MEASURE):
         # only the current tree's -- a flip measured across an edit is the tool
         # noticing the edit, which is the tool working.
         e['observations'] = [o for o in e['observations'] if o.get('tree') == th][-40:]
+        # SAVED AFTER EVERY CHECKER, not once at the end. A full pass is ~200
+        # subprocess runs and outran a 560-second window twice; the whole
+        # measurement was then lost, because the single save at the end never
+        # ran. Evidence that only lands if the process is allowed to finish is
+        # evidence this repo will never actually gather -- the sessions here get
+        # interrupted constantly. A partial pass now contributes what it managed.
+        save_ledger(led)
     return len(tools)
 
 
@@ -290,7 +297,24 @@ def main(argv):
         by = {}
         for r in rows:
             by.setdefault(r['verdict'], []).append(r)
-        print('  checkers with evidence: %d' % len(rows))
+        # COVERAGE DISCLOSURE. A partial pass that reports only what it reached
+        # reads as a clean fleet -- the shape docs/SAIRN-PROCESS-RULES.md 1.7
+        # names. The registered-but-unmeasured checkers are counted and listed.
+        try:
+            registered = set(registry_tools())
+        except Exception:
+            registered = set()
+        measured = set(r['tool'] for r in rows)
+        unmeasured = sorted(registered - measured)
+        print('  checkers with evidence: %d of %d registered'
+              % (len(rows), len(registered) or len(rows)))
+        if unmeasured:
+            print('  NOT MEASURED AT ALL   : %d  <- READ THIS BEFORE THE ROWS BELOW.'
+                  % len(unmeasured))
+            print('     A partial pass that reports only what it reached reads as a')
+            print('     clean fleet. These have no evidence either way:')
+            for t in unmeasured:
+                print('       %s' % t)
         for v in ('QUARANTINE', 'WATCH', 'STABLE', 'TOO-FEW-RUNS'):
             note = {'QUARANTINE': '  <- flipped on unchanged code past the bar',
                     'WATCH': '  <- flipped at least once; alarm is TIGHTER than the bar',
