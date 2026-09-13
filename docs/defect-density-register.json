@@ -1276,6 +1276,32 @@
       "citation_note": "a git identity leaking from one clone's local config. Real, and no standing rule names it."
     },
     {
+      "commit": "d66a87e64fc7",
+      "date": "2026-09-13",
+      "subject": "feat(push-gate): check 11 -- a raw control byte in what this push ships is refused",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check11_probe.py",
+        "tools/control_char_check.py",
+        "tools/report_only_checks.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 409,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "control_char_check promoted to push-gate check 11: a raw control byte is an escape typed literally, and a backspace where a word boundary was meant is a regex that can never match -- six instances across the fleet, two of them privilege guards that could not fail",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
+    },
+    {
       "commit": "d6b3f6e929ec",
       "date": "2026-09-13",
       "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
@@ -1352,6 +1378,25 @@
       ],
       "citation_confidence": "arguable",
       "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case"
+    },
+    {
+      "commit": "e6130cf81728",
+      "date": "2026-09-13",
+      "subject": "fix(tests): check 11 runs before check 1, and the refspec sandbox stubbed neither",
+      "files": [
+        "tests/push_gate/refspec_and_override_probe.py"
+      ],
+      "lines_added": 10,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "fault-injection",
+      "summary": "a hand-built probe sandbox stubs only the tools its own arm needs, so a NEW gate check that correctly refuses a missing tool denied before the arm under test ever ran -- four arms went red for a reason unrelated to their subject",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "clean"
     }
   ]
 }
