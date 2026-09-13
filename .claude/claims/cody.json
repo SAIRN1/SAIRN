@@ -1057,8 +1057,8 @@
       "task": "truthy sum check string literal concatenation is not a numeric fold",
       "claimed_at": "2026-09-13T16:34:50Z",
       "claimed_at_epoch": 1789317290.6159327,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T18:05:10Z"
     }
   ]
 }
