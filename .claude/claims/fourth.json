@@ -970,8 +970,8 @@
       "task": "tolerance stack-up and closing-error scoping master-plan derived numbers",
       "claimed_at": "2026-09-13T15:44:52Z",
       "claimed_at_epoch": 1789314292.484776,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T15:50:45Z"
     }
   ]
 }
