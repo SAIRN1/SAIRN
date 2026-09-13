@@ -2015,11 +2015,44 @@ function init(){
 // Real conflict resolution (updated_at-based) and tombstoned deletes are
 // tracked as separate, deliberately deferred follow-up work. Identical fix
 // applied to sairnscape.html's scpSyncFromServer the same day.
-function grdMergeById(local, serverArr){
+// A STABLE STRING FOR A RECORD -- keys sorted at every level, so two objects
+// with the same fields in a different insertion order compare equal. Plain
+// JSON.stringify would report every record as changed.
+function grdStableStr(v){
+  if(v===null||typeof v!=='object')return JSON.stringify(v)||'null';
+  if(Array.isArray(v))return '['+v.map(grdStableStr).join(',')+']';
+  return '{'+Object.keys(v).sort().map(function(k){
+    return JSON.stringify(k)+':'+grdStableStr(v[k]);
+  }).join(',')+'}';
+}
+// ── THE SERVER STILL WINS. IT JUST STOPS DOING IT SILENTLY (2026-09-13) ────
+// The comment above calls updated_at-based conflict resolution deferred work,
+// and it still is. What was NOT acceptable is that the replacement happened
+// with no error, no toast and no console line -- an edit made on this device
+// since the last sync was destroyed and nothing said so.
+//
+// IT IS NOT updated_at RESOLUTION AND DOES NOT PRETEND TO BE. Measured rather
+// than assumed: no record in this app carries a modification timestamp, the
+// server's `updated_at` is a COLUMN and the generic read is `select=data`, so
+// it never reaches the client. A merge comparing local.updated_at with
+// sr.updated_at would compare undefined with undefined on every record and
+// resolve server-wins exactly as before, while LOOKING like a fix.
+//
+// `conflicts` is an optional out-array -- a caller passing nothing gets the
+// previous signature and previous behaviour, unchanged.
+function grdMergeById(local, serverArr, conflicts){
   var merged=local.slice();
   serverArr.forEach(function(sr){
     var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
-    if(idx>=0)merged[idx]=sr;else merged.push(sr);
+    if(idx>=0){
+      if(conflicts){
+        var lr=merged[idx];
+        // Only a DIFFERENCE counts. The common case is the server returning
+        // the row this device pushed, byte-identical.
+        if(lr&&grdStableStr(lr)!==grdStableStr(sr))conflicts.push(sr.id);
+      }
+      merged[idx]=sr;
+    }else merged.push(sr);
   });
   return merged;
 }
@@ -2050,11 +2083,27 @@ async function grdSyncFromServer(){
     ['msb_sale_hours','msb_sale_hours'],
     ['grd_rounds','grd_rounds'],['grd_cart_orders','grd_cart_orders']];
   var changed=false;
+  // Records whose LOCAL copy differed from the server's and was replaced.
+  // Collected across the whole sweep and reported once -- a toast per resource
+  // on a sweep this size is a toast nobody reads.
+  var overwritten=[];
   for(var i=0;i<resources.length;i++){
     var res=await grdData('read',resources[i][0],{});
     if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
-      st(resources[i][1],grdMergeById(ld(resources[i][1],[]),res.data));changed=true;
+      var conf=[];
+      st(resources[i][1],grdMergeById(ld(resources[i][1],[]),res.data,conf));changed=true;
+      if(conf.length)overwritten.push({key:resources[i][1],ids:conf});
     }
+  }
+  // A LOCAL EDIT THE SERVER REPLACED IS TOLD TO THE PERSON IT HAPPENED TO.
+  if(overwritten.length){
+    var lost=overwritten.reduce(function(n,o){return n+o.ids.length;},0);
+    try{ console.warn('SAIRNgrounds sync: '+lost+' record(s) on this device were '+
+      'REPLACED by a different version from the server -- '+
+      overwritten.map(function(o){return o.key+': '+o.ids.join(', ');}).join(' | ')); }catch(e){}
+    if(typeof toast==='function')toast(lost+' record'+(lost===1?'':'s')+' on this device '+
+      (lost===1?'was':'were')+' replaced by the server’s version. If you edited '+
+      (lost===1?'it':'them')+' here and had not synced, re-enter the change.',8000);
   }
   if(changed){
     fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();rInv();rDreamClose();

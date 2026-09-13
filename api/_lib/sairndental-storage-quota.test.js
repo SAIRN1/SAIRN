@@ -166,20 +166,48 @@ function build(store, logs) {
 // sdnData/rDash/a dozen renderers -- driving it would mean stubbing so much
 // that the stubs, not the code, would be under test.
 const SYNC = fn('async function dntSyncFromServer()');
+// UPDATED 2026-09-13 when dntMergeById gained its optional conflicts
+// out-array. The PROPERTY this arm exists for is unchanged and is what is
+// asserted: `changed=true` happens only inside the `if(st(...))`, and the
+// else-branch collects the key. The previous pattern pinned the exact
+// argument list too, so adding a third argument broke an arm that was still
+// describing correct code. Pinned loosely enough to survive an argument,
+// tightly enough that moving `changed=true` out of the if-branch fails it.
 check('`changed` is set ONLY when the write landed -- it used to be unconditional',
-  /if\(st\(key,dntMergeById\(ld\(key,\[\]\),serverData\)\)\) changed=true;\s*\n\s*else storageFailures\.push\(key\);/.test(SYNC), true);
+  /if\(st\(key,dntMergeById\([^\n]*\{\s*\n\s*changed=true;/.test(SYNC) &&
+  /else storageFailures\.push\(key\);/.test(SYNC), true);
 check('the settings write is checked the same way',
   /if\(st\('dnt_settings_obj',serverSettings\)\) changed=true;/.test(SYNC), true);
 check('and so is the credential-rules write',
   /if\(st\('dnt_cred_rules_list',ruleData\)\) changed=true;/.test(SYNC), true);
-check('every storage failure is collected, not counted into the network total',
-  (SYNC.match(/storageFailures\.push\(/g) || []).length, 3);
+// ── THESE TWO ASSERTED A HARDCODED 3 AND HAD BEEN RED SINCE THE SWEEP GREW
+// ── TO 5. Corrected 2026-09-13; the failure was the ASSERTION, not the code.
+// The sweep gained dnt_vendor_contacts, dnt_vendor_pricing_rules and
+// dnt_cred_rules_list after this suite was written, so both counts moved 3 -> 5
+// and neither number was updated. Nothing was wrong with sairndental.html.
+//
+// A count pinned in a second file is the number-in-two-places shape
+// (docs/SAIRN-PROCESS-RULES.md 2.3): it goes stale on the next correct change
+// and then reads as a defect. So what is asserted now is the INVARIANT that
+// actually matters and that survives the sweep growing -- every network-failure
+// branch has a storage-failure counterpart, and the two counters are never
+// incremented from the same site. The current figure is printed rather than
+// demanded.
+const STORAGE_SITES = (SYNC.match(/storageFailures\.push\(/g) || []).length;
+const NETWORK_SITES = (SYNC.match(/failureCount\+\+/g) || []).length;
+check('every resource group has BOTH a storage-failure and a network-failure ' +
+      'branch -- the invariant, rather than a number that goes stale (now ' +
+      STORAGE_SITES + ' each)',
+  STORAGE_SITES === NETWORK_SITES && STORAGE_SITES >= 3, true);
+check('the two counters are never incremented from the same line -- a storage ' +
+      'failure absorbed into the network total gets the wrong message and the ' +
+      'wrong fix',
+  SYNC.split('\n').some((l) => /storageFailures\.push\(/.test(l) && /failureCount\+\+/.test(l)),
+  false);
+check('every storage failure is collected in an ELSE branch, not counted inline',
+  (SYNC.match(/else storageFailures\.push\(/g) || []).length, STORAGE_SITES);
 check('the result carries them out, so a caller can report them',
   /storage_failures:storageFailures, storage_full:dntQuotaHit/.test(SYNC), true);
-// The network failure count must NOT absorb storage failures -- they need
-// different messages and different fixes.
-check('failureCount still has exactly its three network sites, unchanged',
-  (SYNC.match(/failureCount\+\+/g) || []).length, 3);
 check('failureCount is incremented only in the non-array (network) branches',
   /\}else\{\s*\n\s*failureCount\+\+;/.test(SYNC), true);
 

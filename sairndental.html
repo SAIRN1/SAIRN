@@ -5310,11 +5310,53 @@ function rDash(){
 // removed. Disclosed to staff via the updated toast text (Task 4), not
 // silently hidden. Real tombstoned deletes are separate, larger,
 // deferred work.
-function dntMergeById(local, serverArr){
+// A STABLE STRING FOR A RECORD, so "did this change" is answerable without a
+// timestamp. Plain JSON.stringify is not enough: two objects with the same
+// fields in a different insertion order produce different strings and every
+// record would look changed. Keys are sorted at every level.
+function dntStableStr(v){
+  if(v===null||typeof v!=='object')return JSON.stringify(v)||'null';
+  if(Array.isArray(v))return '['+v.map(dntStableStr).join(',')+']';
+  return '{'+Object.keys(v).sort().map(function(k){
+    return JSON.stringify(k)+':'+dntStableStr(v[k]);
+  }).join(',')+'}';
+}
+// ── THE SERVER STILL WINS. IT JUST STOPS DOING IT SILENTLY (2026-09-13) ────
+// This replaced the local record with the server's and said nothing, so an
+// edit made on this device since the last sync was destroyed with no error,
+// no toast and no console line. That is active data loss, not a stale view.
+//
+// WHAT THIS DOES NOT DO, STATED PLAINLY BECAUSE THE HONEST VERSION MATTERS:
+// it is NOT `updated_at`-based conflict resolution. It cannot be yet --
+// MEASURED, not assumed: no record in this app carries a modification
+// timestamp (zero record-level `updated_at`/`_ts` assignments in the file),
+// the server's `updated_at` is a COLUMN and the generic read is `select=data`,
+// so it never reaches the client at all. A merge written to compare
+// `local.updated_at` with `sr.updated_at` would compare undefined with
+// undefined on every record, resolve server-wins exactly as before, and LOOK
+// like conflict resolution. That is the fake fix this deliberately is not.
+//
+// So the resolution rule is unchanged and still documented -- server wins for
+// a given id, which the on_conflict upsert already made true. What changes is
+// that a REPLACEMENT OF DIFFERING CONTENT IS NOW COUNTED AND REPORTED, so the
+// loss is visible to the person it happened to.
+//
+// `conflicts` is an optional out-array: existing callers that pass nothing
+// keep the old signature and behaviour exactly.
+function dntMergeById(local, serverArr, conflicts){
   var merged=local.slice();
   serverArr.forEach(function(sr){
     var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
-    if(idx>=0)merged[idx]=sr;else merged.push(sr);
+    if(idx>=0){
+      if(conflicts){
+        var lr=merged[idx];
+        // Only a DIFFERENCE counts. The overwhelmingly common case is the
+        // server returning the row this device pushed, byte-identical, and
+        // reporting that as a conflict would bury the real ones.
+        if(lr&&dntStableStr(lr)!==dntStableStr(sr))conflicts.push(sr.id);
+      }
+      merged[idx]=sr;
+    }else merged.push(sr);
   });
   return merged;
 }
@@ -5370,6 +5412,9 @@ async function dntSyncFromServer(){
   // server. Reported, never silent: a sync that deliberately did not take the
   // server's answer has to say so, or it looks like a sync that agreed.
   var unconfirmedHeld=[];
+  // Records whose LOCAL copy differed from the server's and was replaced. See
+  // dntMergeById() -- server-wins is unchanged; this is the disclosure of it.
+  var overwritten=[];
   for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
     var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
     var serverData=await sdnData('read',resource,{});
@@ -5379,7 +5424,13 @@ async function dntSyncFromServer(){
         // unconditionally, so a failed write still triggered a full re-render
         // -- from ld(), which returns the OLD data. The screen refreshed itself
         // back to stale and called it a sync.
-        if(st(key,dntMergeById(ld(key,[]),serverData))) changed=true;
+        // Conflicts are collected PER RESOURCE and reported once at the end.
+        // A toast per resource on a 18-resource sweep is a toast nobody reads.
+        var conf=[];
+        if(st(key,dntMergeById(ld(key,[]),serverData,conf))){
+          changed=true;
+          if(conf.length)overwritten.push({key:key,ids:conf});
+        }
         else storageFailures.push(key);
       }
     }else{
@@ -5468,9 +5519,22 @@ async function dntSyncFromServer(){
     // panel nobody is looking at.
     if($('panel-credentials')&&$('panel-credentials').classList.contains('on'))refreshCredentialBoard();
   }
+  // A LOCAL EDIT THAT THE SERVER REPLACED IS TOLD TO THE PERSON IT HAPPENED
+  // TO. Rendered here rather than left to each caller: this is the only place
+  // that knows the whole sweep's result, and a per-resource toast on an
+  // 18-resource sweep is a toast nobody reads.
+  if(overwritten.length){
+    var lost=overwritten.reduce(function(n,o){return n+o.ids.length;},0);
+    try{ console.warn('SAIRNdental sync: '+lost+' record(s) on this device were '+
+      'REPLACED by a different version from the server -- '+
+      overwritten.map(function(o){return o.key+': '+o.ids.join(', ');}).join(' | ')); }catch(e){}
+    toast(lost+' record'+(lost===1?'':'s')+' on this device '+(lost===1?'was':'were')+
+      ' replaced by the server’s version. If you edited '+(lost===1?'it':'them')+
+      ' here and had not synced, re-enter the change.',8000);
+  }
   return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2,
           storage_failures:storageFailures, storage_full:dntQuotaHit,
-          unconfirmed_held:unconfirmedHeld};
+          unconfirmed_held:unconfirmedHeld, overwritten:overwritten};
 }
 
 // The honest sentence for a sync that reached the server and could not keep
