@@ -25,6 +25,11 @@ asserted to stay clean.
 
 Run: python tests/run_comment_quote_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['comment_quote_check.py']
+
 import io
 import os
 import shutil

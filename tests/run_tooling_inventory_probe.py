@@ -11,6 +11,11 @@ Every arm below plants the defect on throwaway fixtures in a temp tree, or reads
 the real repo, and demands the tool see it. A generator that cannot be made to
 fail is indistinguishable from one that looks at nothing.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['tooling_inventory.py']
+
 import importlib.util
 import io
 import os

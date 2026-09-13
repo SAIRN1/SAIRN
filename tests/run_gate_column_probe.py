@@ -16,6 +16,11 @@ failure this whole tool exists to catch, one level up.
 
 Run: python tests/run_gate_column_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['gate_column_check.py']
+
 import io
 import json
 import os

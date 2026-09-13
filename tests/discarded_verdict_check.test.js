@@ -12,6 +12,11 @@
 // all four sites at the right lines; if it stops doing that, this fails.
 
 'use strict';
+// Declares, for tools/checker_control_check.py, which checker(s) this
+// file is the control for. Declared rather than inferred -- three
+// inference models were each wrong within an hour of being written.
+const CONTROLS_FOR = ['discarded_verdict_check.py'];
+
 const fs = require('fs');
 const os = require('os');
 const path = require('path');

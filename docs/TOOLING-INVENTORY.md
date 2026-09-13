@@ -202,7 +202,7 @@ fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py`, `run_uncontrolled_checkers_probe.py` |
+| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `discarded_verdict_check.test.js`, `run_checker_control_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `sairn_storage_wrapper_honesty.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `faultkit.js`, `live_mode_probe.py` |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | `run_traceability_matrix_probe.py` |

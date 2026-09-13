@@ -14,6 +14,11 @@ So arm B is the important one -- change a SOURCE, and `--check` must go red.
 
 RUNS IN A THROWAWAY WORKTREE. It never writes this clone.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['traceability_matrix.py']
+
 import io
 import os
 import subprocess

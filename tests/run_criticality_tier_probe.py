@@ -17,6 +17,11 @@ would trust on sight.
 
 Run: python tests/run_criticality_tier_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['criticality_tier_check.py']
+
 import io
 import os
 import shutil

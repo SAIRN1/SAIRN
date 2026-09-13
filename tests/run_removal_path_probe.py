@@ -20,6 +20,11 @@ a grandfathered baseline); a removal verb, a single-row collection, and a real
 single-resource append-only label must each clear it; and a MISSING baseline
 file must turn every stuck resource into a finding rather than pass quietly.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['removal_path_check.py']
+
 import io
 import json
 import os

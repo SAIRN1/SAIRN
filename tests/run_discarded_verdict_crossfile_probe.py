@@ -15,6 +15,11 @@ It copies `api/` to a temp directory, plants one of each shape into a real
 file, and requires BOTH to be found and attributed to the right module. The
 repo is never written to.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['discarded_verdict_crossfile.py']
+
 import io
 import os
 import shutil

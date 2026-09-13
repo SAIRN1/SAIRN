@@ -12,6 +12,11 @@ FIXTURES ARE SYNTHETIC. Pinning arms to real cleanup files would rot the moment
 one is edited -- the failure `tests/reachability/live_mode_probe.py` records
 against its own first version. Nothing here reads or writes the repo.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['cleanup_confirm_check.py']
+
 import os
 import subprocess
 import sys

@@ -11,6 +11,11 @@ comments must come back silent.
 
 Run: python tests/run_comment_sensitivity_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['comment_sensitivity_check.py']
+
 import io
 import os
 import shutil

@@ -16,6 +16,11 @@ WHY THE TOOL EXISTS, in one line each:
 
 ARM 4 IS THE ONE THAT MATTERS: the tool must never IMPORT a probe to read it.
 It runs the checker against a fixture probe that writes a sentinel file at
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['mutation_anchor_check.py']
+
 import time, and asserts the sentinel was never written.
 
 Run: python tests/run_mutation_anchor_probe.py
