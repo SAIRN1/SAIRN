@@ -1265,6 +1265,16 @@
       "claimed_at_epoch": 1789315274.709645,
       "status": "released",
       "released_at": "2026-09-13T16:22:21Z"
+    },
+    {
+      "id": "hank-1789316596",
+      "session": "hank",
+      "subject": "flaky-checker-quarantine",
+      "task": "flip rate threshold owner deadline reintroduction",
+      "claimed_at": "2026-09-13T16:23:16Z",
+      "claimed_at_epoch": 1789316596.5381331,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
