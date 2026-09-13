@@ -1355,6 +1355,16 @@
       "claimed_at_epoch": 1789333363.9766774,
       "status": "released",
       "released_at": "2026-09-13T21:12:01Z"
+    },
+    {
+      "id": "hank-1789334708",
+      "session": "hank",
+      "subject": "closed-traverse-closing-error",
+      "task": "derived docs must loop back to source",
+      "claimed_at": "2026-09-13T21:25:08Z",
+      "claimed_at_epoch": 1789334708.167247,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
