@@ -1686,3 +1686,33 @@ Every app's sync seam skips rows with no `id`. Correct -- there is nothing to ke
 Copied from `sfSyncCollection()` rather than invented, so four apps say the same thing about the same condition. **One line per collection per save, not one per row** -- 400 idless rows would otherwise produce 400 identical warnings and get muted, which is its own way of saying nothing.
 
 **The last arm is the point of the file:** `tests/idless_rows_are_reported.js` **derives** the set of apps carrying a `*SyncCollection` seam from the files and fails if it disagrees with its own table -- so a sixth app cannot grow one and default to silence. Each app is checked against the mechanism it actually uses rather than a single shape it would have to be bent into. Assertions read a **comment-stripped** body: every one of these functions now carries a paragraph explaining the warning, and a check counting those would pass on a file whose code had lost the counter.
+
+---
+
+## 2026-09-13 -- the staleness row had itself gone stale
+
+**Re-derived before touching anything, and the first number checked was the one in the row asking for the work.** The index said `db/schema_snapshot.json` was **"9 days stale"**. The file's own `_generated_at` is 2026-09-11 15:42 UTC and the tool reports **47.9 hours**. True when written on 2026-09-11, fixed by my own re-capture the next day (`3d603dd0`), **never corrected here.** Pushed `114e2401`.
+
+### The real defect was one layer down
+
+**`STALE_HOURS = 12` has existed since this tool shipped and gates NOTHING but a printed paragraph.** The exit code is `1 if missing else 0`, and `report_only_checks.py` reads the exit code plus lines starting `  - ` or `FAIL` -- so **the age reached a human reading the full output and nothing else.** The sweep said only *"exit 1"*. A capture could have been arbitrarily old with no trace in any report.
+
+**The obvious fix is the wrong one, and the probe pins that rather than my asserting it.** *"exit 1 when older than STALE_HOURS"* would sit non-zero essentially for ever -- this capture is refreshed **by hand, by a person, in a Supabase editor** -- which is the gate-nothing-and-get-muted failure `preauth_oracle_check`'s own row already names about itself.
+
+**So the finding is the COMBINATION:** an expired capture **still producing verdicts about tables live code queries**, i.e. somebody is about to act on information with no remaining warranty. An old capture with nothing to act on is silent, and a control arm pins that.
+
+**Scoped to the actionable set, not the never-run subset, and that was a correction mid-change.** Every verdict here is *as of the capture*, UNDECIDABLE ones included, and both are equally out of warranty. Keying on never-run also made the condition **untestable on a fixture** -- never-run resolves from git commit dates a throwaway temp directory does not have. **A condition nobody can put in a fixture is a condition nobody can show you failing.**
+
+### Two arms had been failing a correct tool, and they were not mine
+
+`2c` matched the literal *"undecidable here, listed not hidden"*; `4a` required that **neither** reading was ever chosen. Both true of the design before `verdicts()` landed and deliberately untrue since. Repaired to assert the **property** rather than the sentence, and the **current** contract rather than the former one. **A suite with permanently-red arms gets scrolled past, and then the real failure beside it does too.**
+
+### Scoping answer on TOOLING-INVENTORY.md: the mechanism is NOT shared
+
+That is the finding, not an omission. **`TOOLING-INVENTORY.md` is DERIVABLE** -- its subject is the repo, so `--check` regenerates in memory and compares; drift is detectable **and fixable by the tool itself** (it exits 0 today). **The snapshot's subject is the live database, which this repo cannot read.** It cannot be regenerated here at any cadence, only re-pasted by a human with Supabase access. Inventory drift is self-correcting and event-driven; snapshot drift is time-based and **can only be reported, never repaired, from inside the repo.** Building one mechanism for both would have meant pretending the snapshot is derivable.
+
+### My own mistake, in a change about not trusting numbers
+
+**A bulk replace broke the tool mid-change.** A blanket rename of `never_run_queried` hit a print statement that legitimately uses it and `main()` died on `NameError`. Exactly the bulk find-replace CLAUDE.md forbids, done by me, while editing a file about re-deriving before believing. Caught by running it.
+
+**Probe 17 → 24 arms, 0 failing.** Proven to bite: removing the finding call fails four of the new arms.
