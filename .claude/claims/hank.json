@@ -1373,8 +1373,8 @@
       "task": "boundary case seeding design",
       "claimed_at": "2026-09-13T21:32:52Z",
       "claimed_at_epoch": 1789335172.4005568,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T22:23:38Z"
     }
   ]
 }
