@@ -962,6 +962,16 @@
       "claimed_at_epoch": 1789310929.6194785,
       "status": "released",
       "released_at": "2026-09-13T15:15:55Z"
+    },
+    {
+      "id": "fourth-1789314292",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "tolerance stack-up and closing-error scoping master-plan derived numbers",
+      "claimed_at": "2026-09-13T15:44:52Z",
+      "claimed_at_epoch": 1789314292.484776,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
