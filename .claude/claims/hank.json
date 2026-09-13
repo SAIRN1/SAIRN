@@ -1295,6 +1295,16 @@
       "claimed_at_epoch": 1789319891.7887633,
       "status": "released",
       "released_at": "2026-09-13T18:01:21Z"
+    },
+    {
+      "id": "hank-1789324752",
+      "session": "hank",
+      "subject": "disciplines-item-7-and-piece-2",
+      "task": "propagation requalification and tiered independence",
+      "claimed_at": "2026-09-13T18:39:12Z",
+      "claimed_at_epoch": 1789324752.2290628,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
