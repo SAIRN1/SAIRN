@@ -1333,8 +1333,8 @@
       "task": "freshness attestation and scope",
       "claimed_at": "2026-09-13T20:35:28Z",
       "claimed_at_epoch": 1789331728.8879893,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T20:39:33Z"
     }
   ]
 }
