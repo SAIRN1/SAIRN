@@ -1092,8 +1092,8 @@
       "task": "metamorphic relations runner and the extracted checker skeleton",
       "claimed_at": "2026-09-13T20:30:17Z",
       "claimed_at_epoch": 1789331417.082458,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T21:54:49Z"
     },
     {
       "id": "cc-1789335905",
@@ -1102,8 +1102,8 @@
       "task": "defect register standing rule citation field and backfill",
       "claimed_at": "2026-09-13T21:45:05Z",
       "claimed_at_epoch": 1789335905.1725004,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T21:54:49Z"
     }
   ]
 }
