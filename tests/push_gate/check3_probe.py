@@ -39,6 +39,7 @@ SAIRN_SCHEMA_SNAPSHOT, in five shapes:
     corrupt snapshot    -> preflight exit 4 -> gate DENY
     no-tables snapshot  -> preflight exit 4 -> gate DENY
     valid snapshot, sql naming a table it does not have -> exit 1 -> gate DENY
+    the preflight TOOL absent from the clone            ->          gate DENY
     valid snapshot, sql naming only tables it HAS       -> exit 0 -> gate ALLOW
 
 The last one is the control. Without it the four denies cannot be told apart
@@ -54,12 +55,17 @@ timeout or a broken interpreter, and neither can be arranged without changing
 the gate or the tool, which would mean the probe proving its own edit. It is
 read rather than run.
 
-AND A REAL FAIL-OPEN IS RECORDED, NOT FIXED HERE. Check 3 is wrapped in
-`if os.path.isfile(pf):` -- if tools/sairn_sql_preflight.py is absent from the
-clone, check 3 is skipped in silence and the push is allowed. That is the same
-could-not-tell-reported-as-a-pass shape check 3's own comment block says it was
-rewritten to remove. Arm F below PROVES it, as a finding rather than as a pass;
-fixing it is a change to the gate and belongs in its own commit.
+ARM F WAS A FINDING AND IS NOW A GUARD, WHICH IS WHY IT IS WORTH READING.
+When this file was written, check 3 was wrapped in `if os.path.isfile(pf):` with
+no else -- so a clone missing tools/sairn_sql_preflight.py skipped check 3 in
+silence and the push was allowed. Arm F planted that absence and asserted the
+ALLOW, recording the fail-open rather than pretending it was covered. Michael's
+call, 2026-09-13: fix it, fail closed -- a missing or unresolvable state must get
+more scrutiny, never less. The gate now denies, and arm F asserts the deny.
+
+The inversion is the point. An arm written to pin a defect has to be flipped when
+the defect is fixed, or it starts asserting the bug is still there; the previous
+version of this paragraph said so and this is it happening.
 
 Every fixture lives in a throwaway WORKTREE, never on a branch of this clone.
 """
@@ -228,20 +234,37 @@ try:
     ok('a push touching no sql/ file is allowed even with no snapshot at all', rc == 0,
        'exit=%d\n%s' % (rc, out[-500:]))
 
-    print('\nF. THE FAIL-OPEN, PROVEN RATHER THAN ASSERTED')
-    # `if os.path.isfile(pf):` wraps check 3. Remove the tool from the WORKTREE
-    # -- never from this clone -- and the gate stops checking and says nothing.
+    print('\nF. CHECK 3 -- a MISSING CHECKER must be REFUSED, not skipped in silence')
+    # Remove the tool from the WORKTREE -- never from this clone. Before
+    # 2026-09-13 this arm asserted the opposite: the gate skipped check 3 and
+    # allowed the push without a word. See the header.
     git(wt, 'reset', '-q', '--hard', base)
     tip_missing2 = commit(wt, SQL_REL, MISSING_TABLE_SQL,
                           'fixture: sql naming a table the snapshot lacks')
     wt_pf = os.path.join(wt, 'tools', 'sairn_sql_preflight.py')
     os.remove(wt_pf)
     rc, out = run_gate(wt, tip_missing2, base, SNAP_GOOD)
-    ok('FINDING: with tools/sairn_sql_preflight.py absent, the same push is ALLOWED',
-       rc == 0, 'exit=%d -- if this now FAILS the fail-open has been fixed and this '
-                'arm should be inverted\n%s' % (rc, out[-400:]))
-    ok('...and the gate never says it stopped checking',
-       'preflight' not in out.lower(), out[-400:])
+    low = out.lower()
+    ok('the GATE refuses a push shipping sql when the checker is absent', rc != 0,
+       'exit=%d\n%s' % (rc, out[-400:]))
+    # ASSERT THE PATH IT LOOKED FOR, NOT THE TOOL'S NAME. First version checked
+    # only that "sairn_sql_preflight.py" appeared somewhere in the output, and a
+    # mutation that blanked the `expected:` line SURVIVED -- the deny's closing
+    # `git checkout -- tools/sairn_sql_preflight.py` hint carries the same name,
+    # so the arm passed on a different sentence than the one it meant to read.
+    # AND NORMALISE SEPARATORS BEFORE COMPARING. `wt_pf` comes from os.path.join
+    # and is all backslashes on Windows; the gate builds its path from
+    # `git rev-parse --show-toplevel`, which returns FORWARD slashes, so the two
+    # never matched literally. The first version of this arm failed on every run
+    # -- including inside the mutation harness, where it inflated every verdict by
+    # one failing arm and made a SURVIVING mutation read as BITES.
+    ok('...and the refusal names the exact path it looked for, rather than going quiet',
+       'not in this' in low and wt_pf.replace('\\', '/') in out.replace('\\', '/'),
+       'looked for %s in\n%s' % (wt_pf, out[-500:]))
+    ok('...and it names the sql the push ships, so the reader knows what went unchecked',
+       'probe_check3_fixture.sql' in out, out[-500:])
+    ok('...and it is NOT check 2, the credential guard, answering instead',
+       'credential' not in low, out[-400:])
     git(wt, 'checkout', '-q', '--', 'tools/sairn_sql_preflight.py')
     ok('the tool is restored in the worktree before it is dropped',
        os.path.isfile(wt_pf))

@@ -748,9 +748,11 @@ def main():
         # a whole paragraph warning about and that check 3 then reproduced.
         #
         # So: no snapshot, an unreadable snapshot, a snapshot with no tables, a
-        # subprocess that will not start, or a timeout, ALL DENY. The tool's
-        # --require-live gives that its own exit code (4) rather than leaving
-        # this hook to infer it from prose.
+        # subprocess that will not start, a timeout, or THE TOOL ITSELF MISSING
+        # FROM THE CLONE, ALL DENY. The tool's --require-live gives the snapshot
+        # cases their own exit code (4) rather than leaving this hook to infer it
+        # from prose; the missing-tool case is handled at the guard below, and
+        # was the one that stayed open until 2026-09-13.
         #
         # THE COST OF THIS IS REAL AND IS THE POINT: until db/schema_snapshot.json
         # exists, every push that touches sql/ is denied. Generating it is a
@@ -759,63 +761,91 @@ def main():
         pf = os.path.join(repo, 'tools', 'sairn_sql_preflight.py')
         snapshot = (os.environ.get('SAIRN_SCHEMA_SNAPSHOT')
                     or os.path.join(repo, 'db', 'schema_snapshot.json'))
-        if os.path.isfile(pf):
-            try:
-                p = subprocess.run(
-                    [sys.executable, pf, '--gate', '--require-live', '--live', snapshot]
-                    + [os.path.join(repo, q) for q in sql_changed],
-                    capture_output=True, text=True, timeout=120, cwd=repo)
-            except Exception as e:
-                # Was `p = None` followed by a check that skipped silently. A
-                # checker that cannot be run has not passed anything.
-                deny(chr(10).join([
-                    "Blocked: the SQL preflight could not be run, so this push is unchecked.",
-                    "",
-                    "  %s: %s" % (type(e).__name__, e),
-                    "",
-                    "Check 3 runs live and fails closed as of 2026-09-01. An unrunnable",
-                    "checker used to allow the push silently; that is the failure mode this",
-                    "gate exists to prevent, so it now denies instead.",
-                    "",
-                    OVERRIDE_HINT,
-                ]))
-            if p.returncode == 4:
-                deny(chr(10).join([
-                    "Blocked: no live schema snapshot, so this push's SQL cannot be checked.",
-                    "",
-                    p.stdout.strip(),
-                    "",
-                    "This is a DENY and not a warning on purpose. Until 2026-09-01 this check",
-                    "ran against the repo's own CREATE TABLE statements and allowed anything",
-                    "it could not answer, which meant a missing schema and a clean file were",
-                    "indistinguishable from the outside.",
-                    "",
-                    "Point it somewhere else with SAIRN_SCHEMA_SNAPSHOT=<path> if the snapshot",
-                    "lives outside the clone.",
-                    OVERRIDE_HINT,
-                ]))
-            if p.returncode == 1:
-                msg = [
-                    "Blocked: this push contains SQL naming a table or column that the live",
-                    "database does not have.",
-                    "",
-                    p.stdout.strip(),
-                    "",
-                    "A wrong column in an INSERT fails loudly and is survivable. A wrong",
-                    "column in the WHERE of an UPDATE or DELETE does not fail -- it matches",
-                    "nothing and reports success, and '0 rows' is indistinguishable from",
-                    "'nothing needed changing'. That is why this blocks before the file can",
-                    "be pasted into the editor rather than after.",
-                    "",
-                    "Checked against %s, which is a SNAPSHOT and is only as current as the" % snapshot,
-                    "last time someone ran sql/schema_snapshot_query.sql. If the object really",
-                    "does exist because a migration was applied after that, regenerate the",
-                    "snapshot rather than overriding the gate.",
-                    "",
-                    "Full detail:  python tools/sairn_sql_preflight.py --live %s <file>" % snapshot,
-                    OVERRIDE_HINT,
-                ]
-                deny(chr(10).join(msg))
+        # A MISSING CHECKER IS NOT A CLEAN PUSH, and until 2026-09-13 it was.
+        # This was `if os.path.isfile(pf):` with no else -- so a clone without
+        # tools/sairn_sql_preflight.py skipped check 3 entirely, in silence, and
+        # the push went through looking checked. That is the same
+        # could-not-tell-reported-as-a-pass shape the paragraph above says this
+        # check was rewritten on 2026-09-01 to remove; it survived one level up,
+        # in the guard around the call rather than in the handling of its result.
+        # Found by tests/push_gate/check3_probe.py arm F, which planted the
+        # absence and watched a missing-table push be allowed.
+        if not os.path.isfile(pf):
+            deny(chr(10).join([
+                "Blocked: this push ships SQL and the tool that checks it is not in this",
+                "clone, so nothing looked at the file.",
+                "",
+                "  expected: %s" % pf,
+                "",
+                "SQL changed by this push:",
+                ] + ["  " + q for q in sql_changed] + [
+                "",
+                "Check 3 fails closed as of 2026-09-01, and this was the last way around",
+                "CHECK 3: it handled an unrunnable tool and an unusable snapshot by denying,",
+                "and then skipped itself without a word when the tool was simply absent.",
+                "Other checks in this gate still carry the same is-the-tool-present shape;",
+                "closing those is a separate decision, so do not read this as all of them.",
+                "",
+                "Restore the file -- `git checkout -- tools/sairn_sql_preflight.py` if it",
+                "was deleted locally -- rather than overriding the gate.",
+                OVERRIDE_HINT,
+            ]))
+        try:
+            p = subprocess.run(
+                [sys.executable, pf, '--gate', '--require-live', '--live', snapshot]
+                + [os.path.join(repo, q) for q in sql_changed],
+                capture_output=True, text=True, timeout=120, cwd=repo)
+        except Exception as e:
+            # Was `p = None` followed by a check that skipped silently. A
+            # checker that cannot be run has not passed anything.
+            deny(chr(10).join([
+                "Blocked: the SQL preflight could not be run, so this push is unchecked.",
+                "",
+                "  %s: %s" % (type(e).__name__, e),
+                "",
+                "Check 3 runs live and fails closed as of 2026-09-01. An unrunnable",
+                "checker used to allow the push silently; that is the failure mode this",
+                "gate exists to prevent, so it now denies instead.",
+                "",
+                OVERRIDE_HINT,
+            ]))
+        if p.returncode == 4:
+            deny(chr(10).join([
+                "Blocked: no live schema snapshot, so this push's SQL cannot be checked.",
+                "",
+                p.stdout.strip(),
+                "",
+                "This is a DENY and not a warning on purpose. Until 2026-09-01 this check",
+                "ran against the repo's own CREATE TABLE statements and allowed anything",
+                "it could not answer, which meant a missing schema and a clean file were",
+                "indistinguishable from the outside.",
+                "",
+                "Point it somewhere else with SAIRN_SCHEMA_SNAPSHOT=<path> if the snapshot",
+                "lives outside the clone.",
+                OVERRIDE_HINT,
+            ]))
+        if p.returncode == 1:
+            msg = [
+                "Blocked: this push contains SQL naming a table or column that the live",
+                "database does not have.",
+                "",
+                p.stdout.strip(),
+                "",
+                "A wrong column in an INSERT fails loudly and is survivable. A wrong",
+                "column in the WHERE of an UPDATE or DELETE does not fail -- it matches",
+                "nothing and reports success, and '0 rows' is indistinguishable from",
+                "'nothing needed changing'. That is why this blocks before the file can",
+                "be pasted into the editor rather than after.",
+                "",
+                "Checked against %s, which is a SNAPSHOT and is only as current as the" % snapshot,
+                "last time someone ran sql/schema_snapshot_query.sql. If the object really",
+                "does exist because a migration was applied after that, regenerate the",
+                "snapshot rather than overriding the gate.",
+                "",
+                "Full detail:  python tools/sairn_sql_preflight.py --live %s <file>" % snapshot,
+                OVERRIDE_HINT,
+            ]
+            deny(chr(10).join(msg))
 
     # ── CHECK 4: endpoint/engine seam ──────────────────────────────────────
     # Added 2026-09-01. SAIRNlaw's deadline engine grew a `service_methods`

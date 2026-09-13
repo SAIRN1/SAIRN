@@ -3109,3 +3109,54 @@ without editing the gate, which would mean the probe proving its own edit.
 **NOT MINE, SEEN IN PASSING:** `tests/run_snapshot_freshness_probe.py` fails 2
 arms on `main` (`2c`, `4a`) -- inside hank's active `gate-column-check` claim on
 snapshot age. Reported, not touched.
+
+## 2026-09-13 (Cody) -- the fail-open my own probe found, closed: a missing
+## checker is not a clean push
+
+Skill used: `sairn-guardian-v2`. Claim: `push-gate` --
+`check 3 fail-open missing preflight tool must deny`. Michael's call: fix it,
+fail closed -- a missing or unresolvable state must get MORE scrutiny, never less.
+
+**WHAT IT WAS.** Check 3 was `if os.path.isfile(pf):` with no `else`. A clone
+without `tools/sairn_sql_preflight.py` skipped check 3 **entirely, in silence**,
+and the push went through looking checked. Every *result* of that tool was already
+handled by a deny -- unrunnable, timeout, no snapshot, corrupt snapshot, no tables,
+missing table -- and the one case nobody handled was the tool not being there at
+all. The fail-open survived one level up from where the 2026-09-01 fail-closed
+rewrite was looking: in the guard around the call, not in the handling of its
+result.
+
+**WHAT IT IS NOW.** A deny that names the exact path it looked for and lists the
+SQL the push ships, so the reader knows *what* went unchecked rather than only
+*that* something did. **Arm F of `check3_probe.py` is INVERTED, not deleted** --
+it was written as a finding precisely so it would have to be flipped the day the
+defect was fixed, and this is that day.
+
+**6 MUTATION CONTROLS BITE**, gate restored byte-identical each time: restoring the
+fail-open; blanking the path from the deny; removing the exit-4 deny; removing the
+missing-table deny; ignoring `SAIRN_SCHEMA_SNAPSHOT`; and denying unconditionally,
+which must break the two CONTROL arms. 34 arms green.
+
+**THE ARM I WROTE TO CATCH THE SURVIVING MUTATION THEN FAILED ON EVERY RUN, AND
+THE HARNESS READ THAT AS SUCCESS.** Worth writing out, because it is a new shape:
+
+1. First version asserted `'sairn_sql_preflight.py' in out`. A mutation that
+   blanked the `expected:` line **SURVIVED** -- the deny's closing
+   `git checkout -- tools/sairn_sql_preflight.py` hint carries the same basename,
+   so the arm was reading a different sentence than the one it meant to.
+2. So I made it assert the full path. `os.path.join` gives **backslashes**;
+   `git rev-parse --show-toplevel` gives **forward slashes**; the two never
+   matched. The arm failed on every run -- and because it failed under *every*
+   mutation, it added one to each verdict and turned the still-surviving
+   mutation into *"BITES -- 1 arm failed"*.
+
+**A mutation harness that counts failing arms cannot tell a bite from a broken
+arm. Run the probe GREEN first, then mutate.** This is the CRLF false-alarm class
+wearing a different disguise -- normalise separators before believing any path
+comparison.
+
+**FOUR SIBLINGS OF THE SAME SHAPE ARE STILL OPEN IN THIS FILE, and they are a
+decision, not a task I am taking silently.** See the report; the sharpest is
+`if not os.path.isfile(checker): sys.exit(0)` at the top of `main()`, which exits
+**the whole gate** -- checks 2 through 10 -- when `sairn_load_state_check.py` is
+absent.
