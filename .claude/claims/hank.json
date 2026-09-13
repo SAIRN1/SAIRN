@@ -1153,8 +1153,8 @@
       "task": "snapshot age from commit date and metadata keys counted as tables",
       "claimed_at": "2026-09-13T10:59:11Z",
       "claimed_at_epoch": 1789297151.591649,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T11:06:25Z"
     }
   ]
 }
