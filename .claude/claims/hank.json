@@ -1205,6 +1205,16 @@
       "claimed_at_epoch": 1789304828.385498,
       "status": "released",
       "released_at": "2026-09-13T13:32:26Z"
+    },
+    {
+      "id": "hank-1789307989",
+      "session": "hank",
+      "subject": "fmea-risk-drafter",
+      "task": "first-draft risk analysis from prior defects and the lesson corpus",
+      "claimed_at": "2026-09-13T13:59:49Z",
+      "claimed_at_epoch": 1789307989.3479862,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
