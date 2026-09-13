@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**100 files in `tools/`.** By what actually invokes them:
+**101 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 35 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 6 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 7 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 30 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 53 |
+| CHECKER | 54 |
 | GENERATOR | 15 |
 | LIBRARY | 19 |
 | LIVE | 13 |
@@ -44,17 +44,17 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: ZERO.** Every checker that answers a question
-about this codebase is now either promoted to report-only or carries a
-recorded reason for not being. That was 13 on 2026-09-12 before the
-pass that closed it: four were promoted (`checkblocks.py`,
-`comment_sensitivity_check.py`, `criticality_tier_check.py`,
-`soup_register_check.py`), three were recorded as deliberate, and six
-had already been decided in a list this document was not reading.
+**The number to act on: 1 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 1
+that the suite runs against FIXTURES only. The second group is the worse one:
+a green probe on an unpointed checker is the most convincing possible form of
+"we are covered", and it is coverage of the tool rather than of the code.
 
-**That is not the same as being covered.** It means nothing is
-unexamined. A promoted checker reports; it does not block, and several
-of the DECIDED entries are decisions to look later.
+The 1, by name, so this is actionable rather than a statistic:
+
+| Tool | Status | What it catches |
+|---|---|---|
+| `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
 
 **Separately, 3 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
@@ -195,13 +195,14 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (6)
+## SUITE-ONLY (7)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py`, `run_uncontrolled_checkers_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `sairn_storage_wrapper_honesty.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `faultkit.js`, `live_mode_probe.py` |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | `run_traceability_matrix_probe.py` |

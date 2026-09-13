@@ -89,6 +89,10 @@ PURPOSES = {
     # about what guards a push is the exact failure this document exists to stop.
     'verify_review_gates.py': ('CHECKER', 'review-gate evidence in a claims ledger -- referenced by NOTHING in this repo'),
     # --- checkers nothing invokes ------------------------------------------
+    # Landed 2026-09-12 by another session, directly out of the checkblocks.py
+    # finding: a checker that always exits 0 looks exactly like a codebase that
+    # is always clean.
+    'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
     'licence_recoverability_check.py': ('LIVE', 'a licence with credential rows and zero active provisioners'),
     'local_only_collection_check.py': ('CHECKER', 'a collection written only to localStorage that never reaches a server'),
