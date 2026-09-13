@@ -17,6 +17,7 @@ Exit 0 pass, 1 fail.
 """
 import io
 import os
+import re
 import sys
 import tempfile
 
@@ -53,6 +54,21 @@ def with_fixture(checkers, files, fn):
         os.rmdir(d)
 
 
+
+def verdict_row(out, verdict, checker):
+    """True when the report carries VERDICT on the same row as CHECKER.
+
+    Not `verdict in out`: the summary block prints every verdict name with its
+    count, so a bare substring search matches even when the count is ZERO. That
+    made two arms here pass while asserting nothing -- the exact vacuous-check
+    class this probe polices, committed inside it.
+    """
+    for line in out.splitlines():
+        if verdict in line and checker in line:
+            return True
+    return False
+
+
 def rc_of(checkers, files):
     import contextlib
     buf = io.StringIO()
@@ -61,15 +77,16 @@ def rc_of(checkers, files):
     return rc, buf.getvalue()
 
 
-print('1. A CHECKER NOTHING REFERENCES IS *NO CONTROL*, mechanically and certainly')
+print('1. A CHECKER NOTHING DECLARES A CONTROL FOR IS FLAGGED, certainly')
 rc, out = rc_of(['lonely_check.py'], {'unrelated_probe.py': 'x = 1\n'})
 check(rc == 1, 'exit 1 (got %d)' % rc)
-check('NO CONTROL' in out and 'lonely_check.py' in out,
-      'it is named as NO CONTROL')
+check(verdict_row(out, 'NO DECLARED CONTROL', 'lonely_check.py'),
+      'it is named as NO DECLARED CONTROL, on its own row')
 
 print('')
 print('2. A REAL CONTROL PAIR IS *BOTH EVIDENCED* AND THE TOOL GOES QUIET')
 BOTH = (
+    "CONTROLS_FOR = ['paired_check.py']\n"
     "import subprocess, sys\n"
     "r = subprocess.run([sys.executable, 'tools/paired_check.py', 'defect.js'])\n"
     "assert r.returncode == 1\n"
@@ -77,24 +94,28 @@ BOTH = (
     "assert r.returncode == 0\n")
 rc, out = rc_of(['paired_check.py'], {'paired_probe.py': BOTH})
 check(rc == 0, 'exit 0 (got %d)' % rc)
-check('BOTH EVIDENCED    : 1' in out, 'counted as BOTH EVIDENCED')
+check(re.search(r'BOTH EVIDENCED\s*:\s*1', out) is not None,
+      'counted as BOTH EVIDENCED')
 
 print('')
 print('3. ONLY ONE DIRECTION IS NOT A PASS')
 ONLY_FIRES = (
+    "CONTROLS_FOR = ['half_check.py']\n"
     "import subprocess, sys\n"
     "r = subprocess.run([sys.executable, 'tools/half_check.py', 'defect.js'])\n"
     "assert r.returncode == 1\n")
 rc, out = rc_of(['half_check.py'], {'half_probe.py': ONLY_FIRES})
 check(rc == 1, 'exit 1 (got %d)' % rc)
-check('ONE DIRECTION' in out, 'named as ONE DIRECTION -- a checker only ever seen '
-                              'to FIRE has not been seen to stay quiet')
+check(verdict_row(out, 'ONE DIRECTION', 'half_check.py'),
+      'named as ONE DIRECTION on its own row -- a checker only ever seen to '
+      'FIRE has not been seen to stay quiet')
 
 print('')
 print('4. A COMMENT IS NOT EVIDENCE -- the arm this tool exists to deserve')
 # Every assertion here lives in a COMMENT. The code asserts nothing. If the tool
 # reads this as a control pair, its own finding is worthless.
 COMMENT_ONLY_PY = (
+    "CONTROLS_FOR = ['fake_check.py']\n"
     "import subprocess, sys\n"
     "# r = subprocess.run([sys.executable, 'tools/fake_check.py'])\n"
     "# assert r.returncode == 1   # expect exit 1 on a planted defect\n"
@@ -102,22 +123,24 @@ COMMENT_ONLY_PY = (
     "print('this probe asserts nothing at all')\n")
 rc, out = rc_of(['fake_check.py'], {'fake_probe.py': COMMENT_ONLY_PY})
 check(rc == 1, 'a comment-only probe does NOT satisfy the requirement (exit %d)' % rc)
-check('BOTH EVIDENCED    : 0' in out,
-      '...and is not counted as BOTH EVIDENCED')
+check(verdict_row(out, 'DECLARED, NO ASSERTIONS', 'fake_check.py'),
+      '...it DECLARED itself a control and asserted nothing, on its own row')
 
 # The same, in JavaScript, because the two languages are stripped by different
 # code paths and only testing one proves only one.
 COMMENT_ONLY_JS = (
+    "const CONTROLS_FOR = ['fake_js_check.py'];\n"
     "const { execFileSync } = require('child_process');\n"
     "// run tools/fake_js_check.py and assert returncode == 1 on a defect\n"
     "/* and assert returncode == 0, CLEAN, on good input */\n"
     "console.log('asserts nothing');\n")
 rc, out = rc_of(['fake_js_check.py'], {'fake_probe.js': COMMENT_ONLY_JS})
 check(rc == 1, 'the JavaScript comment path is stripped too (exit %d)' % rc)
-check('BOTH EVIDENCED    : 0' in out, '...and is not counted as BOTH EVIDENCED')
+check(verdict_row(out, 'DECLARED, NO ASSERTIONS', 'fake_js_check.py'),
+      '...same verdict on its own row, via the other stripper')
 
 print('')
-print('4b. A MENTION IS NOT A CONTROL -- evidence is attributed BY PROXIMITY')
+print('4b. A MENTION IS NOT A CONTROL -- attribution is DECLARED, not inferred')
 # THE DEFECT THIS TOOL SHIPPED WITH, FOR ABOUT AN HOUR. Attribution was at FILE
 # level: once a file mentioned a checker anywhere, every assertion in that file
 # counted for it. The first control file written against the tool named five
@@ -126,6 +149,7 @@ print('4b. A MENTION IS NOT A CONTROL -- evidence is attributed BY PROXIMITY')
 # docstring is a STRING, not a comment, so comment-stripping neither did nor
 # could remove it.
 MENTION_FAR_AWAY = (
+    "CONTROLS_FOR = ['tested_check.py']\n"
     '"""This file tests tools/tested_check.py and mentions tools/unrelated_check.py.\n'
     '"""\n'
     + '\n' * 40 +
@@ -138,10 +162,10 @@ rc, out = rc_of(['tested_check.py', 'unrelated_check.py'],
                 {'far_probe.py': MENTION_FAR_AWAY})
 check(rc == 1, 'a file testing one checker and MENTIONING another does not '
                'certify both (exit %d)' % rc)
-check('BOTH EVIDENCED    : 1' in out,
+check(re.search(r'BOTH EVIDENCED\s*:\s*1', out) is not None,
       'exactly ONE is BOTH EVIDENCED, not both')
-check('REFERENCED ONLY' in out and 'unrelated_check.py' in out,
-      'the merely-mentioned one is REFERENCED ONLY, which does not pass')
+check(verdict_row(out, 'NO DECLARED CONTROL', 'unrelated_check.py'),
+      'the merely-mentioned one has NO DECLARED CONTROL, which does not pass')
 
 print('')
 print('5. AN EXEMPTION MUST CARRY A REASON')

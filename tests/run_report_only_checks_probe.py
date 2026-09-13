@@ -28,6 +28,11 @@ to contain this week rots the moment that app is edited -- the failure
 `tests/reachability/live_mode_probe.py` records against its own first version.
 Nothing here reads or writes a real app file, and the repo is never touched.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['report_only_checks.py']
+
 import io
 import json
 import os

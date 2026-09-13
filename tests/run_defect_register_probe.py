@@ -12,6 +12,11 @@ failure this platform keeps recording. A number nobody qualifies gets quoted.
 
 RUNS IN A THROWAWAY WORKTREE. It never writes this clone's register.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['defect_register.py']
+
 import io
 import json
 import os

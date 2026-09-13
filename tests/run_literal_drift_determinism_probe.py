@@ -29,6 +29,11 @@ checker with the OLD sort restored must FAIL this probe. Without that arm,
 
 Exit 0 pass, 1 fail.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['literal_drift_check.py']
+
 import io
 import os
 import subprocess

@@ -25,6 +25,11 @@ removed rather than patched: which pipe the author meant as a separator is a
 question about intent, and the two real occurrences were repaired by reading
 them.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['md_table_check.py']
+
 import io
 import os
 import sys

@@ -28,17 +28,19 @@ exists to ask every checker in the registry for both.
 
 ── WHAT IT CAN AND CANNOT SEE, said plainly ─────────────────────────────────
 
-  IT CAN SEE   that NOTHING anywhere in tests/ references a checker at all --
-               which is mechanical, certain, and the finding that matters most.
+  IT CAN SEE   that no file DECLARES itself a control for a checker. That is
+               mechanical and certain, and it is the finding that matters most.
 
-  IT INFERS    which direction a referencing test exercises, by reading the
-               assertions near the reference. That is a heuristic, so the
-               report says EVIDENCED rather than PROVEN, quotes the line it
-               read, and never upgrades a guess into a guarantee.
+  IT INFERS    which DIRECTION a declared control exercises, from its
+               assertions. That is a heuristic, so the report says EVIDENCED
+               rather than PROVEN and never upgrades a guess into a guarantee.
 
   IT CANNOT    tell a control that plants a REAL defect from one that plants a
-               shape the checker happens to match. Only reading the fixture can,
-               which is why the evidence is quoted rather than counted.
+               shape the checker happens to match. Only reading the fixture can.
+
+WHY A DECLARATION RATHER THAN INFERENCE: see declared_controls(). Three
+inference models were tried and all three were wrong within an hour of being
+written, each in a different direction.
 
 IT RUNS NOTHING. It reads test source with comments stripped -- because a test
 whose COMMENT says "expect exit 1" while its code asserts nothing would
@@ -111,46 +113,64 @@ def strip(path, src):
     return _jscomments.strip_comments(src)
 
 
-# How far from a mention of the checker an assertion may sit and still count as
-# evidence about THAT checker.
-#
-# ── WHY A WINDOW, AND WHY THIS TOOL NEEDED ONE WITHIN AN HOUR OF SHIPPING ────
-# The first version attributed evidence at FILE level: once a test file
-# mentioned a checker anywhere, every fires/silent assertion in that file
-# counted for it. Then the very first control file written against this tool
-# named five checkers in its DOCSTRING while actually testing three -- and all
-# five came back BOTH EVIDENCED. NO CONTROL went 5 -> 0 and two of those were a
-# lie.
-#
-# That is this tool producing false reassurance ABOUT false reassurance, which
-# is the worst outcome available to it. A Python docstring is a STRING, not a
-# comment, so comment-stripping does not remove it and never would have.
-#
-# 15 lines is deliberately tight: a control's assertions sit beside the call
-# that produced them. A mention with no assertion within 15 lines is a MENTION,
-# and the verdict for that is REFERENCED ONLY -- which does not pass.
-WINDOW = 15
+DECL_RE = re.compile(
+    r"CONTROLS_FOR\s*=\s*[\[\(]([^\]\)]*)[\]\)]", re.S)
+NAME_RE = re.compile(r"['\"]([\w.-]+\.py)['\"]")
 
 
-def evidence(code, checker):
-    """(fires, silent) evidence lines attributable to ONE checker.
+def declared_controls(code):
+    """Which checkers this file declares itself a control for.
 
-    Attribution is by proximity to a line naming the checker. See WINDOW.
+    ── WHY A DECLARATION, AFTER THREE INFERENCE MODELS ALL FAILED ────────────
+    This tool tried to infer, from a test file's shape, which checker its
+    assertions were about. Every model was wrong in a different direction and
+    each was found within an hour:
+
+      FILE LEVEL   over-credits. The first control file written against this
+                   tool named five checkers in its DOCSTRING while testing
+                   three, and all five came back proven -- the tool producing
+                   false reassurance about false reassurance.
+
+      PROXIMITY    under-credits. `tests/run_defect_register_probe.py` binds
+                   `TOOL = 'tools/defect_register.py'` once at the top and
+                   asserts both directions 150 lines below, so a thorough
+                   control read as ONE DIRECTION.
+
+      INVOCATION   under-credits differently. Real controls wrap the subprocess
+                   call in a `run()` helper, so the checker's name never appears
+                   inside the call span at all -- which marked the controls
+                   written THAT MORNING as REFERENCED ONLY.
+
+    Three models, three wrong answers, each plausible. The lesson is not that
+    the fourth heuristic will work: it is that **which checker a test is a
+    control for is a fact its author knows and nothing else reliably does**.
+
+    So it is declared:
+
+        CONTROLS_FOR = ['checkblocks.py', 'div_balance_check.py']
+
+    One line, unambiguous, and philosophically the right shape for a tool whose
+    whole job is to demand proof rather than infer it. An UNDECLARED control is
+    exactly the "we think it is covered" state this tool exists to end.
     """
-    lines = code.splitlines()
-    at = [i for i, l in enumerate(lines) if checker in l]
-    if not at:
-        return [], []
-    near = set()
-    for i in at:
-        near.update(range(max(0, i - WINDOW), min(len(lines), i + WINDOW + 1)))
+    out = set()
+    for m in DECL_RE.finditer(code):
+        out.update(NAME_RE.findall(m.group(1)))
+    return out
+
+
+def evidence(code):
+    """(fires, silent) assertion lines in a declared control.
+
+    File level is CORRECT here and was not before: the file has said, in its own
+    source, which checkers it is a control for.
+    """
     fires, silent = [], []
-    for i in sorted(near):
-        line = lines[i]
+    for i, line in enumerate(code.splitlines(), 1):
         if any(r.search(line) for r in FIRES_RE):
-            fires.append((i + 1, line.strip()[:90]))
+            fires.append((i, line.strip()[:90]))
         if any(r.search(line) for r in SILENT_RE):
-            silent.append((i + 1, line.strip()[:90]))
+            silent.append((i, line.strip()[:90]))
     return fires, silent
 
 
@@ -167,59 +187,73 @@ def main(argv):
         raw = io.open(t, encoding='utf-8', errors='replace').read()
         bodies[t] = strip(t, raw)
 
+    # Declarations first, so attribution is a fact rather than a guess.
+    declares = {}                       # checker -> [control file, ...]
+    mentions = {}                       # checker -> [file that names it, ...]
+    for t, body in bodies.items():
+        for c in declared_controls(body):
+            declares.setdefault(c, []).append(t)
+    for c in checkers:
+        for t, body in bodies.items():
+            if c in body and t not in declares.get(c, []):
+                mentions.setdefault(c, []).append(t)
+
     rows = []
     for c in checkers:
-        refs = [t for t, b in bodies.items() if c in b]
+        ctrl = declares.get(c, [])
         fires = silent = 0
-        quotes = []
-        for t in refs:
-            f, s = evidence(bodies[t], c)
+        for t in ctrl:
+            f, s_ = evidence(bodies[t])
             fires += len(f)
-            silent += len(s)
-            if f and not quotes:
-                quotes.append((os.path.relpath(t, REPO).replace(os.sep, '/'), f[0]))
+            silent += len(s_)
         if c in EXEMPT:
             verdict = 'EXEMPT'
-        elif not refs:
-            verdict = 'NO CONTROL'
+        elif not ctrl:
+            verdict = 'NO DECLARED CONTROL'
         elif fires and silent:
             verdict = 'BOTH EVIDENCED'
         elif fires or silent:
             verdict = 'ONE DIRECTION'
         else:
-            verdict = 'REFERENCED ONLY'
-        rows.append({'checker': c, 'refs': len(refs), 'fires': fires,
-                     'silent': silent, 'verdict': verdict, 'quotes': quotes})
+            verdict = 'DECLARED, NO ASSERTIONS'
+        rows.append({'checker': c, 'controls': len(ctrl),
+                     'mentions': len(mentions.get(c, [])),
+                     'fires': fires, 'silent': silent, 'verdict': verdict})
 
-    bad = [r for r in rows if r['verdict'] in
-           ('NO CONTROL', 'ONE DIRECTION', 'REFERENCED ONLY')]
+    bad = [r for r in rows if r['verdict'] != 'BOTH EVIDENCED'
+           and r['verdict'] != 'EXEMPT']
     if not quiet:
         print('CHECKER CONTROL CHECK -- nothing was executed')
         print('  promoted checkers : %d' % len(checkers))
         print('  test files read   : %d' % len(tests))
-        for v in ('NO CONTROL', 'REFERENCED ONLY', 'ONE DIRECTION',
-                  'BOTH EVIDENCED', 'EXEMPT'):
+        for v in ('NO DECLARED CONTROL', 'DECLARED, NO ASSERTIONS',
+                  'ONE DIRECTION', 'BOTH EVIDENCED', 'EXEMPT'):
             n = len([r for r in rows if r['verdict'] == v])
             print('  %-17s : %d' % (v, n))
         print('')
-        for r in sorted(rows, key=lambda x: (x['verdict'] != 'NO CONTROL',
+        for r in sorted(rows, key=lambda x: (x['verdict'] != 'NO DECLARED CONTROL',
                                              x['verdict'], x['checker'])):
             if r['verdict'] in ('BOTH EVIDENCED', 'EXEMPT'):
                 continue
-            print('  %-17s %-34s %d test file(s), fires=%d silent=%d'
-                  % (r['verdict'], r['checker'], r['refs'], r['fires'], r['silent']))
+            note = ''
+            if r['verdict'] == 'NO DECLARED CONTROL' and r['mentions']:
+                note = ('  -- %d file(s) NAME it; if one is really its control, '
+                        'add CONTROLS_FOR' % r['mentions'])
+            print('  %-23s %-34s fires=%d silent=%d%s'
+                  % (r['verdict'], r['checker'], r['fires'], r['silent'], note))
         if EXEMPT:
             print('')
             print('  EXEMPT, with a reason each:')
             for k, why in EXEMPT.items():
                 print('    %-30s %s' % (k, why[:96]))
         print('')
-        print('EVIDENCED, NOT PROVEN. Direction is inferred from assertions near the')
-        print('reference; only reading the fixture can tell a control that plants a REAL')
-        print('defect from one that plants a shape the checker happens to match.')
+        print('A CONTROL DECLARES ITSELF:  CONTROLS_FOR = [\'your_check.py\']')
+        print('Three inference models were tried and all three were wrong within an hour,')
+        print('each in a different direction -- see declared_controls() for what they were.')
         print('')
-        print('NO CONTROL is the one that is mechanical and certain: nothing anywhere')
-        print('in tests/ names that checker, so nothing has ever seen it fail.')
+        print('EVIDENCED, NOT PROVEN: direction is read from assertions. Only reading the')
+        print('fixture can tell a control that plants a REAL defect from one that plants a')
+        print('shape the checker happens to match.')
     return 1 if bad else 0
 
 

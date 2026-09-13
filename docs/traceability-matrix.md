@@ -267,7 +267,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**120 of 309 test files are traced to a stated requirement. 189 are not.**
+**120 of 310 test files are traced to a stated requirement. 190 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -390,6 +390,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/base_prompt_single_source.js`
 - `tests/claims/run_matcher_probe.py`
 - `tests/claims/run_push_verify_probe.py`
+- `tests/collection_delete_reaches_the_server.js`
 - `tests/composite_context.js`
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`

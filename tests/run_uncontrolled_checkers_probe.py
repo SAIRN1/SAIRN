@@ -30,6 +30,11 @@ commits on `origin/main` in one day.
 Exit 0 pass, 1 fail. Exit 3 SKIPPED when `node` is absent, because two of these
 checkers need it and "could not run" is not "ran clean".
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['checkblocks.py', 'div_balance_check.py', 'vercel_config_check.py']
+
 import io
 import os
 import shutil
