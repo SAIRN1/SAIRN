@@ -1077,8 +1077,8 @@
       "task": "committer identity leak probe identity in a clone config",
       "claimed_at": "2026-09-13T19:26:42Z",
       "claimed_at_epoch": 1789327602.1294978,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T21:09:45Z"
     }
   ]
 }
