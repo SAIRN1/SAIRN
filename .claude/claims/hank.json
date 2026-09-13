@@ -1243,8 +1243,8 @@
       "task": "three invariant property runner and idempotency checker",
       "claimed_at": "2026-09-13T14:59:49Z",
       "claimed_at_epoch": 1789311589.764304,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T15:34:26Z"
     }
   ]
 }
