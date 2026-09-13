@@ -801,6 +801,44 @@
       "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
     },
     {
+      "commit": "639e9bedf433",
+      "date": "2026-09-13",
+      "subject": "fix(push-gate): five more is-the-tool-present fail-opens, one of which switched off nine checks",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/missing_checker_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 535,
+      "lines_removed": 143,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "critical",
+      "detection_method": "code-review",
+      "summary": "the push gate disabled NINE of its ten checks when one unrelated tool was absent -- if not os.path.isfile(sairn_load_state_check.py): sys.exit(0) at the top of main(), an early exit from when check 1 was the only check"
+    },
+    {
+      "commit": "639e9bedf433",
+      "date": "2026-09-13",
+      "subject": "fix(push-gate): five more is-the-tool-present fail-opens, one of which switched off nine checks",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/missing_checker_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 535,
+      "lines_removed": 143,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "four more is-the-tool-present fail-opens in the push gate: checks 2, 4 and 5 skipped themselves in silence when their checker file was absent, and check 2 also skipped on an unrunnable subprocess"
+    },
+    {
       "commit": "77dd73161646",
       "date": "2026-09-13",
       "subject": "fix(push-gate): a missing checker is not a clean push -- check 3 fails closed on the tool's absence",
