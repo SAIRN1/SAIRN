@@ -999,6 +999,16 @@
       "claimed_at_epoch": 1789224484.3038647,
       "status": "released",
       "released_at": "2026-09-13T10:45:41Z"
+    },
+    {
+      "id": "cody-1789297566",
+      "session": "cody",
+      "subject": "push-gate",
+      "task": "check 3 sql preflight fail-closed deny arms never proven",
+      "claimed_at": "2026-09-13T11:06:06Z",
+      "claimed_at_epoch": 1789297566.8815427,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
