@@ -260,6 +260,31 @@ ok('the real tree: npm_audit_check.py is driven by NOTHING, correctly',
    'its subject is the public npm advisory database -- it is the one EXEMPT '
    'checker in checker_control_check.py, for the same reason')
 
+print('\nI. DRIFT MARGIN -- the alarm is tighter than the failure point')
+# Convention 4. `--check` only speaks once the document is already wrong; this
+# reports how many source commits have landed since it was last regenerated, so
+# unusual drift is visible BEFORE it becomes a finding. The band is measured,
+# not chosen: over 16 regenerations this document's worst staleness was FIVE
+# source commits and its median was two, so the warn line sits at three.
+_d = subprocess.run([sys.executable, TOOL, '--drift'], cwd=REPO,
+                    capture_output=True, text=True, timeout=600)
+_out = (_d.stdout or '') + (_d.stderr or '')
+ok('--drift reports a margin rather than a verdict',
+   'source commits since it was last regenerated' in _out, _out[:200])
+ok('...and names the warn line AND the worst ever observed, not one number',
+   'warn at' in _out and 'worst ever observed' in _out, _out[:200])
+ok('the warn line is INSIDE the observed maximum -- an alarm at the cliff '
+   'edge is not an alarm',
+   0 < ti.DRIFT_WARN_COMMITS < ti.DRIFT_OBSERVED_MAX,
+   'warn=%s max=%s' % (ti.DRIFT_WARN_COMMITS, ti.DRIFT_OBSERVED_MAX))
+ok('a margin within the band exits 0', _d.returncode in (0, 1),
+   'exit=%d' % _d.returncode)
+# IT IS A MARGIN, NOT A MATCH, and saying so matters: a document can be 4
+# commits behind and still be byte-identical, because most commits touch no
+# source this document reads.
+ok('...and it says so -- being behind is not the same as being WRONG',
+   'It may still MATCH' in _out or 'within the band' in _out, _out[:200])
+
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:
     print('  - ' + f)

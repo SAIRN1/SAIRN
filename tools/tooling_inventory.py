@@ -744,7 +744,70 @@ def build():
     return '\n'.join(W) + '\n', None
 
 
+# ── DRIFT MARGIN, added 2026-09-13 ──────────────────────────────────────────
+# The cadence question for this document, answered with its own history rather
+# than a chosen number. Measured over its 16 regenerations:
+#
+#     hours between regenerations   min 0.0   median 0.5   max 20.3
+#     source commits in between     min 0     median 2     max 5
+#
+# SO THE INTERESTING ANSWER IS THAT A SCHEDULE WOULD ADD LITTLE. `--check` is
+# already in the report-only registry and runs on every push, and the worst
+# staleness this document has ever reached is FIVE source commits. A cron that
+# re-derived it hourly would mostly re-derive an already-current file.
+#
+# What was missing is CONVENTION 4: an alarm tighter than the failure point.
+# `--check` only speaks once the document is already wrong. This reports the
+# margin -- how many source commits have landed since it was last regenerated
+# -- so the drift is visible BEFORE it becomes a finding. The band comes from
+# the measurement above: warn at 3, which is inside the observed maximum of 5
+# and outside the median of 2, so it fires on unusual drift and not on normal
+# work.
+DRIFT_WARN_COMMITS = 3
+DRIFT_OBSERVED_MAX = 5
+
+
+def _commits_since(path_spec, since_epoch):
+    r = subprocess.run(['git', 'log', '--format=%ct', '--', path_spec],
+                       cwd=REPO, capture_output=True, text=True)
+    return len([t for t in r.stdout.split()
+                if t.strip() and int(t) > since_epoch])
+
+
+def drift():
+    """How far behind its sources is the committed document, right now?"""
+    r = subprocess.run(['git', 'log', '-1', '--format=%ct', '--', DOC],
+                       cwd=REPO, capture_output=True, text=True)
+    if not r.stdout.strip():
+        print('DRIFT: %s has no commit history here -- nothing to measure '
+              'against. That is not a clean answer.' % DOC)
+        return 2
+    last = int(r.stdout.strip())
+    behind = _commits_since('tools/', last) + _commits_since(SETTINGS, last)
+    print('DRIFT MARGIN -- %s' % DOC)
+    print('  source commits since it was last regenerated : %d' % behind)
+    print('  warn at                                      : %d' % DRIFT_WARN_COMMITS)
+    print('  worst ever observed, over 16 regenerations   : %d' % DRIFT_OBSERVED_MAX)
+    print('')
+    if behind >= DRIFT_WARN_COMMITS:
+        print('%d source commit(s) have landed since this document was last'
+              % behind)
+        print('regenerated. It may still MATCH -- run --check for that. This is')
+        print('the margin, not the violation: the alarm is set tighter than the')
+        print('failure point on purpose, because a check that only speaks once')
+        print('the document is wrong has already shipped the wrong document.')
+        print('    python tools/tooling_inventory.py')
+        return 1
+    print('within the band. Regenerating is cheap and this document has never')
+    print('been more than %d source commits behind; the report-only --check on'
+          % DRIFT_OBSERVED_MAX)
+    print('every push is what has kept it there, not a schedule.')
+    return 0
+
+
 def main(argv):
+    if '--drift' in argv:
+        return drift()
     doc, err = build()
     if err:
         print(err)

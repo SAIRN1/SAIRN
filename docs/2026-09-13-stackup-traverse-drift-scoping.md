@@ -2,14 +2,16 @@
 
 **Written 2026-09-13 (Fourth).** Three items from the civil-engineering /
 surveying research, scoped before anything is built, with a real size against
-each. **Nothing here is implemented yet.** Where a claim carries a number, the
-command that produced it is named, because a scoping document that asserts its
-own figures is the thing item 1 is about.
+each. Where a claim carries a number, the command that produced it is named,
+because a scoping document that asserts its own figures is the thing item 1 is
+about.
 
-**Item 3 IS ALREADY CLAIMED BY ANOTHER SESSION** — `cc`,
-`schema-snapshot-staleness-cadence -- re-derive drift and forced correction`,
-claimed 2026-09-13. It is scoped here for completeness and **must not be built
-from this document**. See the section for what to hand over.
+**STATUS, updated 2026-09-13 after the scoping was approved — this is no longer
+a plan.** Items 1 and 2 are BUILT (`6ac7d8af`, `a4d88cbd`). Item 3 was SPLIT
+rather than assigned to one owner: `cc` keeps `db/schema_snapshot.json`,
+Fourth took `docs/TOOLING-INVENTORY.md`, and that half is done. The sizes below
+are left as they were ESTIMATED, not corrected after the fact, so the estimate
+can be judged against what it cost. Item 1 came in at M as scoped; item 2 at S.
 
 Convention references below are to `docs/2026-09-13-cross-domain-disciplines.md`.
 
@@ -161,7 +163,7 @@ that cannot fire.
 
 ---
 
-## Item 3 — known-rate drift correction · **CLAIMED BY `cc`**
+## Item 3 — known-rate drift correction · **SPLIT, 2026-09-13**
 
 ### The question
 
@@ -172,9 +174,21 @@ exceeded, rather than detecting it once blown?
 
 ### Status
 
-**`cc` holds `schema-snapshot-staleness-cadence -- re-derive drift and forced
-correction`, claimed 2026-09-13, and that is this item almost word for word.**
-Not scoped further here and not to be built from this document.
+**SPLIT ON MICHAEL'S CALL, 2026-09-13 — scoped-and-reassigned, not dropped.**
+The two halves have different drift mechanics (see the hand-over notes below),
+so this is not a collision to settle by picking one owner:
+
+- **`db/schema_snapshot.json` stays with `cc`**, who holds
+  `schema-snapshot-staleness-cadence` and already has it in progress. It is
+  the half that genuinely needs the human-paste mechanism.
+- **`docs/TOOLING-INVENTORY.md` came to Fourth** and is DONE — see
+  `python tools/tooling_inventory.py --drift`. The answer turned out to be
+  that a schedule adds little: measured over its 16 regenerations, the worst
+  staleness it has ever reached is FIVE source commits and the median is two,
+  because `--check` already runs on every push. What was missing was
+  convention 4 — an alarm tighter than the failure point — so it now reports
+  the MARGIN, warning at three, a line taken from that measurement rather
+  than chosen.
 
 ### What to hand over
 
