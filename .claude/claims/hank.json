@@ -1253,8 +1253,8 @@
       "task": "triage which of the 41 can actually retry",
       "claimed_at": "2026-09-13T15:41:36Z",
       "claimed_at_epoch": 1789314096.0529368,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T16:00:12Z"
     }
   ]
 }
