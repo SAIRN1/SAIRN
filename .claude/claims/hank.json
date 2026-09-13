@@ -1185,6 +1185,16 @@
       "claimed_at_epoch": 1789301255.6835382,
       "status": "released",
       "released_at": "2026-09-13T12:16:20Z"
+    },
+    {
+      "id": "hank-1789302013",
+      "session": "hank",
+      "subject": "merge-by-id-overwrite",
+      "task": "timestamp comparison in three identical client merge functions",
+      "claimed_at": "2026-09-13T12:20:13Z",
+      "claimed_at_epoch": 1789302013.4451985,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
