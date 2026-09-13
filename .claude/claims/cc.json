@@ -994,6 +994,16 @@
       "claimed_at_epoch": 1789296368.8606985,
       "status": "released",
       "released_at": "2026-09-13T11:48:59Z"
+    },
+    {
+      "id": "cc-1789300166",
+      "session": "cc",
+      "subject": "stonedesk-object-collections-never-synced",
+      "task": "pricing rules and negotiated prices",
+      "claimed_at": "2026-09-13T11:49:26Z",
+      "claimed_at_epoch": 1789300166.5667245,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
