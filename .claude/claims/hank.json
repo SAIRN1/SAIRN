@@ -1365,6 +1365,16 @@
       "claimed_at_epoch": 1789334708.167247,
       "status": "released",
       "released_at": "2026-09-13T21:32:31Z"
+    },
+    {
+      "id": "hank-1789335172",
+      "session": "hank",
+      "subject": "covert-reviewer-calibration-scoping",
+      "task": "boundary case seeding design",
+      "claimed_at": "2026-09-13T21:32:52Z",
+      "claimed_at_epoch": 1789335172.4005568,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
