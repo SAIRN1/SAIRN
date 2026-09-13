@@ -1225,6 +1225,16 @@
       "claimed_at_epoch": 1789309742.4909134,
       "status": "released",
       "released_at": "2026-09-13T14:43:35Z"
+    },
+    {
+      "id": "hank-1789310893",
+      "session": "hank",
+      "subject": "financial-write-invariants",
+      "task": "scope sum to zero balance and idempotency key",
+      "claimed_at": "2026-09-13T14:48:13Z",
+      "claimed_at_epoch": 1789310893.8462248,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
