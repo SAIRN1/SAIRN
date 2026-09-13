@@ -1315,6 +1315,16 @@
       "claimed_at_epoch": 1789329763.1731405,
       "status": "released",
       "released_at": "2026-09-13T20:12:52Z"
+    },
+    {
+      "id": "hank-1789331333",
+      "session": "hank",
+      "subject": "margin-to-violation-three-engines",
+      "task": "extend cpk alarm to ledger rollup and care-charges",
+      "claimed_at": "2026-09-13T20:28:53Z",
+      "claimed_at_epoch": 1789331333.5333664,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
