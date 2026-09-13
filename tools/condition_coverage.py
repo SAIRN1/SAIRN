@@ -72,6 +72,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CRITERIA_VERSION = '2026-09-13.1'
@@ -250,10 +251,29 @@ def sweep(key, engine, suite, limit=None):
                             'text': o['text'][:100]})
     finally:
         write(path, src)
+    # ── THE RESTORE IS VERIFIED, RETRIED, AND ESCALATED TO GIT ────────────
+    # A tool that writes real source files must leave NO ambiguity about the
+    # state it left them in. The first version compared once and reported
+    # RESTORED: NO on a file that was in fact byte-identical to HEAD -- a read
+    # that beat the write to disk. A false failure here is as corrosive as a
+    # false success: nobody can act on either.
     restored = sha(path) == before_hash
+    how = 'write'
+    if not restored:
+        time.sleep(0.25)
+        restored = sha(path) == before_hash          # retry the READ, not the write
+        how = 'write (after re-read)'
+    if not restored:
+        # Last resort, and LOUD: take the file back from git rather than leave
+        # a mutated engine on disk because a hash check was inconclusive.
+        subprocess.run(['git', 'checkout', '--', engine], cwd=REPO,
+                       capture_output=True, text=True)
+        restored = sha(path) == before_hash
+        how = 'git checkout -- (the write-back could not be confirmed)'
     return {'engine': key, 'file': engine, 'suite': suite,
             'operands': len(ops), 'killed': killed, 'survived': survived,
             'not_applied': not_applied, 'restored_byte_identical': restored,
+            'restored_how': how,
             'results': results}
 
 
