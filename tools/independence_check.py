@@ -153,6 +153,74 @@ def rows():
     return out
 
 
+# A review that FOUND something, as opposed to one that came back clean. Only
+# the first kind can ever appear in the defect register, so only the first kind
+# is a loop left open.
+FOUND_SOMETHING = ('found and fixed', 'defect is fixed', 'defects found',
+                   "reviewer's finding", 'the reviewer found', 'one real defect',
+                   'two defects', 'found a real', 'and the finding is')
+FOUND_NOTHING = ('no findings', 'reviewed and clear', 'no findings.')
+
+
+def review_found_defect(status):
+    t = re.sub(r'[*`~]', '', status or '').lower()
+    if any(p in t for p in FOUND_NOTHING):
+        return False
+    return any(p in t for p in FOUND_SOMETHING)
+
+
+LOOP_FIXTURES = [
+    ('a review that found a defect is a loop to close',
+     "REVIEW DONE 2026-09-08 (CC). All six items answered; the defect is FIXED", True),
+    ('a review that found two defects is too',
+     'INDEPENDENTLY VERIFIED 2026-09-05 -- two defects found and fixed', True),
+    ("a fix made on the reviewer's finding counts",
+     "independently reviewed the same day, fixed by the author on the reviewer's finding", True),
+    ('CONTROL: a clean review is NOT a loop -- it can never appear in the register',
+     'INDEPENDENTLY REVIEWED 2026-09-10 (Hank) -- no findings', False),
+    ('CONTROL: a row that merely mentions review is not a finding',
+     'AWAITING INDEPENDENT REVIEW -- code complete', False),
+]
+
+
+def run_loop_fixtures():
+    return [(n, w, review_found_defect(t)) for n, t, w in LOOP_FIXTURES
+            if review_found_defect(t) != w]
+
+
+def unclosed_loops(rs, recs):
+    """Reviews that found a defect with no register record naming the method.
+
+    THIS IS THE FORWARD FIX, AND IT EXISTS BECAUSE THE BACKFILL WAS NEARLY
+    EMPTY. Measured 2026-09-13: docs/defect-density-register.json starts
+    2026-09-09, and 15 of the 18 review rows are dated BEFORE that -- they
+    cannot be backfilled because the register did not exist when they happened.
+    Of the three in-window rows, one found nothing, one's finding is still an
+    OPEN row never registered, and one names commits that are not in the
+    register at all. ZERO records were safely backfillable.
+
+    Changing a858cab7 from code-review to independent-review would have been
+    WRONG: code review found THAT defect, and the independent review found a
+    DIFFERENT one. Backfilling it would have manufactured the very statistic
+    this is supposed to make honest.
+
+    So instead: make the gap impossible to repeat. A review that found a defect
+    and left no record naming independent-review is reported here, by name.
+    """
+    have = set()
+    for r in recs:
+        if str(r.get('detection_method')) == 'independent-review':
+            have.add(r['commit'][:8])
+    out = []
+    for r in rs:
+        if not review_found_defect(r['status']):
+            continue
+        shas = set(x[:8] for x in re.findall(r'([0-9a-f]{7,12})', r['status']))
+        if not (shas & have):
+            out.append(r)
+    return out
+
+
 def register_capture():
     """Is detection_method capturing independent review at all?"""
     try:
@@ -165,7 +233,7 @@ def register_capture():
 
 
 def main(argv):
-    bad = run_fixtures()
+    bad = run_fixtures() + run_loop_fixtures()
     print('INDEPENDENCE CHECK -- criteria %s, report only' % CRITERIA_VERSION)
     if bad:
         print('  !! THE CRITERIA FAILED THEIR OWN FIXTURES. NOTHING REAL WAS CLASSIFIED.')
@@ -173,7 +241,7 @@ def main(argv):
             print('     expected %-18s got %-18s %s' % (w, g, n))
         return 2
     print('  blind lock: %d/%d fixtures correct, run before the index was read.'
-          % (len(FIXTURES), len(FIXTURES)))
+          % (len(FIXTURES) + len(LOOP_FIXTURES), len(FIXTURES) + len(LOOP_FIXTURES)))
     if '--fixtures' in argv:
         return 0
 
@@ -204,6 +272,24 @@ def main(argv):
             print('    %-18s %s' % (r['method'], r['app'][:40]))
             print('      %s' % r['status'][:120])
 
+    # ── THE LOOP-CLOSING HALF ────────────────────────────────────────────
+    try:
+        recs = json.load(io.open(REGISTER, encoding='utf-8')).get('records', [])
+    except Exception:
+        recs = []
+    loops = unclosed_loops(rs, recs)
+    print('')
+    print('  REVIEWS THAT FOUND A DEFECT AND LEFT NO RECORD: %d' % len(loops))
+    print('  Each of these is a real catch by the independent step that the')
+    print('  fraction-caught measurement will never see. Record it with:')
+    print('     python tools/defect_register.py add --commit <sha> --app <app>')
+    print('        --layer product --severity <sev> --method independent-review')
+    print('        --summary "what the reviewer found"')
+    for r in loops[:10]:
+        print('')
+        print('    %-14s %s' % (r['method'], r['app'][:40]))
+        print('      %s' % r['status'][:130])
+
     print('')
     print('  ── THE MEASUREMENT MICHAEL ASKED FOR IS BLOCKED, AND THAT IS THE')
     print('  ── HEADLINE, NOT A FOOTNOTE ─────────────────────────────────────')
@@ -223,7 +309,7 @@ def main(argv):
         print('  rules-citation field: the tool is ready, the input is not.')
     else:
         print('  the register could not be read -- NOT a pass.')
-    return 1 if (counts.get('SAME-METHOD') or counts.get('UNSTATED')) else 0
+    return 1 if (counts.get('SAME-METHOD') or counts.get('UNSTATED') or loops) else 0
 
 
 if __name__ == '__main__':
