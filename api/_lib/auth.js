@@ -182,7 +182,46 @@ const ROLES_BY_APP = {
   // on TIER (broad-read vs own-assigned) rather than on the literal role string.
   // Building the split now would be speculative structure for a shape nobody has
   // asked for yet.
-  sairnroofing: ['owner', 'admin', 'estimator', 'foreman', 'crew']
+  sairnroofing: ['owner', 'admin', 'estimator', 'foreman', 'crew'],
+  // SAIRNvet (2026-09-13) -- the SIXTEENTH app to get per-employee auth and the
+  // LAST one without it, which is the reason it was built now rather than in
+  // turn. SAIRNvet holds `sv_controlled`, described in its own registry file as
+  // "the controlled-substance register (DEA-relevant)", plus `sv_audit_log`,
+  // its dosing trail. Until today the app authenticated on the LICENCE KEY
+  // ONLY: sairnvet.html:2011 says so in its own words -- "`role` is a
+  // self-selected dropdown, never server-verified". So the one app on the
+  // platform holding a DEA-relevant register knew which PRACTICE was writing
+  // and never which PERSON. Found 2026-09-13 while scoping the witnessing lock
+  // (docs/2026-09-13-irreversible-write-witnessing-scoping.md), where it is
+  // the hard prerequisite: a lock that records "the practice confirmed it" is
+  // theatre.
+  //
+  // THE VOCABULARY IS THE APP'S OWN, READ OUT OF IT RATHER THAN INVENTED.
+  // sairnvet.html's staff roster already offers exactly this list at two
+  // places (:1365 and :6887): Owner/DVM, Associate DVM, Veterinary Technician,
+  // Veterinary Assistant, Practice Manager, Front Desk, Other.
+  //
+  //   owner      -- Owner/DVM. Principal, and the only provisioning role.
+  //   dvm        -- Associate DVM. A licensed veterinarian.
+  //   tech       -- Veterinary Technician (CVT/RVT/LVT depending on state).
+  //   assistant  -- Veterinary Assistant.
+  //   manager    -- Practice Manager. Runs the office; NOT a clinician.
+  //   frontdesk  -- Front Desk / reception.
+  //
+  // 'Other' IS DELIBERATELY DROPPED. It is a roster label, not an identity: a
+  // role that means nothing cannot be gated on, and admitting it would put a
+  // permanently un-gateable role into the access-control surface of an app
+  // whose sharpest record is a controlled-substance log.
+  //
+  // owner + dvm ARE THE LICENSED-PRACTITIONER TIER and that distinction is
+  // load-bearing rather than cosmetic -- a controlled-substance entry is a
+  // legal act by a licensed veterinarian. Exported from api/sv-auth.js as
+  // PRESCRIBER_ROLES so the witnessing lock imports it instead of re-listing
+  // role names, which is the drift that cost SAIRNsenior a real bug.
+  //
+  // Judgment call on the SHORT NAMES only, not on the vocabulary -- same
+  // disclosed-not-silent convention as every other app above.
+  sairnvet: ['owner', 'dvm', 'tech', 'assistant', 'manager', 'frontdesk']
 };
 // Back-compat export — StoneDesk's own role list, unchanged shape for any
 // existing caller that imported ROLES expecting just StoneDesk's set.

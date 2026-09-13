@@ -39,17 +39,26 @@ const mech = require('./mech-auth');
 const rf = require('./rf-auth');
 const sc = require('./sc-auth');
 const sd = require('./sd-auth');
+const sv = require('./sv-auth');
 
 // app_id -> { table, roles }. Only apps that implement set_active have a
-// provisioner concept at all; the other eleven auth files have neither
+// provisioner concept at all; the other ten auth files have neither
 // set_active nor PROVISIONING_ROLES and cannot reach this state, so they are
 // out of scope rather than unaudited.
+//
+// SAIRNvet ADDED 2026-09-13, the day its auth was built. Registering it HERE
+// rather than later is not housekeeping: the trapdoor this endpoint detects is
+// a licence with credential rows and zero active provisioners, which on this
+// app means nobody can mint a credential and therefore nobody can be recorded
+// as the author of a controlled-substance entry. A new auth endpoint that is
+// not in this map is one whose trapdoor nothing watches.
 const APPS = {
   sairndental: { table: dnt.EMPLOYEE_TABLE, roles: dnt.PROVISIONING_ROLES },
   sairnmechanical: { table: mech.EMPLOYEE_TABLE, roles: mech.PROVISIONING_ROLES },
   sairnroofing: { table: rf.EMPLOYEE_TABLE, roles: rf.PROVISIONING_ROLES },
   sairncode: { table: sc.EMPLOYEE_TABLE, roles: sc.PROVISIONING_ROLES },
-  stonedesk: { table: sd.EMPLOYEE_TABLE, roles: sd.PROVISIONING_ROLES }
+  stonedesk: { table: sd.EMPLOYEE_TABLE, roles: sd.PROVISIONING_ROLES },
+  sairnvet: { table: sv.EMPLOYEE_TABLE, roles: sv.PROVISIONING_ROLES }
 };
 
 module.exports = async (req, res) => {
