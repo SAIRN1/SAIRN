@@ -70,14 +70,66 @@ NOT_A_COLUMN = {
 
 
 def snapshot():
+    """The snapshot's TABLES. Metadata keys are not tables and are dropped here.
+
+    db/schema_snapshot.json carries four keys that are not tables --
+    `_generated_at`, `_constraints`, and two `_anon_*_baseline_*` lists. Counting
+    them inflated this tool's header by four: it printed `379 tables` where the
+    file describes 375.
+
+    THAT EXACT MISCOUNT WAS FOUND AND FIXED IN schema_snapshot_freshness.py
+    ("379 where it is 375") AND THE FIX NEVER REACHED THIS CONSUMER. One source
+    file, several readers, and a correction applied to the one someone happened
+    to be looking at -- docs/SAIRN-PROCESS-RULES.md section 1.6. Two tools
+    printing different table counts from the same bytes is also section 2.3, the
+    number that exists in two places.
+
+    THE TEST IS THE LEADING UNDERSCORE, and its limit is worth stating: two real
+    tables in sql/ are named `_grant_baseline_2026_08_25` and
+    `_delete_grant_baseline_2026_08_25`. Neither is in the snapshot, so nothing
+    is misclassified today -- but if one ever is, it will be dropped here. A
+    structural test does not help: the `_anon_*` baselines are lists of strings,
+    the same shape as a table's column list.
+    """
     with io.open(SNAPSHOT, encoding='utf-8') as fh:
-        return json.load(fh)
+        raw = json.load(fh)
+    return {k: v for k, v in raw.items() if not k.startswith('_')}
 
 
-def snapshot_age_days():
+def snapshot_age():
+    """How old the CAPTURE is -- from its own stamp, with the commit date beside it.
+
+    THIS READ THE GIT COMMIT DATE, WHICH IS THE WRONG FIELD, and the same
+    reasoning is already written out in schema_snapshot_freshness.captured_when:
+    a tool whose answer depends on freshness must not take its freshness reading
+    from metadata that lags the thing it describes.
+
+    MEASURED HERE, not argued: this tool printed `last updated 25 hours ago`
+    about a capture generated 43.3 hours earlier -- an 18.7-hour UNDERSTATEMENT,
+    in the direction that makes stale data look current. `_generated_at` is when
+    the query ran; the commit date is when somebody got round to saving it, and
+    the gap between those two is precisely the failure the snapshot tooling
+    exists to catch.
+
+    Both are printed. A capture that exists only in one clone is not yet a fact
+    for anyone else, so the commit date still earns its place -- it is just not
+    the age.
+    """
+    gen = 'no _generated_at in the file'
+    try:
+        with io.open(SNAPSHOT, encoding='utf-8') as fh:
+            stamp = str(json.load(fh).get('_generated_at') or '').strip()
+        if stamp:
+            import datetime
+            g = datetime.datetime.strptime(stamp[:19], '%Y-%m-%d %H:%M:%S')
+            now = datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+            gen = '%s (%.1f hours ago)' % (stamp, (now - g).total_seconds() / 3600.0)
+    except Exception:
+        pass
     r = subprocess.run(['git', 'log', '-1', '--format=%cr', '--', 'db/schema_snapshot.json'],
                        cwd=REPO, capture_output=True, text=True)
-    return (r.stdout or '').strip() or 'unknown'
+    committed = (r.stdout or '').strip() or 'never committed'
+    return 'generated %s; committed %s' % (gen, committed)
 
 
 def main(argv):
@@ -146,8 +198,9 @@ def main(argv):
                           'checked': checked}, indent=1))
     else:
         print('GATE COLUMN CHECK -- report only, nothing was written')
-        print('  schema snapshot   : db/schema_snapshot.json, %d tables, last updated %s'
-              % (len(cols), snapshot_age_days()))
+        print('  schema snapshot   : db/schema_snapshot.json, %d tables'
+              % len(cols))
+        print('                      %s' % snapshot_age())
         print('  files attributed  : %d  (query exactly one table)' % len(checked))
         print('  reads of a column that DOES NOT EXIST: %d' % len(unique))
         print('  NOT checked       : %d  (multi-table or unknown table -- NOT a pass)'

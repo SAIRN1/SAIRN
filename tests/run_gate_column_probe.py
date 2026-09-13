@@ -170,6 +170,74 @@ check('7b  and it attributed files rather than reporting on nothing',
       'files attributed  : 0' not in p.stdout,
       [l.strip() for l in p.stdout.split('\n') if 'files attributed' in l][:1])
 
+# ── 8. THE TWO NUMBERS IN THE HEADER, both wrong until 2026-09-12 ───────────
+# Neither of these changes a finding. Both change what a reader believes about
+# the evidence under one, which is the same thing one level up.
+import io as _io                                                    # noqa: E402
+import json as _json                                                # noqa: E402
+import datetime as _dt                                              # noqa: E402
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import gate_column_check as _g                                      # noqa: E402
+
+_raw = _json.load(_io.open(os.path.join(REPO, 'db', 'schema_snapshot.json'),
+                           encoding='utf-8'))
+_meta = [k for k in _raw if k.startswith('_')]
+check('8a  metadata keys are NOT counted as tables',
+      len(_g.snapshot()) == len(_raw) - len(_meta),
+      'dropped %d non-table keys: %s' % (len(_meta), ', '.join(sorted(_meta))))
+check('8b  and the fixture has some, so 8a is not vacuous',
+      len(_meta) > 0,
+      'a snapshot with no metadata keys would make 8a pass while counting them')
+check('8c  no metadata key survives into the table map',
+      not any(k.startswith('_') for k in _g.snapshot()),
+      'the header count and the lookup must agree on what a table is')
+
+# The age must come from the CAPTURE's own stamp, not the commit date. It read
+# the commit date and printed "25 hours ago" about a 43-hour-old capture --
+# understating it by 18.7 hours, in the direction that makes stale data look
+# current.
+_age = _g.snapshot_age()
+_stamp = str(_raw.get('_generated_at') or '')[:19]
+_gen = _dt.datetime.strptime(_stamp, '%Y-%m-%d %H:%M:%S')
+_hours = (_dt.datetime.now(_dt.timezone.utc).replace(tzinfo=None)
+          - _gen).total_seconds() / 3600.0
+check('8d  the age is derived from _generated_at, not from the commit date',
+      ('%.1f hours ago' % _hours) in _age,
+      _age)
+check('8e  the commit date is still shown -- a capture only one clone has is '
+      'not yet a fact for anyone else',
+      'committed' in _age,
+      _age)
+# THE CONTROL, and it must not go red for the wrong reason. 8d only proves
+# anything while the capture stamp and the commit date actually differ. When a
+# capture is committed promptly they converge, and then 8d would pass whichever
+# field the tool read -- so the control SAYS SO rather than failing or, worse,
+# passing quietly. The first draft hardcoded "~25 hours" and would have gone red
+# the moment a fresh snapshot landed, which is a probe failing for a reason that
+# has nothing to do with the thing it guards.
+_cp = subprocess.run(['git', 'log', '-1', '--format=%cI', '--', 'db/schema_snapshot.json'],
+                     capture_output=True, text=True, cwd=REPO)
+_cs = (_cp.stdout or '').strip()
+_chours = None
+if len(_cs) >= 19:
+    _cd = _dt.datetime.strptime(_cs[:19], '%Y-%m-%dT%H:%M:%S')
+    _off = _cs[19:]
+    if _off and _off[0] in '+-':
+        _cd -= _dt.timedelta(hours=(-1 if _off[0] == '-' else 1) * int(_off[1:3]))
+    _chours = (_dt.datetime.now(_dt.timezone.utc).replace(tzinfo=None)
+               - _cd).total_seconds() / 3600.0
+if _chours is not None and abs(_hours - _chours) > 2:
+    check('8f  CONTROL: the two fields really do differ, so 8d discriminates',
+          ('%.1f hours ago' % _chours) not in _age,
+          'capture %.1fh old vs commit %.1fh old -- the commit age must NOT appear'
+          % (_hours, _chours))
+else:
+    check('8f  CONTROL INAPPLICABLE, declared rather than passed quietly',
+          True,
+          'capture and commit are within 2h (%.1f vs %s) -- 8d cannot discriminate '
+          'right now and is not evidence until they diverge again'
+          % (_hours, '%.1f' % _chours if _chours is not None else 'unknown'))
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  %s' % f)
