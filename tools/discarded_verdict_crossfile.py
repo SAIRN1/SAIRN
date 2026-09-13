@@ -178,7 +178,19 @@ def main(argv):
           % len([h for h in hits if h[0] == 'UNREAD']))
     print('NOTE: a clean run means no hit matched these two SHAPES. It is not '
           'a guarantee -- see the limits in this file\'s header.')
-    return 0
+    # EXIT NON-ZERO ON A HIT, added 2026-09-13. This returned 0 unconditionally
+    # from the day it was written, which was harmless while it was a survey run
+    # by hand -- and stopped being harmless when it was PROMOTED into
+    # tools/report_only_checks.py with `'verdict': by_exit`. by_exit reads the
+    # return code and nothing else, so a tool that cannot exit non-zero can
+    # never report a finding through it, and its clean line is evidence for the
+    # wrong conclusion. Proved rather than reasoned: a copy of api/ with one
+    # BARE and one UNREAD planted printed both hits and exited 0.
+    #
+    # Same class as checkblocks.py, which printed FAILED_BLOCKS:1 and exited 0
+    # while being Guardian Check 0a. Its sibling discarded_verdict_check.py has
+    # always exited non-zero on a finding; this is the one that did not.
+    return 1 if hits else 0
 
 
 if __name__ == '__main__':

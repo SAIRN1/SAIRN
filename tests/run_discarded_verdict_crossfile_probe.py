@@ -14,6 +14,20 @@ done once and forgotten.
 It copies `api/` to a temp directory, plants one of each shape into a real
 file, and requires BOTH to be found and attributed to the right module. The
 repo is never written to.
+
+── AND IT NOW DRIVES THE EXIT CODE, WHICH IT NEVER DID (2026-09-13) ────────
+Every arm here called `survey()` directly. That was reasonable when this was a
+run-by-hand survey, and it stopped being reasonable when the tool was PROMOTED
+into `tools/report_only_checks.py` with `'verdict': by_exit` -- a reader that
+looks at the return code and nothing else. `main()` ended in an unconditional
+`return 0`, so the registry could never see a finding no matter how many the
+tool printed. Proved rather than argued: a planted copy printed both hits and
+exited 0.
+
+A control that tests the FUNCTION while the registry reads the PROCESS is a
+control aimed at the wrong layer -- the same shape as the 84 green isolation
+tests that never touched SAIRNlaw's storage validator. The CLI is driven here
+now, in both directions.
 """
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
@@ -89,8 +103,39 @@ with io.open(target, 'w', encoding='utf-8') as fh:
 _, read_hits = dvc.survey(tmp)
 check('a verdict that is actually consulted is NOT reported', len(read_hits), 0)
 
+# ── THE PROCESS, not just the function ──────────────────────────────────────
+# report_only_checks.py reads this tool with by_exit, which looks at the return
+# code and NOTHING else. Every arm above calls survey() in-process and would
+# stay green while the registry saw nothing -- which is exactly what happened
+# from promotion on 2026-09-10 until 2026-09-13.
+import subprocess                                                # noqa: E402
+
+CLI = os.path.join(ROOT, 'tools', 'discarded_verdict_crossfile.py')
+
+
+def cli_rc(root):
+    p = subprocess.run([sys.executable, CLI, '--root', root], cwd=ROOT,
+                       capture_output=True, text=True, encoding='utf-8',
+                       errors='replace', timeout=600)
+    return p.returncode, (p.stdout or '') + (p.stderr or '')
+
+
+with io.open(target, 'w', encoding='utf-8') as fh:
+    fh.write(original + PLANT)
+rc, out = cli_rc(tmp)
+check('a planted hit makes the PROCESS exit non-zero', rc, 1)
+check('...and the counts are still printed for a human',
+      'BARE_STATEMENT_CROSS_FILE:1' in out, True)
+
+with io.open(target, 'w', encoding='utf-8') as fh:
+    fh.write(original)
+rc, out = cli_rc(tmp)
+check('and an unplanted copy exits 0', rc, 0)
+check('...having really scanned it -- 0 is a count, not a skip',
+      'VERDICT_SHAPED_EXPORTS:0' in out, False)
+
 shutil.rmtree(tmp, ignore_errors=True)
 
 print(('FAILED  ' if fails else 'ok  ') +
-      'discarded-verdict-crossfile: 7 checks, %d failed' % fails)
+      'discarded-verdict-crossfile: 11 checks, %d failed' % fails)
 sys.exit(1 if fails else 0)

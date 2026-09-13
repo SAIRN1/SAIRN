@@ -355,6 +355,95 @@ check('E2 every entry records when and why it was promoted',
       [e['tool'] for e in roc.REGISTRY
        if not (e.get('promoted') and e.get('evidence') and e.get('catches'))], [])
 
+# ── E3. A by_exit ENTRY WHOSE TOOL CANNOT EXIT NON-ZERO IS DEAF ─────────────
+# THE CLASS, found twice on 2026-09-13 by asking it of every entry at once
+# rather than one tool at a time:
+#
+#   literal_drift_check.py          no sys.exit AT ALL -- three sections
+#                                   printed, then it falls off the end
+#   discarded_verdict_crossfile.py  main() ended in an unconditional `return 0`
+#
+# Both were promoted with `'verdict': by_exit`, and by_exit reads the return
+# code and NOTHING ELSE -- `([], out) if not rc`. So every finding either has
+# ever produced was invisible to the registry that runs it, and the evidence
+# line on literal_drift_check.py, "real run 2026-09-10 over all 22 app files: 0
+# findings", is precisely what a checker that CANNOT report looks like.
+#
+# Same shape as checkblocks.py, which printed FAILED_BLOCKS:1 and exited 0
+# while being Guardian Check 0a. That one was found by hand. This is the
+# mechanism, so the third instance is not.
+#
+# IT IS A STATIC PROOF, NOT A HEURISTIC, and only because of what by_exit is.
+# Cody's 2026-09-12 sweep of the BLOCKING tools correctly rejected this same
+# question there -- three of those exit 0 and signal a deny by printing JSON,
+# so "has a non-zero exit path" said nothing about whether the gate refuses.
+# Here the READER is the exit code, so a tool with no non-zero path provably
+# cannot report, whatever it prints.
+import ast                                                       # noqa: E402
+
+# An exemption with a REASON beside it is a decision; one without is a silence.
+EXIT_EXEMPT = {
+    'literal_drift_check.py':
+        'CONFIRMED DEAF, not exempted on the merits -- held open because the '
+        'FIX is a real decision, not a typo. Measured across the app files, '
+        "its fact pass is dominated by demo phone numbers, which the tool's "
+        'own docstring names as noise ("a HIT IS A TRIAGE SIGNAL, NEVER '
+        'PROOF"). Choosing which sections count decides what fires on every '
+        'push, so it was raised 2026-09-13 rather than taken. Driven in both '
+        'directions by tests/run_literal_drift_control_probe.py, which pins '
+        'the always-0 exit so the gap cannot close by accident.',
+}
+
+
+def _has_nonzero_exit(path):
+    """Can this tool ever leave the process with a non-zero status?"""
+    tree = ast.parse(io.open(path, encoding='utf-8', errors='replace').read())
+    funcs = {n.name: n for n in ast.walk(tree)
+             if isinstance(n, (ast.FunctionDef, ast.AsyncFunctionDef))}
+
+    def is_zero(node):
+        return isinstance(node, ast.Constant) and node.value in (0, None)
+
+    for n in ast.walk(tree):
+        if isinstance(n, ast.Raise) and n.exc is not None \
+                and 'SystemExit' in ast.unparse(n.exc):
+            return True
+        if not isinstance(n, ast.Call) or not n.args:
+            continue
+        f = n.func
+        name = f.attr if isinstance(f, ast.Attribute) else \
+            (f.id if isinstance(f, ast.Name) else '')
+        if name != 'exit':
+            continue
+        a = n.args[0]
+        if is_zero(a):
+            continue
+        # `sys.exit(main(...))` -- the status is whatever main returns.
+        if isinstance(a, ast.Call) and isinstance(a.func, ast.Name) \
+                and a.func.id in funcs:
+            fn = funcs[a.func.id]
+            if any(isinstance(r, ast.Return) and r.value is not None
+                   and not is_zero(r.value) for r in ast.walk(fn)):
+                return True
+            continue
+        return True
+    return False
+
+
+deaf = [e['tool'] for e in roc.REGISTRY
+        if e['verdict'].__name__ == 'by_exit'
+        and e['tool'] not in EXIT_EXEMPT
+        and os.path.isfile(os.path.join(REPO, 'tools', e['tool']))
+        and not _has_nonzero_exit(os.path.join(REPO, 'tools', e['tool']))]
+check('E3 every by_exit tool CAN exit non-zero -- otherwise the registry is '
+      'reading a code the tool never sets', deaf, [])
+check('E3a and the reader really is exit-code-only, which is what makes E3 a '
+      'proof rather than a guess', roc.by_exit(0, 'FAIL: something')[0], [])
+check('E3b ...while a non-zero code does produce a finding',
+      len(roc.by_exit(1, 'FAIL: something')[0]) > 0, True)
+check('E3c the one held-open exemption is named, with a reason',
+      [k for k, v in EXIT_EXEMPT.items() if len(v) < 80], [])
+
 # ── F. the target set excludes what is not served ──────────────────────────
 files = roc.app_files()
 check('F1 no non-root html is scanned', [f for f in files if '/' in f], [])
