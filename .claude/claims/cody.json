@@ -1059,6 +1059,16 @@
       "claimed_at_epoch": 1789317290.6159327,
       "status": "released",
       "released_at": "2026-09-13T18:05:10Z"
+    },
+    {
+      "id": "cody-1789322755",
+      "session": "cody",
+      "subject": "stonedesk",
+      "task": "drawing snapshot budget retention cap assertions stale",
+      "claimed_at": "2026-09-13T18:05:55Z",
+      "claimed_at_epoch": 1789322755.9895506,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
