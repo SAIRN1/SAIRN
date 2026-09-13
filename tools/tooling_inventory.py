@@ -98,6 +98,7 @@ PURPOSES = {
     # is always clean.
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
+    'condition_coverage.py': ('CHECKER', 'an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it'),
     'idempotency_check.py': ('CHECKER', 'a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run'),
     'invariant_runner.js': ('CHECKER', 'the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality'),
     'invariant_registry.js': ('CHECKER', 'not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine'),
