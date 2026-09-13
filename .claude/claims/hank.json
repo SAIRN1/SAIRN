@@ -1175,6 +1175,16 @@
       "claimed_at_epoch": 1789301030.7719884,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789301255",
+      "session": "hank",
+      "subject": "coordination-health-check",
+      "task": "tonight relay misroute and truncation cases plus a snapshot loader",
+      "claimed_at": "2026-09-13T12:07:35Z",
+      "claimed_at_epoch": 1789301255.6835382,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
