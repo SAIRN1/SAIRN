@@ -98,7 +98,8 @@ const UNIT = [
   grabAt('function st(key,data){', ''),
   grabAt('function sdSyncCollection(key,next,prev){', ''),
   grabLine('var _sdCapped={};'),
-  grabAt('function sdCapLocal(key,arr,max){', '')
+  grabAt('function sdCapLocal(key,arr,max){', ''),
+  grabAt('function sdCapLocalTail(key,arr,max){', '')
 ].join('\n\n');
 
 function build(opts) {
@@ -366,23 +367,33 @@ function seeded(key, prev, opts) {
   // synced (sd_quote_history, sd_stonehub_log). A cap only matters if the array
   // it trims is the one being saved under a SYNCED key, so the check follows
   // the self-assignment to the next st() call and reads THAT key.
+  // BOTH SLICE FORMS. The first version of this arm only recognised
+  // `x = x.slice(0,N)` -- keep the oldest -- and walked straight past
+  // sd_exec_msgs' `x = x.slice(-500)`, which keeps the NEWEST. That was a sixth
+  // cap on a synced collection, and it would have deleted the executive
+  // channel's server history one message at a time while this arm stayed green.
+  // A guard that recognises one spelling of the thing it guards is a guard with
+  // a hole the exact width of the other spelling.
   test('every cap on a SYNCED collection routes its trim through sdCapLocal', () => {
     const lines = html.split('\n');
     const synced = new Set(build({}).ctx.SD_SYNCED);
+    // BACKING VARIABLE -> KEY, derived once from every st(key, var) site in the
+    // file. The previous version looked for that save within 12 lines of the
+    // trim, and sd_exec_msgs' cap is saved by saveSD5() -- an AGGREGATE saver
+    // several hundred lines away -- so the arm could not attribute it and
+    // reported clean on a mutation that removed the guard. Proven by reverting
+    // the exec cap and watching this stay green, which is why it was rewritten.
+    const varToKey = {};
+    html.replace(/st\(\s*'([a-z_]+)'\s*,\s*([A-Za-z_$][\w$]*)\s*\)/g, (all, key, v) => {
+      if (synced.has(key)) varToKey[v] = key;
+      return all;
+    });
     const offenders = [];
     lines.forEach((l, i) => {
-      const m = l.match(/\b(\w+)\s*=\s*\1\.slice\(\s*0\s*,\s*\d+\s*\)/);
+      const m = l.match(/\b(\w+)\s*=\s*\1\.slice\(\s*(?:0\s*,\s*\d+|-\d+)\s*\)/);
       if (!m || /sdCapLocal/.test(l)) return;
-      const varName = m[1];
-      // the next save within the following 12 lines, which is where every one
-      // of these sits
-      for (let j = i; j < Math.min(lines.length, i + 12); j++) {
-        const s = lines[j].match(new RegExp("st\\(\\s*'([a-z_]+)'\\s*,\\s*" + varName + "\\b"));
-        if (s) {
-          if (synced.has(s[1])) offenders.push((i + 1) + ': ' + l.trim() + '  -> ' + s[1]);
-          break;
-        }
-      }
+      const key = varToKey[m[1]];
+      if (key) offenders.push((i + 1) + ': ' + l.trim() + '  -> ' + key);
     });
     assert.deepStrictEqual(offenders, [],
       'these trim a SYNCED collection without registering the drop, so the cap '

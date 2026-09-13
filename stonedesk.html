@@ -2173,6 +2173,22 @@ function sdCapLocal(key,arr,max){
   return arr.slice(0,max);
 }
 window.sdCapLocal=sdCapLocal;
+// The same thing for a log that keeps its NEWEST entries -- `x = x.slice(-N)`
+// rather than `x = x.slice(0,N)`. Two functions rather than a flag because the
+// call site should read as what it does, and because the first version of the
+// cap guard only recognised the slice(0,N) form and walked straight past
+// sd_exec_msgs' `slice(-500)` -- a sixth cap that would have deleted the
+// executive channel's server history one message at a time.
+function sdCapLocalTail(key,arr,max){
+  if(!Array.isArray(arr)||arr.length<=max) return arr;
+  var dropped=arr.slice(0,arr.length-max);
+  var bucket=_sdCapped[key]||(_sdCapped[key]={});
+  dropped.forEach(function(r){
+    if(r&&r.id!==undefined&&r.id!==null&&r.id!==''){ bucket[String(r.id)]=true; }
+  });
+  return arr.slice(-max);
+}
+window.sdCapLocalTail=sdCapLocalTail;
 
 // ── ROWS THAT NEVER HAD AN ID HAVE NEVER BEEN BACKED UP ──────────────────
 // sdSyncCollection() skips any row whose `id` is missing or empty. Several of
@@ -24310,8 +24326,15 @@ function handlePhotoFiles(files) {
         date: new Date().toISOString()
       };
       sdPhotos.unshift(photo);
-      // Keep only last 200 photos (data URL storage limit)
-      if (sdPhotos.length > 200) sdPhotos = sdPhotos.slice(0, 200);
+      // A LOCAL CAP, NOT A DELETION -- see sdCapLocal(). The comment that stood
+      // here said "data URL storage limit", which is exactly the point: 200 is
+      // a localStorage bound on one browser. The server has no such bound and
+      // was keeping the deeper archive, so without this the 201st photo would
+      // tell it the oldest had been deleted. Found by the cap guard only after
+      // that guard was rewritten to follow AGGREGATE savers -- this one is
+      // saved by saveSD3Data(), hundreds of lines away, so a proximity-based
+      // check could never see it.
+      sdPhotos = sdCapLocal('sd_photos', sdPhotos, 200);
       saveSD3Data();
       renderPhotos();
     };
@@ -27250,7 +27273,20 @@ function renderExecChat(){
   el.innerHTML=sdExecMsgs.map(m=>{
     var isMine=m.role===sdExecRole;
     return '<div class="exec-msg '+(isMine?'mine':'theirs')+'">'+
-      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' · '+new Date(m.ts).toLocaleTimeString()+'</div>'+
+      '<div class="exec-msg-sender">'+m.role.toUpperCase()+' · '+new Date(m.ts).toLocaleTimeString()+
+      // DELETE IS OFFERED ON YOUR OWN MESSAGES ONLY (2026-09-13). This is a
+      // shared channel between three roles, so a blanket Delete would let the
+      // CFO remove what the CEO said. `isMine` is the same test the bubble
+      // styling already uses, so the button appears exactly where the message
+      // is already shown as yours. The server-side gate is that sd_exec_msgs
+      // reaches api/sd-data.js through the generic branch like every other
+      // collection -- this is a UI courtesy, not an authorisation boundary,
+      // and execDelete() re-checks the role rather than trusting the markup.
+      (isMine
+        ? ' <a href="javascript:void(0)" onclick="execDelete(\''+escAttrJs(String(m.id||''))+'\')" '
+          +'style="color:#dc2626;text-decoration:none;font-size:11px;margin-left:6px">Delete</a>'
+        : '')+
+      '</div>'+
       escHtml(m.text)+
     '</div>';
   }).join('');
@@ -27268,9 +27304,29 @@ function execSend(){
   inp.value='';
   var msg={id:'EM'+Date.now(),role:sdExecRole,text:text,ts:new Date().toISOString()};
   sdExecMsgs.push(msg);
-  if(sdExecMsgs.length>500) sdExecMsgs=sdExecMsgs.slice(-500);
+  // A LOCAL CAP, NOT A DELETION -- see sdCapLocalTail(). 500 is a localStorage
+  // bound on one browser; the server has no such bound and keeps the fuller
+  // channel. Without this the 501st message would tell the server the 1st had
+  // been deleted.
+  sdExecMsgs=sdCapLocalTail('sd_exec_msgs',sdExecMsgs,500);
   saveSD5();
   renderExecChat();
+}
+
+// Your own messages only. The markup offers Delete only on `isMine` rows, and
+// this re-checks rather than trusting it: a shared channel where the CFO can
+// remove what the CEO said is a different feature from one where you can take
+// back your own line.
+function execDelete(id){
+  if(!id) return;
+  var m=sdExecMsgs.filter(function(x){return String(x&&x.id)===String(id);})[0];
+  if(!m) return;
+  if(m.role!==sdExecRole){ showToast('You can only delete your own messages.'); return; }
+  if(!confirm('Delete this message?\n\nIt is hidden and kept, not destroyed.')) return;
+  sdExecMsgs=sdExecMsgs.filter(function(x){return String(x&&x.id)!==String(id);});
+  if(!saveSD5()){ showToast('Could not delete that message -- storage may be full or unavailable, try again'); return; }
+  renderExecChat();
+  showToast('Message deleted.');
 }
 
 // == COMMUNICATIONS ============================================
