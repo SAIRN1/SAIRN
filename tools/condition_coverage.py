@@ -51,6 +51,11 @@ rather than printing a meaningless column.
 ── WHAT IT CANNOT SEE, said here rather than discovered later ────────────
   * operands inside comments or string literals. They are stripped before
     parsing, so they are never mutated -- and never counted as covered either;
+  * a `||` inside a REGEX LITERAL. The stripper handles quotes and comments and
+    does NOT track regex literals, so an alternation there could in principle be
+    mutated. Measured on the four engines: zero `&&`/`||` occur inside a regex,
+    so nothing is affected today -- stated as a real limit rather than implied
+    away, because the next engine added may differ;
   * short-circuit reachability: an operand that no input can reach will survive
     every mutation, and that is indistinguishable here from a test gap. Both
     need a human;
@@ -151,7 +156,24 @@ def mutate(src, pos, op):
 
 
 def sha(path):
-    return hashlib.sha256(io.open(path, 'rb').read()).hexdigest()
+    with io.open(path, 'rb') as fh:
+        return hashlib.sha256(fh.read()).hexdigest()
+
+
+def write(path, text):
+    """Write and CLOSE explicitly.
+
+    The first version relied on refcount to close the handle and then hashed
+    the file on the next line. The full ledger sweep reported the restore as
+    NOT byte-identical while the bytes on disk were in fact correct -- an
+    unflushed write read back mid-flight. A restore-verification that can
+    report a false failure is as bad as one that can report a false success:
+    both make the check unbelievable.
+    """
+    with io.open(path, 'w', encoding='utf-8', newline=chr(10)) as fh:
+        fh.write(text)
+        fh.flush()
+        os.fsync(fh.fileno())
 
 
 def run_suite(suite):
@@ -209,7 +231,7 @@ def sweep(key, engine, suite, limit=None):
         for o in ops:
             mutated = mutate(src, o['pos'], o['op'])
             applied = mutated != src
-            io.open(path, 'w', encoding='utf-8', newline='\n').write(mutated)
+            write(path, mutated)
             # ACCURACY: did the file really change? A SURVIVED verdict from a
             # mutation that never applied would report a tested operand as
             # untested -- the worst output this tool could produce.
@@ -227,7 +249,7 @@ def sweep(key, engine, suite, limit=None):
             results.append({'line': o['line'], 'op': o['op'], 'verdict': verdict,
                             'text': o['text'][:100]})
     finally:
-        io.open(path, 'w', encoding='utf-8', newline='\n').write(src)
+        write(path, src)
     restored = sha(path) == before_hash
     return {'engine': key, 'file': engine, 'suite': suite,
             'operands': len(ops), 'killed': killed, 'survived': survived,
