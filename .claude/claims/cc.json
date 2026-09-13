@@ -1004,6 +1004,16 @@
       "claimed_at_epoch": 1789300166.5667245,
       "status": "released",
       "released_at": "2026-09-13T12:07:00Z"
+    },
+    {
+      "id": "cc-1789301343",
+      "session": "cc",
+      "subject": "stonedesk-append-only-delete-ui",
+      "task": "comms repair and delete panels for the remaining collections",
+      "claimed_at": "2026-09-13T12:09:03Z",
+      "claimed_at_epoch": 1789301343.782593,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
