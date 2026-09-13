@@ -1052,8 +1052,8 @@
       "task": "re-derive line count and citation field",
       "claimed_at": "2026-09-13T16:18:01Z",
       "claimed_at_epoch": 1789316281.930037,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T16:32:30Z"
     }
   ]
 }
