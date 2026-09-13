@@ -279,6 +279,11 @@ for ever.
 both probes added since the tool existed were written unguarded. A drift rate is
 not always slow, and it is not always in the direction of the fix.
 
+**Re-run it rather than quoting it from here.** 23 is an open burn-down under an
+active claim (`cody`, 2026-09-13), so this figure is expected to move and this
+document is not its source of truth — which is the eighth convention applied to
+the paragraph stating the eighth convention.
+
 **The second gyro is a generator's own `--check`.** Both ends of that comparison
 come from the same instrument, so it proves the document has not been hand-edited
 and cannot prove the generator still reads what it used to read.
