@@ -1395,6 +1395,16 @@
       "claimed_at_epoch": 1789339745.3183954,
       "status": "released",
       "released_at": "2026-09-13T22:58:07Z"
+    },
+    {
+      "id": "hank-1789340635",
+      "session": "hank",
+      "subject": "fmea",
+      "task": "item 26 fmea prediction loop wiring on register add",
+      "claimed_at": "2026-09-13T23:03:55Z",
+      "claimed_at_epoch": 1789340635.6568356,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
