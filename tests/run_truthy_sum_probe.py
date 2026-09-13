@@ -181,10 +181,53 @@ check('the real SAIRN tree currently has no UNBASELINED occurrence', r.returncod
 # MIN_TEST_FILES in tools/run_all_tests.py: a floor, never an equality, and it
 # is not to be raised to clear a failure -- a DROP means the scanner stopped
 # seeing files and is the thing worth failing on.
-_m = re.search(r'occurrences\s*:\s*(\d+)', r.stdout)
-check('...and it really did look -- the occurrence count is reported', bool(_m), True)
-check('...and it is not a collapsed scan -- at least 100 occurrences seen',
+#
+# AND IT FLOORS ON THE RAW MATCH COUNT, NOT THE CANDIDATE COUNT. The first
+# version of this floor pinned `occurrences`, which is post-classification --
+# splitting string-literal concatenation out the same day took it 140 -> 82 and
+# the arm went red over a correctness improvement. `raw ... matches inspected`
+# is the number that answers "did it look".
+_m = re.search(r'matches inspected\s*:\s*(\d+)', r.stdout)
+check('...and it really did look -- the raw match count is reported', bool(_m), True)
+check('...and it is not a collapsed scan -- at least 100 raw matches seen',
       bool(_m) and int(_m.group(1)) >= 100, True)
+
+# ── 12. a STRING LITERAL on the left is concatenation, not a fold ──────────
+# The whole reason this section exists: before 2026-09-13 every currency label
+# anyone added tripped the check and was answered with a baseline entry, which
+# is a checker teaching people to write exemptions.
+rc, out = case('string-literal-concat', {
+    'app.js': "var h = '<td>$' + (x.ytd || 0) + '</td>';\n"})
+check('a string-literal left operand is NOT reported',
+      (rc, 'NEW OCCURRENCE' in out), (0, False))
+check('...and it is COUNTED, not silently dropped',
+      'not a fold, so not counted : 1' in out, True)
+check('...and --full names it', 'x.ytd' in case('concat-full', {
+    'app.js': "var h = '<td>$' + (x.ytd || 0) + '</td>';\n"}, args=('--full',))[1], True)
+
+# ONLY AN IMMEDIATELY PRECEDING LITERAL. A variable that happens to hold a
+# string is the HAZARD and is not derivable here, so it must still be reported.
+rc, out = case('string-variable-left', {
+    'app.js': 'var h = prefix + (x.ytd || 0);\n'})
+check('a VARIABLE on the left is still reported -- it may hold a string', rc, 1)
+
+# A call returning a string ends in `)`, not a quote. Conservative on purpose.
+rc, out = case('call-returning-string', {
+    'app.js': "var h = label('$') + (x.ytd || 0);\n"})
+check('a call on the left is still reported -- over-reporting is the safe side', rc, 1)
+
+# A template literal is a string literal too.
+rc, out = case('template-literal', {
+    'app.js': 'var h = `total ` + (x.ytd || 0);\n'})
+check('a template literal on the left is NOT reported', rc, 0)
+
+# ── 13. a baseline key nothing matches any more is REPORTED ───────────────
+rc, out = case('stale-baseline', {
+    'app.js': 'var t = rows.reduce(function (s, o) { return s + (o.total || 0); }, 0);\n'},
+    baseline={'app.js::o.total': 'grandfathered', 'app.js::o.gone': 'deleted long ago'})
+check('a baseline key with nothing behind it is counted',
+      'no longer present   : 1' in out, True)
+check('...and the live one is not counted stale', rc, 0)
 
 print()
 if fails:

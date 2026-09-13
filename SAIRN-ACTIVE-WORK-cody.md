@@ -3321,3 +3321,54 @@ three apps, and the stamping failure swallowed silently in two.
 **NOTED FOR THE TOOL'S OWNER, NOT FIXED:** `truthy_sum_check.py` cannot tell a
 numeric fold from a string-literal concatenation, so every future price-display
 line will trip it and need a baseline entry.
+
+## 2026-09-13 (Cody) -- the checker that was teaching people to write exemptions
+
+Skill used: `sairn-code-scrubber`. Claim: `tooling` --
+`truthy sum check string literal concatenation is not a numeric fold`.
+My own flag from the previous pass, and my own close: baselining two currency
+labels was the workaround, this is the fix.
+
+**A STRING OPERAND MAKES `+` CONCATENATE.** `'$' + (x || 0)` matches the same
+text as the hazard and sums nothing -- the result is correct for a number, a
+numeric string, `0` and `undefined` alike. The checker could not tell the two
+apart, so every price-display line anyone added tripped it and was answered with
+a baseline entry. Measured after the split: **140 raw matches, 82 real
+candidates across 8 files, 58 concatenations.** More than a third of what this
+tool had been reporting was never a defect.
+
+**ONLY AN IMMEDIATELY PRECEDING LITERAL COUNTS, and that is deliberate.**
+`s + (x || 0)` where `s` happens to hold a string is the HAZARD and is not
+derivable here; `label('$') + (x || 0)` ends in `)` and is still reported. Arms
+pin both directions, because a classifier that guessed wrong would HIDE a real
+fold -- over-reporting is the safe side for this tool and under-reporting is the
+one that costs money. Template literals count as literals.
+
+**THE EXCLUSION IS COUNTED AND PRINTED ON EVERY RUN**, the same way the
+`archive/` exclusion already is. A silent exclusion reads as coverage.
+
+**31 BASELINE KEYS PRUNED, AND THE FILE SAYS WHY.** The CHECKER was corrected,
+not the code. Nothing was fixed by the prune and no hazard was retired; the
+header says so, so nobody later reads a shrinking baseline as progress.
+
+**A NEW REPORT: baseline keys nothing matches any more.** An entry with nothing
+behind it is a claim nobody is checking, and it makes the file look like it is
+holding back more than it is. Reported, never auto-pruned -- a key can vanish
+because the code was deleted, because it was fixed, or because the matcher
+changed, and only a reader can tell which.
+
+**THE PROBE'S OWN FLOOR HAD TO MOVE, hours after I put it there.** I floored it
+on the candidate count, which is post-classification, so this correctness
+improvement took it 140 -> 82 and turned my own arm red. It floors on **raw
+matches inspected** now -- the number that actually answers "did it look". A
+floor is only as good as the quantity it is pinned to.
+
+**7 MUTATION CONTROLS BITE**, tool restored byte-identical, probe green first:
+the split removed, the split INVERTED (16 arms), the whitespace skip disabled,
+string-literal ends never recorded, the concatenation count unprinted, the
+stale-baseline report hardcoded to zero, and the raw-match line reporting the
+wrong quantity.
+
+**THREE DOCSTRING COUNTS CORRECTED** in the tool and in its report-only registry
+entry rather than left to be quoted -- the tool's own docstring already says a
+number in a docstring is a claim like any other.

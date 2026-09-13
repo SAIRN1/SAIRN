@@ -40,18 +40,29 @@ HAZARD, and the question it asks of each one is "who can write this field".**
 That question is not derivable here and the tool does not pretend to answer it.
 
 THE BASELINE IS THE MECHANISM, same as tools/removal_path_baseline.json. The
-real run finds 135 occurrences across 10 files -- 80 distinct file+field keys,
-led by stonedesk.html (28), sairnbuild.html (20) and api/_lib/wip-accounting.js
-(10). A checker reporting all 135 forever would sit at exit 1 and gate nothing,
-so all 80 keys are grandfathered and the check fails on a NEW one. Burn one down
-by wrapping the term in `Number(...)` -- which is the whole fix -- or, if the
-field is provably numeric, by replacing its line in the baseline with that
-reason.
+real run finds 82 candidate occurrences across 8 files -- 51 distinct file+field
+keys, led by sairnbuild.html (27), stonedesk.html (24) and
+api/_lib/wip-accounting.js (10). A checker reporting all 82 forever would sit at
+exit 1 and gate nothing, so all 51 keys are grandfathered and the check fails on
+a NEW one. Burn one down by wrapping the term in `Number(...)` -- which is the
+whole fix -- or, if the field is provably numeric, by replacing its line in the
+baseline with that reason.
+
+A STRING LITERAL ON THE LEFT IS NOT A FOLD, and treating it as one was this
+tool teaching people to write exemptions. `'$' + (x || 0)` matches the same text
+and sums nothing: a string operand makes `+` concatenate, so the result is right
+for a number, a numeric string, 0 and undefined alike. 58 of the 140 raw matches
+were that shape -- currency labels and table cells -- and every future one would
+have tripped the check and been answered with a baseline entry. They are
+classified separately now, COUNTED AND PRINTED on every run rather than dropped
+in silence, and 31 baseline keys that existed only to excuse them were removed.
+Nothing was fixed by that prune and no hazard was retired.
 
 (An earlier draft of this paragraph said "104 occurrences across eight apps",
 which was a hand-count taken before the tool existed and before string
-interiors were stripped. It is corrected here rather than left to be quoted --
-a number in a docstring is a claim like any other.)
+interiors were stripped; a later one said 135/80 before the concatenation split.
+Both are corrected here rather than left to be quoted -- a number in a docstring
+is a claim like any other.)
 """
 import io
 import json
@@ -151,9 +162,48 @@ def strip_comments(src):
     return ''.join(out)
 
 
+def string_literal_ends(code):
+    """Indices just past every string-literal closing quote in STRIPPED code.
+
+    strip_comments() blanks string INTERIORS but deliberately keeps the
+    delimiters, so every quote character surviving in the stripped source is a
+    real delimiter and they alternate open/close per literal. Escapes are
+    already gone -- `\\'` was replaced by two spaces -- so no quote here is an
+    escaped one.
+    """
+    ends, quote = set(), None
+    for i, c in enumerate(code):
+        if quote:
+            if c == quote:
+                ends.add(i + 1)
+                quote = None
+        elif c in '\'"`':
+            quote = c
+    return ends
+
+
 def occurrences():
-    """(file, line, term) for every uncoerced `+ (x || 0)` in tracked source."""
-    found = []
+    """((file, line, term) candidates, (file, line, term) concatenations).
+
+    A STRING LITERAL ON THE LEFT IS CONCATENATION BY CONSTRUCTION, NOT A FOLD
+    (2026-09-13). `'$' + (x.ytd || 0)` matches the same text as a numeric fold
+    and is not one: JS `+` with a string operand always concatenates, so the
+    result is correct for a number, a numeric string, 0 and undefined alike --
+    `'$'+(500||0)` and `'$'+('500'||0)` are both `'$500'`, and `'$'+(0||0)` is
+    `'$0'`. Nothing is summed. Before this, every currency label a future commit
+    added tripped the check and needed a baseline entry saying so, which is a
+    checker teaching people to write exemptions.
+
+    ONLY AN IMMEDIATELY PRECEDING LITERAL COUNTS, and that is deliberately
+    conservative. `s + (x || 0)` where `s` happens to hold a string is the
+    HAZARD and is not derivable here; `f('$') + (x || 0)` ends in `)` and is
+    still reported. Over-reporting is the safe direction for this tool.
+
+    THEY ARE RETURNED, NOT DROPPED. A silent exclusion reads as "covered
+    everything" when it did not, so main() prints the count on every run the
+    same way the archive/ exclusion is printed.
+    """
+    found, concat = [], []
     for f in tracked():
         path = os.path.join(REPO, f)
         if not os.path.exists(path):
@@ -161,14 +211,19 @@ def occurrences():
         with io.open(path, encoding='utf-8', errors='replace') as fh:
             src = fh.read()
         code = strip_comments(src)
+        lit_ends = string_literal_ends(code)
         for m in TERM_RE.finditer(code):
             # `Number(` immediately before the `(` means the term is coerced.
             before = code[max(0, m.start() - 24):m.start() + 1]
             if COERCED_RE.search(before.replace(' ', '').replace('+', '')):
                 continue
             head = code[:m.start()]
-            found.append((f, head.count('\n') + 1, m.group(1)))
-    return found
+            row = (f, head.count('\n') + 1, m.group(1))
+            j = m.start()
+            while j > 0 and code[j - 1] in ' \t\r\n':
+                j -= 1
+            (concat if j in lit_ends else found).append(row)
+    return found, concat
 
 
 def key(f, line, term):
@@ -184,7 +239,7 @@ def key(f, line, term):
 
 def main(argv):
     quiet, full = '--quiet' in argv, '--full' in argv
-    found = occurrences()
+    found, concat = occurrences()
     baseline = {}
     if os.path.exists(BASELINE):
         with io.open(BASELINE, encoding='utf-8') as fh:
@@ -196,15 +251,39 @@ def main(argv):
         print('truthy-sum check')
         print('  not scanned: archive/ (the preserved ancestor branch) and '
               'docs/skill-backups/ (a vendored third-party viewer)')
+        # THE HONEST "DID IT LOOK AT ANYTHING" NUMBER. The candidate count below
+        # moves when the CLASSIFIER changes, which is not the same question -- a
+        # floor pinned to it went red the day concatenation was split out.
+        print('  raw `+ (x || 0)` matches inspected : %d' % (len(found) + len(concat)))
         print('  uncoerced `+ (x || 0)` occurrences : %d' % len(found))
         print('  distinct file+field keys           : %d'
               % len({key(f, l, t) for f, l, t in found}))
         print('  grandfathered                      : %d' % len(baseline))
+        # PRINTED, NEVER SILENT. This is an exclusion, and an exclusion nobody
+        # sees reads as coverage. `--full` names every one of them.
+        print('  string-literal concatenation, not a fold, so not counted : %d'
+              % len(concat))
+        # A BASELINE ENTRY THAT CAN NO LONGER MATCH IS A CLAIM NOBODY IS
+        # CHECKING. It costs nothing to carry and it makes the file look like it
+        # is holding back more than it is. Reported, never auto-pruned -- a key
+        # can vanish because the code was deleted, because it was fixed, or
+        # because the matcher changed, and only a reader can tell which.
+        _stale = sorted(k for k in baseline
+                        if k not in {key(f, l, t) for f, l, t in found})
+        print('  baselined but no longer present   : %d' % len(_stale))
+        if full and _stale:
+            print('\n--- baseline keys nothing matches any more ---')
+            for k in _stale:
+                print('  ? ' + k)
         if full:
             print('\n--- every occurrence ---')
             for f, ln, t in found:
                 mark = ' ' if key(f, ln, t) in baseline else '*'
                 print('  %s %-24s :%-6d %s' % (mark, f, ln, t))
+            if concat:
+                print('\n--- string-literal concatenation, excluded ---')
+                for f, ln, t in concat:
+                    print('  c %-24s :%-6d %s' % (f, ln, t))
         if new:
             print('\n%d NEW OCCURRENCE(S):' % len(new))
             for f, ln, t in new:
