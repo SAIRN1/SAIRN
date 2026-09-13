@@ -25924,9 +25924,70 @@ function vendorSpendReport() {
       }).join('') :
       '<div style="color:var(--muted);font-size:13px;padding:12px 0">No orders placed yet through StoneDesk. Orders you place will track spend automatically.</div>'
     ) +
+    // ── THE ORDERS THEMSELVES (2026-09-13) ────────────────────────────────
+    // Every figure above is an AGGREGATE of sd_order_history, and until now
+    // nothing listed the orders those aggregates are made of. A shop could see
+    // "$41,200 with GMR Stone" and had no way to check which orders that was,
+    // or to remove one placed twice.
+    '<div style="font-size:13px;font-weight:800;color:var(--text);margin:20px 0 10px">Orders</div>' +
+    '<div id="vendor-order-list"></div>' +
     '<div style="margin-top:20px">' +
       '<button class="q-btn primary" onclick="vendorSpendAI()" style="width:100%">&#129504; Claude Spend Analysis &amp; Recommendations</button>' +
     '</div>';
+  vendorRenderOrders();
+}
+
+// UNLIKE THE OTHER LOGS, THIS ONE WAS ALREADY BACKED UP, and saying otherwise
+// would be the kind of wrong claim in a comment this file keeps correcting.
+// vendorPlaceOrder() has always set `id: 'ORD'+Date.now()`, so these rows pass
+// sdSyncCollection()'s id check -- the gap here was only that nothing listed
+// them and nothing could remove one.
+//
+// The back-fill is DEFENSIVE, for a row that somehow arrived without an id, and
+// is a no-op on every record the app itself wrote. It is here so the Delete
+// button cannot be rendered pointing at an empty id.
+function vendorEnsureOrderIds(){
+  if(sdEnsureRowIds(sdOrderHistory,'PO',['date','vendor','total'])) st('sd_order_history',sdOrderHistory);
+  return sdOrderHistory;
+}
+function vendorRenderOrders(){
+  var el=document.getElementById('vendor-order-list');
+  if(!el) return;
+  var d=vendorEnsureOrderIds();
+  if(!d.length){
+    el.innerHTML='<div style="color:var(--muted);font-size:13px;padding:12px 0">No orders placed yet through StoneDesk.</div>';
+    return;
+  }
+  el.innerHTML=d.map(function(o){
+    var n=(o.items||[]).length;
+    return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:13px;font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(o.vendor||'Unknown')+'</div>'
+        +'<div style="font-size:11px;color:var(--muted)">'+escHtml(String(o.date||'').slice(0,10))+' &bull; '+n+' item'+(n===1?'':'s')+'</div>'
+      +'</div>'
+      +'<div style="font-size:13px;font-weight:700;color:var(--a);flex-shrink:0">$'+(Number(o.total||0)).toLocaleString()+'</div>'
+      +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="vendorOrderDelete(\''+escAttrJs(String(o.id||''))+'\')">Delete</button>'
+      +'</div>';
+  }).join('');
+}
+// THE CONFIRM SAYS WHAT ELSE MOVES. Unlike the other logs, this one is summed:
+// deleting an order changes YTD spend, spend-by-vendor, spend-by-category and
+// the figures the AI analysis is handed. A shop is entitled to remove an order
+// entered twice, and is entitled to know the report will read differently
+// afterwards rather than discovering it.
+function vendorOrderDelete(id){
+  if(!id){ notify('That order has no id yet -- reopen the report and try again.','warn'); return; }
+  var d=vendorEnsureOrderIds();
+  if(!d.some(function(x){return String(x&&x.id)===String(id);})) return;
+  if(!confirm('Delete this order from your purchase history?\n\nIt is hidden and kept, not destroyed -- but your YTD spend and spend-by-vendor figures will drop by its total.')) return;
+  sdOrderHistory=d.filter(function(x){return String(x&&x.id)!==String(id);});
+  if(!st('sd_order_history',sdOrderHistory)){
+    notify('Could not delete that order -- storage may be full or unavailable, try again','err');
+    return;
+  }
+  vendorSpendReport();
+  notify('Order deleted. Spend figures updated.','');
 }
 
 function vendorSpendAI() {
