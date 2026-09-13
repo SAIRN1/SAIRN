@@ -20,6 +20,7 @@ CONTROLS_FOR = ['defect_register.py']
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 import tempfile
@@ -221,6 +222,49 @@ try:
           'It does not count' in out, True)
     check('F5 and the coverage matrix is printed beside the number',
           'COVERAGE -- which methods' in out, True)
+
+    # ── G. TWO FIGURES, NOT ONE (2026-09-13) ──────────────────────────────
+    # The report printed a single ALL APPS rate: every product defect over
+    # EVERY tracked app line, unswept files included. One number was answering
+    # two different questions -- how dense are the defects where we have
+    # looked, and how much have we not looked at -- and the second was folded
+    # into the first as a smaller rate. The caveat under it had always said "an
+    # app with no records is an app nobody has swept, not a clean one" while
+    # the arithmetic said otherwise.
+    check('G1 the swept rate is labelled as the signal',
+          'SWEPT FILES' in out and 'the real signal' in out, True)
+    check('G2 the unswept files are a COUNT, never a rate',
+          'UNSWEPT FILES' in out and 'not a rate' in out, True)
+    check('G3 and they are NAMED, so the coverage owed is actionable',
+          'sairncode' in out.split('UNSWEPT FILES')[-1][:600], True)
+    check('G4 the single ALL APPS rate is gone',
+          'ALL APPS' in out, False)
+
+    # AND THE NUMERATOR MATCHES THE DENOMINATOR. Found by checking the first
+    # version of this very block: len(prod) counts defects filed against
+    # 'PLATFORM', which is not a file and contributes no lines, so both the old
+    # ALL APPS rate and the new swept rate were dividing a defect by lines it
+    # does not live in.
+    # Parsed by PATTERN, not by column index. The first version read
+    # `.split()[3]` and got the LINE COUNT, because the label "SWEPT FILES (7)"
+    # is three tokens and the per-app labels are one -- the same
+    # count-the-columns mistake PR §2.1 is about, in a test rather than a row.
+    def _nums(line):
+        return [int(t) for t in re.findall(r'(?<![.\d])(\d+)(?![.\d])', line)]
+
+    swept_line = [l for l in out.split('\n') if 'SWEPT FILES' in l
+                  and 'UNSWEPT' not in l][0]
+    per_app = [l for l in out.split('\n')
+               if l.startswith('  ') and ' 0.' in l and 'SWEPT' not in l
+               and 'UNSWEPT' not in l and 'OFF-FILE' not in l]
+    counted = sum(_nums(l)[1] for l in per_app) if per_app else 0
+    # (7) in the label is a count of files, so the defect total is the LAST
+    # integer on the line, after the file count and the line count.
+    check('G5 the swept defect count equals the per-app rows above it',
+          _nums(swept_line)[-1], counted)
+    check('G6 an off-file defect is reported with NO rate rather than divided',
+          ('OFF-FILE' in out and 'NO DENOMINATOR' in out) or 'PLATFORM' not in out,
+          True)
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)
     git(REPO, 'worktree', 'prune')

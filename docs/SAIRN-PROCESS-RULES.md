@@ -267,6 +267,44 @@ sources. *(2026-09-12, `ac8f8491`: near-duplicate pair A/B labels swapped
 between runs. The sweep in `docs/2026-09-12-checker-determinism-sweep.md` found
 1 of 26 affected, and it was already known.)*
 
+### 1.11 A check that depends on another tool must fail CLOSED when it is absent
+
+**A gate wrapped in `if os.path.isfile(other_tool):` does not skip one check. It
+reports a pass it never performed**, and the caller cannot tell that from a real
+one — the exit code, the output and the silence are identical.
+
+The rule: **absence of a dependency is a REFUSAL, not a skip.** Say which tool,
+say the check did not run, and fail. If a genuine skip is wanted it must be
+loud and separately labelled — "could not run" is a third state, never folded
+into "passed". Same standard as `--json`'s `unrun` list and exit 3 elsewhere in
+this repo.
+
+**This class has been fixed piecemeal at least five times and never written
+down, which is why it kept coming back:**
+
+- `sairn_push_gate_hook.py` disabled **NINE of its ten checks** when one
+  unrelated tool was missing — a single `if not os.path.isfile(...)` early
+  return covering everything after it. *(register record 41, critical.)*
+- Four more in the same gate: checks 2, 4 and 5 each skipped themselves in
+  silence when their own tool was absent. *(records 42, 43, 46.)*
+- `install_git_hooks.py --check` printed OK on a clone whose pre-push hook was
+  broken, because it compared `core.hooksPath` and nothing else. *(record 39.)*
+
+**It is the most repeated shape in `docs/defect-density-register.json` after
+"the confident line printed after the error" — and until this rule existed it
+was the only repeated shape with NO rule to cite**, so those four records would
+have been left blank by any citation field and read as unpredicted by
+`tools/fmea_prediction_check.py`. Naming it is what makes the citation real.
+
+**Why a named rule and not five more fixes:** each of those was found by
+somebody stumbling into it, and each fix protected exactly one call site. The
+next dependency added to a gate gets the same treatment unless the rule is the
+thing that is read first. `tools/fail_open_check.py` is the mechanical half and
+is a promoted checker; this is the half a person applies before the code exists.
+
+*(Named 2026-09-13 after the density-register classification found four records
+of one shape with nothing to cite.)*
+
 ---
 
 ## Part 2 — Editing standing documents

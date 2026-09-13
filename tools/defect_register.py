@@ -313,10 +313,46 @@ def cmd_report():
             continue
         print('  %-22s %8d %8d %6.2f'
               % (app, lines[app], n, 1000.0 * n / max(1, lines[app])))
-    total_lines = sum(lines.values())
-    print('  %-22s %8d %8d %6.2f'
-          % ('ALL APPS', total_lines, len(prod),
-             1000.0 * len(prod) / max(1, total_lines)))
+    # ── TWO FIGURES, NOT ONE (2026-09-13) ──────────────────────────────────
+    # This printed a single ALL APPS rate: every product defect divided by
+    # EVERY tracked app line, including the files nobody has ever swept. One
+    # number was being asked to answer two different questions -- "how dense
+    # are the defects where we have looked" and "how much have we looked at" --
+    # and the second answer was silently folded into the first as a smaller
+    # rate. A file with no records is a file nobody has swept, not a clean one;
+    # the caveat below has always said so while the arithmetic said otherwise.
+    #
+    # The swept figure is the real signal. The unswept figure is a COUNT, and
+    # deliberately not a rate: dividing by lines nobody has examined would be
+    # the same mistake in the other direction.
+    # ── AND THE NUMERATOR HAS TO MATCH THE DENOMINATOR ─────────────────────
+    # Found by checking the first version of this very block: `len(prod)` counts
+    # every product defect, INCLUDING those filed against app 'PLATFORM', which
+    # is not a file and contributes no lines. The old ALL APPS rate divided
+    # those by the whole-repo line count and the new swept rate divided them by
+    # the swept subset -- both dividing a defect by lines it does not live in.
+    # The caveat below has said "registered but not divided by anything" since
+    # this tool shipped while the arithmetic did exactly that.
+    #
+    # They get their own line, with no rate, for the same reason the unswept
+    # files do: a count with no honest denominator is reported as a count.
+    swept = sorted(a for a in lines if any(r['app'] == a for r in prod))
+    unswept = sorted(a for a in lines if a not in swept)
+    swept_lines = sum(lines[a] for a in swept)
+    unswept_lines = sum(lines[a] for a in unswept)
+    in_files = [r for r in prod if r['app'] in lines]
+    no_denom = [r for r in prod if r['app'] not in lines]
+    print('  %-22s %8d %8d %6.2f   <- SWEPT: the real signal'
+          % ('SWEPT FILES (%d)' % len(swept), swept_lines, len(in_files),
+             1000.0 * len(in_files) / max(1, swept_lines)))
+    print('  %-22s %8d %8s %6s   <- UNMEASURED, not a rate'
+          % ('UNSWEPT FILES (%d)' % len(unswept), unswept_lines, '--', '--'))
+    if unswept:
+        print('     %s' % ', '.join(unswept))
+    if no_denom:
+        print('  %-22s %8s %8d %6s   <- NO DENOMINATOR: not app HTML'
+              % ('OFF-FILE (%s)' % ', '.join(sorted({r['app'] for r in no_denom})),
+                 '--', len(no_denom), '--'))
     print('')
     print('COVERAGE -- which methods have found something in which app')
     apps = sorted({r['app'] for r in recs})
@@ -328,6 +364,15 @@ def cmd_report():
     print('  * A density is a fact about what has been LOOKED AT, not about')
     print('    what is there. An app with no records is an app nobody has')
     print('    swept, not a clean one.')
+    print('  * WHICH IS WHY THERE ARE TWO FIGURES AND NOT ONE. The swept rate')
+    print('    is the signal; the unswept line count is coverage owed, stated')
+    print('    as a COUNT because dividing by lines nobody has examined would')
+    print('    manufacture a reassuring rate out of an absence of work.')
+    print('  * FIVE OF THE FILES COUNTED ARE SATELLITE PAGES, not apps --')
+    print('    stonedesk-hr, stonedesk-intake, stonedesk-catalog,')
+    print('    sairndental-book, sairndental-complaint. 2,647 lines, ~2%% of')
+    print('    the denominator. Real files, really unswept; named so the')
+    print('    unswept count is not read as five whole applications.')
     print('  * The honest signal is CONSECUTIVE ZERO-NEW-FINDING SWEEPS BY')
     print('    DIFFERENT METHODS over the same files. One method returning')
     print('    zero means that method is exhausted. On 2026-09-10 the mutation')

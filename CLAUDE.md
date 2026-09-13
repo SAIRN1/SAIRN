@@ -13,6 +13,16 @@ facts were buried inside incident narratives. Section numbers below in the form
 tool; you are editing a standing document; a gate blocked you; a check passed and
 you are not sure it tested anything; or something failed and said nothing.
 
+**One rule is repeated here rather than only linked, because it is the most
+common defect shape on this platform after a silent failure and it is cheapest
+to get right before the code exists:** a check that depends on another tool
+**must fail CLOSED when that tool is absent** — say which tool, say the check
+did not run, and fail. A gate wrapped in `if os.path.isfile(other_tool):` does
+not skip one check, it **reports a pass it never performed**, and nothing
+downstream can tell that from a real one. "Could not run" is a third state and
+is never folded into "passed". Full statement and the five times it was fixed
+piecemeal before being named: **PR §1.11**.
+
 ---
 
 ## Before you touch anything
