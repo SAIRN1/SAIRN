@@ -1213,8 +1213,8 @@
       "task": "first-draft risk analysis from prior defects and the lesson corpus",
       "claimed_at": "2026-09-13T13:59:49Z",
       "claimed_at_epoch": 1789307989.3479862,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T14:18:49Z"
     }
   ]
 }

@@ -98,6 +98,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **OPEN 2026-09-13 (found by Fourth while declaring the file a control; deliberately NOT fixed)** — `python tests/run_snapshot_freshness_probe.py` reports `2 arm(s) failed`; the other 12 arms pass. Pre | `tests/run_snapshot_freshness_probe.py` |
+| `literal_drift_check.py` has a control that proves DETERMINISM and never proves it can FIRE | **OPEN 2026-09-13 (found by Fourth)** — the last `ONE DIRECTION` in `python tools/checker_control_check.py`; 30 of 32 promoted checkers are `BOTH EVIDENCED`, 1 exempt | `tests/run_literal_drift_determinism_probe.py` |
 | ~~Nothing runs 58% of the test suite, and two probes had rotted unnoticed inside it~~ — **`tools/run_all_tests.py` runs all 126 and NAMES what it did not run** | **CLOSED 2026-09-08 (Hank)** — `67e9a33` (the two rotted probes) and `5c439e6` (the runner); 126/126 pass on a clean tree | `tests/fail_open_browser_probe.py`, `tests/reachability/live_mode_probe.py` |
 | ~~The report-only suite hook runs after every `git push`~~ &mdash; **it ran after every BASH TOOL CALL, because `"if": "Bash(git push*)"` is not a field a Claude Code hook has** | **FIXED 2026-09-09 (Hank)** &mdash; root cause found by watching processes, not by reading | `tests/run_all_tests_hook_gate_probe.py` |
 | **A RELEASED claim gave no signal, so `check` said CLEAR on work another session had finished minutes earlier &mdash; twice in one day, in both directions** | **FIXED 2026-09-10 (Hank)** | `tests/claims/run_released_visibility_probe.py` |
@@ -270,7 +272,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**124 of 319 test files are traced to a stated requirement. 195 are not.**
+**124 of 323 test files are traced to a stated requirement. 199 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -399,6 +401,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`
 - `tests/dnt_vendor_write_confirmation.js`
+- `tests/exec_chat_delete.js`
 - `tests/exec_role_gate.js`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
@@ -419,7 +422,9 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
 - `tests/run_cleanup_confirm_probe.py`
+- `tests/run_fmea_probe.py`
 - `tests/run_index_duplicate_probe.py`
+- `tests/run_jscomments_probe.py`
 - `tests/run_schema_verdict_probe.py`
 - `tests/run_traceability_matrix_probe.py`
 - `tests/run_uncontrolled_checkers_probe.py`
@@ -469,6 +474,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/stonedesk_saved_drawings.js`
 - `tests/style_profile_parity.js`
 - `tests/thh_material_rates.js`
+- `tests/threat_and_snapshot_delete.js`
 
 ### Citations pointing at a file that does not exist
 

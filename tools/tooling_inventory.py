@@ -98,6 +98,8 @@ PURPOSES = {
     # is always clean.
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
+    'fmea_draft.py': ('CHECKER', 'a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted'),
+    'fmea_prediction_check.py': ('CHECKER', 'whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows'),
     'load_schema_snapshot.py': ('CHECKER', 'a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped'),
     'licence_recoverability_check.py': ('LIVE', 'a licence with credential rows and zero active provisioners'),
     'local_only_collection_check.py': ('CHECKER', 'a collection written only to localStorage that never reaches a server'),
