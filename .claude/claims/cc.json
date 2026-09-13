@@ -1034,6 +1034,16 @@
       "claimed_at_epoch": 1789311024.3708878,
       "status": "released",
       "released_at": "2026-09-13T15:07:07Z"
+    },
+    {
+      "id": "cc-1789312348",
+      "session": "cc",
+      "subject": "schema-snapshot-staleness-cadence",
+      "task": "re-derive drift and forced correction",
+      "claimed_at": "2026-09-13T15:12:28Z",
+      "claimed_at_epoch": 1789312348.2676246,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
