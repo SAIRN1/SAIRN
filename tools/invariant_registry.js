@@ -58,8 +58,13 @@ const REGISTRY = [
     // `debits_cents` and got `undefined === undefined` -> TRUE on every case,
     // a VACUOUS 2000/2000. The ACCURACY field caught it while STABILITY read
     // perfect, which is the entire reason the two are reported separately.
-    discriminator: (out) => out && typeof out.debit_total === 'number' &&
-      typeof out.credit_total === 'number',
+    // READS THE CENTS, NOT THE DISPLAY FLOATS (2026-09-13). The float fields
+    // have been through money(), and comparing them is what led me to report
+    // this engine as a float `===` with no tolerance band. It was never that:
+    // the balance decision is `debits === credits` on integer cents and always
+    // has been. The engine was exact; only its OUTPUT was lossy.
+    discriminator: (out) => out && Number.isInteger(out.debit_total_cents) &&
+      Number.isInteger(out.credit_total_cents),
     gen: (r) => {
       const n = 2 + Math.floor(r() * 3);
       const lines = [];
@@ -75,25 +80,41 @@ const REGISTRY = [
     },
     run: (input) => {
       const out = L('ledger.js').validateEntry(input);
-      return { debit_total: out.debit_total, credit_total: out.credit_total,
-               difference: out.difference, balanced: out.balanced, raw: out };
+      return { debit_total_cents: out.debit_total_cents,
+               credit_total_cents: out.credit_total_cents,
+               difference_cents: out.difference_cents,
+               balanced: out.balanced, raw: out };
     },
-    holds: (o) => typeof o.debit_total === 'number' &&
-                  typeof o.credit_total === 'number' &&
-                  o.debit_total === o.credit_total,
-    // ── EXACT === ON FLOATS, WHICH IS ITSELF THE FINDING ────────────────
-    // Measured: validateEntry returns debit_total 0.3 for 0.1 + 0.2 -- these are
-    // FLOATS, not integer cents, and the check is a bare `===` with NO tolerance
-    // band at all. So the margin here is genuinely zero-width: any rounding
-    // difference is not a near-miss, it is an immediate violation.
+    holds: (o) => Number.isInteger(o.debit_total_cents) &&
+                  Number.isInteger(o.credit_total_cents) &&
+                  o.debit_total_cents === o.credit_total_cents,
+    // ── EXACT INTEGER CENTS, SO THE MARGIN IS WHOLE CENTS OF IMBALANCE ──
+    // CORRECTED 2026-09-13. This previously read "exact === on FLOATS, which is
+    // itself the finding" and recommended moving the engine to integer cents.
+    // The engine was ALREADY integer cents -- `balanced` is `debits === credits`
+    // on values from Math.round(v*100). I had been reading debit_total, a
+    // display float produced by money(), and drew a conclusion about the check
+    // from the shape of its output.
     //
-    // Reported as |difference| rather than as headroom, because there is no
-    // headroom to report. The alarm fires on ANY non-zero difference, which is
-    // as tight as a threshold can be set and is the honest setting for a check
-    // with no band: there is no drift to detect before failure, only failure.
-    // A caller wanting real margin here would have to move the engine to
-    // integer cents, which is a design decision and not this tool's to make.
-    margin: (o) => -Math.abs(Number(o.difference) || 0),
+    // The margin is therefore real and in whole cents: how far from balanced
+    // this entry came. 0 means exactly balanced; any non-zero value means the
+    // entry is already refused. The alarm sits at 1 cent -- the smallest
+    // representable step -- because on an exact integer check there is no
+    // fractional drift to detect before failure, and pretending otherwise
+    // would be a fabricated band.
+    // SIGN CONVENTION, and the first version got it wrong in a way worth
+    // recording: margin is HEADROOM, so positive is safe and the alarm fires
+    // BELOW it. With alarmAt() returning 1, every perfectly balanced entry
+    // (margin 0) counted as inside the band -- 2000 of 2000 runs alarmed on
+    // entries that were exactly correct. An alarm that fires on every healthy
+    // case is the margin-column version of a banner that always shouts.
+    //
+    // alarmAt is 0 here, so the band fires only on a real imbalance. THAT MEANS
+    // ZERO ALARMS IS THE EXPECTED OUTPUT, NOT A CLEAN BILL OF HEALTH: an exact
+    // integer check has no pre-failure band by construction, and there is no
+    // drift to detect before failure. The number is reported so the difference
+    // between "no drift" and "no band to drift in" stays visible.
+    margin: (o) => -Math.abs(Number(o.difference_cents) || 0),
     alarmAt: () => 0
   },
   {
@@ -227,15 +248,22 @@ const REGISTRY = [
 // That is the criteria being corrected to match the ENGINE, not loosened to
 // match a result -- the distinction this file exists to keep visible.
 const FIXTURES = [
+  // MOVED TO CENTS 2026-09-13 when the criteria did, and the LOCK CAUGHT IT --
+  // the balanced-posting CONTROL went red the moment `holds` started reading
+  // debit_total_cents, before a single engine was called. Third time the lock
+  // has stopped a field change from being measured against stale fixtures.
   { name: 'a deliberately UNBALANCED posting is caught',
     type: 'DOUBLE-ENTRY', holds: REGISTRY[0].holds,
-    input: { debit_total: 100.00, credit_total: 99.00 }, expect: false },
+    input: { debit_total_cents: 10000, credit_total_cents: 9900 }, expect: false },
   { name: 'CONTROL: a balanced posting passes',
     type: 'DOUBLE-ENTRY', holds: REGISTRY[0].holds,
-    input: { debit_total: 100.00, credit_total: 100.00 }, expect: true },
+    input: { debit_total_cents: 10000, credit_total_cents: 10000 }, expect: true },
   { name: 'a posting with NO totals at all is caught, not read as balanced',
     type: 'DOUBLE-ENTRY', holds: REGISTRY[0].holds,
     input: {}, expect: false },
+  { name: 'a FLOAT total is refused -- a value that has been through money() is not the exact one',
+    type: 'DOUBLE-ENTRY', holds: REGISTRY[0].holds,
+    input: { debit_total_cents: 100.5, credit_total_cents: 100.5 }, expect: false },
   { name: 'a rollup whose stated total does not match its lines is caught',
     type: 'ROLLUP', holds: REGISTRY[1].holds,
     input: { stated: 100.00, computed: 99.99 }, expect: false },

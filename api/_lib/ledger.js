@@ -180,6 +180,27 @@ function validateEntry(input) {
     debit_total: money(debits),
     credit_total: money(credits),
     difference: money(debits - credits),
+    // ── THE EXACT FIGURES, ALONGSIDE THE DISPLAY ONES (2026-09-13) ───────
+    // THE BALANCE DECISION WAS ALREADY EXACT and always has been: `debits` and
+    // `credits` above are integer cents from validateLine()'s Math.round(v*100),
+    // and `balanced` is `debits === credits` on integers. Nothing about the
+    // engine's correctness changes here.
+    //
+    // What was missing is that the only totals a CONSUMER could read were the
+    // float ones. tools/invariant_runner.js compared `debit_total` -- a value
+    // that has been through money() -- and I concluded from it that the check
+    // itself was a float `===` with no tolerance band. It is not. The engine
+    // was exact and the OUTPUT was lossy, which is a different defect and a
+    // much smaller one.
+    //
+    // ADDITIVE ON PURPOSE. The float fields are unchanged and every existing
+    // caller and assertion keeps working -- api/ledger.js:176 and :276 forward
+    // them, and ledger.test.js asserts on them directly. A consumer that needs
+    // exactness now has it without anything being taken away from one that
+    // needs the display value.
+    debit_total_cents: debits,
+    credit_total_cents: credits,
+    difference_cents: debits - credits,
     problems: problems
   };
 }

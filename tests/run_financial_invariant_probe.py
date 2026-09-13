@@ -72,8 +72,18 @@ shutil.copytree(os.path.join(REPO, 'api'), os.path.join(tmp, 'api'),
 reg = os.path.join(tmp, 'tools', 'invariant_registry.js')
 src = io.open(reg, encoding='utf-8').read()
 # Invert the double-entry criterion: balanced now means UNbalanced.
-io.open(reg, 'w', encoding='utf-8', newline='\n').write(
-    src.replace('o.debit_total === o.credit_total', 'o.debit_total !== o.credit_total', 1))
+# THE SABOTAGE MUST ACTUALLY APPLY, AND THAT IS NOW ASSERTED.
+# The anchor was `o.debit_total === o.credit_total`. When the registry moved to
+# integer cents that string stopped existing, str.replace() silently did
+# nothing, and arms 2a/2b failed against a tool that was working perfectly -- a
+# control that no longer breaks its target tests nothing, which is the SECOND
+# time that exact shape has appeared in this file.
+_sab = src.replace('o.debit_total_cents === o.credit_total_cents',
+                   'o.debit_total_cents !== o.credit_total_cents', 1)
+check('2z  the sabotage anchor still matches -- a control that no longer breaks '
+      'its target is not a control', _sab != src,
+      'the registry changed shape and this anchor did not follow')
+io.open(reg, 'w', encoding='utf-8', newline=chr(10)).write(_sab)
 rc, out = node(root=tmp)
 check('2a  an inverted criterion makes the runner exit 2', rc == 2, 'exit %d' % rc)
 check('2b  and it says NOTHING REAL WAS RUN', 'NOTHING REAL WAS RUN' in out)
