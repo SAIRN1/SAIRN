@@ -1012,8 +1012,8 @@
       "task": "comms repair and delete panels for the remaining collections",
       "claimed_at": "2026-09-13T12:09:03Z",
       "claimed_at_epoch": 1789301343.782593,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T14:32:22Z"
     }
   ]
 }
