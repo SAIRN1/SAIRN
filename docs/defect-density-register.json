@@ -976,6 +976,52 @@
       "severity": "moderate",
       "detection_method": "code-review",
       "summary": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline"
+    },
+    {
+      "commit": "d6b3f6e929ec",
+      "date": "2026-09-13",
+      "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnscape.html",
+        "tests/run_truthy_sum_probe.py",
+        "tests/sairn_storage_wrapper_honesty.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 174,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save"
+    },
+    {
+      "commit": "d6b3f6e929ec",
+      "date": "2026-09-13",
+      "subject": "fix(dental,grounds,scape): stamping is not storage, and a stamp that fails must not lose the save",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairndental.html",
+        "sairngrounds.html",
+        "sairnscape.html",
+        "tests/run_truthy_sum_probe.py",
+        "tests/sairn_storage_wrapper_honesty.js",
+        "tools/truthy_sum_baseline.json"
+      ],
+      "lines_added": 174,
+      "lines_removed": 14,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries"
     }
   ]
 }
