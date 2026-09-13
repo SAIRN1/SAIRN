@@ -1029,6 +1029,16 @@
       "claimed_at_epoch": 1789303870.1869442,
       "status": "released",
       "released_at": "2026-09-13T13:48:40Z"
+    },
+    {
+      "id": "cody-1789308024",
+      "session": "cody",
+      "subject": "platform",
+      "task": "pre-push hook installation is never verified per clone",
+      "claimed_at": "2026-09-13T14:00:24Z",
+      "claimed_at_epoch": 1789308024.5208523,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
