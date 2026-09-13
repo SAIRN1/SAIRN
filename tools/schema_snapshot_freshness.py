@@ -210,6 +210,50 @@ def create_introduced(table, sql_path):
     return None
 
 
+STALE_HOURS = 12
+
+
+def capture_age_hours(snap, now=None):
+    """How old the capture is, in hours, or None if it cannot be worked out."""
+    import datetime
+    cap = _parse_stamp(str(snap.get('_generated_at') or ''))
+    if cap is None:
+        return None
+    # _parse_stamp returns a NAIVE UTC datetime, so the comparison point must
+    # be naive UTC too. datetime.now(timezone.utc) is the non-deprecated way to
+    # get the instant; .replace(tzinfo=None) puts it back on the same footing.
+    now = now or datetime.datetime.now(datetime.timezone.utc).replace(tzinfo=None)
+    return (now - cap).total_seconds() / 3600.0
+
+
+def capture_age_banner(snap, now=None):
+    """The line that stops a never-run verdict being read as present tense.
+
+    Added after this tool was wrong about five tables within hours of shipping.
+    The verdicts were correct as of the capture and the capture had been
+    overtaken by a migration run after it. A verdict with no stated expiry gets
+    read as a fact about now, which is what happened.
+    """
+    age = capture_age_hours(snap, now)
+    if age is None:
+        return ('\n  !! THE CAPTURE HAS NO USABLE TIMESTAMP. Every verdict below is\n'
+                '     unscoped and must not be acted on. Re-capture.')
+    head = ('\n  VERDICTS ARE AS OF THE CAPTURE, %.1f HOURS AGO -- NOT AS OF NOW.\n'
+            '  A migration run since then makes a "never run" verdict WRONG, and\n'
+            '  nothing here can see that. Before acting on one, confirm the capture\n'
+            '  postdates the last migration run, or check the table live:\n'
+            '     python tools/stonedesk_storefront_live_check.py\n'
+            '     python tools/schema_provisioning_check.py --app <app> '
+            '--schema <file> --key <key>\n'
+            '  A live LIVE/provisioned:true against a never-run verdict means\n'
+            '  RE-CAPTURE, not that the rule is broken.' % age)
+    if age > STALE_HOURS:
+        head += ('\n  !! THIS CAPTURE IS OVER %d HOURS OLD. On a platform where four\n'
+                 '     sessions and a human run migrations by hand, that is long\n'
+                 '     enough for the answer to have changed underneath it.' % STALE_HOURS)
+    return head
+
+
 def verdicts(missing, created, snap):
     """Resolve "never run" vs "snapshot is behind" where git can decide it.
 
@@ -227,17 +271,39 @@ def verdicts(missing, created, snap):
     such: a CREATE committed after the capture is simply newer than the
     snapshot, which is ordinary and not a finding.
 
-    MEASURED THE DAY THIS WAS ADDED (2026-09-12), against the capture generated
-    2026-09-11 15:42 UTC: all 31 tables that api/ queries and the snapshot
-    lacks resolve to NEVER RUN, and zero were undecidable. Corroborated by a
-    second source that shares no mechanism -- CC's storefront probes answered
-    503 UNAVAILABLE / NOT_PROVISIONED live for three of them on 2026-09-12,
-    and an earlier live read put grd_rounds at provisioned:false.
+    ── EVERY VERDICT EXPIRES AT THE CAPTURE INSTANT. ADDED AFTER GETTING THIS
+    ── WRONG, HOURS AFTER SHIPPING IT (2026-09-12) ─────────────────────────
+    The rule above excludes "the snapshot is behind" relative to the CREATE
+    DATE. IT SAYS NOTHING ABOUT NOW. A migration run AFTER the capture makes
+    every never-run verdict stale, and the first version of this function did
+    not say so anywhere -- it printed "VERDICT: NEVER RUN" as a bare present-
+    tense fact.
 
-    THE RESIDUAL UNCERTAINTY, STATED RATHER THAN IMPLIED: this assumes the
-    capture is COMPLETE for the schema it covers. A capture truncated or scoped
-    to fewer schemas would make every absence look like a never-run migration.
-    That limit is real and is why the verdict names the evidence it used.
+    That is not hypothetical. It happened the same day: this tool called the
+    five stonedesk_public_surface_schema.sql tables never-run against the
+    2026-09-11 15:42 UTC capture, which was CORRECT AS OF THAT INSTANT and
+    already false by the time it was read -- the migration had been run in
+    between, and tools/stonedesk_storefront_live_check.py answered LIVE for
+    three of the five against production. The analysis was not built on a stale
+    FILE; it was built on the newest capture in the repo, and the capture
+    itself had been overtaken.
+
+    So the verdict is now scoped in every output, `verdict_as_of` is carried in
+    the JSON, and the age of the capture is printed beside it. A reader acting
+    on a never-run verdict must confirm the capture postdates the last
+    migration run -- the live checks (stonedesk_storefront_live_check.py,
+    schema_provisioning_check.py) are the sources that can contradict it, and
+    a contradiction means RE-CAPTURE, not that the rule is broken.
+
+    MEASURED WHEN THIS WAS ADDED, against the capture generated 2026-09-11
+    15:42 UTC: 89 tables absent, 31 of them queried by api/, all resolving to
+    never-run AS OF THAT INSTANT. At least five of those have since been run.
+
+    THE OTHER RESIDUAL UNCERTAINTY, STATED RATHER THAN IMPLIED: this assumes
+    the capture is COMPLETE for the schema it covers. A capture truncated or
+    scoped to fewer schemas would make every absence look like a never-run
+    migration. That limit is real and is why the verdict names the evidence it
+    used.
     """
     cap = _parse_stamp(str(snap.get('_generated_at') or ''))
     out = {}
@@ -292,6 +358,8 @@ def main(argv):
 
     if '--json' in argv:
         print(json.dumps({'snapshot_tables': real_tables, 'sql_tables': len(created),
+                          'verdict_as_of': snap.get('_generated_at'),
+                          'capture_age_hours': capture_age_hours(snap),
                           'missing_and_queried': high, 'missing_only': undecided,
                           'never_run_and_queried': never_run_queried,
                           'verdicts': {t: {'verdict': vd[t][0],
@@ -310,14 +378,14 @@ def main(argv):
         print('  created in sql/ but ABSENT from the snapshot: %d' % len(missing))
         print('    of those, also QUERIED by api/ : %d  <- live code expects these'
               % len(high))
-        print('    of THOSE, resolved to NEVER RUN : %d  <- the migration did not happen'
-              % len(never_run_queried))
+        print('    of THOSE, NEVER RUN AS OF THE CAPTURE : %d' % len(never_run_queried))
+        print(capture_age_banner(snap))
         for t in high:
             v, when, why = vd[t]
             print('\n  %s' % t)
             print('      created in %s, queried by api/, NOT in the snapshot.' % created[t])
             if v == 'never-run':
-                print('      VERDICT: NEVER RUN. CREATE committed %s; %s.'
+                print('      VERDICT: NEVER RUN AS OF THE CAPTURE. CREATE committed %s; %s.'
                       % (when.strftime('%Y-%m-%d %H:%M UTC') if when else '?', why))
             else:
                 print('      UNDECIDABLE: %s.' % why)

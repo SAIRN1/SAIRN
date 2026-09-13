@@ -161,6 +161,39 @@ check('and the older one in the same repo still reaches "never-run" -- so the '
       'never-run')
 S.REPO = real_repo
 
+# ── 4b. A VERDICT WITH NO STATED EXPIRY GETS READ AS A FACT ABOUT NOW ──────
+# This tool was WRONG about five real tables within hours of shipping. It
+# called stonedesk_public_surface_schema.sql's tables never-run against the
+# 2026-09-11 15:42 UTC capture -- correct AS OF THAT INSTANT, and already false
+# when read, because the migration had been run in between and
+# stonedesk_storefront_live_check.py answered LIVE for three of the five.
+#
+# The rule excludes "the snapshot is behind" relative to the CREATE DATE. It
+# says NOTHING about now. These arms pin the scoping that makes that visible.
+print('4b. the verdict carries its own expiry')
+import datetime
+SNAP_T = datetime.datetime(2026, 9, 11, 15, 42, 46)
+check('the capture age is measured, not guessed',
+      round(S.capture_age_hours(SNAP, now=SNAP_T + datetime.timedelta(hours=24, minutes=18)), 1),
+      24.3)
+check('a capture with no timestamp yields no age rather than an age of zero',
+      S.capture_age_hours({}), None)
+fresh = S.capture_age_banner(SNAP, now=SNAP_T + datetime.timedelta(hours=1))
+stale = S.capture_age_banner(SNAP, now=SNAP_T + datetime.timedelta(hours=24))
+check('EVERY banner says the verdicts are as of the capture, not as of now -- '
+      'fresh captures included, because the failure was a 24-hour-old one being '
+      'read as present tense',
+      'AS OF THE CAPTURE' in fresh and 'AS OF THE CAPTURE' in stale, True)
+check('and every banner names the live checks that can contradict it',
+      'live' in fresh.lower() and 'live' in stale.lower(), True)
+check('a capture over the staleness threshold gets the extra warning',
+      '!!' in stale, True)
+check('CONTROL: a FRESH capture does NOT get it -- a banner that always shouts '
+      'is a banner nobody reads',
+      '!!' in fresh, False)
+check('a capture with no timestamp refuses rather than passing quietly',
+      'must not be acted on' in S.capture_age_banner({}), True)
+
 # ── 5. THE LIVE FILE, stated as a measurement rather than an expectation ───
 print('5. the live repo')
 import json

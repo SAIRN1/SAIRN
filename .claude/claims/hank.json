@@ -1143,8 +1143,8 @@
       "task": "a verdict stated without its own expiry",
       "claimed_at": "2026-09-12T15:57:50Z",
       "claimed_at_epoch": 1789228670.9360561,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T10:45:36Z"
     }
   ]
 }

@@ -220,6 +220,45 @@ date?** An inventory that is stale is *visibly wrong* and its generator refuses
 rather than guessing. A gate that is stale **passes**, and a passing gate is
 indistinguishable from a safe change. Generate the first; never the second.
 
+### 1.10 A computed answer is only as current as its oldest input
+
+**The rule: a checker's output is a measurement with a timestamp, not a fact
+about now. If a verdict can be invalidated by something that happened after the
+data was gathered, the output must SAY what instant it is true as of — and name
+what could contradict it.**
+
+Written 2026-09-12 from a tool being wrong within hours of shipping, and it was
+not a stale-data mistake in the ordinary sense.
+
+`schema_snapshot_freshness.py` gained a rule for deciding whether a declared
+table had never been migrated: if its `create table` was committed **before**
+the live capture ran and the capture still lacks it, then *"the snapshot is
+behind"* is excluded. Sound. It used the newest capture committed anywhere in
+the repo. The arithmetic was right and the corroboration was real.
+
+It still called five tables never-run that had been migrated **in between the
+capture and the reading**. The rule excluded "the snapshot is behind" relative
+to the **CREATE date** and said nothing about **now**, and the output was
+phrased in the present tense — `VERDICT: NEVER RUN` — so it read as a claim
+about the database rather than about a file from the previous day.
+
+**Why this is easy to miss where §2.3's document version is not.** A number you
+just computed *feels* current, because the computation is current. A stale line
+in a document at least looks like it was written some time ago. Freshly-derived
+staleness has no tell.
+
+**The mechanism:** the tool now scopes every verdict (`NEVER RUN AS OF THE
+CAPTURE`), prints the capture's age on every run, warns above a threshold, and
+carries `verdict_as_of` in its JSON. Section 4b of
+`tests/run_schema_verdict_probe.py` holds it — including the control that a
+**fresh** capture must NOT get the loud warning, because a banner that always
+shouts is one nobody reads.
+
+**Generalise it before writing the next checker:** ask what input has a
+timestamp, and what could change after it was taken. If the answer is "a human
+with database access", or "another of the four sessions", the output needs an
+expiry on its face.
+
 ### 1.9 A checker must answer the same on identical input
 
 Non-determinism in a checker's output turns every diff into noise and every

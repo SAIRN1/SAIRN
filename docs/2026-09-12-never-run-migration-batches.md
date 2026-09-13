@@ -1,9 +1,36 @@
 # The never-run migrations — the send order, and what was checked before sending
 
-**2026-09-12 (Hank).** `tools/schema_snapshot_freshness.py` resolves 89 tables
-declared in `sql/` as NEVER RUN against the fresh 2026-09-11 capture. **31 of
-them are queried by live `api/` code** — that is the set below. The other 58 are
-real but no shipped code path reaches them yet.
+> ## ⚠ CORRECTED 2026-09-12, HOURS AFTER THIS FILE WAS WRITTEN
+>
+> **The counts below are AS OF THE 2026-09-11 15:42 UTC CAPTURE, not as of now,
+> and at least batch 1 is already done.** Michael ran
+> `stonedesk_public_surface_schema.sql` after that capture;
+> `tools/stonedesk_storefront_live_check.py` now answers **LIVE** for
+> `sd_public_rate_limits`, `sd_public_shop` and `sd_order_links` against
+> production, where CC measured 503 `UNAVAILABLE` / `NOT_PROVISIONED` for the
+> same probes earlier. `sd_quote_requests` and `sd_customers` are not reachable
+> by any unauthenticated probe and are therefore **unverified, not
+> contradicted**.
+>
+> **The mistake was mine and it was not a stale file.** The analysis used the
+> newest capture committed anywhere in the repo — `3d603dd0`, byte-identical
+> local and origin, verified. The rule it applies excludes *"the snapshot is
+> behind"* relative to the **CREATE date**. It said nothing about **now**. A
+> migration run after the capture makes a never-run verdict wrong, and I stated
+> the verdicts in the present tense with no expiry on them.
+>
+> `schema_snapshot_freshness.py` now scopes every verdict to the capture
+> instant, prints the capture's age, warns above 12 hours, and carries
+> `verdict_as_of` in its JSON. Held by section 4b of
+> `tests/run_schema_verdict_probe.py`.
+>
+> **Do not act on the table below until the snapshot is re-captured.** Every row
+> needs re-deriving; batch 1 is struck through on the evidence above.
+
+**2026-09-12 (Hank).** `tools/schema_snapshot_freshness.py` resolved 89 tables
+declared in `sql/` as NEVER RUN **as of the 2026-09-11 15:42 UTC capture**.
+**31 of them are queried by live `api/` code** — that is the set below. The
+other 58 are real but no shipped code path reaches them yet.
 
 Skill used: **`sairn-grant-sweep`**, specifically *"grant only the verbs the code
 actually calls"* and its note that `create table if not exists` files are safe to
@@ -49,7 +76,7 @@ was filed. The file is genuinely idempotent; confirmed by reading it.
 
 | # | Files | Tables | App | Sent |
 |---|---|---|---|---|
-| 1 | `stonedesk_public_surface_schema.sql` | 5 | StoneDesk | 2026-09-12 |
+| ~~1~~ | ~~`stonedesk_public_surface_schema.sql`~~ | ~~5~~ | StoneDesk | **RUN — 3 of 5 confirmed LIVE 2026-09-12; `sd_quote_requests` and `sd_customers` unverified, no unauthenticated probe reaches them** |
 | 2 | `sd_approvals_schema.sql`, `stonedesk_locations_schema.sql`, `sd_supplier_lead_times_schema.sql`, `stonedesk_intake_photos_2026-09-03.sql` | 4 | StoneDesk | — |
 | 3 | `sairnroofing_prequal_schema.sql`, `sairnroofing_safety_schema.sql`, `sairnroofing_warranties_schema.sql`, `sairnroofing_entities_schema.sql`, `sairnroofing_supplier_documents_schema.sql` | 8 | SAIRNroofing | — |
 | 4 | `sairnsenior_authorizations_schema.sql`, `sairnsenior_branches_schema.sql`, `sairnsenior_franchise_schema.sql`, `sairnsenior_payer_contracts_schema.sql` | 4 | SAIRNsenior | — |
@@ -84,6 +111,23 @@ A table existing is not a working feature. `schema_provisioning_check.py` can
 confirm the table is reachable through the API afterwards, but a passing read
 does not prove a write succeeds, that the id column matches what the client
 sends, or that a row comes back. Those need a real write against a real licence.
+
+## The lesson, which is not about this tool
+
+**A verdict with no stated expiry gets read as a fact about now.** That is the
+whole of it. The rule was sound, the data was the newest available, the
+arithmetic was right, and the answer was still wrong for five tables within
+hours — because "NEVER RUN" was printed in the present tense about a measurement
+taken a day earlier, on a platform where four sessions and a human run
+migrations by hand.
+
+This is `sairn-memory-curator` §2 — *a fact with a tense needs a read* — applied
+to a tool's OUTPUT rather than to a document. The same discipline that stops a
+CLAUDE.md line going stale has to apply to anything a checker prints, and it is
+easier to miss there because a freshly-computed number feels current by
+construction. **It is only as current as its oldest input.**
+
+Filed as `docs/SAIRN-PROCESS-RULES.md` §1.10.
 
 ## The standing risk this set illustrates
 
