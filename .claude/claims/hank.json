@@ -1245,6 +1245,16 @@
       "claimed_at_epoch": 1789311589.764304,
       "status": "released",
       "released_at": "2026-09-13T15:34:26Z"
+    },
+    {
+      "id": "hank-1789314096",
+      "session": "hank",
+      "subject": "unguarded-retryable-writes",
+      "task": "triage which of the 41 can actually retry",
+      "claimed_at": "2026-09-13T15:41:36Z",
+      "claimed_at_epoch": 1789314096.0529368,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
