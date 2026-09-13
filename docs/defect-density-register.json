@@ -801,6 +801,50 @@
       "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
     },
     {
+      "commit": "102cb926bd74",
+      "date": "2026-09-13",
+      "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_githook_install_probe.py",
+        "tools/install_git_hooks.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 332,
+      "lines_removed": 47,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all"
+    },
+    {
+      "commit": "102cb926bd74",
+      "date": "2026-09-13",
+      "subject": "fix(tooling): install_git_hooks --check called a clone protected while its hook had never run",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_githook_install_probe.py",
+        "tools/install_git_hooks.py",
+        "tools/report_only_checks.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 332,
+      "lines_removed": 47,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead"
+    },
+    {
       "commit": "639e9bedf433",
       "date": "2026-09-13",
       "subject": "fix(push-gate): five more is-the-tool-present fail-opens, one of which switched off nine checks",
