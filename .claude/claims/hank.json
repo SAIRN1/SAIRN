@@ -1393,8 +1393,8 @@
       "task": "entryFromTransfers and the status flip balance trigger",
       "claimed_at": "2026-09-13T22:49:05Z",
       "claimed_at_epoch": 1789339745.3183954,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T22:58:07Z"
     }
   ]
 }
