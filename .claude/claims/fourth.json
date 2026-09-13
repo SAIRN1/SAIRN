@@ -1052,6 +1052,16 @@
       "claimed_at_epoch": 1789339797.2179267,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789341067",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "condition number awareness ill conditioned financial formulas catastrophic cancellation",
+      "claimed_at": "2026-09-13T23:11:07Z",
+      "claimed_at_epoch": 1789341067.9595375,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
