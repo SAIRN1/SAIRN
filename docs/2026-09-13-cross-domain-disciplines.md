@@ -1,4 +1,4 @@
-# Cross-domain disciplines — six standing conventions for any checker built here
+# Cross-domain disciplines — seven standing conventions for any checker built here
 
 **Read this before building any checker, probe, gate or tool.** These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
@@ -159,12 +159,69 @@ not yet resolved whether its Tier A bar currently means the structural version
 or the two-passes version. It is an open question there, referenced here, and it
 should be resolved in piece 2 rather than assumed in either direction.
 
+## 7. Byte-identical is not safe-in-context
+
+**The convention: propagating a proven pattern to a new resource requires an
+explicit re-qualification against the TARGET's actual operating conditions —
+scale, input range, criticality tier — not merely a diff proving the code
+matches. "Copy exactly" governs the bytes. It says nothing about the
+assumptions the bytes were proven under.**
+
+Borrowed from Ariane 5 Flight 501. The inertial reference software was reused
+from Ariane 4 — correct code, correct in its original context, propagated
+without unexplained variation. Ariane 5's flight profile produced a horizontal
+velocity outside the range Ariane 4 could ever reach, an unprotected conversion
+overflowed, both redundant units failed identically because they were running
+the same correct software, and the vehicle was destroyed. **The copy was
+faithful. The context was not.**
+
+**Why this is a seventh discipline and not a footnote on the other six.** The
+first six all defend against *a check that cannot fire*. This defends against
+something structurally different: *a correct thing moved into a context where
+its assumptions no longer hold*. Nothing in items 1–6 would catch it — the
+criteria would be locked, the accuracy and stability would both be perfect, the
+uncertainty table would be complete, the alarm would be correctly placed, the
+validation would be isolated, and the redundancy would be there. **Dissimilar
+redundancy is the one that fails hardest here, and that is the sharpest part of
+the lesson: two identical copies of correct software fail identically, which
+means a second copy is not a second opinion.**
+
+**What re-qualification has to establish, and it is three questions, not one:**
+
+- **SCALE** — does the target carry the same order of magnitude the pattern was
+  proven at? A guard sized for one practice's supply list is not thereby sized
+  for a platform-wide sweep.
+- **INPUT RANGE** — can the target receive values the source could not? This is
+  the Ariane case exactly, and it is the one that reads as paranoid right up
+  until it is not.
+- **CRITICALITY TIER** — is the target the same tier as the source? A pattern
+  proven on a Tier C preference store, propagated unchanged to a Tier A money
+  path, has been re-qualified for nothing. `docs/CRITICALITY-TIERS.md` is the
+  register that answers this, per resource.
+
+**This has to be designed in, not added afterwards.** Any mechanism built to
+propagate a must-copy-exactly pattern automatically must carry the
+re-qualification check **by construction** — a propagation tool that verifies
+byte-identity and nothing else is faster at making this exact mistake, on more
+resources, than a human doing it by hand. The check belongs in the mechanism
+before the mechanism exists, because bolting it on afterwards means every
+propagation done in between was unchecked and nobody recorded which.
+
+**And the honest limit, stated rather than implied:** none of the three
+questions can be answered mechanically today. Scale and input range need
+somebody who knows the target; only the tier is already written down. So the
+realistic first version is a **refusal to propagate without a recorded answer to
+each**, not an automatic verdict — the same standard as a quarantine needing a
+named owner rather than a tool deciding on its own.
+
 ---
 
-## The failure mode all six share
+## The failure mode six of the seven share
 
-Every one of these conventions defends against the same thing: **a check that
-reads as coverage and structurally cannot fire.** A criterion tuned to the data.
+Six of these conventions defend against the same thing: **a check that reads as
+coverage and structurally cannot fire.** (Item 7 is the exception and is worth
+holding separately — it defends against a correct thing moved into a context
+where its assumptions no longer hold, which none of the other six would catch.) A criterion tuned to the data.
 A score that averages away the half that broke. A rate over a denominator
 nobody stated. An alarm set at the cliff edge. A validation fed by its own
 subject. A replication that shares a blind spot.
