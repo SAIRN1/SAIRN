@@ -1002,8 +1002,8 @@
       "task": "pricing rules and negotiated prices",
       "claimed_at": "2026-09-13T11:49:26Z",
       "claimed_at_epoch": 1789300166.5667245,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T12:07:00Z"
     }
   ]
 }
