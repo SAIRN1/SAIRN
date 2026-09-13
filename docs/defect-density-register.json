@@ -801,6 +801,44 @@
       "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
     },
     {
+      "commit": "77dd73161646",
+      "date": "2026-09-13",
+      "subject": "fix(push-gate): a missing checker is not a clean push -- check 3 fails closed on the tool's absence",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check3_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 180,
+      "lines_removed": 76,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "FAIL-OPEN CLOSED: push-gate check 3 skipped itself in silence when tools/sairn_sql_preflight.py was absent from the clone -- every RESULT of the tool denied, the tool's absence did not"
+    },
+    {
+      "commit": "77dd73161646",
+      "date": "2026-09-13",
+      "subject": "fix(push-gate): a missing checker is not a clean push -- check 3 fails closed on the tool's absence",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check3_probe.py",
+        "tools/sairn_push_gate_hook.py"
+      ],
+      "lines_added": 180,
+      "lines_removed": 76,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "a probe arm that fails on EVERY run inflates every mutation verdict by one and turns a surviving mutation into a bite -- os.path.join backslashes vs git rev-parse forward slashes; run the probe green before mutating"
+    },
+    {
       "commit": "8dfde7be2b1b",
       "date": "2026-09-13",
       "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test",
