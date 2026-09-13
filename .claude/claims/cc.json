@@ -1054,6 +1054,16 @@
       "claimed_at_epoch": 1789316281.930037,
       "status": "released",
       "released_at": "2026-09-13T16:32:30Z"
+    },
+    {
+      "id": "cc-1789317471",
+      "session": "cc",
+      "subject": "fail-closed-on-absent-tool",
+      "task": "standing rule and two-figure density",
+      "claimed_at": "2026-09-13T16:37:51Z",
+      "claimed_at_epoch": 1789317471.364958,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
