@@ -1114,6 +1114,16 @@
       "claimed_at_epoch": 1789338065.0338478,
       "status": "released",
       "released_at": "2026-09-13T22:31:29Z"
+    },
+    {
+      "id": "cc-1789339322",
+      "session": "cc",
+      "subject": "cc",
+      "task": "provisioning triage mech_credentials six soft tables ledger_entries empty state",
+      "claimed_at": "2026-09-13T22:42:02Z",
+      "claimed_at_epoch": 1789339322.7486439,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
