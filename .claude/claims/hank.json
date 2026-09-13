@@ -1235,6 +1235,16 @@
       "claimed_at_epoch": 1789310893.8462248,
       "status": "released",
       "released_at": "2026-09-13T14:59:40Z"
+    },
+    {
+      "id": "hank-1789311589",
+      "session": "hank",
+      "subject": "financial-write-invariants",
+      "task": "three invariant property runner and idempotency checker",
+      "claimed_at": "2026-09-13T14:59:49Z",
+      "claimed_at_epoch": 1789311589.764304,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
