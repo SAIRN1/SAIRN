@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**104 files in `tools/`.** By what actually invokes them:
+**106 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 35 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 9 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 11 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 57 |
+| CHECKER | 59 |
 | GENERATOR | 15 |
 | LIBRARY | 19 |
 | LIVE | 13 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 4 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 4
+**The number to act on: 6 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 6
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 4, by name, so this is actionable rather than a statistic:
+The 6, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -58,6 +58,8 @@ The 4, by name, so this is actionable rather than a statistic:
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
 | `fmea_prediction_check.py` | SUITE-ONLY | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows |
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
+| `testability_criteria.py` | SUITE-ONLY | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything |
+| `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 
 **Separately, 3 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
@@ -198,7 +200,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (9)
+## SUITE-ONLY (11)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -214,6 +216,8 @@ fixtures. Nothing points them at the real codebase.
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_fmea_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `schema_provisioning_check.py` | LIVE | a resource the app writes to whose table was never created | `schema_provisioning_probe.py` |
+| `testability_criteria.py` | CHECKER | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything | `run_testability_gate_probe.py` |
+| `testability_gate.py` | CHECKER | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus | `run_testability_gate_probe.py` |
 
 ---
 
