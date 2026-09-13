@@ -1,0 +1,34 @@
+{
+ "app_matched": null,
+ "considered": {
+  "defect_records": 54,
+  "detectors_fired": [
+   "1.5"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 0
+ },
+ "drafted_on": "2026-09-13",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "action": "check every caller; the expensive part of a false success is the confident line after it",
+   "basis": "section 1.5 applies -- The confident line printed after the error",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.5",
+   "risk": "a function reporting failure by return value needs a caller that reads it",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tools/metamorphic_check.py"
+}

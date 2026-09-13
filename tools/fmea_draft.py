@@ -58,6 +58,20 @@ REGISTER = os.path.join(REPO, 'docs', 'defect-density-register.json')
 RULES = os.path.join(REPO, 'docs', 'SAIRN-PROCESS-RULES.md')
 FMEA_DIR = os.path.join(REPO, 'docs', 'fmea')
 
+
+def _today():
+    """The date a draft is written. Read from HEAD's commit date, not the
+    system clock: every other date in this pipeline comes from git, and mixing
+    two clocks is how a draft ends up looking a day older than the defect it is
+    being scored against."""
+    import subprocess
+    try:
+        out = subprocess.run(['git', 'log', '-1', '--format=%cI'], cwd=REPO,
+                             capture_output=True, text=True).stdout.strip()
+        return out[:10]
+    except Exception:
+        return ''
+
 # ── THE DETECTORS ─────────────────────────────────────────────────────────
 # Each maps a standing lesson to a MECHANICAL test over the target's source.
 # The test is deliberately narrow: a detector that fires on every Python file
@@ -477,6 +491,18 @@ def main(argv):
                 continue
             slug = a['target'].replace('/', '_').replace('\\', '_')
             p = os.path.join(FMEA_DIR, slug + '.json')
+            # ── drafted_on, added 2026-09-13, AND IT IS NOT COSMETIC ────────
+            # tools/fmea_prediction_check.py needs to know a draft was written
+            # BEFORE the defect it claims to predict. Without this field it
+            # falls back to "the newest defect the draft cites", which is only
+            # a LOWER bound -- and its own comment says so. The first run that
+            # ever had drafts on disk immediately scored one PREDICTION that
+            # was a BACKDATING ARTEFACT: a draft saved today, citing a defect
+            # from today, matching that same defect. A risk tool scoring itself
+            # right on a defect that had already happened is the fabrication
+            # shape fmea_draft.py's own docstring is written against, arriving
+            # through the TIMESTAMP instead of through the generator.
+            a['drafted_on'] = _today()
             io.open(p, 'w', encoding='utf-8', newline='\n').write(
                 json.dumps(a, indent=1, sort_keys=True))
             print('\nsaved %s' % os.path.relpath(p, REPO).replace(os.sep, '/'))

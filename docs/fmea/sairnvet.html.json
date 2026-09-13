@@ -1,0 +1,132 @@
+{
+ "app_matched": "sairnmechanical",
+ "considered": {
+  "defect_records": 54,
+  "detectors_fired": [
+   "1.3",
+   "2.1"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 9
+ },
+ "drafted_on": "2026-09-13",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "1348466a2e73",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "a858cab7cb17",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "ad588e6c5dc3",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8f9a727f008c",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8f9a727f008c",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "8f9a727f008c",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnmechanical) has this defect on record",
+   "cite": "94034ed14279",
+   "date": "2026-09-10",
+   "detected_by": "static-checker",
+   "prior_severity": "low",
+   "risk": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper",
+   "source": "defect-register"
+  },
+  {
+   "action": "assert the anchor matches exactly once AND read what it matched before acting",
+   "basis": "section 1.3 applies -- An anchor that still matches is not an anchor that still points at the right thing",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.3",
+   "risk": "an exact-string anchor verifies UNIQUENESS, never that it still points at the right code",
+   "source": "process-rules"
+  },
+  {
+   "action": "rebuild the row whole, anchored on a unique substring",
+   "basis": "section 2.1 applies -- Never edit an index row by splitting on `|`",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 2.1",
+   "risk": "splitting a markdown row on `|` breaks on a pipe that is content",
+   "source": "process-rules"
+  }
+ ],
+ "target": "sairnvet.html"
+}

@@ -17,7 +17,10 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "The timesheet AI panel priced labour from raw rows, so unrated rows reached the model as bare hours and the cost estimate carried no exclusion note"
+      "summary": "The timesheet AI panel priced labour from raw rows, so unrated rows reached the model as bare hours and the cost estimate carried no exclusion note",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "a domain-logic defect: the AI priced labour from rows it was never told it could not price. No standing rule names this shape."
     },
     {
       "commit": "5b8570ce0012",
@@ -35,7 +38,10 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\""
+      "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\"",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "two concurrent suite runs restoring each other's files -- a concurrency defect in the harness, and no standing rule covers it."
     },
     {
       "commit": "1348466a2e73",
@@ -51,7 +57,12 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence"
+      "summary": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "a suppression flag left on, not a check that passed"
     },
     {
       "commit": "3f09a48eed54",
@@ -69,7 +80,11 @@
       "layer": "test",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage"
+      "summary": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "3f09a48eed54",
@@ -87,7 +102,11 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper"
+      "summary": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "5abfcdbacbb4",
@@ -104,7 +123,11 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "static-checker",
-      "summary": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero"
+      "summary": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "5b98fd27209b",
@@ -121,7 +144,11 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "Three source assertions matched what came AFTER the guard rather than its position, so if(false && dntIsUnconfirmed(...)) left them green"
+      "summary": "Three source assertions matched what came AFTER the guard rather than its position, so if(false && dntIsUnconfirmed(...)) left them green",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "5b98fd27209b",
@@ -138,7 +165,11 @@
       "layer": "test",
       "severity": "low",
       "detection_method": "probe-control",
-      "summary": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing"
+      "summary": "A mutation control was anchored on a line two writers share verbatim, so it reported ANCHOR-2 and silently probed nothing",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "5b98fd27209b",
@@ -155,7 +186,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "A dropped socket produced NO toast at all, because a rejection never reaches a .then(ok => ...) handler -- and two callers attach none, so it was an unhandled rejection"
+      "summary": "A dropped socket produced NO toast at all, because a rejection never reaches a .then(ok => ...) handler -- and two callers attach none, so it was an unhandled rejection",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "5b98fd27209b",
@@ -172,7 +207,12 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "fault-injection",
-      "summary": "A hung write never settled and there was no timeout anywhere on the path, so it was indistinguishable from not having clicked"
+      "summary": "A hung write never settled and there was no timeout anywhere on the path, so it was indistinguishable from not having clicked",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "silence by omission rather than a false success printed"
     },
     {
       "commit": "5b98fd27209b",
@@ -189,7 +229,11 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "fault-injection",
-      "summary": "A partial response counted as success and CLEARED the unconfirmed flag, letting hydration overwrite the local copy"
+      "summary": "A partial response counted as success and CLEARED the unconfirmed flag, letting hydration overwrite the local copy",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "6fde9cea7b84",
@@ -211,7 +255,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so"
+      "summary": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "6fde9cea7b84",
@@ -233,7 +281,11 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "fault-injection",
-      "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site"
+      "summary": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "6fde9cea7b84",
@@ -255,7 +307,12 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "static-checker",
-      "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard"
+      "summary": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "a sampling window exempting what it does not reach"
     },
     {
       "commit": "94034ed14279",
@@ -270,7 +327,10 @@
       "layer": "product",
       "severity": "low",
       "detection_method": "static-checker",
-      "summary": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper"
+      "summary": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "a dead duplicate definition. Guardian check 27 territory, not a PR class rule."
     },
     {
       "commit": "a858cab7cb17",
@@ -286,7 +346,10 @@
       "layer": "product",
       "severity": "critical",
       "detection_method": "code-review",
-      "summary": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path"
+      "summary": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "a demo seed reaching a live server. Held by a test, not by a class rule."
     },
     {
       "commit": "ad588e6c5dc3",
@@ -303,7 +366,10 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning"
+      "summary": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "a payload too large for the row. A sizing defect with no rule class."
     },
     {
       "commit": "bfe591a24c6a",
@@ -324,7 +390,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all"
+      "summary": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "bfe591a24c6a",
@@ -345,7 +415,11 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured"
+      "summary": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "bfe591a24c6a",
@@ -366,7 +440,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction"
+      "summary": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "bfe591a24c6a",
@@ -387,7 +465,11 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps"
+      "summary": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "caa5bb7cb6b2",
@@ -404,7 +486,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at"
+      "summary": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "d22ce1060e10",
@@ -421,7 +507,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "independent-review",
-      "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays"
+      "summary": "A refused vendor write showed a success toast and the next sync silently replaced the edit -- a negotiated discount, so it changes what the practice pays",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "133f5587a597",
@@ -441,7 +531,12 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "The defect register recorded pre-rebase SHAs, so records pointed at commits that never existed on main and the one promoted report-only checker was permanently red in every clone"
+      "summary": "The defect register recorded pre-rebase SHAs, so records pointed at commits that never existed on main and the one promoted report-only checker was permanently red in every clone",
+      "rules": [
+        "2.3"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "a fact with a tense needing a read, applied to a SHA"
     },
     {
       "commit": "133f5587a597",
@@ -461,7 +556,12 @@
       "layer": "tooling",
       "severity": "low",
       "detection_method": "code-review",
-      "summary": "defect_register --check ran its vocabulary validation after a continue, so a record with an unresolvable SHA stopped having its method, layer and severity checked at all"
+      "summary": "defect_register --check ran its vocabulary validation after a continue, so a record with an unresolvable SHA stopped having its method, layer and severity checked at all",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "vocabulary validation ran after a continue, so a record with an unresolvable SHA stopped being checked at all -- a check that stopped checking, but only for a subset"
     },
     {
       "commit": "8f9a727f008c",
@@ -500,7 +600,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever"
+      "summary": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "8f9a727f008c",
@@ -539,7 +643,11 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported"
+      "summary": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "8f9a727f008c",
@@ -578,7 +686,11 @@
       "layer": "product",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished"
+      "summary": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "d77321dfbe21",
@@ -598,7 +710,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result"
+      "summary": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result",
+      "rules": [
+        "1.6"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "d77321dfbe21",
@@ -618,7 +734,12 @@
       "layer": "test",
       "severity": "high",
       "detection_method": "mutation-testing",
-      "summary": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result"
+      "summary": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping"
     },
     {
       "commit": "d85b98efecb8",
@@ -642,7 +763,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep"
+      "summary": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "dd95a5cf6c0e",
@@ -657,7 +782,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
-      "summary": "sql/stonedesk_recovery_admin_seed.sql wrote credential rows with no recoverability guard and no transaction, landing a day after the guard tool and check 2 shipped and never being stopped"
+      "summary": "sql/stonedesk_recovery_admin_seed.sql wrote credential rows with no recoverability guard and no transaction, landing a day after the guard tool and check 2 shipped and never being stopped",
+      "rules": [
+        "3.4"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "f75e046a736b",
@@ -674,7 +803,12 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
+      "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "the wrapper check asked whether a wrapper speaks ANYWHERE, so a silenced catch was exempted by the scope of the question"
     },
     {
       "commit": "101b9e374748",
@@ -692,7 +826,12 @@
       "layer": "test",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "four of the ten push-gate checks had no probe planting a finding and asserting a deny -- checks 1, 2, 3 and 5 -- so nothing had ever proven they refuse anything"
+      "summary": "four of the ten push-gate checks had no probe planting a finding and asserting a deny -- checks 1, 2, 3 and 5 -- so nothing had ever proven they refuse anything",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "four push-gate checks had no probe asserting a deny, so nothing had ever proven they refuse -- unproven rather than stopped"
     },
     {
       "commit": "101b9e374748",
@@ -710,7 +849,11 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "my own first two gate fixtures proved nothing and both arms passed anyway: the commit subjects began with PROBE so check 8 answered instead, and the check-5 fixture did not match the APPEND detector at all"
+      "summary": "my own first two gate fixtures proved nothing and both arms passed anyway: the commit subjects began with PROBE so check 8 answered instead, and the check-5 fixture did not match the APPEND detector at all",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "978df7ae8d27",
@@ -729,7 +872,11 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels"
+      "summary": "prRefresh and cqRefresh coalesced a failed read to [], making their own '=== null' guard unreachable, so a failed read rendered 0-of-4 coverage plus advice to re-run the seed on the compliance and billing panels",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "9d5c85e205fd",
@@ -752,7 +899,12 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse"
+      "summary": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so a wiring on exit code would have read a finding as clean"
     },
     {
       "commit": "9d5c85e205fd",
@@ -775,7 +927,11 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "static-checker",
-      "summary": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived"
+      "summary": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "9d5c85e205fd",
@@ -798,7 +954,12 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
+      "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage",
+      "rules": [
+        "1.7"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "the inventory did not read NOT_PROMOTED, so six recorded reasons were outside the window it looked at"
     },
     {
       "commit": "102cb926bd74",
@@ -820,7 +981,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all"
+      "summary": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "102cb926bd74",
@@ -842,7 +1007,11 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead"
+      "summary": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead",
+      "rules": [
+        "1.10"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "639e9bedf433",
@@ -861,7 +1030,11 @@
       "layer": "tooling",
       "severity": "critical",
       "detection_method": "code-review",
-      "summary": "the push gate disabled NINE of its ten checks when one unrelated tool was absent -- if not os.path.isfile(sairn_load_state_check.py): sys.exit(0) at the top of main(), an early exit from when check 1 was the only check"
+      "summary": "the push gate disabled NINE of its ten checks when one unrelated tool was absent -- if not os.path.isfile(sairn_load_state_check.py): sys.exit(0) at the top of main(), an early exit from when check 1 was the only check",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "639e9bedf433",
@@ -880,7 +1053,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "four more is-the-tool-present fail-opens in the push gate: checks 2, 4 and 5 skipped themselves in silence when their checker file was absent, and check 2 also skipped on an unrunnable subprocess"
+      "summary": "four more is-the-tool-present fail-opens in the push gate: checks 2, 4 and 5 skipped themselves in silence when their checker file was absent, and check 2 also skipped on an unrunnable subprocess",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "77dd73161646",
@@ -899,7 +1076,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "FAIL-OPEN CLOSED: push-gate check 3 skipped itself in silence when tools/sairn_sql_preflight.py was absent from the clone -- every RESULT of the tool denied, the tool's absence did not"
+      "summary": "FAIL-OPEN CLOSED: push-gate check 3 skipped itself in silence when tools/sairn_sql_preflight.py was absent from the clone -- every RESULT of the tool denied, the tool's absence did not",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "77dd73161646",
@@ -918,7 +1099,12 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "a probe arm that fails on EVERY run inflates every mutation verdict by one and turns a surviving mutation into a bite -- os.path.join backslashes vs git rev-parse forward slashes; run the probe green before mutating"
+      "summary": "a probe arm that fails on EVERY run inflates every mutation verdict by one and turns a surviving mutation into a bite -- os.path.join backslashes vs git rev-parse forward slashes; run the probe green before mutating",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "a probe arm failing on EVERY run inflated every mutation verdict by one -- consistently wrong rather than silently skipped"
     },
     {
       "commit": "832b1a3f0b9a",
@@ -939,7 +1125,12 @@
       "layer": "tooling",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "truthy_sum_check.py could not tell a numeric fold from a string-literal concatenation, so 58 of its 140 matches were never defects and every new currency label was answered with a baseline entry -- a checker teaching people to write exemptions"
+      "summary": "truthy_sum_check.py could not tell a numeric fold from a string-literal concatenation, so 58 of its 140 matches were never defects and every new currency label was answered with a baseline entry -- a checker teaching people to write exemptions",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "the matcher could not tell a fold from a concatenation that reads the same -- adjacent to \"grep cannot tell code from text\", one level in"
     },
     {
       "commit": "832b1a3f0b9a",
@@ -960,7 +1151,12 @@
       "layer": "test",
       "severity": "low",
       "detection_method": "mutation-testing",
-      "summary": "a floor pinned to a POST-CLASSIFICATION count goes red on a correctness improvement -- my own occurrences floor broke hours later when concatenation was split out; it floors on raw matches inspected now"
+      "summary": "a floor pinned to a POST-CLASSIFICATION count goes red on a correctness improvement -- my own occurrences floor broke hours later when concatenation was split out; it floors on raw matches inspected now",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "citation_note": "an anchor that still matched, pinned to a number the classifier moved"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -979,7 +1175,12 @@
       "layer": "test",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "push-gate check 3 had no probe proving the GATE refuses -- only the checker's own exit codes were pinned, and detection is a separate claim from wiring"
+      "summary": "push-gate check 3 had no probe proving the GATE refuses -- only the checker's own exit codes were pinned, and detection is a separate claim from wiring",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "only the checker exit codes were pinned; the GATE refusing was never proven, and detection is a separate claim from wiring"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -998,7 +1199,11 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "FAIL-OPEN in the blocking push gate: check 3 is wrapped in if os.path.isfile(pf), so with tools/sairn_sql_preflight.py absent a missing-table SQL push is allowed in silence and the gate never says it stopped checking"
+      "summary": "FAIL-OPEN in the blocking push gate: check 3 is wrapped in if os.path.isfile(pf), so with tools/sairn_sql_preflight.py absent a missing-table SQL push is allowed in silence and the gate never says it stopped checking",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1017,7 +1222,12 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline"
+      "summary": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline",
+      "rules": [
+        "Part 5"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "verification discipline, not one of the numbered class rules"
     },
     {
       "commit": "a7ff2325890f",
@@ -1033,7 +1243,12 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "mutation-testing",
-      "summary": "a probe whose subject DERIVES its list by scanning tests/ poisoned that list by being committed: its own control identity became a throwaway identity, and the value it had to SET to exercise a fixture was found in the probe instead of the fixture, letting a mutation survive twice"
+      "summary": "a probe whose subject DERIVES its list by scanning tests/ poisoned that list by being committed: its own control identity became a throwaway identity, and the value it had to SET to exercise a fixture was found in the probe instead of the fixture, letting a mutation survive twice",
+      "rules": [
+        "1.9"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "the probe changed its own input by being committed, so the answer depended on something other than the code under test"
     },
     {
       "commit": "bc32bed288b5",
@@ -1055,7 +1270,10 @@
       "layer": "tooling",
       "severity": "high",
       "detection_method": "code-review",
-      "summary": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days"
+      "summary": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "citation_note": "a git identity leaking from one clone's local config. Real, and no standing rule names it."
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1078,7 +1296,12 @@
       "layer": "product",
       "severity": "high",
       "detection_method": "fault-injection",
-      "summary": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save"
+      "summary": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean",
+      "citation_note": "a stamping failure skipped the write and told the user the browser's storage was full -- a confident and WRONG reason printed after the error"
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1101,7 +1324,12 @@
       "layer": "test",
       "severity": "moderate",
       "detection_method": "code-review",
-      "summary": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries"
+      "summary": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "arguable",
+      "citation_note": "an exact scan count pinned as an anchor went red on the first ordinary commit that added a matching line -- the anchor still matched something, just not the thing it was pinned for"
     }
   ]
 }

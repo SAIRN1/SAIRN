@@ -1,0 +1,58 @@
+{
+ "app_matched": null,
+ "considered": {
+  "defect_records": 54,
+  "detectors_fired": [
+   "1.1",
+   "1.2",
+   "1.5",
+   "1.9"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 0
+ },
+ "drafted_on": "2026-09-13",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "action": "make it fail on purpose before trusting it; add the plant-the-defect probe in the same commit",
+   "basis": "section 1.1 applies -- A check that stopped checking",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.1",
+   "risk": "a check that cannot fail is indistinguishable from one that is not running",
+   "source": "process-rules"
+  },
+  {
+   "action": "search a comment-stripped copy, or parse; if the subject IS the comment, declare it",
+   "basis": "section 1.2 applies -- Grep cannot tell code from text that describes code",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.2",
+   "risk": "matching a source file by TEXT cannot tell code from a comment or string describing code",
+   "source": "process-rules"
+  },
+  {
+   "action": "check every caller; the expensive part of a false success is the confident line after it",
+   "basis": "section 1.5 applies -- The confident line printed after the error",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.5",
+   "risk": "a function reporting failure by return value needs a caller that reads it",
+   "source": "process-rules"
+  },
+  {
+   "action": "sort before emitting; run it twice under different PYTHONHASHSEED",
+   "basis": "section 1.9 applies -- A checker must answer the same on identical input",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.9",
+   "risk": "set and dict iteration order makes a checker answer differently on identical input",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tools/sairn_reachability_check.py"
+}

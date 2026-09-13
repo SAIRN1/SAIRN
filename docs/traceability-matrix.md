@@ -101,6 +101,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 4: the FMEA loop &mdash; the standing-rules citation field, and the two defects that only appeared once it existed** | **BUILT 2026-09-13 (CC)** &mdash; `rules` / `citation_confidence` / `citation_note` on all 54 register records, `--rule` on `--add`, 12 saved drafts; held by `tests/run_defect_register_probe.py` (59 c | `tests/run_defect_register_probe.py`, `tests/run_fmea_probe.py` |
 | **Item 18: metamorphic relations &mdash; does a checker's ANSWER survive a change that cannot change the answer?** | **BUILT 2026-09-13 (CC)** &mdash; `tools/metamorphic_check.py` + `tools/checker_kit.py`, held by `tests/run_metamorphic_probe.py` | `tests/run_metamorphic_probe.py` |
 | **Item 32: sharper reachability &mdash; does this code still serve a PURPOSE in the running system, not just "is it callable"** | **BUILT 2026-09-13 (CC)** &mdash; R4 inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker; held by `tests/reachability/activity_probe.py` | `tests/reachability/activity_probe.py` |
 | A hard WITNESSING LOCK on append-only writes — verification must complete before the write can fire at all, rather than a checker that flags one afterwards | **SCOPED 2026-09-13 (Fourth), NOT built** — `docs/2026-09-13-irreversible-write-witnessing-scoping.md`. Four classes measured; **only one is open** | `tests/seed_never_syncs_platform.js` |
@@ -287,7 +288,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**142 of 338 test files are traced to a stated requirement. 196 are not.**
+**143 of 338 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -435,7 +436,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_condition_coverage_probe.py`
 - `tests/run_financial_invariant_probe.py`
 - `tests/run_flaky_quarantine_probe.py`
-- `tests/run_fmea_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_jscomments_probe.py`
 - `tests/run_literal_drift_control_probe.py`
@@ -508,7 +508,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 338   tests/**, api/*.test.js
-  open-work rows citing a test       128   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       129   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                35   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

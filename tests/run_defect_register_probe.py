@@ -70,26 +70,29 @@ try:
     # ── B. IT REFUSES WHAT IT CANNOT VERIFY ────────────────────────────────
     rc, out = run(wt, '--add', '--commit', 'deadbeefdead', '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
-                  '--method', 'code-review', '--summary', 'nope')
+                  '--method', 'code-review', '--summary', 'nope',
+                  '--rule', '1.1')
     check('B1 a commit that does not exist is REFUSED', rc, 2)
     check('B2 and it says so', 'no such commit' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
-                  '--method', 'vibes', '--summary', 'nope')
+                  '--method', 'vibes', '--summary', 'nope', '--rule', '1.1')
     check('B3 an invented detection method is REFUSED', rc, 2)
     check('B4 because the matrix is meaningless with free text',
           '--method must be one of' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'guesswork', '--severity', 'high',
-                  '--method', 'code-review', '--summary', 'nope')
+                  '--method', 'code-review', '--summary', 'nope',
+                  '--rule', '1.1')
     check('B5 an invented layer is REFUSED', rc, 2)
 
     # ── C. it derives rather than trusting what it was told ────────────────
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a probe fixture')
+                  '--method', 'probe-control', '--summary', 'a probe fixture',
+                  '--rule', '1.1')
     check('C1 a real commit is accepted', rc, 0)
     doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                             encoding='utf-8'))
@@ -105,10 +108,16 @@ try:
                                    encoding='utf-8'))['records'])
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a probe fixture')
+                  '--method', 'probe-control', '--summary', 'a probe fixture',
+                  '--rule', '1.1')
     after = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                   encoding='utf-8'))['records'])
     check('D1 a duplicate is not appended', after, before)
+    # D1 ALONE PASSES FOR THE WRONG REASON AND THIS IS THE PROOF. When --rule
+    # became required and this call had not been updated, --add refused it for
+    # a MISSING FLAG -- so nothing was appended, D1 went green, and only D2
+    # caught that the refusal had nothing to do with duplication. An arm that
+    # asserts an absence needs an arm asserting the REASON beside it.
     check('D2 and it says so', 'already registered' in out, True)
 
     # ...but the SAME COMMIT with a DIFFERENT defect is a different record.
@@ -116,7 +125,8 @@ try:
     # would undercount by two.
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a SECOND fixture')
+                  '--method', 'probe-control', '--summary', 'a SECOND fixture',
+                  '--rule', '1.1')
     after2 = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                    encoding='utf-8'))['records'])
     check('D3 one commit CAN carry several distinct defects', after2, before + 1)
@@ -129,6 +139,7 @@ try:
     # points-at-nothing case, and the two now behave differently on purpose.
     # The subject is blanked here so the record really resolves to nothing.
     p = os.path.join(wt, REG.replace('/', os.sep))
+    p_reg = p
     doc = json.load(io.open(p, encoding='utf-8'))
     doc['records'].append(dict(doc['records'][0], commit='000000000000',
                                subject='no commit on this platform says this'))
@@ -208,6 +219,99 @@ try:
           rc == 1 and 'unknown detection method' in out, True)
     # Put the register back so section F reads a sane file.
     io.open(p, 'w', encoding='utf-8', newline='').write(json.dumps(after_doc, indent=2))
+
+    # ── H. THE STANDING-RULE CITATION (added 2026-09-13) ───────────────
+    # tools/fmea_prediction_check.py scored 0 from the day it was written and
+    # said so in its own docstring: it matches a saved risk draft to a defect
+    # BY RULE CITATION ONLY, because its first matcher scored 38% on word
+    # overlap and ALL FIVE of those hits were false positives. The field it
+    # needed did not exist. These arms hold the field that closed that, and
+    # the third confidence -- NOT-CITABLE -- that stops the gap being closed
+    # by pushing every awkward record into the nearest rule.
+    real2 = git(wt, 'rev-parse', 'HEAD~1').stdout.strip()[:12]
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'test', '--severity', 'low',
+                  '--method', 'probe-control', '--summary', 'H fixture')
+    check('H1 --add with NO citation is REFUSED', rc, 2)
+    check('H2 and names the missing flag', '--rule' in out, True)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'test', '--severity', 'low',
+                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--rule', '9.99')
+    check('H3 a rule id that is not a section in the rules doc is REFUSED', rc, 2)
+    check('H4 and says which document it checked against',
+          'SAIRN-PROCESS-RULES' in out, True)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'test', '--severity', 'low',
+                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--rule', 'not-citable')
+    check('H5 not-citable with NO note is REFUSED -- a bare refusal to cite '
+          'is a silence, not a decision', rc, 2)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'test', '--severity', 'low',
+                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--rule', 'not-citable', '--rule-note', 'no rule names this')
+    check('H6 not-citable WITH a note is accepted', rc, 0)
+    doc4 = json.load(io.open(p_reg, encoding='utf-8'))
+    hrec = [r for r in doc4['records'] if r['summary'] == 'H fixture'][0]
+    check('H7 and stores an EMPTY rules list, not a placeholder citation',
+          hrec['rules'], [])
+    check('H8 with the confidence recorded as a first-class answer',
+          hrec['citation_confidence'], 'not-citable')
+
+    # ── I. --check enforces it on records that are already there ───────
+    doc5 = json.load(io.open(p_reg, encoding='utf-8'))
+    doc5['records'][0]['rules'] = ['9.99']
+    doc5['records'][0]['citation_confidence'] = 'clean'
+    io.open(p_reg, 'w', encoding='utf-8', newline='').write(json.dumps(doc5, indent=2))
+    rc, out = run(wt, '--check')
+    check('I1 a citation naming a section that does not exist FAILS --check', rc, 1)
+    check('I2 and names the bad id', '9.99' in out, True)
+
+    doc6 = json.load(io.open(p_reg, encoding='utf-8'))
+    doc6['records'][0]['rules'] = []
+    doc6['records'][0]['citation_confidence'] = 'not-citable'
+    doc6['records'][0].pop('citation_note', None)
+    io.open(p_reg, 'w', encoding='utf-8', newline='').write(json.dumps(doc6, indent=2))
+    rc, out = run(wt, '--check')
+    check('I3 not-citable with no note FAILS --check', rc, 1)
+
+    doc7 = json.load(io.open(p_reg, encoding='utf-8'))
+    doc7['records'][0]['rules'] = ['1.1']
+    doc7['records'][0]['citation_confidence'] = 'arguable'
+    doc7['records'][0].pop('citation_note', None)
+    io.open(p_reg, 'w', encoding='utf-8', newline='').write(json.dumps(doc7, indent=2))
+    rc, out = run(wt, '--check')
+    check('I4 an ARGUABLE citation with no note FAILS -- what is arguable '
+          'about it is the whole content of the word', rc, 1)
+
+    # ── J. CONTROL: THE VOCABULARY IS DERIVED, AND IT FAILS CLOSED ─────
+    # Without this pair every arm above could be passing because the rule set
+    # is empty, or because it accepts anything.
+    doc8 = json.load(io.open(p_reg, encoding='utf-8'))
+    doc8['records'][0]['rules'] = ['1.11']
+    doc8['records'][0]['citation_confidence'] = 'clean'
+    io.open(p_reg, 'w', encoding='utf-8', newline='').write(json.dumps(doc8, indent=2))
+    rc, out = run(wt, '--check')
+    check('J1 CONTROL: a REAL section id passes, so the vocabulary is not '
+          'simply empty', rc, 0)
+    check('J2 and the citation coverage is reported, not silent',
+          'standing-rule citations' in out, True)
+
+    rules_doc = os.path.join(wt, 'docs', 'SAIRN-PROCESS-RULES.md')
+    moved = rules_doc + '.moved'
+    os.rename(rules_doc, moved)
+    try:
+        rc, out = run(wt, '--check')
+        check('J3 PR 1.11: with the rules doc GONE, --check returns 2 -- could '
+              'not check is never folded into a pass', rc, 2)
+        check('J4 and says the vocabulary is unknown',
+              'COULD NOT CHECK' in out, True)
+    finally:
+        os.rename(moved, rules_doc)
 
     # ── F. THE REPORT REFUSES TO BE QUOTED BARE ────────────────────────────
     rc, out = run(wt, '--report')

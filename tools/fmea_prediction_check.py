@@ -22,6 +22,10 @@ for every defect recorded in that file AFTER it:
               failure shape as the defect that then happened.
   MISSED      a defect landed in a drafted file and no risk matched it.
   NO DRAFT    a defect landed in a file that was never drafted at all.
+  DRAFT NEWER a draft exists for the file but postdates the defect, so it
+              cannot have predicted it. UNSCOREABLE BY CONSTRUCTION, and a
+              separate bucket since 2026-09-13 -- it used to be folded into
+              NO DRAFT, which called twelve drafts on disk "no draft".
 
 ── THE NUMBER THAT MATTERS IS THE THIRD ONE, AND IT IS WHY THIS EXISTS ────
 A hit rate computed only over drafted files is the truncation shape this
@@ -41,9 +45,15 @@ is wrong, not partial.
     38%, and EVERY ONE OF THOSE FIVE HITS WAS A FALSE POSITIVE -- see matched().
     A prediction phrased differently from the eventual defect scores as a miss,
     which biases the number DOWN, the safe direction.
-  * and it therefore scores ZERO until docs/defect-density-register.json
-    records WHICH standing rule each defect instantiated. That gap is the real
-    finding of the first run, not a bug in the scorer.
+  * THE CITATION GAP IS CLOSED as of 2026-09-13. All 54 register records now
+    carry `rules`, `citation_confidence` and, where they need one, a note:
+    48 cited (32 clean, 16 arguable) and 6 deliberately NOT-CITABLE. Four of
+    the six that had been not-citable became clean the moment PR 1.11 was
+    written, because they were four instances of a rule that did not exist yet.
+  * CLOSING IT DID NOT PRODUCE A NUMBER, AND THAT IS THE HONEST OUTCOME. Every
+    draft on disk was saved after every defect on record, so nothing is
+    scoreable yet: 0 predicted, 0 missed, 0%. The first defect that lands in a
+    drafted file after today is the first one this can score.
 
 Exit 0 always. This reports; it never gates.
 """
@@ -112,12 +122,18 @@ def matched(draft, rec):
     So word-overlap scoring is GONE. The only match that means "the same named
     failure mode" is a rule citation on both sides.
 
-    AND THAT CANNOT FIRE YET, WHICH IS THE REAL FINDING. The defect register
-    records app/files/layer/severity/detection_method -- but NOT which standing
-    rule each defect instantiated. Until it does, this scores 0 and says so.
-    Adding a `rules` field to docs/defect-density-register.json is the small,
-    concrete thing that closes the loop; inventing a looser matcher to produce a
-    number in the meantime is how the 38% happened.
+    IT CAN FIRE AS OF 2026-09-13. The register carried
+    app/files/layer/severity/detection_method and NOT which standing rule each
+    defect instantiated, so this scored 0 and said so. All 54 records now carry
+    `rules`. Inventing a looser matcher in the meantime is how the 38% happened,
+    and it was not done.
+
+    NOTE WHAT `rules` MUST NOT BECOME. The register admits three confidences --
+    clean, arguable and NOT-CITABLE -- precisely so that a record with no
+    matching rule can say so instead of being pushed into the nearest one. If
+    every record were made to cite something, this matcher would start hitting
+    on manufactured agreement, and the 38% would come back through the DATA
+    instead of through the matcher.
     """
     for r in draft.get('risks', []):
         cite = r.get('cite', '')
@@ -151,20 +167,45 @@ def main(argv):
     for d in drafts:
         by_target.setdefault(d.get('target'), []).append(d)
 
-    predicted, missed, nodraft = [], [], []
+    # TWO BUCKETS, NOT ONE, SPLIT 2026-09-13. `nodraft` used to hold both "no
+    # draft exists for this file" and "a draft exists but is NEWER than the
+    # defect, so it cannot have predicted it", and the report called the whole
+    # pile "FILES WITH A DEFECT AND NO DRAFT". The moment twelve drafts existed
+    # that label was false for every one of them: drafts were on disk, for
+    # exactly those files, and the output said there were none. Two different
+    # states with two different things to do about them -- one needs a draft
+    # written, the other needs TIME TO PASS -- and merging them made the second
+    # look like unfinished work.
+    predicted, missed, nodraft, too_new = [], [], [], []
     for rec in records:
         if since and str(rec.get('date', '')) < since:
             continue
         files = rec.get('files') or []
-        cand = []
+        cand, any_draft = [], False
         for f in files:
             for d in by_target.get(f, []):
+                any_draft = True
                 # Only a draft written BEFORE the defect can have predicted it.
-                if d['_asof'] and rec.get('date') and d['_asof'] > rec['date']:
+                #
+                # `>=`, NOT `>`, CORRECTED 2026-09-13 ON THE FIRST RUN THAT EVER
+                # HAD DRAFTS ON DISK. With `>`, a draft dated the SAME DAY as a
+                # defect counted as having predicted it -- and twelve drafts
+                # saved that afternoon immediately scored one PREDICTION against
+                # a defect from that morning. The draft was written after the
+                # defect, cited the record describing it, and matched it.
+                #
+                # A same-day draft cannot be SHOWN to precede the defect, and
+                # this tool exists to be the honest measure of exactly that. The
+                # dates here are day-resolution, so equality is a could-not-tell
+                # and could-not-tell is never credited. It costs real predictions
+                # -- a draft written in the morning that catches something that
+                # afternoon scores nothing -- and that is the right direction:
+                # this number is quoted as evidence the method works.
+                if d['_asof'] and rec.get('date') and d['_asof'] >= rec['date']:
                     continue
                 cand.append((f, d))
         if not cand:
-            nodraft.append(rec)
+            (too_new if any_draft else nodraft).append(rec)
             continue
         hit = None
         for f, d in cand:
@@ -174,12 +215,13 @@ def main(argv):
                 break
         (predicted if hit else missed).append((rec, hit or cand[0]))
 
-    total = len(predicted) + len(missed) + len(nodraft)
+    total = len(predicted) + len(missed) + len(nodraft) + len(too_new)
     if '--json' in argv:
         print(json.dumps({
             'drafts_on_disk': len(drafts),
             'defects_considered': total,
             'no_draft': len(nodraft),
+            'draft_newer_than_defect': len(too_new),
             'predicted': len(predicted),
             'missed': len(missed),
             'honest_rate_over_all_defects':
@@ -195,6 +237,11 @@ def main(argv):
     print('  defects considered    : %d%s' % (total, (' since ' + since) if since else ''))
     print('')
     print('  NO DRAFT AT ALL       : %d   <- READ THIS FIRST' % len(nodraft))
+    print('  DRAFT EXISTS BUT IS NEWER THAN THE DEFECT: %d' % len(too_new))
+    print('    (unscoreable BY CONSTRUCTION, not unfinished work -- a draft')
+    print('     cannot predict what already happened. These need TIME, not a')
+    print('     draft. Split out 2026-09-13, when twelve drafts on disk were')
+    print('     being reported as NO DRAFT AT ALL.)')
     print('  predicted             : %d' % len(predicted))
     print('  missed (drafted, not predicted): %d' % len(missed))
     if total:
@@ -204,8 +251,9 @@ def main(argv):
         if predicted or missed:
             print('  (over drafted files only : %.0f%% -- DO NOT QUOTE THIS ALONE. It'
                   % (100.0 * len(predicted) / (len(predicted) + len(missed))))
-            print('   excludes the %d defect(s) in files nobody drafted, which is the'
-                  % len(nodraft))
+            print('   excludes the %d defect(s) in files nobody drafted and the %d'
+                  % (len(nodraft), len(too_new)))
+            print('   whose only draft postdates them, which is the')
             print('   truncation shape this platform keeps finding.)')
 
     if not drafts:
@@ -213,6 +261,13 @@ def main(argv):
         print('  NO DRAFTS EXIST YET, so every defect is NO DRAFT and the rate is 0%.')
         print('  That is an honest zero, not a failure of the method. Draft a file:')
         print('     python tools/fmea_draft.py <path> --save')
+    elif not predicted and not missed:
+        print('')
+        print('  EVERY DRAFT POSTDATES EVERY DEFECT, so nothing is scoreable yet and')
+        print('  the rate is 0%. That is the CORRECT reading of a loop that has just')
+        print('  been closed, not a failed method and not a coverage gap: the drafts')
+        print('  are in place and the first defect that lands in a drafted file after')
+        print('  today is the first one this can score.')
 
     for rec, hit in predicted[:10]:
         print('')

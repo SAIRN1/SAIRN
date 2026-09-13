@@ -37,6 +37,7 @@ completeness it does not have.
 import io
 import json
 import os
+import re
 import subprocess
 import sys
 
@@ -53,6 +54,46 @@ METHODS = (
     'live-verification', 'independent-review', 'traceability-matrix',
     'probe-control', 'user-report',
 )
+
+# ── THE STANDING-RULE CITATION, added 2026-09-13 ───────────────────────────
+# `tools/fmea_prediction_check.py` has scored ZERO since the day it was written
+# and says so in its own docstring: matching a saved risk draft to a defect that
+# then happened is by RULE CITATION ONLY, because the first matcher scored 38%
+# on three-word overlap AND EVERY ONE OF THOSE FIVE HITS WAS A FALSE POSITIVE.
+# Its answer was blocked on this field, not on its own logic.
+#
+# THREE CONFIDENCES, NOT TWO, AND THE THIRD IS THE POINT. A register that could
+# only say "cites rule X" would push every awkward record into a citation it
+# does not really instantiate, and the FMEA scorer would then match on
+# manufactured agreement -- the 38% arriving through the data instead of the
+# matcher. So `not-citable` is a first-class answer, it requires a note saying
+# why, and 6 of 54 records carry it.
+CONFIDENCES = ('clean', 'arguable', 'not-citable')
+RULES_DOC = os.path.join('docs', 'SAIRN-PROCESS-RULES.md')
+
+
+def known_rules():
+    """Section ids parsed out of the process rules themselves.
+
+    DERIVED, NOT LISTED. A hand-kept vocabulary of rule ids is a second copy of
+    the rules document, and this repo has corrected that exact shape in the
+    Guardian App File Map seven times. A citation naming a section that does not
+    exist is a finding; a citation naming one that was renumbered should fail
+    loudly rather than sit there looking checked.
+
+    Returns None when the document cannot be read -- the caller must treat that
+    as COULD NOT CHECK, never as "every citation is fine" (PR 1.11).
+    """
+    p = os.path.join(REPO, RULES_DOC)
+    if not os.path.isfile(p):
+        return None
+    try:
+        src = io.open(p, encoding='utf-8').read()
+    except Exception:
+        return None
+    ids = set(re.findall(r'^###\s+(\d+\.\d+)\s', src, re.M))
+    ids.update(re.findall(r'^##\s+(Part \d+)\b', src, re.M))
+    return ids or None
 
 
 def git(*a):
@@ -123,12 +164,36 @@ def cmd_add(argv):
     sha, app = opt('--commit'), opt('--app')
     layer, sev, method = opt('--layer'), opt('--severity'), opt('--method')
     summary = opt('--summary')
+    # REQUIRED, not optional, and that is the whole fix. The field was absent
+    # for 54 records because nothing ever asked for it, and `--check` cannot
+    # demand of old records what `--add` never collected. Pass
+    # `--rule not-citable` when no standing rule names the shape -- with a
+    # `--rule-note` saying so. Refusing to record a defect because no rule fits
+    # would be worse than the gap this closes.
+    rule = opt('--rule')
+    note = opt('--rule-note', required=False)
     if layer not in LAYERS:
         print('--layer must be one of %s' % (LAYERS,)); return 2
     if sev not in SEVERITIES:
         print('--severity must be one of %s' % (SEVERITIES,)); return 2
     if method not in METHODS:
         print('--method must be one of %s' % (METHODS,)); return 2
+    if rule == 'not-citable':
+        rules, conf = [], 'not-citable'
+    else:
+        rules, conf = [rule], ('arguable' if note else 'clean')
+        known = known_rules()
+        if known is None:
+            # PR 1.11. The vocabulary comes from a document; if that document
+            # cannot be read the citation CANNOT BE CHECKED, and accepting it
+            # would record an unverified claim as a verified one.
+            print('COULD NOT READ %s, so --rule cannot be validated. Not '
+                  'recording an unchecked citation.' % RULES_DOC); return 2
+        if rule not in known:
+            print('--rule %r is not a section in %s. Known: %s'
+                  % (rule, RULES_DOC, ', '.join(sorted(known)))); return 2
+    if conf != 'clean' and not note:
+        print('--rule-note is required unless the citation is clean'); return 2
     d = derive(sha)
     if not d:
         print('no such commit: %s' % sha); return 2
@@ -138,7 +203,10 @@ def cmd_add(argv):
         print('already registered: %s' % d['commit']); return 0
     rec = dict(d)
     rec.update({'app': app, 'layer': layer, 'severity': sev,
-                'detection_method': method, 'summary': summary})
+                'detection_method': method, 'summary': summary,
+                'rules': rules, 'citation_confidence': conf})
+    if note:
+        rec['citation_note'] = note
     reg['records'].append(rec)
     reg['records'].sort(key=lambda r: (r['date'], r['commit']))
     save(reg)
@@ -200,6 +268,8 @@ def cmd_check(argv=()):
     than none, because its length reads as evidence."""
     reg = load()
     bad, reseat = [], []
+    could_not_check = 0
+    known = known_rules()
     idx = subject_index()
     for r in reg['records']:
         sha, how = resolve(r, idx)
@@ -221,6 +291,32 @@ def cmd_check(argv=()):
                        % (r['commit'], r['detection_method']))
         if r['layer'] not in LAYERS or r['severity'] not in SEVERITIES:
             bad.append('%s -- layer/severity outside the vocabulary' % r['commit'])
+        # ── THE CITATION, checked the same way and for the same reason ──────
+        conf = r.get('citation_confidence')
+        rules = r.get('rules')
+        if conf not in CONFIDENCES:
+            bad.append('%s -- citation_confidence %r is outside %s'
+                       % (r['commit'], conf, (CONFIDENCES,)))
+        elif conf == 'not-citable':
+            if rules:
+                bad.append('%s -- not-citable but carries rules %r'
+                           % (r['commit'], rules))
+            if not str(r.get('citation_note') or '').strip():
+                bad.append('%s -- not-citable with no note. A bare refusal to '
+                           'cite is a silence, not a decision.' % r['commit'])
+        else:
+            if not rules:
+                bad.append('%s -- %s citation with no rule' % (r['commit'], conf))
+            if conf == 'arguable' and not str(r.get('citation_note') or '').strip():
+                bad.append('%s -- arguable citation with no note saying what is '
+                           'arguable about it' % r['commit'])
+            if known is None:
+                could_not_check += 1
+            else:
+                for rid in (rules or []):
+                    if rid not in known:
+                        bad.append('%s -- cites %r, which is not a section in %s'
+                                   % (r['commit'], rid, RULES_DOC))
     seen = set()
     for r in reg['records']:
         k = (r['commit'], r['summary'])
@@ -244,9 +340,20 @@ def cmd_check(argv=()):
         for b in bad:
             print('  ' + b)
         return 1
+    if could_not_check:
+        # PR 1.11, in this file's own output. The citations were NOT validated,
+        # and saying "OK" here would be reporting a check that did not run.
+        print('COULD NOT CHECK %d citation(s): %s is unreadable, so the rule '
+              'vocabulary is unknown. This is not a pass.'
+              % (could_not_check, RULES_DOC))
+        return 2
+    cited = sum(1 for r in reg['records'] if r.get('rules'))
     print('OK: %d record(s), every commit resolves and every field is in '
           'vocabulary.%s' % (len(reg['records']),
                              ' %d by subject.' % len(reseat) if reseat else ''))
+    print('    standing-rule citations: %d cited, %d deliberately not-citable, '
+          'every id checked against %s'
+          % (cited, len(reg['records']) - cited, RULES_DOC))
     return 0
 
 

@@ -1,0 +1,42 @@
+{
+ "app_matched": null,
+ "considered": {
+  "defect_records": 54,
+  "detectors_fired": [
+   "1.1",
+   "1.7"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 0
+ },
+ "drafted_on": "2026-09-13",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "action": "make it fail on purpose before trusting it; add the plant-the-defect probe in the same commit",
+   "basis": "section 1.1 applies -- A check that stopped checking",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.1",
+   "risk": "a check that cannot fail is indistinguishable from one that is not running",
+   "source": "process-rules"
+  },
+  {
+   "action": "report what was NOT looked at; a scan that covered 31% and says \"clean\" is a wrong answer",
+   "basis": "section 1.7 applies -- A sampling window silently exempts what it does not reach",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 1.7",
+   "risk": "a fixed window or limit silently exempts whatever it does not reach",
+   "source": "process-rules"
+  }
+ ],
+ "target": "tools/literal_drift_check.py"
+}

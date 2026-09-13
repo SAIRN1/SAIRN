@@ -116,8 +116,66 @@ if 'over drafted files only' in out:
     check('5f  the drafted-only rate is never offered without its warning',
           'DO NOT QUOTE THIS ALONE' in out)
 else:
-    check('5f  DECLARED INAPPLICABLE: no drafts exist, so no drafted-only rate '
-          'was printed to warn about', True)
+    # DECLARED INAPPLICABLE, and the reason moved. It used to be "no drafts
+    # exist"; twelve drafts exist now and the line is still absent, because
+    # nothing is SCOREABLE -- every draft postdates every defect, so predicted
+    # and missed are both zero and there is no drafted-only rate to warn about.
+    check('5f  DECLARED INAPPLICABLE: nothing is scoreable yet, so no '
+          'drafted-only rate was printed to warn about',
+          'predicted             : 0' in out)
+
+print('\n6. a draft cannot predict what already happened')
+# THE BACKDATING ARM. The first run that ever had drafts on disk scored one
+# PREDICTION from a draft saved the same afternoon as the defect it "predicted"
+# -- the comparison was `>` on day-resolution dates, so same-day counted as
+# before. A risk tool scoring itself right on a defect that had already
+# happened is the fabrication shape the whole pipeline is built against,
+# arriving through the TIMESTAMP instead of through the generator.
+FIX = 'tools/probe_fixture_target.py'
+REC = {'summary': 'x', 'rules': ['1.1'], 'date': '2026-09-10',
+       'files': [FIX]}
+RISK = {'cite': 'docs/SAIRN-PROCESS-RULES.md section 1.1', 'risk': 'x'}
+
+
+def score(draft_date):
+    """Run the real bucketing with one draft and one defect."""
+    saved_records = P.load_register
+    saved_drafts = P.load_drafts
+    P.load_register = lambda: [dict(REC)]
+    P.load_drafts = lambda: [{'target': FIX, 'risks': [dict(RISK)],
+                              '_file': 'docs/fmea/fixture.json',
+                              'drafted_on': draft_date,
+                              '_asof': draft_date}]
+    try:
+        import io as _io
+        buf, real = _io.StringIO(), sys.stdout
+        sys.stdout = buf
+        try:
+            P.main(['--json'])
+        finally:
+            sys.stdout = real
+        return json.loads(buf.getvalue())
+    finally:
+        P.load_register = saved_records
+        P.load_drafts = saved_drafts
+
+
+before = score('2026-09-09')
+same = score('2026-09-10')
+after = score('2026-09-11')
+check('6a  a draft written BEFORE the defect scores it',
+      before['predicted'] == 1, before)
+check('6b  a SAME-DAY draft does NOT score it -- day-resolution dates cannot '
+      'show it preceded the defect', same['predicted'] == 0, same)
+check('6c  and that same-day draft lands in its own bucket, not NO DRAFT',
+      same['draft_newer_than_defect'] == 1 and same['no_draft'] == 0, same)
+check('6d  a draft written AFTER is likewise unscoreable, not a miss',
+      after['predicted'] == 0 and after['missed'] == 0 and
+      after['draft_newer_than_defect'] == 1, after)
+check('6e  CONTROL: the before-case really is a MISS when the rule differs, '
+      'so 6a is not scoring on the date alone',
+      P.matched({'risks': [dict(RISK)]},
+                {'summary': 'x', 'rules': ['2.3']})[0] is None)
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:

@@ -1856,3 +1856,44 @@ The skill marketplace is published **outside this clone**, at `sairn-tech/sairn-
 **DECISION OWED TO MICHAEL:** this proxy stays uninformative until either real customer traffic exists or Web Analytics is switched on. Nothing further should be built on it before then.
 
 **Verified:** `metamorphic_check --all` 660/0/0; `run_metamorphic_probe` all pass; `activity_probe` all pass; `checker_control_check` 33 BOTH EVIDENCED, 0 with no declared control; `run_report_only_checks_probe` 70 checks 0 failed; `live_mode_probe` still verified; `md_table_check` 378/378.
+
+
+---
+
+## 2026-09-13 -- item 4: the FMEA loop, and the two defects that only appeared once it could run
+
+`tools/fmea_prediction_check.py` had scored **ZERO since the day it was written** and said so in its own docstring. It matches a saved risk draft to a defect **by rule citation only**, because its first matcher scored **38% on three-word overlap and ALL FIVE of those hits were false positives** -- every one from a draft of a WORKLOG file, which accumulates the prose of every defect ever recorded, so a three-word bar matches anything. The field it needed did not exist in the register.
+
+### The field, and the backfill
+
+`rules`, `citation_confidence` and `citation_note` on all **54** records. `--add` now requires `--rule`; the vocabulary is **derived from `docs/SAIRN-PROCESS-RULES.md`**, not listed, and `--check` returns **2, not 0**, when that document cannot be read -- PR 1.11 applied to the citation checker itself.
+
+**48 cited (32 clean, 16 arguable), 6 deliberately not-citable.**
+
+**THE UNLOCK IS FOUR RECORDS.** 41, 42, 43 and 46 were classified not-citable only because **the rule they all instantiate did not exist yet**: a gate that disables itself in silence when a tool it calls is absent. They are the most-repeated shape in the register after 1.5, **PR 1.11 was written from them**, and naming it made them clean. That is the whole shape of the exercise -- the gap in the data was a gap in the rules.
+
+**APPLIED BY (subject, summary), NEVER BY LIST INDEX.** The register re-sorts by (date, commit) on every `--add` and had grown from 50 records to 54, so the index table in the scoping document was already stale by the time this ran. Keying a judgement to a list position is the defect `truthy_sum_check.py`'s own `key()` note is about.
+
+**NOT-CITABLE IS A FIRST-CLASS ANSWER AND IT IS LOAD-BEARING.** If every record were pushed into the nearest rule, the matcher would start hitting on manufactured agreement and **the 38% would come back through the DATA instead of through the matcher**. It requires a note: a bare refusal to cite is a silence, not a decision.
+
+### Closing the field gap exposed the second blocker
+
+**`docs/fmea/` was empty.** Nobody had ever run `--save`, so the scorer would have gone on reporting 0% for a reason that had nothing to do with the citation field. 12 drafts saved over the most defect-prone files.
+
+### And the first run that ever had drafts found two defects in the scorer
+
+**1. BACKDATING.** It immediately scored one PREDICTION -- from a draft saved the same afternoon as the defect it "predicted", citing the record describing it. The comparison was `>` on day-resolution dates, so same-day read as *before*. **A risk tool scoring itself right on a defect that had already happened is the fabrication shape this whole pipeline is built against, arriving through the TIMESTAMP instead of through the generator.** Now `>=`, and `--save` stamps `drafted_on` from git rather than letting the scorer fall back to "the newest defect this draft cites", which its own comment admits is only a lower bound.
+
+**2. A MERGED BUCKET.** `NO DRAFT AT ALL` held two different states: "no draft exists for this file" and "a draft exists but postdates the defect". The moment twelve drafts existed the report called them **no draft** -- drafts were on disk, for exactly those files, and the output said there were none. Split: **19 genuinely undrafted, 35 unscoreable by construction.** One needs a draft written; the other needs time to pass.
+
+**THE HONEST OUTCOME IS 0% AND IT IS THE CORRECT READING.** Every draft postdates every defect, so nothing is scoreable yet. The first defect that lands in a drafted file after today is the first one this can score. Inventing a looser matcher to produce a number in the meantime is precisely how the 38% happened.
+
+### A probe arm passing for the wrong reason, caught by the arm beside it
+
+When `--rule` became required, `D1 a duplicate is not appended` stayed **green** -- because `--add` refused the call for a MISSING FLAG. Nothing was appended, for entirely the wrong reason, and only `D2 and it says so` caught it. **An arm that asserts an ABSENCE needs an arm asserting the REASON beside it.**
+
+### Part (c) was already done
+
+The standing rule for "a gate that silently disables when its dependency tool is absent" is **PR 1.11**, written earlier today and repeated in CLAUDE.md rather than only linked. Checked before assuming, as asked; nothing to write.
+
+**Verified:** `defect_register --check` OK, 54 records, 48 cited / 6 not-citable, every id checked against the rules doc; `run_defect_register_probe` 59 checks 0 failed; `run_fmea_probe` 0 arms failed including five new date-logic arms with a control.
