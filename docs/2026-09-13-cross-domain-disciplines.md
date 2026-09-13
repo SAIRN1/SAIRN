@@ -1,4 +1,4 @@
-# Cross-domain disciplines — seven standing conventions for any checker built here
+# Cross-domain disciplines — eight standing conventions for any checker built here
 
 **Read this before building any checker, probe, gate or tool.** These are not
 aspirations. Each one is a convention every new tool must satisfy, and each was
@@ -233,17 +233,109 @@ realistic first version is a **refusal to propagate without a recorded answer to
 each**, not an automatic verdict — the same standard as a quarantine needing a
 named owner rather than a tool deciding on its own.
 
+## 8. Instrument drift — nothing announces the day a check stops testing anything
+
+**The convention: any check whose validity rests on something OUTSIDE itself — a
+string anchor into a source file, a generator's inputs, a captured snapshot — is
+re-referenced against that outside source on a stated cadence, and the cadence is
+derived from a MEASURED drift rate rather than chosen. Re-running the check
+against its own output is not a re-reference, and a check that cannot say how old
+its evidence is has not been re-referenced at all.**
+
+From instrument flying. A directional gyro precesses at a known rate — a few
+degrees a quarter hour — and it reads perfectly smoothly the entire time it is
+wrong. There is no flicker at the moment it stops being right. The remedy is not
+a better gyro; it is a scheduled re-reference against the magnetic compass,
+performed in the one condition where the compass is itself valid. And the reason
+the reference has to be a DIFFERENT instrument is the vacuum-failure case: an
+attitude indicator on a dying pump eases over rather than falling off its peg,
+and every instrument on that pump fails together and agrees with the others all
+the way down. **Agreement is not corroboration when both ends come off the same
+bus.**
+
+**Why this is an eighth and not a footnote on 5 and 6.** Items 1–7 judge a check
+at ONE INSTANT: is the criterion locked, is the validation isolated, is the
+replication structurally independent, is the copy safe in its new context. All
+seven can be satisfied at once. This asks the question none of them asks — **the
+check WAS valid; what tells you the day it stopped?** Item 5 says do not feed a
+validation from its own subject. Item 8 says a validation that was correctly
+isolated in July is running against a file that moved in September, and nothing
+on either side of it will say so.
+
+**The commonest gyro here is a string anchor, and it has been measured.** A
+negative control patches a real source file, runs the checker and asserts it goes
+red — almost always `src.replace(anchor, …)`. When the target is refactored the
+anchor stops matching, **`str.replace` silently does nothing**, and the control
+then runs the checker against an unmodified file.
+`python tools/sabotage_control_check.py`, run 2026-09-13: **39 probes sabotage a
+real source file, 16 verify the sabotage applied, 23 do not.** The asymmetry is
+why it needed a tool rather than care — an arm expecting RED fails loudly against
+a checker that works, which is how this was noticed at all; an arm written as
+*"expect no findings"* keeps passing on a file nobody touched and reports green
+for ever.
+
+**And the number moved the wrong way inside one afternoon.** `51fe25e8` measured
+**37 and 21** when the tool was written; six hours later it is **39 and 23** —
+both probes added since the tool existed were written unguarded. A drift rate is
+not always slow, and it is not always in the direction of the fix.
+
+**The second gyro is a generator's own `--check`.** Both ends of that comparison
+come from the same instrument, so it proves the document has not been hand-edited
+and cannot prove the generator still reads what it used to read.
+`tooling_inventory.py` stayed **byte-clean through two separate wrong readers in
+one session** — a probe column naming the wrong test file for 27 tools, then a
+pre-filter that saw no probe at all for five promoted checkers. Both were caught
+by reading the regenerated diff; neither was caught by `--check`. The fix is item
+2 of `docs/2026-09-13-stackup-traverse-drift-scoping.md`: every derivation SOURCE
+must yield a non-zero count, and a source yielding zero is a refusal rather than
+a quiet zero.
+
+**The cadence comes from a measurement, not from a preference.**
+`python tools/tooling_inventory.py --drift` reports margin against its own
+history: over **16 regenerations the worst staleness ever reached is 5 source
+commits and the median is 2**, so it warns at **3** — a line taken from that
+distribution rather than picked, which is convention 4 applied to time. The
+answer it produced was worth having on its own: for that document a schedule adds
+little, because `--check` already runs on every push. **Measure before you
+schedule — the drift may not be the problem.**
+
+**State the age of the evidence, and say which instrument loses a
+disagreement.** `python tools/schema_snapshot_freshness.py` is the worked
+example. It prints *"VERDICTS ARE AS OF THE CAPTURE, 4.1 HOURS AGO — NOT AS OF
+NOW"*, names the live probes that re-reference it, and says outright that a live
+`provisioned:true` against a never-run verdict **means RE-CAPTURE, not that the
+rule is broken.** That last sentence is the whole discipline in one line: when
+the gyro and the compass disagree, the gyro is the one that is wrong.
+
+**And the honest limit, which is half the rule rather than a caveat on it: a
+cadence does not repair a broken instrument.** Re-running a generator that has
+stopped reading a source produces a fresher wrong document, sooner. The two
+halves are complementary and neither substitutes — re-reference against the
+SOURCE *and* on a measured cadence. The two documents this was scoped against
+make the point by needing different fixes: `docs/TOOLING-INVENTORY.md`
+regenerates from the repo at zero cost, so its staleness is a **scheduling**
+problem; `db/schema_snapshot.json` needs a live capture pasted in by a human and
+that relay has already failed twice, so its staleness is a **hand-off** problem,
+and a cron that cannot perform the capture will report drift it cannot fix.
+
 ---
 
-## The failure mode six of the seven share
+## The failure mode seven of the eight share
 
-Six of these conventions defend against the same thing: **a check that reads as
+Seven of these conventions defend against the same thing: **a check that reads as
 coverage and structurally cannot fire.** (Item 7 is the exception and is worth
 holding separately — it defends against a correct thing moved into a context
-where its assumptions no longer hold, which none of the other six would catch.) A criterion tuned to the data.
+where its assumptions no longer hold, which none of the others would catch.) A criterion tuned to the data.
 A score that averages away the half that broke. A rate over a denominator
 nobody stated. An alarm set at the cliff edge. A validation fed by its own
-subject. A replication that shares a blind spot.
+subject. A replication that shares a blind spot. An anchor that quietly stopped
+matching.
+
+**Item 8 arrives at that same failure mode by a different route, which is why it
+is separate rather than folded in.** Items 1–6 are about a check built wrong.
+Item 8 is about a check built RIGHT that decayed, and the two need different
+defences — nothing in a correctly-locked, correctly-isolated,
+correctly-replicated check watches the calendar.
 
 The recurring evidence for taking that seriously is that **the tools written to
 enforce these conventions kept committing the defects they were built to catch**
@@ -253,5 +345,16 @@ that shipped with a **literal backspace** in it and could never match. None of
 those were caught by review. Each was caught by a control that had been built to
 make the tool fail on purpose.
 
-**Which is the seventh thing, and it underwrites the other six: build the
-control that makes it fail before you trust the run that says it passed.**
+**Which is the rule underneath all eight — deliberately NOT numbered among them,
+because it is the precondition for trusting any of them: build the control that
+makes it fail before you trust the run that says it passed.** And item 8's
+addition to it: **re-check that the control can still fail, because the day it
+stopped being able to is not a day anything reported.**
+
+*(Numbering note, 2026-09-13: this closing rule used to be called "the seventh
+thing", written when the document had six numbered sections. It is unnumbered now
+so it cannot collide with a section again. Two references in
+`docs/2026-09-13-stackup-traverse-drift-scoping.md` — "all six conventions" and
+"the seventh convention" — were written against that older numbering and point at
+this rule, not at section 7. They are left as they were rather than silently
+renumbered; correcting them is a separate edit to that document.)*

@@ -145,7 +145,7 @@ looks.
 ## Skills — read them, don't rely on trigger-word matching
 
 **BEFORE BUILDING ANY CHECKER, PROBE, GATE OR TOOL, read
-`docs/2026-09-13-cross-domain-disciplines.md`.** Seven standing conventions, each
+`docs/2026-09-13-cross-domain-disciplines.md`.** Eight standing conventions, each
 paid for by a real defect: lock a check's criteria against synthetic fixtures
 before running it on real data; report accuracy and stability as two numbers,
 never one; publish a named uncertainty table rather than a combined figure; set
@@ -156,7 +156,14 @@ is not safe-in-context** -- propagating a proven pattern needs the target's
 scale, input range and criticality tier re-qualified, not just a diff proving
 the code matches. Ariane 5 Flight 501 destroyed a vehicle with correct,
 faithfully-copied software, and two identical redundant units failed identically
-because a second copy is not a second opinion.
+because a second copy is not a second opinion. **And an eighth, which is about
+TIME rather than design: nothing announces the day a check stops testing
+anything** -- a string anchor that no longer matches, a generator's `--check`
+comparing a document to its own output, a snapshot whose verdicts are as of a
+capture hours ago. Re-reference against the SOURCE, on a cadence taken from a
+MEASURED drift rate. Measured 2026-09-13: **23 of 39 negative controls on this
+platform never verify their own sabotage applied**
+(`python tools/sabotage_control_check.py`).
 
 The other six exist because **the tools written to enforce them kept committing
 the defects they were built to catch** — a risk scorer that
