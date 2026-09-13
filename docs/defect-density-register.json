@@ -677,6 +677,42 @@
       "summary": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this"
     },
     {
+      "commit": "101b9e374748",
+      "date": "2026-09-12",
+      "subject": "test(push-gate): checks 2 and 5 had never been proven to refuse anything",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check2_and_check5_probe.py"
+      ],
+      "lines_added": 293,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "four of the ten push-gate checks had no probe planting a finding and asserting a deny -- checks 1, 2, 3 and 5 -- so nothing had ever proven they refuse anything"
+    },
+    {
+      "commit": "101b9e374748",
+      "date": "2026-09-12",
+      "subject": "test(push-gate): checks 2 and 5 had never been proven to refuse anything",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check2_and_check5_probe.py"
+      ],
+      "lines_added": 293,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "my own first two gate fixtures proved nothing and both arms passed anyway: the commit subjects began with PROBE so check 8 answered instead, and the check-5 fixture did not match the APPEND detector at all"
+    },
+    {
       "commit": "978df7ae8d27",
       "date": "2026-09-12",
       "subject": "fix(sairncare): a failed rule read rendered as an empty rule set, and advised the seed",
