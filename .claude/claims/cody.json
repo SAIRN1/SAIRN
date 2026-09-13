@@ -1047,8 +1047,8 @@
       "task": "two tests red on main storage wrapper honesty scape and truthy sum probe",
       "claimed_at": "2026-09-13T15:15:27Z",
       "claimed_at_epoch": 1789312527.1596615,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T16:20:16Z"
     }
   ]
 }
