@@ -702,37 +702,75 @@ def main():
             ]))
 
     checker = os.path.join(repo, 'tools', 'sairn_load_state_check.py')
-    if not os.path.isfile(checker):
-        sys.exit(0)
+    # THIS WAS `if not os.path.isfile(checker): sys.exit(0)` UNTIL 2026-09-13,
+    # and it is the widest fail-open this file has had. The early exit dates
+    # from when check 1 was the ONLY check; nine more were added above and
+    # below it, and every one of them silently stopped running whenever
+    # sairn_load_state_check.py was absent from the clone. A gate that turns
+    # itself off because ONE of its ten tools is missing is not a gate.
+    #
+    # NOT converted to a deny, deliberately. Check 1's could-not-tell path
+    # ALLOWS with a notice -- Michael's standing decision, because a missing
+    # licence key must not block somebody else's legitimate push. So the
+    # absence is routed into check 1's own `untold` list, where it already has
+    # a voice, and checks 2 through 10 now run regardless of it.
 
     # ── CHECK 2: credential-writer guard on any changed sql/*.sql ──────────
     changed = outgoing_files(repo, base, tip)
     sql_changed = [q for q in changed if q.startswith('sql/') and q.endswith('.sql')]
     if sql_changed:
         gcheck = os.path.join(repo, 'tools', 'employee_auth_guard_check.py')
-        if os.path.isfile(gcheck):
-            try:
-                g = subprocess.run(
-                    [sys.executable, gcheck, '--changed']
-                    + [os.path.join(repo, q) for q in sql_changed],
-                    capture_output=True, text=True, timeout=60, cwd=repo)
-            except Exception:
-                g = None
-            if g is not None and g.returncode == 1:
-                msg = [
-                    "Blocked: this push adds or changes a SQL file that writes credential",
-                    "rows without the guard that keeps a licence recoverable.",
-                    "",
-                    g.stdout.strip(),
-                    "",
-                    "SQL is the ONLY path into the zero-active-provisioner state -- the API",
-                    "refuses self-deactivation and refuses to deactivate the last active",
-                    "provisioner, so it cannot get there. That is why the guard belongs in",
-                    "the file rather than in the app.",
-                    "",
-                    OVERRIDE_HINT,
-                ]
-                deny(chr(10).join(msg))
+        # A MISSING GUARD TOOL IS NOT A GUARDED FILE. Same shape as check 3's,
+        # closed the same day: this was `if os.path.isfile(gcheck):` with no
+        # else, so a clone without the tool shipped credential-writing SQL with
+        # nothing having looked at it.
+        if not os.path.isfile(gcheck):
+            deny(chr(10).join([
+                "Blocked: this push changes SQL and the credential-writer guard is not in",
+                "this clone, so nothing checked it.",
+                "",
+                "  expected: %s" % gcheck,
+                "",
+                "SQL changed by this push:",
+                ] + ["  " + q for q in sql_changed] + [
+                "",
+                "SQL is the ONLY path into the zero-active-provisioner state, which is why",
+                "the guard belongs in the file. A clone that cannot run the guard cannot",
+                "tell a guarded writer from an unguarded one.",
+                OVERRIDE_HINT,
+            ]))
+        try:
+            g = subprocess.run(
+                [sys.executable, gcheck, '--changed']
+                + [os.path.join(repo, q) for q in sql_changed],
+                capture_output=True, text=True, timeout=60, cwd=repo)
+        except Exception as e:
+            # Was `g = None` followed by `if g is not None`, which skipped the
+            # check in silence. A checker that cannot be RUN has not passed
+            # anything -- the same correction check 3 got on 2026-09-01.
+            deny(chr(10).join([
+                "Blocked: the credential-writer guard could not be run, so this push is",
+                "unchecked.",
+                "",
+                "  %s: %s" % (type(e).__name__, e),
+                "",
+                OVERRIDE_HINT,
+            ]))
+        if g.returncode == 1:
+            msg = [
+                "Blocked: this push adds or changes a SQL file that writes credential",
+                "rows without the guard that keeps a licence recoverable.",
+                "",
+                g.stdout.strip(),
+                "",
+                "SQL is the ONLY path into the zero-active-provisioner state -- the API",
+                "refuses self-deactivation and refuses to deactivate the last active",
+                "provisioner, so it cannot get there. That is why the guard belongs in",
+                "the file rather than in the app.",
+                "",
+                OVERRIDE_HINT,
+            ]
+            deny(chr(10).join(msg))
 
         # ── CHECK 3: SQL preflight, LIVE and FAIL-CLOSED ──────────────────
         # LIVE MODE ENABLED 2026-09-01 (Michael's call), replacing declared-only.
@@ -862,79 +900,92 @@ def main():
     api_changed = [q for q in changed if q.startswith('api/') and q.endswith('.js')]
     if api_changed:
         seam = os.path.join(repo, 'tools', 'sairn_seam_check.py')
-        if os.path.isfile(seam):
-            try:
-                # ── AT THE PUSHED TIP, NOT THE WORKING TREE (2026-09-08) ────
-                # This ran the seam check with no ref, so it read whatever was
-                # on disk. tools/run_all_tests.py --hook mutates tracked files
-                # while its probes run, and on 2026-09-08 that DENIED THREE
-                # LEGITIMATE PUSHES over `zz_probe_field` -- a field a probe
-                # had injected into api/_lib/dental-guardian.js, present in
-                # neither HEAD nor origin. The check was right about the bytes
-                # it was handed; the bytes were nobody's code.
-                #
-                # Check 1 above already exports sql/ at the tip for exactly
-                # this reason. This is the same fix, one flag instead of a temp
-                # directory, and it is what the pushed commits actually contain.
-                s = subprocess.run([sys.executable, seam, '--ref', tip],
-                                   capture_output=True, text=True, timeout=90, cwd=repo)
-            except Exception as e:
-                deny(chr(10).join([
-                    "Blocked: the endpoint/engine seam check could not be run, so this",
-                    "push is unchecked.",
-                    "",
-                    "  %s: %s" % (type(e).__name__, e),
-                    "",
-                    "A checker that cannot be run has not passed anything.",
-                    OVERRIDE_HINT,
-                ]))
-            if s.returncode == 1:
-                deny(chr(10).join([
-                    "Blocked: an endpoint does not forward every input its engine reads.",
-                    "",
-                    s.stdout.strip(),
-                    "",
-                    "This does not throw at run time. The field arrives undefined, the",
-                    "engine takes its default branch, and the response looks entirely",
-                    "reasonable -- which is how SAIRNlaw returned Florida deadlines five",
-                    "days late for five days with both test suites green.",
-                    "",
-                    "Fix by forwarding the field, or -- if the engine supplies it itself or",
-                    "the endpoint fills it from the database -- declare it in the ENGINE",
-                    "file next to the contract it describes:",
-                    "    // seam-check: server-supplied <field> [<field>...]",
-                    "",
-                    "Full detail:  python tools/sairn_seam_check.py",
-                    OVERRIDE_HINT,
-                ]))
-            if s.returncode not in (0, 1, 2):
-                # Anything else is the checker failing, not the code passing.
-                # Before 2026-09-08 an unknown code fell off the end of this
-                # block and the push was ALLOWED SILENTLY -- the shape this
-                # whole check exists to avoid. --ref makes it reachable: an
-                # unreadable revision now exits 4 rather than borrowing 2.
-                deny(chr(10).join([
-                    "Blocked: the endpoint/engine seam check exited %d, which is neither"
-                    % s.returncode,
-                    "a pass, a finding, nor a could-not-tell. It did not check this push.",
-                    "",
-                    (s.stderr or s.stdout or '').strip()[:800],
-                    "",
-                    "A checker that did not run has not passed anything.",
-                    OVERRIDE_HINT,
-                ]))
-            if s.returncode == 2:
-                # A seam this tool cannot parse is not a pass and does not
-                # pretend to be, but blocking on it would make an unanalysable
-                # shape unshippable -- same trade as check 1's could-not-tell.
-                note = ("Seam check COULD NOT TELL for at least one endpoint/engine pair. "
-                        "The push is allowed, but nothing was verified about that seam. "
-                        "Run: python tools/sairn_seam_check.py")
-                if MODE == 'prepush':
-                    sys.stderr.write('\n' + note + '\n\n')
-                else:
-                    print(json.dumps({"hookSpecificOutput": {
-                        "hookEventName": "PreToolUse", "additionalContext": note}}))
+        # A MISSING SEAM TOOL IS NOT A CHECKED SEAM -- same fail-open as checks
+        # 2 and 3 carried, closed 2026-09-13.
+        if not os.path.isfile(seam):
+            deny(chr(10).join([
+                "Blocked: this push changes api/ JavaScript and the endpoint/engine seam",
+                "check is not in this clone, so nothing looked at it.",
+                "",
+                "  expected: %s" % seam,
+                "",
+                "A dropped field does not throw. The engine takes its default branch and",
+                "the response looks reasonable, which is how SAIRNlaw returned Florida",
+                "deadlines five days late for five days with both suites green.",
+                OVERRIDE_HINT,
+            ]))
+        try:
+            # ── AT THE PUSHED TIP, NOT THE WORKING TREE (2026-09-08) ────
+            # This ran the seam check with no ref, so it read whatever was
+            # on disk. tools/run_all_tests.py --hook mutates tracked files
+            # while its probes run, and on 2026-09-08 that DENIED THREE
+            # LEGITIMATE PUSHES over `zz_probe_field` -- a field a probe
+            # had injected into api/_lib/dental-guardian.js, present in
+            # neither HEAD nor origin. The check was right about the bytes
+            # it was handed; the bytes were nobody's code.
+            #
+            # Check 1 above already exports sql/ at the tip for exactly
+            # this reason. This is the same fix, one flag instead of a temp
+            # directory, and it is what the pushed commits actually contain.
+            s = subprocess.run([sys.executable, seam, '--ref', tip],
+                               capture_output=True, text=True, timeout=90, cwd=repo)
+        except Exception as e:
+            deny(chr(10).join([
+                "Blocked: the endpoint/engine seam check could not be run, so this",
+                "push is unchecked.",
+                "",
+                "  %s: %s" % (type(e).__name__, e),
+                "",
+                "A checker that cannot be run has not passed anything.",
+                OVERRIDE_HINT,
+            ]))
+        if s.returncode == 1:
+            deny(chr(10).join([
+                "Blocked: an endpoint does not forward every input its engine reads.",
+                "",
+                s.stdout.strip(),
+                "",
+                "This does not throw at run time. The field arrives undefined, the",
+                "engine takes its default branch, and the response looks entirely",
+                "reasonable -- which is how SAIRNlaw returned Florida deadlines five",
+                "days late for five days with both test suites green.",
+                "",
+                "Fix by forwarding the field, or -- if the engine supplies it itself or",
+                "the endpoint fills it from the database -- declare it in the ENGINE",
+                "file next to the contract it describes:",
+                "    // seam-check: server-supplied <field> [<field>...]",
+                "",
+                "Full detail:  python tools/sairn_seam_check.py",
+                OVERRIDE_HINT,
+            ]))
+        if s.returncode not in (0, 1, 2):
+            # Anything else is the checker failing, not the code passing.
+            # Before 2026-09-08 an unknown code fell off the end of this
+            # block and the push was ALLOWED SILENTLY -- the shape this
+            # whole check exists to avoid. --ref makes it reachable: an
+            # unreadable revision now exits 4 rather than borrowing 2.
+            deny(chr(10).join([
+                "Blocked: the endpoint/engine seam check exited %d, which is neither"
+                % s.returncode,
+                "a pass, a finding, nor a could-not-tell. It did not check this push.",
+                "",
+                (s.stderr or s.stdout or '').strip()[:800],
+                "",
+                "A checker that did not run has not passed anything.",
+                OVERRIDE_HINT,
+            ]))
+        if s.returncode == 2:
+            # A seam this tool cannot parse is not a pass and does not
+            # pretend to be, but blocking on it would make an unanalysable
+            # shape unshippable -- same trade as check 1's could-not-tell.
+            note = ("Seam check COULD NOT TELL for at least one endpoint/engine pair. "
+                    "The push is allowed, but nothing was verified about that seam. "
+                    "Run: python tools/sairn_seam_check.py")
+            if MODE == 'prepush':
+                sys.stderr.write('\n' + note + '\n\n')
+            else:
+                print(json.dumps({"hookSpecificOutput": {
+                    "hookEventName": "PreToolUse", "additionalContext": note}}))
 
     # ── CHECK 5: reachability -- BLOCKING as of 2026-09-02 ─────────────────
     # Added 2026-09-01. Three complete, working, AI-backed StoneDesk features
@@ -963,56 +1014,71 @@ def main():
     html_changed = [q for q in changed if q.endswith('.html')]
     if html_changed:
         reach = os.path.join(repo, 'tools', 'sairn_reachability_check.py')
-        if os.path.isfile(reach):
-            try:
-                rr = subprocess.run([sys.executable, reach] + html_changed,
-                                    capture_output=True, text=True, timeout=120, cwd=repo)
-                if rr.returncode == 1:
-                    deny(chr(10).join([
-                        "Blocked: this push touches HTML that ships an unreachable feature.",
-                        "",
-                        rr.stdout.strip(),
-                        "",
-                        "Every finding here is a feature a customer cannot get to. Three such",
-                        "features shipped in StoneDesk and nobody noticed, because nothing was",
-                        "broken -- there was simply no way in, and that is invisible to every",
-                        "other check in this file.",
-                        "",
-                        "Settle an R3 against the REAL page rather than by grepping: these names",
-                        "all appear in the source, which is why a grep cannot answer it. Use",
-                        "tools/sairn_dom_snapshot.js then",
-                        "  python tools/sairn_reachability_check.py --live <snapshot.json> <file>",
-                        "",
-                        "If the checker is WRONG about a finding, add it to",
-                        "tools/reachability_exemptions.json with a reason a reader can check",
-                        "against the source. If the finding is REAL and you are not fixing it now,",
-                        "it belongs in SAIRN-BACKLOG.md -- the exemption file is for the checker",
-                        "being wrong, not for work being deferred.",
-                        "",
-                        OVERRIDE_HINT,
-                    ]))
-                if rr.returncode == 2:
-                    # The checker itself could not run -- a broken exemption file,
-                    # or --require-live with no snapshot. Same standard as check 3:
-                    # a checker that cannot answer has not passed anything.
-                    deny(chr(10).join([
-                        "Blocked: the reachability check could not complete.",
-                        "",
-                        rr.stdout.strip(),
-                        "",
-                        OVERRIDE_HINT,
-                    ]))
-            except Exception as e:
+        # A MISSING REACHABILITY TOOL IS NOT A REACHABLE FEATURE. This check
+        # became blocking on 2026-09-02 and the comment below already says an
+        # unrunnable checker must deny; the tool being absent entirely was the
+        # case left open. Closed 2026-09-13.
+        if not os.path.isfile(reach):
+            deny(chr(10).join([
+                "Blocked: this push changes HTML and the reachability check is not in this",
+                "clone, so nothing looked at it.",
+                "",
+                "  expected: %s" % reach,
+                "",
+                "Three complete AI-backed StoneDesk features shipped with no way in and",
+                "nobody noticed, because nothing was broken. That is invisible to every",
+                "other check in this file.",
+                OVERRIDE_HINT,
+            ]))
+        try:
+            rr = subprocess.run([sys.executable, reach] + html_changed,
+                                capture_output=True, text=True, timeout=120, cwd=repo)
+            if rr.returncode == 1:
                 deny(chr(10).join([
-                    "Blocked: the reachability check could not be run, so this push is unchecked.",
+                    "Blocked: this push touches HTML that ships an unreachable feature.",
                     "",
-                    "  %s: %s" % (type(e).__name__, e),
+                    rr.stdout.strip(),
                     "",
-                    "This check became blocking on 2026-09-02. An unrunnable checker used to be",
-                    "ignored here; that is the failure mode the whole gate exists to prevent.",
+                    "Every finding here is a feature a customer cannot get to. Three such",
+                    "features shipped in StoneDesk and nobody noticed, because nothing was",
+                    "broken -- there was simply no way in, and that is invisible to every",
+                    "other check in this file.",
+                    "",
+                    "Settle an R3 against the REAL page rather than by grepping: these names",
+                    "all appear in the source, which is why a grep cannot answer it. Use",
+                    "tools/sairn_dom_snapshot.js then",
+                    "  python tools/sairn_reachability_check.py --live <snapshot.json> <file>",
+                    "",
+                    "If the checker is WRONG about a finding, add it to",
+                    "tools/reachability_exemptions.json with a reason a reader can check",
+                    "against the source. If the finding is REAL and you are not fixing it now,",
+                    "it belongs in SAIRN-BACKLOG.md -- the exemption file is for the checker",
+                    "being wrong, not for work being deferred.",
                     "",
                     OVERRIDE_HINT,
                 ]))
+            if rr.returncode == 2:
+                # The checker itself could not run -- a broken exemption file,
+                # or --require-live with no snapshot. Same standard as check 3:
+                # a checker that cannot answer has not passed anything.
+                deny(chr(10).join([
+                    "Blocked: the reachability check could not complete.",
+                    "",
+                    rr.stdout.strip(),
+                    "",
+                    OVERRIDE_HINT,
+                ]))
+        except Exception as e:
+            deny(chr(10).join([
+                "Blocked: the reachability check could not be run, so this push is unchecked.",
+                "",
+                "  %s: %s" % (type(e).__name__, e),
+                "",
+                "This check became blocking on 2026-09-02. An unrunnable checker used to be",
+                "ignored here; that is the failure mode the whole gate exists to prevent.",
+                "",
+                OVERRIDE_HINT,
+            ]))
 
     # ── CHECK 6: REDACTION ON WHAT THIS PUSH SHIPS (added 2026-09-04) ──────
     # tools/redaction_check.py already runs as a PreToolUse Write|Edit hook, and
@@ -1544,7 +1610,14 @@ def main():
     seed_dir, seed_note = export_sql_at(repo, tip)
 
     drifted, untold = [], []
+    # The tool's absence is a could-not-tell, and it is SAID rather than
+    # inherited from a subprocess exit nobody reads. See the note above the
+    # `checker =` line for why this is a notice and not a deny.
+    _have_checker = os.path.isfile(checker)
     for app in apps:
+        if not _have_checker:
+            untold.append((app, 'tools/sairn_load_state_check.py is not in this clone'))
+            continue
         env_name, default_key = APP_KEYS[app]
         key = os.environ.get(env_name) or default_key
         try:

@@ -3160,3 +3160,51 @@ decision, not a task I am taking silently.** See the report; the sharpest is
 `if not os.path.isfile(checker): sys.exit(0)` at the top of `main()`, which exits
 **the whole gate** -- checks 2 through 10 -- when `sairn_load_state_check.py` is
 absent.
+
+## 2026-09-13 (Cody) -- five more of the same shape, and one of them switched
+## off nine checks
+
+Skill used: `sairn-guardian-v2`. Claim: `push-gate` --
+`sibling fail-opens missing checker guards in the push gate`. Follow-on from
+closing check 3's, found by reading the file for the shape rather than waiting
+for a sixth instance.
+
+**THE WIDEST WAS `if not os.path.isfile(checker): sys.exit(0)`** at the top of
+`main()`. That early exit dates from when check 1 was the ONLY check; nine more
+were added around it, and **every one of them silently stopped running whenever
+`tools/sairn_load_state_check.py` was absent from the clone.** A gate that turns
+itself off because one of its ten tools is missing is not a gate.
+
+**IT IS NOT A DENY, and that is a decision rather than an oversight.** Check 1's
+could-not-tell path ALLOWS with a notice by standing decision -- a missing licence
+key must not block somebody else's legitimate push. So the absence is routed
+into check 1's own `untold` list, where it already has a voice, and **checks 2
+through 10 now run regardless of it.** Section E of the probe proves that: remove
+the load-state checker, push a feature with no way in, and **CHECK 5 refuses it.**
+The old code exited 0 and said nothing.
+
+**THE OTHER FOUR ARE DENIES.** A missing `employee_auth_guard_check.py` (check 2),
+`sairn_seam_check.py` (check 4) or `sairn_reachability_check.py` (check 5) each
+refuse and **name the exact path they looked for**; check 2's
+`except Exception: g = None` now denies instead of skipping.
+
+**EVERY ARM ASSERTS THE PATH, NOT JUST A REFUSAL, and that is load-bearing.**
+With the seam tool removed AND its deny mutated away, the gate still refuses --
+by the public-endpoint-declaration check. An arm accepting any non-zero exit would
+have passed on the wrong check in two of the four sections. Only the path arm bit.
+
+**THE CONTROL IS PER-ARM: the same commit, the same gate, the tool RESTORED,
+asserting the gate does not give that answer.** Stronger than a generic clean
+push -- and for `api/` a generic control could not be written honestly at all,
+because a NEW api file is correctly refused by the declaration check no matter
+what else is true. Finding that out is what turned a failing control arm into a
+better one instead of a fudged fixture.
+
+**4 MUTATION CONTROLS BITE**, gate restored byte-identical, probe run GREEN before
+mutating. **1 IS RECORDED AS SURVIVING rather than reported as covered:** check
+2's unrunnable-subprocess deny has no arm, because reaching it needs the
+subprocess to fail to start or time out and neither can be arranged without
+editing the gate -- the same boundary check 3's `except` arm sits behind.
+
+**THE HARNESS NOW REFUSES TO START ON A RED PROBE.** Yesterday's lesson,
+mechanised: a probe that is already failing makes every mutation look like it bit.
