@@ -150,13 +150,41 @@ FACTS = {
     'slab default':  r'(\d+)\s*sqft per slab',
     'waste pct':     r'(\d{2})% waste allowance',
 }
+# ── WHAT THIS TOOL GATES, AND WHAT IT ONLY REPORTS (decided 2026-09-13) ─────
+# It was promoted on 2026-09-10 with `'verdict': by_exit` in
+# tools/report_only_checks.py and had NO sys.exit at all, so it could never
+# report a finding through the registry that ran it, whatever it printed. Its
+# evidence line -- "0 findings" -- is what a deaf checker looks like.
+#
+# THE FIX WAS NOT A TYPO, WHICH IS WHY IT WAS DECIDED RATHER THAN PATCHED.
+# Measured across every app file before choosing: 126 near-duplicate prose
+# pairs and 14 fact divergences, of which the fact half is DOMINATED by demo
+# phone numbers and demo city names. This file's own header says it: "A HIT IS
+# A TRIAGE SIGNAL, NEVER PROOF -- demo phone numbers and repeated error strings
+# dominate the raw output and are fine." Gating all of that is how a checker
+# earns being routed around.
+#
+# GATED: the entity name, and section C. Those are invariants, not samples --
+# one company has one legal name, and one label has one value. On the real tree
+# they fire on exactly two files (stonedesk.html 23x "SAIRN Tech LLC" vs 17x
+# "SAIRN Technologies", sairnscape.html 3x vs 1x), which is a real and
+# previously-known inconsistency.
+#
+# REPORT-ONLY: everything else, printed exactly as before. A person reading the
+# output loses nothing; the push gate stops crying wolf.
+GATED_FACTS = ('entity name',)
+gated = []
+
 for name, pat in FACTS.items():
     vals = defaultdict(list)
     for m in re.finditer(pat, src):
         v = m.group(0)
         vals[v].append(src.count('\n', 0, m.start()) + 1)
     if len(vals) > 1:
-        print('  !! %-15s %d distinct values' % (name, len(vals)))
+        if name in GATED_FACTS:
+            gated.append('%s: %d distinct values' % (name, len(vals)))
+        print('  !! %-15s %d distinct values%s'
+              % (name, len(vals), '   [GATED]' if name in GATED_FACTS else ''))
         for v, ls in sorted(vals.items(), key=lambda kv: -len(kv[1])):
             print('       %-32s x%-3d lines %s' % (v[:32], len(ls), ls[:6]))
     elif vals:
@@ -169,10 +197,38 @@ print('\n=== C. SAME LABEL, DIFFERENT VALUE ===')
 pairs = defaultdict(set)
 for m in re.finditer(r'>([A-Z][A-Za-z ()/]{3,28})</span><span class="rv">([^<]{1,60})<', src):
     pairs[m.group(1).strip()].add(m.group(2).strip())
-for m in re.finditer(r"l:'([^']{3,28})'[^}]*?s:'([^']{1,70})'", src):
+# WORD BOUNDARIES ON THE KEY NAMES (2026-09-13). Without them `l:'` matches the
+# TAIL of `email:'...'` and `s:'` the tail of `address:'...'` / `status:'...'`,
+# so this paired a customer's email with an unrelated key's value from
+# somewhere else in the same object literal. Measured across every app file:
+# 69 matches before, 4 after -- SIXTY-FIVE of them substring artifacts, and the
+# only section C finding on the whole platform was one of them
+# (`Install -> ['Sales', 'Sales Visit']`, three unrelated dictionaries).
+# Found while gating this section, which could not have been done on top of it.
+for m in re.finditer(r"(?<![\w$])l:'([^']{3,28})'[^}]*?(?<![\w$])s:'([^']{1,70})'",
+                     src):
     pairs[m.group(1).strip()].add(m.group(2).strip())
 hits = {k: v for k, v in pairs.items() if len(v) > 1}
 if not hits:
     print('  none')
 for k, v in sorted(hits.items()):
-    print('  !! %-24s -> %s' % (k, sorted(v)[:4]))
+    gated.append('label %r has %d values' % (k, len(v)))
+    print('  !! %-24s -> %s   [GATED]' % (k, sorted(v)[:4]))
+
+# ── THE EXIT CODE ────────────────────────────────────────────────────────────
+# It is read by tools/report_only_checks.py with by_exit, which looks at the
+# return code and NOTHING else. Until today there was no sys.exit here at all.
+# Held in both directions by tests/run_literal_drift_control_probe.py, and the
+# class is guarded by arm E3 of tests/run_report_only_checks_probe.py.
+print('')
+if gated:
+    print('GATED FINDINGS:%d -- %s' % (len(gated), '; '.join(gated)))
+    print('An entity name and a label are INVARIANTS: one company has one legal')
+    print('name, one label has one value. Everything else above is report-only')
+    print('and does not affect this exit code -- read it, do not gate on it.')
+else:
+    print('GATED FINDINGS:0 -- the gated set is the entity name and section C.')
+    print('Anything printed above under another heading is a TRIAGE SIGNAL and')
+    print('was deliberately not gated: demo phone numbers and demo city names')
+    print('dominate it, and a checker that cries wolf is one nobody reads.')
+sys.exit(1 if gated else 0)

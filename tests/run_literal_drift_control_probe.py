@@ -174,31 +174,69 @@ check('ok county' in b and 'x1' in b,
 
 # ── 8. THE EXIT CODE, PINNED ─────────────────────────────────────────────────
 print('')
-print('8. it ALWAYS exits 0 -- the property the registry is wired against')
-rc_defect, _ = on(page('var A = "%s";\nvar B = "%s";' % (CLAUSE % 'Cuyahoga',
-                                                         CLAUSE % 'Summit')))
-rc_clean, _ = on(page('var A = "%s";' % (CLAUSE % 'Cuyahoga')))
-check(rc_defect == 0, 'a fixture FULL of drift still exits 0 (got %d)' % rc_defect)
-check(rc_clean == 0, 'and a clean fixture exits 0 too (got %d)' % rc_clean)
-check(rc_defect == rc_clean,
-      'THE TWO ARE INDISTINGUISHABLE BY EXIT CODE -- so report_only_checks.py '
-      'reading this tool with by_exit can never see a finding')
+print('8. THE GATE -- what reaches the exit code, and what deliberately does not')
+# Decided 2026-09-13, after measuring rather than guessing. This tool was
+# promoted with `'verdict': by_exit` and had NO sys.exit at all, so it could
+# never report through the registry that ran it. The fix was a decision, not a
+# typo: across every app file its fact pass is dominated by demo phone numbers
+# and demo city names, which its own header names as noise. Gating all of it is
+# how a checker earns being routed around.
+#
+# GATED: the entity name, and section C. Both are INVARIANTS -- one company has
+# one legal name, one label has one value.
+rc, out = on(page('var A = "SAIRN Tech LLC owns this.";\n'
+                  'var B = "SAIRN Technologies owns this.";'))
+check(rc == 1, 'two spellings of the company name EXIT NON-ZERO (got %d)' % rc)
+check('GATED FINDINGS:1' in out, '...and the gated count is stated')
+check('[GATED]' in section(out, 'B'), '...and the row itself is marked')
 
-# The registry entry is read rather than described, so this arm cannot go stale
-# quietly if somebody fixes the wiring.
+rc, out = on(page('var A = "SAIRN Tech LLC owns this.";\n'
+                  'var B = "SAIRN Tech LLC also owns that.";'))
+check(rc == 0, 'CONTROL: one spelling exits 0 (got %d)' % rc)
+check('GATED FINDINGS:0' in out, '...and says the gated set was empty')
+
+# THE UNGATED HALF MUST STILL BE REPORTED, AND MUST STILL NOT GATE. A narrowing
+# that also stopped PRINTING would be a silent miss wearing the name of a fix.
+rc, out = on(page('var A = "call (440) 555-0100 now";\n'
+                  'var B = "call (216) 444-7700 instead";'))
+check(rc == 0, 'divergent demo phone numbers do NOT gate (got %d)' % rc)
+check('!! phone' in section(out, 'B'), '...but ARE still printed for a human')
+check('[GATED]' not in section(out, 'B'), '...and are not marked gated')
+
+rc, out = on('<html><body>\n' + LABEL % ('Waste Allowance', '12%')
+             + LABEL % ('Waste Allowance', '15%') + '</body></html>\n')
+check(rc == 1, 'section C -- one label, two values -- gates (got %d)' % rc)
+
+# ── 9. THE SUBSTRING BUG SECTION C COULD NOT HAVE BEEN GATED OVER ───────────
+# `l:'` matched the TAIL of `email:'...'` and `s:'` the tail of `status:'...'`,
+# so the pattern paired one key's value with an unrelated key's value in the
+# same object literal. 69 matches across the app files before, 4 after -- and
+# the ONLY section C finding on the whole platform was one of them.
+print('')
+print('9. a key ENDING in l: or s: is not the l:/s: pair shape')
+rc, out = on('<html><body><script>\n'
+             "var rows=[{email:'a@example.com',status:'Active'},\n"
+             "          {email:'b@example.com',status:'Closed'}];\n"
+             '</script></body></html>\n')
+check('!!' not in section(out, 'C'),
+      "`email:`/`status:` are not `l:`/`s:` -- no phantom label pair")
+check(rc == 0, '...and it does not gate on one (got %d)' % rc)
+
+rc, out = on('<html><body><script>\n'
+             "var a={l:'Stage',s:'Draft'};\nvar b={l:'Stage',s:'Final'};\n"
+             '</script></body></html>\n')
+check('!! Stage' in section(out, 'C'),
+      '...while the REAL l:/s: pair shape is still found')
+
+# The registry entry is read rather than described, so this arm cannot go stale.
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import report_only_checks as R                                  # noqa: E402
 entry = [e for e in R.REGISTRY if e['tool'] == 'literal_drift_check.py']
 check(len(entry) == 1, 'the checker is in the report-only registry exactly once')
 if entry:
-    verdict = entry[0]['verdict'].__name__
-    print('     registry reads it with: %s()' % verdict)
-    # NOT an assertion that it is by_exit. Pinning the BUG would mean this arm
-    # goes red the moment somebody fixes it, which is the wrong way round.
-    # What is asserted is the thing that must hold either way.
-    check(verdict != 'by_exit' or rc_defect == 0,
-          'if it is still wired by_exit, the exit code is still 0 -- i.e. the '
-          'gap is real and has not silently closed')
+    check(entry[0]['verdict'].__name__ == 'by_exit',
+          'the registry reads it by EXIT CODE -- which is why the gate above '
+          'is the thing that decides what it can report')
 
 print('')
 if fails:

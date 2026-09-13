@@ -382,17 +382,16 @@ check('E2 every entry records when and why it was promoted',
 import ast                                                       # noqa: E402
 
 # An exemption with a REASON beside it is a decision; one without is a silence.
-EXIT_EXEMPT = {
-    'literal_drift_check.py':
-        'CONFIRMED DEAF, not exempted on the merits -- held open because the '
-        'FIX is a real decision, not a typo. Measured across the app files, '
-        "its fact pass is dominated by demo phone numbers, which the tool's "
-        'own docstring names as noise ("a HIT IS A TRIAGE SIGNAL, NEVER '
-        'PROOF"). Choosing which sections count decides what fires on every '
-        'push, so it was raised 2026-09-13 rather than taken. Driven in both '
-        'directions by tests/run_literal_drift_control_probe.py, which pins '
-        'the always-0 exit so the gap cannot close by accident.',
-}
+#
+# EMPTY, AND IT WAS NOT EMPTY FOR LONG. literal_drift_check.py sat here for
+# part of 2026-09-13 as CONFIRMED DEAF -- held open rather than exempted on the
+# merits, because its fix was a decision about what to gate rather than a typo.
+# That decision was taken the same day: the entity name and section C are
+# GATED, everything else stays report-by-hand. It now has a non-zero exit path
+# and needs no entry. Kept as a dict rather than deleted because the next
+# genuinely-held-open case should land here with its reason beside it, not in
+# somebody's head.
+EXIT_EXEMPT = {}
 
 
 def _has_nonzero_exit(path):
@@ -441,7 +440,7 @@ check('E3a and the reader really is exit-code-only, which is what makes E3 a '
       'proof rather than a guess', roc.by_exit(0, 'FAIL: something')[0], [])
 check('E3b ...while a non-zero code does produce a finding',
       len(roc.by_exit(1, 'FAIL: something')[0]) > 0, True)
-check('E3c the one held-open exemption is named, with a reason',
+check('E3c any held-open exemption carries a reason, not a bare entry',
       [k for k, v in EXIT_EXEMPT.items() if len(v) < 80], [])
 
 # ── F. the target set excludes what is not served ──────────────────────────
