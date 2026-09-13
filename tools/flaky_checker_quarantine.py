@@ -86,6 +86,20 @@ def tree_hash():
     p = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, cwd=REPO)
     dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
                            text=True, cwd=REPO).stdout
+    # THE LEDGER IS EXCLUDED FROM ITS OWN TREE HASH, and this is not a nicety.
+    # Without it the tool cannot accumulate ANY evidence: the first --measure
+    # writes docs/flaky-checker-ledger.json, which changes `git status`, which
+    # changes the tree hash, so the next pass discards everything the first one
+    # recorded. Measured: three passes in a row each left exactly 3 observations
+    # and the classifier honestly answered TOO-FEW-RUNS forever.
+    #
+    # A tool whose own output invalidates its own input is its own subject. The
+    # fix is to take itself out of the measurement, not to loosen the filter --
+    # the filter is correct and is what made the loop visible.
+    dirty = '
+'.join(l for l in dirty.split('
+')
+                      if 'flaky-checker-ledger.json' not in l)
     return hashlib.sha256(((p.stdout or '') + dirty).encode('utf-8')).hexdigest()[:16]
 
 
