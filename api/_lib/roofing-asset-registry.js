@@ -204,6 +204,41 @@ function portfolioForecast(input) {
     // nobody has assessed -- which are the ones most likely to fail. The count
     // and the area are surfaced beside the totals, not below them.
     unplannable: unplannable,
+    // ── AND THE SAME ARGUMENT ONE LEVEL DOWN, CLOSED 2026-09-13 ───────────
+    // `unplannable` carries sections with no replacement year. A section can
+    // be FULLY PLANNABLE -- counted in the year buckets and in
+    // planned_area_sqft -- and still carry sectionState()'s own flags saying
+    // the figures under it should not be trusted yet. Those flags were
+    // produced, tested at section level, and then discarded here, so the
+    // portfolio read clean while the sections under it did not.
+    //
+    // CONSTRUCTED AND MEASURED, not reasoned about: three sections, every one
+    // flagged, and portfolioForecast surfaced none of them. The worst was a
+    // condition_score of 7 -- not one of 1..5, so condition_state stays
+    // `not_inspected`, so that section is EXCLUDED from poor_condition. The
+    // report said one roof was in poor condition; the truth was one poor and
+    // one whose condition is unknown because the entry was rejected, with its
+    // 10,000 sqft still counted in planned_area_sqft.
+    //
+    // That is what the comment above refuses to do -- omitting the roofs
+    // nobody has assessed understates the plan by exactly the ones most likely
+    // to fail -- happening one level down in the same function.
+    //
+    // The existing fields are UNTOUCHED. A caller reading `unplannable` or
+    // `poor_condition` must not silently start receiving a different set; this
+    // is a new name beside them, and the two partition (a section with no
+    // replacement year is in `unplannable` and never here).
+    flagged: evaluated.filter(function (e) {
+      return e.replacement_year !== null && e.flags && e.flags.length;
+    }).map(function (e) {
+      return { section_id: e.section_id, building_id: e.building_id, flags: e.flags };
+    }),
+    // Sections this engine could not evaluate AT ALL -- a null or non-object
+    // entry in `sections`. Before this they vanished between .map and .filter
+    // and `sections_evaluated` reported the survivors, so a caller could not
+    // tell 40-of-40 from 40-of-50. Named rather than counted clean, the same
+    // standard as `unplannable`.
+    not_evaluated: sections.length - evaluated.length,
     planned_area_sqft: Math.round(plannedArea),
     unplannable_area_sqft: Math.round(unplannableArea),
     overdue: evaluated.filter(function (e) { return e.life_state === 'past_expected_life'; })

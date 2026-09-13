@@ -194,4 +194,69 @@ test('expired, void, no-end-date and none-recorded are four different answers', 
   assert.strictEqual(c.needs_attention.length, 4);
 });
 
+// ── A PORTFOLIO THAT READS CLEAN WHILE ITS SECTIONS DO NOT (2026-09-13) ───
+// `unplannable` carries sections with no replacement year. A section can be
+// FULLY PLANNABLE -- counted in the year buckets and in planned_area_sqft --
+// and still carry sectionState()'s own flags. Those were produced, tested at
+// section level, and then discarded by portfolioForecast.
+
+// A: condition_score 7 is not 1..5, so condition_state stays 'not_inspected'
+// and A is EXCLUDED from poor_condition -- while its 10,000 sqft is counted.
+const FL_A = sec({ section_id: 'A', area_sqft: 10000, installed_on: '2010-01-01',
+                   expected_life_years: 20, condition_score: 7, condition_on: '2026-01-01' });
+// C: a score with no date. Plannable, counted, and its age is unknown.
+const FL_C = sec({ section_id: 'C', area_sqft: 2000, installed_on: '2015-01-01',
+                   expected_life_years: 25, condition_score: 4, condition_on: null });
+// CLEAN: plannable, scored, dated, sourced. Nothing to say about it.
+const FL_OK = sec({ section_id: 'OK', area_sqft: 1000, installed_on: '2016-01-01',
+                    expected_life_years: 25, condition_score: 4, condition_on: '2026-01-01' });
+
+test('the sections themselves really do carry flags, or the rest proves nothing', () => {
+  assert.ok(r.sectionState({ section: FL_A, today: TODAY }).flags.length,
+    'fixture A must be flagged');
+  assert.ok(r.sectionState({ section: FL_C, today: TODAY }).flags.length,
+    'fixture C must be flagged');
+  assert.deepStrictEqual(r.sectionState({ section: FL_OK, today: TODAY }).flags, [],
+    'fixture OK must be CLEAN, or the control below is meaningless');
+});
+
+test('and the portfolio now carries them instead of dropping them', () => {
+  const p = r.portfolioForecast({ today: TODAY, sections: [FL_A, FL_C, FL_OK] });
+  assert.deepStrictEqual(p.flagged.map((f) => f.section_id).sort(), ['A', 'C']);
+  assert.ok(/not one of/.test(p.flagged.find((f) => f.section_id === 'A').flags.join(' ')));
+});
+
+test('the flagged sections are COUNTED, which is what makes dropping them dangerous', () => {
+  const p = r.portfolioForecast({ today: TODAY, sections: [FL_A, FL_C, FL_OK] });
+  assert.strictEqual(p.sections_evaluated, 3);
+  assert.strictEqual(p.planned_area_sqft, 13000,
+    "A's 10000 is in the plan while its condition entry was rejected");
+  assert.deepStrictEqual(p.poor_condition, [],
+    'A is absent from poor_condition precisely BECAUSE its score was rejected');
+});
+
+test('CONTROL: a portfolio of clean sections reports NO flagged sections', () => {
+  const p = r.portfolioForecast({ today: TODAY, sections: [FL_OK] });
+  assert.deepStrictEqual(p.flagged, [],
+    'without this, a field listing every section would pass the arm above');
+  assert.strictEqual(p.not_evaluated, 0);
+});
+
+test('flagged and unplannable PARTITION -- a section cannot be counted in both', () => {
+  // no life_source: unplannable, and it also carries a flag at section level
+  const noSource = sec({ section_id: 'NS', installed_on: '2012-01-01',
+                         expected_life_years: 20, life_source: null });
+  const p = r.portfolioForecast({ today: TODAY, sections: [noSource, FL_A] });
+  assert.deepStrictEqual(p.unplannable.map((u) => u.section_id), ['NS']);
+  assert.deepStrictEqual(p.flagged.map((f) => f.section_id), ['A'],
+    'NS has no replacement year, so it belongs in unplannable and nowhere else');
+});
+
+test('sections that could not be evaluated at all are named, not silently dropped', () => {
+  const p = r.portfolioForecast({ today: TODAY, sections: [FL_OK, null, undefined] });
+  assert.strictEqual(p.sections_evaluated, 1);
+  assert.strictEqual(p.not_evaluated, 2,
+    'before this, 1-of-3 and 1-of-1 were indistinguishable to a caller');
+});
+
 console.log(passed + ' passed');

@@ -4396,6 +4396,30 @@ function rfRenderForecast(fd){
       'service life, or none with a source. The plan is short by exactly these roofs. '+
       rfEsc(f.unplannable.map(function(u){return u.section_id;}).join(', '))+'</div>';
   }
+  // THE SAME ARGUMENT ONE LEVEL DOWN (2026-09-13). The block above covers
+  // sections left OUT of the figures. These are sections counted IN them that
+  // said something about themselves. The sharp case is a condition score
+  // outside 1-5: it is rejected, so the section stays 'not_inspected' and is
+  // absent from the "scoring poor" tile below -- while its area is in
+  // "planned". Read without this, the tile says the roofs are fine when the
+  // truth is that nobody knows.
+  if(f.flagged&&f.flagged.length){
+    out+='<div class="note" style="margin-top:10px;background:#FEF3C7;border-color:#FCD34D;color:#78350F;">'+
+      '<strong>'+f.flagged.length+' section'+(f.flagged.length===1?'':'s')+' ARE in the figures above '+
+      'but flagged</strong> &mdash; the totals include them and the entries behind them need checking.'+
+      '<ul style="margin:6px 0 0 18px;padding:0;">'+
+      f.flagged.map(function(g){
+        return '<li>'+rfEsc(g.section_id||'(no id)')+' &mdash; '+
+          rfEsc(g.flags.join('; '))+'</li>';
+      }).join('')+'</ul></div>';
+  }
+  // Sections the engine could not read at all. Silence here would make
+  // "40 evaluated" indistinguishable from "40 of 50 evaluated".
+  if(f.not_evaluated){
+    out+='<div class="note" style="margin-top:10px;background:#FEF3C7;border-color:#FCD34D;color:#78350F;">'+
+      '<strong>'+f.not_evaluated+' section'+(f.not_evaluated===1?'':'s')+' could not be read at all</strong> '+
+      '&mdash; not counted anywhere above, and not a zero.</div>';
+  }
   out+='<div style="display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:13px;">'+
     '<div><strong>'+f.overdue.length+'</strong> past expected life</div>'+
     '<div><strong>'+f.due_within_horizon.length+'</strong> due within '+f.horizon_years+'y</div>'+
