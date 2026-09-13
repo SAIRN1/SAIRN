@@ -109,6 +109,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Every promoted checker must have a control that PROVES it can fire &mdash; and five have none at all** | **BUILT 2026-09-12 (Fourth)** &mdash; `tools/checker_control_check.py` + `tests/run_checker_control_probe.py` (14 arms). Michael's initiative; Cody owns the gate-tool half under `blocking-checkers-can | `tests/run_checker_control_probe.py` |
 | **Checker determinism &mdash; a checker whose output depends on `PYTHONHASHSEED` gives a different answer on the same input, and no single run can show it** | **SWEPT 2026-09-12 (Fourth)** &mdash; `docs/2026-09-12-checker-determinism-sweep.md` | `tests/run_literal_drift_determinism_probe.py` |
 | `literal_drift_check.py` reports a near-duplicate PAIR in an unstable order &mdash; same lines, same ratio, opposite A/B labels between runs | **CLOSED 2026-09-12 (Fourth)** &mdash; `tools/literal_drift_check.py` sorts on a total order now; `tests/run_literal_drift_determinism_probe.py` (11 arms) | `tests/run_literal_drift_determinism_probe.py` |
+| **First coordination health check &mdash; the relay that moves a file between Michael and a session has no integrity check, and it failed 3 times in one night** | **WRITTEN 2026-09-13 (Hank)** &mdash; `docs/2026-09-13-coordination-health-check.md`; the expensive class now has a tool | `tests/run_snapshot_loader_probe.py` |
 | **The table checker written to protect the open-work index was reading 31% of it and printing `OK`** &mdash; three unresolved conflict markers, committed to `origin/main` | **CLOSED 2026-09-12 (Hank)** &mdash; `tools/md_table_check.py`, `docs/SAIRN-OPEN-WORK-INDEX.md` | `tests/run_md_table_check_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
@@ -267,7 +268,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**121 of 311 test files are traced to a stated requirement. 190 are not.**
+**122 of 312 test files are traced to a stated requirement. 190 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 

@@ -94,6 +94,7 @@ PURPOSES = {
     # is always clean.
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
+    'load_schema_snapshot.py': ('CHECKER', 'a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped'),
     'licence_recoverability_check.py': ('LIVE', 'a licence with credential rows and zero active provisioners'),
     'local_only_collection_check.py': ('CHECKER', 'a collection written only to localStorage that never reaches a server'),
     'missing_dom_target_check.py': ('CHECKER', 'a getElementById target that appears as no id in the file'),
