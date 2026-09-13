@@ -1067,8 +1067,8 @@
       "task": "drawing snapshot budget retention cap assertions stale",
       "claimed_at": "2026-09-13T18:05:55Z",
       "claimed_at_epoch": 1789322755.9895506,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T19:26:17Z"
     }
   ]
 }
