@@ -921,6 +921,48 @@
       "summary": "a probe arm that fails on EVERY run inflates every mutation verdict by one and turns a surviving mutation into a bite -- os.path.join backslashes vs git rev-parse forward slashes; run the probe green before mutating"
     },
     {
+      "commit": "832b1a3f0b9a",
+      "date": "2026-09-13",
+      "subject": "fix(tools): a string literal on the left is concatenation, not a numeric fold",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_truthy_sum_probe.py",
+        "tools/report_only_checks.py",
+        "tools/truthy_sum_baseline.json",
+        "tools/truthy_sum_check.py"
+      ],
+      "lines_added": 217,
+      "lines_removed": 55,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "truthy_sum_check.py could not tell a numeric fold from a string-literal concatenation, so 58 of its 140 matches were never defects and every new currency label was answered with a baseline entry -- a checker teaching people to write exemptions"
+    },
+    {
+      "commit": "832b1a3f0b9a",
+      "date": "2026-09-13",
+      "subject": "fix(tools): a string literal on the left is concatenation, not a numeric fold",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_truthy_sum_probe.py",
+        "tools/report_only_checks.py",
+        "tools/truthy_sum_baseline.json",
+        "tools/truthy_sum_check.py"
+      ],
+      "lines_added": 217,
+      "lines_removed": 55,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "mutation-testing",
+      "summary": "a floor pinned to a POST-CLASSIFICATION count goes red on a correctness improvement -- my own occurrences floor broke hours later when concatenation was split out; it floors on raw matches inspected now"
+    },
+    {
       "commit": "8dfde7be2b1b",
       "date": "2026-09-13",
       "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test",
