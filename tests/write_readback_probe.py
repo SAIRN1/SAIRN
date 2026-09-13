@@ -15,6 +15,11 @@ correctly by its own rules and uselessly in practice, because SAIRNbiz was not
 writing to a server at all. That arm is asserted so the limitation stays true
 and visible rather than being quietly forgotten.
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['write_without_readback_check.py']
+
 import os
 import subprocess
 import sys

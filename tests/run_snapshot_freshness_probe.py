@@ -17,6 +17,11 @@ wording says so.
 
 Run: python tests/run_snapshot_freshness_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+CONTROLS_FOR = ['schema_snapshot_freshness.py']
+
 import io
 import json
 import os

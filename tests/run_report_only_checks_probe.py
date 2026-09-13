@@ -31,7 +31,9 @@ Nothing here reads or writes a real app file, and the repo is never touched.
 # Declares, for tools/checker_control_check.py, which checker(s) this file is
 # the control for. Attribution is DECLARED rather than inferred because three
 # inference models were each wrong within an hour of being written.
-CONTROLS_FOR = ['report_only_checks.py']
+CONTROLS_FOR = ['report_only_checks.py', 'nav_panel_check.py',
+                'duplicate_global_check.py', 'panel_nesting_check.py',
+                'sairn_strict_args_check.py']
 
 import io
 import json

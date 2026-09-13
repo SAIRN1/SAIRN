@@ -14,6 +14,16 @@ move. An untestable branch in a checker is how a checker quietly stops working.
 
 Run: python tests/fail_open_browser_probe.py
 """
+# Declares, for tools/checker_control_check.py, which checker(s) this file is
+# the control for. Attribution is DECLARED rather than inferred because three
+# inference models were each wrong within an hour of being written.
+#
+# The other two files that NAME fail_open_check.py are NOT its control:
+# ld_reports_unreadable.js and sv_storage_guard.js both assert the real tree
+# comes back clean, which is the silent half alone. This file is the one that
+# plants a silent loader and requires the tool to REPORT it.
+CONTROLS_FOR = ['fail_open_check.py']
+
 import io
 import os
 import re
