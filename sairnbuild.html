@@ -2272,16 +2272,38 @@ function bldSyncCollection(key, next, prev) {
       try { before[String(r.id)] = JSON.stringify(r); } catch (e) {}
     }
   });
+  // ── A ROW WITH NO id IS COUNTED AND REPORTED, NOT SILENTLY DROPPED ──────
+  // Added 2026-09-13 after StoneDesk lost six collections to this exact line.
+  // sd_comms, sd_sms_log, sd_veinmatch, sd_seamai, sd_email_threats and
+  // sd_business_snapshots were all built before their sync seam existed and
+  // never set an id, so every row left the function without a sound -- while
+  // sitting on a list whose name reads as "this is backed up". They were found
+  // by reading writers one at a time, which does not scale to the next one.
+  //
+  // SAIRNfreedom and SAIRNvet already count and warn here, and SAIRNbiz
+  // back-fills instead. SAIRNbuild and StoneDesk were the two doing neither;
+  // this is copied from sfSyncCollection() so all of them say the same thing
+  // about the same condition. THIRTY collections route through here.
+  //
+  // ONE LINE PER COLLECTION PER SAVE, not one per row: a 400-row array with no
+  // ids would otherwise produce 400 identical warnings and get muted.
+  var skipped = 0;
   next.forEach(function (r) {
-    if (!r || r.id === undefined || r.id === null || r.id === '') return;
+    if (!r || r.id === undefined || r.id === null || r.id === '') { skipped++; return; }
     var now;
-    try { now = JSON.stringify(r); } catch (e) { return; }
+    try { now = JSON.stringify(r); } catch (e) { skipped++; return; }
     if (before[String(r.id)] === now) return;   // unchanged -- nothing to push
     var rid = String(r.id);
     bldData('write', key, r).then(function (saved) {
       if (saved === null) bldPendingMark(key, rid); else bldPendingClear(key, rid);
     });
   });
+  if (skipped) {
+    try {
+      console.warn('SAIRNbuild backup: ' + skipped + ' record(s) in "' + key +
+        '" have no id and were NOT backed up. They are saved on this device only.');
+    } catch (e) {}
+  }
 }
 
 // -- WHAT FAILED TO REACH THE SERVER (2026-09-04) -------------------------

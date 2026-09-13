@@ -2054,9 +2054,26 @@ function sdSyncCollection(key,next,prev){
   (Array.isArray(prev)?prev:[]).forEach(function(r){
     if(r&&r.id!==undefined&&r.id!==null){ try{ before[String(r.id)]=JSON.stringify(r); }catch(e){} }
   });
+  // ── A ROW WITH NO id IS COUNTED AND REPORTED, NOT SILENTLY DROPPED ──────
+  // This `return` is the line that hid six collections. sd_comms, sd_sms_log,
+  // sd_veinmatch, sd_seamai, sd_email_threats and sd_business_snapshots were
+  // all built before this seam existed and never set an id, so every row went
+  // out of this function without a sound -- and each of them sat in SD_SYNCED,
+  // a list whose name reads as "this is backed up". They were found on
+  // 2026-09-13 by reading writers one at a time, which is not a method that
+  // scales to the next one.
+  //
+  // SAIRNfreedom and SAIRNvet have counted and warned here for weeks, and
+  // SAIRNbiz back-fills instead; StoneDesk was the app doing neither. Copied
+  // from sfSyncCollection() rather than invented, so the four apps say the
+  // same thing about the same condition.
+  //
+  // ONE LINE PER COLLECTION PER SAVE, not one per row: a 400-row array with no
+  // ids would otherwise produce 400 identical warnings and get muted.
+  var skipped=0;
   next.forEach(function(r){
-    if(!r||r.id===undefined||r.id===null||r.id==='') return;
-    var now; try{ now=JSON.stringify(r); }catch(e){ return; }
+    if(!r||r.id===undefined||r.id===null||r.id===''){ skipped++; return; }
+    var now; try{ now=JSON.stringify(r); }catch(e){ skipped++; return; }
     if(before[String(r.id)]===now) return;
     sdData('write',key,r).then(function(saved){
       // A failed push is NOT reported as success. The local write has already
@@ -2068,6 +2085,10 @@ function sdSyncCollection(key,next,prev){
       }
     });
   });
+  if(skipped){
+    try{ console.warn('StoneDesk backup: '+skipped+' record(s) in "'+key+
+      '" have no id and were NOT backed up. They are saved on this device only.'); }catch(e){}
+  }
   // ── REMOVALS (2026-09-13) ──────────────────────────────────────────────
   // THE OTHER HALF OF A BACKUP, AND IT WAS MISSING FOR ALL TWENTY-ONE OF
   // THESE COLLECTIONS. This function pushed writes and nothing else, so a row
