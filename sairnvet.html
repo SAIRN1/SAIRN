@@ -156,6 +156,19 @@
     .pc-coach-banner{margin-top:10px;padding:10px 14px;background:rgba(124,58,237,.25);border:1px solid var(--primary);border-radius:8px;color:#fff;font-size:13px;font-weight:600;text-align:center;transition:opacity .2s;}
     .pc-controls{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
   </style>
+<!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
+     WHY IT WAS WORTH TURNING ON WITH NO TRAFFIC: the reachability work
+     earlier today could not classify a single route because 13 of 64
+     endpoints saw any request in 72 hours and there is no client-side
+     telemetry at all. This is the half that was missing -- it measures the
+     pages, which no server log can.
+     COOKIELESS, and this platform sends it NOTHING SENSITIVE: no SAIRN app
+     puts an identifier in its URL (the only two that touch history strip a
+     Stripe return), and the three public pages that carried a token as a
+     query parameter now remove it before this script can see it.
+     The project-side toggle is a dashboard setting and is NOT in this repo;
+     until it is on, this script 404s harmlessly. -->
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 

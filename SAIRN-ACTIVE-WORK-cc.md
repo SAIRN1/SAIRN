@@ -1949,3 +1949,45 @@ Routine because no customer traffic reaches any of them, none is abandoned code,
 **19 of 48 firings in 24 hours -- 40%.** The upstream status is **504 from Supabase**: not a missing table, not a code change, the database not answering in time.
 
 **Guardian check 30 exists because this exact cron sent ZERO reminders for months**, returning 500 every hour on a misnamed env var, while everyone believed the feature worked. The failure is loud in the logs and completely silent to anyone not reading them -- which is how the first one lasted months. **This outranks all 26 tables**, it is a separate row, and nothing in this repo can fix a gateway timeout.
+
+
+---
+
+## 2026-09-13 -- Web Analytics on, a credential out of three address bars, and two corrections to my own triage
+
+### The corrections first, because both of my named exceptions were wrong
+
+**Both were wrong the same way: I read a NAME instead of a CONSUMER.**
+
+**`mech_credentials` is not the auth gate.** It is a technician certification registry -- EPA 608, NATE, state licence, medical gas, backflow. **The login table is `mech_employee_auth` and it is NOT among the 26.** `api/mech-auth.js` mentions `mech_credentials` only in a comment, which is what I matched on. Nobody is locked out of SAIRNmechanical, and `sairnmechanical.html` already honours `provisioned===false` with a message naming the migration. It needs the migration run, nothing more.
+
+**`ledger_entries` is not being misread anywhere.** `sairnbiz.html` is the only client, it calls `action:'post'` and nothing else, and the ledger's WRITE path already fails closed with `503 NOT_PROVISIONED` **twice**. The SOFT-200 shape is on `read` and `trial_balance` -- **which have zero callers anywhere on the platform.** So the answer to "is the empty state being read as 'no transactions' in sairnbiz.html" is **no, because nothing reads the ledger at all.**
+
+**The residual risk is dormant rather than live, and it is worth a row:** `api/ledger.js` ships three read actions nobody calls, carrying the only soft shape in the file. Whoever wires a trial balance up inherits `provisioned:false` + `trial_balance:null` -- **a balanced, empty set of books rendered from a table that does not exist** -- which is the exact defect that file's own 2026-09-04 comment block was written about.
+
+### The two real defects, both in SAIRNroofing
+
+`api/sd-data.js` answers an absent `rf_bonding` or `rf_job_hazard_assessments` with `200 {ok:true,data:[],provisioned:false}`. That soft shape is correct -- **the FLAG carries the answer.** Two call sites ignored it:
+
+- `rfLoadPrequal()` left `cd.capacity` null, so `rfRenderBonding` printed **"No bonding letter recorded."**
+- `rfLoadSafety()` left `rfJhas` empty, so `rfRenderJhas` printed **"No hazard assessments recorded."**
+
+**A contractor reads the first as "you have no bond" and the second as "none were needed". Both are the opposite of "we could not tell you"** -- and on a surety position and a safety file that difference is the whole content.
+
+**The fix was already in the same file three times** (prequal documents, safety equipment, warranty tiers). These two call sites simply never used it. Held by `tests/roofing_unprovisioned_is_not_empty.js`, which extracts and RUNS the real loaders, carries a **control** asserting a provisioned-but-empty table still reads as empty -- a guard that fired on everything would pass every other arm -- and a **mutation control** confirming the suite goes RED on the pre-fix source.
+
+### Web Analytics, and the prerequisite that was a security fix
+
+The script is on all **22** root app pages. The project-side toggle is a dashboard setting with no API, so that half is Michael's; until it is on, the script 404s harmlessly.
+
+**The prerequisite is worth having on its own.** Three public pages carried a bearer-equivalent token as a query parameter -- `stonedesk-catalog.html?track=`, `sairndental-complaint.html?token=`, `sairnsenior.html?portal=`. `api/stonedesk-track.js` says it in its own header: *"The token IS the credential, like a calendar-share link -- 256-bit crypto-random, revocable."* **A credential in the address bar reaches the browser history, the Referer header of every outbound link, and every logging layer in between** -- whatever an analytics product does or does not store. All three now remove it immediately after capture; each already held it in a variable and never re-read `location.search`.
+
+### Three defects of my own, all caught before commit
+
+**1. THE STRIP TOOK THE PUBLIC IDENTIFIERS WITH IT.** The first version replaced the URL with `location.pathname`, which also threw away `?shop=` and `?slug=`. Both are captured **before** the strip, **so the first load worked perfectly and a REFRESH would have shown no shop.** Only the credential key is deleted now. **An identifier belongs in a shareable URL; a credential does not.**
+
+**2. A PATCH SCRIPT THAT PRINTED SUCCESS AND CHANGED NOTHING.** The correction's `str.replace` never matched in the two CRLF files, because the lines it was replacing had been inserted with LF by the previous script. It appended to its `wrote` list regardless of whether the replace hit. **A false success in a patch script**, found by grepping the files afterwards rather than trusting the output -- the rewrite now asserts the string actually changed.
+
+**3. A COMMENT THAT QUOTED THE MARKUP IT DESCRIBED.** `stonedesk.html` has **64 `</head>` tags and 63 of them build printable documents inside `document.write` strings**, so a blind insert would have put a tracker inside a printed quote. I inserted at the first one and wrote a comment explaining why -- **which contained the tag literally, putting a second copy in front of the real one, and the placement test then found the copy.** PR 1.2 in yet another disguise. The tag is named in words now.
+
+**Verified:** all 22 apps `node --check` 0 failures and `div_balance` PASS; `roofing_unprovisioned_is_not_empty` 14 assertions with a mutation control (RED on pre-fix source, GREEN on shipped); `public_token_leaves_the_address_bar` 13 assertions including a control that an untouched URL is left alone; `roofing_jobs_load_failure`, `roofing_claim_gate_single_source`, `intake_form_public_surface`, `intake_link_no_credential`, `public_catalog_no_false_empty` all still pass.

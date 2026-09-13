@@ -113,6 +113,19 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 .hentry{padding:8px 0;border-bottom:1px solid var(--border);font-size:12px;}
 .hentry:last-child{border-bottom:none;}
 </style>
+<!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
+     WHY IT WAS WORTH TURNING ON WITH NO TRAFFIC: the reachability work
+     earlier today could not classify a single route because 13 of 64
+     endpoints saw any request in 72 hours and there is no client-side
+     telemetry at all. This is the half that was missing -- it measures the
+     pages, which no server log can.
+     COOKIELESS, and this platform sends it NOTHING SENSITIVE: no SAIRN app
+     puts an identifier in its URL (the only two that touch history strip a
+     Stripe return), and the three public pages that carried a token as a
+     query parameter now remove it before this script can see it.
+     The project-side toggle is a dashboard setting and is NOT in this repo;
+     until it is on, this script 404s harmlessly. -->
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 
@@ -3698,6 +3711,19 @@ function rfLoadPrequal(){
       if(cv!==''){ var n=parseFloat(cv); if(isFinite(n))cp.candidate_value=n; }
       return rfDataRaw('capacity','rf_bonding',cp).then(function(c){
         var cd=(c.ok&&c.data)||{};
+        // NOT SET UP AND NO BOND ARE OPPOSITE ANSWERS TO A SURETY (2026-09-13).
+        // api/sd-data.js answers an absent rf_bonding table with
+        // {ok:true,data:[],provisioned:false} and 200, so cd.capacity was null
+        // and rfRenderBonding printed "No bonding letter recorded." A
+        // contractor reads that as "you have no bond"; the truth was "the table
+        // was never created". The three sibling resources in this same panel --
+        // prequal documents, safety equipment, warranty tiers -- already say
+        // "Not set up yet, run sql/..."; this call site simply never did.
+        if(cd.provisioned===false){
+          rfBonding=null;
+          $('pq-bonding').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_prequal_schema.sql, then refresh. <strong>This is not the same as having no bond.</strong></div>';
+          return;
+        }
         rfBonding=cd.capacity||null;
         rfRenderBonding(cd);
       });
@@ -3921,6 +3947,19 @@ function rfLoadSafety(){
       var v=rfJhaValidFor();if(v!==undefined)jp.valid_for_days=v;
       return rfDataRaw('crew_check','rf_job_hazard_assessments',jp).then(function(j){
         var jd=(j.ok&&j.data)||{};
+        // SAME CLASS AS THE BONDING CALL ABOVE, AND ON A SAFETY RECORD.
+        // An absent rf_job_hazard_assessments table answers 200 with
+        // provisioned:false, so rfJhas came back empty and rfRenderJhas printed
+        // "No hazard assessments recorded." On a job-hazard-analysis panel that
+        // reads as "none were needed", which is the opposite of "we cannot tell
+        // you". rfRenderJhas already warns loudly when the SCHEDULE is
+        // unprovisioned, for exactly this reason -- the assessments table
+        // itself had no such check.
+        if(jd.provisioned===false){
+          rfJhas=[];
+          $('safety-jha').innerHTML='<div class="empty">Not set up yet &mdash; run sql/sairnroofing_safety_schema.sql, then refresh. <strong>This is not the same as having no hazard assessments.</strong></div>';
+          return;
+        }
         rfJhas=jd.data||[];
         rfRenderJhas(jd);
       });

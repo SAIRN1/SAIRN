@@ -60,6 +60,19 @@ textarea{resize:vertical;min-height:84px;}
 .foot{text-align:center;font-size:12px;color:var(--muted);margin-top:26px;line-height:1.7;}
 .hide{display:none;}
 </style>
+<!-- VERCEL WEB ANALYTICS, enabled 2026-09-13 on Michael's decision.
+     WHY IT WAS WORTH TURNING ON WITH NO TRAFFIC: the reachability work
+     earlier today could not classify a single route because 13 of 64
+     endpoints saw any request in 72 hours and there is no client-side
+     telemetry at all. This is the half that was missing -- it measures the
+     pages, which no server log can.
+     COOKIELESS, and this platform sends it NOTHING SENSITIVE: no SAIRN app
+     puts an identifier in its URL (the only two that touch history strip a
+     Stripe return), and the three public pages that carried a token as a
+     query parameter now remove it before this script can see it.
+     The project-side toggle is a dashboard setting and is NOT in this repo;
+     until it is on, this script 404s harmlessly. -->
+<script defer src="/_vercel/insights/script.js"></script>
 </head>
 <body>
 <div class="wrap">
@@ -146,6 +159,27 @@ var TRACK_API='/api/stonedesk-track';
 var Q=new URLSearchParams(location.search);
 var SLUG=Q.get('shop')||'';
 var TOKEN=Q.get('track')||'';
+// THE TOKEN IS THE CREDENTIAL, SO IT DOES NOT STAY IN THE ADDRESS BAR
+// (2026-09-13). api/stonedesk-track.js says it plainly in its own header:
+// "The token IS the credential, like a calendar-share link -- 256-bit
+// crypto-random, revocable". A credential in a query string reaches the
+// browser history, the Referer header of any outbound link, and every
+// logging layer in between. It is captured above and never re-read from
+// location.search, so removing it changes nothing this page does.
+// after a Stripe return.
+// ONLY THE CREDENTIAL IS REMOVED, NOT THE WHOLE QUERY STRING.
+// The first version replaced the URL with location.pathname and took the
+// PUBLIC identifiers with it -- ?shop= here and ?slug= on the dental
+// complaint page. Both are captured above, so the first load still worked
+// and a REFRESH would have shown no shop. An identifier belongs in a
+// shareable URL; a credential does not.
+try{
+  var _u=new URL(window.location.href);
+  if(_u.searchParams.has('track')){
+    _u.searchParams.delete('track');
+    window.history.replaceState({},document.title,_u.pathname+(_u.search||'')+_u.hash);
+  }
+}catch(e){}
 var SHOP=null, PICKED=null;
 
 function $(id){return document.getElementById(id);}

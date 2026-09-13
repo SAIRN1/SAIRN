@@ -102,6 +102,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Web Analytics turned on &mdash; and the three public pages that carried a CREDENTIAL in the query string now strip it first** | **BUILT 2026-09-13 (CC)** on Michael's decision. Script on all **22** root app pages; held by `tests/public_token_leaves_the_address_bar.js` | `tests/public_token_leaves_the_address_bar.js` |
 | **Item 4: the FMEA loop &mdash; the standing-rules citation field, and the two defects that only appeared once it existed** | **BUILT 2026-09-13 (CC)** &mdash; `rules` / `citation_confidence` / `citation_note` on all 54 register records, `--rule` on `--add`, 12 saved drafts; held by `tests/run_defect_register_probe.py` (59 c | `tests/run_defect_register_probe.py`, `tests/run_fmea_probe.py` |
 | **Item 26, FMEA-prediction branch: the loop-closing question was asked by nobody at the moment its answer changes** | **WIRED 2026-09-13 (Hank)** &mdash; `tools/defect_register.py` `fmea_loop()`, `tests/run_fmea_loop_probe.py`, 14 arms | `tests/run_fmea_loop_probe.py` |
 | **Item 8: nothing adversarial has ever been run against 17 AI surfaces and 102 system-prompt sites &mdash; and the proxy answers an unauthenticated stranger** | **SAIRN-OWNED HALF BUILT 2026-09-13 (Hank)** &mdash; `api/claude-guardrail-probes.test.js`, 27 arms, **0 Anthropic calls by construction**; scope in `docs/2026-09-13-ai-red-teaming-scoping.md`. **gara | `api/claude-guardrail-probes.test.js` |
@@ -256,6 +257,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **An unprovisioned table rendered as an EMPTY one on a surety position and a safety record &mdash; "No bonding letter recorded" when the truth was "the table was never created"** | **FIXED 2026-09-13 (CC)** &mdash; `sairnroofing.html`, held by `tests/roofing_unprovisioned_is_not_empty.js` with a mutation control proving it goes RED on the pre-fix source | `tests/roofing_unprovisioned_is_not_empty.js` |
 | A rate-taxed invoice/proposal misreports how its own tax was derived on every read | **Half closed 2026-09-01 — the CODE fix shipped 2026-08-26 in `b044f35`; the LEGACY ROWS were never migrated** | `api/_lib/roofing-billing.test.js` |
 
 ### sairnvet
@@ -293,7 +295,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**147 of 342 test files are traced to a stated requirement. 195 are not.**
+**149 of 344 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -512,8 +514,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 342   tests/**, api/*.test.js
-  open-work rows citing a test       133   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 344   tests/**, api/*.test.js
+  open-work rows citing a test       135   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                35   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
