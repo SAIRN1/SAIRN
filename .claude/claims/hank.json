@@ -1385,6 +1385,16 @@
       "claimed_at_epoch": 1789338625.536523,
       "status": "released",
       "released_at": "2026-09-13T22:48:52Z"
+    },
+    {
+      "id": "hank-1789339745",
+      "session": "hank",
+      "subject": "ledger",
+      "task": "entryFromTransfers and the status flip balance trigger",
+      "claimed_at": "2026-09-13T22:49:05Z",
+      "claimed_at_epoch": 1789339745.3183954,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
