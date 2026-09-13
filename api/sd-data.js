@@ -9152,6 +9152,30 @@ module.exports = async (req, res) => {
         res.status(400).json({ error: { message: resource + ' payload.id is required' } });
         return;
       }
+      // ── THE WITNESSING LOCK (2026-09-13) ────────────────────────────────
+      // `sv_controlled` is the DEA-relevant controlled-substance register and
+      // is Tier A WITH NO REMOVAL PATH: a wrong row cannot be taken back
+      // through the product, because a correction is a SECOND row and the
+      // wrong one stands forever. So the verification happens BEFORE the
+      // write, not as a report afterwards.
+      //
+      // IT IS A REFUSAL, NOT A FLAG. requireWitness returns a refusal object
+      // or null -- deliberately not a boolean, because a boolean invites
+      // `if (!ok) { log(); }` and this has to be the thing that stops the
+      // write. Every could-not-tell answer inside it refuses too: a failed
+      // check is not the same as "verified", and on an irreversible write the
+      // only safe answer to "I could not tell" is no.
+      //
+      // ONE GATE, CALLED FROM HERE. The logic lives in api/sv-witness.js
+      // rather than being inlined, because a second implementation of "is this
+      // witnessed" is a second place for the answer to drift.
+      const svWitness = require('./sv-witness');
+      const refusal = await svWitness.requireWitness({
+        resource: resource, payload: payload, licHash: licHash,
+        rest: rest, headers: headers,
+        token: req.headers['x-sv-witness'] || (body && body.witness_token) || ''
+      });
+      if (refusal) { res.status(refusal.status).json(refusal.body); return; }
       const r = await fetch(rest(resource + '?on_conflict=license_hash,' + idCol), {
         method: 'POST',
         headers: Object.assign({}, headers, { Prefer: 'resolution=merge-duplicates,return=representation' }),
