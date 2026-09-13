@@ -62,6 +62,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code | `comment_sensitivity_check.py` | real run 2026-09-12 found ONE: key_collision_check.py counted 93 key writes on stonedesk.html raw and 92 stripped -- one was a line of prose. Verdict unchanged either way, which is why it survived. Fixed in the same commit; 0 findings after, across 22 targets and 6 checkers |
 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line | `criticality_tier_check.py` | real run 2026-09-12: 382 registered, 382 rows, 17 re-tiered apps, 78 Tier A, PROBLEMS:0 |
 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running | `soup_register_check.py` | real run 2026-09-12: 3 npm direct dependencies, 3 CDN scripts in root apps, CLEAN both directions |
+| a clone configured to commit under one of the throwaway identities this repo's own probes use -- the list is READ out of the probe sources, so a new probe's identity is covered with no edit to the checker | `committer_identity_check.py` | real run 2026-09-13: CLEAN in all four clones after the leak was unset in SAIRN-fourth. It reports the 131 already-affected commits as a number and deliberately does NOT fail on them -- rewriting published history on a repo four clones share is the larger risk. Held in BOTH directions by tests/run_committer_identity_probe.py, 20 arms, which breaks a THROWAWAY CLONE rather than a worktree because user.* is REPOSITORY config a worktree shares; 7 mutation controls bite |
 | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, or whose gate script or shell wrapper does not execute | `install_git_hooks.py` | real run 2026-09-13: OK in this clone. Held in BOTH directions by tests/run_githook_install_probe.py, which breaks a THROWAWAY CLONE three ways -- core.hooksPath unset, hook rewritten to CRLF with the config left CORRECT, and a wrapper that does not execute -- and asserts this clone is untouched; 5 mutation controls bite |
 | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated | `tooling_inventory.py` | real run 2026-09-12: OK, and its probe mutates the committed document and confirms --check exits non-zero |
 | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database | `schema_snapshot_freshness.py` | real run 2026-09-11: 444 tables created in sql/, 258 in the snapshot, 210 absent and 39 of those queried by api/. BOTH readings are real and both were measured live the same day -- mech_checks provisioned:true (snapshot behind) and grd_rounds provisioned:false (SQL never run), in the same list. The tool reports the question and refuses to pick, which arm 4 of its probe asserts |
@@ -152,6 +153,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **`install_git_hooks.py --check` REPORTED A CLONE PROTECTED WHILE ITS PRE-PUSH HOOK HAD NEVER ONCE EXECUTED** &mdash; and nothing ran it anyway | **CLOSED 2026-09-13 (Cody)** &mdash; `--check` widened to ask what `install` already asked, and PROMOTED to report-only; `tests/run_githook_install_probe.py`, 19 arms; **5 mutation controls bite**, to | `tests/run_githook_install_probe.py` |
 | **TWO TESTS WENT RED ON `main` WITHIN HOURS, AND BOTH WERE RIGHT ABOUT SOMETHING** &mdash; a storage wrapper that would blame the browser for a stamping failure, and a probe pinned to an exact count | **BOTH CLOSED 2026-09-13 (Cody)** &mdash; `tests/sairn_storage_wrapper_honesty.js` 65 arms, `tests/run_truthy_sum_probe.py` all pass; **5 mutation controls bite**, all three app files restored byte-id | `tests/run_truthy_sum_probe.py`, `tests/sairn_storage_wrapper_honesty.js` |
 | **`truthy_sum_check.py` COULD NOT TELL A NUMERIC FOLD FROM A STRING-LITERAL CONCATENATION, so it was teaching people to write exemptions** &mdash; 58 of its 140 matches were never folds | **CLOSED 2026-09-13 (Cody)** &mdash; the matcher classifies them, the count is PRINTED rather than dropped, 31 baseline keys that existed only to excuse them are gone, and the tool now reports baselin | `tests/run_truthy_sum_probe.py` |
+| **131 COMMITS ON `origin/main` WERE AUTHORED AND COMMITTED BY A TEST FIXTURE** &mdash; one clone had the probes&#39; throwaway identity in its LOCAL git config, and nothing on this platform reads the committing identity | **LEAK STOPPED AND HELD 2026-09-13 (Cody)** &mdash; `SAIRN-fourth` corrected, `tools/committer_identity_check.py` built and promoted report-only, `tests/run_committer_identity_probe.py` 20 arms; **7 m | `tests/run_committer_identity_probe.py` |
 | ~~**FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an empty file list**~~ &mdash; **CORRECTED: THE HOLE DOES NOT EXIST IN THAT FORM AND MY REPORT OF IT WAS WRONG** | **REVERTED 2026-09-11 (Cody), same session that wrote it.** The widening rung, the `prepush_base()` change and the credential-scan note are all out; `9c75a8d9` is the restored state of `tools/sairn_pu | `tests/push_gate/refspec_and_override_probe.py` |
 | Fourth promotion batch &mdash; and one checker HELD BACK rather than silenced | **PROMOTED 2026-09-10 (Cody), registry 15 &rarr; 16** &mdash; `5abfcdba`; sweep CLEAN with **no could-not-tell**, probe 57/57, all three `local_only` probes and `write_readback_probe` green | `tests/local_only_probe.py` |
 | The 28 unwired checkers have no way to be promoted, and none had ever run against real code | **REPORT-ONLY PATH BUILT, 3 PROMOTED 2026-09-09 (Cody)** &mdash; `408df818`; `tests/run_report_only_checks_probe.py` 29/29, full sweep CLEAN, and Hank's `run_all_tests_hook_gate_probe.py` still ALL PA | `tests/run_report_only_checks_probe.py` |
@@ -280,7 +282,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**137 of 334 test files are traced to a stated requirement. 197 are not.**
+**138 of 335 test files are traced to a stated requirement. 197 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -501,10 +503,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 334   tests/**, api/*.test.js
-  open-work rows citing a test       123   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 335   tests/**, api/*.test.js
+  open-work rows citing a test       124   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                33   report_only_checks.REGISTRY
+  report-only registry                34   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
   numbered gate checks                10   sairn_push_gate_hook.py
 ```

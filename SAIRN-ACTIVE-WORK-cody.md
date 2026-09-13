@@ -3405,3 +3405,59 @@ green before mutating: the cap raised back to 50, the helper swapped back for
 the raw slice, the cap removed entirely, and the cap applied to the wrong key.
 The second of those is the one that matters -- it is the real bug, and it now
 fails 3 arms.
+
+## 2026-09-13 (Cody) -- 131 commits on main were authored by a test fixture
+
+Skill used: `sairn-code-scrubber`. Claim: `platform` --
+`committer identity leak probe identity in a clone config`. Michael's direction:
+investigate as its own task, stop the leak, do NOT rewrite the history, and
+answer separately whether check 8 is producing wrong results.
+
+**FOUND WHILE DIAGNOSING SOMETHING ELSE.** `git log --format=%an` on the commit
+that had just blocked every push returned `probe <probe@local>` -- the identity
+push-gate probes give their throwaway fixture commits. Measured: **131 of 3,730
+commits**, 2026-09-10 through 2026-09-13, including an app's entire per-employee
+auth endpoint, claim commits and generated-doc regenerations.
+
+**CAUSE, LOCATED RATHER THAN GUESSED.** `git config --local --get user.email`
+across all four clones: `SAIRN-fourth` alone carried `probe@local`, written into
+its `.git/config` on 2026-09-10 rather than passed per-invocation with `git -c`.
+Unset, so it falls back to the global identity. All four clones now commit as
+`Michael Dibert <mikied68@gmail.com>`. No current probe writes to a real clone's
+config -- every `git config user.*` call in `tests/` is scoped to a temp repo or
+a throwaway clone, checked one by one -- so this is residue rather than an
+ongoing source.
+
+**CHECK 8 IS NOT BROKEN, AND THAT IS A SEPARATE FACT FROM IT NOT CATCHING THIS.**
+It keys on the commit SUBJECT matching `^PROBE\b` and has never read an
+identity. Verified rather than assumed: grepping the gate for `%an`, `%ae`,
+`%cn`, `%ce`, `user.name` and `user.email` returns nothing at all. So the leak
+degraded no gate. It also tripped none -- because **nothing anywhere on this
+platform reads the committing identity.** That absence is the defect class, and
+it is why a clone published real work under a fixture's name for three days.
+
+**THE GUARD IS DERIVED, NOT HARDCODED.** `tools/committer_identity_check.py`
+reads the throwaway identities out of the probe sources themselves, so a new
+probe's identity is covered with no edit to the checker -- the staleness failure
+the app map and the tooling inventory were both rewritten for. An arm plants a
+brand-new identity in a fixture file and requires it to be caught.
+
+**HISTORY IS REPORTED AND NEVER FAILED ON.** Rewriting published history on a
+repo four clones share is a larger risk than a wrong name on a commit, so the
+count is printed on every run and an arm requires that a clone whose HISTORY
+carries the identity still PASSES once its CONFIG is fixed.
+
+**THE PROBE BREAKS A THROWAWAY CLONE, NOT A WORKTREE.** `user.*` is REPOSITORY
+config and a worktree shares `.git/config` with the clone that made it, so doing
+this in a worktree would mis-attribute this clone's own commits for as long as
+the probe ran -- the defect, performed.
+
+**ONE MUTATION SURVIVED THE FIRST PASS, for the reason that keeps recurring.**
+Section C left `user.name=probe`, so the two derived-list arms were refusing on
+the NAME and proving nothing about the email under test; deleting the
+`-c user.email=x` branch from the scanner changed nothing. The arms reset the
+name first and read the matched value out of the COMPROMISED block now. **7
+mutation controls bite**, tool restored byte-identical, probe green first.
+
+**FLAG FOR FOURTH, INFORMATIONAL:** the config in their clone is corrected and
+no action is needed from them.

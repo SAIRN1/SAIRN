@@ -494,6 +494,40 @@ REGISTRY = [
                     'in root apps, CLEAN both directions',
     },
     {
+        'tool': 'committer_identity_check.py',
+        'mode': 'once',
+        'args': [],
+        'verdict': by_exit,
+        'promoted': '2026-09-13, the day the leak was found',
+        'catches': "a clone configured to commit under one of the throwaway "
+                   "identities this repo's own probes use -- the list is READ "
+                   "out of the probe sources, so a new probe's identity is "
+                   "covered with no edit to the checker",
+        'why_it_matters': '131 commits reached origin/main authored AND '
+                          'committed as `probe <probe@local>` between '
+                          '2026-09-10 and 2026-09-13, including an app\'s '
+                          'entire per-employee auth endpoint. One clone had '
+                          'the identity written into its LOCAL git config '
+                          'instead of passed per-invocation with `git -c`. '
+                          'NOTHING on the platform reads the committing '
+                          'identity -- verified, not assumed: the push gate '
+                          'greps clean for %an/%ae/%cn/%ce and user.name/'
+                          'user.email -- so nothing said anything for three '
+                          'days. Check 8, the one check about probe residue, '
+                          'keys on the commit SUBJECT matching ^PROBE and was '
+                          'therefore NOT degraded by this and did not catch it '
+                          'either; those are two different facts',
+        'evidence': 'real run 2026-09-13: CLEAN in all four clones after the '
+                    'leak was unset in SAIRN-fourth. It reports the 131 '
+                    'already-affected commits as a number and deliberately '
+                    'does NOT fail on them -- rewriting published history on a '
+                    'repo four clones share is the larger risk. Held in BOTH '
+                    'directions by tests/run_committer_identity_probe.py, 20 '
+                    'arms, which breaks a THROWAWAY CLONE rather than a '
+                    'worktree because user.* is REPOSITORY config a worktree '
+                    'shares; 7 mutation controls bite',
+    },
+    {
         'tool': 'install_git_hooks.py',
         'mode': 'once',
         # --check, NOT bare. Bare INSTALLS: it rewrites .githooks/pre-push to

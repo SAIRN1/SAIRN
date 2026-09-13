@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**114 files in `tools/`.** By what actually invokes them:
+**115 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 36 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 37 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 18 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 66 |
+| CHECKER | 67 |
 | GENERATOR | 16 |
 | LIBRARY | 19 |
 | LIVE | 13 |
@@ -113,7 +113,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (36)
+## REPORT-ONLY (37)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -126,6 +126,7 @@ quiet in practice.
 | `cleanup_confirm_check.py` | 2026-09-10, written the same day for a rule that existed since 2026-08-26 with no mechanism behind it | a cleanup or migration file whose destructive statements carry no confirm query and no expected answer -- so nobody can ever establish what it did |
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
 | `comment_sensitivity_check.py` | 2026-09-12, once its one real finding was fixed | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code |
+| `committer_identity_check.py` | 2026-09-13, the day the leak was found | a clone configured to commit under one of the throwaway identities this repo's own probes use -- the list is READ out of the probe sources, so a new probe's identity is covered with no edit to the checker |
 | `control_char_check.py` | 2026-09-10, the day it was built | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `criticality_tier_check.py` | 2026-09-12 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line |
 | `defect_register.py` | 2026-09-10, the day it was built | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice |
@@ -303,11 +304,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      114   git ls-files tools/
+  tools on disk                      115   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                7   tools\sairn_push_gate_hook.py
-  report-only registry                33   report_only_checks.REGISTRY
-  tools invoked by tests/             66   tests/**/*.py, *.js
+  report-only registry                34   report_only_checks.REGISTRY
+  tools invoked by tests/             67   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                10   tools\sairn_push_gate_hook.py
 ```
