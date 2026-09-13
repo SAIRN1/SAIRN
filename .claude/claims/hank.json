@@ -1255,6 +1255,16 @@
       "claimed_at_epoch": 1789314096.0529368,
       "status": "released",
       "released_at": "2026-09-13T16:00:12Z"
+    },
+    {
+      "id": "hank-1789315274",
+      "session": "hank",
+      "subject": "mutation-derived-condition-coverage",
+      "task": "operand level kills on tier a engines",
+      "claimed_at": "2026-09-13T16:01:14Z",
+      "claimed_at_epoch": 1789315274.709645,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
