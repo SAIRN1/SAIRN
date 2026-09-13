@@ -1072,8 +1072,8 @@
       "task": "copyright and trademark strings disagree across apps",
       "claimed_at": "2026-09-13T17:16:53Z",
       "claimed_at_epoch": 1789319813.1663024,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T17:21:54Z"
     }
   ]
 }
