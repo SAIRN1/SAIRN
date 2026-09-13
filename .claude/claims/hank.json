@@ -1303,8 +1303,8 @@
       "task": "propagation requalification and tiered independence",
       "claimed_at": "2026-09-13T18:39:12Z",
       "claimed_at_epoch": 1789324752.2290628,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T19:11:49Z"
     }
   ]
 }
