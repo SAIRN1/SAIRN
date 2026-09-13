@@ -1,0 +1,34 @@
+{
+  "_what_this_is": "Declared EXPECTED-INVOCATION CADENCE per api/ route, so a silence can be read. A route that is silent because it runs once a year, or only during an incident, or has not launched, is NOT the same as a route nothing calls -- and no static analysis can tell those apart. The cadence is the fact a human knows; this file is where it gets written down instead of re-litigated.",
+
+  "_why_a_declaration_and_not_inference": "Same argument checker_control_check.py makes for CONTROLS_FOR after three inference models failed inside an hour. Whether a disaster-recovery path SHOULD have fired this month is not derivable from the code, from git history, or from the logs. It is declared, with an owner and a reason, or it is not known.",
+
+  "_this_file_is_almost_empty_ON_PURPOSE": "Only rows with real evidence are here. The two crons are derived from vercel.json and are recorded because they are the ones whose expected cadence is mechanically checkable. EVERY OTHER ROUTE HAS NO ROW, and the checker reports that as NO CADENCE DECLARED -- a prompt to write one, never a finding and never a suggestion to delete anything. Filling this in with guesses would turn a known-unknown into a fabricated fact, which is the defect this platform keeps paying for.",
+
+  "min_route_coverage": 0.6,
+  "_min_route_coverage_why": "The same rule and the same number as MIN_PANEL_COVERAGE in sairn_reachability_check.py, for the same reason: a snapshot that saw too little of the surface cannot clear or condemn anything, and 'could not tell' must never render as clean. If fewer than this share of routed endpoints were observed at all, NOTHING is classified.",
+
+  "cadences": {
+    "continuous": "expected at least once in any capture window. Silence is a real signal.",
+    "cron:<schedule>": "fires on a declared vercel.json schedule. Expected count is derivable from the window.",
+    "periodic:<n>d": "expected at least once every n days. Silence shorter than that is expected.",
+    "annual": "year-end / filing-season code. Silence for most of the year is CORRECT.",
+    "incident": "disaster recovery, rollback, manual remediation. Silence is the DESIRED state and is never evidence of deadness; what such a row needs instead is a DRILL date proving it still works.",
+    "unlaunched": "shipped but not released to any customer. Silence is expected and the row must name what has to be true before the class changes."
+  },
+
+  "rows": {
+    "/api/sairndental/send-reminder": {
+      "cadence": "cron:0 * * * *",
+      "owner": "platform",
+      "reason": "declared in vercel.json crons, hourly. Guardian check 30 exists because this cron sent ZERO reminders for months while returning 500 every hour on a misnamed env var -- so a count here that is far below the window's expected firings is a real signal, not noise.",
+      "evidence": "vercel.json crons[0]"
+    },
+    "/api/alf-alerts": {
+      "cadence": "cron:0 * * * *",
+      "owner": "platform",
+      "reason": "declared in vercel.json crons, hourly.",
+      "evidence": "vercel.json crons[1]"
+    }
+  }
+}

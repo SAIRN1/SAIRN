@@ -1,0 +1,33 @@
+{
+  "_what_this_is": "A record of which api/ routes were OBSERVED INVOKED in production over a real window. Read by tools/sairn_reachability_check.py --activity. It is an observation with a date on it, not a standing fact: re-capture before trusting it, exactly like tools/sairn_dom_snapshot.js output.",
+
+  "_how_to_recapture": "Vercel MCP: get_runtime_logs(projectId, teamId, environment='production', since='72h', group_by='requestPath'). 24h and 72h both return; 7d TIMED OUT and 30d returned 400 on 2026-09-13, so 72h is the practical ceiling and the window is SHORT. Paste the table into counts below, set captured_at and window_hours, and leave everything else derived.",
+
+  "_why_it_is_a_file_and_not_a_network_call": "Every checker in tools/ is offline and read-only, and the reachability checker's existing --live flag already takes a captured DOM snapshot for the same reason. A checker that reaches the network cannot run in a hook, a cron, or on a plane, and it fails in a way that looks like a clean pass.",
+
+  "source": "Vercel runtime logs, production, grouped by requestPath",
+  "project": "prj_bj475nKLxC1TTmpFU6j7HVCSMEhn",
+  "team": "team_xlXR8IEKwOD7fvQQeiJtzxiT",
+  "captured_at": "2026-09-13",
+  "window_hours": 72,
+
+  "counts": {
+    "/api/alf-alerts": 72,
+    "/api/sairndental/send-reminder": 72,
+    "/api/sd-data": 71,
+    "/api/stonedesk-public": 6,
+    "/api/sairndental/public-availability": 6,
+    "/api/stonedesk-track": 5,
+    "/api/rf-auth": 2,
+    "/api/alf-auth": 1,
+    "/api/scp-auth": 1,
+    "/api/law-auth": 1,
+    "/api/mech-auth": 1,
+    "/api/sc-auth": 1,
+    "/api/sd-auth": 1
+  },
+
+  "_cron_paths_are_DERIVED": "The checker reads vercel.json's own crons array rather than trusting a list here. On 2026-09-13 that is /api/sairndental/send-reminder and /api/alf-alerts, both hourly, which is exactly the 72 each over 72 hours.",
+
+  "_unattributed_is_named_rather_than_guessed": "Everything that is not a declared cron is UNATTRIBUTED, not 'organic'. This platform has no request-level attribution, so a hit cannot be separated into customer traffic, a session's own live-verification fetch, a deploy check, or an uptime probe. /api/sd-data's 71 over 72 hours is the clearest case: it is almost exactly hourly and NOTHING EXPLAINS IT. The obvious guess was that a cron calls it -- grep found 'sd-data' in api/sairndental/send-reminder.js and the hit was a COMMENT saying that file BYPASSES sd-data. That is PR 1.2 one more time, in the analysis rather than in a tool, and it is why this field says unattributed instead of inventing a bucket."
+}

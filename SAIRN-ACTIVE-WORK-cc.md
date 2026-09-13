@@ -1810,3 +1810,49 @@ Historical records keep the old spelling -- active-work logs, session handoffs, 
 The skill marketplace is published **outside this clone**, at `sairn-tech/sairn-skills`. `dist/` is corrected; **the published copy is not, and nothing here can reach it.** `dist/` **has no generator** -- hand-maintained, confirmed by searching every `.py`/`.js`/`.sh`/`.yml` in the tree -- so no build step carries this across. Two of the stale strings are MIT copyright lines on a package other people can redistribute.
 
 **Verified:** all six apps `GATED FINDINGS:0` on `literal_drift_check.py`; `node --check` 0 failures across 149 script blocks (unchanged from baseline); `base_prompt_single_source` 21/21; `exec_role_gate` 16/16; `md_table_check` 373/373 rows.
+
+---
+
+## 2026-09-13 -- items 18 and 32: metamorphic relations, and the reachability question production traffic cannot answer
+
+### Item 18 -- `tools/metamorphic_check.py` + `tools/checker_kit.py`
+
+**Almost every check in this repo has NO ORACLE.** Nobody can write down the correct output of `literal_drift_check.py` on a 2.5MB file, so nobody can test it by comparing against the right answer. A control pair proves a checker CAN fire. A metamorphic relation proves it fires for the RIGHT REASON: transform the input in a way that cannot legitimately change the answer, assert the answer did not change.
+
+**Five relations, each already paid for by a real incident.** `identity` (byte-identical copy at another path), `crlf`, `trailing_ws`, `blank_lines` as SAME; `duplicate` as NO_ERASE, because doubling an HTML file legitimately creates duplicate ids so MORE findings is correct -- what cannot be correct is a defect being ERASED by adding a second copy of it.
+
+**It does not own, and does not re-implement, the two relations that already have tools** -- comment-blanking (`comment_sensitivity_check.py`) and repeated runs (`flaky_checker_quarantine.py`). That exclusion is **printed on every run**, not left in a docstring, because an unstated exclusion reads as coverage. What is new is the FRAME: relations are data, so the next one is a table row.
+
+**FIRST REAL RUN, `--all`: 660 comparisons, 0 violated, 0 could-not-run.**
+
+**THAT ZERO IS ONLY WORTH SOMETHING BECAUSE OF THE BLIND LOCK,** and the lock caught this tool on its very first run: `crlf` was **unfalsifiable as written** -- the sensitive fixture read through Python text mode, which does universal newlines, so it could not see the difference. That is also **why the whole fleet passes `crlf`**: text mode converts CRLF to LF for free and nobody hardened anything. The relation still earns its place -- it stops holding the moment a checker reads bytes or shells out.
+
+**THREE MORE DEFECTS FOUND BY RUNNING IT, AND ALL THREE WERE IN THE HARNESS, NOT THE FLEET.** Every one produced a CONFIDENTLY WRONG verdict rather than an error:
+
+1. **Reading the target through universal newlines made `identity` secretly the `crlf` transform.** It accused `key_collision_check.py` of violating IDENTITY on stonedesk.html -- a NONDETERMINISM verdict, the most serious thing the tool can say. A byte-exact `cp` reproduced nothing. The harness had flipped the line endings of a CRLF file and blamed the checker.
+2. **Normalising the bare basename rewrote a checker's PROSE.** `key_collision_check.py` prints an acknowledgement note containing the words *stonedesk.html*; the baseline's copy of that sentence became `<TARGET>` and the transformed copy's did not, so two identical reports compared unequal. **That is PR 1.2 -- text that merely DESCRIBES code -- committed by the normaliser instead of by a checker.** Fixed structurally, not with another pattern: every copy now lives in its own subdirectory under the SAME basename.
+3. **The position-format list knew `lines [..]` and not `A line(s) [..]`,** which is what `literal_drift_check.py` emits. Every position in its report survived normalisation, so `blank_lines` -- which shifts every line by construction -- reported it violated on all three targets. **Three false findings from one missing `(s)`.**
+
+**A FOURTH WAS CAUGHT BY THE CONTROL PROBE, AND IT IS THE PRETTIEST ONE.** The sensitive fixture measured raw LENGTH, and on a CRLF target `trailing_ws` HELD when it should have been violated: converting six CRLF endings to LF removes exactly six bytes and appending one space to six non-empty lines adds exactly six back. **The fixture agreed with itself by arithmetic accident.** The lock never saw it because the lock's target is LF and the probe's is CRLF -- two line-ending regimes, which is the only reason it showed up. It prints a **digest** now: a summary of the bytes can coincide, a hash cannot.
+
+**`tools/checker_kit.py` is the extracted skeleton** -- the three things that have each been got wrong more than once here, so the next checker is built THROUGH them: the **three-state exit contract** (could-not-run is NEVER folded into passed, PR 1.11), comment-stripped parsing, and the control-pair declaration. `metamorphic_check.py` was written against it rather than the module being reverse-engineered from it.
+
+**No existing checker was migrated onto the kit,** deliberately: rewriting eleven promoted checkers onto a module written the same hour has every gate in the repo as its blast radius, and "extract the skeleton" does not ask for that. **One duplication is NAMED rather than silently inherited** -- `truthy_sum_check.py` carries a second, independent comment+string scanner, and collapsing it onto the kit is its own change with its own control run against a 51-key baseline.
+
+### Item 32 -- R4 inside the EXISTING reachability checker, not a second one
+
+**THE PROXY IS CONCRETE AND MEASURED:** days since a route was last OBSERVED INVOKED in Vercel production runtime logs, over a declared window, compared against a DECLARED expected cadence. Both halves are dated files with owners in them, so the claim is checkable rather than trusted. Offline by construction, exactly like the existing `--live` DOM snapshot -- a checker that reaches the network cannot run in a hook and fails in a way that looks like a clean pass.
+
+**RARE-BUT-REAL IS A DECLARED CLASS, NEVER INFERRED.** `annual`, `incident` and `unlaunched` are all correctly silent and nothing in the logs separates them from dead code. **An `incident` row needs a DRILL date, not a log line** -- silence there is the DESIRED state. A route with no row reads as NO CADENCE DECLARED: a known-unknown, printed as one. `tools/activity_cadence.json` ships almost empty on purpose; filling it with guesses would turn a known-unknown into a fabricated fact.
+
+**IT NEVER GATES AND NEVER VOTES FOR REMOVAL.** Proved by an arm asserting the exit code is byte-identical with and without `--activity`, not by a promise in a comment.
+
+**THE MEASUREMENT IS THE FINDING, AND IT IS THE ANSWER TO THE QUESTION ITEM 32 ASKS: production traffic cannot tell us which code is dead.** Over 72 hours, **13 of 64 routed endpoints were observed at all -- 20%**, two of them the declared hourly crons. The denominator gate fires -- same rule and same 60% bar as `MIN_PANEL_COVERAGE`, in the same file, for the same reason -- and **NOTHING is classified.** When most routes see zero, one route seeing zero is evidence about the traffic, not about the route.
+
+**LIMITS, MEASURED RATHER THAN ASSUMED.** 24h and 72h return; **7d TIMED OUT and 30d returned 400**, so 72h is the practical ceiling. **Web Analytics is NOT ENABLED on the project**, so there is no client-side telemetry at all -- every `window.<name>` orphan R3 reports is outside this proxy's reach entirely, and no amount of work on this tool changes that.
+
+**AND THE OBVIOUS ATTRIBUTION GUESS WAS WRONG, IN THE ANALYSIS RATHER THAN IN A TOOL.** `/api/sd-data` took 71 hits in 72 hours -- almost exactly hourly, so surely a cron calls it. `grep sd-data api/sairndental/send-reminder.js` hit, and the hit was a **COMMENT saying that file BYPASSES sd-data**. PR 1.2 for the second time in one session, this time in my own reasoning. The snapshot says UNATTRIBUTED because that is what is known.
+
+**DECISION OWED TO MICHAEL:** this proxy stays uninformative until either real customer traffic exists or Web Analytics is switched on. Nothing further should be built on it before then.
+
+**Verified:** `metamorphic_check --all` 660/0/0; `run_metamorphic_probe` all pass; `activity_probe` all pass; `checker_control_check` 33 BOTH EVIDENCED, 0 with no declared control; `run_report_only_checks_probe` 70 checks 0 failed; `live_mode_probe` still verified; `md_table_check` 378/378.

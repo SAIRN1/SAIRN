@@ -214,10 +214,183 @@ def load_exemptions():
     return out, None
 
 
+# ── R4: STILL SERVED IN PRODUCTION? added 2026-09-13 ───────────────────────
+# R1-R3 ask "can anyone reach this". R4 asks the next question over: the code is
+# reachable, but does it still serve a PURPOSE in the running system, or has the
+# world moved past it?
+#
+# THE PROXY IS CONCRETE AND MEASURED, NOT A JUDGMENT CALL: days since the route
+# was last OBSERVED INVOKED in Vercel's production runtime logs, over a declared
+# window, compared against a DECLARED EXPECTED CADENCE. Both halves are files
+# with dates and owners in them (production_activity_snapshot.json,
+# activity_cadence.json), so a reader can check the claim rather than trust it.
+#
+# ── THE THREE THINGS THAT KEEP THIS HONEST ─────────────────────────────────
+#
+# 1. IT NEVER SUGGESTS REMOVAL AND NEVER GATES. R4 cannot change this tool's
+#    exit code. "Nothing called it" is an observation about a 72-hour window on
+#    a platform with almost no customers; treating that as permission to delete
+#    is how a working disaster-recovery path gets removed the month before it is
+#    needed. The output is a prompt to WRITE A CADENCE ROW, nothing more.
+#
+# 2. RARE-BUT-REAL IS A DECLARED CLASS, NOT AN INFERENCE. Year-end code,
+#    incident-only code and unlaunched code are all correctly silent, and no
+#    amount of log reading can tell them from dead code. activity_cadence.json
+#    is where a human says which, with an owner and a reason. A route with no
+#    row is NO CADENCE DECLARED -- a known-unknown, printed as one.
+#
+# 3. THE DENOMINATOR GATE, which is the part that stops this being theatre.
+#    If the snapshot observed fewer than MIN_ROUTE_COVERAGE of the routed
+#    endpoints AT ALL, then "this route saw zero" carries no information --
+#    every route saw zero -- and NOTHING is classified. Identical rule and
+#    identical number to MIN_PANEL_COVERAGE above, for an identical reason: an
+#    under-covered snapshot is a could-not-tell, and could-not-tell must never
+#    render as clean.
+#
+# MEASURED THE DAY IT WAS BUILT, and the result is the finding: over 72 hours,
+# 13 of 64 routed endpoints were observed at all -- 20%, far under the bar. Two
+# of the thirteen are the declared hourly crons. So the gate fires, nothing is
+# classified, and the honest output is "this snapshot cannot discriminate". That
+# is a real answer to the question "which of our code is dead": right now,
+# production traffic cannot tell us, and any tool claiming otherwise from this
+# data would be fabricating confidence.
+ACTIVITY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                             'production_activity_snapshot.json')
+CADENCE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                            'activity_cadence.json')
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def routed_api_paths():
+    """Every api/ handler Vercel serves, derived from the tree -- not a list.
+
+    Excludes `_lib/` and `_resources/` (imported, never routed) and `*.test.js`.
+    Derived rather than written down for the same reason the App File Map had to
+    be: a list of routes maintained by hand is a claim that drifts.
+    """
+    import subprocess
+    out = subprocess.run(['git', 'ls-files', 'api/*.js', 'api/*/*.js'],
+                         cwd=REPO_ROOT, capture_output=True, text=True).stdout
+    paths = []
+    for f in out.split('\n'):
+        f = f.strip()
+        if not f or f.endswith('.test.js'):
+            continue
+        if f.startswith('api/_lib/') or f.startswith('api/_resources/'):
+            continue
+        paths.append('/' + f[:-3])
+    return sorted(paths)
+
+
+def declared_crons():
+    """Cron paths read out of vercel.json itself, never hand-listed here."""
+    try:
+        with open(os.path.join(REPO_ROOT, 'vercel.json'), encoding='utf-8') as fh:
+            return {c.get('path') for c in (json.load(fh).get('crons') or [])
+                    if c.get('path')}
+    except Exception:
+        return None            # unreadable -> caller treats it as could-not-tell
+
+
+def load_activity(path):
+    """(snapshot, error_or_None). Fail CLOSED on anything unreadable."""
+    try:
+        with open(path, encoding='utf-8') as fh:
+            snap = json.load(fh)
+    except Exception as e:
+        return None, 'activity snapshot unreadable (%s): %s' % (type(e).__name__, e)
+    for field in ('counts', 'captured_at', 'window_hours'):
+        if field not in snap:
+            return None, 'activity snapshot is missing %r' % field
+    return snap, None
+
+
+def report_activity(snap):
+    """Print the R4 section. Returns nothing -- it CANNOT affect the exit code."""
+    cadence = {}
+    min_cov = 0.60
+    try:
+        with open(CADENCE_FILE, encoding='utf-8') as fh:
+            c = json.load(fh)
+            cadence = c.get('rows') or {}
+            min_cov = c.get('min_route_coverage', 0.60)
+    except Exception as e:
+        print('  CADENCE FILE UNREADABLE (%s) -- every route reads as '
+              'NO CADENCE DECLARED, which is a could-not-tell, not a pass.' % e)
+
+    routes = routed_api_paths()
+    counts = snap.get('counts') or {}
+    crons = declared_crons()
+    observed = [r for r in routes if counts.get(r)]
+    # Counts for paths that are NOT routed handlers in this tree. A snapshot
+    # naming a route that no longer exists is evidence about the snapshot, and
+    # it is printed rather than dropped.
+    unknown_paths = sorted(set(counts) - set(routes))
+
+    print('')
+    print('=== R4: STILL SERVED IN PRODUCTION? (report only, never gates) ===')
+    print('  snapshot      : %s, %sh window, %s'
+          % (snap.get('captured_at'), snap.get('window_hours'),
+             snap.get('source', 'source not stated')))
+    print('  routed api/   : %d endpoints (derived from the tree)' % len(routes))
+    print('  observed at all: %d  (%.0f%%)'
+          % (len(observed), 100.0 * len(observed) / max(1, len(routes))))
+    if crons is None:
+        print('  declared crons: COULD NOT READ vercel.json -- cron traffic '
+              'cannot be separated, so treat the figure above as inflated')
+        cron_n = 0
+    else:
+        cron_n = len([r for r in observed if r in crons])
+        print('  of those, declared crons: %d  (%s)'
+              % (cron_n, ', '.join(sorted(crons)) or 'none'))
+    print('  the rest are UNATTRIBUTED -- this platform has no request-level')
+    print('  attribution, so a hit cannot be split into customer traffic, a')
+    print('  session\'s own live-verification fetch, a deploy check or a probe.')
+    if unknown_paths:
+        print('  in the snapshot but NOT a routed handler here: %s'
+              % ', '.join(unknown_paths))
+
+    coverage = len(observed) / float(max(1, len(routes)))
+    if coverage < min_cov:
+        print('')
+        print('  VERDICT: UNKNOWN. Route coverage %.0f%% is under the %.0f%% bar,'
+              % (100 * coverage, 100 * min_cov))
+        print('  so NOTHING IS CLASSIFIED. When most routes see zero, one route')
+        print('  seeing zero is not evidence about that route -- it is evidence')
+        print('  about the traffic. Same rule as MIN_PANEL_COVERAGE: an')
+        print('  under-covered snapshot is a could-not-tell, not a pass.')
+        print('  No route is called dead here and none should be removed on')
+        print('  the strength of this run.')
+        return
+
+    silent_declared, silent_undeclared = [], []
+    for r in routes:
+        if counts.get(r):
+            continue
+        row = cadence.get(r)
+        (silent_declared if row else silent_undeclared).append((r, row))
+    print('')
+    print('  SERVED                    : %d' % len(observed))
+    print('  SILENT, cadence declared  : %d  (expected silence, read the row)'
+          % len(silent_declared))
+    print('  SILENT, NO CADENCE ROW    : %d  <- a known-unknown, not a finding'
+          % len(silent_undeclared))
+    for r, row in silent_declared:
+        print('    -- %-44s %s' % (r, row.get('cadence')))
+    for r, _ in silent_undeclared:
+        print('    ?  %-44s no cadence declared' % r)
+    print('')
+    print('  WHAT TO DO WITH THE "?" ROWS: write a cadence row in')
+    print('  tools/activity_cadence.json saying why silence is expected --')
+    print('  annual, incident, unlaunched -- or that it is not. NOT delete the')
+    print('  code. A silent route is a question, and this tool asks it; it does')
+    print('  not answer it and it never votes for removal.')
+
+
 def main(argv):
     args = [a for a in argv[1:]]
     live_paths, require_live, check_exemptions = [], False, False
-    rest = []
+    activity_path, rest = None, []
     i = 0
     while i < len(args):
         if args[i] == '--live' and i + 1 < len(args):
@@ -226,6 +399,17 @@ def main(argv):
             require_live = True; i += 1; continue
         if args[i] == '--check-exemptions':
             check_exemptions = True; i += 1; continue
+        # `--activity` alone uses the committed snapshot; `--activity x.json`
+        # overrides it. The next token is only consumed when it is a .json path
+        # -- an earlier version consumed whatever followed and swallowed the
+        # html target, then failed closed on it as an unreadable snapshot. Fail
+        # closed did its job; the argument parsing was still wrong.
+        if args[i] == '--activity':
+            if i + 1 < len(args) and args[i + 1].lower().endswith('.json'):
+                activity_path = args[i + 1]; i += 2
+            else:
+                activity_path = ACTIVITY_FILE; i += 1
+            continue
         rest.append(args[i]); i += 1
 
     exempt, exempt_err = load_exemptions()
@@ -236,6 +420,21 @@ def main(argv):
         print('BLOCKING: %s' % exempt_err)
         print('Fix tools/reachability_exemptions.json; it is not optional once entries exist.')
         return 2
+
+    # R4 runs FIRST and prints FIRST because its subject is api/ routes while
+    # R1-R3's is html files -- two different questions about two different
+    # trees. It is opt-in (--activity), it cannot change the exit code, and a
+    # BROKEN snapshot file fails closed at 2 the same way a broken exemption
+    # file does: a corrupt input read as "no data" is how a checker reports a
+    # pass it never performed.
+    if activity_path:
+        snap, act_err = load_activity(activity_path)
+        if act_err:
+            print('BLOCKING: %s' % act_err)
+            print('An unreadable activity snapshot is a could-not-tell, not an '
+                  'empty one. Re-capture it or drop --activity.')
+            return 2
+        report_activity(snap)
 
     targets = rest or sorted(glob.glob('*.html'))
     # A STALE REPORT IS ONLY MEANINGFUL ON A FULL RUN, and this tool was missing

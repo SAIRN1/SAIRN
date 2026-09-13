@@ -464,6 +464,42 @@ REGISTRY = [
                     'targets and 6 checkers',
     },
     {
+        'tool': 'metamorphic_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-13',
+        'catches': "a checker whose ANSWER changes under a transform that cannot "
+                   "legitimately change it -- a byte-identical copy at another "
+                   "path, flipped line endings, trailing whitespace, inserted "
+                   "blank lines -- and a finding ERASED by duplicating the file",
+        'why_it_matters': 'almost every check here has NO ORACLE, so nobody can '
+                          'test it by comparing against the right answer. A '
+                          'control pair proves a checker CAN fire; this proves it '
+                          'fires for the right REASON. The class is not '
+                          'hypothetical: literal_drift_check.py answered '
+                          'differently on identical input (PYTHONHASHSEED, fixed '
+                          'in ac8f8491) and a CRLF-vs-LF difference produced '
+                          'three false alarms in one session on 2026-09-03',
+        'evidence': 'first real run 2026-09-13, --all: 660 comparisons (6 checkers '
+                    'x 22 app files x 5 relations), 0 violated, 0 could-not-run. '
+                    'THAT ZERO IS ONLY WORTH SOMETHING BECAUSE OF THE BLIND LOCK -- '
+                    'the criteria are classified against synthetic fixtures first '
+                    'and the real run is REFUSED if a relation cannot fire. The '
+                    'lock caught its own tool twice on the first two runs: `crlf` '
+                    'was unfalsifiable because the fixture read through universal '
+                    'newlines, and the fixture later agreed with itself by '
+                    'arithmetic accident on a CRLF target (6 bytes removed, 6 '
+                    'spaces added). Three more defects were found by running it, '
+                    'ALL IN THE HARNESS: reading the target through universal '
+                    'newlines made `identity` secretly the `crlf` transform and '
+                    'accused key_collision_check.py of nondeterminism; normalising '
+                    'the bare basename rewrote a checker\'s PROSE and made two '
+                    'identical reports compare unequal; and a position-format list '
+                    'that knew `lines [..]` but not `A line(s) [..]` reported '
+                    'literal_drift_check.py as violated on all three targets. Held '
+                    'in both directions by tests/run_metamorphic_probe.py',
+    },
+    {
         'tool': 'criticality_tier_check.py',
         'mode': 'once',
         'verdict': by_exit,
