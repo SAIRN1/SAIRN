@@ -1617,3 +1617,44 @@ I added `if(typeof drawings!=='undefined') drawings=next;` to keep a module copy
 **Hydration is the riskier half and is guarded accordingly.** With no id to merge on the choice is adopt-or-leave, so the server copy is adopted **only on a device that has never written one** -- `getItem(key)!==null`, because *"this device has never written one"* is a fact while *"it looks like the default"* is a guess. Overwriting a shop's live discount rules from a second browser is exactly the clobber the array rule exists to prevent.
 
 **The suite had the same gap in miniature:** its extraction did not include `SD_SYNCED_OBJECT`, so every object arm would have thrown `ReferenceError` inside the vm **while the array arms stayed green**. It takes the line from the file now, like every other declaration it borrows. 36 arms, from 26. Pushed `d8733316`, live-verified.
+
+---
+
+## 2026-09-13 -- real delete UI for every remaining collection
+
+**Michael's decision: full capability, not just wiring.** Ten delete entry points, live-verified on the deployed file. Commits `b42d9b36`, `e82edf5c`, `fbafec55`, `e9c05b6b`, `8d6317b0`, `ef04c0ee`, `096d05cb`, `1b7f80dc`.
+
+Comms log, SMS log, VeinMatch, SeamAI, quote history, Quote Builder saves, exec channel, email threat log, KPI snapshots, vendor orders.
+
+### Six of them had never been backed up either, and the cause was one line
+
+`sdSyncCollection()` skips any row whose `id` is missing. **Six collections were built before that seam existed and never set one** -- so `sd_comms`, `sd_sms_log`, `sd_veinmatch`, `sd_seamai`, `sd_email_threats` and `sd_business_snapshots` sat on a list whose name reads *"backed up"* while living entirely in one browser's cache. Nobody had connected the guard to the collections it was silently excluding.
+
+**The id is DERIVED FROM THE ROW'S CONTENT and that is load-bearing, not stylistic.** A random back-fill id differs per device, so one message would sync as **one server row per browser that ever opened the panel**, and deleting it on one could not delete it on the other. **The field list stays per-collection** -- an arm pins that `msg` is in the SMS id, because two messages to the same person in the same minute with different text are different entries.
+
+### Three had no list at all -- a writer, a cap, and no reader
+
+VeinMatch and SeamAI wrote a row per analysis and showed only a **count**. `sd_business_snapshots` had a writer, a 90-entry cap, a **daily auto-save**, and the only reader was a *"last snapshot"* date used to decide whether to take another. **A count with no list behind it is a number nobody can check.**
+
+### And the app has TWO "save a quote" buttons writing two different stores
+
+*Save to History* → `sd_quote_history`, displayed. *Save Quote* → `stonedesk_quote_history`, rendered only by `renderHistory()` into `#history-list` -- an element the file's own comment records as never built. A shop pressing it got a confirmation and the quote appeared nowhere.
+
+**Listed, NOT merged.** Folding them into the table above would put them into Total Quotes, Total Value and Win Rate, **silently moving four money figures every existing shop already reads.** An arm pins that `load()` still reads two stores, so a later merge has to be a decision somebody makes rather than a line somebody adds.
+
+### The cap guard I shipped yesterday had two holes, and both were real
+
+It recognised only `slice(0,N)` and missed `sd_exec_msgs`' `slice(-500)`. And it attributed caps by **proximity**, so it could not see past an aggregate saver -- **proven by reverting the exec cap and watching the arm stay GREEN**, rather than reasoned about. Rewritten to derive backing-variable → key from every `st(key,var)` site, which immediately found a **seventh** cap nobody had looked at: `sdPhotos.slice(0,200)`, saved by `saveSD3Data()`.
+
+### Two design calls worth naming
+
+- **The exec channel offers Delete on your own messages only**, and `execDelete()` **re-checks the role** rather than trusting the markup -- a button that is merely not drawn is not an access rule. An arm calls it directly as the wrong role.
+- **The vendor-order confirm says outright that YTD spend and spend-by-vendor will drop.** Unlike every other log, that one is SUMMED; a shop is entitled to remove a duplicate order and entitled to know the report will read differently afterwards.
+
+### My own mistakes, recorded
+
+- **I wrote that `sd_order_history` was never backed up. It always was** -- `id:'ORD'+Date.now()`. Corrected before commit, and an arm now asserts its back-fill writes nothing.
+- **`commsDelete()` is not the comms delete.** I first asserted it had "no caller and no markup"; `renderCommsThreads()` does draw a Delete wired to it. The accurate claim -- its only caller is inside that dormant renderer -- is now what both the test and the source say.
+- **Three extraction bugs in my own suites, all one class.** `function render(){`, `function load(){` and `function updateKPIs(){` each appear in many IIFEs; anchoring on the first match pulls a different panel's copy. Loud when the stubbed element ids differ, **silent when they happen to overlap.** Everything ambiguous is now anchored after each module's own unique `save()`.
+- **A suite that ran against an empty store while failing confidently:** `loadThreats()` reads `THREATS_KEY`, which my sandbox did not pass, so `getItem(undefined)` returned null.
+- **Two escaping bugs** from writing JS string concatenation through a shell heredoc -- `\'` collapsing to `''` and `\n\n` becoming a real line break inside a literal. Caught by `node --check`, not by reading.

@@ -116,7 +116,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The table checker written to protect the open-work index was reading 31% of it and printing `OK`** &mdash; three unresolved conflict markers, committed to `origin/main` | **CLOSED 2026-09-12 (Hank)** &mdash; `tools/md_table_check.py`, `docs/SAIRN-OPEN-WORK-INDEX.md` | `tests/run_md_table_check_probe.py` |
 | **Every mutation-probe anchor is now VERIFIED rather than assumed &mdash; and a probe that mutates a tracked file refuses an import** | **BUILT 2026-09-11 (CC)** &mdash; `986eef83`, `tools/mutation_anchor_check.py`, wired as a promoted report-only checker | `tests/run_mutation_anchor_probe.py` |
 | **321 of 389 registered resources have no way for the PRODUCT to remove a record** &mdash; the root of the "15 hand-written cleanup SQL files and still growing" row, now classified and held by a baseline | **CLASSIFIED AND HELD 2026-09-10 (Hank)** on Michael's approval &mdash; `tools/removal_path_check.py` + `tools/removal_path_baseline.json` + `tests/run_removal_path_probe.py` (18 arms), wired as repor | `tests/run_removal_path_probe.py` |
-| **53 TIER A resources have no removal path** (was 56) &mdash; the burn-down order for the 324, derived by crossing them with the criticality register rather than guessed | Open &mdash; **DERIVED 2026-09-10 (Hank)**, `python tools/removal_path_check.py --burn-down`. **This is a review queue ordered by consequence, NOT 56 defects** | `api/sd-data-customer-soft-delete.test.js`, `api/sd-data-quote-request-soft-delete.test.js`, `tests/customer_delete_does_not_resurrect.js`, `tests/public_catalog_no_false_empty.js`, `tests/quote_request_soft_delete_panel.js` |
+| **53 TIER A resources have no removal path** (was 56) &mdash; the burn-down order for the 324, derived by crossing them with the criticality register rather than guessed | Open &mdash; **DERIVED 2026-09-10 (Hank)**, `python tools/removal_path_check.py --burn-down`. **This is a review queue ordered by consequence, NOT 56 defects** | `api/sd-data-customer-soft-delete.test.js`, `api/sd-data-quote-request-soft-delete.test.js`, `tests/ai_analysis_logs_delete.js`, `tests/collection_delete_reaches_the_server.js`, `tests/comms_log_delete_and_ids.js`, `tests/customer_delete_does_not_resurrect.js`, `tests/exec_chat_delete.js`, `tests/public_catalog_no_false_empty.js`, `tests/quote_history_delete.js`, `tests/quote_request_soft_delete_panel.js`, `tests/sms_log_delete_and_ids.js`, `tests/stonedesk_saved_drawings.js`, `tests/threat_and_snapshot_delete.js`, `tests/vendor_order_delete.js` |
 | **A probe can assert on the target's COMMENTS instead of its code &mdash; and the dangerous direction is SILENT** | **BUILT 2026-09-11 (CC)** &mdash; `ba70ec12`, `tools/comment_quote_check.py`, wired as a promoted report-only checker; rule in CLAUDE.md | `tests/run_comment_quote_probe.py`, `tests/sairndental_write_failure_voice.js`, `tests/sairnlaw_csp.js`, `tests/sd_security_status_is_measured.js` |
 | **The `NOT RUN` label on 29 cleanup SQL files is a claim about the FILE, not the database &mdash; and the checker written to doubt it shipped its own false CLEAN** | **BUILT 2026-09-10 (CC)** &mdash; `b3e92a8d`, `tools/cleanup_residue_check.py` + `tests/cleanup_residue_probe.py`. **Answers 0 of 29 today** and says so | `tests/cleanup_residue_probe.py` |
 | **A mutation arm that had stopped proving anything, reported under a headline that pointed the reader the wrong way** | **FIXED 2026-09-10 (Fourth), `8366aa89`** — all 15 arms of `tests/sairndental_outbound_queue_probe.py` bite again | `tests/sairndental_outbound_queue_probe.py` |
@@ -272,7 +272,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**124 of 323 test files are traced to a stated requirement. 199 are not.**
+**133 of 324 test files are traced to a stated requirement. 191 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -388,20 +388,16 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/sd-sub-data-auth-ordering.test.js`
 - `api/stonedesk-public.test.js`
 - `api/stonedesk-track.test.js`
-- `tests/ai_analysis_logs_delete.js`
 - `tests/ai_auth_wrapper.test.js`
 - `tests/ai_shortcuts_reach_the_chat.js`
 - `tests/approval_persistence.js`
 - `tests/base_prompt_single_source.js`
 - `tests/claims/run_matcher_probe.py`
 - `tests/claims/run_push_verify_probe.py`
-- `tests/collection_delete_reaches_the_server.js`
-- `tests/comms_log_delete_and_ids.js`
 - `tests/composite_context.js`
 - `tests/cut_sheet_basis_parity.js`
 - `tests/discarded_verdict_check.test.js`
 - `tests/dnt_vendor_write_confirmation.js`
-- `tests/exec_chat_delete.js`
 - `tests/exec_role_gate.js`
 - `tests/faults/dnt_vendor_write_faults.js`
 - `tests/faults/faultkit.js`
@@ -417,7 +413,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/prompt_budget.js`
 - `tests/push_gate/check4_probe.py`
 - `tests/push_gate/check9_probe.py`
-- `tests/quote_history_delete.js`
 - `tests/quote_history_duplication.js`
 - `tests/roofing_claim_gate_single_source.js`
 - `tests/roofing_jobs_load_failure.js`
@@ -467,14 +462,11 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/seam_check/run_ref_probe.py`
 - `tests/slab_reserve_client.js`
 - `tests/slab_scan_labels.js`
-- `tests/sms_log_delete_and_ids.js`
 - `tests/sql_preflight/constraint_probe.py`
 - `tests/stonedesk_locations.js`
 - `tests/stonedesk_remake_causes.js`
-- `tests/stonedesk_saved_drawings.js`
 - `tests/style_profile_parity.js`
 - `tests/thh_material_rates.js`
-- `tests/threat_and_snapshot_delete.js`
 
 ### Citations pointing at a file that does not exist
 
