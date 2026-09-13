@@ -75,7 +75,12 @@ function build(rows, opts) {
   const SAVE = "function save(d){return st('sd_comms',d);}";
   assert.strictEqual(html.split(LOAD).length - 1, 1, 'the comms load() moved or changed');
   assert.strictEqual(html.split(SAVE).length - 1, 1, 'the comms save() moved or changed');
+  // The shared helpers the comms wrappers delegate to, taken from the file for
+  // the same reason as everything else here: a hand-written copy of them would
+  // let the real ones change while these arms stayed green.
   const src =
+    fn('function sdRowId(prefix,row,fields){') + '\n' +
+    fn('function sdEnsureRowIds(rows,prefix,fields){') + '\n' +
     LOAD + '\n' + SAVE + '\n' +
     fn('  function commsId(x){') + '\n' +
     fn('  function commsEnsureIds(){') + '\n' +

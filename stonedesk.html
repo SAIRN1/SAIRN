@@ -2174,6 +2174,48 @@ function sdCapLocal(key,arr,max){
 }
 window.sdCapLocal=sdCapLocal;
 
+// ── ROWS THAT NEVER HAD AN ID HAVE NEVER BEEN BACKED UP ──────────────────
+// sdSyncCollection() skips any row whose `id` is missing or empty. Several of
+// the append-only logs in SD_SYNCED were built before that seam existed and
+// never set one -- the communication log, the SMS log, the VeinMatch and
+// SeamAI analysis logs. Each of them sat on a list that reads as "backed up"
+// while living entirely in one browser's cache.
+//
+// sdEnsureRowIds(rows, prefix, fields) fills the gap in place and returns TRUE
+// if it changed anything, so the caller writes only when there was something to
+// write. Idempotent: after the first pass nothing is missing.
+//
+// THE ID IS DERIVED FROM THE ROW'S OWN CONTENT, and that is the whole design
+// rather than a detail. A random id assigned at back-fill time would be a
+// DIFFERENT id on every device, so one message would sync as one server row per
+// browser that ever opened the panel, and deleting it on one could not delete
+// it on the other. A content hash gives every device the same answer.
+//
+// COLLISIONS ARE SUFFIXED, NOT MERGED. Two identical rows written in the same
+// minute are two real log entries; folding them into one would delete a record
+// the shop actually created.
+function sdRowId(prefix,row,fields){
+  var parts=[String(prefix||'ID')];
+  (fields||[]).forEach(function(f){
+    parts.push(String((row&&row[f])!=null?row[f]:'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,14));
+  });
+  return parts.join('-');
+}
+function sdEnsureRowIds(rows,prefix,fields){
+  if(!Array.isArray(rows)) return false;
+  var seen={}, changed=false;
+  rows.forEach(function(r){
+    if(!r||typeof r!=='object') return;
+    if(r.id!==undefined&&r.id!==null&&r.id!==''){ seen[String(r.id)]=true; return; }
+    var base=sdRowId(prefix,r,fields), id=base, n=2;
+    while(seen[id]){ id=base+'-'+(n++); }
+    seen[id]=true; r.id=id; changed=true;
+  });
+  return changed;
+}
+window.sdEnsureRowIds=sdEnsureRowIds;
+window.sdRowId=sdRowId;
+
 // ── HYDRATION ────────────────────────────────────────────────────────────
 // Additive-only merge by id: a server record not already present locally is
 // appended, and a locally present id is NEVER overwritten. Deliberately not
@@ -9807,24 +9849,16 @@ window.sdRMExport=function(){
   // IDEMPOTENT: after the first pass nothing is missing, so this writes only
   // once. It is called from the render path rather than on load, so a shop that
   // never opens the panel is never rewritten.
-  function commsId(x){
-    return 'CM-' + String((x&&x.date)||'').replace(/[^0-9]/g,'')
-         + '-' + String((x&&x.to)||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,12)
-         + '-' + String((x&&x.subj)||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,16);
-  }
+  // Delegates to the shared sdEnsureRowIds(), which carries the reasoning and
+  // is used identically by the SMS, VeinMatch and SeamAI logs. Kept as named
+  // local wrappers because the three call sites below read better for it, and
+  // because the FIELD LIST is a per-collection decision: date+to+subj is what
+  // identifies a comm, and picking those is not something a generic helper can
+  // do for you.
+  function commsId(x){ return sdRowId('CM',x,['date','to','subj']); }
   function commsEnsureIds(){
-    var d=load(), changed=false, seen={};
-    d.forEach(function(x){
-      if(!x||typeof x!=='object') return;
-      if(x.id!==undefined&&x.id!==null&&x.id!=='') { seen[String(x.id)]=true; return; }
-      var base=commsId(x), id=base, n=2;
-      // Two identical messages in the same minute would derive the same id.
-      // Suffixed rather than merged: they are two real log entries and the
-      // shop sent both.
-      while(seen[id]){ id=base+'-'+(n++); }
-      seen[id]=true; x.id=id; changed=true;
-    });
-    if(changed) save(d);
+    var d=load();
+    if(sdEnsureRowIds(d,'CM',['date','to','subj'])) save(d);
     return d;
   }
   function render(){
@@ -30655,8 +30689,19 @@ document.addEventListener('DOMContentLoaded', function() {
   };
   function load(){try{return JSON.parse(localStorage.getItem('sd_sms_log')||'[]');}catch(e){return [];}}
   function save(d){return st('sd_sms_log',d);}
-  function render(){
+  // IDLESS ROWS ARE NEVER BACKED UP -- sdSyncCollection() skips them, so every
+  // message in this log lived in one browser despite sd_sms_log sitting in
+  // SD_SYNCED. Back-filled from the row's own content so two devices derive the
+  // same id; see sdEnsureRowIds() for why a random one would be worse than
+  // none. Idempotent, and called from render() so a shop that never opens the
+  // panel is never rewritten.
+  function smsEnsureIds(){
     var d=load();
+    if(sdEnsureRowIds(d,'SMS',['date','phone','msg'])) save(d);
+    return d;
+  }
+  function render(){
+    var d=smsEnsureIds();
     document.getElementById('sms-sent').textContent=d.length;
     var today=sdLocalToday();
     var monthPrefix=today.slice(0,7);
@@ -30667,10 +30712,26 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">'
         +'<span><strong style="color:var(--text)">'+escHtml(x.to)+'</strong> '+escHtml(x.phone)+'</span><span>'+x.date+'</span></div>'
         +'<div style="font-size:13px;color:var(--text)">'+escHtml(x.msg)+'</div>'
-        +'<div style="font-size:11px;color:var(--brand2);margin-top:4px">'+x.status+'</div>'
+        +'<div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px">'
+        +'<span style="font-size:11px;color:var(--brand2)">'+x.status+'</span>'
+        +'<button class="q-btn" style="font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="sdSMSDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button></div>'
         +'</div>';
     }).join('')||'<div style="color:var(--muted)">No messages yet</div>';
   }
+  // The log records that a message was composed, not that it was delivered --
+  // the module's own comment above says so -- and a shop clearing out a mistyped
+  // entry is an ordinary thing to want. Hidden and kept, not destroyed.
+  window.sdSMSDelete=function(id){
+    if(!id){ showToast('That entry has no id yet -- reopen the panel and try again.'); return; }
+    if(!confirm('Delete this SMS log entry?\n\nIt is hidden and kept, not destroyed.')) return;
+    var d=smsEnsureIds();
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(next.length===d.length) return;
+    if(!save(next)){ showToast('Could not delete that entry -- storage may be full or unavailable, try again'); return; }
+    render();
+    showToast('SMS log entry deleted.');
+  };
   window.sdSMSTemplate=function(){
     var v=document.getElementById('sms-tpl').value;
     if(v&&TEMPLATES[v])document.getElementById('sms-msg').value=TEMPLATES[v];
@@ -30689,10 +30750,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // confirm delivery from here, so the log honestly says "Sent" (composer
     // opened), never "Delivered" (that would be an unverifiable claim).
     if(phone){window.location.href='sms:'+encodeURIComponent(phone)+'?body='+encodeURIComponent(msg);}
-    var d=load();
+    var d=smsEnsureIds();
     var now=new Date();
-    d.push({to:to,phone:phone||'N/A',msg:msg,
-      date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),status:'Sent'});
+    var rec={to:to,phone:phone||'N/A',msg:msg,
+      date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),status:'Sent'};
+    d.push(rec);
+    // Set on the way in, so a message sent today is syncable immediately rather
+    // than waiting for the next render pass.
+    sdEnsureRowIds(d,'SMS',['date','phone','msg']);
     save(d);render();
     document.getElementById('sms-to').value='';document.getElementById('sms-msg').value='';
     document.getElementById('sms-phone').value='';
