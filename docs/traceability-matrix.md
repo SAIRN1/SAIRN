@@ -99,6 +99,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| A hard WITNESSING LOCK on append-only writes — verification must complete before the write can fire at all, rather than a checker that flags one afterwards | **SCOPED 2026-09-13 (Fourth), NOT built** — `docs/2026-09-13-irreversible-write-witnessing-scoping.md`. Four classes measured; **only one is open** | `tests/seed_never_syncs_platform.js` |
 | **Methodology piece 1: mutation-derived condition coverage &mdash; 48 of 146 operands in the Tier A financial engines are ones the suite does NOT notice being wrong** | **BUILT 2026-09-13 (Hank)** &mdash; `tools/condition_coverage.py`, 20 arms, `fb5a1884` | `tests/sairncare/test-care-charges.js` |
 | `tests/run_snapshot_freshness_probe.py` arms **2c** and **4a** have been RED on `main` since the tool learned to resolve its own ambiguity | **OPEN 2026-09-13 (found by Fourth while declaring the file a control; deliberately NOT fixed)** — `python tests/run_snapshot_freshness_probe.py` reports `2 arm(s) failed`; the other 12 arms pass. Pre | `tests/run_snapshot_freshness_probe.py` |
 | `literal_drift_check.py` has a control that proves DETERMINISM and never proves it can FIRE | **OPEN 2026-09-13 (found by Fourth)** — the last `ONE DIRECTION` in `python tools/checker_control_check.py`; 30 of 32 promoted checkers are `BOTH EVIDENCED`, 1 exempt | `tests/run_literal_drift_determinism_probe.py` |
@@ -498,7 +499,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 333   tests/**, api/*.test.js
-  open-work rows citing a test       119   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       120   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                33   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
