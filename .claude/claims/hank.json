@@ -1305,6 +1305,16 @@
       "claimed_at_epoch": 1789324752.2290628,
       "status": "released",
       "released_at": "2026-09-13T19:11:49Z"
+    },
+    {
+      "id": "hank-1789329763",
+      "session": "hank",
+      "subject": "detection-method-backfill",
+      "task": "independent review method on the defect register",
+      "claimed_at": "2026-09-13T20:02:43Z",
+      "claimed_at_epoch": 1789329763.1731405,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
