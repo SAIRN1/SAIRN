@@ -1361,8 +1361,17 @@ function dntStampChanged(k,v){
   return out;
 }
 function st(k,v){
+  // STAMPING IS NOT STORAGE (2026-09-13). The `_m` stamp was added inside this
+  // try, so anything dntStampChanged() threw on skipped the write AND set
+  // dntQuotaHit -- reporting a quota problem for a browser whose storage was
+  // fine. A stamp that cannot be computed is not a reason to lose the save: an
+  // unstamped record means the server wins on the next merge, which is the
+  // designed-safe direction and already how every pre-stamp record behaves.
+  try{ v=dntStampChanged(k,v); }
+  catch(e){ try{ console.error('SAIRNdental: _m stamping failed for "'+k+
+    '" -- saving UNSTAMPED, so the server wins this record on the next merge. '+
+    (e&&e.message||e)); }catch(_e){} }
   try{
-    v=dntStampChanged(k,v);
     localStorage.setItem(k,JSON.stringify(v));
     return true;
   }catch(e){

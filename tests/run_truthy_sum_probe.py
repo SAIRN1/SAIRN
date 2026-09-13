@@ -32,6 +32,7 @@ CONTROLS_FOR = ['truthy_sum_check.py']
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -171,8 +172,19 @@ check('--full lists both the grandfathered and the new one',
 # ── 11. and the REAL repo is clean, since that is what it is for ──────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True, text=True)
 check('the real SAIRN tree currently has no UNBASELINED occurrence', r.returncode, 0)
-check('...and it really did look -- 135 occurrences inspected',
-      'occurrences : 135' in r.stdout, True)
+# A FLOOR, NOT AN EQUALITY (2026-09-13). This was `'occurrences : 135' in
+# r.stdout`, and it went red the first time an ordinary commit added a matching
+# line -- 140 by 2026-09-13, from two currency-label concatenations in
+# stonedesk.html. The question this arm exists to answer is "did the scan
+# actually look at anything, or did it report CLEAN over an empty result", and
+# an exact count answers a different and unstable question. Same reasoning as
+# MIN_TEST_FILES in tools/run_all_tests.py: a floor, never an equality, and it
+# is not to be raised to clear a failure -- a DROP means the scanner stopped
+# seeing files and is the thing worth failing on.
+_m = re.search(r'occurrences\s*:\s*(\d+)', r.stdout)
+check('...and it really did look -- the occurrence count is reported', bool(_m), True)
+check('...and it is not a collapsed scan -- at least 100 occurrences seen',
+      bool(_m) and int(_m.group(1)) >= 100, True)
 
 print()
 if fails:

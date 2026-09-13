@@ -1474,7 +1474,18 @@ function grdStampChanged(k,v){
   return out;
 }
 function st(k,v){
-  try{v=grdStampChanged(k,v);localStorage.setItem(k,JSON.stringify(v));return true;}
+  // STAMPING IS NOT STORAGE, AND MUST NOT BORROW ITS ERROR MESSAGE (2026-09-13).
+  // The `_m` stamp was added INSIDE this try. Anything grdStampChanged() threw
+  // on -- a value shape it did not expect, a getItem that refuses -- therefore
+  // skipped the write entirely and told the user "storage is full or
+  // unavailable", which would be a FALSE REASON for a browser whose storage was
+  // fine. A stamp that cannot be computed is not a reason to lose the save: an
+  // unstamped record means the server wins on the next merge, which is the
+  // designed-safe direction and already how every record written before the
+  // stamp existed behaves.
+  try{v=grdStampChanged(k,v);}
+  catch(e){try{console.error('SAIRNgrounds: _m stamping failed for "'+k+'" -- saving UNSTAMPED, so the server wins this record on the next merge. '+(e&&e.message||e));}catch(_e){}}
+  try{localStorage.setItem(k,JSON.stringify(v));return true;}
   catch(e){
     if(typeof toast==='function')toast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
     return false;

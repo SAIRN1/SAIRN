@@ -66,39 +66,97 @@ function workingStore() {
 
 // ── PART 1: the three wrappers fixed on 2026-09-04 ─────────────────────────
 
+// ── THE WRAPPERS GREW A DEPENDENCY AND THIS FILE DID NOT NOTICE (2026-09-13) ─
+// st()/scpSt() now call a `_m` stamping helper before writing. The harness
+// builds each wrapper with `new Function` and injects only the globals it names
+// here, so the helper was an unbound identifier and EVERY good-path arm failed:
+// the ReferenceError landed in the storage catch, which returned false and
+// toasted "storage is full or unavailable". The wrapper was fine in a browser.
+//
+// THAT FALSE FAILURE WAS ALSO A REAL FINDING, and it is fixed in the apps
+// rather than only injected around here: stamping ran INSIDE the storage try,
+// so anything the helper threw on skipped the write and blamed the browser's
+// storage. The stamp now has its own try, a failure is logged, and the write
+// goes ahead UNSTAMPED -- an unstamped record means the server wins on the next
+// merge, which is the designed-safe direction. The arms below pin that.
+const stampOk = (k, v) => v;
+const stampThrows = () => { throw new Error('stamp exploded'); };
+
 // SAIRNgrounds -- st()
 {
   const src = read('sairngrounds.html');
-  const make = (store, toasts) => new Function('localStorage', 'toast',
-    fnFrom(src, 'function st(k,v){') + '\nreturn st;')(store, (m, d) => toasts.push(String(m)));
+  const logs = [];
+  const make = (store, toasts, stamp) => new Function('localStorage', 'toast', 'grdStampChanged',
+    'console', fnFrom(src, 'function st(k,v){') + '\nreturn st;')(
+      store, (m, d) => toasts.push(String(m)), stamp, { error: (m) => logs.push(String(m)) });
 
   const good = workingStore(), gt = [];
-  check('grounds: a write that works returns true', make(good.store, gt)('grd_jobs', [1]), true);
+  check('grounds: a write that works returns true', make(good.store, gt, stampOk)('grd_jobs', [1]), true);
   check('grounds: and says nothing', gt.length, 0);
   check('grounds: and actually stores', good.data.grd_jobs, '[1]');
 
   const bad = refusingStore(), bt = [];
-  check('grounds: a refused write returns FALSE, not undefined', make(bad.store, bt)('grd_jobs', [1]), false);
+  check('grounds: a refused write returns FALSE, not undefined', make(bad.store, bt, stampOk)('grd_jobs', [1]), false);
   check('grounds: and tells the user', bt.length, 1);
   check('grounds: naming what did not happen', /NOT saved/.test(bt[0]), true);
   check('grounds: and that the screen is showing the old data',
     /previous data/.test(bt[0]), true);
+
+  const st2 = workingStore(), t2 = [];
+  check('grounds: a stamping failure does NOT lose the write',
+    make(st2.store, t2, stampThrows)('grd_jobs', [1]), true);
+  check('grounds: ...and the data really landed', st2.data.grd_jobs, '[1]');
+  check('grounds: ...and the user is NOT told storage failed', t2.length, 0);
+  // NOT SILENT EITHER. A swallowed stamping failure would be the same defect
+  // in a smaller disguise, so the console must carry it and say which
+  // direction the record will now lose in.
+  check('grounds: ...but the console IS told, naming the key and the consequence',
+    logs.length === 1 && /grd_jobs/.test(logs[0]) && /UNSTAMPED/.test(logs[0]), true);
 }
 
 // SAIRNscape -- scpSt()
 {
   const src = read('sairnscape.html');
-  const make = (store, toasts) => new Function('localStorage', 'scpToast',
-    fnFrom(src, 'function scpSt(k,v){') + '\nreturn scpSt;')(store, (m, d) => toasts.push(String(m)));
+  const logs = [];
+  const make = (store, toasts, stamp) => new Function('localStorage', 'scpToast', 'scpStampChanged',
+    'console', fnFrom(src, 'function scpSt(k,v){') + '\nreturn scpSt;')(
+      store, (m, d) => toasts.push(String(m)), stamp, { error: (m) => logs.push(String(m)) });
 
   const good = workingStore(), gt = [];
-  check('scape: a write that works returns true', make(good.store, gt)('scp_jobs', [1]), true);
+  check('scape: a write that works returns true', make(good.store, gt, stampOk)('scp_jobs', [1]), true);
   check('scape: and says nothing', gt.length, 0);
 
   const bad = refusingStore(), bt = [];
-  check('scape: a refused write returns FALSE', make(bad.store, bt)('scp_jobs', [1]), false);
+  check('scape: a refused write returns FALSE', make(bad.store, bt, stampOk)('scp_jobs', [1]), false);
   check('scape: and tells the user', bt.length, 1);
   check('scape: naming what did not happen', /NOT saved/.test(bt[0]), true);
+
+  const st2 = workingStore(), t2 = [];
+  check('scape: a stamping failure does NOT lose the write',
+    make(st2.store, t2, stampThrows)('scp_jobs', [1]), true);
+  check('scape: ...and the data really landed', st2.data.scp_jobs, '[1]');
+  check('scape: ...and the user is NOT told storage failed', t2.length, 0);
+  check('scape: ...but the console IS told, naming the key and the consequence',
+    logs.length === 1 && /scp_jobs/.test(logs[0]) && /UNSTAMPED/.test(logs[0]), true);
+}
+
+// SAIRNdental -- st(), which grew the same dependency
+{
+  const src = read('sairndental.html');
+  const make = (store, stamp, quotaFn) => new Function('localStorage', 'dntStampChanged',
+    'dntIsQuotaError', 'console',
+    fnFrom(src, 'function st(k,v){') + '\nreturn st;')(
+      store, stamp, quotaFn || (() => false), { error: () => {} });
+
+  const good = workingStore();
+  check('dental: a write that works returns true', make(good.store, stampOk)('dnt_x', [1]), true);
+  check('dental: and actually stores', good.data.dnt_x, '[1]');
+  check('dental: a refused write returns FALSE', make(refusingStore().store, stampOk)('dnt_x', [1]), false);
+
+  const st2 = workingStore();
+  check('dental: a stamping failure does NOT lose the write',
+    make(st2.store, stampThrows)('dnt_x', [1]), true);
+  check('dental: ...and the data really landed', st2.data.dnt_x, '[1]');
 }
 
 // SAIRNmechanical -- mechSt(), plus the three callers that claimed an outcome

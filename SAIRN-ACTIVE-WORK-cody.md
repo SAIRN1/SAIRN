@@ -3266,3 +3266,58 @@ the harness is now line-ending aware.
 truncates to two names with no ellipsis, so registering this probe silently
 displaced `run_matcher_probe.py` from `sairn_claim.py`'s row. A silent cap in a
 generated document, in fourth's checker-registry area.
+
+## 2026-09-13 (Cody) -- two tests went red on main within hours, and both were
+## right about something
+
+Skill used: `sairn-guardian-v2`. Claim: `platform` --
+`two tests red on main storage wrapper honesty scape and truthy sum probe`.
+Both reds appeared between two of my own suite runs, neither inside anyone's
+active claim.
+
+**THE PRODUCT DEFECT: STAMPING RAN INSIDE THE STORAGE `try`.** `1e0d4527` added
+a per-record `_m` stamp to `st()`/`scpSt()` in SAIRNdental, SAIRNgrounds and
+SAIRNscape, centrally rather than at 486 save sites -- the right call, and the
+commit argues it well. But the call sits INSIDE the `try` that guards
+`localStorage.setItem`, so **anything the stamping helper threw on skipped the
+write entirely and told the user "this browser storage is full or
+unavailable"** -- a false reason for a browser whose storage was fine, and a
+lost save.
+
+Stamping now has its own `try`. A failure is LOGGED, naming the key and the
+consequence, and **the write goes ahead UNSTAMPED** -- the designed-safe
+direction, by `1e0d4527`'s own rule that a missing `_m` means the server wins,
+which is already how every record written before the stamp behaves.
+
+**THE TEST FOUND IT BY BREAKING FOR THE WRONG REASON, and chasing that is what
+surfaced the real one.** `sairn_storage_wrapper_honesty.js` builds each wrapper
+with `new Function` and injects only the globals it names, so the new helper was
+an unbound identifier; the `ReferenceError` landed in the storage catch and every
+good-path arm failed. In a browser the wrapper was fine. The easy fix was to
+inject the helper and move on -- but the reason the harness could not tell the
+two apart is exactly the reason a USER could not: **one catch answering for two
+unrelated causes.** Arms now pin both halves, including that the console IS told,
+because a silently swallowed stamping failure would be the same defect in a
+smaller disguise.
+
+**THE SECOND TEST PINNED AN EXACT COUNT.** `run_truthy_sum_probe.py` asserted
+`occurrences : 135` to prove the scan was not empty, and went red the first time
+an ordinary commit added a matching line (140). Replaced with a FLOOR, the same
+rule `MIN_TEST_FILES` carries and for the same reason: a DROP means the scanner
+stopped seeing files and is worth failing on; a rise is ordinary growth. An
+equality answers a different and unstable question than the one the arm exists
+to ask.
+
+**THE TWO NEW OCCURRENCES ARE NOT DEFECTS, and are baselined with that
+ASSESSMENT rather than with "not assessed".** Both are `'$'+(x||0)` currency
+labels in `stonedesk.html`. The left operand is a STRING LITERAL, so
+concatenation is the intended behaviour and the result is correct for a number,
+a numeric string, `0` and `undefined` alike.
+
+**5 MUTATION CONTROLS BITE**, all three app files restored byte-identical, test
+green before mutating: stamping put back inside the storage try in each of the
+three apps, and the stamping failure swallowed silently in two.
+
+**NOTED FOR THE TOOL'S OWNER, NOT FIXED:** `truthy_sum_check.py` cannot tell a
+numeric fold from a string-literal concatenation, so every future price-display
+line will trip it and need a baseline entry.

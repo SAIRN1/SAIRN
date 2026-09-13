@@ -135,6 +135,8 @@
     "stonedesk.html::x.s.ltv": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::x.tax": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
     "stonedesk.html::x.taxable": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
-    "stonedesk.html::x.val": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here."
+    "stonedesk.html::x.val": "grandfathered 2026-09-11 -- NOT ASSESSED. The shape is real; whether it is a defect depends on whether anything can put a STRING in this field, which is not derivable here.",
+    "stonedesk.html::x.value": "assessed 2026-09-13 and NOT a numeric fold. The left operand is the STRING LITERAL '$', so concatenation is the intended behaviour and the result is correct for a number, a numeric string, 0 and undefined alike: '$'+(500||0) is '$500', '$'+('500'||0) is '$500', '$'+(0||0) is '$0'. Nothing is summed here -- it is a currency label being built for display.",
+    "stonedesk.html::x.ytd": "assessed 2026-09-13 and NOT a numeric fold. The left operand is the STRING LITERAL '$', so concatenation is the intended behaviour and the result is correct for a number, a numeric string, 0 and undefined alike: '$'+(500||0) is '$500', '$'+('500'||0) is '$500', '$'+(0||0) is '$0'. Nothing is summed here -- it is a currency label being built for display."
   }
 }
