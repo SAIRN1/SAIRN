@@ -54,7 +54,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 **Platform totals: 382 resources owned by an app, 75 test files attributed to one, 29 of those traced, 8 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **335** test files on disk in total and **138** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **336** test files on disk in total and **138** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -101,7 +101,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               335   tests/**, api/*.test.js
+  test files on disk               336   tests/**, api/*.test.js
   tests traced to a requirement    143   traceability_matrix.traced()
   declared fault probes              8   MUTATIONS blocks + *_fault_probe.py
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
