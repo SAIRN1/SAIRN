@@ -201,8 +201,126 @@ function validateEntry(input) {
     debit_total_cents: debits,
     credit_total_cents: credits,
     difference_cents: debits - credits,
+    // WHICH PATH BUILT THIS (2026-09-13, item 41). entryFromTransfers() below
+    // makes imbalance UNREPRESENTABLE; this path only makes it REFUSED. Both
+    // return this same object, so without a field naming the path every later
+    // reader would assume the stronger guarantee applies to both.
+    built_from: 'lines',
     problems: problems
   };
+}
+
+// ── Balanced by construction ─────────────────────────────────────────────
+// A TRANSFER is one amount moving from one account to another: a debit account,
+// a credit account, and a single figure. Every transfer contributes THE SAME
+// CENTS TO BOTH TOTALS, so an entry assembled from transfers cannot come out
+// unbalanced -- not "is checked and found balanced", INCAPABLE of being
+// otherwise. That is the difference between refusing a bad state and not being
+// able to express one, and it is the whole point of this function.
+//
+// SAME PATTERN AS reversalOf(), which already builds its mirror here rather
+// than leaving a caller to get it subtly wrong. This applies it to creation.
+//
+// ── WHAT IT DOES NOT DO, so nobody reads more into it ───────────────────
+//   * IT PREVENTS IMBALANCE, NOT BEING WRONG. A mistyped amount still produces
+//     a perfectly balanced entry with the wrong figure in it.
+//   * IT CANNOT EXPRESS AN m:n ENTRY. Several accounts on BOTH sides has no
+//     unique transfer decomposition -- debit A 100 / B 50 against credit C 120
+//     / D 30 can be written as (A->C 100, B->C 20, B->D 30) or as (A->C 90,
+//     A->D 10, B->C 30, B->D 20), and the ledger cannot tell which pairing the
+//     accounting means because it generally means neither. Those entries keep
+//     using validateEntry() with a line array. Anything with a single account
+//     on one side -- payroll, an invoice, a payment -- decomposes uniquely and
+//     belongs here.
+//
+// ── AGGREGATION IS REAL AND IS NOT A DETAIL ─────────────────────────────
+// Three transfers all debiting 6010 become ONE debit line for 6010, not three.
+// That is the entry a person expects, and it is a genuine difference from what
+// the caller literally typed. Debits and credits are aggregated SEPARATELY and
+// never netted against each other: an account that is debited in one transfer
+// and credited in another gets both lines. Netting them would be a judgement
+// about what the transaction meant, and this function does not make those.
+//
+// EVERY OTHER RULE IS validateEntry's. The chart of accounts, the memo, the
+// date, the at-least-two-lines rule -- one implementation, delegated to, so
+// there is no second copy to drift. This function's only added guarantee is
+// balance.
+function entryFromTransfers(input) {
+  input = input || {};
+  const today = isDate(input.today) ? input.today : null;
+  if (!today) {
+    return { ok: false, error: { code: 'NO_TODAY', message: 'today (YYYY-MM-DD) is required -- this engine will not assume a clock' } };
+  }
+  const e = input.entry || null;
+  if (!e) return { ok: false, error: { code: 'NO_ENTRY', message: 'no entry supplied' } };
+
+  const raw = Array.isArray(e.transfers) ? e.transfers : [];
+  const problems = [];
+  if (!raw.length) problems.push('an entry needs at least one transfer');
+
+  // Insertion order is preserved so the lines come out in the order the caller
+  // described them, which is what makes the result readable back.
+  const debitOrder = [];
+  const creditOrder = [];
+  const debitBy = {};
+  const creditBy = {};
+
+  raw.forEach(function (tr, i) {
+    const t = tr || {};
+    const from = str(t.debit_account);
+    const to = str(t.credit_account);
+    const amt = cents(t.amount);
+    let bad = false;
+
+    if (!from) { problems.push('transfer ' + i + ': no debit_account'); bad = true; }
+    else if (!ACCOUNTS[from]) { problems.push('transfer ' + i + ': debit_account "' + from + '" is not in the chart of accounts'); bad = true; }
+    if (!to) { problems.push('transfer ' + i + ': no credit_account'); bad = true; }
+    else if (!ACCOUNTS[to]) { problems.push('transfer ' + i + ': credit_account "' + to + '" is not in the chart of accounts'); bad = true; }
+    // The same account on both sides balances perfectly and moves nothing. It
+    // is a typo every time, and letting it through would put two lines on the
+    // books that cancel and mean nothing.
+    if (from && to && from === to) {
+      problems.push('transfer ' + i + ': debit_account and credit_account are both "' + from + '" -- a transfer to itself moves nothing');
+      bad = true;
+    }
+    if (amt === null) { problems.push('transfer ' + i + ': amount is not a number'); bad = true; }
+    else if (amt <= 0) { problems.push('transfer ' + i + ': amount must be greater than zero -- reverse the accounts instead of using a negative'); bad = true; }
+
+    if (bad) return;
+    if (debitBy[from] === undefined) { debitBy[from] = 0; debitOrder.push(from); }
+    if (creditBy[to] === undefined) { creditBy[to] = 0; creditOrder.push(to); }
+    debitBy[from] += amt;
+    creditBy[to] += amt;
+  });
+
+  // money() round-trips exactly here: every figure is an integer cent count
+  // produced by cents(), and validateEntry() puts it straight back through
+  // Math.round(v * 100).
+  const lines = [];
+  debitOrder.forEach(function (code) {
+    lines.push({ account_code: code, debit: money(debitBy[code]), credit: 0, memo: null });
+  });
+  creditOrder.forEach(function (code) {
+    lines.push({ account_code: code, debit: 0, credit: money(creditBy[code]), memo: null });
+  });
+
+  const v = validateEntry({
+    today: today,
+    entry: {
+      entry_date: e.entry_date, memo: e.memo, source_app: e.source_app,
+      source_kind: e.source_kind, source_id: e.source_id, lines: lines
+    }
+  });
+  if (!v.ok) return v;
+
+  // A transfer-level problem is not a line-level problem and the line indices
+  // would not map back to it, so they are reported together and the transfer
+  // ones come first -- they are the ones the caller can act on.
+  v.problems = problems.concat(v.problems);
+  v.postable = v.problems.length === 0;
+  v.built_from = 'transfers';
+  v.transfer_count = raw.length;
+  return v;
 }
 
 // ── The reversing entry ──────────────────────────────────────────────────
@@ -293,6 +411,7 @@ module.exports = {
   ENTRY_STATUSES,
   validateLine,
   validateEntry,
+  entryFromTransfers,
   reversalOf,
   trialBalance
 };

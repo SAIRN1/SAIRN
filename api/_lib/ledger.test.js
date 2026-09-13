@@ -197,4 +197,147 @@ test('this module cannot reach the network -- it decides, the endpoint acts', ()
     assert.strictEqual(src.indexOf(n), -1, 'found "' + n + '"'));
 });
 
+// ── entryFromTransfers: balanced by construction (item 41, phase A) ───────
+//
+// The point of these is NOT that the function balances the entries the tests
+// happen to try. It is that no input CAN come out unbalanced, which is a
+// different claim and needs the sweep at the bottom to support it.
+
+const tf = (transfers, o) => L.entryFromTransfers({
+  today: TODAY,
+  entry: Object.assign({ entry_date: '2026-09-02', memo: 'Payroll run 2026-09-02', transfers }, o || {})
+});
+
+test('a single transfer becomes a balanced, postable two-line entry', () => {
+  const r = tf([{ debit_account: '6010', credit_account: '1010', amount: 4000 }]);
+  assert.strictEqual(r.postable, true, JSON.stringify(r.problems));
+  assert.strictEqual(r.balanced, true);
+  assert.strictEqual(r.lines.length, 2);
+  assert.strictEqual(r.debit_total_cents, 400000);
+  assert.strictEqual(r.credit_total_cents, 400000);
+});
+
+test('the 1:n case decomposes uniquely -- payroll is one debit against three credits', () => {
+  const r = tf([
+    { debit_account: '6010', credit_account: '2130', amount: 400 },
+    { debit_account: '6010', credit_account: '2110', amount: 600 },
+    { debit_account: '6010', credit_account: '1010', amount: 4000 },
+  ]);
+  assert.strictEqual(r.postable, true, JSON.stringify(r.problems));
+  // FOUR lines, not six: the three 6010 debits aggregate into one.
+  assert.strictEqual(r.lines.length, 4);
+  const wages = r.lines.filter(l => l.account_code === '6010');
+  assert.strictEqual(wages.length, 1, 'the debits did not aggregate');
+  assert.strictEqual(wages[0].debit_cents, 500000);
+});
+
+test('debits and credits are aggregated SEPARATELY and never netted -- an account '
+  + 'on both sides gets both lines', () => {
+  const r = tf([
+    { debit_account: '1010', credit_account: '1100', amount: 100 },
+    { debit_account: '1100', credit_account: '4010', amount: 40 },
+  ]);
+  assert.strictEqual(r.postable, true, JSON.stringify(r.problems));
+  const ar = r.lines.filter(l => l.account_code === '1100');
+  assert.strictEqual(ar.length, 2, '1100 was netted instead of carrying both sides');
+  assert.strictEqual(ar[0].credit_cents + ar[1].credit_cents, 10000);
+  assert.strictEqual(ar[0].debit_cents + ar[1].debit_cents, 4000);
+});
+
+test('IT SAYS WHICH PATH BUILT IT -- the two paths carry different guarantees '
+  + 'and return the same object', () => {
+  assert.strictEqual(tf([{ debit_account: '6010', credit_account: '1010', amount: 1 }]).built_from, 'transfers');
+  assert.strictEqual(L.validateEntry({ today: TODAY, entry: entry() }).built_from, 'lines');
+});
+
+test('it refuses without today, like every other entry point', () => {
+  const r = L.entryFromTransfers({ entry: { transfers: [] } });
+  assert.strictEqual(r.ok, false);
+  assert.strictEqual(r.error.code, 'NO_TODAY');
+});
+
+test('a transfer to the SAME account is refused -- it balances perfectly and moves nothing', () => {
+  const r = tf([{ debit_account: '1010', credit_account: '1010', amount: 50 }]);
+  assert.strictEqual(r.postable, false);
+  assert.ok(r.problems.some(p => /moves nothing/.test(p)), JSON.stringify(r.problems));
+});
+
+test('a zero or negative amount is refused rather than reversed silently', () => {
+  [0, -5].forEach((amount) => {
+    const r = tf([{ debit_account: '6010', credit_account: '1010', amount }]);
+    assert.strictEqual(r.postable, false, 'amount ' + amount + ' was accepted');
+    assert.ok(r.problems.some(p => /greater than zero/.test(p)));
+  });
+});
+
+test('a STRING amount is refused, not coerced -- "1,200.00" parsed loosely is 1', () => {
+  const r = tf([{ debit_account: '6010', credit_account: '1010', amount: '1200' }]);
+  assert.strictEqual(r.postable, false);
+  assert.ok(r.problems.some(p => /not a number/.test(p)), JSON.stringify(r.problems));
+});
+
+test('an account outside the chart is refused, and the message names the TRANSFER '
+  + 'rather than a line index that would not map back to it', () => {
+  const r = tf([{ debit_account: '9999', credit_account: '1010', amount: 10 }]);
+  assert.strictEqual(r.postable, false);
+  assert.ok(r.problems.some(p => /^transfer 0: debit_account "9999"/.test(p)), JSON.stringify(r.problems));
+});
+
+test('no transfers at all is refused', () => {
+  const r = tf([]);
+  assert.strictEqual(r.postable, false);
+  assert.ok(r.problems.some(p => /at least one transfer/.test(p)));
+});
+
+test("validateEntry's other rules still apply -- a missing memo is still refused", () => {
+  const r = tf([{ debit_account: '6010', credit_account: '1010', amount: 10 }], { memo: '  ' });
+  assert.strictEqual(r.postable, false);
+  assert.ok(r.problems.some(p => /needs a memo/.test(p)), JSON.stringify(r.problems));
+});
+
+test('BALANCED BY CONSTRUCTION: a deterministic sweep of 4,096 transfer sets, and '
+  + 'not one of them can come out with debits != credits', () => {
+  // No Math.random: a property test whose failing case cannot be reproduced is
+  // not a property test. The codes and amounts are walked, not sampled.
+  const codes = Object.keys(L.ACCOUNTS);
+  let checked = 0, unbalanced = 0, postable = 0;
+  for (let a = 0; a < 16; a++) {
+    for (let b = 0; b < 16; b++) {
+      for (let n = 1; n <= 4; n++) {
+        for (let cents = 1; cents <= 4; cents++) {
+          const transfers = [];
+          for (let k = 0; k < n; k++) {
+            transfers.push({
+              debit_account: codes[(a + k) % codes.length],
+              credit_account: codes[(b + k * 3 + 1) % codes.length],
+              amount: (cents * 7 + k) / 100,
+            });
+          }
+          const r = tf(transfers);
+          checked++;
+          if (r.debit_total_cents !== r.credit_total_cents) unbalanced++;
+          if (r.postable) postable++;
+        }
+      }
+    }
+  }
+  assert.strictEqual(checked, 4096);
+  assert.strictEqual(unbalanced, 0, unbalanced + ' of ' + checked + ' came out unbalanced');
+  // ACCURACY AND STABILITY ARE TWO NUMBERS: "0 unbalanced" would also be true
+  // of a function that refused everything, so the sweep asserts the postable
+  // count too. Some sets legitimately refuse -- a same-account transfer occurs
+  // whenever the two walks collide -- so this is a floor, not an equality.
+  assert.ok(postable > 3000, 'only ' + postable + ' of ' + checked
+    + ' were postable -- the sweep is passing because the function refuses, not because it balances');
+});
+
+test('CONTROL: the sweep can actually fail -- an unbalanced line array is caught '
+  + 'by the same assertion', () => {
+  const bad = L.validateEntry({ today: TODAY, entry: entry({
+    lines: [{ account_code: '1100', debit: 1200 }, { account_code: '4010', credit: 1100 }] }) });
+  assert.notStrictEqual(bad.debit_total_cents, bad.credit_total_cents,
+    'the control is a no-op -- it did not produce an unbalanced entry');
+  assert.strictEqual(bad.postable, false);
+});
+
 console.log(passed + ' passed');
