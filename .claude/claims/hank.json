@@ -1363,8 +1363,8 @@
       "task": "derived docs must loop back to source",
       "claimed_at": "2026-09-13T21:25:08Z",
       "claimed_at_epoch": 1789334708.167247,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T21:32:31Z"
     }
   ]
 }
