@@ -1087,8 +1087,8 @@
       "task": "promote control char check to blocking",
       "claimed_at": "2026-09-13T21:27:40Z",
       "claimed_at_epoch": 1789334860.622999,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T22:48:26Z"
     }
   ]
 }
