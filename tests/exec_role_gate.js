@@ -2,7 +2,7 @@
 //
 // Run:  node tests/exec_role_gate.js
 //
-// The Executive Suite's advisor prompts carry SAIRN Technologies' own chart of
+// The Executive Suite's advisor prompts carry SAIRN Tech LLC's own chart of
 // accounts, StoneDesk's price book and the patent deadline. Before 2026-09-02 a
 // paying customer's Sales Rep could open it, because:
 //

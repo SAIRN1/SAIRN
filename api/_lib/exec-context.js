@@ -4,7 +4,7 @@
 // 2026-09-02 and served only through an authenticated, role-gated read.
 //
 // -- WHY THEY ARE NOT IN THE HTML ANY MORE ----------------------------------
-// They carry SAIRN Technologies' own internal business data: the chart of
+// They carry SAIRN Tech LLC's own internal business data: the chart of
 // accounts, the StoneDesk price book, and the provisional-patent filing dates
 // with the non-provisional deadline. stonedesk.html is served in full to every
 // customer of the product, so every one of those facts was readable with View

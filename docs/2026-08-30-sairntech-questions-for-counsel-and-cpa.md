@@ -1,4 +1,4 @@
-# Questions for a CPA or attorney — SAIRN Technologies LLC
+# Questions for a CPA or attorney — SAIRN Tech LLC
 
 **Prepared 2026-08-30 (CC).** Extracted from the research documents so they can
 be handed over as-is the moment a professional is engaged, rather than someone

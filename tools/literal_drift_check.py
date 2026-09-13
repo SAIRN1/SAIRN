@@ -165,10 +165,19 @@ FACTS = {
 # earns being routed around.
 #
 # GATED: the entity name, and section C. Those are invariants, not samples --
-# one company has one legal name, and one label has one value. On the real tree
-# they fire on exactly two files (stonedesk.html 23x "SAIRN Tech LLC" vs 17x
-# "SAIRN Technologies", sairnscape.html 3x vs 1x), which is a real and
-# previously-known inconsistency.
+# one company has one legal name, and one label has one value. When gating was
+# added it fired on exactly two files (stonedesk.html 23x "SAIRN Tech LLC" vs
+# 17x the "Technologies" spelling, sairnscape.html 3x vs 1x).
+#
+# THAT FINDING WAS RESOLVED 2026-09-13, and it is worth recording HOW, because
+# the gate only did half the work. Michael confirmed SAIRN Tech LLC as the
+# registered entity and all 45 sites were corrected (docs/2026-09-13-entity-
+# name-divergence.md). But THIS CHECKER RUNS PER FILE, so the three apps that
+# were uniformly WRONG -- sairnvet, sairncode, sairnbiz, each 100% the
+# "Technologies" spelling -- reported `ok entity name one value` and exited 0
+# the entire time. A per-file invariant cannot see a cross-file divergence:
+# unanimity inside one file is what this check calls correct. The sweep was
+# driven by a repo-wide grep, and the gate confirmed the two mixed files only.
 #
 # REPORT-ONLY: everything else, printed exactly as before. A person reading the
 # output loses nothing; the push gate stops crying wolf.

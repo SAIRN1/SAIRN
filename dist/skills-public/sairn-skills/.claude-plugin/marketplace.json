@@ -1,6 +1,6 @@
 {
   "name": "sairn-skills",
-  "owner": { "name": "SAIRN Technologies LLC" },
+  "owner": { "name": "SAIRN Tech LLC" },
   "plugins": [
     {
       "name": "postgres-grant-sweep",

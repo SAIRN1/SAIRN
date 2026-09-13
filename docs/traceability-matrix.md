@@ -168,6 +168,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Three live apps were a PERMANENT “could not read” in the local-only checker — and clearing it exposed a false accusation on a fourth** | **FIXED 2026-09-10 (CC)** — `1fa74f2f`, held by `tests/local_only_shape_probe.py` | `tests/local_only_shape_probe.py` |
 | ~~`dnt_settings_obj` has FOUR writers under two backing variables — the same shape StoneDesk had, unchecked~~ | **CLOSED 2026-09-04 (CC)** — the collision is benign and now ACKNOWLEDGED with the trace; the real defect found in the same read was NOT the collision, and is fixed | `tests/sairndental_settings_merge_base.js` |
 | ~~**No app can deactivate a departing employee through its own UI — `set_active` has ZERO client callers platform-wide**~~ | **CLOSED 2026-09-03 (Fourth) — 9/9 endpoints, 8/9 screens.** ⚠️ **THE NUMBERS IN THIS ROW WERE ALREADY STALE WHEN IT WAS CLOSED, AND THAT IS THE REUSABLE LESSON:** it said client UI in ZERO apps and t | `api/_lib/employee-lifecycle-wiring.test.js` |
+| The company's own name had THREE spellings across the platform, two of them under &copy; and &trade; | 2026-09-13 | `tests/base_prompt_single_source.js` |
 
 ### sairnbiz
 
@@ -279,7 +280,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**136 of 334 test files are traced to a stated requirement. 198 are not.**
+**137 of 334 test files are traced to a stated requirement. 197 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -399,7 +400,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/ai_auth_wrapper.test.js`
 - `tests/ai_shortcuts_reach_the_chat.js`
 - `tests/approval_persistence.js`
-- `tests/base_prompt_single_source.js`
 - `tests/claims/run_matcher_probe.py`
 - `tests/claims/run_push_verify_probe.py`
 - `tests/composite_context.js`

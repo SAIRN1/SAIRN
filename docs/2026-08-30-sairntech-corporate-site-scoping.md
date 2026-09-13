@@ -65,7 +65,7 @@ pricing page. This is genuinely from zero on the site itself.
 ## 3. FLAGGED: the skill pack is a fourth product line, and it is the closest to shippable
 
 `dist/skills-public/sairn-skills/` already exists in the repo — a Claude Code
-plugin marketplace README under **SAIRN Technologies LLC**, pointing at
+plugin marketplace README under **SAIRN Tech LLC**, pointing at
 `sairntech.com`, with one skill published (`postgres-grant-sweep`) and an install
 path (`/plugin marketplace add sairn-tech/sairn-skills`).
 

@@ -1775,3 +1775,38 @@ Picked up from the report-only sweep, where `literal_drift_check.py` had a **gat
 **But a third string exists, and that is why this is not a typo.** `docs/2026-08-30-sairntech-questions-for-counsel-and-cpa.md` is **titled** *"SAIRN Technologies LLC"*, and the shell-scoping doc records the marketplace README as published under it. **A document written to ask counsel questions, using a different entity name from the signature blocks, is the shape of an open question rather than a slip.**
 
 **Deliberately not done:** no occurrence changed (34 live sites, 8 files — a bulk rename would be the find-replace CLAUDE.md forbids applied to a legal fact nobody has confirmed); **no variant declared correct, including the most frequent one and the one in the signature blocks — frequency is not authority**; and the checker was **not silenced or exempted**, because a gated invariant staying red until the fact is decided is what it is for.
+
+---
+
+## 2026-09-13 -- the name is settled, and the sweep found three apps the gate never could
+
+Michael confirmed **`SAIRN Tech LLC`** as the registered entity. **45 sites corrected across 17 files.** Full working: `docs/2026-09-13-entity-name-divergence.md` (the measurement above is left intact as the record; the correction is appended under *"The correction"*).
+
+**Corroboration was already in the tree and nobody had noticed:** `tests/base_prompt_single_source.js:78` has been asserting *"and names the real legal entity: SAIRN Tech LLC, not \"SAIRN Technologies LLC\""* -- green, on every run, the whole time the platform shipped the other spelling in five apps.
+
+**NOT a find-replace.** A line-pinned site list: file + line + the exact substring expected on that line, aborting the whole run with nothing written on any mismatch, so a stale line number cannot silently edit its neighbour. **20 of the 45 sites are byte-identical banner comments in `stonedesk.html`** and could not have been matched by text at all.
+
+### The finding that outlives the sweep: the gate caught two of the five apps
+
+`literal_drift_check.py` gates the entity name **per file**. It fired only on the two files that were internally **mixed** -- `stonedesk.html` (23 vs 17) and `sairnscape.html` (3 vs 1). **SAIRNvet, SAIRNcode and SAIRNbiz were 100% wrong, uniformly, and all three reported `ok entity name -- one value` and exited 0 the entire time.** A per-file invariant cannot see a cross-file divergence: unanimity inside one file is exactly what the check calls correct. The three were found by a repo-wide grep and would have survived any number of clean gate runs. Recorded in the tool itself rather than only here.
+
+### What was corrected
+
+**34 in app HTML, 9 of them rendered** -- the printed Confidential SOP footer (`stonedesk.html:19099`), the **CEO advisor's opening line** in the Executive Suite (`:27908` -- the model greeted the user with the wrong company name), the printed Ask Stonehead footer (`:39229`), SAIRNscape's nav badge (`:134`, on the same page whose footer at `:244` already read `(c) 2026 SAIRN Tech LLC` -- **one page, both spellings**), SAIRNvet's login byline and sidebar (`:166`, `:207`), SAIRNcode's logo (`:711`), SAIRNbiz's demo expense and vendor rows.
+
+**Two MIT copyright notices were also wrong and were not in the original measurement at all** -- `dist/skills-public/sairn-skills/LICENSE` and the `postgres-grant-sweep` plugin's, both `Copyright (c) 2026 SAIRN Technologies LLC`. **The first pass filtered by file extension and `LICENSE` has none.** Plus 2 live JS comments and 4 documents that leave the company, including the counsel/CPA question doc and the **Colorado OLLS draft letter**, which carried the wrong name in its signature block.
+
+### Two decisions taken, both reversible, both said out loud
+
+- **The (TM) was dropped, not carried over.** 27 of the corrected sites read `SAIRN Technologies(TM)`, five rendered. `SAIRN Tech LLC(TM)` asserts a trademark on a corporate entity designator -- a **new** legal claim, and confirming the registered name is not confirmation of that. Bare also matches the house convention already live at `sairnscape.html:244` and in the ten AI system prompts. **Dropping it removes an unverified assertion rather than adding one.** If SAIRN is an asserted mark the place for it is the product -- `SAIRNvet(TM)` -- not the LLC name.
+- **The SAIRNbiz demo vendor rows were swept with everything else**, not held back as the prior pass suggested: the software vendor in that demo *is* this company under either spelling. Separately and left alone: that row carries a **fabricated phone number** next to the entity name. Demo-data question, not an entity-name one.
+
+### Deliberately left
+
+Historical records keep the old spelling -- active-work logs, session handoffs, dated specs, and the measurement above; **rewriting a dated record to match today is how a log stops being evidence.** `tests/base_prompt_single_source.js:78` and `tests/run_literal_drift_control_probe.py:188` name the wrong spelling **on purpose** (an assertion message and a detector fixture). `.claude/skills/sairn-build-lifecycle/SKILL.md:3` is one line of prose in a **mirror of the user skill store** -- editing the repo copy alone creates mirror drift; **flagged, not fixed.**
+
+### The one thing this repo cannot close -- new open row
+
+The skill marketplace is published **outside this clone**, at `sairn-tech/sairn-skills`. `dist/` is corrected; **the published copy is not, and nothing here can reach it.** `dist/` **has no generator** -- hand-maintained, confirmed by searching every `.py`/`.js`/`.sh`/`.yml` in the tree -- so no build step carries this across. Two of the stale strings are MIT copyright lines on a package other people can redistribute.
+
+**Verified:** all six apps `GATED FINDINGS:0` on `literal_drift_check.py`; `node --check` 0 failures across 149 script blocks (unchanged from baseline); `base_prompt_single_source` 21/21; `exec_role_gate` 16/16; `md_table_check` 373/373 rows.

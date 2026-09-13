@@ -160,7 +160,7 @@ Custom work has the weakest cold-start story of the three offerings — no produ
 to try, no price to compare. **It is bought on evidence of judgment.**
 
 The strongest available evidence is already public: the Claude Code plugin
-marketplace under SAIRN Technologies LLC, now backed by **nine SAIRN-original
+marketplace under SAIRN Tech LLC, now backed by **nine SAIRN-original
 skills** vetted against a real shipping gate. A prospect reads a public
 engineering artifact very differently from a marketing page.
 
