@@ -9790,6 +9790,43 @@ window.sdRMExport=function(){
   ];
   function load(){try{return JSON.parse(localStorage.getItem('sd_comms')||'null')||(sdDemoCleared()?[]:SEED);}catch(e){return sdDemoCleared()?[]:SEED;}}
   function save(d){return st('sd_comms',d);}
+  // ── EVERY COMM WAS IDLESS, SO NONE OF THEM HAS EVER BEEN BACKED UP ───────
+  // sdSyncCollection() skips any row without an `id` -- `if(!r||r.id===undefined
+  // ||r.id===null||r.id==='') return;` -- and sdCommsNew() never set one. So
+  // sd_comms sat in SD_SYNCED, which reads as "this is backed up", and every
+  // message a shop logged lived in one browser and died with its cache. Same
+  // shape as sd_negotiated_prices and sd_pricing_rules, found the same day, and
+  // the same reason nobody looked.
+  //
+  // THE ID IS DERIVED FROM THE CONTENT, NOT MINTED RANDOMLY, and that is the
+  // load-bearing choice. A random id assigned at back-fill time would be a
+  // DIFFERENT id on every device, so the same message would sync as two rows --
+  // one per browser that ever opened the panel -- and neither could be deleted
+  // from the other. A content hash gives every device the same answer.
+  //
+  // IDEMPOTENT: after the first pass nothing is missing, so this writes only
+  // once. It is called from the render path rather than on load, so a shop that
+  // never opens the panel is never rewritten.
+  function commsId(x){
+    return 'CM-' + String((x&&x.date)||'').replace(/[^0-9]/g,'')
+         + '-' + String((x&&x.to)||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,12)
+         + '-' + String((x&&x.subj)||'').toLowerCase().replace(/[^a-z0-9]+/g,'').slice(0,16);
+  }
+  function commsEnsureIds(){
+    var d=load(), changed=false, seen={};
+    d.forEach(function(x){
+      if(!x||typeof x!=='object') return;
+      if(x.id!==undefined&&x.id!==null&&x.id!=='') { seen[String(x.id)]=true; return; }
+      var base=commsId(x), id=base, n=2;
+      // Two identical messages in the same minute would derive the same id.
+      // Suffixed rather than merged: they are two real log entries and the
+      // shop sent both.
+      while(seen[id]){ id=base+'-'+(n++); }
+      seen[id]=true; x.id=id; changed=true;
+    });
+    if(changed) save(d);
+    return d;
+  }
   function render(){
     var d=load();
     var today=sdLocalToday();
@@ -9815,11 +9852,16 @@ window.sdRMExport=function(){
     var to=document.getElementById('comms-to').value.trim();
     var body=document.getElementById('comms-body').value.trim();
     if(!to||!body){showToast('Enter recipient and message.');return;}
-    var d=load();
+    var d=commsEnsureIds();
     var now=new Date();
-    d.push({type:document.getElementById('comms-type').value,to:to,
+    var rec={type:document.getElementById('comms-type').value,to:to,
       subj:document.getElementById('comms-subj').value||'(no subject)',
-      body:body,date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),sent:true});
+      body:body,date:now.toISOString().slice(0,10)+' '+now.toTimeString().slice(0,5),sent:true};
+    // The id is set HERE as well as in the back-fill, so a message logged
+    // today does not have to wait for a later pass to become syncable.
+    rec.id=commsId(rec);
+    if(d.some(function(x){return x&&String(x.id)===rec.id;})) rec.id=rec.id+'-'+Date.now();
+    d.push(rec);
     save(d);render();
     ['comms-to','comms-subj','comms-body'].forEach(function(id){document.getElementById(id).value='';});
     showToast('Message logged.');
@@ -9843,7 +9885,10 @@ window.sdRMExport=function(){
     w.document.write('</table></body></html>');w.document.close();w.print();
   };
   window.sdCommsRender=function(){
-    var d=load();
+    // Back-fill first, so every row on screen has an id for its Delete button
+    // AND becomes syncable. See commsEnsureIds() for why the id is derived
+    // from the content rather than minted.
+    var d=commsEnsureIds();
     var q=(document.getElementById('comms-search')||{}).value||'';
     var tf=(document.getElementById('comms-type-filter')||{}).value||'';
     if(q)d=d.filter(function(x){return (x.to+' '+x.subj+' '+x.body).toLowerCase().includes(q.toLowerCase());});
@@ -9862,8 +9907,25 @@ window.sdRMExport=function(){
         +'</div>'
         +'<div style="font-size:12px;color:var(--muted);margin-bottom:6px">To: <strong>'+escHtml(x.to)+'</strong> &bull; '+x.date+'</div>'
         +'<div style="font-size:13px;color:var(--text);line-height:1.5">'+escHtml(x.body).slice(0,120)+(x.body.length>120?'...':'')+'</div>'
+        +'<div style="text-align:right;margin-top:6px"><button class="q-btn" style="font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="sdCommsDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button></div>'
         +'</div>';
     }).join('')||'<div style="color:var(--muted);padding:20px;text-align:center">No messages found</div>';
+  };
+  // The communication log is a record of what was sent, so the confirm says
+  // what deleting actually does: the row is marked and hidden on the server,
+  // not destroyed, and the CSV export above still exists for anyone who wants
+  // the whole log off the machine first.
+  window.sdCommsDelete=function(id){
+    if(!id){ showToast('That entry has no id yet -- reopen the panel and try again.'); return; }
+    if(!confirm('Delete this log entry?\n\nIt is hidden and kept, not destroyed.')) return;
+    var d=commsEnsureIds();
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(next.length===d.length) return;          // matched nothing; write nothing
+    if(!save(next)){ showToast('Could not delete that entry -- storage may be full or unavailable, try again'); return; }
+    window.sdCommsRender();
+    if(typeof commsUpdateKPIs==='function') commsUpdateKPIs();
+    showToast('Log entry deleted.');
   };
   window.sdCommsExport=function(){
     var d=load();
@@ -27195,6 +27257,23 @@ function commsPin(id) {
   t.pinned=!t.pinned; saveSD5(); renderComms();
 }
 
+// ── DORMANT, AND IT HAS NEVER PERSISTED ANYTHING (labelled 2026-09-13) ─────
+// Part of the threaded-comms system (sdCommsThreads / renderCommsThreads),
+// which saveSD5()'s own comment records as having "zero working markup
+// anywhere" and not being reached by nav dispatch.
+//
+// IT DOES HAVE A CALLER, AND SAYING OTHERWISE WOULD SEND THE NEXT READER THE
+// WRONG WAY: renderCommsThreads() draws a Delete button wired to it. That
+// renderer is itself dormant -- nothing calls it and it has no container -- so
+// the button is never drawn. And even if it were, this would persist nothing,
+// because saveSD5() deliberately stopped writing sd_comms (see that comment
+// for the data-loss bug the removal fixed).
+//
+// SO IT IS NOT THE COMMS DELETE. The reachable one is sdCommsDelete(), on the
+// real comms log, added 2026-09-13. Labelled rather than removed: the threaded
+// system is a designed feature waiting for UI, and deleting half of it would
+// make the other half harder to finish. Guardian check 0d -- dormant code that
+// LOOKS live is the defect; dormant code that says so is a decision.
 function commsDelete(id) {
   if(!confirm('Delete this message thread?')) return;
   sdCommsThreads = sdCommsThreads.filter(function(x){return x.id!==id;});
