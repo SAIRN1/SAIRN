@@ -5626,6 +5626,48 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     var okAi=ai.length?st('sd_aiquotes',ai):true;
     return okHist&&okAi;
   }
+  // ── DELETING THE LAST AI QUOTE NEEDS save() TO WRITE AN EMPTY ARRAY ───────
+  // The guard above is right for a status change and WRONG for a deletion. If
+  // the row being removed is the only `_src:'ai'` row, `ai` comes out empty,
+  // sd_aiquotes is left untouched, and load() concatenates the deleted quote
+  // straight back on the next call -- a deletion that undoes itself, which is
+  // the exact defect class this app spent 2026-09-12 and 13 removing.
+  //
+  // So the delete path says explicitly which stores it is settling, rather than
+  // the save guessing from what happens to be left.
+  function saveAfterDelete(d,removedWasAI){
+    var hist=[],ai=[];
+    (d||[]).forEach(function(x){
+      if(!x||typeof x!=='object'){hist.push(x);return;}
+      var c={};for(var k in x){if(k!=='_src')c[k]=x[k];}
+      (x._src==='ai'?ai:hist).push(c);
+    });
+    var okHist=st('sd_quote_history',hist);
+    var okAi=(ai.length||removedWasAI)?st('sd_aiquotes',ai):true;
+    return okHist&&okAi;
+  }
+  // A quote is a business record, so this is a deliberate removal rather than
+  // an edit: the status vocabulary already covers "Declined" and "Expired",
+  // and a shop reaching for Delete means the row should not be in the tally at
+  // all -- a test quote, a duplicate, a wrong customer.
+  window.sdHistoryDelete=function(id){
+    if(id===undefined||id===null||id==='') return;
+    // THE ROW IS FOUND BEFORE THE USER IS ASKED. Confirming and then doing
+    // nothing because the id matched nothing is a dialog that lies about what
+    // is about to happen -- the user answers "yes, delete it" and watches
+    // nothing change.
+    var d=load();
+    var gone=d.filter(function(x){return String(x&&x.id)===String(id);})[0];
+    if(!gone) return;
+    if(!confirm('Delete this quote from the history?\n\nIt is hidden and kept, not destroyed, and the KPIs above stop counting it.')) return;
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(!saveAfterDelete(next,gone._src==='ai')){
+      showToast('Could not delete that quote -- storage may be full or unavailable, try again');
+      return;
+    }
+    window.sdHistoryRender();
+    showToast('Quote deleted.');
+  };
   function updateKPIs(d){
     var total=d.length;
     var val=d.reduce(function(a,x){return a+(x.amount||0);},0);
@@ -5672,7 +5714,10 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:right;font-weight:800;color:var(--brand2);font-size:14px">$'+(x.amount||0).toLocaleString()+'</td>'
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center"><span style="background:'+(statusColors[st]||'#f3f4f6')+';color:'+(statusText[st]||'#374151')+';padding:3px 10px;border-radius:10px;font-size:11px;font-weight:700">'+st+'</span></td>'
         +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);color:var(--muted);font-size:12px">'+x.date+'</td>'
-        +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center"><button class="q-btn" style="font-size:11px;padding:3px 8px" onclick="sdHistoryView(\''+escAttrJs(x.id)+'\')">View</button></td>'
+        +'<td style="padding:10px 12px;border-bottom:1px solid var(--border);text-align:center;white-space:nowrap">'
+          +'<button class="q-btn" style="font-size:11px;padding:3px 8px" onclick="sdHistoryView(\''+escAttrJs(x.id)+'\')">View</button> '
+          +'<button class="q-btn" style="font-size:11px;padding:3px 8px;color:#dc2626;border-color:#dc2626" onclick="sdHistoryDelete(\''+escAttrJs(x.id)+'\')">Delete</button>'
+        +'</td>'
         +'</tr>';
     });
     document.getElementById('hist-tbody').innerHTML=rows.join('');
