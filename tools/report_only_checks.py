@@ -494,6 +494,35 @@ REGISTRY = [
                     'in root apps, CLEAN both directions',
     },
     {
+        'tool': 'install_git_hooks.py',
+        'mode': 'once',
+        # --check, NOT bare. Bare INSTALLS: it rewrites .githooks/pre-push to
+        # LF and sets core.hooksPath. A report-only checker must not mutate a
+        # tracked file or this clone's config -- the same trap tooling_inventory
+        # fell into below, read before registering this one.
+        'args': ['--check'],
+        'verdict': by_exit,
+        'promoted': '2026-09-13, the day --check was widened to answer the real question',
+        'catches': 'a clone whose pre-push hook is not installed, is CRLF and '
+                   'therefore silently skipped by git, or whose gate script or '
+                   'shell wrapper does not execute',
+        'why_it_matters': "the pre-push hook is the ONLY thing that gates a push "
+                          "made by subprocess -- which is how sairn_claim.py "
+                          "pushes -- and .git/ is not versioned, so a fresh clone "
+                          "has no hooks until somebody runs the installer. On "
+                          "2026-09-01 all four clones held a CRLF copy and git was "
+                          "skipping it silently on every push; two of them had "
+                          "core.hooksPath set, which is all --check looked at, so "
+                          "it would have printed OK on a hook that had never once "
+                          "executed. Nothing ran --check anyway",
+        'evidence': 'real run 2026-09-13: OK in this clone. Held in BOTH '
+                    'directions by tests/run_githook_install_probe.py, which '
+                    'breaks a THROWAWAY CLONE three ways -- core.hooksPath unset, '
+                    'hook rewritten to CRLF with the config left CORRECT, and a '
+                    'wrapper that does not execute -- and asserts this clone is '
+                    'untouched; 5 mutation controls bite',
+    },
+    {
         'tool': 'tooling_inventory.py',
         'mode': 'once',
         # --check, NOT bare. Without it the hook runs the GENERATOR on every push

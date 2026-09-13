@@ -24,19 +24,19 @@ makes this the one inventory whose staleness is hardest to notice.
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 35 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 36 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 11 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 31 | nothing runs these at all |
+| **UNWIRED** | 30 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 59 |
+| CHECKER | 60 |
 | GENERATOR | 15 |
-| LIBRARY | 19 |
+| LIBRARY | 18 |
 | LIVE | 13 |
 
 **18 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -107,7 +107,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (35)
+## REPORT-ONLY (36)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -130,6 +130,7 @@ quiet in practice.
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
+| `install_git_hooks.py` | 2026-09-13, the day --check was widened to answer the real question | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, or whose gate script or shell wrapper does not execute |
 | `key_collision_check.py` | 2026-09-10 | a localStorage key written by more than one feature, where the two writers disagree about the shape |
 | `literal_drift_check.py` | 2026-09-10 | a duplicated literal whose copies have DIVERGED -- the same constant written twice and then changed once |
 | `md_table_check.py` | 2026-09-10 | a markdown row whose prose pipes broke its own columns, so trailing cells fall off and an edit-by-index writes into the wrong one |
@@ -221,7 +222,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (31)
+## UNWIRED (30)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -248,7 +249,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gen_va_seed.py` | GENERATOR | a court-holiday calendar or deadline seed for one state | &mdash; |
 | `gh_push.py` | LIBRARY | a push whose arrival on the remote is queried back | &mdash; |
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
-| `install_git_hooks.py` | LIBRARY | points core.hooksPath at .githooks -- per clone, once | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |

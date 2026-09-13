@@ -132,7 +132,11 @@ PURPOSES = {
     'js_code_only_diff.py': ('LIBRARY', 'a diff with comment-only changes removed'),
     'run_all_tests.py': ('LIBRARY', 'every .js and .py under tests/, plus api/**/*.test.js'),
     'run_semgrep.py': ('LIBRARY', 'the .semgrep rules, when semgrep is installed'),
-    'install_git_hooks.py': ('LIBRARY', 'points core.hooksPath at .githooks -- per clone, once'),
+    # install_git_hooks.py MOVED TO THE REGISTRY 2026-09-13. Its `--check` is now
+    # a report-only checker, and a REGISTRY tool must not also be described here
+    # -- two descriptions of one tool can disagree, which is the whole failure
+    # this document exists to stop. tests/run_tooling_inventory_probe.py asserts
+    # the disjointness and caught this within the hour of the promotion.
     'sairn_claim.py': ('LIBRARY', 'claim / release / check / list on the work-claim files'),
     'gh_push.py': ('LIBRARY', 'a push whose arrival on the remote is queried back'),
     'gh_verify.py': ('LIBRARY', 'whether a commit is really on the remote'),

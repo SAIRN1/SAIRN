@@ -3208,3 +3208,61 @@ editing the gate -- the same boundary check 3's `except` arm sits behind.
 
 **THE HARNESS NOW REFUSES TO START ON A RED PROBE.** Yesterday's lesson,
 mechanised: a probe that is already failing makes every mutation look like it bit.
+
+## 2026-09-13 (Cody) -- the installer check reported a clone protected while
+## its hook had never once executed
+
+Skill used: `sairn-guardian-v2`. Claim: `platform` --
+`pre-push hook installation is never verified per clone`.
+
+**`.githooks/pre-push` IS THE ONLY THING THAT GATES A PUSH MADE BY SUBPROCESS.**
+The Claude Code PreToolUse hook keys on Bash command text, and the claim tool
+pushes from Python, so that regex never matches. And `.git/` is not versioned:
+a fresh clone has no hooks at all until somebody runs the installer, per clone.
+
+**`--check` ASKED A WEAKER QUESTION THAN `install` DID, and the difference is
+the failure this file exists for.** It compared `core.hooksPath` and stopped.
+The install path went on to repair CRLF, run the gate and run the shell wrapper
+-- three facts `--check` could not see. On 2026-09-01 all four clones held a CRLF
+copy of the hook; a CRLF shebang names an interpreter whose name ends in a
+carriage return, so git skipped it SILENTLY on every push. **Two of the four had
+`core.hooksPath` set correctly the whole time, so `--check` would have printed
+OK on a hook that had never run.** Same shape as the fail-opens closed earlier
+today: a verifier reporting protected while the protection is dead.
+
+**AND NOTHING RAN IT ANYWAY.** The inventory classified it LIBRARY, so no hook,
+no suite and no gate ever invoked `--check`. It is now a report-only checker in
+`tools/report_only_checks.py` -- registered with `args: ['--check']`, because
+bare INSTALLS, and a report-only checker that rewrites a tracked file or this
+clone's config is the one thing report-only must never do.
+
+**IT CHECKS AND DOES NOT REPAIR.** The byte fix stays in `install`. A `--check`
+that quietly rewrote a tracked file would be worse than a weak one, and an arm
+asserts the CRLF is still there afterwards.
+
+**THE PROBE USES A THROWAWAY `git clone`, NOT A WORKTREE.** `core.hooksPath` is
+REPOSITORY config and a worktree shares `.git/config` with the clone that made
+it, so breaking it in a worktree would disarm this clone's real push gate for as
+long as the probe ran. A final section asserts this clone's config and hook are
+untouched.
+
+**THE ARM THAT MATTERS IS C:** it sets `core.hooksPath` CORRECTLY and still
+expects a refusal. Any arm can show the check fails on a broken clone; only that
+one shows it now sees something the config cannot.
+
+**MY FIRST VERSION REPORTED FOUR FALSE FAILURES.** `git clone` carries committed
+HEAD, so the throwaway clone was running the tool as it stood BEFORE the change
+under test. The probe now points THIS clone's script at that directory. Worth
+recording next to yesterday's separator bug: both were the harness being wrong
+about what it was measuring, not the subject.
+
+**5 MUTATION CONTROLS BITE**, tool restored byte-identical, probe green first.
+Two anchors initially reported NOT APPLIED because the harness built multi-line
+anchors with `
+` against a CRLF file -- the CRLF class again, and the reason
+the harness is now line-ending aware.
+
+**NOTED, NOT FIXED -- NOT MY CLAIM:** the tooling inventory's control column
+truncates to two names with no ellipsis, so registering this probe silently
+displaced `run_matcher_probe.py` from `sairn_claim.py`'s row. A silent cap in a
+generated document, in fourth's checker-registry area.

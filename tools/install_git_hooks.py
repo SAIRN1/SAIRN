@@ -31,6 +31,38 @@ def git(*args):
     return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 
+def runs_cleanly(repo, hookfile):
+    """Do the gate script and the shell wrapper actually EXECUTE?
+
+    Returns a list of reasons, empty if both run. Read-only: this repairs
+    nothing, which is why --check can use it and install still repairs first.
+
+    HONEST SCOPE, MEASURED RATHER THAN ASSUMED. This does NOT catch the CRLF
+    failure -- `sh <file>` reads the file as a script and never consults the
+    shebang, so a CRLF copy and an LF copy both exit 0 here. Verified both ways.
+    The byte check is the authoritative one for that; this is a second, narrower
+    net for a broken wrapper (shell syntax error, missing interpreter, bad path).
+    """
+    reasons = []
+    gate = os.path.join(repo, 'tools', 'sairn_push_gate_hook.py')
+    r = subprocess.run([sys.executable, gate, '--pre-push'],
+                       input='', capture_output=True, text=True, cwd=repo)
+    if r.returncode not in (0, 1):
+        reasons.append('the gate script did not run cleanly (exit %d): %s'
+                       % (r.returncode, r.stderr.strip()[:200]))
+    try:
+        w = subprocess.run(['sh', hookfile], input='', capture_output=True,
+                           text=True, cwd=repo)
+        if ('not found' in (w.stderr or '').lower()
+                or 'bad interpreter' in (w.stderr or '').lower()
+                or w.returncode not in (0, 1)):
+            reasons.append('the SHELL WRAPPER did not execute (exit %d): %s'
+                           % (w.returncode, (w.stderr or '').strip()[:200]))
+    except Exception as e:
+        reasons.append('could not execute the shell wrapper: %s' % e)
+    return reasons
+
+
 def main():
     check_only = '--check' in sys.argv
 
@@ -51,10 +83,36 @@ def main():
     installed = (rc == 0 and current.replace('\\', '/').rstrip('/').endswith('.githooks'))
 
     if check_only:
-        if installed:
-            print('OK -- core.hooksPath = %s' % current)
+        # ── --check ANSWERED A WEAKER QUESTION THAN install DID, AND THE
+        # ── DIFFERENCE WAS THE FAILURE THIS FILE EXISTS FOR (2026-09-13) ──────
+        # It compared core.hooksPath and stopped. The install path below then
+        # went on to repair CRLF, run the gate and run the shell wrapper --
+        # three facts --check could not see. So on 2026-09-01, when all four
+        # clones held a CRLF .githooks/pre-push and git was skipping it silently
+        # on every push, hank and cody had core.hooksPath set and this flag
+        # would have printed OK. That is the whole shape of the incident in the
+        # docstring above: reporting protected while the protection has never
+        # once executed.
+        #
+        # It CHECKS rather than repairs -- the byte fix belongs to install, and
+        # a --check that quietly rewrote a file would be worse than a weak one.
+        problems = []
+        if not installed:
+            problems.append('core.hooksPath is %s, not .githooks' % (current or '<unset>'))
+        try:
+            if b'\r\n' in open(hookfile, 'rb').read():
+                problems.append('.githooks/pre-push has CRLF endings -- the shebang names '
+                                'an interpreter whose name ends in a carriage return, and '
+                                'git SKIPS the hook silently on every push')
+        except Exception as e:
+            problems.append('could not read .githooks/pre-push: %s' % e)
+        problems.extend(runs_cleanly(repo, hookfile))
+        if not problems:
+            print('OK -- core.hooksPath = %s, hook is LF, gate and wrapper both run' % current)
             return 0
-        print('NOT INSTALLED -- core.hooksPath is %s' % (current or '<unset>'))
+        print('NOT INSTALLED, or installed and DEAD:')
+        for p in problems:
+            print('  - %s' % p)
         print('Run: python tools/install_git_hooks.py')
         return 1
 
@@ -107,42 +165,17 @@ def main():
     # the whole failure being fixed here was a gate that was present and never
     # asked. --pre-push with no stdin refs exits 0 (nothing outgoing to check),
     # so a clean exit here means the interpreter, the path and the script all
-    # resolved.
-    gate = os.path.join(repo, 'tools', 'sairn_push_gate_hook.py')
-    r = subprocess.run([sys.executable, gate, '--pre-push'],
-                       input='', capture_output=True, text=True, cwd=repo)
-    if r.returncode not in (0, 1):
-        print('WARNING: the gate script did not run cleanly (exit %d).' % r.returncode)
-        print(r.stderr.strip()[:400])
+    # resolved. The wrapper is a SEPARATE claim from the python, and is where
+    # this failed once: the python was fine, the shell file was not executable
+    # by git, and "Gate script runs. Installed." was true while the hook was
+    # dead. Both live in runs_cleanly() now, so --check asks the same questions.
+    problems = runs_cleanly(repo, hookfile)
+    if problems:
+        for p in problems:
+            print('WARNING: %s' % p)
+        print('git would skip this hook silently. Do not treat this as installed.')
         return 1
-    print('Gate script runs.')
-
-    # AND THE SHELL WRAPPER, WHICH IS A SEPARATE CLAIM. The check above proves
-    # the PYTHON runs. It says nothing about the wrapper, and that is where this
-    # failed: the python was fine, the shell file was not executable by git, and
-    # "Gate script runs. Installed." was true while the hook was dead.
-    #
-    # HONEST SCOPE, MEASURED RATHER THAN ASSUMED: this catches a broken wrapper
-    # (shell syntax error, missing interpreter, wrong path). It does NOT catch
-    # the CRLF failure -- `sh <file>` reads the file as a script and never
-    # consults the shebang, so a CRLF copy and an LF copy both exit 0 here.
-    # Verified both ways before writing this line. The CRLF case is caught and
-    # repaired by the byte check above, which is the authoritative one; this run
-    # is a second, narrower net and is not a substitute for it.
-    try:
-        w = subprocess.run(['sh', hookfile], input='', capture_output=True, text=True, cwd=repo)
-        bad = ('not found' in (w.stderr or '').lower()
-               or 'bad interpreter' in (w.stderr or '').lower()
-               or w.returncode not in (0, 1))
-        if bad:
-            print('WARNING: the SHELL WRAPPER did not execute (exit %d).' % w.returncode)
-            print((w.stderr or '').strip()[:300])
-            print('git would skip this hook silently. Do not treat this as installed.')
-            return 1
-        print('Shell wrapper executes.')
-    except Exception as e:
-        print('WARNING: could not execute the shell wrapper: %s' % e)
-        return 1
+    print('Gate script runs. Shell wrapper executes.')
     print('Installed.')
     print('')
     print('Verify end to end with a real push from a NON-Bash caller:')
