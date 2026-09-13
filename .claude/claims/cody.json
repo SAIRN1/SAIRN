@@ -1039,6 +1039,16 @@
       "claimed_at_epoch": 1789308024.5208523,
       "status": "released",
       "released_at": "2026-09-13T15:13:50Z"
+    },
+    {
+      "id": "cody-1789312527",
+      "session": "cody",
+      "subject": "platform",
+      "task": "two tests red on main storage wrapper honesty scape and truthy sum probe",
+      "claimed_at": "2026-09-13T15:15:27Z",
+      "claimed_at_epoch": 1789312527.1596615,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
