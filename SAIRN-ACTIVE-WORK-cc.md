@@ -1716,3 +1716,40 @@ That is the finding, not an omission. **`TOOLING-INVENTORY.md` is DERIVABLE** --
 **A bulk replace broke the tool mid-change.** A blanket rename of `never_run_queried` hit a print statement that legitimately uses it and `main()` died on `NameError`. Exactly the bulk find-replace CLAUDE.md forbids, done by me, while editing a file about re-deriving before believing. Caught by running it.
 
 **Probe 17 → 24 arms, 0 failing.** Proven to bite: removing the finding call fails four of the new arms.
+
+---
+
+## 2026-09-13 -- PR §1.11 named, density split in two, and a collision on item 14
+
+Pushed `026c374c`.
+
+### The rule that was missing
+
+**"A check that depends on another tool must fail CLOSED when it is absent."** Now PR §1.11, and **repeated in CLAUDE.md rather than only linked** -- it is cheapest to get right before the code exists, so it has to be in the file read at the START of a session, not only the one read after something has gone wrong.
+
+**Fixed at least five times and never written down**, which is why it kept coming back: the push gate disabled **nine of its ten checks** behind one `if not os.path.isfile(...)` (record 41, critical), three more in the same gate (42, 43, 46), and `install_git_hooks.py --check` printed OK on a clone whose pre-push hook was broken (39).
+
+**It is the most repeated shape in the register after "the confident line printed after the error", and it was the only repeated shape with nothing to cite.** A citation field added before this would have left all four blank and `fmea_prediction_check.py` would have gone on reading them as unpredicted. `fmea_draft.py` picks the id up automatically -- 22 rules parsed, 1.11 among them.
+
+### Two figures, not one
+
+| | lines | defects | per 1k | |
+|---|---|---|---|---|
+| SWEPT FILES (7) | 72,458 | 18 | **0.25** | the signal |
+| UNSWEPT FILES (15) | 62,905 | -- | -- | a COUNT, named |
+| OFF-FILE (PLATFORM) | -- | 2 | -- | no denominator |
+
+The unswept files are **listed by name** so the coverage owed is actionable, and deliberately have **no rate**: dividing by lines nobody has examined would manufacture a reassuring figure out of an absence of work.
+
+**A defect found by checking my own new number.** `len(prod)` counts records filed against `PLATFORM`, which is not a file and contributes no lines -- so the old ALL APPS rate *and the first version of my swept rate* both divided a defect by lines it does not live in. The per-app rows summed to 18 while the total said 20.
+
+**And the arm that caught it was itself wrong first:** it read `.split()[3]` and got the line count, because *"SWEPT FILES (7)"* is three tokens and a per-app label is one -- the count-the-columns mistake **PR §2.1** is about, committed in a test rather than an index row. Parses by pattern now.
+
+### Item 14 -- blocked, and the block is real
+
+**`sairn_claim.py check` BLOCKED on Hank's active `flaky-checker-quarantine` claim** ("flip rate threshold owner deadline reintroduction", 0.2h before I looked). **Not a lexical false positive** -- the shared phrase *"flip rate"* is the actual subject. Did not reword to slip past the matcher and did not start the runner. Raised to Michael instead.
+
+**The lock question, answered anyway because it is read-only analysis.** `tools/run_all_tests.py`'s lock (`5b8570ce`) is repo-path-keyed, lives in the system temp dir, is already shared with `sairn_push_gate_hook.py`, and its `acquire_lock()`/`release_lock()` are importable. **Reuse it; do not scope a narrower one** -- two locks that do not know about each other protect nothing. Two gaps:
+
+- **`LOCK_MAX_AGE = 900` is a correctness bound for this use, not a tuning knob.** A tier-A pass (~3 min) is safely inside it. The full 34-minute sweep is **not**: another run would treat the lock as abandoned, delete it, and start mid-measurement. The ceiling was chosen against the 400s hook timeout, not against a long measurement.
+- **The lock makes the tree exclusive, not clean.** A mutation left by a *killed* earlier run (its `finally` never ran) is still sitting there, so the runner must check `git status --porcelain` itself between runs rather than trusting the lock.
