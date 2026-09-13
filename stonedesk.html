@@ -31399,6 +31399,15 @@ document.addEventListener('DOMContentLoaded', function() {
         <div style="color:var(--muted);font-style:italic">Configure your project above to get AI vein matching recommendations.</div>
       </div>
     </div>
+    <!-- SAVED ANALYSES (2026-09-13). sdVeinAnalyze() has always written a row
+         per analysis to sd_veinmatch, and the only thing that ever read it back
+         was the "Layouts Analyzed" counter and the CSV export. The shop could
+         see THAT it had run 14 analyses and never which, and could not remove
+         one. A count with no list behind it is a number nobody can check. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Saved Analyses</div>
+      <div id="vein-saved-list" style="font-size:13px"></div>
+    </div>
     <div style="background:#f0f9ff;border:1px solid #7dd3fc;border-radius:10px;padding:14px">
       <div style="font-weight:700;color:#0c4a6e;margin-bottom:8px">💡 Vein Matching Tips</div>
       <div style="font-size:13px;color:#0c4a6e;line-height:1.7">
@@ -31416,13 +31425,53 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
   function load(){try{return JSON.parse(localStorage.getItem('sd_veinmatch')||'[]');}catch(e){return[];}}
   function save(d){return st('sd_veinmatch',d);}
-  function updateKPIs(){
+  // IDLESS ROWS ARE NEVER BACKED UP -- sdSyncCollection() skips them, so every
+  // analysis this panel recorded lived in one browser despite sd_veinmatch
+  // sitting in SD_SYNCED. See sdEnsureRowIds() for why the id is derived from
+  // the row rather than minted.
+  function veinEnsureIds(){
     var d=load();
+    if(sdEnsureRowIds(d,'VM',['date','proj','stone'])) save(d);
+    return d;
+  }
+  function updateKPIs(){
+    var d=veinEnsureIds();
     document.getElementById('vein-jobs').textContent=d.length;
     document.getElementById('vein-match').textContent='--';
     document.getElementById('vein-waste').textContent='--';
     document.getElementById('vein-saved').textContent='--';
+    veinRenderSaved(d);
   }
+  // THE LIST THE COUNTER NEVER HAD. Newest first, and it says plainly when
+  // there is nothing rather than rendering an empty box.
+  function veinRenderSaved(d){
+    var el=document.getElementById('vein-saved-list');
+    if(!el) return;
+    if(!d.length){
+      el.innerHTML='<div style="color:var(--muted);font-style:italic">No analyses saved yet. Run one above and it is kept here.</div>';
+      return;
+    }
+    el.innerHTML=d.slice().reverse().map(function(x){
+      return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(x.proj||'Project')+'</div>'
+          +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.stone||'')+' &bull; '+escHtml(x.style||'')+' &bull; '+escHtml(x.date||'')+'</div>'
+        +'</div>'
+        +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="sdVeinDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button>'
+        +'</div>';
+    }).join('');
+  }
+  window.sdVeinDelete=function(id){
+    if(!id){ showToast('That analysis has no id yet -- reopen the panel and try again.'); return; }
+    if(!confirm('Delete this saved analysis?\n\nIt is hidden and kept, not destroyed.')) return;
+    var d=veinEnsureIds();
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(next.length===d.length) return;
+    if(!save(next)){ showToast('Could not delete that analysis -- storage may be full or unavailable, try again'); return; }
+    updateKPIs();
+    showToast('Analysis deleted.');
+  };
   window.sdVeinAnalyze=function(){
     var proj=document.getElementById('vein-proj').value.trim()||'Project';
     var stone=document.getElementById('vein-stone').value;
@@ -31437,7 +31486,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(r){return r.json();}).then(function(r){
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-      var d=load();d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
+      var d=veinEnsureIds();
+      d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
+      // Set on the way in, so an analysis run today is syncable and
+      // deletable immediately rather than waiting for a later pass.
+      sdEnsureRowIds(d,'VM',['date','proj','stone']);
       save(d);updateKPIs();
     }).catch(function(){
       out.innerHTML='<strong>'+style+' Layout — '+stone+'</strong><br><br>'
@@ -31445,7 +31498,11 @@ document.addEventListener('DOMContentLoaded', function() {
         +'<strong>Cut Sequence:</strong> Template the left piece first, mirror template for right. Ensure bundle match — use adjacent slabs from same lot.<br><br>'
         +'<strong>Seam Placement:</strong> Center seam at island midpoint, aligned with dominant vein direction.<br><br>'
         +'<strong>Waste Optimization:</strong> Reserve offcuts for waterfall legs if applicable. Expected waste: 12-18%.';
-      var d=load();d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
+      var d=veinEnsureIds();
+      d.push({proj:proj,stone:stone,style:style,date:sdLocalToday()});
+      // Set on the way in, so an analysis run today is syncable and
+      // deletable immediately rather than waiting for a later pass.
+      sdEnsureRowIds(d,'VM',['date','proj','stone']);
       save(d);updateKPIs();
     });
   };
@@ -31848,6 +31905,14 @@ document.addEventListener('DOMContentLoaded', function() {
         <div style="color:var(--muted);font-style:italic">Fill in project details and click Analyze to get AI seam placement recommendations.</div>
       </div>
     </div>
+    <!-- SAVED ANALYSES (2026-09-13). sdSeamAnalyze() has always written a
+         row per analysis to sd_seamai, and the only readers were four KPI
+         tiles and the CSV export. The shop could see that it had run 22
+         analyses and never WHICH, and could not remove one. -->
+    <div style="background:var(--card);border:1px solid var(--border);border-radius:10px;padding:16px;margin-bottom:12px">
+      <div style="font-weight:700;margin-bottom:10px;color:var(--text)">Saved Analyses</div>
+      <div id="seam-saved-list" style="font-size:13px"></div>
+    </div>
     <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:10px;padding:14px">
       <div style="font-weight:700;color:#92400e;margin-bottom:8px">⚡ Seam Best Practices</div>
       <div style="font-size:13px;color:#78350f;line-height:1.7">
@@ -31865,13 +31930,52 @@ document.addEventListener('DOMContentLoaded', function() {
 (function(){
   function load(){try{return JSON.parse(localStorage.getItem('sd_seamai')||'[]');}catch(e){return[];}}
   function save(d){return st('sd_seamai',d);}
-  function updateKPIs(){
+  // IDLESS ROWS ARE NEVER BACKED UP -- sdSyncCollection() skips them, so every
+  // analysis this panel recorded lived in one browser despite sd_seamai sitting
+  // in SD_SYNCED. See sdEnsureRowIds() for why the id is derived, not minted.
+  function seamEnsureIds(){
     var d=load();
+    if(sdEnsureRowIds(d,'SA',['date','job','loc'])) save(d);
+    return d;
+  }
+  function updateKPIs(){
+    var d=seamEnsureIds();
     document.getElementById('seam-analyzed').textContent=d.length;
     document.getElementById('seam-approved').textContent=d.length?Math.round((d.filter(function(x){return !x.remake;}).length/d.length)*100)+'%':'--';
     document.getElementById('seam-remakes').textContent=d.filter(function(x){return x.remake;}).length;
     document.getElementById('seam-savings').textContent='$'+(d.length*180).toLocaleString();
+    seamRenderSaved(d);
   }
+  // THE LIST FOUR KPI TILES NEVER HAD. Newest first, and it says plainly
+  // when there is nothing rather than rendering an empty box.
+  function seamRenderSaved(d){
+    var el=document.getElementById('seam-saved-list');
+    if(!el) return;
+    if(!d.length){
+      el.innerHTML='<div style="color:var(--muted);font-style:italic">No analyses saved yet. Run one above and it is kept here.</div>';
+      return;
+    }
+    el.innerHTML=d.slice().reverse().map(function(x){
+      return '<div style="display:flex;gap:10px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0">'
+          +'<div style="font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+escHtml(x.job||'Project')+'</div>'
+          +'<div style="font-size:12px;color:var(--muted)">'+escHtml(x.mat||'')+' &bull; '+escHtml(x.loc||'')+' &bull; '+escHtml(x.date||'')+'</div>'
+        +'</div>'
+        +'<button class="q-btn" style="flex-shrink:0;font-size:11px;padding:3px 9px;color:#dc2626;border-color:#dc2626" '
+        +'onclick="sdSeamDelete(\''+escAttrJs(String(x.id||''))+'\')">Delete</button>'
+        +'</div>';
+    }).join('');
+  }
+  window.sdSeamDelete=function(id){
+    if(!id){ showToast('That analysis has no id yet -- reopen the panel and try again.'); return; }
+    if(!confirm('Delete this saved analysis?\n\nIt is hidden and kept, not destroyed.')) return;
+    var d=seamEnsureIds();
+    var next=d.filter(function(x){return String(x&&x.id)!==String(id);});
+    if(next.length===d.length) return;
+    if(!save(next)){ showToast('Could not delete that analysis -- storage may be full or unavailable, try again'); return; }
+    updateKPIs();
+    showToast('Analysis deleted.');
+  };
   window.sdSeamAnalyze=function(){
     var job=document.getElementById('seam-job').value.trim()||'Project';
     var mat=document.getElementById('seam-mat').value;
@@ -31886,8 +31990,11 @@ document.addEventListener('DOMContentLoaded', function() {
     }).then(function(r){return r.json();}).then(function(r){
       var txt=(r.content&&r.content[0]&&r.content[0].text?r.content[0].text:(r.completion||''));
       out.innerHTML=escHtml(txt).replace(/\n/g,'<br>').replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>');
-      var d=load();
+      var d=seamEnsureIds();
       d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
+      // Set on the way in, so an analysis run today is syncable and deletable
+      // immediately rather than waiting for a later pass.
+      sdEnsureRowIds(d,'SA',['date','job','loc']);
       save(d);updateKPIs();
     }).catch(function(){
       out.innerHTML='<strong>Seam Recommendation for '+loc+':</strong><br><br>'
@@ -31895,7 +32002,8 @@ document.addEventListener('DOMContentLoaded', function() {
         +'For '+mat+', match adhesive color to background tone. '
         +'Recommend butterfly joint at corners for maximum strength.<br><br>'
         +'<strong>Technique:</strong> Level slab surfaces to within 1/32", use dual-component epoxy, allow 45-minute cure before polishing.';
-      var d=load();d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
+      var d=seamEnsureIds();d.push({job:job,mat:mat,loc:loc,date:sdLocalToday(),remake:false});
+      sdEnsureRowIds(d,'SA',['date','job','loc']);
       save(d);updateKPIs();
     });
   };
