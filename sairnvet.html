@@ -164,26 +164,34 @@
     <h1>SAIRNvet</h1>
     <p>The World's Most Complete Veterinary Platform</p>
     <p style="font-size:11px;color:var(--muted);margin-top:-8px;">by SAIRN Tech LLC</p>
-    <div class="gate-role">
-      <label>Role</label>
-      <select id="gateRole">
-        <option>Doctor</option>
-        <option>Technician</option>
-        <option>Receptionist</option>
-        <option>Manager</option>
-      </select>
+    <!-- TWO STEPS: which PRACTICE, then which PERSON. The role dropdown that
+         used to sit here is GONE -- the server supplies the role now, and a
+         role the user picked was the whole defect. -->
+    <div id="gate-step-licence">
+      <div class="gate-role">
+        <label>Licence key</label>
+        <input type="text" id="gateLicense" placeholder="Your practice licence key">
+      </div>
+      <button class="gate-submit" onclick="svGateLicence()">Continue</button>
     </div>
-    <div class="gate-role">
-      <label>License</label>
-      <input type="text" id="gateLicense" placeholder="SV-PINNACLE-2026">
+    <div id="gate-step-signin" style="display:none">
+      <div class="gate-role">
+        <label>Employee ID</label>
+        <input type="text" id="gateEmployeeId" placeholder="Your employee ID">
+      </div>
+      <div class="gate-role">
+        <label>PIN</label>
+        <div class="pin-display" id="pinDisplay"></div>
+        <div class="pin-pad" id="pinPad"></div>
+      </div>
+      <button class="gate-submit" onclick="svGateSignIn()">Sign in</button>
+      <div class="gate-hint" style="margin-top:10px">
+        First time for this practice?
+        <a href="#" onclick="svGateBootstrap();return false;">Create the first Owner</a>
+        &mdash; this works once, and only while no sign-ins exist yet.
+      </div>
     </div>
-    <div class="gate-role">
-      <label>PIN</label>
-      <div class="pin-display" id="pinDisplay"></div>
-      <div class="pin-pad" id="pinPad"></div>
-    </div>
-    <button class="gate-submit" onclick="gateSubmit()">Enter</button>
-    <div class="gate-hint">Demo: SV-PINNACLE-2026 | PIN: 1234 | Clinic: Pinnacle Animal Hospital, Cleveland OH</div>
+    <div id="gate-msg" style="margin-top:10px;font-size:12px;min-height:16px"></div>
   </div>
 </div>
 
@@ -277,6 +285,7 @@
 <button class="sidebar-btn" onclick="svNav('panel-communications')">Communications</button>
 <button class="sidebar-btn" onclick="svNav('panel-reminders')">Reminders</button>
 <button class="sidebar-btn" onclick="svNav('settings')">Settings</button>
+<button class="sidebar-btn" onclick="svNav('panel-access')">Sign-in Access</button>
 </div>
 </div>
 
@@ -1559,6 +1568,14 @@
 <div class="card"><h3>Log a Reminder</h3><div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:15px 0;"><input type="text" id="rem-add-patient" placeholder="Patient"><input type="text" id="rem-add-type" placeholder="Reminder type"><input type="date" id="rem-add-due"><button class="btn" onclick="addReminder()">Log</button></div></div>
 </div>
 
+<div id="panel-access" class="panel">
+<div class="panel-header">
+<h1 class="panel-title">Sign-in Access</h1>
+<p class="panel-desc">Who can sign in to this practice, and their role. Deactivating a sign-in never deletes the person &mdash; their record stays, so every controlled-substance and audit entry they signed keeps its author.</p>
+</div>
+<div id="sv-access"></div>
+</div>
+
 <div id="settings" class="panel">
 <div class="panel-header">
 <h1 class="panel-title">Settings</h1>
@@ -2327,6 +2344,206 @@ function svBlockForCorruptStore(keys){
   }
 }
 function svStore(k,v){return st('sv_'+k,v);}
+
+/* ─────────────────────────────────────────────────────────────────────────
+   PER-EMPLOYEE SIGN-IN -- the client half (2026-09-13)
+
+   SAIRNvet was the SIXTEENTH and last app to get real per-employee auth, and
+   until today this file authenticated on a HARDCODED DEMO GATE: the licence
+   had to equal the literal 'SV-PINNACLE-2026', the PIN the literal '1234',
+   both compared in the browser, and ROLE WAS A DROPDOWN THE USER PICKED. The
+   comment further up this file said so in its own words -- "`role` is a
+   self-selected dropdown, never server-verified".
+
+   That mattered here more than anywhere. This app holds `sv_controlled`, its
+   own registry module calls it "the controlled-substance register
+   (DEA-relevant)", and removal_path_check ranks it TIER A WITH NO REMOVAL
+   PATH -- a wrong row cannot be taken back through the product at all. A
+   register whose author is whatever the writer picked from a dropdown has no
+   author.
+
+   THE MODULE IS THE ONE sairnroofing / sairnsenior / sairnlegacy / sairnscape
+   SHARE, with this app's prefix. Not reinvented: the platform has one shape
+   for this and nine apps already use it.
+
+   TWO SECRETS, TWO HEADERS, deliberately. The licence rides as
+   `Authorization: Bearer`; the employee session as `X-SD-Auth`. They are
+   different things -- one says which practice, the other which person -- and
+   the whole reason this exists is that SAIRNvet previously had only the first.
+
+   SIGN-OUT IS LOCAL ONLY. No server call, no revocation: a token stays valid
+   for its full 12h life. Said here rather than assumed, because "signed out"
+   reads like "cut off" and is not.
+
+   ROLE-DRIVEN UI GATING BELOW IS COSMETIC. The server refuses regardless;
+   hiding a button only stops offering one that would always 403.
+   ───────────────────────────────────────────────────────────────────────── */
+var SV_AUTH_API = 'https://sairn.vercel.app/api/sv-auth';
+var SV_SESSION_KEY = 'sv_session_token';
+var SV_ROLE_KEY = 'sv_session_role';
+var SV_EMPLOYEE_KEY = 'sv_session_employee';
+
+function svLic(){
+  var v = svLoad('license','');
+  return v ? String(v) : '';
+}
+function svTok(){ try{ return sessionStorage.getItem(SV_SESSION_KEY)||''; }catch(e){ return ''; } }
+function svMyRole(){ try{ return sessionStorage.getItem(SV_ROLE_KEY)||''; }catch(e){ return ''; } }
+function svMyEmployeeId(){ try{ return sessionStorage.getItem(SV_EMPLOYEE_KEY)||''; }catch(e){ return ''; } }
+
+/* One transport, session opt-in via the third argument. A call that needs a
+   session and has none fails HERE rather than sending a request the server
+   will refuse anyway -- the refusal is identical either way, and this keeps
+   the reason readable. */
+function svAuthCall(action,payload,needSession){
+  var lic = svLic();
+  if(!lic) return Promise.resolve({ok:false,status:0,data:null,code:'',msg:'No licence key on this device.'});
+  var headers = {'Content-Type':'application/json', Authorization:'Bearer '+lic};
+  if(needSession){
+    var tok = svTok();
+    if(!tok) return Promise.resolve({ok:false,status:0,data:null,code:'',msg:'Not signed in.'});
+    headers['X-SD-Auth'] = tok;
+  }
+  return fetch(SV_AUTH_API,{method:'POST',headers:headers,
+    body:JSON.stringify(Object.assign({action:action},payload||{}))})
+    .then(function(r){ return r.json().catch(function(){return {};}).then(function(d){
+      return {ok:r.ok&&d&&d.ok, status:r.status, data:d,
+              code:(d&&d.error&&d.error.code)||'',
+              msg:(d&&d.error&&d.error.message)||''};
+    });})
+    .catch(function(){ return {ok:false,status:0,data:null,code:'',msg:'Network error - check your connection.'}; });
+}
+window.svAuthCall = svAuthCall;
+
+/* Only an Owner or Practice Manager may READ the roster; only an Owner may
+   change it. Kept in step with api/sv-auth.js's MANAGEMENT_ROLES and
+   PROVISIONING_ROLES -- the server is the boundary, this only decides what to
+   offer. A DVM is deliberately absent: the credential roster is the
+   access-control surface, not clinical data. */
+function svCanViewAccess(){ return ['owner','manager'].indexOf(svMyRole())!==-1; }
+function svCanChangeAccess(){ return svMyRole()==='owner'; }
+
+function svRenderAccess(){
+  var el = document.getElementById('sv-access');
+  if(!el) return;
+  if(!svTok()){
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Sign in to see who can access this practice.</div>';
+    return;
+  }
+  if(!svCanViewAccess()){
+    el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Only an Owner or Practice Manager can see or change sign-in access.</div>';
+    return;
+  }
+  el.innerHTML = '<div style="font-size:13px;color:var(--muted)">Loading sign-ins&hellip;</div>';
+  svAuthCall('roster',{},true).then(function(r){
+    if(!r.ok || !r.data || !Array.isArray(r.data.employees)){
+      /* A FAILED READ IS NEVER RENDERED AS "NO SIGN-INS". An empty table here
+         would tell an owner nobody can sign in to their own practice, which is
+         a different and far more alarming claim than "the list did not load". */
+      el.innerHTML = '<div style="color:#EF4444;font-size:13px">'+escHtml(r.msg||'Could not load sign-ins - this is not the same as having none.')+'</div>';
+      return;
+    }
+    var rows = r.data.employees;
+    if(!rows.length){ el.innerHTML='<div style="font-size:13px;color:var(--muted)">No sign-in credentials yet.</div>'; return; }
+    var me = svMyEmployeeId();
+    var canChange = svCanChangeAccess();
+    el.innerHTML = '<div class="table-wrap"><table class="data-table"><thead><tr><th>Employee ID</th><th>Name</th><th>Role</th><th>Status</th><th>Actions</th></tr></thead><tbody>'+
+      rows.map(function(e){
+        var active = e.active!==false;
+        /* &#39; rather than a backslash-escaped quote: the browser decodes the
+           entity before evaluating the attribute. */
+        var idArg = '&#39;'+escHtml(e.employee_id)+'&#39;';
+        return '<tr><td>'+escHtml(e.employee_id)+(e.employee_id===me?' <b>(you)</b>':'')+'</td>'+
+          '<td>'+escHtml(e.display_name||'--')+'</td><td>'+escHtml(e.role||'')+'</td>'+
+          '<td>'+(active?'active':'<b>deactivated</b>')+'</td>'+
+          '<td>'+(canChange
+            ? '<button class="btn btn-sm" onclick="svSetActive('+idArg+','+(active?'false':'true')+')">'+(active?'Deactivate':'Reactivate')+'</button>'
+            : '<span style="color:var(--muted);font-size:12px">Owner only</span>')+'</td></tr>';
+      }).join('')+'</tbody></table></div>';
+  });
+}
+window.svRenderAccess = svRenderAccess;
+
+function svSetActive(employee_id,nextActive){
+  var payload = {employee_id:employee_id, active:nextActive};
+  if(!nextActive){
+    /* The server REQUIRES a reason to deactivate and refuses 400 without one.
+       Asked for rather than sent blank: the reason is what somebody
+       reconstructs months later, and here the person being switched off may be
+       the signer of a controlled-substance entry. */
+    var reason = window.prompt('Why is '+employee_id+' being deactivated? (recorded with the change)');
+    if(reason===null) return;
+    reason = String(reason).trim();
+    if(!reason){ showToast('A reason is required to deactivate a sign-in','error'); return; }
+    payload.reason = reason.slice(0,500);
+  }
+  svAuthCall('set_active',payload,true).then(function(r){
+    if(!r.ok){ showToast(r.msg||'Could not change this sign-in - nothing was changed','error',6000); svRenderAccess(); return; }
+    if(r.data&&r.data.unchanged) showToast(employee_id+' was already '+(nextActive?'active':'deactivated')+' - nothing changed');
+    else showToast(employee_id+(nextActive?' can sign in again':' can no longer sign in'));
+    svRenderAccess();
+  });
+}
+window.svSetActive = svSetActive;
+
+/* Session restore: decode the payload, check exp and app, enter, then fire a
+   NON-BLOCKING whoami that signs out on rejection. The blocking version makes a
+   slow network look like a broken app; the MISSING version is what let a
+   revoked SAIRNlaw account render as signed in indefinitely (2026-08-18). */
+function svDecodeToken(tok){
+  try{
+    var part = String(tok).split('.')[1];
+    if(!part) return null;
+    var b64 = part.replace(/-/g,'+').replace(/_/g,'/');
+    while(b64.length%4) b64 += '=';
+    return JSON.parse(atob(b64));
+  }catch(e){ return null; }
+}
+function svSessionValid(){
+  var tok = svTok();
+  if(!tok) return false;
+  var p = svDecodeToken(tok);
+  if(!p) return false;
+  if(p.app !== 'sairnvet') return false;
+  if(!p.exp || (p.exp*1000) <= Date.now()) return false;
+  return true;
+}
+window.svSessionValid = svSessionValid;
+
+function svSignOut(silent){
+  try{ sessionStorage.removeItem(SV_SESSION_KEY); sessionStorage.removeItem(SV_ROLE_KEY); sessionStorage.removeItem(SV_EMPLOYEE_KEY); }catch(e){}
+  if(!silent) showToast('Signed out');
+}
+window.svSignOut = svSignOut;
+
+function svWhoamiCheck(){
+  if(!svTok()) return;
+  svAuthCall('whoami',{},true).then(function(r){
+    if(r.ok && r.data && r.data.role){
+      /* ROLE FROM THE SERVER ROW, not from the token, so a role change or a
+         deactivation takes effect on the next load rather than waiting out the
+         token's 12h life. */
+      try{ sessionStorage.setItem(SV_ROLE_KEY,String(r.data.role)); }catch(e){}
+      var badge = document.getElementById('userRole');
+      if(badge) badge.textContent = String(r.data.role);
+      return;
+    }
+    if(r.status===401){ svSignOut(true); showToast('Your sign-in is no longer valid - sign in again','error',7000); }
+  });
+}
+window.svWhoamiCheck = svWhoamiCheck;
+
+/* Stores what a successful login returned. sessionStorage rather than
+   localStorage on purpose: a credential that survives closing the tab is a
+   credential nobody signed out of. */
+function svStoreSession(d){
+  try{
+    sessionStorage.setItem(SV_SESSION_KEY,String(d.token||''));
+    sessionStorage.setItem(SV_ROLE_KEY,String(d.role||''));
+    sessionStorage.setItem(SV_EMPLOYEE_KEY,String(d.employee_id||''));
+  }catch(e){}
+}
+window.svStoreSession = svStoreSession;
 // ── svLoad() BYPASSED BOTH HALVES OF THE GUARD ABOVE (2026-09-04) ────────
 // The unreadable-store guard is deliberately built in two places, "because
 // either alone still fails": st() refuses to overwrite a corrupted value, and
@@ -2497,19 +2714,16 @@ function checkTrialGate(){
 }
 window.checkTrialGate=checkTrialGate;
 
-function gateSubmit(){
-  var role=document.getElementById('gateRole').value;
-  var license=document.getElementById('gateLicense').value.trim();
-  if(!license){showToast('Enter license key','error');return;}
-  if(license!=='SV-PINNACLE-2026'){showToast('Invalid license','error');return;}
-  if(pinValue!=='1234'){showToast('Invalid PIN','error');return;}
-  svStore('role',escHtml(role));
-  svStore('license',escHtml(license));
-  svStore('auth',new Date().toISOString());
+function svEnterApp(role){
+  // Everything that was inline in the old gateSubmit(), unchanged. Split
+  // out so SIGNING IN and ENTERING THE APP are two steps: session restore
+  // on page load enters without a sign-in round trip, and a failed login
+  // must never reach any of this.
   if(!checkTrialGate())return;
   document.getElementById('gate').style.display='none';
   document.getElementById('appContainer').classList.add('active');
-  document.getElementById('userRole').textContent=role;
+  var badge=document.getElementById('userRole');
+  if(badge)badge.textContent=String(role||svMyRole()||"");
   svNav('dashboard');
   renderWhiteboard();
   renderControlled();
@@ -2554,6 +2768,138 @@ function gateSubmit(){
   renderMultisite();
   renderPeerConsults();
 }
+window.svEnterApp=svEnterApp;
+
+/* ── THE GATE IS NOW A REAL SIGN-IN, AND THE DEMO CHECK IS GONE ────────────
+   What this replaced, verbatim from the file it replaced:
+
+       if(license!=='SV-PINNACLE-2026'){showToast('Invalid license','error');return;}
+       if(pinValue!=='1234'){showToast('Invalid PIN','error');return;}
+       svStore('role',escHtml(role));
+
+   A licence compared to a literal in the browser, a PIN compared to '1234' in
+   the browser, and a ROLE THE USER PICKED FROM A DROPDOWN and this file then
+   stored as fact. Anyone reading the page source had the credentials, and
+   every sv_controlled row was attributed to whatever the writer selected.
+
+   THE CUTOVER IS DELIBERATE AND IT IS NOT BACKWARDS-COMPATIBLE. There is no
+   demo path left. That is the point: a second way in is a second thing to
+   secure, and on an app holding a DEA-relevant register the fallback would be
+   the one everybody used. The migration
+   sql/sairnvet_employee_auth_schema.sql MUST be run before anyone can sign
+   in, and until it is the server answers NOT_PROVISIONED and this screen says
+   so by name rather than failing as "invalid PIN".
+
+   TWO STEPS, licence then person -- the same shape as the other nine apps.
+   The licence is checked with `check_license` BEFORE it is stored, so a bad
+   key is reported as a bad key instead of being misattributed to a wrong PIN
+   later. That misattribution is the reason `check_license` exists at all.
+   ───────────────────────────────────────────────────────────────────────── */
+function svGateMsg(text,isError){
+  var el = document.getElementById('gate-msg');
+  if(!el) return;
+  el.textContent = text || '';
+  el.style.color = isError ? '#EF4444' : 'var(--muted)';
+}
+
+/* Step 1: verify the licence server-side, then keep it. */
+function svGateLicence(){
+  var el = document.getElementById('gateLicense');
+  var license = el ? String(el.value||'').trim() : '';
+  if(!license){ svGateMsg('Enter your licence key',true); return; }
+  svGateMsg('Checking licence…',false);
+  /* Stored BEFORE the call because svAuthCall reads it from storage, and
+     removed again if the server rejects it -- so a bad key never sticks. */
+  var previous = svLoad('license','');
+  svStore('license',license);
+  svAuthCall('check_license',{},false).then(function(r){
+    if(!r.ok){
+      svStore('license',previous||'');
+      svGateMsg(r.msg||'That licence key was not accepted.',true);
+      return;
+    }
+    svGateMsg('',false);
+    var lic = document.getElementById('gate-step-licence');
+    var sign = document.getElementById('gate-step-signin');
+    if(lic) lic.style.display='none';
+    if(sign) sign.style.display='block';
+    var idEl = document.getElementById('gateEmployeeId');
+    if(idEl) idEl.focus();
+  });
+}
+window.svGateLicence = svGateLicence;
+
+/* Step 2: employee ID + PIN. The role comes back from the SERVER. */
+function svGateSignIn(){
+  var idEl = document.getElementById('gateEmployeeId');
+  var employee_id = idEl ? String(idEl.value||'').trim() : '';
+  var pin = String(pinValue||'').trim();
+  if(!employee_id){ svGateMsg('Enter your employee ID',true); return; }
+  if(!pin){ svGateMsg('Enter your PIN',true); return; }
+  svGateMsg('Signing in…',false);
+  svAuthCall('login',{employee_id:employee_id,pin:pin},false).then(function(r){
+    if(!r.ok){
+      /* NOT_PROVISIONED is named rather than shown as a credential failure.
+         A missing migration and a wrong PIN are different problems and the
+         person in front of the screen can only act on one of them. */
+      if(r.code==='NOT_PROVISIONED'){
+        svGateMsg('Employee sign-ins are not set up for this practice yet. Run sql/sairnvet_employee_auth_schema.sql, then create the first Owner.',true);
+      }else if(r.code==='LOCKED'){
+        svGateMsg(r.msg||'Too many failed attempts - try again later.',true);
+      }else{
+        svGateMsg(r.msg||'Incorrect employee ID or PIN',true);
+      }
+      pinValue=''; updatePinDisplay();
+      return;
+    }
+    svStoreSession(r.data);
+    svStore('auth',new Date().toISOString());
+    svGateMsg('',false);
+    svEnterApp(r.data.role);
+  });
+}
+window.svGateSignIn = svGateSignIn;
+
+/* First-run: mint the first Owner. Reached by a link rather than by a
+   client-side "does an owner exist?" probe -- that probe would be an
+   unauthenticated existence oracle, and the server is the sole arbiter: it
+   answers 409 ALREADY_PROVISIONED. */
+function svGateBootstrap(){
+  var idEl = document.getElementById('gateEmployeeId');
+  var employee_id = idEl ? String(idEl.value||'').trim() : '';
+  var pin = String(pinValue||'').trim();
+  if(!employee_id){ svGateMsg('Enter the employee ID for the first Owner',true); return; }
+  if(!/^\d{6,8}$/.test(pin)){ svGateMsg('The first Owner needs a 6-8 digit PIN',true); return; }
+  svGateMsg('Creating the first Owner…',false);
+  svAuthCall('bootstrap',{employee_id:employee_id,pin:pin,display_name:employee_id},false).then(function(r){
+    if(!r.ok){
+      if(r.code==='ALREADY_PROVISIONED'){
+        svGateMsg('This practice already has sign-ins. Sign in instead, or ask an Owner to add you.',true);
+      }else if(r.code==='NOT_PROVISIONED'){
+        svGateMsg('Run sql/sairnvet_employee_auth_schema.sql first - the credential table does not exist yet.',true);
+      }else{
+        svGateMsg(r.msg||'Could not create the first Owner.',true);
+      }
+      pinValue=''; updatePinDisplay();
+      return;
+    }
+    svStoreSession(r.data);
+    svStore('auth',new Date().toISOString());
+    svGateMsg('',false);
+    svEnterApp(r.data.role);
+  });
+}
+window.svGateBootstrap = svGateBootstrap;
+
+/* Session restore on load. Enters WITHOUT a round trip when the token still
+   decodes and has not expired, then fires whoami in the background. */
+function svRestoreSession(){
+  if(!svSessionValid()) return false;
+  svEnterApp(svMyRole());
+  svWhoamiCheck();
+  return true;
+}
+window.svRestoreSession = svRestoreSession;
 
 var WHITEBOARD_STATUSES = ['Awaiting Surgery','Post-Op Recovery','Critical — ICU','Stable — Monitoring','Ready for Discharge'];
 
@@ -7229,6 +7575,13 @@ function svNav(panelId){
   // leave the roster count stale, which is the failure mode the hardcoded
   // version had permanently.
   if(panelId==='dashboard' && typeof svRenderDashboard==='function') svRenderDashboard();
+  // THE ACCESS PANEL IS RENDERED ON ARRIVAL, NOT AT BOOT. Its contents are a
+  // live server read, so painting it once at sign-in would show a roster that
+  // is stale the moment another Owner changes one. Rendering on nav is also
+  // what stops it being the sairnbiz shape this platform already recorded: an
+  // access card and a render function that nothing invoked, so the card stayed
+  // empty forever and the gap looked closed.
+  if(panelId==='panel-access' && typeof svRenderAccess==='function') svRenderAccess();
   window.scrollTo(0,0);
 }
 // backward-compat alias used by earlier builds
@@ -8906,62 +9259,22 @@ var _svCorruptAtBoot = svIntegrityScan();
 if(_svCorruptAtBoot.length){
   svBlockForCorruptStore(_svCorruptAtBoot);
 }else{
-setupPinPad();
-var auth=svLoad('auth');
-// checkTrialGate() re-checked here too, not just in gateSubmit() -- this
-// block restores a session directly from a stored 'auth' flag on every
-// page load, bypassing gateSubmit() entirely, so the trial gate would
-// otherwise only ever fire once (on first login) and never again on
-// subsequent visits after day 30.
-if(auth&&checkTrialGate()){
-  document.getElementById('gate').style.display='none';
-  document.getElementById('appContainer').classList.add('active');
-  var role=svLoad('role','Doctor');
-  document.getElementById('userRole').textContent=role;
-  svNav('dashboard');
-  renderWhiteboard();
-  renderControlled();
-  renderSchedule();
-  renderVitals();
-  renderLab();
-  renderImaging();
-  renderSurgery();
-  renderDental();
-  renderExamRooms();
-  renderTeleconsult();
-  renderLameness();
-  renderFarmCalls();
-  renderRepro();
-  renderEquineDental();
-  renderPPE();
-  renderPatients();
-  renderSettings();
-  renderSoap();
-  renderBoarding();
-  renderComms();
-  renderDocuments();
-  renderMobileVet();
-  renderPetInsurance();
-  renderPortal();
-  renderReferrals();
-  renderReminders();
-  renderWellness();
-  renderCoggins();
-  renderHerdHealth();
-  renderWildlifeRehab();
-  renderSpeciesRef();
-  renderConservation();
-  renderCompliance();
-  renderClientsPanel();
-  renderInvoicing();
-  renderBilling();
-  renderFinancials();
-  renderReports();
-  renderAnalytics();
-  renderStaff();
-  renderMultisite();
-  renderPeerConsults();
+// ── THE RESTORE CONDITION IS THE SESSION TOKEN, NOT A STORED FLAG ────────
+// This block used to enter the app on `svLoad('auth')` -- a timestamp this
+// file wrote itself -- and read the role from `svLoad('role','Doctor')`.
+// Both are localStorage values the browser owns, so anyone could set them
+// and arrive inside as a Doctor. On an app holding a DEA-relevant register
+// that is the same defect as the demo gate, one layer down.
+//
+// svRestoreSession() requires a SIGNED token that still decodes, still names
+// this app, and has not expired, and then fires a non-blocking whoami that
+// signs out if the credential behind it has been deactivated. The trial gate
+// is re-checked inside svEnterApp(), so it still fires on every visit rather
+// than only at first sign-in -- which is why that check was here.
+if(svRestoreSession()){
+  /* svEnterApp() painted every panel and re-checked the trial gate. */
 } else {
+  setupPinPad();
   updatePinDisplay();
 }
 }   // end of the boot integrity gate's else -- see svIntegrityScan() above

@@ -57,10 +57,16 @@
 // not a clinician, and conflating the two is how a non-veterinarian ends up
 // recorded as the author of a DEA-relevant row.
 //
-// WIRE FORMAT: this app uses `LAST_OWNER` / `remaining_owners`, matching
-// api/rf-auth.js. The platform has two spellings (sc/sd use `LAST_ADMIN` /
-// `remaining_admins`) and a client written against one breaks against the
-// other, so the choice is stated rather than left to be discovered.
+// WIRE FORMAT: `LAST_ADMIN` / `remaining_admins`, because `roster` and
+// `set_active` go through api/_lib/employee-lifecycle.js and that is the
+// spelling it emits. CORRECTED 2026-09-13, and the correction is the point:
+// this header said `LAST_OWNER` / `remaining_owners` while the file was
+// hand-written off api/rf-auth.js, and WIRING IT ONTO THE SHARED HELPER
+// CHANGED THE WIRE FORMAT without changing the sentence describing it. The
+// platform has two spellings, a client written against one breaks against the
+// other, and a header that describes the version before last is how that
+// breakage gets shipped. Read the helper, not this line, if they ever
+// disagree again.
 //
 // All actions are POST, license key via Authorization: Bearer, employee session
 // via X-SD-Auth:
@@ -78,6 +84,7 @@
 // ---------------------------------------------------------------------------
 
 const { validateLicenseKey } = require('./_lib/license');
+const lifecycle = require('./_lib/employee-lifecycle');
 const {
   hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest,
   ROLES_BY_APP
@@ -93,7 +100,14 @@ const ACTIONS = ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'rost
 // Only 'owner' provisions or changes credentials. A veterinary practice has one
 // principal, and the blast radius of a mistaken deactivation here includes the
 // author of every controlled-substance entry that person has signed.
+//
+// READ OFF THIS FILE'S OWN `setup` GATE, not assumed, and asserted against it by
+// api/_lib/employee-lifecycle-wiring.test.js -- the shared helper takes this as
+// a PARAMETER so each app passes its own, and a guard hardcoding 'owner' passes
+// clean forever while checking nothing on an app whose list differs
+// (SAIRNcode's is 'admin').
 const PROVISIONING_ROLES = ['owner'];
+const PROVISIONING_LABEL = 'an Owner';
 // The credential roster is the access-control surface, not app data -- the same
 // reason api/sc-auth.js denies its read-only 'auditor' role. A Practice Manager
 // runs the office and legitimately needs it; a DVM does not.
@@ -349,29 +363,27 @@ module.exports = async (req, res) => {
 
     if (action === 'roster') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || !MANAGEMENT_ROLES[caller.role]) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner or Practice Manager can view the employee roster' } });
-        return;
-      }
-      // INCLUDES INACTIVE ROWS on purpose: set_active can reactivate, and an
-      // owner has to be able to SEE a deactivated person in order to turn them
-      // back on. StoneDesk filtered active=eq.true originally and flipped it on
-      // 2026-08-23 for exactly this. Never returns pin_hash / pin_salt /
-      // failed_attempts / locked_until.
-      const r = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) +
-        '&select=employee_id,display_name,role,active&order=employee_id.asc'), { headers });
-      const rows = await r.json();
-      if (!r.ok) return upstream(res, rows);
-      const callerRow = (rows || []).filter(function (x) { return x.employee_id === caller.employee_id; })[0];
-      if (!callerRow || callerRow.active !== true) {
-        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
-        return;
-      }
-      res.status(200).json({ ok: true, employees: rows || [] });
+      // THE SHARED HELPER, not a seventeenth hand-written copy. It INCLUDES
+      // INACTIVE ROWS on purpose -- set_active can reactivate, and an owner has
+      // to be able to SEE a deactivated person to turn them back on -- and it
+      // never returns pin_hash / pin_salt / failed_attempts / locked_until.
+      //
+      // canView is DELIBERATELY WIDER THAN provisioningRoles here: a Practice
+      // Manager runs the office and legitimately reads the roster, while only
+      // an Owner may change it. The credential roster is the access-control
+      // surface rather than app data, which is why a DVM is not on this list
+      // even though a DVM outranks a manager clinically.
+      const out = await lifecycle.roster({
+        caller: caller, licHash: licHash, table: TABLE, rest: rest, headers: headers,
+        canView: !!(caller && MANAGEMENT_ROLES[caller.role]),
+        viewLabel: 'an Owner or Practice Manager'
+      });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
 
-    // ── set_active: the credential lifecycle, shipped in v1 ──
+    // ── set_active: the credential lifecycle, through the shared helper ──
     // Deactivation, NEVER deletion. login / whoami / loadEmployee all filter
     // active=eq.true, so the flag is enforced the moment it is written and
     // there is no second mechanism to keep in sync. Keeping the row preserves
@@ -380,110 +392,33 @@ module.exports = async (req, res) => {
     // credential row in this app would orphan the author of a DEA-relevant
     // record, and hand-written SQL deletes are what lost three StoneDesk
     // licences.
+    //
+    // WIRED RATHER THAN HAND-WRITTEN, and the first draft of this file got that
+    // wrong. It was modelled on api/rf-auth.js, which is the cleanest COMPLETE
+    // example of the action set -- and is also one of the five endpoints that
+    // predate api/_lib/employee-lifecycle.js and were deliberately left
+    // un-migrated because rewriting live auth for tidiness risks a locked-out
+    // customer. That reasoning does not extend to an endpoint written today.
+    // api/_lib/employee-lifecycle-wiring.test.js caught it at the push gate:
+    // "an auth endpoint exists that no list mentions". Adding it to
+    // PRE_EXISTING would have been raising a count to get past a gate, which is
+    // what that gate's own message warns against.
     if (action === 'set_active') {
       const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
-      if (!caller || PROVISIONING_ROLES.indexOf(caller.role) === -1) {
-        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only an Owner can activate or deactivate a credential' } });
-        return;
-      }
-
-      const target_id = String(body.employee_id || '').trim();
-      const nextActive = body.active === true;
-      const reason = String(body.reason || '').trim();
-      if (!target_id) { res.status(400).json({ error: { message: 'employee_id is required' } }); return; }
-      if (typeof body.active !== 'boolean') { res.status(400).json({ error: { message: 'active must be true or false' } }); return; }
-      // Required to switch someone OFF, not on. Reactivating is
-      // self-explanatory and always safe; a deactivation is the thing somebody
-      // reconstructs months later.
-      if (!nextActive && !reason) {
-        res.status(400).json({ error: { message: 'reason is required when deactivating a credential' } });
-        return;
-      }
-      if (reason.length > 500) { res.status(400).json({ error: { message: 'reason max 500 characters' } }); return; }
-
-      // No self-deactivation. It is the likeliest accidental route to a licence
-      // with zero active owners. Checked BEFORE the roster read on purpose: an
-      // already-deactivated caller deactivating themselves gets
-      // SELF_DEACTIVATE, not CREDENTIAL_INACTIVE.
-      if (!nextActive && target_id === caller.employee_id) {
-        res.status(409).json({ error: { code: 'SELF_DEACTIVATE', message: 'You cannot deactivate your own credential. Ask another Owner to do it.' } });
-        return;
-      }
-
-      // Read the real roster ONCE and decide from it -- never from what the
-      // client claimed about the target or about who else exists.
-      const allR = await fetch(rest(TABLE + '?license_hash=eq.' + enc(licHash) + '&select=employee_id,role,active'), { headers });
-      const all = await allR.json();
-      if (!allR.ok) return upstream(res, all);
-      const rowsAll = Array.isArray(all) ? all : [];
-
-      // Caller-still-active, computed off that same read. Costs no extra query.
-      const callerRow = rowsAll.filter(function (x) { return x.employee_id === caller.employee_id; })[0];
-      if (!callerRow || callerRow.active !== true) {
-        res.status(403).json({ error: { code: 'CREDENTIAL_INACTIVE', message: 'This credential has been deactivated. Sign in again with an active account.' } });
-        return;
-      }
-
-      const target = rowsAll.filter(function (x) { return x.employee_id === target_id; })[0];
-      if (!target) {
-        res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No such employee on this license' } });
-        return;
-      }
-
-      const activeOwners = rowsAll.filter(function (x) {
-        return x.active === true && PROVISIONING_ROLES.indexOf(x.role) !== -1;
+      const out = await lifecycle.setActive({
+        caller: caller, body: body, licHash: licHash, table: TABLE,
+        provisioningRoles: PROVISIONING_ROLES, roleLabel: PROVISIONING_LABEL,
+        rest: rest, headers: headers
+        // No `audit`: api/_lib/audit.js allowlists sairnlaw / sairncode /
+        // stonedesk only. This app HAS sv_audit_log, but that is the DOSING
+        // trail for sv_controlled -- a different record class, and routing
+        // credential events into it would mix the two in the one table a DEA
+        // inspector would read. Adding sairnvet to the shared writer belongs
+        // with the witnessing lock, where credential identity starts having
+        // consequences worth logging.
       });
-      // LAST_OWNER guard. bootstrap refuses once ANY row exists and does not
-      // filter on active, so a licence with zero active owners cannot log in,
-      // cannot run setup, and cannot re-bootstrap -- dead through the API.
-      //
-      // QUARANTINED, NOT DEAD. It is unreachable by construction while the
-      // caller-still-active check above stands: an active owner caller plus a
-      // DIFFERENT active owner target implies at least two. Kept deliberately,
-      // because reachability is a property of TODAY's rule set -- widening
-      // PROVISIONING_ROLES, adding a service-to-service caller, or any path
-      // that skips the active re-check makes it live again. It was reachable
-      // before that re-check existed and was proven firing live on 2026-08-23.
-      // Do not remove it as unused.
-      if (!nextActive && PROVISIONING_ROLES.indexOf(target.role) !== -1 && target.active === true && activeOwners.length <= 1) {
-        res.status(409).json({
-          error: {
-            code: 'LAST_OWNER',
-            message: 'This is the only active Owner on this license. Deactivating it would lock everyone out with no way back in through the app — provision another Owner first, then retry.'
-          }
-        });
-        return;
-      }
-
-      if (target.active === nextActive) {
-        res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, unchanged: true, remaining_owners: activeOwners.length });
-        return;
-      }
-
-      const patchR = await patchEmployee(target_id, { active: nextActive });
-      // PostgREST answers a PATCH with 204 No Content unless Prefer:
-      // return=representation is set, and patchEmployee deliberately does not
-      // set it. Parsing the body unconditionally THREW on success in rf, the
-      // outer catch turned it into a 502, and the caller saw a failure for a
-      // mutation that had already landed -- proven live 2026-08-27. Only parse
-      // when there is an error to read.
-      if (!patchR.ok) { const detail = await patchR.json().catch(function () { return null; }); return upstream(res, detail); }
-
-      const remaining = rowsAll.filter(function (x) {
-        var isActive = (x.employee_id === target_id) ? nextActive : x.active === true;
-        return isActive && PROVISIONING_ROLES.indexOf(x.role) !== -1;
-      }).length;
-
-      // NO AUDIT LOG FOR CREDENTIAL EVENTS, stated rather than silently absent,
-      // AND THE GAP IS SHARPER HERE THAN IN rf. api/_lib/audit.js allowlists
-      // exactly three tables -- sairnlaw_audit_log, sairncode_audit_log,
-      // stonedesk_audit_log -- and sairnvet is not among them. This app DOES
-      // have `sv_audit_log`, but that is the DOSING trail for sv_controlled and
-      // is a different subject; routing credential events into it would mix two
-      // record classes in the one table a DEA inspector would read. Adding
-      // sairnvet to the shared writer belongs with the witnessing lock, which
-      // is where credential identity starts having consequences worth logging.
-      res.status(200).json({ ok: true, employee_id: target_id, active: nextActive, remaining_owners: remaining, audited: false });
+      if (out.upstream) return upstream(res, out.upstream);
+      res.status(out.status).json(out.body);
       return;
     }
   } catch (err) {

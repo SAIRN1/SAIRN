@@ -49,7 +49,16 @@ const WIRED = [
   { file: 'sb-auth.js', app: 'sairnbiz', table: 'sb_employee_auth' },
   { file: 'scp-auth.js', app: 'sairnscape', table: 'scp_employee_auth' },
   { file: 'law-auth.js', app: 'sairnlaw', table: 'sairnlaw_employee_auth' },
-  { file: 'leg-auth.js', app: 'sairnlegacy', table: 'sairnlegacy_employee_auth' }
+  { file: 'leg-auth.js', app: 'sairnlegacy', table: 'sairnlegacy_employee_auth' },
+  // SAIRNvet, 2026-09-13 -- the SIXTEENTH and last app to get per-employee
+  // auth, and WIRED from its first commit rather than hand-written. Its
+  // first draft was modelled on api/rf-auth.js, which is the cleanest
+  // complete example of the ACTION SET and is also one of the five that
+  // predate this helper -- so the draft arrived hand-written and THIS TEST
+  // caught it at the push gate. PRE_EXISTING would have been the wrong
+  // list: its entry reason is 'already live before the helper existed', and
+  // adding a same-day endpoint there is raising a count to clear a gate.
+  { file: 'sv-auth.js', app: 'sairnvet', table: 'sairnvet_employee_auth' }
 ];
 
 // The five that already had their own hand-written set_active before the shared
@@ -82,8 +91,25 @@ const PRE_EXISTING = ['sd-auth.js', 'sc-auth.js', 'dnt-auth.js', 'mech-auth.js',
 const STILL_OPEN = [];
 
 // Pull the roles a `setup` gate actually enforces, out of its own source.
-// Handles both shapes in the repo: `caller.role !== 'owner'` and
-// `(caller.role !== 'owner' && caller.role !== 'superintendent')`.
+// THREE shapes exist in this repo and all three are real:
+//
+//   caller.role !== 'owner'                                    (literal)
+//   caller.role !== 'owner' && caller.role !== 'superintendent' (literals)
+//   PROVISIONING_ROLES.indexOf(caller.role) === -1              (the constant)
+//
+// THE THIRD WAS ADDED 2026-09-13, AND WIDENING RATHER THAN NARROWING WAS THE
+// RIGHT DIRECTION HERE. api/sv-auth.js writes its gate against the constant,
+// which is what `sairn-employee-auth-scaffold` asks for in terms -- it records
+// that sc-auth.js and sd-auth.js both DECLARE the constant "so if this list
+// ever grows, that guard grows with it automatically" and then use literals in
+// their own setup gates anyway. A gate written against the constant cannot
+// diverge from it, so the failure THIS TEST EXISTS FOR is structurally
+// impossible there; reading it as "names no roles" would have forced the newer
+// endpoint to adopt the weaker shape to satisfy the checker.
+//
+// The widening is narrow on purpose: it matches the constant BY NAME, so a
+// gate testing some other list still reads as unparseable rather than being
+// waved through. Driven in both directions by the two fixture arms below.
 function rolesFromSetupGate(src) {
   const at = src.indexOf("action === 'setup'");
   assert.ok(at > 0, 'no setup gate found');
@@ -94,6 +120,11 @@ function rolesFromSetupGate(src) {
   const re = /caller\.role !== '([a-z_]+)'/g;
   let g;
   while ((g = re.exec(m[1])) !== null) roles.push(g[1]);
+  if (!roles.length && /PROVISIONING_ROLES\.indexOf\(caller\.role\) === -1/.test(m[1])) {
+    // The gate IS the constant. Return what the constant declares -- the two
+    // cannot disagree, which is the whole point of writing it this way.
+    return declaredProvisioningRoles(src);
+  }
   assert.ok(roles.length > 0, 'the setup gate names no roles');
   return roles.sort();
 }
@@ -293,7 +324,14 @@ const UI = [
   { file: 'sairnlegacy.html', fn: 'legSetActive', render: 'legRenderAccess' },
   { file: 'sairnbiz.html', fn: 'sbSetActive', render: 'sbRenderAccess' },
   { file: 'sairngrounds.html', fn: 'grdSetActive', render: 'grdRenderAccess' },
-  { file: 'sairnscape.html', fn: 'scpSetActive', render: 'scpRenderAccess' }
+  { file: 'sairnscape.html', fn: 'scpSetActive', render: 'scpRenderAccess' },
+  // SAIRNvet, 2026-09-13. Its endpoint and its screen landed together
+  // rather than a release apart, because this test refused the endpoint
+  // on its own -- correctly. sairnvet.html had NO auth client at all
+  // before today: zero references to sv-auth, to X-SD-Auth, or to any
+  // session, and a gate comparing the licence to a literal and the PIN to
+  // '1234' in the browser with the ROLE PICKED FROM A DROPDOWN.
+  { file: 'sairnvet.html', fn: 'svSetActive', render: 'svRenderAccess' }
 ];
 
 // Empty as of 2026-09-03: all nine wired endpoints have a screen.

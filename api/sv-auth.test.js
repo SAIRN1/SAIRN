@@ -259,40 +259,59 @@ t('a second bootstrap is refused with ALREADY_PROVISIONED', () => {
   assert.ok(SRC.indexOf('ALREADY_PROVISIONED') !== -1);
 });
 
-// ── 6. THE DEACTIVATION LIFECYCLE ───────────────────────────────────────────
-section('6. set_active -- guard ordering, and deactivate-never-delete');
+// ── 6. THE DEACTIVATION LIFECYCLE, THROUGH THE SHARED HELPER ──────────────
+// REWRITTEN 2026-09-13, AND WHY MATTERS MORE THAN WHAT. This section used to
+// assert the guard ORDERING inside a hand-written set_active in this file --
+// self-deactivation before the roster read, the caller-still-active re-check,
+// the last-owner refusal, the 204-No-Content trap. Those guarantees are all
+// still real; they moved into api/_lib/employee-lifecycle.js when the push
+// gate caught that a same-day endpoint had no business hand-writing them, and
+// api/_lib/employee-lifecycle-wiring.test.js asserts them there.
+//
+// Re-asserting them here would have been the second copy of a security
+// decision that the shared helper exists to prevent -- and a copy that reads
+// the WRONG FILE, so it would go green on a helper that had lost the guard.
+// What this file can honestly assert is DELEGATION: that sv-auth hands the
+// helper the right app-specific values and nothing else.
+section("6. set_active and roster delegate, and pass this app's own values");
 const SA = SRC.slice(SRC.indexOf("action === 'set_active'"));
-t('self-deactivation is refused BEFORE the roster read', () => {
-  const self = SA.indexOf('SELF_DEACTIVATE');
-  const roster = SA.indexOf('select=employee_id,role,active');
-  assert.ok(self > 0 && roster > 0 && self < roster,
-    'an already-deactivated caller must get SELF_DEACTIVATE, not CREDENTIAL_INACTIVE');
+t('set_active calls the shared helper rather than hand-rolling the guards', () => {
+  assert.ok(/lifecycle\.setActive\(/.test(SA),
+    'a sixteenth hand-written copy of the lifecycle is what the helper exists to stop');
 });
-t('a reason is required to deactivate and not to reactivate', () => {
-  assert.ok(SA.indexOf('!nextActive && !reason') !== -1);
+t('...and hands it PROVISIONING_ROLES, not a literal', () => {
+  assert.ok(/provisioningRoles:\s*PROVISIONING_ROLES/.test(SA),
+    "the helper takes the list as a PARAMETER precisely so a guard cannot "
+    + "hardcode 'owner' and check nothing on an app whose list differs");
 });
-t('the caller-still-active re-check is computed off the same one read', () => {
-  assert.ok(SA.indexOf('CREDENTIAL_INACTIVE') !== -1);
-  assert.ok(SA.indexOf('callerRow.active !== true') !== -1);
+t('...and a human label for those roles', () => {
+  assert.ok(/roleLabel:\s*PROVISIONING_LABEL/.test(SA));
 });
-t('the last-owner guard is present and quarantined, not deleted', () => {
-  assert.ok(SA.indexOf('LAST_OWNER') !== -1);
-  assert.ok(SRC_RAW.indexOf('QUARANTINED, NOT DEAD') !== -1,
-    'the comment explaining why it looks unused must survive, or somebody removes it');
+t('roster delegates too', () => {
+  const R = SRC.slice(SRC.indexOf("action === 'roster'"), SRC.indexOf("action === 'set_active'"));
+  assert.ok(/lifecycle\.roster\(/.test(R));
 });
-t('the wire format is LAST_OWNER / remaining_owners, stated in the header', () => {
-  assert.ok(SA.indexOf('remaining_owners') !== -1);
-  assert.ok(SA.indexOf('remaining_admins') === -1, 'the platform has two spellings; pick one');
-  assert.ok(SRC_RAW.indexOf('WIRE FORMAT') !== -1);
+t('...with canView WIDER than provisioning -- a Practice Manager reads, an Owner changes', () => {
+  const R = SRC.slice(SRC.indexOf("action === 'roster'"), SRC.indexOf("action === 'set_active'"));
+  assert.ok(/canView:[^,]*MANAGEMENT_ROLES/.test(R),
+    'roster is management-gated; set_active is owner-gated, and they are different questions');
 });
 t('NOTHING in this endpoint deletes a credential row', () => {
   assert.ok(SRC.indexOf("method: 'DELETE'") === -1);
-  assert.ok(!/\bdelete\b/i.test(SRC.replace(/merge-duplicates/g, '')),
+  assert.ok(!/delete/i.test(SRC.replace(/merge-duplicates/g, '')),
     'deactivation is active=false; a delete orphans the author of a DEA-relevant record');
 });
-t('the PATCH result is only parsed when it failed', () => {
-  assert.ok(SA.indexOf('if (!patchR.ok)') !== -1,
-    'PostgREST answers 204 No Content, and parsing it unconditionally 502s a landed write');
+// THE HEADER MUST NAME THE SPELLING THE HELPER ACTUALLY EMITS. It said
+// LAST_OWNER / remaining_owners while this file was hand-written off
+// rf-auth.js, and wiring it onto the helper CHANGED THE WIRE FORMAT to
+// LAST_ADMIN / remaining_admins without changing the sentence describing it.
+// A client written against the wrong one breaks.
+t('the header names the wire format the shared helper really emits', () => {
+  const helper = fs.readFileSync(path.join(ROOT, 'api', '_lib', 'employee-lifecycle.js'), 'utf8');
+  const emitsAdmin = helper.indexOf('remaining_admins') !== -1;
+  assert.ok(emitsAdmin, 'the helper changed its wire format -- re-read it');
+  assert.ok(SRC_RAW.indexOf('LAST_ADMIN') !== -1 && SRC_RAW.indexOf('remaining_admins') !== -1,
+    'the header must name LAST_ADMIN / remaining_admins, which is what callers receive');
 });
 
 // ── 7. DIAGNOSTICS AND HONESTY ──────────────────────────────────────────────
@@ -304,9 +323,19 @@ t('NOT_PROVISIONED and NOT_GRANTED are distinguished', () => {
 t('...and each names the file that fixes it', () => {
   assert.ok(SRC.indexOf('sql/sairnvet_employee_auth_schema.sql') !== -1);
 });
-t('set_active reports audited:false rather than implying coverage', () => {
-  assert.ok(SA.indexOf('audited: false') !== -1,
-    'api/_lib/audit.js allowlists three tables and sairnvet is not one');
+// The `audited` flag is the SHARED HELPER's to emit, not this file's -- it is
+// what decides whether an audit writer was passed at all. What this file is
+// responsible for is NOT passing one, and saying why: api/_lib/audit.js
+// allowlists sairnlaw / sairncode / stonedesk only. sairnvet DOES have
+// sv_audit_log, and that is the DOSING trail for sv_controlled -- routing
+// credential events into it would mix two record classes in the one table a
+// DEA inspector would read.
+t('no audit writer is passed, and the reason is written down', () => {
+  assert.ok(!/audit:\s*\w/.test(SA),
+    'passing one would write credential events into the dosing trail');
+  assert.ok(SRC_RAW.indexOf('sv_audit_log') !== -1
+    && SRC_RAW.indexOf('allowlists') !== -1,
+    'the gap must be stated rather than silently absent');
 });
 t('all seven actions ship', () => {
   ['check_license', 'whoami', 'bootstrap', 'login', 'setup', 'roster', 'set_active']
