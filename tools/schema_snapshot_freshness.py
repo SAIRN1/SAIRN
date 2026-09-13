@@ -254,6 +254,59 @@ def capture_age_banner(snap, now=None):
     return head
 
 
+def age_finding(snap, actionable, now=None):
+    """A FAIL line when an EXPIRED capture is still producing dated verdicts.
+
+    ── WHY THIS IS NOT A PLAIN AGE GATE, WHICH IS THE OBVIOUS VERSION ───────
+    STALE_HOURS has existed since this tool shipped and gated NOTHING but a
+    paragraph. The exit code is `1 if missing else 0`, and the report-only
+    sweep reads the exit code plus lines starting with `  - ` or `FAIL` -- so
+    the age reached a human reading the full output and nothing else.
+
+    The obvious fix is "exit 1 when the capture is older than STALE_HOURS".
+    That is WRONG HERE and the reason is worth stating, because it is the
+    failure this repo already names about preauth_oracle_check: a capture is
+    older than 12 hours almost ALL of the time -- it is refreshed by hand, by a
+    person, in a Supabase editor. A raw age gate would sit at exit 1 for ever,
+    gate nothing, and be muted within a week.
+
+    SO THE FINDING IS THE COMBINATION, NOT THE AGE. It fires when the capture
+    has expired AND the tool is still emitting verdicts about tables live code
+    queries -- i.e. when somebody is about to act on information that has no
+    remaining warranty. An old capture with nothing to act on endangers nobody
+    and is not reported.
+
+    SCOPED TO `high`, NOT TO THE NEVER-RUN SUBSET, and that was a correction.
+    The first version keyed on never-run verdicts alone; every verdict this tool
+    prints is "as of the capture", including the UNDECIDABLE ones, and both
+    kinds are equally out of warranty once the capture expires. Keying on the
+    narrower set also made the condition untestable on a fixture -- never-run is
+    resolved from GIT COMMIT DATES, which a throwaway temp directory does not
+    have -- so the arms could only ever have been exercised against the real
+    repo. A condition that cannot be put in a fixture is a condition nobody can
+    show you failing.
+
+    A MISSING TIMESTAMP IS ALWAYS A FINDING, because then there is no expiry to
+    check at all and every verdict below is unscoped.
+
+    Returns the line to print, or '' when there is nothing to say.
+    """
+    if not actionable:
+        return ''
+    age = capture_age_hours(snap, now)
+    if age is None:
+        return ('\nFAIL: %d verdict(s) about tables live code queries rest on a capture '
+                'with\n      NO USABLE TIMESTAMP, so none of them can be scoped. '
+                'Re-capture before acting on any.\n' % len(actionable))
+    if age <= STALE_HOURS:
+        return ''
+    return ('\nFAIL: %d verdict(s) about tables live code queries rest on a capture %.1f '
+            'hours\n      old, past the %d-hour expiry. They were true AS OF THE CAPTURE '
+            'and cannot be\n      acted on now without a re-capture or a live check. This '
+            'is the correction\n      falling due, not a new defect.\n'
+            % (len(actionable), age, STALE_HOURS))
+
+
 def verdicts(missing, created, snap):
     """Resolve "never run" vs "snapshot is behind" where git can decide it.
 
@@ -407,6 +460,13 @@ def main(argv):
         print('  -- then COMMIT it. On 2026-09-11 the query had been run the night before')
         print('  and the file was still byte-identical to the 2026-09-02 capture, so the')
         print('  save-and-commit half is the step that actually goes missing.')
+        # ── THE EXPIRY REACHES THE REPORT, NOT JUST THE READER (2026-09-13) ─
+        # STALE_HOURS existed and gated NOTHING but a paragraph. The exit code
+        # is `1 if missing else 0`, and the report-only sweep reads the exit
+        # code plus lines starting with `  - ` or `FAIL` -- so a capture could
+        # be arbitrarily old and the only trace of it was prose nobody's tooling
+        # read.
+        print(age_finding(snap, high) or '', end='')
 
     return 1 if missing else 0
 

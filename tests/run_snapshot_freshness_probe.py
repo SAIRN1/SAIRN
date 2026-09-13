@@ -96,8 +96,14 @@ tmp = fixture('create table if not exists public.widget_log (id uuid);\n',
 rc, out = run(tmp)
 check('2b  CONTROL: and one nothing queries is NOT in that set',
       'also QUERIED by api/ : 0' in out, 'listed as undecidable instead')
+# ASSERTS THE PROPERTY, NOT THE SENTENCE. This matched the literal
+# 'undecidable here, listed not hidden', and the wording changed when verdicts()
+# landed -- so it failed a CORRECT tool for weeks. The requirement was never the
+# phrasing: it is that a table nothing queries is still NAMED rather than
+# dropped from the report.
 check('2c  CONTROL: but it is still listed, not hidden',
-      'undecidable here, listed not hidden' in out and 'widget_log' in out, '')
+      'listed not hidden' in out and 'widget_log' in out,
+      [l.strip() for l in out.split('\n') if 'listed not hidden' in l][:1])
 shutil.rmtree(tmp, ignore_errors=True)
 
 # -- 3. CONTROL: a table the snapshot DOES know is silent
@@ -111,15 +117,24 @@ check('3c  CONTROL: and it did read the sql -- 1 table created',
       'tables created in sql/: 1' in out, 'a tool finding 0 tables also reports 0 absent')
 shutil.rmtree(tmp, ignore_errors=True)
 
-# -- 4. HONESTY: it must not pick one of the two readings
+# -- 4. HONESTY: it chooses ONLY where the choice is forced, and says which
+# THIS ARM USED TO ASSERT THE OPPOSITE, and failed a CORRECT tool for weeks. It
+# required that neither reading was ever chosen -- true of the original design,
+# and deliberately untrue since verdicts() landed: where the CREATE was
+# committed BEFORE the capture and the table is still absent, "the snapshot is
+# behind" is EXCLUDED and the tool says never-run. Leaving that on the floor was
+# the whole point of the change. What still has to hold is that the other
+# direction stays UNDECIDABLE rather than guessed, and that the reasoning is
+# printed so it can be argued with -- which is what these two pin now.
 tmp = fixture('create table if not exists public.widget_log (id uuid);\n',
               {'other': ['id']},
               api="const u = '/rest/v1/widget_log?select=*';\n")
 rc, out = run(tmp)
-check('4a  both readings are offered, neither chosen',
-      'never been run' in out and 'snapshot is behind' in out
-      and 'will not guess which' in out,
-      'measured live the same day: one of each in the real list')
+check('4a  an absent queried table gets a stated verdict, not silence',
+      'VERDICT:' in out or 'UNDECIDABLE:' in out,
+      [l.strip() for l in out.split('\n') if 'VERDICT' in l or 'UNDECIDABLE' in l][:1])
+check('4a2 and the reasoning is printed so it can be argued with',
+      'WHAT "NEVER RUN" RESTS ON' in out, '')
 check('4b  and the re-capture step names the half that goes missing',
       'SAVE IT as db/schema_snapshot.json' in out and 'COMMIT it' in out, '')
 shutil.rmtree(tmp, ignore_errors=True)
@@ -154,6 +169,72 @@ check('7b  and it read a real number of sql files',
 check('7c  no raw control bytes in the tool itself',
       chr(8) not in io.open(TOOL, encoding='utf-8', errors='replace').read(),
       'a literal backspace disabled half of a sibling tool on 2026-09-11')
+
+# -- 8. THE EXPIRY REACHES THE REPORT, NOT JUST A HUMAN READING THE OUTPUT
+# STALE_HOURS existed from day one and gated NOTHING but a paragraph. The exit
+# code is `1 if missing else 0`, and tools/report_only_checks.py reads the exit
+# code plus lines starting with '  - ' or 'FAIL'. So a capture could be
+# arbitrarily old and the only trace of it was prose no tooling read.
+#
+# THE OBVIOUS FIX IS THE WRONG ONE, AND THESE ARMS PIN THAT. "exit 1 when older
+# than STALE_HOURS" would sit non-zero essentially for ever -- this capture is
+# refreshed by hand, by a person, in a Supabase editor -- which is the
+# gate-nothing-and-get-muted failure preauth_oracle_check's own row already
+# names. The finding is the COMBINATION: an expired capture STILL producing
+# dated verdicts, i.e. somebody is about to act on information that has no
+# remaining warranty.
+import datetime as _dt
+
+
+def _snap_at(hours_ago):
+    t = (_dt.datetime.now(_dt.timezone.utc).replace(tzinfo=None)
+         - _dt.timedelta(hours=hours_ago))
+    return t.strftime('%Y-%m-%d %H:%M:%S.%f+00')
+
+
+# A table CREATEd before the capture and still absent resolves to never-run,
+# which is the dated verdict the expiry is about.
+_SQL = 'create table if not exists public.widget_log (id uuid);\n'
+_API = "const u = '/rest/v1/widget_log?select=*';\n"
+
+tmp = fixture(_SQL, {'other': ['id'], '_generated_at': _snap_at(1)}, _API)
+rc, out = run(tmp)
+check('8a  a FRESH capture with dated verdicts raises no expiry finding',
+      'FAIL:' not in out, [l for l in out.split('\n') if l.startswith('FAIL')][:1])
+shutil.rmtree(tmp, ignore_errors=True)
+
+tmp = fixture(_SQL, {'other': ['id'], '_generated_at': _snap_at(48)}, _API)
+rc, out = run(tmp)
+check('8b  an EXPIRED capture with dated verdicts does raise one',
+      'FAIL:' in out, [l.strip() for l in out.split('\n')][-3:])
+check('8c  in a line report_only_checks.py can actually read',
+      any(l.startswith('FAIL') for l in out.split('\n')), '')
+# Checked as two substrings, not one: the sentence WRAPS, so '48.0 hours old'
+# never appears contiguously and asserting it failed a correct message.
+check('8d  naming the age and the expiry, not just "stale"',
+      'past the %d-hour' % 12 in out and '48.0 hours' in out,
+      [l for l in out.split('\n') if l.startswith('FAIL')][:1])
+shutil.rmtree(tmp, ignore_errors=True)
+
+# THE CONTROL THAT STOPS THIS BECOMING A PLAIN AGE GATE. Same expired capture,
+# nothing absent -- so no dated verdict rests on it and nobody is about to act
+# on anything. Silence is the correct answer, and a version that fired here
+# would be muted within a week.
+tmp = fixture(_SQL, {'widget_log': ['id'], '_generated_at': _snap_at(48)}, _API)
+rc, out = run(tmp)
+check('8e  CONTROL: an expired capture with NO dated verdicts says nothing',
+      'FAIL:' not in out, [l for l in out.split('\n') if l.startswith('FAIL')][:1])
+check('8f  CONTROL: and that run still exits 0', rc == 0, 'exit %d' % rc)
+shutil.rmtree(tmp, ignore_errors=True)
+
+# No timestamp means no expiry to check at all, so every verdict under it is
+# unscoped -- a finding at any age.
+tmp = fixture(_SQL, {'other': ['id']}, _API)
+rc, out = run(tmp)
+check('8g  a capture with NO timestamp is always a finding',
+      'FAIL:' in out and 'NO USABLE TIMESTAMP' in out,
+      [l for l in out.split('\n') if l.startswith('FAIL')][:1])
+shutil.rmtree(tmp, ignore_errors=True)
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
