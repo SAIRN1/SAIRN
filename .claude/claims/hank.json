@@ -1375,6 +1375,16 @@
       "claimed_at_epoch": 1789335172.4005568,
       "status": "released",
       "released_at": "2026-09-13T22:23:38Z"
+    },
+    {
+      "id": "hank-1789338625",
+      "session": "hank",
+      "subject": "ai-proxy-probes",
+      "task": "sairn owned ai proxy probe set and soup toolchain boundary",
+      "claimed_at": "2026-09-13T22:30:25Z",
+      "claimed_at_epoch": 1789338625.536523,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
