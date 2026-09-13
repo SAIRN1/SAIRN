@@ -1753,3 +1753,25 @@ The unswept files are **listed by name** so the coverage owed is actionable, and
 
 - **`LOCK_MAX_AGE = 900` is a correctness bound for this use, not a tuning knob.** A tier-A pass (~3 min) is safely inside it. The full 34-minute sweep is **not**: another run would treat the lock as abandoned, delete it, and start mid-measurement. The ceiling was chosen against the 400s hook timeout, not against a long measurement.
 - **The lock makes the tree exclusive, not clean.** A mutation left by a *killed* earlier run (its `finally` never ran) is still sitting there, so the runner must check `git status --porcelain` itself between runs rather than trusting the lock.
+
+---
+
+## 2026-09-13 -- the company's own name has three spellings
+
+Pushed `2eea83b4`. **Measured and reported. Nothing changed.**
+
+Picked up from the report-only sweep, where `literal_drift_check.py` had a **gated** finding sitting unexamined. It gates on *entity name* precisely because it is an invariant: one company has one legal name.
+
+| string | app HTML | `docs/legal/` (signed documents) | planning docs |
+|---|---|---|---|
+| `SAIRN Tech LLC` | 27 (**23 not comments**) | **13** | 0 |
+| `SAIRN Technologies` | 34 (**11 not comments**) | 0 | 1 |
+| `SAIRN Technologies LLC` | 0 | 0 | **3** |
+
+**Both spellings reach customers and two of the sites are legal assertions.** `sairnscape.html:244` renders **"© 2026 SAIRN Tech LLC"**; `sairnvet.html:166` renders **"by SAIRN Technologies™"**. Also live: **ten AI system prompts** say *"Built by SAIRN Tech LLC"* and state it as provenance when a user asks who made the product; `stonedesk.html:19099` puts `SAIRN Technologies` in the footer of a printed **Confidential SOP**; `stonedesk.html:35590` uses `SAIRN Tech LLC` as the default shop name.
+
+**The strongest in-repo signal is the signature blocks** — all four `docs/legal/` templates read `SAIRN Tech LLC`, 13 occurrences, no other variant. Those are the documents a customer signs.
+
+**But a third string exists, and that is why this is not a typo.** `docs/2026-08-30-sairntech-questions-for-counsel-and-cpa.md` is **titled** *"SAIRN Technologies LLC"*, and the shell-scoping doc records the marketplace README as published under it. **A document written to ask counsel questions, using a different entity name from the signature blocks, is the shape of an open question rather than a slip.**
+
+**Deliberately not done:** no occurrence changed (34 live sites, 8 files — a bulk rename would be the find-replace CLAUDE.md forbids applied to a legal fact nobody has confirmed); **no variant declared correct, including the most frequent one and the one in the signature blocks — frequency is not authority**; and the checker was **not silenced or exempted**, because a gated invariant staying red until the fact is decided is what it is for.
