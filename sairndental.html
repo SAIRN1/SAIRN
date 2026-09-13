@@ -1300,8 +1300,69 @@ function dntIsQuotaError(e){
       || n === 'NS_ERROR_DOM_QUOTA_REACHED'
       || e.code === 22 || e.code === 1014;
 }
+// ── THE PER-RECORD MODIFICATION STAMP (2026-09-13) ───────────────────────
+// `_m` is an ISO instant recording when THIS DEVICE last changed a record.
+// It is what makes real conflict resolution possible in dntMergeById: without
+// it, "is my copy newer than the server's" is unanswerable and the merge can
+// only disclose a loss, never prevent one.
+//
+// STAMPED CENTRALLY, IN st(), AND THAT IS THE WHOLE DESIGN DECISION. There
+// are 233 st() call sites in this file; editing each one would be 233 chances
+// to miss one, and a record that silently never gets stamped is a record the
+// merge silently keeps overwriting -- the defect, surviving inside its own fix.
+// One place cannot be missed.
+//
+// IT STAMPS ONLY WHAT ACTUALLY CHANGED. st() writes a whole collection on
+// every save, so stamping everything would mark all records modified every
+// time anything was and make `_m` meaningless. Each record is compared against
+// the stored version by CONTENT -- `_m` itself excluded, or the comparison
+// would differ by construction on the second save.
+//
+// IT NEVER MUTATES THE CALLER'S OBJECT. A changed record is copied before the
+// stamp goes on, because callers hold references to these objects and an
+// in-place edit would make the same record look modified on the next save.
+//
+// SUPPRESSED DURING SYNC (dntSyncingFromServer). Merging the server's rows in
+// is not a local edit, and stamping them would mark every synced record as
+// locally-modified-just-now -- which would make the merge prefer local
+// forever and quietly resurrect the overwrite problem in reverse.
+var dntSyncingFromServer = false;
+// Content identity, IGNORING `_m`. Two records that differ only by when they
+// were stamped are the same record.
+function dntContentStr(v){
+  if(v===null||typeof v!=='object'||Array.isArray(v))return dntStableStr(v);
+  var c={};
+  for(var k in v)if(Object.prototype.hasOwnProperty.call(v,k)&&k!=='_m')c[k]=v[k];
+  return dntStableStr(c);
+}
+function dntStampChanged(k,v){
+  if(dntSyncingFromServer||!Array.isArray(v))return v;
+  var prev=ld(k,null);
+  if(!Array.isArray(prev))prev=[];
+  var byId=Object.create(null),i;
+  for(i=0;i<prev.length;i++){var p=prev[i];if(p&&typeof p==='object'&&p.id!=null)byId[p.id]=p;}
+  var now=new Date().toISOString(),out=new Array(v.length);
+  for(i=0;i<v.length;i++){
+    var r=v[i];
+    if(!r||typeof r!=='object'||Array.isArray(r)||r.id==null){out[i]=r;continue;}
+    var old=byId[r.id];
+    if(old&&dntContentStr(old)===dntContentStr(r)){
+      // Unchanged. Carry the EXISTING stamp forward rather than dropping it --
+      // losing it would make an old edit look older than it is.
+      if(r._m===undefined&&old._m!==undefined){
+        var keep={};for(var kk in r)if(Object.prototype.hasOwnProperty.call(r,kk))keep[kk]=r[kk];
+        keep._m=old._m;out[i]=keep;
+      }else out[i]=r;
+      continue;
+    }
+    var c={};for(var ck in r)if(Object.prototype.hasOwnProperty.call(r,ck))c[ck]=r[ck];
+    c._m=now;out[i]=c;
+  }
+  return out;
+}
 function st(k,v){
   try{
+    v=dntStampChanged(k,v);
     localStorage.setItem(k,JSON.stringify(v));
     return true;
   }catch(e){
@@ -5321,42 +5382,59 @@ function dntStableStr(v){
     return JSON.stringify(k)+':'+dntStableStr(v[k]);
   }).join(',')+'}';
 }
-// ── THE SERVER STILL WINS. IT JUST STOPS DOING IT SILENTLY (2026-09-13) ────
-// This replaced the local record with the server's and said nothing, so an
-// edit made on this device since the last sync was destroyed with no error,
-// no toast and no console line. That is active data loss, not a stale view.
+// ── REAL CONFLICT RESOLUTION ON `_m` (2026-09-13) ─────────────────────────
+// This replaced the local record with the server's unconditionally and said
+// nothing, so an edit made on this device since the last sync was destroyed
+// with no error, no toast and no console line. Active data loss.
 //
-// WHAT THIS DOES NOT DO, STATED PLAINLY BECAUSE THE HONEST VERSION MATTERS:
-// it is NOT `updated_at`-based conflict resolution. It cannot be yet --
-// MEASURED, not assumed: no record in this app carries a modification
-// timestamp (zero record-level `updated_at`/`_ts` assignments in the file),
-// the server's `updated_at` is a COLUMN and the generic read is `select=data`,
-// so it never reaches the client at all. A merge written to compare
-// `local.updated_at` with `sr.updated_at` would compare undefined with
-// undefined on every record, resolve server-wins exactly as before, and LOOK
-// like conflict resolution. That is the fake fix this deliberately is not.
+// It is now resolved on the per-record `_m` stamp that st() maintains:
 //
-// So the resolution rule is unchanged and still documented -- server wins for
-// a given id, which the on_conflict upsert already made true. What changes is
-// that a REPLACEMENT OF DIFFERING CONTENT IS NOW COUNTED AND REPORTED, so the
-// loss is visible to the person it happened to.
+//   local._m > server._m   -> THE LOCAL EDIT IS NEWER AND IS KEPT. This is the
+//                             half that PREVENTS the loss rather than
+//                             reporting it. The record stays until it is
+//                             pushed, and `_m` rides along in `data` so the
+//                             server ends up carrying it too.
+//   otherwise              -> server wins, as before.
 //
-// `conflicts` is an optional out-array: existing callers that pass nothing
-// keep the old signature and behaviour exactly.
+// EITHER WAY, A DIFFERENCE IS REPORTED. Keeping local is not free -- the
+// server's version is now the one being discarded -- so both directions go
+// into `conflicts` with which side was kept, and the sweep tells the user.
+//
+// MISSING STAMPS MEAN SERVER WINS, which is deliberate and is what makes this
+// safe to ship on live data. Every record written before today has no `_m`,
+// and inventing one would date an edit that was never observed. Records
+// converge on being stamped as they are next saved.
+//
+// THE HONEST LIMIT, AND IT IS REAL: `_m` COMES FROM THE DEVICE'S OWN CLOCK.
+// Two workstations whose clocks disagree will order edits by the skew rather
+// than by what happened. That is why local is preferred only on a STRICT
+// `>`, and why a conflict is reported in BOTH directions -- a human seeing
+// "we kept this device's copy" on a record they did not touch is the signal
+// that a clock is wrong. Server-side ordering would need the server to see
+// the edit, and it does not: writes are pushed whole and the server stamps
+// only when it received them, not when they were made.
+//
+// `conflicts` is an optional out-array. A caller passing nothing gets the
+// previous signature, and -- because the resolution itself changed -- the new
+// behaviour. That is intended: the whole point is that no caller keeps the
+// silent overwrite.
 function dntMergeById(local, serverArr, conflicts){
   var merged=local.slice();
   serverArr.forEach(function(sr){
     var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
-    if(idx>=0){
-      if(conflicts){
-        var lr=merged[idx];
-        // Only a DIFFERENCE counts. The overwhelmingly common case is the
-        // server returning the row this device pushed, byte-identical, and
-        // reporting that as a conflict would bury the real ones.
-        if(lr&&dntStableStr(lr)!==dntStableStr(sr))conflicts.push(sr.id);
-      }
-      merged[idx]=sr;
-    }else merged.push(sr);
+    if(idx<0){merged.push(sr);return;}
+    var lr=merged[idx];
+    // Only a DIFFERENCE matters. The overwhelmingly common case is the server
+    // returning the row this device pushed, unchanged; reporting that would
+    // bury the real ones.
+    if(!lr||dntContentStr(lr)===dntContentStr(sr)){merged[idx]=sr;return;}
+    var lm=lr._m,sm=sr._m;
+    if(typeof lm==='string'&&typeof sm==='string'&&lm>sm){
+      if(conflicts)conflicts.push({id:sr.id,kept:'local'});
+      return;                       // local is newer: keep it, discard theirs
+    }
+    if(conflicts)conflicts.push({id:sr.id,kept:'server'});
+    merged[idx]=sr;
   });
   return merged;
 }
@@ -5412,9 +5490,14 @@ async function dntSyncFromServer(){
   // server. Reported, never silent: a sync that deliberately did not take the
   // server's answer has to say so, or it looks like a sync that agreed.
   var unconfirmedHeld=[];
-  // Records whose LOCAL copy differed from the server's and was replaced. See
-  // dntMergeById() -- server-wins is unchanged; this is the disclosure of it.
+  // Records where the local and server copies differed, with which side was
+  // kept. See dntMergeById() -- resolution is on the `_m` stamp now.
   var overwritten=[];
+  // Merging the server's rows in is NOT a local edit. Without this, st()
+  // would stamp every synced record as modified-just-now and the merge would
+  // prefer local forever -- the overwrite bug, in reverse.
+  dntSyncingFromServer=true;
+  try{
   for(var i=0;i<DNT_SYNC_RESOURCES.length;i++){
     var resource=DNT_SYNC_RESOURCES[i][0], key=DNT_SYNC_RESOURCES[i][1];
     var serverData=await sdnData('read',resource,{});
@@ -5519,18 +5602,35 @@ async function dntSyncFromServer(){
     // panel nobody is looking at.
     if($('panel-credentials')&&$('panel-credentials').classList.contains('on'))refreshCredentialBoard();
   }
-  // A LOCAL EDIT THAT THE SERVER REPLACED IS TOLD TO THE PERSON IT HAPPENED
-  // TO. Rendered here rather than left to each caller: this is the only place
+  }finally{
+    // FINALLY, not a plain assignment at the end. Every await above can
+    // reject; leaving this true would silently disable stamping for the rest
+    // of the session, and a record that is never stamped is one the merge
+    // goes back to overwriting silently.
+    dntSyncingFromServer=false;
+  }
+  // A CONFLICT IS TOLD TO THE PERSON IT HAPPENED TO, IN BOTH DIRECTIONS.
+  // Rendered here rather than left to each caller: this is the only place
   // that knows the whole sweep's result, and a per-resource toast on an
   // 18-resource sweep is a toast nobody reads.
   if(overwritten.length){
-    var lost=overwritten.reduce(function(n,o){return n+o.ids.length;},0);
-    try{ console.warn('SAIRNdental sync: '+lost+' record(s) on this device were '+
-      'REPLACED by a different version from the server -- '+
-      overwritten.map(function(o){return o.key+': '+o.ids.join(', ');}).join(' | ')); }catch(e){}
-    toast(lost+' record'+(lost===1?'':'s')+' on this device '+(lost===1?'was':'were')+
-      ' replaced by the server’s version. If you edited '+(lost===1?'it':'them')+
-      ' here and had not synced, re-enter the change.',8000);
+    var flat=[];
+    overwritten.forEach(function(o){o.ids.forEach(function(c){flat.push({key:o.key,c:c});});});
+    var keptLocal=flat.filter(function(x){return x.c.kept==='local';});
+    var keptServer=flat.filter(function(x){return x.c.kept!=='local';});
+    try{ console.warn('SAIRNdental sync conflicts: '+
+      keptServer.length+' replaced by the server, '+keptLocal.length+
+      ' kept from this device -- '+
+      flat.map(function(x){return x.key+':'+x.c.id+'('+x.c.kept+')';}).join(' | ')); }catch(e){}
+    // BOTH DIRECTIONS ARE TOLD. Keeping this device's copy discards the
+    // server's, which somebody else may have made -- reporting only the
+    // losses in one direction would be the same silence one step over.
+    var msg=[];
+    if(keptServer.length)msg.push(keptServer.length+' record'+(keptServer.length===1?'':'s')+
+      ' on this device '+(keptServer.length===1?'was':'were')+' replaced by a newer version from the server');
+    if(keptLocal.length)msg.push(keptLocal.length+' record'+(keptLocal.length===1?'':'s')+
+      ' edited here more recently '+(keptLocal.length===1?'was':'were')+' KEPT, and the server’s version discarded');
+    toast(msg.join('; ')+'. Check them if that is not what you expected.',9000);
   }
   return {changed:changed, failures:failureCount, total:DNT_SYNC_RESOURCES.length+2,
           storage_failures:storageFailures, storage_full:dntQuotaHit,

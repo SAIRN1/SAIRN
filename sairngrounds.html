@@ -1432,8 +1432,49 @@ function H(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').re
 // codebase keeps rediscovering -- a change spread over that many sites gets
 // half-applied, and the half that is missed looks exactly like the half that
 // is not.
+// ── THE PER-RECORD MODIFICATION STAMP (2026-09-13) ───────────────────────
+// `_m` is an ISO instant recording when THIS DEVICE last changed a record.
+// It is what makes real conflict resolution possible in grdMergeById --
+// without it, "is my copy newer than the server's" is unanswerable.
+//
+// STAMPED CENTRALLY, IN st(). There are 223 st() call sites in this file;
+// editing each would be 223 chances to miss one, and an unstamped record is
+// one the merge silently keeps overwriting -- the defect surviving inside its
+// own fix. Only what actually CHANGED is stamped, compared by content with
+// `_m` excluded, and the caller's object is copied rather than mutated.
+// Suppressed during sync: merging the server's rows in is not a local edit.
+var grdSyncingFromServer=false;
+function grdContentStr(v){
+  if(v===null||typeof v!=='object'||Array.isArray(v))return grdStableStr(v);
+  var c={};
+  for(var k in v)if(Object.prototype.hasOwnProperty.call(v,k)&&k!=='_m')c[k]=v[k];
+  return grdStableStr(c);
+}
+function grdStampChanged(k,v){
+  if(grdSyncingFromServer||!Array.isArray(v))return v;
+  var prev=ld(k,null);
+  if(!Array.isArray(prev))prev=[];
+  var byId=Object.create(null),i;
+  for(i=0;i<prev.length;i++){var p=prev[i];if(p&&typeof p==='object'&&p.id!=null)byId[p.id]=p;}
+  var now=new Date().toISOString(),out=new Array(v.length);
+  for(i=0;i<v.length;i++){
+    var r=v[i];
+    if(!r||typeof r!=='object'||Array.isArray(r)||r.id==null){out[i]=r;continue;}
+    var old=byId[r.id];
+    if(old&&grdContentStr(old)===grdContentStr(r)){
+      if(r._m===undefined&&old._m!==undefined){
+        var keep={};for(var kk in r)if(Object.prototype.hasOwnProperty.call(r,kk))keep[kk]=r[kk];
+        keep._m=old._m;out[i]=keep;
+      }else out[i]=r;
+      continue;
+    }
+    var c={};for(var ck in r)if(Object.prototype.hasOwnProperty.call(r,ck))c[ck]=r[ck];
+    c._m=now;out[i]=c;
+  }
+  return out;
+}
 function st(k,v){
-  try{localStorage.setItem(k,JSON.stringify(v));return true;}
+  try{v=grdStampChanged(k,v);localStorage.setItem(k,JSON.stringify(v));return true;}
   catch(e){
     if(typeof toast==='function')toast('NOT saved — this browser storage is full or unavailable. Nothing was written, and the screen still shows the previous data.',8000);
     return false;
@@ -2040,19 +2081,30 @@ function grdStableStr(v){
 //
 // `conflicts` is an optional out-array -- a caller passing nothing gets the
 // previous signature and previous behaviour, unchanged.
+// RESOLVED ON `_m`: local._m > server._m keeps the local record and discards
+// the server's; otherwise the server wins as before. A MISSING STAMP MEANS
+// SERVER WINS -- every record written before today has none, and inventing one
+// would date an edit that was never observed.
+//
+// THE HONEST LIMIT: `_m` is the DEVICE'S OWN CLOCK. Two workstations whose
+// clocks disagree order edits by the skew. That is why local is preferred only
+// on a STRICT `>` and why a conflict is reported in BOTH directions -- a
+// "we kept this device's copy" on a record nobody here touched is the signal
+// that a clock is wrong.
 function grdMergeById(local, serverArr, conflicts){
   var merged=local.slice();
   serverArr.forEach(function(sr){
     var idx=merged.findIndex(function(m){return m&&sr&&m.id!=null&&m.id===sr.id;});
-    if(idx>=0){
-      if(conflicts){
-        var lr=merged[idx];
-        // Only a DIFFERENCE counts. The common case is the server returning
-        // the row this device pushed, byte-identical.
-        if(lr&&grdStableStr(lr)!==grdStableStr(sr))conflicts.push(sr.id);
-      }
-      merged[idx]=sr;
-    }else merged.push(sr);
+    if(idx<0){merged.push(sr);return;}
+    var lr=merged[idx];
+    if(!lr||grdContentStr(lr)===grdContentStr(sr)){merged[idx]=sr;return;}
+    var lm=lr._m,sm=sr._m;
+    if(typeof lm==='string'&&typeof sm==='string'&&lm>sm){
+      if(conflicts)conflicts.push({id:sr.id,kept:'local'});
+      return;
+    }
+    if(conflicts)conflicts.push({id:sr.id,kept:'server'});
+    merged[idx]=sr;
   });
   return merged;
 }
@@ -2087,23 +2139,39 @@ async function grdSyncFromServer(){
   // Collected across the whole sweep and reported once -- a toast per resource
   // on a sweep this size is a toast nobody reads.
   var overwritten=[];
-  for(var i=0;i<resources.length;i++){
-    var res=await grdData('read',resources[i][0],{});
-    if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
-      var conf=[];
-      st(resources[i][1],grdMergeById(ld(resources[i][1],[]),res.data,conf));changed=true;
-      if(conf.length)overwritten.push({key:resources[i][1],ids:conf});
+  // Merging the server's rows in is NOT a local edit. Without this, st() would
+  // stamp every synced record as modified-just-now and the merge would prefer
+  // local forever -- the overwrite bug, in reverse. `finally` because every
+  // await below can reject, and leaving it true disables stamping for the rest
+  // of the session.
+  grdSyncingFromServer=true;
+  try{
+    for(var i=0;i<resources.length;i++){
+      var res=await grdData('read',resources[i][0],{});
+      if(res&&res.provisioned&&Array.isArray(res.data)&&res.data.length){
+        var conf=[];
+        st(resources[i][1],grdMergeById(ld(resources[i][1],[]),res.data,conf));changed=true;
+        if(conf.length)overwritten.push({key:resources[i][1],ids:conf});
+      }
     }
-  }
-  // A LOCAL EDIT THE SERVER REPLACED IS TOLD TO THE PERSON IT HAPPENED TO.
+  }finally{ grdSyncingFromServer=false; }
+  // A CONFLICT IS TOLD TO THE PERSON IT HAPPENED TO, IN BOTH DIRECTIONS --
+  // keeping this device's copy discards somebody else's, and reporting only
+  // one direction would be the same silence one step over.
   if(overwritten.length){
-    var lost=overwritten.reduce(function(n,o){return n+o.ids.length;},0);
-    try{ console.warn('SAIRNgrounds sync: '+lost+' record(s) on this device were '+
-      'REPLACED by a different version from the server -- '+
-      overwritten.map(function(o){return o.key+': '+o.ids.join(', ');}).join(' | ')); }catch(e){}
-    if(typeof toast==='function')toast(lost+' record'+(lost===1?'':'s')+' on this device '+
-      (lost===1?'was':'were')+' replaced by the server’s version. If you edited '+
-      (lost===1?'it':'them')+' here and had not synced, re-enter the change.',8000);
+    var flat=[];
+    overwritten.forEach(function(o){o.ids.forEach(function(c){flat.push({key:o.key,c:c});});});
+    var keptLocal=flat.filter(function(x){return x.c.kept==='local';});
+    var keptServer=flat.filter(function(x){return x.c.kept!=='local';});
+    try{ console.warn('SAIRNgrounds sync conflicts: '+keptServer.length+
+      ' replaced by the server, '+keptLocal.length+' kept from this device -- '+
+      flat.map(function(x){return x.key+':'+x.c.id+'('+x.c.kept+')';}).join(' | ')); }catch(e){}
+    var msg=[];
+    if(keptServer.length)msg.push(keptServer.length+' record'+(keptServer.length===1?'':'s')+
+      ' on this device '+(keptServer.length===1?'was':'were')+' replaced by a newer version from the server');
+    if(keptLocal.length)msg.push(keptLocal.length+' record'+(keptLocal.length===1?'':'s')+
+      ' edited here more recently '+(keptLocal.length===1?'was':'were')+' KEPT, and the server’s version discarded');
+    if(typeof toast==='function')toast(msg.join('; ')+'. Check them if that is not what you expected.',9000);
   }
   if(changed){
     fillPropertySelects();rDash();rProps();rJobs();rQuotes();rGolf();rSched();rInv();rDreamClose();

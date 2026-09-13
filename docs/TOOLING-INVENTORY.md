@@ -203,7 +203,7 @@ fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
-| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `discarded_verdict_check.test.js`, `run_checker_control_probe.py` |
+| `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `discarded_verdict_check.test.js`, `fail_open_browser_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `sairn_storage_wrapper_honesty.js` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `faultkit.js`, `live_mode_probe.py` |

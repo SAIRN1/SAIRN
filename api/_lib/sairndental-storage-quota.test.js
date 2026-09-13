@@ -86,11 +86,21 @@ function makeStore(fullFrom) {
 function build(store, logs) {
   return new Function('localStorage', 'console',
     scalarVar('dntQuotaHit') + '\n' +
+    // st()'s DEPENDENCIES GREW on 2026-09-13 when it started stamping `_m`,
+    // and this harness builds st() in isolation -- so without these it threw,
+    // st()'s own catch swallowed it, and EVERY arm reported a failed write.
+    // Extracted from the real file, like everything else here: a stub would
+    // let the stamping change underneath this suite unnoticed.
+    scalarVar('dntSyncingFromServer') + '\n' +
+    fn('function dntStableStr(v)') + '\n' +
+    fn('function dntContentStr(v)') + '\n' +
+    fn('function dntStampChanged(k,v)') + '\n' +
     fn('function dntIsQuotaError(e)') + '\n' +
     fn('function st(k,v)') + '\n' +
     fn('function ld(k,d)') + '\n' +
     fn('function dntStorageFailureMessage(result)') + '\n' +
     'return { st: st, ld: ld, msg: dntStorageFailureMessage,' +
+    '         stamp: dntStampChanged,' +
     '         quotaHit: function(){ return dntQuotaHit; } };'
   )(store, { error: (m) => logs.push(String(m)) });
 }
