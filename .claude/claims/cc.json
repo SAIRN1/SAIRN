@@ -1084,6 +1084,16 @@
       "claimed_at_epoch": 1789320391.1118639,
       "status": "released",
       "released_at": "2026-09-13T20:09:27Z"
+    },
+    {
+      "id": "cc-1789331417",
+      "session": "cc",
+      "subject": "cc",
+      "task": "metamorphic relations runner and the extracted checker skeleton",
+      "claimed_at": "2026-09-13T20:30:17Z",
+      "claimed_at_epoch": 1789331417.082458,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
