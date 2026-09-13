@@ -2006,6 +2006,11 @@ var SD_SYNCED=[
 ];
 var SD_SYNCED_ON={};
 SD_SYNCED.forEach(function(k){SD_SYNCED_ON[k]=true;});
+// The two entries above that are a single OBJECT rather than an array of
+// records. Declared rather than sniffed: an array-shaped collection that
+// happens to be empty on one save must not be mistaken for one of these, and a
+// future object-shaped key has to be written down here to be backed up at all.
+var SD_SYNCED_OBJECT={sd_negotiated_prices:true, sd_pricing_rules:true};
 // Set while seeding or hydrating. Seeding writes many arrays of demo rows in
 // one pass, and demo data is not the customer's business record; hydration
 // writes rows that CAME from the server, so echoing them back is pure noise.
@@ -2015,7 +2020,33 @@ function sdSyncCollection(key,next,prev){
   if(sdSyncSuppressed) return;
   if(typeof sdData!=='function') return;
   if(typeof sdLicenseKey!=='function'||!sdLicenseKey()) return;
-  if(!Array.isArray(next)) return;      // single objects are not this pattern
+  // ── THE TWO SINGLE-OBJECT COLLECTIONS (2026-09-13) ─────────────────────
+  // `if(!Array.isArray(next)) return;` sat here alone, so sd_negotiated_prices
+  // and sd_pricing_rules -- both plain objects, not arrays -- were listed in
+  // SD_SYNCED and NEVER SYNCED AT ALL. Not their writes, not their deletes.
+  // The shop's negotiated supplier prices and its whole discount rule set
+  // lived in one browser and died with its cache: exactly the state sd_crm and
+  // sd_customers were in before each got a real sync, on a list that reads as
+  // "these are backed up".
+  //
+  // ONE ROW PER LICENCE, BLOB-WRAPPED. The server branch is keyed and stores
+  // `data: payload` verbatim, so `{id:'all', blob:<object>}` round-trips
+  // without a server change. Wrapped rather than spread, because spreading an
+  // object whose own keys are SKUs would collide with `id` the first time a
+  // vendor used one.
+  if(!Array.isArray(next)){
+    if(!SD_SYNCED_OBJECT[key]) return;
+    var objNow, objWas;
+    try{ objNow=JSON.stringify(next); }catch(e){ return; }
+    try{ objWas=JSON.stringify(prev); }catch(e){ objWas=null; }
+    if(objWas===objNow) return;          // same rule as the array path: only what changed
+    sdData('write',key,{id:'all',blob:next}).then(function(saved){
+      if(saved===null){
+        try{ console.warn('StoneDesk backup: "'+key+'" did NOT reach the server. It is saved on this device only.'); }catch(e){}
+      }
+    });
+    return;
+  }
   // ONLY WHAT CHANGED. Hooking st() is only affordable because of this: a
   // panel that re-saves a 400-row array on every keystroke would otherwise
   // push 400 records each time.
@@ -2159,6 +2190,25 @@ function sdHydrateAll(){
   return Promise.all(SD_SYNCED.map(function(key){
     return sdData('read',key,null).then(function(rows){
       if(!rows||!Array.isArray(rows)||!rows.length) return;
+      // ── THE SINGLE-OBJECT PAIR (2026-09-13) ────────────────────────────
+      // ADOPTED ONLY ON A DEVICE THAT HAS NONE. The array path's rule is
+      // "a locally present id is NEVER overwritten"; the object equivalent is
+      // that a device already holding a rule set keeps it. There is no id to
+      // merge on, so the choice is adopt-or-leave, and overwriting a shop's
+      // live discount rules from a second browser would be the clobber that
+      // rule exists to prevent. `getItem(key)!==null` rather than a
+      // default-value comparison: only "this device has never written one" is
+      // a fact; "it looks like the default" is a guess.
+      if(SD_SYNCED_OBJECT[key]){
+        try{ if(localStorage.getItem(key)!==null) return; }catch(e){ return; }
+        var blob=rows[0]&&rows[0].blob;
+        if(!blob||typeof blob!=='object') return;
+        merged++;
+        sdSyncSuppressed=true;
+        st(key,blob);
+        sdSyncSuppressed=false;
+        return;
+      }
       var local=sdLoad(key,[]);
       if(!Array.isArray(local)) return;
       var have={};

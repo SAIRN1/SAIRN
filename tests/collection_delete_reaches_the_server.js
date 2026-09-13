@@ -89,6 +89,11 @@ function grabBlock(startSig, endSig) {
 // the hook in st() is where that happens.
 const UNIT = [
   grabBlock('var SD_SYNCED=[', 'SD_SYNCED.forEach(function(k){SD_SYNCED_ON[k]=true;});'),
+  // Taken from the file, not restated here. sdSyncCollection() reads it on the
+  // non-array path, so leaving it out would make every object-shaped arm throw
+  // ReferenceError inside the vm -- and the array arms would stay green, which
+  // is how a gap like this survives.
+  grabLine('var SD_SYNCED_OBJECT={'),
   'var sdSyncSuppressed=false;',
   grabAt('function st(key,data){', ''),
   grabAt('function sdSyncCollection(key,next,prev){', ''),
@@ -382,6 +387,107 @@ function seeded(key, prev, opts) {
     assert.deepStrictEqual(offenders, [],
       'these trim a SYNCED collection without registering the drop, so the cap '
       + 'would delete server history: ');
+  });
+
+  // ══ 3c. the two single-object collections ════════════════════════════════
+  // They sat in SD_SYNCED and NEVER SYNCED AT ALL -- `if(!Array.isArray(next))
+  // return;` sent both straight out of the function. A shop's negotiated
+  // supplier prices and its whole discount rule set lived in one browser and
+  // died with its cache, on a list that reads as "these are backed up".
+  section('an object-shaped collection is backed up too, as one row');
+
+  test('a changed object is written as {id:"all", blob}', () => {
+    const b = build({ store: { sd_negotiated_prices: JSON.stringify({ 'SKU-1': 10 }) } });
+    save(b, 'sd_negotiated_prices', { 'SKU-1': 10, 'SKU-2': 22 });
+    const w = writes(b);
+    assert.strictEqual(w.length, 1);
+    assert.strictEqual(w[0].key, 'sd_negotiated_prices');
+    assert.strictEqual(w[0].payload.id, 'all');
+    assert.strictEqual(w[0].payload.blob['SKU-2'], 22);
+  });
+
+  // WRAPPED, NOT SPREAD. These objects are keyed by SKU; spreading one would
+  // collide with `id` the first time a vendor used that string.
+  test('a SKU literally called "id" cannot collide with the row id', () => {
+    const b = build({ store: { sd_negotiated_prices: JSON.stringify({}) } });
+    save(b, 'sd_negotiated_prices', { id: 99 });
+    assert.strictEqual(writes(b)[0].payload.id, 'all');
+    assert.strictEqual(writes(b)[0].payload.blob.id, 99);
+  });
+
+  test('an unchanged object writes nothing', () => {
+    const o = { 'SKU-1': 10 };
+    const b = build({ store: { sd_negotiated_prices: JSON.stringify(o) } });
+    save(b, 'sd_negotiated_prices', { 'SKU-1': 10 });
+    assert.strictEqual(b.calls.length, 0);
+  });
+
+  test('and no soft_delete is ever issued for an object collection', () => {
+    const b = build({ store: { sd_negotiated_prices: JSON.stringify({ 'SKU-1': 10, 'SKU-2': 1 }) } });
+    save(b, 'sd_negotiated_prices', {});          // every SKU removed
+    assert.strictEqual(dels(b).length, 0,
+      'the removal sweep ran on an object -- its ids are SKUs, not rows');
+  });
+
+  test('an object key NOT declared object-shaped is still skipped entirely', () => {
+    const b = build({ store: { sd_invoices: JSON.stringify([]) } });
+    save(b, 'sd_invoices', { notAnArray: true });
+    assert.strictEqual(b.calls.length, 0);
+  });
+
+  test('both object-shaped keys are declared, and both are in SD_SYNCED', () => {
+    const b = build({});
+    const declared = Object.keys(b.ctx.SD_SYNCED_OBJECT);
+    assert.deepStrictEqual(declared.sort(), ['sd_negotiated_prices', 'sd_pricing_rules']);
+    declared.forEach(k => assert.ok(Array.from(b.ctx.SD_SYNCED).indexOf(k) !== -1,
+      k + ' is declared object-shaped but is not in SD_SYNCED, so nothing reads it'));
+  });
+
+  // ── HYDRATION IS THE RISKIER HALF, so it gets its own arms ──────────────
+  // The array path's rule is "a locally present id is NEVER overwritten". The
+  // object equivalent has no id to merge on, so the choice is adopt-or-leave --
+  // and adopting over a shop's live discount rules from a second browser is
+  // exactly the clobber that rule exists to prevent.
+  const HYDRATE = [
+    grabAt('function sdLoad(k,def){', ''),
+    grabAt('function sdHydrateAll(){', '')
+  ].join('\n\n');
+
+  function hydrateWith(store, rowsByKey) {
+    const b = build({ store, answer: () => null });
+    b.ctx.sdData = (action, key) => {
+      b.calls.push({ action, key });
+      return Promise.resolve(action === 'read' ? (rowsByKey[key] || null) : {});
+    };
+    vm.runInContext(HYDRATE, b.ctx, { filename: 'stonedesk-hydrate-extract.js' });
+    return b;
+  }
+
+  atest('an object collection this device already holds is NOT overwritten', async () => {
+    const b = hydrateWith({ sd_negotiated_prices: JSON.stringify({ 'SKU-1': 1 }) },
+      { sd_negotiated_prices: [{ id: 'all', blob: { 'SKU-1': 999, 'SKU-9': 5 } }] });
+    await b.ctx.sdHydrateAll();
+    assert.deepStrictEqual(JSON.parse(b.store.sd_negotiated_prices), { 'SKU-1': 1 },
+      'a second browser overwrote this shop\'s live negotiated prices');
+  });
+
+  atest('a device that has never written one adopts the server copy', async () => {
+    const b = hydrateWith({}, { sd_negotiated_prices: [{ id: 'all', blob: { 'SKU-9': 5 } }] });
+    await b.ctx.sdHydrateAll();
+    assert.deepStrictEqual(JSON.parse(b.store.sd_negotiated_prices), { 'SKU-9': 5 });
+  });
+
+  atest('and adopting does not echo straight back to the server', async () => {
+    const b = hydrateWith({}, { sd_negotiated_prices: [{ id: 'all', blob: { 'SKU-9': 5 } }] });
+    await b.ctx.sdHydrateAll();
+    assert.strictEqual(b.calls.filter(c => c.action === 'write').length, 0,
+      'the hydrate wrote the row it had just read -- sdSyncSuppressed was not held');
+  });
+
+  atest('a malformed server row is left alone rather than adopted', async () => {
+    const b = hydrateWith({}, { sd_negotiated_prices: [{ id: 'all' }] });
+    await b.ctx.sdHydrateAll();
+    assert.strictEqual(b.store.sd_negotiated_prices, undefined);
   });
 
   // ══ 4. coverage: the twenty-second cannot be added without a verb ════════
