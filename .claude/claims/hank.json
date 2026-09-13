@@ -1203,8 +1203,8 @@
       "task": "per save site across dental grounds scape",
       "claimed_at": "2026-09-13T13:07:08Z",
       "claimed_at_epoch": 1789304828.385498,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T13:32:26Z"
     }
   ]
 }
