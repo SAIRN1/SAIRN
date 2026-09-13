@@ -1017,8 +1017,8 @@
       "task": "check 3 fail-open missing preflight tool must deny",
       "claimed_at": "2026-09-13T12:04:33Z",
       "claimed_at_epoch": 1789301073.3703756,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T12:50:01Z"
     }
   ]
 }
