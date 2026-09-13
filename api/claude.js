@@ -141,6 +141,34 @@ function cappedMaxTokens(requested) {
   return Math.min(Math.floor(n), MAX_TOKENS_CEILING);
 }
 
+// ── max_uses, AND THE DIRECTION GARBAGE FALLS (fixed 2026-09-13) ──────────
+// It was `Number(t.max_uses) || MAX_TOOL_USES_CEILING`, and `||` is falsy for
+// 0, NaN and a non-numeric string -- so 0, "abc", null and NaN each came out
+// as 5, THE MAXIMUM NUMBER OF BILLED WEB SEARCHES. cappedMaxTokens() thirty
+// lines below states the opposite rule in its own comment -- "garbage in
+// should not buy the largest generation available" -- and this line, on the
+// neighbouring function, resolved it the other way. Measured, not read:
+// 0 -> 5, "abc" -> 5, null -> 5, false -> 5.
+//
+// TYPE-CHECKED BEFORE COERCING, for the reason cappedMaxTokens() already
+// documents: Number([2]) is 2, so a single-element array bought two searches,
+// and Number(true) is 1. Same trap, same file, second occurrence.
+//
+// ABSENT IS NOT GARBAGE and is deliberately unchanged. A caller that sends no
+// max_uses is not sending a wrong value; the server cap is the documented
+// answer for it, and re-reading that as a defect would be a behaviour change
+// nobody asked for wearing a bug fix's clothes.
+//
+// Covered by api/claude-guardrail-probes.test.js section 3, which was written
+// RED against the old line before this replaced it.
+function cappedMaxUses(requested) {
+  if (requested === undefined) return MAX_TOOL_USES_CEILING;
+  if (typeof requested !== 'number' && typeof requested !== 'string') return 1;
+  const n = Number(requested);
+  if (!Number.isFinite(n)) return 1;
+  return Math.max(1, Math.min(Math.floor(n) || 1, MAX_TOOL_USES_CEILING));
+}
+
 function sanitizeTools(tools) {
   if (!Array.isArray(tools)) return undefined;
   const clean = tools
@@ -148,8 +176,7 @@ function sanitizeTools(tools) {
     .map((t) => {
       if (t.type === undefined || t.type === 'custom') return t;
       const out = { type: t.type, name: t.name || 'web_search' };
-      const requested = Number(t.max_uses) || MAX_TOOL_USES_CEILING;
-      out.max_uses = Math.max(1, Math.min(requested, MAX_TOOL_USES_CEILING));
+      out.max_uses = cappedMaxUses(t.max_uses);
       return out;
     });
   return clean.length ? clean : undefined;
@@ -420,4 +447,11 @@ claudeProxyHandler.demoCallCounts = demoCallCounts;
 claudeProxyHandler.DEMO_DAILY_LIMIT = DEMO_DAILY_LIMIT;
 claudeProxyHandler.cappedMaxTokens = cappedMaxTokens;
 claudeProxyHandler.MAX_TOKENS_CEILING = MAX_TOKENS_CEILING;
+// Exported 2026-09-13 for api/claude-guardrail-probes.test.js, same reason
+// MAX_TOKENS_CEILING above already is: a probe that re-typed these lists would
+// be asserting against its own copy and would stay green through a change to
+// the real one. Read-only to every consumer; nothing here mutates them.
+claudeProxyHandler.KNOWN_APP_IDS = KNOWN_APP_IDS;
+claudeProxyHandler.ALLOWED_SERVER_TOOL_TYPES = ALLOWED_SERVER_TOOL_TYPES;
+claudeProxyHandler.MAX_TOOL_USES_CEILING = MAX_TOOL_USES_CEILING;
 module.exports = claudeProxyHandler;

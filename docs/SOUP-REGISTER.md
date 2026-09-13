@@ -284,9 +284,11 @@ and it does not exist yet.
   nobody.
 - **It is not a licence-compliance review.** Licences are recorded because the
   lockfile states them, not because anyone checked obligations.
-- **It does not track the toolchain** — Node, Python, `node --check`, the
-  checkers in `tools/`. Those shape what ships without running in production,
-  and they are a deliberate second pass, not an oversight.
+- **It does not track the ordinary toolchain** — Node, Python, `node --check`,
+  the checkers in `tools/`. Those shape what ships without running in
+  production, and they are a deliberate second pass, not an oversight.
+  **Narrowed 2026-09-13: a tool with production reach is no longer covered by
+  that exclusion — see the section below.**
 - **It has no CVE feed of its own.** Dependabot is the only automated watch, it
   covers npm only, and it sees none of the three CDN components. **The two
   moderate alerts open on 2026-09-10 are triaged and fixed** — both were `qs`,
@@ -297,6 +299,50 @@ and it does not exist yet.
   literal `document.createElement('script')`.** That is stated in the checker's
   own docstring too. The gap that let `tesseract.js` sit here unrecorded was
   exactly this kind of blind spot, one shape narrower.
+
+---
+
+## Toolchain with production reach — a category, added 2026-09-13
+
+**The trigger.** Item 8 asked what would make a third-party AI red-teaming
+engine trustworthy, and the honest first answer was that this register does not
+cover it: it excludes *"the toolchain."* **That exclusion was written with
+`node --check` in mind** — a local tool, handed a file, producing a verdict.
+A red-team engine is a different animal wearing the same coat. It is pointed at
+a live production URL, its entire purpose is to send hostile input to real
+customer apps, it receives every response they give, and once
+`SAIRN_CLAUDE_AUTH_MODE` moves to `enforce` it has to be handed a valid licence
+key to work at all. Calling that "toolchain" and leaving it unregistered is the
+same shape of blind spot as `tesseract.js` — a component the register's own
+definition could not see, running unregistered.
+
+**The boundary, stated so it decides cases rather than describing one.** A
+development-time tool needs an entry here when **any one** of these is true:
+
+1. it is given a **credential** that works against production — a licence key,
+   an API key, a service-account token;
+2. it **sends requests to, or receives data from, a live production endpoint**;
+3. it **ingests production data or SAIRN-authored material** and transmits it
+   anywhere off this machine — including to the tool vendor's own service.
+
+`node --check`, `ripgrep`, Python and the 109 checkers in `tools/` meet none of
+these and stay out. `tools/sairn_http.py` reaches production but is
+first-party, so it is not SOUP; the category is about **third-party** tools with
+that reach.
+
+**Criterion 3 is the one that catches what the other two miss**, and it is not
+hypothetical. promptfoo — the engine item 8 assessed and rejected — sends the
+application purpose, the prompt sent to the target, the target's response, and
+*"request examples, target URLs, and auth headers"* to `api.promptfoo.app` by
+default, per its own data-handling documentation. A rule written only around
+credentials and endpoints would have waved that through as "just a dev tool."
+
+**Nothing is registered under this category yet.** No red-team engine has been
+installed. The category exists first so the entry cannot be skipped later, which
+is the opposite of how `tesseract.js` went. The drafted garak entry, if and when
+it is adopted, is in
+`docs/2026-09-13-ai-red-teaming-scoping.md` §5 and has to be moved here — with
+an exact pinned version — in the same commit that installs it.
 
 ---
 
