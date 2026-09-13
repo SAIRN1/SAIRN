@@ -3050,3 +3050,62 @@ behaviour change. It also cannot be pinned cheaply from the other side -- tried
 rather than assumed: the reachability checker exits 0 on a file with no panels and
 on an almost-empty file, so there is no reachable could-not-tell exit to build a
 fixture from. Inventing one would be fabricating the fault.
+
+## 2026-09-13 (Cody) -- the reason I gave for leaving check 3 uncovered was
+## wrong, and I found it myself the next morning
+
+Skill used: `sairn-guardian-v2`. Claim: `push-gate` --
+`check 3 sql preflight fail-closed deny arms never proven`.
+
+**YESTERDAY'S HEADER SAID CHECKS 1 AND 3 WERE BOTH UNCOVERABLE FROM A CLONE WITH
+NO CREDENTIALS. That is true of check 1 and FALSE of check 3, and I wrote it.**
+Check 3 does not need database access. It needs a snapshot **file**, and the hook
+reads that path from `SAIRN_SCHEMA_SNAPSHOT` before falling back to
+`db/schema_snapshot.json` -- so a probe can hand it any snapshot it likes and
+reach every one of its deny paths with no credentials at all. The stated reason
+was a guess about the check that I never tested against the check's own source.
+
+**CHECK 3 IS NOW PROVEN**, `tests/push_gate/check3_probe.py`, 30 arms:
+
+- an **absent**, a **corrupt** and a **no-tables** snapshot each produce preflight
+  exit 4 and a **gate DENY**;
+- SQL naming a table the snapshot does not have produces exit 1 and a **gate
+  DENY** that names the table;
+- **CONTROL:** the same SQL against a snapshot that HAS the table is **ALLOWED**;
+- **CONTROL:** an unusable snapshot does **not** block a push shipping no `sql/`.
+
+Every deny arm asserts the deny **REASON**, and asserts it is **not check 2** --
+the credential guard, which runs first on the same `sql_changed` list -- answering
+instead. That arm is not decoration: mutation 3 below denies for the *right exit
+code* and the *wrong reason*, and only the reason arms caught it.
+
+**WHAT THE TOOL ALREADY PROVED IS NOT WHAT THIS PROVES.**
+`tests/sql_preflight/run_probe.py` already pins `sairn_sql_preflight.py` at exit 4
+on an unusable snapshot and exit 1 on a missing table. That is the CHECKER. It
+says nothing about whether the GATE turns those exits into a refusal -- which is
+the whole distinction that started this pass, since `checkblocks.py` HAD its
+finding and lacked the SIGNAL. Detection and wiring are two claims.
+
+**A REAL FAIL-OPEN, FOUND BY WRITING THE PROBE AND PROVEN RATHER THAN FIXED.**
+Check 3 is wrapped in `if os.path.isfile(pf):`. With
+`tools/sairn_sql_preflight.py` absent from the clone, the same missing-table push
+is **ALLOWED, in silence** -- the gate never says it stopped checking. Arm F pins
+that as a finding, and inverts to a failure the day it is fixed. **Not fixed
+here:** it is a behaviour change to a blocking gate and belongs in its own commit
+with its own controls, not folded into a test commit.
+
+**4 MUTATION CONTROLS, ALL BITE**, gate restored byte-identical and `git status`
+clean after each: removing check 3's exit-4 deny (6 arms fail); removing its
+missing-table deny (3 fail); ignoring `SAIRN_SCHEMA_SNAPSHOT` (4 fail); and
+denying unconditionally, which must break the CONTROLS (6 fail).
+
+**TWO THINGS STAY UNCOVERED AND ARE SAID OUT LOUD RATHER THAN LEFT AS SILENCE.**
+Check 1's deny needs `sairn_load_state_check.py` to exit 1 -- a live comparison
+against a licence -- and its could-not-tell path deliberately ALLOWS with a note,
+so there is nothing to plant without credentials. Check 3's `except Exception`
+arm needs a 120-second timeout or a broken interpreter, neither arrangeable
+without editing the gate, which would mean the probe proving its own edit.
+
+**NOT MINE, SEEN IN PASSING:** `tests/run_snapshot_freshness_probe.py` fails 2
+arms on `main` (`2c`, `4a`) -- inside hank's active `gate-column-check` claim on
+snapshot age. Reported, not touched.

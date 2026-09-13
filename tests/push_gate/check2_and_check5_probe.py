@@ -21,22 +21,29 @@ plants a finding and asserts a deny:
     check 8  tests/push_gate/check8_probe.py                 covered
     check 9  tests/push_gate/check9_probe.py                 covered
     check 10 tests/push_gate/gate_freshness_probe.py         covered (report-only)
+    check 3  tests/push_gate/check3_probe.py                 covered (2026-09-13)
     check 1  -- NOT COVERED
     check 2  -- NOT COVERED   <- this file
-    check 3  -- NOT COVERED
     check 5  -- NOT COVERED   <- this file
 
 tests/push_gate/refspec_and_override_probe.py MENTIONS 1, 2 and 3, and that is
 all it does with them: it is about refspec parsing and the override, not about
 whether those checks refuse.
 
-── WHY 1 AND 3 ARE NOT IN HERE, stated rather than left as a silence ─────────
-Check 1 compares LIVE seed content against the repo and needs a licence key.
-Check 3 runs the SQL preflight against db/schema_snapshot.json and --require-live.
-Both are could-not-tell from a clone with no credentials, and a probe that cannot
-distinguish "the gate refused" from "the gate could not run" would assert nothing.
-They need a live-state probe, which is a different job; recorded here so the two
-remaining gaps are visible rather than implied by their absence.
+── WHY 1 IS NOT IN HERE, stated rather than left as a silence ────────────────
+Check 1 compares LIVE seed content against the repo and needs a licence key, and
+a probe that cannot distinguish "the gate refused" from "the gate could not run"
+would assert nothing. Its could-not-tell path deliberately ALLOWS with a note, so
+there is nothing to plant from a clone with no credentials. Recorded here so the
+remaining gap is visible rather than implied by its absence.
+
+── THE REASON GIVEN FOR CHECK 3 WAS WRONG, AND IT IS CORRECTED HERE ──────────
+This header originally said check 3 was uncoverable for the same reason as check
+1. It is not. Check 3 needs a snapshot FILE, not database access, and the hook
+reads its path from SAIRN_SCHEMA_SNAPSHOT before falling back to
+db/schema_snapshot.json -- so a probe can hand it any snapshot it likes and reach
+every one of its deny paths with no credentials at all.
+tests/push_gate/check3_probe.py does that, 2026-09-13.
 
 ── WHAT IS PLANTED ───────────────────────────────────────────────────────────
 Check 2: a sql/ file that writes *_employee_auth rows with no recoverability
