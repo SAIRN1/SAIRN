@@ -982,6 +982,16 @@
       "claimed_at_epoch": 1789314829.6725008,
       "status": "released",
       "released_at": "2026-09-13T16:47:19Z"
+    },
+    {
+      "id": "fourth-1789318400",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "irreversible-write witnessing lock scoping which writes cannot be undone",
+      "claimed_at": "2026-09-13T16:53:20Z",
+      "claimed_at_epoch": 1789318400.8122368,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
