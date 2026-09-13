@@ -134,6 +134,20 @@ looks.
 
 ## Skills — read them, don't rely on trigger-word matching
 
+**BEFORE BUILDING ANY CHECKER, PROBE, GATE OR TOOL, read
+`docs/2026-09-13-cross-domain-disciplines.md`.** Six standing conventions, each
+paid for by a real defect: lock a check's criteria against synthetic fixtures
+before running it on real data; report accuracy and stability as two numbers,
+never one; publish a named uncertainty table rather than a combined figure; set
+the alarm tighter than the failure point; run the deep validation with its
+subject NOT trusted; and require a structurally different method for
+independence. They exist because **the tools written to enforce them kept
+committing the defects they were built to catch** — a risk scorer that
+fabricated a 38% accuracy from false positives, a testability gate that read the
+wrong column, a regex that shipped with a literal backspace and could never
+match. None were caught by review; each was caught by a control built to make
+the tool fail on purpose.
+
 **Precedence when several skills cover one job:
 `docs/2026-08-30-skill-precedence.md`.**
 
