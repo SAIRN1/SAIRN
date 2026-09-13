@@ -799,6 +799,63 @@
       "severity": "moderate",
       "detection_method": "code-review",
       "summary": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage"
+    },
+    {
+      "commit": "8dfde7be2b1b",
+      "date": "2026-09-13",
+      "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check2_and_check5_probe.py",
+        "tests/push_gate/check3_probe.py"
+      ],
+      "lines_added": 339,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "push-gate check 3 had no probe proving the GATE refuses -- only the checker's own exit codes were pinned, and detection is a separate claim from wiring"
+    },
+    {
+      "commit": "8dfde7be2b1b",
+      "date": "2026-09-13",
+      "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check2_and_check5_probe.py",
+        "tests/push_gate/check3_probe.py"
+      ],
+      "lines_added": 339,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "FAIL-OPEN in the blocking push gate: check 3 is wrapped in if os.path.isfile(pf), so with tools/sairn_sql_preflight.py absent a missing-table SQL push is allowed in silence and the gate never says it stopped checking"
+    },
+    {
+      "commit": "8dfde7be2b1b",
+      "date": "2026-09-13",
+      "subject": "test(push-gate): my reason for leaving check 3 uncovered was wrong, and it was cheap to test",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/push_gate/check2_and_check5_probe.py",
+        "tests/push_gate/check3_probe.py"
+      ],
+      "lines_added": 339,
+      "lines_removed": 11,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline"
     }
   ]
 }
