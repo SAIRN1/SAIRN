@@ -96,10 +96,9 @@ def tree_hash():
     # A tool whose own output invalidates its own input is its own subject. The
     # fix is to take itself out of the measurement, not to loosen the filter --
     # the filter is correct and is what made the loop visible.
-    dirty = '
-'.join(l for l in dirty.split('
-')
-                      if 'flaky-checker-ledger.json' not in l)
+    keep = [l for l in dirty.split(chr(10))
+            if 'flaky-checker-ledger.json' not in l]
+    dirty = chr(10).join(keep)
     return hashlib.sha256(((p.stdout or '') + dirty).encode('utf-8')).hexdigest()[:16]
 
 
