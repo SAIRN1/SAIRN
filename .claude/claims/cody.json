@@ -1089,6 +1089,16 @@
       "claimed_at_epoch": 1789334860.622999,
       "status": "released",
       "released_at": "2026-09-13T22:48:26Z"
+    },
+    {
+      "id": "cody-1789339784",
+      "session": "cody",
+      "subject": "tests",
+      "task": "sabotage controls that never verify their own sabotage applied",
+      "claimed_at": "2026-09-13T22:49:44Z",
+      "claimed_at_epoch": 1789339784.627903,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
