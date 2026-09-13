@@ -1233,8 +1233,8 @@
       "task": "scope sum to zero balance and idempotency key",
       "claimed_at": "2026-09-13T14:48:13Z",
       "claimed_at_epoch": 1789310893.8462248,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T14:59:40Z"
     }
   ]
 }
