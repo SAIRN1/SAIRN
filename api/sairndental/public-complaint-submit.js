@@ -54,6 +54,61 @@ module.exports = async (req, res) => {
     const licenseHash = await resolveSlug(slug);
     if (!licenseHash) { res.status(404).json({ error: { code: 'UNKNOWN_SLUG', message: 'Practice link not found' } }); return; }
 
+    // ── IDEMPOTENT ON THE SUBMISSION, NOT ON THE REQUEST (2026-09-13) ────
+    // A public form is retried by a double-click, by a browser resubmitting on
+    // a slow response, and by a patient who saw no confirmation. Every one of
+    // those filed a SECOND complaint, and the practice then had two records of
+    // one grievance with the same first message -- which reads as two unhappy
+    // patients and gets two replies.
+    //
+    // KEYED ON THE BUSINESS EVENT, the same choice api/ledger.js makes: the
+    // practice, the patient's name and the message text. NOT on a caller-
+    // supplied header -- a public form has no client code to send one, and a
+    // key the caller invents is a key the caller can vary on a retry, which is
+    // exactly the case this exists for.
+    //
+    // CHECKED AGAINST THE TABLE, never an in-memory map: this runs serverless,
+    // so a second request is a second process and anything held in memory is
+    // already gone. That distinction is the whole shape of the defect --
+    // docs/2026-09-13-cross-domain-disciplines.md.
+    //
+    // THE WINDOW IS BOUNDED AT 10 MINUTES on purpose. A patient who writes the
+    // same sentence a week later has a NEW complaint and must not be silently
+    // folded into the old one; a duplicate within ten minutes is a retry.
+    const submissionKey = crypto.createHash('sha256')
+      .update(licenseHash + '\x00' + patientName + '\x00' + message)   // NUL delimiter,
+      // written as an ESCAPE and never as a raw byte: a raw NUL makes the file
+      // read as binary to grep and invisible to review, which is the control-char
+      // defect this repo records. NUL rather than a space because a space can
+      // occur in a name or a message, and 'ab'+'c' would then hash the same as
+      // 'a'+'bc' -- a delimiter that cannot appear in the input cannot collide.
+      .digest('hex');
+    const sinceISO = new Date(Date.now() - 10 * 60 * 1000).toISOString();
+    const dupRes = await fetch(rest('dnt_complaints?license_hash=eq.' + encodeURIComponent(licenseHash) +
+      '&submission_key=eq.' + submissionKey +
+      '&updated_at=gte.' + encodeURIComponent(sinceISO) +
+      '&select=complaint_id,access_token&limit=1'), { headers: supabaseHeaders() });
+    if (dupRes.ok) {
+      const dupRows = await dupRes.json().catch(function () { return null; });
+      if (Array.isArray(dupRows) && dupRows[0]) {
+        // The SAME answer the original submission got. A patient who clicked
+        // twice must see their complaint, not an error about clicking twice.
+        res.status(200).json({ ok: true, duplicate_of_recent: true,
+                               complaint_id: dupRows[0].complaint_id,
+                               access_token: dupRows[0].access_token });
+        return;
+      }
+    } else if (dupRes.status !== 404 && dupRes.status !== 400) {
+      // REFUSE RATHER THAN FILE UNCHECKED. A failed duplicate check is not the
+      // same answer as "no duplicate", and treating it as one is how a retry
+      // storm becomes a duplicate storm. 404/400 means the column is not there
+      // yet, which is handled below by simply proceeding.
+      console.error('SAIRNdental public-complaint-submit: duplicate check failed, HTTP',
+                    dupRes.status, '-- refusing rather than filing unchecked');
+      res.status(503).json({ error: { code: 'UNAVAILABLE', message: 'Temporarily unavailable -- please call the office or try again shortly' } });
+      return;
+    }
+
     const complaintId = newId('COMP');
     const accessToken = crypto.randomBytes(32).toString('hex');
     const nowISO = new Date().toISOString();
@@ -68,7 +123,11 @@ module.exports = async (req, res) => {
       headers: Object.assign({}, supabaseHeaders(), { Prefer: 'return=representation' }),
       body: JSON.stringify({
         license_hash: licenseHash, app_id: 'sairndental', complaint_id: complaintId,
-        access_token: accessToken, data: data, updated_at: nowISO
+        access_token: accessToken, data: data, updated_at: nowISO,
+        // Written even before the column exists: PostgREST rejects an unknown
+        // column outright, so this is NOT a silent no-op -- the 400 is handled
+        // above and surfaces as NOT_PROVISIONED rather than a quiet success.
+        submission_key: submissionKey
       })
     });
     if (insertRes.status === 404 || insertRes.status === 400) {

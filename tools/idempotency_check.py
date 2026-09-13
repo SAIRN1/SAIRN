@@ -93,6 +93,38 @@ def analyse(rel, src):
             break
     unique_idx = bool(re.search(r'on_conflict=|ON CONFLICT|unique\s*\(', code, re.I))
 
+    # ── RETRYABILITY TRIAGE (2026-09-13) ──────────────────────────────────
+    # AN UNGUARDED WRITE IS ONLY A FINDING IF SOMETHING CAN RETRY IT. Counting
+    # all 41 as risk overstates it, and an overstated number is how a real
+    # finding gets discounted. Each class below is mechanical; the ones that
+    # matter are then read by hand and recorded in RETRY_NOTES.
+    is_handler = bool(re.search(r'module\.exports\s*=\s*(?:async\s*)?\(?\s*(?:req|request)',
+                                code))
+    # A WRITE THAT ONLY EVER SETS A FIELD TO THE SAME VALUE IS IDEMPOTENT
+    # WITHOUT A KEY, and calling it a finding is how a real finding gets
+    # discounted. Measured, not assumed: the highest-risk row this tool first
+    # produced was api/agent/stripe-webhook.js -- and its ONLY write is a PATCH
+    # setting plan_status to a constant. A Stripe retry sets 'canceled' to
+    # 'canceled'. Not a defect.
+    #
+    # The signal is PATCH-only with no INSERT: a PATCH addresses an existing
+    # row by id, so replaying it converges. A POST creates a second row.
+    patches = len(re.findall(r"method:\s*'PATCH'", code))
+    posts = len(re.findall(r"method:\s*'(?:POST|PUT)'", code))
+    if patches and not posts:
+        retry = 'IDEMPOTENT-BY-SHAPE'
+    elif re.search(r'stripe|webhook', rel, re.I) or re.search(r'constructEvent|webhook', code):
+        retry = 'WEBHOOK'          # the sender retries BY DESIGN. Highest risk.
+    elif not is_handler:
+        # An internal helper inherits its caller's retryability; classifying it
+        # separately would double-count the handler that calls it.
+        retry = 'HELPER-INHERITS'
+    elif re.search(r'public|unauthenticated', rel + ' ' + code[:2000], re.I):
+        retry = 'PUBLIC-FORM'      # a double-click is a retry
+    else:
+        retry = 'AUTHED-ENDPOINT'  # a client timeout is a retry
+
+
     if reads_key and durable and not in_mem:
         verdict = 'GUARDED-DURABLE'
     elif reads_key and in_mem:
@@ -101,7 +133,7 @@ def analyse(rel, src):
         verdict = 'UNIQUE-CONSTRAINT-MAYBE'    # not a finding; not proof either
     else:
         verdict = 'UNGUARDED'
-    return {'file': rel, 'writes': writes, 'verdict': verdict,
+    return {'file': rel, 'writes': writes, 'verdict': verdict, 'retry': retry,
             'reads_key': reads_key, 'durable_check': durable,
             'in_memory_check': in_mem, 'upsert_or_unique': unique_idx}
 

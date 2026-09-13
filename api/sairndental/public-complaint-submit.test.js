@@ -91,6 +91,15 @@ async function main() {
       }
     };
     global.fetch = async function (url, opts) {
+      // The handler now makes a DUPLICATE LOOKUP before the insert (2026-09-13),
+      // which is a GET with no body -- this mock previously did
+      // JSON.parse(opts.body) on every call and threw on it. Answering the
+      // lookup with "no duplicate" keeps this arm asserting exactly what it
+      // always asserted: the shape of the insert payload.
+      if (String(url).indexOf('submission_key=eq.') >= 0) {
+        return { ok: true, status: 200, json: async function () { return []; },
+                 text: async function () { return ''; } };
+      }
       capturedBody = JSON.parse(opts.body);
       return { ok: true, json: async function () { return [capturedBody]; }, text: async function () { return ''; } };
     };
@@ -107,6 +116,133 @@ async function main() {
     assert.strictEqual(capturedBody.data.messages.length, 1);
     assert.strictEqual(capturedBody.data.messages[0].from, 'patient');
     assert.strictEqual(capturedBody.data.messages[0].text, 'Front desk was rude');
+  });
+
+  // ── IDEMPOTENCE ON A RETRIED SUBMISSION (2026-09-13) ──────────────────
+  // A public form is retried by a double-click and by a browser resubmitting
+  // on a slow response. Before this, each retry filed a SECOND complaint with
+  // the same first message, and the practice replied twice to one grievance.
+  //
+  // Every arm drives the REAL handler with a fetch that records the calls, so
+  // it asserts what the endpoint actually does rather than what it intends.
+  function withFetch(calls, dupRows, dupStatus) {
+    global.fetch = async function (url, opts) {
+      calls.push({ url: String(url), method: (opts && opts.method) || 'GET',
+                   body: opts && opts.body ? JSON.parse(opts.body) : null });
+      if (String(url).indexOf('submission_key=eq.') >= 0) {
+        if (dupStatus && dupStatus !== 200) {
+          return { ok: false, status: dupStatus,
+                   json: async function () { return null; },
+                   text: async function () { return 'boom'; } };
+        }
+        return { ok: true, status: 200, json: async function () { return dupRows || []; },
+                 text: async function () { return ''; } };
+      }
+      return { ok: true, status: 201,
+               json: async function () { return [opts && opts.body ? JSON.parse(opts.body) : {}]; },
+               text: async function () { return ''; } };
+    };
+    delete require.cache[require.resolve('./public-complaint-submit.js')];
+    return require('./public-complaint-submit.js');
+  }
+
+  await test('the duplicate check runs BEFORE the insert, and against the table', async () => {
+    var calls = [];
+    var h = withFetch(calls, []);
+    var res = mockRes();
+    await h(mockReq({ slug: 'p', message: 'Front desk was rude', patient_name: 'Jane' }), res);
+    assert.ok(calls.length >= 2, 'expected a lookup then an insert, got ' + calls.length);
+    assert.ok(calls[0].url.indexOf('submission_key=eq.') >= 0,
+      'the FIRST call must be the duplicate lookup: checking after inserting checks nothing');
+    assert.strictEqual(calls[0].method, 'GET', 'the check must be a read against the table');
+    assert.strictEqual(calls[1].method, 'POST');
+  });
+
+  await test('a RETRY inside the window returns the ORIGINAL complaint, and writes nothing',
+    async () => {
+      var calls = [];
+      var h = withFetch(calls, [{ complaint_id: 'COMP-1', access_token: 'tok-1' }]);
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'Front desk was rude', patient_name: 'Jane' }), res);
+      assert.strictEqual(res.statusCode, 200);
+      assert.strictEqual(res.body.complaint_id, 'COMP-1',
+        'a patient who clicked twice must see THEIR complaint, not a second one');
+      assert.strictEqual(res.body.duplicate_of_recent, true);
+      assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 0,
+        'THIS IS THE BUG: a retry must not insert');
+    });
+
+  await test('CONTROL: with NO duplicate on record it still inserts -- or the arm above '
+    + 'would pass on a handler that never writes at all', async () => {
+      var calls = [];
+      var h = withFetch(calls, []);
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'Different message', patient_name: 'Jane' }), res);
+      assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 1);
+    });
+
+  await test('the key is the BUSINESS EVENT -- a different message is a different key',
+    async () => {
+      var a = [], b = [];
+      var h1 = withFetch(a, []);
+      await h1(mockReq({ slug: 'p', message: 'one', patient_name: 'Jane' }), mockRes());
+      var h2 = withFetch(b, []);
+      await h2(mockReq({ slug: 'p', message: 'two', patient_name: 'Jane' }), mockRes());
+      var k1 = a[0].url.split('submission_key=eq.')[1].split('&')[0];
+      var k2 = b[0].url.split('submission_key=eq.')[1].split('&')[0];
+      assert.notStrictEqual(k1, k2, 'two different complaints must not share a key');
+      assert.strictEqual(k1.length, 64, 'expected a sha256 hex digest');
+    });
+
+  await test('the same submission produces the SAME key -- or a retry never matches',
+    async () => {
+      var a = [], b = [];
+      var h1 = withFetch(a, []);
+      await h1(mockReq({ slug: 'p', message: 'same', patient_name: 'Jane' }), mockRes());
+      var h2 = withFetch(b, []);
+      await h2(mockReq({ slug: 'p', message: 'same', patient_name: 'Jane' }), mockRes());
+      assert.strictEqual(a[0].url.split('submission_key=eq.')[1].split('&')[0],
+                         b[0].url.split('submission_key=eq.')[1].split('&')[0]);
+    });
+
+  await test('the lookup is BOUNDED IN TIME -- the same sentence a week later is a new complaint',
+    async () => {
+      var calls = [];
+      var h = withFetch(calls, []);
+      await h(mockReq({ slug: 'p', message: 'bounded', patient_name: 'Jane' }), mockRes());
+      assert.ok(calls[0].url.indexOf('updated_at=gte.') >= 0,
+        'without a window, a complaint filed once could never be filed again');
+    });
+
+  await test('a FAILED duplicate check REFUSES rather than filing unchecked', async () => {
+    var calls = [];
+    var h = withFetch(calls, null, 500);
+    var res = mockRes();
+    await h(mockReq({ slug: 'p', message: 'server down', patient_name: 'Jane' }), res);
+    assert.strictEqual(res.statusCode, 503,
+      'a failed check is not the same answer as "no duplicate"');
+    assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 0);
+  });
+
+  await test('a 400 from the lookup means the COLUMN is not there yet, and it proceeds',
+    async () => {
+      var calls = [];
+      var h = withFetch(calls, null, 400);
+      var res = mockRes();
+      await h(mockReq({ slug: 'p', message: 'no column yet', patient_name: 'Jane' }), res);
+      assert.strictEqual(calls.filter(function (c) { return c.method === 'POST'; }).length, 1,
+        'before the migration runs, the endpoint must still accept complaints');
+    });
+
+  await test('the insert carries the key, so the NEXT retry can find it', async () => {
+    var calls = [];
+    var h = withFetch(calls, []);
+    await h(mockReq({ slug: 'p', message: 'carries', patient_name: 'Jane' }), mockRes());
+    var post = calls.filter(function (c) { return c.method === 'POST'; })[0];
+    assert.ok(post.body.submission_key, 'a key checked but never stored guards nothing');
+    assert.strictEqual(post.body.submission_key,
+                       calls[0].url.split('submission_key=eq.')[1].split('&')[0],
+                       'the key stored must be the key looked up');
   });
 
   console.log(passed + ' passed');
