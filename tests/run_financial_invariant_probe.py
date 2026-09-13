@@ -88,9 +88,29 @@ for r in data['results']:
           and 'held' in r['stability'])
 check('3b  every row carries the EVIDENCE its type was read from',
       all(len(r.get('evidence', '')) > 40 for r in data['results']))
-check('3c  margin is reported ONLY for the inequality, not padded onto equalities',
-      sum(1 for r in data['results'] if r['margin'].get('worst') is not None) == 1,
-      [r['id'] for r in data['results'] if r['margin'].get('worst') is not None])
+# ── ARM 3c REWRITTEN 2026-09-13, AND THE REASON IS A CORRECTION TO ME ──
+# It used to assert margin appeared on EXACTLY ONE row, "not padded onto
+# equalities". That was right about the mathematics and wrong about the code:
+# roofing-billing and care-charges both check `|stated - computed| < 0.005`, and
+# a 0.005 tolerance band has real unused headroom. ledger is the genuine
+# exception -- a bare `===` on FLOATS with no band at all, which is itself the
+# finding rather than an absence of one.
+#
+# This is a criterion corrected on the merits after measuring the engines, NOT
+# an assertion loosened to make a changed tool pass. The distinction is the one
+# docs/2026-09-13-cross-domain-disciplines.md item 1 exists to keep visible, and
+# the old wording is quoted above so a reader can see exactly what changed.
+withmargin = [r for r in data['results'] if r['margin'].get('worst') is not None]
+check('3c  every engine now reports a margin -- the tolerance band is in the CODE '
+      'even where the identity is an equality',
+      len(withmargin) == len(data['results']),
+      '%d of %d' % (len(withmargin), len(data['results'])))
+check('3d  a margin is never displayed wider than the band it sits inside',
+      all(abs(r['margin']['worst']) <= 0.0050001 for r in withmargin),
+      [(r['id'], r['margin']['worst']) for r in withmargin])
+check('3e  the double-entry row is distinguishable: a zero-width band reports a '
+      'NON-POSITIVE margin, because there is no headroom to have',
+      [r for r in withmargin if r['id'].startswith('ledger')][0]['margin']['worst'] <= 0)
 
 print('4. CONTROL -- sabotage a REAL engine by one cent and the runner must catch it')
 target = os.path.join(REPO, 'api', '_lib', 'roofing-billing.js')

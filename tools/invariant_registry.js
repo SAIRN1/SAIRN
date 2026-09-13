@@ -81,7 +81,20 @@ const REGISTRY = [
     holds: (o) => typeof o.debit_total === 'number' &&
                   typeof o.credit_total === 'number' &&
                   o.debit_total === o.credit_total,
-    margin: null            // an equality has no distance-to-violation
+    // ── EXACT === ON FLOATS, WHICH IS ITSELF THE FINDING ────────────────
+    // Measured: validateEntry returns debit_total 0.3 for 0.1 + 0.2 -- these are
+    // FLOATS, not integer cents, and the check is a bare `===` with NO tolerance
+    // band at all. So the margin here is genuinely zero-width: any rounding
+    // difference is not a near-miss, it is an immediate violation.
+    //
+    // Reported as |difference| rather than as headroom, because there is no
+    // headroom to report. The alarm fires on ANY non-zero difference, which is
+    // as tight as a threshold can be set and is the honest setting for a check
+    // with no band: there is no drift to detect before failure, only failure.
+    // A caller wanting real margin here would have to move the engine to
+    // integer cents, which is a design decision and not this tool's to make.
+    margin: (o) => -Math.abs(Number(o.difference) || 0),
+    alarmAt: () => 0
   },
   {
     id: 'roofing-billing.computeTotals',
@@ -115,7 +128,19 @@ const REGISTRY = [
                computed: Math.round(computed * 100) / 100, raw: t };
     },
     holds: (o) => Math.abs(o.stated - o.computed) < 0.005,
-    margin: null            // also an equality
+    // ── CORRECTED 2026-09-13: I SAID THIS HAD NO MARGIN AND I WAS WRONG ──
+    // The earlier note read "also an equality", and that was right about the
+    // MATHEMATICS and wrong about the IMPLEMENTATION. `stated == sum of lines`
+    // is an equality on paper; in code it is `|stated - computed| < 0.005`, and
+    // that 0.005 is a real tolerance band with real headroom. The margin is how
+    // much of the band is unused.
+    //
+    // ALARM AT 20% OF THE BAND -- tighter than the violation point of 0, per
+    // docs/2026-09-13-cross-domain-disciplines.md item 4. A rollup drifting to
+    // within a fifth of a cent of its own tolerance is a finding before it is a
+    // failure.
+    margin: (o) => 0.005 - Math.abs(o.stated - o.computed),
+    alarmAt: () => 0.001
   },
   {
     id: 'wip-accounting.jobWip',
@@ -123,8 +148,9 @@ const REGISTRY = [
     type: 'CONSERVATION',
     evidence: 'read from exports: jobWip() returns retainage_held alongside ' +
       'retainage_released and the accrued figure; the identity is held = accrued - ' +
-      'released, and released must never exceed accrued. An INEQUALITY, so margin ' +
-      'is meaningful here and only here.',
+      'released, and released must never exceed accrued. An INEQUALITY -- the only ' +
+      'one of the four, though all four now report a margin: the other three ' +
+      'are equalities in the MATHEMATICS and tolerance bands in the CODE.',
     discriminator: (out) => out && typeof out.accrued === 'number' &&
       typeof out.released === 'number',
     gen: (r) => {
@@ -182,7 +208,11 @@ const REGISTRY = [
                computed: Math.round((add - rem + chg) * 100) / 100, raw: out };
     },
     holds: (o) => Math.abs(o.stated - o.computed) < 0.005,
-    margin: null            // an equality again
+    // Same correction as the rollup row above: the identity is an equality, the
+    // CHECK is a 0.005 tolerance, and the unused part of that tolerance is a
+    // real margin.
+    margin: (o) => 0.005 - Math.abs(o.stated - o.computed),
+    alarmAt: () => 0.001
   }
 ];
 

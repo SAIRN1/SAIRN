@@ -170,7 +170,11 @@ function main() {
                   ' held' + (r.stability.rate === 1 ? '' :
                   '   <- NOT 10000/10000. A single break is a finding.'));
       if (r.margin.worst !== undefined && r.margin.worst !== null) {
-        console.log('    margin        : worst ' + r.margin.worst.toFixed(2) +
+        // PRECISION MATTERS HERE. Two decimals rendered a 0.005 tolerance band
+        // as "0.01" -- wider than the band it was measuring, which makes the
+        // number worse than useless. Six decimals, so a margin can never be
+        // displayed as larger than the tolerance it sits inside.
+        console.log('    margin        : worst ' + r.margin.worst.toFixed(6) +
                     ', ' + r.margin.alarms + ' run(s) inside the alarm band');
         console.log('                    ' + r.margin.note);
       } else {

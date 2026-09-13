@@ -502,7 +502,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 334   tests/**, api/*.test.js
-  open-work rows citing a test       122   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       123   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                33   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

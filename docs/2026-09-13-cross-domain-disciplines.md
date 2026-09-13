@@ -108,14 +108,33 @@ From statistical process control: a process that only alarms once it is out of
 spec has already shipped the bad unit. The useful signal is the drift toward
 the limit.
 
-**Where margin means nothing, say so rather than padding the column.** Margin
-requires an INEQUALITY. Double-entry (`debits == credits`) is exact, and reading
-the engines showed ROLLUP (`stated == sum of lines`) is exact too — the distance
-to violating an equality is zero, or it is already violated. So the invariant
-runner reports margin on exactly one of four rows, `wip-accounting.jobWip`
-(`released <= accrued`), with the alarm at **1% of accrued** rather than at
-zero. It fires in practice: **29 of 2000 generated runs came inside the band
-without violating anything.**
+**CORRECTED 2026-09-13, and the correction is the useful part.** This section
+first said margin requires an INEQUALITY, so only one of four engines could have
+one. That was right about the mathematics and **wrong about the code**. `stated
+== sum of lines` is an equality on paper; in the implementation it is
+`|stated − computed| < 0.005`, and a 0.005 tolerance band has real unused
+headroom. **Ask what the CHECK does, not what the identity says.**
+
+All four engines now report a margin, and the shapes differ in a way worth
+seeing:
+
+- `wip-accounting.jobWip` — a true inequality (`released <= accrued`). Alarm at
+  **1% of accrued**. It fires: **29 of 2000 runs came inside the band without
+  violating anything.**
+- `roofing-billing.computeTotals` and `care-charges.reconcileAgainstInvoice` —
+  equalities with a **0.005 tolerance**. Margin is the unused band; alarm at
+  0.001, a fifth of it.
+- `ledger.validateEntry` — a bare `===` on **floats**, measured (0.1 + 0.2
+  returns `debit_total 0.3`, not integer cents). **Zero-width band**, so there is
+  no headroom to report and its margin is non-positive by construction. That is
+  itself the finding: on a check with no band there is no drift to detect before
+  failure, only failure. Moving the engine to integer cents is a design decision
+  and not a tool's to make.
+
+**A display bug found in the same pass, worth keeping:** the margin was printed
+to two decimals, which rendered a 0.005 band as `0.01` — **wider than the
+tolerance it was measuring**. A number that cannot be smaller than the thing it
+describes is worse than no number.
 
 ## 5. Isolated validation — the deep check runs with the subject NOT trusted
 
