@@ -333,6 +333,48 @@ function seeded(key, prev, opts) {
     assert.strictEqual(src.length, 3);
   });
 
+  // ── THE TAIL VARIANT HAD ONLY A SOURCE-LEVEL ARM ────────────────────────
+  // sdCapLocalTail() was added for sd_exec_msgs, which trims with slice(-500)
+  // -- keeping the NEWEST. Until now the only thing asserted about it was that
+  // execSend() calls it; nothing had ever watched it exempt a row. A helper
+  // with a source-level arm and no behavioural one is the same shape as a
+  // checker nobody has seen fail: it looks covered and is not.
+  test('sdCapLocalTail keeps the NEWEST and exempts what it dropped', () => {
+    const b = seeded('sd_exec_msgs', ROWS);
+    const kept = b.ctx.sdCapLocalTail('sd_exec_msgs', ROWS.slice(), 2);
+    assert.deepStrictEqual(kept.map(r => r.id), ['B', 'C'],
+      'the tail cap kept the wrong end -- that is sdCapLocal, not sdCapLocalTail');
+    save(b, 'sd_exec_msgs', kept);
+    assert.strictEqual(dels(b).length, 0,
+      'the tail cap told the server the dropped row had been deleted: ' + JSON.stringify(dels(b)));
+  });
+
+  test('and a real deletion alongside a tail cap is still sent', () => {
+    const b = seeded('sd_exec_msgs', ROWS);
+    const kept = b.ctx.sdCapLocalTail('sd_exec_msgs', ROWS.slice(), 2);   // drops A
+    save(b, 'sd_exec_msgs', [kept[1]]);                                   // user deletes B
+    assert.deepStrictEqual(dels(b).map(c => c.payload.id), ['B'],
+      'the tail exemption swallowed a real deletion, or failed to exempt the capped row');
+  });
+
+  test('its exemption is consumed after one sweep too', () => {
+    const b = seeded('sd_exec_msgs', ROWS);
+    const kept = b.ctx.sdCapLocalTail('sd_exec_msgs', ROWS.slice(), 2);
+    save(b, 'sd_exec_msgs', kept);                 // sweep 1: A exempt
+    assert.strictEqual(dels(b).length, 0);
+    save(b, 'sd_exec_msgs', [kept[1], ROWS[0]]);   // A comes back
+    save(b, 'sd_exec_msgs', [kept[1]]);            // and is genuinely deleted
+    assert.ok(dels(b).map(c => c.payload.id).indexOf('A') !== -1,
+      'a stale tail-cap registration is still silencing a real deletion of that id');
+  });
+
+  test('it does not mutate its argument either', () => {
+    const b = build({});
+    const src = ROWS.slice();
+    b.ctx.sdCapLocalTail('sd_exec_msgs', src, 1);
+    assert.strictEqual(src.length, 3);
+  });
+
   test('a REAL deletion in the same save is still sent', () => {
     const b = seeded('sd_drawings', ROWS);
     const kept = b.ctx.sdCapLocal('sd_drawings', ROWS.slice(), 2);   // drops C
