@@ -1263,8 +1263,8 @@
       "task": "operand level kills on tier a engines",
       "claimed_at": "2026-09-13T16:01:14Z",
       "claimed_at_epoch": 1789315274.709645,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-13T16:22:21Z"
     }
   ]
 }
