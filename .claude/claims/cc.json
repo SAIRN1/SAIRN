@@ -1044,6 +1044,16 @@
       "claimed_at_epoch": 1789312348.2676246,
       "status": "released",
       "released_at": "2026-09-13T16:00:52Z"
+    },
+    {
+      "id": "cc-1789316281",
+      "session": "cc",
+      "subject": "defect-density-denominator",
+      "task": "re-derive line count and citation field",
+      "claimed_at": "2026-09-13T16:18:01Z",
+      "claimed_at_epoch": 1789316281.930037,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
