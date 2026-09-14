@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**125 files in `tools/`.** By what actually invokes them:
+**126 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 24 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | CHECKER | 75 |
 | GENERATOR | 15 |
 | LIBRARY | 20 |
-| LIVE | 15 |
+| LIVE | 16 |
 
 **18 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -72,7 +72,7 @@ The 17, by name, so this is actionable rather than a statistic:
 | `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 | `three_way_match_check.py` | SUITE-ONLY | a goods receipt or a vendor bill written with no join key back to its purchase order, and a PO number derived from a row count (which reuses itself after a delete). Structural half runs from the repo; the PO-vs-receipt-vs-bill comparison needs an export and is COULD-NOT-RUN without one |
 
-**Separately, 5 tool(s) make a LIVE network or database request.** Those are
+**Separately, 6 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -219,7 +219,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (23)
+## SUITE-ONLY (24)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -241,6 +241,7 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_jscomments_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
+| `restore_coherence_check.js` | LIVE | a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about | `run_restore_coherence_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `sabotage_control_check.py` | CHECKER | a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever | `run_sabotage_control_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_fmea_probe.py` |
@@ -322,11 +323,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      125   git ls-files tools/
+  tools on disk                      126   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             75   tests/**/*.py, *.js
+  tools invoked by tests/             76   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

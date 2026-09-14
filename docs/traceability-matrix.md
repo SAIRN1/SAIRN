@@ -105,6 +105,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **There is now something to run the day a restore happens by hand &mdash; and there is no other restore tooling at all** | **BUILT 2026-09-14 (Fourth)** &mdash; `tools/restore_coherence_check.js`, 26/26 arms in `tests/run_restore_coherence_probe.js` | `tests/run_restore_coherence_probe.js` |
 | **Item 52: the two checker-quality signals fused &mdash; by MINIMUM, and the corrector proves its own safety before it reports anything** | **BUILT 2026-09-14 (CC)** &mdash; `tools/checker_confidence.py`, held by `tests/run_checker_confidence_probe.py` (30 arms). Report only, not registered | `tests/run_checker_confidence_probe.py` |
 | **Item 59: defect causation is close to UNIFORM, and the apparent concentration is a coverage artefact** | **MEASURED 2026-09-14 (CC)** &mdash; `tools/defect_dispersion.py`, held by `tests/run_defect_dispersion_probe.py` (29 arms). **Report only, no threshold, nothing gates** | `tests/run_defect_dispersion_probe.py` |
 | **The watchdog now DOES something, and the response was decided before the incident** | **BUILT 2026-09-14 (Fourth)** &mdash; `api/_lib/cron-response.js`, 55/55 arms in `api/cron-watchdog.test.js` | `api/cron-watchdog.test.js` |
@@ -310,7 +311,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**160 of 355 test files are traced to a stated requirement. 195 are not.**
+**161 of 356 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -529,8 +530,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 355   tests/**, api/*.test.js
-  open-work rows citing a test       147   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 356   tests/**, api/*.test.js
+  open-work rows citing a test       148   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

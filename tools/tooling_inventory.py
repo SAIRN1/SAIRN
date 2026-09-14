@@ -137,6 +137,13 @@ PURPOSES = {
     # watches, so a total scheduler outage silences both. This runs outside
     # Vercel and is the only thing here that survives that -- but only when
     # somebody runs it, which is why the doc it writes says so.
+    # LIVE: it talks to whatever database it is pointed at. Item 65a, and it
+    # exists BECAUSE there is no backup to restore -- Supabase free tier,
+    # confirmed 2026-09-14 -- so the realistic restore is the hand one
+    # somebody does at 3am, and this is what asks whether the result is
+    # coherent. Needs no scratch environment and no baseline capture: the
+    # audit checkpoint chain is a fingerprint carried inside the data.
+    'restore_coherence_check.js': ('LIVE', 'a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about'),
     'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
     'sairn_load_state_check.py': ('LIVE', 'live seed content differing from the repo seed (gate check 1)'),

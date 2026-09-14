@@ -1,4 +1,28 @@
-# Item 65 — a backup completing is not the same claim as a backup restoring
+# Item 65 — there is no recovery path, and that is the finding
+
+> ## ANSWERED 2026-09-14 — Michael, directly: **Supabase FREE TIER, one-day log retention.**
+>
+> **Source: confirmed by the platform owner on 2026-09-14.** Not inferred from a
+> dashboard, not read off an invoice, and not re-derivable from this repo —
+> which is why it is recorded here with its date and its source rather than left
+> as a fact somebody has to re-establish.
+>
+> **The free tier takes no automated database backups.** So this item is NOT
+> "backup restorability is unverified". It is:
+>
+> ### There is no real recovery path beyond 24 hours for `sv_controlled`, `law_trusttx` and `dnt_charges`, among others.
+>
+> A DEA-relevant controlled-substance register, attorney client trust money, and
+> dental charge history. The one-day log retention is **not** a recovery path —
+> a log says what a request claimed, not what a row contained, and it cannot
+> reconstruct a table.
+>
+> Everything below was written before that was confirmed. It is left standing
+> rather than rewritten, because the *reasoning* that produced the question is
+> what makes the answer readable, and because the sizing of 65a does not change.
+> **What DOES change:** 65c is not blocked on a plan decision any more — there
+> is nothing to restore, so the question is whether to create backups at all,
+> which is a spend decision, not a testing one.
 
 **Written 2026-09-14 (Fourth).** Scoped before building, and the measurement
 moved the question before it moved the answer.
@@ -126,6 +150,31 @@ useful the day somebody does a restore by hand — which is what will actually
 happen the first time it matters.
 
 ---
+
+## The accidental safety net, measured — and it is thinner than it looks
+
+With no database backup, the only other copy of anything is the one sitting in a
+browser. Measured per table rather than assumed from the pattern, because the
+three named tables came out **three different ways**:
+
+| Table | Local copy | Recovery value |
+|---|---|---|
+| `sv_controlled` | in `SV_SYNCED` (`sairnvet.html:2046`) — synced, not purged | **partial, device-dependent**: whatever that browser last held |
+| `law_trusttx` | written through `st('law_trusttx', …)` (`sairnlaw.html:2077`), and sairnlaw has no scoped-cache purge list | **partial, device-dependent** |
+| `dnt_charges` | **none.** `dnt_charges_list` is a SCOPED CACHE in `DNT_SCOPED_CACHES` (`sairndental.html:1725`), **cleared on sign-out and whenever the person changes** | **nothing** |
+
+**The app holding dental money is the one with no local fallback, and that is a
+CORRECT decision that happens to remove the accidental net.** Dental's caches are
+purged deliberately: on a shared operatory tablet an owner signs in, the caches
+fill, a provider signs in next, and every panel reads the previous user's copy —
+which defeats the financial gate and the patient scoping. The file says so at
+length. The security fix and the recovery gap are in genuine tension here, and
+the resolution is a real backup, not a weaker cache.
+
+**And a device-dependent copy is not a recovery plan even where it exists.** It
+is whatever one browser last synced, on a machine nobody is tracking, with no
+statement of completeness. It is worth knowing about at 3am and worth nothing in
+a plan.
 
 ## What this scoping does NOT claim
 
