@@ -117,6 +117,14 @@ const GOOD_ROW = () => ([{
   spent_at: null, expires_at: FUTURE
 }]);
 const POLICY = (two) => ([{ require_two_person: two }]);
+// ── THE ATTESTER STILL WORKS HERE. Item 101, 2026-09-14. ───────────────────
+// requireWitness() now re-reads the witness's (and countersigner's) active
+// status at SPEND time, not only at request time. Every arm that expects a
+// write to PROCEED has to say the attester is still active -- and the six arms
+// that went red when this landed are the evidence the step is load-bearing
+// rather than decorative: without this line they refuse.
+const ACTIVE = (ids) => ([svAuth.EMPLOYEE_TABLE + '?license_hash',
+  { body: (ids || ['dr-a']).map((i) => ({ employee_id: i })) }]);
 
 t('an UNLOCKED resource is not gated at all', async () => {
   fakeRest([]);
@@ -207,6 +215,7 @@ t('two-person ON WITH a countersignature proceeds', async () => {
   fakeRest([
     ['sairnvet_witness_tokens', { body: row, method: 'GET' }],
     ['sairnvet_witness_policy', { body: POLICY(true) }],
+    ACTIVE(['dr-a', 'dr-b']),
     ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
   ]);
   const out = await W.requireWitness(ctx());
@@ -216,6 +225,7 @@ t('two-person OFF proceeds on one confirmation', async () => {
   fakeRest([
     ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
     ['sairnvet_witness_policy', { body: POLICY(false) }],
+    ACTIVE(),
     ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
   ]);
   assert.strictEqual(await W.requireWitness(ctx()), null);
@@ -224,11 +234,85 @@ t('NO POLICY ROW means single-operator -- the safe default to be missing', async
   fakeRest([
     ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
     ['sairnvet_witness_policy', { body: [] }],
+    ACTIVE(),
     ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
   ]);
   assert.strictEqual(await W.requireWitness(ctx()), null,
     'a practice that never configured this must not be held to a rule it cannot meet');
 });
+
+// ── 5b. THE SETTLING STEP -- item 101, the attenuation phase ───────────────
+// Every check before this one is about the TOKEN. None is about the WORLD, and
+// the world has TOKEN_TTL_MS to move between the confirmation and the write.
+// A witness signature from a revoked account carries a name that no longer
+// means anything -- this file's own words, 300 lines above, about a check it
+// then did not perform here.
+section('5b. the attester must STILL be active at spend time, not only at request');
+t('a deactivated WITNESS refuses the write', async () => {
+  fakeRest([
+    ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
+    ['sairnvet_witness_policy', { body: POLICY(false) }],
+    // The employee lookup comes back EMPTY: `active=eq.true` matched nothing.
+    [svAuth.EMPLOYEE_TABLE + '?license_hash', { body: [] }],
+    ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
+  ]);
+  const out = await W.requireWitness(ctx());
+  assert.ok(out, 'a record confirmed by a now-revoked vet must not be written');
+  assert.strictEqual(out.body.error.code, 'WITNESS_NO_LONGER_ACTIVE');
+  assert.strictEqual(out.status, 403);
+});
+t('...and it refuses BEFORE the token is spent, so the confirmation survives', async () => {
+  const calls = fakeRest([
+    ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
+    ['sairnvet_witness_policy', { body: POLICY(false) }],
+    [svAuth.EMPLOYEE_TABLE + '?license_hash', { body: [] }],
+    ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
+  ]);
+  await W.requireWitness(ctx());
+  assert.strictEqual(calls.filter((c) => c.method === 'PATCH').length, 0,
+    'burning the token on a refusal the operator cannot act on would force a '
+    + 're-confirmation for a reason that is not their fault');
+});
+t('a deactivated COUNTERSIGNER refuses too -- both attesters are checked', async () => {
+  const row = GOOD_ROW(); row[0].countersign_employee_id = 'dr-b';
+  let seen = 0;
+  fakeRest([
+    ['sairnvet_witness_tokens', { body: row, method: 'GET' }],
+    ['sairnvet_witness_policy', { body: POLICY(true) }],
+    // dr-a answers active; dr-b does not. Matched on the employee_id in the URL
+    // so the arm says WHICH person is revoked rather than relying on call order.
+    [svAuth.EMPLOYEE_TABLE + '?license_hash=eq.L1&employee_id=eq.dr-a',
+     { body: [{ employee_id: 'dr-a' }] }],
+    [svAuth.EMPLOYEE_TABLE + '?license_hash=eq.L1&employee_id=eq.dr-b', { body: [] }],
+    ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
+  ]);
+  const out = await W.requireWitness(ctx());
+  assert.ok(out, 'a countersignature from a revoked vet is not a countersignature');
+  assert.strictEqual(out.body.error.code, 'WITNESS_NO_LONGER_ACTIVE');
+  void seen;
+});
+t('a failed employee lookup is COULD-NOT-TELL, not "still active"', async () => {
+  fakeRest([
+    ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
+    ['sairnvet_witness_policy', { body: POLICY(false) }],
+    [svAuth.EMPLOYEE_TABLE + '?license_hash',
+     { ok: false, status: 500, body: { message: 'boom' } }],
+    ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
+  ]);
+  const out = await W.requireWitness(ctx());
+  assert.strictEqual(out.body.error.code, 'WITNESS_CHECK_FAILED');
+  assert.strictEqual(out.status, 503);
+});
+t('CONTROL: an active attester still proceeds -- the step is not a blanket refusal',
+  async () => {
+    fakeRest([
+      ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
+      ['sairnvet_witness_policy', { body: POLICY(false) }],
+      ACTIVE(),
+      ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
+    ]);
+    assert.strictEqual(await W.requireWitness(ctx()), null);
+  });
 
 // ── 6. THE SPEND IS A COMPARE-AND-SET ───────────────────────────────────────
 section('6. the token is spent BEFORE the write, and only once');
@@ -236,6 +320,7 @@ t('the spend PATCH carries &spent_at=is.null', async () => {
   const calls = fakeRest([
     ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
     ['sairnvet_witness_policy', { body: POLICY(false) }],
+    ACTIVE(),
     ['spent_at=is.null', { body: [{ id: 'r1' }], method: 'PATCH' }]
   ]);
   await W.requireWitness(ctx());
@@ -253,6 +338,7 @@ t('losing the race returns ALREADY_SPENT rather than proceeding', async () => {
   fakeRest([
     ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
     ['sairnvet_witness_policy', { body: POLICY(false) }],
+    ACTIVE(),
     ['spent_at=is.null', { body: [], method: 'PATCH' }]
   ]);
   const out = await W.requireWitness(ctx());
@@ -262,6 +348,7 @@ t('a failed spend refuses -- never write with an unrecorded confirmation', async
   fakeRest([
     ['sairnvet_witness_tokens', { body: GOOD_ROW(), method: 'GET' }],
     ['sairnvet_witness_policy', { body: POLICY(false) }],
+    ACTIVE(),
     ['spent_at=is.null', { ok: false, status: 500, body: {}, method: 'PATCH' }]
   ]);
   const out = await W.requireWitness(ctx());

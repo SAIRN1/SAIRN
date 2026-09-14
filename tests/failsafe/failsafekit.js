@@ -63,6 +63,10 @@ function restWorld(opts) {
     policy: o.policy === undefined ? { require_two_person: false } : o.policy,
     calls: [],
     applied: [],
+    // Counts the attester-active lookups the lock makes. A harness that answers
+    // a question nobody asked would hide the check being deleted; an arm can
+    // assert this is non-zero to prove it is still being asked.
+    employeeQueries: 0,
   };
 
   function matchTokenQuery(url) {
@@ -128,6 +132,33 @@ function restWorld(opts) {
         return { ok: true, status: 200, json: async () => [clone(row)] };
       }
       return { ok: true, status: 200, json: async () => clone(matchTokenQuery(u)) };
+    }
+
+    // ── the employee table ────────────────────────────────────────────────
+    // Item 101, 2026-09-14. requireWitness() now re-reads the attester's
+    // active status at SPEND time, so this world has to be able to answer it.
+    // `employees` defaults to "everyone named is active", because the arms in
+    // this file are about INTERRUPTION and a revoked witness would make every
+    // one of them refuse for an unrelated reason. Set it explicitly to test the
+    // revoked case -- api/sv-witness.test.js section 5b does exactly that.
+    //
+    // THE DEFAULT IS THE PERMISSIVE ONE ON PURPOSE AND THAT IS A RISK WORTH
+    // NAMING: a harness that silently answers "active" to a question the code
+    // did not ask would hide the check being removed. The arm that protects
+    // against it is the uninterrupted-transition one -- if the lock stopped
+    // asking, `employeeQueries` below would be zero and that is asserted.
+    if (u.indexOf('employee_auth') !== -1 || u.indexOf('_employees') !== -1) {
+      state.employeeQueries += 1;
+      const m = /employee_id=eq\.([^&]+)/.exec(u);
+      const who = m ? decodeURIComponent(m[1]) : null;
+      const revoked = o.revoked || [];
+      if (o.employeeLookupFails) {
+        return { ok: false, status: 500, json: async () => ({ message: 'employee lookup failed' }) };
+      }
+      if (who && revoked.indexOf(who) !== -1) {
+        return { ok: true, status: 200, json: async () => [] };
+      }
+      return { ok: true, status: 200, json: async () => [{ employee_id: who }] };
     }
 
     return { ok: true, status: 200, json: async () => [] };

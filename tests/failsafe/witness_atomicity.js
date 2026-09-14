@@ -98,6 +98,12 @@ t('the uninterrupted transition PROCEEDS, or every arm below is vacuous', async 
   assert.ok(world.tokens[0].spent_at, 'proceeded without spending the token');
   TRANSITION_CALLS = world.calls.length;
   assert.ok(TRANSITION_CALLS >= 2, 'measured ' + TRANSITION_CALLS + ' calls');
+  // THE HARNESS ANSWERS "ACTIVE" BY DEFAULT, so it would keep answering a
+  // question the lock had stopped asking and nothing would notice. Item 101's
+  // re-read is asserted to have HAPPENED, not merely to have been satisfiable.
+  assert.ok(world.employeeQueries > 0,
+    'the lock did not re-read the attester at spend time -- a permissive '
+    + 'default in this kit would have hidden that');
 });
 
 t('interrupting at every point never says PROCEED on an unspent token', async () => {
@@ -144,9 +150,21 @@ t('a spend applied server-side then interrupted does NOT proceed', async () => {
   // The dangerous asymmetry. The row is now spent and the caller is told
   // nothing; if the lock swallowed this it would either write unwitnessed or
   // retry onto a burned signature.
+  // THE SPEND'S CALL INDEX IS MEASURED, NOT WRITTEN DOWN. It was hard-coded as
+  // 3, and on 2026-09-14 the lock gained a fourth round trip -- the attester's
+  // active re-read, item 101 -- which moved the spend to call 4. The arm then
+  // interrupted a GET, no spend landed, and its own guard fired: "the fixture
+  // did not actually apply the spend -- this arm proves nothing". That guard
+  // working is the good outcome; the hard-coded index is the defect, and this
+  // file's own header already says so about section A's call count.
+  const probe = K.restWorld({ tokens: [tokenRow()] });
+  await K.attempt(() => W.requireWitness(ctx()));
+  const SPEND_CALL = probe.calls.findIndex((c) => c.method === 'PATCH') + 1;
+  assert.ok(SPEND_CALL > 0, 'no PATCH was observed at all -- the lock stopped spending');
+
   const world = K.restWorld({
     tokens: [tokenRow()],
-    applyThenInterruptAfter: 3,
+    applyThenInterruptAfter: SPEND_CALL,
   });
   const r = await K.attempt(() => W.requireWitness(ctx()));
   assert.notStrictEqual(r.outcome, 'proceed',

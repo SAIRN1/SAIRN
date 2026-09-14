@@ -411,6 +411,52 @@ async function requireWitness(ctx) {
     return { status: 403, body: { error: { code: 'COUNTERSIGN_REQUIRED',
       message: 'This practice requires a second licensed veterinarian to countersign before this record can be saved.' } } };
   }
+  // ── THE SETTLING STEP. Item 101, added 2026-09-14. ───────────────────────
+  // Everything above this line re-checks the TOKEN -- that it exists, is
+  // unspent, is unexpired, covers THIS payload, and carries the countersign the
+  // policy demands. Not one of those is a fact about the WORLD, and between the
+  // confirmation and the write the world has up to TOKEN_TTL_MS to move.
+  //
+  // THE SHAPE IS NASA'S DOCKING SEQUENCE AND THE MIDDLE PHASE WAS MISSING. Soft
+  // capture, then ATTENUATION -- damp the relative motion and re-check
+  // alignment, still able to back out -- and only then hard capture. This lock
+  // had soft capture (`request`) and hard capture (`spend` + write) with
+  // nothing between them. The TTL is not an attenuation phase; it is a
+  // DEADLINE, and a deadline re-verifies nothing.
+  //
+  // THE REACHABLE CASE, and this file already names the hazard 300 lines above
+  // in activeCaller(): "a witness signature from a revoked account is worse
+  // than no signature: it carries a name that no longer means anything."
+  // activeCaller() is called on `policy`, `set_policy`, `request` and
+  // `countersign` -- and was never called here. So a vet could confirm a
+  // controlled-substance entry, be deactivated (struck off, dismissed, licence
+  // pulled -- exactly when deactivation is urgent), and the write would still
+  // land attributed to them inside the next ten minutes. On a DEA-relevant,
+  // append-only register with no removal path, where a correction is a SECOND
+  // row and the wrong one stands forever.
+  //
+  // It re-reads the WITNESS from the token row rather than the current caller,
+  // which is the stronger check: it is the attester's standing that the record
+  // claims, not the saver's.
+  const attesters = [row.witness_employee_id];
+  if (row.countersign_employee_id) attesters.push(row.countersign_employee_id);
+  for (const who of attesters) {
+    if (!who) continue;
+    const ar = await fetch(rest(EMPLOYEE_TABLE + '?license_hash=eq.' + enc(licHash) +
+      '&employee_id=eq.' + enc(who) + '&active=eq.true&select=employee_id&limit=1'),
+      { headers });
+    const arows = await ar.json().catch(() => null);
+    if (!ar.ok) {
+      // Could-not-tell, on an irreversible write. Same answer as every other
+      // could-not-tell in this function.
+      return { status: 503, body: { error: { code: 'WITNESS_CHECK_FAILED',
+        message: 'Whether the confirming employee is still active could not be verified, so nothing was written. This is not the same as the record being unconfirmed.' } } };
+    }
+    if (!(Array.isArray(arows) && arows[0])) {
+      return { status: 403, body: { error: { code: 'WITNESS_NO_LONGER_ACTIVE',
+        message: 'The employee who confirmed this record is no longer active. Confirm it again with a current employee — the record was not saved.' } } };
+    }
+  }
   // SPEND IT BEFORE THE WRITE, NOT AFTER. If the write then fails the token is
   // burned and the record must be confirmed again -- which is the direction to
   // fail in. Spending afterwards leaves a window where a retry reuses the same
