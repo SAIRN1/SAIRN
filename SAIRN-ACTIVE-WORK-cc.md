@@ -2414,3 +2414,26 @@ Unreachable at four jobs. Written down so it is not rediscovered as a surprise.
 
 One register record, `detection_method: independent-review`, rule 1.1 (a check that stopped
 checking), phase coding, severity high. 63 records, `--check` clean.
+
+### The second mutation control, which found that the first fix was half-tested
+
+The obvious sabotage -- disabling the new `total === null` branch -- **left the suite green**,
+because the short-count arm alone already refuses a null total (`null !== 1`). The arm was
+therefore passing on a handler with **no not-stated branch at all**, which would report
+`expected: null` -- a message that reads as a bug in the checkpointer rather than a server that
+never answered the question asked. The test now asserts `detail.why`, so the branch is
+load-bearing. **Both mutations now take the suite to 37 passed, 1 failed:**
+
+| mutation | result |
+|---|---|
+| restore the pre-fix `total !== null && total !== rows.length` | 37 passed, **1 failed** |
+| disable only the not-stated branch | 37 passed, **1 failed** |
+| no mutation | **38 passed, 0 failed** |
+
+### What live verification could and could not establish -- stated, not implied
+
+`/api/audit-checkpoint` on the deployed host answers **401** to an unauthenticated GET, which
+proves the route is deployed and the cron gate refuses. **It does not prove the new guard runs**:
+exercising it needs `CRON_SECRET`, and a real call WRITES A PRODUCTION CHECKPOINT. The proof that
+the guard fires is the driven local run against the real handler, not the live probe. Recorded
+this way so nobody later reads "pushed and verified" as more than it was.
