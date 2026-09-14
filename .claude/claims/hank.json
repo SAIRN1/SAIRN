@@ -1493,8 +1493,8 @@
       "task": "risk acceptances recorded only in file headers and nowhere central",
       "claimed_at": "2026-09-14T15:38:36Z",
       "claimed_at_epoch": 1789400316.0215702,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T15:46:49Z"
     }
   ]
 }
