@@ -21,8 +21,14 @@
 #  1. AN EMPTY DUMP THAT RESTORES PERFECTLY. Every audit table on this platform
 #     has RLS enabled, and a SELECT-only role without BYPASSRLS dumps ZERO rows
 #     from them and exits 0. sql/backup_reader_role.sql grants BYPASSRLS for
-#     exactly this reason, and the size floor below plus the coherence check are
-#     the two things that would catch it if the role were ever recreated wrong.
+#     exactly this reason. THE SIZE FLOOR BELOW DOES NOT CATCH IT -- that claim
+#     was here until CC's independent review on 2026-09-14 and it was wrong, in
+#     the direction that matters: a BYPASSRLS-less dump is approximately a
+#     SCHEMA-ONLY dump, and the floor's own comment says a schema-only dump of
+#     this database is well over 100 KB. It passes a 50 KB floor comfortably.
+#     THE RESTORE PLUS tools/restore_coherence_check.js IS THE ONLY DETECTOR
+#     for this failure. A reader who believed there were two independent ones
+#     would be wrong about the thing that matters most here.
 #  2. A DUMP NOBODY EVER READ BACK. Addressed by restoring every night.
 #  3. PLAINTEXT ON DISK. pg_dump is piped STRAIGHT into age; the unencrypted
 #     bytes never become a file, on the runner or anywhere else.
@@ -127,11 +133,21 @@ jobs:
             | age -r "$RECIPIENT" > "/tmp/sairn-$STAMP.sql.age"
           ls -l "/tmp/sairn-$STAMP.sql.age"
 
-      # ── A SIZE FLOOR, BECAUSE AN EMPTY DUMP IS THE FAILURE THAT LOOKS FINE ─
-      # A schema-only dump of this database is well over 100 KB, so anything
-      # under 50 KB means the data did not come. The most likely cause is the
-      # backup role losing BYPASSRLS and silently reading zero rows from every
-      # RLS-protected table -- see sql/backup_reader_role.sql.
+      # ── A SIZE FLOOR, AND IT IS NARROWER THAN IT LOOKED ────────────────────
+      # It catches a dump that is TRUNCATED OR EMPTY -- a pg_dump killed
+      # part-way, a pipe that produced nothing, an age failure emitting a stub.
+      #
+      # IT DOES NOT CATCH THE BYPASSRLS FAILURE, and it said it did until CC's
+      # independent review on 2026-09-14. The arithmetic is the refutation and
+      # this comment contained both halves of it: a role without BYPASSRLS
+      # produces approximately a SCHEMA-ONLY dump, and a schema-only dump of
+      # this database is "well over 100 KB" -- so it sails past 50 KB. The
+      # floor would have reported a completely empty backup as fine.
+      #
+      # THE RESTORE PLUS THE COHERENCE CHECKER IS THE DETECTOR FOR THAT ONE.
+      # It genuinely works: the audit-checkpoint digests cannot match an empty
+      # table. Two detectors were claimed and there is one, which is why the
+      # error message below no longer names BYPASSRLS as the usual cause.
       - name: Refuse a suspiciously small dump
         run: |
           set -euo pipefail
@@ -139,8 +155,10 @@ jobs:
           echo "encrypted dump: $SIZE bytes"
           if [ "$SIZE" -lt 51200 ]; then
             echo "::error::The dump is ${SIZE} bytes. That is too small to contain this database."
-            echo "::error::The usual cause is the backup role having lost BYPASSRLS, which makes"
-            echo "::error::pg_dump read ZERO rows from every RLS-protected table and exit 0."
+            echo "::error::Likely a truncated or empty dump: pg_dump killed part-way, an empty"
+            echo "::error::pipe, or age emitting a stub. NOT the BYPASSRLS failure -- a dump"
+            echo "::error::missing every RLS-protected row is still schema-heavy and would"
+            echo "::error::pass this floor. The restore + coherence check is what catches that."
             exit 1
           fi
 

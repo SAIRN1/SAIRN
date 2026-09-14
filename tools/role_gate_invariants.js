@@ -16,10 +16,19 @@
 //
 // ── EXHAUSTIVE IS AFFORDABLE HERE, WHICH IS WHY THIS CLASS WAS CHOSEN ──────
 // Sixteen apps, at most six roles each. There is no sampling and no heuristic:
-// every app is checked against every invariant over its whole role set. That is
-// the property that made authorization the right first target -- the rules are
-// small enough to state exactly, and the cost of a wrong answer is somebody
-// reading a controlled-substance register.
+// every app is checked against every invariant ~~over its whole role set~~ THAT
+// THIS TOOL IMPLEMENTS, over its whole role set. That is the property that made
+// authorization the right first target -- the rules are small enough to state
+// exactly, and the cost of a wrong answer is somebody reading a
+// controlled-substance register.
+//
+// THE QUALIFIER WAS MISSING AND IT MATTERED (CC's review, 2026-09-14, Finding
+// 4). "Every invariant" read as all of them; the spec has I1 and I2 as well,
+// this file implements neither, and the output said nothing. Both are runtime
+// properties proven elsewhere -- see SPEC_NOT_CHECKED_HERE, which the run now
+// PRINTS with where each one is actually proven. The existing denominator does
+// not cover them: "N not checkable" is about role sets that could not be READ,
+// and an invariant never evaluated for any app appears in no count at all.
 //
 // ── UNSPECIFIED IS A THIRD STATE AND IT IS COUNTED SEPARATELY ──────────────
 // Several auth modules export no role sets at all -- their gates are internal.
@@ -258,15 +267,43 @@ const SPEC_CHECKED_ELSEWHERE = {
     + 'failure withdraws every derived set instead of reporting one app'
 };
 
+// ── AND IT IS PRINTED, NOT ONLY DECLARED (2026-09-14) ──────────────────────
+// CC's independent review, Finding 4: this file's header said "every app is
+// checked against every invariant" while implementing I3, I4, I5a/b/c only.
+// I1 (AppIsolation) and I2 (DeactivationBinds) are in the spec and have NO
+// checker here, and the output never said so.
+//
+// THE DENOMINATOR THAT WAS ALREADY PRINTED DOES NOT COVER THIS, and that is
+// the sharp part of the finding. "56 checks run, 22 not checkable" is about
+// role SETS that could not be READ. An invariant never evaluated for any app
+// does not appear in either number. Two different kinds of gap, one of them
+// invisible.
+//
+// So each entry now carries WHERE the property is actually proven. Neither is
+// unproven -- both are runtime behaviour covered elsewhere -- which is why the
+// fix is a disclosure rather than new code here.
 const SPEC_NOT_CHECKED_HERE = {
-  TypeOK: 'a well-formedness statement about the model\'s own variables; there '
-        + 'is no runtime counterpart to read',
-  AppIsolation: 'requires presenting a token minted for one app to another and '
-              + 'observing the refusal -- behaviour, not a role set. '
-              + 'tests/ exercises it per app',
-  DeactivationBinds: 'requires a deactivated credential to be refused at the '
-                   + 'gate; again behaviour. The set of roles is unchanged by '
-                   + 'deactivation, so this file is structurally blind to it'
+  TypeOK: {
+    why: 'a well-formedness statement about the model\'s own variables; there '
+       + 'is no runtime counterpart to read',
+    proven_by: '(nothing to prove -- it constrains the model, not the code)'
+  },
+  AppIsolation: {
+    why: 'requires presenting a token minted for one app to another and '
+       + 'observing the refusal -- behaviour, not a role set, and no reading of '
+       + 'MANAGEMENT_ROLES can decide it',
+    proven_by: 'tests/app_session_isolation.js, plus the Semgrep rule '
+             + '.semgrep/verify-session-token-app-scope.yml which blocks a '
+             + 'verifySessionToken() call missing its expectedApp argument'
+  },
+  DeactivationBinds: {
+    why: 'requires a deactivated credential to be refused AT THE GATE. The set '
+       + 'of roles is unchanged by deactivation, so this file is structurally '
+       + 'blind to it',
+    proven_by: 'the deactivated-caller re-check each api/*-auth.js performs '
+             + '(activeCaller() and its equivalents), and for the witnessing '
+             + 'lock specifically, api/sv-witness.test.js section 5b'
+  }
 };
 
 const sameSet = (a, b) => a.length === b.length && subset(a, b) && subset(b, a);
@@ -423,6 +460,22 @@ function main(argv) {
       console.log('      ' + k.padEnd(16) + ' ' + String(reasons[k]).padStart(3) +
         '  ' + gloss);
     }
+    // ── WHAT THIS TOOL DOES NOT EVALUATE AT ALL ──────────────────────────
+    // Distinct from NOT CHECKABLE above, and the distinction is the finding:
+    // that one is a role set nobody could READ; this one is a spec invariant
+    // never EVALUATED for any app, which appears in no count anywhere.
+    const notHere = Object.keys(SPEC_NOT_CHECKED_HERE)
+      .filter((k) => k !== 'TypeOK');
+    console.log('\n  SPEC INVARIANTS THIS TOOL DOES NOT EVALUATE (%d) -- NOT part',
+      notHere.length);
+    console.log('  of the counts above, which are about role sets that could not');
+    console.log('  be read. These are never asked here for ANY app:');
+    for (const k of notHere) {
+      const e = SPEC_NOT_CHECKED_HERE[k];
+      console.log('    %s -- %s', k, e.why);
+      console.log('      proven by: %s', e.proven_by);
+    }
+
     console.log('\n  I6 CONTROL -- what licenses the derived checks:');
     if (control.licensed) {
       console.log('    %d module(s) state AUTHENTICATED_ROLES outright and every one '

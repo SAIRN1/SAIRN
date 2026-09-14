@@ -334,6 +334,31 @@ console.log('\n--- I. the spec and the checker are held together ---');
     JSON.stringify(Object.keys(T.SPEC_NOT_CHECKED_HERE).filter(
       (k) => cited.indexOf(k) !== -1)));
 
+  // ── CC's FINDING 4: an invariant never EVALUATED appears in no count ─────
+  // "N not checkable" is about role sets that could not be READ. I1 and I2 are
+  // not evaluated for ANY app, which no number here ever reflected.
+  const notHere = Object.keys(T.SPEC_NOT_CHECKED_HERE).filter((k) => k !== 'TypeOK');
+  ok('I6 every not-evaluated invariant names WHERE it is actually proven',
+    notHere.length > 0 && notHere.every(
+      (k) => T.SPEC_NOT_CHECKED_HERE[k].why && T.SPEC_NOT_CHECKED_HERE[k].proven_by),
+    JSON.stringify(T.SPEC_NOT_CHECKED_HERE));
+  // Captured here rather than reusing section H's `txt`, which is block-scoped
+  // to H -- the first version of these arms referenced it and died with a
+  // ReferenceError, which is a probe that tested nothing rather than a pass.
+  const runOut = execFileSync(process.execPath,
+    [path.join(REPO, 'tools', 'role_gate_invariants.js')], { encoding: 'utf8' });
+  ok('I7 ...and the RUN prints them, so the gap is not only in the source',
+    /DOES NOT EVALUATE/.test(runOut) && /proven by:/.test(runOut), runOut.slice(-900));
+  ok('I8 ...naming AppIsolation and DeactivationBinds specifically',
+    /AppIsolation/.test(runOut) && /DeactivationBinds/.test(runOut), runOut.slice(-900));
+  ok('I9 ...and it says outright they are NOT part of the counts above',
+    /NOT part[\s\S]{0,120}counts above/.test(runOut), runOut.slice(-900));
+  ok('I10 the header no longer claims every invariant unqualified',
+    /every invariant ~~over its whole role set~~ THAT/.test(
+      require('fs').readFileSync(
+        path.join(REPO, 'tools', 'role_gate_invariants.js'), 'utf8')),
+    'the unqualified "every invariant" claim is back');
+
   ok('I5 I6 in particular reached BOTH halves',
     /AuthenticatedMatchesVocabulary\s*==/m.test(tla) &&
     conjuncts.indexOf('AuthenticatedMatchesVocabulary') !== -1,

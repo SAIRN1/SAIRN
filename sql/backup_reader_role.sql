@@ -44,19 +44,76 @@
 -- WRITTEN 2026-09-14. NOT RUN.
 -- ---------------------------------------------------------------------------
 
--- 1. The role. Replace the password before running; it goes straight into the
---    GitHub secret BACKUP_PGPASSWORD and nowhere else.
+-- 1. The role. Replace the password below before running; it goes straight into
+--    the GitHub secret BACKUP_PGPASSWORD and nowhere else.
+--
+-- ── THE FILE REFUSES TO RUN WHILE THE PLACEHOLDER IS STILL HERE ────────────
+-- Found by CC's independent review, 2026-09-14, before the role had ever been
+-- created. Fixed the same day. The original was:
+--
+--     if not exists (...) then create role ... password 'REPLACE_ME_BEFORE_RUNNING';
+--
+-- Three things made that a HIGH finding rather than an untidy default:
+--
+--   1. THIS REPOSITORY IS PUBLIC, so the placeholder is not a placeholder. It
+--      is a published string, and running the file un-edited mints a LOGIN role
+--      with BYPASSRLS and SELECT on every table in `public` whose password
+--      anybody can read.
+--   2. `if not exists` MADE THE SLIP PERMANENT. Re-running the corrected file
+--      changed nothing, because the role already existed. A one-time mistake
+--      became a standing one, and the guard that did it was there to make the
+--      file safe to re-run.
+--   3. NOTHING IN THE FIVE VERIFY STEPS LOOKED AT THE PASSWORD. The file
+--      checked privileges thoroughly and never asked the one question that
+--      mattered.
+--
+-- "Replace it before running" is a note, and a note is not a control. So:
+--
+--   * the block RAISES while the literal is present -- the file cannot be run
+--     un-edited at all, rather than being run and then detected;
+--   * the password is set UNCONDITIONALLY, `create` on first run and `alter`
+--     on every run after. That closes the if-not-exists trap AND makes this
+--     file the remediation for a role already created with the placeholder:
+--     re-run it with a real password and the old one is rotated out.
+--
+-- WHY THERE IS NO "IS THE PASSWORD STILL THE PLACEHOLDER" VERIFY QUERY, stated
+-- rather than left as an omission: `pg_authid.rolpassword` holds a SALTED SCRAM
+-- verifier, so the same password hashes differently every time and cannot be
+-- compared to a known string. The check has to be PREVENTIVE, which is why it
+-- is a raise and not an assertion afterwards.
 do $$
+declare
+  -- REPLACE THIS. It is the only edit this file needs.
+  v_pw text := 'REPLACE_ME_BEFORE_RUNNING';
 begin
+  if v_pw = 'REPLACE_ME_BEFORE_RUNNING' or length(v_pw) < 16 then
+    raise exception
+      'REFUSING TO RUN: the backup role password is still the placeholder '
+      'committed to a PUBLIC repository (or is under 16 characters). Running '
+      'this file as-is would create a LOGIN role with BYPASSRLS and SELECT on '
+      'every table in public, with a password anybody can read -- and the old '
+      'if-not-exists guard meant re-running the corrected file would not have '
+      'changed it. Edit v_pw above, then run this again.'
+      using errcode = 'invalid_password';
+  end if;
+
   if not exists (select 1 from pg_roles where rolname = 'sairn_backup_reader') then
-    create role sairn_backup_reader
-      with login
-           nosuperuser
-           nocreatedb
-           nocreaterole
-           noinherit
-           bypassrls
-           password 'REPLACE_ME_BEFORE_RUNNING';
+    execute format(
+      'create role sairn_backup_reader with login nosuperuser nocreatedb '
+      'nocreaterole noinherit bypassrls password %L', v_pw);
+    raise notice 'created sairn_backup_reader';
+  else
+    -- THE ROTATION PATH, and the reason it is unconditional. If this file was
+    -- ever run un-edited, the role exists with a published password and no
+    -- amount of re-running the old version would have fixed it.
+    execute format('alter role sairn_backup_reader with password %L', v_pw);
+    -- Re-assert the attributes too: a role created by an earlier version, or
+    -- altered by hand since, must not be assumed to still carry them.
+    execute 'alter role sairn_backup_reader with login nosuperuser nocreatedb '
+            'nocreaterole noinherit bypassrls';
+    raise notice 'sairn_backup_reader already existed -- password ROTATED and '
+                 'attributes re-asserted. If this role was ever created from '
+                 'the un-edited file, the published password is now dead.';
   end if;
 end
 $$;
@@ -143,6 +200,32 @@ select distinct privilege_type
  where grantee = 'sairn_backup_reader'
  order by privilege_type;
 
+-- 2a. HOW MANY TABLES, NOT WHICH PRIVILEGE. Expect: missing = 0
+--     Added 2026-09-14 from CC's Finding 3. Query 2 above asks WHICH PRIVILEGES
+--     this role holds and answers SELECT -- and it answers SELECT whether the
+--     role can read 380 tables or three, because a table with no grant simply
+--     does not appear in the result. COVERAGE was never checked, which is the
+--     same silent-omission shape this file names one level up about FOR ROLE.
+--
+--     A NON-ZERO `missing` IS THE FAILURE and it names the tables, because a
+--     count alone would tell you something was wrong and not what.
+with granted as (
+  select distinct table_name
+    from information_schema.role_table_grants
+   where grantee = 'sairn_backup_reader' and table_schema = 'public'
+), present as (
+  select table_name
+    from information_schema.tables
+   where table_schema = 'public' and table_type = 'BASE TABLE'
+)
+select (select count(*) from present)                     as tables_in_public,
+       (select count(*) from granted)                     as tables_granted,
+       (select count(*) from present
+         where table_name not in (select table_name from granted)) as missing,
+       (select string_agg(table_name, ', ' order by table_name)
+          from present
+         where table_name not in (select table_name from granted)) as missing_names;
+
 -- 2b. THE DEFAULT ACLs ACTUALLY TOOK, AND FOR WHICH GRANTOR. Expect ONE ROW PER
 --     GRANTOR that exists on this deployment -- `postgres` and `supabase_admin`
 --     -- each showing a grant to sairn_backup_reader.
@@ -179,3 +262,36 @@ reset role;
 -- set role sairn_backup_reader;
 -- insert into sairnlaw_audit_log (license_hash, event_type) values ('x', 'login_success');
 -- reset role;
+
+-- 6. THE PASSWORD IS SET AND IS A SCRAM VERIFIER. Expect: SCRAM-SHA-256
+--    Added 2026-09-14 with the placeholder fix. READ WHAT THIS DOES AND DOES
+--    NOT PROVE: a salted verifier cannot be compared to a known string, so this
+--    CANNOT tell you the password is not the published placeholder. It tells
+--    you only that a password exists and is stored in the modern format. The
+--    control against the placeholder is the RAISE in step 1, which is
+--    preventive; this is a completeness check, not a second detector.
+select case
+         when rolpassword is null then 'NO PASSWORD -- the role cannot log in'
+         when rolpassword like 'SCRAM-SHA-256%' then 'SCRAM-SHA-256'
+         else 'UNEXPECTED FORMAT: ' || left(rolpassword, 12)
+       end as password_state
+  from pg_authid where rolname = 'sairn_backup_reader';
+
+-- 7. THE ATTRIBUTE THAT DECIDES WHETHER THE BACKUP CONTAINS ANYTHING, asked
+--    again AFTER any rotation. Expect: t
+--    Step 1 re-asserts bypassrls on the existing-role path; this is the query
+--    that proves the re-assertion landed rather than assuming it did.
+select rolbypassrls from pg_roles where rolname = 'sairn_backup_reader';
+
+-- ── IF THIS FILE WAS EVER RUN UN-EDITED, READ THIS ────────────────────────
+-- The role exists with a password published in a public repository. Rotating
+-- it is necessary and is NOT sufficient on its own:
+--   1. Re-run this file with a real password -- step 1's else-branch rotates it
+--      and re-asserts the attributes.
+--   2. Update the GitHub secret BACKUP_PGPASSWORD to match, or the workflow
+--      starts failing to connect, which is the safe direction but is an outage.
+--   3. Treat the window between the two as a disclosure: a LOGIN role with
+--      BYPASSRLS and SELECT on every table in public was reachable by anyone
+--      who read the repo. What that is worth depends on whether the database
+--      host is reachable from the internet, which is a separate question and
+--      is NOT answered by this file.

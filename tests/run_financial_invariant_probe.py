@@ -195,6 +195,51 @@ check('6f  ...and the run prints it rather than keeping it internal',
 check('6g  the three terms that match nothing are named, not hidden',
       'match NO file and never have' in out, out[:600])
 
+# ── 6b. THE CANDIDATES ARE DERIVED, EVEN THOUGH THE CLASSIFICATION IS NOT ──
+# Three derivations of the vocabulary itself were built and measured; all three
+# were worse and the numbers are recorded at KEY_SHAPE in the tool. What IS
+# derivable is the CANDIDATE LIST, and that is the half that failed:
+# submission_key sat in the tree for a day with a real guard on it and nothing
+# pointed at it.
+print('\n--- 6b. a new key cannot sit in the tree unnamed ---')
+cands = I.derive_key_candidates(I.REPO)
+check('6h  candidates are derived from api/, not read from a list',
+      isinstance(cands, dict) and len(cands) > 0, str(cands))
+check('6i  every derived candidate has a hand-written judgment today',
+      all(k in I.KEY_CANDIDATES_JUDGED for k in cands),
+      'UNCLASSIFIED: ' + str(sorted(k for k in cands
+                                    if k not in I.KEY_CANDIDATES_JUDGED)))
+check('6j  ...and each judgment says WHY, not just yes/no',
+      all(len(v) > 30 for v in I.KEY_CANDIDATES_JUDGED.values()),
+      str([k for k, v in I.KEY_CANDIDATES_JUDGED.items() if len(v) <= 30]))
+# THE ARM THAT PROVES IT PREVENTS THE RECURRENCE. Pretend submission_key was
+# never added to the vocabulary: the reporter must surface it as UNCLASSIFIED,
+# which is what would have happened on the day it was written.
+_terms = I.KEY_TERMS
+try:
+    I.KEY_TERMS = [t for t in _terms if t != 'submission_key']
+    back = I.derive_key_candidates(I.REPO)
+    un = sorted(k for k in back if k not in I.KEY_CANDIDATES_JUDGED)
+    check('6k  REPLAY: with submission_key unknown, the reporter surfaces it',
+          un == ['submission_key'], 'unclassified was ' + str(un))
+    check('6l  ...and points at the file that carries it',
+          back.get('submission_key') ==
+          ['api/sairndental/public-complaint-submit.js'],
+          str(back.get('submission_key')))
+finally:
+    I.KEY_TERMS = _terms
+check('6m  the patch was removed, or every later arm is bogus',
+      I.KEY_TERMS is _terms and 'submission_key' in I.KEY_TERMS, str(I.KEY_TERMS))
+check('6n  the run PRINTS the derived candidates and the unclassified count',
+      'DERIVED FROM api/' in out and 'UNCLASSIFIED' in out, out[:900])
+# Newlines collapsed before matching: the sentence wraps in the real output and
+# the first version of this arm asserted a phrase that spans a line break --
+# the same reading-the-wrong-thing failure two D-arms in the claims probe hit.
+_flat = ' '.join(out.split())
+check('6o  ...and refuses to read "all judged" as "the vocabulary is complete"',
+      'not the same as the vocabulary being complete' in _flat
+      and 'not key-shaped at all is invisible' in _flat, _flat[:1200])
+
 # ── 7. ITEM 6 TRIAGE -- a denominator for "being triaged" ──────────────────
 print('\n--- 7. how many has anybody actually read ---')
 tri, terr = I.load_triage()
@@ -204,7 +249,7 @@ check('7b  every entry carries a verdict AND a reason -- an exemption with no '
       all(v.get('verdict') and v.get('why') for v in tri.values()),
       str([k for k, v in tri.items() if not (v.get('verdict') and v.get('why'))]))
 check('7c  the verdicts are from the declared vocabulary',
-      all(v['verdict'] in ('SAFE', 'FIX', 'ACCEPTED', 'UNTRIAGED')
+      all(v['verdict'] in ('SAFE', 'FIX', 'FIXED', 'ACCEPTED', 'UNTRIAGED')
           for v in tri.values()),
       str(sorted(set(v['verdict'] for v in tri.values()))))
 check('7d  the run reports judged and untriaged as SEPARATE numbers',

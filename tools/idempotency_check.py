@@ -80,10 +80,102 @@ CRITERIA_VERSION = '2026-09-13.1'
 # What IS derived is the disclosure: the run prints how many files each term
 # matched, so a term that has never matched and a key this list does not know
 # are both visible rather than silent.
-KEY_NAMES = (r'(source_id|source_kind|idempotency[_-]?key|request_id|'
+KEY_NAMES = (r'(source_id|source_kind|idempotency[_-]?key(?:_hash)?|request_id|'
              r'client_token|order_id|external_id|submission_key)')
-KEY_TERMS = ['source_id', 'source_kind', 'idempotency_key', 'request_id',
+KEY_TERMS = ['source_id', 'source_kind', 'idempotency_key',
+             # Added 2026-09-14 BY THE CANDIDATE REPORTER, on its first day:
+             # api/sairncash/trial-start.js stores a sha256 of its key, so the
+             # column is idempotency_key_HASH and the vocabulary did not have
+             # it. The reporter surfaced it as UNCLASSIFIED within minutes of
+             # the column being written -- which is exactly the gap that let
+             # submission_key sit unnoticed for a day.
+             'idempotency_key_hash', 'request_id',
              'client_token', 'order_id', 'external_id', 'submission_key']
+
+# --- DERIVING THE VOCABULARY: THREE ATTEMPTS, ALL MEASURED, ALL WORSE ------
+# Asked on 2026-09-14 to derive this list from real usage rather than maintain
+# it by hand. Three derivations were built and MEASURED against two known true
+# positives -- api/ledger.js (source_id/source_kind) and
+# api/sairndental/public-complaint-submit.js (submission_key):
+#
+#   A. "a non-scope column both filtered with =eq. AND written in a body"
+#      -> 37 files, SIXTEEN of them keyed on `active`, a deactivation flag.
+#      Would have flipped dozens of files to GUARDED. Fail-open.
+#   B. "a read whose result short-circuits a later write" -- the actual
+#      semantic -- approximated by regex -> 24 files, admits `license_hash`
+#      (which is in every query on this platform), AND MISSES
+#      public-complaint-submit.js, whose early return is nested two `if` levels
+#      deep. Wrong in both directions at once.
+#   C. "a column the SCHEMA declares UNIQUE and api/ filters on"
+#      -> 50 columns, because every record id is unique in its own table. Also
+#      misses submission_key, which deliberately carries an INDEX and not a
+#      UNIQUE constraint -- its own migration says why: a unique constraint
+#      "would refuse that second, legitimate complaint forever".
+#
+# B is the right semantic and it needs an AST. There is no JS parser here:
+# nothing in node_modules, and this repo's package.json records that it carries
+# three dependencies on purpose, one added only because hand-rolling WebAuthn
+# crypto was the wrong call. Adding a parser to power a checker is not that.
+#
+# SO THE CLASSIFICATION STAYS HAND-WRITTEN AND THE CANDIDATES ARE DERIVED --
+# which is the half that actually failed. submission_key sat in the tree for a
+# day and nothing pointed at it. A candidate reporter would have, the day it was
+# written. It never classifies anything: it produces a lead a human judges, the
+# same shape secrets_inventory.py already uses for a newly-introduced env var.
+KEY_SHAPE = re.compile(r'(_key$|_token$|_hash$|idempot|dedup|submission|nonce)')
+# The scoping columns every query on this platform carries. Not a second
+# vocabulary -- they are excluded because they appear EVERYWHERE, which is the
+# opposite of the property a key needs.
+SCOPE_COLS = ('license_hash', 'app_id')
+FILTER_COL = re.compile(r'[?&]([a-z][a-z0-9_]{2,40})=eq\.')
+MUTATING = re.compile(r"method:\s*'(?:POST|PATCH|PUT)'")
+
+# Hand-written judgments on the DERIVED candidates. A candidate with no entry
+# here is reported UNCLASSIFIED on every run, because a guard built on a name
+# this vocabulary does not know reads as UNGUARDED -- which is what happened.
+KEY_CANDIDATES_JUDGED = {
+    'token_hash': 'NOT an idempotency key. A hashed bearer credential looked '
+                  'up to authenticate a caller; the write that follows is the '
+                  'point of the request, not a duplicate of it',
+    'access_token': 'NOT an idempotency key. Same shape as token_hash -- it '
+                    'says WHO is asking, not WHICH submission this is',
+    'link_token': 'NOT an idempotency key. A share/track link identifier',
+    'ip_hash': 'NOT an idempotency key. A rate-limit bucket, keyed with '
+               'window_start; suppressing duplicates is not its job',
+    'setting_key': 'NOT an idempotency key. A settings column name',
+    'trial_token': 'NOT an idempotency key, and the trial-start finding is why '
+                   'it is worth saying: the token is the RESULT of the write, '
+                   'minted per request, so it cannot key the write that '
+                   'produces it. See tools/idempotency_triage.json',
+}
+
+
+def derive_key_candidates(repo):
+    """Columns filtered with =eq. inside a file that WRITES, whose name is
+    key-shaped, and which the vocabulary does not already know.
+
+    DERIVED FROM api/ ON EVERY RUN, so a new key cannot sit in the tree
+    unnamed. It reports; it never classifies.
+    """
+    out = {}
+    for root, _dirs, files in os.walk(os.path.join(repo, 'api')):
+        for f in files:
+            if not f.endswith('.js') or f.endswith('.test.js'):
+                continue
+            p = os.path.join(root, f)
+            try:
+                code = io.open(p, encoding='utf-8', errors='replace').read()
+            except Exception:
+                continue
+            if not MUTATING.search(code):
+                continue
+            rel = os.path.relpath(p, repo).replace(os.sep, '/')
+            for col in set(FILTER_COL.findall(code)):
+                if col in KEY_TERMS or col in SCOPE_COLS:
+                    continue
+                if KEY_SHAPE.search(col):
+                    out.setdefault(col, []).append(rel)
+    return dict((k, sorted(v)) for k, v in out.items())
 # Evidence the key is checked against something that OUTLIVES the process.
 DURABLE = r'(fetch\(\s*rest\(|await\s+\w*[Ff]etch|select=|\.from\(|SELECT\s)'
 # Evidence it is checked against something that does NOT outlive the process.
@@ -337,6 +429,31 @@ def main(argv):
         print('    rather than derived, which reads exactly like a complete one.')
     print('    If a real guard is in the UNGUARDED list below, READ IT before')
     print('    triaging it: it may be guarded under a name this list lacks.')
+    # ── THE DERIVED HALF (2026-09-14) ──────────────────────────────────────
+    # The classification cannot be derived -- three attempts are recorded at
+    # KEY_SHAPE, each measured and each worse. The CANDIDATES can, and that is
+    # the half that failed: submission_key sat in the tree for a day with a
+    # real guard on it and nothing pointed at it. This never classifies; it
+    # produces a lead, and an unclassified lead is loud.
+    cands = derive_key_candidates(REPO)
+    unclassified = sorted(k for k in cands if k not in KEY_CANDIDATES_JUDGED)
+    print('')
+    print('  KEY-SHAPED COLUMNS DERIVED FROM api/, NOT FROM A LIST: %d'
+          % len(cands))
+    print('    Filtered with =eq. inside a file that writes, name not already')
+    print('    in the vocabulary. %d judged, %d UNCLASSIFIED.'
+          % (len(cands) - len(unclassified), len(unclassified)))
+    if unclassified:
+        print('    !! UNCLASSIFIED -- a guard built on one of these reads as')
+        print('       UNGUARDED until somebody decides. Add it to')
+        print('       KEY_CANDIDATES_JUDGED (or to KEY_TERMS if it IS a key):')
+        for k in unclassified:
+            print('         %-18s %s' % (k, ', '.join(cands[k][:3])))
+    else:
+        print('    Every derived candidate has a judgment. That is not the same')
+        print('    as the vocabulary being complete -- a key whose name is not')
+        print('    key-shaped at all is invisible to this too, and would come')
+        print('    back as a false UNGUARDED exactly as submission_key did.')
     print('')
     # ── ITEM 6: HOW MANY OF THESE HAS ANYBODY ACTUALLY READ ────────────────
     # "Being triaged" with no denominator is indistinguishable from nothing

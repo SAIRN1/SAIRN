@@ -3,9 +3,10 @@
   "_verdicts": {
     "SAFE": "a retry cannot duplicate the effect, and the reason is stated. No work.",
     "FIX": "a retry duplicates a real effect. Names the consequence and the pattern to copy.",
-    "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one."
+    "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one.",
+    "FIXED": "a FIX that has been BUILT. Kept as its own verdict rather than deleted: an entry that vanishes on being fixed leaves nobody able to tell a defect that was closed from one nobody ever judged."
   },
-  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. Six files of thirty are judged. The other twenty-four are named by the checker as UNTRIAGED and are NOT covered by any statement here.",
+  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. TEN files of twenty-nine are judged. The rest are named by the checker as UNTRIAGED and are NOT covered by any statement here.",
   "_triaged_by": "fourth",
   "_triaged_at": "2026-09-14",
   "files": {
@@ -16,17 +17,19 @@
       "read_at": "2026-09-14"
     },
     "api/sairncash/trial-start.js": {
-      "verdict": "FIX",
+      "verdict": "FIXED",
       "why": "The row cannot duplicate -- sql/sairncash_trial_schema.sql:18 makes email UNIQUE, so a retry gets a 409 and the handler answers ALREADY_EXISTS explicitly. So it is idempotent against duplicate ROWS.",
       "but": "It is NOT idempotent against duplicate REQUESTS, and that is the real defect. trialToken is minted per request and returned ONLY on the 200 path. If the insert commits and the response is lost -- a client timeout, a dropped connection -- the retry gets 409 and the caller NEVER RECEIVES THE TOKEN THAT WAS MINTED. The trial exists and is unreachable. The handler's own message anticipates it: 'Contact support if you need help accessing it.'",
       "fix": "Copy api/sairndental/public-complaint-submit.js, which solved exactly this a day earlier: on the duplicate branch, SELECT the existing row and return the ORIGINAL answer rather than an error. A user who retried must see their trial, not a support instruction.",
-      "read_at": "2026-09-14"
+      "read_at": "2026-09-14",
+      "fixed": "2026-09-14. An OPTIONAL client-supplied idempotency_key, stored as a sha256; a retry carrying the same key gets the ORIGINAL token back. NOT the 'return the existing token on 409' fix public-complaint-submit.js uses -- that would be a CREDENTIAL DISCLOSURE here, because this endpoint is public, Access-Control-Allow-Origin *, and its only input is an email address. api/sairncash/trial-start.test.js section C is the arm for that: right email plus wrong key must still get ALREADY_EXISTS. Needs sql/sairncash_trial_idempotency_2026-09-14.sql."
     },
     "api/agent/enqueue.js": {
-      "verdict": "FIX",
+      "verdict": "FIXED",
       "why": "Inserts a row into sairn_agent_commands with no key, no unique constraint and no read-before-write. A retry after a lost response enqueues a SECOND command, and an agent polling the queue executes it a second time. This is the plainest real instance of the shape in the whole list: the effect duplicated is an arbitrary agent OPERATION, not a log line.",
       "fix": "A caller-supplied idempotency key carried on the row with a unique index on (agent_id, idempotency_key), and the enqueue returning the existing command_id when it collides. Note that the current response already returns command_id, so the shape of the fix is the same as trial-start's: return the original answer, do not error.",
-      "read_at": "2026-09-14"
+      "read_at": "2026-09-14",
+      "fixed": "2026-09-14. An OPTIONAL idempotency_key with a PARTIAL UNIQUE index on (agent_id, idempotency_key); a retry carrying the same key returns the ORIGINAL command_id instead of queueing a second command. Not hashed, unlike trial-start's, and the migration says why: that key retrieves a credential and this one retrieves nothing. A failed read-back tells the caller the command IS queued and NOT to retry with a new key -- being told only 'try again' is what would make them queue it twice. Needs sql/sairn_agent_commands_idempotency_2026-09-14.sql."
     },
     "api/_lib/audit.js": {
       "verdict": "ACCEPTED",
@@ -43,6 +46,30 @@
     "api/cron-watchdog.js": {
       "verdict": "UNTRIAGED",
       "why": "Listed explicitly rather than omitted, because it is the one I most expected to be able to judge quickly and could not. It carries 2 writes and is scheduled rather than client-driven, so 'a client timeout is a retry' does not describe its retry model at all -- a cron re-fire is a different thing from a lost response, and deciding it needs reading how the scheduler retries. Not guessed.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/auth.js": {
+      "verdict": "SAFE",
+      "why": "NOT A DATABASE WRITE. The only POST is oidcExchangeCode() posting an authorization code to the identity provider's token endpoint. A retry re-presents the code, and an authorization code is single-use BY THE IdP -- OAuth 2.0 requires it to be rejected on reuse. Nothing of ours is duplicated because nothing of ours is written.",
+      "but": "THIS IS A SCOPE LIMIT OF THE CHECKER, not a property of this file. idempotency_check.py counts ANY POST/PATCH/PUT as a mutating fetch, so every outbound call to a third party reads as an unguarded write. Expect more of these in the untriaged remainder and judge them on whether OUR store changes, not on the verb.",
+      "read_at": "2026-09-14"
+    },
+    "api/provisioner-health.js": {
+      "verdict": "SAFE",
+      "why": "A HEALTH PROBE THAT CANNOT WRITE, deliberately. It calls the rate limit RPC with p_app_id: '' -- and sql/sairn_ai_rate_limit_consume_fn.sql returns {error: 'app_id required'} on an empty app_id BEFORE taking the advisory lock and before the insert. Confirmed by reading the function, not inferred from the endpoint's name. The probe exercises reachability and records no usage, so a retry records nothing twice.",
+      "but": "It depends on a refusal in a DIFFERENT file staying where it is. If that early return ever moves below the insert, this health probe starts writing rate-limit rows on every run and nothing here would say so.",
+      "read_at": "2026-09-14"
+    },
+    "api/network.js": {
+      "verdict": "ACCEPTED",
+      "why": "Appends a row to network_insights. A retry appends a second, so the duplicate is real -- and what duplicates is one advisory insight in a list a human reads. No money, no identity, no count computed from it, and nothing downstream acts on the row automatically.",
+      "but": "ACCEPTED IS NOT SAFE and the difference is the point: this one does duplicate. It is accepted because the consequence is a repeated line on a screen. If anything ever computes a total from this table, or triggers on a row, re-read this entry -- the judgment is about the consequence and the consequence would have changed.",
+      "read_at": "2026-09-14"
+    },
+    "api/org-intel.js": {
+      "verdict": "ACCEPTED",
+      "why": "Same shape and same reasoning as api/network.js: an append to sairnscape_org_intel of one text insight, read by a human, with nothing computing a total from it or triggering on it. A retry shows the insight twice.",
+      "but": "Same conditional as network.js. Two files reaching the same verdict for the same reason is worth noting rather than collapsing -- if the reason turns out wrong it is wrong in both, and a single merged entry would hide the second one.",
       "read_at": "2026-09-14"
     }
   }
