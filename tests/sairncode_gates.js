@@ -150,7 +150,37 @@ const WRITE_GATED = {
   // EVERY write to this resource is gated, which is what makes it measurable
   // by a plain write.
   sc_settings: 'admin',
+  // ── THE SIX TIER A BILLING RESOURCES (2026-09-14, Michael's decision) ─────
+  // These six were the FINDING this suite recorded on 2026-09-14: all 28
+  // resources accepted an ordinary write with the licence key alone, and six of
+  // them are Tier A medical-billing records. The decision was to narrow the
+  // WRITE to a real role gate and leave the READ licence-only, so the table
+  // moves from 1 write-gated to 7 -- and this suite failed on the change until
+  // the table was updated, which is the direction that failure should run. The
+  // handler is the fact; this is the claim; a disagreement is a finding.
+  sc_ar: 'admin|biller',
+  sc_claims: 'admin|biller',
+  sc_revenue: 'admin|biller',
+  sc_denial: 'admin|biller',
+  sc_compliance: 'admin|biller',
+  sc_credential_scope: 'admin|biller',
 };
+// Read from api/sd-data.js rather than retyped, for the same reason
+// SB_VOID_ROLES is read out of sairnbiz.html in tests/sairnbiz_void_not_delete.js:
+// a hardcoded ['admin','biller'] here would keep passing after somebody widened
+// the constant, which is the one change this suite most needs to notice.
+const TIER_A_ROLES = (() => {
+  const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
+  const m = /const SC_TIER_A_WRITE_ROLES = (\[[^\]]*\]);/.exec(src);
+  assert.ok(m, 'SC_TIER_A_WRITE_ROLES not found in api/sd-data.js');
+  return JSON.parse(m[1].replace(/'/g, '"'));
+})();
+const TIER_A_GATED = (() => {
+  const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
+  const m = /const SC_TIER_A_WRITE_GATED = \[([^\]]*)\];/.exec(src);
+  assert.ok(m, 'SC_TIER_A_WRITE_GATED not found in api/sd-data.js');
+  return JSON.parse('[' + m[1].replace(/'/g, '"').replace(/,\s*\]/, ']') + ']');
+})();
 // Gated only on a specific payload shape. Creating a draft, editing before
 // review and logging a payer decision after the fact are all open; making a
 // request SUBMISSION-READY is not. Section 4 drives both halves.
@@ -421,16 +451,229 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     // table is the claim; the handler is the fact; disagreement is a finding
     // either way, and reporting only one direction is how a posture drifts
     // without anybody being told.
-    ok(writeOpen.length === 27,
-       'CONTROL: 27 resources accept an ordinary write with the licence key '
-       + 'alone -- that is the OPEN FINDING this suite records rather than '
-       + 'silently changes (measured ' + writeOpen.length + ')');
-    const tierA = ['sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',
-                   'sc_credential_scope'];
-    const openTierA = tierA.filter((t) => writeOpen.indexOf(t) !== -1);
-    ok(openTierA.length === tierA.length,
-       'and the six named Tier A resources are all among them, which is why the '
-       + 'row is open: ' + openTierA.join(', '));
+    ok(writeOpen.length === 21,
+       '21 resources still accept an ordinary write with the licence key alone '
+       + '-- the 22 non-billing ones minus sc_auth_requests\' conditional gate, '
+       + 'which is what "the other 22 stay as-is" means measured rather than '
+       + 'asserted (got ' + writeOpen.length + ')');
+    // THE ARM THAT WAS INVERTED BY THE DECISION, and it is left visibly
+    // inverted rather than deleted. It used to read "the six named Tier A
+    // resources are ALL among the open ones, which is why the row is open".
+    // They are now all gated. Deleting it would lose the record that this is
+    // the same six, measured the same way, with the answer changed on purpose.
+    const openTierA = TIER_A_GATED.filter((t) => writeOpen.indexOf(t) !== -1);
+    ok(openTierA.length === 0,
+       'and NONE of the six Tier A billing resources is open to an ordinary '
+       + 'write any more -- this arm was inverted on 2026-09-14 when the '
+       + 'decision landed, not deleted'
+       + (openTierA.length ? ' -- STILL OPEN: ' + openTierA.join(', ') : ''));
+    // ...and the reads are untouched, which is the other half of the decision
+    // and the half a role gate most easily breaks by accident.
+    let readsOpen = 0;
+    for (const resource of TIER_A_GATED) {
+      const r = await call(h, { resource, action: 'read' });
+      if (r.code === 200) readsOpen += 1;
+    }
+    ok(readsOpen === TIER_A_GATED.length,
+       'CONTROL: all six are still READABLE with the licence key alone -- reads '
+       + 'were deliberately not narrowed, and a gate applied to the wrong branch '
+       + 'is the obvious way that goes wrong. ' + readsOpen + '/'
+       + TIER_A_GATED.length);
+  }
+
+  // ── 6. THE TIER A BILLING WRITE GATE ─────────────────────────────────────
+  // Michael's decision of 2026-09-14, after section 5 measured the posture.
+  // Written as its own section because it is a BEHAVIOUR CHANGE ON LIVE DATA,
+  // not a discovery: these six accepted a write from the licence key alone
+  // until now.
+  section('6. the six Tier A billing resources require a role to WRITE');
+  {
+    ok(TIER_A_GATED.length === 6,
+       'the handler gates exactly six resources -- ' + TIER_A_GATED.join(', '));
+    ok(TIER_A_GATED.every((r) => SC.resources.indexOf(r) !== -1),
+       'and every one is a real registered SAIRNcode resource');
+    // THE ROLE LIST NAMES ROLES THIS APP ACTUALLY HAS. The same PR 3.4 trap as
+    // SAIRNbiz's void gate: the decision said "Admin/Manager" and SAIRNcode has
+    // no `manager`, so a literal implementation would have shipped a gate no
+    // account could pass. `biller` is the translation and it is asserted, not
+    // assumed.
+    const unknown = TIER_A_ROLES.filter((r) => ROLES.indexOf(r) === -1);
+    ok(unknown.length === 0,
+       'every role in SC_TIER_A_WRITE_ROLES exists in ROLES_BY_APP.sairncode ('
+       + ROLES.join('|') + ')' + (unknown.length ? ' -- UNKNOWN: ' + unknown.join(', ') : ''));
+    ok(ROLES.indexOf('manager') === -1,
+       'CONTROL: SAIRNcode genuinely has no `manager` role, so mapping the '
+       + 'decision\'s "Manager" onto `biller` was a translation and not a rename');
+
+    const denied = ROLES.filter((r) => TIER_A_ROLES.indexOf(r) === -1);
+    ok(denied.length > 0, 'CONTROL: there are roles to deny -- ' + denied.join(', '));
+
+    let anon401 = 0, deniedCount = 0, allowedCount = 0;
+    const leaks = [];
+    for (const resource of TIER_A_GATED) {
+      const anon = await call(h, { resource, action: 'write', payload: { id: 'W1', amt: 1 } });
+      if (anon.code === 401 && anon.body && anon.body.error
+          && anon.body.error.code === 'NO_SESSION' && !anon.sawUpstream) anon401 += 1;
+      else leaks.push(resource + ' (no session -> ' + anon.code + ')');
+
+      for (const role of denied) {
+        const r = await call(h, { resource, action: 'write', payload: { id: 'W1' },
+                                  token: token(role) });
+        if (r.code === 403 && r.body && r.body.error
+            && r.body.error.code === 'FORBIDDEN' && !r.sawUpstream) deniedCount += 1;
+        else leaks.push(resource + '/' + role + ' -> ' + r.code
+                        + (r.sawUpstream ? ' REACHED STORAGE' : ''));
+      }
+      for (const role of TIER_A_ROLES) {
+        const r = await call(h, { resource, action: 'write', payload: { id: 'W1' },
+                                  token: token(role) });
+        if (r.code === 200 && r.sawUpstream) allowedCount += 1;
+        else leaks.push(resource + '/' + role + ' -> ' + r.code + ' (expected 200)');
+      }
+    }
+    ok(anon401 === 6,
+       'all six answer 401 NO_SESSION to an unsigned write, without touching '
+       + 'storage -- ' + anon401 + '/6');
+    ok(deniedCount === 6 * denied.length,
+       'every disallowed role (' + denied.join(', ') + ') is refused 403 '
+       + 'FORBIDDEN on every one of the six -- ' + deniedCount + '/'
+       + (6 * denied.length));
+    // WITHOUT THIS THE TWO ARMS ABOVE WOULD PASS ON A BRANCH THAT REFUSED
+    // EVERYONE, which would be a worse outage than the gap it closed.
+    ok(allowedCount === 6 * TIER_A_ROLES.length,
+       'CONTROL: every ALLOWED role does reach storage on every one of the six -- '
+       + allowedCount + '/' + (6 * TIER_A_ROLES.length));
+    ok(leaks.length === 0, 'nothing behaved differently: '
+       + (leaks.slice(0, 6).join('; ') || 'none'));
+
+    // 401 AND 403 ARE DIFFERENT PROBLEMS WITH DIFFERENT FIXES and collapsing
+    // them sends a support call to the wrong place. Asserted rather than assumed
+    // because the shortest way to write this gate collapses them.
+    const anon = await call(h, { resource: 'sc_claims', action: 'write',
+                                 payload: { id: 'W1' } });
+    const wrongRole = await call(h, { resource: 'sc_claims', action: 'write',
+                                      payload: { id: 'W1' }, token: token('coder') });
+    ok(anon.code === 401 && wrongRole.code === 403,
+       'not signed in is 401 and wrong role is 403 -- ' + anon.code + ' vs '
+       + wrongRole.code);
+    ok(/requires a signed-in employee session/.test(
+         (anon.body && anon.body.error && anon.body.error.message) || ''),
+       '...and the 401 says what to do');
+    ok(new RegExp(TIER_A_ROLES.join('|')).test(
+         (wrongRole.body && wrongRole.body.error && wrongRole.body.error.message) || ''),
+       '...and the 403 names the roles that can, rather than only the one that '
+       + 'cannot: ' + ((wrongRole.body && wrongRole.body.error
+                        && wrongRole.body.error.message) || '').slice(0, 90));
+
+    // CROSS-APP: a StoneDesk ADMIN token carries the right role string and the
+    // wrong app. The app claim must be the thing that refuses it -- the same
+    // property the delete gate's arm in section 1 exists for, and the 2026-08-03
+    // collision this whole convention comes from.
+    const crossAdmin = await call(h, { resource: 'sc_claims', action: 'write',
+                                       payload: { id: 'W1' },
+                                       token: token('admin', 'stonedesk') });
+    ok(crossAdmin.code === 401 && !crossAdmin.sawUpstream,
+       'a StoneDesk admin session cannot write sc_claims -- the token does not '
+       + 'verify for this app at all, so it is 401 rather than 403: '
+       + crossAdmin.code);
+    const wrongLic = await call(h, { resource: 'sc_claims', action: 'write',
+                                     payload: { id: 'W1' },
+                                     token: token('biller', 'sairncode', 'OTHER-HASH') });
+    ok(wrongLic.code === 401 && !wrongLic.sawUpstream,
+       'nor can a real sairncode biller session bound to a different licence -- '
+       + wrongLic.code);
+
+    // AND THE 22 THAT WERE DELIBERATELY LEFT ALONE. "The other 22 stay as-is"
+    // is a decision, and a gate that crept onto one of them would be a silent
+    // outage for every role that writes it.
+    const untouched = SC.resources.filter((r) => TIER_A_GATED.indexOf(r) === -1
+                                           && r !== 'sc_settings'
+                                           && r !== 'sc_auth_requests');
+    let stillOpen = 0;
+    for (const resource of untouched) {
+      const r = await call(h, { resource, action: 'write', payload: { id: 'W1' } });
+      if (r.code === 200 && r.sawUpstream) stillOpen += 1;
+      else leaks.push(resource + ' (should still be open -> ' + r.code + ')');
+    }
+    ok(stillOpen === untouched.length,
+       'all ' + untouched.length + ' non-billing resources still accept a write '
+       + 'with the licence key alone -- the gate did not creep');
+  }
+
+  // ── 7. THE CLIENT HALF: A REFUSAL MUST NOT READ AS A SYNC FAILURE ────────
+  // Every add-function on this page already tested its scData() result and said
+  // "added on this device only -- server sync failed, will not appear on other
+  // devices until resolved". That was TRUE of every failure this client could
+  // previously get on these six: a network drop, a 503, an unprovisioned table.
+  // IT IS NOT TRUE OF A 403. "Until resolved" tells a coder to wait for
+  // something that will never happen, and the row sits on that one device for
+  // ever -- so shipping the gate without this half would have reintroduced the
+  // silent-failure class on purpose.
+  section('7. the client tells a refusal apart from a transient failure');
+  {
+    const html = require('fs').readFileSync(path.join(ROOT, 'sairncode.html'), 'utf8')
+      .replace(/\r\n/g, '\n');
+    function grab(sig) {
+      const start = html.indexOf(sig);
+      assert.ok(start > 0, 'not found in sairncode.html: ' + sig);
+      let i = html.indexOf('{', start + sig.length - 1), depth = 0, q = null;
+      for (; i < html.length; i++) {
+        const c = html[i], p = html[i - 1];
+        if (q) { if (c === q && p !== '\\') q = null; continue; }
+        if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+        if (c === '/' && html[i + 1] === '/') { i = html.indexOf('\n', i); continue; }
+        if (c === '/' && html[i + 1] === '*') { i = html.indexOf('*/', i) + 1; continue; }
+        if (c === '{') depth++;
+        else if (c === '}') { depth--; if (!depth) return html.slice(start, i + 1); }
+      }
+      throw new Error('unterminated: ' + sig);
+    }
+    const ctx = { err: null, scLastDataError: () => ctx.err };
+    require('vm').createContext(ctx);
+    require('vm').runInContext(grab('function scWriteRefusalText(fallback) {'), ctx);
+    const FALLBACK = 'added on this device only -- server sync failed, will not '
+      + 'appear on other devices until resolved';
+
+    for (const code of ['FORBIDDEN', 'NO_SESSION']) {
+      ctx.err = { code: code, message: 'Only admin or biller can change sc_claims.' };
+      const t = ctx.scWriteRefusalText(FALLBACK);
+      ok(/NOT SAVED TO THE SERVER/.test(t) && !/until resolved/.test(t),
+         code + ' does NOT get the "until resolved" sentence -- ' + t.slice(0, 70));
+      ok(/re-trying will not change that/.test(t),
+         '...and says re-trying will not help, which is the part that stops '
+         + 'somebody waiting');
+      ok(t.indexOf('Only admin or biller can change sc_claims.') !== -1,
+         '...and carries the SERVER\'s own words, not a local paraphrase');
+    }
+    // CONTROL: every OTHER failure keeps the original sentence. Without this the
+    // arms above would pass on a helper that had simply replaced the message for
+    // everybody, which would make a real transient failure look permanent.
+    for (const code of ['NETWORK', 'NOT_PROVISIONED', 'HTTP_500', '']) {
+      ctx.err = { code: code, message: 'x' };
+      ok(ctx.scWriteRefusalText(FALLBACK) === FALLBACK,
+         'CONTROL: ' + (code || '(empty)') + ' keeps the original transient '
+         + 'sentence unchanged');
+    }
+    ctx.err = null;
+    ok(ctx.scWriteRefusalText(FALLBACK) === FALLBACK,
+       'CONTROL: and so does no recorded error at all');
+
+    // THE PAIRING ASSERTION. A helper nothing calls is worse than no helper:
+    // it reads as covered. Every one of the six write sites must route its
+    // failure branch through it, and the other twenty must NOT -- on those, the
+    // original sentence is still accurate.
+    for (const resource of TIER_A_GATED) {
+      const at = html.indexOf("scData('write', '" + resource + "'");
+      ok(at > 0, resource + ' has a write call site in sairncode.html');
+      const window_ = html.slice(at, at + 1400);
+      ok(/scWriteRefusalText\(/.test(window_),
+         '...and its failure branch routes through scWriteRefusalText');
+    }
+    const uses = (html.match(/scWriteRefusalText\(/g) || []).length;
+    ok(uses === TIER_A_GATED.length + 1,
+       'the helper is called exactly ' + TIER_A_GATED.length + ' times plus its '
+       + 'own definition -- ' + uses + '. A 7th caller would mean it crept onto '
+       + 'a resource where the original sentence is still true');
   }
 
   console.log('\nALL ' + n + ' ASSERTIONS PASS');

@@ -138,7 +138,14 @@ const POSTURE = {
   sairndesign:     { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 1 of 18 gates (the assignment rule); nothing records the posture for the rest' },
   sairnvet:        { gate: 'NONE', auth: true,  why: 'DOCUMENTED at SV_RESOURCES: SAIRNvet has NO per-employee authentication -- role is a self-selected dropdown, never server-verified. A gate here would gate on a session that does not exist' },
   sairnfreedom:    { gate: 'NONE', auth: false, why: 'DOCUMENTED at SF_RESOURCES: no per-employee authentication either' },
-  sairncode:       { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED, and the sharpest of the five: api/sc-auth.js exists, and sc_ar, sc_claims, sc_revenue, sc_denial, sc_compliance and sc_credential_scope are all Tier A' },
+  // READS are still licence-only on all 28 and that is what this column
+  // measures. The WRITE posture is no longer NONE: on 2026-09-14 Michael
+  // decided the six Tier A billing resources -- sc_ar, sc_claims, sc_revenue,
+  // sc_denial, sc_compliance, sc_credential_scope -- require an admin or
+  // biller session to WRITE, and tests/sairncode_gates.js drives that. So this
+  // row is no longer NOT DOCUMENTED: the read posture is a decision now, not
+  // an omission, and the open question is narrower than it was.
+  sairncode:       { gate: 'NONE', auth: true,  why: 'DECIDED 2026-09-14: READS stay licence-only on all 28, deliberately; WRITES on the six Tier A billing resources require admin or biller (SC_TIER_A_WRITE_ROLES in api/sd-data.js, driven by tests/sairncode_gates.js). This column measures READS only, which is why it still says NONE' },
   sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
   sairnscape:      { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/scp-auth.js exists; scp_quotes and invoices are Tier A' },
   sairnlegacy:     { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/leg-auth.js exists; leg_preneed is Tier A' },
@@ -220,8 +227,15 @@ section('0. the fixture really is a token, and really is app-bound');
   section('4. THE POSTURE MAP -- where a session gate exists at all');
   // MEASURED BY DRIVING, then compared with the hand-written table above. A gate
   // that silently disappears fails here; a gate that appears must be recorded.
-  // The `why` column is the part a tool cannot produce, and five of the rows
-  // say NOT DOCUMENTED, which is a finding rather than a gap in this file.
+  // The `why` column is the part a tool cannot produce, and the rows that say
+  // NOT DOCUMENTED are a finding rather than a gap in this file.
+  //
+  // THIS COLUMN MEASURES READS, AND SINCE 2026-09-14 THAT IS A REAL LIMITATION
+  // RATHER THAN A DETAIL. SAIRNcode now gates six WRITES and no reads, so its
+  // verdict here is NONE while its write posture is SOME -- one app where the
+  // two halves genuinely differ. Stated rather than left for a reader to infer
+  // from a row that looks unchanged; the write side is driven by
+  // tests/sairncode_gates.js, which is where that assertion belongs.
   const measured = {};
   for (const app of reg.APP_NAMES) {
     const names = reg.RESOURCE_NAMES_BY_APP[app] || [];

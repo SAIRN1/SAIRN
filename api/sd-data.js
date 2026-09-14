@@ -141,6 +141,41 @@ const SC_RESOURCES = require('./_resources/sairncode').resources;
 // record loss years from now, long after anyone remembers setting it. The
 // string 'indefinite' is the other valid value and means never purge.
 const SC_RETENTION_FLOOR_YEARS = 10;
+// ── THE SIX TIER A BILLING RESOURCES, AND WHO MAY WRITE THEM (2026-09-14) ──
+// Michael's decision, after tests/sairncode_gates.js MEASURED the posture: all
+// 28 SAIRNcode resources were readable AND writable with the licence key alone,
+// no employee session, and six of them are Tier A medical-billing records.
+// Writes on those six are narrowed to a real role gate. READS ARE DELIBERATELY
+// UNCHANGED and stay licence-only, and the other 22 resources are untouched --
+// which is the difference between this and gating the app.
+//
+// "ADMIN/MANAGER" IS THE DECISION'S WORDING AND SAIRNCODE HAS NO `manager`.
+// Its vocabulary is admin/coder/biller/auditor (api/_lib/auth.js ROLES_BY_APP),
+// where `admin` is the bootstrap and top role -- the "Compliance Admin" the UI
+// already names. A literal implementation would have shipped a gate NO ACCOUNT
+// ON THIS APP COULD EVER PASS, which is the same trap PR 3.4 records against
+// PROVISIONING_ROLES: SAIRNcode's is `admin`, not `owner`, and a guard
+// hardcoding the other list passes clean forever while checking nothing. So
+// "Manager" is `biller` here: all six of these are the BILLING side of the app,
+// and the biller is the role that owns it.
+//
+// ONE CONSTANT, NOT A PER-RESOURCE MAP, and that is deliberate. The SC_RESOURCES
+// comment below already argues why a per-resource ROLE map is the wrong shape
+// for this endpoint, and a per-resource WRITE map is the same shape of
+// complexity: six lists to keep true instead of one. Widening or narrowing this
+// is one edit.
+//
+// TWO THINGS TO DECIDE AGAINST REAL USE, both one edit to this line:
+//   * a `coder` cannot write sc_claims. In this app the coder's own resource is
+//     sc_coded_items, which is NOT gated, so the split is coherent -- but if a
+//     coder is expected to create claims, add 'coder' here.
+//   * an `auditor` cannot write sc_compliance. Recording a finding is arguably
+//     the auditor's job; the role is read-shaped by name and is left out.
+const SC_TIER_A_WRITE_ROLES = ['admin', 'biller'];
+const SC_TIER_A_WRITE_GATED = [
+  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',
+  'sc_credential_scope'
+];
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
 // from the caller's own verified token) is allowed for every role and does
@@ -11359,6 +11394,48 @@ module.exports = async (req, res) => {
         // effect. The retention FLOOR guard below is unchanged and still
         // applies to admins too -- a role check and a value check are
         // different controls and neither replaces the other.
+        // ── THE SIX TIER A BILLING RESOURCES (2026-09-14, Michael's call) ───
+        // Same shape as the sc_settings gate immediately below, and for the
+        // same stated reason: a hidden button is a convenience, never a
+        // boundary. The role comes from the VERIFIED session token, which
+        // carries an app claim, so a valid session for a DIFFERENT SAIRN app
+        // cannot satisfy it (Check 28) -- and the 2026-08-03 cross-app
+        // collision is exactly what that argument is about.
+        //
+        // WHAT THIS NARROWS, SAID PLAINLY BECAUSE IT IS A BEHAVIOUR CHANGE ON
+        // LIVE DATA: these six accepted a write from the LICENCE KEY ALONE
+        // until now -- no employee session at all. Every signed-in role could
+        // write them; now only SC_TIER_A_WRITE_ROLES can, and an unsigned
+        // caller cannot at all. Reads are untouched.
+        //
+        // THE ONE-TIME MIGRATION IS THE CONSEQUENCE WORTH KNOWING. sairncode
+        // .html's scSyncAllResources() pushes local rows up after login when
+        // the server table is empty, so on these six that migration now needs
+        // an admin or biller to perform it. It fails LOUDLY rather than
+        // silently -- scSyncOneResource counts failedRows and the client
+        // toasts -- which is why this is a statement and not a blocker.
+        //
+        // 401 AND 403 ARE KEPT DISTINCT, deliberately: "you are not signed in"
+        // and "your role may not do this" are different problems with different
+        // fixes, and collapsing them is how a support call goes to the wrong
+        // place.
+        if (SC_TIER_A_WRITE_GATED.indexOf(resource) !== -1) {
+          const scTierACaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+          if (!scTierACaller) {
+            res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first — ' + resource + ' is a billing record and requires a signed-in employee session' } });
+            return;
+          }
+          if (SC_TIER_A_WRITE_ROLES.indexOf(scTierACaller.role) === -1) {
+            res.status(403).json({
+              error: {
+                code: 'FORBIDDEN',
+                message: 'Only ' + SC_TIER_A_WRITE_ROLES.join(' or ') + ' can change '
+                  + resource + '. Your changes were not saved.'
+              }
+            });
+            return;
+          }
+        }
         if (resource === 'sc_settings') {
           const scSetCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
           if (!scSetCaller) {

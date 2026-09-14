@@ -3832,7 +3832,7 @@ How to answer:
             renderRevenue();
             document.getElementById('rev-add-charge').value = '';
             document.getElementById('rev-add-collected').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Entry added' : 'Entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Entry added' : scWriteRefusalText('Entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getDenialEntries(){
@@ -3902,7 +3902,7 @@ How to answer:
             document.getElementById('den-add-cause').value = '';
             document.getElementById('den-add-count').value = '';
             document.getElementById('den-add-amount').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial record added' : 'Denial record added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Denial record added' : scWriteRefusalText('Denial record added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // ================================================================
@@ -4050,7 +4050,7 @@ How to answer:
             var synced = saved ? await scData('write', 'sc_compliance', list[list.length - 1]) : null;
             renderCompliance();
             document.getElementById('comp-add-item').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Compliance item added' : 'Compliance item added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Compliance item added' : scWriteRefusalText('Compliance item added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getFraudAlerts(){
@@ -6229,7 +6229,7 @@ How to answer:
             document.getElementById('ar-add-patient').value = '';
             document.getElementById('ar-add-amount').value = '';
             document.getElementById('ar-add-days').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'A/R entry added' : 'A/R entry added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'A/R entry added' : scWriteRefusalText('A/R entry added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         function getProviderEntries(){
@@ -6484,7 +6484,7 @@ How to answer:
             document.getElementById('clm-add-patient').value = '';
             document.getElementById('clm-add-payer').value = '';
             document.getElementById('clm-add-amount').value = '';
-            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Claim added' : 'Claim added on this device only -- server sync failed, will not appear on other devices until resolved'));
+            showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again' : (synced ? 'Claim added' : scWriteRefusalText('Claim added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
 
         // ── Dashboard KPI drill-down (2026-08-20) ──
@@ -7287,7 +7287,7 @@ How to answer:
             document.getElementById('cs-add-scope').value = '';
             document.getElementById('cs-add-source').value = '';
             showToast(!saved ? 'Could not save -- storage may be full or unavailable, try again'
-                : (synced ? 'Credential scope added' : 'Added on this device only -- server sync failed, will not appear on other devices until resolved'));
+                : (synced ? 'Credential scope added' : scWriteRefusalText('Added on this device only -- server sync failed, will not appear on other devices until resolved')));
         }
         async function removeCredentialScope(id){
             if (!requireAdminForDelete()) return;
@@ -12186,6 +12186,36 @@ How to answer:
         // cannot accept them, one 503 per row, silently. null = not yet known.
         var _scLastProvisioned = null;
         function scLastProvisioned() { return _scLastProvisioned; }
+        // ── A REFUSAL IS NOT A SYNC FAILURE, AND "until resolved" IS A PROMISE
+        //    (2026-09-14, with the Tier A billing write gate) ─────────────────
+        // Six resources -- sc_ar, sc_claims, sc_revenue, sc_denial,
+        // sc_compliance, sc_credential_scope -- now require an admin or biller
+        // session to WRITE. Every add-function on this page already tests its
+        // scData() result and says "added on this device only -- server sync
+        // failed, will not appear on other devices until resolved", which was
+        // true of every failure this client could previously get: a network
+        // drop, a 503, an unprovisioned table. It is NOT true of a 403.
+        //
+        // A refusal rendered as a transient failure is worse than a bare error,
+        // because "until resolved" tells a coder to wait for something that will
+        // never happen, and the row sits on that one device for ever. That is
+        // the silent-failure class this codebase has spent the whole audit arc
+        // removing, and shipping the gate without this half would have
+        // reintroduced it on purpose.
+        //
+        // SCOPED TO THE SIX. The other twenty write sites keep the original
+        // sentence unchanged, because on those resources it is still accurate --
+        // a 403 is not a failure they can get.
+        function scWriteRefusalText(fallback) {
+            var e = scLastDataError();
+            var code = (e && e.code) || '';
+            if (code === 'FORBIDDEN' || code === 'NO_SESSION') {
+                return 'NOT SAVED TO THE SERVER -- ' +
+                    ((e && e.message) || 'your role is not allowed to change this record.') +
+                    ' It is on this computer only, and re-trying will not change that.';
+            }
+            return fallback;
+        }
         // ── THE TRANSPORT IS BOUNDED, 2026-09-11 ───────────────────────────────────
 // Twelve of the fifteen apps that write to a server had NO TIMEOUT on any path,
 // and two more had one only on a READ. A hung fetch -- a black-holed connection,
