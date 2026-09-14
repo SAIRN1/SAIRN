@@ -144,6 +144,7 @@ import os
 import re
 import subprocess
 import sys
+import tempfile
 import time
 
 # The canonical licence per app. These are the demo/verification keys already
@@ -1613,6 +1614,195 @@ def main():
                 "escape, and build the line with chr(92) if a heredoc keeps eating it.",
                 OVERRIDE_HINT,
             ]))
+    # ── CHECK 12: A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) ──
+    # BLOCKING, AND SCOPED BY CAUSATION RATHER THAN BY FILE LIST. Michael's
+    # decision, 2026-09-14: a push is refused only when IT introduced the gap --
+    # never for a pre-existing one it merely stands downstream of.
+    #
+    # WHY IT IS NOT ENOUGH TO LEAVE THESE REPORT-ONLY, measured the same day
+    # across all three documents rather than argued:
+    #
+    #   * docs/MASTER-PLAN.md          -- master_plan.py was built 2026-09-13 and
+    #     never registered in report_only_checks.REGISTRY, so the one document
+    #     compounding four gates into a FINISHED verdict had NO check on any push.
+    #   * docs/traceability-matrix.md  -- REGISTERED, its --check HAD been running
+    #     on every push, AND IT WAS STALE ANYWAY. Report-only never blocks: the
+    #     check fires, prints, and the push goes out. This is the observation
+    #     that decided the promotion -- registering the third one would not have
+    #     been enough, because registration was never the thing that worked.
+    #   * docs/TOOLING-INVENTORY.md    -- answering EXIT 2, refusing to generate,
+    #     over one tool with no PURPOSES entry -- and while it refused, every
+    #     unrelated correction behind it was frozen too.
+    #
+    # HOW THE SCOPING IS DONE, and why it is NOT a list of source globs. The
+    # obvious implementation declares each generator's sources and asks whether
+    # this push touched one. That declaration is a second source of truth that
+    # can only ever drift AWAY from what the generator really reads, and it
+    # drifts in the dangerous direction: an under-declared source means the gate
+    # silently stops firing and looks exactly like a clean push.
+    #
+    # So the question asked here is not "did this push touch its sources" but
+    # "DID THIS PUSH CHANGE THE ANSWER" -- run --check at the tip, and if it is
+    # not clean, run the BASE COPY of the same generator against the BASE TREE in
+    # a throwaway worktree. Clean there and dirty here means this push did it.
+    # Nothing to declare, nothing to drift, and it cannot under-detect a source.
+    #
+    # THE LIMIT, STATED RATHER THAN DISCOVERED: if the document was ALREADY
+    # non-zero at base for an unrelated reason, a NEW breakage introduced by this
+    # push is reported and not refused, because the two are indistinguishable
+    # through a single exit code. That is the conservative direction and it is
+    # the one the scoping decision explicitly asks for -- the failure this check
+    # must never have is refusing somebody's unrelated push for a document
+    # another session left stale, which is the state check 5 has been stuck in
+    # since 2026-09-01.
+    #
+    # EXIT 2 IS TREATED AS A FINDING HERE AND THAT IS DELIBERATE. In the
+    # generator's own vocabulary 2 is COULD-NOT-DERIVE rather than a finding, and
+    # it is kept distinct in the message. But a push that ADDS a tool with no
+    # inventory entry is precisely the case this check exists for, and its
+    # symptom is exit 2, not exit 1.
+    _gen_docs = [
+        ('tools/master_plan.py', 'docs/MASTER-PLAN.md'),
+        ('tools/tooling_inventory.py', 'docs/TOOLING-INVENTORY.md'),
+        ('tools/traceability_matrix.py', 'docs/traceability-matrix.md'),
+    ]
+
+    def _gen_check(cwd, tool_rel):
+        """(rc, output) for one generator's --check, or (None, reason)."""
+        try:
+            r = subprocess.run([sys.executable, os.path.join(cwd, tool_rel), '--check'],
+                               capture_output=True, text=True, timeout=300, cwd=cwd)
+            return r.returncode, ((r.stdout or '') + (r.stderr or '')).strip()
+        except Exception as e:
+            return None, '%s: %s' % (type(e).__name__, e)
+
+    _gen_dirty = []          # (tool, doc, rc, output) -- not clean at the tip
+    for _tool_rel, _doc_rel in _gen_docs:
+        _tool_abs = os.path.join(repo, _tool_rel)
+        _doc_abs = os.path.join(repo, _doc_rel)
+        # NEITHER PRESENT means this clone does not carry that generator at all
+        # -- an older checkout, a worktree pinned behind its creation. Silence is
+        # correct there. A MISSING TOOL BESIDE A PRESENT DOCUMENT is not: the
+        # document is being shipped with nothing able to check it, and that is
+        # the fail-open checks 2, 3, 4 and 11 were corrected away from.
+        if not os.path.isfile(_tool_abs):
+            if os.path.isfile(_doc_abs):
+                deny(chr(10).join([
+                    "Blocked: %s is in this push's tree and its generator is not," % _doc_rel,
+                    "so nothing can say whether the document is still true.",
+                    "",
+                    "  expected: %s" % _tool_rel,
+                    "",
+                    "This is a COULD-NOT-TELL, not a finding about your content.",
+                    OVERRIDE_HINT,
+                ]))
+            continue
+        _rc, _out = _gen_check(repo, _tool_rel)
+        if _rc == 0:
+            continue
+        _gen_dirty.append((_tool_rel, _doc_rel, _rc, _out))
+
+    if _gen_dirty:
+        # Resolve the base ONCE, and only now -- the worktree is the expensive
+        # part and it is never built for a push whose documents are all clean.
+        _base_sha = None
+        if base:
+            _b = git(repo, 'rev-parse', '--verify', '--quiet', base + '^{commit}').strip()
+            _base_sha = _b or None
+        if not _base_sha:
+            _b = git(repo, 'merge-base', 'origin/main', tip).strip()
+            _base_sha = _b or None
+
+        _wt = None
+        _why_no_base = None
+        if _base_sha:
+            _wt = os.path.join(tempfile.gettempdir(),
+                               'sairn-gate-base-%s' % _base_sha[:12])
+            try:
+                if os.path.isdir(_wt):
+                    git(repo, 'worktree', 'remove', '--force', _wt)
+                git(repo, 'worktree', 'add', '--detach', '--quiet', _wt, _base_sha)
+                if not os.path.isdir(_wt):
+                    _wt, _why_no_base = None, 'the base worktree was not created'
+            except Exception as _e:
+                _wt, _why_no_base = None, '%s: %s' % (type(_e).__name__, _e)
+        else:
+            _why_no_base = 'neither the pre-push base nor merge-base(origin/main) resolved'
+
+        _caused, _preexisting, _untold = [], [], []
+        try:
+            for _tool_rel, _doc_rel, _rc, _out in _gen_dirty:
+                if not _wt:
+                    _untold.append((_doc_rel, _rc, _why_no_base))
+                    continue
+                if not os.path.isfile(os.path.join(_wt, _tool_rel)):
+                    # The generator did not EXIST at base, so "was it clean
+                    # before" has no answer -- and the honest reading is that
+                    # this push is what put the document under a check at all.
+                    _untold.append((_doc_rel, _rc,
+                                    '%s did not exist at the base commit' % _tool_rel))
+                    continue
+                _brc, _bout = _gen_check(_wt, _tool_rel)
+                if _brc is None:
+                    _untold.append((_doc_rel, _rc,
+                                    'the base copy could not be run -- %s' % _bout))
+                elif _brc == 0:
+                    _caused.append((_tool_rel, _doc_rel, _rc, _out))
+                else:
+                    _preexisting.append((_doc_rel, _rc, _brc))
+        finally:
+            if _wt:
+                try:
+                    git(repo, 'worktree', 'remove', '--force', _wt)
+                except Exception:
+                    pass
+
+        # SAID OUT LOUD EVEN THOUGH IT ALLOWS. A document another session left
+        # stale is not this push's to fix, but silence here would make the gate
+        # indistinguishable from one that never looked.
+        for _doc_rel, _rc, _brc in _preexisting:
+            print("NOTICE (check 12): %s is %s and was ALREADY %s at the base commit, "
+                  "so this push is not what broke it and is NOT blocked. Somebody has "
+                  "to clear it: python %s"
+                  % (_doc_rel,
+                     'stale' if _rc == 1 else 'refusing to generate (exit %d)' % _rc,
+                     'stale' if _brc == 1 else 'refusing (exit %d)' % _brc,
+                     [t for t, d in _gen_docs if d == _doc_rel][0]))
+        for _doc_rel, _rc, _reason in _untold:
+            print("NOTICE (check 12): %s is not clean (exit %d) and this gate COULD NOT "
+                  "TELL whether this push caused it -- %s. Allowed, and that is a "
+                  "could-not-tell rather than a pass."
+                  % (_doc_rel, _rc, _reason))
+
+        if _caused:
+            _lines = [
+                "Blocked: this push makes a GENERATED document stop matching what it is",
+                "derived from. It was clean at the base commit and is not at this tip,",
+                "so this push is what changed the answer.",
+                "",
+            ]
+            for _tool_rel, _doc_rel, _rc, _out in _caused:
+                _lines.append("  %s -- %s" % (
+                    _doc_rel,
+                    'no longer matches its sources' if _rc == 1
+                    else 'the generator REFUSES to run (exit %d)' % _rc))
+                for _ln in [l for l in _out.splitlines() if l.strip()][-6:]:
+                    _lines.append("      " + _ln)
+                _lines.append("      fix: python %s" % _tool_rel)
+                _lines.append("")
+            _lines += [
+                "Exit 1 and exit 2 are different problems and the fix differs. 1 means",
+                "regenerate. 2 means the generator's HAND-WRITTEN half has drifted -- a",
+                "tool this push adds with no entry describing it -- and it refuses rather",
+                "than emitting a blank cell. A refusal also FREEZES every unrelated",
+                "correction behind it, which is why it blocks here instead of waiting.",
+                "",
+                "This check refuses only what THIS push broke. A document left stale by",
+                "somebody else is reported above and does not block you.",
+                OVERRIDE_HINT,
+            ]
+            deny(chr(10).join(_lines))
+
     # ── CHECK 10: THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) ─
     # REPORT-ONLY. It reports the one thing no other check here can: that the
     # checks themselves may be out of date.

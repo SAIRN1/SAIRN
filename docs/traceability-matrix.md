@@ -35,6 +35,7 @@ Source: the numbered `CHECK n:` blocks in `tools/sairn_push_gate_hook.py`. Deriv
 | 9 | THE NAMED GUARD AND SEAM TESTS BLOCK (2026-09-10) |
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
+| 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
 
 ## 3. Enforced report-only
 
@@ -298,7 +299,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**151 of 344 test files are traced to a stated requirement. 193 are not.**
+**151 of 345 test files are traced to a stated requirement. 194 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -435,6 +436,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/merge_by_id_overwrite.js`
 - `tests/nesting_dxf.js`
 - `tests/prompt_budget.js`
+- `tests/push_gate/check12_probe.py`
 - `tests/push_gate/check4_probe.py`
 - `tests/push_gate/check9_probe.py`
 - `tests/quote_history_duplication.js`
@@ -515,12 +517,12 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 344   tests/**, api/*.test.js
+  test files on disk                 345   tests/**, api/*.test.js
   open-work rows citing a test       137   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                36   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
-  numbered gate checks                11   sairn_push_gate_hook.py
+  numbered gate checks                12   sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.

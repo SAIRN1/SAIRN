@@ -113,6 +113,7 @@ the only source that moves when one is added.
 | 9 | THE NAMED GUARD AND SEAM TESTS BLOCK (2026-09-10) |
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
+| 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
 
 ---
 
@@ -316,7 +317,7 @@ number, and only one of them is a document.
   report-only registry                36   report_only_checks.REGISTRY
   tools invoked by tests/             70   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
-  numbered gate checks                11   tools\sairn_push_gate_hook.py
+  numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is
