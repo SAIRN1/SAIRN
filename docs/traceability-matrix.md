@@ -85,6 +85,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason | `removal_path_check.py` | 18-arm probe, and the arm worth having is the FALSE EXEMPTION one: a shared registry comment reading "X is MUTABLE; Y is APPEND-ONLY" was attributed wholesale by the first version, labelling a money record its own comment calls MUTABLE as append-only and silently exempting it. The probe asserts the mutable sibling still fails. Also: a missing baseline turns every stuck resource into a finding rather than passing quietly, and an unloadable registry is an error rather than CLEAN. 0.3s |
 | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted | `eaten_substitution_check.py` | FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over the last 3,000 commits it flags exactly 2, and both are the instances item 18 already records. RECALL IS NOT MEASURED and is not claimed -- the criterion was read off those same two commits, so finding them is circular. The blind spot is structural and stated on every clean run: a substitution that produced OUTPUT leaves no gap at all, so only the empty-output case is detectable afterwards and `git commit -F` remains the control. 32-arm probe; removing the list-item exclusion takes 7 arms red and silencing the detector takes 9, each sabotage asserting its own anchor matched first. 0.2s |
 | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING | `temporary_state_check.py` | real run 2026-09-14: 723 files, 0 declarations, 175 undeclared candidates, PASS. TWO REAL DEFECTS IN THE SUBJECT were found by building the control first -- a case-insensitive /config/ matched storeError('CONFIG', ...) in api/_lib/sd-store.js, and the Python `= True` blind spot was real and undisclosed. And a LIVE finding, not historical: stonedesk.html 2286/2299/6350 set sdSyncSuppressed=true, call st(), clear it, with no `finally` -- a throw between them silences every later server write for the session. 24-arm probe; neutering FLAG_ON collapses the positive arms, and the sabotage asserts its own anchor is present first. 0.4s |
+| a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists | `export_coverage_check.py` | real run 2026-09-14: 11 Class A resources parsed from docs/2026-09-13-irreversible-write-witnessing-scoping.md rather than hardcoded, 3 exportable, 4 gaps in an existing registry, 4 in apps with no export path at all. The ON-SCREEN half of item 39 is NOT attempted here and the tool says so in its own header: two detectors for it were wrong in opposite directions, one missing alf_staff_credentials entirely and one binding most of SAIRNdental. 21-arm probe; blinding the registry reader collapses the EXPORTABLE answers, and section E pins all eleven verdicts by name so a registry change flips an arm. 0.2s |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -129,6 +130,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **The route-vs-resource unit mismatch is NOT unique to `/api/sd-data`: 182 individually addressable ACTIONS sit behind 27 routes, and 17 of them are named by nothing in this repo** | **SWEPT AND BUILT 2026-09-14 (CC)** &mdash; R7 inside the EXISTING `tools/sairn_reachability_check.py`, alongside R6. Held by `tests/reachability/action_demand_probe.py` (16 arms, three mutation contr | `tests/reachability/action_demand_probe.py` |
+| **Item 39c: the nine UNASSESSED Class A resources, answered &mdash; and a record you can look at is not a record you can hand over** | **BUILT 2026-09-14 (Hank)** &mdash; `docs/2026-09-14-class-a-retrievability.md`, `tools/export_coverage_check.py` held by `tests/run_export_coverage_probe.py` (21 arms). **Report-only, registered as ` | `tests/run_export_coverage_probe.py` |
 | **Item 8's attack-generation half, deterministically: 5 metamorphic relations over the proxy's own request envelope, ZERO Anthropic calls** | **BUILT 2026-09-14 (Cody)** &mdash; `api/claude-guardrail-metamorphic.test.js`, 30 arms, blind lock on hand-built clamps, **4 mutation controls bite** | `api/claude-guardrail-metamorphic.test.js` |
 | **Item 34: state meant to be temporary that silently outlives its invocation &mdash; and the declaration that has to come first** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/temporary_state_check.py`, held by `tests/run_temporary_state_probe.py` (24 arms, the sabotage asserts its own anchor first). **Report-only, registered as `- | `tests/run_temporary_state_probe.py` |
 | **Item 43: the one literal Copy-Exactly block no longer matches its own app &mdash; 0 of 5 identical** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/copy_exactly_check.py`, `tests/run_copy_exactly_probe.py` (17 arms), `docs/2026-09-14-copy-exactly-audit.md` | `tests/run_copy_exactly_probe.py` |
@@ -362,7 +364,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**187 of 391 test files are traced to a stated requirement. 204 are not.**
+**188 of 392 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -590,10 +592,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 391   tests/**, api/*.test.js
-  open-work rows citing a test       176   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 392   tests/**, api/*.test.js
+  open-work rows citing a test       177   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                42   report_only_checks.REGISTRY
+  report-only registry                43   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
