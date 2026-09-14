@@ -1117,8 +1117,8 @@
       "task": "two probe anchors into the schema snapshot do not match exactly once",
       "claimed_at": "2026-09-14T13:06:34Z",
       "claimed_at_epoch": 1789391194.7137043,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:08:44Z"
     }
   ]
 }
