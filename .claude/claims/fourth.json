@@ -1142,6 +1142,16 @@
       "claimed_at_epoch": 1789390395.64038,
       "status": "released",
       "released_at": "2026-09-14T13:11:08Z"
+    },
+    {
+      "id": "fourth-1789391482",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 55 pre-planned automated threshold response on the cron watchdog",
+      "claimed_at": "2026-09-14T13:11:22Z",
+      "claimed_at_epoch": 1789391482.5741768,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
