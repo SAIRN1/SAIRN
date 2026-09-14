@@ -1455,6 +1455,16 @@
       "claimed_at_epoch": 1789395148.2265568,
       "status": "released",
       "released_at": "2026-09-14T14:28:39Z"
+    },
+    {
+      "id": "hank-1789396136",
+      "session": "hank",
+      "subject": "copy-exactly-audit",
+      "task": "item 43 does propagation actually re-qualify or only diff bytes",
+      "claimed_at": "2026-09-14T14:28:56Z",
+      "claimed_at_epoch": 1789396136.5954154,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
