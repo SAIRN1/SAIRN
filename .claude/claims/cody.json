@@ -1139,6 +1139,16 @@
       "claimed_at_epoch": 1789397260.7054343,
       "status": "released",
       "released_at": "2026-09-14T18:18:09Z"
+    },
+    {
+      "id": "cody-1789410083",
+      "session": "cody",
+      "subject": "ai-redteam-refusals",
+      "task": "item 8 indirect injection and stated refusals deterministic half no model calls",
+      "claimed_at": "2026-09-14T18:21:23Z",
+      "claimed_at_epoch": 1789410083.4529946,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
