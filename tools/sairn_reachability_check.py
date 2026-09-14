@@ -259,6 +259,7 @@ ACTIVITY_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 CADENCE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                             'activity_cadence.json')
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+RESOURCES_DIR = os.path.join(REPO_ROOT, 'api', '_resources')
 
 
 def routed_api_paths():
@@ -421,6 +422,156 @@ def report_activity(snap):
 # this platform has almost no customers, and treating a quiet 72 hours as a
 # mandate to delete is how a disaster-recovery path gets removed the month
 # before it is needed.
+# ── R6: IS THE RESOURCE ASKED FOR? (report only, never gates) ─────────────
+# THE RUNG R4 AND R5 CANNOT REACH, and the reason is arithmetic. R4 asks
+# whether a ROUTE is still served; R5 asks whether a FUNCTION inside one was
+# invoked. Both take the route as the unit -- and `/api/sd-data` is ONE route
+# carrying 384 registered resources. It is among the most-served endpoints on
+# the platform, so every resource behind it reads as reachable whether or not
+# anything has ever asked for it by name.
+#
+# R6 changes the unit to the RESOURCE. A registered name that no app HTML and
+# no api/ module ever mentions passes the allowlist and then falls through to
+# "Unsupported action/resource combination" -- which api/_resources/sairnlaw.js
+# already records as a WORSE failure than not registering it, because the name
+# looks supported right up to the moment somebody calls it.
+#
+# ── IT NEVER GATES AND NEVER SUGGESTS REMOVAL ────────────────────────────
+# The same standing rule R4 and R5 carry, for the same reason: legitimate code
+# can be rare. A year-end calculation, a disaster-recovery path or a resource
+# whose panel has not shipped yet is quiet and correct, and treating quiet as a
+# mandate to delete is how the recovery path gets removed the month before it
+# is needed. This prints a list and a denominator. Nothing else.
+#
+# ── WHAT IT CANNOT SEE, so nobody reads the list as exhaustive ───────────
+#   * a name BUILT at runtime -- `'dnt_' + kind` is invisible to a literal
+#     scan, and the answer for such a resource is NOT KNOWN rather than absent;
+#   * a caller outside this repo entirely;
+#   * whether a resource that IS named is named on a path anyone runs. That is
+#     R4 and R5's question, one level up.
+R6_ACKNOWLEDGED = {
+    ('sairndental', 'dnt_ar'):
+        'DELIBERATE, and argued in api/sd-data-dental-ledger-validation.test.js '
+        'around line 1821: "deliberately no write to dnt_ar -- a stored ageing row '
+        'is stale the next time anything changes". It stays registered and unwritten '
+        'so the tier gate covers it the day something does write it.',
+    ('sairndental', 'dnt_revenue'):
+        'Same decision, same file, same paragraph: registered and covered by the '
+        'financial tier gate (api/sd-data-dental-financial-tier.test.js drives both '
+        'through the real handler), with no writer by design.',
+}
+
+
+def _registered_resources():
+    """{app: {name, ...}} from the registry modules, parsed the same way
+    tools/criticality_tier_check.py parses them -- one reader, not two."""
+    out = {}
+    if not os.path.isdir(RESOURCES_DIR):
+        return out
+    for f in sorted(os.listdir(RESOURCES_DIR)):
+        if not f.endswith('.js') or f.endswith('.test.js'):
+            continue
+        app = f[:-3]
+        if app in ('index', 'shared'):
+            continue
+        names = set()
+        for l in io.open(os.path.join(RESOURCES_DIR, f), encoding='utf-8'):
+            s = l.strip()
+            if s.startswith("'") and s.endswith("',") and s.count("'") == 2:
+                names.add(s.strip("',"))
+        if names:
+            out[app] = names
+    return out
+
+
+def _mention_corpus():
+    """Every place a resource name could legitimately be asked for: the app
+    HTML files and every api/ module EXCEPT the registry itself.
+
+    THE REGISTRY IS EXCLUDED ON PURPOSE. It is where the name is DECLARED, and
+    counting a declaration as a use is how a check reports a closed loop as
+    coverage -- the same shape as a generator's --check comparing a document to
+    its own output.
+    """
+    blob = []
+    for f in sorted(os.listdir(REPO_ROOT)):
+        if f.endswith('.html'):
+            blob.append(io.open(os.path.join(REPO_ROOT, f), encoding='utf-8',
+                                errors='replace').read())
+    api_dir = os.path.join(REPO_ROOT, 'api')
+    for dp, dn, fn in os.walk(api_dir):
+        dn[:] = [d for d in dn if d != 'node_modules']
+        if os.path.basename(dp) == '_resources':
+            continue
+        for f in sorted(fn):
+            if f.endswith('.js') and not f.endswith('.test.js'):
+                blob.append(io.open(os.path.join(dp, f), encoding='utf-8',
+                                    errors='replace').read())
+    return ''.join(blob)
+
+
+def report_resource_demand():
+    """Print the R6 section. Like R4 and R5 it CANNOT affect the exit code."""
+    print('')
+    print('=== R6: IS THE RESOURCE ASKED FOR? (report only, never gates) ===')
+    registered = _registered_resources()
+    if not registered:
+        print('  COULD NOT RUN: no registry modules were readable under '
+              'api/_resources, so NO resource was checked. That is not an '
+              'empty result.')
+        return
+    corpus = _mention_corpus()
+    total = sum(len(v) for v in registered.values())
+    unrequested = []
+    for app in sorted(registered):
+        for name in sorted(registered[app]):
+            if ("'" + name + "'") in corpus or ('"' + name + '"') in corpus:
+                continue
+            unrequested.append((app, name))
+
+    acked = [x for x in unrequested if x in R6_ACKNOWLEDGED]
+    open_rows = [x for x in unrequested if x not in R6_ACKNOWLEDGED]
+    print('  registered resources : %d across %d app registr(y/ies)'
+          % (total, len(registered)))
+    print('  named nowhere        : %d  (%d acknowledged, %d open)'
+          % (len(unrequested), len(acked), len(open_rows)))
+    print('  THE UNIT IS THE RESOURCE, NOT THE ROUTE. /api/sd-data is one route')
+    print('  carrying most of that %d, so R4 and R5 read every one of them as' % total)
+    print('  reachable. This is the only rung that can tell them apart.')
+
+    if open_rows:
+        print('')
+        print('  NOT ASKED FOR BY ANY app HTML OR api/ MODULE -- read these, do not')
+        print('  act on the list. A resource whose panel has not shipped yet looks')
+        print('  exactly like one nobody needs:')
+        for app, name in open_rows:
+            print('    %-14s %s' % (app, name))
+    else:
+        print('')
+        print('  none open. Every registered resource is named somewhere a caller')
+        print('  could reach it -- a measured zero over %d names, not a silence.' % total)
+
+    # ACKNOWLEDGEMENTS ARE PRINTED EVERY RUN. One nobody can see is a
+    # suppression, and one that outlives the finding it excused is worse.
+    print('')
+    print('  ACKNOWLEDGED (%d) -- deliberate, with the reason and where it is argued:'
+          % len(acked))
+    for app, name in acked:
+        print('    %s/%s' % (app, name))
+        print('      %s' % R6_ACKNOWLEDGED[(app, name)])
+    stale = [k for k in R6_ACKNOWLEDGED if k not in set(unrequested)]
+    if stale:
+        print('  STALE ACKNOWLEDGEMENT(S) -- the resource IS named now, so the entry')
+        print('  has outlived what it excused. Remove them:')
+        for app, name in stale:
+            print('    %s/%s' % (app, name))
+    print('')
+    print('  CANNOT SEE: a resource name BUILT at runtime is invisible to a literal')
+    print('  scan, and for such a resource the answer is NOT KNOWN rather than')
+    print('  absent. Nor can this tell whether a name that IS mentioned sits on a')
+    print('  path anyone runs -- that is R4 and R5, one level up.')
+
+
 def report_function_purpose(snap, coverage_ok):
     print('')
     print('=== R5: FUNCTIONS INSIDE api/ ROUTES (report only, never gates) ===')
@@ -537,6 +688,13 @@ def main(argv):
             return 2
         coverage_ok = report_activity(snap)
         report_function_purpose(snap, bool(coverage_ok))
+
+    # R6 NEEDS NO ACTIVITY SNAPSHOT -- it is a static question -- so it runs on
+    # every FULL sweep rather than only with --activity. It is skipped on a
+    # targeted run for the same reason the stale-exemption report is: a subset
+    # cannot say what the whole tree does not mention.
+    if not rest:
+        report_resource_demand()
 
     targets = rest or sorted(glob.glob('*.html'))
     # A STALE REPORT IS ONLY MEANINGFUL ON A FULL RUN, and this tool was missing

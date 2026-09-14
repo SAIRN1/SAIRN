@@ -2079,6 +2079,182 @@
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
+    },
+    {
+      "commit": "57236fe9db01",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_bill_cannot_settle_unmatched.js"
+      ],
+      "lines_added": 500,
+      "lines_removed": 10,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "4ba885d99f42",
+      "date": "2026-09-14",
+      "subject": "feat: SAIRNcare Phase 3 items 1-4 -- pharmacy eMAR, doc-to-charges, AI care plans, late-care alerting",
+      "files": [
+        "vercel.json",
+        "api/alf-alerts.js",
+        "api/sairndental/send-reminder.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "two hourly crons were scheduled on the identical minute (0 * * * *) and BOTH FAILED ABOUT A THIRD OF THEIR RUNS on a 504 from Supabase -- 23 send-reminder failures and 20 alf-alerts failures over seven days, every one at :00, so appointment reminders were not sent and medication-exception alerts were not computed; /api/claude's Supabase rate-limit RPC also timed out at :00, which was the open unexplained 504 pattern",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "973e2471",
+      "date": "2026-09-14",
+      "subject": "feat: sairnsenior.html + api/sen-portal.js -- Family/Client Portal, scoped revocable links (not a PIN account)",
+      "files": [
+        "api/sen-portal.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/sen-portal.js declares MANAGEMENT_ROLES = { owner, billing } and references it nowhere, while the agency-wide list branch beside it refuses with 'ask management for the agency-wide list' and enforces the WIDER BROAD_ROLES -- owner, billing, coordinator and scheduler. The message and the check disagree, so one of the two is wrong: either a coordinator should not have the agency-wide list of every client's portal links, or the refusal misstates the rule to everyone who hits it",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "citation_note": "No standing rule covers a refusal message that misstates its own guard. The nearest, 1.11, is about a check that could not run being folded into a pass, and this check runs and answers correctly for the rule it actually enforces -- what is wrong is the sentence beside it, plus a gate that was written and never wired. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "completeness_check.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "20afb167",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
+      "files": [
+        "api/sd-data.js",
+        "api/_resources/sairnbiz.js",
+        "sql/sairnbiz_data_schema.sql",
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "found_by_tool": "removal_path_check.py",
+      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers 'a resource was given a server before it was given a way to correct a wrong row'. The nearest standing work is the 53-Tier-A-no-removal-path burn-down row, which is a review queue rather than a numbered rule. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "injection": {
+        "commit": "20afb167"
+      }
+    },
+    {
+      "commit": "518782ec",
+      "date": "2026-09-14",
+      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
+      "files": [
+        "sql/backup_reader_role.sql"
+      ],
+      "lines_added": 116,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "518782ec"
+      },
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "summary": "sql/backup_reader_role.sql creates sairn_backup_reader with the literal password 'REPLACE_ME_BEFORE_RUNNING' inside a `do $$ if not exists` guard, so running the file once un-edited produces a LOGIN role with BYPASSRLS and SELECT on every table in public, and re-running the corrected file changes nothing because the role already exists. The repo is public (confirmed via the GitHub API: visibility public), so the placeholder is a published string, and no verification step in the file checks that the password is not still the placeholder",
+      "citation_note": "No standing rule covers a placeholder credential made permanent by an idempotence guard. The nearest, 1.11, is about a check folding could-not-run into a pass, and this is a create that silently declines to act. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "citation_confidence": "not-citable",
+      "rules": []
+    },
+    {
+      "commit": "518782ec",
+      "date": "2026-09-14",
+      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
+      "files": [
+        ".github/workflows/nightly-backup.yml"
+      ],
+      "lines_added": 270,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "518782ec"
+      },
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one",
+      "citation_note": "No standing rule covers a guard whose stated purpose is a failure it cannot detect. Closest in spirit to the repeated finding that a check can pass without testing anything, but that is a discipline rather than a numbered rule.",
+      "citation_confidence": "not-citable",
+      "rules": []
+    },
+    {
+      "commit": "858ad4a6",
+      "date": "2026-09-14",
+      "subject": "feat(spec): item 78 -- the cross-app role gates, stated formally, and 19 of 80 checks are all that can be made",
+      "files": [
+        "tools/role_gate_invariants.js",
+        "docs/spec/RoleGates.tla"
+      ],
+      "lines_added": 218,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "858ad4a6"
+      },
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "summary": "tools/role_gate_invariants.js states in its header that 'every app is checked against every invariant over its whole role set', and it implements I3, I4, I5a, I5b and I5c only. I1 (APP ISOLATION) and I2 (DEACTIVATION BINDS) are in docs/spec/RoleGates.tla and have NO checker, and nothing in the output discloses it -- the honest denominator it does print (56 checks, 24 not checkable) is about role SETS that could not be read, not about invariants never evaluated. Both are runtime properties and both ARE covered elsewhere (I1 by tests/app_session_isolation.js, I2 by the deactivated-caller re-check), so the fix is a disclosure naming them and where they are proven, not new code",
+      "citation_note": "No standing rule covers a coverage claim that is true of the checks run and false of the specification. The nearest is the repeated lesson that a denominator must be the whole population, which the file applies correctly on one axis and not on the other.",
+      "citation_confidence": "not-citable",
+      "rules": []
     }
   ]
 }

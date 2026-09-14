@@ -3121,3 +3121,108 @@ Checked before claiming, per the standing rule. `vercel.json` already reads `7 *
 17/17. Both mechanisms asked for -- a stagger AND randomized jitter -- landed earlier today, were
 pushed, and were live-verified at 17:15Z. **The 504 connection is already established from
 production logs and recorded in the index row for Hank.**
+
+
+---
+
+## 2026-09-14 -- independent review of Fourth's 65a and 78, and item 32 gets R6
+
+### Method, because a second READER is not an independent review
+
+Both tools were DRIVEN. The coherence checker to its refusal paths; the invariants tool against
+THREE violations I planted myself. The SQL was read against Postgres semantics rather than against
+its own comments. Reviewed at named SHAs -- `518782ec`, `858ad4a6`, `d7091d3f` -- because Fourth
+holds an active item-78 claim and the file may have moved since.
+
+### Finding 1 (HIGH) -- a published credential, made permanent by an idempotence guard
+
+`sql/backup_reader_role.sql` creates `sairn_backup_reader` with the literal password
+`REPLACE_ME_BEFORE_RUNNING`, inside `do $$ ... if not exists`.
+
+Run the file once un-edited and you get a **LOGIN role with BYPASSRLS and SELECT on every table in
+`public`** -- and **re-running the corrected file changes nothing, because the role already
+exists.** The repo is **public** (confirmed against the GitHub API, `visibility: public`), so the
+placeholder is a published string.
+
+**Nothing in the file's own five-step verification checks that the password is no longer the
+placeholder.** The header says replace-before-running. *Somebody will remember* is not a control,
+and the `if not exists` guard is what turns a one-time slip into a permanent one.
+
+Cheap fix: `alter role ... password` unconditionally, or RAISE in the `do` block while the literal
+is present, plus a sixth verify step.
+
+### Finding 2 (MODERATE) -- a guard whose stated purpose is a failure it cannot detect
+
+The workflow refuses a dump under **50 KB** and names the cause it guards against: the backup role
+losing BYPASSRLS. But a BYPASSRLS-less dump is approximately a **schema-only** dump -- which the
+same comment states is **well over 100 KB**. It passes.
+
+The real detector is the restore plus the coherence checker, which genuinely works. The defect is
+that a reader trusting the comment believes there are two independent detectors where there is one.
+
+### Finding 3 (LOW) -- an unqualified claim about default privileges
+
+`alter default privileges ... grant select` without `FOR ROLE` applies only to objects created by
+the role that RUNS it; the comment claims it covers everything added later, flatly. Supabase
+migrations run as `postgres`, so the practical risk is low -- but the verification block checks
+WHICH PRIVILEGES and never WHICH TABLES, so a table outside the grant would be invisible. That is
+the same silent-omission shape the file names one level up.
+
+### What is clean, and not vacuously
+
+`tools/restore_coherence_check.js` handles the empty-chain case correctly. Driven: exit **2** with
+no env, exit **2** against a dead URL, and it refuses to read a clean run over an empty chain as a
+pass. The workflow treats exit 2 as FAILURE; retention advances only after a night that produced a
+restorable dump; the `pipefail` reasoning about `age` masking a half-finished `pg_dump` is exactly
+right; the key is shredded with `if: always()`.
+
+### Item 78 -- one finding, and the tool itself is strong
+
+`tools/role_gate_invariants.js` FIRES. Three violations planted independently in `api/rf-auth.js`:
+
+| plant | result |
+|---|---|
+| a provisioning role that is not management | I3 violation, named, exit 1 |
+| an empty `MANAGEMENT_ROLES` | I5a violation, named, exit 1 |
+| a foreign app's role in the provisioning set | I3 violation, named, exit 1 |
+
+Restored: exit 0. Each message carried its evidence strength. It separates UNSPECIFIED from clean,
+counts by the WEAKEST evidence each check rests on, and carries an I6 CONTROL licensing its derived
+checks.
+
+**Finding 4 (MODERATE): the header says every app is checked against every invariant.** The checker
+implements **I3, I4, I5a, I5b, I5c only.** `I1 (APP ISOLATION)` and `I2 (DEACTIVATION BINDS)` are in
+the spec and **have no checker, and the output never says so.**
+
+The honest denominator it does print -- 56 checks, 24 not checkable -- is about role SETS that could
+not be READ, not about invariants never evaluated for any app. A reader concludes the spec is fully
+covered bar 24 unreadable sets; two of six are not evaluated at all.
+
+Both are RUNTIME properties and both ARE covered elsewhere -- I1 by `tests/app_session_isolation.js`
+(54 arms, built today, driving real signed tokens across apps), I2 by the deactivated-caller
+re-check in the employee lifecycle. **So the fix is a disclosure naming them and where they are
+proven, not new code.**
+
+### Item 32 -- R6, inside the existing checker
+
+**The blind spot is arithmetic.** R4 asks whether a ROUTE is served; R5 whether a FUNCTION inside it
+was invoked. Both take the route as the unit -- and `/api/sd-data` is ONE route carrying **385
+registered resources**. It is among the most-served endpoints on the platform, so every resource
+behind it reads as reachable whether or not anything ever asked for it by name.
+
+R6 changes the unit to the RESOURCE. **385 registered, 2 named nowhere** -- `dnt_ar` and
+`dnt_revenue` -- and both turn out to be deliberate, argued in
+`api/sd-data-dental-ledger-validation.test.js`. Acknowledged by name with the reason and the file
+that argues it; the count prints every run; an acknowledgement whose resource becomes reachable
+again is reported STALE.
+
+**Never gates, never suggests removal** -- the standing rule R4 and R5 already carry, inherited
+deliberately. A year-end calculation or a disaster-recovery path is quiet and correct.
+
+**The closed loop is the failure this could have had**, and the probe pins it: the registry is where
+a name is DECLARED, so counting a declaration as a use would make every resource reachable by
+definition. `api/_resources/` is excluded, and a mutation that puts it back drops the findings to
+zero and takes the suite red.
+
+Existing rungs unaffected: R1-R3 clean over 22 files, the R4 activity probe passes, Fourth's R5
+probe passes.
