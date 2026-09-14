@@ -104,6 +104,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 57: Benford digit distribution &mdash; the automated form of the fabricated-KPI question, and the shape pre-check is most of it** | **BUILT 2026-09-14 (CC)** &mdash; `tools/benford_check.py`, held by `tests/run_benford_probe.py` (37 arms). **NOT wired into any gate and NOT registered** | `tests/run_benford_probe.py` |
 | **RECONCILED for Cody: the report-only sweep timeout is REAL but it is NOT `metamorphic_check.py` &mdash; two pre-existing checkers are 49% of the sweep** | **MEASURED 2026-09-14 (CC) on current `main`, handed over rather than worked on &mdash; Cody holds the active claim** | `tests/run_report_only_checks_probe.py` |
 | **Web Analytics turned on &mdash; and the three public pages that carried a CREDENTIAL in the query string now strip it first** | **BUILT 2026-09-13 (CC)** on Michael's decision. Script on all **22** root app pages; held by `tests/public_token_leaves_the_address_bar.js` | `tests/public_token_leaves_the_address_bar.js` |
 | **Item 4: the FMEA loop &mdash; the standing-rules citation field, and the two defects that only appeared once it existed** | **BUILT 2026-09-13 (CC)** &mdash; `rules` / `citation_confidence` / `citation_note` on all 54 register records, `--rule` on `--add`, 12 saved drafts; held by `tests/run_defect_register_probe.py` (59 c | `tests/run_defect_register_probe.py`, `tests/run_fmea_probe.py` |
@@ -300,7 +301,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**152 of 346 test files are traced to a stated requirement. 194 are not.**
+**153 of 347 test files are traced to a stated requirement. 194 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -518,8 +519,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 346   tests/**, api/*.test.js
-  open-work rows citing a test       138   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 347   tests/**, api/*.test.js
+  open-work rows citing a test       139   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                36   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

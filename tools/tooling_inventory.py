@@ -103,6 +103,16 @@ PURPOSES = {
     'checker_kit.py': ('LIBRARY', 'the exit-code contract, comment-stripped parsing and the '
                                   'control-pair declaration, extracted so the next checker '
                                   'is built through them rather than re-deriving them'),
+    # UNWIRED ON PURPOSE, and the reason belongs here rather than in a commit
+    # message: a digit-distribution result is a POINTER, never a verdict, so
+    # there is nothing for a gate to do with it. Registration also waits on
+    # Cody's report-only sweep-timeout work, because a registry entry is what
+    # blew that budget last time.
+    'benford_check.py': ('CHECKER', 'money figures whose leading-digit distribution does not '
+                                    'look measured -- a LOOK HERE pointer for the '
+                                    'fabricated-KPI class, with a shape pre-check that '
+                                    'REFUSES any dataset too small, too narrow, too rounded '
+                                    'or too repetitive to carry the test'),
     'session_lock_check.py': ('CHECKER', 'a second session in the same clone, at start and on every prompt'),
     'sairn_claim_hook.py': ('CHECKER', "another session's active claim on the work about to start"),
     'employee_auth_guard_check.py': ('CHECKER', 'a SQL file writing credential rows with no recoverability guard (gate check 2)'),

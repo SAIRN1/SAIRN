@@ -2075,3 +2075,91 @@ Four controls: a failed `st()` must leave BOTH storage and memory untouched; an 
 All three keys are now recorded in `key_collision_check.py` with their traced reasons -- including the fixed one, **acknowledged AFTER the fix rather than instead of it**, because three writers are still three writers and the shape is still worth reporting if it changes. StoneDesk pushes are quiet again: **7 collisions, 0 unacknowledged.** Every entry is keyed on the exact variable set, so **a fourth writer or a rename un-acknowledges it** -- which is the property that makes the table safe to add to at all.
 
 **Verified:** `node --check` 131/131 blocks clean; `div_balance` PASS; `duplicate_global` 0; `key_collision_check` 0 unacknowledged and `tests/key_collision_probe.py` all checks pass; `quote_builder_delete_does_not_resurrect` 12 assertions including the reproduction; `quote_history_delete`, `quote_history_duplication`, `customer_delete_does_not_resurrect` and `collection_delete_reaches_the_server` all still pass.
+
+
+---
+
+## 2026-09-14 -- items 57 and 58: a digit-distribution pointer, and three documents with no key
+
+### The claim was BLOCKED and the block was lexical -- said out loud, per PR 4.3
+
+`claim cc "benford ... report-only check ..."` was refused against Cody's active
+`tooling -- sabotage detector replace must feed a file write and report-only sweep timeout`,
+matching on the shared tokens **"report" and "only"**. Cody owns the sweep's runtime and the
+sabotage detector; a new Benford tool shares neither. **PR 4.3 says: if the block is lexical,
+say so out loud and proceed -- but do not reword the task to slip past the matcher; naming the
+SUBJECT accurately is the honest fix.** So the subject is now `benford-digit-check` rather than
+the generic `cc`, which is the sanctioned move and not the forbidden one.
+
+**And there IS one genuine overlap, which is why the tool is deliberately NOT registered:**
+adding an entry to `tools/report_only_checks.py` would touch the file Cody is editing, and
+adding a registry entry is exactly what blew the sweep budget last time. Registration waits.
+
+### Item 57 -- `tools/benford_check.py`
+
+Guardian Check 0b asks *is there a function behind this number*. This asks the question one
+step over, the only one that still works once a function DOES exist: **do these numbers look
+measured, or typed?**
+
+**The shape pre-check is most of the tool, and that is the design.** Applying Benford to data
+that cannot satisfy it produces a confident false positive every single time. Five refusals,
+each printed with its measured number: TOO FEW VALUES, TOO NARROW A SPREAD, TOO ROUNDED, TOO
+FEW DISTINCT VALUES, ASSIGNED-NOT-MEASURED. **On the real tree it skips 9 of 10 corpora** and
+says why for each -- a skip nobody sees reads as a pass.
+
+**Two numbers, never one.** MAD with Nigrini's bands is primary; chi-square is printed beside it
+and never alone, because chi-square's power grows with n and would manufacture findings out of
+sample size. **The first real run produced exactly that disagreement:** stonedesk.html seed
+figures, n=219, first-digit MAD 0.0260 (NONCONFORMITY) against chi2 15.2 on 8 df -- **just under
+the 15.507 bar, not significant.** The tool prints that the two measures disagree and that this
+is WEAKER evidence than either alone, not stronger.
+
+**THE BLIND LOCK CAUGHT THE TOOL ON ITS FIRST RUN, for the third time this session.** The
+typed-data fixture emitted only four-digit numbers -- barely one order of magnitude -- so the
+shape pre-check refused it, and the lock correctly declined to certify a statistic it had never
+exercised. **The fixture was wrong, not the bar.** A person inventing amounts spreads the
+MAGNITUDE too, so the fixture now cycles 2-to-5 digit magnitudes with a flat leading digit.
+
+**PR 1.11 on the production question:** the real tables are in the database. With no `--data`
+export the run reports COULD NOT RUN, exit 2, and names the tables it did not examine. The repo
+corpora are seed data -- openly invented, 29 SEED constants in stonedesk.html alone -- and the
+output states that a non-conformity there is EXPECTED. They are present only because they are
+the one corpus with real spread, which is what proves the instrument fires on something other
+than a fixture.
+
+### Item 58 -- the three-way match audit
+
+Full working: `docs/2026-09-14-three-way-match-audit.md`. **Nothing changed, nothing gated.**
+
+**SAIRNbiz is a zero-way match and the documents do not exist.** `saveBill()` creates a payable
+from one form typed by one person and posts to the ledger immediately; `sbPayBill()` settles it
+**from that same internally-created row** -- no second document, no second person, no amount
+re-entry. `grep -ciE "purchase order|receiving|packing slip|bill of lading" sairnbiz.html` is
+**0**. The match is not skipped; two of the three documents are not there.
+
+**What bounds it, and it changes the severity a lot:** the app says so itself in the toast --
+*"recorded in this app only, no payment was sent"*. **No money moves.** The exposure is a wrong
+set of books, not a wrong disbursement. The accounting shape is right -- receipt and payment are
+two entries rather than an edit, each idempotent on its own source id. It is the AUTHORISATION
+shape that is absent.
+
+**StoneDesk is the interesting one: it is most of the way there and does not know it.** All
+three legs are real and shipped -- `sd_pos`/`sdPOCreate`, `sd_receiving`/`sdRecvLog`,
+`sd_invoices`. And `po_id|poId|purchase_order_id|receiving_id|recv_id|receipt_id` returns **0 in
+both files**. **Not one field joins any of the three to either of the others**, so the match is
+not unenforced -- **it is unconstructible.** The receiving log even records its own `value`,
+typed by the receiver with no reference to the PO amount: two independently-typed money figures
+for one delivery, and nothing that puts them side by side.
+
+**One incidental defect found on the path:** `sdPOCreate()` mints `'PO-2024-0'+(50+d.length)`.
+It is derived from ARRAY LENGTH, so **deleting any PO makes the next one reuse a number already
+issued**, and **the year is hardcoded to 2024**. Recorded rather than fixed -- audit only.
+
+**The smallest thing that changes the answer:** StoneDesk needs ONE FIELD. **SAIRNbiz needs a
+decision before it needs code** -- at that scale the three-way match is often deliberately not
+run, and that call is Michael's.
+
+**Verified:** `benford_check --fixtures` locks in both directions; the repo run skips 9 corpora
+with reasons and flags 1 with the disagreement stated; `tests/run_benford_probe.py` 37 arms pass
+including four refusal arms, a control that the refusals do not swallow testable data, and two
+arms that break a bar on purpose and assert the lock FAILS.
