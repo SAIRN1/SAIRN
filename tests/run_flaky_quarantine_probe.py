@@ -176,12 +176,15 @@ try:
     # so the control below cannot be slow enough to trip its own budget.
     Q.registry_tools = lambda: ['checkblocks.py', 'cleanup_confirm_check.py']
     l7 = Q.load_ledger()
-    reached, tools = Q.measure(l7, runs=1, budget=0)
+    # measure() returns a THIRD value since 2026-09-14: the registered
+    # checkers this runner cannot execute at all. Unpacked rather than
+    # starred, so the next signature change breaks here loudly too.
+    reached, tools, unrunnable = Q.measure(l7, runs=1, budget=0)
     check('7h  a budget of zero REACHES NOTHING and says so, rather than being '
           'killed mid-pass with no output at all',
           reached == [] and len(tools) == 2, (reached, tools))
     l8 = Q.load_ledger()
-    reached2, tools2 = Q.measure(l8, runs=1, budget=None)
+    reached2, tools2, unrunnable2 = Q.measure(l8, runs=1, budget=None)
     check('7i  CONTROL: with no budget the same two ARE measured -- 7g would '
           'otherwise pass on a measure() that never runs anything',
           sorted(reached2) == sorted(tools2) and len(reached2) == 2, reached2)

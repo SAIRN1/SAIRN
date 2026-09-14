@@ -14,7 +14,87 @@ calibration programme has to seed against, written down for the first time.
 >
 > ---
 >
-> ### 🛑 STOP — if you are the ratifier, DO NOT READ PAST THIS BOX YET
+> ### 🛑 STOP — the guard cannot live in this file, and now it does not
+>
+> **2026-09-14 (Cody). The STOP box below has now failed THREE READERS RUNNING,
+> and I am the third.** The instruction moved here from the bottom of the file
+> because Fourth reached it too late. That fix addressed POSITION. **Position is
+> not the cause.**
+>
+> I opened this file with one action that returned all 228 lines. The STOP box
+> arrived in the same payload as the rubric it guards, so it was void before I
+> could act on it. **There is no position inside a file that is read atomically
+> which can protect the rest of that file.** A reader who scrolls is protected
+> by a box at the top; a reader whose smallest unit is "open the file" is not,
+> and both kinds read this repo.
+>
+> **The guard is therefore a DIFFERENT FILE:
+> `docs/2026-09-14-rubric-blind-grading-protocol.md`.** That is the only
+> arrangement where "read this first" is enforced by the reader's own mechanics
+> instead of their self-restraint. Send the next grader there and do not send
+> them here.
+>
+> ---
+>
+> ### RATIFICATION STATUS: **NOT RATIFIED.** Accuracy measured, stability owed.
+>
+> **Cody, 2026-09-14.** I graded the holdout **after** reading the rubric — the
+> before-pass was already gone — so this is the accuracy half only, and the
+> stability half is **not** reported rather than estimated.
+>
+> **HOLDOUT IS 21 RECORDS, not the 12 stated below.** The register held 55 at
+> this file's commit and 76 when I ran it. The figure below was correct when
+> written and is now stale, which is the eighth-discipline problem arriving in
+> the document that asks for it.
+>
+> **ACCURACY: 13 of 21 = 62%.** Recorded spread `11 moderate / 8 high / 2 low`;
+> my rubric-applied spread `11 high / 6 moderate / 4 low`. **No `critical` in
+> the holdout, so the D3 escalators are still unexercised** — the figure says
+> nothing about them.
+>
+> **AND 62% IS NOT MAINLY THE RUBRIC BEING WRONG, which is the finding.** Five
+> of the eight disagreements are one shape: *a control that silently stopped
+> testing anything.* Applied faithfully, D1 makes those `high` — a report
+> saying PASS about what it never examined, with nothing louder saying
+> otherwise. The register grades that shape **1 `low`, 4 `moderate`, 2 `high`**
+> across 7 records. **The reference standard disagrees with itself, and the
+> rubric was derived from the half that says `high`.**
+>
+> Sharpest instance: this document cites `report_only_checks.py` printing clean
+> over zero apps as the canonical `high`, and it IS recorded `high`. The
+> holdout's *"printed CLEAN over a run where 33 never executed"* is the same
+> defect and is recorded `moderate`. **One shape, two grades, one register.**
+>
+> **THE THREE BOUNDARY FAILURES, each reproducible:**
+>
+> 1. **Does a TOOL falsely reporting clean satisfy D1?** The "acted on" list
+>    says yes. Recent practice says `moderate`. 7 records split 1/4/2. **This is
+>    the one decision that has to be made by an owner, not by me** — it moves
+>    five of these eight, and whichever way it goes the losing half of the
+>    corpus needs regrading.
+> 2. **The rubric has NO question for a LATENT high-consequence exposure.** D3
+>    requires a wrong value to have REACHED production; D1 requires something to
+>    have been acted on. So the trust-accounting explainer that *could* emit a
+>    fabricated professional-conduct citation on client money grades `low`
+>    (nothing reached, nothing acted on, one panel) while the register says
+>    `high`. A Tier A fabrication path that has not fired yet has nowhere to sit.
+> 3. **D1's silence test excludes loud money failures, and the register does
+>    not.** `sbThreeWayMatch` refusing a correct bill with two identical figures
+>    is a false alarm — loud, so D1 is no, so `moderate` at most. Recorded
+>    `high`.
+>
+> **WHAT I CHANGED IN THE RUBRIC ITSELF: nothing.** Every one of the three is a
+> decision with consequences for existing grades, and a ratifier who quietly
+> rewrote the boundary they were sent to check would be doing exactly what this
+> document's own §5 warning is about. The file keeps its `-UNRATIFIED` suffix.
+>
+> **WHAT WOULD RATIFY IT:** resolve failure 1, then a grader who has not read
+> this file supplies the stability number via the protocol document. CC has not
+> read it as far as I know.
+>
+> ---
+>
+> ### 🛑 The original STOP box — kept for the record, superseded above
 >
 > **Added 2026-09-14 (fourth). This instruction was already in this document,
 > at the very bottom, under "Why there is no back-test" — which is after

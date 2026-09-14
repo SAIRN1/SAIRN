@@ -1331,15 +1331,7 @@ NOT_PROMOTED = [
      'have caught on day one. Write tests/run_independence_probe.py with both '
      'directions and a CONTROLS_FOR line, then this is a promotion candidate rather '
      'than a judgement call.'),
-    ('restore_coherence_check.js', 'TWO BLOCKERS AND ONE OF THEM IS ABOUT THE RUNNER, '
-     'not the tool. (1) It reaches the network, like the LIVE tools above. (2) IT IS '
-     'JAVASCRIPT, and the flaky-checker ledger that measures every promoted checker '
-     'shells out with the python interpreter -- so a promoted .js checker would be '
-     'measured by nothing, silently, which is the exact condition the 2026-09-14 '
-     'coverage pass was widened to expose. It DOES have a real control pair '
-     '(tests/run_restore_coherence_probe.js, CONTROLS_FOR declared), so it is the '
-     'best-prepared tool on this list; the runner gap has to close first or promoting '
-     'it would create the first unmeasurable registry entry.'),
+    ('restore_coherence_check.js', 'ONE BLOCKER LEFT OF THE TWO, AND THE RUNNER ONE IS FIXED. As of 2026-09-14 tools/flaky_checker_quarantine.py dispatches on extension (INTERPRETERS: .py -> python, .js -> node) and PROBES the interpreter before using it, so a promoted .js checker is now measurable and a missing node is a named could-not-measure rather than a silent one. That mattered more than it looked: the old runner shelled out with sys.executable unconditionally, so handing a JavaScript file to Python would have exited non-zero with a SyntaxError IDENTICALLY every run -- flip rate 0.0, classified STABLE. The first .js promotion would have produced an unmeasurable registry entry that the ledger called the most reliable tool on the platform. Fixing it also surfaced a separate fail-open in the same file: ANY execution failure was recorded as an ordinary observation, so a checker that never ran once was the most stable thing in the fleet. There is now an UNRUNNABLE verdict with two fixtures and a control that bites. THE REMAINING BLOCKER IS THE NETWORK, and it is the same reason cron_liveness_check.py and stonedesk_storefront_live_check.py are held out above: this tool reaches out to verify a restore, so a push gate carrying it makes every push depend on the outside world being up. It is otherwise the best-prepared tool on this list -- a real control pair in tests/run_restore_coherence_probe.js with CONTROLS_FOR declared. Promote it if the network half is ever separable from the question it answers, which for a RESTORE check it may not be.'),
     ('shape_antipattern_check.py', 'TRACK RECORD PENDING, AND THAT IS THE AUTHOR\'S OWN '
      'STATED DECISION rather than mine -- its index row says "report-only and '
      'deliberately NOT registered, because promotion is earned on a track record". '

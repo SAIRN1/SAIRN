@@ -4255,3 +4255,92 @@ assumed: image in, two-key JSON out, `confident===true` and an integer 0-100
 required, no model prose ever displayed. Image-borne injection can only produce
 a WRONG INTEGER. It names what would END the exemption, and the checker still
 reports the site.
+
+---
+
+## 2026-09-14 (Cody) -- the rubric is NOT ratified, and the STOP box failed its
+## third reader because position was never the cause
+
+Claim: `rubric-ratification`. Files:
+`docs/2026-09-13-defect-severity-rubric-UNRATIFIED.md` (verdict recorded, NOT
+renamed), `docs/2026-09-14-rubric-blind-grading-protocol.md` (new),
+`tools/flaky_checker_quarantine.py`, `tools/report_only_checks.py`,
+`tests/run_flaky_quarantine_probe.py`.
+
+### I destroyed my own blind pass, and said so before grading anything
+
+The STOP box says do not read past it. I opened the file in one action that
+returned all 228 lines, so the box arrived in the same payload as the rubric it
+guards. Fourth was caught identically, and the fix applied then was POSITION.
+
+**Position is not the cause.** There is no position inside a file read
+atomically that protects the rest of that file. A reader who scrolls is
+protected by a box at the top; a reader whose smallest unit is "open the file"
+is not -- and both kinds read this repo. So the guard is now a SEPARATE FILE,
+the only arrangement where "read this first" is enforced by the reader's own
+mechanics rather than their self-restraint.
+
+### The measurement, and why the number is not the finding
+
+Holdout is **21 records, not the 12 stated** -- 55 at the rubric's commit, 76
+now. **ACCURACY 13/21 = 62%.** No `critical` in the holdout, so D3 is still
+unexercised and the figure says nothing about it. **Stability is NOT reported
+rather than estimated** -- unobtainable for me.
+
+**62% is mostly the REGISTER disagreeing with itself.** Five of the eight
+disagreements are one shape -- *a control that silently stopped testing
+anything* -- which D1 makes `high`, and which the register grades **1 low / 4
+moderate / 2 high across 7 records.** The rubric was derived from the half that
+says high.
+
+Sharpest instance: the rubric cites `report_only_checks.py` printing clean over
+zero apps as its canonical `high`, and that record IS `high`. The holdout's
+"printed CLEAN over a run where 33 never executed" is the same defect and is
+`moderate`. One shape, two grades, one register. **Accuracy against a
+self-inconsistent reference is not a clean measure of the rubric**, which is
+convention 3 applied to the reference rather than the sample.
+
+### Three reproducible boundary failures, and I changed NOTHING in the rubric
+
+1. Does a TOOL falsely reporting clean satisfy D1? The acted-on list says yes;
+   practice says moderate. **This one needs an owner** -- it moves five of the
+   eight, and whichever way it goes the losing half of the corpus needs
+   regrading.
+2. **No question exists for a LATENT high-consequence exposure.** D3 needs a
+   value to have REACHED production, D1 needs something acted on -- so a Tier A
+   fabrication path that has not fired yet grades `low` while the register says
+   `high`.
+3. D1's silence test excludes LOUD money failures and the register does not.
+
+A ratifier who quietly rewrote the boundary they were sent to check would be
+committing the §5 failure this document is built around. File keeps its
+`-UNRATIFIED` suffix.
+
+### The .js blocker was worse than "cannot measure"
+
+The ledger shelled out with `sys.executable` unconditionally. Handing a
+JavaScript file to Python **does not fail loudly** -- it exits non-zero with a
+SyntaxError IDENTICALLY every run, so the flip rate is 0.0 and the checker is
+classified **STABLE**. The first `.js` promotion would have produced an
+unmeasurable registry entry that the ledger called the most reliable tool on
+the platform.
+
+Fixed by extension dispatch plus a one-off interpreter PROBE, so a missing
+`node` is a named could-not-measure. An unsupported extension returns None,
+which is a refusal the caller records and `main()` prints -- a best-guess
+interpreter would rebuild the defect.
+
+**And fixing it surfaced a separate fail-open in the same file:** every
+execution failure was stored as an ordinary observation, so **a checker that
+never ran once was the most stable thing in the fleet.** New `UNRUNNABLE`
+verdict, checked before the run-count gate, with two fixtures -- all-error goes
+UNRUNNABLE, and **one failed launch among real runs is still a FLIP** so it is
+not a blanket amnesty -- and a control that turns the first fixture STABLE when
+disabled.
+
+**The list is printed**, because I left the R3 counter computed-and-unshown in
+another tool earlier today and did not want the third instance.
+
+`restore_coherence_check.js` stays NOT_PROMOTED on its REMAINING blocker: it
+reaches the network to verify a restore. Its entry now records that the runner
+half is closed.

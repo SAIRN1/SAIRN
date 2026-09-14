@@ -198,6 +198,17 @@ WATCH_EXPRESSIBLE_AT = int(math.ceil(1.0 / QUARANTINE_AT))
 
 def classify(entry):
     rate, runs, distinct = flip_rate(entry)
+    obs = entry.get('observations', [])
+    # ── AN UNRUNNABLE CHECKER IS NOT A STABLE ONE ─────────────────────────
+    # A tool that cannot be EXECUTED raises the same exception every run, so
+    # every digest matched, so the flip rate was 0.0 and this returned STABLE.
+    # The least-verified thing in the fleet read as the most reliable. That is
+    # the fail-open shape PR 1.11 names, inside the tool whose job is judging
+    # other tools -- so "could not run" gets its own verdict rather than being
+    # folded into a pass. Checked FIRST, before the run-count gate, because a
+    # handful of failed launches is not evidence of anything at all.
+    if obs and all(o.get('err') for o in obs):
+        return 'UNRUNNABLE', rate, runs
     if runs < MIN_RUNS_TO_JUDGE:
         return 'TOO-FEW-RUNS', rate, runs
     # ONE disagreement is WATCH, at every run count. See WATCH_EXPRESSIBLE_AT.
@@ -243,6 +254,20 @@ FIXTURES = [
      _e(['a', 'b', 'a', 'b', 'a', 'b']), 'QUARANTINE'),
     ('CONTROL: too few runs is NOT a verdict -- 2/2 stable is not a claim',
      _e(['a', 'a']), 'TOO-FEW-RUNS'),
+
+    # ── THE UNRUNNABLE STATE, WHICH USED TO READ AS THE BEST IN THE FLEET ──
+    # Every observation an execution failure. Identical digests, flip rate
+    # 0.0, and the old classifier called that STABLE. These two fixtures are
+    # the difference between a tool that always agrees with itself because it
+    # is reliable and one that always agrees because it never ran.
+    ('a checker that NEVER RAN is UNRUNNABLE, not STABLE',
+     {'observations': [{'digest': 'x', 'tree': 't', 'err': True}] * 6},
+     'UNRUNNABLE'),
+    ('CONTROL: one failed launch among real runs is NOT unrunnable -- that is '
+     'a flip, and it must still reach the flake logic',
+     {'observations': [{'digest': 'a', 'tree': 't', 'err': False}] * 5
+      + [{'digest': 'x', 'tree': 't', 'err': True}]},
+     'WATCH'),
     ('a checker just over the bar is QUARANTINE, not WATCH',
      _e(['a'] * 18 + ['b', 'b']), 'QUARANTINE'),
 
@@ -302,6 +327,47 @@ def registry_tools():
     src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
                   encoding='utf-8').read()
     return sorted(set(re.findall(r"'tool':\s*'([^']+)'", src)))
+
+
+# ── HOW A CHECKER IS RUN, BY EXTENSION (2026-09-14) ───────────────────────
+# THE BLOCKER THIS REMOVES was named in tools/report_only_checks.py's
+# NOT_PROMOTED entry for restore_coherence_check.js: the ledger shelled out
+# with `sys.executable` unconditionally, so a promoted .js checker would have
+# been "measured" by handing a JavaScript file to Python. That does not fail
+# loudly -- Python exits non-zero with a SyntaxError, IDENTICALLY every run, so
+# the flip rate is 0.0 and the checker is reported STABLE. The first .js
+# promotion would have created a registry entry nothing could measure, and the
+# ledger would have said it was the most reliable tool on the platform.
+#
+# `node` is not assumed present. An interpreter that is missing is a
+# COULD-NOT-MEASURE and is named; it is never folded into a verdict, which is
+# the same rule the push gate's check-9 lock and this file's own third state
+# already follow.
+INTERPRETERS = {'.py': [sys.executable], '.js': ['node']}
+
+
+def interpreter_for(tool):
+    """argv prefix to run `tool`, or None if this runner cannot run it.
+
+    None is a REFUSAL, not a skip: the caller records the tool as unrunnable
+    and main() prints it. Returning a best-guess interpreter would reproduce
+    exactly the defect this function exists to remove.
+    """
+    ext = os.path.splitext(tool)[1].lower()
+    argv = INTERPRETERS.get(ext)
+    if not argv:
+        return None
+    if ext != '.py':
+        # Probe the interpreter once rather than discovering its absence as a
+        # per-run exception that then looks like a stable verdict.
+        try:
+            r = subprocess.run(argv + ['--version'], capture_output=True,
+                               text=True, timeout=30)
+            if r.returncode != 0:
+                return None
+        except Exception:                                       # noqa: BLE001
+            return None
+    return list(argv)
 
 
 def decided_tools():
@@ -402,6 +468,7 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
     tools = measure_order(led, tools, th)
     started = time.time()
     reached = []
+    unrunnable = []
     for t in tools:
         # A BUDGET THAT STOPS CLEANLY, because the alternative is being KILLED,
         # and a killed pass prints nothing at all -- so the run that covered a
@@ -412,17 +479,33 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
         if budget is not None and time.time() - started >= budget:
             break
         p = os.path.join(REPO, 'tools', t)
+        argv = interpreter_for(t)
+        if argv is None:
+            # AN UNRUNNABLE CHECKER IS NOT A STABLE ONE. Skipped WITHOUT an
+            # observation and named by main(), rather than measured into a
+            # digest -- see interpreter_for().
+            unrunnable.append(t)
+            continue
         reached.append(t)
         e = led['checkers'].setdefault(t, {'observations': []})
         for _ in range(runs):
+            err = False
             try:
-                r = subprocess.run([sys.executable, p], capture_output=True, text=True,
+                r = subprocess.run(argv + [p], capture_output=True, text=True,
                                    encoding='utf-8', errors='replace', cwd=REPO, timeout=180)
                 out = normalise((r.stdout or '') + (r.stderr or '')) + '|exit=' + str(r.returncode)
             except Exception as ex:
                 out = 'RUNNER-ERROR:' + type(ex).__name__
+                err = True
             dg = hashlib.sha256(out.encode('utf-8')).hexdigest()[:16]
-            e['observations'].append({'digest': dg, 'tree': th})
+            # `err` IS RECORDED, AND WITHOUT IT THE WORST CASE READS BEST.
+            # A checker that cannot be EXECUTED raises the same exception every
+            # run, so it produced the same digest every run, so flip_rate was
+            # 0.0 and classify() called it STABLE. A tool that never ran once
+            # was the most stable thing in the fleet -- the fail-open shape
+            # this platform names as its most repeated defect, inside the tool
+            # whose whole job is judging other tools.
+            e['observations'].append({'digest': dg, 'tree': th, 'err': err})
             # ONE SAMPLE PER DISTINCT VERDICT, and this exists because the
             # first real flip this tool ever found was UNDIAGNOSABLE
             # (comment_sensitivity_check.py, 2026-09-14, rate 0.333 over 12
@@ -456,7 +539,7 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
         # evidence this repo will never actually gather -- the sessions here get
         # interrupted constantly. A partial pass now contributes what it managed.
         save_ledger(led)
-    return reached, tools
+    return reached, tools, unrunnable
 
 
 def main(argv):
@@ -489,14 +572,30 @@ def main(argv):
         if '--budget-seconds' in argv:
             i = argv.index('--budget-seconds')
             budget = max(1, int(argv[i + 1])) if i + 1 < len(argv) else None
-        reached, tools = measure(led, runs, budget)
+        reached, tools, unrunnable = measure(led, runs, budget)
         save_ledger(led)
         print('  measured %d of %d registered checker(s), %d run(s) each, tree %s'
               % (len(reached), len(tools), runs, tree_hash()))
+        # PRINTED, because a list that is computed and never shown is a
+        # measurement nobody can act on -- and I did exactly that to the R3
+        # counter in ai_prompt_refusal_check.py earlier today. A registered
+        # checker this runner cannot execute is the most important line in the
+        # output: it has no evidence and no prospect of any.
+        if unrunnable:
+            print('  CANNOT BE RUN BY THIS RUNNER: %d registered checker(s). Not '
+                  'measured, NOT a pass,' % len(unrunnable))
+            print('     and no amount of re-running changes it. Either add the '
+                  'interpreter to INTERPRETERS')
+            print('     or record a NOT_PROMOTED reason -- an unmeasurable '
+                  'registry entry is the shape')
+            print('     the 2026-09-14 coverage pass was widened to expose:')
+            for t in unrunnable:
+                print('     - ' + t)
         # NO SILENT CAP. A pass that stopped early and says nothing is a pass
         # that reads as complete; the skipped names are printed, not a count.
-        if len(reached) < len(tools):
-            skipped = [t for t in tools if t not in set(reached)]
+        if len(reached) + len(unrunnable) < len(tools):
+            skipped = [t for t in tools
+                       if t not in set(reached) and t not in set(unrunnable)]
             print('  STOPPED EARLY on a %ss budget -- %d checker(s) NOT measured '
                   'this pass, and that is not evidence about them:' % (budget, len(skipped)))
             for t in skipped:
@@ -633,8 +732,10 @@ def main(argv):
             print('     be a sentence with no meaning.')
             for t in _nodecision:
                 print('       %s' % t)
-        for v in ('QUARANTINE', 'WATCH', 'STABLE', 'TOO-FEW-RUNS'):
+        for v in ('QUARANTINE', 'UNRUNNABLE', 'WATCH', 'STABLE', 'TOO-FEW-RUNS'):
             note = {'QUARANTINE': '  <- flipped on unchanged code past the bar',
+                    'UNRUNNABLE': '  <- NEVER EXECUTED. Not a pass, and it used '
+                                  'to read as STABLE',
                     'WATCH': '  <- flipped at least once; alarm is TIGHTER than the bar',
                     'STABLE': '',
                     'TOO-FEW-RUNS': '  <- NOT a pass. 2/2 stable is not a claim'}[v]
