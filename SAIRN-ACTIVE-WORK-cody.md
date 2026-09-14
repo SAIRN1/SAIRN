@@ -3900,3 +3900,161 @@ byte-identical after all seven.
 `alf-alerts` both on `0 * * * *`) is CC's under an active claim. `vercel.json` is
 untouched. Independently confirmed for CC's use: the collision is real, and
 `cron-watchdog` (:15) and `audit-checkpoint` (3:30) are clear of it.
+
+---
+
+## 2026-09-14 (Cody) -- item 8's deterministic half, item 89's real defect, and
+## 23 tools nothing was measuring
+
+Skill used: `sairn-guardian-v2`. Claim: `ai-redteam-refusals`. Files:
+`tools/ai_prompt_refusal_check.py` (new, via `tools/new_checker.py`),
+`tests/run_ai_prompt_refusal_probe.py` (new), `tools/flaky_checker_quarantine.py`,
+`tools/report_only_checks.py`, `tools/tooling_inventory.py`.
+
+### Item 8, sub-item 7 -- the half that needs no model call
+
+**THE LIMIT IS IN THE TOOL'S OWN OUTPUT, not just in this log:** it checks that
+refusal WORDS ARE PRESENT in a system prompt. It cannot show the model obeys
+them. That half needs a model call and stays deferred.
+
+**THE FINDING WORTH HAVING IS THE ONE THAT LOOKS COVERED.** `sairnlaw` defines
+`LAW_CITATION_RULE` -- *never output a case citation in citable-reference
+format*. Two of its AI call sites do not reference it and instead write their
+own `HARD RULES` block, one of which says *"if you cite a case, give its real
+reporter citation"*. **Those are materially different rules on a legal product**,
+and nothing keeps them in step. A third site is a trust-accounting explainer
+emitting prose with no citation rule at all.
+
+**THE RULE INFERS NOTHING, DELIBERATELY.** Topic matching would be a design
+opinion on every prompt in the tree, which is what `shape_antipattern_check.py`
+records getting switched off inside a day. It fires only where an app already
+made the commitment itself; **an app with no constant is never told to write
+one.** 6 files define a constant, 11 call sites sit in them, 7 carry one, 4 do
+not -- and the denominator is printed, because quoting 4 against 465 files
+scanned would flatter the platform by two orders of magnitude.
+
+**FIVE FALSE POSITIVES, EVERY ONE HIT FOR REAL, ALL PINNED:** `dx-system` is a
+BODY-SYSTEM `<select>` in SAIRNvet's diagnoses search -- "system" is overloaded
+(anatomical, HVAC, "5-tab system"); `400 INVALID_COVERAGE_RULE` is an error code
+in a SAIRNdental comment; a constant defined only inside a comment is not a
+commitment.
+
+### Three defects in my own tool, none caught by the blind lock
+
+1. **`_value_expr` was not string-aware.** Every prompt here is English and
+   English has commas, so the first comma inside the prose severed the
+   expression. `sairnfreedom.html:4066` genuinely ends `+VA_CLAIM_REFUSAL`, and
+   the walk stopped at the comma in *"on a page you read, and always name the
+   page"* -- **reporting two COMPLIANT sites as missing their own refusal.**
+   Nine findings became four. **The lock said 9/9 the whole time**, because not
+   one fixture had a comma inside a string.
+2. **The population counters were incremented by the FIXTURE run as well as the
+   sweep.** First report: 18 sites, 10 compliant, 4 flagged -- **which does not
+   add up, and the arithmetic is the only reason I looked.** An identity is
+   asserted now.
+3. **THE MUTATION CONTROLS WERE VACUOUS.** A mutant copied to a temp directory
+   died on a missing-module error before reaching any sabotaged line, and that
+   crash exits 1 -- indistinguishable from the sabotage working. Four of five
+   controls "went RED" while measuring nothing. Every control now requires
+   **proof the mutant RAN** before its verdict is believed.
+
+**AND ONE CONTROL LEGITIMATELY REFUSED TO BITE, which is the point of having
+them:** reverting the lock to raw text still gave 11/11, proving the
+comment-stripping fix was UNPROVEN by the fixtures meant to hold it. A twelfth
+fixture that discriminates by mode was added; the control bites now.
+
+### Item 89 -- the look-elsewhere effect, and what was under it
+
+**The premise is confirmed:** every threshold in item 22's ledger is
+per-checker and none references how many checkers are measured.
+
+**The arithmetic underneath is worse.** With n runs the smallest non-zero flip
+rate expressible is 1/n. The WATCH band is `(0.0001, 0.05]`, so one
+disagreement lands in WATCH only at n >= 20. **All 37 registered checkers sit at
+n=6 or n=12**, where one disagreement is 0.167 and 0.083 -- both above the
+quarantine bar. **The WATCH tier was unreachable fleet-wide**, so every first
+chance flip went straight to a quarantine needing an owner, a deadline and ten
+clean re-entry runs. That contradicts the file's own prose. **The lock read 5/5
+throughout: no fixture covered n=4..19, the only regime any real checker has
+been in.**
+
+**NO PRE-REGISTERED THRESHOLD MOVED.** A post-hoc threshold change after seeing
+the data is exactly what convention 1 forbids. What changed is that one
+disagreement is WATCH at any run count -- the stated rule, implemented --
+and `WATCH_EXPRESSIBLE_AT` is DERIVED from `QUARANTINE_AT` rather than typed.
+The control proves it: removing the fix fails exactly the two new WATCH
+fixtures, while the third (TWO disagreements at the same n is still QUARANTINE)
+keeps passing, so it is not an amnesty for small samples. The one real
+quarantine is untouched.
+
+**THE MULTIPLICITY IS PUBLISHED, NOT SILENTLY CORRECTED.** Tightening the bar by
+a Bonferroni factor is the same forbidden post-hoc change and would hide real
+flakiness in a fleet that has already recorded a genuine case. The per-run
+probability is printed as an ASSUMPTION and is **not calibrated from the ledger
+it judges** -- that would be the validation eating its own subject. **The split
+matters more than the figure:** multiplicity explains SINGLE disagreements and
+not repeats, so quoting a chance figure beside a 4-in-12 checker would discount
+a real defect. My own split read `r['rate']` where the key is `flip_rate` and
+printed a plausible pair of zeros beside a live quarantine; it is cross-checked
+against the verdict column now.
+
+### 23 tools with no recorded decision
+
+**Three REGISTERED checkers have no ledger evidence at all** --
+`completeness_check.py`, `dependency_graph.py`, `secrets_inventory.py`, two of
+them a day old. That half of the disclosure works and needs a `--measure` pass.
+
+**The denominator was the half that did not.** "37 of 40 registered" is honest
+about a registry and wrong for the question anyone asks: an unregistered tool is
+not measured-zero-times, it is **absent from the arithmetic**. Measured: **64
+check-shaped tools, 29 promoted, 12 recorded-not-promoted, 23 in neither** --
+including `restore_coherence_check.js` and four other tools built in the last two
+days. Third occurrence of the 11-unwired-checkers shape, so the disclosure is
+widened rather than the finding re-found.
+
+**And the register's own data shape is part of it:** two NOT_PROMOTED entries
+pack several tool names into one string, so five names cannot be found by an
+exact-name lookup. **My first count was 24 because of it** -- a source-regex read
+found 59 decided names where importing finds 61. It imports now, keeps the regex
+as a fallback, and prints which method it used, because a reader cannot tell a
+parser's blind spot from a real gap.
+
+`injection_commit` is **not a tool** -- it is a field on the defect register --
+so there is nothing to register. Said because it was named in the ask.
+
+My own new checker is in NOT_PROMOTED with a reason rather than promoted: its
+four findings need a human triage that has not happened, and one looks
+defensible as it stands.
+
+**AND THE SAME THREE TOOLS TURNED A PRE-EXISTING RED TEST GREEN.**
+`tests/run_tooling_inventory_probe.py` was failing on *"no REGISTRY tool is also
+described in PURPOSES"*, and the three violators were exactly
+`completeness_check.py`, `secrets_inventory.py` and `dependency_graph.py` -- the
+same three that had no ledger evidence. A REGISTRY tool's `catches` must come
+from REGISTRY; duplicating it into PURPOSES makes two sources that can disagree,
+which is the claim-in-two-places failure that document exists to prevent. Their
+registration was half-done: REGISTRY entry added, PURPOSES entry left behind,
+never measured. Three duplicate entries removed, probe passes.
+
+**It was one of the 12 failures I had already proven pre-existing by reverting
+my own work, so it was never mine** -- it was fixable as a direct consequence of
+asking whether the new tools were registered properly. One down, 11 to go, and
+the remaining 11 belong to other sessions' work in flight.
+
+**A FOURTH INSTANCE ARRIVED IN THE NEXT REBASE, FROM ANOTHER SESSION, WITHIN THE
+HOUR** -- `eaten_substitution_check.py`, same half-done registration. A mistake
+two sessions make independently is a MISSING GUARD, not carelessness, so the
+generator now refuses on it: `tooling_inventory.py` already refused a tool with
+no description and a description for no tool, and did not refuse a tool
+described TWICE. That third direction is the claim-in-two-places failure the
+document exists to prevent, inside the generator meant to prevent it -- and it
+had been surfacing as a red test a long way from the line that caused it.
+
+**AND MY OWN REMOVAL SCRIPT THEN ATE AN UNRELATED ENTRY.** It consumed lines
+until one ended `'),`; the eaten_substitution entry ends `"),` with a double
+quote, so the terminator never matched and it swallowed `claim_provenance.py`
+as well. **The new refusal caught it on the very next run** -- "1 tool in tools/
+with no PURPOSES entry: claim_provenance.py" -- and the entry was restored
+byte-identical from `git show HEAD:`, not retyped. That is the never-bulk-replace
+rule in CLAUDE.md earning its place, and the guard I had just written catching
+the person who wrote it.

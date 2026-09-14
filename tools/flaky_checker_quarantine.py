@@ -76,6 +76,7 @@ fixtures fail -- which means nothing was measured.
 import hashlib
 import io
 import json
+import math
 import os
 import re
 import subprocess
@@ -158,15 +159,74 @@ def flip_rate(entry):
     return (len(obs) - modal) / float(len(obs)), len(obs), len(counts)
 
 
+# ── THE RUN COUNT AT WHICH THE WATCH BAND EXISTS AT ALL ───────────────────
+# DERIVED FROM THE THRESHOLD, NOT PICKED -- so it moves on its own if
+# QUARANTINE_AT is ever changed, which is convention 4 applied to the
+# estimator rather than to the alarm.
+#
+# ITEM 89 (the look-elsewhere effect) IS WHAT SENT ME LOOKING, AND THE
+# ARITHMETIC UNDERNEATH IT IS WORSE THAN THE MULTIPLICITY. With n runs the
+# smallest NON-ZERO flip rate this estimator can produce is 1/n. The WATCH band
+# is (WATCH_AT, QUARANTINE_AT] = (0.0001, 0.05], so a single disagreement lands
+# in WATCH only when 1/n <= 0.05, i.e. n >= 20.
+#
+# MEASURED ON THE REAL LEDGER, 2026-09-14: all 37 registered checkers sit at
+# n=6 or n=12. At n=6 one disagreement is 0.167 -- more than THREE TIMES
+# QUARANTINE_AT. So the WATCH tier was unreachable for the entire fleet, and
+# every first chance flip went straight to QUARANTINE.
+#
+# That directly contradicts this file's own stated rule. The MARGIN section
+# says the alarm is deliberately set tighter than the quarantine bar because
+# "drift toward the limit is the signal worth having", and FIXTURES asserts
+# "a single disagreement is WATCH, never an immediate quarantine" -- using
+# n=40, where the arithmetic happens to work. No fixture covered the n=4..19
+# regime, which is the only regime any real checker has ever been in, so the
+# lock passed 5/5 while the rule it encodes could not fire.
+#
+# THE FIX IS THE STATED RULE, IMPLEMENTED -- NOT A NEW THRESHOLD. Nothing
+# pre-registered moves: QUARANTINE_AT, WATCH_AT and MIN_RUNS_TO_JUDGE are
+# untouched. A post-hoc threshold change after seeing the data is exactly what
+# convention 1 forbids. What changes is that ONE disagreement is WATCH at any
+# run count, because that is what the file already said and what the estimator
+# was too coarse to express.
+#
+# And it is the right answer for item 89 as well: a single spurious flip is by
+# far the likeliest chance event across a fleet this size, so it is precisely
+# the one that must not spend a quarantine.
+WATCH_EXPRESSIBLE_AT = int(math.ceil(1.0 / QUARANTINE_AT))
+
+
 def classify(entry):
     rate, runs, distinct = flip_rate(entry)
     if runs < MIN_RUNS_TO_JUDGE:
         return 'TOO-FEW-RUNS', rate, runs
+    # ONE disagreement is WATCH, at every run count. See WATCH_EXPRESSIBLE_AT.
+    disagreements = int(round(rate * runs))
+    if disagreements == 1:
+        return 'WATCH', rate, runs
     if rate > QUARANTINE_AT:
         return 'QUARANTINE', rate, runs
     if rate > WATCH_AT:
         return 'WATCH', rate, runs
     return 'STABLE', rate, runs
+
+
+def chance_expectation(n_checkers, runs_each, per_run_flip=0.01):
+    """Expected number of checkers showing >=1 disagreement BY CHANCE.
+
+    Item 89's substance, published as a number rather than applied as a silent
+    correction. A fleet-wide WATCH count is not N independent findings: with
+    N checkers each run n times, even a small per-run non-determinism produces
+    an expected crop of WATCH verdicts owing nothing to any real defect.
+
+    `per_run_flip` is an ASSUMPTION, not a measurement, and is labelled as one
+    wherever it is printed. It is not calibrated from this ledger on purpose --
+    deriving the chance rate from the same observations it is used to judge
+    would be the validation-eats-its-own-subject shape (disciplines item 5).
+    """
+    if not n_checkers or not runs_each:
+        return 0.0
+    return n_checkers * (1.0 - (1.0 - per_run_flip) ** runs_each)
 
 
 # ── FIXTURES: hand-decided, before any checker was measured ───────────────
@@ -185,6 +245,27 @@ FIXTURES = [
      _e(['a', 'a']), 'TOO-FEW-RUNS'),
     ('a checker just over the bar is QUARANTINE, not WATCH',
      _e(['a'] * 18 + ['b', 'b']), 'QUARANTINE'),
+
+    # ── THE REGIME EVERY REAL CHECKER IS ACTUALLY IN, AND NOTHING COVERED IT ──
+    # The five fixtures above use n = 12, 40, 6, 2 and 20. The single-
+    # disagreement case -- the one the rule above is named after -- was only
+    # ever tested at n=40, where 1/40 = 0.025 happens to land inside the WATCH
+    # band. MEASURED ON THE REAL LEDGER 2026-09-14: all 37 registered checkers
+    # sit at n=6 or n=12, where one disagreement is 0.167 and 0.083, BOTH ABOVE
+    # QUARANTINE_AT. So the stated rule could not fire anywhere in the fleet
+    # while the lock read 5/5.
+    #
+    # These three are ADDITIONS covering a gap, not fixtures bent to match
+    # output -- and their expected verdicts come from this file's own prose
+    # ("a single disagreement is WATCH, never an immediate quarantine"), which
+    # was written before any of this was measured.
+    ('one disagreement at the fleet"s ACTUAL run count is WATCH, not QUARANTINE',
+     _e(['a'] * 5 + ['b']), 'WATCH'),
+    ('...and at the other real run count too',
+     _e(['a'] * 11 + ['b']), 'WATCH'),
+    ('CONTROL: TWO disagreements at that same run count is still QUARANTINE, '
+     'so this is not a blanket amnesty for small samples',
+     _e(['a'] * 4 + ['b', 'b']), 'QUARANTINE'),
 ]
 
 NORMALISE_FIXTURES = [
@@ -221,6 +302,53 @@ def registry_tools():
     src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
                   encoding='utf-8').read()
     return sorted(set(re.findall(r"'tool':\s*'([^']+)'", src)))
+
+
+def decided_tools():
+    """Every tool a decision HAS been recorded about -- promoted or not.
+
+    Both registries, because the question this answers is "did anybody choose",
+    not "was it promoted". Read with the same source regex `registry_tools()`
+    uses so the two cannot disagree about what a registry entry looks like.
+
+    COMMA-SPLIT ON PURPOSE. Two NOT_PROMOTED entries name several tools in one
+    string, so those names are unreachable by an exact-name lookup. Without the
+    split this undercounts recorded decisions and OVER-reports the gap.
+
+    ── IT IMPORTS RATHER THAN PARSES, AND THE DIFFERENCE WAS MEASURED ──────
+    The first version regexed the source, in the style of `registry_tools()`
+    above. It found 59 decided names where importing the module finds 61 --
+    missing `licence_recoverability_check.py` and `rf_claim_gate_live_probe.py`,
+    both buried in the same comma-packed NOT_PROMOTED string. So the gap read
+    24 when it is 23.
+
+    An over-report is the safer direction and it is still wrong, and a reader
+    cannot tell a parser's blind spot from a real gap. The import is the
+    structure; the regex is a guess at it. The regex stays only as a FALLBACK,
+    and when it is used the caller SAYS SO instead of quoting the figure as if
+    both methods agreed.
+    """
+    try:
+        sys.path.insert(0, os.path.join(REPO, 'tools'))
+        import report_only_checks as _roc
+
+        def _names(e):
+            v = (e.get('tool') if isinstance(e, dict)
+                 else (e[0] if isinstance(e, (list, tuple)) else e))
+            return [os.path.basename(x.strip())
+                    for x in str(v).split(',') if x.strip()]
+        out = set()
+        for e in list(_roc.REGISTRY) + list(_roc.NOT_PROMOTED):
+            out.update(_names(e))
+        return sorted(out), 'imported'
+    except Exception as e:
+        src = io.open(os.path.join(REPO, 'tools', 'report_only_checks.py'),
+                      encoding='utf-8').read()
+        out = set()
+        for raw in re.findall(r"'tool':\s*'([^']+)'", src):
+            out.update(os.path.basename(x.strip())
+                       for x in raw.split(',') if x.strip())
+        return sorted(out), 'REGEX FALLBACK (%s) -- known to undercount' % type(e).__name__
 
 
 def measure_order(led, tools, th):
@@ -420,12 +548,149 @@ def main(argv):
             print('     clean fleet. These have no evidence either way:')
             for t in unmeasured:
                 print('       %s' % t)
+
+        # ── THE CATEGORY THIS DISCLOSURE COULD NOT SEE ─────────────────────
+        # "of N registered" is an honest denominator for a registry, and it is
+        # the WRONG denominator for the question anyone actually asks: is every
+        # checker on this platform measured. A tool that was never registered
+        # is not "measured 0 times" here -- it is absent from the arithmetic
+        # entirely, so the fleet reads as fully covered while a third of it is
+        # outside the frame.
+        #
+        # MEASURED 2026-09-14: 64 check-shaped tools on disk, 29 in REGISTRY,
+        # 12 recorded in NOT_PROMOTED, and 23 IN NEITHER -- no decision either
+        # way, and therefore never measured for flakiness. Several were built
+        # in the preceding two days. The 11 unwired checkers this platform
+        # already found once had exactly this shape, so the disclosure is
+        # widened rather than the finding re-discovered a third time.
+        #
+        # NOT_PROMOTED IS SPLIT ON COMMAS ON PURPOSE. Two of its entries pack
+        # several tool names into one string, so five names are invisible to
+        # an exact-name lookup -- which is how this count read 25 before the
+        # split and 23 after. The packing is a data-shape problem in
+        # report_only_checks.py with an owner; what must not happen is this
+        # disclosure inheriting the undercount.
+        try:
+            _dec_list, _dec_how = decided_tools()
+            _decided = set(_dec_list)
+            _ondisk = [os.path.basename(f) for f in subprocess.run(
+                ['git', 'ls-files', 'tools/'], capture_output=True, text=True,
+                cwd=REPO).stdout.split(chr(10))
+                if f.endswith(('_check.py', '_check.js', '_scan.py', '_sweep.py'))]
+            _nodecision = sorted(set(_ondisk) - _decided)
+        except Exception as _e:
+            _nodecision = None
+            print('  COULD NOT TELL how many tools have no recorded decision '
+                  '(%s) -- so do NOT' % type(_e).__name__)
+            print('     read the registered-vs-measured figures above as fleet '
+                  'coverage.')
+        if _nodecision:
+            print('  NO RECORDED DECISION  : %d of %d check-shaped tools on '
+                  'disk  [registries %s]'
+                  % (len(_nodecision), len(set(_ondisk)), _dec_how))
+            print('     Neither promoted (REGISTRY) nor recorded as '
+                  'deliberately not promoted')
+            print('     (NOT_PROMOTED), so nothing measures them and no one '
+                  'chose that. This is')
+            print('     the 11-unwired-checkers shape; the fix is one '
+                  'NOT_PROMOTED line each, with')
+            print('     a reason -- not a promotion:')
+            for t in _nodecision:
+                print('       %s' % t)
         for v in ('QUARANTINE', 'WATCH', 'STABLE', 'TOO-FEW-RUNS'):
             note = {'QUARANTINE': '  <- flipped on unchanged code past the bar',
                     'WATCH': '  <- flipped at least once; alarm is TIGHTER than the bar',
                     'STABLE': '',
                     'TOO-FEW-RUNS': '  <- NOT a pass. 2/2 stable is not a claim'}[v]
             print('    %-14s %3d%s' % (v, len(by.get(v, [])), note))
+
+        # ── ITEM 89: THE TRIALS FACTOR, PUBLISHED RATHER THAN CORRECTED ────
+        # The verdicts above are PER-CHECKER, and every threshold in this file
+        # is a per-checker threshold. Read down a column of 37 of them and the
+        # look-elsewhere effect applies: with that many measurements, some
+        # elevated flip rates are expected from chance alone, and a WATCH count
+        # of 3 is NOT three independent findings.
+        #
+        # It is REPORTED, not silently corrected, and that is the deliberate
+        # part. Tightening the bar by a multiplicity factor would be a post-hoc
+        # threshold change of exactly the kind convention 1 forbids, and it
+        # would also hide real flakiness in a fleet that has already recorded
+        # one genuine case (literal_drift_check.py, PYTHONHASHSEED). The number
+        # below lets a reader discount the column themselves.
+        #
+        # The per-run assumption is LABELLED AS AN ASSUMPTION every time it is
+        # printed, because it is not measured -- and deliberately is not
+        # calibrated from this same ledger, which would be the validation
+        # feeding on its own subject.
+        runs_each = [r.get('runs') or 0 for r in rows]
+        typical = max(set(runs_each), key=runs_each.count) if runs_each else 0
+        # WHAT THE TRIALS FACTOR DOES AND DOES NOT EXPLAIN. Multiplicity
+        # explains a crop of checkers showing ONE disagreement. It does NOT
+        # explain a checker disagreeing repeatedly: at 4 flips in 12 runs the
+        # chance of that arising from a small per-run probability is negligible,
+        # so quoting an expected-by-chance figure next to it would DISCOUNT A
+        # REAL DEFECT -- the opposite error, and the more expensive one, because
+        # this fleet has already recorded one genuine flaky checker
+        # (literal_drift_check.py, PYTHONHASHSEED). The two populations are
+        # therefore reported separately rather than summed.
+        # THE KEY IS `flip_rate`, NOT `rate`, AND THE FIRST VERSION GOT IT
+        # WRONG -- reading a key that does not exist gave None, coerced to 0,
+        # and printed "exactly one: 0 / more than one: 0" beside a live
+        # QUARANTINE. A quiet zero from a bad lookup is indistinguishable from
+        # a real zero, which is why the disagreement counts are cross-checked
+        # against the verdict column below rather than trusted.
+        def _disagreements(r):
+            return int(round((r.get('flip_rate') or 0) * (r.get('runs') or 0)))
+
+        single = [r for r in rows if _disagreements(r) == 1]
+        repeat = [r for r in rows if _disagreements(r) > 1]
+        print('')
+        print('  THE TRIALS FACTOR (item 89 -- look-elsewhere). These are %d '
+              'per-checker verdicts,' % len(rows))
+        print('  each against a per-checker threshold, so the column below is '
+              'not %d independent' % len(rows))
+        print('  findings. Multiplicity explains SINGLE disagreements; it does '
+              'NOT explain repeats.')
+        for p in (0.005, 0.01, 0.02):
+            print('    if each run flips with probability %.3f (ASSUMED, not '
+                  'measured), expect %.1f of %d to show >=1'
+                  % (p, chance_expectation(len(rows), typical, p), len(rows)))
+        print('    OBSERVED, split because the two mean different things:')
+        print('      exactly one disagreement : %d  <- this is the population '
+              'the figures above apply to' % len(single))
+        print('      more than one            : %d  <- NOT explained by '
+              'multiplicity; read the evidence' % len(repeat))
+        print('      typical run count        : %d' % typical)
+        # CROSS-CHECK, because the split is computed from a DIFFERENT field
+        # than the verdict column and a mismatch means one of them is lying.
+        # This is the arm that would have caught the `rate`-vs-`flip_rate`
+        # lookup immediately instead of printing a plausible pair of zeros.
+        _flagged = len(by.get('WATCH', [])) + len(by.get('QUARANTINE', []))
+        if len(single) + len(repeat) != _flagged:
+            print('      !! THESE TWO LINES DISAGREE WITH THE VERDICT COLUMN '
+                  '(%d vs %d flagged).' % (len(single) + len(repeat), _flagged))
+            print('         The split is computed from flip_rate x runs and the '
+                  'column from classify();')
+            print('         when they differ, NEITHER figure can be quoted. '
+                  'Do not discount anything')
+            print('         on the strength of the trials factor until this '
+                  'agrees.')
+        print('  Nothing is thresholded on any of this -- it is yours to '
+              'discount with, and every')
+        print('  per-checker row below still names its own evidence.')
+        if typical and typical < WATCH_EXPRESSIBLE_AT:
+            print('')
+            print('  AND THE ESTIMATOR IS COARSER THAN THE BANDS IT FEEDS: at '
+                  '%d runs the smallest' % typical)
+            print('  non-zero flip rate expressible is 1/%d = %.3f, while the '
+                  'WATCH band is (%g, %g].'
+                  % (typical, 1.0 / typical, WATCH_AT, QUARANTINE_AT))
+            print('  WATCH is reachable by RATE only at %d+ runs, so a single '
+                  'disagreement is classified' % WATCH_EXPRESSIBLE_AT)
+            print('  as WATCH explicitly rather than by rate. See '
+                  'WATCH_EXPRESSIBLE_AT -- this was measured, not')
+            print('  assumed, and it had disabled the WATCH tier for the whole '
+                  'fleet.')
         for r in by.get('QUARANTINE', []) + by.get('WATCH', []):
             print('      %-34s rate %.3f over %d run(s)' % (r['tool'], r['flip_rate'], r['runs']))
             # THE VERDICTS THEMSELVES, not just the rate. A flip reported as two

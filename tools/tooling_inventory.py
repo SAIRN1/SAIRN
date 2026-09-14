@@ -73,6 +73,14 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'ai_prompt_refusal_check.py': ('CHECKER',
+        "an app's own named *_RULE / *_REFUSAL constant is missing from one of "
+        "that app's AI call sites, or replaced there by a hand-written rule "
+        "block that only LOOKS equivalent -- sairnlaw's constant forbids case "
+        "citations outright while one site's inline rule permits real ones. "
+        'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
+        'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
+        'deferred. Report-only, and a divergence is not automatically a bug'),
     'accepted_risk_scan.py': ('CHECKER',
         'a risk somebody deliberately ACCEPTED in a comment and recorded '
         'nowhere central -- the shape that got api/sairncash/portal.js read as '
@@ -216,15 +224,11 @@ PURPOSES = {
     'closing_error.py': ('LIBRARY', 'not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent'),
     'checker_control_check.py': ('CHECKER', 'a promoted checker with no control proving it can FIRE -- one direction evidenced is not two'),
     'cleanup_residue_check.py': ('CHECKER', 'rows a cleanup SQL file claims to have removed and did not'),
-    'eaten_substitution_check.py': ('CHECKER', "scrubber item 18's SECOND vehicle, which had no checker until 2026-09-14: a commit message the SHELL edited. Backticks inside a double-quoted -m are a command substitution, and when the expression evaluates to nothing bash deletes it and leaves a paragraph continuation line beginning with a stray single space. FALSE POSITIVES MEASURED: 0 in 2,998 -- it flags exactly 2 over 3,000 commits and both are the instances item 18 records. RECALL IS NOT MEASURED and is not claimed, because the criterion was read off those same two commits. The blind spot is structural and printed on every clean run: a substitution that produced OUTPUT leaves no gap at all, so green means no eaten-and-empty substitution was found, never that the messages are intact"),
     'claim_provenance.py': ('LIVE', 'not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register'),
     'sabotage_control_check.py': ('CHECKER', 'a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever'),
     'independence_check.py': ('CHECKER', 'an index row claiming an INDEPENDENT review that names only a second READER, or names no method at all -- a second read shares the assumptions of the first, so it cannot break a shared blind spot; also reports that the defect register is not capturing independent-review at all, which blocks the fraction-caught measurement'),
-    'secrets_inventory.py': ('CHECKER', 'a secret the platform reads with NO GUARD FOUND in any file that reads it or in any module those files require -- reported as a pointer to read the file rather than as a verdict, because the heuristic is wrong in both directions; the CLASSIFICATION half is hand-written and the tool REFUSES to run until a newly-introduced variable has been classified, so a new secret cannot appear as a row with a blank cell'),
-    'completeness_check.py': ('CHECKER', 'a RULE that is declared and then not applied everywhere it must be -- a role gate consulted nowhere at all (S1), one consulted on a read path and on no write path (S2, the shape of the real DNT_FINANCIAL_ROLES defect), and a dispatch chain over a declared domain with a member reaching no arm and no else (S3). The pair of item 90 rather than a copy: parse-don t-validate cannot reach legacy code that never had a boundary, and the SITES a rule must be applied at are not a type. Every narrowing is a fixture paid for by a real false positive, and a shape that finds nothing says it is a MEASURED zero with a denominator'),
     'pra_event_tree.py': ('CHECKER', 'which END STATE a component failure reaches -- fails closed or not, announced or not, reconstructible or not -- for every chokepoint in docs/SPOF-REGISTER.md and every secret with no guard. Top-down and per-system, the complement of fmea_draft.py which is bottom-up and per-file. REFUSES to produce a frequency or a fused risk score: the only candidate population is defects-found-in-code over six days, which is not a component-failure rate. A branch that took one value on the input set is reported as not having discriminated'),
     'reliability_growth.py': ('CHECKER', 'whether the defect discovery series may be fitted by a reliability growth model AT ALL -- enough intervals, a FALLING rate, and effort recorded. Goel-Okumoto and Musa-Okumoto are implemented and locked against synthetic curves with known parameters, so the refusal is a statement about the data rather than about a fitter nobody has seen work. Today it refuses on all three criteria and names each measured value'),
-    'dependency_graph.py': ('CHECKER', 'a component whose failure stops a disproportionate share of the platform -- blast radius (how many PRODUCTION modules transitively require it) and articulation points reported as two separate rankings rather than one fused score, plus the 2-element minimal cut sets that no single-point analysis can see; test files are excluded by default because 155 of the 299 .js files under api/ are *.test.js and counting them makes the headline number mean CI rather than production'),
     'flaky_checker_quarantine.py': ('CHECKER', 'a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard'),
     'condition_coverage.py': ('CHECKER', 'an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it'),
     'idempotency_check.py': ('CHECKER', 'a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run'),
@@ -624,7 +628,33 @@ def build():
         return None, 'REFUSING to generate -- the traverse did not close: %s' % e
 
     absent, extra = missing_purposes(tools, reg)
-    if absent or extra:
+    # ── THE THIRD DRIFT DIRECTION, WHICH WENT UNREFUSED FOR FOUR INSTANCES ──
+    # This block already refused a tool with NO description and a description
+    # for NO tool. It did not refuse a tool described TWICE -- once in REGISTRY
+    # (which carries `catches`) and once in PURPOSES -- which is two sources
+    # that can disagree: the claim-in-two-places failure this whole document
+    # exists to prevent, inside the generator meant to prevent it.
+    #
+    # It was not harmless, and it was not caught here. It surfaced as a RED
+    # TEST instead: tests/run_tooling_inventory_probe.py failing on "no
+    # REGISTRY tool is also described in PURPOSES", which is a long way from
+    # the line that caused it.
+    #
+    # FOUR INSTANCES, and the fourth is why this is a refusal rather than four
+    # deletions. completeness_check.py, secrets_inventory.py and
+    # dependency_graph.py were all half-registered -- REGISTRY entry added,
+    # PURPOSES entry left behind, never measured for flakiness either. Those
+    # three were cleaned up on 2026-09-14; eaten_substitution_check.py arrived
+    # with the SAME defect in the next rebase, from a different session, within
+    # the hour. A mistake two sessions make independently is a missing guard,
+    # not carelessness -- so the generator now stops the next one at the line
+    # that causes it.
+    # `reg` here is a DICT keyed by tool name (line 568), not the 3-tuple list
+    # registry() returns. Got that wrong once and it raised rather than
+    # reporting -- which is the right direction for a mistake in a refusal, but
+    # worth the comment so the next reader does not repeat it.
+    dup = sorted(t for t in reg if t in PURPOSES)
+    if absent or extra or dup:
         lines = ['REFUSING to generate -- the hand-written half has drifted.', '']
         if absent:
             lines += ['%d tool(s) in tools/ with no PURPOSES entry. A blank cell in this'
@@ -634,6 +664,17 @@ def build():
         if extra:
             lines += ['', '%d PURPOSES entr(y/ies) naming a tool that no longer exists:' % len(extra)]
             lines += ['    ' + t for t in extra]
+        if dup:
+            lines += ['',
+                      '%d tool(s) described in BOTH REGISTRY and PURPOSES:' % len(dup)]
+            lines += ['    ' + t for t in dup]
+            lines += ['',
+                      'A report-only tool\'s `catches` comes from REGISTRY, which already carries',
+                      'it. A second description in PURPOSES is a second source that can disagree --',
+                      'the claim-in-two-places failure this document exists to prevent. DELETE THE',
+                      'PURPOSES LINE; do not reword it to match. This is usually a half-finished',
+                      'promotion, so check the same tool has ledger evidence too:',
+                      '    python tools/flaky_checker_quarantine.py']
         return None, '\n'.join(lines)
 
     order = ['BLOCKING', 'REPORT-ONLY', 'ADVISORY', 'DECIDED', 'SUITE-ONLY', 'UNWIRED']

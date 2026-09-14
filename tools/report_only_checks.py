@@ -1111,6 +1111,18 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('ai_prompt_refusal_check.py', 'ITEM 8, sub-item 7, the no-model-call half. HELD '
+     'BACK DELIBERATELY AND THE REASON IS ITS OWN OUTPUT: all four of its current '
+     'findings need a human triage decision that has not been made, and one of them '
+     '(sairnfreedom bottle-fullness: image in, two-key JSON out) looks DEFENSIBLE '
+     'rather than wrong. A runner entry today would print the same four rows on every '
+     'push, three of them awaiting somebody who owns SAIRNlaw and one of them arguably '
+     'correct as it stands -- which is how a report stops being read. Promote it once '
+     'the four are triaged and its steady state is silence. Note also what it CANNOT '
+     'say, because a registry entry would imply otherwise: it checks that refusal '
+     'WORDS ARE PRESENT in a prompt and cannot show the model obeys them; that half '
+     'needs a model call and is deferred by Michael\'s recorded garak decision. Held '
+     'by tests/run_ai_prompt_refusal_probe.py, 12 fixtures and 5 mutation controls.'),
     ('pra_event_tree.py', 'ITEM 84. It is an ANALYSIS, not a check: it enumerates which '
      'end state each component failure reaches and has no notion of a finding to report '
      'or a pass to give. Wiring it into a runner would print the same 20-row tree on '

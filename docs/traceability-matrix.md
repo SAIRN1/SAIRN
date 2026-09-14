@@ -87,6 +87,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `ai_prompt_refusal_check.py` -- ITEM 8, sub-item 7, the no-model-call half. HELD BACK DELIBERATELY AND THE REASON IS ITS OWN OUTPUT: all four of its current findings need a human triage decision that has not been made, and one of them (sairnfreedom bottle-fullness: image in, two-key JSON out) looks DEFENSIBLE rather than wrong. A runner entry today would print the same four rows on every push, three of them awaiting somebody who owns SAIRNlaw and one of them arguably correct as it stands -- which is how a report stops being read. Promote it once the four are triaged and its steady state is silence. Note also what it CANNOT say, because a registry entry would imply otherwise: it checks that refusal WORDS ARE PRESENT in a prompt and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded garak decision. Held by tests/run_ai_prompt_refusal_probe.py, 12 fixtures and 5 mutation controls.
 - `pra_event_tree.py` -- ITEM 84. It is an ANALYSIS, not a check: it enumerates which end state each component failure reaches and has no notion of a finding to report or a pass to give. Wiring it into a runner would print the same 20-row tree on every push, which is how a report stops being read. It is run when the SPOF register or the secrets inventory changes -- both of which ARE checked mechanically -- and its own inputs are what change its answer. Held by tests/run_pra_event_tree_probe.py.
 - `reliability_growth.py` -- ITEM 80, and it must not be promoted while it REFUSES. Its verdict today is exit 1 on all three admissibility criteria, and a runner entry would report that on every push for weeks -- a notice whose content cannot change until somebody records effort per interval or enough time passes. Promote it the day the gate ADMITS, because that is the day its output starts varying. The fitters are proven against synthetic curves with known parameters, so the refusal is a statement about the data rather than about a fitter nobody has seen work; held by tests/run_reliability_growth_probe.py.
 - `benford_check.py` -- ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the production question needs `--data <export>`, and ledger_entries, ledger_lines and the StoneDesk invoice and quote amounts live in the database where nothing in this repo can read them. The only corpora it CAN reach here are the seed and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries 29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD 0.0260, n=219) is the instrument proving it fires, not a finding about production. Wiring that into a runner would print a could-not-run notice and a known-expected finding on every push for ever, which is how a notice stops being read -- the same argument already recorded for cleanup_residue_check.py above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is not proof in either direction, a conforming distribution is not evidence of honesty, and real datasets fail it innocently every day (a price list, a tier table, anything with a floor). Promote it the day somebody hands it a real export on a cadence -- and even then as report-only, never as a gate. Registered here on 2026-09-14 once the claim collision with Cody cleared; held by tests/run_benford_probe.py, which passes.
@@ -114,6 +115,9 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
+| **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
+| **23 of 64 check-shaped tools had NO RECORDED DECISION either way &mdash; not promoted, not recorded as deliberately unpromoted, and therefore measured by nothing** | **MEASURED AND DISCLOSED 2026-09-14 (Cody)** &mdash; coverage disclosure widened in `tools/flaky_checker_quarantine.py`; my own new checker given a recorded NOT_PROMOTED reason, 23 &rarr; 22 | `tests/run_tooling_inventory_probe.py` |
+| **Item 8's deterministic half: a law app's own CRITICAL RULE forbidding case citations is absent from 4 of its 11 AI call sites &mdash; and at two of them a hand-written rule block PERMITS real citations instead** | **BUILT 2026-09-14 (Cody)**, report-only and unregistered &mdash; `tools/ai_prompt_refusal_check.py`, 12 fixtures, `tests/run_ai_prompt_refusal_probe.py` 30 arms, **5 mutation controls bite** | `tests/run_ai_prompt_refusal_probe.py` |
 | **Item 84: probabilistic risk assessment &mdash; the event tree, and the number it REFUSES to invent** | **BUILT 2026-09-14 (CC)** &mdash; `tools/pra_event_tree.py`, held by `tests/run_pra_event_tree_probe.py` (20 arms, four mutation controls). **Recorded as NOT-PROMOTED with a reason: it is an analysis, | `tests/run_pra_event_tree_probe.py` |
 | **Item 80: reliability growth models &mdash; built, proven on synthetic curves, and REFUSING this platform&rsquo;s data on all three criteria** | **BUILT 2026-09-14 (CC)** &mdash; `tools/reliability_growth.py`, held by `tests/run_reliability_growth_probe.py` (18 arms, three mutation controls). **NOT-PROMOTED with a reason: promote it the day th | `tests/run_reliability_growth_probe.py` |
 | **Item 38: the completeness detector &mdash; a rule that is DECLARED and then not applied everywhere. One real finding, and an access gate whose MESSAGE and CHECK disagree** | **BUILT 2026-09-14 (CC)** &mdash; `tools/completeness_check.py`, held by `tests/run_completeness_probe.py` (21 arms, four mutation controls). **Report-only, registered, nothing gates** | `tests/run_completeness_probe.py` |
@@ -335,7 +339,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**178 of 383 test files are traced to a stated requirement. 205 are not.**
+**180 of 384 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -488,7 +492,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
-- `tests/run_flaky_quarantine_probe.py`
 - `tests/run_index_duplicate_probe.py`
 - `tests/run_invisible_in_pattern_probe.py`
 - `tests/run_jscomments_probe.py`
@@ -564,11 +567,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 383   tests/**, api/*.test.js
-  open-work rows citing a test       165   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 384   tests/**, api/*.test.js
+  open-work rows citing a test       168   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                41   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     16   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     17   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
 

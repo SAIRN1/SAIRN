@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**141 files in `tools/`.** By what actually invokes them:
+**142 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 43 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 21 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 22 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 34 | nothing runs these at all |
 
@@ -34,12 +34,12 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 88 |
+| CHECKER | 89 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 17 |
 
-**21 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**22 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -188,7 +188,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (21)
+## DECIDED -- not promoted, on purpose (22)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -199,6 +199,7 @@ is how a reader stops believing the number.
 
 | Tool | Kind | Why not promoted |
 |---|---|---|
+| `ai_prompt_refusal_check.py` | CHECKER | ITEM 8, sub-item 7, the no-model-call half. HELD BACK DELIBERATELY AND THE REASON IS ITS OWN OUTPUT: all four of its current findings need a human triage decision that has not been made, and one of them (sairnfreedom bottle-fullness: image in, two-key JSON out) looks DEFENSIBLE rather than wrong. A runner entry today would print the same four rows on every push, three of them awaiting somebody who owns SAIRNlaw and one of them arguably correct as it stands -- which is how a report stops being read. Promote it once the four are triaged and its steady state is silence. Note also what it CANNOT say, because a registry entry would imply otherwise: it checks that refusal WORDS ARE PRESENT in a prompt and cannot show the model obeys them; that half needs a model call and is deferred by Michael's recorded garak decision. Held by tests/run_ai_prompt_refusal_probe.py, 12 fixtures and 5 mutation controls. |
 | `benford_check.py` | CHECKER | ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the production question needs `--data <export>`, and ledger_entries, ledger_lines and the StoneDesk invoice and quote amounts live in the database where nothing in this repo can read them. The only corpora it CAN reach here are the seed and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries 29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD 0.0260, n=219) is the instrument proving it fires, not a finding about production. Wiring that into a runner would print a could-not-run notice and a known-expected finding on every push for ever, which is how a notice stops being read -- the same argument already recorded for cleanup_residue_check.py above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is not proof in either direction, a conforming distribution is not evidence of honesty, and real datasets fail it innocently every day (a price list, a tier table, anything with a floor). Promote it the day somebody hands it a real export on a cadence -- and even then as report-only, never as a gate. Registered here on 2026-09-14 once the claim collision with Cody cleared; held by tests/run_benford_probe.py, which passes. |
 | `cleanup_residue_check.py` | CHECKER | it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look". |
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
@@ -344,12 +345,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      141   git ls-files tools/
+  tools on disk                      142   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                41   report_only_checks.REGISTRY
-  tools invoked by tests/             90   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     21   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/             91   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     22   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
 
