@@ -1465,6 +1465,16 @@
       "claimed_at_epoch": 1789396136.5954154,
       "status": "released",
       "released_at": "2026-09-14T14:39:01Z"
+    },
+    {
+      "id": "hank-1789396755",
+      "session": "hank",
+      "subject": "tier-a-bypass",
+      "task": "item 40 can external input reach a tier A resource without its verification path",
+      "claimed_at": "2026-09-14T14:39:15Z",
+      "claimed_at_epoch": 1789396755.3549237,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
