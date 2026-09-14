@@ -1665,6 +1665,16 @@
       "claimed_at_epoch": 1789421945.2355871,
       "status": "released",
       "released_at": "2026-09-14T21:59:38Z"
+    },
+    {
+      "id": "hank-1789424292",
+      "session": "hank",
+      "subject": "sairnvet",
+      "task": "fault probe the 58-arm audit and controlled suite must DENY",
+      "claimed_at": "2026-09-14T22:18:12Z",
+      "claimed_at_epoch": 1789424292.8220327,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
