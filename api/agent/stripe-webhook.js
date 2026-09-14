@@ -42,6 +42,7 @@
 // push with a hardcoded key.
 
 const crypto = require('crypto');
+const stripeConfig = require('../_lib/stripe-config');
 
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
@@ -52,8 +53,16 @@ module.exports = async (req, res) => {
   const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET;
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
-  if (!WEBHOOK_SECRET || !SUPABASE_URL || !SERVICE_KEY) {
-    console.error('STRIPE_WEBHOOK_SECRET / SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY not set in environment variables');
+  // The STRIPE half comes from api/_lib/stripe-config.js (2026-09-14, item 94)
+  // so that what this webhook needs from Stripe is a row in one table rather
+  // than a condition re-typed here. THE SUPABASE HALF STAYS INLINE on purpose
+  // -- it is a different subsystem, and routing it through a module named for
+  // Stripe would hide it somewhere nobody would look. One guard, two sources.
+  const stripeCfg = stripeConfig.status('webhook:agent');
+  if (!stripeCfg.ready || !SUPABASE_URL || !SERVICE_KEY) {
+    console.error(stripeCfg.logMessage
+      + ' | SUPABASE_URL set: ' + Boolean(SUPABASE_URL)
+      + ' | SUPABASE_SERVICE_ROLE_KEY set: ' + Boolean(SERVICE_KEY));
     res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
     return;
   }

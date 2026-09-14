@@ -27,6 +27,8 @@ async function mintFirebaseToken(customerId) {
   }
 }
 
+const stripeConfig = require('../_lib/stripe-config');
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -34,8 +36,19 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).end(); return; }
 
+  // ONE PLACE ANSWERS "IS STRIPE CONFIGURED" (2026-09-14, item 94). The
+  // requirement list lives in api/_lib/stripe-config.js; five files used to
+  // re-derive it and three disagreed. `ready` means THE VARIABLES ARE PRESENT
+  // and never that Stripe works -- on 2026-09-14 the key was present and an
+  // expired sk_test_ one.
+  const cfg = stripeConfig.status('verify');
+  if (!cfg.ready) {
+    console.error(cfg.logMessage);
+    res.status(500).json({ error: cfg.clientMessage });
+    return;
+  }
+  if (cfg.warnings.length) console.error(cfg.logMessage);
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) { res.status(500).json({ error: 'Not configured' }); return; }
 
   try {
     const sessionId = req.body && req.body.sessionId;

@@ -71,6 +71,7 @@
 // ---------------------------------------------------------------------------
 
 const { rtdbUpdate, rtdbGet } = require('../_lib/firebase-admin.js');
+const stripeConfig = require('../_lib/stripe-config');
 
 const HANDLED = [
   'checkout.session.completed',
@@ -201,13 +202,20 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const secret = process.env.SAIRNCASH_STRIPE_WEBHOOK_SECRET;
-  const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!secret || !stripeKey) {
-    console.error('SAIRNCASH_STRIPE_WEBHOOK_SECRET / STRIPE_SECRET_KEY not set in environment variables');
+  // ONE PLACE ANSWERS "IS STRIPE CONFIGURED" (2026-09-14, item 94). This one
+  // needs a DIFFERENT pair from the other four -- the SAIRNcash-specific
+  // webhook secret rather than the bare one -- which is exactly the kind of
+  // per-capability requirement that should be a row in a table rather than a
+  // condition re-typed in each file.
+  const cfg = stripeConfig.status('webhook:sairncash');
+  if (!cfg.ready) {
+    console.error(cfg.logMessage);
     res.status(500).json({ error: { message: 'Server configuration error — contact support' } });
     return;
   }
+  if (cfg.warnings.length) console.error(cfg.logMessage);
+  const secret = process.env.SAIRNCASH_STRIPE_WEBHOOK_SECRET;
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
 
   let rawBody;
   try {

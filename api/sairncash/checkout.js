@@ -11,6 +11,8 @@
 // 2026-08-10; see docs/superpowers/plans/2026-08-10-sairncash-pivot-foundation.md
 // Task 1 Step 1). SITE_URL optional, defaults to https://sairn.vercel.app.
 
+const stripeConfig = require('../_lib/stripe-config');
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -22,10 +24,26 @@ module.exports = async (req, res) => {
   const priceId = process.env.STRIPE_PRICE_ID;
   const siteUrl = process.env.SITE_URL || 'https://sairn.vercel.app';
 
-  if (!stripeKey || !priceId) {
-    res.status(500).json({ error: 'Stripe not configured' });
+  // ── ONE PLACE ANSWERS "IS STRIPE CONFIGURED" (2026-09-14, item 94) ──────
+  // This condition used to live here, and it answered "Stripe not configured"
+  // when STRIPE_PRICE_ID was missing while the KEY was set the whole time.
+  // That message was then read as evidence about the key by three separate
+  // readers -- the SOUP register, a comment in ai.js, and a comment in
+  // sairncash.html -- and none of them could see the disagreement, because no
+  // file held the whole answer. The requirement list now lives in
+  // api/_lib/stripe-config.js and nowhere else.
+  //
+  // THE LOG NAMES THE VARIABLE AND THE RESPONSE DOES NOT. This endpoint is
+  // unauthenticated, so telling a caller which variable is missing tells them
+  // about the deployment; and a per-endpoint message is exactly what invited
+  // readers to infer a cause last time.
+  const cfg = stripeConfig.status('checkout');
+  if (!cfg.ready) {
+    console.error(cfg.logMessage);
+    res.status(500).json({ error: cfg.clientMessage });
     return;
   }
+  if (cfg.warnings.length) console.error(cfg.logMessage);
 
   try {
     const email = (req.body && req.body.email) || undefined;

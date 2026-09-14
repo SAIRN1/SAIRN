@@ -33,6 +33,8 @@
 // value checkout.js uses.
 // ---------------------------------------------------------------------------
 
+const stripeConfig = require('../_lib/stripe-config');
+
 module.exports = async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -40,8 +42,26 @@ module.exports = async (req, res) => {
   if (req.method === 'OPTIONS') { res.status(204).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'POST only' }); return; }
 
+  // ── ONE PLACE ANSWERS "IS STRIPE CONFIGURED" (2026-09-14, item 94) ──────
+  // THIS FILE IS WHY THE MODULE EXISTS. Its guard was `if (!stripeKey)` while
+  // checkout.js guarded on `!stripeKey || !priceId`, so the two disagreed about
+  // the same environment: checkout said "Stripe not configured" over a missing
+  // PRICE_ID and this one sailed through to Stripe. Reading one endpoint's
+  // message as a fact about the other's variable is what left the SOUP register
+  // recording a blast radius of zero.
+  //
+  // AND `ready` STILL DOES NOT MEAN STRIPE WORKS. On 2026-09-14 this key was
+  // present and was an EXPIRED sk_test_ key -- the call reached Stripe and died
+  // there. No env check can see that; `warnings` carries the one hint that is
+  // visible without a call.
+  const cfg = stripeConfig.status('portal');
+  if (!cfg.ready) {
+    console.error(cfg.logMessage);
+    res.status(500).json({ error: cfg.clientMessage });
+    return;
+  }
+  if (cfg.warnings.length) console.error(cfg.logMessage);
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) { res.status(500).json({ error: 'Not configured' }); return; }
 
   const subscriptionId = req.body && req.body.subscriptionId;
   if (!subscriptionId || typeof subscriptionId !== 'string') {

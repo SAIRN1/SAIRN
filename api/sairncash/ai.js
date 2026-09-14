@@ -39,12 +39,24 @@
 // ---------------------------------------------------------------------------
 
 const { callAnthropic } = require('../claude.js');
+const stripeConfig = require('../_lib/stripe-config');
 
 const APP_ID = 'sairncash';
 
 async function subscriptionActive(subscriptionId) {
+  // ONE PLACE ANSWERS "IS STRIPE CONFIGURED" (2026-09-14, item 94). The comment
+  // further down this file -- "production's Stripe key does not work ...
+  // checkout.js reports 'Stripe not configured' on its separate STRIPE_PRICE_ID
+  // check" -- was a previous session noticing this exact disagreement and
+  // recording it in a comment in ONE file instead of consolidating it. That is
+  // the leak: the knowledge existed and no module owned it.
+  const cfg = stripeConfig.status('ai');
+  if (!cfg.ready) {
+    console.error(cfg.logMessage);
+    return { ok: false, reason: 'CONFIG' };
+  }
+  if (cfg.warnings.length) console.error(cfg.logMessage);
   const stripeKey = process.env.STRIPE_SECRET_KEY;
-  if (!stripeKey) return { ok: false, reason: 'CONFIG' };
   try {
     const Stripe = require('stripe');
     const stripe = new Stripe(stripeKey);
