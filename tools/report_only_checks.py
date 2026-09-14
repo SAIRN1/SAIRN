@@ -1060,6 +1060,49 @@ REGISTRY = [
                     'finding rather than passing quietly, and an unloadable '
                     'registry is an error rather than CLEAN. 0.3s',
     },
+    {
+        'tool': 'eaten_substitution_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        # -n 40, NOT the default range and NOT a big one. The default is
+        # `@{u}..HEAD`, which is EMPTY by the time this sweep runs after a
+        # push -- it would be silent forever and look like a passing check.
+        # A large window re-reports the two historical instances on every
+        # push, which is a check that cries wolf permanently. 40 is a rolling
+        # window: far more than lands between two consecutive sweeps, and
+        # short enough that a recorded-and-corrected instance rolls out.
+        'args': ['-n', '40'],
+        'promoted': '2026-09-14, the day it was built, report-only and NOT '
+                    'wired into the push gate: it reports a SHAPE and cannot '
+                    'know a shell caused it, and a check that cannot tell a '
+                    'stray keystroke from an eaten expression has no business '
+                    'refusing a push',
+        'catches': 'a commit message whose paragraph has a continuation line '
+                   'beginning with a stray single space -- what bash leaves '
+                   'behind when a backticked expression inside a double-quoted '
+                   '-m evaluates to nothing and is deleted',
+        'why_it_matters': 'scrubber item 18 has TWO vehicles and only one had '
+                          'a checker. control_char_check.py covers the heredoc '
+                          'byte; nothing covered the commit message, and item '
+                          '18 records it happening TWICE on 2026-09-14 -- the '
+                          'second time in a commit whose subject is about a '
+                          'check that silently stops testing anything. The '
+                          'shell reports success every time, so the damage is '
+                          'visible only to someone who re-reads the message, '
+                          'and nobody re-reads a commit message',
+        'evidence': 'FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over '
+                    'the last 3,000 commits it flags exactly 2, and both are '
+                    'the instances item 18 already records. RECALL IS NOT '
+                    'MEASURED and is not claimed -- the criterion was read off '
+                    'those same two commits, so finding them is circular. The '
+                    'blind spot is structural and stated on every clean run: a '
+                    'substitution that produced OUTPUT leaves no gap at all, so '
+                    'only the empty-output case is detectable afterwards and '
+                    '`git commit -F` remains the control. 32-arm probe; '
+                    'removing the list-item exclusion takes 7 arms red and '
+                    'silencing the detector takes 9, each sabotage asserting '
+                    'its own anchor matched first. 0.2s',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

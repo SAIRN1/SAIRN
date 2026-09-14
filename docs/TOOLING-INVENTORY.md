@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**140 files in `tools/`.** By what actually invokes them:
+**141 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 42 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 43 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 21 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 87 |
+| CHECKER | 88 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 17 |
@@ -127,7 +127,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (42)
+## REPORT-ONLY (43)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -150,6 +150,7 @@ quiet in practice.
 | `discarded_verdict_crossfile.py` | 2026-09-10 | the CROSS-MODULE half: a verdict returned by a required module and dropped in another file |
 | `div_balance_check.py` | 2026-09-10 | an unbalanced <div> tree -- the safe-editing rules say run it after EVERY edit and nothing ever did |
 | `duplicate_global_check.py` | 2026-09-10, after its one real-run finding turned out to be a deliberate wrapper | a second top-level declaration of the same global -- the later one silently wins and the earlier becomes dead code that still reads correctly (Guardian check 13) |
+| `eaten_substitution_check.py` | 2026-09-14, the day it was built, report-only and NOT wired into the push gate: it reports a SHAPE and cannot know a shell caused it, and a check that cannot tell a stray keystroke from an eaten expression has no business refusing a push | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted |
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
@@ -343,11 +344,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      140   git ls-files tools/
+  tools on disk                      141   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                40   report_only_checks.REGISTRY
-  tools invoked by tests/             89   tests/**/*.py, *.js
+  report-only registry                41   report_only_checks.REGISTRY
+  tools invoked by tests/             90   tests/**/*.py, *.js
   recorded NOT-promoted decisions     21   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

@@ -83,6 +83,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character | `control_char_check.py` | real negative control against the real tree, not a fixture: run against the pre-fix files it exits 1 and names all SIX bytes with file, line and offset; after the fix, 0. 1622 files in 1.3s. NOT a git-diff problem -- .gitattributes marks the repo text so diffs were readable the whole time, verified rather than assumed, and the first draft of the finding had that wrong. THE TRACK RECORD IS WHAT PROMOTED IT: two fleet-wide sweeps, zero false positives, and on 2026-09-13 it caught a FIFTH within hours of the file shipping -- /<BS>delete<BS>/i in api/sv-auth.test.js, the assertion that SAIRNvet's auth endpoint deletes no credential row, which had never been capable of failing. Held as a gate by tests/push_gate/check11_probe.py, 20 arms, 5 mutation controls bite |
 | a NEW `+ (x \|\| 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding | `truthy_sum_check.py` | 82 candidate occurrences across 8 files, 51 distinct file+field keys, all grandfathered so a NEW one fails. It read 140 on the first real run and 58 of those were NOT folds: a STRING LITERAL on the left makes `+` concatenate, so `'$' + (x \|\| 0)` is a currency label and sums nothing. Classified separately 2026-09-13, COUNTED AND PRINTED rather than dropped, and the 31 baseline keys that existed only to excuse them removed -- before that, every price-display line anyone added tripped the check and was answered with an exemption. The tool now also reports baseline keys nothing matches any more. 33-arm probe, and the arms worth having are the ones that keep it trustworthy: MULTIPLICATION IS NOT REPORTED (2 * ("3"\|\|0) is 6; only + concatenates), Number/parseFloat/parseInt go silent, and the pattern quoted in a COMMENT or a STRING is not code -- that last arm exists because the first version reported 193 and FIFTY-TWO were prose explaining the defect, including the refusal message of this checker's own subject. 3.1s |
 | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason | `removal_path_check.py` | 18-arm probe, and the arm worth having is the FALSE EXEMPTION one: a shared registry comment reading "X is MUTABLE; Y is APPEND-ONLY" was attributed wholesale by the first version, labelling a money record its own comment calls MUTABLE as append-only and silently exempting it. The probe asserts the mutable sibling still fails. Also: a missing baseline turns every stuck resource into a finding rather than passing quietly, and an unloadable registry is an error rather than CLEAN. 0.3s |
+| a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted | `eaten_substitution_check.py` | FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over the last 3,000 commits it flags exactly 2, and both are the instances item 18 already records. RECALL IS NOT MEASURED and is not claimed -- the criterion was read off those same two commits, so finding them is circular. The blind spot is structural and stated on every clean run: a substitution that produced OUTPUT leaves no gap at all, so only the empty-output case is detectable afterwards and `git commit -F` remains the control. 32-arm probe; removing the list-item exclusion takes 7 arms red and silencing the detector takes 9, each sabotage asserting its own anchor matched first. 0.2s |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -333,7 +334,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**177 of 380 test files are traced to a stated requirement. 203 are not.**
+**177 of 381 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -483,6 +484,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_condition_coverage_probe.py`
 - `tests/run_copy_exactly_probe.py`
 - `tests/run_defect_budget_probe.py`
+- `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
 - `tests/run_flaky_quarantine_probe.py`
 - `tests/run_index_duplicate_probe.py`
@@ -560,10 +562,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 380   tests/**, api/*.test.js
+  test files on disk                 381   tests/**, api/*.test.js
   open-work rows citing a test       164   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                40   report_only_checks.REGISTRY
+  report-only registry                41   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     16   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
