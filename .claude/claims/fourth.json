@@ -1170,8 +1170,8 @@
       "task": "item 65 free tier reframe and 65a coherence checker",
       "claimed_at": "2026-09-14T13:56:20Z",
       "claimed_at_epoch": 1789394180.9398763,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:46:58Z"
     }
   ]
 }
