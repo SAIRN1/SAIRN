@@ -1535,6 +1535,62 @@
       "phase_confidence": "stated"
     },
     {
+      "commit": "72fa70003224",
+      "date": "2026-09-14",
+      "subject": "fix(tests): the trial-gate tripwire died in a snapshot re-capture for the third time",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/license_trial_gate_probe.py",
+        "tests/push_gate/check11_probe.py",
+        "tests/push_gate/missing_checker_probe.py",
+        "tests/run_mutation_anchor_probe.py",
+        "tools/mutation_anchor_check.py"
+      ],
+      "lines_added": 200,
+      "lines_removed": 20,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "mutation-testing",
+      "summary": "a probe's text anchors into db/schema_snapshot.json died for the THIRD time in a re-capture -- compact after pretty-printed after one-line -- so the only tripwire on a live licence gate was disarmed again; both arms mutate the parsed JSON now and have no anchor to rot",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
+    },
+    {
+      "commit": "72fa70003224",
+      "date": "2026-09-14",
+      "subject": "fix(tests): the trial-gate tripwire died in a snapshot re-capture for the third time",
+      "files": [
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/license_trial_gate_probe.py",
+        "tests/push_gate/check11_probe.py",
+        "tests/push_gate/missing_checker_probe.py",
+        "tests/run_mutation_anchor_probe.py",
+        "tools/mutation_anchor_check.py"
+      ],
+      "lines_added": 200,
+      "lines_removed": 20,
+      "app": "PLATFORM",
+      "layer": "test",
+      "severity": "low",
+      "detection_method": "code-review",
+      "summary": "a negative control whose PRECONDITION was another session's unfixed defect expired the moment they fixed it -- check11_probe asserted the tree still carried a control byte in a file inside fourth's claim; it plants its own now",
+      "rules": [
+        "1.3"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
+    },
+    {
       "commit": "e059df4cc2d4",
       "date": "2026-09-14",
       "subject": "fix(tools): the report-only sweep had stopped completing, and only its probe's timeout said so",
