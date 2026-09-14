@@ -1194,6 +1194,16 @@
       "claimed_at_epoch": 1789394244.2819228,
       "status": "released",
       "released_at": "2026-09-14T14:03:46Z"
+    },
+    {
+      "id": "cc-1789395259",
+      "session": "cc",
+      "subject": "review-fourth-35-54",
+      "task": "adversarially drive api audit-checkpoint and cron-watchdog written by fourth",
+      "claimed_at": "2026-09-14T14:14:19Z",
+      "claimed_at_epoch": 1789395259.6289535,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
