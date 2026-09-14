@@ -117,6 +117,14 @@ PURPOSES = {
     'sairn_claim_hook.py': ('CHECKER', "another session's active claim on the work about to start"),
     'employee_auth_guard_check.py': ('CHECKER', 'a SQL file writing credential rows with no recoverability guard (gate check 2)'),
     'sairn_sql_preflight.py': ('CHECKER', 'SQL referencing a column or table the live schema does not have (gate check 3)'),
+    # LIVE because it calls the DEPLOYED endpoint -- it cannot be wired into a
+    # hook without making every push talk to the outside world, which is the
+    # exact reason this `kind` exists. It is the NAMED STOPGAP reader for the
+    # audit checkpoints (Michael, 2026-09-14) until item 54's liveness monitor
+    # takes over; a run that cannot reach the endpoint overwrites the previous
+    # clean verdict with COULD NOT TELL rather than leaving a document
+    # asserting a check that never ran.
+    'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
     'sairn_load_state_check.py': ('LIVE', 'live seed content differing from the repo seed (gate check 1)'),
     'sairn_seam_check.py': ('CHECKER', 'an endpoint dropping a field the engine reads (gate check 4)'),
     'sairn_reachability_check.py': ('CHECKER', 'a feature no user can reach (gate check 5)'),

@@ -130,6 +130,10 @@
     "class": "cron-secret",
     "reason": "Refuses unless the Authorization header equals 'Bearer ' + CRON_SECRET, checked first. Invoked by the vercel.json cron entry."
   },
+  "api/audit-checkpoint.js": {
+    "class": "cron-secret",
+    "reason": "Refuses unless the Authorization header equals 'Bearer ' + CRON_SECRET, checked FIRST -- before the SUPABASE_* configuration check, so an unauthenticated caller cannot tell a configured deployment from an unconfigured one. Invoked by the vercel.json cron entry at 30 3 * * *. It reads the three audit logs and reads/writes only the audit checkpoint table; it carries no user data path and takes no caller-supplied identifier -- the only input is an action name matched against a literal."
+  },
   "api/sairncash/ai.js": {
     "class": "bespoke-auth",
     "reason": "It is NOT unauthenticated -- it verifies a real Stripe subscription or a live trial token SERVER-SIDE before it will spend anything, and refuses 401 otherwise. preauth_oracle_check.py reports it as having no boundary because the boundary is not validateLicenseKey() or verifySessionToken(), the only two names that checker knows. This is the FOURTH instance of that limitation, after dnt-bi's feed token, alf-alerts' cron secret and sd-agent's store.validateAndGate(). Built 2026-09-05 because SAIRNcash has no SAIRN licence key at all -- it is a consumer app identified by a device id plus a Stripe subscription -- so it cannot satisfy the licence-key requirement coming to api/claude.js. The client sends only an IDENTIFIER; this file looks it up and never believes what localStorage claims, which is the lesson of that app's own 2026-08-10 fix. It FAILS CLOSED on a Stripe outage, unlike the shared proxy's fail-open licence check, because here the identifier is the only thing between a caller and the Anthropic key. Held by 17 assertions in api/sairncash-ai.test.js, including that a canceled subscription, an expired-but-still-marked-active trial, and an upstream outage each spend nothing. Read 2026-09-05."

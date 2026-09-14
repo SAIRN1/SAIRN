@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**120 files in `tools/`.** By what actually invokes them:
+**121 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 31 | nothing runs these at all |
+| **UNWIRED** | 32 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | CHECKER | 72 |
 | GENERATOR | 15 |
 | LIBRARY | 20 |
-| LIVE | 13 |
+| LIVE | 14 |
 
 **18 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -69,7 +69,7 @@ The 14, by name, so this is actionable rather than a statistic:
 | `testability_criteria.py` | SUITE-ONLY | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything |
 | `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 
-**Separately, 3 tool(s) make a LIVE network or database request.** Those are
+**Separately, 4 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -246,7 +246,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (31)
+## UNWIRED (32)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -254,6 +254,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
 | `fetch_blocked_doc.sh` | LIBRARY | fetches a document a plain request cannot reach | &mdash; |
@@ -314,7 +315,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      120   git ls-files tools/
+  tools on disk                      121   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
