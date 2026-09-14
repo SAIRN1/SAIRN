@@ -1593,8 +1593,8 @@
       "task": "near-miss branch: is there a real source of near misses",
       "claimed_at": "2026-09-14T17:57:55Z",
       "claimed_at_epoch": 1789408675.5237548,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T18:10:16Z"
     }
   ]
 }
