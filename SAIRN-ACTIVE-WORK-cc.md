@@ -2852,3 +2852,32 @@ from another session's work with no row. **The register caught a new chokepoint 
 about** -- the first thing that page did which a static document could not. Added as ACCEPTED: it
 is the item-94 module that replaced fourteen byte-identical copies of `isDate`, all wrong the same
 way, so a wide blast radius there is the point rather than the problem.
+
+
+---
+
+## 2026-09-14 -- live verification of the cron stagger, reported for what it establishes
+
+Deploy landed ~15:17Z. Read at 17:15Z.
+
+**Both jobs are firing on the new minutes and beating healthy.** The 17:15 watchdog run reports
+`checked: 4` with `not_ok` naming only `/api/audit-checkpoint` and the watchdog itself -- so
+`send-reminder` and `alf-alerts` are absent from it, which **rules out the silent-canary reading**
+(zero errors because zero runs). That was the specific thing worth ruling out, having just written
+the same caution about the SAIRNlaw phase-2 trigger an hour earlier.
+
+**No 504 on either job since the deploy**, against a prior rate of roughly one run in three.
+
+**AND THAT IS TWO RUNS EACH, WHICH IS NOT YET EVIDENCE.** A process failing one run in three
+produces two clean runs about 44% of the time by chance. Encouraging, not established. The change
+was shaped so a week of logs answers it; this read is the first data point, not the answer.
+
+### One thing the same read settled
+
+`/api/audit-checkpoint` is NEVER_BEAT because it is scheduled `30 3 * * *` and today's 03:30Z was
+before it existed. **Expected, not a defect.** But its first real run tomorrow will answer 503
+NOT_PROVISIONED unless `sql/audit_checkpoint_schema.sql` has been run -- a second migration
+outstanding alongside `sql/sairnbiz_po_recv_migration.sql`.
+
+The watchdog reporting itself FAILING/PARTIAL is the watchdog working: it has something not-ok to
+report and `SAIRN_OPS_EMAIL` is unset, so it says so rather than going quiet.
