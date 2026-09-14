@@ -153,10 +153,39 @@ GUARD_NEAR = re.compile(r'isFinite|isNaN|parseInt|[<>]=?\s*\d'
                         # completely, just not with a numeric test. The bug this
                         # shape is about is Number('') === 0; anything that
                         # proves the value is non-empty has already stopped it.
-                        r'|\.trim\(\)|\.length|!==?\s*[\'"]{2}')
+                        # `.length` ONLY AS AN EMPTINESS TEST, never bare. The
+                        # first version matched any `.length`, and `limbs.length`
+                        # in a for-loop header suppressed the finding on the very
+                        # next line of api/_lib/deadline-engine.js -- a FALSE
+                        # NEGATIVE, which is the dangerous direction, produced by
+                        # a token that looked like a guard and was an array
+                        # iteration.
+                        r'|\.trim\(\)|![\w$.\[\]]*\.length|\.length\s*[=!<>]'
+                        r'|!==?\s*[\'"]{2}'
+                        # AN EQUALITY TEST AGAINST THE EMPTY STRING IS THE SAME
+                        # GUARD WRITTEN THE OTHER WAY ROUND, and leaving it out
+                        # cost three false positives on the first real triage:
+                        #   payload.royalty_pct === '' ? 0 : Number(...)
+                        #   if (el.value === '') return undefined;
+                        # Both close the Number('') path completely. A pattern
+                        # that only recognised `!== ''` was reporting the
+                        # careful half of the codebase.
+                        # NOT a bare `undefined`: the first attempt added one and
+                        # it suppressed api/_lib/deadline-engine.js, where the
+                        # word appears somewhere in every 200-character window on
+                        # the platform. A guard token has to be specific to the
+                        # guard, or it is an off switch wearing a pattern's
+                        # clothes.
+                        r'|===?\s*[\'"]{2}|===?\s*undefined|typeof\s')
 
 
-def _guarded(src, at, before=80, after=160):
+# `before` is 200, not 80. sairnlaw.html guards on the PRECEDING LINE --
+# `if (!dd || !String(dd.value).trim()) { toast(...); return; }` -- and 80
+# characters did not reach back past the toast message to see it. Widening
+# trades false positives for false negatives, which is the right direction for a
+# REPORT-ONLY checker whose findings a human reads one at a time: a missed one
+# is a gap, a fabricated one teaches people to ignore the tool.
+def _guarded(src, at, before=200, after=160):
     return bool(GUARD_NEAR.search(src[max(0, at - before):at + after]))
 
 
@@ -176,7 +205,11 @@ def rule(path, src):
         out.append('%s:%d S1 PRIMITIVE OBSESSION -- Number(%s) on a value from '
                    'outside with no range or finiteness check near it. '
                    "Number('') is 0, so an ABSENT field becomes a real number "
-                   'and every downstream check passes on it.'
+                   'and every downstream check passes on it. AND CHECK THE FORM '
+                   'OF ANY RANGE GUARD YOU FIND: `<= 0` CANNOT SEE NaN (every '
+                   'comparison against NaN is false), while the negated `!(x > 0)` '
+                   'can. That difference was a live hole on attorney trust money, '
+                   'found 2026-09-14.'
                    % (path, src.count(nl, 0, m.start()) + 1, arg))
 
     for m in GUARD_FN.finditer(src):

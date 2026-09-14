@@ -8815,6 +8815,27 @@ module.exports = async (req, res) => {
         // Where the record carries a real measurement, evaluate it here rather than
         // trusting a client-supplied pass/fail -- the threshold is the point of the record.
         let passed = null;
+        // ── A TEMPERATURE THAT IS NOT A NUMBER IS NOT A READING (2026-09-14) ──
+        // FOUND BY tools/shape_antipattern_check.py's S1 (item 90). The guard
+        // was `payload.temperature_f !== undefined`, which is a presence test,
+        // not a value test -- so an empty field arrived as `Number('') === 0`
+        // and was stored and GRADED as a reading of ZERO DEGREES FAHRENHEIT.
+        // On a cold-holding record that grades as comfortably in range, and on
+        // a hot-holding record it grades as a violation: either way the
+        // inspector is reading a number nobody measured. `Number('abc')` is NaN,
+        // which JSON.stringify writes as null, so that half vanished instead.
+        //
+        // REFUSED RATHER THAN DEFAULTED, and the reason is the same one the
+        // threshold comment below gives: substituting a value nobody supplied
+        // is how a food-safety record stops being a record.
+        if (payload.record_type === 'food_temp' && payload.temperature_f !== undefined
+            && payload.temperature_f !== null && !isFinite(Number(payload.temperature_f))) {
+          res.status(400).json({ error: { code: 'BAD_TEMPERATURE', message:
+            'temperature_f must be a number. An empty field becomes 0 and would be stored and ' +
+            'graded as a reading of zero degrees; a non-numeric one becomes NaN and reaches the ' +
+            'record as null. Neither is a measurement.' } });
+          return;
+        }
         if (payload.record_type === 'food_temp' && payload.holding_kind && payload.temperature_f !== undefined) {
           // ── AN UNREADABLE THRESHOLD IS NOT THE NATIONAL DEFAULT (2026-09-04) ──
           // This read used to fall back to {}, and evaluateFoodTemp() then falls
@@ -11136,6 +11157,34 @@ module.exports = async (req, res) => {
     if (resource === 'law_trusttx' && action === 'write') {
       if (!payload || !payload.id || !payload.matter_id || !payload.client_id) { res.status(400).json({ error: { message: 'law_trusttx payload.id, payload.matter_id, and payload.client_id are required' } }); return; }
       if (payload.type !== 'Deposit' && payload.type !== 'Disbursement') { res.status(400).json({ error: { message: "law_trusttx payload.type must be exactly 'Deposit' or 'Disbursement'" } }); return; }
+      // ── THE AMOUNT MUST BE A FINITE NUMBER (2026-09-14) ──────────────────
+      // FOUND BY tools/shape_antipattern_check.py's S1 (item 90), and the hole
+      // was in a guard that looks complete. The Disbursement branch below
+      // refuses on `Number(payload.amount) <= 0` -- which catches '' (0) and
+      // catches a negative, and DOES NOT CATCH A NON-NUMBER:
+      //
+      //     Number('abc')        -> NaN
+      //     NaN <= 0             -> FALSE, so the refusal never fires
+      //     JSON.stringify(NaN)  -> null
+      //
+      // so `p_amount` arrived at law_check_and_insert_disbursement() as NULL,
+      // on ATTORNEY CLIENT TRUST MONEY -- the one balance a bar association
+      // audits. Every comparison against NaN is false, which is why a guard
+      // written as a comparison cannot see it.
+      //
+      // CHECKED HERE, ABOVE BOTH BRANCHES, rather than patched into the one
+      // that was found: the Deposit path reaches a plain upsert with the same
+      // value and had no amount check at all. A fix applied only where the
+      // checker pointed would have left the other half open.
+      if (payload.amount !== undefined && payload.amount !== null) {
+        const txAmount = Number(payload.amount);
+        if (!isFinite(txAmount)) {
+          res.status(400).json({ error: { message: 'law_trusttx payload.amount must be a number — ' +
+            'a value that is not one becomes NaN, and every comparison against NaN is false, so it ' +
+            'would pass a range check and reach the ledger as null.' } });
+          return;
+        }
+      }
       // Atomic deposit-void balance guard (2026-08-17, step 3a). Voiding a
       // Deposit is the one void that can DECREASE a client's balance (a
       // Disbursement-void only ever increases it, so it stays on the plain
