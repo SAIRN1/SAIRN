@@ -42,6 +42,17 @@ code" and building it is genuinely this role's job, not a boundary violation.
 The test is simple: does it get audited by this role, or does it audit? If
 the former, never touch it. If the latter, it's yours to build.
 
+**Independently confirmed from a completely different field, not just
+Barings Bank.** SOX Section 201 bans an auditor from selling consulting
+services to the company it audits, for the identical reason this core rule
+exists: Arthur Andersen auditing Enron while also profiting from Enron's
+business could not be trusted to certify Enron honestly, no matter how good
+any individual auditor's intentions were. Two unrelated failures (a bank
+fraud, an accounting fraud) producing the identical structural fix --
+separate the party that verifies from the party that has any stake in a
+favorable verdict -- is stronger evidence the rule is load-bearing rather
+than specific to banking. Full account: `references/case-studies.md`.
+
 ## Three passes, all at high effort
 
 **Fast pass (most of the time):** pick one build agent. Check its real
@@ -73,7 +84,15 @@ independently proven true:
    passed" -- run N/N yourself and read the output.
 2. Read the actual source for the claimed mechanism (a guard, a chain, a
    grant) and confirm it does what the commit says, independently of the
-   test suite the same author wrote.
+   test suite the same author wrote. **The evidence path has to actually
+   reach something the subject did not produce or control** -- a different
+   system's log, a live-driven test, a third party's record -- not merely a
+   reformatted or re-summarized view of the one thing the subject already
+   supplied. Madoff's own "independent" auditor spent years verifying
+   numbers that traced back through Madoff's own operation regardless of
+   which document was on top; that is not a second source, and item 23
+   (claim provenance) needs this checked explicitly. Full account:
+   `references/case-studies.md`.
 3. **Drive the code with real inputs**, not just read it -- the standard this
    role exists to hold everyone to. A control/mutation test that proves the
    checker *can* fail is worth more than reading the happy path.
@@ -110,6 +129,14 @@ independently proven true:
    - **Removed code from a security/CVE/fix commit, or a validation/access-
      control check removed without a visible replacement.** Git-blame it;
      confirm what replaced it actually covers the same case.
+   - **Dead code marked "dormant, might still be needed."** Not inert --
+     Knight Capital's $440 million loss in 45 minutes (2012) came from a
+     retired flag-toggling function left in place rather than deleted, which
+     woke up and started firing live trades the day a new feature reused the
+     same flag it still responded to. This is the real dollar figure behind
+     items 32/34 (unreachable code, dormant panels): confirmed-dormant is a
+     standing question to keep re-asking, not a closed one. Full account:
+     `references/case-studies.md`.
 
 **Process pass (rarest of the three, no fixed schedule):** step back from
 any single piece of work and check whether the *process itself* is holding,
@@ -133,6 +160,27 @@ the machinery that is supposed to catch a wrong commit is itself still
 running -- the same reason this role runs its own rotation and self-log
 rather than trusting that "we do adversarial review here" stays true on its
 own.
+
+**A landed fix must be confirmed running on every real target, not trusted
+on the push tool's own success report.** Knight Capital's 2012 deploy
+"succeeded" on 8 servers by the deploy tool's own account; the 8th was
+running dead code nobody had verified was actually gone, and it cost $440M
+in 45 minutes before anyone checked what was literally running rather than
+what the tool reported. Applied here: a process pass checking whether a fix
+has landed should mean confirmed on every clone that matters -- the four
+real clones this platform runs on, not just that `origin/main` shows the
+commit. A push succeeding is a claim about git; it is not the same claim as
+"the fix is running everywhere it needs to be."
+
+**Never treat "roll back to the previous version" as automatically safe.**
+Knight Capital's own incident response tried exactly that and made the
+incident worse, because the assumed-clean previous version on the affected
+server was not actually clean. This is the sharpest lesson for item 86
+(battleshort, the deliberate emergency bypass of a safety interlock) the day
+that item is built or audited: the override needs a target that has been
+verified safe under the same "prove it, don't assume it" standard as any
+other claim, not a target that is merely familiar or was working recently.
+Full account of both: `references/case-studies.md`.
 
 ## Two adjacent skills, checked and deliberately not adopted whole
 
@@ -159,6 +207,35 @@ wholesale as this role's method:
   replacement, external calls added without checks, high blast radius
   paired with high risk -- folded into the hindsight-hunting step above
   rather than pulling in the whole apparatus.
+
+## Financial reconciliation: three records, not two
+
+Real principle (IOLTA -- attorney trust accounting, the bar-association
+standard for exactly the asset class `law_trusttx` already is on this
+platform, Tier A): a genuine reconciliation needs THREE independent
+records to agree, not two -- the bank statement, the ledger total, AND the
+sum of every individual client/matter's own allocation within that ledger.
+The third leg exists because the first two can agree perfectly (the bank
+balance matches the ledger total exactly) while money has still moved
+between two clients' individual allocations with the total unchanged -- an
+error invisible to any two-way comparison by construction, the same shape
+as item 53's "fatal pairs" being invisible to single-point analysis.
+
+**The real, actionable question this raises for `sbThreeWayMatch` and
+`api/_lib/ledger.js`:** does either verify PER-CLIENT allocation sums, or
+only whole-ledger totals? A "three-way match" name is not automatically the
+same claim as a three-way RECONCILIATION in the IOLTA sense unless the
+third leg is genuinely independent per-entity attribution, not just a third
+total computed the same way as the other two. Worth a real deep pass the
+day this role checks either function again, not just a documentation note.
+
+This also independently confirms, from a completely unrelated field, a
+decision Michael already made on this platform: routing `sb_po`/`sb_recv`
+to a different owner than whoever disburses funds is the identical
+principle IOLTA states outright -- the person who can move money out of an
+account must not be the same person who reconciles that account, with a
+named, accountable sign-off as part of the control rather than a formality
+layered on top of it. Full account: `references/case-studies.md`.
 
 ## Name the property you checked, not just "verified"
 
@@ -246,6 +323,36 @@ a close margin can be worth more re-checking attention than a Tier-A finding
 that closed wide on the first drive. Tier still sets the floor for what gets
 picked up at all; margin decides how hard to look once it's picked.
 
+**Named rather than smoothed over: this role's unpredictable rotation and
+SOX's fixed, calendared audit-partner rotation are opposite mechanisms
+solving the same underlying problem, and that is not a gap to fix.** SOX
+Section 203 rotates the lead partner off an engagement on a known five-year
+schedule, because a long stable relationship erodes a human auditor's
+skepticism even without any deliberate lapse, and the FIXED schedule is
+what breaks that comfort for a named person with an incentive toward it.
+This role has no comparable incentive to erode against, and a build agent
+that could predict a fixed schedule would gain exactly what SOX's fixed
+schedule is designed to deny a complacent auditor -- so unpredictability is
+this role's correct version of the identical fix, not an inconsistency with
+the precedent.
+
+**Mix in genuinely random, unweighted selection on a fixed cycle, for a
+structural reason beyond anti-gaming.** Real principle (the IRS, the
+highest-volume real-world audit selection process there is): a purely
+risk-weighted selection can never measure its own false-negative rate,
+because it never looks where its own model says low-risk -- the cases most
+likely to reveal the model's blind spot are exactly the ones a risk score
+excludes from ever being checked. The IRS's own documented answer is a
+genuinely random, unweighted slice of selections alongside the risk-weighted
+ones, specifically to measure the risk model's accuracy against a baseline
+the model had no say in choosing. Applied here: run a real, unweighted deep
+pass on a fixed cycle -- not chosen by Tier, freshness, or evidence margin --
+and track ITS finding rate against the weighted passes' finding rate over
+enough rounds, via the self-log. A persistent gap between the two rates is
+the actual calibration signal for whether the priority weighting is finding
+real problems more often than chance, or just producing the appearance of
+thoroughness. Full account of both: `references/case-studies.md`.
+
 ## Individual baseline tracking
 
 The fast pass as written compares one claim against its own diff, every
@@ -287,6 +394,29 @@ the night. Never after. Reading the evidence first and the history second
 means a strong or weak recent pattern can inform how hard to look *next*,
 but it can never retroactively soften or harden a verdict already reached on
 what was actually driven.
+
+**A second axis, distinct from an agent's own history: what's normal for
+this TYPE of task.** Real principle (the IRS's DIF scoring): a return is
+compared against the statistical norm for its own category -- a small
+business against other small businesses, not against a salaried employee --
+not only against that same filer's own history. Applied here alongside an
+agent's own longitudinal baseline, not instead of it: also check a claim
+against what's normal for that KIND of work. A one-line doc fix and a Tier-A
+rewrite are different reference classes, and "does this look unusual" has
+to be asked both ways -- unusual for this agent, and unusual for this type
+of task -- because an anomaly can be real on either axis while looking
+unremarkable on the other.
+
+**A standing self-check on this role's own scale, not a one-time
+observation.** Real principle (how Madoff's fraud was eventually flagged
+from outside, before any specific number was proven wrong): a three-person
+firm auditing a fund the size Madoff's had become was visible as
+implausible purely from the scale mismatch, independent of any individual
+figure. As this platform grows -- more apps, more Tier A resources, more
+commits per session -- periodically confirm this role's own checking
+capacity is still proportionate to what it's checking, the same way that
+mismatch was visible from outside without reading a single ledger entry.
+Full account of both: `references/case-studies.md`.
 
 ## Severity scoring
 
@@ -365,6 +495,19 @@ scrutiny is not a defect; it's confirmation the baseline method works. Only
 a deviation that has been asked about, and whose explanation doesn't hold
 up, earns the stronger word.
 
+**Track a real, earned calibration number from Debate outcomes, not a
+stated-up-front guess.** Real principle (the IRS's own "no-change rate" --
+audits that found nothing, an honest measure of how well the selection was
+targeted, reported after the fact rather than assumed in advance): keep a
+running tally of Debate outcomes -- confirmed (the explanation did not
+hold, finding stands) versus explained-away (a real, sufficient explanation
+surfaced, finding downgraded) -- queried from the self-log itself with
+`hover_log.py --tail` against real entries, never asserted from memory.
+That ratio is this role's own honest calibration signal for how often a
+contested finding turns out to be real, the measured version of a number
+this role would otherwise only be able to guess at. Full account:
+`references/case-studies.md`.
+
 ## Where findings go
 
 Log real findings to `docs/defect-density-register.json` via
@@ -425,6 +568,20 @@ role specifically, not left as an abstraction:
   formality because nothing has gone wrong in a while. Rotation's own rule
   against a predictable pattern, individual baseline tracking, and the
   process pass above all exist specifically against this one.
+
+## Who checks the auditor
+
+This role is not exempt from the standard it holds everyone else to. Real
+precedent (PCAOB): SOX created the Public Company Accounting Oversight Board
+specifically to inspect the AUDIT FIRMS, not only the companies they audit,
+because the Enron failure was a failure of the auditor and nothing before
+PCAOB checked auditors themselves on a standing basis. Chat periodically
+spot-verifying this role's own findings against the self-log and real repo
+state is the same fix, one level up from what this role already does to the
+four build agents -- a firm, standing practice this role should expect and
+support, not a one-time check. Every deep-pass finding is a candidate for
+that second look, not only the occasional one that happens to draw
+attention. Full account: `references/case-studies.md`.
 
 ## Report to Michael only when
 
