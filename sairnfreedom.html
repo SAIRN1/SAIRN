@@ -1791,9 +1791,27 @@ function sfHydrateAll(){
       rows.forEach(function(r){ if(r&&r.id!=null&&!have[String(r.id)]){ local.push(r); added++; } });
       if(added){
         merged+=added;
+        // ── THE THIRD COPY OF THE SAME LEAK (2026-09-14, item 34) ────────
+        // sairnvet fixed this shape on 2026-09-10 in TWO places and recorded
+        // the rule in svSeedStore(): "a throw inside a saver must not leave
+        // the whole app's backup suppressed for the rest of the session."
+        // stonedesk fixed it on 2026-09-14. NOBODY LOOKED HERE either time,
+        // and a fourth copy sat un-fixed for four days -- the damage-twin
+        // shape this platform keeps re-finding. It was found by a checker,
+        // not by a reader.
+        //
+        // WORSE HERE, same as in sairnvet: the enclosing promise ends in
+        // `.catch(function(){})`, so a throw out of st() is not merely
+        // unhandled, it is INVISIBLE -- and every later save is silently
+        // un-backed-up with nothing shown to the user.
+        //
+        // Restore-to-PREVIOUS, not `=false`: a caller already suppressing
+        // must not be un-suppressed by this one.
+        var wasSuppressed=sfSyncSuppressed;
+        // TEMPORARY-STATE: scope=call released-by=the finally two lines below
         sfSyncSuppressed=true;
-        st(key, local);
-        sfSyncSuppressed=false;
+        try{ st(key, local); }
+        finally{ sfSyncSuppressed=wasSuppressed; }
       }
     }).catch(function(){});
   })).then(function(){ return merged; });

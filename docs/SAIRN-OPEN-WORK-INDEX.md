@@ -27,6 +27,17 @@ must read all four, not just the shared file.**
 **Every row is a claim, not a fact.** Same standard as a handoff: re-verify
 before you act on one. Rows marked ⚠️ are ones this rebuild could not confirm.
 
+**THERE IS NO ITEM 45, and an item number in a session summary is not a
+registry entry.** Recorded 2026-09-14 after a fresh session was handed a
+work queue naming *"the item 40/41/43/44/45 cluster"* and spent time looking
+for the fifth. `grep -rn "item 45"` over the whole repo returns **zero hits** —
+no row here, nothing in `docs/MASTER-PLAN.md`, nothing in any
+`SAIRN-ACTIVE-WORK-*.md`, and no `items.md` exists anywhere in the tree. The
+number came from a summary of a prior session, which is exactly the kind of
+claim the paragraph above says to re-verify. **This file is the registry. If a
+number is not in it, the item does not exist** — say so and move on rather than
+hunting for it.
+
 ---
 
 ## Open items

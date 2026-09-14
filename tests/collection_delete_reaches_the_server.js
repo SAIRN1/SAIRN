@@ -501,8 +501,15 @@ function seeded(key, prev, opts) {
   // object equivalent has no id to merge on, so the choice is adopt-or-leave --
   // and adopting over a shop's live discount rules from a second browser is
   // exactly the clobber that rule exists to prevent.
+  // sdWhileSuppressed is pulled in DELIBERATELY, not incidentally. Hydration's
+  // two writes went through it on 2026-09-14 (item 34) so a throw inside st()
+  // cannot leave sdSyncSuppressed stuck on for the session. Omitting it here
+  // does not fail loudly -- sdHydrateAll's own `.catch(function(){})` swallows
+  // the ReferenceError and the arm below fails with "undefined is not valid
+  // JSON", which is the extract being incomplete, not the app being wrong.
   const HYDRATE = [
     grabAt('function sdLoad(k,def){', ''),
+    grabAt('function sdWhileSuppressed(fn){', ''),
     grabAt('function sdHydrateAll(){', '')
   ].join('\n\n');
 

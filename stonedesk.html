@@ -2262,6 +2262,27 @@ window.sdRowId=sdRowId;
 //
 // provisioned:false comes back as null from sdData(), so a read against an
 // un-migrated table leaves local data untouched rather than emptying anything.
+//
+// ── WHY HYDRATION'S WRITES GO THROUGH A HELPER (2026-09-14, item 34) ──────
+// Both merge branches below used to read: set sdSyncSuppressed=true, call
+// st(), set it =false on the next line. A throw ANYWHERE in st() skipped the
+// third line, and because the surrounding `.catch(function(){})` swallows the
+// throw, suppression stayed ON for the rest of the session -- every later save
+// silently un-backed-up, no error, nothing in the UI. That is the item 34
+// shape exactly: something set on the way in, meant to come off on the way
+// out, and nothing that guarantees it does. sdClearSafeDemoData() already had
+// the `finally`; hydration never got it.
+//
+// Restore-to-PREVIOUS rather than `=false`, so a caller that is already
+// suppressing cannot be silently un-suppressed by a nested hydrate.
+function sdWhileSuppressed(fn){
+  var was=sdSyncSuppressed;
+  // TEMPORARY-STATE: scope=call released-by=the finally three lines below
+  sdSyncSuppressed=true;
+  try{ return fn(); }
+  finally{ sdSyncSuppressed=was; }
+}
+window.sdWhileSuppressed=sdWhileSuppressed;
 function sdHydrateAll(){
   if(typeof sdData!=='function') return Promise.resolve(0);
   if(typeof sdLicenseKey!=='function'||!sdLicenseKey()) return Promise.resolve(0);
@@ -2283,9 +2304,7 @@ function sdHydrateAll(){
         var blob=rows[0]&&rows[0].blob;
         if(!blob||typeof blob!=='object') return;
         merged++;
-        sdSyncSuppressed=true;
-        st(key,blob);
-        sdSyncSuppressed=false;
+        sdWhileSuppressed(function(){ st(key,blob); });
         return;
       }
       var local=sdLoad(key,[]);
@@ -2296,9 +2315,7 @@ function sdHydrateAll(){
       rows.forEach(function(r){ if(r&&r.id!=null&&!have[String(r.id)]){ local.push(r); added++; } });
       if(added){
         merged+=added;
-        sdSyncSuppressed=true;
-        st(key,local);
-        sdSyncSuppressed=false;
+        sdWhileSuppressed(function(){ st(key,local); });
       }
     }).catch(function(){});
   })).then(function(){ return merged; });
@@ -6347,6 +6364,7 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
     // leave every later save silently un-backed-up -- a suppression that stays
     // on is a backup that has stopped without saying so.
     var wasSuppressed=sdSyncSuppressed;
+    // TEMPORARY-STATE: scope=call released-by=the finally two lines below
     sdSyncSuppressed=true;
     try{ SAFE_DEMO_KEYS.forEach(function(k){st(k,[]);}); }
     finally{ sdSyncSuppressed=wasSuppressed; }

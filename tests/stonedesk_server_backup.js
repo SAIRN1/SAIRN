@@ -222,8 +222,49 @@ test('hydration is additive: it never overwrites a local id', () => {
   const src = html.slice(at, html.indexOf('window.sdHydrateAll', at));
   assert.match(src, /!have\[String\(r\.id\)\]/,
     'the merge no longer checks whether the id is already local');
-  assert.ok(src.indexOf('sdSyncSuppressed=true') !== -1,
-    'hydrated rows would be echoed straight back to the server');
+  // ── THE ANCHOR MOVED, 2026-09-14 (item 34) ──────────────────────────────
+  // This asserted the literal `sdSyncSuppressed=true` inside sdHydrateAll.
+  // Both hydration writes now go through sdWhileSuppressed() so a throw in
+  // st() cannot leave suppression stuck on for the session -- so the literal
+  // left this slice, and the old assertion would have gone red on a CORRECT
+  // change. That is the failure mode where an assertion gets loosened or
+  // deleted instead of re-aimed. It is re-aimed: the PROPERTY is that every
+  // write in the merge is wrapped, and a new unwrapped one fails this.
+  const sts = src.match(/st\(key\s*,/g) || [];
+  const wrapped = src.match(/sdWhileSuppressed\(function\(\)\{\s*st\(key\s*,/g) || [];
+  assert.ok(sts.length > 0, 'the merge no longer writes anything');
+  assert.strictEqual(wrapped.length, sts.length,
+    'a hydration write is not suppressed -- those rows echo straight back '
+    + 'to the server (' + wrapped.length + ' wrapped of ' + sts.length + ')');
+});
+
+test('a throw inside a hydration write does not leave suppression stuck ON', () => {
+  // ITEM 34, AND THE REASON THE HELPER EXISTS. Hydration used to set
+  // sdSyncSuppressed=true, call st(), and clear it on the NEXT LINE. A throw
+  // inside st() skipped that line, and sdHydrateAll's enclosing
+  // `.catch(function(){})` swallowed the throw -- so every later save was
+  // silently un-backed-up for the REST OF THE SESSION, no error, nothing on
+  // screen. Read rather than run, this code looks correct, which is why it
+  // survived three reviews; so this arm RUNS it.
+  const at = html.indexOf('function sdWhileSuppressed(fn){');
+  assert.ok(at > 0, 'the suppression helper is gone');
+  const src = html.slice(at, html.indexOf('window.sdWhileSuppressed', at));
+
+  const ctx = vm.createContext({ sdSyncSuppressed: false });
+  vm.runInContext(src + '\nthis.run = sdWhileSuppressed;', ctx,
+    { filename: 'sd-while-suppressed-extract.js' });
+
+  assert.throws(() => ctx.run(() => { throw new Error('localStorage full'); }),
+    /localStorage full/, 'the throw is swallowed -- the caller cannot react');
+  assert.strictEqual(ctx.sdSyncSuppressed, false,
+    'suppression stayed ON after a throw -- every later save is silently lost');
+
+  // Restore-to-PREVIOUS, not `=false`: a caller that is already suppressing
+  // must not be un-suppressed by a nested call.
+  ctx.sdSyncSuppressed = true;
+  ctx.run(() => {});
+  assert.strictEqual(ctx.sdSyncSuppressed, true,
+    'a nested call un-suppressed its caller');
 });
 
 section('soft delete: marked and hidden, never destroyed');

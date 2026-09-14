@@ -179,6 +179,41 @@ test('sfData is the only sd-data caller in the file', () => {
     'more than one place calls sd-data directly -- the registry header says there is one');
 });
 
+section('5. hydration cannot leave the backup suppressed for the session');
+
+test('every sfSyncSuppressed=true is released in a finally', () => {
+  // ── THE THIRD COPY OF ONE BUG, 2026-09-14 (item 34) ────────────────────
+  // sairnvet fixed this shape TWICE on 2026-09-10 and wrote the rule into
+  // svSeedStore(): "a throw inside a saver must not leave the whole app's
+  // backup suppressed for the rest of the session." stonedesk fixed it on
+  // 2026-09-14. Nobody looked here either time, and this app carried the leak
+  // for four more days. It was found by a checker, not by a reader.
+  //
+  // WORSE HERE, same as in sairnvet: sfHydrateAll's enclosing
+  // `.catch(function(){})` swallows the throw, so the failure is invisible and
+  // every later save is silently un-backed-up.
+  //
+  // ASSERTED AS A COUNT, not on one line, so a FOURTH site added later without
+  // a finally fails this rather than sliding past a fixed anchor.
+  const ons = (HTML.match(/^\s*sfSyncSuppressed\s*=\s*true\s*;/gm) || []).length;
+  const finallys = (HTML.match(/finally\s*\{\s*sfSyncSuppressed\s*=/g) || []).length;
+  assert.ok(ons > 0, 'the suppression flag is gone -- this arm now tests nothing');
+  assert.strictEqual(finallys, ons,
+    'a site sets sfSyncSuppressed and does NOT release it in a finally ('
+    + finallys + ' finally of ' + ons + ' set) -- a throw there silences every '
+    + 'later save for the rest of the session');
+});
+
+test('the release restores the PREVIOUS value, not a bare false', () => {
+  // `=false` in a nested call un-suppresses its caller. sairnvet's svSeedStore
+  // uses a bare false and is correct there because nothing nests inside it;
+  // this site is inside a per-key promise map, so it saves and restores.
+  assert.ok(/var wasSuppressed=sfSyncSuppressed;/.test(HTML),
+    'the previous value is no longer captured');
+  assert.ok(/finally\{ sfSyncSuppressed=wasSuppressed; \}/.test(HTML),
+    'the release no longer restores the captured value');
+});
+
 console.log('\n' + (fail ? 'FAILED' : 'ok') + '  sairnfreedom_server_backup: '
   + pass + ' passed, ' + fail + ' failed');
 process.exit(fail ? 1 : 0);
