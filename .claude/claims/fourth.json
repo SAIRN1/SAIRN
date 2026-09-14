@@ -1110,8 +1110,8 @@
       "task": "sairnvet dosing audit trail durable ids and backed-up-before-evict cap",
       "claimed_at": "2026-09-14T11:23:21Z",
       "claimed_at_epoch": 1789385001.3482673,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T11:46:11Z"
     }
   ]
 }
