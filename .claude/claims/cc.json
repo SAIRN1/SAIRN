@@ -1134,6 +1134,16 @@
       "claimed_at_epoch": 1789382641.5535972,
       "status": "released",
       "released_at": "2026-09-14T10:54:07Z"
+    },
+    {
+      "id": "cc-1789383566",
+      "session": "cc",
+      "subject": "cc",
+      "task": "stonedesk sd_drawings two backing variables traced",
+      "claimed_at": "2026-09-14T10:59:26Z",
+      "claimed_at_epoch": 1789383566.468804,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
