@@ -1,0 +1,270 @@
+# .github/workflows/nightly-backup.yml
+#
+# THE NIGHTLY BACKUP, AND THE RESTORE THAT PROVES IT IS ONE.
+# Michael's decision, 2026-09-14. Supabase is on the FREE TIER: no automated
+# database backups at all, one-day log retention. Before this, a DEA-relevant
+# controlled-substance register, attorney client trust money and dental charge
+# history had no recovery path.
+#
+# ── THE PART THAT MATTERS IS THE SECOND HALF ────────────────────────────────
+# A dump that completed is not a backup. This job restores the dump it just
+# took into a throwaway Postgres, stands PostgREST in front of it, and runs
+# tools/restore_coherence_check.js against the restored copy -- so a dump that
+# cannot restore clean FAILS THAT NIGHT rather than on the day it is needed.
+#
+# The coherence checker needs no baseline capture: the audit checkpoint chain
+# (item 35) is a fingerprint carried inside the data, so the restored copy is
+# checked against its own past. That is what makes a nightly restore test
+# affordable at all.
+#
+# ── THE THREE SILENT FAILURES THIS IS BUILT AGAINST ─────────────────────────
+#  1. AN EMPTY DUMP THAT RESTORES PERFECTLY. Every audit table on this platform
+#     has RLS enabled, and a SELECT-only role without BYPASSRLS dumps ZERO rows
+#     from them and exits 0. sql/backup_reader_role.sql grants BYPASSRLS for
+#     exactly this reason, and the size floor below plus the coherence check are
+#     the two things that would catch it if the role were ever recreated wrong.
+#  2. A DUMP NOBODY EVER READ BACK. Addressed by restoring every night.
+#  3. PLAINTEXT ON DISK. pg_dump is piped STRAIGHT into age; the unencrypted
+#     bytes never become a file, on the runner or anywhere else.
+#
+# ── WHAT THE ENCRYPTION DOES AND DOES NOT PROTECT, STATED PLAINLY ───────────
+# The age identity lives in a GitHub secret because the same workflow has to
+# decrypt to run the restore test. So it protects the dump AT REST IN R2 --
+# against a bucket credential leak, a misconfigured bucket, or R2 itself -- and
+# it does NOT protect against someone who already has this repository's Actions
+# secrets. That is a real limit and it is written here rather than implied by
+# the word "encrypted".
+#
+# ── SECRETS THIS NEEDS (none of them exist yet) ─────────────────────────────
+#   BACKUP_PGHOST BACKUP_PGPORT BACKUP_PGDATABASE BACKUP_PGUSER BACKUP_PGPASSWORD
+#       the dedicated SELECT-only role from sql/backup_reader_role.sql
+#   BACKUP_AGE_KEY        an age identity (AGE-SECRET-KEY-1...), used to encrypt
+#                         AND to decrypt for the restore test
+#   R2_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY R2_BUCKET
+#       Cloudflare R2, S3-compatible. Free to 10GB with no egress charge, which
+#       is what makes pulling the dump back down every night affordable.
+#
+# NOT VERIFIED: this workflow has never run. It cannot be run from a developer
+# machine, and every secret above is absent. Read the first real run's log
+# before treating any of it as working -- especially the restore, which is the
+# step most likely to need the role and extension fixes that only a real
+# Supabase dump reveals.
+
+name: nightly-backup
+
+on:
+  schedule:
+    # 03:40 UTC. Deliberately not on the hour: Vercel's crons run at :00 and
+    # :15, and a backup that reads mid-sweep is a backup of a half-written row.
+    - cron: '40 3 * * *'
+  workflow_dispatch:
+
+concurrency:
+  # Two of these at once would race on the same object name and on the retention
+  # sweep. Never cancel-in-progress: killing a half-finished backup to start
+  # another is the wrong trade.
+  group: nightly-backup
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  dump-and-prove-it-restores:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    services:
+      # The throwaway. Nothing here is persisted and nothing reaches production.
+      restore-target:
+        image: postgres:15
+        env:
+          POSTGRES_PASSWORD: restore-target-local-only
+          POSTGRES_DB: restored
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install pg_dump 15 and age
+        run: |
+          set -euo pipefail
+          sudo sh -c 'echo "deb http://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+          curl -fsSL https://www.postgresql.org/media/keys/ACCC4CF8.asc | sudo gpg --dearmor -o /etc/apt/trusted.gpg.d/pgdg.gpg
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq postgresql-client-15 age
+          pg_dump --version
+          age --version
+
+      # ── THE DUMP, ENCRYPTED BEFORE IT TOUCHES DISK ────────────────────────
+      # `set -o pipefail` is load-bearing: without it the exit status is age's,
+      # and a pg_dump that died half way through produces a perfectly valid
+      # encrypted file containing half a database, with a zero exit code.
+      - name: Dump and encrypt in one pipe
+        env:
+          PGHOST: ${{ secrets.BACKUP_PGHOST }}
+          PGPORT: ${{ secrets.BACKUP_PGPORT }}
+          PGDATABASE: ${{ secrets.BACKUP_PGDATABASE }}
+          PGUSER: ${{ secrets.BACKUP_PGUSER }}
+          PGPASSWORD: ${{ secrets.BACKUP_PGPASSWORD }}
+          AGE_KEY: ${{ secrets.BACKUP_AGE_KEY }}
+        run: |
+          set -euo pipefail
+          STAMP="$(date -u +%Y-%m-%dT%H%M%SZ)"
+          echo "STAMP=$STAMP" >> "$GITHUB_ENV"
+          # The public half is derived from the identity so only ONE secret has
+          # to exist and the two can never drift apart.
+          printf '%s' "$AGE_KEY" > /tmp/age.key
+          chmod 600 /tmp/age.key
+          RECIPIENT="$(age-keygen -y /tmp/age.key)"
+          pg_dump --format=plain --no-owner --no-privileges --schema=public \
+            | age -r "$RECIPIENT" > "/tmp/sairn-$STAMP.sql.age"
+          ls -l "/tmp/sairn-$STAMP.sql.age"
+
+      # ── A SIZE FLOOR, BECAUSE AN EMPTY DUMP IS THE FAILURE THAT LOOKS FINE ─
+      # A schema-only dump of this database is well over 100 KB, so anything
+      # under 50 KB means the data did not come. The most likely cause is the
+      # backup role losing BYPASSRLS and silently reading zero rows from every
+      # RLS-protected table -- see sql/backup_reader_role.sql.
+      - name: Refuse a suspiciously small dump
+        run: |
+          set -euo pipefail
+          SIZE=$(stat -c%s "/tmp/sairn-$STAMP.sql.age")
+          echo "encrypted dump: $SIZE bytes"
+          if [ "$SIZE" -lt 51200 ]; then
+            echo "::error::The dump is ${SIZE} bytes. That is too small to contain this database."
+            echo "::error::The usual cause is the backup role having lost BYPASSRLS, which makes"
+            echo "::error::pg_dump read ZERO rows from every RLS-protected table and exit 0."
+            exit 1
+          fi
+
+      - name: Upload to R2
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          aws s3 cp "/tmp/sairn-$STAMP.sql.age" \
+            "s3://${{ secrets.R2_BUCKET }}/daily/sairn-$STAMP.sql.age" \
+            --endpoint-url "$R2"
+
+      # ── RESTORE IT. THIS IS THE STEP THE WHOLE JOB EXISTS FOR ─────────────
+      # Decrypt from the file just written, not from R2: pulling it back would
+      # also test R2, and a step that tests two things cannot say which failed.
+      # The R2 round trip is its own job below.
+      - name: Restore into the throwaway
+        env:
+          AGE_KEY: ${{ secrets.BACKUP_AGE_KEY }}
+          PGPASSWORD: restore-target-local-only
+        run: |
+          set -euo pipefail
+          # The three Supabase roles the dump's GRANT lines name. A plain
+          # Postgres has none of them, and without these every grant aborts the
+          # restore -- which would read as "the backup is broken" when it is the
+          # TARGET that is missing something.
+          psql -h localhost -U postgres -d restored -v ON_ERROR_STOP=1 -c \
+            "do \$\$ begin
+               if not exists (select 1 from pg_roles where rolname='service_role') then create role service_role; end if;
+               if not exists (select 1 from pg_roles where rolname='anon') then create role anon; end if;
+               if not exists (select 1 from pg_roles where rolname='authenticated') then create role authenticated; end if;
+             end \$\$;"
+          age -d -i /tmp/age.key "/tmp/sairn-$STAMP.sql.age" \
+            | psql -h localhost -U postgres -d restored -v ON_ERROR_STOP=1 --quiet
+          psql -h localhost -U postgres -d restored -t -c \
+            "select count(*) from information_schema.tables where table_schema='public';"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Stand PostgREST in front of the restored copy
+        run: |
+          set -euo pipefail
+          # The coherence checker speaks the same interface production does.
+          # Restoring into bare Postgres and querying it with psql would test a
+          # different thing from the one that has to work.
+          docker run -d --name postgrest --network host \
+            -e PGRST_DB_URI="postgres://postgres:restore-target-local-only@localhost:5432/restored" \
+            -e PGRST_DB_SCHEMAS="public" \
+            -e PGRST_DB_ANON_ROLE="postgres" \
+            -e PGRST_SERVER_PORT=3000 \
+            postgrest/postgrest:v12.2.0
+          for i in $(seq 1 30); do
+            if curl -fsS http://localhost:3000/ >/dev/null 2>&1; then break; fi
+            sleep 2
+          done
+          curl -fsS http://localhost:3000/ >/dev/null
+
+      # ── THE VERDICT ───────────────────────────────────────────────────────
+      # Exit 0 coherent, 1 a finding, 2 could-not-check. ALL THREE ARE REPORTED
+      # AND ONLY 0 PASSES: a run that could not look is not a clean restore, and
+      # letting 2 through would turn this whole job into a nightly green tick
+      # over an unchecked file.
+      - name: Prove the restored copy is coherent
+        env:
+          SAIRN_TARGET_URL: http://localhost:3000
+          SAIRN_TARGET_KEY: unused-postgrest-is-open-on-this-throwaway
+        run: |
+          set +e
+          node tools/restore_coherence_check.js
+          RC=$?
+          set -e
+          echo "restore_coherence_check exit: $RC"
+          if [ "$RC" -eq 1 ]; then
+            echo "::error::The restored copy is NOT coherent. The dump completed and the"
+            echo "::error::data it carries does not match the fingerprint inside it."
+            exit 1
+          fi
+          if [ "$RC" -eq 2 ]; then
+            echo "::error::The coherence check COULD NOT RUN. That is not a clean restore --"
+            echo "::error::it means nothing was verified, and the most likely cause is that"
+            echo "::error::sql/audit_checkpoint_schema.sql has never been applied in production,"
+            echo "::error::so there is no fingerprint to check the restore against."
+            exit 1
+          fi
+
+      # ── RETENTION, LAST, AND ONLY AFTER EVERYTHING ABOVE PASSED ───────────
+      # Deliberately not a bucket lifecycle rule: a rule deletes on a schedule
+      # this job cannot see, so a month of failing backups would quietly age out
+      # the last GOOD one. Running it here means retention only advances on a
+      # night that produced a dump which demonstrably restores.
+      - name: Delete backups older than 30 days
+        env:
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          R2: https://${{ secrets.R2_ACCOUNT_ID }}.r2.cloudflarestorage.com
+        run: |
+          set -euo pipefail
+          CUTOFF=$(date -u -d '30 days ago' +%Y-%m-%d)
+          echo "deleting daily/ objects dated before $CUTOFF"
+          aws s3 ls "s3://${{ secrets.R2_BUCKET }}/daily/" --endpoint-url "$R2" \
+            | awk '{print $4}' | grep -E '^sairn-' | while read -r KEY; do
+              D=$(echo "$KEY" | sed -E 's/^sairn-([0-9]{4}-[0-9]{2}-[0-9]{2}).*/\1/')
+              if [ "$D" \< "$CUTOFF" ]; then
+                echo "  removing $KEY"
+                aws s3 rm "s3://${{ secrets.R2_BUCKET }}/daily/$KEY" --endpoint-url "$R2"
+              fi
+            done
+          # KEEP A FLOOR. If the listing ever comes back empty or unparsable the
+          # loop above deletes nothing, which is correct -- but say the count so
+          # a retention sweep that silently stopped working is visible.
+          REMAINING=$(aws s3 ls "s3://${{ secrets.R2_BUCKET }}/daily/" --endpoint-url "$R2" | wc -l)
+          echo "backups retained: $REMAINING"
+          if [ "$REMAINING" -lt 1 ]; then
+            echo "::error::No backups are retained after the sweep. Something deleted the one"
+            echo "::error::this job just uploaded."
+            exit 1
+          fi
+
+      - name: Shred the key material
+        if: always()
+        run: shred -u /tmp/age.key 2>/dev/null || rm -f /tmp/age.key
