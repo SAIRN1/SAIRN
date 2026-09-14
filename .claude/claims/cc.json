@@ -1262,8 +1262,8 @@
       "task": "review-fourth-65a-78 independent review of item 65a nightly backup and item 78 role gate spec, plus item 32 reachability",
       "claimed_at": "2026-09-14T19:08:56Z",
       "claimed_at_epoch": 1789412936.1799092,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:44:28Z"
     }
   ]
 }
