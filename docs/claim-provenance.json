@@ -1,0 +1,37 @@
+{
+  "_what_this_is": "Item 23, the RECORDING side. How each Tier A claim was established: what was observed, WHEN it was observed (not when it was typed), by what method, and how somebody else could redo it. Nothing judges staleness yet -- see the design document for why recording comes first.",
+  "_scope": "Tier A only, derived from docs/CRITICALITY-TIERS.md",
+  "_freshness": "per TYPE, not per clock; an unclassified type is NOT LIVE",
+  "records": [
+    {
+      "subject": "mech_credentials",
+      "type": "live-schema",
+      "claim": "absent from the live-schema snapshot; NEVER RUN as of the capture (CREATE committed 2026-09-02 23:10 UTC, capture is newer and still lacks the table, so snapshot-is-behind is excluded)",
+      "method": "measured",
+      "observed_at": "2026-09-13T18:39:55Z",
+      "recorded_at": "2026-09-14T17:43:55Z",
+      "by": "fourth",
+      "how": "python tools/schema_snapshot_freshness.py -- read the per-table VERDICT block for mech_credentials"
+    },
+    {
+      "subject": "sen_payer_contracts",
+      "type": "live-schema",
+      "claim": "absent from the live-schema snapshot; NEVER RUN as of the capture (CREATE committed 2026-09-02 15:44 UTC, capture is newer and still lacks the table, so snapshot-is-behind is excluded)",
+      "method": "measured",
+      "observed_at": "2026-09-13T18:39:55Z",
+      "recorded_at": "2026-09-14T17:43:55Z",
+      "by": "fourth",
+      "how": "python tools/schema_snapshot_freshness.py -- read the per-table VERDICT block for sen_payer_contracts"
+    },
+    {
+      "subject": "migration:sairnbiz_po_recv_migration.sql",
+      "type": "migration-run",
+      "claim": "its two CREATE TABLE statements (public.sb_po, public.sb_recv) had run as of the capture -- both tables are present in the live-schema snapshot. THIS DOES NOT COVER the rest of the file: columns, grants and indexes are not evidenced by table presence, and sb_po/sb_recv column drift was open work at the time this was recorded.",
+      "method": "derived",
+      "observed_at": "2026-09-13T18:39:55Z",
+      "recorded_at": "2026-09-14T17:44:19Z",
+      "by": "fourth",
+      "how": "python tools/schema_snapshot_freshness.py -- sb_po and sb_recv appear in NEITHER the absent-and-queried nor the absent-and-unqueried list, so both are in the 380-table snapshot; cross-check the CREATEs at sql/sairnbiz_po_recv_migration.sql:54 and :70"
+    }
+  ]
+}
