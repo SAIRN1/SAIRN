@@ -162,6 +162,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **`truthy_sum_check.py` COULD NOT TELL A NUMERIC FOLD FROM A STRING-LITERAL CONCATENATION, so it was teaching people to write exemptions** &mdash; 58 of its 140 matches were never folds | **CLOSED 2026-09-13 (Cody)** &mdash; the matcher classifies them, the count is PRINTED rather than dropped, 31 baseline keys that existed only to excuse them are gone, and the tool now reports baselin | `tests/run_truthy_sum_probe.py` |
 | **131 COMMITS ON `origin/main` WERE AUTHORED AND COMMITTED BY A TEST FIXTURE** &mdash; one clone had the probes&#39; throwaway identity in its LOCAL git config, and nothing on this platform reads the committing identity | **LEAK STOPPED AND HELD 2026-09-13 (Cody)** &mdash; `SAIRN-fourth` corrected, `tools/committer_identity_check.py` built and promoted report-only, `tests/run_committer_identity_probe.py` 20 arms; **7 m | `tests/run_committer_identity_probe.py` |
 | **`control_char_check.py` PROMOTED TO BLOCKING as push-gate check 11** &mdash; a raw control byte is an escape typed literally, and a `&#92;b` that became a backspace is a regex that can NEVER match | **PROMOTED 2026-09-13 (Michael's call, Cody)** &mdash; `tests/push_gate/check11_probe.py`, 20 arms; **5 mutation controls bite**, gate and checker restored byte-identical | `api/sv-auth.test.js`, `tests/push_gate/check11_probe.py` |
+| **FIVE negative controls now prove their own sabotage applied &mdash; and about NINE of the remaining nineteen are FALSE POSITIVES, measured** | **5 CLOSED 2026-09-13 (Cody)**, 24 &rarr; 19; the rest classified against their own evidence lines rather than counted | `tests/push_gate/gate_freshness_probe.py` |
 | ~~**FAIL-OPEN IN THE BLOCKING PUSH GATE: an unresolvable base returned an empty file list**~~ &mdash; **CORRECTED: THE HOLE DOES NOT EXIST IN THAT FORM AND MY REPORT OF IT WAS WRONG** | **REVERTED 2026-09-11 (Cody), same session that wrote it.** The widening rung, the `prepush_base()` change and the credential-scan note are all out; `9c75a8d9` is the restored state of `tools/sairn_pu | `tests/push_gate/refspec_and_override_probe.py` |
 | Fourth promotion batch &mdash; and one checker HELD BACK rather than silenced | **PROMOTED 2026-09-10 (Cody), registry 15 &rarr; 16** &mdash; `5abfcdba`; sweep CLEAN with **no could-not-tell**, probe 57/57, all three `local_only` probes and `write_readback_probe` green | `tests/local_only_probe.py` |
 | The 28 unwired checkers have no way to be promoted, and none had ever run against real code | **REPORT-ONLY PATH BUILT, 3 PROMOTED 2026-09-09 (Cody)** &mdash; `408df818`; `tests/run_report_only_checks_probe.py` 29/29, full sweep CLEAN, and Hank's `run_all_tests_hook_gate_probe.py` still ALL PA | `tests/run_report_only_checks_probe.py` |
@@ -290,7 +291,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**145 of 340 test files are traced to a stated requirement. 195 are not.**
+**145 of 341 test files are traced to a stated requirement. 196 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -387,6 +388,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/wip-accounting.test.js`
 - `api/alf-append-only-fail-closed.test.js`
 - `api/claude-cost-controls.test.js`
+- `api/claude-guardrail-probes.test.js`
 - `api/dnt-bi.test.js`
 - `api/duplicate-check-fail-closed.test.js`
 - `api/fail-open-triage-2026-09-04.test.js`
@@ -509,8 +511,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 340   tests/**, api/*.test.js
-  open-work rows citing a test       130   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 341   tests/**, api/*.test.js
+  open-work rows citing a test       131   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                35   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

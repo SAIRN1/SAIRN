@@ -242,7 +242,11 @@ try:
     tip_missing2 = commit(wt, SQL_REL, MISSING_TABLE_SQL,
                           'fixture: sql naming a table the snapshot lacks')
     wt_pf = os.path.join(wt, 'tools', 'sairn_sql_preflight.py')
+    ok('the preflight is present before the sabotage removes it',
+       os.path.isfile(wt_pf), wt_pf)
     os.remove(wt_pf)
+    ok('...and the sabotage really applied -- it is gone',
+       not os.path.exists(wt_pf), wt_pf)
     rc, out = run_gate(wt, tip_missing2, base, SNAP_GOOD)
     low = out.lower()
     ok('the GATE refuses a push shipping sql when the checker is absent', rc != 0,

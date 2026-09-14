@@ -92,7 +92,13 @@ try:
     # Any real edit will do; the check compares content, not a version string.
     path = os.path.join(wt, REL.replace('/', os.sep))
     original = io.open(path, 'rb').read()
+    # THE SABOTAGE MUST PROVE IT APPLIED. This arm asserts the gate NOTICES a
+    # local edit; if the write silently produced identical bytes the arm would
+    # be asserting that about an unmodified file, and 'no notice' would then
+    # read as a failure of the check rather than of the control.
     io.open(path, 'wb').write(original + b"\n# probe: a local edit to this gate\n")
+    check('B0 the local edit really changed the gate on disk',
+          io.open(path, 'rb').read() != original, True)
     rc, out = run_gate(wt)
     check('B1 a modified gate produces the notice',
           'Gate-freshness (check 10) NOTICE' in out, True)
@@ -106,7 +112,13 @@ try:
     # line endings alone. A freshness notice that fires on every push in a CRLF
     # clone is worth less than no notice: it would be the notice nobody reads,
     # on the check whose entire job is to be believed.
-    io.open(path, 'wb').write(original.replace(b'\n', b'\r\n'))
+    _crlf = original.replace(b'\n', b'\r\n')
+    # Same rule for the CRLF arm, and it matters more here: if the gate file
+    # were ever checked out CRLF already, `replace` returns it unchanged and
+    # 'a CRLF-only difference does not fire' would be proven about a file that
+    # differs from origin by nothing at all.
+    check('C0 the CRLF rewrite really changed the bytes', _crlf != original, True)
+    io.open(path, 'wb').write(_crlf)
     rc, out = run_gate(wt)
     check('C1 a CRLF-only difference does not fire', 'Gate-freshness' in out, False)
     io.open(path, 'wb').write(original)

@@ -173,7 +173,11 @@ try:
         git(wt, 'reset', '-q', '--hard', base)
         tip = commit(wt, fixture_rel, fixture_body, subject)
         victim = os.path.join(wt, rel_tool)
+        ok('%s -- the tool is present before the sabotage removes it' % title,
+           os.path.isfile(victim), victim)
         os.remove(victim)
+        ok('...and the sabotage really applied -- it is gone',
+           not os.path.exists(victim), victim)
         try:
             rc, out = run_gate(wt, tip, base, SNAP)
         finally:
@@ -217,7 +221,11 @@ try:
     tip = commit(wt, 'probe_missing_checker.html', UNREACHABLE_HTML,
                  'fixture: a feature with no way in')
     victim = os.path.join(wt, TOOLS['loadstate'])
+    ok('the load-state checker is present before the sabotage removes it',
+       os.path.isfile(victim), victim)
     os.remove(victim)
+    ok('...and the sabotage really applied -- it is gone',
+       not os.path.exists(victim), victim)
     try:
         rc, out = run_gate(wt, tip, base, SNAP)
     finally:

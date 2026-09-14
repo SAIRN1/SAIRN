@@ -186,7 +186,11 @@ try:
     git(wt, 'reset', '-q', '--hard', base); sync_tools(wt)
     tip5 = commit(wt, REL, b'x = "' + BS + b'";\n', 'fixture: a byte to check')
     victim = os.path.join(wt, TOOL_REL)
+    ok('the checker is present before the sabotage removes it',
+       os.path.isfile(victim), victim)
     os.remove(victim)
+    ok('...and the sabotage really applied -- it is gone',
+       not os.path.exists(victim), victim)
     try:
         rc5, out5 = run_gate(wt, tip5, base)
     finally:

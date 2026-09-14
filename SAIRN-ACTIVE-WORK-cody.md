@@ -3553,3 +3553,52 @@ inside fourth's active `sairnvet` claim -- `sairn_claim.py check` BLOCKED, and I
 verified the block rather than rewording past it. Check 11 will refuse the next
 push that touches that file, which is the correct outcome and puts the fix in
 front of its owner.
+
+## 2026-09-13 (Cody) -- five sabotage controls closed, and the headline count is
+## inflated by about half
+
+Skill used: `sairn-guardian-v2`. Claim: `tests` --
+`sabotage controls that never verify their own sabotage applied`.
+
+**FIVE CLOSED**, 24 unguarded -> 19, each now asserting the sabotage CHANGED THE
+TARGET rather than only that the checker answered as expected:
+`gate_freshness_probe` (both the append and the CRLF rewrite assert the bytes
+differ), and the four removal-style controls -- `check3_probe`, `check11_probe`,
+`missing_checker_probe`, `run_githook_install_probe` -- which now assert the tool
+was present before `os.remove` and is gone after.
+
+**THE HEADLINE IS INFLATED AND THE CAUSE IS MECHANICAL.** The detector fires on
+any file containing both a write and a `.replace(`. I classified all 19
+remaining rows against their own evidence lines, and about NINE patch no file at
+all:
+
+  * `datetime.now(...).replace(tzinfo=None)` -- `run_gate_column_probe`,
+    `run_snapshot_freshness_probe`
+  * scrubbing a checker's OUTPUT STRING -- `run_control_char_probe`,
+    `run_metamorphic_probe`, `claims/run_push_verify_probe`
+  * path-separator normalisation -- `run_committer_identity_probe`,
+    `run_defect_register_probe`, `run_suite_lock_probe`,
+    `check2_and_check5_probe`
+
+**NO ANCHOR TO ROT MEANS NOTHING TO GUARD, so I added no assertion to any of
+them.** Flipping a flag by writing a check that proves nothing is the exact
+defect this tool exists to find, performed on the tool.
+
+**ITS OWN DOCSTRING RECORDS THE BLIND LOCK CATCHING THIS BIAS ONCE ALREADY, in
+the opposite direction** -- the first pattern required `.replace(` to be followed
+by a quote, so the GUARDED idiom was never judged at all. This is the mirror
+image, and the fixtures cannot catch it because not one of the seven contains a
+datetime or an output scrub. A blind lock is only as good as the shapes it
+imagines.
+
+**~10 GENUINELY UNGUARDED CONTROLS REMAIN**, most of them the sabotage tool's own
+author's probes. Narrowing the detector to require the replace to FEED A FILE
+WRITE is a change to somebody else's tool and is left as a decision rather than
+taken.
+
+**SUITE: 238 files, 8 failures, NONE MINE** -- all seven testable ones reproduce
+on a stashed pristine main, and the eighth is
+`tests/run_report_only_checks_probe.py` timing out at 600s because the
+report-only sweep now takes longer than its own limit. That last one is worth
+somebody's attention: a sweep that cannot finish inside its timeout reports as a
+failure rather than as a result.

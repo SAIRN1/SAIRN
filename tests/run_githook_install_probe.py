@@ -113,7 +113,15 @@ try:
     git(CLONE, 'config', 'core.hooksPath', '.githooks')
     raw = io.open(hookpath(CLONE), 'rb').read()
     ok('the fresh clone checked the hook out as LF', b'\r\n' not in raw)
-    io.open(hookpath(CLONE), 'wb').write(raw.replace(b'\n', b'\r\n'))
+    # THE SABOTAGE MUST PROVE IT APPLIED. `bytes.replace` returns the original
+    # unchanged when the pattern is absent, so a hook that arrived CRLF already,
+    # or a checkout convention that changes, would leave this arm running the
+    # checker against an UNTOUCHED file -- and an arm phrased as "still fails"
+    # would keep passing forever on a control that broke nothing.
+    sabotaged = raw.replace(b'\n', b'\r\n')
+    ok('the CRLF sabotage really changed the hook', sabotaged != raw)
+    io.open(hookpath(CLONE), 'wb').write(sabotaged)
+    ok('...and the file on disk carries it', b'\r\n' in io.open(hookpath(CLONE), 'rb').read())
     cfg = git(CLONE, 'config', '--get', 'core.hooksPath').stdout.strip()
     ok('core.hooksPath is CORRECT in this clone', cfg == '.githooks', cfg)
     rc, out = check(CLONE)
@@ -125,7 +133,10 @@ try:
        b'\r\n' in io.open(hookpath(CLONE), 'rb').read())
 
     print('\nD. a broken shell wrapper is caught too')
+    before_d = io.open(hookpath(CLONE), 'rb').read()
     io.open(hookpath(CLONE), 'wb').write(b'#!/bin/sh\nthis-interpreter-does-not-exist\n')
+    ok('the wrapper sabotage really replaced the hook',
+       io.open(hookpath(CLONE), 'rb').read() != before_d)
     rc, out = check(CLONE)
     ok('--check fails on a wrapper that does not execute', rc == 1,
        'exit=%d\n%s' % (rc, out[-400:]))
@@ -138,6 +149,11 @@ try:
     raw = io.open(hookpath(CLONE), 'rb').read()
     if b'\r\n' in raw:
         io.open(hookpath(CLONE), 'wb').write(raw.replace(b'\r\n', b'\n'))
+    # The CONTROL has to be genuinely restored, or "passes once installed" is
+    # being asserted about a file still carrying one of the sabotages above.
+    restored = io.open(hookpath(CLONE), 'rb').read()
+    ok('the clone really is restored before the control is asserted',
+       b'\r\n' not in restored and b'this-interpreter-does-not-exist' not in restored)
     rc, out = check(CLONE)
     ok('--check passes once the clone is really installed', rc == 0,
        'exit=%d\n%s' % (rc, out[-400:]))
