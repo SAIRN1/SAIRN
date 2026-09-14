@@ -11,6 +11,72 @@ calibration programme has to seed against, written down for the first time.
 > trusting its own subject (disciplines §5). Rename this file without the
 > `-UNRATIFIED` suffix in the commit that ratifies it, and say in that commit
 > who read it and what they changed.
+>
+> ---
+>
+> ### 🛑 STOP — if you are the ratifier, DO NOT READ PAST THIS BOX YET
+>
+> **Added 2026-09-14 (fourth). This instruction was already in this document,
+> at the very bottom, under "Why there is no back-test" — which is after
+> everything it exists to protect.** The validation procedure requires the
+> ratifier to grade records **blind, from the summaries with the severities
+> stripped, BEFORE reading the rubric**, then again after: accuracy against the
+> recorded grade, stability between their own two passes.
+>
+> **A ratifier who learns that by reading to the end has already destroyed the
+> "before" pass.** I did exactly that — I read this file top to bottom to find
+> out what ratifying involved, and by the time I reached the instruction I was
+> no longer eligible to follow it. **I am therefore disqualified from the blind
+> half and am not ratifying this.** That is not a near miss, it is the
+> procedure failing on its first contact with a reader, and the only fix is
+> position: the guard has to sit in front of the thing it guards.
+>
+> **THE HOLDOUT NOW EXISTS — measured 2026-09-14, it did not when this was
+> written.** The register held 55 records at this file's commit and holds 67
+> now: **12 records this rubric was NOT derived from.** Spread: 6 `high`,
+> 4 `moderate`, 2 `low`. **No `critical`, so the D3 escalators are NOT
+> exercised by this holdout** and the accuracy figure will say nothing about
+> them — publish it with that denominator named, per disciplines §2/§3.
+>
+> Generate the blind packet without reading grades. **Run from the repo root.**
+> The SHA is this file's own adding commit, resolved at run time rather than
+> pasted, because four sessions rebase constantly and a pasted SHA names a
+> commit that stops existing. **No temp file, deliberately** — the first draft
+> of this block wrote to `/tmp` and it does not work here: Git Bash's `/tmp` is
+> a virtual path Windows Python cannot open, so the snippet died on its own
+> output. Verified working 2026-09-14, printing 12 rows.
+>
+> ```bash
+> python - <<'PY'
+> import json, io, subprocess
+> RC = subprocess.check_output(['git', 'log', '--diff-filter=A', '-1', '--format=%H', '--',
+>     'docs/2026-09-13-defect-severity-rubric-UNRATIFIED.md']).decode().strip()
+> pick = lambda d: d['records'] if isinstance(d, dict) and 'records' in d else d
+> old = pick(json.loads(subprocess.check_output(
+>     ['git', 'show', '%s:docs/defect-density-register.json' % RC]).decode('utf-8')))
+> new = pick(json.load(io.open('docs/defect-density-register.json', encoding='utf-8')))
+> k = lambda x: (x.get('subject'), x.get('summary', '')[:60])
+> seen = set(map(k, old))
+> for i, x in enumerate([r for r in new if k(r) not in seen], 1):
+>     print('%2d. %s\n' % (i, x.get('summary')))   # severity deliberately NOT printed
+> PY
+> ```
+>
+> **If it prints 0 rows, STOP — that is a broken differ, not an empty holdout.**
+> The register only grows, so an empty result means the key stopped matching,
+> which reads exactly like "nothing new to grade."
+>
+> **One honest wrinkle, stated rather than smoothed over.** The line below says
+> the rubric was derived from **54** records; the register held **55** at this
+> file's commit. The differ excludes everything present at the commit, so if
+> that 55th record was added after the reading it is being wrongly excluded
+> from the holdout. **The error therefore runs one way only — the holdout is a
+> floor, never contaminated.** 12 is the number to publish; the true figure may
+> be 13.
+>
+> Grade those 12 blind and record the grades **before** reading on. Records
+> added after 2026-09-14 are a second, larger holdout for the month-later
+> question this document already asks for.
 
 Derived from all 54 records in `docs/defect-density-register.json` as of
 2026-09-13. Nothing here is invented: every rule below is a reading of grades
@@ -142,6 +208,14 @@ it is flagged rather than folded in quietly.
 **A back-test against the 54 records would be circular** — the rubric was read
 off those grades, so agreement with them measures nothing but my own
 consistency. No clean holdout exists, because I read all 54 before writing this.
+
+> **2026-09-14 (fourth): this instruction is the one that matters most and it
+> was positioned last, where a ratifier reaches it only after reading the whole
+> rubric — at which point it can no longer be followed.** It is now repeated in
+> the STOP box at the top, which is where it has to live. It is left here too
+> rather than moved, so a reader who remembers it from the bottom still finds
+> it. **The holdout it asks for exists now: 12 records, command in the STOP
+> box.**
 
 **What would validate it:** the ratifier grading a set of records blind, from
 the summaries alone with the severities stripped, before reading this document —
