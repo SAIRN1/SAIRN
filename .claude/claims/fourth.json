@@ -1383,8 +1383,8 @@
       "task": "sairnbiz fault probe the money suites must DENY",
       "claimed_at": "2026-09-14T22:26:02Z",
       "claimed_at_epoch": 1789424762.78571,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T22:42:41Z"
     }
   ]
 }
