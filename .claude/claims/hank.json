@@ -1543,8 +1543,8 @@
       "task": "50b regime statement and 50c quantisation removal from the cost to cost branch",
       "claimed_at": "2026-09-14T16:57:39Z",
       "claimed_at_epoch": 1789405059.334586,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:03:32Z"
     }
   ]
 }
