@@ -51,6 +51,40 @@ Contains: 2,000+ diagnoses, 500+ medications, AI engine covering every drug and 
 
 ## SAIRN CLAUDE ENGINE — Copy Exactly
 
+> ### ⚠️ DO NOT COPY THIS BLOCK AS IT STANDS (measured 2026-09-14)
+>
+> **Of the five functions below, ZERO are byte-identical to what
+> `sairnvet.html` actually runs.** One differs only in line wrapping; **four
+> differ in substance, and in every case because the APP was fixed and this
+> document was not.** The sharpest:
+>
+> ```
+> here : function svStore(k,v){try{localStorage.setItem('sv_'+k,JSON.stringify(v));}catch(e){}}
+> app  : function svStore(k,v){return st('sv_'+k,v);}
+> ```
+>
+> This block still ships a storage wrapper that **swallows its own failure**.
+> The app routed it through the honest one months ago. `svLoad` has the same
+> problem, `showToast` is missing the 2026-09-05 no-toast-element fix, and
+> `callClaude` is missing a severity argument. **Copying this into a new app
+> today reintroduces a silent-failure write** — the defect class this platform
+> has spent the most time removing.
+>
+> A block labelled *Copy Exactly* that no longer matches its own app is not a
+> propagation aid, it is a **propagation vector**, and nothing was watching it
+> until now: `python tools/copy_exactly_check.py`.
+>
+> **The code below is left unchanged on purpose.** `svStore` now delegates to
+> `st()`, a helper that is not part of this block, so the current app version is
+> no longer self-contained and pasting it would not work either. Deciding what
+> the canonical source should be — this document, `sairnvet.html`, or a real
+> shared module — is a call for Michael, not a silent edit. See
+> `docs/2026-09-14-copy-exactly-audit.md`.
+>
+> And note what the checker does **not** do: disciplines §7 asks whether the
+> TARGET was re-qualified for scale, input range and criticality tier. Agreeing
+> bytes are precisely what §7 warns is not safety. That half is unbuilt.
+
 ```javascript
 var APP_ID = 'sairnvet';
 var PROXY  = 'https://sairn.vercel.app/api/claude';

@@ -73,6 +73,13 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'copy_exactly_check.py': ('CHECKER',
+        'whether the one literal must-copy-exactly block still matches the app '
+        'it was copied from -- 0 of 5 identical on 2026-09-14, 4 differing '
+        'because the APP was fixed and the document was not. Four states, '
+        'never collapsed: identical / reflowed (NOT drift) / differs / absent. '
+        'It does NOT answer disciplines 7 -- agreeing bytes are what that '
+        'section warns is not safety'),
     # --- invoked by a hook or by the push gate -----------------------------
     # NO COUNT HERE, DELIBERATELY. This said "the ten numbered push checks" and
     # the gate has eleven; the gate's own header says "DO NOT TRUST THAT NUMBER
