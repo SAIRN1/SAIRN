@@ -2030,3 +2030,48 @@ Timed per registry entry -- whole sweep **347.4s over 35 entries**:
 **The arm I replaced was a good one and was not deleted silently.** It asserted that `trial_balance` and `reverse` refused rather than computing from a partial read -- and it is the assertion that found four fail-open reads in this file in the first place. The file-wide shape assertion beside it stays. In its place: one arm asserting the three actions and `rowsOrFail` are gone and the named 400 survives, and a **CONTROL** asserting `chart`/`validate`/`post` are still present, the write path still refuses at both sites, and the library still exports both pure functions. **Without the control the first arm passes just as well on an empty file, and a deletion that took too much would look identical to one that took exactly enough.**
 
 **Verified:** `node --check` clean on `api/ledger.js`; `api/duplicate-check-fail-closed.test.js` 13 assertions pass (was 11, +2 net after the replacement); `api/_lib/ledger.test.js` passes; no dangling reference to any deleted action anywhere outside `archive/` -- the `action:'read'` hits elsewhere are `sd-data`, a different endpoint.
+
+
+---
+
+## 2026-09-14 -- tracing a "benign" collision row found a delete that undid itself
+
+The row said `sd_drawings` has two distinct backing variables and `key_collision_check.py` is PROMOTED, so it reports on every StoneDesk push until somebody traces it. Tracing it was the small job. **Two keys over was a real defect.**
+
+### The three keys looked identical to the tool
+
+| key | backing variables | verdict |
+|---|---|---|
+| `sd_drawings` | `drawings`, `next` | benign |
+| `sd_business_snapshots` | `d`, `next`, `snaps` | benign, and it has MORE writers |
+| `stonedesk_quote_history` | `d`, `next`, `quoteHistory` | **the real one** |
+
+**The variable COUNT said nothing. Only reading each one did.** In the two benign keys every backing variable is a fresh `JSON.parse` of localStorage -- `sdDrawingsAll()`, `bizSnaps()` -- so there is no in-memory copy for two names to diverge over. `sd_drawings` even carried a comment saying so, and naming `sdCommsThreads` as the opposite case.
+
+### The one that was a cache
+
+`var quoteHistory` is a **module-level array read from localStorage ONCE, at parse time**.
+
+- `sdQBDelete()` filtered the row out, wrote the survivors through `st()`, and **never touched it**.
+- `sdQBRender()` re-reads storage through `qbLoad()`, **so the row really did vanish from the panel.** The delete looked complete.
+- `saveQuote()` then does `quoteHistory.unshift(q)` and `st('stonedesk_quote_history', quoteHistory)` -- **writing the stale array, deleted row and all, back over storage and out to the server through `sdSyncCollection()`.**
+
+**Every Quote Builder delete came back on the next saved quote, and nothing said so.** The confirm's "It is hidden and kept, not destroyed" is about the SERVER copy; it is not a warning that the local row returns.
+
+### The fix, and why each half of it
+
+Resync **AFTER** a confirmed write -- resyncing first would clear the row from memory while storage still held it, which is the same defect pointed the other way. **IN PLACE**, not reassigned -- `saveQuote()` closes over the binding, so swapping the reference would leave it writing the old array. Guarded with `Array.isArray(window.quoteHistory)` because the two functions live in **different script blocks, 11 and 36 of 131**, and the global is the only thing connecting them.
+
+### Two things the test had to earn
+
+**It reproduces the resurrection before asserting the fix.** Section 1 derives the pre-fix body from the shipped source by removing the resync block -- so it cannot drift away from what it contrasts with -- and demands the row come back. A resurrection test that has never seen a resurrection is asserting a property of its own fixture.
+
+**It models `window` as the real global object.** The first draft hand-assigned `window.quoteHistory = quoteHistory`, **which would have passed whether or not a top-level `var` actually lands on `window`** -- the exact assumption the fix depends on. It now runs `window = this` and lets the declaration land where a browser would put it.
+
+Four controls: a failed `st()` must leave BOTH storage and memory untouched; an unmatched id must write nothing; the array object identity must survive.
+
+### The acknowledgements
+
+All three keys are now recorded in `key_collision_check.py` with their traced reasons -- including the fixed one, **acknowledged AFTER the fix rather than instead of it**, because three writers are still three writers and the shape is still worth reporting if it changes. StoneDesk pushes are quiet again: **7 collisions, 0 unacknowledged.** Every entry is keyed on the exact variable set, so **a fourth writer or a rename un-acknowledges it** -- which is the property that makes the table safe to add to at all.
+
+**Verified:** `node --check` 131/131 blocks clean; `div_balance` PASS; `duplicate_global` 0; `key_collision_check` 0 unacknowledged and `tests/key_collision_probe.py` all checks pass; `quote_builder_delete_does_not_resurrect` 12 assertions including the reproduction; `quote_history_delete`, `quote_history_duplication`, `customer_delete_does_not_resurrect` and `collection_delete_reaches_the_server` all still pass.

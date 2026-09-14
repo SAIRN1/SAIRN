@@ -384,6 +384,77 @@ def scan_block(content, base_line, SETITEM_RE):
 # reported again. An allowlist that silences a key forever would be worse than
 # no allowlist -- it is exactly how sd_referrals hid until 2026-08-07.
 ACKNOWLEDGED = {
+    'stonedesk_quote_history': (
+        {'d', 'next', 'quoteHistory'},
+        "THE ONE OF THE THREE THAT WAS REAL, and this tool is how it was "
+        "found. Acknowledged 2026-09-14 AFTER the fix, not instead of it. "
+        "'quoteHistory' is a MODULE-LEVEL array read from localStorage once at "
+        "parse time -- the only cache among the nine backing variables across "
+        "these three keys. sdQBDelete() wrote the survivors to storage and "
+        "never touched it, sdQBRender() re-read storage so the row really did "
+        "vanish from the panel, and then saveQuote()'s "
+        "`quoteHistory.unshift(q)` + `st(key, quoteHistory)` wrote the STALE "
+        "array back over storage and out to the server. EVERY QUOTE BUILDER "
+        "DELETE UNDID ITSELF ON THE NEXT SAVED QUOTE, and nothing said so. "
+        "sdQBDelete() now brings the array into step AFTER a confirmed write "
+        "and IN PLACE -- after, because resyncing first would clear it from "
+        "memory while storage still held it; in place, because saveQuote() "
+        "closes over the binding. Held in BOTH directions by "
+        "tests/quote_builder_delete_does_not_resurrect.js, whose section 1 "
+        "reproduces the resurrection on the pre-fix body before section 2 "
+        "asserts the fix. "
+        "KEPT AS AN ACKNOWLEDGEMENT RATHER THAN CLOSED: the three writers are "
+        "still three writers, so the shape this tool reports is still here and "
+        "should be. A FOURTH writer, or a rename, un-acknowledges it and it "
+        "comes back -- which is exactly what should happen, because the next "
+        "person to add one needs to read this."),
+    'sd_business_snapshots': (
+        {'d', 'next', 'snaps'},
+        "TRACED BY HAND 2026-09-14 (CC), in the same pass as sd_drawings and "
+        "stonedesk_quote_history. THREE names, and ALL THREE ARE FRESH READS: "
+        "bizSnaps() re-parses the key on every call and writes 'd' back only "
+        "when sdEnsureRowIds() back-fills a missing id; sdBizSnapDelete() "
+        "writes 'next', a filtered copy of bizSnaps(); sdBizSnapshot() writes "
+        "'snaps', which is also just `var snaps=bizSnaps()`. There is no "
+        "module-level array here, so there is nothing to go stale. "
+        "THE CONTRAST IS THE POINT AND IT IS WHY THIS ENTRY EXISTS RATHER THAN "
+        "A BLANKET RULE: stonedesk_quote_history looked IDENTICAL to this tool "
+        "-- three names, same {'d','next',...} pair -- and its third name was a "
+        "module-level cache read once at parse time, which made every Quote "
+        "Builder delete come back on the next saved quote. Fixed 2026-09-14 and "
+        "held by tests/quote_builder_delete_does_not_resurrect.js. The variable "
+        "COUNT says nothing; only reading each one does. "
+        "sdBizSnapshot() also applies sdCapLocal(..., 90) where the delete does "
+        "not -- a localStorage quota bound, not a deletion, same as "
+        "sd_drawings."),
+    'sd_drawings': (
+        {'drawings', 'next'},
+        "TRACED BY HAND 2026-09-14 (CC), after Fourth found it and flagged it "
+        "as adjacent to the delete-UI claim. NEITHER NAME IS A CACHE: both are "
+        "FRESH READS of localStorage, so there is no in-memory copy for the "
+        "two to diverge over. sdDrawingsDelete() writes 'next', a filtered "
+        "copy of sdDrawingsAll(), which re-parses sd_drawings on every call; "
+        "sdDrawSave() writes 'drawings', declared FUNCTION-LOCALLY as its own "
+        "JSON.parse of the same key. Two names, two reads, one owner at a "
+        "time. "
+        "THE FILE HAD ALREADY WORKED THIS OUT AND SAID SO: "
+        "sdDrawingsDelete() carries a comment explaining that it deliberately "
+        "does NOT sync an in-memory copy, because sdDrawSave()'s array is a "
+        "re-read and 'a line syncing it would have been a no-op with a comment "
+        "claiming it mattered' -- and it names sdCommsThreads as the opposite "
+        "case, which IS a stale module-level copy. This entry exists so the "
+        "next session does not re-derive that from scratch, which is the whole "
+        "argument for this table. "
+        "BOTH WRITES ARE CHECKED, so neither fails silently: the delete "
+        "toasts on a false return from st(), and the save drives a "
+        "draw-save-status line from it. "
+        "ONE REAL ASYMMETRY, RECORDED BECAUSE IT IS NOT A COLLISION AND COULD "
+        "BE MISTAKEN FOR ONE: sdDrawSave() applies sdCapLocal('sd_drawings', "
+        "..., 20) and the delete does not, so a delete performed while more "
+        "than 20 drawings are held writes the full filtered list back and the "
+        "next save re-caps it. That is sdCapLocal doing its job -- the cap is "
+        "a localStorage quota bound, NOT a deletion, and it exists precisely "
+        "so a local trim is not reported to the server as one."),
     'stonedesk:ai_memories': (
         {'_sdMemories', 'data'},
         "syncSDMemoriesFromSupabase() caches the server's list ('data'); "

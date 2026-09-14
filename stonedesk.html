@@ -5775,6 +5775,28 @@ saLog('INIT', 'SAIRN Security System v3.0 initialized — 29 of 30 layers wired 
       showToast('Could not delete that quote -- storage may be full or unavailable, try again');
       return;
     }
+    // THE MODULE-LEVEL ARRAY HAS TO COME WITH IT, AND UNTIL 2026-09-14 IT DID
+    // NOT. `quoteHistory` is read from localStorage ONCE, at parse time, and
+    // saveQuote() does `quoteHistory.unshift(q)` then writes the WHOLE array
+    // back. So a delete here removed the row from storage, sdQBRender() re-read
+    // storage and showed it gone -- and the next saved quote wrote the stale
+    // array straight back over it, deleted row and all, and on to the server
+    // through sdSyncCollection(). Every Quote Builder delete undid itself the
+    // next time anyone saved a quote, and nothing said so.
+    //
+    // AFTER the write, never before: resyncing first would clear the row from
+    // memory while storage still held it, which is the same defect pointed the
+    // other way. IN PLACE, not reassigned: saveQuote() closes over this binding
+    // and swapping the reference would leave it writing the old array.
+    //
+    // sd_drawings and sd_business_snapshots look identical to
+    // tools/key_collision_check.py and are BENIGN -- every one of their
+    // backing variables is a fresh read. This one was the cache. The
+    // acknowledgement table in that tool records which is which and why.
+    if(Array.isArray(window.quoteHistory)){
+      window.quoteHistory.length=0;
+      Array.prototype.push.apply(window.quoteHistory,next);
+    }
     window.sdQBRender();
     showToast('Quote Builder save deleted.');
   };
