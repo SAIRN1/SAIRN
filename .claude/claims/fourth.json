@@ -1082,6 +1082,16 @@
       "claimed_at_epoch": 1789381816.7568789,
       "status": "released",
       "released_at": "2026-09-14T10:58:01Z"
+    },
+    {
+      "id": "fourth-1789383494",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 39 record retention and retrievability on class a resources",
+      "claimed_at": "2026-09-14T10:58:14Z",
+      "claimed_at_epoch": 1789383494.6339018,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
