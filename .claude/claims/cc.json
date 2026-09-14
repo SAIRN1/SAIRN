@@ -1162,8 +1162,8 @@
       "task": "po number sequence and po_num join across receiving invoices",
       "claimed_at": "2026-09-14T12:35:44Z",
       "claimed_at_epoch": 1789389344.058408,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T13:19:33Z"
     }
   ]
 }
