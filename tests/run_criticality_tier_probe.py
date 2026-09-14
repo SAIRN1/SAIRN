@@ -146,6 +146,52 @@ here = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--', REL_DOC
                       capture_output=True, text=True).stdout.strip()
 check('this clone\'s own register is untouched', here == '', here)
 
+
+# -- THE READER ITSELF, DRIVEN DIRECTLY. Added 2026-09-14. -----------------
+# Every arm above runs the whole tool in a worktree, which is right for "does
+# it deny". It cannot see WHICH NAMES the tool decided were registered, and
+# that is exactly where the defect was: apps_with_registries() matched any line
+# of the shape 'name', anywhere in the file, so it scraped the notSynced array
+# -- the list of keys that DELIBERATELY never reach a server.
+#
+# And the answer depended on COMMENT PLACEMENT. sairnvet declares three
+# local-only keys together; two carry trailing comments and were invisible, the
+# third has its comment on the lines above and was scraped. The checker then
+# reported "sairnvet/sv_audit_backed is registered and has no row" -- a finding
+# produced entirely by where somebody put a //.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import criticality_tier_check as C            # noqa: E402
+
+_names, _err = C.resource_names(
+    os.path.join(REPO, 'api', '_resources', 'sairnvet.js'))
+check('the reader parses sairnvet at all', _err is None and _names, str(_err))
+for _k in ('sv_audit_backed', 'sv_settings', 'sv_examrooms_turnover'):
+    check('notSynced key %-22s is NOT a registered resource' % _k,
+          _names is not None and _k not in _names,
+          'notSynced is the list of things that never reach a server; counting '
+          'one is the opposite of what registered means')
+check('THE PAIRED POSITIVE: real resources ARE still counted, so the fix is not '
+      'just a narrower reader that sees nothing',
+      _names is not None and 'sv_controlled' in _names and len(_names) > 30,
+      '%s names' % (len(_names) if _names else 0))
+
+# ALL THREE FILE SHAPES PARSE. The first version of the narrowed reader knew
+# only the multi-line array and reported the other two as a changed file shape,
+# which was loud and wrong.
+for _app, _why in (('sairnvet', 'multi-line array'),
+                   ('sairncash', 'resources: [] -- explicitly empty, a real answer'),
+                   ('sairncode', 'resources: RESOURCES -- a reference to a const')):
+    _n, _e = C.resource_names(
+        os.path.join(REPO, 'api', '_resources', _app + '.js'))
+    check('%-11s parses (%s)' % (_app, _why), _e is None, str(_e))
+
+# AND AN UNPARSEABLE FILE IS AN ERROR, NOT AN EMPTY APP -- returning zero names
+# would make every resource in it vanish from the check and the app would read
+# CLEAN, which is the fail-open direction from a completeness checker.
+_n, _e = C.resource_names(os.path.join(REPO, 'tools', 'criticality_tier_check.py'))
+check('a file with no resources array is an ERROR, not an app with no resources',
+      _n is None and _e, 'returned %r / %r' % (_n, _e))
+
 print('\n%s  run_criticality_tier_probe: %d failed'
       % ('FAILED' if fails else 'ok', len(fails)))
 sys.exit(1 if fails else 0)

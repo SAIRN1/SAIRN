@@ -92,7 +92,11 @@ const FCL_BASE = 'https://caselaw.nationalarchives.gov.uk';
 const FCL_LIMIT = { seconds: 300, max: 200 };
 const UA = 'SAIRNlaw/1.0 (legal research tool; contact michael@sairn.com)';
 
-async function checkLimit(table, seconds, max) {
+// The one function that must exist for the atomic path; named here so a
+// rename in the SQL is a one-line change rather than a silent fallback.
+const CONSUME_RPC = 'sairnlaw_rate_limit_consume';
+
+async function checkLimitRacy(table, seconds, max) {
   const { headers, rest } = sbClient();
   const since = new Date(Date.now() - seconds * 1000).toISOString();
   const r = await fetch(rest(table + '?requested_at=gte.' + encodeURIComponent(since) + '&select=id'), { headers });
@@ -110,13 +114,59 @@ async function checkLimit(table, seconds, max) {
   }
   if (!r.ok) throw new Error(table + ' limit check failed: HTTP ' + r.status);
   const rows = await r.json();
-  if (Array.isArray(rows) && rows.length >= max) return { limited: true, max, seconds };
+  if (Array.isArray(rows) && rows.length >= max) return { limited: true, max, seconds, racy: true };
   await fetch(rest(table), {
     method: 'POST',
     headers: Object.assign({}, headers, { Prefer: 'return=minimal' }),
     body: JSON.stringify({})
   });
-  return { limited: false };
+  return { limited: false, racy: true };
+}
+
+// ── THE ATOMIC PATH. Item 78's race, swept here 2026-09-14. ───────────────
+// checkLimitRacy above reads the window in one HTTP call and inserts in
+// another, with nothing between them: N concurrent lookups all see the same
+// count and all proceed. That is the shape docs/spec/RateLimitConsume.tla
+// models and tools/rate_limit_race_model.js proves violates the cap. It was
+// found and fixed for the AI limiter and for CourtListener; these two were
+// never swept.
+//
+// THE FALLBACK IS KEPT AND IS LABELLED, not removed. Until
+// sql/sairnlaw_rate_limit_consume_fn_2026-09-14.sql is run the RPC does not
+// exist, and deleting the old path would take the feature down rather than
+// leaving it exactly as it is today. Every result now carries `racy` so which
+// path answered is visible in the return value rather than inferred -- the
+// same decision api/_lib/ai-rate-limit.js made with its observe-racy mode.
+async function checkLimit(table, seconds, max) {
+  const { headers, rest } = sbClient();
+  let r;
+  try {
+    r = await fetch(rest('rpc/' + CONSUME_RPC), {
+      method: 'POST',
+      headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ p_table: table, p_window_seconds: seconds, p_max: max })
+    });
+  } catch (e) {
+    // A NETWORK FAILURE IS NOT "UNDER THE LIMIT". Fall through to the racy
+    // path, which does its own fail-closed handling, rather than returning a
+    // permissive answer from a call that never completed.
+    return checkLimitRacy(table, seconds, max);
+  }
+  if (r.status === 404) {
+    // The function has not been created yet. Exactly today's behaviour.
+    return checkLimitRacy(table, seconds, max);
+  }
+  if (!r.ok) return checkLimitRacy(table, seconds, max);
+  const out = await r.json().catch(() => null);
+  if (!out || typeof out.limited !== 'boolean') {
+    // An allowlist refusal answers {error: ...} and has no `limited`. Treating
+    // that as "not limited" would be the fail-open shape this whole sweep is
+    // about, so it goes to the racy path, which still honours the window.
+    return checkLimitRacy(table, seconds, max);
+  }
+  return out.limited
+    ? { limited: true, max, seconds, racy: false }
+    : { limited: false, racy: false };
 }
 
 function xmlTagText(chunk, tag) {
@@ -214,5 +264,7 @@ async function fclSearch(query, perPage) {
 module.exports = {
   COVERAGE,
   FCL_BASE, FCL_LIMIT, fclSearch, parseFclAtom,
-  checkLimit, xmlTagText
+  // checkLimit is the ATOMIC entry point; the racy path is exported too so a
+  // probe can drive it directly rather than having to break the RPC to reach it.
+  checkLimit, checkLimitRacy, xmlTagText
 };

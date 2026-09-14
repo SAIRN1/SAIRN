@@ -6,7 +6,7 @@
     "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one.",
     "FIXED": "a FIX that has been BUILT. Kept as its own verdict rather than deleted: an entry that vanishes on being fixed leaves nobody able to tell a defect that was closed from one nobody ever judged."
   },
-  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. TEN files of twenty-nine are judged. The rest are named by the checker as UNTRIAGED and are NOT covered by any statement here.",
+  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. NINETEEN files of twenty-nine are judged. The remaining eight are named by the checker as UNTRIAGED and are NOT covered by any statement here -- they are unread, not cleared.",
   "_triaged_by": "fourth",
   "_triaged_at": "2026-09-14",
   "files": {
@@ -70,6 +70,82 @@
       "verdict": "ACCEPTED",
       "why": "Same shape and same reasoning as api/network.js: an append to sairnscape_org_intel of one text insight, read by a human, with nothing computing a total from it or triggering on it. A retry shows the insight twice.",
       "but": "Same conditional as network.js. Two files reaching the same verdict for the same reason is worth noting rather than collapsing -- if the reason turns out wrong it is wrong in both, and a single merged entry would hide the second one.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/courtlistener.js": {
+      "verdict": "SAFE",
+      "why": "The write is an RPC call to cl_rate_limit_consume, which does the count and the insert in ONE transaction under pg_advisory_xact_lock (sql/cl_rate_limit_consume_fn_2026-09-04.sql:96). There is no gap between reading the count and recording the use, so there is nothing for a retry to race.",
+      "but": "This is the FIXED one of the four rate limiters on this platform, and reading it is what showed two others were not. See the wex and intl-caselaw entries.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/wex.js": {
+      "verdict": "FIX",
+      "why": "COUNT-THEN-INSERT, THE ITEM 78 RACE, IN A SECOND PLACE. checkLimit reads wex_rate_limit_log filtered on requested_at in one HTTP call, decides, then POSTs a row in another. Nothing coordinates them -- verbatim the shape docs/spec/RateLimitConsume.tla models and tools/rate_limit_race_model.js proves violates the cap. N concurrent lookups all see an empty window and all proceed.",
+      "consequence": "This limit is not ours to overspend: it honours Cornell LII's PUBLISHED Crawl-delay. Over-running it hammers a third party's server and risks the IP being blocked, which would take the feature down for every customer. Bounded by requests in flight, like the AI one -- racy is not unbounded.",
+      "fix": "The pattern is already written TWICE here: sql/cl_rate_limit_consume_fn_2026-09-04.sql and sql/sairn_ai_rate_limit_consume_fn.sql. Re-qualify rather than copy byte-for-byte (disciplines item 7): the wex limit is a CRAWL-DELAY, at most one row in the window, not an N-per-day cap.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/intl-caselaw.js": {
+      "verdict": "FIX",
+      "why": "THE SAME RACE, THIRD PLACE. checkLimit(table, seconds, max) reads the count, compares it to max, then POSTs. Two HTTP calls with nothing between them. It is the GENERIC form of the wex one -- it serves more than one ledger table -- so one fix here covers every source it limits.",
+      "consequence": "Same class as wex: these limits exist to honour other people's published rates, so over-running them is a politeness and access failure rather than a money one, and the cost lands on every customer if the source blocks us.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/ai-rate-limit.js": {
+      "verdict": "FIX",
+      "why": "The racy count-then-insert is the FALLBACK path, taken whenever the atomic RPC is unavailable. The file is honest about it -- it reports mode observe-racy / enforce-racy precisely so the race is visible in the return value.",
+      "but": "WHETHER THE FALLBACK IS LIVE IS NOT KNOWABLE FROM THIS REPO. db/schema_snapshot.json carries TABLES ONLY and has never held a function, so the earlier 'verified NEVER RUN' claim was not supportable in either direction. Read the mode the endpoint returns. Nothing to build here beyond running the migration.",
+      "read_at": "2026-09-14"
+    },
+    "api/claude.js": {
+      "verdict": "SAFE",
+      "why": "NOT A WRITE TO OUR STORE. The POST is to api.anthropic.com -- this file IS the proxy Guardian check 1 requires every call to go through. A retry duplicates no record.",
+      "but": "It duplicates a BILLED API CALL and consumes rate-limit budget, which is a real cost consequence even though it is not a data-integrity one. Named rather than folded into SAFE silently.",
+      "read_at": "2026-09-14"
+    },
+    "api/sc-eligibility.js": {
+      "verdict": "SAFE",
+      "why": "The POST is an eligibility INQUIRY to Stedi, a third party. Nothing of ours is written by it and the upstream effect is a read.",
+      "but": "Clearinghouse transactions are typically billed per inquiry, so a retry costs money without duplicating data. Same shape as claude.js.",
+      "read_at": "2026-09-14"
+    },
+    "api/agent/poll.js": {
+      "verdict": "SAFE",
+      "why": "Two PATCHes, both filtered by PRIMARY KEY and both ABSOLUTE assignments: a last_seen_at timestamp on sairn_agents and a status change on one command row. A retry writes the same shape of value to the same row. No increment, no append.",
+      "read_at": "2026-09-14"
+    },
+    "api/agent/register.js": {
+      "verdict": "SAFE",
+      "why": "PATCH sairn_agents by id with status active and a last_seen_at. An absolute assignment by primary key; replay is a no-op.",
+      "read_at": "2026-09-14"
+    },
+    "api/agent/result.js": {
+      "verdict": "SAFE",
+      "why": "PATCH sairn_agent_commands by id with a status, a result and a completed_at, all derived from THIS request's body. A retry of the same request writes the same values to the same row.",
+      "but": "It is absolute, not conditional -- a LATER result for the same command_id overwrites an earlier one. That is a different question from idempotency (which result is authoritative) and is not a finding here; named so the next reader does not re-derive it.",
+      "read_at": "2026-09-14"
+    },
+    "api/sairncash/trial-renew.js": {
+      "verdict": "FIX",
+      "why": "A READ-MODIFY-WRITE ON A COUNTER, and the sharpest thing in this batch. It SELECTs renewal_count, computes plus one in JavaScript, then PATCHes that value back along with a fresh expires_at computed from NOW.",
+      "consequence": "TWO failures, both real. (1) LOST UPDATE: two concurrent renewals both read N and both write N+1, so one renewal vanishes from the count. (2) DOUBLE EXTENSION ON RETRY, which is worse: if the PATCH commits and the response is lost, the retry reads N+1, writes N+2 AND a new expires_at 30 days from the retry -- the trial is extended twice from ONE admin approval. This endpoint is admin-approval-gated, so that is an entitlement granted beyond what was approved.",
+      "fix": "Two halves, because one does not cover the other. A compare-and-set (renewal_count=eq.N in the PATCH filter) closes the lost update: the loser gets zero rows back and knows. An idempotency key closes the double extension, the same shape trial-start now uses -- a retry returns the ORIGINAL expiry instead of computing a new one.",
+      "read_at": "2026-09-14"
+    },
+    "api/sairncash/trial-verify.js": {
+      "verdict": "SAFE",
+      "why": "One best-effort PATCH of a constant status, filtered by trial_token. An absolute assignment, and the file already says a failure here does not change the answer it computed. Replay writes the same value.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/employee-lifecycle.js": {
+      "verdict": "SAFE",
+      "why": "PATCH of an active flag and updated_at, scoped to one employee in one licence. The flag is derived from the REQUEST, not toggled from the stored value, so a retry sets the same state. A TOGGLE here would be the classic version of this bug and it is not one.",
+      "read_at": "2026-09-14"
+    },
+    "api/alf-alerts.js": {
+      "verdict": "ACCEPTED",
+      "why": "The POST is to Resend: it SENDS AN EMAIL. A retry sends it twice, which is a real duplicate side effect even though nothing of ours is written. Accepted because a duplicated ALERT is noise -- the recipient sees the same warning twice -- and suppressing a repeat alert is the more dangerous failure in a care setting.",
+      "but": "Resend supports an Idempotency-Key header, so the fix is cheap if duplicate alerts ever become the complaint. Recorded so that is a decision rather than a rediscovery.",
       "read_at": "2026-09-14"
     }
   }

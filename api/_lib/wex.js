@@ -54,7 +54,7 @@ function toWexSlug(term) {
 // firm shares this egress, so an in-process cooldown would be wrong the moment
 // two instances are warm. Same reasoning and same table pattern as the
 // CourtListener limiter.
-async function checkWexCrawlDelay() {
+async function checkCrawlDelayRacy() {
   const { headers, rest } = sbClient();
   const since = new Date(Date.now() - WEX_CRAWL_DELAY_SECONDS * 1000).toISOString();
   const r = await fetch(
@@ -79,14 +79,57 @@ async function checkWexCrawlDelay() {
   if (!r.ok) throw new Error('wex crawl-delay check failed: HTTP ' + r.status);
   const rows = await r.json();
   if (Array.isArray(rows) && rows.length > 0) {
-    return { delayed: true, retryAfterSeconds: WEX_CRAWL_DELAY_SECONDS };
+    return { delayed: true, retryAfterSeconds: WEX_CRAWL_DELAY_SECONDS, racy: true };
   }
   await fetch(rest('wex_rate_limit_log'), {
     method: 'POST',
     headers: Object.assign({}, headers, { Prefer: 'return=minimal' }),
     body: JSON.stringify({})
   });
-  return { delayed: false };
+  return { delayed: false, racy: true };
+}
+
+// ── THE ATOMIC PATH. Item 78's race, swept here 2026-09-14. ───────────────
+// The function above reads the 10-second window in one HTTP call and inserts
+// in another. N concurrent lookups all see it empty and all proceed, so the
+// crawl-delay this file exists to honour is not actually enforced under
+// concurrency -- the shape docs/spec/RateLimitConsume.tla models. It was fixed
+// for the AI limiter and for CourtListener and never swept here.
+//
+// AND THE CONSEQUENCE IS NOT OURS TO ACCEPT. The other two protect our own
+// quota; this one is a promise to law.cornell.edu, whose robots.txt publishes
+// `Crawl-delay: 10`. Over-running it risks the IP being blocked, which takes
+// the feature down for every customer at once.
+//
+// The racy path is KEPT AND LABELLED rather than removed: until
+// sql/sairnlaw_rate_limit_consume_fn_2026-09-14.sql is run the RPC does not
+// exist, and deleting the fallback would take the feature down instead of
+// leaving it as it is today. `racy` on the result says which path answered.
+const CONSUME_RPC = 'sairnlaw_rate_limit_consume';
+
+async function checkCrawlDelay() {
+  const { headers, rest } = sbClient();
+  let r;
+  try {
+    r = await fetch(rest('rpc/' + CONSUME_RPC), {
+      method: 'POST',
+      headers: Object.assign({}, headers, { 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ p_table: 'wex_rate_limit_log',
+                             p_window_seconds: WEX_CRAWL_DELAY_SECONDS, p_max: 1 })
+    });
+  } catch (e) {
+    return checkCrawlDelayRacy();
+  }
+  // 404 means the function has not been created yet -- exactly today's
+  // behaviour, not a new failure. Anything else unreadable also falls back
+  // rather than answering "go ahead" from a call that did not complete: a
+  // permissive answer here is a request sent to somebody else's server.
+  if (!r.ok) return checkCrawlDelayRacy();
+  const out = await r.json().catch(() => null);
+  if (!out || typeof out.limited !== 'boolean') return checkCrawlDelayRacy();
+  return out.limited
+    ? { delayed: true, retryAfterSeconds: WEX_CRAWL_DELAY_SECONDS, racy: false }
+    : { delayed: false, racy: false };
 }
 
 function decodeEntities(s) {
@@ -163,7 +206,7 @@ async function wexLookup(term) {
   const slug = toWexSlug(term);
   if (!slug) return { ok: false, code: 'BAD_TERM', message: 'Enter a legal term to look up.' };
 
-  const gate = await checkWexCrawlDelay();
+  const gate = await checkCrawlDelay();
   if (gate.notProvisioned) {
     return { ok: false, code: 'NOT_PROVISIONED', message: gate.message };
   }
@@ -220,5 +263,11 @@ async function wexLookup(term) {
 
 module.exports = {
   WEX_BASE, WEX_CRAWL_DELAY_SECONDS, WEX_USER_AGENT,
-  toWexSlug, parseWexPage, wexLookup, checkWexCrawlDelay
+  toWexSlug, parseWexPage, wexLookup,
+  // THE OLD NAME NOW POINTS AT THE ATOMIC PATH, deliberately. Any existing
+  // importer of checkWexCrawlDelay gets the FIXED behaviour without a change
+  // at the call site -- the alternative is an export that silently keeps
+  // handing out the racy version to whoever imported it first.
+  checkWexCrawlDelay: checkCrawlDelay,
+  checkCrawlDelay, checkCrawlDelayRacy
 };

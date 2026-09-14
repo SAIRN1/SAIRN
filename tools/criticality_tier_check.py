@@ -76,13 +76,98 @@ def apps_with_registries():
         app = f[:-3]
         if app in ('index', 'shared'):
             continue
-        names = set()
-        for l in io.open(os.path.join(RESOURCES, f), encoding='utf-8'):
-            s = l.strip()
-            if s.startswith("'") and s.endswith("',") and s.count("'") == 2:
-                names.add(s.strip("',"))
+        names, err = resource_names(os.path.join(RESOURCES, f))
+        if err:
+            # A FILE WHOSE SHAPE IS NOT RECOGNISED IS AN ERROR, NOT AN EMPTY
+            # APP. Returning an empty set would make every resource in it
+            # vanish from the register check and the app would read CLEAN --
+            # which is the fail-open direction and the worst possible answer
+            # from a completeness checker.
+            out[app] = SHAPE_ERROR(err)
+            continue
         out[app] = names
     return out
+
+
+class SHAPE_ERROR(str):
+    """A file this reader could not parse. Truthy and NOT a set, so any use of
+    it as a name collection fails loudly instead of contributing zero names."""
+
+
+def resource_names(path):
+    """Names inside the `resources: [...]` array ONLY.
+
+    ── WHY THIS IS NOT "any line that looks like a quoted string" ────────────
+    It was, until 2026-09-14, and the answer depended on WHERE SOMEBODY PUT A
+    COMMENT. api/_resources/sairnvet.js declares three local-only keys together
+    in `notSynced`:
+
+        'sv_examrooms_turnover',  // NOT RECORDS -- a flat array of NUMBERS
+        'sv_settings',            // device configuration
+        ...
+        'sv_audit_backed',
+
+    The old rule required the line to END in `',` with exactly two quotes. The
+    first two carry trailing comments and so were invisible; the third has its
+    comment on the lines ABOVE and so was scraped as a server resource. The
+    checker then reported `sairnvet/sv_audit_backed is registered and has no
+    row` -- a finding produced entirely by comment placement, about a key that
+    is DECLARED LOCAL-ONLY and correctly has no tier row.
+
+    `notSynced` is the opposite of registered: it is the list of things that
+    deliberately never reach a server. Counting it was always wrong; the
+    comment style merely decided which of the three got noticed.
+    """
+    try:
+        lines = io.open(path, encoding='utf-8').read().splitlines()
+    except Exception as e:
+        return None, 'could not read (%s)' % type(e).__name__
+    # THREE SHAPES EXIST IN api/_resources/ AND ALL THREE ARE REAL. The first
+    # version of this reader knew only the first and reported the other two as
+    # a changed file shape -- which was loud and wrong, and is why it is worth
+    # enumerating them here rather than widening a regex until nothing
+    # complains.
+    #
+    #   resources: [            multi-line array          (13 files)
+    #   resources: [],          explicitly EMPTY          (sairncash)
+    #   resources: RESOURCES,   a reference to a const    (sairncode)
+    start = None
+    for i, l in enumerate(lines):
+        # An explicitly empty array is a real answer, not a parse failure: the
+        # app owns no resources of its own and the master plan already says so.
+        if re.match(r'^\s*resources:\s*\[\s*\]\s*,?\s*$', l):
+            return set(), None
+        if re.match(r'^\s*resources:\s*\[\s*$', l):
+            start = i + 1
+            break
+        m = re.match(r'^\s*resources:\s*([A-Z_][A-Z0-9_]*)\s*,\s*$', l)
+        if m:
+            # Follow the reference to `const NAME = [`. One hop only -- a chain
+            # is a shape nobody has written and guessing at it would be the
+            # widening this comment warns against.
+            for j, l2 in enumerate(lines):
+                if re.match(r'^\s*const\s+' + re.escape(m.group(1)) + r'\s*=\s*\[\s*$', l2):
+                    start = j + 1
+                    break
+            if start is None:
+                return None, ('resources references %s and no `const %s = [` was '
+                              'found' % (m.group(1), m.group(1)))
+            break
+    if start is None:
+        return None, 'no `resources:` array or reference found -- the file shape changed'
+    names = set()
+    for l in lines[start:]:
+        # Another TOP-LEVEL key (two-space indent) ends the array. That is what
+        # `notSynced:` and `extraActions:` are, and stopping here is the whole
+        # fix.
+        if re.match(r'^  \w+:', l) or re.match(r'^\};', l) or re.match(r'^\s*\]\s*;?\s*$', l):
+            break
+        m = re.match(r"^\s*'([\w.-]+)'\s*,", l)
+        if m:
+            names.add(m.group(1))
+    if not names:
+        return None, 'the `resources: [` array parsed to ZERO names -- that is a '                     'broken reader, not an app with no resources'
+    return names, None
 
 
 def parse():
