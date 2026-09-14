@@ -3050,3 +3050,74 @@ reasoning that kept the `sen-portal` gate and SAIRNlaw phase 2 out of my hands.
 
 Recorded with a **known `injection.commit`** -- the first record able to say exactly where the gap
 arrived, since it arrived with the commit that registered the two resources.
+
+
+---
+
+## 2026-09-14 -- item 92 on the two functions that decide money, and a red suite nobody had noticed
+
+Selective, not a rewrite. Two functions, both answering *may this money move*.
+
+### The ledger core was already pure -- and nothing checked it
+
+`api/_lib/ledger.js` has claimed *"Pure functions, no I/O"* in its own header since it was written.
+The claim holds. But **a purity claim nobody verifies is the same shape as a coverage claim nobody
+measures: true when written, silently false the first time somebody needs a timestamp.**
+
+It is now a regression guard, with a CONTROL that its one dependency `calendar-date.js` really does
+contain a clock -- so the arm distinguishes the pure half of a real module from the impure half,
+rather than passing on a file with no clock to avoid.
+
+### The one real finding: the shell was re-deriving a money rule the core owns
+
+`api/ledger.js` built the rows it writes with `l.debit_cents / 100` -- a second cents-to-money rule
+beside **nine uses of `money()` inside the core**. And `money()` was **not exported**, so the shell
+could not have used it.
+
+The two agree today only because `cents()` always rounds, so `debit_cents` is always an integer.
+**Nothing enforced that**, and the day it stopped being true the totals the core REPORTS and the
+rows the endpoint WRITES would differ by a fraction of a cent, with no error anywhere.
+
+Item-94's shape applied to money. `cents` and `money` are exported; the shell calls `ledger.money()`.
+
+### sbThreeWayMatch is now a core and a three-line shell
+
+`sbMatchPure(pos, recs, po_num, vendor, amt)` decides; the shell does two `localStorage` reads.
+
+**Why this function specifically:** it is the gate that stops a bill being settled, and testing it
+through the shell meant standing up a fake `localStorage` to ask an arithmetic question -- which is
+how a money comparison ends up with fewer cases exercised than it has branches. A partial delivery,
+a vendor mismatch, a duplicated PO number and a one-cent overage are now **four arguments, not four
+fixtures.**
+
+**The reason strings are deliberately unchanged.** They are the user-facing contract, and this
+split is about where the decision is made. Every existing assertion on those sentences still
+holds -- **a refactor that also changes behaviour cannot be verified as either.**
+
+### The purity arm is behavioural, not a grep
+
+The core is driven in a sandbox with no `localStorage`, no `ld`, no `sbPOAll`, and `Date` and
+`Math.random` replaced by throwing getters. A reach is **caught and reported as a named failure**
+rather than left to crash the file -- the first version let it propagate, so undoing the split gave
+a stack trace instead of a finding, and **a control whose output is indistinguishable from its own
+breakage is one somebody re-runs instead of reads.**
+
+### A suite that had been red on main with nothing saying so
+
+`tests/sairnbiz_ledger_source_id.js` hand-lists the names it injects into a `new Function` sandbox.
+`saveBill()` gained the three-way-match gate earlier today, and the suite has been throwing
+`ReferenceError: sbThreeWayMatch is not defined` ever since. **Confirmed pre-existing by stashing
+every later change and re-running.**
+
+That is the **fifth** time this repo has recorded a suite failing on a CORRECT file because its own
+copy of a dependency list went stale. Stubbed permissively and labelled: this file asks whether a
+posted entry's `source_id` points at a record that exists, and the gate has its own 42-assertion
+suite -- **leaving it unstubbed left both untested.** 23 passed, 0 failed.
+
+### Item 93 second half -- already done, verified rather than redone
+
+Checked before claiming, per the standing rule. `vercel.json` already reads `7 * * * *` and
+`37 * * * *`; `api/_lib/cron-jitter.js` is present; `tests/cron_schedules_do_not_collide.js` passes
+17/17. Both mechanisms asked for -- a stagger AND randomized jitter -- landed earlier today, were
+pushed, and were live-verified at 17:15Z. **The 504 connection is already established from
+production logs and recorded in the index row for Hank.**

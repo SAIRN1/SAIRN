@@ -112,6 +112,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 84: probabilistic risk assessment &mdash; the event tree, and the number it REFUSES to invent** | **BUILT 2026-09-14 (CC)** &mdash; `tools/pra_event_tree.py`, held by `tests/run_pra_event_tree_probe.py` (20 arms, four mutation controls). **Recorded as NOT-PROMOTED with a reason: it is an analysis, | `tests/run_pra_event_tree_probe.py` |
 | **Item 80: reliability growth models &mdash; built, proven on synthetic curves, and REFUSING this platform&rsquo;s data on all three criteria** | **BUILT 2026-09-14 (CC)** &mdash; `tools/reliability_growth.py`, held by `tests/run_reliability_growth_probe.py` (18 arms, three mutation controls). **NOT-PROMOTED with a reason: promote it the day th | `tests/run_reliability_growth_probe.py` |
@@ -334,7 +335,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**177 of 381 test files are traced to a stated requirement. 204 are not.**
+**178 of 382 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -562,8 +563,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 381   tests/**, api/*.test.js
-  open-work rows citing a test       164   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 382   tests/**, api/*.test.js
+  open-work rows citing a test       165   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                41   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     16   report_only_checks.NOT_PROMOTED

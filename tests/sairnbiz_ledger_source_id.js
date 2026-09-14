@@ -82,7 +82,7 @@ function build(fields, frozenNow) {
   const api = new Function(
     'localStorage', 'console', '$', 'toast', 'fmt', 'sbLocalToday',
     'closeExpModal', 'rExps', 'rDash', 'rPay', 'closeBillModal', 'rAP',
-    'sbGlPost', 'SB_GL_EXPENSE_ACCOUNTS', 'Date',
+    'sbGlPost', 'SB_GL_EXPENSE_ACCOUNTS', 'Date', 'sbThreeWayMatch',
     'var _sbSaveFailed={};\n' +
     fn('function st(k,v){') + '\n' +
     fn('function ld(k,d){') + '\n' +
@@ -98,7 +98,22 @@ function build(fields, frozenNow) {
     () => {}, () => {}, () => {}, () => {}, () => {}, () => {},
     (entry) => posted.push(entry),
     { Materials: '5020', Tools: '5030' },
-    FrozenDate
+    FrozenDate,
+    // ── THE GATE IS STUBBED, DELIBERATELY AND SAYING SO ────────────────────
+    // THIS SUITE WAS RED ON main AND NOTHING SAID SO. `saveBill()` gained the
+    // three-way-match gate on 2026-09-14 and this harness hand-lists the names
+    // it injects, so the real body threw `ReferenceError: sbThreeWayMatch is
+    // not defined` -- a suite failing because its own copy of a dependency list
+    // went stale, which is the fifth time this repo has recorded that shape.
+    // Confirmed pre-existing by stashing every later change and re-running.
+    //
+    // A PERMISSIVE STUB IS THE RIGHT ANSWER HERE, and the reason matters: this
+    // file asks whether a posted entry's `source_id` points at a record that
+    // exists. It is not the gate's suite -- that is
+    // tests/sairnbiz_bill_cannot_settle_unmatched.js, 42 assertions, which
+    // drives the real function. Re-testing the gate here would duplicate it;
+    // leaving it unstubbed left BOTH untested.
+    () => ({ ok: true, reasons: [] })
   );
   return { api, store: s, posted, toasts };
 }

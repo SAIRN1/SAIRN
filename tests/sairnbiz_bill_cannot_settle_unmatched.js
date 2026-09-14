@@ -86,6 +86,14 @@ function makeCtx(store, fields) {
   for (const sig of ['function sbMoneyCents(v){',
                      'function sbPOAll(){', 'function sbRecvAll(){',
                      'function sbVendorKey(v){', 'function sbPONext(rows,year){',
+                     // sbMatchPure is the FUNCTIONAL CORE and must load BEFORE the
+                     // shell that calls it (item 92, 2026-09-14). This hand-listed
+                     // set is the same shape this repo has recorded going stale
+                     // three times -- a sandbox that mirrors declarations by hand
+                     // and then throws ReferenceError on a correct file. It threw
+                     // here the moment the split landed, which is the list doing
+                     // its job loudly rather than a suite going quietly green.
+                     'function sbMatchPure(pos,recs,po_num,vendor,amt){',
                      'function sbThreeWayMatch(po_num,vendor,amt){',
                      'function sbPOCreate(){', 'function sbRecvLog(){',
                      'function saveBill(){', 'function sbPayBill(id){']) {

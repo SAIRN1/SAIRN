@@ -2511,11 +2511,32 @@ function sbPONext(rows,year){
 
 // Returns {ok, reasons[]}. REASONS ARE NAMED, never a bare "no match": a
 // refusal a person cannot act on is one they will route around.
-function sbThreeWayMatch(po_num,vendor,amt){
+// ── FUNCTIONAL CORE (item 92, 2026-09-14) ────────────────────────────────
+// THE MONEY COMPARISON TAKES ITS DATA AS ARGUMENTS AND READS NOTHING.
+// `sbThreeWayMatch` below is the imperative shell: two localStorage reads and
+// nothing else. Everything that DECIDES whether a bill may be paid lives here,
+// where the same inputs always produce the same answer.
+//
+// WHY THAT IS WORTH DOING ON THIS FUNCTION SPECIFICALLY, rather than as a
+// style preference: this is the gate that stops a bill being settled. Testing
+// it through the shell means standing up a fake localStorage to ask an
+// arithmetic question, which is how a money comparison ends up with fewer
+// cases exercised than it has branches. A partial delivery, a vendor mismatch,
+// a duplicated PO number and a one-cent overage are now four arguments, not
+// four fixtures.
+//
+// DELIBERATELY NOT CHANGED: the reason STRINGS. They are the user-facing
+// contract -- "a refusal a person cannot act on is one they will route
+// around" -- and this split is about WHERE the decision is made, not about
+// what it says. Every existing assertion on those sentences still holds,
+// which is the point: a refactor that also changes behaviour cannot be
+// verified as either.
+function sbMatchPure(pos,recs,po_num,vendor,amt){
   var reasons=[];
   po_num=String(po_num||'').trim();
   if(!po_num) return {ok:false,reasons:['no purchase order number on this bill']};
-  var pos=sbPOAll().filter(function(p){return String(p.po_num)===po_num;});
+  pos=(Array.isArray(pos)?pos:[]).filter(function(p){return String(p&&p.po_num)===po_num;});
+  recs=(Array.isArray(recs)?recs:[]).filter(function(r){return String(r&&r.po_num)===po_num;});
   if(!pos.length) return {ok:false,reasons:['no purchase order '+po_num+' exists']};
   // TWO POs WITH THE SAME NUMBER IS A REFUSAL, NOT A PICK-THE-FIRST
   // (2026-09-14, added with the sb_po server sync, which is what makes this
@@ -2530,7 +2551,6 @@ function sbThreeWayMatch(po_num,vendor,amt){
   if(pos.length>1) return {ok:false,reasons:[pos.length+' different purchase orders are numbered '+po_num
     +' -- this bill cannot be matched until that is corrected']};
   var po=pos[0];
-  var recs=sbRecvAll().filter(function(r){return String(r.po_num)===po_num;});
   if(!recs.length) reasons.push('nothing has been recorded as received against '+po_num);
   if(sbVendorKey(po.vendor)!==sbVendorKey(vendor))
     reasons.push('vendor differs: the PO says "'+po.vendor+'", the bill says "'+vendor+'"');
@@ -2566,6 +2586,19 @@ function sbThreeWayMatch(po_num,vendor,amt){
   if(recs.length&&Math.abs(billC-recvC)>tolC)
     reasons.push('billed '+fmt(billC/100)+' against '+fmt(recvC/100)+' actually received');
   return {ok:reasons.length===0,reasons:reasons};
+}
+
+// ── IMPERATIVE SHELL ─────────────────────────────────────────────────────
+// Two reads and a call. Every caller in this file still calls THIS, so the
+// split is invisible from outside -- which is what makes it checkable: the
+// existing assertions on the refusal sentences are unchanged and still pass,
+// so the behaviour is known not to have moved.
+//
+// The shell is deliberately this thin. The moment it starts filtering,
+// summing or comparing, the core stops being the whole decision and the next
+// reader has to check two places to know what the gate does.
+function sbThreeWayMatch(po_num,vendor,amt){
+  return sbMatchPure(sbPOAll(),sbRecvAll(),po_num,vendor,amt);
 }
 
 function sbRenderPOs(){

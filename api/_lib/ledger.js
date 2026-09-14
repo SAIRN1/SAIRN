@@ -416,6 +416,20 @@ function trialBalance(input) {
 module.exports = {
   ACCOUNTS,
   ENTRY_STATUSES,
+  // ── EXPORTED 2026-09-14 (item 92) BECAUSE THE SHELL WAS RE-DERIVING THEM ──
+  // `money` is used NINE times inside this file and `api/ledger.js` did
+  // `l.debit_cents / 100` by hand when building the rows it writes. The two
+  // agree today only because `cents()` always rounds, so `debit_cents` is
+  // always an integer -- NOTHING ENFORCES THAT, and the day it stops being
+  // true the totals this file reports and the rows the endpoint writes would
+  // differ by a fraction of a cent with no error anywhere.
+  //
+  // That is the item-94 shape applied to money: five SAIRNcash files
+  // re-derived "is Stripe configured" and three disagreed about the same
+  // environment. One rule, one place, exported so the shell can use it rather
+  // than reinvent it.
+  cents,
+  money,
   validateLine,
   validateEntry,
   entryFromTransfers,

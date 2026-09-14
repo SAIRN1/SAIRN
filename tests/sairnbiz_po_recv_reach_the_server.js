@@ -296,8 +296,14 @@ function matchCtx(store) {
   };
   vm.createContext(ctx);
   vm.runInContext('var SB_MATCH_TOLERANCE = 0.00;', ctx);
+  // sbMatchPure is the FUNCTIONAL CORE and loads BEFORE the shell that calls
+  // it (item 92, 2026-09-14). A hand-listed sandbox like this one throws
+  // ReferenceError on a CORRECT file the moment a declaration moves -- which is
+  // exactly what it did here, loudly, rather than going quietly green.
   for (const sig of ['function sbMoneyCents(v){', 'function sbPOAll(){', 'function sbRecvAll(){',
-                     'function sbVendorKey(v){', 'function sbThreeWayMatch(po_num,vendor,amt){']) {
+                     'function sbVendorKey(v){',
+                     'function sbMatchPure(pos,recs,po_num,vendor,amt){',
+                     'function sbThreeWayMatch(po_num,vendor,amt){']) {
     vm.runInContext(grab(sig), ctx);
   }
   return ctx;

@@ -230,7 +230,12 @@ module.exports = async (req, res) => {
       const lineRows = v.lines.map((l, i) => ({
         license_hash: licHash, app_id: appId, entry_id: entryId, line_no: i + 1,
         account_code: l.account_code,
-        debit: l.debit_cents / 100, credit: l.credit_cents / 100,
+        // THE CORE OWNS THE CENTS-TO-MONEY RULE (item 92, 2026-09-14). This
+        // was `l.debit_cents / 100` -- a second money rule in the shell, next
+        // to nine uses of `money()` inside api/_lib/ledger.js. They agree only
+        // while `debit_cents` is an integer, which `cents()` happens to
+        // guarantee and nothing asserts.
+        debit: ledger.money(l.debit_cents), credit: ledger.money(l.credit_cents),
         memo: l.memo
       }));
       const lw = await fetch(rest('ledger_lines'), {
