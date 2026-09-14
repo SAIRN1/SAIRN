@@ -1433,8 +1433,8 @@
       "task": "correlate supabase 504s across crons and the ai rate limit rpc",
       "claimed_at": "2026-09-14T10:25:58Z",
       "claimed_at_epoch": 1789381558.3623862,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:05:01Z"
     },
     {
       "id": "hank-1789390787",
