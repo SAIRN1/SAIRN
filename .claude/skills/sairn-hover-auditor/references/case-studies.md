@@ -3,7 +3,7 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in five
+is still on record somewhere, not compressed away. Added 2026-09-14 in six
 batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
 Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
 SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
@@ -11,10 +11,11 @@ calibration industry (ISO/IEC 17025, ILAC-G24); then Lloyd's Register
 (differentiated cadence within one object, and the independence test the
 Boeing/SpaceX contrast was pointing at); then METR's sleeper-agent finding
 and entity-based assessment shift, and CAICT/Taobao's "false alignment"
-research -- the first four batches drew on adjacent industries and
-historical analogy; this last batch is direct, current research about the
-exact category of system this role itself belongs to. All five once the
-earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
+research (direct, current research about the exact category of system this
+role belongs to, rather than adjacent-industry analogy); then Kepler/
+Flyspeck (the hard scale limit of human review) and loophole-free Bell
+tests (closing every explanation together, not one at a time). All six once
+the earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
 Debate, risk-limiting audits, Registered Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
 than bloating the one every invocation loads.
@@ -578,3 +579,91 @@ from matching the tested inputs will not. This is a sharper, more
 falsifiable test of real generalization than confirming the same tested
 case passes again, and it is directly actionable inside the existing
 hindsight-hunting step rather than a separate method.
+
+## Kepler Conjecture / Flyspeck -- the hard scale limit of human review
+
+Johannes Kepler conjectured in 1611 that the densest possible way to pack
+equal spheres is the ordinary way oranges get stacked in a grocery
+display. Thomas Hales produced a proof in 1998 -- not a short one:
+hundreds of pages of dense mathematical argument combined with extensive
+computer calculation checking thousands of individual configurations.
+
+**Twelve referees, four years, and an honest "we cannot fully certify
+this."** The journal Annals of Mathematics assigned twelve expert referees
+-- among the most qualified mathematicians in the world for this specific
+problem -- to review the proof. After approximately four years of effort,
+the review panel reported they were 99% certain the proof was correct but
+could not FULLY certify every piece of it, particularly the extensive
+computer-assisted case-checking, within any reasonable further amount of
+review time. The paper was published in 2005 with that limit stated
+openly, rather than either withholding publication indefinitely or quietly
+implying a certainty the review process had not actually reached.
+
+**The real response: not more reviewers, a different verification
+method entirely.** Hales and a team then spent roughly eleven years (the
+Flyspeck project, completed around 2014) producing a complete
+MACHINE-CHECKED formal proof, verified end-to-end by automated
+proof-assistant software (HOL Light and Isabelle) rather than by human
+mathematicians reading and re-deriving each step. Those involved
+described the machine-checked result as more reliable by orders of
+magnitude than the traditional peer-review process that preceded it --
+not because the mathematicians were careless, but because a proof of that
+length and computational complexity had genuinely exceeded what
+human review, however expert, could exhaustively verify in bounded time.
+
+**This is the single most extreme documented real-world case of the
+principle this platform's own sabotage-verified checkers are built on:**
+review that plants a defect and confirms detection, rather than review
+that only reads and hopes, is the thing that scales past the point where
+human certification alone runs out of road. Twelve world-class referees
+and four years is about as much human review capacity as a single proof
+has ever received, and it still was not enough on its own.
+
+**Not a closed loop even so, stated because it matters.** The
+machine-checked Flyspeck proof still has one honest, disclosed remaining
+trust point: the correctness of the proof-checker KERNEL itself, and the
+possibility of a user who deliberately constructs something to subvert it.
+Formal verification narrows what has to be trusted down to a small,
+well-specified kernel -- it does not eliminate the need to trust something.
+This is the identical disclosed-boundary shape seL4 states about its own
+formal proof: name the trust boundary precisely, rather than claiming
+there is none.
+
+## Loophole-free Bell tests -- closing every explanation at once, not one at a time
+
+For roughly fifty years after quantum entanglement was first demonstrated
+experimentally, physics pursued "Bell tests" designed to rule out
+classical, non-quantum explanations for the correlations observed between
+entangled particles. Each experiment closed one specific "loophole" -- one
+particular classical explanation the experimental design had not yet ruled
+out. And each time, skeptics of the quantum interpretation correctly
+pointed to whichever loophole that specific experiment had NOT closed: an
+experiment that closed the detection loophole (not enough particles
+detected to rule out a classical explanation exploiting the gap) still
+left the locality loophole open (the possibility that the two measurement
+stations could have exchanged some slower-than-light signal); an
+experiment that closed the locality loophole with better timing still had
+a detection-efficiency problem. Closing loopholes one at a time, across
+five decades, left a real, valid, standing objection at every single
+experiment along the way, because each individual test was only ever
+designed to close the one door it targeted.
+
+**2015 -- the first experiments to close every known loophole
+simultaneously, in one design.** Multiple independent groups finally
+designed and ran experiments (using entangled electrons in diamond,
+and later entangled photons) that closed the detection loophole, the
+locality loophole, AND the freedom-of-choice loophole all at once, within
+a single experimental run. This is what finally left skeptics with no
+remaining loophole to point to -- not because any single loophole closure
+was new, but because no prior experiment had closed all of them
+TOGETHER.
+
+**The transferable methodological point.** Sequential loophole-closing is
+individually rigorous and collectively insufficient, because a skeptic
+(or, here, an innocent alternative explanation for a finding) only needs
+one remaining open door to have a genuinely valid objection, regardless of
+how many other doors have already been closed. The fix is not more
+sequential tests; it is enumerating every plausible alternative explanation
+in advance and designing one test, or one line of questioning, that
+addresses all of them at once -- the same shift in method that finally
+ended a fifty-year-old physics debate.

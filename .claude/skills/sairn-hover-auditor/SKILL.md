@@ -88,8 +88,37 @@ advanced -- adversarial human judgment finds a real, distinct category of
 defect that better checkers do not close. "The tests pass" is weak evidence
 of correctness, not strong evidence; a deep pass exists specifically to
 supply the other half, and passing tests earning complacency here is
-exactly the gap this statistic measures. Full account:
-`references/case-studies.md`.
+exactly the gap this statistic measures.
+
+**The complementary, opposite-direction data point, and the tension is the
+point, not a contradiction to resolve away.** The Kepler Conjecture is the
+single most extreme documented case anywhere of human peer review hitting
+a hard scale wall: twelve world-class mathematician referees spent
+roughly four years attempting to fully certify Thomas Hales' proof and
+still could not certify it completely -- it was published with that limit
+openly disclosed rather than hidden. The real response was not more
+referees or more years; it was the eleven-year Flyspeck project to produce
+a complete, MACHINE-CHECKED version instead, described by those involved
+as "more reliable by orders of magnitude" than the traditional peer-review
+process it replaced for that specific proof. This is real, quantified
+validation of why this platform builds sabotage-verified checkers (plant a
+defect, confirm the checker still catches it) rather than relying on
+review alone -- the single most extreme real case anywhere of exactly that
+principle. Held together with Trail of Bits rather than against it: human
+review finds what automated checking structurally cannot (roughly half of
+real findings), and at sufficient scale automated/machine-checked
+verification is more reliable than human review can be. Neither one
+replaces the other; this role's own two-speed method (driven checks plus
+adversarial human judgment) is the honest response to both findings being
+true at once, not a choice between them.
+
+**Even Flyspeck's machine-checked proof still has one honest, disclosed
+remaining trust point** -- the proof-checker kernel itself, and a user who
+deliberately chooses to subvert it -- the identical disclosed-boundary
+shape as seL4's own stated limits below ("Name the property you checked").
+No verification regime, including a fully machine-checked one, closes
+every trust boundary; the discipline is disclosing which one remains open,
+not pretending none does. Full account: `references/case-studies.md`.
 
 1. Run the stated tests yourself. Don't trust the commit message's "N/N
    passed" -- run N/N yourself and read the output.
@@ -736,6 +765,28 @@ merely *observed*. A pattern deviation with an explanation that survives
 scrutiny is not a defect; it's confirmation the baseline method works. Only
 a deviation that has been asked about, and whose explanation doesn't hold
 up, earns the stronger word.
+
+**When an indirect finding has more than one plausible innocent
+explanation, rule them all out together, not one at a time.** Real
+methodological precedent (loophole-free Bell tests in quantum physics): for
+roughly fifty years, physics closed alternative classical explanations for
+quantum entanglement one loophole at a time, and skeptics simply pointed to
+whichever loophole was still open in any given experiment -- closing the
+detection loophole left the locality loophole standing, closing that one
+left another. It took until 2015 to design a single experiment that closed
+every known loophole SIMULTANEOUSLY, which is what finally left no standing
+objection anywhere. The transferable lesson: when a finding has several
+plausible innocent explanations (a harder task that week, a legitimate
+process change, a tooling quirk, coincidence), testing them sequentially --
+rule out explanation A, then ask about B, then C -- leaves a real, live
+objection standing at every step along the way, because each individual
+test only closes one door while the others stay open. Enumerate every
+plausible innocent explanation FIRST, before running anything, then design
+one check or one question that addresses all of them together. A verdict
+that survives a single comprehensive challenge is real evidence; a verdict
+that has merely outlasted a sequence of individually weaker challenges,
+each closing only the door it was aimed at, is not the same strength of
+claim. Full account: `references/case-studies.md`.
 
 **Track a real, earned calibration number from Debate outcomes, not a
 stated-up-front guess.** Real principle (the IRS's own "no-change rate" --
