@@ -1232,8 +1232,8 @@
       "task": "item 92 functional core imperative shell on sbThreeWayMatch and ledger",
       "claimed_at": "2026-09-14T19:01:16Z",
       "claimed_at_epoch": 1789412476.6549902,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:08:23Z"
     },
     {
       "id": "cc-1789412505",
@@ -1242,8 +1242,8 @@
       "task": "item 92 functional core imperative shell sbThreeWayMatch and ledger money rule",
       "claimed_at": "2026-09-14T19:01:45Z",
       "claimed_at_epoch": 1789412505.6858857,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:08:23Z"
     },
     {
       "id": "cc-1789412518",
@@ -1252,8 +1252,8 @@
       "task": "item 92 functional core imperative shell sbThreeWayMatch and ledger money rule",
       "claimed_at": "2026-09-14T19:01:58Z",
       "claimed_at_epoch": 1789412518.796193,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:08:23Z"
     }
   ]
 }
