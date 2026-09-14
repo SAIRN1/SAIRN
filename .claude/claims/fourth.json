@@ -1140,8 +1140,8 @@
       "task": "item 54 cron liveness heartbeat monitor and watchdog",
       "claimed_at": "2026-09-14T12:53:15Z",
       "claimed_at_epoch": 1789390395.64038,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T13:11:08Z"
     }
   ]
 }
