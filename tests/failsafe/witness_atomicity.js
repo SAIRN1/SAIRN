@@ -165,6 +165,37 @@ t('and the burned token is REFUSED on the retry, not silently reused', async () 
   assert.strictEqual(world.applied.length, 0, 'a spent token was written to again');
 });
 
+section('C1b. EXPIRY -- added 2026-09-14 by an independent mutation pass');
+
+// A MUTATION SURVIVED EVERY ARM IN BOTH SUITES: disabling the expiry check on
+// the spend path -- `if (new Date(row.expires_at).getTime() <= Date.now())` in
+// requireWitness -- left this file and witness_recovery.js entirely green.
+//
+// Nothing here ever drove an EXPIRED token. Both suites build tokens with
+// `Date.now() + TOKEN_TTL_MS` and the recovery suite MEASURES the remaining
+// TTL, which reads like expiry coverage and is not: measuring how long a token
+// has left never asks what happens after it runs out.
+//
+// It is the ONLY expiry guard on that path -- the CAS checks `spent_at is
+// null` and says nothing about time -- so with it gone an expired signature
+// spends successfully and writes a controlled-substance row. The guard is
+// correct; what was missing was anything that would notice if it stopped being.
+t('an EXPIRED token is refused, and nothing is written', async () => {
+  const stale = tokenRow({ expires_at: new Date(Date.now() - 1000).toISOString() });
+  const world = K.restWorld({ tokens: [stale] });
+  const r = await K.attempt(() => W.requireWitness(ctx()));
+  assert.strictEqual(r.outcome, 'refused');
+  assert.strictEqual(world.applied.length, 0,
+    'an expired token reached the spend -- the write landed');
+});
+
+t('CONTROL: the same fixture with a FUTURE expiry is ALLOWED, so the arm above '
+  + 'is not passing because this fixture refuses everything', async () => {
+  const world = K.restWorld({ tokens: [tokenRow()] });
+  const r = await K.attempt(() => W.requireWitness(ctx()));
+  assert.notStrictEqual(r.outcome, 'refused');
+});
+
 section('C2. THE RACE -- one signature, two requests, exactly one write');
 
 // ADDED AFTER A MUTATION SURVIVED. Deleting `&spent_at=is.null` from the
