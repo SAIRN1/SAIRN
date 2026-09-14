@@ -1159,6 +1159,16 @@
       "claimed_at_epoch": 1789415472.646527,
       "status": "released",
       "released_at": "2026-09-14T21:49:02Z"
+    },
+    {
+      "id": "cody-1789423168",
+      "session": "cody",
+      "subject": "reliability-and-witness-expiry",
+      "task": "reliability growth probe 5c anchor, item 83 real wall clock expiry, three_way_match fixtures, sairnlaw trust citation check, decomposition badge, checker post-call controls, sairnfreedom exemption",
+      "claimed_at": "2026-09-14T21:59:28Z",
+      "claimed_at_epoch": 1789423168.034463,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
