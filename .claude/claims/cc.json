@@ -1202,8 +1202,8 @@
       "task": "adversarially drive api audit-checkpoint and cron-watchdog written by fourth",
       "claimed_at": "2026-09-14T14:14:19Z",
       "claimed_at_epoch": 1789395259.6289535,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:35:02Z"
     }
   ]
 }
