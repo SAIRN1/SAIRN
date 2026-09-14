@@ -1507,3 +1507,59 @@ compromised component was never supposed to have any influence over. A
 scope-changing vulnerability is treated as materially more severe than an
 otherwise-identical one that stays contained, independent of either
 component's own individual asset-criticality rating.
+
+## Sources for the security-technique batch (secrets scanning, CodeQL, SLSA, ATT&CK)
+
+Brief citation grounding; the full reasoning for each is written directly
+in SKILL.md rather than duplicated here, per this file's own
+checklist-trimming discipline.
+
+**TruffleHog and Gitleaks** are real, widely-used open-source secrets
+scanners; the 2024 industry figures cited in SKILL.md (5.5 hardcoded
+secrets per developer per year, ~13x remediation cost after commit versus
+before, compromised credentials as 16% of real breaches) come from
+published 2024 industry security research and IBM's 2024 Cost of a Data
+Breach report. **CodeQL** is GitHub's real, production semantic code-
+analysis engine, used internally at GitHub and offered publicly for
+open-source security scanning; its actual technique (querying source code
+as structured data, including real data-flow analysis across function
+boundaries) is the real basis for the pattern-generalization and
+data-flow-tracing ideas in SKILL.md. **SLSA** (slsa.dev) is a real,
+current specification maintained under the OpenSSF (Open Source Security
+Foundation, itself under the Linux Foundation), developed originally at
+Google and now an industry-adopted standard; its Build Levels 0-3 are
+specified precisely, not paraphrased here. **MITRE ATT&CK** (attack.mitre.org)
+is a real, publicly maintained, continuously-updated knowledge base
+maintained by MITRE Corporation, built from aggregated real-world
+incident and threat-intelligence reporting rather than theorized in
+advance.
+
+## Sources for the technical-due-diligence batch
+
+Brief citation grounding for the "beyond security" research direction;
+full reasoning is in SKILL.md.
+
+**Technical due diligence** as a formal five-pillar (Team, Process,
+Engineering, Security, Fit) methodology is real, current practice among
+firms that audit codebases for investors and acquirers; the "180+ real
+audits" and "98.3% of codebases contain at least one vulnerability"
+figures are drawn from published technical due diligence industry
+reports. **SonarQube** is a real, widely-deployed static-analysis and
+code-quality platform; Technical Debt Ratio and its stated industry
+quality-gate thresholds (0 new bugs/vulnerabilities, ~5% debt ratio on new
+code, ~80% new-code coverage) are its own real, documented default
+"Clean as You Code" methodology, not an invented number. Cyclomatic
+complexity as a metric originates with Thomas McCabe (1976); the
+10-15-per-function figure is a commonly cited real industry-observed
+average, not a hard specification. **WCAG** (Web Content Accessibility
+Guidelines) is the real, current W3C standard for web accessibility;
+WCAG-EM (the Evaluation Methodology) is the W3C's own real, formal
+sampling methodology, and the 25-40% automated-coverage figure is drawn
+from published accessibility-testing industry research. **FinOps** is a
+real, current cloud financial-management discipline formalized by the
+FinOps Foundation (also under the Linux Foundation); its Inform/Optimize/
+Operate lifecycle and the Showback concept are both its own real, named
+terms, not paraphrased equivalents. **Diátaxis** (diataxis.fr) is a real,
+current documentation framework, publicly documented and openly licensed,
+distinguishing tutorials, how-to guides, reference material, and
+explanation as four genuinely distinct documentation modes.

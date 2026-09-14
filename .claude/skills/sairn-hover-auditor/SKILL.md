@@ -431,8 +431,45 @@ Full account of all Trail of Bits material: `references/case-studies.md`.
      went stale" but "does the next dependent step structurally REFUSE to
      proceed until the prior one is confirmed complete" -- a checker that
      notices staleness after the fact is weaker than a gate that never lets
-     the stale state get consumed in the first place. Full account of all
-     three: `references/case-studies.md`.
+     the stale state get consumed in the first place.
+   - **Secrets scanning -- a mechanical, automatable check that would
+     have caught this session's own HIGH finding by a completely
+     different route than the manual read that actually caught it.** Real
+     industry technique (TruffleHog, Gitleaks): scan for the SHAPE of a
+     credential -- a password literal, a key pattern, a token format --
+     across the codebase and, critically, across its full git HISTORY, not
+     only the current working tree. Once a secret is committed, deleting
+     the file in a later commit does not remove it from the repository --
+     it persists permanently in history, retrievable by anyone with read
+     access, forever. This is directly, currently relevant: the
+     `REPLACE_ME_BEFORE_RUNNING` placeholder this session found and had
+     fixed is sitting in a PUBLIC repository's history right now. **Real,
+     quantified industry baseline:** published 2024 data puts the average
+     enterprise codebase at 5.5 hardcoded secrets committed per developer
+     per year, remediation after a secret is already committed costing
+     roughly 13x more than catching it before the commit, and compromised
+     credentials named as the single most common real initial attack
+     vector into a breach (16% of real breaches, IBM 2024). This platform
+     has never run a dedicated secrets-history scan across its own full
+     git history -- a real, currently-missing check, distinct from reading
+     the current state of any one file.
+   - **The same bug shape, found and fixed independently more than once,
+     is a signal to write one permanent, codebase-wide check for that
+     exact shape -- not to log each instance and move on.** Real technique
+     (GitHub's CodeQL: querying a codebase's structure like a database
+     rather than pattern-matching text). The value beyond simple
+     regex/pattern tools is DATA-FLOW tracing: following one specific
+     piece of sensitive or untrusted data through however many function
+     calls it passes through, to see where it actually ends up, rather
+     than only checking the obvious call site. This platform has already
+     produced the exact real pattern this targets: the unescaped-pipe
+     index-row bug found and fixed twice independently, and the
+     sairnbiz_ledger_source_id.js-shaped `ReferenceError` found five
+     times. The moment a recurring bug's real shape is understood, write a
+     permanent check for that exact shape immediately -- a structural
+     upgrade to how a recurring class actually gets closed, rather than
+     re-discovering the same shape by hand each time it recurs. Full
+     account of all: `references/case-studies.md`.
 
 **Process pass (rarest of the three, no fixed schedule):** step back from
 any single piece of work and check whether the *process itself* is holding,
@@ -736,6 +773,25 @@ still entirely on paper, still never executed. A finding that stops at the
 first door found is a smaller, less useful finding than one that also
 names what is behind it.
 
+**MITRE ATT&CK as the real, evidence-based answer to the post-exploitation
+question, distinct from STRIDE and OWASP.** Both of those name what CAN go
+wrong, derived from taxonomy and principle. ATT&CK is built entirely from
+real, observed incidents and names what actually DOES happen, and in what
+real order: Tactics (an attacker's real goal at a given stage -- initial
+access, persistence, privilege escalation, exfiltration), Techniques (how
+that goal is actually achieved), and Procedures (specific, documented
+examples of a real threat actor doing it). Applied to the
+post-exploitation question directly above: instead of a hypothetical
+"what might be reachable from here," name the real ATT&CK tactic the next
+step would represent (persistence, lateral movement, exfiltration) and
+check whether a documented, real technique for that tactic actually
+applies to the path being traced -- a real, evidence-grounded answer
+rather than an invented one. **Unlike STRIDE (a fixed taxonomy from 1999)
+or OWASP Top 10 (periodically revised on a slow cycle), ATT&CK is
+continuously updated directly from ongoing real-world incident
+observations** -- treat it as a lens worth revisiting periodically as it
+updates, not a one-time checklist copied once and left static.
+
 **STRIDE's six categories, named** (the reconciliation with OWASP is
 stated above, at the top of this section, and applies here): Spoofing
 (Authentication), Tampering (Integrity), Repudiation (Non-repudiation --
@@ -910,6 +966,45 @@ claim; "I drove the function across a wide adversarial input range" is a
 fuzzing-shaped claim; neither is a claim about whether the live system
 survives a real failure, which this role has not yet run at all.
 
+## SLSA -- a different question from "is the source correct"
+
+Every check above -- correctness, threat modeling, secrets, recurring bug
+shapes -- audits the SOURCE. SLSA (Supply-chain Levels for Software
+Artifacts, Google/OpenSSF, a real, current build-provenance framework)
+asks a genuinely different question: can this platform prove the artifact
+actually RUNNING in production is what the reviewed source said it should
+be. This is exactly the gap the xz-utils backdoor exploited -- real
+accounts describe that backdoor as hidden specifically in the BUILD
+process, not visible in a plain source diff, which is why a source-only
+review would not have caught it even with perfect diligence.
+
+**SBOM and SLSA are two different, complementary questions, not one.** A
+Software Bill of Materials answers "what's inside" -- the dependency list,
+covered above by the bus-factor scanner and the license-compliance
+question below. SLSA answers "how was it actually built, and was that
+build process itself trustworthy." This platform's own deploy pipeline
+has never been asked the second question at all: whether the artifact
+running in production is provably the exact output of the exact reviewed
+commit, rather than something a compromised build step could have
+altered in between.
+
+**A real, graduated ladder (Build Levels 0-3), the same SHAPE as Common
+Criteria's EAL but for a different axis -- build trustworthiness rather
+than code-content rigor.** Level 1: provenance data exists at all,
+describing how the artifact was built. Level 2: the build runs on a real,
+hosted build platform that generates and cryptographically signs that
+provenance itself, rather than a developer's own machine self-reporting
+it. Level 3: the build environment itself is hardened against tampering
+during the build.
+
+**Secrets scanning and CodeQL-style checks (above) audit the source;
+SLSA-style thinking audits the build step itself -- genuinely
+complementary defenses, neither a substitute for the other.** A perfectly
+clean, secret-free, bug-free source commit can still ship a compromised
+artifact if the build step in between is not itself trustworthy, which is
+precisely the shape of the most sophisticated real supply-chain attack
+this file cites.
+
 ## Two adjacent skills, checked and deliberately not adopted whole
 
 `sairn-adversarial-reviewer` and `differential-review` are both real, both
@@ -963,6 +1058,194 @@ checkers happen to already have coverage? A gap between where the platform's
 own tooling looks and where real damage would land is worth noticing on its
 own, not only inferred from Tier or freshest-commit signals. Full account:
 `references/case-studies.md`.
+
+## Technical due diligence -- a broader scope than code correctness
+
+A new research direction, genuinely distinct from everything above it in
+this file: not a new adversarial technique or a sharper security lens, but
+a real, named acknowledgment that this role's actual scope is broader than
+whether code is correct or secure. Technical Due Diligence (TDD -- the real
+methodology firms use auditing high-value codebases for investors and
+M&A, drawn from 180+ real audits) states this directly and structures it
+into five real pillars, only one of which is engineering:
+
+**TEAM.** Key-person risk: does any Tier A area currently depend on only
+one build agent's understanding, with no one else positioned to pick it
+up cold if that session simply stopped existing. The bus-factor scanner
+built this session already answers this question for third-party
+dependencies; this pillar asks the identical question about this
+platform's own knowledge, held only by whichever session last touched a
+given area.
+
+**PROCESS.** Is documentation actually kept current enough that a new
+agent or a fresh session could onboard from it alone, without needing the
+person who wrote it available to explain it. This is the direct subject
+of Diátaxis below.
+
+**ENGINEERING.** Code quality independent of whether it currently works --
+the direct subject of the code-quality metrics below.
+
+**SECURITY.** Everything above this section already covers this pillar in
+depth.
+
+**FIT.** Whether the platform's actual architecture can support where the
+business is actually trying to go -- a question about direction, not about
+any single line of code, and one this role is not positioned to answer
+alone; named here so it is not silently assumed covered by anything else
+in this file.
+
+**The real framing worth holding onto directly, stated in TDD's own
+terms:** the people and processes that produce the code usually matter
+more than any single line of it. A clean deep-pass finding on one commit
+says nothing on its own about whether the PROCESS that produced it is
+sound -- which is exactly why the process pass already built into this
+file's method exists as its own distinct activity, not a byproduct of
+enough individual clean deep passes.
+
+**A real, quantified baseline, so a finding at this level is read
+correctly rather than as alarming.** 98.3% of real audited codebases
+contain at least one vulnerability, and a large share of open-source
+dependencies in a typical audited codebase are more than four years out
+of date. These are the STANDARD, EXPECTED findings at this level of
+scrutiny, not evidence of an unusually troubled codebase -- read a finding
+at this scope against that baseline, not against an implicit assumption of
+what a "healthy" codebase looks like.
+
+### License and IP compliance -- a real dimension this platform has never audited
+
+Not a question about correctness or security at all: does SAIRN actually
+have the legal right to use everything it is built on. A real, standard
+M&A due-diligence dimension covering three genuinely separate real
+questions about the same dependency tree, not one: undeclared open source
+(a dependency used without anyone tracking that it's there at all),
+problematic or unknown licenses (some open-source licenses impose real
+obligations -- copyleft requirements, attribution requirements -- on a
+commercial product built on top of them), and known vulnerabilities in
+that open-source code specifically. This platform has never run a real
+license-compatibility pass across its own dependency tree.
+
+**A genuinely different FAILURE MODE than anything else in this file.**
+This category does not show up as a bug or a security hole at all -- a
+fully correct, fully secure, fully working feature can still carry real
+legal exposure that no amount of code review or testing would ever
+surface, because the exposure lives in the license terms, not in the
+code's behavior.
+
+### Real, quantified code-quality metrics (SonarQube)
+
+Measures how MAINTAINABLE code actually is, independent of whether it
+currently works -- a real, current industry-standard measurement distinct
+from correctness or security.
+
+**Technical Debt Ratio** -- the cost to fix all outstanding maintainability
+issues in a codebase, divided by the cost of having built that code from
+scratch, expressed as a percentage. A real, adoptable industry quality
+gate applies a visibly STRICTER bar to newly-changed code than to the
+surrounding, already-accepted codebase: zero new bugs, zero new
+vulnerabilities, technical debt ratio on NEW code capped at roughly 5%,
+new-code test coverage at roughly 80% or higher. Applied here: hold
+newly-changed code to that stricter bar explicitly, rather than one
+blended standard applied evenly regardless of whether the code is new
+this session or has been accepted for months.
+
+**Cyclomatic Complexity** -- counts the number of independent paths
+through a function's actual control flow; real current industry average
+sits around 10 to 15 per function. A function scoring far above that
+baseline is itself a legitimate, objective finding on its own terms -- not
+a bug, a genuine, measurable maintainability risk independent of whether
+the function currently produces correct output.
+
+**The real, named "seven deadly sins" of technical debt**, worth checking
+as a named list rather than a vague sense that something needs cleanup:
+bugs and potential bugs, coding-standard violations, code duplication,
+insufficient test coverage, poor distribution of complexity (a few
+functions carrying disproportionate complexity rather than it being
+spread reasonably), spaghetti design, and too few or too many comments (both
+directions named as real problems, not only a shortage).
+
+### WCAG accessibility audit methodology
+
+Not "does it work" or "is it secure" -- can everyone actually use it.
+Directly relevant given SAIRNsenior and SAIRNcare serve populations with
+real, concrete accessibility need, not a generic best practice.
+
+**A third independent confirmation of a pattern already logged twice in
+this file** (smart-contract audits' 40-60% automated coverage ceiling;
+CodeQL's manual-review-still-primary framing): automated accessibility
+scanners catch roughly 25 to 40% of real accessibility issues. A scanner
+can confirm an `alt` attribute EXISTS on an image; it cannot confirm the
+text it contains is actually accurate or useful to someone who cannot see
+the image. Three unrelated fields converging on the identical "automation
+covers a measured minority, manual review remains primary" shape is
+strong evidence the pattern is real rather than a coincidence of any one
+field.
+
+**A real, formal W3C sampling methodology (WCAG-EM), and a genuinely
+different axis from tier- or margin-weighted rotation.** Rather than
+checking everything (infeasible) or picking pages at random, WCAG-EM
+defines scope first, then draws a representative sample across a taxonomy
+of page or feature TYPES -- at minimum one instance of every distinct
+template type, plus every high-stakes flow explicitly. This is sampling by
+REPRESENTATIVENESS across functional category, distinct from sampling by
+risk level (Tier) or by evidence margin (the risk-limiting-audit
+technique already in Rotation) -- a real, third axis worth applying
+specifically when the question is "does every kind of page/flow get
+covered," which neither Tier nor margin-weighting is actually built to
+answer.
+
+### FinOps -- real cloud-cost governance
+
+Not correctness, security, or maintainability -- whether real money is
+being spent well. Directly relevant given this platform's own known,
+already-documented constraint: Supabase's free tier, a Pro upgrade not
+currently affordable, already the direct cause of the no-backups finding
+covered earlier in this file.
+
+**A real, three-phase iterative model.** INFORM: real, concrete visibility
+into what is actually being spent and why, before anything else. OPTIMIZE:
+act on the real savings that visibility reveals. OPERATE: build the real,
+repeatable processes that make cost management durable rather than a
+one-time cleanup. This platform has never run a real "Inform" pass across
+its own actual infrastructure spend -- what is actually being paid for,
+and why, stated concretely rather than assumed.
+
+**A real, concrete case worth citing as achievable, not aspirational:** a
+real company cut cloud waste by 20% purely from adding visibility --
+tagging resources, building dashboards, assigning shared accountability --
+with no re-architecture required at all. The INFORM phase alone,
+correctly done, is real, measurable value before anything gets optimized.
+
+**Showback** -- a real, named mechanism: making the actual cost of a
+specific resource or a specific decision visible to whoever is actually
+deciding about it, at the moment of the decision, rather than surfacing
+the cost later in an aggregate bill nobody can trace back to a specific
+choice.
+
+### Diátaxis -- structuring documentation by the one job each piece should do
+
+A structural axis specifically for the PROCESS pillar above: not "is the
+documentation current," but "is each piece of documentation actually doing
+the ONE job it is supposed to do." A real, current technical-documentation
+framework.
+
+**Four real quadrants**, each serving a genuinely different reader need:
+Tutorial (learning-oriented -- a guided first experience), How-To Guide
+(problem-oriented -- solving one specific, already-understood task),
+Reference (information-oriented -- consulted for a specific fact, not read
+start to end), Explanation (understanding-oriented -- the why behind a
+design, read for context rather than to accomplish an immediate task).
+This platform's own documentation (the master plan, this skill's own
+SKILL.md files, area and topic files) has never been explicitly checked
+against this classification.
+
+**A real, sharp, named failure pattern worth flagging on its own terms on
+a future documentation pass:** "documentation that fails users almost
+always fails by MIXING modes -- a tutorial that pauses to lecture, a
+reference that tries to teach, a how-to that demands three chapters of
+context first." When a documentation gap is found, name specifically
+which mode the document is trying to serve and where it drifts into a
+different one, rather than only noting "needs updating" -- mode-mixing is
+its own, more precise finding.
 
 ## Financial reconciliation: three records, not two
 
