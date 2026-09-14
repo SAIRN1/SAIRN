@@ -1234,6 +1234,16 @@
       "claimed_at_epoch": 1789412476.6549902,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cc-1789412505",
+      "session": "cc",
+      "subject": "cc",
+      "task": "item 92 functional core imperative shell sbThreeWayMatch and ledger money rule",
+      "claimed_at": "2026-09-14T19:01:45Z",
+      "claimed_at_epoch": 1789412505.6858857,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
