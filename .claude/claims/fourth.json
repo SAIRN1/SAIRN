@@ -1220,8 +1220,8 @@
       "task": "item-65-nightly-encrypted-backup-and-restore-test",
       "claimed_at": "2026-09-14T16:23:10Z",
       "claimed_at_epoch": 1789402990.5197387,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T16:33:21Z"
     }
   ]
 }
