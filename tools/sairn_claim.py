@@ -39,6 +39,34 @@ It also cannot tell you a claim is being WORKED. It tells you one was MADE. A
 crashed or compacted session leaves a claim behind, which is why claims expire --
 see STALE_HOURS.
 
+── AND IT CANNOT BE CURRENT WITHOUT A FETCH, WHICH IT NOW SAYS (2026-09-14) ──
+`check` printed a bare, unqualified CLEAR when the `git fetch` it depends on had
+FAILED. Reproduced live: with the remote unreachable the fetch exited 128 with
+"unable to access", and the very next line was
+
+    CLEAR -- no active overlapping claim from another session.
+
+That verdict came off an `origin/main` ref eighteen minutes stale, and nothing in
+the output said so -- the failure was swallowed by `check=False` and the origin
+read then SUCCEEDED, because a stale remote-tracking ref is perfectly readable.
+So the one existing warning ("falling back to this clone's copy, which may be
+stale") could not fire: nothing had fallen back.
+
+This is CLAUDE.md PR §1.11 inside the tool whose whole premise is that a fetch
+happened -- "could not run" folded into "passed" -- and it is disciplines item 8
+exactly (docs/2026-09-13-cross-domain-disciplines.md): the gyro reads perfectly
+smoothly the entire time it is wrong. **A check that cannot say how old its
+evidence is has not been re-referenced at all.**
+
+Worth naming, because it is why this was a blind spot and not a bug anyone would
+trip over: `tools/sairn_claim_hook.py` -- the SessionStart companion -- already
+tracked this. Its `try_fetch()` returns a bool and its `read_claims()` threads a
+`fresh` flag through so "a fallback answer is never reported as a current one".
+The freshness accounting existed in the copy that runs unattended and was
+missing from the copy a human invokes before spending hours. That is the same
+one-copy-fixed asymmetry this pair recorded on 2026-09-04 over
+`git checkout origin/main -- .claude/claims`, with the arrow reversed.
+
 Usage:
   python tools/sairn_claim.py check  sairnfreedom "competitive scan"
   python tools/sairn_claim.py claim  sairnfreedom "competitive scan"
@@ -46,6 +74,12 @@ Usage:
   python tools/sairn_claim.py list [--all]
 
 Exit codes:  0 clear / claimed   1 blocked by another session's claim   2 error
+             3 the claim or release never reached origin/main
+             4 CHECKED, BUT NOT AGAINST THE REMOTE -- the fetch failed or was
+               skipped, so the answer is as of the last successful fetch rather
+               than as of now. A distinct code on purpose: exiting 0 for both a
+               fresh CLEAR and a stale one is what left nothing downstream able
+               to tell them apart. It does NOT stop `claim` -- see cmd_claim().
 """
 import argparse
 import glob
@@ -436,6 +470,142 @@ def on_origin(sha):
     return r.returncode == 0
 
 
+# ── HOW OLD IS THE ANSWER: the fetch, not the commit date (2026-09-14) ─────
+STALE_RC = 4
+
+# The instant of the last SUCCESSFUL fetch, written by this tool and nothing
+# else. Two things it deliberately is NOT:
+#
+#   * NOT `.git/FETCH_HEAD`. That was the first implementation and it was
+#     WRONG IN THE DANGEROUS DIRECTION -- measured, not reasoned about:
+#     `git clone` never writes FETCH_HEAD at all, and a FAILED fetch CREATES
+#     and touches it (`git fetch` exit 128 against a dead remote left the file
+#     0.00 hours old). So the age would have read "1 minute ago" on a view five
+#     hours stale, immediately after the fetch that failed to refresh it. That
+#     is the `gate_column_check` 18.7-hour understatement recommitted by the
+#     code written to avoid it, and only the mutation control caught it.
+#   * NOT in the working tree. An untracked file in REPO shows as `??` and
+#     makes every clean-tree-dependent probe skip -- the reason
+#     `run_all_tests.py` puts its own lock outside the repo too.
+FETCH_STAMP = 'sairn-claim-last-fetch'
+
+
+def git_dir():
+    """Absolute path to this clone's `.git`, or None."""
+    d = sh(['git', 'rev-parse', '--git-dir'], check=False)
+    if not d:
+        return None
+    return d if os.path.isabs(d) else os.path.join(REPO, d)
+
+
+def fetch_origin():
+    """(ok, error_line). A failed fetch is a FACT, not a detail to swallow.
+
+    Replaces `sh(['git','fetch','origin'], check=False)` at both call sites. That
+    form discarded the result, which is the whole defect in the header: the
+    verdict printed afterwards claimed a currency the run had not achieved.
+
+    Stamps the success instant, so the NEXT run that cannot reach the remote can
+    say how old its answer is.
+    """
+    r = subprocess.run(['git', 'fetch', 'origin'], cwd=REPO,
+                       capture_output=True, text=True)
+    if r.returncode == 0:
+        d = git_dir()
+        if d:
+            try:
+                with open(os.path.join(d, FETCH_STAMP), 'w') as f:
+                    f.write('%f\n' % now())
+            except OSError:
+                pass        # an unwritable .git must not take this tool down
+        return True, ''
+    text = (r.stderr or r.stdout or '').strip().split('\n')
+    # The FIRST fatal line, not the last one. Git's dead-remote error ends with
+    # "and the repository exists.", which is advice rather than the error.
+    fatal = [ln.strip() for ln in text if ln.strip().startswith('fatal:')]
+    return False, (fatal[0] if fatal else (text[0].strip() if text else ''))
+
+
+def last_fetch_hours():
+    """Hours since the last SUCCESSFUL fetch, or None if it cannot be measured.
+
+    Reads the epoch this tool WROTE when a fetch returned 0 -- the content, not
+    the file's mtime, because the content records the instant of the observation
+    and an mtime records whatever last happened to the file.
+
+    NOT the commit date of origin/main's tip, and that choice is the point.
+    `gate_column_check.py` measured freshness from a git commit date and
+    reported a capture as 25 hours old when it was 43.3 -- an 18.7-hour
+    UNDERSTATEMENT, in the direction that makes stale data look current
+    (docs/2026-09-13-claim-provenance-chain-design.md, Q1). Freshness is
+    measured from when the measurement was TAKEN. Here the measurement is the
+    fetch; when somebody else last happened to commit is a different question,
+    and answering it instead is how that 18.7 hours went missing.
+
+    Returns None rather than 0 whenever it cannot tell -- no stamp yet on this
+    clone, an unreadable one, or a value in the future from a clock that moved.
+    "Unknown" and "just now" are the two answers that must never be confused,
+    and this is the direction that errs toward saying so out loud.
+    """
+    d = git_dir()
+    if not d:
+        return None
+    try:
+        with open(os.path.join(d, FETCH_STAMP)) as f:
+            hrs = (now() - float(f.read().strip())) / 3600.0
+    except (OSError, ValueError):
+        return None
+    return None if hrs < 0 else hrs
+
+
+def fetch_age_str(hrs):
+    """The age in the unit that carries the information at that magnitude.
+
+    `%.1f hours` renders a two-minute-old fetch as "0.0 hours ago", which is
+    the display defect disciplines item 4 records against the margin printer:
+    a number that cannot distinguish the two cases a reader is deciding
+    between is worse than no number. Minutes under an hour, days over two.
+    """
+    if hrs is None:
+        return 'AT A TIME THIS CANNOT MEASURE'
+    if hrs < 1:
+        mins = max(1, int(round(hrs * 60)))
+        return '%d minute%s ago' % (mins, '' if mins == 1 else 's')
+    if hrs > 48:
+        return '%.1f DAYS ago' % (hrs / 24.0)
+    return '%.1f hours ago' % hrs
+
+
+def freshness_lines(fetched, err, skipped):
+    """The age of the evidence a verdict rests on -- printed only when it is
+    not NOW.
+
+    Deliberately silent on a successful fetch. A banner that prints every run
+    is one a reader learns to skip, which would cost exactly the line that
+    matters; and on a good fetch the verdict really is current.
+
+    The wording is taken from the platform's worked example for this,
+    `tools/schema_snapshot_freshness.py`: state the age, say which instrument
+    loses a disagreement, and say what to do about it.
+    """
+    if fetched:
+        return []
+    age = fetch_age_str(last_fetch_hours())
+    lines = ['',
+             'THE REMOTE WAS NOT READ ON THIS RUN -- %s.'
+             % ('--no-fetch was passed' if skipped else 'the git fetch FAILED'),
+             'EVERY VERDICT ABOVE IS AS OF THE LAST SUCCESSFUL FETCH, %s, '
+             'NOT AS OF NOW.' % age,
+             'A claim another session pushed since then is invisible here, and '
+             'one shown as active may already have been released.']
+    if err:
+        lines.append('  fetch error: ' + err)
+    lines.append('Get the network up and re-run before spending hours on the '
+                 'strength of this. Exit code %d says the same to a script.'
+                 % STALE_RC)
+    return lines
+
+
 def save_mine(doc, message, push):
     """Returns True only when the claim is PRESENT ON THE REMOTE.
 
@@ -531,14 +701,18 @@ def push_verified():
 
 
 def cmd_check(args, quiet=False):
+    fetched, ferr = False, ''
     if not args.no_fetch:
-        sh(['git', 'fetch', 'origin'], check=False)
         # Read claims as they exist on origin/main, not just locally -- a claim
         # another session pushed is only visible here after a fetch, and this is
-        # the whole reason the check can be trusted at all.
+        # the whole reason the check can be trusted at all. Which is exactly why
+        # the RESULT of the fetch is kept now instead of discarded: if it
+        # failed, that reason did not hold on this run and the verdict has to
+        # say so. See the header.
         # NO `git checkout origin/main -- .claude/claims` here. It overwrites AND
         # STAGES the working tree; read_origin_claims() reads the same bytes
         # with `git show` and cannot write anything. See its docstring.
+        fetched, ferr = fetch_origin()
     subj, task = args.subject, ' '.join(args.task)
     me = session_name()
     blocking = []
@@ -576,6 +750,15 @@ def cmd_check(args, quiet=False):
             print('If you believe that claim is dead, confirm with the other '
                   'session first -- do not just wait %g hours for it to expire.'
                   % STALE_HOURS)
+            # A stale BLOCK is reported too, and it is not the harmless
+            # direction people assume: the claim blocking you may have been
+            # released since the last fetch, so the note is the difference
+            # between confirming with the other session and waiting 4 hours
+            # for nothing.
+            for ln in freshness_lines(fetched, ferr, args.no_fetch):
+                print(ln)
+        # A block stays a block -- 1 is the actionable code and must not be
+        # displaced by the staleness one. The staleness is in the text.
         return 1
     if not quiet:
         print('CLEAR -- no active overlapping claim from another session.')
@@ -601,7 +784,9 @@ def cmd_check(args, quiet=False):
                   'was DONE and never released. Check before repeating it.')
         _report_recent_releases(load_all(from_origin=not args.no_fetch),
                                 me, subj, task)
-    return 0
+        for ln in freshness_lines(fetched, ferr, args.no_fetch):
+            print(ln)
+    return 0 if fetched else STALE_RC
 
 
 def _report_recent_releases(claims, me, subj, task):
@@ -637,7 +822,22 @@ def _report_recent_releases(claims, me, subj, task):
 
 def cmd_claim(args):
     rc = cmd_check(args)
-    if rc != 0:
+    stale_check = rc == STALE_RC
+    if stale_check:
+        # STALE DOES NOT ABORT, and that is a decision rather than an oversight.
+        # Refusing to claim without a fetch would make the tool unusable the
+        # moment the network is down, and this file already records what that
+        # costs: "a gate that must be talked past routinely is a gate people
+        # learn to talk past" -- six false blocks, six overrides. The two halves
+        # also fail differently. The COLLISION half genuinely degrades on stale
+        # data. The PUBLISH half does not: save_mine() -> push_verified() ->
+        # on_origin() proves the claim reached the remote or returns 3, so a
+        # claim that lands was never published on stale evidence.
+        print('\nPROCEEDING ANYWAY on a check that did not reach the remote. '
+              'The publish half below is still verified against origin/main; '
+              'it is the COLLISION half above that is only as current as the '
+              'last fetch.')
+    elif rc != 0:
         return rc
     subj, task = args.subject, ' '.join(args.task)
     doc = load_mine()
@@ -664,6 +864,13 @@ def cmd_claim(args):
         return 3
     print('\nCLAIMED. Release it when the work closes:')
     print('  python tools/sairn_claim.py release %s' % subj)
+    if stale_check:
+        # The push just proved the remote is reachable NOW, which means the
+        # collision check can finally be made for real -- and it is the cheap
+        # half. Saying it here rather than leaving the session to infer it.
+        print('\nThe collision check ran before the remote was readable. It is '
+              'readable now (the claim landed), so re-run it:')
+        print('  python tools/sairn_claim.py check %s %s' % (subj, task))
     return 0
 
 
@@ -707,24 +914,31 @@ def cmd_release(args):
 
 
 def cmd_list(args):
+    fetched, ferr = False, ''
     if not args.no_fetch:
-        sh(['git', 'fetch', 'origin'], check=False)
         # NO `git checkout origin/main -- .claude/claims` here. It overwrites AND
         # STAGES the working tree; read_origin_claims() reads the same bytes
         # with `git show` and cannot write anything. See its docstring.
+        fetched, ferr = fetch_origin()
     rows = load_all(from_origin=not args.no_fetch)
     if not args.all:
         rows = [c for c in rows if is_active(c)]
     if not rows:
+        # "No active claims" off a stale ref is the most misleading output this
+        # tool can produce -- an empty list reads as permission -- so the note
+        # matters MORE here, not less.
         print('No %sclaims.' % ('' if args.all else 'active '))
-        return 0
-    rows.sort(key=lambda c: c.get('claimed_at_epoch', 0), reverse=True)
-    for c in rows:
-        state = ('active' if is_active(c)
-                 else ('EXPIRED' if c.get('status') == 'active' else 'released'))
-        print('[%-8s] %-6s %-16s %s  (%s)'
-              % (state, c.get('session'), c.get('subject'), c.get('task'), age_str(c)))
-    return 0
+    else:
+        rows.sort(key=lambda c: c.get('claimed_at_epoch', 0), reverse=True)
+        for c in rows:
+            state = ('active' if is_active(c)
+                     else ('EXPIRED' if c.get('status') == 'active' else 'released'))
+            print('[%-8s] %-6s %-16s %s  (%s)'
+                  % (state, c.get('session'), c.get('subject'), c.get('task'),
+                     age_str(c)))
+    for ln in freshness_lines(fetched, ferr, args.no_fetch):
+        print(ln)
+    return 0 if fetched else STALE_RC
 
 
 def main():

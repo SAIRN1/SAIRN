@@ -3834,3 +3834,69 @@ SCRIPTED stub cannot answer "did the write land" -- it replays the same answer
 either way, and atomicity is entirely a question about what landed. The next
 fail-safe in the family -- the cron watchdog, a circuit breaker, a
 deny-by-default gate -- gets both questions asked with the same kit.
+
+---
+
+## 2026-09-14 (Cody) -- `check` printed CLEAR after its fetch had FAILED, and
+## the control caught the same defect inside the fix
+
+Skill used: `sairn-guardian-v2`. Claim: `platform`. Files:
+`tools/sairn_claim.py`, `tests/claims/run_freshness_probe.py` (new, 63 arms).
+
+**REPRODUCED FIRST, NOT INFERRED.** With the remote unreachable the `git fetch`
+exited **128** with *"unable to access"*, and the next line printed was
+
+    CLEAR -- no active overlapping claim from another session.
+
+That verdict came off an `origin/main` ref eighteen minutes stale and nothing in
+the output said so. The fetch failure was swallowed by `check=False`, and the one
+existing warning -- *"falling back to this clone's copy, which may be stale"* --
+**could not fire, because nothing had fallen back.** A stale remote-tracking ref
+is perfectly readable, so `read_origin_claims()` SUCCEEDED and handed back old
+claims. PR §1.11 inside the tool whose entire premise is that a fetch happened.
+
+**WHY IT SURVIVED IS THE PART THAT TRANSFERS.** `tools/sairn_claim_hook.py`
+already tracked this: `try_fetch()` returns a bool and `read_claims()` threads a
+`fresh` flag so *"a fallback answer is never reported as a current one"*. The
+freshness accounting existed in the copy that runs UNATTENDED and was missing
+from the copy A HUMAN INVOKES before spending hours -- the same one-copy-fixed
+asymmetry this pair recorded on 2026-09-04 over `git checkout origin/main --`,
+with the arrow reversed. Neither copy is the canonical one, which is the lesson.
+
+**THE FIX STAYS SILENT WHEN THE FETCH WORKED.** A banner on every run is one a
+reader learns to skip, and that would cost exactly the line that matters. Exit
+**4** is a distinct code because returning 0 for both a fresh CLEAR and a stale
+one is what left nothing downstream able to tell them apart. A BLOCK still exits
+1 and carries the note as well -- staleness cuts both ways, and a claim blocking
+you may have been RELEASED since the last fetch.
+
+**STALE DOES NOT ABORT A CLAIM, and that is a decision.** Refusing offline would
+make the tool unusable the moment the network drops, and the file's own header
+records the price: *"a gate that must be talked past routinely is a gate people
+learn to talk past"* -- six false blocks, six overrides. The two halves also fail
+differently. The COLLISION half genuinely degrades on stale data; the PUBLISH
+half does not, because `push_verified()` proves the commit reached origin/main or
+returns 3. So it warns, proceeds, and afterwards tells the session to re-run the
+collision check now that the remote is demonstrably reachable.
+
+**THE CONTROL CAUGHT A REAL DEFECT IN MY OWN FIX, which is the whole argument
+for section I.** The age first came from `.git/FETCH_HEAD`'s mtime, on the
+reasoning that git rewrites it on a successful fetch. **Measured rather than
+reasoned about, both halves were wrong:** `git clone` never writes FETCH_HEAD at
+all, and a **FAILED** fetch CREATES and touches it -- `git fetch` exiting 128
+against a dead remote left the file **0.00 hours old**. The tool would have
+reported a five-hour-stale view as ONE MINUTE old, immediately after the fetch
+that failed to refresh it. That is the `gate_column_check` 18.7-hour
+understatement recommitted by the code written to avoid it, in the one direction
+that matters -- making stale data look current. Replaced by a stamp written under
+`.git/` **only on exit 0**, read as a recorded instant rather than a file's
+mtime, and control 7 exists so the mistake cannot come back.
+
+**Seven controls, each asserting its own sabotage landed** before believing the
+arm went red -- the 23-of-39 measurement is what that guard is for. Tool restored
+byte-identical after all seven.
+
+**NOT MINE, RESPECTED:** the cron-jitter collision (`send-reminder` and
+`alf-alerts` both on `0 * * * *`) is CC's under an active claim. `vercel.json` is
+untouched. Independently confirmed for CC's use: the collision is real, and
+`cron-watchdog` (:15) and `audit-checkpoint` (3:30) are clear of it.
