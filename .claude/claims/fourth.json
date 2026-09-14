@@ -1292,6 +1292,16 @@
       "claimed_at_epoch": 1789411239.7427866,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789411269",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "scrubber item 18 second vehicle -- eaten command substitution in commit messages",
+      "claimed_at": "2026-09-14T18:41:09Z",
+      "claimed_at_epoch": 1789411269.0688856,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
