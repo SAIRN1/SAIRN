@@ -105,6 +105,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Daily audit checkpoints are BUILT &mdash; and `sql/audit_checkpoint_schema.sql` HAS NOT BEEN RUN** | **BUILT 2026-09-14 (Fourth)**, migration PENDING &mdash; `api/audit-checkpoint.js`, 36/36 arms in `api/audit-checkpoint.test.js` | `api/audit-checkpoint.test.js` |
 | **Item 57: Benford digit distribution &mdash; the automated form of the fabricated-KPI question, and the shape pre-check is most of it** | **BUILT 2026-09-14 (CC)** &mdash; `tools/benford_check.py`, held by `tests/run_benford_probe.py` (37 arms). **NOT wired into any gate and NOT registered** | `tests/run_benford_probe.py` |
 | **RECONCILED for Cody: the report-only sweep timeout is REAL but it is NOT `metamorphic_check.py` &mdash; two pre-existing checkers are 49% of the sweep** | **MEASURED 2026-09-14 (CC) on current `main`, handed over rather than worked on &mdash; Cody holds the active claim** | `tests/run_report_only_checks_probe.py` |
 | **Web Analytics turned on &mdash; and the three public pages that carried a CREDENTIAL in the query string now strip it first** | **BUILT 2026-09-13 (CC)** on Michael's decision. Script on all **22** root app pages; held by `tests/public_token_leaves_the_address_bar.js` | `tests/public_token_leaves_the_address_bar.js` |
@@ -302,7 +303,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**153 of 348 test files are traced to a stated requirement. 195 are not.**
+**154 of 349 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -521,8 +522,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 348   tests/**, api/*.test.js
-  open-work rows citing a test       139   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 349   tests/**, api/*.test.js
+  open-work rows citing a test       140   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

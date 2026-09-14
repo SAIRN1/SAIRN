@@ -99,6 +99,10 @@
     {
       "path": "/api/alf-alerts",
       "schedule": "0 * * * *"
+    },
+    {
+      "path": "/api/audit-checkpoint",
+      "schedule": "30 3 * * *"
     }
   ]
 }
