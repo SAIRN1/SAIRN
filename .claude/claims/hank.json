@@ -1525,6 +1525,16 @@
       "claimed_at_epoch": 1789403353.0490432,
       "status": "released",
       "released_at": "2026-09-14T16:33:31Z"
+    },
+    {
+      "id": "hank-1789404233",
+      "session": "hank",
+      "subject": "register-tool-field",
+      "task": "found_by_tool field and item 4 citation unlock",
+      "claimed_at": "2026-09-14T16:43:53Z",
+      "claimed_at_epoch": 1789404233.7643454,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
