@@ -1702,6 +1702,56 @@ def main():
             continue
         _gen_dirty.append((_tool_rel, _doc_rel, _rc, _out))
 
+    # ── CHECK 12b: A TOOL THIS PUSH ADDS, NAMED BY THE REFUSAL (2026-09-14) ─
+    # CONFIRMED LIVE FIRST, WHICH IS WHY THIS EXISTS. Michael's 2026-09-13
+    # decision is that no tools/ file is mergeable without a matching inventory
+    # entry. Driven against the real hook: with a CLEAN base it holds -- adding
+    # an unentered tool is blocked. With an ALREADY-REFUSING base it does NOT:
+    # the second unentered tool is waved through with a NOTICE, and so is every
+    # one after it until somebody clears the first. The rule was open-ended
+    # exactly where it needed to hold.
+    #
+    # THAT IS NOT A DEFECT IN CHECK 12's SCOPING, and the fix does not weaken
+    # it. Check 12 refuses only what a push BROKE, deliberately, so nobody is
+    # blocked for another session's stale document. This asks a different and
+    # narrower question: is the generator refusing over a tools/ FILE THIS PUSH
+    # IS SHIPPING? That is not a pre-existing gap -- it is the file in the push,
+    # and it is the same scoping check 11 uses.
+    #
+    # IT ONLY FIRES WHEN THE REFUSAL NAMES A FILE IN THIS PUSH. A push that
+    # ships no tools/ file, or whose tools/ files are all entered, is never
+    # blocked by somebody else's unentered one.
+    _new_tools = [q for q in changed
+                  if q.startswith('tools/') and q.endswith(('.py', '.js'))]
+    if _new_tools:
+        for _tool_rel, _doc_rel, _rc, _out in _gen_dirty:
+            if _rc != 2 or 'no PURPOSES entry' not in _out:
+                continue
+            _named = [q for q in _new_tools
+                      if os.path.basename(q) in _out]
+            if not _named:
+                continue
+            deny(chr(10).join([
+                "Blocked: this push adds a tools/ file with no entry in the tool",
+                "inventory, and the generator refuses to run because of it.",
+                "",
+            ] + ["  " + q for q in _named] + [
+                "",
+                "Michael's decision, 2026-09-13: no tool file is mergeable without a",
+                "matching inventory entry. A blank cell is how the last inventory went",
+                "stale, and a tool nobody described is one nobody can decide to run.",
+                "",
+                "Add a PURPOSES entry in tools/tooling_inventory.py naming what it",
+                "CATCHES -- not what it does -- then regenerate:",
+                "    python tools/tooling_inventory.py",
+                "",
+                "This is narrower than check 12 above and does not overlap it: check 12",
+                "asks whether this push BROKE a generated document, and skips a document",
+                "that was already broken. This asks whether the refusal names a file in",
+                "THIS push, which is never somebody else's problem to clear.",
+                OVERRIDE_HINT,
+            ]))
+
     if _gen_dirty:
         # Resolve the base ONCE, and only now -- the worktree is the expensive
         # part and it is never built for a push whose documents are all clean.

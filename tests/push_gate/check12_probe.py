@@ -218,13 +218,21 @@ try:
     tip = commit(wt, TOOL_REL, NEW_TOOL, 'add a tool')
     rc, out = run_gate(wt, tip, base)
     ok('C1 the push is REFUSED', rc != 0, 'rc=%d\n%s' % (rc, out))
-    ok('C2 it names TOOLING-INVENTORY',
-       'docs/TOOLING-INVENTORY.md' in out.replace('\\', '/'), out[-800:])
-    ok('C3 it says the GENERATOR refuses, not that the document is stale',
-       'REFUSES to run (exit 2)' in out, out[-800:])
+    # ── C2/C3 WERE REWRITTEN 2026-09-14 AND THE REASON IS THE POINT ─────────
+    # They used to assert check 12's generic message. Check 12b now answers
+    # FIRST and more narrowly: it names THE TOOL THIS PUSH ADDS rather than the
+    # document, because the document is a symptom and the file is the cause. The
+    # push is refused either way -- C1 is unchanged -- and the arm asserting the
+    # WORSE message was the one that had to move.
+    ok('C2 it names the TOOL this push adds, not just the document it broke',
+       'tools/zz_check12_fixture.py' in out.replace('\\', '/'), out[-900:])
+    ok("C3 it cites the decision rather than only the mechanism",
+       '2026-09-13: no tool file is mergeable' in out, out[-900:])
     ok('C4 it does not call an exit 2 a stale document',
        'docs/TOOLING-INVENTORY.md -- no longer matches' not in out.replace('\\', '/'),
        out[-800:])
+    ok('C5 and it says what to do -- an entry, then regenerate',
+       'PURPOSES entry' in out and 'python tools/tooling_inventory.py' in out, out[-900:])
 finally:
     drop(wt)
 
@@ -303,6 +311,49 @@ try:
     ok('F3 it denies for the OTHER direction instead: a PURPOSES entry naming a '
        'tool that no longer exists',
        rc != 0 and 'docs/TOOLING-INVENTORY.md' in flat, 'rc=%d\n%s' % (rc, out[-800:]))
+finally:
+    drop(wt)
+
+# ── G. 12b: THE HOLE THE LIVE CONFIRMATION FOUND ───────────────────────────
+# Michael's 2026-09-13 decision is that no tools/ file is mergeable without a
+# matching inventory entry. Driven against the real hook on 2026-09-14, it held
+# on a CLEAN base (section C) and DID NOT HOLD once the inventory was already
+# refusing: the second unentered tool was waved through with a notice, and so
+# would every one after it, until somebody cleared the first.
+#
+# The pair below is what makes the fix narrow rather than a widening of check
+# 12: a push that SHIPS an unentered tool is refused even on a dirty base, and a
+# push that ships NO tools/ file is still allowed on that same dirty base. If
+# the second arm ever fails, this has become the thing check 12 exists not to
+# be -- a gate that blocks you for somebody else's mess.
+print('\n--- G. 12b: an unentered tool, on a base that was ALREADY refusing ---')
+wt = worktree()
+try:
+    base = commit(wt, 'tools/zz_g_first.py', '"""first, unentered."""\n',
+                  'base already carries an unentered tool')
+    tip = commit(wt, 'tools/zz_g_second.py', '"""second, unentered."""\n',
+                 'add a SECOND unentered tool')
+    rc, out = run_gate(wt, tip, base)
+    flat = out.replace('\\', '/')
+    ok('G1 the push is REFUSED even though the inventory was already refusing',
+       rc != 0, 'rc=%d\n%s' % (rc, out[-900:]))
+    ok('G2 it names the tool THIS push adds', 'tools/zz_g_second.py' in flat, out[-900:])
+    ok('G3 and NOT the one that was already there -- never somebody else\'s to clear',
+       'tools/zz_g_first.py' not in flat, out[-900:])
+finally:
+    drop(wt)
+
+print('\n--- G(ii). the pair: no tools/ file in the push, same dirty base ---')
+wt = worktree()
+try:
+    base = commit(wt, 'tools/zz_g_first.py', '"""first, unentered."""\n',
+                  'base already carries an unentered tool')
+    tip = commit(wt, INERT_REL, INERT, 'an unrelated lib, no tools touched')
+    rc, out = run_gate(wt, tip, base)
+    ok('G4 the push is ALLOWED -- 12b did not widen into check 12',
+       rc == 0, 'rc=%d\n%s' % (rc, out[-900:]))
+    ok('G5 and the pre-existing refusal is still SAID, not silently tolerated',
+       'NOTICE (check 12)' in out and 'ALREADY' in out, out[-900:])
 finally:
     drop(wt)
 
