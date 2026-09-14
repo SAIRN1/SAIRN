@@ -1190,8 +1190,8 @@
       "task": "item 90 three anti-pattern shapes checker",
       "claimed_at": "2026-09-14T14:55:07Z",
       "claimed_at_epoch": 1789397707.3083148,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T15:21:41Z"
     }
   ]
 }
