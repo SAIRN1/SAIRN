@@ -1180,8 +1180,8 @@
       "task": "item 28 checker scaffold generator",
       "claimed_at": "2026-09-14T14:47:12Z",
       "claimed_at_epoch": 1789397232.4029768,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:54:55Z"
     }
   ]
 }
