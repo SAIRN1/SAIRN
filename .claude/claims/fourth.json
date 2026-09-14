@@ -1132,6 +1132,16 @@
       "claimed_at_epoch": 1789389091.9172957,
       "status": "released",
       "released_at": "2026-09-14T12:53:02Z"
+    },
+    {
+      "id": "fourth-1789390395",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 54 cron liveness heartbeat monitor and watchdog",
+      "claimed_at": "2026-09-14T12:53:15Z",
+      "claimed_at_epoch": 1789390395.64038,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
