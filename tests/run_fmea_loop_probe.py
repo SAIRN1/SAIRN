@@ -78,9 +78,34 @@ check('and it does NOT print NO DRAFT for a document',
 
 # ── 3/4. a real drafted target, on both sides of the draft date ────────────
 print('\n--- 3. a drafted target whose draft PREDATES the defect ---')
+
+# PICK A DRAFT THAT CAN ACTUALLY EXERCISE ARM 5, not merely the first one.
+# The earlier version took the first dated code-file draft in directory order,
+# which worked only while that happened to be a draft carrying a rule
+# citation. Drafting 60 more files changed the alphabetical first entry to one
+# with no rule-citing risk at all and arm 5 went red -- a probe failing on a
+# property of the CORPUS rather than of the code under test. A probe whose
+# verdict depends on filename ordering is not testing what it says it is.
+def rule_ids(draft):
+    """Every rule id this draft could be matched on -- both shapes.
+
+    matched() reads a rules-doc `cite` AND, since 2026-09-14, a same-file
+    register risk's own `rules` list. Reading only the first shape here would
+    let arm 5 go red against a draft the matcher can in fact score.
+    """
+    out = []
+    for r in draft.get('risks', []):
+        c = r.get('cite', '') or ''
+        if 'SAIRN-PROCESS-RULES' in c:
+            out.append(c.rsplit(' ', 1)[-1])
+        out.extend(r.get('rules') or [])
+    return [x for x in out if x]
+
+
 target = None
 for d in dated:
-    if d.get('target') and not fp.NOT_A_CODE_TARGET.search(d['target']):
+    if (d.get('target') and not fp.NOT_A_CODE_TARGET.search(d['target'])
+            and rule_ids(d)):
         target = d
         break
 if target is None:
@@ -99,11 +124,7 @@ else:
           'DRAFT NEWER' in out and 'MISSED' not in out, out)
 
     print('\n--- 5. a citation the draft DOES carry is a PREDICTED ---')
-    cited = []
-    for r in target.get('risks', []):
-        c = r.get('cite', '')
-        if 'SAIRN-PROCESS-RULES' in c:
-            cited.append(c.rsplit(' ', 1)[-1])
+    cited = rule_ids(target)
     if not cited:
         check('the chosen draft cites at least one standing rule', False,
               'no risk in %s cites a rule, so PREDICTED cannot be reached'

@@ -20,7 +20,9 @@
       "summary": "The timesheet AI panel priced labour from raw rows, so unrated rows reached the model as bare hours and the cost estimate carried no exclusion note",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "a domain-logic defect: the AI priced labour from rows it was never told it could not price. No standing rule names this shape."
+      "citation_note": "a domain-logic defect: the AI priced labour from rows it was never told it could not price. No standing rule names this shape.",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "5b8570ce0012",
@@ -41,7 +43,9 @@
       "summary": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\"",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "two concurrent suite runs restoring each other's files -- a concurrency defect in the harness, and no standing rule covers it."
+      "citation_note": "two concurrent suite runs restoring each other's files -- a concurrency defect in the harness, and no standing rule covers it.",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "1348466a2e73",
@@ -62,7 +66,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "a suppression flag left on, not a check that passed"
+      "citation_note": "a suppression flag left on, not a check that passed",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "3f09a48eed54",
@@ -84,7 +90,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "3f09a48eed54",
@@ -106,7 +114,9 @@
       "rules": [
         "1.2"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "5abfcdbacbb4",
@@ -127,7 +137,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "5b98fd27209b",
@@ -148,7 +160,9 @@
       "rules": [
         "1.3"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "5b98fd27209b",
@@ -169,7 +183,9 @@
       "rules": [
         "1.3"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "5b98fd27209b",
@@ -190,7 +206,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "5b98fd27209b",
@@ -212,7 +230,9 @@
         "1.5"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "silence by omission rather than a false success printed"
+      "citation_note": "silence by omission rather than a false success printed",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "5b98fd27209b",
@@ -233,7 +253,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "6fde9cea7b84",
@@ -259,7 +281,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "6fde9cea7b84",
@@ -285,7 +309,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "6fde9cea7b84",
@@ -312,7 +338,9 @@
         "1.7"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "a sampling window exempting what it does not reach"
+      "citation_note": "a sampling window exempting what it does not reach",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "94034ed14279",
@@ -330,7 +358,9 @@
       "summary": "Two mechEsc definitions in one script block: the later hoisted over the earlier, so an edit to the wrong one would silently reach no call site -- in an HTML escaper",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "a dead duplicate definition. Guardian check 27 territory, not a PR class rule."
+      "citation_note": "a dead duplicate definition. Guardian check 27 territory, not a PR class rule.",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "a858cab7cb17",
@@ -349,7 +379,9 @@
       "summary": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "a demo seed reaching a live server. Held by a test, not by a class rule."
+      "citation_note": "a demo seed reaching a live server. Held by a test, not by a class rule.",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "ad588e6c5dc3",
@@ -369,7 +401,9 @@
       "summary": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "a payload too large for the row. A sizing defect with no rule class."
+      "citation_note": "a payload too large for the row. A sizing defect with no rule class.",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "bfe591a24c6a",
@@ -394,7 +428,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "bfe591a24c6a",
@@ -419,7 +455,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "bfe591a24c6a",
@@ -444,7 +482,9 @@
       "rules": [
         "1.2"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "bfe591a24c6a",
@@ -469,7 +509,9 @@
       "rules": [
         "1.2"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "caa5bb7cb6b2",
@@ -490,7 +532,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "d22ce1060e10",
@@ -511,7 +555,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "133f5587a597",
@@ -536,7 +582,9 @@
         "2.3"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "a fact with a tense needing a read, applied to a SHA"
+      "citation_note": "a fact with a tense needing a read, applied to a SHA",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "133f5587a597",
@@ -561,7 +609,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "vocabulary validation ran after a continue, so a record with an unresolvable SHA stopped being checked at all -- a check that stopped checking, but only for a subset"
+      "citation_note": "vocabulary validation ran after a continue, so a record with an unresolvable SHA stopped being checked at all -- a check that stopped checking, but only for a subset",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "8f9a727f008c",
@@ -604,7 +654,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "8f9a727f008c",
@@ -647,7 +699,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "8f9a727f008c",
@@ -690,7 +744,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "d77321dfbe21",
@@ -714,7 +770,9 @@
       "rules": [
         "1.6"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "d77321dfbe21",
@@ -739,7 +797,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping"
+      "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "d85b98efecb8",
@@ -767,7 +827,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "dd95a5cf6c0e",
@@ -786,7 +848,9 @@
       "rules": [
         "3.4"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "f75e046a736b",
@@ -808,7 +872,9 @@
         "1.7"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "the wrapper check asked whether a wrapper speaks ANYWHERE, so a silenced catch was exempted by the scope of the question"
+      "citation_note": "the wrapper check asked whether a wrapper speaks ANYWHERE, so a silenced catch was exempted by the scope of the question",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "101b9e374748",
@@ -831,7 +897,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "four push-gate checks had no probe asserting a deny, so nothing had ever proven they refuse -- unproven rather than stopped"
+      "citation_note": "four push-gate checks had no probe asserting a deny, so nothing had ever proven they refuse -- unproven rather than stopped",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "101b9e374748",
@@ -853,7 +921,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "978df7ae8d27",
@@ -876,7 +946,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "9d5c85e205fd",
@@ -904,7 +976,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so a wiring on exit code would have read a finding as clean"
+      "citation_note": "checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so a wiring on exit code would have read a finding as clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "9d5c85e205fd",
@@ -931,7 +1005,9 @@
       "rules": [
         "1.2"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "9d5c85e205fd",
@@ -959,7 +1035,9 @@
         "1.7"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "the inventory did not read NOT_PROMOTED, so six recorded reasons were outside the window it looked at"
+      "citation_note": "the inventory did not read NOT_PROMOTED, so six recorded reasons were outside the window it looked at",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "102cb926bd74",
@@ -985,7 +1063,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "102cb926bd74",
@@ -1011,7 +1091,9 @@
       "rules": [
         "1.10"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "639e9bedf433",
@@ -1034,7 +1116,9 @@
       "rules": [
         "1.11"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "639e9bedf433",
@@ -1057,7 +1141,9 @@
       "rules": [
         "1.11"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "77dd73161646",
@@ -1080,7 +1166,9 @@
       "rules": [
         "1.11"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "77dd73161646",
@@ -1104,7 +1192,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "a probe arm failing on EVERY run inflated every mutation verdict by one -- consistently wrong rather than silently skipped"
+      "citation_note": "a probe arm failing on EVERY run inflated every mutation verdict by one -- consistently wrong rather than silently skipped",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "832b1a3f0b9a",
@@ -1130,7 +1220,9 @@
         "1.2"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "the matcher could not tell a fold from a concatenation that reads the same -- adjacent to \"grep cannot tell code from text\", one level in"
+      "citation_note": "the matcher could not tell a fold from a concatenation that reads the same -- adjacent to \"grep cannot tell code from text\", one level in",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "832b1a3f0b9a",
@@ -1156,7 +1248,9 @@
         "1.3"
       ],
       "citation_confidence": "clean",
-      "citation_note": "an anchor that still matched, pinned to a number the classifier moved"
+      "citation_note": "an anchor that still matched, pinned to a number the classifier moved",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1180,7 +1274,9 @@
         "1.1"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "only the checker exit codes were pinned; the GATE refusing was never proven, and detection is a separate claim from wiring"
+      "citation_note": "only the checker exit codes were pinned; the GATE refusing was never proven, and detection is a separate claim from wiring",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1203,7 +1299,9 @@
       "rules": [
         "1.11"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1227,7 +1325,10 @@
         "Part 5"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "verification discipline, not one of the numbered class rules"
+      "citation_note": "verification discipline, not one of the numbered class rules",
+      "injection_phase": "unknown",
+      "phase_confidence": "inferred",
+      "phase_note": "The defect is in my own STATED REASON for leaving a check uncovered -- a justification never tested against the check's source. That is a verification failure about a decision, not a phase in which anything was built, and none of requirement/design/coding/config fits it without stretching. Recorded as unknown rather than pushed into the nearest bin."
     },
     {
       "commit": "a7ff2325890f",
@@ -1248,7 +1349,9 @@
         "1.9"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "the probe changed its own input by being committed, so the answer depended on something other than the code under test"
+      "citation_note": "the probe changed its own input by being committed, so the answer depended on something other than the code under test",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "bc32bed288b5",
@@ -1273,7 +1376,9 @@
       "summary": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days",
       "rules": [],
       "citation_confidence": "not-citable",
-      "citation_note": "a git identity leaking from one clone's local config. Real, and no standing rule names it."
+      "citation_note": "a git identity leaking from one clone's local config. Real, and no standing rule names it.",
+      "injection_phase": "config",
+      "phase_confidence": "stated"
     },
     {
       "commit": "d66a87e64fc7",
@@ -1299,7 +1404,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1327,7 +1434,9 @@
         "1.5"
       ],
       "citation_confidence": "clean",
-      "citation_note": "a stamping failure skipped the write and told the user the browser's storage was full -- a confident and WRONG reason printed after the error"
+      "citation_note": "a stamping failure skipped the write and told the user the browser's storage was full -- a confident and WRONG reason printed after the error",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1355,7 +1464,9 @@
         "1.3"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "an exact scan count pinned as an anchor went red on the first ordinary commit that added a matching line -- the anchor still matched something, just not the thing it was pinned for"
+      "citation_note": "an exact scan count pinned as an anchor went red on the first ordinary commit that added a matching line -- the anchor still matched something, just not the thing it was pinned for",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "e414b563f0f9",
@@ -1377,7 +1488,9 @@
         "1.11"
       ],
       "citation_confidence": "arguable",
-      "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case"
+      "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case",
+      "injection_phase": "coding",
+      "phase_confidence": "stated"
     },
     {
       "commit": "e6130cf81728",
@@ -1396,7 +1509,9 @@
       "rules": [
         "1.6"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     },
     {
       "commit": "3ffb0603784b",
@@ -1415,7 +1530,9 @@
       "rules": [
         "1.2"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated"
     },
     {
       "commit": "e059df4cc2d4",
@@ -1439,7 +1556,9 @@
       "rules": [
         "1.1"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "config",
+      "phase_confidence": "stated"
     },
     {
       "commit": "e059df4cc2d4",
@@ -1463,7 +1582,9 @@
       "rules": [
         "1.5"
       ],
-      "citation_confidence": "clean"
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
     }
   ]
 }

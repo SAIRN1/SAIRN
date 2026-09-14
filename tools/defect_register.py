@@ -46,6 +46,42 @@ REG = os.path.join('docs', 'defect-density-register.json')
 
 LAYERS = ('product', 'tooling', 'test')
 SEVERITIES = ('critical', 'high', 'moderate', 'low')
+
+# ── WHERE THE DEFECT WAS INJECTED (item 77, added 2026-09-14) ──────────────
+# `detection_method` records how a defect was REMOVED. This records where it
+# was PUT IN. Two different questions, and only both together make an
+# injection-vs-removal matrix mean anything: "code review found 25 defects" is
+# a raw count until you can also say which phase those 25 came from, and
+# therefore which phase is worth attacking.
+#
+# DELIBERATELY ORTHOGONAL TO `layer`. Layer says WHERE the defect lives
+# (product / tooling / test); phase says WHEN it entered. A test file can carry
+# a coding defect or a design defect, and collapsing the two axes would make
+# the matrix unreadable in exactly the way one label per app made
+# CRITICALITY-TIERS.md stop discriminating.
+#
+# THE DISCRIMINATOR, written down so it decides cases instead of describing
+# them -- ask in this order and stop at the first that answers:
+#   requirement  fixing it changes WHAT the thing is supposed to do
+#   design       the code faithfully implements a plan that could not work;
+#                the fix needs a different structure, not a corrected line
+#   coding       the plan was right, the expression is not
+#   config       the fix is outside the source entirely -- a grant, an env var,
+#                a migration nobody ran, a clone's own git config
+#   unknown      none of the above honestly fits
+#
+# `unknown` IS A REAL ANSWER AND REQUIRES A NOTE, for the same reason
+# `not-citable` does: a vocabulary with no honest escape hatch does not produce
+# accurate data, it produces data pushed into the nearest bin. A bare
+# `unknown` is a silence, not a decision.
+PHASES = ('requirement', 'design', 'coding', 'config', 'unknown')
+
+# How good the phase call is. Same shape as citation_confidence, and for the
+# same reason: most of these are read from a one-line summary rather than from
+# the diff, and a register that cannot say so would be overstating itself.
+#   stated    the record's own summary names the defective construct
+#   inferred  the phase is a judgement about the summary, not a quote from it
+PHASE_CONFIDENCES = ('stated', 'inferred')
 # Every method that has actually found something on this platform. Named rather
 # than free text, so the coverage matrix means something -- and extended
 # deliberately when a genuinely new method finds its first defect.
@@ -172,6 +208,24 @@ def cmd_add(argv):
     # would be worse than the gap this closes.
     rule = opt('--rule')
     note = opt('--rule-note', required=False)
+    # REQUIRED, like --rule and for the same reason: a field that is optional
+    # at the moment of recording is a field that stays empty, and --check
+    # cannot demand of a record what --add never collected. Pass
+    # `--phase unknown` with a `--phase-note` when none of the four honestly
+    # fits; refusing to record a defect because no phase fits would be worse
+    # than the gap this closes.
+    phase = opt('--phase')
+    phase_note = opt('--phase-note', required=False)
+    if phase not in PHASES:
+        print('--phase must be one of %s' % (PHASES,)); return 2
+    if phase == 'unknown' and not str(phase_note).strip():
+        print('--phase unknown requires --phase-note. A bare unknown is a '
+              'silence, not a decision.'); return 2
+    # `stated` is a claim that the SUMMARY names the defective construct, so it
+    # is checked against the summary rather than taken on trust.
+    phase_conf = opt('--phase-confidence', required=False) or 'inferred'
+    if phase_conf not in PHASE_CONFIDENCES:
+        print('--phase-confidence must be one of %s' % (PHASE_CONFIDENCES,)); return 2
     if layer not in LAYERS:
         print('--layer must be one of %s' % (LAYERS,)); return 2
     if sev not in SEVERITIES:
@@ -204,9 +258,12 @@ def cmd_add(argv):
     rec = dict(d)
     rec.update({'app': app, 'layer': layer, 'severity': sev,
                 'detection_method': method, 'summary': summary,
-                'rules': rules, 'citation_confidence': conf})
+                'rules': rules, 'citation_confidence': conf,
+                'injection_phase': phase, 'phase_confidence': phase_conf})
     if note:
         rec['citation_note'] = note
+    if phase_note:
+        rec['phase_note'] = phase_note
     reg['records'].append(rec)
     reg['records'].sort(key=lambda r: (r['date'], r['commit']))
     save(reg)
@@ -373,6 +430,18 @@ def cmd_check(argv=()):
                        % (r['commit'], r['detection_method']))
         if r['layer'] not in LAYERS or r['severity'] not in SEVERITIES:
             bad.append('%s -- layer/severity outside the vocabulary' % r['commit'])
+        # ── THE INJECTION PHASE, checked the same way and for the same reason ─
+        ph = r.get('injection_phase')
+        phc = r.get('phase_confidence')
+        if ph not in PHASES:
+            bad.append('%s -- injection_phase %r is outside %s'
+                       % (r['commit'], ph, (PHASES,)))
+        elif ph == 'unknown' and not str(r.get('phase_note') or '').strip():
+            bad.append('%s -- injection_phase unknown with no note. A bare '
+                       'unknown is a silence, not a decision.' % r['commit'])
+        if phc not in PHASE_CONFIDENCES:
+            bad.append('%s -- phase_confidence %r is outside %s'
+                       % (r['commit'], phc, (PHASE_CONFIDENCES,)))
         # ── THE CITATION, checked the same way and for the same reason ──────
         conf = r.get('citation_confidence')
         rules = r.get('rules')
@@ -492,6 +561,39 @@ def cmd_report():
         n = len([r for r in recs if r['detection_method'] == M])
         if n:
             print('  %-20s %d' % (M, n))
+    print('')
+    # ── INJECTION x REMOVAL (item 77) ──────────────────────────────────────
+    # UNKNOWN AND INFERRED ARE PRINTED FIRST, ABOVE THE MATRIX, and that
+    # ordering is the same decision fmea_prediction_check.py makes when it puts
+    # NO DRAFT above the hit rate. A matrix read without them looks like
+    # knowledge; read with them it is a matrix over the records somebody could
+    # actually place, which is a different and smaller claim.
+    unk = [r for r in recs if r.get('injection_phase') == 'unknown']
+    inferred = [r for r in recs if r.get('phase_confidence') == 'inferred']
+    print('WHERE DEFECTS WERE INJECTED -- read these two lines FIRST')
+    print('  injection_phase = unknown       : %d of %d' % (len(unk), len(recs)))
+    print('  phase called INFERRED, not stated: %d of %d   <- most of the '
+          'matrix below rests on a judgement about a one-line summary, not on '
+          'a quote from it' % (len(inferred), len(recs)))
+    print('')
+    print('BY INJECTION PHASE')
+    for P in PHASES:
+        n = len([r for r in recs if r.get('injection_phase') == P])
+        if n:
+            print('  %-12s %d' % (P, n))
+    print('')
+    print('INJECTION x REMOVAL -- the matrix the phase field exists for')
+    used = [M for M in METHODS if any(r['detection_method'] == M for r in recs)]
+    print('  %-12s %s' % ('', ' '.join('%-6s' % M[:6] for M in used)))
+    for P in PHASES:
+        row = [len([r for r in recs
+                    if r.get('injection_phase') == P and r['detection_method'] == M])
+               for M in used]
+        if sum(row):
+            print('  %-12s %s' % (P, ' '.join('%-6d' % n for n in row)))
+    print('  DO NOT QUOTE A CELL ALONE. The columns are how a defect was '
+          'FOUND, which is a fact about where people looked, not about where '
+          'defects are.')
     print('')
     print('PRODUCT DEFECTS PER 1,000 LINES, against a MEASURED denominator')
     print('  %-22s %8s %8s %s' % ('app', 'lines', 'defects', 'per 1k'))
