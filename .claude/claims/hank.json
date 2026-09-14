@@ -1653,8 +1653,8 @@
       "task": "item39c retrievability of the other nine class A resources by the backing-variable method",
       "claimed_at": "2026-09-14T20:36:36Z",
       "claimed_at_epoch": 1789418196.1141555,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T21:36:34Z"
     }
   ]
 }
