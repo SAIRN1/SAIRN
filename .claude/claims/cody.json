@@ -1097,8 +1097,8 @@
       "task": "sabotage controls that never verify their own sabotage applied",
       "claimed_at": "2026-09-13T22:49:44Z",
       "claimed_at_epoch": 1789339784.627903,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T10:05:09Z"
     }
   ]
 }
