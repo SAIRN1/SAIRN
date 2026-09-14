@@ -1583,8 +1583,8 @@
       "task": "optional injection_commit with a required reason when omitted",
       "claimed_at": "2026-09-14T17:45:02Z",
       "claimed_at_epoch": 1789407902.2042565,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:54:32Z"
     }
   ]
 }
