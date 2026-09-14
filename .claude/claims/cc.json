@@ -1274,6 +1274,16 @@
       "claimed_at_epoch": 1789418079.2911236,
       "status": "released",
       "released_at": "2026-09-14T21:53:24Z"
+    },
+    {
+      "id": "cc-1789422818",
+      "session": "cc",
+      "subject": "sairncode",
+      "task": "dedicated test suite for the 28 registered resources, zero-suite gap from MASTER-PLAN gate 3",
+      "claimed_at": "2026-09-14T21:53:38Z",
+      "claimed_at_epoch": 1789422818.7475474,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
