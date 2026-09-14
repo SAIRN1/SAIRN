@@ -1127,8 +1127,8 @@
       "task": "four pre-existing suite failures sv backup faults local only shape fmea loop tooling inventory",
       "claimed_at": "2026-09-14T14:14:38Z",
       "claimed_at_epoch": 1789395278.0423954,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:45:17Z"
     }
   ]
 }
