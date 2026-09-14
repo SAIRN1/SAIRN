@@ -1230,8 +1230,8 @@
       "task": "item-94-date-comparison-module",
       "claimed_at": "2026-09-14T16:34:22Z",
       "claimed_at_epoch": 1789403662.1803942,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T16:49:34Z"
     }
   ]
 }
