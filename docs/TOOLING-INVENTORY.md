@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**124 files in `tools/`.** By what actually invokes them:
+**125 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 22 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 23 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 74 |
+| CHECKER | 75 |
 | GENERATOR | 15 |
 | LIBRARY | 20 |
 | LIVE | 15 |
@@ -44,17 +44,18 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 16 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 15
+**The number to act on: 17 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 16
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 16, by name, so this is actionable rather than a statistic:
+The 17, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `benford_check.py` | SUITE-ONLY | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test |
+| `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
@@ -218,7 +219,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (22)
+## SUITE-ONLY (23)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -226,12 +227,13 @@ fixtures. Nothing points them at the real codebase.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `benford_check.py` | CHECKER | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test | `run_benford_probe.py` |
+| `checker_confidence.py` | CHECKER | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything | `run_checker_confidence_probe.py` |
 | `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py` |
-| `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_flaky_quarantine_probe.py` |
+| `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
 | `fmea_prediction_check.py` | CHECKER | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows | `run_fmea_loop_probe.py`, `run_fmea_probe.py` |
 | `idempotency_check.py` | CHECKER | a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run | `run_financial_invariant_probe.py` |
@@ -320,11 +322,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      124   git ls-files tools/
+  tools on disk                      125   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             74   tests/**/*.py, *.js
+  tools invoked by tests/             75   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

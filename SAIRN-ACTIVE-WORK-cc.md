@@ -2293,3 +2293,60 @@ verdict never appeared on the only run anybody would do.** Printed unconditional
 answer is known in advance (0.75 for one-of-four, 0.90 for one-of-ten), a CONTROL proving the two
 columns agree when population equals the affected set -- without which the difference could be an
 artefact rather than the zeros -- and arms asserting every caveat is printed.
+
+
+---
+
+## 2026-09-14 -- item 52: two checker-quality signals, fused by minimum
+
+`tools/checker_confidence.py`. Report only, not registered.
+
+**Two signals that are strong in opposite places.** STABILITY, from `flaky_checker_quarantine.py`:
+always-on and cheap, so it accumulates continuously -- and it can DRIFT, and it says nothing about
+whether the verdict is CORRECT. **A checker that always exits 0 has a perfect flip rate.**
+PROVEN-TO-FIRE, from `checker_control_check.py`: accurate, because a planted defect must be
+REPORTED and planted clean code must stay SILENT -- but INFREQUENT, because somebody has to write
+the control.
+
+**`checkblocks.py` is the proof that neither alone is worth much:** perfectly stable and
+completely useless, for months, and nothing noticed.
+
+### The fusion is a minimum, and that is the whole design
+
+An AVERAGE would rate a perfect-flip-rate-with-no-control checker **MEDIUM** -- which is exactly
+the rating `checkblocks.py` did not deserve. Under `min`, one weak signal caps the result. Always.
+
+**The sanity check on the corrector is exhaustive rather than a sample:** all 16 input pairs are
+checked for `fuse(a,b) <= min(a,b)`, for symmetry, and for UNKNOWN capping everything -- **before
+any real number is produced.** If it fails, the tool **exits 2 and reports nothing** rather than
+publishing figures derived from a broken rule.
+
+**And the probe mutates the corrector to an average and asserts it is REJECTED**, including that
+the tool then refuses to report. Without that arm, "the self-check passes" is a statement about
+`min` being `min`, which nobody doubted.
+
+### UNKNOWN is a band, not a zero -- and it found something
+
+A checker with no ledger entry has not been MEASURED. That is neither unstable nor fine, so it
+lands at UNKNOWN and caps the fused result there.
+
+**First real run: 37 checkers scored, 11 at UNKNOWN because their flip rate has never been
+measured at all** -- including `metamorphic_check.py`, which is mine. That is a real coverage
+finding, and it is one **neither input surfaces on its own**: the flip ledger simply has no row,
+and the control check says BOTH EVIDENCED and looks fine.
+
+### Two defects of my own on the way
+
+The first version read `checker_control_check.evidence()` as a dict when it returns a
+`(fires, silent)` TUPLE, and read `flip_rate`/`runs` off the ledger row when the row holds raw
+`observations`. Both threw on the first real run rather than producing a wrong number, which is
+the only reason they are footnotes. The stability bands now call the ledger's **own**
+`classify()` rather than re-deriving its thresholds -- a second copy of those bars would drift
+from the ones that were locked against fixtures.
+
+One near-tautological arm was removed: it asserted `'not' in out.lower()`, true of almost any
+English text. The same class of green tick as an always-true `ok()`.
+
+**Verified:** `run_checker_confidence_probe` 30 arms including the exhaustive corrector proof, the
+averaging mutation, five stability-band arms driven off real ledger shapes, five evidence-band
+arms, and an arm asserting no row in the real run is rated above either of its inputs.
