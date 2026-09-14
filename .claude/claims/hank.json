@@ -1415,6 +1415,16 @@
       "claimed_at_epoch": 1789380281.2572215,
       "status": "released",
       "released_at": "2026-09-14T10:12:35Z"
+    },
+    {
+      "id": "hank-1789381346",
+      "session": "hank",
+      "subject": "fmea-drafts",
+      "task": "draft the remaining undrafted code files",
+      "claimed_at": "2026-09-14T10:22:26Z",
+      "claimed_at_epoch": 1789381346.7463164,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
