@@ -1373,8 +1373,8 @@
       "task": "item 6 triage final five unguarded writes",
       "claimed_at": "2026-09-14T22:14:48Z",
       "claimed_at_epoch": 1789424088.255582,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T22:23:16Z"
     }
   ]
 }
