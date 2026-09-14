@@ -15,6 +15,18 @@ So the checker runs in **both directions**, and the second one is the half that 
 | A row marked **RETIRED** whose component is **still** above the threshold | **The sharp one.** A retirement that did not happen is how a register becomes a reassuring lie. **Retirement is a measurement, not a decision somebody makes.** |
 | A row with no owner | An unowned entry is a note |
 
+## The baseline, frozen
+
+**BASELINE: 11 components at or above the threshold on 2026-09-14, the day this register opened.**
+
+JWST tracked 344 single-point failures, and the number is remembered because it never moved: every retirement was read against the SAME total, so progress was a fraction rather than an anecdote.
+
+This page counted OPEN / ACCEPTED / RETIRED from day one, and that is a **snapshot**. Without a frozen denominator, *"7 OPEN"* a year from now cannot be told from *"7 OPEN"* today — **a register that shrank by four and one that never moved print the same line.** So the opening total is written here once and every `--register` run reports today against it.
+
+**The line above is a historical fact and must not be edited.** `python tools/dependency_graph.py --register` **refuses** when it is missing, rather than defaulting to today's count — a default would silently make progress zero forever, which is the most flattering possible failure.
+
+Raising the threshold would also shrink this list without a single fix landing. The threshold lives in one place (`SPOF_THRESHOLD`) for exactly that reason, and moving it invalidates the baseline: **change one and the other must be re-derived in the same commit.**
+
 ## The threshold, and what the number means
 
 **Blast radius ≥ 10 production modules** (`SPOF_THRESHOLD` in `tools/dependency_graph.py`). Blast radius is how many modules **transitively require** the component — how many stop working if it does. 144 production modules are in the graph, so ten is roughly 7%.

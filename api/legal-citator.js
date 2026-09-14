@@ -507,18 +507,40 @@ module.exports = async (req, res) => {
         const citingCourtId = null;
 
         let courtWeight = null;
+        // ── THE COPY CARRIES ITS SOURCE'S AS-OF DATE (item 23, 2026-09-14) ──
+        // court_hierarchy_weight is denormalised from cl_court_cache.position
+        // and its own schema comment says so. The SOURCE has a freshness stamp
+        // (`last_refreshed_at`); until now the COPY had none, so a copied
+        // weight could not be told from a current one and nothing could measure
+        // the drift. Treatments are ordered by this column a few hundred lines
+        // up, so a stale weight changes WHICH citing case a lawyer sees first.
+        //
+        // NULL when unknown, never `now()`. Stamping an unknown copy with the
+        // current time asserts a freshness nobody measured.
+        let courtWeightAsOf = null;
         if (citingCourtId) {
           const courtCacheR = await fetch(sb.rest('cl_court_cache?id=eq.' + encodeURIComponent(citingCourtId) + '&limit=1'), { headers: sb.headers });
           const courtCacheRows = await courtCacheR.json();
           if (Array.isArray(courtCacheRows) && courtCacheRows[0]) {
             courtWeight = courtCacheRows[0].position;
+            courtWeightAsOf = courtCacheRows[0].last_refreshed_at || null;
           } else {
             try {
               const courtData = await cl.clCourt(citingCourtId);
               const courtRow = courtData && courtData.results && courtData.results[0];
               if (courtRow) {
                 courtWeight = courtRow.position;
-                await fetch(sb.rest('cl_court_cache'), { method: 'POST', headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ id: courtRow.id, full_name: courtRow.full_name, jurisdiction: courtRow.jurisdiction, position: courtRow.position, parent_court: courtRow.parent_court, appeals_to: courtRow.appeals_to || [] }) });
+                // ── last_refreshed_at IS SET EXPLICITLY, AND IT HAS TO BE ────
+                // The column is `not null default now()`, and a DEFAULT applies
+                // only on INSERT. This is an upsert with merge-duplicates, so an
+                // existing court is UPDATEd -- and kept whatever
+                // last_refreshed_at it was first written with. A cache column
+                // literally named "last refreshed" would have gone on reporting
+                // the FIRST fetch forever, which is a stale-data detector that
+                // is itself stale.
+                const refreshedAt = new Date().toISOString();
+                courtWeightAsOf = refreshedAt;
+                await fetch(sb.rest('cl_court_cache'), { method: 'POST', headers: Object.assign({}, sb.headers, { Prefer: 'resolution=merge-duplicates,return=minimal' }), body: JSON.stringify({ id: courtRow.id, full_name: courtRow.full_name, jurisdiction: courtRow.jurisdiction, position: courtRow.position, parent_court: courtRow.parent_court, appeals_to: courtRow.appeals_to || [], last_refreshed_at: refreshedAt }) });
               }
             } catch (e) { console.error('court fetch failed for', citingCourtId, e.message); }
           }
@@ -541,6 +563,7 @@ module.exports = async (req, res) => {
           citing_case_name: citingCaseName,
           citing_court_id: citingCourtId,
           court_hierarchy_weight: courtWeight,
+          court_hierarchy_weight_as_of: courtWeightAsOf,
           run_results: passes,
           final_treatment: agg.treatment,
           agreement_pct: agg.agreement_pct,

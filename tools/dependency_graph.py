@@ -495,6 +495,30 @@ def register_rows(text):
     return rows
 
 
+# ── THE FROZEN DENOMINATOR (item 91, 2026-09-14) ──────────────────────────
+# JWST tracked 344 single-point failures. The number is famous because it never
+# moved: every retirement was read against the SAME total, so progress was a
+# fraction and not an anecdote.
+#
+# This register already counted OPEN / ACCEPTED / RETIRED, and that is a
+# snapshot. Without a baseline "7 OPEN" a year from now cannot be told from
+# "7 OPEN" today -- a register that shrank by four and one that never moved
+# print the same line. So the opening total is written into the register once,
+# parsed here, and every run reports today AGAINST it.
+#
+# IT IS A HISTORICAL FACT AND MUST NOT BE EDITED. If it drifts, the fraction
+# stops meaning anything, which is why a MISSING baseline is a refusal rather
+# than a default -- a default of "today's count" would silently make progress
+# zero forever.
+BASELINE_RE = re.compile(
+    r'BASELINE\s*[:\-]?\s*(\d+)\s+components?\s+at\s+or\s+above', re.I)
+
+
+def read_baseline(text):
+    m = BASELINE_RE.search(text)
+    return int(m.group(1)) if m else None
+
+
 def check_register():
     if not os.path.exists(REGISTER):
         print('  COULD NOT RUN: %s does not exist. That is not a clean register.'
@@ -547,6 +571,21 @@ def check_register():
     print('  %d OPEN, %d ACCEPTED (deliberate, with a reason and a compensating '
           'control), %d RETIRED.'
           % (len([r for r in rows if r['status'] == 'OPEN']), len(accepted), len(retired)))
+    base = read_baseline(io.open(REGISTER, encoding='utf-8', errors='replace').read())
+    if base is None:
+        problems.append('NO BASELINE   %s has no "BASELINE: N components at or '
+                        'above" line. Without a frozen denominator a register '
+                        'that shrank by four and one that never moved print the '
+                        'same number.' % os.path.relpath(REGISTER, REPO))
+    else:
+        net = base - len(live)
+        moved = ('no change' if net == 0
+                 else ('%d fewer' % net if net > 0 else '%d MORE' % -net))
+        print('  BASELINE %d on the day this register opened -> %d today (%s).'
+              % (base, len(live), moved))
+        if net == 0 and not retired:
+            print('  NOTHING HAS BEEN RETIRED YET. Said plainly: the mechanism')
+            print('  works and the list has not moved.')
     print('  A register that only grows is a graveyard; one that shrinks without '
           'a measurement')
     print('  behind it is worse, so RETIRED is refused while the component is '
