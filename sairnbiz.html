@@ -2090,7 +2090,15 @@ function computeHiringCostImpact(hourlyRate, employmentType, payrollSummary, plS
   var candidate = { type: employmentType, pay_freq: payFrequency, rate: hourlyRate };
   var newRoleHours = sbHoursPerPeriod(candidate);
   var newRoleGross = sbGrossPerPeriod(candidate);
-  var newRoleFica = newRoleGross * 0.0765;
+  // SB_TAX_FICA_RATE, not the literal. Same 7.65%, and that is the point:
+  // the constant exists at the bottom of this block and these two call sites
+  // bypassed it, so a rate change would have moved the declaration and left
+  // the hiring-cost estimate and the payroll summary quietly wrong. Found
+  // 2026-09-14 by tools/bypassed_constant_check.py.
+  // The EMPLOYER half deliberately: this is the cost of hiring somebody, not
+  // what is withheld from them, and the two are different money even though
+  // the percentage is identical -- see the declaration's own note.
+  var newRoleFica = newRoleGross * SB_TAX_FICA_RATE;
   var newRoleBenefit = sbBenefitPerPeriod(candidate);
   var newRoleFullyLoadedCost = newRoleGross + newRoleFica + newRoleBenefit;
 
@@ -3055,7 +3063,10 @@ function sbPayrollTotals(){
   var freqs={};
   emps.forEach(function(e){
     var g=sbGrossPerPeriod(e);
-    gross+=g; taxes+=g*0.0765; bens+=sbBenefitPerPeriod(e);
+    // SB_TAX_FICA_RATE, not the literal -- see computeHiringCostImpact. The
+    // EMPLOYER half: this sums fully-loaded cost alongside benefits, not
+    // employee withholding.
+    gross+=g; taxes+=g*SB_TAX_FICA_RATE; bens+=sbBenefitPerPeriod(e);
     annual+=sbAnnualGross(e);
     freqs[sbPayFreq(e)]=(freqs[sbPayFreq(e)]||0)+1;
     if(sbPayFreqIsDefault(e))assumedFreq++;

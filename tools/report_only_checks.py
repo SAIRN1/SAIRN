@@ -1061,6 +1061,46 @@ REGISTRY = [
                     'registry is an error rather than CLEAN. 0.3s',
     },
     {
+        'tool': 'bypassed_constant_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-14, the day it was built. Report-only: it reports a '
+                    'shape that is sometimes deliberate, and a checker whose '
+                    'finding might be a considered choice has no business '
+                    'refusing a push',
+        'catches': 'a declared decimal rate constant that some call site in the '
+                   'same app HTML bypasses with the literal value -- so changing '
+                   'the rate moves the declaration and leaves those sites '
+                   'quietly wrong',
+        'why_it_matters': 'sairnbiz declared SB_TAX_FICA_RATE with a careful '
+                          'note distinguishing it from the employee half, and '
+                          'two call sites multiplied by 0.0765 directly. The '
+                          '2026-09-03 competitive-gap audit reached the same '
+                          'conclusion from the product side -- "a product that '
+                          'needs a deploy to stay legal is a product that is '
+                          'quietly wrong between deploys" -- and the 2026-08-28 '
+                          'SAIRNsenior pass reached it from the regulatory '
+                          'side. completeness_check.py asks a version of this '
+                          "question and walks api/ ONLY; every app's rates "
+                          'live in the HTML, outside its reach',
+        'evidence': 'THE CRITERION WAS NARROWED ONCE AND THE MEASUREMENT IS '
+                    'RECORDED IN THE TOOL. "A declared constant whose value '
+                    'appears again as a literal" flagged 60 across the platform '
+                    'and almost all were noise -- TRIAL_DAYS = 30 against 134 '
+                    'unrelated 30s, SD_CTX_MAX_MEMORIES = 10 against 242 '
+                    'unrelated 10s. Narrowed to decimals with three or more '
+                    'significant digits: 2 findings, both real, both the same '
+                    'site. The integer blind spot is therefore DELIBERATE and '
+                    'is printed on every clean run. 20-arm probe whose sharpest '
+                    'arm is that two constants sharing a value do not accuse '
+                    'each other -- employer and employee FICA are different '
+                    'money at the same rate, and the first criterion reported '
+                    'both forever. Sabotage-verified in both directions. It '
+                    'also caught three of its OWN fixtures using a name the '
+                    'tool cannot match, two of which were passing vacuously. '
+                    '0.4s',
+    },
+    {
         'tool': 'ownership_evidence_drift.py',
         'mode': 'once',
         'verdict': by_exit,

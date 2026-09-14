@@ -50,6 +50,20 @@ function slice(startMark, endMark) {
 const helpersSrc = slice('var SB_PAY_FREQ = {', 'function sbPayrollTotals(){');
 const totalsSrc = slice('function sbPayrollTotals(){', '\nfunction rPay()');
 const hiringSrc = slice('function computeHiringCostImpact(', '\nfunction rDash()');
+// THE TAX RATE IS EXTRACTED TOO, added 2026-09-14. Both functions below used to
+// carry a raw 0.0765, so they were accidentally self-contained; they use
+// SB_TAX_FICA_RATE now, which is the whole point -- a rate change must reach
+// every site -- and this harness has to supply what the real page supplies.
+//
+// EXTRACTED FROM THE PAGE, NOT RETYPED. A literal here would be a SECOND copy
+// of the rate living in the test, which is exactly the defect the product
+// change removed, reintroduced one file over.
+const ratesSrc = slice('var SB_TAX_FICA_RATE =', '\nvar SB_TAX_REFUSALS');
+assert.ok(/SB_TAX_FICA_RATE\s*=\s*0\.\d+/.test(ratesSrc)
+  && /SB_EMPLOYEE_FICA_RATE\s*=\s*0\.\d+/.test(ratesSrc),
+  'the rate declarations were not extracted -- every arm below would fail with '
+  + '"SB_TAX_FICA_RATE is not defined", which reads as a broken product rather '
+  + 'than a broken harness');
 
 function harness(roster) {
   const store = { sb_emps: JSON.stringify(roster || []) };
@@ -58,7 +72,7 @@ function harness(roster) {
     ld: (k, d) => { try { const r = store[k]; return r === undefined ? d : JSON.parse(r); } catch (e) { return d; } }
   };
   vm.createContext(ctx);
-  vm.runInContext(helpersSrc + '\n' + totalsSrc + '\n' + hiringSrc, ctx);
+  vm.runInContext(ratesSrc + '\n' + helpersSrc + '\n' + totalsSrc + '\n' + hiringSrc, ctx);
   return ctx;
 }
 

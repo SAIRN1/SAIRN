@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**145 files in `tools/`.** By what actually invokes them:
+**146 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 46 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 36 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 92 |
+| CHECKER | 93 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 17 |
@@ -117,7 +117,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (46)
+## REPORT-ONLY (47)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -126,6 +126,7 @@ quiet in practice.
 
 | Tool | Promoted | What it catches |
 |---|---|---|
+| `bypassed_constant_check.py` | 2026-09-14, the day it was built. Report-only: it reports a shape that is sometimes deliberate, and a checker whose finding might be a considered choice has no business refusing a push | a declared decimal rate constant that some call site in the same app HTML bypasses with the literal value -- so changing the rate moves the declaration and leaves those sites quietly wrong |
 | `checkblocks.py` | 2026-09-12, after being given an exit code it never had | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check |
 | `cleanup_confirm_check.py` | 2026-09-10, written the same day for a rule that existed since 2026-08-26 with no mechanism behind it | a cleanup or migration file whose destructive statements carry no confirm query and no expected answer -- so nobody can ever establish what it did |
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
@@ -257,7 +258,7 @@ fixtures. Nothing points them at the real codebase.
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
-| `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_citator_freshness_probe.py`, `run_jscomments_probe.py` |
+| `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
 | `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
@@ -338,11 +339,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      145   git ls-files tools/
+  tools on disk                      146   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                44   report_only_checks.REGISTRY
-  tools invoked by tests/             94   tests/**/*.py, *.js
+  report-only registry                45   report_only_checks.REGISTRY
+  tools invoked by tests/             95   tests/**/*.py, *.js
   recorded NOT-promoted decisions     36   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
