@@ -1445,6 +1445,16 @@
       "claimed_at_epoch": 1789390787.5269735,
       "status": "released",
       "released_at": "2026-09-14T14:12:16Z"
+    },
+    {
+      "id": "hank-1789395148",
+      "session": "hank",
+      "subject": "review-cc-ap",
+      "task": "item 44 independent review of cc three way match tier A financial code",
+      "claimed_at": "2026-09-14T14:12:28Z",
+      "claimed_at_epoch": 1789395148.2265568,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
