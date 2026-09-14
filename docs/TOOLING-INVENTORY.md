@@ -141,6 +141,7 @@ quiet in practice.
 | `div_balance_check.py` | 2026-09-10 | an unbalanced <div> tree -- the safe-editing rules say run it after EVERY edit and nothing ever did |
 | `duplicate_global_check.py` | 2026-09-10, after its one real-run finding turned out to be a deliberate wrapper | a second top-level declaration of the same global -- the later one silently wins and the earlier becomes dead code that still reads correctly (Guardian check 13) |
 | `eaten_substitution_check.py` | 2026-09-14, the day it was built, report-only and NOT wired into the push gate: it reports a SHAPE and cannot know a shell caused it, and a check that cannot tell a stray keystroke from an eaten expression has no business refusing a push | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted |
+| `export_coverage_check.py` | 2026-09-14, report-only, and IT FAILS ON ITS FIRST DAY -- deliberately. The four it names are real and open, so a runner that stayed silent about them would be the problem rather than the noise. NOT wired into the push gate: a missing export is a product decision and has no business refusing somebody else's push | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists |
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
@@ -339,7 +340,7 @@ number, and only one of them is a document.
   tools on disk                      143   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                42   report_only_checks.REGISTRY
+  report-only registry                43   report_only_checks.REGISTRY
   tools invoked by tests/             92   tests/**/*.py, *.js
   recorded NOT-promoted decisions     36   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py

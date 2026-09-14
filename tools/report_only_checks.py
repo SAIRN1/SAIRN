@@ -1143,6 +1143,46 @@ REGISTRY = [
                     'FLAG_ON collapses the positive arms, and the sabotage '
                     'asserts its own anchor is present first. 0.4s',
     },
+    {
+        'tool': 'export_coverage_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        # --check, not the bare report, for the same reason as the three above:
+        # the bare run prints a table and exits 0 whatever it finds.
+        'args': ['--check'],
+        'promoted': '2026-09-14, report-only, and IT FAILS ON ITS FIRST DAY -- '
+                    'deliberately. The four it names are real and open, so a '
+                    'runner that stayed silent about them would be the problem '
+                    'rather than the noise. NOT wired into the push gate: a '
+                    'missing export is a product decision and has no business '
+                    "refusing somebody else's push",
+        'catches': 'a Class A (append-only by design) resource sitting in an app '
+                   'whose CSV export registry ALREADY EXISTS and does not carry '
+                   'it. Resources in apps with NO export machinery at all are '
+                   'counted separately and are NOT gated -- that is a feature '
+                   'nobody built, not a gap in one that exists',
+        'why_it_matters': 'item 39. An inspector asks for a RECORD, not a '
+                          'screenshot. "Can staff look it up" and "can this '
+                          'practice produce what it was asked for" are '
+                          'different questions and only the second has a '
+                          'deadline. SAIRNdental exports nine datasets and NOT '
+                          'dnt_charges or dnt_payments, its two append-only '
+                          'money records -- what it exports instead is the '
+                          'DERIVED ageing buckets, which read as coverage and '
+                          'are not the row-level record',
+        'evidence': 'real run 2026-09-14: 11 Class A resources parsed from '
+                    'docs/2026-09-13-irreversible-write-witnessing-scoping.md '
+                    'rather than hardcoded, 3 exportable, 4 gaps in an existing '
+                    'registry, 4 in apps with no export path at all. The '
+                    'ON-SCREEN half of item 39 is NOT attempted here and the '
+                    'tool says so in its own header: two detectors for it were '
+                    'wrong in opposite directions, one missing '
+                    'alf_staff_credentials entirely and one binding most of '
+                    'SAIRNdental. 21-arm probe; blinding the registry reader '
+                    'collapses the EXPORTABLE answers, and section E pins all '
+                    'eleven verdicts by name so a registry change flips an arm. '
+                    '0.2s',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────
