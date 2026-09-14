@@ -1111,6 +1111,137 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    # ── THE 2026-09-14 BACKLOG PASS, AND WHAT THE COUNT GOT WRONG FIRST ─────
+    # The gap was reported as "23 of 64 check-shaped tools have no recorded
+    # decision". Cross-referencing against tooling_inventory.classify() cut it
+    # to 14: EIGHT of those tools are already wired MORE strongly than
+    # report-only -- six BLOCKING (employee_auth_guard_check.py,
+    # preauth_oracle_check.py, redaction_check.py, sairn_load_state_check.py,
+    # sairn_reachability_check.py, sairn_seam_check.py), one REPORT-ONLY via a
+    # PostToolUse hook (html_script_check.py) and one ADVISORY via SessionStart
+    # (session_lock_check.py). "We decided not to promote this to report-only"
+    # is a meaningless sentence about a tool that already blocks a push, so
+    # they get no entry: their wiring IS the decision.
+    #
+    # That is the same mistake not_promoted() above records being made twice in
+    # this file already -- a number that overstated the gap because a source of
+    # truth existed and was not read. Third time, so it is written here beside
+    # the entries rather than only in a work log.
+    #
+    # EACH ENTRY BELOW IS A DECISION, NOT A BATCH. Where the reason was already
+    # written down in the tool's own PURPOSES line, this transcribes it into the
+    # register that can be queried by tool name; where a genuinely new judgement
+    # was needed and I could not responsibly make it for somebody else's tool,
+    # the entry NAMES THE SPECIFIC BLOCKER instead of guessing. A uniform reason
+    # across fourteen tools would be a bulk promotion wearing individual
+    # clothes.
+    ('accepted_risk_scan.py', 'A READ-LIST WHOSE COUNT IS NOT A SCORE, and its own '
+     'PURPOSES line says so: it reads language, not intent, and scored roughly 1 in 3 '
+     'on its first weight-3 run. Promoting it would print a list of comments on every '
+     'push whose correct length is NOT zero -- zero would mean somebody deleted the '
+     'comments that record accepted risks. A report-only entry implies a number to '
+     'drive down; this tool has no such number. It belongs where it is, run when the '
+     'accepted-risk register is reviewed.'),
+    ('tier_a_bypass_check.py', 'SAME SHAPE, and again its own line already says it: a '
+     'read-list, not a number to drive to zero. Its interesting column is COULD NOT '
+     'TELL -- it cannot see whether a refusal runs BEFORE the write, and naming a '
+     'Tier A resource is not writing to one. A push gate needs a verdict; this tool '
+     'deliberately produces three states of which the middle one is the useful one. '
+     'Promote it only if the GATED column ever becomes a real clearance rather than '
+     '"an identity check and a refusal both appear in this file".'),
+    ('fmea_prediction_check.py', 'IT REFUSES TO BE QUOTED BARE, which is exactly what a '
+     'registry entry would do to it. It prints NO-DRAFT first and carries DO NOT QUOTE '
+     'THIS ALONE beside the drafted-only figure, because a hit rate over the subset '
+     'somebody happened to draft an FMEA for is not a hit rate. Promotion would put '
+     'the unqualified number on every push, which is the one presentation the tool was '
+     'built to prevent. It is run by the FMEA loop when a register record is added, '
+     'which is the moment its answer can change.'),
+    ('copy_exactly_check.py', 'ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE, not a finding: '
+     '0 of 5 identical on 2026-09-14, with 4 differing because the APP was fixed and '
+     'the must-copy-exactly DOCUMENT was not. Wiring it now means four rows on every '
+     'push until somebody updates the document -- a notice whose content cannot change '
+     'by pushing. Promote it the day the documented block and the app agree, because '
+     'that is the day its output starts varying with what a push actually did. Note '
+     'its own caveat too: it does NOT answer disciplines item 7, since agreeing bytes '
+     'are precisely what that section warns is not safety.'),
+    ('sabotage_control_check.py', 'A BURN-DOWN, AND A BURN-DOWN IS NOT A PASS/FAIL. It '
+     'measures how many of THIS REPO\'S OWN negative controls verify that their '
+     'sabotage applied -- 16 of 39 when it was written, 20 of 30 later the same week. '
+     'That figure moves as other people fix their probes, so a push-time entry would '
+     'report somebody else\'s unfinished work as this push\'s finding, on every push, '
+     'for weeks. It is the meta-checker equivalent of the flaky-checker ledger and '
+     'wants the same treatment: measured on a cadence, read by a person, never gating.'),
+    ('checker_control_check.py', 'THE SAME META-CHECKER SHAPE, one level out: it asks '
+     'whether every promoted checker has a plant-defect/plant-clean control pair. 31 '
+     'test files reference it, which is the tell -- it is infrastructure the suite uses '
+     'to judge other tools, not a check on the codebase. Its finding is always "these '
+     'N tools still lack a pair", which is a project state rather than a property of '
+     'the diff in front of it. Promoting it would make every push report the backlog '
+     'it is measuring. Related and deliberately separate: the two EXPIRED '
+     'checker-control-registry claims (fourth, 33-53h ago) are the burn-down itself.'),
+    ('cron_liveness_check.py', 'IT MAKES A LIVE NETWORK REQUEST, which is the same '
+     'reason waf_rule_check.py and sairn_app_map_check.py are already held out on this '
+     'list. Its whole subject is whether a scheduled job actually fired, so the network '
+     'half is not incidental to it -- there is nothing useful left if you remove it. A '
+     'push gate that talks to the outside world makes every push depend on the outside '
+     'world being up, and this repo has already recorded what a network-dependent gate '
+     'costs when a 403 gets swallowed. It does carry a real three-state exit, so the '
+     'blocker is the network dependency alone, not the contract.'),
+    ('stonedesk_storefront_live_check.py', 'LIVE BY NAME AND BY DESIGN -- it probes the '
+     'deployed StoneDesk storefront. Same network reasoning as cron_liveness_check.py '
+     'above, and with one addition specific to it: its correct answer today is that '
+     'those tables are NOT provisioned, confirmed by two sources sharing no mechanism '
+     '(absent from a schema capture AND answering 503 NOT_PROVISIONED live). A gate '
+     'reporting a correct, expected, unchanging 503 on every push teaches people to '
+     'skip its output. Run it when the storefront is actually provisioned.'),
+    ('schema_provisioning_check.py', 'NEEDS THE LIVE DATABASE, which no clone can '
+     'reach: the question it answers is whether a table declared in sql/ exists on the '
+     'real instance. That is the same human-relay dependency docs/SOUP and the schema '
+     'snapshot already carry -- a person runs a query in the Supabase editor and pastes '
+     'the result. A registry entry would therefore report COULD NOT RUN on every push '
+     'for reasons no push can fix, which is a log line rather than a check. Promote it '
+     'if a read-only credential is ever available to CI.'),
+    ('idempotency_check.py', 'NOT REJECTED -- BLOCKED, and the blocker is specific: it '
+     'reaches the network, and unlike the two LIVE tools above that dependency looks '
+     'removable rather than essential. It already has a FIXTURES block, so the blind '
+     'lock is in place. What it needs before promotion is the network half separated '
+     'from the static half so the static half can run offline and report a real verdict '
+     'instead of COULD NOT RUN. That is a code change with an owner, not a decision, '
+     'and it is deliberately not made here because narrowing somebody else\'s checker '
+     'to make it promotable is how a criterion gets loosened to produce a number.'),
+    ('independence_check.py', 'BLOCKED ON A CONTROL PAIR, which is the one thing that '
+     'cannot be waived. It has FIXTURES and no probe anywhere under tests/ references '
+     'it, so nothing has ever made it fail on purpose -- and this repo\'s own record is '
+     'that literal_drift_check.py was promoted with `verdict: by_exit` and no sys.exit '
+     'in it, and checkblocks.py exited 0 for months, both of which a control pair would '
+     'have caught on day one. Write tests/run_independence_probe.py with both '
+     'directions and a CONTROLS_FOR line, then this is a promotion candidate rather '
+     'than a judgement call.'),
+    ('restore_coherence_check.js', 'TWO BLOCKERS AND ONE OF THEM IS ABOUT THE RUNNER, '
+     'not the tool. (1) It reaches the network, like the LIVE tools above. (2) IT IS '
+     'JAVASCRIPT, and the flaky-checker ledger that measures every promoted checker '
+     'shells out with the python interpreter -- so a promoted .js checker would be '
+     'measured by nothing, silently, which is the exact condition the 2026-09-14 '
+     'coverage pass was widened to expose. It DOES have a real control pair '
+     '(tests/run_restore_coherence_probe.js, CONTROLS_FOR declared), so it is the '
+     'best-prepared tool on this list; the runner gap has to close first or promoting '
+     'it would create the first unmeasurable registry entry.'),
+    ('shape_antipattern_check.py', 'TRACK RECORD PENDING, AND THAT IS THE AUTHOR\'S OWN '
+     'STATED DECISION rather than mine -- its index row says "report-only and '
+     'deliberately NOT registered, because promotion is earned on a track record". '
+     'Recorded here so the decision is queryable by tool name instead of living only '
+     'in a prose row. It is well prepared: FIXTURES, a three-state exit, and a real '
+     'control pair in tests/run_shape_antipattern_probe.py. What it lacks is runtime: '
+     '12 S1 and 2 S3 findings of which 5 were hand-verified, so 9 are still unread. '
+     'Promote it once those are triaged and its steady state is silence.'),
+    ('three_way_match_check.py', 'SAME TRACK-RECORD HOLD, and it is the closest of the '
+     'fourteen to ready: three-state exit, a declared control pair in '
+     'tests/run_three_way_match_probe.py. It has no FIXTURES block, which is the one '
+     'gap worth naming rather than waiving -- convention 1 wants the criteria locked '
+     'against synthetic cases before real data, and this checker judges MONEY (a '
+     'purchase order, a receipt and an invoice agreeing). A money checker promoted '
+     'without a blind lock is the combination this platform has least appetite for. '
+     'Add the fixtures and it is a promotion candidate.'),
     ('ai_prompt_refusal_check.py', 'ITEM 8, sub-item 7, the no-model-call half. HELD '
      'BACK DELIBERATELY AND THE REASON IS ITS OWN OUTPUT: all four of its current '
      'findings need a human triage decision that has not been made, and one of them '

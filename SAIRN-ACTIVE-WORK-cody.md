@@ -4058,3 +4058,94 @@ with no PURPOSES entry: claim_provenance.py" -- and the entry was restored
 byte-identical from `git show HEAD:`, not retyped. That is the never-bulk-replace
 rule in CLAUDE.md earning its place, and the guard I had just written catching
 the person who wrote it.
+
+---
+
+## 2026-09-14 (Cody) -- the citation premise did not survive checking, 14 real
+## registration decisions, and item 8's attack half
+
+Claim: `sairnlaw-citation-rule`. Files: `sairnlaw.html`,
+`api/claude-guardrail-metamorphic.test.js` (new), `tools/report_only_checks.py`,
+`tools/flaky_checker_quarantine.py`, `docs/defect-density-register.json`.
+
+### The brief's premise was wrong, and checking it was the work
+
+I was sent to log "2 of 11 call sites defining a contradictory rule" as a live
+correctness bug permitting fabricated citations on a legal product. **The
+critique step turned out to be the SAFEST AI surface in the app.** Its output
+goes through `mtExtractCitations` -> `mtVerifyCitations` ->
+`citatorFetch('verify')` against CourtListener; every citation is badged
+Verified / *Not found -- do not rely on this* / Ambiguous / unavailable, the
+footnote only says "every citation resolved" when they all did, and the whole
+response is WITHHELD if a probability claim appears.
+
+**So Michael's preferred option -- route the simulator's citations through the
+existing citator -- was already wired.** Logging that site at the stated
+severity would have been recording a defect that is not there, which is the one
+thing this register must never contain.
+
+**THREE GAPS THAT ARE REAL**, registered at honest severity against `e71bcba0`:
+HIGH on the trust-accounting explainer (client money, no rule, no check, raw
+prose to a bookkeeper); MODERATE on the decomposition renderer (unverified
+citation displayed beside Anchored badges that cover `source_span` and NOT the
+`claim` text); and MODERATE on **my own checker**, which cannot see a mechanical
+control applied after the model call and therefore over-implies severity on
+exactly the best-protected site.
+
+### `--check` caught my own record before it became a second app
+
+My new record spelled the app `platform`; 47 others say `PLATFORM`. "One entity
+with two names is two entities to every per-app figure in this file."
+
+### 14 registration decisions, and the count was wrong first
+
+Reported as "23 of 64 tools with no recorded decision". Cross-referencing
+`tooling_inventory.classify()` cut it to **14**: eight are wired MORE strongly
+than report-only -- six BLOCKING, one report-only via PostToolUse, one advisory
+via SessionStart. **"We decided not to promote this to report-only" is a
+meaningless sentence about a tool that already blocks a push.** That is the
+third time this file's own history records a count overstating the gap because
+a source of truth existed and was not read, so the disclosure now consults the
+wiring instead of assuming absence.
+
+Ten individual rejections with real reasons (read-lists whose correct length is
+not zero; burn-downs that report other people's unfinished work; three that
+need the live network or database) and four with a NAMED blocker rather than a
+guess -- a missing control pair, a missing FIXTURES block on a MONEY checker, a
+network half that looks separable, and a .js checker the flaky ledger's python
+runner cannot measure at all. **A uniform reason across fourteen tools would be
+a bulk promotion wearing individual clothes.**
+
+### Item 8's attack half, deterministically
+
+`api/claude-guardrail-metamorphic.test.js`, 30 arms, **zero Anthropic calls by
+construction**. Item 18's mechanism pointed at the guardrails: Hank's 27 arms
+assert exact values, and **a guard can be right at every point an author thought
+to write down and wrong on the variant nobody typed.** Five relations -- exact
+allowlist under padding/casing/tab/newline/escaped-NUL/zero-width, equal numeric
+representations agreeing (tested both at AND below the ceiling, since a
+saturating clamp makes them agree for free), clamp idempotence, order and
+multiplicity invariance, envelope-size invariance.
+
+**The rephrasing families are over the ENVELOPE, not over natural language** --
+the model-obedience version needs a model call and stays deferred.
+
+**The controls caught two things in my own file:** a sabotage anchor that did not
+match, which REFUSED instead of silently replacing nothing; and a **raw NUL byte**
+I shipped in a fixture label, caught by `control_char_check.py`. Mutants are
+written beside the original rather than in tmpdir, because a mutant that cannot
+resolve `./_lib/` dies on require and that exits non-zero exactly like a
+sabotage that worked -- which made four of five controls vacuous in a suite I
+wrote earlier the same day.
+
+### Item 83, re-confirmed rather than assumed
+
+**An independent reviewer found a real hole in my work** (`53e5c88b`): nothing
+ever drove an EXPIRED token. Both my suites built tokens with
+`Date.now() + TOKEN_TTL_MS`, and the recovery suite MEASURED remaining TTL --
+which reads like expiry coverage and is not. *"Measuring how long a token has
+left never asks what happens after it runs out."* With the expiry check on the
+spend path disabled, every arm in both suites stayed green; an expired signature
+would spend successfully and write a controlled-substance row. Two arms added,
+now 14 atomicity + 10 recovery, both green. That is my own
+passing-assertion-checks-the-wrong-thing lesson landing on my own suite.

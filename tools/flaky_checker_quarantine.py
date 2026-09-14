@@ -573,6 +573,36 @@ def main(argv):
         try:
             _dec_list, _dec_how = decided_tools()
             _decided = set(_dec_list)
+            # ── WIRING IS A DECISION TOO, AND THIS MISSED IT AT FIRST ───────
+            # The first version of this disclosure counted 23 tools as having
+            # no recorded decision. EIGHT of those are wired MORE strongly than
+            # report-only -- six reachable from the push gate (BLOCKING), one
+            # report-only through a PostToolUse hook, one advisory through
+            # SessionStart. For those, "nothing measures them and no one chose
+            # that" is simply false, and asking for a NOT_PROMOTED line saying
+            # "we decided not to promote this to report-only" about something
+            # that already blocks a push is a sentence with no meaning.
+            #
+            # So the classification counts. not_promoted() in
+            # tooling_inventory.py records this exact mistake being made twice
+            # before -- a count that overstated the gap because a source of
+            # truth existed and was not read. This is the third time, in a
+            # disclosure written to expose the opposite error, which is why the
+            # wiring is now consulted rather than assumed absent.
+            try:
+                sys.path.insert(0, os.path.join(REPO, 'tools'))
+                import tooling_inventory as _ti
+                _out = _ti.classify()
+                _cls = next((x for x in (_out if isinstance(_out, tuple) else (_out,))
+                             if isinstance(x, dict)), {})
+                _wired = set(t for t, k in _cls.items()
+                             if k in ('BLOCKING', 'REPORT-ONLY', 'ADVISORY'))
+                _decided |= _wired
+                _dec_how += ' + wiring'
+            except Exception as _we:
+                _dec_how += (' -- WIRING NOT CONSULTED (%s), so the count below '
+                             'OVER-reports by however many tools are hook- or '
+                             'gate-wired' % type(_we).__name__)
             _ondisk = [os.path.basename(f) for f in subprocess.run(
                 ['git', 'ls-files', 'tools/'], capture_output=True, text=True,
                 cwd=REPO).stdout.split(chr(10))
@@ -588,13 +618,19 @@ def main(argv):
             print('  NO RECORDED DECISION  : %d of %d check-shaped tools on '
                   'disk  [registries %s]'
                   % (len(_nodecision), len(set(_ondisk)), _dec_how))
-            print('     Neither promoted (REGISTRY) nor recorded as '
-                  'deliberately not promoted')
-            print('     (NOT_PROMOTED), so nothing measures them and no one '
-                  'chose that. This is')
-            print('     the 11-unwired-checkers shape; the fix is one '
-                  'NOT_PROMOTED line each, with')
-            print('     a reason -- not a promotion:')
+            print('     Not promoted (REGISTRY), not recorded as deliberately '
+                  'unpromoted')
+            print('     (NOT_PROMOTED), AND not wired into a hook or the push '
+                  'gate -- so nothing')
+            print('     measures them and nobody chose that. This is the '
+                  '11-unwired-checkers')
+            print('     shape; the fix is one NOT_PROMOTED line each, with a '
+                  'reason -- not a')
+            print('     promotion. A hook- or gate-wired tool is NOT listed '
+                  'here: its wiring is')
+            print('     the decision, and asking it for a not-promoted-to-'
+                  'report-only line would')
+            print('     be a sentence with no meaning.')
             for t in _nodecision:
                 print('       %s' % t)
         for v in ('QUARANTINE', 'WATCH', 'STABLE', 'TOO-FEW-RUNS'):
