@@ -1825,6 +1825,52 @@
       }
     },
     {
+      "commit": "518782ec",
+      "date": "2026-09-14",
+      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
+      "files": [
+        "sql/backup_reader_role.sql"
+      ],
+      "lines_added": 116,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "518782ec"
+      },
+      "injection_phase": "coding",
+      "phase_confidence": "stated",
+      "summary": "sql/backup_reader_role.sql creates sairn_backup_reader with the literal password 'REPLACE_ME_BEFORE_RUNNING' inside a `do $$ if not exists` guard, so running the file once un-edited produces a LOGIN role with BYPASSRLS and SELECT on every table in public, and re-running the corrected file changes nothing because the role already exists. The repo is public (confirmed via the GitHub API: visibility public), so the placeholder is a published string, and no verification step in the file checks that the password is not still the placeholder",
+      "citation_note": "No standing rule covers a placeholder credential made permanent by an idempotence guard. The nearest, 1.11, is about a check folding could-not-run into a pass, and this is a create that silently declines to act. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "citation_confidence": "not-citable",
+      "rules": []
+    },
+    {
+      "commit": "518782ec",
+      "date": "2026-09-14",
+      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
+      "files": [
+        ".github/workflows/nightly-backup.yml"
+      ],
+      "lines_added": 270,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "518782ec"
+      },
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one",
+      "citation_note": "No standing rule covers a guard whose stated purpose is a failure it cannot detect. Closest in spirit to the repeated finding that a check can pass without testing anything, but that is a discipline rather than a numbered rule.",
+      "citation_confidence": "not-citable",
+      "rules": []
+    },
+    {
       "commit": "57236fe9db01",
       "date": "2026-09-14",
       "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
@@ -1915,6 +1961,30 @@
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
+    },
+    {
+      "commit": "858ad4a6",
+      "date": "2026-09-14",
+      "subject": "feat(spec): item 78 -- the cross-app role gates, stated formally, and 19 of 80 checks are all that can be made",
+      "files": [
+        "tools/role_gate_invariants.js",
+        "docs/spec/RoleGates.tla"
+      ],
+      "lines_added": 218,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "injection": {
+        "commit": "858ad4a6"
+      },
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "summary": "tools/role_gate_invariants.js states in its header that 'every app is checked against every invariant over its whole role set', and it implements I3, I4, I5a, I5b and I5c only. I1 (APP ISOLATION) and I2 (DEACTIVATION BINDS) are in docs/spec/RoleGates.tla and have NO checker, and nothing in the output discloses it -- the honest denominator it does print (56 checks, 24 not checkable) is about role SETS that could not be read, not about invariants never evaluated. Both are runtime properties and both ARE covered elsewhere (I1 by tests/app_session_isolation.js, I2 by the deactivated-caller re-check), so the fix is a disclosure naming them and where they are proven, not new code",
+      "citation_note": "No standing rule covers a coverage claim that is true of the checks run and false of the specification. The nearest is the repeated lesson that a denominator must be the whole population, which the file applies correctly on one axis and not on the other.",
+      "citation_confidence": "not-citable",
+      "rules": []
     },
     {
       "commit": "973e2471",
@@ -2025,6 +2095,84 @@
       }
     },
     {
+      "commit": "e71bcba001de",
+      "date": "2026-09-14",
+      "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
+      "files": [
+        "sairnlaw.html"
+      ],
+      "lines_added": 106,
+      "lines_removed": 4,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "sairnlaw trust-accounting reconciliation explainer (explainReconciliation) displayed raw model prose about CLIENT MONEY with no citation rule in its system prompt and no citation verification on its output, so a fabricated professional-conduct citation in citable-reference format could reach a bookkeeper unmarked. LAW_CITATION_RULE appended.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "requirement",
+      "phase_confidence": "stated",
+      "found_by_tool": "ai_prompt_refusal_check.py",
+      "injection": {
+        "unknown_reason": "the explainer predates LAW_CITATION_RULE's introduction on 2026-08-09; git log -S would name a commit for the prompt string but not the moment the OMISSION became a defect, which is when the rule was written and this surface was not updated with it"
+      },
+      "citation_note": "the fail-closed rule generalised to a prompt-level refusal: a stated rule absent on one surface produces output indistinguishable from output the rule governed, and nothing downstream could tell them apart -- this explainer had neither the rule nor a citation check, so a fabricated professional-conduct citation had no state between refused and shown"
+    },
+    {
+      "commit": "e71bcba001de",
+      "date": "2026-09-14",
+      "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
+      "files": [
+        "sairnlaw.html"
+      ],
+      "lines_added": 106,
+      "lines_removed": 4,
+      "app": "sairnlaw",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "sairnlaw argument-decomposition step (mtDecompose) had NO citation rule and its renderer mtRenderPoints displayed the model's own claim text with no citation check, beside Anchored badges that cover source_span only -- so a citation-shaped string reached the screen unbadged on a card that looked verified. New MT_CITATION_RULE permits echoing only a citation verbatim in the user's own text, plus an on-screen ILLUSTRATIVE ONLY disclaimer naming each unverified citation.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": "ai_prompt_refusal_check.py",
+      "injection": {
+        "unknown_reason": "the decomposition step and its renderer shipped together, so no single commit introduced the divergence; the gap is that mtExtractCitations was wired to one of the two display paths and the asymmetry was never stated"
+      },
+      "citation_note": "same third-state shape one level down: the Anchored badge covers source_span and NOT the model's own claim text, so an unverified citation displayed beside verified-looking badges reads as checked when nothing checked it -- could-not-tell rendered as passed"
+    },
+    {
+      "commit": "e71bcba001de",
+      "date": "2026-09-14",
+      "subject": "fix(sairnlaw): the citation rule was absent on trust accounting, and the simulator's exception was an accident rather than a scope",
+      "files": [
+        "sairnlaw.html"
+      ],
+      "lines_added": 106,
+      "lines_removed": 4,
+      "app": "platform",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "tools/ai_prompt_refusal_check.py cannot see a mechanical control applied AFTER the model call, so it flagged sairnlaw's critique step -- the one surface whose citations are verified against CourtListener and badged -- identically to the trust-accounting explainer, which had no control at all. A text-presence checker over-implies severity on exactly the best-protected site. Mitigated by naming the exception (MT_CRITIQUE_CITATION_RULE) rather than by widening the checker, and recorded in its NOT_PROMOTED reason.",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "arguable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "introduced in the same commit that created the checker earlier today; it is a limit of the chosen signature rather than a line that was written wrong"
+      },
+      "citation_note": "the checker reports a prompt-level absence identically whether a downstream mechanical control enforces the same property or nothing does -- so its finding cannot be read as a severity, which is the could-not-tell-folded-into-a-verdict shape applied to a checker's own output"
+    },
+    {
       "commit": "e7927872775e",
       "date": "2026-09-14",
       "subject": "test(failsafe): item 83 independent review -- expiry on the spend path was untested",
@@ -2079,76 +2227,6 @@
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
-    },
-    {
-      "commit": "518782ec",
-      "date": "2026-09-14",
-      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
-      "files": [
-        "sql/backup_reader_role.sql"
-      ],
-      "lines_added": 116,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "independent-review",
-      "injection": {
-        "commit": "518782ec"
-      },
-      "injection_phase": "coding",
-      "phase_confidence": "stated",
-      "summary": "sql/backup_reader_role.sql creates sairn_backup_reader with the literal password 'REPLACE_ME_BEFORE_RUNNING' inside a `do $$ if not exists` guard, so running the file once un-edited produces a LOGIN role with BYPASSRLS and SELECT on every table in public, and re-running the corrected file changes nothing because the role already exists. The repo is public (confirmed via the GitHub API: visibility public), so the placeholder is a published string, and no verification step in the file checks that the password is not still the placeholder",
-      "citation_note": "No standing rule covers a placeholder credential made permanent by an idempotence guard. The nearest, 1.11, is about a check folding could-not-run into a pass, and this is a create that silently declines to act. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "citation_confidence": "not-citable",
-      "rules": []
-    },
-    {
-      "commit": "518782ec",
-      "date": "2026-09-14",
-      "subject": "feat(backup): nightly encrypted dump, and the restore that proves it is a backup",
-      "files": [
-        ".github/workflows/nightly-backup.yml"
-      ],
-      "lines_added": 270,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "injection": {
-        "commit": "518782ec"
-      },
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "summary": "the 50 KB size floor cannot catch the failure its own comment names: it says a dump under 50 KB means the data did not come and that the usual cause is the backup role losing BYPASSRLS, but a BYPASSRLS-less dump is approximately a SCHEMA-ONLY dump, which the same comment states is 'well over 100 KB' -- so it passes the floor. The real detector is the restore plus the coherence checker, which does work; the defect is that a reader trusting the comment believes there are two independent detectors where there is one",
-      "citation_note": "No standing rule covers a guard whose stated purpose is a failure it cannot detect. Closest in spirit to the repeated finding that a check can pass without testing anything, but that is a discipline rather than a numbered rule.",
-      "citation_confidence": "not-citable",
-      "rules": []
-    },
-    {
-      "commit": "858ad4a6",
-      "date": "2026-09-14",
-      "subject": "feat(spec): item 78 -- the cross-app role gates, stated formally, and 19 of 80 checks are all that can be made",
-      "files": [
-        "tools/role_gate_invariants.js",
-        "docs/spec/RoleGates.tla"
-      ],
-      "lines_added": 218,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "tooling",
-      "severity": "moderate",
-      "detection_method": "independent-review",
-      "injection": {
-        "commit": "858ad4a6"
-      },
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "summary": "tools/role_gate_invariants.js states in its header that 'every app is checked against every invariant over its whole role set', and it implements I3, I4, I5a, I5b and I5c only. I1 (APP ISOLATION) and I2 (DEACTIVATION BINDS) are in docs/spec/RoleGates.tla and have NO checker, and nothing in the output discloses it -- the honest denominator it does print (56 checks, 24 not checkable) is about role SETS that could not be read, not about invariants never evaluated. Both are runtime properties and both ARE covered elsewhere (I1 by tests/app_session_isolation.js, I2 by the deactivated-caller re-check), so the fix is a disclosure naming them and where they are proven, not new code",
-      "citation_note": "No standing rule covers a coverage claim that is true of the checks run and false of the specification. The nearest is the repeated lesson that a denominator must be the whole population, which the file applies correctly on one axis and not on the other.",
-      "citation_confidence": "not-citable",
-      "rules": []
     }
   ]
 }
