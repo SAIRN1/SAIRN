@@ -1395,6 +1395,16 @@
       "claimed_at_epoch": 1789426226.717216,
       "status": "released",
       "released_at": "2026-09-14T23:22:00Z"
+    },
+    {
+      "id": "fourth-1789428630",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "declared rate constant bypassed by its own literal in app html, sairnbiz fica",
+      "claimed_at": "2026-09-14T23:30:30Z",
+      "claimed_at_epoch": 1789428630.7412431,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
