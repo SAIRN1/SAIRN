@@ -1090,8 +1090,8 @@
       "task": "item 39 record retention and retrievability on class a resources",
       "claimed_at": "2026-09-14T10:58:14Z",
       "claimed_at_epoch": 1789383494.6339018,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T11:07:57Z"
     }
   ]
 }
