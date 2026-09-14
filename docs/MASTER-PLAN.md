@@ -33,7 +33,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnbuild` | 32 | ✅ | 3 | 1 | 0 | **no fault probe** |
 | `sairncare` | 13 | ✅ | 18 | 1 | 0 | **no fault probe** |
 | `sairncash` | 0 | ✅ | 2 | 0 | 0 | **nothing traced** · **no fault probe** |
-| `sairncode` | 28 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
+| `sairncode` | 28 | ✅ | 2 | 2 | 0 | **no fault probe** |
 | `sairndental` | 24 | ✅ | 9 | 6 | 3 | — |
 | `sairndental-book` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndental-complaint` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
@@ -52,9 +52,9 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 384 resources owned by an app, 82 test files attributed to one, 35 of those traced, 8 fault probes.**
+**Platform totals: 384 resources owned by an app, 84 test files attributed to one, 37 of those traced, 8 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **397** test files on disk in total and **191** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **399** test files on disk in total and **193** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -120,8 +120,8 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               397   tests/**, api/*.test.js
-  tests traced to a requirement    197   traceability_matrix.traced()
+  test files on disk               399   tests/**, api/*.test.js
+  tests traced to a requirement    199   traceability_matrix.traced()
   declared fault probes              8   MUTATIONS blocks + *_fault_probe.py
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```

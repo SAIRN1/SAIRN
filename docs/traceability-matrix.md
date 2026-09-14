@@ -274,6 +274,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **A failed rule read rendered as an authoritative EMPTY RULE SET on the compliance and billing panels &mdash; and told the operator to re-run the seed.** The guard against it was already written and could not fire | **CLOSED 2026-09-11 (Cody)** &mdash; 13 fault arms in `tests/faults/alf_rule_read_faults.js`, 6 mutation controls bite, file restored byte-identical; the first suite on this platform aimed at the READ | `tests/faults/alf_rule_read_faults.js` |
 
+### sairncode
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| **28 registered resources, ZERO test files &mdash; and the three server-side gates standing between a licence key and a deleted medical-billing record had never been exercised** | **CLOSED 2026-09-14 (CC)** &mdash; `tests/sairncode_gates.js` (50 arms, driven against the real handler) and `tests/sairncode_gates_mutation_control.js` (8 mutations, all caught). **The POSTURE findin | `tests/sairncode_gates.js`, `tests/sairncode_gates_mutation_control.js` |
+
 ### sairndental
 
 | Requirement | Status | Proved by |
@@ -366,7 +372,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**191 of 397 test files are traced to a stated requirement. 206 are not.**
+**193 of 399 test files are traced to a stated requirement. 206 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -596,8 +602,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 397   tests/**, api/*.test.js
-  open-work rows citing a test       178   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 399   tests/**, api/*.test.js
+  open-work rows citing a test       179   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                44   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
