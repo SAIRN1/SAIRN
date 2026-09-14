@@ -1,0 +1,87 @@
+-- sql/dnt_appointments_due_index.sql
+-- One index, for the query the hourly reminder cron actually issues.
+--
+-- ══ NOT RUN. ═══════════════════════════════════════════════════════════════
+-- Nothing has executed this against the live database as of 2026-09-14.
+-- Idempotent and safe to re-run once it has been.
+--
+-- ══ WHY ════════════════════════════════════════════════════════════════════
+-- `GET /api/sairndental/send-reminder` has been answering 502 on roughly half
+-- its firings, logging
+--     send-reminder: dnt_appointments list failed 504 {"message":"Gateway Timeout"}
+-- MEASURED over the 12 hours to 2026-09-14T10:30Z: 6 of 12 hourly firings.
+-- CC measured 19 of 48 across both crons in the 24h to 2026-09-13.
+--
+-- The query, api/sairndental/send-reminder.js:128, is:
+--
+--     dnt_appointments?status=eq.Confirmed
+--                     &start_time=gt.<now>&start_time=lte.<now+48h>
+--
+-- It carries NO license_hash filter, and that is correct -- a reminder cron
+-- sweeps every tenant. But the table's only declared index is
+--
+--     idx_dntap_license on public.dnt_appointments(license_hash)
+--
+-- so both filtered columns are unindexed. THE 48-HOUR WINDOW BOUNDS THE RESULT,
+-- NOT THE WORK: the planner still has to scan the table to find those rows, and
+-- the scan grows with every appointment ever written.
+--
+-- Equality on `status`, range on `start_time` -- so `status` leads and
+-- `start_time` follows, which is the order this index is in and the order that
+-- makes the range usable.
+--
+-- ══ WHAT THIS DOES NOT FIX ═════════════════════════════════════════════════
+-- The OTHER hourly cron, `GET /api/alf-alerts`, fails the same way for a
+-- related but different reason: `loadMar()` reads every `alf_mar` row a licence
+-- has ever written and filters to one day IN JAVASCRIPT. That one needs a code
+-- change, not an index, and it is deliberately NOT bundled here -- `alf_mar` is
+-- a medication administration record and that cron is what notices a late dose.
+-- See docs/2026-09-14-supabase-504-root-cause.md section 5.
+--
+-- SO DO NOT READ A RECOVERED send-reminder AS THE 504 PROBLEM BEING CLOSED.
+-- Half of it will still be failing, and the shared contention window means
+-- other queries may still time out at the top of the hour.
+
+-- ---------------------------------------------------------------------------
+-- 1. Before: confirm the index is actually absent, rather than assuming it.
+-- ---------------------------------------------------------------------------
+--   select indexname, indexdef from pg_indexes
+--    where schemaname = 'public' and tablename = 'dnt_appointments';
+--
+-- And the size of the thing being scanned, which is the number that decides
+-- whether this is the whole fix or only part of it:
+--   select count(*) from public.dnt_appointments;
+
+-- ---------------------------------------------------------------------------
+-- 2. The index.
+-- ---------------------------------------------------------------------------
+-- CONCURRENTLY so the build does not take a write lock on a live table that
+-- the dental app writes to. It CANNOT run inside a transaction block -- run
+-- this statement on its own, not wrapped in begin/commit, or Postgres refuses
+-- it. If it fails partway it leaves an INVALID index behind, which must be
+-- dropped before retrying:
+--   drop index concurrently if exists public.idx_dntap_due;
+create index concurrently if not exists idx_dntap_due
+  on public.dnt_appointments (status, start_time);
+
+-- ---------------------------------------------------------------------------
+-- 3. After: prove it is used and prove it helped. Both, not either.
+-- ---------------------------------------------------------------------------
+-- An index that exists and is not chosen by the planner has changed nothing,
+-- and "the cron stopped failing" on its own could be the hour being quiet.
+--
+--   explain analyze
+--   select license_hash, appointment_id, start_time, status
+--     from public.dnt_appointments
+--    where status = 'Confirmed'
+--      and start_time >  now()
+--      and start_time <= now() + interval '48 hours';
+--
+-- EXPECT: an Index Scan or Bitmap Index Scan naming idx_dntap_due. A Seq Scan
+-- means the planner did not take it -- on a small table that is correct
+-- behaviour and means the timeout is NOT coming from this query, which would
+-- send the investigation back to docs/2026-09-14-supabase-504-root-cause.md.
+--
+-- Then watch the real thing for at least three consecutive firings before
+-- calling it fixed, since roughly half of them were already succeeding:
+--   Vercel MCP get_runtime_logs(query='send-reminder', since='6h')
