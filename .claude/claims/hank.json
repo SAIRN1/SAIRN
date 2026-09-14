@@ -1573,8 +1573,8 @@
       "task": "IBNR undiscovered defect reserve scoping",
       "claimed_at": "2026-09-14T17:39:33Z",
       "claimed_at_epoch": 1789407573.2872856,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:42:32Z"
     }
   ]
 }
