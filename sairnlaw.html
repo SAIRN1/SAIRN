@@ -2173,6 +2173,58 @@ var LAW_DEFINITION_RULE='CRITICAL RULE: you have no legal dictionary in your own
 // outcome. A missed extraction costs a refusal, never a fabrication.
 var LAW_GROUNDED_DEFINITIONS_RULE='CRITICAL RULE ON LEGAL DEFINITIONS: you have no tools available in this request. You may state what a legal term, doctrine or phrase MEANS only if that meaning appears in the GROUNDED LEGAL DEFINITIONS section below, which was retrieved from Cornell LII before this request was sent. Quote or closely paraphrase that retrieved text and name the source URL given with it. If a term you would otherwise want to define is NOT in that section -- including terms you are completely confident about -- do not define it: say plainly that no grounded definition was retrieved for it and that the user can look it up in this app\'s Legal Reference panel, then carry on with the rest of the work. Do not offer a "general sense", a "roughly speaking" version, or your own paraphrase as a substitute. Drafting or reviewing document TEXT is unaffected by this rule -- you may write a contract clause that defines a term for the parties, and you may say a document uses a term inconsistently or ambiguously, because neither of those is you asserting what the term means as a matter of law.';
 
+// ── THE SIMULATOR'S OWN CITATION RULE, DELIBERATELY SCOPED (2026-09-14) ──
+// Michael's decision, and the reason it is a SEPARATE constant rather than a
+// reuse of LAW_CITATION_RULE above: do not converge the two. The mock-trial /
+// adversary simulator is the one surface here that legitimately needs to
+// discuss authority, and LAW_CITATION_RULE -- which forbids emitting a
+// citable-format string under any circumstances -- would break it. Everywhere
+// that produces real WORK PRODUCT keeps LAW_CITATION_RULE airtight.
+//
+// WHAT THIS IS NOT: it is not the accidental omission it replaced. Before
+// this, the decomposition step (mtDecompose) carried NO citation rule at all,
+// which is a silence rather than a scope -- nothing told the model what it
+// could emit, and its own `authority_relied_on` point type invites restating
+// authority. A deliberate narrow permission and an accidental absence read
+// the same way to the model and completely differently to a reviewer.
+//
+// WHY IT IS STRICTER THAN THE CRITIQUE STEP'S RULE, which is the part worth
+// reading before changing either. The CRITIQUE path (mtCritique) may name a
+// real reporter citation because its output is MECHANICALLY VERIFIED after the
+// call: mtExtractCitations pulls every citation out and mtVerifyCitations
+// batches them to the real citator against CourtListener, and each one is
+// badged Verified / Not found -- do not rely on this / Ambiguous / unavailable,
+// with a footnote that only claims "every citation resolved" when they all
+// did. Model asserts, code checks -- the same discipline the citator itself
+// carries.
+//
+// THE DECOMPOSITION PATH HAS NO SUCH CHECK. mtExtractCitations is called at
+// exactly one site, and it is not this one; mtRenderPoints displays the
+// model's own `claim` text with an Anchored / Not-in-your-text badge that
+// covers `source_span` and NOT `claim`. So an unverified citation-shaped
+// string could reach the screen here with no badge at all. Two paths, two
+// different guarantees, therefore two different rules -- and the weaker
+// guarantee gets the stricter prompt, not the other way round.
+var MT_CITATION_RULE='CITATION RULE FOR THIS STEP: do not generate a case citation, statute citation or docket number in citable-reference format (the volume/reporter/page/year pattern, or a statute section number). You MAY repeat such a string back if -- and only if -- it appears verbatim in the position the user wrote, because this step decomposes their argument rather than adding authority to it. Otherwise refer to authority narratively: the holding, the parties, the principle, the era. Nothing you emit here is citation-checked before it is shown, so a citation you compose is one nobody verifies.';
+
+// The CRITIQUE step's rule, and the ONLY place on this platform where emitting
+// a citable-format string is permitted. NAMED rather than written inline, which
+// is the whole point: the permission was previously item 3 of a hand-written
+// HARD RULES block, indistinguishable from an author forgetting
+// LAW_CITATION_RULE existed. A deliberate exception has to LOOK deliberate, or
+// the next reviewer either removes it and breaks the feature or copies it
+// somewhere it does not belong.
+//
+// WHAT EARNS THE PERMISSION IS A MECHANICAL CHECK, NOT A PROMPT. Everything
+// this step emits passes through mtExtractCitations -> mtVerifyCitations ->
+// citatorFetch('verify') against CourtListener, and each citation is badged
+// Verified / Not found -- do not rely on this / Ambiguous / unavailable, with a
+// footnote that only claims "every citation resolved" when they all did. If
+// that verification is ever removed or bypassed, THIS CONSTANT MUST GO BACK TO
+// THE STRICT RULE -- the permission is downstream of the check, not
+// independent of it.
+var MT_CRITIQUE_CITATION_RULE='If you cite a case, give its real reporter citation and do not invent one. If you are not confident a citation is real, describe the principle without a citation instead. Every citation you produce here is checked automatically against a real case reporter after you answer and is shown to the user marked verified or unverified, so a fabricated one will be visible as such -- it will not pass unnoticed. This is a practice/training surface; it is the one place in this application permitted to emit a citation in citable-reference format, and the user is told to confirm anything not marked verified before relying on it.';
+
 // Deterministic candidate extraction. NOT a model judgment and not a
 // hardcoded glossary -- either of those would reintroduce the thing being
 // removed. It looks only for places the text ITSELF marks a term as a term:
@@ -3242,7 +3294,22 @@ async function explainReconciliation(){
   try{
     var trPrompt='Trust ledger balance: '+fmt(r.ledgerBal)+'. Sum of client ledgers: '+fmt(r.clientSum)+'. Bank statement balance: '+(r.bankBal===null?'not yet entered':fmt(r.bankBal))+'. Ledger matches client-ledger sum: '+r.ledgerVsClient+'. Ledger matches bank statement: '+r.ledgerVsBank+'. Explain what this indicates and what to check.';
     var rr=await lawAuth('ai_generate',{max_tokens:300,
-      system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).',
+      // LAW_CITATION_RULE APPENDED 2026-09-14. It was absent, and this is the
+      // surface where its absence mattered most: trust accounting is client
+      // money and the most disciplinarily-dangerous area of practice, so a
+      // model explaining a discrepancy has every reason to reach for a
+      // professional-conduct rule -- "Ohio Prof.Cond.R. 1.15", an ABA Model
+      // Rule -- in exactly the citable format the platform rule forbids.
+      // Nothing stopped it and nothing checked it: this output is displayed
+      // as raw prose and is NOT citation-verified (mtExtractCitations is
+      // called at one site and it is not this one).
+      //
+      // IT GETS THE AIRTIGHT RULE, NOT THE SIMULATOR'S SCOPED ONE, per
+      // Michael's decision: the narrow permission belongs to the mock-trial
+      // surface alone, and everything producing real work product stays under
+      // LAW_CITATION_RULE. A reconciliation explanation a bookkeeper acts on
+      // is work product.
+      system:'You explain trust-accounting reconciliation discrepancies in plain language for a law firm. You are given real, already-computed numbers -- never recompute or second-guess them, never invent additional numbers, only explain what a mismatch of this shape typically means and what to check next (uncleared checks, timing differences, a missed entry).'+LAW_CITATION_RULE,
       messages:[{role:'user',content:trPrompt}],prompt_for_log:trPrompt,matter_id:'general',tools_used:[]},true);
     var data=rr.data;
     var aiErr=lawAiError(data)||(!rr.ok?(rr.msg||'AI request failed'):null);
@@ -5165,7 +5232,8 @@ function mtDecompose(position) {
     '1. source_span must be copied character-for-character from the position. Do not paraphrase it, do not correct it, and do not stitch together words that are not adjacent in the original.\n' +
     '2. Do not add points the position does not contain. If the position is thin, return few points.\n' +
     '3. Never state or imply a probability, percentage, odds or likelihood of winning.\n' +
-    '4. Split a compound sentence into separate points where its parts carry separate legal weight.';
+    '4. Split a compound sentence into separate points where its parts carry separate legal weight.\n\n' +
+    MT_CITATION_RULE;
   return fetch(PROXY, {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ app_id: 'sairnlaw', is_demo: true, max_tokens: 1400, system: sys,
@@ -5566,10 +5634,44 @@ function mtRenderPoints(points) {
       '<b>' + stray + ' point' + (stray === 1 ? '' : 's') + ' could not be traced to your text</b> and ' +
       (stray === 1 ? 'was' : 'were') + ' excluded from the critique. Shown so you can see what was inferred rather than read.</div>'
     : '';
+
+  // ── THE UNVERIFIED-CITATION DISCLAIMER (2026-09-14, Michael's decision) ──
+  // The critique path below badges every citation Verified / Not found /
+  // Ambiguous against CourtListener. THIS path does not: mtExtractCitations is
+  // called at one site and it is not this one, and the Anchored badge above
+  // covers `source_span`, never the model's own `claim` text. So a
+  // citation-shaped string could reach the screen here carrying no badge at
+  // all -- next to Anchored badges that make the whole card look checked.
+  //
+  // IT FIRES ONLY WHEN THERE IS SOMETHING TO DISCLAIM, and that is deliberate
+  // rather than a softening of "mandatory". A banner printed on every run is
+  // one a reader learns to skip, which is this platform's own repeated lesson
+  // and would cost exactly the run where it mattered. The same extractor the
+  // critique path uses decides, so the two cannot drift apart on what counts
+  // as a citation.
+  var claimCites = [];
+  points.forEach(function (p) {
+    mtExtractCitations(p.claim).forEach(function (c) {
+      if (claimCites.indexOf(c) === -1) claimCites.push(c);
+    });
+  });
+  var citeWarn = claimCites.length
+    ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:8px;color:#92400e;font-size:12px">' +
+      '<b>' + claimCites.length + ' citation' + (claimCites.length === 1 ? '' : 's') +
+      ' in the decomposition above ' + (claimCites.length === 1 ? 'is' : 'are') +
+      ' NOT verified.</b> Unlike the critique below, nothing checks these against a real ' +
+      'reporter. Treat ' + (claimCites.length === 1 ? 'it' : 'them') +
+      ' as ILLUSTRATIVE ONLY and confirm ' + (claimCites.length === 1 ? 'it' : 'them') +
+      ' in Westlaw, Lexis or the court&rsquo;s own site before relying on ' +
+      (claimCites.length === 1 ? 'it' : 'them') + ' for real work: ' +
+      claimCites.map(function (c) { return '<code>' + H(c) + '</code>'; }).join(', ') +
+      '</div>'
+    : '';
+
   el.innerHTML = '<div class="card" style="margin:0"><div class="ch"><span class="ct">Argument decomposition</span></div><div class="cb">' +
     '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Your position broken into ' + points.length +
     ' legal data point' + (points.length === 1 ? '' : 's') + '. Each is attacked separately below. Every point quotes the words it came from, and that quote is checked against what you actually wrote.</div>' +
-    rows + warn + '</div></div>';
+    rows + warn + citeWarn + '</div></div>';
 }
 
 function mtRun() {
@@ -5589,7 +5691,7 @@ function mtRun() {
     '\n\nHARD RULES:\n' +
     '1. Never state or imply a probability, percentage, odds, or likelihood of winning or losing. Not even loosely. If asked, say plainly that you do not predict outcomes.\n' +
     '2. Raise concrete objections tied to the actual argument. Name the doctrine or rule each objection rests on.\n' +
-    '3. If you cite a case, give its real reporter citation. Do not invent citations. If you are not confident a citation is real, describe the principle without a citation instead.\n' +
+    '3. ' + MT_CRITIQUE_CITATION_RULE + '\n' +
     '4. Be specific and adversarial. Vague encouragement is useless here.\n' +
     '\nPractice-juror difficulty for context (training settings, not a real panel): ' +
     'skepticism ' + diff.skepticism + '/10, disposition ' + diff.disposition + '/10 toward hostile, legal sophistication ' + diff.sophistication + '/10.';
