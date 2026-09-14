@@ -459,6 +459,51 @@ REGISTRY = [
                     'RED and this one cannot yet',
     },
     {
+        'tool': 'invisible_in_pattern_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        # REPORT-ONLY FIRST, not blocking, and that is the standing promotion
+        # path rather than timidity: nothing here had ever run against real code
+        # until today, and the tool that reported ALL 26 of SAIRNfreedom's panels
+        # unreachable is the reason this file exists at all. Its real-world
+        # false-positive rate is unknown until it has been quiet in practice.
+        # control_char_check.py sat report-only from 2026-09-10 and was promoted
+        # to push-gate check 11 on 2026-09-13 on a measured track record; this is
+        # the same road, and the date it earns the same promotion belongs in a
+        # decision, not in this comment.
+        'promoted': '2026-09-14, the day it was built',
+        'catches': 'an invisible character INSIDE a regex literal or a string '
+                   'handed to a regex constructor -- a zero-width space, an '
+                   'NBSP, or a bidi override, where it silently changes what '
+                   'the pattern matches and no reader can see it',
+        'why_it_matters': '2026-09-14 was the THIRD confirmed instance on this '
+                          'platform of an invisible character defeating an '
+                          'assertion, and ALL THREE WERE PRIVILEGE GUARDS. '
+                          'api/sv-auth.test.js asserted "NOTHING in this '
+                          'endpoint deletes a credential row" with two literal '
+                          '0x08 bytes where word boundaries were meant, so the '
+                          'pattern could never match and the guard on a '
+                          'DEA-relevant register passed unconditionally for its '
+                          'whole life. control_char_check.py closed the C0 half; '
+                          'this one closes everything above it, and the bidi '
+                          'overrides it also covers are worse in kind -- source '
+                          'that READS differently from how it EXECUTES '
+                          '(Trojan Source, CVE-2021-42574)',
+        'evidence': 'blind lock 10/10 fixtures before any real file is opened, '
+                    'two of them being real-world occurrences it must stay '
+                    'SILENT about -- the deliberate UTF-8 BOM sairnroofing.html '
+                    'writes into its CSV, and a C0 byte, which is the other '
+                    "tool's question. tests/run_invisible_in_pattern_probe.py "
+                    'drives both directions on real files in a throwaway '
+                    'worktree: a planted ZWSP makes it exit 1 naming file, '
+                    'codepoint and that it is INSIDE A PATTERN; the untouched '
+                    'tree exits 0; a broken fixture exits 2 having judged '
+                    'nothing; and a planted C0 leaves it silent WHILE '
+                    'control_char_check catches it, so the split between the two '
+                    'leaves no hole. First real sweep: 653 files, ZERO findings, '
+                    'and a census of 1 -- the CSV BOM',
+    },
+    {
         'tool': 'checkblocks.py',
         'mode': 'apps',
         'verdict': by_exit,

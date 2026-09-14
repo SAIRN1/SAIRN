@@ -61,6 +61,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a resource an app WRITES to the server and never reads back -- a backup nobody could restore from | `write_without_readback_check.py` | real run 2026-09-10: 0 findings, 0 could-not-tell, exit 0 |
 | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not | `traceability_matrix.py` | built and wired the same day: 21-check probe including the one that matters -- add a GUARD_TESTS entry and --check goes RED, regenerate and it agrees again |
 | docs/MASTER-PLAN.md no longer matching the repo -- a resource, a test file, a tier or a trace moved and the one document that compounds four gates into a single FINISHED verdict was not regenerated | `master_plan.py` | the check BIT, observed rather than constructed: on 2026-09-14 `--check` answered FAIL against the committed document and regenerating moved five lines (test files on disk 340->342, traced 150->152, worst-case bound 480->482) after which it answered OK. It had gone red with nothing reporting it, and was found by running the tool by hand. tests/run_master_plan_probe.py is 43 arms green -- but NOTE, plainly: none of them is a staleness arm, so the sibling entry above can cite a fixture proving --check goes RED and this one cannot yet |
+| an invisible character INSIDE a regex literal or a string handed to a regex constructor -- a zero-width space, an NBSP, or a bidi override, where it silently changes what the pattern matches and no reader can see it | `invisible_in_pattern_check.py` | blind lock 10/10 fixtures before any real file is opened, two of them being real-world occurrences it must stay SILENT about -- the deliberate UTF-8 BOM sairnroofing.html writes into its CSV, and a C0 byte, which is the other tool's question. tests/run_invisible_in_pattern_probe.py drives both directions on real files in a throwaway worktree: a planted ZWSP makes it exit 1 naming file, codepoint and that it is INSIDE A PATTERN; the untouched tree exits 0; a broken fixture exits 2 having judged nothing; and a planted C0 leaves it silent WHILE control_char_check catches it, so the split between the two leaves no hole. First real sweep: 653 files, ZERO findings, and a census of 1 -- the CSV BOM |
 | a <script> block in an app file that no longer PARSES -- Guardian Check 0a, extracted per block with an HTML parser and run through node --check | `checkblocks.py` | real run 2026-09-12: all 22 root .html files exit 0; a planted SyntaxError exits 1; a file with no script block exits 2, which is could-not-tell and NOT a pass |
 | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code | `comment_sensitivity_check.py` | real run 2026-09-12 found ONE: key_collision_check.py counted 93 key writes on stonedesk.html raw and 92 stripped -- one was a line of prose. Verdict unchanged either way, which is why it survived. Fixed in the same commit; 0 findings after, across 22 targets and 6 checkers |
 | a checker whose ANSWER changes under a transform that cannot legitimately change it -- a byte-identical copy at another path, flipped line endings, trailing whitespace, inserted blank lines -- and a finding ERASED by duplicating the file | `metamorphic_check.py` | first real run 2026-09-13, --all: 660 comparisons (6 checkers x 22 app files x 5 relations), 0 violated, 0 could-not-run. THAT ZERO IS ONLY WORTH SOMETHING BECAUSE OF THE BLIND LOCK -- the criteria are classified against synthetic fixtures first and the real run is REFUSED if a relation cannot fire. The lock caught its own tool twice on the first two runs: `crlf` was unfalsifiable because the fixture read through universal newlines, and the fixture later agreed with itself by arithmetic accident on a CRLF target (6 bytes removed, 6 spaces added). Three more defects were found by running it, ALL IN THE HARNESS: reading the target through universal newlines made `identity` secretly the `crlf` transform and accused key_collision_check.py of nondeterminism; normalising the bare basename rewrote a checker's PROSE and made two identical reports compare unequal; and a position-format list that knew `lines [..]` but not `A line(s) [..]` reported literal_drift_check.py as violated on all three targets. Held in both directions by tests/run_metamorphic_probe.py |
@@ -301,7 +302,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**153 of 347 test files are traced to a stated requirement. 194 are not.**
+**153 of 348 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -449,6 +450,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_financial_invariant_probe.py`
 - `tests/run_flaky_quarantine_probe.py`
 - `tests/run_index_duplicate_probe.py`
+- `tests/run_invisible_in_pattern_probe.py`
 - `tests/run_jscomments_probe.py`
 - `tests/run_literal_drift_control_probe.py`
 - `tests/run_sabotage_control_probe.py`
@@ -519,10 +521,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 347   tests/**, api/*.test.js
+  test files on disk                 348   tests/**, api/*.test.js
   open-work rows citing a test       139   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                36   report_only_checks.REGISTRY
+  report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```

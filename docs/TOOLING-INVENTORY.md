@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**119 files in `tools/`.** By what actually invokes them:
+**120 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 38 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 71 |
+| CHECKER | 72 |
 | GENERATOR | 15 |
 | LIBRARY | 20 |
 | LIVE | 13 |
@@ -118,7 +118,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (38)
+## REPORT-ONLY (39)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -143,6 +143,7 @@ quiet in practice.
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
 | `install_git_hooks.py` | 2026-09-13, the day --check was widened to answer the real question | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, or whose gate script or shell wrapper does not execute |
+| `invisible_in_pattern_check.py` | 2026-09-14, the day it was built | an invisible character INSIDE a regex literal or a string handed to a regex constructor -- a zero-width space, an NBSP, or a bidi override, where it silently changes what the pattern matches and no reader can see it |
 | `key_collision_check.py` | 2026-09-10 | a localStorage key written by more than one feature, where the two writers disagree about the shape |
 | `literal_drift_check.py` | 2026-09-10 | a duplicated literal whose copies have DIVERGED -- the same constant written twice and then changed once |
 | `master_plan.py` | 2026-09-14, a day after it was built -- see `evidence` | docs/MASTER-PLAN.md no longer matching the repo -- a resource, a test file, a tier or a trace moved and the one document that compounds four gates into a single FINISHED verdict was not regenerated |
@@ -313,11 +314,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      119   git ls-files tools/
+  tools on disk                      120   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                36   report_only_checks.REGISTRY
-  tools invoked by tests/             71   tests/**/*.py, *.js
+  report-only registry                37   report_only_checks.REGISTRY
+  tools invoked by tests/             72   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
