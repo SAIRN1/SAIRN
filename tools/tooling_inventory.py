@@ -178,6 +178,11 @@ PURPOSES = {
     # formally; this checks the REAL exported role sets still have them.
     # Neither alone is enough -- a spec that drifts from its code is a
     # document asserting properties nobody holds.
+    # Item 78's second target. A MODEL, not a checker of this repo: it
+    # enumerates every interleaving of the rate limiter's count-then-insert
+    # and exhibits the schedule that breaks the cap. The defect is not in any
+    # single execution, which is why a test cannot find it.
+    'rate_limit_race_model.js': ('CHECKER', "the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla"),
     'role_gate_invariants.js': ('CHECKER', 'a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key'),
     'restore_coherence_check.js': ('LIVE', 'a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about'),
     'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
