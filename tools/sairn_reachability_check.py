@@ -361,7 +361,9 @@ def report_activity(snap):
         print('  under-covered snapshot is a could-not-tell, not a pass.')
         print('  No route is called dead here and none should be removed on')
         print('  the strength of this run.')
-        return
+        # RETURNS THE COVERAGE VERDICT so R5 can honour the same bar for its
+        # silence-based half and ignore it for its observation-based half.
+        return False
 
     silent_declared, silent_undeclared = [], []
     for r in routes:
@@ -385,6 +387,105 @@ def report_activity(snap):
     print('  annual, incident, unlaunched -- or that it is not. NOT delete the')
     print('  code. A silent route is a question, and this tool asks it; it does')
     print('  not answer it and it never votes for removal.')
+    return True
+
+
+# ── R5: THE PURPOSE PROXY AT FUNCTION GRANULARITY ──────────────────────────
+# R4 answers "is this ROUTE still served". Item 32 asks the same question one
+# level down -- was the FUNCTION actually invoked -- and there is no telemetry
+# for that. No production log records a JS function call. So R5 does not invent
+# one: it CROSSES two things that already exist and reports where they disagree.
+#
+# THE DIRECTION THAT WORKS TODAY IS THE ONE FROM OBSERVATION, NOT FROM SILENCE,
+# and that distinction is the whole reason this is worth adding under R4's
+# coverage gate rather than behind it. R4 gates because "this route saw zero"
+# carries no information when almost every route saw zero -- an inference FROM
+# SILENCE needs a denominator. An inference from a route that WAS OBSERVED needs
+# no such thing: a served route is positive evidence about itself regardless of
+# how many others were quiet. So:
+#
+#   route SERVED + the sweep says a function in it has NO CALLERS
+#       -> a question about THE SWEEP, not about the code. The file ran. Either
+#          the function genuinely never executed on those requests, or it is
+#          reached by a dispatch the caller analysis cannot see -- a string key,
+#          a table of handlers, an exported name called from elsewhere. Worth a
+#          human read either way, and it is the only direction this data can
+#          support today at 20% route coverage.
+#
+#   route SILENT + no callers
+#       -> the strongest available signal, and still NOT permission to delete.
+#          Gated behind R4's coverage bar because it is an inference from
+#          silence, and printed only when that bar is met.
+#
+# IT NEVER GATES AND NEVER SUGGESTS REMOVAL, the same standing rule R4 carries:
+# this platform has almost no customers, and treating a quiet 72 hours as a
+# mandate to delete is how a disaster-recovery path gets removed the month
+# before it is needed.
+def report_function_purpose(snap, coverage_ok):
+    print('')
+    print('=== R5: FUNCTIONS INSIDE api/ ROUTES (report only, never gates) ===')
+    try:
+        sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+        import sairn_dead_function_sweep as sweeper
+    except Exception as e:
+        # FAIL LOUD, NOT SILENT. A missing sibling tool means this section did
+        # not run; folding that into "nothing to report" is the fail-open this
+        # repo keeps correcting.
+        print('  COULD NOT RUN: tools/sairn_dead_function_sweep.py could not be '
+              'imported (%s: %s), so NO function was crossed against production '
+              'activity. That is not an empty result.' % (type(e).__name__, e))
+        return
+
+    counts = snap.get('counts') or {}
+    routes = routed_api_paths()
+    served_no_callers, silent_no_callers, unreadable = [], [], []
+    for route in routes:
+        rel = 'api' + route[len('/api'):] + '.js' if route.startswith('/api') else None
+        path = os.path.join(REPO_ROOT, (rel or '').replace('/', os.sep))
+        if not rel or not os.path.isfile(path):
+            continue
+        try:
+            _defs, dead, _export_only = sweeper.sweep(path)
+        except Exception as e:
+            unreadable.append((route, '%s: %s' % (type(e).__name__, e)))
+            continue
+        if not dead:
+            continue
+        names = [n for n, _ in dead]
+        (served_no_callers if counts.get(route) else silent_no_callers).append((route, names))
+
+    if unreadable:
+        print('  COULD NOT READ (%d) -- not counted as clean:' % len(unreadable))
+        for route, why in unreadable:
+            print('    ? %-40s %s' % (route, why))
+
+    print('  routes SERVED in the window whose file has a function with no '
+          'caller: %d' % len(served_no_callers))
+    for route, names in served_no_callers:
+        print('    ! %-40s %s' % (route, ', '.join(names[:6]) +
+                                  ('' if len(names) <= 6 else ' (+%d)' % (len(names) - 6))))
+    if served_no_callers:
+        print('  ^ THE FILE RAN. So either these never executed on those')
+        print('    requests, or the caller analysis cannot see how they are')
+        print('    reached -- a string dispatch, a handler table, an exported')
+        print('    name called from another file. READ THE DISPATCH. This is a')
+        print('    question about the sweep at least as much as about the code.')
+
+    if not coverage_ok:
+        print('')
+        print('  SILENT-ROUTE side: NOT CLASSIFIED. R4\'s coverage bar was not')
+        print('  met, and "no caller AND the route was quiet" is an inference')
+        print('  FROM SILENCE -- it needs the denominator R4 says is missing.')
+        print('  The served side above does not: a route that WAS observed is')
+        print('  evidence about itself however quiet the others were.')
+        return
+    print('  routes SILENT in the window whose file has a function with no '
+          'caller: %d' % len(silent_no_callers))
+    for route, names in silent_no_callers:
+        print('    ? %-40s %s' % (route, ', '.join(names[:6])))
+    print('  ^ The strongest signal this data can produce, and STILL NOT')
+    print('    permission to delete anything. Write a cadence row or read the')
+    print('    code; this tool does not vote.')
 
 
 def main(argv):
@@ -434,7 +535,8 @@ def main(argv):
             print('An unreadable activity snapshot is a could-not-tell, not an '
                   'empty one. Re-capture it or drop --activity.')
             return 2
-        report_activity(snap)
+        coverage_ok = report_activity(snap)
+        report_function_purpose(snap, bool(coverage_ok))
 
     targets = rest or sorted(glob.glob('*.html'))
     # A STALE REPORT IS ONLY MEANINGFUL ON A FULL RUN, and this tool was missing
