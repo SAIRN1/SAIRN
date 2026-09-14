@@ -1613,8 +1613,8 @@
       "task": "item 91 frozen baseline so shrinkage is visible",
       "claimed_at": "2026-09-14T18:48:59Z",
       "claimed_at_epoch": 1789411739.6206574,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T18:57:46Z"
     }
   ]
 }
