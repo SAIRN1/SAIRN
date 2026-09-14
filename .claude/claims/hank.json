@@ -1615,6 +1615,16 @@
       "claimed_at_epoch": 1789411739.6206574,
       "status": "released",
       "released_at": "2026-09-14T18:57:46Z"
+    },
+    {
+      "id": "hank-1789412333",
+      "session": "hank",
+      "subject": "citator-freshness",
+      "task": "item 23 freshness stamp on court_hierarchy_weight",
+      "claimed_at": "2026-09-14T18:58:53Z",
+      "claimed_at_epoch": 1789412333.2108705,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
