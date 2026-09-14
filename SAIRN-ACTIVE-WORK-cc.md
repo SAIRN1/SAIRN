@@ -2237,3 +2237,59 @@ ABSENCE assertion pass while the defect is present, which is the unsafe directio
 five that break a structural property on purpose and one that removes the app entirely to prove
 COULD-NOT-RUN is not a pass. The `voiceBtn` missing-target finding is pre-existing -- 0 ids and 5
 references at HEAD too.
+
+
+---
+
+## 2026-09-14 -- item 59: the concentration is the zeros, and there is no bad layer
+
+`tools/defect_dispersion.py`, report only, no threshold, nothing gates.
+
+**THE TRAP IS THE DENOMINATOR AND IT IS THE WHOLE ANALYSIS.** The register contains only units
+that HAVE a defect. A Gini computed over it alone answers *among the commits that produced a
+defect, how unevenly are defects spread* -- a different and much less interesting question, and
+one that always looks more uniform because every zero is missing. So every figure is reported
+**twice**: among the affected, and over the full population with the zeros included.
+
+| dimension | Gini among affected | Gini over population | units |
+|---|---|---|---|
+| originating commit | **0.275** | **0.969** | 35 / 828 |
+| file | 0.546 | 0.921 | 80 / 462 |
+| app | 0.642 | 0.875 | 8 / 23 |
+| session | 0.454 | 0.727 | 8 / 16 |
+| **layer** | **0.078** | **0.078** | 3 / 3 |
+
+**Among the things that produced any defect at all, causation is close to uniform** -- commit
+Gini 0.275, and 16 of 35 affected commits carry more than one. **The concentration is almost
+entirely the zeros.**
+
+**THE LAYER DIMENSION IS THE SHARPEST RESULT, because it is the one where both columns agree.**
+0.078 either way: tooling 23, product 21, test 16. **There is no bad layer** -- and the tooling
+built to find defects carries the most of any single layer, which is consistent with everything
+else this session recorded about checkers finding their own defects.
+
+**A high population figure is at least as much about COVERAGE as about causation**, and the tool
+prints that beside the number rather than leaving it to be remembered. This register records what
+has been FOUND; finding is not uniform either; **a file nobody has swept contributes a zero
+indistinguishable from a file that is clean.**
+
+**The session dimension is labelled a PROXY, not an agent.** Sessions are reused across subjects
+and a fix commit often carries the record of the defect it FIXED, so the session that landed a
+record is not necessarily the one that introduced the defect. Reported because it is the only
+real unit available; labelled so nobody reads it as a scorecard.
+
+**The detection-method population is REFUSED rather than guessed.** Its population is *the
+methods that exist*, which is a judgement and not a count, so those columns are `--` and the run
+exits **2, could-not-run**, rather than printing a number nobody could justify.
+
+### The probe caught the caveat hiding exactly when it was needed
+
+"This is a description, not a verdict" lived in the `clean_line`, which only prints when there
+are no findings AND nothing could-not-run. The real run exits 2 because one population is
+deliberately uncounted -- **so the one sentence that stops the whole table being read as a
+verdict never appeared on the only run anybody would do.** Printed unconditionally now.
+
+**Verified:** `run_defect_dispersion_probe` 29 arms including the Gini maths against inputs whose
+answer is known in advance (0.75 for one-of-four, 0.90 for one-of-ten), a CONTROL proving the two
+columns agree when population equals the affected set -- without which the difference could be an
+artefact rather than the zeros -- and arms asserting every caveat is printed.
