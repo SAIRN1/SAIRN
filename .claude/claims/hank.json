@@ -1495,6 +1495,16 @@
       "claimed_at_epoch": 1789400316.0215702,
       "status": "released",
       "released_at": "2026-09-14T15:46:49Z"
+    },
+    {
+      "id": "hank-1789400879",
+      "session": "hank",
+      "subject": "fai",
+      "task": "item 47 first article inspection on the checkpoint verifier and the cron watchdog",
+      "claimed_at": "2026-09-14T15:47:59Z",
+      "claimed_at_epoch": 1789400879.1890903,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
