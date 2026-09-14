@@ -3,7 +3,7 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in seven
+is still on record somewhere, not compressed away. Added 2026-09-14 in eight
 batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
 Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
 SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
@@ -16,9 +16,12 @@ role belongs to, rather than adjacent-industry analogy); then Kepler/
 Flyspeck (the hard scale limit of human review) and loophole-free Bell
 tests (closing every explanation together, not one at a time); then the
 Audit Risk Model (the real professional formula underneath the rotation-
-weighting technique, not another borrowed analogy). All seven once
-the earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
-Debate, risk-limiting audits, Registered Reports) had already pushed
+weighting technique, not another borrowed analogy); then Marzullo's
+Algorithm and NTP stratum (the formal, quantified answer to this role's own
+Debate problem, and a named warning against conflating provenance-distance
+with correctness). All eight once the earlier research (NASA IV&V, SUBSAFE,
+WADA, seL4, Pnueli, AI Safety via Debate, risk-limiting audits, Registered
+Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
 than bloating the one every invocation loads.
 
@@ -726,3 +729,72 @@ Conversely, a lower-tier item with high Control Risk -- genuinely novel,
 freshly built, sitting in a category with thin existing coverage -- can
 rightly earn more attention than its tier label alone would suggest. Both
 questions have to be asked; Tier answers only the first one.
+
+## Marzullo's Algorithm and NTP stratum -- consensus among disagreeing sources
+
+The Network Time Protocol (NTP) is the real, continuously-operating
+infrastructure that keeps most of the internet's clocks synchronized, and
+it has to solve a real version of this role's own Debate problem
+constantly: multiple independent time sources disagree by small amounts,
+none of them is labeled as the liar in advance, and a client machine needs
+to reach a safe, correct answer anyway.
+
+**The algorithm itself.** Marzullo's Algorithm (developed by Keith
+Marzullo, later adopted as NTP's core selection mechanism) takes each
+source's reported value together with its own stated uncertainty interval,
+and finds the LARGEST subset of sources whose intervals all mutually
+overlap. Every source inside that overlapping subset is trusted and
+combined into the final answer; every source outside it is rejected
+outright as a "false ticker" -- without the algorithm ever needing to know
+in advance which specific source would be the bad one. The overlap
+condition does the work of identifying the liar after the fact, from the
+disagreement pattern itself.
+
+**The precise, quantified robustness threshold.** The algorithm is
+well-defined and produces an answer with as few as 3 sources, but formal
+analysis of its robustness (how reliably it produces the CORRECT answer
+in the presence of exactly one lying source) shows it is only genuinely
+robust starting at 4 sources. With 3 sources and one disagreeing, the
+largest-overlapping-subset selection can be ambiguous or can still be
+distorted by where the bad source's interval happens to fall relative to
+the other two -- there isn't necessarily a clearly larger subset to prefer.
+With 4 sources, one liar's interval can always be safely excluded while
+the remaining three's overlap is used, without ambiguity about which
+subset is larger. This is a specific, derived number from the algorithm's
+own formal properties, not an approximate rule of thumb picked by
+convention.
+
+**Applied directly to this role's own Debate mechanism.** A finding that
+remains genuinely contested after Debate -- the build agent's explanation
+actually sought, actually weighed, and the disagreement still standing --
+is structurally a 2-source situation: this role's own evidence as one
+source, the agent's explanation as the other. By Marzullo's own robustness
+result, 2 sources sits well below the 4-source threshold needed to safely
+resolve which side is actually correct from the disagreement pattern
+alone; at 2, there is no principled way to pick a winner without simply
+asserting authority for one side, which is exactly the unilateral-verdict
+failure Debate exists to avoid in the first place. Reaching a genuine third
+independent source -- someone or something that did not merely re-examine
+the same first two positions -- moves the situation to 3, and a fourth
+moves it to the robust range where a lying or mistaken single source can
+be safely outvoted rather than merely argued with.
+
+**Stratum, and the specific failure of conflating it with correctness.**
+NTP organizes its time sources into numbered "strata": stratum 1 servers
+connect directly to an authoritative reference (an atomic clock, a GPS
+receiver); stratum 2 servers synchronize FROM a stratum-1 server; stratum
+3 from stratum 2, and so on. A lower stratum number means fewer hops of
+derivation from the original authoritative source -- and NOTHING ELSE. A
+stratum-1 server whose own local hardware clock has drifted, failed, or
+been misconfigured is still, right now, a false ticker, regardless of its
+proximity to the ultimate reference. The protocol's own design treats
+stratum purely as a distance measurement, never as a correctness
+guarantee, and NTP clients still apply Marzullo's Algorithm across
+multiple sources even when one of them is stratum 1 -- proximity to the
+source does not exempt a server from being wrong. The direct, named
+warning this produces: "closer to the original commit," "fewer
+transformations applied," or "read directly from the primary artifact"
+answers a question about DISTANCE from the source, not a question about
+whether that particular reading is correct right now, and treating the
+first as a proxy for the second is a specific, well-understood mistake in
+the field this mechanism comes from.

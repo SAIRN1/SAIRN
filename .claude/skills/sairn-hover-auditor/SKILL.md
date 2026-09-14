@@ -818,7 +818,64 @@ one check or one question that addresses all of them together. A verdict
 that survives a single comprehensive challenge is real evidence; a verdict
 that has merely outlasted a sequence of individually weaker challenges,
 each closing only the door it was aimed at, is not the same strength of
-claim. Full account: `references/case-studies.md`.
+claim.
+
+**Marzullo's Algorithm -- the formal, named answer to exactly this role's
+own Debate problem, not an analogy borrowed from elsewhere.** This is the
+real consensus mechanism NTP (Network Time Protocol) uses to decide which
+time source to trust when multiple independent sources disagree and there
+is no way to know in advance which one is wrong. Every source reports a
+value plus a stated uncertainty interval; the algorithm finds the LARGEST
+subset of sources whose intervals all overlap with each other. Sources
+inside that overlapping subset are trusted and averaged; sources outside
+it are rejected outright as "false tickers," without needing to know in
+advance which specific source would lie.
+
+**A real, quantified robustness requirement this role should hold itself
+to, not just the mechanism.** Marzullo's Algorithm technically produces an
+answer with as few as 3 sources, but it is only genuinely ROBUST at 4 or
+more. With 3 sources and one disagreeing, the overlapping-subset selection
+can deadlock (no subset of size 2 is clearly better than another) or a
+single bad source can still distort the result depending on how the
+intervals happen to fall. With 4 sources, one liar can be safely outvoted
+by the other three without ambiguity. This is a precise, field-tested
+number, not a rule of thumb.
+
+**Why a genuinely contested Debate is structurally under-sourced, and
+the real fix.** A finding still contested after Debate -- the build agent's
+explanation heard and weighed against this role's own read -- is exactly a
+2-SOURCE comparison: this role's evidence on one side, the agent's
+explanation on the other. Per Marzullo's own robustness result, 2 sources
+is well below the threshold needed to safely determine which side is
+actually wrong; with only 2, disagreement alone gives no principled way to
+pick a winner, only two conflicting claims sitting side by side. The real,
+adoptable addition: when Debate leaves a finding STILL genuinely contested
+after both sides have actually been heard -- not merely when uncertain
+going in -- get a real third independent read specifically to reach a safe
+consensus count, not as extra caution layered on top. Chat's own direct
+check, or a different build agent's independent look, both genuinely add a
+third source; re-reading the same evidence a second time by the same
+auditor does not, because it is not actually independent of the first
+read.
+
+**Stratum ≠ correctness -- a real, named, sharp distinction from the same
+protocol, worth holding as its own warning.** NTP's servers are organized
+into "strata": a stratum-1 server sits directly against an atomic clock or
+GPS receiver, a stratum-2 server takes its time from a stratum-1 server,
+and so on -- a lower stratum number means fewer hops from the original
+authoritative source. Critically, stratum says NOTHING about whether that
+specific server is currently correct RIGHT NOW: a stratum-1 server can
+still be a false ticker if its own hardware clock has drifted or failed,
+regardless of how close to the original source it nominally sits.
+Applied here as a real warning against a specific, easy-to-make mistake in
+step 2 of a deep pass and in weighing Madoff-style evidence independence
+above: do not let "closer to the original commit," "less transformed,"
+or "fewer hops from the raw source" quietly stand in for "more likely
+correct." Provenance-distance and correctness are two genuinely different
+axes -- a value that has passed through fewer transformations is not
+automatically the more trustworthy one, and this field has a precise,
+named failure mode for the exact mistake of conflating the two. Full
+account of both: `references/case-studies.md`.
 
 **Track a real, earned calibration number from Debate outcomes, not a
 stated-up-front guess.** Real principle (the IRS's own "no-change rate" --
