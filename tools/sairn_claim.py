@@ -643,7 +643,18 @@ def save_mine(doc, message, push):
     sh(['git', 'add', rel])
     if not sh(['git', 'diff', '--cached', '--name-only']):
         print('  (no change to commit)')
-        # Nothing to publish, so nothing can be invisible.
+        # ── "NOTHING TO COMMIT" IS NOT "NOTHING TO PUBLISH" (2026-09-14) ──────
+        # The comment here used to read "Nothing to publish, so nothing can be
+        # invisible", and that is false in the one case that matters: an EARLIER
+        # run already wrote this exact file and committed it, and its push
+        # failed. The local file then matches, this returns True, and the caller
+        # prints CLAIMED over a commit no other clone can see. cmd_release()
+        # already guards this exact case in its own no-match branch; the write
+        # path did not.
+        if push and not on_origin(sh(['git', 'rev-parse', 'HEAD'])):
+            print('  ...but HEAD is not on origin/main, so an earlier write may '
+                  'be committed here and unpublished. Publishing it.')
+            return push_verified()
         return True
     sh(['git', 'commit', '-q', '-m', message])
     print('  committed: %s' % message.split('\n')[0])
@@ -696,7 +707,25 @@ def push_verified():
           'therefore INVISIBLE to every other clone -- treat this as NOT CLAIMED.')
     if last_err:
         print('  last error: ' + last_err)
-    print('  Push it yourself, then confirm with: python tools/sairn_claim.py list')
+    # ── NAME THE DIRTY TREE, BECAUSE IT IS THE CAUSE AND "push it yourself"
+    #    WILL NOT WORK EITHER (2026-09-14) ─────────────────────────────────────
+    # Measured cause of every failure in this session: one unstaged file makes
+    # `git rebase origin/main` exit 1 with "cannot rebase: You have unstaged
+    # changes" on all three attempts, so the push never runs. git's own line was
+    # printed as `last error` and read straight past, because the headline said
+    # to push and pushing by hand fails identically. The actionable instruction
+    # is to clean the tree.
+    dirty = sh(['git', 'status', '--porcelain', '--untracked-files=no'],
+               check=False)
+    if dirty:
+        print('')
+        print('  THE WORKING TREE IS DIRTY, AND THAT IS ALMOST CERTAINLY WHY.')
+        print('  `git rebase` refuses outright with unstaged changes, so no push')
+        print('  was ever attempted. Commit or stash these, then re-run the same')
+        print('  claim -- re-running is a RETRY and will not add a second entry:')
+        for line in dirty.split('\n')[:8]:
+            print('    ' + line)
+    print('  Then confirm with: python tools/sairn_claim.py list')
     return False
 
 
@@ -843,6 +872,48 @@ def cmd_claim(args):
     doc = load_mine()
     ts = now()
     doc['session'] = session_name()
+
+    # ── RE-CLAIMING THE SAME THING IS A RETRY, NOT A SECOND CLAIM ─────────────
+    # Added 2026-09-14 after six unreleased claims appeared in the record, three
+    # of them IDENTICAL and 30-45 seconds apart from this session, and three more
+    # 13-29 seconds apart from cc the same hour. Neither was a loop and neither
+    # was carelessness: save_mine() COMMITS the claim before it pushes, and when
+    # the push fails it prints "treat this as NOT CLAIMED" and LEAVES THE COMMIT
+    # THERE. The operator does the sensible thing and re-runs; each re-run
+    # appends another entry; and whatever pushes next publishes all of them.
+    #
+    # So the tool reported a refusal it had not performed, and the claim it said
+    # did not happen happened anyway, later, three times. That is PR 1.11's shape
+    # on the WRITE side -- f5855e31 fixed the same family on the READ side, where
+    # `check` printed CLEAR after its fetch had failed.
+    #
+    # REPRODUCED, NOT INFERRED: the trigger was one unstaged file in the working
+    # tree. `git rebase origin/main` then exits 1 with "cannot rebase: You have
+    # unstaged changes" on all three attempts, so the push never gets to run.
+    same = [c for c in doc['claims']
+            if c.get('status') == 'active'
+            and c.get('subject') == subj
+            and c.get('task') == task]
+    if same:
+        print('\nALREADY CLAIMED BY THIS SESSION -- not adding a second entry.')
+        print('  claimed at: %s' % same[-1].get('claimed_at'))
+        print('  This is a RETRY of the same claim, so the only thing left to do')
+        print('  is publish the commit that is already sitting here.')
+        if args.no_push:
+            print('  --no-push: nothing published. Other clones still cannot see it.')
+            return 3
+        if on_origin(sh(['git', 'rev-parse', 'HEAD'])):
+            print('  ...and it is already on origin/main. Nothing to do.')
+            return 0
+        if not push_verified():
+            print('\nSTILL NOT CLAIMED -- the earlier claim is committed here and')
+            print('every other clone still sees this work as unclaimed.')
+            return 3
+        print('\nCLAIMED (the earlier entry, now published). Release it when the '
+              'work closes:')
+        print('  python tools/sairn_claim.py release %s' % subj)
+        return 0
+
     doc['claims'].append({
         'id': '%s-%d' % (session_name(), int(ts)),
         'session': session_name(),
@@ -860,7 +931,14 @@ def cmd_claim(args):
         # non-zero so a script cannot read this as success either.
         print('\nNOT CLAIMED -- the claim did not reach origin/main, so every other')
         print('clone still sees this work as unclaimed and can start it.')
-        print('Fix the push and re-run, or write the claim by hand and push it.')
+        # The entry IS written and committed here; that is not a leak any more
+        # because re-running the same claim is now a retry rather than a second
+        # entry. Say so, so the obvious next action is also the safe one --
+        # before this, "re-run" is exactly what produced three identical claims.
+        print('Clear whatever the reason above names, then RE-RUN THIS SAME '
+              'COMMAND.')
+        print('It is a retry: the entry already written will be published, and '
+              'no second entry is added.')
         return 3
     print('\nCLAIMED. Release it when the work closes:')
     print('  python tools/sairn_claim.py release %s' % subj)

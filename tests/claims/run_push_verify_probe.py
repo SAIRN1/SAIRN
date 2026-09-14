@@ -331,6 +331,124 @@ def main():
               'git commands executed: %s' % sorted(set(executed)))
         check('...and reads origin/main with `git show`', 'show' in executed,
               'git commands executed: %s' % sorted(set(executed)))
+
+        # ── 9. A RE-RUN AFTER A FAILED PUSH IS A RETRY, NOT A SECOND CLAIM ───
+        # Added 2026-09-14. Section 1-5 fixed the tool LYING about a claim that
+        # did not land. What it did not fix is what the operator does next: the
+        # failure message says to re-run, each re-run APPENDED another entry,
+        # and whatever pushed later published all of them. Six unreleased claims
+        # appeared in the real record, three identical from `fourth` 30-45s
+        # apart and three from `cc` 13-29s apart the same hour -- two sessions,
+        # same shape, neither a loop.
+        #
+        # The trigger is reproduced here rather than described: ONE unstaged
+        # file makes `git rebase origin/main` exit 1 outright, so no push is
+        # ever attempted and all three attempts fail identically.
+        print('\n9. a failed push, then a re-run -- one entry, not two')
+        git(clone, 'checkout', '--', '.claude/claims/probe.json', check=False)
+        # Make the push impossible in the way it really failed: an unstaged
+        # change to a TRACKED file. tools/sairn_claim.py is untracked in this
+        # clone (build() copies it in), and an untracked file does NOT block a
+        # rebase -- using it here would have made the whole section vacuous.
+        DIRTY = os.path.join(clone, '.claude', 'claims', 'README.md')
+        with open(DIRTY, 'a', encoding='utf-8') as f:
+            f.write('probe: an unstaged change, which is what blocks rebase\n')
+        dirty_now = git(clone, 'status', '--porcelain', '--untracked-files=no',
+                        check=False).stdout.strip()
+        check('the reproduction really did dirty a TRACKED file -- otherwise 9 '
+              'proves nothing', dirty_now != '',
+              'tree is clean; the rest of section 9 is vacuous')
+
+        rc1, out1 = run_tool(clone, 'claim', 'probe', 'retry arm task')
+        check('a claim that cannot be pushed exits 3', rc1 == 3, out1[-400:])
+        check('...and says NOT CLAIMED rather than CLAIMED',
+              'NOT CLAIMED' in out1, out1[-400:])
+        check('...and NAMES THE DIRTY TREE as the cause, not just "push it yourself"',
+              'WORKING TREE IS DIRTY' in out1, out1[-600:])
+        check('...and tells the operator re-running is safe',
+              'no second entry' in out1 or 'RETRY' in out1, out1[-600:])
+
+        def entries(task):
+            p = os.path.join(clone, '.claude', 'claims', 'probe.json')
+            with open(p, encoding='utf-8') as f:
+                return [c for c in json.load(f)['claims'] if c.get('task') == task]
+
+        check('the entry IS written locally -- which is exactly why a re-run must '
+              'not add another', len(entries('retry arm task')) == 1,
+              str(len(entries('retry arm task'))))
+
+        rc2, out2 = run_tool(clone, 'claim', 'probe', 'retry arm task')
+        check('the re-run is recognised as a retry',
+              'ALREADY CLAIMED BY THIS SESSION' in out2, out2[-400:])
+        check('...and adds NO second entry -- the defect this arm exists for',
+              len(entries('retry arm task')) == 1,
+              'entries: %d' % len(entries('retry arm task')))
+        check('...and still exits non-zero while it is unpublished', rc2 == 3,
+              'rc=%s\n%s' % (rc2, out2[-300:]))
+
+        # Now clear the real obstacle and re-run once more: the entry already
+        # written must be PUBLISHED, still without a second entry.
+        git(clone, 'checkout', '--', '.claude/claims/README.md')
+        rc3, out3 = run_tool(clone, 'claim', 'probe', 'retry arm task')
+        check('once the tree is clean the retry publishes the earlier entry',
+              rc3 == 0, 'rc=%s\n%s' % (rc3, out3[-400:]))
+        origin_doc = claims_on_origin(clone, 'probe') or {'claims': []}
+        landed = [c for c in origin_doc['claims'] if c.get('task') == 'retry arm task']
+        check('...and origin/main carries exactly ONE claim for that task',
+              len(landed) == 1, 'on origin: %d' % len(landed))
+        check('...and it is active', landed and landed[0].get('status') == 'active',
+              str(landed))
+
+        # ── 10. "nothing to commit" is not "nothing to publish" ──────────────
+        # save_mine()'s early return said "Nothing to publish, so nothing can be
+        # invisible". False in the one case that matters: an earlier run wrote
+        # this exact file, committed it, and its push failed -- the local file
+        # then matches, the early return fired, and the caller printed CLAIMED
+        # over a commit no other clone could see.
+        # save_mine() IS DRIVEN DIRECTLY HERE, and the reason is a failure this
+        # arm had on its first version. Written as a `claim` re-run, it passed
+        # with the fix SABOTAGED -- because the section-9 idempotency guard
+        # catches that case first and save_mine's early return is never reached.
+        # A passing arm that never enters the branch it names is worth less than
+        # no arm. The branch is genuinely live: cmd_release() calls save_mine too.
+        print('\n10. an unpushed commit is republished, not reported clean')
+        rc4, out4 = run_tool(clone, 'claim', 'probe', 'unpushed arm task')
+        check('a normal claim lands first', rc4 == 0, out4[-300:])
+
+        head = git(clone, 'rev-parse', 'HEAD').stdout.strip()
+        git(clone, 'push', '-q', '--force', 'origin', 'HEAD~1:main')
+        git(clone, 'fetch', 'origin')
+        check('the rewind really unpublished it -- otherwise arm 10 is vacuous',
+              git(clone, 'merge-base', '--is-ancestor', head, 'origin/main',
+                  check=False).returncode != 0, 'still an ancestor')
+
+        # Import the clone's own copy so REPO/CLAIM_DIR resolve to the probe
+        # tree, and call save_mine with the doc exactly as it is on disk: no
+        # change to commit, but a commit sitting here unpublished.
+        drive = (
+            'import sys, json, io, os\n'
+            'sys.path.insert(0, %r)\n'
+            'import sairn_claim as S\n'
+            'doc = S.load_mine()\n'
+            'print("SAVE_MINE_RETURNED", S.save_mine(doc, "chore(claims): probe no-op", True))\n'
+        ) % os.path.join(clone, 'tools')
+        r = subprocess.run([sys.executable, '-c', drive], cwd=clone,
+                           capture_output=True, text=True)
+        out5 = (r.stdout or '') + (r.stderr or '')
+        check('save_mine really took its no-change path -- otherwise this is a '
+              'different test', '(no change to commit)' in out5, out5[-400:])
+        check('...and it does NOT report success over an unpublished commit',
+              'SAVE_MINE_RETURNED True' in out5 and 'not on origin/main' in out5,
+              out5[-500:])
+        check('...it republishes instead',
+              git(clone, 'merge-base', '--is-ancestor', head, 'origin/main',
+                  check=False).returncode == 0
+              if 'SAVE_MINE_RETURNED True' in out5 else False,
+              out5[-500:])
+        check('...and origin/main carries the claim again',
+              any(c.get('task') == 'unpushed arm task'
+                  for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']),
+              out5[-400:])
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 
