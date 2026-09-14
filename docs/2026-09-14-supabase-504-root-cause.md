@@ -147,6 +147,38 @@ it is not confirmation. Three more shots at `:00:50` are running, each to be
 paired with that hour's cron outcome; an hour with no cron 502 yields **no
 data** and is counted neither way.
 
+### 4a. Two more hours, and the collateral-damage claim does not survive them
+
+| Hour | send-reminder | alf-alerts | `api/claude` at `:00:5x` |
+|---|---|---|---|
+| 10:00 | **504** | **504** | **timed out** |
+| 11:00 | ok | ok | clean |
+| 12:00 | **504** | ok | clean |
+| 13:00 | ok | **504** | clean |
+
+**Both specific forms of the hypothesis are now refuted.**
+
+- *"Any cron 504 saturates the database"* — refuted at **12:00**: send-reminder
+  timed out and `api/claude` 25 seconds later was clean.
+- *"`alf-alerts` specifically is the heavy one that takes others down"* —
+  refuted at **13:00**: `alf-alerts` timed out and `api/claude` **13 seconds
+  later** was clean. This was the narrower claim I had reported as 3-for-3 on
+  three hours of data; the fourth hour broke it, which is what a fourth hour is
+  for.
+
+The only surviving form is *"it takes BOTH sweeps failing together"*, and that
+rests on **one** observation — the 10:00 hour. At n=1 it is not distinguishable
+from coincidence, and it should not be repeated as a finding.
+
+**So `api/claude`'s two 504s are not explained.** What remains true is narrower
+and still worth acting on: each cron's own failure rate, and the unbounded query
+behind one of them. **§3 is unaffected** — the query text, the missing `dayStr`
+filter and the index list are facts about the code, and `alf-alerts` failing 5
+times in 12 hours is measured, not inferred. The fix in §5 was justified as
+*"so it stops taking other crons down with it"*, and **that justification is
+gone while the fix itself still stands on `alf-alerts`' own numbers.** Recorded
+rather than quietly re-motivated.
+
 ## 5. What the fix looks like
 
 Neither of these needs Supabase support.
