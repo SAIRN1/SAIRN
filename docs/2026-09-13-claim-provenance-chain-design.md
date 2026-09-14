@@ -108,7 +108,7 @@ attestation saying the same thing is weaker evidence, not equal evidence.
 
 **Answer: Tier A only, and the number is why.**
 
-Measured: **382 registered resources, 78 Tier A.** Universal scope means
+Measured: **382 registered resources, ~~78 Tier A~~ → 80 Tier A.** Universal scope means
 provenance on 382 subjects, most of which are Tier B operational data and Tier C
 preference stores where the consequence of a stale claim is somebody refreshing
 a screen.
@@ -117,8 +117,20 @@ a screen.
 everything gets skimmed. The platform already has the worked example: the
 testability gate flagged **70% of the requirements corpus** on its first run and
 the honest reading was miscalibration, not 123 junk requirements — a signal that
-covers everything carries no information. Tier A is 78 subjects, each already
+covers everything carries no information. Tier A is ~~78~~ 80 subjects, each already
 carrying evidence in `docs/CRITICALITY-TIERS.md`, and a reader can hold that.
+
+> **Both counts corrected 2026-09-14 (fourth), and the drift is the design
+> working rather than the design decaying.** `78` was true as written on
+> 2026-09-13. The commit *"feat(sairnbiz): the three-way match's own two
+> documents reach a server"* tiered two more resources A, and because scope is
+> derived from the register rather than from a second list, those two entered
+> the chain with nothing to keep in step — which is exactly what the escape
+> hatch below promises. Read 2026-09-14: `python tools/claim_provenance.py
+> scope` reports 80, and an independent `awk -F'|'` count of column 3 in
+> `docs/CRITICALITY-TIERS.md` agrees at 80. Two structurally different readers,
+> not one read twice. **The figure has a tense and will drift again — re-read
+> it, do not cite this line.**
 
 **Confirmed rather than assumed, which is what was asked.** Two things make Tier
 A the right boundary beyond its size: the tier register **already exists and is
@@ -140,7 +152,7 @@ keep in step.
 **Not small, and the largest part is not the code.** The mechanism is perhaps a
 session: a claim record (subject, type, observation instant, method, author,
 reproduction path), a per-type freshness table, and a checker that reports claims
-whose interval has lapsed. **The expensive part is that 78 Tier A subjects need
+whose interval has lapsed. **The expensive part is that ~~78~~ 80 Tier A subjects need
 their current claims located and classified**, and most of them live in prose
 inside `docs/SAIRN-OPEN-WORK-INDEX.md` rather than in any structured field.
 
@@ -171,3 +183,66 @@ three measurement passes in a row produced TOO-FEW-RUNS.
   503) and the one the chain most needs to be able to say.
 - **Whether the chain itself needs a provenance chain.** It does, and the
   regress has to stop somewhere; naming where is a decision, not a derivation.
+
+---
+
+## BUILT — 2026-09-14 (fourth), the recording side only
+
+`tools/claim_provenance.py`, commit subject *"feat(provenance): item 23
+recording side -- and a second subject kind that only running it exposed"*. The
+recommendation above was followed exactly: **it records and deliberately does
+not judge.** The ledger is `docs/claim-provenance.json`, 3 records as of
+2026-09-14T17:44Z. The checking side is not built.
+
+### What USING it found that reading the design would not have
+
+**The first real claim anybody tried to record had no valid subject.** It was
+*"this migration was run and verified"* — and Q3's answer derives scope from the
+**resource** register, so there was no legal way to name it. The type
+`migration-run` already sat in the tool's own freshness table describing the
+human-attested foundation the whole chain rests on (Q2), **with nothing it could
+legally be about.** That is an inconsistency between Q2 and Q3 that survived
+being designed, reviewed and written down, and it took about a minute of actual
+use to surface.
+
+**The fix, and what it deliberately is not.** A second subject kind,
+`migration:<file>.sql`, whose filename must name a real file in `sql/`. It is
+**not** widened to free text: Q3's dilution argument is right and a chain
+covering everything gets skimmed. The filename is still derived from the repo,
+so there is still no second list to keep in step — the same discipline as the
+tier register, applied to a different source.
+
+### Q3 is amended, not overturned
+
+Scope is still Tier A only for resources. But **"Tier A only" was stated as if
+the tier register enumerated every namable thing, and it does not** — it
+enumerates resources. A claim can be about an *event* (a migration ran) as well
+as about a *resource*, and the design had no vocabulary for the first even
+though Q2 made one the foundation. Read the two answers together before adding
+a third subject kind.
+
+### What was verified, by use rather than by reading
+
+- Refusal path: `migration:` naming a file absent from `sql/` → exit 1, nothing
+  written.
+- Two `measured` records (`mech_credentials`, `sen_payer_contracts`) from
+  `tools/schema_snapshot_freshness.py`.
+- One `derived` migration record, **scoped to the two `CREATE TABLE`s it can
+  actually evidence** — table presence does not evidence columns, grants or
+  indexes, and it says so in the record rather than overclaiming.
+- The attestation downgrade branch — named above as the most abusable part —
+  exercised against a throwaway ledger, so the most abusable path is not also
+  the untested one.
+
+**The observed/recorded gap is already earning its place.** All three records
+carry `observed_at 2026-09-13T18:39:55Z` against `recorded_at 2026-09-14T17:44Z`
+— a 23-hour gap. Stamping "now" as the observation instant would have erased it,
+in the same direction as the 18.7-hour understatement this design cites.
+
+### Still not settled, and this build did not touch it
+
+All three items above remain open. **A fourth is added by having built it:** the
+checker cannot be written against 3 records. The recommendation says let the
+chain accumulate for a fortnight, so the earliest honest date for the checking
+side is **2026-09-28**, and building it sooner reproduces the exact failure
+(items 2/24 and 4) this order exists to avoid.
