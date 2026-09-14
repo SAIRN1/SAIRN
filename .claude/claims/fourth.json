@@ -1242,6 +1242,16 @@
       "claimed_at_epoch": 1789404764.021253,
       "status": "released",
       "released_at": "2026-09-14T16:58:45Z"
+    },
+    {
+      "id": "fourth-1789405142",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item-78-formal-spec-role-gates",
+      "claimed_at": "2026-09-14T16:59:02Z",
+      "claimed_at_epoch": 1789405142.7388484,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
