@@ -1405,6 +1405,16 @@
       "claimed_at_epoch": 1789340635.6568356,
       "status": "released",
       "released_at": "2026-09-13T23:17:32Z"
+    },
+    {
+      "id": "hank-1789380281",
+      "session": "hank",
+      "subject": "fmea-drafts",
+      "task": "fmea draft coverage for code files carrying defects",
+      "claimed_at": "2026-09-14T10:04:41Z",
+      "claimed_at_epoch": 1789380281.2572215,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
