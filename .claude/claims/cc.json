@@ -1192,8 +1192,8 @@
       "task": "combine flip rate stability with control pair evidence into one signal",
       "claimed_at": "2026-09-14T13:57:24Z",
       "claimed_at_epoch": 1789394244.2819228,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T14:03:46Z"
     }
   ]
 }
