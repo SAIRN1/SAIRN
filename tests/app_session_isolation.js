@@ -1,0 +1,282 @@
+// tests/app_session_isolation.js  -- item 69
+//
+// Run:  node tests/app_session_isolation.js
+//
+// TWO QUESTIONS, AND THEY ARE NOT THE SAME ONE.
+//
+//   1. WHERE A SESSION GATE EXISTS, does it keep one app's session out of
+//      another app's data? (Sections 1-3.)
+//   2. WHERE DOES A SESSION GATE EXIST AT ALL? (Section 4 -- the posture map.)
+//
+// `api/_resources/app-boundary.test.js` already answers a third question, the
+// LICENCE half: a licence whose `app_id` is `stonedesk` cannot address
+// `law_matters`. This suite is the other two, and question 1 is not covered by
+// that one, because the licence boundary is DELIBERATELY OPEN for an
+// unattributable licence:
+//
+//     "an unattributable licence is NOT gated -- the documented fallback"
+//
+// That fallback is correct and was argued for. But it means that for a licence
+// with no `app_id` -- the whole pre-2026-09-04 population, which nobody can
+// enumerate -- THE ONLY THING BETWEEN ONE APP'S SESSION AND ANOTHER APP'S DATA
+// IS THE `expectedApp` ARGUMENT INSIDE EACH BRANCH.
+//
+// ── A STATIC VERSION WAS TRIED FIRST AND ABANDONED, and the reason generalises
+// Attributing a resource map to the `verifySessionToken` call that gates it BY
+// TEXT REGION over-reported in both directions: bounded backwards it picked up
+// the tail of the previous branch and reported SAIRNlegacy's resources as gated
+// by SAIRNdental; bounded by the next declaration it ran past its own branch
+// and did it again. That is the same over-reach `removal_path_check.py` records
+// about its 2500-character window, arrived at independently on a different
+// file. DRIVING THE REAL HANDLER HAS NO REGION PROBLEM -- the handler decides
+// and this only reads the answer.
+
+'use strict';
+const assert = require('assert');
+const path = require('path');
+
+const ROOT = path.join(__dirname, '..');
+// Assembled rather than written as a literal assignment, so this file carries
+// nothing credential-shaped -- the same convention
+// tests/sairncare/test-alf-alerts-endpoint.js uses. Set BEFORE api/_lib/auth.js
+// is required, which reads the value at module load.
+process.env[['SD', 'AUTH', 'SECRET'].join('_')] =
+  ['app', 'session', 'isolation', 'fixture', String(process.pid)].join('-');
+
+const auth = require(path.join(ROOT, 'api/_lib/auth.js'));
+const reg = require(path.join(ROOT, 'api/_resources'));
+const HANDLER = path.join(ROOT, 'api/sd-data.js');
+
+let n = 0;
+function ok(cond, label) { assert.ok(cond, label); n++; console.log('  ok   ' + label); }
+function section(s) { console.log('\n' + s); }
+
+// THE LICENCE HASH IS DERIVED THE WAY THE HANDLER DERIVES IT, not invented.
+// api/_lib/license.js documents license_hash as sha256(license_key) hex and the
+// handler binds the session to THAT value. A token minted against a made-up
+// hash is refused for the right reason by accident, which would make every
+// refusal below meaningless. The control in section 1 caught exactly that on
+// the first run of this file.
+const LICENSE_KEY = 'k';
+const LIC_HASH = require('crypto').createHash('sha256').update(LICENSE_KEY).digest('hex');
+
+function token(app) {
+  return auth.signSessionToken({
+    app: app, role: auth.ROLES_BY_APP[app][0],
+    license_hash: LIC_HASH, employee_id: 'E-ISO'
+  });
+}
+
+function loadHandler() {
+  delete require.cache[require.resolve(HANDLER)];
+  return require(HANDLER);
+}
+
+// Drives the REAL handler with a REAL signed token. The licence lookup is
+// stubbed so the licence-level boundary can be put in either state
+// deliberately; every later fetch answers an honest empty 200, so a branch that
+// gets PAST the session gate returns data rather than an error and the
+// difference between "refused" and "reached" is unmistakable.
+async function call(handler, resource, appId, sessionToken, action) {
+  const out = { code: null, body: null };
+  const res = { status(c) { out.code = c; return res; }, json(b) { out.body = b; return res; },
+                setHeader() {} };
+  const names = { url: ['SUPABASE', 'URL'].join('_'),
+                  key: ['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_') };
+  const envURL = process.env[names.url], envKey = process.env[names.key];
+  const realFetch = global.fetch;
+  process.env[names.url] = 'https://stub.invalid';
+  process.env[names.key] = ['stub', 'fixture', 'value'].join('-');
+  let first = true;
+  global.fetch = async () => {
+    if (first) {
+      first = false;
+      return { ok: true, status: 200, json: async () => [{ status: 'active', app_id: appId }] };
+    }
+    return { ok: true, status: 200, json: async () => [] };
+  };
+  try {
+    const headers = { authorization: 'Bearer ' + LICENSE_KEY };
+    if (sessionToken) headers['x-sd-auth'] = sessionToken;
+    await handler({ method: 'POST', headers: headers,
+                    body: { action: action || 'read', resource: resource, payload: {} } }, res);
+  } finally {
+    global.fetch = realFetch;
+    if (envURL === undefined) delete process.env[names.url]; else process.env[names.url] = envURL;
+    if (envKey === undefined) delete process.env[names.key]; else process.env[names.key] = envKey;
+  }
+  return out;
+}
+
+// One session-gated resource per app that has a gate, chosen for consequence.
+const GATED = [
+  ['sb_payruns', 'sairnbiz'],
+  ['law_invoices', 'sairnlaw'],
+  ['sen_claims', 'sairnsenior'],
+  ['dnt_charges', 'sairndental'],
+];
+
+// ── THE POSTURE MAP: THE HAND-WRITTEN HALF ────────────────────────────────
+// Whether an app SHOULD gate on a session is a judgement, and four of these
+// judgements are already argued in api/sd-data.js. The rest are not written
+// down anywhere, and saying so is the point of this table -- an undocumented
+// posture is not the same as a decided one.
+//
+// `auth` is whether the app has a per-employee auth endpoint at all. An app
+// with no api/<prefix>-auth.js CANNOT have a session gate; one that has it and
+// gates nothing has made a choice nobody recorded.
+const POSTURE = {
+  sairnbiz:        { gate: 'ALL',  auth: true,  why: 'payroll history, performance scores and PIP flags; argued at SB_RESOURCES' },
+  sairncare:       { gate: 'ALL',  auth: true,  why: 'eMAR and resident records' },
+  sairndental:     { gate: 'ALL',  auth: true,  why: 'PHI and the financial tier' },
+  sairnroofing:    { gate: 'ALL',  auth: true,  why: 'claims and claim photos' },
+  sairnsenior:     { gate: 'ALL',  auth: true,  why: 'claims, pay rates and payer contracts' },
+  sairnlaw:        { gate: 'SOME', auth: true,  why: 'PHASE 1 of a deliberate, sequenced rollout (2026-09-05): the fifteen generic resources are gated, four bespoke ones are not YET. See section 5' },
+  sairnbuild:      { gate: 'SOME', auth: true,  why: 'DOCUMENTED at BLD_RESOURCES: the shared job record is read by every role; bld_bids and bld_tna gate because each has a real per-person visibility rule' },
+  stonedesk:       { gate: 'SOME', auth: true,  why: 'DOCUMENTED at SD_LOCAL_RESOURCES: the shared shop record; personnel and financial data gate elsewhere' },
+  sairnmechanical: { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 2 of 6 gate and nothing records why the other four do not' },
+  sairndesign:     { gate: 'SOME', auth: true,  why: 'NOT DOCUMENTED -- 1 of 18 gates (the assignment rule); nothing records the posture for the rest' },
+  sairnvet:        { gate: 'NONE', auth: true,  why: 'DOCUMENTED at SV_RESOURCES: SAIRNvet has NO per-employee authentication -- role is a self-selected dropdown, never server-verified. A gate here would gate on a session that does not exist' },
+  sairnfreedom:    { gate: 'NONE', auth: false, why: 'DOCUMENTED at SF_RESOURCES: no per-employee authentication either' },
+  sairncode:       { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED, and the sharpest of the five: api/sc-auth.js exists, and sc_ar, sc_claims, sc_revenue, sc_denial, sc_compliance and sc_credential_scope are all Tier A' },
+  sairngrounds:    { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/grd-auth.js exists; grd_invoices and msb_licenses are Tier A' },
+  sairnscape:      { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/scp-auth.js exists; scp_quotes and invoices are Tier A' },
+  sairnlegacy:     { gate: 'NONE', auth: true,  why: 'NOT DOCUMENTED -- api/leg-auth.js exists; leg_preneed is Tier A' },
+  shared:          { gate: 'NONE', auth: false, why: 'the cross-app resources. NONE of the seven answers 401 to a no-session read -- five answer something else entirely (they are not plain read/write resources), and render_usage and shared_knowledge are licence-only. Recorded rather than gated: `shared` is not an app and has no session to bind to' },
+  sairncash:       { gate: 'NONE', auth: false, why: 'registers no resources on this endpoint at all' },
+};
+
+// The four SAIRNlaw resources phase 2 will move. Named rather than left out,
+// because a suite that tested only the gated ones would read as "every SAIRNlaw
+// resource is gated" -- the opposite of true for the most consequential one.
+const PHASE_1_UNGATED = ['law_clients', 'law_matters', 'law_trusttx', 'law_deadlines'];
+
+console.log('SAIRN: one app\'s session cannot reach another app\'s gated data\n');
+
+section('0. the fixture really is a token, and really is app-bound');
+{
+  const t = token('sairnbiz');
+  ok(typeof t === 'string' && t.length > 20, 'a SAIRNbiz session token is minted');
+  ok(!!auth.verifySessionToken(t, LIC_HASH, 'sairnbiz'),
+     'it verifies for SAIRNbiz -- so a refusal below is about the APP, not a broken fixture');
+  ok(!auth.verifySessionToken(t, LIC_HASH, 'sairnlaw'),
+     'and does NOT verify for SAIRNlaw at the library level');
+  ok(!auth.verifySessionToken(t, 'OTHER-HASH', 'sairnbiz'),
+     'nor for the same app under a different licence');
+}
+
+(async () => {
+  const h = loadHandler();
+
+  section('1. an unattributable licence -- expectedApp is the only gate left');
+  for (const [resource, owner] of GATED) {
+    ok(reg.OWNER_BY_RESOURCE[resource] === owner,
+       resource + ' is owned by ' + owner + ' in the registry -- the fixture is not stale');
+  }
+  // THE CONTROL COMES FIRST, deliberately. Without it every refusal below could
+  // be a resource that is simply unreachable in this harness, and the suite
+  // would be asserting that nothing works.
+  for (const [resource, owner] of GATED) {
+    const own = await call(h, resource, null, token(owner));
+    ok(own.code !== 401,
+       'CONTROL: ' + owner + '\'s OWN session reaches ' + resource + ' (' + own.code
+       + ') -- so a 401 below is about the app, not the harness');
+  }
+  for (const [resource, owner] of GATED) {
+    for (const [other] of GATED) {
+      if (other === resource) continue;
+      const otherOwner = reg.OWNER_BY_RESOURCE[other];
+      const out = await call(h, resource, null, token(otherOwner));
+      ok(out.code === 401,
+         otherOwner + '\'s session is REFUSED ' + resource + ' (owned by ' + owner
+         + ') -- got ' + out.code);
+    }
+  }
+
+  section('2. no session is not a weak session');
+  for (const [resource, owner] of GATED) {
+    const out = await call(h, resource, null, null);
+    ok(out.code === 401,
+       resource + ' with no token at all is 401, not an empty 200 that reads as "'
+       + owner + ' has no records"');
+  }
+
+  section('3. with an ATTRIBUTABLE licence the boundary refuses first, and differently');
+  {
+    // 400, not 401: a foreign resource must stay indistinguishable from one
+    // that does not exist -- the enumeration oracle app-boundary.test.js
+    // closed. Pinned here so a change to the session gate cannot reopen it by
+    // turning a 400 into a 401.
+    const out = await call(h, 'law_invoices', 'sairnbiz', token('sairnbiz'));
+    const invented = await call(h, '__no_such_resource__', 'sairnbiz', token('sairnbiz'));
+    ok(out.code === invented.code,
+       'a SAIRNbiz licence asking for law_invoices answers exactly as an invented name '
+       + 'does (' + out.code + ') -- the oracle stays closed even with a valid session');
+    ok(out.code !== 401,
+       '...and it is the LICENCE boundary answering, not the session gate -- two locks, '
+       + 'not one counted twice');
+  }
+
+  section('4. THE POSTURE MAP -- where a session gate exists at all');
+  // MEASURED BY DRIVING, then compared with the hand-written table above. A gate
+  // that silently disappears fails here; a gate that appears must be recorded.
+  // The `why` column is the part a tool cannot produce, and five of the rows
+  // say NOT DOCUMENTED, which is a finding rather than a gap in this file.
+  const measured = {};
+  for (const app of reg.APP_NAMES) {
+    const names = reg.RESOURCE_NAMES_BY_APP[app] || [];
+    if (!names.length) { measured[app] = 'NONE'; continue; }
+    let gated = 0;
+    for (const r of names) {
+      // `call` returns {code, body} -- comparing the OBJECT to 401 made every
+      // app measure as ungated, including ones section 2 had just proven were
+      // gated. Caught because the recorded table disagreed with the
+      // measurement, which is the table doing its job.
+      const out = await call(h, r, null, null);
+      if (out.code === 401) gated++;
+    }
+    measured[app] = gated === 0 ? 'NONE' : (gated === names.length ? 'ALL' : 'SOME');
+  }
+  for (const app of Object.keys(measured)) {
+    ok(POSTURE[app] && POSTURE[app].gate === measured[app],
+       app + ': measured ' + measured[app] + ', recorded '
+       + ((POSTURE[app] && POSTURE[app].gate) || 'NOTHING')
+       + (POSTURE[app] ? ' -- ' + POSTURE[app].why.slice(0, 90) : ' -- ADD A ROW WITH A REASON'));
+  }
+  const undocumented = Object.keys(POSTURE).filter((a) => /NOT DOCUMENTED/.test(POSTURE[a].why));
+  ok(undocumented.length > 0,
+     'CONTROL: the table really does distinguish documented from undocumented postures '
+     + '(' + undocumented.length + ' undocumented: ' + undocumented.join(', ') + ') -- if this '
+     + 'ever reads zero, check that the postures were WRITTEN DOWN rather than that the '
+     + 'column stopped working');
+
+  section('5. the SAIRNlaw phase-1 split -- a KNOWN state, asserted so it cannot drift');
+  // NOT A FINDING. api/sd-data.js records this as PHASE 1 OF THE SESSION GATE
+  // (2026-09-05): flipping these four in the same commit would have broken a
+  // staff member mid-session ON TRUST-MONEY WRITES, because Vercel deploys the
+  // page and the endpoint together and a cached page sends no token.
+  //
+  // THE TRIGGER, from the open-work row: once the fifteen have been writing
+  // cleanly for a full working day with no session complaints, these four move
+  // behind the same check -- AND THIS SECTION MUST THEN BE INVERTED, NOT
+  // DELETED. Deleting it removes the only mechanical record the split existed.
+  //
+  // AND THE PART WORTH SAYING OUT LOUD: THE CANARY IS SILENCE, and a silent
+  // canary and a healthy canary look identical. "No session complaints" is
+  // evidence the fifteen are not FAILING; it is not evidence they are being
+  // USED. The trigger cannot be confirmed from an error table alone.
+  for (const resource of PHASE_1_UNGATED) {
+    const out = await call(h, resource, null, null);
+    ok(out.code !== 401,
+       'PHASE 1 (2026-09-05, still open): ' + resource + ' is reachable with the LICENCE '
+       + 'ALONE -- no session -- and answers ' + out.code
+       + '. When phase 2 lands, INVERT this arm rather than deleting it');
+  }
+  ok(PHASE_1_UNGATED.indexOf('law_trusttx') !== -1,
+     '...and the list still names law_trusttx: attorney CLIENT TRUST MONEY, Tier A, the '
+     + 'one balance a bar association audits, with no removal path. If it leaves this list '
+     + 'because it was gated, invert the arm; if it leaves because somebody trimmed the '
+     + 'list, that is a defect');
+
+  console.log('\nALL ' + n + ' ASSERTIONS PASS');
+})().catch((e) => { console.error('\nFAILED: ' + (e && e.message)); process.exit(1); });

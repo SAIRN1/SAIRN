@@ -2712,3 +2712,76 @@ reverting to the `process.env`-only heuristic leaves `ANTHROPIC_API_KEY`, `STABI
 It reads the CODE, not the deployment, so it cannot say whether a variable is SET. The exception is
 recorded because it came from production: **`SAIRN_OPS_EMAIL` is unset**, and every cron-watchdog
 alert on 2026-09-14 said so in its own error text -- **the watchdog's alerts currently go nowhere.**
+
+
+---
+
+## 2026-09-14 -- item 69: per-app session isolation, and the posture map
+
+### Three questions, and only one was already answered
+
+`api/_resources/app-boundary.test.js` covers the LICENCE half. This covers the other two:
+**where a gate exists, does it keep one app's SESSION out of another app's data** -- and
+**where does a gate exist at all.**
+
+Question 1 is not covered by the licence boundary, because that boundary is **deliberately open
+for an unattributable licence** (the documented pre-2026-09-04 fallback, which nobody can
+enumerate). For those licences the only thing between one app's session and another app's data is
+the `expectedApp` argument inside each branch.
+
+Driven with REAL signed tokens against the REAL handler. **Every cross-app pair is refused 401**,
+with a CONTROL first that each app's own session reaches its own resource. **Mutation control:
+dropping the third argument from the SAIRNbiz gate lets a SAIRNlaw session read `sb_payruns` --
+200.**
+
+### Question 2 is the posture map, and it is the deliverable
+
+| posture | apps |
+|---|---|
+| gates **ALL** | `sairnbiz`, `sairncare`, `sairndental`, `sairnroofing`, `sairnsenior` |
+| gates **SOME** | `sairnlaw` 15/19, `stonedesk` 6/36, `sairnbuild` 2/32, `sairnmechanical` 2/6, `sairndesign` 1/18 |
+| gates **NONE** | `sairnvet` 0/41, `sairnfreedom` 0/35, `sairnlegacy` 0/36, `sairncode` 0/28, `sairngrounds` 0/30, `sairnscape` 0/12 |
+
+Measured by driving, asserted against a hand-written table with a reason per app.
+
+**Four postures are argued in the code and are NOT findings:** `sairnvet` and `sairnfreedom` have
+no per-employee authentication at all -- a gate would gate on a session that does not exist;
+`sairnbuild` and `stonedesk` leave the shared job/shop record ungated because every role reads it.
+
+**SIX ARE NOT DOCUMENTED ANYWHERE, and every one of them HAS an auth endpoint:** `sairncode`,
+`sairnlegacy`, `sairngrounds`, `sairnscape`, `sairndesign`, `sairnmechanical`. **SAIRNcode is the
+sharpest: `sc_ar`, `sc_claims`, `sc_revenue`, `sc_denial`, `sc_compliance` and
+`sc_credential_scope` are all Tier A and none of the 28 requires a session.**
+
+**An undocumented posture is not a decided one.**
+
+### A documented rollout nine days past its trigger
+
+`api/sd-data.js` records PHASE 1 (2026-09-05): the fifteen generic SAIRNlaw resources were gated,
+and `law_clients`, `law_matters`, `law_trusttx`, `law_deadlines` deliberately were not -- flipping
+them in one commit would have broken a staff member **mid-session on trust-money writes**. The
+trigger: *once the fifteen have been writing cleanly for a full working day with no session
+complaints, move the four.*
+
+**`law_trusttx` -- attorney client trust money, Tier A -- is still reachable with the licence key
+alone.**
+
+**The trigger cannot be confirmed from what is available.** Vercel's seven-day error table shows no
+session complaints on any law resource -- but **the canary is SILENCE, and a silent canary and a
+healthy canary look identical.** No complaints is evidence the fifteen are not FAILING, not
+evidence they are being USED. Michael's decision.
+
+### The static version was tried first and abandoned
+
+Attributing a resource map to the `verifySessionToken` call that gates it BY TEXT REGION
+over-reported both ways: bounded backwards it picked up the previous branch's tail and reported
+SAIRNlegacy's resources as gated by SAIRNdental; bounded by the next declaration it ran past its
+own branch and did it again. **The same over-reach `removal_path_check.py` records about its
+2500-character window, arrived at independently on a different file.**
+
+### One defect in my own test, caught by the table
+
+The posture loop compared the returned OBJECT to `401` instead of `out.code`, so **every app
+measured as ungated -- including ones section 2 had just proven were gated.** Caught because the
+hand-written table disagreed with the measurement. That is the table doing its job, and the reason
+the map is asserted rather than printed.
