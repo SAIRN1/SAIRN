@@ -1563,3 +1563,24 @@ terms, not paraphrased equivalents. **Diátaxis** (diataxis.fr) is a real,
 current documentation framework, publicly documented and openly licensed,
 distinguishing tutorials, how-to guides, reference material, and
 explanation as four genuinely distinct documentation modes.
+
+## DORA and CMMI -- sources
+
+**DORA** (DevOps Research and Assessment) was a real research team,
+later acquired by Google, whose multi-year empirical research across
+thousands of real organizations was published as the book "Accelerate"
+(Forsgren, Humble, Kim) and is continued today in Google's annual State of
+DevOps report. The four/five metrics and the Elite/High/Medium/Low
+benchmark bands are real, published, current figures from that ongoing
+research program, not a one-time study. The "speed and stability
+reinforce rather than trade off" finding is the research's own headline
+empirical result, replicated across multiple years of the same survey
+rather than a single study's finding. **CMMI** (Capability Maturity Model
+Integration) is maintained by the CMMI Institute (originally developed at
+Carnegie Mellon's Software Engineering Institute for the US Department of
+Defense, now under ISACA); its five-level structure is specified formally
+and used for real, current appraisals in government and defense
+contracting, not an informal framework. The documented criticism that
+CMMI can become process-oriented without a tied strategic goal is a real,
+long-standing critique in software-engineering literature about the
+framework's own practical adoption, not this file's own invention.

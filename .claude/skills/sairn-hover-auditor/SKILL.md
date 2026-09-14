@@ -1247,6 +1247,112 @@ which mode the document is trying to serve and where it drifts into a
 different one, rather than only noting "needs updating" -- mode-mixing is
 its own, more precise finding.
 
+## DORA and CMMI -- measuring and maturing the build METHOD itself
+
+A genuinely new research direction, distinct from everything above it:
+critiquing the BUILD METHOD -- the process by which commits, claims, and
+releases happen at all -- rather than finding a defect in any one
+commit's output. Everything above this section, including the process
+pass, checks whether the machinery is currently RUNNING as designed. This
+asks a different, longer-horizon question: is the machinery itself
+actually good, measured, and getting better over time.
+
+**DORA metrics -- the single most directly applicable real framework
+found for this question.** Google's DevOps Research and Assessment team
+(the real, multi-year empirical research published as "Accelerate")
+identified four metrics that predict real software delivery performance,
+each independently measurable from data a platform already generates, not
+invented for this purpose: **Deployment Frequency** (how often real code
+actually reaches production), **Lead Time for Changes** (real elapsed
+time from commit to that change running live), **Change Failure Rate**
+(real percentage of deploys that need a rollback, hotfix, or patch
+afterward), and **Mean Time to Recovery / MTTR** (real time to restore
+service once something breaks). A fifth, **Reliability**, covers how
+consistently the service meets its own stated performance goals. Real,
+quantified Elite/High/Medium/Low benchmark bands exist for each metric,
+published and current, not this role's own invention.
+
+**The sharpest finding from this research, worth holding onto directly
+because it corrects a natural but wrong intuition.** The underlying
+multi-year research found that speed and stability REINFORCE each other
+rather than trading off -- elite-performing teams deploy more frequently
+AND fail less often than slower teams, not one at the expense of the
+other. The intuitive assumption that "careful means slow" and "fast means
+risky" is directly contradicted by the actual measured data: a genuinely
+good process gets both at once, and a slow process is not automatically a
+safer one.
+
+**A real, directly buildable target, not yet built this session.** This
+platform's own real history already contains the raw material for real
+DORA numbers, informally tracked in prose rather than formalized into a
+tracked metric: every commit-to-push-to-live-verified sequence this file
+already distinguishes ("committed, not pushed," "pushed but not
+live-verified"), and every real defect's full lifetime from injection to
+fix, are exactly Lead Time and MTTR data points sitting unrecorded as
+structured numbers. A lightweight tool that walks the platform's own real
+git and deploy history and computes actual Deployment Frequency, Lead
+Time, and Change Failure Rate, then states plainly which DORA tier the
+real computed number falls into, is a genuinely buildable next step --
+named here as a real target for a future session, not built in this one.
+
+**Change Failure Rate specifically is a real, external, quantified answer
+to a question this file has otherwise only been able to gesture at.**
+Whether this platform's own real investment in mutation and sabotage
+testing is actually reducing real production failures, or only producing
+more logged findings without changing the real outcome, is exactly what a
+real, measured Change Failure Rate over time would show -- a genuine
+external check on whether the method itself is working, distinct from
+counting how many findings any one pass produces.
+
+**CMMI -- Capability Maturity Model Integration (SEI/Carnegie Mellon), a
+real, formal, DoD-originated process-maturity framework used for actual
+government contracting appraisals.** A real, five-level staged maturity
+ladder for the PROCESS itself, the same SHAPE as Common Criteria's EAL and
+SLSA's Build Levels already in this file, applied to a third distinct
+axis: Level 1 **Initial** (ad hoc, unpredictable, success depends on
+individual heroics rather than the process); Level 2 **Managed**
+(project-level tracking of requirements, schedule, and commitments
+exists); Level 3 **Defined** (organization-wide standard processes exist,
+and individual contributors tailor their own work from that shared
+standard rather than inventing their own each time); Level 4
+**Quantitatively Managed** (real statistical process control applied to
+the process itself -- quantitative baselines exist, not just individual
+findings); Level 5 **Optimizing** (continuous process improvement driven
+by quantitative feedback and piloted innovations, not by intuition about
+what feels better).
+
+**A real, honest self-assessment, stated plainly rather than assumed.**
+This platform's shared claim system, its standing process rules, and its
+master-plan/status-document discipline already place real structure above
+pure Level 1 -- closer to Level 2 or 3, genuine standard processes that
+individual sessions tailor from rather than inventing fresh each time.
+DORA metrics, once actually computed rather than only discussed, are the
+real, concrete mechanism for reaching Level 4 specifically: a genuine
+statistical baseline about the process itself, replacing an impression
+that things are going well with an actual number.
+
+**An honest, disclosed limit on CMMI itself, not only on this platform's
+level.** CMMI's own real, documented criticism is that a process-maturity
+program can become too process-oriented without being tied to any
+genuine strategic goal -- more documentation, more ceremony, without
+anything actually getting better. Any future process-maturity work on
+this platform should be explicitly tied to DORA's own real numbers --
+fewer real production failures, faster real time-to-fix -- as the stated
+goal, not "more process" pursued as an end in itself.
+
+**The synthesis, real and directly actionable, stated as one sequence:**
+DORA supplies the real, quantified MEASUREMENT; CMMI supplies the real,
+staged FRAMEWORK for what to do with that measurement over time. Build
+the lightweight DORA-metrics tool described above from this platform's
+own real git, deploy, and defect-register history first. Once real
+numbers exist, use them as the Level 4 quantitative baseline this
+platform does not currently have. Then treat any future change to the
+actual build METHOD -- the paste-in/paste-out discipline, the claim
+system, the silent-mode rule, the decision-authority split between chat
+and the build agents -- as a real, testable hypothesis against those
+baseline numbers: did Lead Time or Change Failure Rate actually improve
+after the change, measured, not "does this feel better" asserted.
+
 ## Financial reconciliation: three records, not two
 
 Real principle (IOLTA -- attorney trust accounting, the bar-association
