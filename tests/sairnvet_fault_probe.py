@@ -51,6 +51,8 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 SUITE = os.path.join('tests', 'sairnvet_audit_and_controlled.js')
 HTML = 'sairnvet.html'
 
+SUBJECTS = (HTML, SUITE)
+
 fails = []
 
 
@@ -78,6 +80,19 @@ if add.returncode != 0:
     sys.exit(3)
 
 try:
+
+    # ── THE WORKING TREE, NOT HEAD, AND THE REASON IS A REAL TRAP ──────────
+    # `git worktree add ... HEAD` gives a copy of what was COMMITTED. That is
+    # right for isolation and wrong for what this probe is for: a suite change
+    # made to close a hole this probe just found is UNCOMMITTED, so the probe
+    # would keep reporting the same hole and the fix would look ineffective.
+    # It happened on the first run of this file. So the subject files are
+    # copied over from the working tree after the worktree is created -- the
+    # isolation is unchanged (nothing is ever written back), and what gets
+    # tested is what you are about to commit.
+    for _rel in SUBJECTS:
+        shutil.copyfile(os.path.join(REPO, _rel), os.path.join(wt, _rel))
+
     ORIG = io.open(os.path.join(wt, HTML), encoding='utf-8', newline='').read()
 
     def write(text):
@@ -164,7 +179,7 @@ try:
     # failed would leave the remaining arms passing against a mutated file.
     # Asserting the tree is clean again is cheap and is the only thing that
     # distinguishes "all arms ran" from "the first arm ran".
-    check('the worktree copy is byte-identical to HEAD after every arm',
+    check('the worktree copy is byte-identical to the working tree after every arm',
           io.open(os.path.join(wt, HTML), encoding='utf-8', newline='').read() == ORIG,
           'a restore did not land -- later arms tested a mutated file')
     rc, out = run(wt)

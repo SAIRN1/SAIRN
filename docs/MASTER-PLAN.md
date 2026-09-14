@@ -29,7 +29,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 | Vertical | res | tiered | suites | traced | fault | Gaps |
 |---|---|---|---|---|---|---|
-| `sairnbiz` | 12 | ✅ | 9 | 8 | 0 | **no fault probe** |
+| `sairnbiz` | 12 | ✅ | 10 | 9 | 1 | — |
 | `sairnbuild` | 32 | ✅ | 3 | 1 | 0 | **no fault probe** |
 | `sairncare` | 13 | ✅ | 20 | 2 | 0 | **no fault probe** |
 | `sairncash` | 0 | ✅ | 2 | 0 | 0 | **nothing traced** · **no fault probe** |
@@ -52,14 +52,14 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 384 resources owned by an app, 141 test files attributed to one, 53 of those traced, 9 fault probes.**
+**Platform totals: 384 resources owned by an app, 142 test files attributed to one, 54 of those traced, 10 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **403** test files on disk in total and **197** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **404** test files on disk in total and **198** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
 - **`suites` counts test files whose PATH names the app.** A test that covers an app without saying so in its filename is invisible to it. That is why `sairncode` and `sairnroofing` read 0 here while the hand-written version claimed 8 and 26 — the old figures used a rule nobody wrote down, and neither number can be checked against the other. This one can at least be checked against `ls tests/`.
-- **`fault` is a FLOOR of 9 declared probes, not a census.** A probe counts only if it declares a parseable `MUTATIONS` block or is named `*_fault_probe.py`. A probe that mutates real source while declaring neither is not counted, and `tools/mutation_anchor_check.py` records that four of six could not be swept on 2026-09-11 for exactly that reason. **The previous hand-written figure of 14 was higher and rested on a rule nobody can reconstruct** — an early draft of this generator reproduced that kind of number by accident, crediting StoneDesk with 19 including a probe written that morning which plants nothing at all.
+- **`fault` is a FLOOR of 10 declared probes, not a census.** A probe counts only if it declares a parseable `MUTATIONS` block or is named `*_fault_probe.py`. A probe that mutates real source while declaring neither is not counted, and `tools/mutation_anchor_check.py` records that four of six could not be swept on 2026-09-11 for exactly that reason. **The previous hand-written figure of 14 was higher and rested on a rule nobody can reconstruct** — an early draft of this generator reproduced that kind of number by accident, crediting StoneDesk with 19 including a probe written that morning which plants nothing at all.
 - **`tiered` means `criticality_tier_check.py` raised nothing**, which is a completeness check, not a judgement about whether a tier is right.
 
 ### The stack-up — a worst-case bound, with RSS beside it
@@ -120,9 +120,9 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               403   tests/**, api/*.test.js
-  tests traced to a requirement    203   traceability_matrix.traced()
-  declared fault probes              9   MUTATIONS blocks + *_fault_probe.py
+  test files on disk               404   tests/**, api/*.test.js
+  tests traced to a requirement    204   traceability_matrix.traced()
+  declared fault probes             10   MUTATIONS blocks + *_fault_probe.py
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```
 

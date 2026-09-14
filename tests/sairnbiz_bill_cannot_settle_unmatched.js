@@ -391,4 +391,65 @@ console.log('\n7. money is compared in cents -- a correct multi-receipt bill set
      + 'including the tolerance, so it would silently MATCH');
 }
 
+// -- 8. TWO PURCHASE ORDERS WITH THE SAME NUMBER ---------------------------
+// ADDED 2026-09-14, and tests/sairnbiz_fault_probe.py found the hole rather
+// than a reader: planting `if(false)` over sbMatchPure's duplicate refusal left
+// this suite GREEN. The refusal existed, was commented at length, and nothing
+// anywhere exercised it -- which is exactly what gate 4 exists to surface, and
+// the reason a mutation probe is worth more on a DENSE suite than a thin one.
+//
+// THE STATE IS REAL, NOT CONTRIVED. po_num comes from sb_po_seq, a PER-DEVICE
+// counter, so two workstations both raise PO-2026-001; before the sb_po server
+// sync neither device could see the other's, and after hydration one device
+// holds both. The rows are written into the store directly because that is how
+// they ARRIVE -- through hydration, not through sbPOCreate(), which cannot mint
+// a collision on one device.
+console.log('\n8. two POs with one number is a refusal, not a pick-the-first');
+{
+  const store = {};
+  // Same number, DIFFERENT amounts. A gate that takes [0] validates against
+  // whichever is first in insertion order and says nothing about the other.
+  store.sb_po = JSON.stringify([
+    { id: 'PO-A', po_num: 'PO-2026-001', vendor: 'Mountain Stone', desc: 'Slabs',
+      amt: 1000, date: '2026-09-14', status: 'Open' },
+    { id: 'PO-B', po_num: 'PO-2026-001', vendor: 'Mountain Stone', desc: 'Slabs',
+      amt: 4000, date: '2026-09-14', status: 'Open' }
+  ]);
+  store.sb_recv = JSON.stringify([
+    { id: 'RC-1', po_num: 'PO-2026-001', vendor: 'Mountain Stone', val: 1000,
+      date: '2026-09-14' }
+  ]);
+  const m = makeCtx(store, {}).sbThreeWayMatch('PO-2026-001', 'Mountain Stone', '1000.00');
+  ok(m.ok === false,
+     'a bill agreeing perfectly with ONE of two same-numbered POs is refused');
+  ok(/2 different purchase orders are numbered PO-2026-001/.test(m.reasons.join(' ')),
+     '...and the reason NAMES the count so the duplicate can be found: '
+     + m.reasons.join(' '));
+
+  // CONTROL: the refusal must come from the DUPLICATE and from nothing else.
+  // Without this the arm above passes against a gate that refuses everything.
+  const single = { sb_po: JSON.stringify([JSON.parse(store.sb_po)[0]]),
+                   sb_recv: store.sb_recv };
+  const m2 = makeCtx(single, {}).sbThreeWayMatch('PO-2026-001', 'Mountain Stone', '1000.00');
+  ok(m2.ok === true,
+     'CONTROL: the SAME bill against a SINGLE PO matches, so the refusal above '
+     + 'is the duplicate rather than a gate that refuses everything: '
+     + m2.reasons.join(' '));
+
+  // And the documented correction really works: voiding the one raised in
+  // error leaves a single live PO and the correct bill matches, while both
+  // rows and the reason stay on the record.
+  const rows = JSON.parse(store.sb_po);
+  rows[1].status = 'Void';
+  rows[1].void_reason = 'raised in error on the second workstation';
+  const fixed = { sb_po: JSON.stringify(rows), sb_recv: store.sb_recv };
+  const m3 = makeCtx(fixed, {}).sbThreeWayMatch('PO-2026-001', 'Mountain Stone', '1000.00');
+  ok(m3.ok === true,
+     'voiding the duplicate clears the ambiguity and the correct bill matches: '
+     + m3.reasons.join(' '));
+  ok(JSON.parse(fixed.sb_po).length === 2,
+     '...and BOTH rows are still on the record -- a void removes a row from the '
+     + 'FIGURES, never from the trail');
+}
+
 console.log('\nALL ' + n + ' ASSERTIONS PASS');
