@@ -142,7 +142,23 @@ check('7d  evidence from a DIFFERENT tree does not count as coverage of this one
 check('7e  the order is deterministic -- two passes that measured different '
       'tools in different orders would be indistinguishable from a flip',
       Q.measure_order(led7, list(led7['checkers'].keys()), th) == order2)
-check('7f  ...and it is the SAME order the tool actually measures in, not a '
+# THE ARM THAT CAUGHT THE FIRST VERSION OF THIS FIX DOING NOTHING. The tree
+# hash changes on EVERY commit, so right after the ordering landed all 37
+# checkers had zero observations at the new tree, every weight tied at zero,
+# the tie broke on name, and the pass went ALPHABETICAL AGAIN -- starving
+# exactly the same tail it was written to rescue. Watched happening, not
+# reasoned about: the ledger sat at 26 entries while the pass ground through
+# the same alphabetical head.
+led_fresh = {'checkers': {
+    'zzz_never_run_anywhere.py': {'observations': []},
+    'aaa_measured_yesterday.py': obs(['a'] * 6, tree='YESTERDAY'),
+}}
+fresh = Q.measure_order(led_fresh, list(led_fresh['checkers'].keys()), 'TODAY')
+check('7f  AT A BRAND-NEW TREE, where nobody has evidence, the checker that '
+      'has never run AT ANY TREE still sorts first -- otherwise every commit '
+      'resets the order to alphabetical and the fix does nothing',
+      fresh[0] == 'zzz_never_run_anywhere.py', fresh)
+check('7g2 ...and it is the SAME order the tool actually measures in, not a '
       'helper nothing calls', 'measure_order(led, tools, th)' in code)
 
 # THE BUDGET ARM IS BEHAVIOURAL, NOT A GREP. Written that way after the
@@ -161,17 +177,17 @@ try:
     Q.registry_tools = lambda: ['checkblocks.py', 'cleanup_confirm_check.py']
     l7 = Q.load_ledger()
     reached, tools = Q.measure(l7, runs=1, budget=0)
-    check('7g  a budget of zero REACHES NOTHING and says so, rather than being '
+    check('7h  a budget of zero REACHES NOTHING and says so, rather than being '
           'killed mid-pass with no output at all',
           reached == [] and len(tools) == 2, (reached, tools))
     l8 = Q.load_ledger()
     reached2, tools2 = Q.measure(l8, runs=1, budget=None)
-    check('7h  CONTROL: with no budget the same two ARE measured -- 7g would '
+    check('7i  CONTROL: with no budget the same two ARE measured -- 7g would '
           'otherwise pass on a measure() that never runs anything',
           sorted(reached2) == sorted(tools2) and len(reached2) == 2, reached2)
 finally:
     Q.LEDGER, Q.registry_tools = old_led, old_reg
-check('7i  what a short pass did not reach is NAMED, not counted -- a silent '
+check('7j  what a short pass did not reach is NAMED, not counted -- a silent '
       'cap reads as a complete pass', 'STOPPED EARLY' in code and 'for t in skipped' in code)
 
 print('\n%d arm(s) failed' % len(failures))

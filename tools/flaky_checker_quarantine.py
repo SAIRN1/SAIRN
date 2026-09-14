@@ -240,14 +240,30 @@ def measure_order(led, tools, th):
     suffix being permanently unmeasured. It does not make the pass faster and
     is not meant to -- it makes the part that does run the part worth running.
 
+    THE SECOND KEY IS EVIDENCE AT *ANY* TREE, AND WITHOUT IT THIS FIX DOES
+    NOTHING. Found by watching the first version run: the tree hash changes on
+    every commit, so the moment this landed, all 37 checkers had zero
+    observations at the new tree, every weight tied at zero, the tie broke on
+    name -- and the pass was ALPHABETICAL AGAIN, starving exactly the same
+    tail. On a repo with four active sessions a commit lands every few minutes,
+    so "evidence at this tree" alone is almost always zero for everybody and
+    carries no ordering information at all.
+
+    A checker with six observations from YESTERDAY'S tree still knows more
+    about itself than one that has never been run at any tree. That is not
+    evidence about the current tree -- `classify` still refuses to mix trees --
+    it is evidence about which checker is most starved, which is a different
+    question and the one this ordering answers.
+
     Ties break on name so the order is deterministic, which matters: two runs
     that disagree because they measured different tools in different orders
     would be indistinguishable from a flip.
     """
     def weight(t):
         e = led.get('checkers', {}).get(t) or {}
-        obs = [o for o in e.get('observations', []) if o.get('tree') == th]
-        return (len(obs), t)
+        all_obs = e.get('observations', [])
+        here = [o for o in all_obs if o.get('tree') == th]
+        return (len(here), len(all_obs), t)
     return sorted(tools, key=weight)
 
 
