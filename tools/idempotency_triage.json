@@ -6,7 +6,7 @@
     "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one.",
     "FIXED": "a FIX that has been BUILT. Kept as its own verdict rather than deleted: an entry that vanishes on being fixed leaves nobody able to tell a defect that was closed from one nobody ever judged."
   },
-  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. NINETEEN files of twenty-nine are judged. The remaining eight are named by the checker as UNTRIAGED and are NOT covered by any statement here -- they are unread, not cleared.",
+  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. TWENTY-FIVE files of twenty-nine are judged. The remaining two -- api/sc-credentials.js and api/sd-webauthn.js, both credential inserts -- are named by the checker as UNTRIAGED and are NOT covered by any statement here. They are unread, not cleared.",
   "_triaged_by": "fourth",
   "_triaged_at": "2026-09-14",
   "files": {
@@ -44,8 +44,9 @@
       "read_at": "2026-09-14"
     },
     "api/cron-watchdog.js": {
-      "verdict": "UNTRIAGED",
-      "why": "Listed explicitly rather than omitted, because it is the one I most expected to be able to judge quickly and could not. It carries 2 writes and is scheduled rather than client-driven, so 'a client timeout is a retry' does not describe its retry model at all -- a cron re-fire is a different thing from a lost response, and deciding it needs reading how the scheduler retries. Not guessed.",
+      "verdict": "ACCEPTED",
+      "why": "The POST is to Resend: it SENDS AN ALERT EMAIL. A retry sends it twice. Same judgment and same reasoning as api/alf-alerts.js -- a duplicated alert is noise, and SUPPRESSING a repeat alert is the more dangerous failure for a watchdog whose whole job is to be noticed.",
+      "but": "Two files now reach this verdict for the same reason. If duplicate alerts ever become the complaint, Resend's Idempotency-Key header fixes both together -- and they should be fixed together, because a fix applied to one is a fix somebody will believe covers the other.",
       "read_at": "2026-09-14"
     },
     "api/_lib/auth.js": {
@@ -126,11 +127,12 @@
       "read_at": "2026-09-14"
     },
     "api/sairncash/trial-renew.js": {
-      "verdict": "FIX",
+      "verdict": "FIXED",
       "why": "A READ-MODIFY-WRITE ON A COUNTER, and the sharpest thing in this batch. It SELECTs renewal_count, computes plus one in JavaScript, then PATCHes that value back along with a fresh expires_at computed from NOW.",
       "consequence": "TWO failures, both real. (1) LOST UPDATE: two concurrent renewals both read N and both write N+1, so one renewal vanishes from the count. (2) DOUBLE EXTENSION ON RETRY, which is worse: if the PATCH commits and the response is lost, the retry reads N+1, writes N+2 AND a new expires_at 30 days from the retry -- the trial is extended twice from ONE admin approval. This endpoint is admin-approval-gated, so that is an entitlement granted beyond what was approved.",
       "fix": "Two halves, because one does not cover the other. A compare-and-set (renewal_count=eq.N in the PATCH filter) closes the lost update: the loser gets zero rows back and knows. An idempotency key closes the double extension, the same shape trial-start now uses -- a retry returns the ORIGINAL expiry instead of computing a new one.",
-      "read_at": "2026-09-14"
+      "read_at": "2026-09-14",
+      "fixed": "2026-09-14, and it needed BOTH halves because neither covers the other. A COMPARE-AND-SET (`renewal_count=eq.<N>` in the PATCH filter, or `is.null` for an untouched row) closes the lost update: the loser matches zero rows and is told, as a 409 CONCURRENT_RENEWAL rather than a silent success -- PostgREST returns 200 with an EMPTY ARRAY to the loser, so a handler checking only `ok` would report a renewal that never happened, and the PATCH asks for return=representation because `minimal` returns no body to count. An OPTIONAL idempotency key closes the double extension: a retry carrying the same key gets the ORIGINAL expiry back and writes nothing. Needs sql/sairncash_trial_renew_idempotency_2026-09-14.sql. Three sabotages verified: dropping the retry recognition, dropping the CAS filter, and ignoring the zero-row result each take arms red."
     },
     "api/sairncash/trial-verify.js": {
       "verdict": "SAFE",
@@ -146,6 +148,37 @@
       "verdict": "ACCEPTED",
       "why": "The POST is to Resend: it SENDS AN EMAIL. A retry sends it twice, which is a real duplicate side effect even though nothing of ours is written. Accepted because a duplicated ALERT is noise -- the recipient sees the same warning twice -- and suppressing a repeat alert is the more dangerous failure in a care setting.",
       "but": "Resend supports an Idempotency-Key header, so the fix is cheap if duplicate alerts ever become the complaint. Recorded so that is a decision rather than a rediscovery.",
+      "read_at": "2026-09-14"
+    },
+    "api/audit-checkpoint.js": {
+      "verdict": "SAFE",
+      "why": "The append cannot duplicate: sql/audit_checkpoint_schema.sql:82 carries `constraint sairn_audit_checkpoint_one_per_window unique (audit_table, window_end)`, so a retry gets a 23505 rather than a second checkpoint. The schema's own verify step names this exactly -- line 123: \"The uniqueness that stops a second run forking the chain exists.\"",
+      "but": "WORTH RECORDING AS A NON-FINDING RATHER THAN SILENCE. This is a hash-chained audit log, so a duplicate checkpoint would put two links where there is one and chain verification would have to decide which is real. The author saw that and constrained it. The checker cannot see a constraint that lives in SQL, which is a scope limit of the checker and not a gap in this file.",
+      "read_at": "2026-09-14"
+    },
+    "api/dnt-bi.js": {
+      "verdict": "ACCEPTED",
+      "why": "stampUse() is a read-modify-write on a counter -- `use_count: (trow.use_count || 0) + 1` -- so it is the same defect SHAPE as trial-renew.js. THE AUTHOR ALREADY MADE THIS CALL AND WROTE IT DOWN, in the function's own comment: \"Read-then-write, so two simultaneous polls can lose a count -- said plainly because use_count is a 'has anyone touched this' signal, not an audited total, and must never be quoted as one.\"",
+      "but": "RECORDED RATHER THAN RE-DERIVED, which is the point of this entry. The triage's job here is to confirm a judgment already made, not to overturn it -- and to note the condition: the moment use_count is quoted as a total anywhere, this stops being accepted. It is also deliberately not awaited and swallows its own failure, for a stated reason: a dashboard that 500s over a bookkeeping UPDATE.",
+      "read_at": "2026-09-14"
+    },
+    "api/sd-agent.js": {
+      "verdict": "SAFE",
+      "why": "The POST carries `{model, max_tokens, ...}` to the Claude API. Nothing of ours is written. Same class as api/claude.js and api/sc-eligibility.js.",
+      "but": "A retry duplicates a BILLED call and consumes rate-limit budget -- a cost consequence, not a data-integrity one. Third instance of this shape, which is why the checker's scope limit is now recorded against api/_lib/auth.js: any outbound POST reads as a mutating write.",
+      "read_at": "2026-09-14"
+    },
+    "api/sen-portal.js": {
+      "verdict": "ACCEPTED",
+      "why": "It mints a fresh crypto.randomBytes(32) token per request and inserts a sen_portal_links row. `unique (link_token)` stops the ROW colliding, but a retry mints a NEW token and inserts a SECOND link for the same client. Both work.",
+      "consequence": "AN ORPHANED ACCESS CREDENTIAL, which is the opposite of trial-start's failure and worth the contrast: there the caller LOST the token that was minted; here an EXTRA valid one exists. Revoking 'the' link does not revoke the orphan.",
+      "but": "Accepted because links are listed and revocable per row, so the orphan is visible rather than hidden. NAMED TRIGGER: if the UI ever shows one link per client rather than a list, the orphan becomes invisible and this entry is wrong. The fix is the same idempotency key trial-start now uses.",
+      "read_at": "2026-09-14"
+    },
+    "api/stonedesk-track.js": {
+      "verdict": "ACCEPTED",
+      "why": "Identical shape to api/sen-portal.js: a fresh 32-byte token and a new sd_order_links row per request, with a unique index on link_token that stops collision but not duplication. A retry leaves a second working tracking link for the same job.",
+      "but": "Same conditional as sen-portal, and the two are recorded separately rather than merged for the same reason network.js and org-intel.js are: if the reasoning turns out wrong it is wrong in both, and one merged entry would hide the second.",
       "read_at": "2026-09-14"
     }
   }

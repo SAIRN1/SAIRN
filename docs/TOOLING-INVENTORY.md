@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**144 files in `tools/`.** By what actually invokes them:
+**145 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 45 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 46 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 36 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 91 |
+| CHECKER | 92 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 17 |
@@ -117,7 +117,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (45)
+## REPORT-ONLY (46)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -156,6 +156,7 @@ quiet in practice.
 | `nav_panel_check.py` | 2026-09-09, AFTER its matcher was fixed -- NOT as it stood | a panel no nav control reaches (Guardian checks 16-18), and a duplicate id in static markup |
 | `npm_audit_check.py` | 2026-09-10, the day it was built | a known advisory against a package in the committed lockfile, direct or transitive, with the advisory URL |
 | `orphan_register_check.py` | 2026-09-10 | an open-work row citing something the register records as removed -- a task pointing at code that is gone |
+| `ownership_evidence_drift.py` | 2026-09-14, the day it was built, report-only and NOT a push-gate block: it reports that nobody has LOOKED, which is not the same as a finding and must never refuse a push | the ownership evidence behind an accepted risk drifting away from the population it was evidence about |
 | `panel_nesting_check.py` | 2026-09-10, after three defects found by running it | a panel that is not a sibling of the others, so the show/hide CSS cannot reach it |
 | `removal_path_check.py` | 2026-09-10, the day it was built | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason |
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
@@ -337,11 +338,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      144   git ls-files tools/
+  tools on disk                      145   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                43   report_only_checks.REGISTRY
-  tools invoked by tests/             93   tests/**/*.py, *.js
+  report-only registry                44   report_only_checks.REGISTRY
+  tools invoked by tests/             94   tests/**/*.py, *.js
   recorded NOT-promoted decisions     36   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

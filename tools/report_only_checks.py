@@ -1061,6 +1061,36 @@ REGISTRY = [
                     'registry is an error rather than CLEAN. 0.3s',
     },
     {
+        'tool': 'ownership_evidence_drift.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-14, the day it was built, report-only and NOT a '
+                    'push-gate block: it reports that nobody has LOOKED, which '
+                    'is not the same as a finding and must never refuse a push',
+        'catches': 'the ownership evidence behind an accepted risk drifting away '
+                   'from the population it was evidence about',
+        'why_it_matters': "docs/SAIRN-OPEN-WORK-INDEX.md carries "
+                          "`supabase_admin`'s default ACL -- which grants anon "
+                          "and authenticated FULL CRUD on tables it creates -- "
+                          "as ACCEPTED RISK, MONITORED. It is accepted on ONE "
+                          "measurement: 100% postgres ownership across 251 "
+                          "tables on 2026-08-26. The row names its own re-check "
+                          "trigger, names the monitor as one SELECT, and "
+                          "NOTHING RUNS IT. A tool that exists is not a "
+                          "mechanism; a tool that RUNS is",
+        'evidence': 'RED on its first run and correctly so: 251 tables when the '
+                    'evidence was taken, 380 now, 129 unobserved and 51% growth. '
+                    'That is not a claim the ACL has fired -- it almost '
+                    'certainly has not, every migration here goes through the '
+                    'SQL editor as postgres -- it is a statement that nobody has '
+                    'checked, which must not read as a clean result. 18-arm '
+                    'probe whose MAIN arm is that it goes GREEN when the '
+                    'baseline is refreshed, because a checker that can only be '
+                    'red is as useless as one always green; an unreadable '
+                    'snapshot is COULD NOT RUN rather than zero drift, verified '
+                    'by sabotage. 0.1s',
+    },
+    {
         'tool': 'eaten_substitution_check.py',
         'mode': 'once',
         'verdict': by_exit,

@@ -1,0 +1,20 @@
+{
+  "_what_this_is": "The last time anybody MEASURED who owns the objects in schema public, and how big the population was when they measured it. tools/ownership_evidence_drift.py compares that population to today's and reports how far the evidence has drifted from the thing it is evidence about.",
+  "_why_it_exists": "docs/SAIRN-OPEN-WORK-INDEX.md carries `supabase_admin`'s default ACL as an ACCEPTED RISK, MONITORED. It is accepted on one measurement -- 100% postgres ownership, zero supabase_admin-owned objects -- and the row names its own re-check trigger: THE MOMENT ANY OBJECT IN public IS CREATED BY ANYTHING OTHER THAN THE SQL EDITOR RUNNING AS postgres. Nothing evaluates that trigger. The row even names the monitor (one SELECT) and nothing runs it. A tool that exists is not a mechanism; a tool that RUNS is.",
+  "_what_this_can_and_cannot_say": "It CANNOT tell you who owns anything -- that needs a live database and no clone has credentials. It tells you how much of the population the existing evidence does not cover, which is the question 'can the accepted risk be closed out' actually turns on.",
+  "measurements": [
+    {
+      "measured_at": "2026-08-26",
+      "by": "Michael, via sql/supabase_admin_default_acl_check_2026-08-26.sql Section 1",
+      "recorded_in": "docs/SAIRN-OPEN-WORK-INDEX.md, the supabase_admin default-ACL row",
+      "tables_in_public": 251,
+      "sequences": 4,
+      "functions": 11,
+      "owned_by_postgres_pct": 100,
+      "supabase_admin_owned_objects": 0,
+      "verbatim": "ownership across public is 100% postgres -- all 251 tables, 4 sequences and 11 functions. Zero supabase_admin-owned objects anywhere. The default ACL is real and has never fired.",
+      "note": "This is a real measurement and it is not disputed. What it cannot do is cover objects created after it was taken."
+    }
+  ],
+  "_how_to_refresh": "Run sql/supabase_admin_default_acl_check_2026-08-26.sql Section 1 as postgres, then add a new entry above with the numbers it prints. Do NOT edit the 2026-08-26 entry -- the point of keeping it is to show how long the gap ran."
+}
