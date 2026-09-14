@@ -1162,6 +1162,16 @@
       "claimed_at_epoch": 1789392367.631875,
       "status": "released",
       "released_at": "2026-09-14T13:31:29Z"
+    },
+    {
+      "id": "fourth-1789394180",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 65 free tier reframe and 65a coherence checker",
+      "claimed_at": "2026-09-14T13:56:20Z",
+      "claimed_at_epoch": 1789394180.9398763,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
