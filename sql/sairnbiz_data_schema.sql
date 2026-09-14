@@ -36,15 +36,26 @@
 -- document and apply. sb_invs -> inv_id, sb_exps -> exp_id, sb_vends ->
 -- vend_id, sb_payruns -> payrun_id. The other five are already singular
 -- (sb_ap, sb_train, sb_perf, sb_hire, sb_bud) and keep their name unchanged.
+-- sb_po -> po_id and sb_recv -> recv_id follow the same rule. What DOES NOT
+-- follow mechanically for sb_po is what GOES IN that column: see the table
+-- itself, where the PO number is deliberately not used as the key.
 --
 -- NAMING COLLISION CHECK: every table here carries the sb_ prefix. Checked
 -- before writing, not assumed -- the only pre-existing sb_ table anywhere in
 -- sql/ is sb_employee_auth (sql/sb_employee_auth_schema.sql), which does not
--- appear below, and no sb_ RESOURCE was registered by any app.
+-- appear below, and no sb_ RESOURCE was registered by any app. Re-run for
+-- sb_po and sb_recv on 2026-09-14 rather than inherited from the 2026-09-04
+-- statement above: no sb_po or sb_recv table exists in any other sql/ file and
+-- neither name is registered by any app's resource module.
 --
--- WHY THESE NINE AND NOT ALL SEVENTEEN: see api/_resources/sairnbiz.js, which
--- carries the reason for each of the eight left out, in the registry itself,
--- so the next reader does not have to re-derive the judgement.
+-- WHY THESE TWELVE AND NOT EVERY COLLECTION THE APP WRITES: see
+-- api/_resources/sairnbiz.js, which carries the reason for each one left out,
+-- in the registry itself, so the next reader does not have to re-derive the
+-- judgement. Nine on 2026-09-04, ten with sb_incidents on 2026-09-10, twelve
+-- with sb_po and sb_recv on 2026-09-14 -- the two documents of the three-way
+-- match, which were built after the 2026-09-10 pass and so had never been
+-- considered here at all. The remaining gap is not estimated in this header;
+-- `python tools/local_only_collection_check.py` is the number that moves.
 --
 -- THE READ PATH REQUIRES A SIGNED-IN EMPLOYEE SESSION, not just the licence
 -- key -- a deliberate divergence from the bld_ tables, argued in full at the
@@ -248,10 +259,76 @@ alter table public.sb_incidents enable row level security;
 revoke all on public.sb_incidents from service_role;
 grant select, insert, update on public.sb_incidents to service_role;
 
--- Verify after running. Expect exactly 11 rows -- the TEN above plus the
+-- PURCHASE ORDERS. ADDED 2026-09-14, with sb_recv below, and the two are one
+-- change: they are the OTHER TWO DOCUMENTS of the three-way match built into
+-- sairnbiz.html on the same day. `tools/local_only_collection_check.py` reports
+-- them as 2 of 13 collections with NO route to a server.
+--
+-- WHY A MATCH DOCUMENT IS A WORSE THING TO KEEP ON ONE WORKSTATION THAN AN
+-- ORDINARY RECORD, which is the whole reason these two were not left for later:
+-- sb_ap (the bill) IS already backed up, and the ledger entry settling it is
+-- durable in Postgres. The PO and the receipt are the only two documents that
+-- say the bill was ever entitled to be paid. Clear the browser and what
+-- survives is a payable and a payment with NOTHING LEFT THAT JUSTIFIES EITHER
+-- -- and sbThreeWayMatch, reading an empty sb_po, then reports "no purchase
+-- order PO-2026-001 exists" against a bill that was correctly matched when it
+-- was paid. The control does not merely stop working; it starts producing a
+-- FALSE ACCUSATION about work that was done right.
+--
+-- THE ID COLUMN IS NOT THE PO NUMBER, and that is the one place this table
+-- departs from the mechanical rule above being purely mechanical. po_num comes
+-- from a per-DEVICE sequence (sairnbiz.html's sb_po_seq), so two workstations
+-- raising their first PO of the year BOTH mint PO-2026-001. Keying the upsert
+-- on the PO number would make the second device's PO silently OVERWRITE the
+-- first one through `resolution=merge-duplicates` -- one row, two real
+-- purchase orders, no error anywhere. The synced id is an internal minted
+-- string instead (SB_ID_PREFIX in sairnbiz.html), so both survive as separate
+-- rows and the duplicate NUMBER becomes a visible business problem somebody can
+-- correct, rather than silent data loss. sairnbiz.html refuses to match a bill
+-- against a duplicated PO number for the same reason.
+create table if not exists public.sb_po (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnbiz',
+  po_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, po_id),
+  constraint sb_po_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_sb_po_license on public.sb_po(license_hash);
+alter table public.sb_po enable row level security;
+revoke all on public.sb_po from service_role;
+grant select, insert, update on public.sb_po to service_role;
+-- RECEIPTS -- what actually arrived against a PO. The second of the two
+-- documents the bill is matched against; see sb_po above for why both had to
+-- reach a server in the same change rather than one at a time.
+--
+-- `sb_recv` is already singular, so the mechanical id rule leaves it unchanged:
+-- recv_id. These rows carry their own minted id at creation
+-- (sairnbiz.html's sbRecvLog), so unlike sb_po nothing has to be derived here.
+create table if not exists public.sb_recv (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnbiz',
+  recv_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, recv_id),
+  constraint sb_recv_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_sb_recv_license on public.sb_recv(license_hash);
+alter table public.sb_recv enable row level security;
+revoke all on public.sb_recv from service_role;
+grant select, insert, update on public.sb_recv to service_role;
+
+-- Verify after running. Expect exactly 13 rows -- the TWELVE above plus the
 -- pre-existing sb_employee_auth -- each with INSERT / SELECT / UPDATE and
--- nothing else. (Was 10 before sb_incidents was added on 2026-09-10; a stale
--- expected count is a verification step that passes while missing a table.)
+-- nothing else. (Was 10 before sb_incidents was added on 2026-09-10, and 11
+-- before sb_po and sb_recv on 2026-09-14; a stale expected count is a
+-- verification step that passes while missing a table.)
 --
 --   select table_name, string_agg(privilege_type, ', ' order by privilege_type) as privs
 --     from information_schema.role_table_grants

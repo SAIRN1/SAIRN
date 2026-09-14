@@ -203,6 +203,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The three-way match shipped with BOTH of its documents local-only &mdash; `sb_po` and `sb_recv` reached no server at all** | **BUILT 2026-09-14 (CC)** &mdash; `sql/sairnbiz_po_recv_migration.sql` written and **NOT YET RUN**; held by `tests/sairnbiz_po_recv_reach_the_server.js` (28 arms, four mutation controls). Registered,  | `tests/sairnbiz_po_recv_reach_the_server.js` |
 | **A bill can no longer be settled unless a purchase order, a goods receipt and the invoice all agree &mdash; and the two missing documents now exist** | **BUILT 2026-09-14 (CC)** on Michael's decision &mdash; `sb_po`, `sb_recv`, `sbThreeWayMatch()`, gates on `saveBill()` and `sbPayBill()`. Held by `tests/sairnbiz_bill_cannot_settle_unmatched.js` (32 a | `tests/sairnbiz_bill_cannot_settle_unmatched.js` |
 | **The three dead `api/ledger.js` actions are DELETED, not hardened &mdash; they carried the only soft failure shape left in a financial endpoint** | **DONE 2026-09-14 (CC)** on Michael's call. `read`, `trial_balance`, `reverse` and their `rowsOrFail` helper removed; held by two arms in `api/duplicate-check-fail-closed.test.js`, one of them a CONTR | `api/_lib/ledger.test.js`, `api/duplicate-check-fail-closed.test.js` |
 | ~~`api/sd-data-memory-app-scope.test.js` is RED &mdash; its deliberate tripwire fired: the resource registry now knows `sairnbiz`~~ | **RESOLVED 2026-09-04 (CC, `31572bd6`)** &mdash; and the answer was NEITHER of the two options this row offered | `api/sd-data-memory-app-scope.test.js` |
@@ -314,7 +315,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**163 of 360 test files are traced to a stated requirement. 197 are not.**
+**164 of 361 test files are traced to a stated requirement. 197 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -535,8 +536,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 360   tests/**, api/*.test.js
-  open-work rows citing a test       151   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 361   tests/**, api/*.test.js
+  open-work rows citing a test       152   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

@@ -2515,8 +2515,21 @@ function sbThreeWayMatch(po_num,vendor,amt){
   var reasons=[];
   po_num=String(po_num||'').trim();
   if(!po_num) return {ok:false,reasons:['no purchase order number on this bill']};
-  var po=sbPOAll().filter(function(p){return String(p.po_num)===po_num;})[0];
-  if(!po) return {ok:false,reasons:['no purchase order '+po_num+' exists']};
+  var pos=sbPOAll().filter(function(p){return String(p.po_num)===po_num;});
+  if(!pos.length) return {ok:false,reasons:['no purchase order '+po_num+' exists']};
+  // TWO POs WITH THE SAME NUMBER IS A REFUSAL, NOT A PICK-THE-FIRST
+  // (2026-09-14, added with the sb_po server sync, which is what makes this
+  // reachable). po_num comes from sb_po_seq, a PER-DEVICE counter, so two
+  // workstations both raise PO-2026-001; before sync neither device could ever
+  // see the other's, and after hydration one device holds both. This function
+  // took `[0]` -- array order, which is insertion order -- and would have
+  // validated a bill against whichever PO happened to be first, with no
+  // indication that a second one with the same number and a different amount
+  // was sitting next to it. A quiet wrong answer from a control is worse than
+  // no control. The refusal names the count so the duplicate can be found.
+  if(pos.length>1) return {ok:false,reasons:[pos.length+' different purchase orders are numbered '+po_num
+    +' -- this bill cannot be matched until that is corrected']};
+  var po=pos[0];
   var recs=sbRecvAll().filter(function(r){return String(r.po_num)===po_num;});
   if(!recs.length) reasons.push('nothing has been recorded as received against '+po_num);
   if(sbVendorKey(po.vendor)!==sbVendorKey(vendor))
@@ -2598,7 +2611,20 @@ function sbRecvLog(){
   if(!sbPOAll().some(function(p){return String(p.po_num)===po_num;})){
     toast('No purchase order '+po_num+' exists -- raise the PO first',6000);return;}
   var recs=sbRecvAll();
-  recs.unshift({id:'RC'+Date.now().toString(36),po_num:po_num,
+  // COLLISION-CHECKED, not just timestamped (2026-09-14, with the sb_recv
+  // sync). `'RC'+Date.now().toString(36)` alone gives two receipts logged in
+  // the same millisecond the SAME id. That was harmless while these rows never
+  // left the device -- nothing local keys off the id -- but the server upserts
+  // on (license_hash, recv_id) with resolution=merge-duplicates, so from the
+  // moment sb_recv is synced an id collision means the second receipt SILENTLY
+  // REPLACES the first. Two deliveries would become one and the three-way match
+  // would then refuse the bill for a short receipt total that is an artefact.
+  // Same loop as sbEnsureIds() and sbNormalizeBills() rather than a new shape.
+  var seenRc={};
+  recs.forEach(function(r){if(r&&r.id)seenRc[String(r.id)]=true;});
+  var rcId,rcN=0;
+  do{rcId='RC'+Date.now().toString(36)+(rcN?'-'+rcN:'');rcN++;}while(seenRc[rcId]);
+  recs.unshift({id:rcId,po_num:po_num,
     vendor:$('rcvvendor').value.trim(),val:val,date:sbLocalToday()});
   if(!st('sb_recv',recs)){toast('Could not record that receipt -- storage may be full or unavailable, try again',6000);return;}
   ['rcvpo','rcvvendor','rcvval'].forEach(function(id){var e=$(id);if(e)e.value='';});
@@ -4479,7 +4505,17 @@ window.recordSbSharedTopics = recordSbSharedTopics;
 // seed() ... syncing a collection with no write path would back up an empty
 // array forever and read as coverage." saveIncident() is that write path, and
 // an injury log is the last record a shop should keep on one workstation.
-var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud','sb_incidents'];
+// sb_po and sb_recv joined 2026-09-14, together, because they are one thing --
+// the two documents of the three-way match, which was built after the
+// 2026-09-10 pass and so had never been considered here. They are the sharpest
+// pair on this list rather than two more collections: sb_ap is ALREADY here and
+// the ledger entry that settles a bill is durable, so losing this browser left
+// a payable and a payment WITH NOTHING THAT JUSTIFIES EITHER -- and
+// sbThreeWayMatch, reading an empty sb_po, then reports "no purchase order
+// PO-2026-001 exists" against a bill that was correctly matched when it was
+// paid. A control that goes quiet is a gap; one that starts accusing correct
+// work is worse, because somebody acts on it.
+var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud','sb_incidents','sb_po','sb_recv'];
 var _sbSyncOn={};
 SB_SYNCED.forEach(function(k){_sbSyncOn[k]=true;});
 // Set while seed() runs and while hydration writes merged rows back. Seeding
@@ -4532,7 +4568,28 @@ function sbBackupFetch(action,resource,payload){
 // (an invoice number, a vendor code, the handle a Pay button names a row by).
 // Minting one there would put a generated string in front of a customer, so a
 // missing id is reported instead and left alone.
-var SB_ID_PREFIX={sb_exps:'EX',sb_perf:'PF',sb_hire:'HR',sb_bud:'BD',sb_incidents:'IN'};
+//
+// sb_po MINTS, AND THAT IS A DECISION AGAINST THE OBVIOUS ALTERNATIVE (added
+// 2026-09-14 with the PO/receipt sync). A purchase order already HAS a
+// user-visible identifier -- po_num, "PO-2026-001" -- so by the rule above it
+// looks like one of the five that should report rather than mint. It is not,
+// because po_num IS NOT UNIQUE ACROSS DEVICES: it comes from sb_po_seq, a
+// per-device counter, so two workstations raising their first PO of the year
+// both mint PO-2026-001. api/sd-data.js upserts on (license_hash, po_id) with
+// resolution=merge-duplicates, so keying on the PO number would let the second
+// device's purchase order SILENTLY OVERWRITE the first: one row, two real POs,
+// no error anywhere, and the three-way match would afterwards validate bills
+// against whichever one won.
+//
+// The minted id is internal and is never rendered -- sbRenderPOs() prints
+// po_num, vendor, description, amount and date, and no id. So nothing generated
+// reaches a customer, which is the concern the rule above is actually about.
+// The duplicate NUMBER stays visible and correctable instead of becoming silent
+// data loss, and sbThreeWayMatch refuses to match against a duplicated PO
+// number rather than quietly taking the first.
+//
+// sb_recv is NOT here: sbRecvLog() assigns its own id at creation.
+var SB_ID_PREFIX={sb_exps:'EX',sb_perf:'PF',sb_hire:'HR',sb_bud:'BD',sb_incidents:'IN',sb_po:'PO'};
 // Latched per key. Unlike a failed write, which is an EVENT worth recording
 // every time, a record with no id is a STANDING condition -- it would repeat
 // on every repaint for the life of the session and bury everything else.

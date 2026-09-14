@@ -1721,6 +1721,31 @@
       "phase_confidence": "stated",
       "citation_note": "No standing rule covers 'an identifier that was never a secret became a bearer credential'. The nearest, 1.2 and 1.11, are both about CHECKS rather than about authorisation, and forcing one would manufacture agreement the matcher would then score. Recorded as not-citable per the register's own escape hatch.",
       "correction_note": "Summary corrected 2026-09-14, same day. The first version said the finding was LIVE. I had verified that the !stripeKey guard did not fire, which proves the variable is SET, and then asserted reachability, which it does not prove. The production log line -- 'Expired API Key provided: sk_test_...' -- settled it afterwards. Corrected in place rather than superseded: the defect did not change, my claim about it did, and a second record would inflate the density and split the injection matrix."
+    },
+    {
+      "commit": "57236fe9db01",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_bill_cannot_settle_unmatched.js"
+      ],
+      "lines_added": 500,
+      "lines_removed": 10,
+      "app": "SAIRNBIZ",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred"
     }
   ]
 }

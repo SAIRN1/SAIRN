@@ -29,10 +29,12 @@
 // intact while the records that justify them are gone -- and the surviving
 // half is the one that looks authoritative.
 //
-// The nine below are handled by the generic SB_RESOURCES read/write pair in
-// api/sd-data.js -- one pair, not nine copy-pasted blocks, same shape as
+// The twelve below are handled by the generic SB_RESOURCES read/write pair in
+// api/sd-data.js -- one pair, not twelve copy-pasted blocks, same shape as
 // BLD_RESOURCES and LEG_RESOURCES. See sql/sairnbiz_data_schema.sql, which
-// must be run before any of these answer anything but 503 NOT_PROVISIONED.
+// must be run before any of these answer anything but 503 NOT_PROVISIONED --
+// and sql/sairnbiz_po_recv_migration.sql if that file was already run before
+// 2026-09-14.
 //
 // NAMING: the resource name is the localStorage key verbatim. That is not
 // cosmetic -- the client's sync hook keys off the storage key directly, so a
@@ -78,6 +80,28 @@ module.exports = {
   // regulator asks for, so losing the browser loses exactly the thing that
   // cannot be reconstructed from anything else in the app.
     'sb_incidents',
+  // PURCHASE ORDERS, and RECEIPTS against them. ADDED 2026-09-14, together,
+  // because they are one thing: the other two documents of the three-way match
+  // sairnbiz.html gained the same day. They were not "left out" in the
+  // 2026-09-04 or 2026-09-10 passes -- they did not exist yet.
+  //
+  // THE REASON THIS PAIR IS SHARPER THAN THE TEN ABOVE, stated here rather than
+  // left to be re-derived: `sb_ap` is already on this list and the double-entry
+  // ledger entry that settles a bill is durable in Postgres. The PO and the
+  // receipt are the ONLY two documents that say the bill was ever entitled to
+  // be paid. Lose the browser and a payable and a payment survive with nothing
+  // left that justifies either -- and sbThreeWayMatch, reading an empty sb_po,
+  // reports "no purchase order PO-2026-001 exists" against a bill that WAS
+  // correctly matched when it was paid. A control that goes quiet is a gap; a
+  // control that starts accusing correct work is worse, because somebody acts
+  // on it.
+  //
+  // NOTE FOR ANYONE ADDING THE TABLE: the synced id for sb_po is NOT the PO
+  // number. po_num comes from a per-device sequence, so two workstations both
+  // mint PO-2026-001 and the upsert would silently collapse two real POs into
+  // one row. See sql/sairnbiz_po_recv_migration.sql.
+    'sb_po',
+    'sb_recv',
   // DELIBERATELY NOT SYNCED, and why -- so the next reader does not have to
   // re-derive the judgement or assume it was an oversight:
   //   sb_emps -- ALREADY synced, by the bespoke `employees` branch, which
@@ -98,5 +122,13 @@ module.exports = {
   //     hydration SETS this deliberately on a fresh device, so syncing it as
   //     a record would fight that logic.
   //   sb_sync -- a "last synced" display timestamp, local to the device.
+  //   sb_po_seq -- the PER-DEVICE purchase-order sequence counter, added with
+  //     sb_po above and excluded on the same day it was included, which is why
+  //     it is written down. It is not a business record: it is a high-water
+  //     HINT, and sbPONext() re-derives the real high water by scanning the PO
+  //     rows themselves, so a device that hydrates another device's POs picks
+  //     up their numbering without the counter travelling at all. Syncing a
+  //     shared counter would need a real allocator; a jsonb blob upsert under
+  //     resolution=merge-duplicates is the opposite of one.
   ],
 };

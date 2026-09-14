@@ -30,7 +30,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 
 | App | Registered resources | A | B | C | Status |
 |---|---|---|---|---|---|
-| `sairnbiz` | 10 | **2** | 8 | 0 | **RE-TIERED** — `sb_incidents`, `sb_payruns` |
+| `sairnbiz` | 12 | **4** | 8 | 0 | **RE-TIERED** — `sb_incidents`, `sb_payruns`, `sb_po`, `sb_recv` |
 | `sairnbuild` | 32 | **5** | 27 | 0 | **RE-TIERED** — `bld_bids`, `bld_costs`, `bld_incidents`, `bld_price_points`, `bld_sub_bids` |
 | `sairncare` | 13 | **7** | 6 | 0 | **RE-TIERED** — `alf_billing`, `alf_claim_routes`, `alf_compliance_rules`, `alf_incidents`, `alf_op_audits`, `alf_payer_rules`, `alf_staff_credentials` |
 | `sairncode` | 28 | **7** | 20 | 1 | **RE-TIERED** — `sc_ar`, `sc_claims`, `sc_compliance`, `sc_credential_scope`, `sc_denial`, `sc_denial_events`, `sc_revenue` |
@@ -91,7 +91,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 
 ## The other fifteen apps
 
-### `sairnbiz` — 10 resources
+### `sairnbiz` — 12 resources
 
 | Resource | Tier | Worst consequence if it is wrong | Evidence |
 |---|---|---|---|
@@ -102,6 +102,8 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `sb_incidents` | **A** | An OSHA injury log wrong or incomplete | REGULATED. The OSHA Form 300 log built in `fb85a4d9` after the open-work row found the Safety tile counting a collection nothing could write |
 | `sb_invs` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `sb_payruns` | **A** | A payroll run wrong | Money, and the most consequential kind -- payroll. `sairnbiz.html` is also the only writer of the platform-shared `employees` roster |
+| `sb_po` | **A** | A bill paid against a purchase order that does not say what it says | MONEY, and upstream of it. A purchase order is a priced COMMITMENT rather than a record of one -- the same rule this register already states for `bld_bids` -- and `sbThreeWayMatch` in `sairnbiz.html` validates the bill amount against this row before `sbPayBill` will settle it. Wrong in one direction it refuses a correct payment; wrong in the other it authorises one nobody committed to. Added 2026-09-14 with `sql/sairnbiz_po_recv_migration.sql`, when the collection first reached a server at all |
+| `sb_recv` | **A** | A bill paid in full for goods that never arrived | MONEY. The receipt is the only record of what ACTUALLY ARRIVED, and `sbThreeWayMatch` compares the bill against the summed receipts for the PO -- so this row is the half of the control that catches a full invoice for a partial delivery. `sql/sairnbiz_po_recv_migration.sql` gave it a server for the first time on 2026-09-14; before that the check ran entirely on one workstation |
 | `sb_perf` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `sb_train` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `sb_vends` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |

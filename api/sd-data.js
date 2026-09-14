@@ -9389,10 +9389,22 @@ module.exports = async (req, res) => {
     // same reason it covers sb_perf: an injury log names an employee, a body
     // part and a privacy-case flag, and the licence key is a string the app
     // documents as not being auth.
+    // sb_po and sb_recv joined 2026-09-14 -- the OTHER TWO DOCUMENTS of the
+    // three-way match, built into sairnbiz.html after the 2026-09-10 pass and
+    // so never provisioned. They are the sharpest case on this list rather
+    // than two more collections: sb_ap is ALREADY here and the ledger entry
+    // settling a bill is durable, so losing the browser leaves a payable and a
+    // payment WITH NOTHING LEFT THAT JUSTIFIES EITHER -- and sbThreeWayMatch,
+    // reading an empty sb_po, then accuses a correctly-matched bill of having
+    // no purchase order. The control does not stop working, it starts lying.
+    //
+    // The session gate argued above covers both for the same reason it covers
+    // sb_ap: a PO names a vendor and an amount the company is committed to.
     const SB_RESOURCES = {
       sb_invs: 'inv_id', sb_exps: 'exp_id', sb_ap: 'ap_id', sb_vends: 'vend_id',
       sb_payruns: 'payrun_id', sb_train: 'train_id', sb_perf: 'perf_id',
-      sb_hire: 'hire_id', sb_bud: 'bud_id', sb_incidents: 'incident_id'
+      sb_hire: 'hire_id', sb_bud: 'bud_id', sb_incidents: 'incident_id',
+      sb_po: 'po_id', sb_recv: 'recv_id'
     };
     if (SB_RESOURCES[resource]) {
       const sbBizSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');

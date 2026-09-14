@@ -2437,3 +2437,65 @@ proves the route is deployed and the cron gate refuses. **It does not prove the 
 exercising it needs `CRON_SECRET`, and a real call WRITES A PRODUCTION CHECKPOINT. The proof that
 the guard fires is the driven local run against the real handler, not the live probe. Recorded
 this way so nobody later reads "pushed and verified" as more than it was.
+
+
+---
+
+## 2026-09-14 -- SAIRNbiz: the three-way match's own two documents reached no server
+
+**Found by `tools/local_only_collection_check.py`**, which named them rather than implying a
+count: **2 of 13 sairnbiz collections with NO route to a server -- `sb_po` and `sb_recv`.** Both
+were built the same day by the three-way-match work, AFTER the pass that provisioned everything
+else, so they were never *left out*; they were never considered.
+
+### Why this pair is not just two more local-only collections
+
+`sb_ap` -- the bill -- was **already** backed up, and the double-entry ledger entry settling it is
+durable in Postgres. The PO and the receipt are the only two documents that say the bill was ever
+ENTITLED to be paid. Clear the browser and a payable and a payment survive **with nothing left
+that justifies either** -- and `sbThreeWayMatch`, reading an empty `sb_po`, then reports *"no
+purchase order PO-2026-001 exists"* against a bill that WAS correctly matched when it was paid.
+
+**The control does not go quiet. It starts accusing correct work**, and nothing distinguishes that
+from a real finding.
+
+### The one non-mechanical decision: `po_id` is not the PO number
+
+`po_num` comes from `sb_po_seq`, a **per-device** counter, so two workstations raising their first
+PO of the year both mint `PO-2026-001`. `api/sd-data.js` upserts on `(license_hash, po_id)` with
+`resolution=merge-duplicates`. Keying on the PO number would let the second device's purchase order
+**silently overwrite** the first: one row, two real POs, no error anywhere, and the match would
+afterwards validate bills against whichever won. The synced id is an internal minted string, so
+both survive and the duplicate NUMBER becomes a visible, correctable business problem.
+
+### Two holes that were harmless until sync made them destructive
+
+Closed in the same change, because leaving one of two identical sites is how this codebase keeps
+rediscovering the same defect:
+
+1. **`sbRecvLog()` had no collision check** -- `'RC'+Date.now().toString(36)`. Two receipts in the
+   same millisecond shared an id. Nothing local keys off it; from the moment `sb_recv` is upserted
+   the second receipt **silently replaces the first**, two deliveries become one, and the match
+   then refuses the bill for a short receipt total that is an artefact of the id, not the goods.
+2. **`sbThreeWayMatch` took `[0]`** from the POs matching a number -- array order. Once hydration
+   puts two same-numbered POs on one device it would validate against whichever was first. It
+   refuses now and names the count.
+
+### How it is held
+
+Four places have to agree -- `SB_SYNCED`, `SB_RESOURCES`, the resource registry, the schema -- and
+the arm is **bidirectional**, asserting they are the SAME SET rather than that today's two are
+present, because the failure that matters is a fifth collection added later to three of the four.
+
+**Four mutation controls, each run, each taking the suite red:** drop `sb_po` from `SB_ID_PREFIX`;
+restore the single-line receipt id; restore pick-the-first in the match; drop the pair from
+`SB_SYNCED`. `tests/sairnbiz_po_recv_reach_the_server.js`, 28 arms. Existing suite still 42/42;
+`app-boundary` 13/13; `checkblocks.py` 5 blocks, 0 failed, and the checker was itself controlled by
+planting a syntax error and watching it fire.
+
+### What is NOT done, and it is not mine to do
+
+**`sql/sairnbiz_po_recv_migration.sql` has not been run.** Until it is, every write answers 503
+NOT_PROVISIONED and the app keeps records on the device -- saying so in the console, not in a badge.
+Tiered **A** for both (`docs/CRITICALITY-TIERS.md`, sairnbiz 10 -> 12 resources, A 2 -> 4) and one
+register record added, `detection_method: static-checker`, rule 1.11.
