@@ -55,7 +55,7 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CRITERIA_VERSION = '2026-09-13.1'
+CRITERIA_VERSION = '2026-09-13.2'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -89,10 +89,118 @@ def strip_comments(src, js):
     return '\n'.join(l for l in lines if not l.strip().startswith(marker))
 
 
+# A `.replace(` that can never touch a file. Stated as a narrow, named list
+# rather than inferred: `datetime.replace(tzinfo=...)` is the stdlib's
+# immutable-copy API and has nothing to do with source text.
+NEVER_A_FILE = re.compile(r'\.replace\(\s*tzinfo\s*=')
+
+
+def logical_lines(code):
+    """Join continuations so an expression split across lines is one unit.
+
+    `open(p,'w').write(` on one line and `src.replace(old,new))` on the next is
+    the commonest shape in this repo, and a line-at-a-time reader sees a bare
+    replace with no write anywhere near it.
+    """
+    out, buf, depth = [], '', 0
+    for raw in code.split('\n'):
+        buf = raw if not buf else buf + ' ' + raw.strip()
+        depth += raw.count('(') + raw.count('[') - raw.count(')') - raw.count(']')
+        if depth <= 0:
+            out.append(buf)
+            buf, depth = '', 0
+    if buf:
+        out.append(buf)
+    return out
+
+
+ASSIGNED = re.compile(r'^\s*(?:const|let|var)?\s*([A-Za-z_$][\w$]*)\s*=[^=]')
+
+WRITE_CALL = re.compile(r'\b(?:write|writeFileSync)\s*\(')
+
+# `x = src.replace(...)` -- the replace is what produces x. Not
+# `x = json.load(open(p.replace(...)))`, where it produced a path.
+ASSIGN_IS_REPLACE = re.compile(r'=\s*[\w$.\[\]\'"]+\.replace\(')
+
+
+def write_arguments(line):
+    """The argument text of every write call on one logical line.
+
+    `open(dest, 'w').write(body)` yields `body` and NOT `dest`. That distinction
+    is the whole point: a path variable sits on the write line without being
+    what is written, and reading the line as a whole counts it as content.
+    """
+    out = []
+    for m in WRITE_CALL.finditer(line):
+        i, depth = m.end(), 1
+        while i < len(line) and depth:
+            if line[i] == '(':
+                depth += 1
+            elif line[i] == ')':
+                depth -= 1
+                if not depth:
+                    break
+            i += 1
+        out.append(line[m.end():i])
+    return out
+
+
+def replace_feeds_a_write(code):
+    """Does any `.replace(` result actually reach a file write?
+
+    NARROWED 2026-09-13 (Cody, Michael's call). The previous test was
+    file-level -- any write anywhere AND any replace anywhere -- so a probe
+    that patched no file at all was judged and counted. Measured across the
+    19 rows then outstanding: about NINE were `datetime.replace(tzinfo=None)`,
+    scrubbing a checker's OUTPUT STRING, or path-separator normalisation.
+    None of them has an anchor that can rot, so there was nothing to guard and
+    no honest way to close them -- which is how a headline count inflates.
+
+    Two shapes count, and they are the two this repo actually uses:
+      * the replace sits inside the write call itself;
+      * the replace is assigned to a name, and that name is later written.
+
+    BOTH ARE JUDGED ON THE WRITE'S CONTENT ARGUMENT, NOT ON THE LINE. The first
+    version of this narrowing asked whether the name appeared anywhere on a line
+    containing a write, and a PATH variable does exactly that --
+    `open(dest, 'w').write(body)` has `dest` on the write line while the thing
+    being written is `body`. So `dest = p.replace('/', os.sep)` still counted,
+    and two path-normalising probes stayed flagged. Sabotage is about CONTENT;
+    the destination is not the payload.
+
+    WHAT THIS STILL CANNOT SEE, said here rather than discovered later: a
+    replace passed to a local helper that writes (`mutate(src.replace(...))`).
+    Tracking that needs the helper's body, which is not done. The bias is now
+    toward NOT judging, which loses a real row rather than inventing one.
+    """
+    lines = logical_lines(code)
+    written_args = ' '.join(a for ln in lines for a in write_arguments(ln))
+    written_names = set(re.findall(r'[A-Za-z_$][\w$]*', written_args))
+    for ln in lines:
+        if not REPLACES.search(ln) or NEVER_A_FILE.search(ln):
+            continue
+        # Inside the write's own argument text, not merely on the same line.
+        if any('.replace(' in a and not NEVER_A_FILE.search(a)
+               for a in write_arguments(ln)):
+            return True
+        m = ASSIGNED.match(ln)
+        # ...and the replace must PRODUCE the assigned value, not merely occur
+        # somewhere inside the expression that does. `doc = json.load(io.open(
+        # os.path.join(wt, REG.replace('/', os.sep))))` assigns a parsed
+        # document and is later written -- but the replace built the PATH. That
+        # kept run_defect_register_probe flagged through two rounds of this
+        # narrowing, which is how a heuristic stays wrong while getting closer.
+        if m and m.group(1) in written_names and ASSIGN_IS_REPLACE.search(ln):
+            return True
+    return False
+
+
 def analyse(rel, src):
     js = rel.endswith('.js')
     code = strip_comments(src, js)
     if not (WRITES.search(code) and REPLACES.search(code)):
+        return None
+    if not replace_feeds_a_write(code):
         return None
     guarded = any(g.search(code) for g in GUARDS)
     return {'file': rel, 'guarded': guarded}
@@ -112,6 +220,24 @@ FIXTURES = [
      "open(p,'w').write('| A | B |\\n')\n", None),
     ('CONTROL: a probe that only reads is not judged',
      "src = open(p).read()\nassert 'x' in src\n", None),
+    # ── ADDED 2026-09-13 WITH THE NARROWING. Not one of the seven fixtures
+    # above contains a datetime or an output scrub, which is exactly why the
+    # blind lock could not catch the bias this pass found -- a lock is only as
+    # good as the shapes it imagines.
+    ('CONTROL: datetime.replace(tzinfo=) beside a write is not judged',
+     "open(p,'w').write('x')\nt = now.replace(tzinfo=None)\n", None),
+    ('CONTROL: scrubbing a checker OUTPUT string is not judged',
+     "open(p,'w').write('x')\nassert 'y' not in out.replace('write x','')\n", None),
+    ('CONTROL: path-separator normalisation is not judged',
+     "open(p,'w').write('x')\nq = REL.replace('/', os.sep)\n", None),
+    ('a replace ASSIGNED then written IS judged, and unguarded here',
+     "src = open(p).read()\nm = src.replace('a','b')\nopen(p,'w').write(m)\n", False),
+    ('a replace INSIDE the write call is judged',
+     "open(p,'w').write(src.replace('a','b'))\n", False),
+    ('a write and a replace SPLIT ACROSS LINES is still one expression',
+     "open(p,'w').write(\n    src.replace('a','b'))\n", False),
+    ('CONTROL: a path built with replace, parsed, then written is not judged',
+     "doc = json.load(open(REG.replace('/', os.sep)))\n" "open(p,'w').write(json.dumps(doc))\n", None),
     ('a GUARD IN A COMMENT does not count -- the check must be in the code',
      "# assert old in src\nsrc = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n", False),
 ]
