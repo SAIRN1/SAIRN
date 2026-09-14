@@ -133,7 +133,10 @@ the traverse closed; it never returns to the known point.
   that too. It was caught by reading the regenerated diff, not by the check.
 
 **The failure mode has a name here already:** a check that reads as coverage
-and structurally cannot fire — the one all six conventions defend against.
+and structurally cannot fire — the one **seven of the eight** conventions defend
+against. (This line read *"all six"* when written on 2026-09-13; the document
+gained a seventh and an eighth the same day. Item 7, byte-identical-is-not-
+safe-in-context, is the exception and defends against something else.)
 
 ### What the fix is
 
@@ -156,10 +159,14 @@ Two generators, roughly four inputs each, and the refusal pattern already
 exists in the same file. Add **M** if `MASTER-PLAN.md` becomes the third
 generator under item 1, in which case do item 1 first and this one inherits it.
 
-**Build the control first** (the seventh convention): drive each generator from
-a copy of the tree with one source deliberately emptied, and assert it REFUSES
-rather than reporting a clean document. Without that arm this is another check
-that cannot fire.
+**Build the control first** — the disciplines document's **closing rule**, which
+is deliberately unnumbered so it cannot collide with a section: *build the
+control that makes it fail before you trust the run that says it passed.* (This
+said *"the seventh convention"* when written, meaning that closing rule at a time
+when the document had six numbered sections. It now has eight, and section 7 is a
+different thing entirely.) Drive each generator from a copy of the tree with one
+source deliberately emptied, and assert it REFUSES rather than reporting a clean
+document. Without that arm this is another check that cannot fire.
 
 ---
 

@@ -358,8 +358,8 @@ stopped being able to is not a day anything reported.**
 
 *(Numbering note, 2026-09-13: this closing rule used to be called "the seventh
 thing", written when the document had six numbered sections. It is unnumbered now
-so it cannot collide with a section again. Two references in
-`docs/2026-09-13-stackup-traverse-drift-scoping.md` — "all six conventions" and
-"the seventh convention" — were written against that older numbering and point at
-this rule, not at section 7. They are left as they were rather than silently
-renumbered; correcting them is a separate edit to that document.)*
+so it cannot collide with a section again. The two references in
+`docs/2026-09-13-stackup-traverse-drift-scoping.md` that were written against the
+older numbering — "all six conventions" and "the seventh convention" — have been
+corrected in that document, each carrying what it originally said so the
+correction is visible rather than invisible.)*
