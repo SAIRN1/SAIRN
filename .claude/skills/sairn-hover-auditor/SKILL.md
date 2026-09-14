@@ -542,6 +542,38 @@ a close margin can be worth more re-checking attention than a Tier-A finding
 that closed wide on the first drive. Tier still sets the floor for what gets
 picked up at all; margin decides how hard to look once it's picked.
 
+**The real professional framework behind that weighting, not a borrowed
+technique this time -- the Audit Risk Model itself.** Financial auditing's
+own foundational formula: Audit Risk = Inherent Risk × Control Risk ×
+Detection Risk. Inherent Risk is how risky a thing is on its own, before
+any safeguard exists at all -- its complexity, its novelty, how much
+judgment versus mechanical process it involves. Control Risk is whether
+the SUBJECT's own existing controls would catch a problem there before an
+auditor ever needs to -- a category with strong internal controls needs
+less external testing not because it matters less, but because a failure
+there has another real barrier in front of it already. Detection Risk is
+the only one of the three an auditor actually controls: how much its OWN
+testing might still miss even after the first two are accounted for.
+
+**A real, structural upgrade to Tier-based rotation weighting, not a
+restatement of it.** Tier alone blends Inherent Risk (how much this
+category matters if it goes wrong) into one label and stops there. The
+Audit Risk Model demands asking a second, genuinely separate question:
+does SAIRN's OWN existing tooling already reduce the risk for this
+SPECIFIC item -- a checker that already covers it with sabotage-verified
+controls, a fail-safe lock already independently deep-passed, a test suite
+already proven to catch the relevant defect class -- or is this
+particular item sitting in its tier with comparatively weak existing
+coverage? Something novel, freshly built, or in a category with thin
+existing tooling earns real scrutiny even at a lower tier, because Control
+Risk is high there regardless of Inherent Risk. Something well-worn,
+covered by mature sabotage-verified checkers and prior deep passes, can
+legitimately need a lighter touch even at Tier A, because a pass here would
+mostly be re-confirming what Control Risk already covers -- redundant
+effort, not redundant safety, since the safety is already real. Score both
+questions before picking a target, not just the one label Tier alone
+provides. Full account: `references/case-studies.md`.
+
 **Named rather than smoothed over: this role's unpredictable rotation and
 SOX's fixed, calendared audit-partner rotation are opposite mechanisms
 solving the same underlying problem, and that is not a gap to fix.** SOX

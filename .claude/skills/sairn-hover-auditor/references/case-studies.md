@@ -3,7 +3,7 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in six
+is still on record somewhere, not compressed away. Added 2026-09-14 in seven
 batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
 Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
 SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
@@ -14,7 +14,9 @@ and entity-based assessment shift, and CAICT/Taobao's "false alignment"
 research (direct, current research about the exact category of system this
 role belongs to, rather than adjacent-industry analogy); then Kepler/
 Flyspeck (the hard scale limit of human review) and loophole-free Bell
-tests (closing every explanation together, not one at a time). All six once
+tests (closing every explanation together, not one at a time); then the
+Audit Risk Model (the real professional formula underneath the rotation-
+weighting technique, not another borrowed analogy). All seven once
 the earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
 Debate, risk-limiting audits, Registered Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
@@ -667,3 +669,60 @@ sequential tests; it is enumerating every plausible alternative explanation
 in advance and designing one test, or one line of questioning, that
 addresses all of them at once -- the same shift in method that finally
 ended a fifty-year-old physics debate.
+
+## The Audit Risk Model -- the real professional framework underneath the method
+
+Where the risk-limiting-audit citation elsewhere in this file borrows a
+TECHNIQUE from an adjacent field (election security's margin-based
+sampling), this is the actual foundational formula of the financial
+auditing profession itself, and this role's rotation-weighting turns out to
+be a specific case of it rather than an analogy to it.
+
+**Audit Risk = Inherent Risk × Control Risk × Detection Risk.** Three
+genuinely separate factors, not one blended number:
+
+- **Inherent Risk** -- how risky a thing is on its own, before any
+  safeguard exists at all. A function doing novel, judgment-heavy work in
+  a regulated domain has high inherent risk; a well-understood, mechanical
+  calculation has low inherent risk, independent of anything built to
+  guard either one.
+- **Control Risk** -- whether the SUBJECT's own existing controls would
+  catch a problem in this area before an external auditor ever needs to.
+  A category with mature, tested internal controls has low control risk
+  even if its inherent risk is high, because a failure there has to get
+  past a real barrier first. A category with no internal controls at all
+  has high control risk regardless of how mechanical the underlying work
+  is.
+- **Detection Risk** -- the only factor the auditor actually controls: how
+  much the auditor's OWN testing might still miss, even after accounting
+  for the first two. This is the one lever an auditor can pull directly;
+  the other two are properties of the subject being audited, not of the
+  audit itself.
+
+**Why Tier alone is Inherent Risk with the other two factors silently
+assumed constant.** A Tier label answers "how much does this matter if it
+goes wrong" -- Inherent Risk, essentially. It says nothing on its own about
+Control Risk: whether THIS specific item already sits behind a real,
+tested, sabotage-verified checker, a fail-safe lock already independently
+deep-passed, or a test suite already proven (not merely claimed) to catch
+the relevant defect class. Two Tier A items can have wildly different
+Control Risk -- one freshly built with no prior independent verification at
+all, one that has already survived several genuine deep passes and
+mutation-control tests. Treating both the same because they share a Tier
+label is exactly the blending the Audit Risk Model exists to prevent:
+Inherent Risk stayed the label, and Control Risk, the thing that should
+have changed how hard to look, got silently assumed away.
+
+**The structural consequence for where this role's own attention goes.**
+An item with high Inherent Risk AND high Control Risk (novel, Tier A,
+nothing has independently verified it yet) deserves the deepest scrutiny
+this role can give. An item with high Inherent Risk but genuinely LOW
+Control Risk (Tier A, but already covered by mature, sabotage-verified
+tooling and prior real deep passes) can legitimately receive a lighter
+touch -- not because it stopped mattering, but because re-running the same
+verification the existing controls already provide is redundant EFFORT,
+not redundant SAFETY, since the safety is already real and already proven.
+Conversely, a lower-tier item with high Control Risk -- genuinely novel,
+freshly built, sitting in a category with thin existing coverage -- can
+rightly earn more attention than its tier label alone would suggest. Both
+questions have to be asked; Tier answers only the first one.
