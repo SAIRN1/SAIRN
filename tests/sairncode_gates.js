@@ -162,7 +162,7 @@ const WRITE_GATED = {
   sc_claims: 'admin|biller',
   sc_revenue: 'admin|biller',
   sc_denial: 'admin|biller',
-  sc_compliance: 'admin|biller',
+  sc_compliance: 'admin|biller|auditor',   // the one per-resource override
   sc_credential_scope: 'admin|biller',
 };
 // Read from api/sd-data.js rather than retyped, for the same reason
@@ -181,6 +181,27 @@ const TIER_A_GATED = (() => {
   assert.ok(m, 'SC_TIER_A_WRITE_GATED not found in api/sd-data.js');
   return JSON.parse('[' + m[1].replace(/'/g, '"').replace(/,\s*\]/, ']') + ']');
 })();
+// ── THE PER-RESOURCE OVERRIDE (2026-09-14) ─────────────────────────────────
+// Michael added `auditor` to sc_compliance and left `coder` off sc_claims. Both
+// are read out of api/sd-data.js rather than retyped, so a widened list fails
+// here instead of being ratified by a test that agreed with itself. Section 6
+// drives allowed and denied PER RESOURCE as a result: its first version asked
+// "every disallowed role on every one of the six" and went red the moment one
+// resource departed from the shared list -- which is the arm doing its job, but
+// a blanket claim is the wrong shape once an exception exists.
+const TIER_A_OVERRIDES = (() => {
+  const src = require('fs').readFileSync(path.join(ROOT, 'api/sd-data.js'), 'utf8');
+  const m = /const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = \{([\s\S]*?)\};/.exec(src);
+  assert.ok(m, 'SC_TIER_A_WRITE_ROLES_BY_RESOURCE not found in api/sd-data.js');
+  const out = {};
+  const re = /(\w+)\s*:\s*\[([^\]]*)\]/g;
+  let e;
+  while ((e = re.exec(m[1])) !== null) {
+    out[e[1]] = JSON.parse('[' + e[2].replace(/'/g, '"').replace(/,\s*$/, '') + ']');
+  }
+  return out;
+})();
+const rolesFor = (resource) => TIER_A_OVERRIDES[resource] || TIER_A_ROLES;
 // Gated only on a specific payload shape. Creating a draft, editing before
 // review and logging a payer decision after the fact are all open; making a
 // request SUBMISSION-READY is not. Section 4 drives both halves.
@@ -505,12 +526,22 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
        'CONTROL: SAIRNcode genuinely has no `manager` role, so mapping the '
        + 'decision\'s "Manager" onto `biller` was a translation and not a rename');
 
-    const denied = ROLES.filter((r) => TIER_A_ROLES.indexOf(r) === -1);
-    ok(denied.length > 0, 'CONTROL: there are roles to deny -- ' + denied.join(', '));
-
-    let anon401 = 0, deniedCount = 0, allowedCount = 0;
+    // ── ALLOWED AND DENIED ARE MEASURED PER RESOURCE ──────────────────────
+    // Not as one blanket claim over all six. The first version of this section
+    // asserted "every disallowed role on every one of the six" and went red the
+    // moment Michael added `auditor` to sc_compliance -- the arm doing its job,
+    // and the wrong shape once an exception exists. Every expectation below
+    // comes from the handler's own per-resource list.
+    let anon401 = 0, deniedCount = 0, allowedCount = 0, deniedExpected = 0;
     const leaks = [];
     for (const resource of TIER_A_GATED) {
+      const allowed = rolesFor(resource);
+      const denied = ROLES.filter((r) => allowed.indexOf(r) === -1);
+      ok(denied.length > 0,
+         'CONTROL: ' + resource + ' still has roles to deny -- ' + denied.join(', ')
+         + ' (allowed: ' + allowed.join(', ') + ')');
+      deniedExpected += denied.length;
+
       const anon = await call(h, { resource, action: 'write', payload: { id: 'W1', amt: 1 } });
       if (anon.code === 401 && anon.body && anon.body.error
           && anon.body.error.code === 'NO_SESSION' && !anon.sawUpstream) anon401 += 1;
@@ -524,7 +555,7 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
         else leaks.push(resource + '/' + role + ' -> ' + r.code
                         + (r.sawUpstream ? ' REACHED STORAGE' : ''));
       }
-      for (const role of TIER_A_ROLES) {
+      for (const role of allowed) {
         const r = await call(h, { resource, action: 'write', payload: { id: 'W1' },
                                   token: token(role) });
         if (r.code === 200 && r.sawUpstream) allowedCount += 1;
@@ -534,17 +565,58 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     ok(anon401 === 6,
        'all six answer 401 NO_SESSION to an unsigned write, without touching '
        + 'storage -- ' + anon401 + '/6');
-    ok(deniedCount === 6 * denied.length,
-       'every disallowed role (' + denied.join(', ') + ') is refused 403 '
-       + 'FORBIDDEN on every one of the six -- ' + deniedCount + '/'
-       + (6 * denied.length));
+    ok(deniedCount === deniedExpected,
+       'every role NOT on a resource\'s own list is refused 403 FORBIDDEN, '
+       + 'resource by resource -- ' + deniedCount + '/' + deniedExpected);
     // WITHOUT THIS THE TWO ARMS ABOVE WOULD PASS ON A BRANCH THAT REFUSED
     // EVERYONE, which would be a worse outage than the gap it closed.
-    ok(allowedCount === 6 * TIER_A_ROLES.length,
-       'CONTROL: every ALLOWED role does reach storage on every one of the six -- '
-       + allowedCount + '/' + (6 * TIER_A_ROLES.length));
+    const allowedExpected = TIER_A_GATED.reduce((a, r) => a + rolesFor(r).length, 0);
+    ok(allowedCount === allowedExpected,
+       'CONTROL: every ALLOWED role does reach storage on its own resources -- '
+       + allowedCount + '/' + allowedExpected);
     ok(leaks.length === 0, 'nothing behaved differently: '
        + (leaks.slice(0, 6).join('; ') || 'none'));
+
+    // ── THE TWO DECISIONS, NAMED SO THEY CANNOT DRIFT BACK SILENTLY ───────
+    // Both were open questions when the gate shipped and both were answered on
+    // 2026-09-14. Asserting them by name means a later widening or narrowing is
+    // a test failure with a reason attached, not a quiet change to a constant.
+    ok(rolesFor('sc_compliance').indexOf('auditor') !== -1,
+       'DECIDED: an `auditor` CAN write sc_compliance -- recording a compliance '
+       + 'finding is that role\'s stated job, and excluding it from the resource '
+       + 'named for that job was the wrong-shaped gate');
+    const auditorCompliance = await call(h, { resource: 'sc_compliance', action: 'write',
+                                              payload: { id: 'W1' },
+                                              token: token('auditor') });
+    ok(auditorCompliance.code === 200 && auditorCompliance.sawUpstream,
+       '...driven, not just declared -- an auditor session reaches storage on '
+       + 'sc_compliance');
+    // AND THE OVERRIDE IS AN OVERRIDE. Widening the shared constant instead
+    // would have granted an auditor five more resources nobody decided about.
+    let auditorElsewhere = 0;
+    for (const resource of TIER_A_GATED.filter((r) => r !== 'sc_compliance')) {
+      const r = await call(h, { resource, action: 'write', payload: { id: 'W1' },
+                                token: token('auditor') });
+      if (r.code === 403 && !r.sawUpstream) auditorElsewhere += 1;
+      else leaks.push('auditor reached ' + resource + ' -> ' + r.code);
+    }
+    ok(auditorElsewhere === 5,
+       'CONTROL: and an auditor is still refused on the other five -- the '
+       + 'exception is an EXCEPTION, not a widened shared list. '
+       + auditorElsewhere + '/5');
+    ok(rolesFor('sc_claims').indexOf('coder') === -1,
+       'DECIDED: a `coder` CANNOT write sc_claims. Coherent with the split this '
+       + 'app already has -- sc_coded_items is the coder\'s own resource and is '
+       + 'ungated -- and claims submission is billing-side by design');
+    const coderClaims = await call(h, { resource: 'sc_claims', action: 'write',
+                                        payload: { id: 'W1' }, token: token('coder') });
+    ok(coderClaims.code === 403 && !coderClaims.sawUpstream,
+       '...driven: a coder session is refused 403 on sc_claims');
+    const coderCoded = await call(h, { resource: 'sc_coded_items', action: 'write',
+                                       payload: { id: 'W1' } });
+    ok(coderCoded.code === 200 && coderCoded.sawUpstream,
+       'CONTROL: sc_coded_items -- the coder\'s own resource -- is still ungated, '
+       + 'which is what makes the exclusion above a split rather than a lockout');
 
     // 401 AND 403 ARE DIFFERENT PROBLEMS WITH DIFFERENT FIXES and collapsing
     // them sends a support call to the wrong place. Asserted rather than assumed
@@ -559,11 +631,21 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     ok(/requires a signed-in employee session/.test(
          (anon.body && anon.body.error && anon.body.error.message) || ''),
        '...and the 401 says what to do');
-    ok(new RegExp(TIER_A_ROLES.join('|')).test(
-         (wrongRole.body && wrongRole.body.error && wrongRole.body.error.message) || ''),
-       '...and the 403 names the roles that can, rather than only the one that '
-       + 'cannot: ' + ((wrongRole.body && wrongRole.body.error
-                        && wrongRole.body.error.message) || '').slice(0, 90));
+    // THE MESSAGE MUST NAME THE LIST THE CHECK ACTUALLY USED. With a
+    // per-resource override those can diverge, and a refusal that tells somebody
+    // the wrong set of roles sends them to the wrong colleague.
+    const wrMsg = (wrongRole.body && wrongRole.body.error
+                   && wrongRole.body.error.message) || '';
+    ok(rolesFor('sc_claims').every((r) => wrMsg.indexOf(r) !== -1),
+       '...and the 403 names every role that CAN, rather than only the one that '
+       + 'cannot: ' + wrMsg.slice(0, 90));
+    const compDenied = await call(h, { resource: 'sc_compliance', action: 'write',
+                                       payload: { id: 'W1' }, token: token('coder') });
+    const compMsg = (compDenied.body && compDenied.body.error
+                     && compDenied.body.error.message) || '';
+    ok(compMsg.indexOf('auditor') !== -1,
+       'CONTROL: and on sc_compliance it names `auditor` too, so the message '
+       + 'tracks the OVERRIDE and not the shared constant: ' + compMsg.slice(0, 90));
 
     // CROSS-APP: a StoneDesk ADMIN token carries the right role string and the
     // wrong app. The app claim must be the thing that refuses it -- the same

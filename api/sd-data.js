@@ -176,6 +176,33 @@ const SC_TIER_A_WRITE_GATED = [
   'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',
   'sc_credential_scope'
 ];
+// ── ONE PER-RESOURCE EXCEPTION, AND IT IS AN EXCEPTION ON PURPOSE ──────────
+// Michael's call, 2026-09-14, on the two questions the gate above was shipped
+// with open:
+//
+//   sc_claims  -- `coder` stays EXCLUDED. Coherent with the split this app
+//     already has: the coder's own resource, sc_coded_items, is ungated and
+//     that is their real job. Claims SUBMISSION is billing-side by design,
+//     matching the standard division between coding and billing even where
+//     SAIRNcode gives them separate roles. No change; recorded because "we
+//     looked and decided not to" is a different fact from "nobody asked".
+//
+//   sc_compliance -- `auditor` is ADDED. Recording a compliance finding is
+//     literally the auditor role's stated job, so excluding them from the
+//     resource named for that job is the wrong-shaped gate.
+//
+// WHY AN OVERRIDE MAP RATHER THAN WIDENING THE CONSTANT: adding 'auditor' to
+// SC_TIER_A_WRITE_ROLES would let an auditor write sc_ar, sc_claims, sc_revenue,
+// sc_denial and sc_credential_scope as well -- five resources nobody decided
+// about, granted silently by a one-word edit. The shared list stays the default
+// and the exception is named; a reader can see at a glance that exactly one
+// resource departs from it and why.
+const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {
+  sc_compliance: ['admin', 'biller', 'auditor'],
+};
+function scTierAWriteRoles(resource) {
+  return SC_TIER_A_WRITE_ROLES_BY_RESOURCE[resource] || SC_TIER_A_WRITE_ROLES;
+}
 // Roles allowed to list every profile or write any profile -- mirrors the
 // EMPLOYEES_*_ROLES pattern above. Self-read (own profile only, derived
 // from the caller's own verified token) is allowed for every role and does
@@ -11425,11 +11452,16 @@ module.exports = async (req, res) => {
             res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first — ' + resource + ' is a billing record and requires a signed-in employee session' } });
             return;
           }
-          if (SC_TIER_A_WRITE_ROLES.indexOf(scTierACaller.role) === -1) {
+          // Per-resource, defaulting to the shared list. sc_compliance is the
+          // one exception and the only one -- see scTierAWriteRoles above. The
+          // MESSAGE names the same list the CHECK used, so a refusal can never
+          // tell somebody the wrong set of roles.
+          const scAllowed = scTierAWriteRoles(resource);
+          if (scAllowed.indexOf(scTierACaller.role) === -1) {
             res.status(403).json({
               error: {
                 code: 'FORBIDDEN',
-                message: 'Only ' + SC_TIER_A_WRITE_ROLES.join(' or ') + ' can change '
+                message: 'Only ' + scAllowed.join(' or ') + ' can change '
                   + resource + '. Your changes were not saved.'
               }
             });

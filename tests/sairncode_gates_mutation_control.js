@@ -144,8 +144,13 @@ const MUTATIONS = [
     replace: "        if (false) {",
   },
   {
+    // ANCHOR UPDATED 2026-09-14, and it went ANCHOR-0 first. The line used to
+    // read `SC_TIER_A_WRITE_ROLES.indexOf(...)`; adding the per-resource
+    // override changed it to `scAllowed.indexOf(...)`. That is the stale-anchor
+    // failure this control's part-one arm exists for, caught on the run right
+    // after the edit rather than months later on a probe reporting clean.
     name: 'the gate accepts ANY authenticated role, so a coder writes claims again',
-    find: "          if (SC_TIER_A_WRITE_ROLES.indexOf(scTierACaller.role) === -1) {",
+    find: "          if (scAllowed.indexOf(scTierACaller.role) === -1) {",
     replace: "          if (false) {",
   },
   {
@@ -171,6 +176,40 @@ const MUTATIONS = [
         + 'writes start answering 401',
     find: "        if (SC_TIER_A_WRITE_GATED.indexOf(resource) !== -1) {",
     replace: "        if (true) {",
+  },
+  // ── THE TWO ROLE DECISIONS OF 2026-09-14 ─────────────────────────────────
+  // Both were open questions when the gate shipped. A decision nothing can
+  // fail on is a preference, so each is planted in both directions: reversed,
+  // and implemented the OTHER way (by widening the shared constant), which is
+  // the version that grants five resources nobody decided about.
+  {
+    name: 'the auditor override is deleted, so the role whose job is '
+        + 'compliance cannot record a finding',
+    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n};",
+    replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {};",
+  },
+  {
+    name: 'the override is applied by WIDENING the shared list instead, '
+        + 'granting an auditor five resources nobody decided about',
+    find: "const SC_TIER_A_WRITE_ROLES = ['admin', 'biller'];",
+    replace: "const SC_TIER_A_WRITE_ROLES = ['admin', 'biller', 'auditor'];",
+  },
+  {
+    name: 'the 403 MESSAGE reverts to the shared constant, so a refusal on '
+        + 'sc_compliance names the wrong set of roles',
+    find: "                message: 'Only ' + scAllowed.join(' or ') + ' can change '",
+    replace: "                message: 'Only ' + SC_TIER_A_WRITE_ROLES.join(' or ') + ' can change '",
+  },
+  {
+    name: 'coder is admitted to sc_claims -- the other decision reversed',
+    find: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n};",
+    replace: "const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {\n  sc_compliance: ['admin', 'biller', 'auditor'],\n  sc_claims: ['admin', 'biller', 'coder'],\n};",
+  },
+  {
+    name: 'sc_coded_items is gated too, so the coder exclusion becomes a '
+        + 'lockout rather than a split',
+    find: "  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',\n  'sc_credential_scope'\n];",
+    replace: "  'sc_ar', 'sc_claims', 'sc_revenue', 'sc_denial', 'sc_compliance',\n  'sc_credential_scope', 'sc_coded_items'\n];",
   },
   {
     name: 'one resource is quietly dropped from the gated list',
