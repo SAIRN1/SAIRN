@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**138 files in `tools/`.** By what actually invokes them:
+**139 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 21 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 33 | nothing runs these at all |
+| **UNWIRED** | 34 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -37,7 +37,7 @@ By what they are, independent of wiring:
 | CHECKER | 86 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
-| LIVE | 16 |
+| LIVE | 17 |
 
 **21 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
@@ -77,7 +77,7 @@ The 22, by name, so this is actionable rather than a statistic:
 | `three_way_match_check.py` | SUITE-ONLY | a goods receipt or a vendor bill written with no join key back to its purchase order, and a PO number derived from a row count (which reuses itself after a delete). Structural half runs from the repo; the PO-vs-receipt-vs-bill comparison needs an export and is COULD-NOT-RUN without one |
 | `tier_a_bypass_check.py` | SUITE-ONLY | an HTTP handler that names a Tier A resource IN CODE without both an identity check and a refusal. Three states, never two -- COULD NOT TELL is the interesting column. GATED is not a clearance: it cannot tell whether the refusal runs BEFORE the write, and a name is not a write. A read-list, not a number to drive to zero |
 
-**Separately, 6 tool(s) make a LIVE network or database request.** Those are
+**Separately, 7 tool(s) make a LIVE network or database request.** Those are
 correctly manual: wiring one into a hook would make every push talk to the
 outside world. Unwired is the right state for them and is not a finding.
 
@@ -270,7 +270,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (33)
+## UNWIRED (34)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -279,6 +279,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
+| `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
 | `cron_liveness_check.py` | LIVE | a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
 | `extract_scripts.py` | LIBRARY | script blocks out of an app file, HTML-parser based | &mdash; |
@@ -340,7 +341,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      138   git ls-files tools/
+  tools on disk                      139   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                40   report_only_checks.REGISTRY
