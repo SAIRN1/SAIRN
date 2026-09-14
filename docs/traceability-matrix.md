@@ -84,6 +84,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a NEW `+ (x \|\| 0)` in a numeric fold with no Number() around it -- the guard never fires on a non-empty string, so `+` CONCATENATES instead of adding | `truthy_sum_check.py` | 82 candidate occurrences across 8 files, 51 distinct file+field keys, all grandfathered so a NEW one fails. It read 140 on the first real run and 58 of those were NOT folds: a STRING LITERAL on the left makes `+` concatenate, so `'$' + (x \|\| 0)` is a currency label and sums nothing. Classified separately 2026-09-13, COUNTED AND PRINTED rather than dropped, and the 31 baseline keys that existed only to excuse them removed -- before that, every price-display line anyone added tripped the check and was answered with an exemption. The tool now also reports baseline keys nothing matches any more. 33-arm probe, and the arms worth having are the ones that keep it trustworthy: MULTIPLICATION IS NOT REPORTED (2 * ("3"\|\|0) is 6; only + concatenates), Number/parseFloat/parseInt go silent, and the pattern quoted in a COMMENT or a STRING is not code -- that last arm exists because the first version reported 193 and FIFTY-TWO were prose explaining the defect, including the refusal message of this checker's own subject. 3.1s |
 | a NEWLY registered resource the product cannot remove a record from -- no delete and no soft_delete verb -- that is not in tools/removal_path_baseline.json with a reason | `removal_path_check.py` | 18-arm probe, and the arm worth having is the FALSE EXEMPTION one: a shared registry comment reading "X is MUTABLE; Y is APPEND-ONLY" was attributed wholesale by the first version, labelling a money record its own comment calls MUTABLE as append-only and silently exempting it. The probe asserts the mutable sibling still fails. Also: a missing baseline turns every stuck resource into a finding rather than passing quietly, and an unloadable registry is an error rather than CLEAN. 0.3s |
 | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted | `eaten_substitution_check.py` | FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over the last 3,000 commits it flags exactly 2, and both are the instances item 18 already records. RECALL IS NOT MEASURED and is not claimed -- the criterion was read off those same two commits, so finding them is circular. The blind spot is structural and stated on every clean run: a substitution that produced OUTPUT leaves no gap at all, so only the empty-output case is detectable afterwards and `git commit -F` remains the control. 32-arm probe; removing the list-item exclusion takes 7 arms red and silencing the detector takes 9, each sabotage asserting its own anchor matched first. 0.2s |
+| a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING | `temporary_state_check.py` | real run 2026-09-14: 723 files, 0 declarations, 175 undeclared candidates, PASS. TWO REAL DEFECTS IN THE SUBJECT were found by building the control first -- a case-insensitive /config/ matched storeError('CONFIG', ...) in api/_lib/sd-store.js, and the Python `= True` blind spot was real and undisclosed. And a LIVE finding, not historical: stonedesk.html 2286/2299/6350 set sdSyncSuppressed=true, call st(), clear it, with no `finally` -- a throw between them silences every later server write for the session. 24-arm probe; neutering FLAG_ON collapses the positive arms, and the sabotage asserts its own anchor is present first. 0.4s |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -128,6 +129,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **Item 8's attack-generation half, deterministically: 5 metamorphic relations over the proxy's own request envelope, ZERO Anthropic calls** | **BUILT 2026-09-14 (Cody)** &mdash; `api/claude-guardrail-metamorphic.test.js`, 30 arms, blind lock on hand-built clamps, **4 mutation controls bite** | `api/claude-guardrail-metamorphic.test.js` |
+| **Item 34: state meant to be temporary that silently outlives its invocation &mdash; and the declaration that has to come first** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/temporary_state_check.py`, held by `tests/run_temporary_state_probe.py` (24 arms, the sabotage asserts its own anchor first). **Report-only, registered as `- | `tests/run_temporary_state_probe.py` |
 | **Item 43: the one literal Copy-Exactly block no longer matches its own app &mdash; 0 of 5 identical** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/copy_exactly_check.py`, `tests/run_copy_exactly_probe.py` (17 arms), `docs/2026-09-14-copy-exactly-audit.md` | `tests/run_copy_exactly_probe.py` |
 | **INDEPENDENT REVIEW of Fourth&rsquo;s item 65a (nightly backup) and item 78 (role-gate formal spec): FOUR findings, one of them a published credential** | **REVIEWED 2026-09-14 (CC)** at `518782ec` and `858ad4a6`+`d7091d3f`. Three register records, `detection_method: independent-review`. **Findings raised, NOT fixed &mdash; they are Fourth&rsquo;s files | `tests/app_session_isolation.js` |
 | **Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURCE asked for, not just the route** | **BUILT 2026-09-14 (CC)** &mdash; inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker. Held by `tests/reachability/resource_demand_probe.py` (18 arms, three mutation controls | `api/sd-data-dental-ledger-validation.test.js`, `tests/reachability/resource_demand_probe.py` |
@@ -357,7 +359,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**183 of 386 test files are traced to a stated requirement. 203 are not.**
+**184 of 387 test files are traced to a stated requirement. 203 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -584,10 +586,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 386   tests/**, api/*.test.js
-  open-work rows citing a test       172   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 387   tests/**, api/*.test.js
+  open-work rows citing a test       173   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                41   report_only_checks.REGISTRY
+  report-only registry                42   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
