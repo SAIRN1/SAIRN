@@ -1655,6 +1655,16 @@
       "claimed_at_epoch": 1789418196.1141555,
       "status": "released",
       "released_at": "2026-09-14T21:36:34Z"
+    },
+    {
+      "id": "hank-1789421945",
+      "session": "hank",
+      "subject": "sairndental",
+      "task": "export gaps dnt_charges dnt_payments dnt_vendor_orders rf_claim_photos and flaky quarantine",
+      "claimed_at": "2026-09-14T21:39:05Z",
+      "claimed_at_epoch": 1789421945.2355871,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
