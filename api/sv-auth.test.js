@@ -298,7 +298,29 @@ t('...with canView WIDER than provisioning -- a Practice Manager reads, an Owner
 });
 t('NOTHING in this endpoint deletes a credential row', () => {
   assert.ok(SRC.indexOf("method: 'DELETE'") === -1);
-  assert.ok(!/delete/i.test(SRC.replace(/merge-duplicates/g, '')),
+  // THIS ASSERTION COULD NEVER FIRE UNTIL 2026-09-14. It was written as
+  // /<BS>delete<BS>/i -- a literal 0x08 BACKSPACE where a word boundary was
+  // meant, twice -- so it matched only a backspace-delete-backspace byte
+  // sequence, which cannot occur in source. `.test()` was always false, the
+  // negation always true, and the guard on a DEA-relevant record passed
+  // unconditionally for its whole life. Found by tools/control_char_check.py,
+  // which is now push-gate check 11 for exactly this class.
+  //
+  // WIDENED, NOT JUST DE-TYPO'D, and the widening is the deliberate part. The
+  // intended /\bdelete\b/ would have missed `deleteRow`, `deleted` and
+  // `svDeleteRow` -- measured, not assumed. SRC is comment-stripped, so prose
+  // about deletion cannot trip a bare /delete/i, and the file contains no
+  // occurrence of the substring at all. The strongest form costs nothing here.
+  //
+  // NO ESCAPE SEQUENCE IN THE PATTERN, on purpose: /delete/i carries no
+  // backslash, so there is nothing a heredoc or a paste can turn back into a
+  // raw control byte. That is the third time this year one did.
+  const DELETE_WORD = /delete/i;
+  // THE CONTROL. A guard that has never been seen to match is a guard whose
+  // behaviour nobody knows -- which is precisely how the line above survived.
+  assert.ok(DELETE_WORD.test("method: 'DELETE'") && DELETE_WORD.test('svDeleteRow()'),
+    'the pattern itself must be able to match, or this assertion proves nothing');
+  assert.ok(!DELETE_WORD.test(SRC.replace(/merge-duplicates/g, '')),
     'deactivation is active=false; a delete orphans the author of a DEA-relevant record');
 });
 // THE HEADER MUST NAME THE SPELLING THE HELPER ACTUALLY EMITS. It said
