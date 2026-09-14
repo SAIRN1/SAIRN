@@ -1272,8 +1272,8 @@
       "task": "route versus resource unit mismatch sweep across high dispatch routes, then next unclaimed gap",
       "claimed_at": "2026-09-14T20:34:39Z",
       "claimed_at_epoch": 1789418079.2911236,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T21:53:24Z"
     }
   ]
 }
