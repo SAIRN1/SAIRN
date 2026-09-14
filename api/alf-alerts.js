@@ -65,12 +65,67 @@ async function loadFacility(licHash) {
   return (Array.isArray(rows) && rows[0] && rows[0].data) || null;
 }
 
+// ── HOW MANY DAYS OF ADMINISTRATIONS TO READ, AND WHY IT IS NOT ONE ───────
+// The day filter this function applies at the end reads `data.administered_at`
+// -- a CLIENT-SUPPLIED timestamp inside the JSON -- while the query below can
+// only filter on `created_at`, which is when the row reached the server. THEY
+// ARE DIFFERENT CLOCKS, and the whole safety of this change rests on the
+// database filter being a strict SUPERSET of the JavaScript one.
+//
+// The dangerous direction is a row with `administered_at` = today but
+// `created_at` older than the cutoff, because that row would be dropped before
+// the JS filter ever saw it -- and a dropped administration is a late-dose
+// alert that never fires. Two days covers every way that can legitimately
+// happen: timezone skew is at most ±14 hours, and a device syncing late moves
+// `created_at` LATER, never earlier. The only shape it would miss is a row
+// created more than two days BEFORE the administration it describes, which is
+// pre-recording a dose that has not happened yet.
+//
+// This reduces the read from every row the licence has ever written to about
+// three days of them. It does not change which administrations are ALERTED on:
+// `administrations.filter(a => a.day === dayStr)` below is untouched and still
+// does the exact narrowing.
+const ADMIN_LOOKBACK_DAYS = 2;
+
 // Pull the active, reviewed medication orders and the day's administrations.
+//
+// ── TWO READS, NOT ONE (2026-09-14) ──────────────────────────────────────
+// This was a single unfiltered read of `alf_mar` for the licence -- every row
+// ever written -- which then discarded all but one day IN JAVASCRIPT. `alf_mar`
+// is an append-only medication administration record, so that query got slower
+// every day and never stopped: `/api/alf-alerts` was answering 502 on roughly
+// 40% of its hourly firings with `facility sweep read failed, HTTP 504`.
+// MEASURED 2026-09-14: 5 of 12 firings in twelve hours.
+//
+// Orders are NOT time-bounded and must not be -- a standing medication order
+// can be years old and is still active today. Only the administrations are.
 async function loadMar(licHash, dayStr) {
-  const r = await fetch(rest('alf_mar?license_hash=eq.' + enc(licHash) + '&select=entry_id,resident_id,entry_type,data'), { headers: supabaseHeaders() });
-  if (r.status === 404 || r.status === 400) return { provisioned: false, orders: [], administrations: [] };
-  if (!r.ok) return null;
-  const rows = await r.json().catch(() => []);
+  const cutoff = new Date(Date.parse(dayStr + 'T00:00:00Z')
+                          - ADMIN_LOOKBACK_DAYS * 86400000).toISOString();
+  const base = 'alf_mar?license_hash=eq.' + enc(licHash)
+    + '&select=entry_id,resident_id,entry_type,data';
+  const reads = await Promise.all([
+    fetch(rest(base + '&entry_type=eq.medication_order'), { headers: supabaseHeaders() }),
+    fetch(rest(base + '&entry_type=eq.administration&created_at=gte.' + enc(cutoff)),
+          { headers: supabaseHeaders() })
+  ]);
+  // EITHER read failing fails the whole sweep, and 404/400 on either means the
+  // table is not provisioned. Folding a half-read into a result would produce
+  // a facility that looks like it has orders and no administrations -- i.e.
+  // every dose late -- or the reverse, which alerts on nothing. Both are worse
+  // than refusing.
+  for (const r of reads) {
+    if (r.status === 404 || r.status === 400) return { provisioned: false, orders: [], administrations: [] };
+    if (!r.ok) return null;
+  }
+  const rows = [];
+  for (const r of reads) {
+    const part = await r.json().catch(() => null);
+    // A body that will not parse is NOT an empty result. Returning [] here
+    // would report a facility with nothing due.
+    if (!Array.isArray(part)) return null;
+    rows.push.apply(rows, part);
+  }
   const orders = [];
   const administrations = [];
   (rows || []).forEach((row) => {

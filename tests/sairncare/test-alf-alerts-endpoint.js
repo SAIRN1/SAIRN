@@ -37,6 +37,7 @@ authMod.verifySessionToken = (token) => (token ? JSON.parse(token) : null);
 
 let FACILITIES = [{ license_hash: 'HASH1', data: { name: 'Test ALF', med_window_minutes: 60, alert_email: 'don@example.test' } }];
 let MAR_ROWS = [];
+let MAR_URLS = [];
 let EMAILS = [];
 
 global.fetch = async (url, opts) => {
@@ -53,7 +54,23 @@ global.fetch = async (url, opts) => {
     return { ok: true, status: 200, json: async () => FACILITIES.slice() };
   }
   if (/alf_mar\?license_hash=eq\./.test(url)) {
-    return { ok: true, status: 200, json: async () => MAR_ROWS.slice() };
+    // ── THE STUB HONOURS THE FILTERS, AND IT HAS TO (2026-09-14) ──────────
+    // loadMar() now issues TWO scoped reads instead of one unfiltered one. A
+    // stub that ignored the query string would hand every row back to both of
+    // them -- duplicating the fixture and testing a shape the database can
+    // never produce -- and the suite would stay green while proving nothing
+    // about the scoping. MAR_URLS records what was actually asked for so the
+    // arms below can assert on the query rather than on the answer.
+    MAR_URLS.push(url);
+    const m = /entry_type=eq\.([a-z_]+)/.exec(url);
+    const c = /created_at=gte\.([^&]+)/.exec(url);
+    const cutoff = c ? decodeURIComponent(c[1]) : null;
+    const out = MAR_ROWS.filter((row) => {
+      if (m && row.entry_type !== m[1]) return false;
+      if (cutoff && row.created_at && row.created_at < cutoff) return false;
+      return true;
+    });
+    return { ok: true, status: 200, json: async () => out };
   }
   throw new Error('Unmocked fetch: ' + method + ' ' + url);
 };
@@ -287,6 +304,89 @@ function assertTrue(v, m) { if (!v) throw new Error(m || 'expected truthy'); }
       'x-test-token': JSON.stringify({ role: 'owner', employee_id: 'O1' })
     }, { action: 'check' });
     assertEq(EMAILS.length, 0);
+  });
+
+  // ── THE MAR READ IS SCOPED, AND THE SCOPE IS A SUPERSET (2026-09-14) ───
+  // loadMar() used to read every alf_mar row the licence had ever written and
+  // discard all but one day in JavaScript. On an append-only medication record
+  // that query got slower every day: /api/alf-alerts was 502ing on ~40% of its
+  // hourly firings with `facility sweep read failed, HTTP 504`.
+  //
+  // The arms that matter are NOT "is it faster". They are: does it still see
+  // every administration it used to alert on, and does it still see standing
+  // orders that are older than any time window.
+  const TODAY = new Date().toISOString().slice(0, 10);
+  const daysAgo = (n) => new Date(Date.now() - n * 86400000).toISOString();
+
+  await check('the MAR read is now TWO scoped queries, not one unfiltered sweep', async () => {
+    MAR_URLS = [];
+    MAR_ROWS = [];
+    await call('GET', { authorization: CRON_AUTH });
+    const typed = MAR_URLS.filter((u) => /entry_type=eq\./.test(u));
+    assertEq(typed.length, 2, 'expected one read per entry_type, got ' + MAR_URLS.length);
+    assertTrue(MAR_URLS.some((u) => /entry_type=eq\.medication_order/.test(u)));
+    assertTrue(MAR_URLS.some((u) => /entry_type=eq\.administration/.test(u)));
+  });
+
+  await check('ONLY the administrations carry a time bound -- a standing order '
+    + 'is not time-bounded and must not be', async () => {
+    MAR_URLS = [];
+    MAR_ROWS = [];
+    await call('GET', { authorization: CRON_AUTH });
+    const orders = MAR_URLS.filter((u) => /entry_type=eq\.medication_order/.test(u))[0];
+    const admins = MAR_URLS.filter((u) => /entry_type=eq\.administration/.test(u))[0];
+    assertTrue(!/created_at=gte/.test(orders),
+      'the orders read grew a time filter -- a years-old standing order would stop alerting');
+    assertTrue(/created_at=gte/.test(admins), 'the administrations read has no time filter');
+  });
+
+  await check('A STANDING ORDER WRITTEN LONG AGO IS STILL READ -- the arm that '
+    + 'would catch the worst version of this change', async () => {
+    EMAILS = [];
+    MAR_ROWS = [{
+      entry_id: 'MED-OLD', resident_id: 'RES-1', entry_type: 'medication_order',
+      created_at: daysAgo(400),
+      data: { name: 'Warfarin', schedule_times: ['00:05'], pharmacy_status: 'accepted' }
+    }];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.statusCode, 200);
+    const r = res.body.results[0];
+    assertTrue(r.late > 0 || r.due >= 0,
+      'a 400-day-old order vanished from the sweep');
+  });
+
+  await check('AN ADMINISTRATION RECORDED TODAY IS SEEN, so the time bound has '
+    + 'not narrowed what gets alerted on', async () => {
+    MAR_ROWS = [
+      { entry_id: 'MED-A', resident_id: 'RES-1', entry_type: 'medication_order',
+        created_at: daysAgo(30),
+        data: { name: 'Metformin', schedule_times: ['00:05'], pharmacy_status: 'accepted' } },
+      { entry_id: 'ADM-A', resident_id: 'RES-1', entry_type: 'administration',
+        created_at: daysAgo(0),
+        data: { medication_id: 'MED-A', administered_at: TODAY + 'T00:06:00Z',
+                scheduled_time: '00:05' } }
+    ];
+    const res = await call('GET', { authorization: CRON_AUTH });
+    assertEq(res.statusCode, 200);
+    assertTrue(res.body.results.length > 0);
+  });
+
+  await check('CONTROL: the stub really is filtering -- an administration OLDER '
+    + 'than the lookback is withheld, so the arms above are not passing '
+    + 'against an unfiltered fixture', async () => {
+    MAR_URLS = [];
+    MAR_ROWS = [
+      { entry_id: 'ADM-OLD', resident_id: 'RES-1', entry_type: 'administration',
+        created_at: daysAgo(90),
+        data: { medication_id: 'MED-A', administered_at: daysAgo(90) } }
+    ];
+    await call('GET', { authorization: CRON_AUTH });
+    const admins = MAR_URLS.filter((u) => /entry_type=eq\.administration/.test(u))[0];
+    const c = /created_at=gte\.([^&]+)/.exec(admins);
+    assertTrue(!!c, 'no cutoff in the query, so this control proves nothing');
+    const cutoff = decodeURIComponent(c[1]);
+    assertTrue(daysAgo(90) < cutoff,
+      'the 90-day-old row is NOT older than the cutoff -- the fixture cannot exercise the filter');
   });
 
   console.log('\n' + pass + ' passed, ' + fail + ' failed');

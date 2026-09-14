@@ -1,0 +1,81 @@
+-- sql/alf_mar_sweep_index.sql
+-- The index for the two scoped reads /api/alf-alerts now issues.
+--
+-- ══ NOT RUN. ═══════════════════════════════════════════════════════════════
+-- Nothing has executed this against the live database as of 2026-09-14.
+-- Idempotent and safe to re-run once it has been.
+--
+-- ══ WHY ════════════════════════════════════════════════════════════════════
+-- `GET /api/alf-alerts` has been answering 502 on roughly 40% of its hourly
+-- firings, logging `alf-alerts: facility sweep read failed, HTTP 504`.
+-- MEASURED over the 12 hours to 2026-09-14T10:30Z: 5 of 12.
+--
+-- `loadMar()` read EVERY alf_mar row a licence had ever written and then threw
+-- away all but one day IN JAVASCRIPT. alf_mar is an append-only medication
+-- administration record, so that query got slower every day and would not have
+-- stopped. It is now two scoped reads -- all standing orders, plus
+-- administrations within a two-day lookback -- and this is the index those
+-- reads want.
+--
+-- The existing indexes are on (license_hash), (license_hash, resident_id) and
+-- (license_hash, assigned_employee_id). NONE covers entry_type or created_at,
+-- which are exactly the two columns the new queries filter on.
+--
+-- Equality on license_hash and entry_type, range on created_at -- so the two
+-- equality columns lead and the range follows, which is the order below and
+-- the order that makes the range usable rather than incidental. It serves the
+-- orders read too, which filters on the first two columns only.
+
+-- ---------------------------------------------------------------------------
+-- 1. Before: confirm what is there, and how big the thing being scanned is.
+-- ---------------------------------------------------------------------------
+--   select indexname, indexdef from pg_indexes
+--    where schemaname = 'public' and tablename = 'alf_mar';
+--
+--   select entry_type, count(*), min(created_at), max(created_at)
+--     from public.alf_mar group by entry_type order by 2 desc;
+--
+-- THE SECOND QUERY IS THE ONE TO READ. The claim that an unbounded read was
+-- timing out is inferred from the code and from the failure rate, NOT measured
+-- against the table -- no session here can reach the database. If the
+-- administration count is small, this index is not the fix and the 504 is
+-- coming from somewhere else; say so rather than closing the row.
+
+-- ---------------------------------------------------------------------------
+-- 2. The index.
+-- ---------------------------------------------------------------------------
+-- CONCURRENTLY so the build takes no write lock on a table the care app writes
+-- to during a medication pass. It CANNOT run inside a transaction block -- run
+-- this statement alone, not wrapped in begin/commit. If it fails partway it
+-- leaves an INVALID index that must be dropped before retrying:
+--   drop index concurrently if exists public.idx_alfmar_sweep;
+create index concurrently if not exists idx_alfmar_sweep
+  on public.alf_mar (license_hash, entry_type, created_at);
+
+-- ---------------------------------------------------------------------------
+-- 3. After: prove it is used, and prove the sweep still SEES what it must.
+-- ---------------------------------------------------------------------------
+--   explain analyze
+--   select entry_id, resident_id, entry_type, data
+--     from public.alf_mar
+--    where license_hash = '<hash>'
+--      and entry_type   = 'administration'
+--      and created_at  >= now() - interval '2 days';
+--
+-- EXPECT an Index Scan naming idx_alfmar_sweep. A Seq Scan on a small table is
+-- correct planner behaviour and means the timeout is NOT this query.
+--
+-- THEN THE HALF THAT MATTERS MORE THAN SPEED. This cron is what notices a late
+-- dose, so the risk of the change it accompanies is not slowness, it is a
+-- MISSED ALERT. Check that no administration the sweep should see falls outside
+-- the two-day window -- rows whose recorded administration time is inside
+-- today but whose row arrived more than two days earlier:
+--
+--   select count(*) from public.alf_mar
+--    where entry_type = 'administration'
+--      and (data->>'administered_at') >= to_char(current_date, 'YYYY-MM-DD')
+--      and created_at < now() - interval '2 days';
+--
+-- EXPECT 0. A non-zero answer means the lookback in api/alf-alerts.js
+-- (ADMIN_LOOKBACK_DAYS) is too short for how this facility actually records,
+-- and it must be widened BEFORE anyone relies on the alerts again.
