@@ -78,7 +78,18 @@ newer commits.
 recently-completed, *real* (already committed -- a still-active claim has
 nothing to audit yet) work. Prioritize Tier A (financial, health, legal,
 regulated data) over lower-stakes work. Assume every claim is false until
-independently proven true:
+independently proven true.
+
+**This is not caution for its own sake -- it is a quantified, real
+finding, not an assumption.** Trail of Bits' own retrospective across 246
+findings from 23 real smart-contract audits found that roughly half of real
+findings are unlikely to ever be caught by any automated tool, no matter how
+advanced -- adversarial human judgment finds a real, distinct category of
+defect that better checkers do not close. "The tests pass" is weak evidence
+of correctness, not strong evidence; a deep pass exists specifically to
+supply the other half, and passing tests earning complacency here is
+exactly the gap this statistic measures. Full account:
+`references/case-studies.md`.
 
 1. Run the stated tests yourself. Don't trust the commit message's "N/N
    passed" -- run N/N yourself and read the output.
@@ -161,6 +172,40 @@ running -- the same reason this role runs its own rotation and self-log
 rather than trusting that "we do adversarial review here" stays true on its
 own.
 
+**"Boundary erosion" -- a real, named failure shape distinct from any
+single bad decision, and worth checking for specifically.** The Boeing 737
+MAX / FAA Organization Designation Authorization program is the documented
+case: the FAA correctly kept direct oversight of MCAS specifically because
+it was flight-critical -- the same logic Tier A already applies here. But
+between late 2016 and early 2017 that oversight was delegated away
+incrementally, piece by piece, until MCAS was effectively 100%
+self-certified by the two 2018-2019 crashes. Nobody at any point made a
+single decision to fully self-certify a flight-critical system -- it
+drifted there through a sequence of individually small, individually
+reasonable-looking delegations. **The standing check this produces:**
+periodically verify Tier A's ACTUAL independent-review rate hasn't quietly
+drifted down from its original design intent, the same way the earlier
+process pass already found a 4+ hour independent-review gap once by
+actually checking rather than assuming the channel was still live -- this
+makes that check a standing habit rather than a one-time catch, because
+erosion by definition doesn't announce itself as a single event to notice.
+
+**The subject of a review has a structural incentive to under-classify its
+own risk tier, not just an honest chance of a mistake.** Boeing's own
+internal communications, surfaced afterward, show a deliberate effort to
+avoid classifying MCAS as a "new system" specifically because that
+classification would have triggered more scrutiny -- proof of motive, not
+merely an error made in good faith. Applied here: a process pass should
+specifically spot-check whether anything currently tagged Tier B or Tier C
+has characteristics that argue it was under-classified, rather than only
+trusting the tier a build agent or a checker's own header assigned it.
+
+(Cited as an honest, quotable reference point, not a mechanism to import:
+96% of MCAS's certification work ended up self-certified by Boeing itself
+by the time of the crashes -- real data on how far delegated verification
+can drift before independent oversight becomes theoretical rather than
+actual. Full account: `references/case-studies.md`.)
+
 **A landed fix must be confirmed running on every real target, not trusted
 on the push tool's own success report.** Knight Capital's 2012 deploy
 "succeeded" on 8 servers by the deploy tool's own account; the 8th was
@@ -207,6 +252,34 @@ wholesale as this role's method:
   replacement, external calls added without checks, high blast radius
   paired with high risk -- folded into the hindsight-hunting step above
   rather than pulling in the whole apparatus.
+
+  **And why the parent methodology isn't adopted wholesale, stated
+  honestly rather than left implicit.** Trail of Bits' actual smart-contract
+  practice audits EXHAUSTIVELY, once, before launch -- because a deployed
+  contract is immutable, so pre-launch is the only chance a defect can ever
+  be caught before it is permanent. SAIRN's code is patchable; a defect
+  found next week can still be fixed next week. That specific model --
+  maximum depth once, before an irreversible deploy -- does not transfer
+  here, and forcing it would misapply the reasoning that makes it correct
+  for its own domain. This role's actual shape -- continuous, unscheduled,
+  ongoing verification against code that keeps changing -- is closer to
+  NASA IV&V's or SUBSAFE's operational model than to a pre-launch audit,
+  and that is the honest reason, not a shortfall against the Trail of Bits
+  standard.
+
+**Check whether attention is proportionate to where real risk actually
+concentrates, not just where checkers already look.** Trail of Bits' own
+data on real crypto losses: roughly 44% of actual hacks trace to access-
+control or key-compromise failures, yet traditional audits rarely examine
+that category with the same depth they give financial-calculation logic --
+a real scope mismatch between where audits look and where losses actually
+happen. Applied here, periodically: is this role's own attention actually
+proportionate to where SAIRN's real risk concentrates (auth and role-gate
+code, session isolation, credential handling) versus wherever the existing
+checkers happen to already have coverage? A gap between where the platform's
+own tooling looks and where real damage would land is worth noticing on its
+own, not only inferred from Tier or freshest-commit signals. Full account:
+`references/case-studies.md`.
 
 ## Financial reconciliation: three records, not two
 
@@ -279,6 +352,20 @@ tonight: a confident-sounding line printed after the actual evidence ran
 out, which reads as more certain than what was actually established.
 Coverage is a scope statement -- what was checked, out of what exists --
 never a manufactured precision score standing in for it.
+
+**Every verdict cites the specific evidence, never a bare assertion.** Real
+precedent, deployed rather than theoretical: a real, live system auditing
+blood-culture orders in actual medical records uses two AI agents in
+sequence, and the second is REQUIRED to quote or reject specific evidence
+from the record -- never permitted to return a bare verdict -- and must
+flag its own reasoning explicitly when it cannot find support for it. The
+same standard applies here: "confirmed" or "clean" is not itself a finding,
+it is a conclusion, and the finding is the specific diff line, log entry,
+test output, or commit hash that conclusion rests on. Every report should
+be able to answer "quote the exact evidence" without the auditor having to
+go back and re-derive it. This is item 23's own standard (claim
+provenance) applied to this role's own output, not only to what it checks.
+Full account: `references/case-studies.md`.
 
 ## Rotation
 

@@ -3,12 +3,13 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in one
-batch (SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS) once the earlier
-research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via Debate,
-risk-limiting audits, Registered Reports) had already pushed SKILL.md large
-enough that further detail belonged in its own file rather than bloating the
-one every invocation loads.
+is still on record somewhere, not compressed away. Added 2026-09-14 in two
+batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first, then Trail of
+Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA -- both
+once the earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety
+via Debate, risk-limiting audits, Registered Reports) had already pushed
+SKILL.md large enough that further detail belonged in its own file rather
+than bloating the one every invocation loads.
 
 ## SOX / PCAOB -- public-company audit law
 
@@ -229,3 +230,113 @@ surfaces a structural limitation risk-weighting alone cannot fix.
    calibration number, and it should be queried from `hover_log.py --tail`
    against real entries, the same standard applied to every other number in
    this file.
+
+## Trail of Bits -- 246 findings, 23 real smart-contract audits
+
+Trail of Bits' own published retrospective across 23 real audit engagements
+and 246 real findings is one of the few genuinely quantified datasets on
+what automated tooling actually catches versus what a human adversarial
+reviewer catches, because the same 246 findings were classified both ways
+after the fact.
+
+**Roughly half of real findings are unlikely to ever be caught by any
+automated tool, no matter how sophisticated the tool becomes.** Not "current
+tools miss half" -- the classification was about the SHAPE of the finding,
+not the maturity of any specific scanner: business-logic errors, subtle
+economic incentive misalignments, and context-dependent reasoning failures
+that require understanding what the code is FOR, not just what it does. A
+finding a test suite is structurally unable to express is not a finding a
+better test suite would have caught either. This is the real, quantified
+grounding for treating "the tests pass" as weak evidence -- not a stylistic
+preference for skepticism, a measured fact about what test-passing can and
+cannot prove.
+
+**Roughly 44% of actual cryptocurrency losses trace to access-control or
+private-key-compromise failures**, measured across real, dollar-denominated
+hacks -- yet Trail of Bits' own retrospective notes that traditional smart-
+contract audits historically under-invest attention there relative to
+financial/economic-logic review, because access-control code often reads as
+"boilerplate" rather than as the load-bearing surface it actually is. A
+scope mismatch between where audit attention naturally goes and where real
+damage actually originates, measured rather than assumed.
+
+**Why the full methodology still isn't adopted wholesale, said plainly.**
+Trail of Bits' practice is exhaustive, maximum-depth, ONE-TIME review before
+a deploy, because a deployed smart contract is immutable -- pre-launch is
+the only window a defect can ever be caught in before it becomes permanent.
+That specific shape (maximum depth once, before an irreversible event) is
+correct for that domain and would be a mismatch applied here: SAIRN's code
+is patchable, a defect found next week is still fixable next week, and the
+actual analog for continuous, unscheduled, ongoing verification against
+code that keeps changing is NASA IV&V or SUBSAFE, not a pre-launch audit
+firm. Citing Trail of Bits' statistics is not the same as importing Trail
+of Bits' cadence.
+
+## Stanford -- two-agent clinical order auditing, deployed not theoretical
+
+A real, currently-deployed system (not a research paper's hypothetical)
+audits blood-culture ordering decisions inside live electronic medical
+records using two AI agents in sequence: the first proposes a judgment, and
+the second is structurally REQUIRED to either quote specific supporting
+evidence from the actual patient record or explicitly reject the first
+agent's reasoning -- a bare verdict with no cited evidence is not an
+accepted output shape at all, and the second agent must flag its own
+reasoning explicitly whenever it cannot locate support for it in the
+record.
+
+The transferable discipline, not the medical specifics: **a verdict without
+a citable, specific piece of evidence behind it is not a finding, it is an
+assertion wearing a finding's shape.** "Confirmed" and "clean" are
+conclusions; the actual finding is the diff line, the log entry, the test
+output, or the commit hash the conclusion rests on, and a report should
+never require the auditor to go back and re-derive what was actually looked
+at. This is the direct extension of item 23's claim-provenance standard
+applied reflexively -- not only to what this role checks in others' work,
+but to what this role asserts about its own.
+
+## Boeing 737 MAX / FAA ODA -- boundary erosion, not a single bad call
+
+The FAA's Organization Designation Authorization (ODA) program lets
+manufacturers self-certify most aircraft systems under FAA oversight, to
+manage the FAA's own limited engineering capacity against the volume of
+certification work modern aircraft require. MCAS -- the flight-control
+software implicated in the two 2018-2019 737 MAX crashes that killed 346
+people -- was, correctly, kept under DIRECT FAA oversight rather than
+delegated to Boeing's self-certification when the ODA program was
+structured, specifically because it was flight-critical. The same reasoning
+Tier A already applies on this platform: some categories of risk are too
+consequential to delegate away from direct, external verification.
+
+**What actually happened is the finding, and it is a different SHAPE of
+failure than a single wrong decision.** Between late 2016 and early 2017,
+oversight of MCAS was delegated away from direct FAA review incrementally,
+in a sequence of individually small hand-offs, until it was functionally
+close to 100% self-certified by Boeing by the time of the crashes. No single
+person or meeting decided "MCAS will now be fully self-certified" -- each
+individual step looked like a reasonable, bounded delegation at the moment
+it was made, and the cumulative effect only became visible in hindsight, as
+a pattern across many small decisions rather than inside any one of them.
+This is "boundary erosion": a category correctly walled off from delegation
+at the start, that drifts across that wall not through a violation of the
+rule but through nobody re-checking whether the rule was still actually
+being followed as circumstances (schedule pressure, resourcing, trust built
+over successful prior deliveries) changed around it.
+
+**Motive, not just honest error.** Internal Boeing communications that
+surfaced after the crashes show a documented effort to avoid classifying
+MCAS as a "new system" specifically because that classification would have
+triggered additional certification scrutiny and cost -- the company
+reviewing its own risk category had a real, structural incentive to
+under-classify, not merely an ordinary chance of an honest mistake. Any
+process that lets a subject assign or influence its own risk tier carries
+this same incentive, structurally, regardless of that subject's individual
+honesty.
+
+**The number, cited honestly as data rather than imported as a target.**
+Public reporting and subsequent Congressional investigation put Boeing's
+share of MCAS's actual certification work at roughly 96% self-performed by
+the time of the crashes -- real evidence of how far a delegated verification
+arrangement can drift from its original design intent before independent
+oversight becomes nominal rather than actual, useful here as a concrete
+answer to "how bad can boundary erosion actually get" rather than as a
+mechanism this role tries to replicate.
