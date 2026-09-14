@@ -2499,3 +2499,89 @@ planting a syntax error and watching it fire.
 NOT_PROVISIONED and the app keeps records on the device -- saying so in the console, not in a badge.
 Tiered **A** for both (`docs/CRITICALITY-TIERS.md`, sairnbiz 10 -> 12 resources, A 2 -> 4) and one
 register record added, `detection_method: static-checker`, rule 1.11.
+
+
+---
+
+## 2026-09-14 -- item 22, and a live production failure found while looking at it
+
+### Item 22: the flip-rate pass starved the same tail every time
+
+Eleven of 37 registered checkers had NEVER been measured, months after the other 26 had six
+observations each. **The cause is one slow tool and a fixed order.** Timed directly:
+
+| checker | per run |
+|---|---|
+| `checkblocks.py` | 0.2s |
+| `cleanup_confirm_check.py` | 0.1s |
+| `comment_quote_check.py` | 4.1s |
+| **`comment_sensitivity_check.py`** | **102.9s** |
+| `committer_identity_check.py` | 0.5s |
+
+Six runs of that one tool is 618 seconds. A pass never finished inside a real session window, and
+because the order was **alphabetical the same suffix starved every single time.** Not partial
+coverage -- a permanent blind spot that reads as a clean fleet.
+
+The pass is now **weakest-evidence-first**, with a `--budget-seconds` that stops before the kill
+and **names** what it did not reach.
+
+**AND THE FIRST VERSION OF THAT FIX DID NOTHING, caught by watching it run rather than by
+reasoning.** The tree hash changes on every commit, so the moment it landed every checker had zero
+observations at the new tree, every weight tied at zero, the tie broke on name, and the pass was
+alphabetical again. The weight is now `(obs at this tree, obs at ANY tree, name)`. Arm 7f fails on
+the previous version.
+
+**Result: 37 of 37 measured. `checker_confidence.py` reports no UNKNOWN.**
+
+### The first real flip this fleet has ever produced -- and it was undiagnosable
+
+`comment_sensitivity_check.py`: **rate 0.333 over 12 runs at one tree**, 8 agreeing and 4 not.
+The ledger held two HASHES and nothing else, so there was no way to see WHAT differed -- and this
+tool's own rules require a quarantine to carry EVIDENCE. The ledger now keeps one 400-character
+excerpt per distinct verdict, capped at 4, dropped with the observations they belong to.
+
+**What is NOT established:** three deliberate back-to-back runs on an idle machine were
+byte-identical (md5 `cf992690...`). Both passes that produced the differing digests were running
+concurrently with other tooling, and that checker spawns 132 subprocesses. **Load-dependence is a
+hypothesis, not a finding.** The rate stands as measured; the cause does not.
+
+### The cron collision -- measured from production, and it was not a tidiness issue
+
+`/api/sairndental/send-reminder` and `/api/alf-alerts` were both `0 * * * *`. Vercel's
+runtime-error table, seven days:
+
+| error | count | window |
+|---|---|---|
+| `send-reminder: dnt_appointments list failed 504` | **23** | `2026-09-12T00:00:29Z` -> `2026-09-14T12:00:29Z` |
+| `alf-alerts: facility sweep read failed, HTTP 504` | **20** | `2026-09-12T04:00:43Z` -> `2026-09-14T13:00:43Z` |
+| `ai rate limit: atomic RPC failed, HTTP 504` (`/api/claude`) | **11** | last `2026-09-14T10:00:51Z` |
+
+**Every one at :00.** About a third of hourly runs: reminders not sent, medication-exception alerts
+not computed. And the third row is the open, unexplained `/api/claude` 504 pattern, in the same
+minute.
+
+**Michael's hypothesis was right in substance and wrong in mechanism, and the difference matters.**
+NEITHER cron calls `/api/claude` -- read them and they call Supabase and Resend and nothing else.
+What all three share is the **Supabase project**: `/api/claude` does a licence validation and a
+rate-limit RPC against it before it ever reaches Anthropic. Contention on a common backend, not a
+call path.
+
+**Causation is NOT established** and the change is shaped so the logs answer it: if the failures
+move with the schedule the collision was the cause; if they stay at :00 something else spikes at
+the top of the hour, and this was the wrong fix, cheaply.
+
+Spread to :07 and :37, plus `api/_lib/cron-jitter.js` -- because a fixed minute fixes THIS pair and
+the fifth cron will be typed by hand. Bound is **20s and conservative on purpose: `vercel.json`
+declares no `functions` block, so nothing in the repo records the real `maxDuration`.**
+
+**One cost paid out loud:** the delay took `send-reminder.test.js` from 0.12s to 17s and the
+alf-alerts endpoint suite past two minutes. Both set `SAIRN_CRON_JITTER_MS=0` **in the test file,
+not inside the helper** -- a helper that behaves differently under test is a helper whose tested
+behaviour is not the shipped one.
+
+### Not fixed, because it is inside somebody else's claim
+
+`api/cron-watchdog.test.js` is **54 passed, 1 failed**, and it fails on the CLOCK: the arm
+`a healthy table answers ok:true` builds its fixture from a hardcoded `2026-09-14T11:59:00Z`, now
+four hours stale, so the handler correctly answers DEAD. **Confirmed pre-existing by stashing every
+change here and re-running.** Hank holds item 47 on the watchdog.

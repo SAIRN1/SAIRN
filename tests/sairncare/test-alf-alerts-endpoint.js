@@ -26,6 +26,16 @@ process.env.RESEND_API_KEY = FIXTURE.mailToken;
 // below -- this test previously set the name the code read, so both sides were
 // consistently wrong together and the suite passed while production never sent.
 process.env.RESEND_FROM_EMAIL = FIXTURE.fromAddress;
+// THE CRON JITTER IS OFF IN TESTS, EXPLICITLY (2026-09-14). api/_lib/cron-jitter
+// waits a bounded random interval before the facility sweep so this job and
+// send-reminder stop arriving at Supabase in the same instant. That is a
+// PRODUCTION mitigation and tests should not pay for it: left on, this suite
+// went from seconds to over two minutes, and a slow suite is how a fleet stops
+// being run at all -- the same failure that left eleven checkers unmeasured for
+// months. Set here rather than detected inside the helper, because a helper
+// that quietly behaves differently under test is a helper whose tested
+// behaviour is not the shipped one.
+process.env.SAIRN_CRON_JITTER_MS = '0';
 
 const licenseMod = require(path.join(ROOT, 'api/_lib/license.js'));
 licenseMod.validateLicenseKey = async () => ({

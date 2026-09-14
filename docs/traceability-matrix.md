@@ -106,6 +106,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **The 2026-09-13 "no tool without an inventory entry" decision was CONFIRMED LIVE &mdash; and it did not hold** | **CONFIRMED AND CLOSED 2026-09-14 (Fourth)** &mdash; push-gate check 12b, 5 new arms in `tests/push_gate/check12_probe.py` | `tests/push_gate/check12_probe.py` |
+| **Two hourly crons fired at the SAME MINUTE and BOTH were failing about a third of their runs &mdash; and it is the same minute /api/claude&rsquo;s 504s land on** | **FIXED 2026-09-14 (CC)** &mdash; schedules spread to :07 and :37, plus `api/_lib/cron-jitter.js`. Held by `tests/cron_schedules_do_not_collide.js` (17 arms, three mutation controls). Recorded in the  | `api/cron-watchdog.test.js`, `tests/cron_schedules_do_not_collide.js` |
 | **Item 28 folded in as a GENERATOR &mdash; and what it emits REFUSES until its rule is written** | **BUILT 2026-09-14 (Fourth)** &mdash; `tools/new_checker.py`, 16/16 arms in `tests/run_new_checker_probe.py` | `tests/run_new_checker_probe.py` |
 | **R5: the purpose question one level down &mdash; was the FUNCTION invoked, not just the route** | **BUILT 2026-09-14 (Fourth)** &mdash; extends `tools/sairn_reachability_check.py`, 16/16 arms in `tests/run_reachability_r5_probe.py` | `tests/run_reachability_r5_probe.py` |
 | **There is now something to run the day a restore happens by hand &mdash; and there is no other restore tooling at all** | **BUILT 2026-09-14 (Fourth)** &mdash; `tools/restore_coherence_check.js`, 26/26 arms in `tests/run_restore_coherence_probe.js` | `tests/run_restore_coherence_probe.js` |
@@ -316,7 +317,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**165 of 365 test files are traced to a stated requirement. 200 are not.**
+**166 of 366 test files are traced to a stated requirement. 200 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -540,8 +541,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 365   tests/**, api/*.test.js
-  open-work rows citing a test       153   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 366   tests/**, api/*.test.js
+  open-work rows citing a test       154   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

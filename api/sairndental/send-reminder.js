@@ -92,6 +92,7 @@ async function stampReminderSent(row, stage, nowISO) {
 }
 
 const { beat } = require('../_lib/heartbeat');
+const { jitter } = require('../_lib/cron-jitter');
 
 module.exports = async (req, res) => {
   if (!process.env.CRON_SECRET) {
@@ -118,6 +119,19 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: { message: 'Server configuration error' } });
     return;
   }
+
+  // ── SPREAD, AFTER THE GATES AND BEFORE THE FIRST READ (2026-09-14) ───────
+  // This job and /api/alf-alerts were both scheduled `0 * * * *`, the same
+  // minute every hour, and BOTH WERE FAILING ABOUT A THIRD OF THEIR RUNS on a
+  // 504 from Supabase -- 23 failures for this one between 2026-09-12T00:00:29Z
+  // and 2026-09-14T12:00:29Z, EVERY ONE AT :00. Those are appointment
+  // reminders that were never sent.
+  //
+  // Placed HERE rather than at the top of the handler deliberately: a
+  // misconfigured or unauthorised request must still answer immediately. Only
+  // a run that is actually about to do work waits.
+  var waited = await jitter();
+  if (waited) console.log('send-reminder: jittered ' + waited + 'ms before the appointment read');
 
   var nowMs = Date.now();
   var nowISO = new Date(nowMs).toISOString();

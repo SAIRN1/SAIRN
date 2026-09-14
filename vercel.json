@@ -94,11 +94,11 @@
   "crons": [
     {
       "path": "/api/sairndental/send-reminder",
-      "schedule": "0 * * * *"
+      "schedule": "7 * * * *"
     },
     {
       "path": "/api/alf-alerts",
-      "schedule": "0 * * * *"
+      "schedule": "37 * * * *"
     },
     {
       "path": "/api/audit-checkpoint",

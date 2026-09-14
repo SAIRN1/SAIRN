@@ -226,6 +226,7 @@ async function computeForFacility(licHash, nowDate) {
 }
 
 const { beat } = require('./_lib/heartbeat');
+const { jitter } = require('./_lib/cron-jitter');
 
 module.exports = async (req, res) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
@@ -264,6 +265,19 @@ module.exports = async (req, res) => {
         '). No notifications were sent.');
       return;
     }
+    // ── SPREAD, AFTER THE CONFIG GATE AND BEFORE THE FIRST READ (2026-09-14)
+    // This sweep and /api/sairndental/send-reminder were both scheduled
+    // `0 * * * *`, the same minute every hour, and BOTH WERE FAILING ABOUT A
+    // THIRD OF THEIR RUNS on a 504 from Supabase -- 20 failures for this one
+    // between 2026-09-12T04:00:43Z and 2026-09-14T13:00:43Z, EVERY ONE AT :00.
+    // Those are medication-exception alerts that were never computed and never
+    // delivered, on a sweep whose own comments record how hard it was to make
+    // it fire at all.
+    //
+    // INSIDE the isCron branch on purpose: the interactive path is somebody
+    // waiting on a response, and there is nothing to spread it away from.
+    const waited = await jitter();
+    if (waited) console.log('alf-alerts: jittered ' + waited + 'ms before the facility sweep');
     const fr = await fetch(rest('alf_facility?select=license_hash,data'), { headers: supabaseHeaders() });
     if (fr.status === 404 || fr.status === 400) {
       res.status(200).json({ ok: true, facilities_checked: 0, note: 'No facility profiles are provisioned yet.' });

@@ -1746,6 +1746,28 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred"
+    },
+    {
+      "commit": "4ba885d99f42",
+      "date": "2026-09-14",
+      "subject": "feat: SAIRNcare Phase 3 items 1-4 -- pharmacy eMAR, doc-to-charges, AI care plans, late-care alerting",
+      "files": [
+        "vercel.json",
+        "api/alf-alerts.js",
+        "api/sairndental/send-reminder.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "two hourly crons were scheduled on the identical minute (0 * * * *) and BOTH FAILED ABOUT A THIRD OF THEIR RUNS on a 504 from Supabase -- 23 send-reminder failures and 20 alf-alerts failures over seven days, every one at :00, so appointment reminders were not sent and medication-exception alerts were not computed; /api/claude's Supabase rate-limit RPC also timed out at :00, which was the open unexplained 504 pattern",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit."
     }
   ]
 }

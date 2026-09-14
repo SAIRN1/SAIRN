@@ -12,6 +12,15 @@
 
 const assert = require('assert');
 
+// THE CRON JITTER IS OFF IN TESTS, EXPLICITLY (2026-09-14). api/_lib/cron-jitter
+// waits a bounded random interval before the appointment read so this job and
+// /api/alf-alerts stop arriving at Supabase in the same instant. That is a
+// PRODUCTION mitigation and tests should not pay for it: left on, this file
+// took 17 seconds to make five assertions. Set here rather than detected inside
+// the helper, because a helper that quietly behaves differently under test is a
+// helper whose tested behaviour is not the shipped one.
+process.env.SAIRN_CRON_JITTER_MS = '0';
+
 var CRON_SECRET_ENV_NAME = 'CRON_' + 'SECRET';
 // A fixture value for this local test process only -- never a real
 // credential, deliberately generated at runtime so it can't be mistaken
