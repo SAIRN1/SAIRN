@@ -46,7 +46,13 @@ import tempfile
 import time
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-TOOL = os.path.join(ROOT, 'tools', 'sairn_claim.py')
+# SAIRN_CLAIM_TOOL points this probe at a MUTATED COPY of the tool.
+# tests/claims/run_claim_retype_mutation_control.py uses it to prove the
+# section-11 arms actually go red when the guard is removed -- the platform
+# measured on 2026-09-13 that 23 of 39 negative controls never verify their own
+# sabotage applied, so a control that cannot be shown to fail is not evidence.
+# Defaults to the shipped tool, so an ordinary run is unchanged.
+TOOL = os.environ.get('SAIRN_CLAIM_TOOL') or os.path.join(ROOT, 'tools', 'sairn_claim.py')
 HOOK = os.path.join(ROOT, 'tools', 'sairn_claim_hook.py')
 
 passed = 0
@@ -449,6 +455,138 @@ def main():
               any(c.get('task') == 'unpushed arm task'
                   for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']),
               out5[-400:])
+
+        # ── 11. A RETYPED TASK STRING IS STILL A RETRY ───────────────────────
+        # Section 9 drives the retry with the SAME string, and the guard it
+        # covers compares `task` byte for byte. befb65e3's own commit message
+        # says the real incident was not byte-identical: "cc has three for item
+        # 92 ... with the task string slightly retyped between attempts". So
+        # the case the fix was written from is the one section 9 does not
+        # exercise, and driving it against the tool as shipped produced TWO
+        # published claims from three attempts -- half the defect, still open.
+        #
+        # THE TWO STRINGS BELOW ARE THE REAL ONES from .claude/claims/cc.json's
+        # history (9baec9be, then 7bec5124 and 6f7cb9d3), not invented
+        # near-misses. A person retyping after a reported failure is the ONLY
+        # way this state is reached: a machine repeats the string exactly.
+        print('\n11. a RETYPED task string after a failed push -- still one entry')
+        git(clone, 'checkout', '--', '.claude/claims/probe.json', check=False)
+        A = ('item 92 functional core imperative shell on sbThreeWayMatch '
+             'and ledger')
+        B = ('item 92 functional core imperative shell sbThreeWayMatch and '
+             'ledger money rule')
+        DIRTY2 = os.path.join(clone, '.claude', 'claims', 'README.md')
+        with open(DIRTY2, 'a', encoding='utf-8') as f:
+            f.write('probe 11: an unstaged change, which is what blocks rebase\n')
+        check('the reproduction really did dirty a TRACKED file -- otherwise 11 '
+              'proves nothing',
+              git(clone, 'status', '--porcelain', '--untracked-files=no',
+                  check=False).stdout.strip() != '',
+              'tree is clean; the rest of section 11 is vacuous')
+
+        rcA, outA = run_tool(clone, 'claim', 'probe11', A)
+        check('the first attempt fails to publish, as it must for this to be the '
+              'retype case at all', rcA == 3, outA[-300:])
+
+        def active11():
+            p = os.path.join(clone, '.claude', 'claims', 'probe.json')
+            with open(p, encoding='utf-8') as f:
+                return [c for c in json.load(f)['claims']
+                        if c.get('status') == 'active'
+                        and c.get('subject') == 'probe11']
+
+        check('...and the entry IS written locally', len(active11()) == 1,
+              str(active11()))
+
+        rcB, outB = run_tool(clone, 'claim', 'probe11', B)
+        check('a RETYPED task on the same subject is refused, not appended',
+              'UNPUBLISHED CLAIM' in outB, outB[-700:])
+        check('...and adds NO second entry -- the half befb65e3 left open',
+              len(active11()) == 1, 'entries: %d' % len(active11()))
+        check('...and exits non-zero', rcB == 3, 'rc=%s' % rcB)
+        # THE REFUSAL MUST BE ACTIONABLE. A refusal a person cannot act on is
+        # one they route around, and routing around this one means editing the
+        # claim file by hand.
+        check('...and prints BOTH strings, so the operator can tell which is which',
+              A in outB and B in outB, outB[-700:])
+        # ANCHORED ON THE LABELLED LINE, not merely on the string appearing
+        # somewhere. The first version of this arm checked `A in outB`, and the
+        # mutation control showed that passes with the "already here" line
+        # DELETED -- because A also appears in the re-run command below it. An
+        # arm that a sabotage survives is worth less than no arm.
+        check('...and labels which one is already on file, on its own line',
+              ('already here (unpublished): ' + A) in outB, outB[-700:])
+        check('...and says when it was claimed, so an operator can tell a retry '
+              'from something they typed an hour ago',
+              'claimed at' in outB, outB[-700:])
+        check('...and names the exact command that publishes the earlier entry',
+              ('claim probe11 ' + A) in outB, outB[-700:])
+
+
+        git(clone, 'checkout', '--', '.claude/claims/README.md')
+        rcC, outC = run_tool(clone, 'claim', 'probe11', A)
+        check('re-running the EARLIER wording on a clean tree publishes it',
+              rcC == 0, outC[-400:])
+        pub11 = [c for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']
+                 if c.get('status') == 'active' and c.get('subject') == 'probe11']
+        check('...and origin/main carries exactly ONE claim for that subject',
+              len(pub11) == 1, str(pub11))
+
+        # CONTROL, and it is the arm that keeps this from being a blanket block.
+        # Once the earlier claim is PUBLISHED the failed-push state cannot
+        # apply, and a second claim on the same subject is ordinary work. An
+        # over-tight guard here would be worse than the defect: it would make
+        # the tool refuse real claims, and a gate that must be talked past
+        # routinely is one people learn to talk past.
+        rcD, outD = run_tool(clone, 'claim', 'probe11',
+                             'a genuinely different second piece of work')
+        check('CONTROL: once the first is published, a DIFFERENT second claim on '
+              'the same subject is allowed', rcD == 0, outD[-400:])
+        pub11b = [c for c in (claims_on_origin(clone, 'probe') or {'claims': []})['claims']
+                  if c.get('status') == 'active' and c.get('subject') == 'probe11']
+        check('...and origin/main now carries two, which is correct',
+              len(pub11b) == 2, str(len(pub11b)))
+
+        # ── THE THIRD STATE: origin's copy cannot be read at all ─────────────
+        # published_claim_ids() returns None there, and "could not tell" must
+        # never be folded into "published" (PR 1.11). Fail CLOSED: an origin
+        # nothing can be read from is also an origin nothing can be published
+        # to, so refusing costs nothing that was going to work anyway -- while
+        # failing OPEN appends the duplicate this whole section exists to stop.
+        #
+        # STAGED BY BREAKING THE BLOB ON ORIGIN, not by deleting a ref: the
+        # tool fetches before it reaches this guard, and a fetch would put a
+        # deleted remote-tracking ref straight back. Invalid JSON survives the
+        # fetch, which is what makes the arm deterministic.
+        seed_claims = os.path.join(seed, '.claude', 'claims')
+        os.makedirs(seed_claims, exist_ok=True)
+        git(seed, 'fetch', 'origin')
+        git(seed, 'reset', '-q', '--hard', 'origin/main')
+        with open(os.path.join(seed_claims, 'probe.json'), 'w', encoding='utf-8') as f:
+            f.write('{ this is not json')
+        git(seed, 'add', '-A')
+        git(seed, 'commit', '-q', '-m', 'probe: unreadable claim blob on origin')
+        git(seed, 'push', '-q', 'origin', 'main')
+        broken = git(clone, 'fetch', 'origin', check=False)
+        shown = git(clone, 'show', 'origin/main:.claude/claims/probe.json',
+                    check=False).stdout
+        check('the reproduction really did make origin\'s copy unparseable -- '
+              'otherwise this arm proves nothing',
+              broken.returncode == 0 and 'not json' in shown,
+              'fetch rc=%s blob=%r' % (broken.returncode, shown[:80]))
+
+        with open(DIRTY2, 'a', encoding='utf-8') as f:
+            f.write('probe 11: dirty again for the unreadable-origin arm\n')
+        rcE, outE = run_tool(clone, 'claim', 'probe11',
+                             'a third wording while origin is unreadable')
+        check('with origin UNREADABLE the guard still REFUSES -- fail closed, '
+              'not fail open', 'UNPUBLISHED CLAIM' in outE and rcE == 3,
+              outE[-700:])
+        check('...and still adds no entry',
+              len([c for c in active11()
+                   if c.get('task') == 'a third wording while origin is unreadable']) == 0,
+              str(active11()))
+        git(clone, 'checkout', '--', '.claude/claims/README.md', check=False)
     finally:
         shutil.rmtree(tmp, ignore_errors=True)
 

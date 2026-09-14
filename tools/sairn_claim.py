@@ -456,6 +456,37 @@ def load_mine():
     return {'session': session_name(), 'claims': []}
 
 
+def published_claim_ids():
+    """The ids of MY active claims as origin/main holds them right now.
+
+    Returns None when origin/main's copy cannot be read at all -- a distinct
+    third state from "an empty set", and the caller must not fold the two
+    together (PR 1.11). "Could not tell" is not "not published", and it is not
+    "published" either.
+
+    Reads with `git show`, which cannot write the index or the working tree --
+    the same reason load_all(from_origin=True) reads that way rather than
+    checking anything out. Section 6 of tests/claims/run_push_verify_probe.py
+    asserts the whole tool leaves the tree alone while reading.
+    """
+    rel = os.path.relpath(my_file(), REPO).replace(os.sep, '/')
+    r = subprocess.run(['git', 'show', 'origin/main:' + rel],
+                       cwd=REPO, capture_output=True, text=True)
+    if r.returncode != 0:
+        # The file may simply not exist on origin yet -- a session that has
+        # never published a claim. That is READABLE and means "none published",
+        # so it is only unknown if origin/main itself is unreadable.
+        ok = subprocess.run(['git', 'rev-parse', '--verify', 'origin/main'],
+                            cwd=REPO, capture_output=True, text=True)
+        return set() if ok.returncode == 0 else None
+    try:
+        doc = json.loads(r.stdout)
+    except ValueError:
+        return None
+    return set(c.get('id') for c in doc.get('claims', [])
+               if c.get('status') == 'active')
+
+
 def on_origin(sha):
     """Is this commit actually reachable from origin/main RIGHT NOW.
 
@@ -913,6 +944,65 @@ def cmd_claim(args):
               'work closes:')
         print('  python tools/sairn_claim.py release %s' % subj)
         return 0
+
+    # ── A RETYPED TASK STRING IS STILL A RETRY, AND THE GUARD ABOVE MISSES IT ─
+    # Added 2026-09-14 (CC). The guard above compares `task` BYTE FOR BYTE, and
+    # befb65e3's own evidence says the real incident was not byte-identical:
+    # "cc has three for item 92 ... with the task string slightly retyped
+    # between attempts". Driven against the real tool with the two real strings
+    # from that incident, three attempts still produced TWO published claims:
+    #
+    #   attempt 1  "item 92 functional core imperative shell on sbThreeWayMatch and ledger"
+    #   attempt 2  "...sbThreeWayMatch and ledger money rule"   <- NOT recognised
+    #   attempt 3  same as 2                                     <- recognised
+    #
+    # So the fix halved the defect on the case it was measured against and did
+    # not close it. A person retyping after a reported failure is the ONLY way
+    # this state is reached -- a machine would repeat the string exactly -- so
+    # the retyped case is the likelier half, not the edge case.
+    #
+    # WHY THIS REFUSES RATHER THAN MERGING. Folding a different task string into
+    # the existing entry would silently rewrite WHAT WAS CLAIMED, and the record
+    # would then name work nobody chose to claim. Folding the other way -- a new
+    # entry -- is the defect. Both guesses are wrong in a way nothing downstream
+    # can see, so the tool names both strings and lets the operator say which.
+    #
+    # SCOPED TO AN UNPUBLISHED CLAIM, which is what makes it safe. Once the
+    # earlier claim is on origin/main this state cannot arise from a failed
+    # push, and a second claim on the same subject is ordinary. `published_claim_ids`
+    # returns None when origin cannot be read, and that is treated as UNPUBLISHED
+    # -- fail closed: an unreadable origin is also an origin nothing can be
+    # published to, so the refusal costs nothing that was going to work anyway.
+    stuck = []
+    if not args.no_push:
+        published = published_claim_ids()
+        for c in doc['claims']:
+            if c.get('status') != 'active' or c.get('subject') != subj:
+                continue
+            if published is None or c.get('id') not in published:
+                stuck.append(c)
+    if stuck:
+        earlier = stuck[-1]
+        print('\nNOT CLAIMED -- and nothing was added, deliberately.')
+        print('')
+        print('THIS SESSION ALREADY HAS AN UNPUBLISHED CLAIM ON "%s"' % subj)
+        print('with a DIFFERENT task string. That is what a retype after a failed')
+        print('push looks like, and appending a second entry is the defect that')
+        print('put three claims for one piece of work into the record.')
+        print('')
+        print('  already here (unpublished): %s' % (earlier.get('task') or '(no task)'))
+        print('  claimed at                : %s' % earlier.get('claimed_at'))
+        print('  you just typed            : %s' % (task or '(no task)'))
+        print('')
+        print('IF THIS IS THE SAME WORK -- clear whatever blocked the push (a dirty')
+        print('tree is the usual cause; `git status` names it), then re-run the')
+        print('EARLIER wording, which publishes the entry already written:')
+        print('  python tools/sairn_claim.py claim %s %s' % (subj, earlier.get('task') or ''))
+        print('')
+        print('IF IT IS GENUINELY DIFFERENT WORK -- publish or release the one above')
+        print('first, then claim this. Two claims on one subject is fine; two')
+        print('claims for one piece of work is what this refuses.')
+        return 3
 
     doc['claims'].append({
         'id': '%s-%d' % (session_name(), int(ts)),
