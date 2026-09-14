@@ -1102,6 +1102,16 @@
       "claimed_at_epoch": 1789384120.9082832,
       "status": "released",
       "released_at": "2026-09-14T11:12:04Z"
+    },
+    {
+      "id": "fourth-1789385001",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sairnvet dosing audit trail durable ids and backed-up-before-evict cap",
+      "claimed_at": "2026-09-14T11:23:21Z",
+      "claimed_at_epoch": 1789385001.3482673,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
