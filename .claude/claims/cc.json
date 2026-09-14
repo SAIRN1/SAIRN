@@ -1204,6 +1204,16 @@
       "claimed_at_epoch": 1789395259.6289535,
       "status": "released",
       "released_at": "2026-09-14T14:35:02Z"
+    },
+    {
+      "id": "cc-1789396948",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sb_po sb_recv schema sync item 22 checkers items 61 69 88 91 53 38 completeness vercel cron jitter",
+      "claimed_at": "2026-09-14T14:42:28Z",
+      "claimed_at_epoch": 1789396948.1841059,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
