@@ -98,10 +98,41 @@ happened"*.
 **What a hostile version could do:** report a payment as succeeded that did not,
 or leak the secret key it holds.
 
-**What bounds it:** `STRIPE_SECRET_KEY` is not currently configured in Vercel —
+**What bounds it:** ~~`STRIPE_SECRET_KEY` is not currently configured in Vercel —
 `api/sairncash/checkout.js` returns `{"error":"Stripe not configured"}` today
 (its own open-work row). So the blast radius is presently zero and **will not
-be once that key is set**. Re-read this entry at that moment.
+be once that key is set**. Re-read this entry at that moment.~~
+
+> **⚠️ THAT MOMENT PASSED AND NOBODY NOTICED. Corrected 2026-09-14 (Hank),
+> live-verified, not read off the source.**
+>
+> **`STRIPE_SECRET_KEY` IS SET in production.** The blast radius is not zero.
+>
+> The entry above was misled by `checkout.js` still answering
+> `{"error":"Stripe not configured"}` — **that guard is
+> `if (!stripeKey || !priceId)`, so it fires when EITHER is missing**, and what
+> is actually missing is `STRIPE_PRICE_ID`. Proved by probing a second endpoint
+> with a narrower guard: `api/sairncash/portal.js` checks `if (!stripeKey)`
+> alone, and it **did not fire** — the request reached Stripe and failed on the
+> deliberately-invalid subscription id instead:
+>
+> ```
+> POST /api/sairncash/portal  {"subscriptionId":"sub_...does_not_exist..."}
+>   -> 500 {"error":"Could not open the billing portal"}        (the catch branch)
+> POST /api/sairncash/checkout {"email":"probe@example.invalid"}
+>   -> 500 {"error":"Stripe not configured"}                    (the guard)
+> ```
+>
+> **Two endpoints, one env var, two different answers — and only the narrower
+> guard tells the truth.** A status message is a claim about the guard that
+> produced it, not about the environment.
+>
+> **This is why the re-read trigger failed:** it was written as *"re-read when
+> the key is set"*, and nothing watches for that. The only visible signal was an
+> error string that stayed the same for a different reason.
+>
+> See `docs/2026-09-14-tier-a-bypass-audit.md` for what is now reachable
+> through `portal.js` as a result.
 
 ### Transitive
 

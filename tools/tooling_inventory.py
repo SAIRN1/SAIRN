@@ -73,6 +73,12 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'tier_a_bypass_check.py': ('CHECKER',
+        'an HTTP handler that names a Tier A resource IN CODE without both an '
+        'identity check and a refusal. Three states, never two -- COULD NOT '
+        'TELL is the interesting column. GATED is not a clearance: it cannot '
+        'tell whether the refusal runs BEFORE the write, and a name is not a '
+        'write. A read-list, not a number to drive to zero'),
     'copy_exactly_check.py': ('CHECKER',
         'whether the one literal must-copy-exactly block still matches the app '
         'it was copied from -- 0 of 5 identical on 2026-09-14, 4 differing '
