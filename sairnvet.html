@@ -2213,6 +2213,92 @@ function svPushOne(key,rec,label){
   });
 }
 
+// ── THE CAP MAY NOT EVICT WHAT HAS NO SECOND COPY (2026-09-14) ─────────────
+// sv_audit_log is the controlled-substance DOSING trail. It carried a flat
+// 500-entry cap applied on every write, keeping the newest -- and entries
+// written before 2026-09-09 have no id, so svSyncCollection() never backed them
+// up. THE TWO COMPOUND: the cap evicts OLDEST first and the un-backed-up
+// entries are the OLDEST, so the entries that existed in exactly one place were
+// precisely the ones the next 500 writes pushed out of it. Nothing deleted them;
+// the only copy was in a quota-bounded browser store.
+//
+// Two changes, and neither is "raise the cap":
+//   1. EVERY ENTRY GETS A DURABLE ID, including the legacy ones.
+//   2. THE CAP MAY ONLY EVICT AN ENTRY CONFIRMED ON THE SERVER.
+//
+// ON (1) AND THE OBJECTION THAT WAS RIGHT TO RAISE IT. This file already says
+// backfilling ids into an existing audit trail would be REWRITING it, which is
+// the one thing an audit trail must not have done to it. That objection is
+// answered rather than overruled: the id is DERIVED FROM WHAT WAS RECORDED, so
+// it adds no information that was not already in the entry, anyone can recompute
+// it from the entry, and no recorded field is touched. It is also DETERMINISTIC
+// for the same reason CC's StoneDesk back-fill had to be -- a random id differs
+// per device, so one legacy entry would sync as one server row per browser that
+// ever opened the app. And it is self-labelling: an `ac` prefix says computed
+// later, `au` says issued at the moment of the event, so an inspector can always
+// tell the two apart. The alternative on the table was destroying the entry.
+//
+// NOT TAMPER-EVIDENCE, said plainly so nobody reads it as such: this is a fast
+// non-cryptographic hash and it is a TRANSPORT KEY. Making the trail
+// tamper-evident is hash-chaining, which is a different piece of work.
+var SV_AUDIT_KEY = 'sv_audit_log';
+var SV_AUDIT_CAP = 500;
+var SV_AUDIT_BACKED_KEY = 'sv_audit_backed';
+
+// Canonical form: keys sorted recursively, NOTHING else normalised. Two
+// encodings of the same entry must produce the same id or a legacy entry syncs
+// twice; two different entries must never collide or one overwrites the other
+// in a compliance record.
+function svAuditCanonical(v){
+  if(v===null||typeof v!=='object') return JSON.stringify(v);
+  if(Object.prototype.toString.call(v)==='[object Array]'){
+    var a=[]; for(var i=0;i<v.length;i++) a.push(svAuditCanonical(v[i]));
+    return '['+a.join(',')+']';
+  }
+  var k=Object.keys(v).sort(),o=[];
+  for(var j=0;j<k.length;j++){ if(k[j]==='id') continue; o.push(JSON.stringify(k[j])+':'+svAuditCanonical(v[k[j]])); }
+  return '{'+o.join(',')+'}';
+}
+// TWO INDEPENDENT 32-BIT HASHES, not one. A single 32-bit space collides at
+// roughly one pair in 65,000 entries by the birthday bound, which is reachable
+// for a busy practice's trail; two different mixing functions concatenated are
+// not the same as one wider one, but they are far past what this needs.
+function svAuditContentId(entry){
+  var s; try{ s=svAuditCanonical(entry); }catch(e){ s=String(entry); }
+  var h1=5381,h2=52711;
+  for(var i=0;i<s.length;i++){ var c=s.charCodeAt(i); h1=((h1*33)^c)>>>0; h2=(((h2*31)>>>0)+c)>>>0; }
+  return 'ac'+h1.toString(36)+h2.toString(36);
+}
+// AN UNREADABLE SET MEANS NOTHING IS EVICTABLE, not that everything is. A
+// could-not-tell on "has this been backed up" can only be answered NO on a
+// record that cannot be recovered if the answer was wrong.
+function svAuditBackedSet(){
+  try{
+    var a=JSON.parse(localStorage.getItem(SV_AUDIT_BACKED_KEY)||'[]'),m={};
+    if(Object.prototype.toString.call(a)==='[object Array]'){
+      for(var i=0;i<a.length;i++) m[String(a[i])]=true;
+    }
+    return m;
+  }catch(e){ return {}; }
+}
+function svAuditMarkBacked(id){
+  if(id===undefined||id===null||id==='') return;
+  var m=svAuditBackedSet(); m[String(id)]=true;
+  // BOUNDED BY THE TRAIL ITSELF. An id no longer in the log cannot be evicted
+  // from it, so remembering it forever buys nothing and grows without limit.
+  var live={};
+  try{
+    var log=JSON.parse(localStorage.getItem(SV_AUDIT_KEY)||'[]');
+    if(Object.prototype.toString.call(log)==='[object Array]'){
+      for(var i=0;i<log.length;i++){ if(log[i]&&log[i].id!=null) live[String(log[i].id)]=true; }
+    }
+  }catch(e){ live=null; }   // could not read the log: prune nothing this time
+  var out=[];
+  var keys=Object.keys(m);
+  for(var j=0;j<keys.length;j++){ if(!live||live[keys[j]]) out.push(keys[j]); }
+  try{ localStorage.setItem(SV_AUDIT_BACKED_KEY,JSON.stringify(out)); }catch(e){}
+}
+
 function svSyncCollection(key,next,prev){
   if(svSyncSuppressed) return;
   if(typeof svData!=='function') return;
@@ -2242,7 +2328,17 @@ function svSyncCollection(key,next,prev){
     // and a hang all produce the same sentence with the reason named; the
     // pushes stay independent, so one dead record cannot stall the rest of
     // the collection behind it.
-    svPushOne(key,svOutbound(key,r,idField),r[idField]);
+    var _push=svPushOne(key,svOutbound(key,r,idField),r[idField]);
+    // A CONFIRMED PUSH IS WHAT MAKES AN AUDIT ENTRY EVICTABLE. Recorded only
+    // here, off the resolved promise, so "backed up" means the server answered
+    // -- never that a request was sent. svPushOne() resolves null on a refusal,
+    // a rejection and a timeout alike, and all three must leave the entry
+    // un-evictable rather than any of them reading as success.
+    if(key===SV_AUDIT_KEY&&_push&&typeof _push.then==='function'){
+      (function(_id){
+        _push.then(function(res){ if(res) svAuditMarkBacked(_id); });
+      })(r[idField]);
+    }
   });
   if(skipped){
     try{ console.warn('SAIRNvet backup: '+skipped+' record(s) in "'+key+
@@ -7771,15 +7867,59 @@ function logDoseAudit(entry){
     // same millisecond (a refusal and the action that caused it) would collide
     // and one would silently overwrite the other in a compliance record.
     //
-    // ENTRIES WRITTEN BEFORE TODAY HAVE NO id AND ARE NOT BACKED UP. They stay
-    // on the device and are readable exactly as before; svSyncCollection()
-    // counts and reports them rather than skipping them silently. Backfilling
-    // ids into an existing audit trail would be rewriting it, which is the one
-    // thing an audit trail must not have done to it.
+    // ENTRIES WRITTEN BEFORE 2026-09-09 HAD NO id AND WERE NOT BACKED UP.
+    // CLOSED 2026-09-14 -- see svAuditContentId() above for why a DERIVED id
+    // answers the rewriting objection rather than overruling it, and why it has
+    // to be deterministic rather than random.
     entry.id = 'au' + Date.now() + '-' + Math.random().toString(36).slice(2, 8);
     log.push(entry);
-    if(log.length>500) log = log.slice(log.length-500);
-    ok = st('sv_audit_log', log);
+
+    // ── EVERY ENTRY GETS A DURABLE ID BEFORE IT IS EVICTABLE ──────────────
+    // Giving a legacy entry an id IS the thing that backs it up: the sync diffs
+    // on id, so an entry that has just acquired one is absent from `before` and
+    // gets pushed on this very write. No separate upload path to keep in step.
+    var derived = 0;
+    for(var _i = 0; _i < log.length; _i++){
+      var _e = log[_i];
+      if(_e && (_e.id === undefined || _e.id === null || _e.id === '')){
+        _e.id = svAuditContentId(_e); derived++;
+      }
+    }
+
+    // ── THE CAP EVICTS ONLY WHAT THE SERVER HAS CONFIRMED ─────────────────
+    // Oldest-first as before, but it STOPS at the first entry with no second
+    // copy rather than stepping over it. So the trail can exceed 500 while a
+    // clinic is offline, and that is the correct direction to fail in: a log
+    // that grows makes st() report a full store loudly, and a log that evicted
+    // the only copy of a DEA-relevant entry reports nothing at all, ever.
+    var held = 0;
+    if(log.length > SV_AUDIT_CAP){
+      var backed = svAuditBackedSet();
+      var over = log.length - SV_AUDIT_CAP, drop = 0;
+      while(drop < over && log[drop] && backed[String(log[drop].id)]) drop++;
+      held = over - drop;
+      if(drop > 0) log = log.slice(drop);
+    }
+    ok = st(SV_AUDIT_KEY, log);
+    // SAID OUT LOUD, ONCE, AND NOT TO THE CONSOLE. The old idless-record
+    // warning went to console.warn, where nobody in a clinic reads it -- which
+    // is how this sat. Over the cap with un-backed-up entries is a real state a
+    // practice needs to act on, so it reaches the screen.
+    // ONE-SHOT BY CONSTRUCTION: once an entry has an id, `derived` is 0 on
+    // every later write, so this cannot become the notice nobody reads.
+    if(ok && derived > 0 && typeof showToast === 'function'){
+      showToast(derived + ' historical audit entr' + (derived === 1 ? 'y was' : 'ies were') +
+        ' given an identifier so ' + (derived === 1 ? 'it can' : 'they can') +
+        ' be backed up. Nothing recorded in them was changed — the identifier is ' +
+        'computed from the entry itself.', 'success', 7000);
+    }
+    if(ok && held > 0 && typeof showToast === 'function'){
+      showToast('The dosing audit trail is ' + held + ' entr' + (held === 1 ? 'y' : 'ies') +
+        ' over its local limit because ' + (held === 1 ? 'it has' : 'they have') +
+        ' not been backed up to the server yet. Nothing was discarded. Check the ' +
+        'connection — entries are only removed locally once the server confirms them.',
+        'error', 8000);
+    }
   }catch(e){ ok = false; }
   if(!ok && typeof showToast === 'function'){
     showToast('NOT recorded to the audit log — storage may be full or unavailable. The action itself may still have been saved; the audit entry was not.','error',6000);

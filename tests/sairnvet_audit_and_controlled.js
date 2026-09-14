@@ -60,6 +60,18 @@ function fn(decl) {
   if (i < 0) throw new Error('not found: ' + decl);
   return balanced(i);
 }
+// One whole `var NAME = ...;` statement, lifted verbatim. THROWS rather than
+// returning '' when the prefix stops matching: a missing declaration would make
+// every arm below fail with a ReferenceError from inside a catch, which reads as
+// a defect in the app rather than as this file's anchor having rotted. That
+// exact confusion is what left the boot-gate arm red further down.
+function decl(prefix) {
+  const i = src.indexOf(prefix);
+  if (i < 0) throw new Error('declaration anchor no longer matches: ' + prefix);
+  const j = src.indexOf(';', i);
+  if (j < 0) throw new Error('unterminated declaration: ' + prefix);
+  return src.slice(i, j + 1);
+}
 
 // A store that can be told to refuse writes, which is the whole point: st()
 // returning false is the trigger every assertion below turns on.
@@ -118,6 +130,19 @@ function build(opts) {
     // binding the first assignment would throw in strict-mode-adjacent Function
     // bodies and leak to the global otherwise.
     'var _svKeyVerified = {};\nvar _svUnreadable = {};\nvar svSyncSuppressed = false;\n' +
+    // ── THE AUDIT CAP'S CONSTANTS AND HELPERS, TAKEN FROM THE FILE ─────────
+    // Hand-writing `var SV_AUDIT_CAP = 500;` here would make this sandbox a
+    // SECOND declaration of the cap, and the arms below would then keep passing
+    // against a number the app had moved away from. Five suites in this repo
+    // have already broken on a hand-written mirror of a declaration going
+    // stale; this one is read out of sairnvet.html every run.
+    decl('var SV_AUDIT_KEY = ') + '\n' +
+    decl('var SV_AUDIT_CAP = ') + '\n' +
+    decl('var SV_AUDIT_BACKED_KEY = ') + '\n' +
+    fn('function svAuditCanonical(v){') + '\n' +
+    fn('function svAuditContentId(entry){') + '\n' +
+    fn('function svAuditBackedSet(){') + '\n' +
+    fn('function svAuditMarkBacked(id){') + '\n' +
     fn('function svSeedStore(saver, rows){') + '\n' +
     fn('function st(key,data){') + '\n' +
     fn('function svIntegrityScan(){') + '\n' +
@@ -127,7 +152,9 @@ function build(opts) {
     fn('function saveControlledLog(list){') + '\n' +
     fn('function renderControlled(){') + '\n' +
     fn('function onDoseVetSignoff(){') + '\n' +
-    'return { logDoseAudit: logDoseAudit, renderControlled: renderControlled,' +
+    'return { svAuditContentId: svAuditContentId, svAuditMarkBacked: svAuditMarkBacked,' +
+    '         svAuditBackedSet: svAuditBackedSet,' +
+    '         logDoseAudit: logDoseAudit, renderControlled: renderControlled,' +
     '         onDoseVetSignoff: onDoseVetSignoff, getControlledLog: getControlledLog,' +
     '         st: st, scan: svIntegrityScan, block: svBlockForCorruptStore };'
   )(s.store, dom.document, (m, t, d) => toasts.push({ m: String(m), t: t }), { warn() {}, error() {} });
@@ -287,12 +314,138 @@ function build(opts) {
 {
   const gate = src.indexOf('var _svCorruptAtBoot = svIntegrityScan();');
   const pin = src.indexOf('setupPinPad();', gate > 0 ? gate : 0);
-  const firstRender = src.indexOf('renderWhiteboard();', gate > 0 ? gate : 0);
+  // ── THIS ARM WAS RED AND THE ANCHOR HAD ROTTED, NOT THE APP (2026-09-14) ──
+  // It searched for `renderWhiteboard();` AFTER the gate. Every one of the four
+  // such calls sits between lines 2741 and 3031, inside panel functions, far
+  // ABOVE the gate at 9271 -- so indexOf returned -1, `gate < -1` was false, and
+  // the arm had been failing against a correct file. The direct boot render it
+  // was written for is gone: the boot path is now svRestoreSession() ->
+  // svEnterApp(), and the line where the render used to be is a COMMENT saying
+  // "svEnterApp() painted every panel".
+  //
+  // AN ANCHOR THAT IS NOT FOUND MUST SAY SO, which is the half that was missing
+  // and the reason this read as an ordering failure for however long it sat
+  // there. tests/dnt_vendor_write_confirmation_probe.py already records the
+  // same lesson as ANCHOR-0: -1 is a could-not-tell, and folding it into a
+  // comparison turns it into a confident wrong answer about the app.
+  const firstEntry = src.indexOf('if(svRestoreSession()){', gate > 0 ? gate : 0);
   check('the boot gate exists', gate > 0, true);
+  check('the setupPinPad anchor still matches', pin !== -1, true);
+  check('the boot-entry anchor still matches', firstEntry !== -1, true);
   check('and runs before setupPinPad()', gate < pin, true);
-  check('and before the first render', gate < firstRender, true);
+  check('and before the boot path that paints the panels', gate < firstEntry, true);
   check('and the boot really is inside its else, not merely after it',
     /svBlockForCorruptStore\(_svCorruptAtBoot\);\s*\}else\{/.test(src), true);
+}
+
+// ── THE CAP MAY NOT EVICT WHAT HAS NO SECOND COPY (2026-09-14) ─────────────
+// The defect: a flat 500-entry cap keeping the NEWEST, and entries written
+// before 2026-09-09 with no id that svSyncCollection() therefore never backed
+// up. The two compound -- the cap evicts OLDEST first and the un-backed-up
+// entries ARE the oldest -- so the entries that existed in exactly one place
+// were precisely the ones the next 500 writes pushed out.
+//
+// ARM 4 IS THE CONTROL AND IT IS THE WHOLE POINT: 600 entries with NONE
+// confirmed must stay 600. The old code dropped 100 of them, so that arm fails
+// against the previous version of the function by construction. An arm that
+// only proved eviction WORKS would have passed against the defect.
+function auditWith(entries, backed) {
+  const w = build();
+  w.store.data.sv_audit_log = JSON.stringify(entries);
+  if (backed) w.store.data.sv_audit_backed = JSON.stringify(backed);
+  return w;
+}
+function legacy(n, tag) {
+  const out = [];
+  for (let i = 0; i < n; i++) out.push({ type: (tag || 'dose_calc'), seq: i, timestamp: 't' + i });
+  return out;
+}
+
+{
+  // 1. a derived id, and the same entry derives the SAME id every time
+  const w = build();
+  const e = { type: 'dose_calc', seq: 1, timestamp: 't1' };
+  w.api.logDoseAudit({ type: 'fresh' });
+  const a = w.api.svAuditContentId(e), b = w.api.svAuditContentId({ timestamp: 't1', seq: 1, type: 'dose_calc' });
+  check('the derived id is deterministic across key order', a, b);
+  check('and it is self-labelling as computed-later', a.slice(0, 2), 'ac');
+  check('two DIFFERENT entries do not collide',
+    w.api.svAuditContentId({ a: 1 }) === w.api.svAuditContentId({ a: 2 }), false);
+  // The id must not depend on an id already present, or re-deriving changes it.
+  check('an existing id is excluded from the derivation',
+    w.api.svAuditContentId({ a: 1, id: 'x' }), w.api.svAuditContentId({ a: 1 }));
+}
+{
+  // 2. legacy entries acquire ids on the next write, content untouched
+  const w = auditWith(legacy(3));
+  check('a fresh entry is written', w.api.logDoseAudit({ type: 'dose_calc' }), true);
+  const log = JSON.parse(w.store.data.sv_audit_log);
+  check('every entry now has an id', log.every((r) => !!r.id), true);
+  check('the legacy ones are marked as derived', log.slice(0, 3).every((r) => r.id.slice(0, 2) === 'ac'), true);
+  check('the new one is marked as issued at the time', log[3].id.slice(0, 2), 'au');
+  check('and NOTHING recorded in a legacy entry changed',
+    JSON.stringify(log.slice(0, 3).map((r) => ({ type: r.type, seq: r.seq, timestamp: r.timestamp }))),
+    JSON.stringify(legacy(3)));
+  check('and the user is told, on screen, not in the console',
+    w.toasts.filter((t) => /historical audit entr/.test(t.m)).length, 1);
+}
+{
+  // 3. it is one-shot: nothing is re-derived on the next write
+  const w = auditWith(legacy(3));
+  w.api.logDoseAudit({ type: 'dose_calc' });
+  const second = build();
+  second.store.data.sv_audit_log = w.store.data.sv_audit_log;
+  second.api.logDoseAudit({ type: 'dose_calc' });
+  check('the derived-id notice does not repeat',
+    second.toasts.filter((t) => /historical audit entr/.test(t.m)).length, 0);
+}
+{
+  // 4. THE CONTROL. Over the cap, nothing confirmed -> NOTHING is discarded.
+  const w = auditWith(legacy(600));
+  w.api.logDoseAudit({ type: 'dose_calc' });
+  const log = JSON.parse(w.store.data.sv_audit_log);
+  check('an unconfirmed entry is NEVER evicted, even far over the cap', log.length, 601);
+  check('and the practice is told, on screen', w.toasts.filter((t) => /over its local limit/.test(t.m)).length, 1);
+  check('the notice says nothing was discarded',
+    /Nothing was discarded/.test(w.toasts.filter((t) => /over its local limit/.test(t.m))[0].m), true);
+}
+{
+  // 5. confirmed entries DO get evicted, oldest first -- or the cap is dead
+  const rows = legacy(600).map((r) => Object.assign({}, r, { id: 'seed' + r.seq }));
+  const w = auditWith(rows, rows.map((r) => r.id));
+  w.api.logDoseAudit({ type: 'dose_calc' });
+  const log = JSON.parse(w.store.data.sv_audit_log);
+  check('with every entry confirmed the cap holds', log.length, 500);
+  check('and it dropped the OLDEST', log[0].id, 'seed101');
+  check('and kept the newest', log[log.length - 1].id.slice(0, 2), 'au');
+}
+{
+  // 6. it STOPS at the first unconfirmed rather than stepping over it
+  const rows = legacy(600).map((r) => Object.assign({}, r, { id: 'seed' + r.seq }));
+  const w = auditWith(rows, rows.slice(0, 10).map((r) => r.id));
+  w.api.logDoseAudit({ type: 'dose_calc' });
+  const log = JSON.parse(w.store.data.sv_audit_log);
+  check('only the confirmed run at the head is dropped', log.length, 591);
+  check('and it stopped at the first unconfirmed one', log[0].id, 'seed10');
+}
+{
+  // 7. an unreadable confirmation set answers NO, never YES
+  const rows = legacy(600).map((r) => Object.assign({}, r, { id: 'seed' + r.seq }));
+  const w = auditWith(rows);
+  w.store.data.sv_audit_backed = '{not json';
+  w.api.logDoseAudit({ type: 'dose_calc' });
+  check('a could-not-tell on "is it backed up" evicts nothing',
+    JSON.parse(w.store.data.sv_audit_log).length, 601);
+}
+{
+  // 8. the confirmation set stays bounded by the trail itself
+  const w = auditWith([{ id: 'live1', type: 'x' }], ['live1', 'gone1', 'gone2']);
+  w.api.svAuditMarkBacked('live1');
+  check('ids no longer in the trail are pruned from the confirmation set',
+    JSON.stringify(JSON.parse(w.store.data.sv_audit_backed).sort()), JSON.stringify(['live1']));
+  check('a refusal, a timeout and a rejection all leave it unmarked -- '
+    + 'svPushOne resolves null for each and only a truthy answer marks',
+    /if\(res\) svAuditMarkBacked\(_id\);/.test(src), true);
 }
 
 console.log((fail ? 'FAILED' : 'ok') + '  sairnvet-audit-and-controlled: ' +
