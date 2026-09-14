@@ -1,0 +1,304 @@
+// tests/sairnbiz_bill_cannot_settle_unmatched.js
+//
+// Run:  node tests/sairnbiz_bill_cannot_settle_unmatched.js
+//
+// SAIRNBIZ HAD A ZERO-WAY MATCH AND TWO OF THE THREE DOCUMENTS DID NOT EXIST.
+//
+//   saveBill()   created a payable from ONE form -- vendor, amount, optional
+//                invoice number, one person -- and posted bill_received to the
+//                ledger immediately.
+//   sbPayBill()  settled it FROM THAT SAME INTERNALLY-CREATED ROW. No second
+//                document, no second person, no amount re-entry.
+//
+// `grep -ciE "purchase order|receiving|packing slip|bill of lading"` returned 0
+// against this file. The match was not skipped: there was nothing to match
+// against.
+//
+// WHAT THE GATE DOES AND DOES NOT DO, because the difference is the design. It
+// does NOT refuse to RECORD a bill -- a bill that has arrived is a real
+// document, and a system that refuses to write it down moves the problem to a
+// spreadsheet where there is no control at all. It refuses to let one be
+// SETTLED. An unmatched bill is recorded, HELD, and cannot be paid.
+//
+// THE FUNCTIONS ARE EXTRACTED FROM THE SHIPPED sairnbiz.html AND DRIVEN.
+
+'use strict';
+const fs = require('fs');
+const path = require('path');
+const assert = require('assert');
+const vm = require('vm');
+
+const ROOT = path.join(__dirname, '..');
+const HTML = fs.readFileSync(process.env.SB_HTML || path.join(ROOT, 'sairnbiz.html'),
+                             'utf8').replace(/\r\n/g, '\n');
+
+let n = 0;
+function ok(cond, label) { assert.ok(cond, label); n++; console.log('  ok   ' + label); }
+
+function grab(sig) {
+  const start = HTML.indexOf(sig);
+  assert.ok(start > 0, 'not found in sairnbiz.html: ' + sig);
+  let i = HTML.indexOf('{', start + sig.length - 1), depth = 0, q = null;
+  for (; i < HTML.length; i++) {
+    const c = HTML[i], p = HTML[i - 1];
+    if (q) { if (c === q && p !== '\\') q = null; continue; }
+    if (c === '"' || c === "'" || c === '`') { q = c; continue; }
+    if (c === '/' && HTML[i + 1] === '/') { i = HTML.indexOf('\n', i); continue; }
+    if (c === '/' && HTML[i + 1] === '*') { i = HTML.indexOf('*/', i) + 1; continue; }
+    if (c === '{') depth++;
+    else if (c === '}') { depth--; if (!depth) return HTML.slice(start, i + 1); }
+  }
+  throw new Error('unterminated: ' + sig);
+}
+
+function makeCtx(store, fields) {
+  const els = {};
+  Object.keys(fields || {}).forEach(k => { els[k] = { value: String(fields[k]) }; });
+  const toasts = [];
+  const ctx = {
+    console: console,
+    toasts: toasts,
+    localStorage: {
+      getItem: k => (k in store ? store[k] : null),
+      setItem: (k, v) => { store[k] = String(v); }
+    },
+    store: store,
+    stFails: false,
+    toast: (m) => { toasts.push(String(m)); },
+    $: id => (id in els ? els[id] : null),
+    H: s => String(s),
+    fmt: v => '$' + Number(v).toFixed(2),
+    sbLocalToday: () => '2026-09-14',
+    ld: (k, d) => { try { const v = JSON.parse(store[k]); return v === null ? d : v; } catch (e) { return d; } },
+    st: function (k, v) { if (ctx.stFails) return false; store[k] = JSON.stringify(v); return true; },
+    rAP: () => {}, rDash: () => {}, closeBillModal: () => {},
+    sbNormalizeBills: d => (Array.isArray(d) ? d : []),
+    sbGlPost: () => {},
+    els: els
+  };
+  vm.createContext(ctx);
+  vm.runInContext('window = this;', ctx);
+  for (const sig of ['function sbPOAll(){', 'function sbRecvAll(){',
+                     'function sbVendorKey(v){', 'function sbPONext(rows,year){',
+                     'function sbThreeWayMatch(po_num,vendor,amt){',
+                     'function sbPOCreate(){', 'function sbRecvLog(){',
+                     'function saveBill(){', 'function sbPayBill(id){']) {
+    vm.runInContext(grab(sig), ctx);
+  }
+  vm.runInContext('var SB_MATCH_TOLERANCE = 0.00;', ctx);
+  return ctx;
+}
+
+const bills = ctx => JSON.parse(ctx.store.sb_ap || '[]');
+
+console.log('SAIRNbiz: a bill cannot settle unmatched\n');
+
+// ── 1. THE THREE DOCUMENTS AGREE ─────────────────────────────────────────────
+console.log('1. all three agree -- the bill is matched and settles');
+{
+  const store = {};
+  let ctx = makeCtx(store, { popvendor: 'Stone World', popdesc: 'Slabs', popamt: '1200' });
+  ctx.sbPOCreate();
+  const po = JSON.parse(store.sb_po)[0];
+  ok(po.po_num === 'PO-2026-001', 'a PO is raised with a real sequence number (' + po.po_num + ')');
+
+  ctx = makeCtx(store, { rcvpo: po.po_num, rcvvendor: 'Stone World', rcvval: '1200' });
+  ctx.sbRecvLog();
+  ok(JSON.parse(store.sb_recv).length === 1, 'a receipt is logged against it');
+
+  ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'INV-9', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Open', blpo: po.po_num
+  });
+  ctx.saveBill();
+  const b = bills(ctx)[0];
+  ok(b.matched === true, 'the bill records itself as MATCHED');
+  ok(b.status === 'Open', '...and is Open, not Held');
+
+  ctx.sbPayBill(b.id);
+  ok(bills(ctx)[0].status === 'Paid', 'and it SETTLES');
+}
+
+// ── 2. EACH LEG MISSING OR DISAGREEING REFUSES ──────────────────────────────
+console.log('\n2. FIRES -- each way the three can fail to agree');
+function scenario(setup, billFields) {
+  const store = {};
+  setup(store);
+  const ctx = makeCtx(store, Object.assign({
+    blvendor: 'Stone World', blinv: 'INV-9', bldate: '2026-09-14',
+    bldue: '2026-10-14', blamt: '1200', blstatus: 'Open'
+  }, billFields));
+  ctx.saveBill();
+  const b = bills(ctx)[0];
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(b.id);
+  return { bill: bills(ctx)[0], stored: b, toasts: ctx.toasts };
+}
+function withPO(store, amt, vendor) {
+  const c = makeCtx(store, { popvendor: vendor || 'Stone World', popdesc: 'Slabs', popamt: String(amt) });
+  c.sbPOCreate();
+  return JSON.parse(store.sb_po)[0].po_num;
+}
+function withRecv(store, po_num, val, vendor) {
+  const c = makeCtx(store, { rcvpo: po_num, rcvvendor: vendor || 'Stone World', rcvval: String(val) });
+  c.sbRecvLog();
+}
+
+{
+  const r = scenario(() => {}, { blpo: '' });
+  ok(r.stored.status === 'Held', 'NO PO NUMBER: the bill is HELD');
+  ok(r.bill.status === 'Held', '...and stays Held after a pay attempt');
+  ok(/no purchase order number/.test(r.toasts.join(' ')), '...and the refusal says why');
+}
+{
+  const r = scenario(() => {}, { blpo: 'PO-2026-999' });
+  ok(r.bill.status === 'Held', 'A PO NUMBER THAT EXISTS NOWHERE: held');
+  ok(/no purchase order PO-2026-999 exists/.test(r.toasts.join(' ')), '...named exactly');
+}
+{
+  const store = {};
+  const num = withPO(store, 1200);
+  const ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  const b = bills(ctx)[0];
+  ok(b.status === 'Held', 'PO EXISTS BUT NOTHING WAS RECEIVED: held');
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(b.id);
+  ok(bills(ctx)[0].status === 'Held', '...and it will not settle');
+  ok(/nothing has been recorded as received/.test(ctx.toasts.join(' ')), '...and says so');
+}
+{
+  const store = {};
+  const num = withPO(store, 1200);
+  withRecv(store, num, 1200);
+  const ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1900', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  ok(bills(ctx)[0].status === 'Held', 'BILLED MORE THAN THE PO: held');
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(bills(ctx)[0].id);
+  const t = ctx.toasts.join(' ');
+  ok(/billed \$1900\.00 against a PO of \$1200\.00/.test(t),
+     '...and BOTH figures are named, with the difference');
+}
+{
+  const store = {};
+  const num = withPO(store, 1200);
+  withRecv(store, num, 400);          // a partial delivery, billed in full
+  const ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(bills(ctx)[0].id);
+  ok(bills(ctx)[0].status === 'Held', 'BILLED IN FULL FOR A PARTIAL DELIVERY: held');
+  ok(/against \$400\.00 actually received/.test(ctx.toasts.join(' ')),
+     '...naming what actually arrived');
+}
+{
+  const store = {};
+  const num = withPO(store, 1200, 'Stone World');
+  withRecv(store, num, 1200, 'Stone World');
+  const ctx = makeCtx(store, {
+    blvendor: 'Atlas Marble', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(bills(ctx)[0].id);
+  ok(bills(ctx)[0].status === 'Held', 'A DIFFERENT VENDOR ON THE BILL: held');
+  ok(/vendor differs/.test(ctx.toasts.join(' ')), '...and says which two names disagree');
+}
+
+// ── 3. A BILL MARKED PAID ON CREATION CANNOT SKIP THE GATE ──────────────────
+console.log('\n3. the obvious way round it is closed');
+{
+  const store = {};
+  const ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Paid', blpo: ''
+  });
+  ctx.saveBill();
+  const b = bills(ctx)[0];
+  ok(b.status === 'Held', 'status=Paid on an UNMATCHED new bill is refused');
+  ok(b.bal === 1200, '...and the balance is not zeroed');
+  ok(/cannot be marked paid before it matches/.test(ctx.toasts.join(' ')),
+     '...and the refusal is explicit');
+}
+
+// ── 4. THE STALE-VERDICT ARM, which is why both checks run ──────────────────
+console.log('\n4. a matched bill whose documents later vanish still will not settle');
+{
+  const store = {};
+  const num = withPO(store, 1200);
+  withRecv(store, num, 1200);
+  let ctx = makeCtx(store, {
+    blvendor: 'Stone World', blinv: 'I', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '1200', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  ok(bills(ctx)[0].matched === true, 'the bill was matched when it was entered');
+  // Somebody deletes the receipt afterwards.
+  store.sb_recv = JSON.stringify([]);
+  ctx = makeCtx(store, {});
+  ctx.toasts.length = 0;
+  ctx.sbPayBill(bills(ctx)[0].id);
+  ok(bills(ctx)[0].status !== 'Paid',
+     'a STALE matched:true does not settle it once the receipt is gone');
+  ok(/nothing has been recorded as received/.test(ctx.toasts.join(' ')),
+     '...and the live evaluation is what says so');
+}
+
+// ── 5. CONTROLS ─────────────────────────────────────────────────────────────
+console.log('\n5. controls -- the gate must not refuse everything');
+{
+  // Without this the whole suite passes on a gate that is simply always shut,
+  // which is the same as an app with no AP.
+  const store = {};
+  const num = withPO(store, 1200);
+  withRecv(store, num, 1200);
+  const ctx = makeCtx(store, {
+    blvendor: '  stone   world ', blinv: 'I', bldate: '2026-09-14',
+    bldue: '2026-10-14', blamt: '1200', blstatus: 'Open', blpo: num
+  });
+  ctx.saveBill();
+  ok(bills(ctx)[0].matched === true,
+     'CONTROL: vendor comparison ignores case and spacing, so a real match still passes');
+}
+{
+  // A receipt must name a PO that exists, or the join is decoration.
+  const store = {};
+  const ctx = makeCtx(store, { rcvpo: 'PO-2026-404', rcvvendor: 'X', rcvval: '5' });
+  ctx.sbRecvLog();
+  ok(!store.sb_recv, 'a receipt against a PO that does not exist is refused');
+  ok(/No purchase order PO-2026-404 exists/.test(ctx.toasts.join(' ')), '...and says so');
+}
+{
+  // The sequence must not reuse a number after a delete -- it is the match key.
+  const store = {};
+  withPO(store, 100); withPO(store, 200); withPO(store, 300);
+  const kept = JSON.parse(store.sb_po).filter(p => p.po_num !== 'PO-2026-002');
+  store.sb_po = JSON.stringify(kept);
+  const ctx = makeCtx(store, { popvendor: 'V', popdesc: '', popamt: '400' });
+  ctx.sbPOCreate();
+  const nums = JSON.parse(store.sb_po).map(p => p.po_num);
+  ok(new Set(nums).size === nums.length, 'after a delete the next PO number is not a reuse');
+  ok(nums.indexOf('PO-2026-004') !== -1, '...it is PO-2026-004, the sequence continuing');
+}
+{
+  // A failed reservation must not issue a number nothing recorded.
+  const store = {};
+  const ctx = makeCtx(store, { popvendor: 'V', popdesc: '', popamt: '9' });
+  ctx.stFails = true;
+  ctx.sbPOCreate();
+  ok(!store.sb_po, 'a failed write leaves no PO behind');
+  ok(/Could not reserve a PO number/.test(ctx.toasts.join(' ')), '...and refuses out loud');
+}
+
+console.log('\nALL ' + n + ' ASSERTIONS PASS');

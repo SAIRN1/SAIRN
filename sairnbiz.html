@@ -483,6 +483,7 @@ textarea{resize:vertical;min-height:80px;}
   <div class="mbox">
     <div class="mtitle">Add Bill</div>
     <div class="fr"><div class="fg"><label>Vendor</label><select id="blvendor"></select></div><div class="fg"><label>Invoice #</label><input id="blinv" placeholder="MSS-44821"></div></div>
+    <div class="fr"><div class="fg"><label>Purchase Order #</label><input id="blpo" placeholder="PO-2026-001"></div><div class="fg"><label style="visibility:hidden">.</label><div style="font-size:11px;color:var(--muted,#666);line-height:1.4;padding-top:6px">A bill with no matching PO <strong>and</strong> goods receipt is recorded and HELD &mdash; it cannot be paid until all three agree.</div></div></div>
     <div class="fr"><div class="fg"><label>Bill Date</label><input id="bldate" type="date"></div><div class="fg"><label>Due Date</label><input id="bldue" type="date"></div></div>
     <div class="fr"><div class="fg"><label>Amount ($)</label><input id="blamt" type="number" placeholder="1200.00"></div><div class="fg"><label>Status</label><select id="blstatus"><option>Open</option><option>Paid</option><option>Overdue</option></select></div></div>
     <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
@@ -799,6 +800,35 @@ textarea{resize:vertical;min-height:80px;}
   <div class="card"><div class="cb">
     <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Vendor</th><th>Invoice #</th><th>Date</th><th>Due Date</th><th>Amount</th><th>Balance</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="aptbody"></tbody></table></div>
+  </div></div>
+
+  <!-- THE OTHER TWO LEGS. Before 2026-09-14 SAIRNbiz had neither: the audit
+       measured ZERO occurrences of "purchase order", "receiving", "packing
+       slip" or "bill of lading" in this file, so the three-way match was not
+       skipped -- two of the three documents did not exist. -->
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:8px">Purchase Orders</div>
+    <div class="fr">
+      <div class="fg"><label>Vendor</label><input id="popvendor" placeholder="Vendor name"></div>
+      <div class="fg"><label>Description</label><input id="popdesc" placeholder="What was ordered"></div>
+      <div class="fg"><label>Amount ($)</label><input id="popamt" type="number" placeholder="1200.00"></div>
+      <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbPOCreate()">Raise PO</button></div>
+    </div>
+    <div class="tw" tabindex="0" role="region" aria-label="Purchase orders"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Received</th><th>Billed</th><th>Date</th></tr></thead>
+    <tbody id="potbody"></tbody></table></div>
+  </div></div>
+
+  <div class="card"><div class="cb">
+    <div style="font-weight:700;margin-bottom:8px">Goods Received</div>
+    <div class="fr">
+      <div class="fg"><label>PO #</label><input id="rcvpo" placeholder="PO-2026-001"></div>
+      <div class="fg"><label>Vendor</label><input id="rcvvendor" placeholder="Vendor name"></div>
+      <div class="fg"><label>Value received ($)</label><input id="rcvval" type="number" placeholder="1200.00"></div>
+      <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbRecvLog()">Log Receipt</button></div>
+    </div>
+    <div style="font-size:11px;color:var(--muted,#666);margin-bottom:8px">Enter what ACTUALLY arrived, independently of the PO. Two figures that were typed separately are the whole point of the match &mdash; copying the PO amount across defeats it.</div>
+    <div class="tw" tabindex="0" role="region" aria-label="Goods received"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Value</th><th>Date</th></tr></thead>
+    <tbody id="rcvtbody"></tbody></table></div>
   </div></div>
 </div>
 
@@ -2430,6 +2460,126 @@ function openBillModal(){
   $('billmodal').classList.add('on');
 }
 function closeBillModal(){$('billmodal').classList.remove('on');}
+// ── THREE-WAY MATCH (2026-09-14) ───────────────────────────────────────────
+// A payable is not settled until three INDEPENDENTLY-PRODUCED documents agree:
+// the PURCHASE ORDER (what we agreed to buy), the GOODS RECEIPT (what actually
+// arrived) and the VENDOR BILL (what we are being asked to pay). Any one alone
+// is a claim by a single party, and until today this app had only the third:
+// saveBill() created a payable from one form typed by one person and
+// sbPayBill() settled it from that same row, with no second document and no
+// second person anywhere in the cycle.
+//
+// WHAT THE GATE DOES AND DOES NOT DO, because the difference is the whole
+// design. It does NOT refuse to RECORD a bill: a bill that has arrived is a
+// real document and a system that refuses to write it down just moves the
+// problem to a spreadsheet. It refuses to let one be SETTLED. An unmatched
+// bill is recorded, posted to the ledger as the liability it is, and held.
+//
+// TOLERANCE IS ZERO AND IT IS DECLARED. Real AP departments run a variance
+// tolerance; a tolerance that nobody states is just a hole. The refusal names
+// the exact difference so the PO or the bill can be corrected, rather than
+// leaving somebody to guess how close is close enough.
+var SB_MATCH_TOLERANCE = 0.00;
+
+function sbPOAll(){ var d=ld('sb_po',[]); return Array.isArray(d)?d:[]; }
+function sbRecvAll(){ var d=ld('sb_recv',[]); return Array.isArray(d)?d:[]; }
+function sbVendorKey(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
+
+// THE NUMBER IS RESERVED BEFORE THE PO IS WRITTEN. If the write then fails the
+// sequence has burned a number and there is a GAP -- auditable and harmless.
+// A REUSE is neither, and it is what a count-derived number produces after any
+// delete. Same shape as StoneDesk's sdPONextNum, fixed the same day.
+function sbPONext(rows,year){
+  rows=rows||[];
+  year=year||String(sbLocalToday()).slice(0,4);
+  var seq={};
+  try{ var raw=JSON.parse(localStorage.getItem('sb_po_seq')||'{}'); if(raw&&typeof raw==='object')seq=raw; }catch(e){}
+  var highest=Number(seq[year])||0;
+  rows.forEach(function(r){
+    var m=/^PO-(\d{4})-(\d+)$/.exec(String((r&&r.po_num)||''));
+    if(m&&m[1]===year){ var n=parseInt(m[2],10); if(n>highest)highest=n; }
+  });
+  var next=highest+1;
+  seq[year]=next;
+  if(!st('sb_po_seq',seq)) return null;
+  return 'PO-'+year+'-'+(next<100?('00'+next).slice(-3):String(next));
+}
+
+// Returns {ok, reasons[]}. REASONS ARE NAMED, never a bare "no match": a
+// refusal a person cannot act on is one they will route around.
+function sbThreeWayMatch(po_num,vendor,amt){
+  var reasons=[];
+  po_num=String(po_num||'').trim();
+  if(!po_num) return {ok:false,reasons:['no purchase order number on this bill']};
+  var po=sbPOAll().filter(function(p){return String(p.po_num)===po_num;})[0];
+  if(!po) return {ok:false,reasons:['no purchase order '+po_num+' exists']};
+  var recs=sbRecvAll().filter(function(r){return String(r.po_num)===po_num;});
+  if(!recs.length) reasons.push('nothing has been recorded as received against '+po_num);
+  if(sbVendorKey(po.vendor)!==sbVendorKey(vendor))
+    reasons.push('vendor differs: the PO says "'+po.vendor+'", the bill says "'+vendor+'"');
+  recs.forEach(function(r){
+    if(sbVendorKey(r.vendor)&&sbVendorKey(r.vendor)!==sbVendorKey(po.vendor))
+      reasons.push('a receipt names "'+r.vendor+'" but the PO says "'+po.vendor+'"');
+  });
+  var poAmt=Number(po.amt)||0, billAmt=Number(amt)||0;
+  var recvVal=recs.reduce(function(a,r){return a+(Number(r.val)||0);},0);
+  if(Math.abs(billAmt-poAmt)>SB_MATCH_TOLERANCE)
+    reasons.push('billed '+fmt(billAmt)+' against a PO of '+fmt(poAmt)+' (difference '+fmt(billAmt-poAmt)+')');
+  if(recs.length&&Math.abs(billAmt-recvVal)>SB_MATCH_TOLERANCE)
+    reasons.push('billed '+fmt(billAmt)+' against '+fmt(recvVal)+' actually received');
+  return {ok:reasons.length===0,reasons:reasons};
+}
+
+function sbRenderPOs(){
+  var pos=sbPOAll(), recs=sbRecvAll(), bills=ld('sb_ap',[]);
+  var pob=$('potbody');
+  if(pob){
+    pob.innerHTML=pos.map(function(p){
+      var rv=recs.filter(function(r){return String(r.po_num)===String(p.po_num);})
+                 .reduce(function(a,r){return a+(Number(r.val)||0);},0);
+      var bv=(Array.isArray(bills)?bills:[]).filter(function(b){return String(b.po_num)===String(p.po_num);})
+                 .reduce(function(a,b){return a+(Number(b.amt)||0);},0);
+      // The three figures side by side is the whole instrument. Two of them
+      // were typed independently; a reader can see a difference without
+      // anything having to decide what it means.
+      return '<tr><td><strong>'+H(p.po_num)+'</strong></td><td>'+H(p.vendor)+'</td><td>'+H(p.desc||'')+'</td>'
+        +'<td>'+fmt(p.amt)+'</td><td>'+(rv?fmt(rv):'<span class="badge bx">none</span>')+'</td>'
+        +'<td>'+(bv?fmt(bv):'--')+'</td><td>'+H(p.date)+'</td></tr>';
+    }).join('')||'<tr><td colspan="7" style="color:var(--muted,#666)">No purchase orders raised</td></tr>';
+  }
+  var rcb=$('rcvtbody');
+  if(rcb){
+    rcb.innerHTML=recs.map(function(r){
+      return '<tr><td><strong>'+H(r.po_num)+'</strong></td><td>'+H(r.vendor||'')+'</td><td>'+fmt(r.val)+'</td><td>'+H(r.date)+'</td></tr>';
+    }).join('')||'<tr><td colspan="4" style="color:var(--muted,#666)">Nothing received yet</td></tr>';
+  }
+}
+
+function sbPOCreate(){
+  var vendor=$('popvendor').value.trim(), amt=parseFloat($('popamt').value)||0;
+  if(!vendor||!amt){toast('Vendor and amount are required to raise a PO');return;}
+  var rows=sbPOAll();
+  var num=sbPONext(rows);
+  if(!num){toast('Could not reserve a PO number -- storage may be full or unavailable, try again',6000);return;}
+  rows.unshift({po_num:num,vendor:vendor,desc:$('popdesc').value.trim(),amt:amt,date:sbLocalToday(),status:'Open'});
+  if(!st('sb_po',rows)){toast('PO number '+num+' was reserved but the PO could not be saved. The number is not reused -- raise it again.',8000);return;}
+  ['popvendor','popdesc','popamt'].forEach(function(id){var e=$(id);if(e)e.value='';});
+  rAP();toast('PO raised: '+num);
+}
+
+function sbRecvLog(){
+  var po_num=$('rcvpo').value.trim(), val=parseFloat($('rcvval').value)||0;
+  if(!po_num){toast('A receipt has to name the PO it answers');return;}
+  if(!sbPOAll().some(function(p){return String(p.po_num)===po_num;})){
+    toast('No purchase order '+po_num+' exists -- raise the PO first',6000);return;}
+  var recs=sbRecvAll();
+  recs.unshift({id:'RC'+Date.now().toString(36),po_num:po_num,
+    vendor:$('rcvvendor').value.trim(),val:val,date:sbLocalToday()});
+  if(!st('sb_recv',recs)){toast('Could not record that receipt -- storage may be full or unavailable, try again',6000);return;}
+  ['rcvpo','rcvvendor','rcvval'].forEach(function(id){var e=$(id);if(e)e.value='';});
+  rAP();toast('Receipt logged against '+po_num);
+}
+
 function saveBill(){
   var vendor=$('blvendor').value,amt=parseFloat($('blamt').value)||0;
   if(!vendor||!amt){toast('Vendor and amount required');return;}
@@ -2448,8 +2598,27 @@ function saveBill(){
   var apSeen={};bills.forEach(function(b){if(b&&b.id)apSeen[String(b.id)]=true;});
   var blId,apN=0;
   do{blId='AP'+Date.now().toString(36)+'-'+apN;apN++;}while(apSeen[blId]);
-  bills.push({id:blId,vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status});
-  st('sb_ap',bills);closeBillModal();rAP();rDash();toast('Bill added - '+vendor);
+  // ── THE MATCH IS EVALUATED HERE AND THE RESULT IS STORED ON THE BILL ────
+  // Not recomputed at payment time: the match is a fact about what was true
+  // when the bill was entered, and a PO edited afterwards must not silently
+  // turn a held bill into a payable one. sbPayBill() re-runs it as well and
+  // requires BOTH to agree -- see there for why.
+  var po_num=($('blpo')&&$('blpo').value||'').trim();
+  var m=sbThreeWayMatch(po_num,vendor,amt);
+  // A BILL IS ALWAYS RECORDED. A bill that has arrived is a real document and
+  // a system that refuses to write it down moves the problem to a spreadsheet,
+  // where there is no control at all. What the gate refuses is SETTLEMENT.
+  if(!m.ok&&status==='Paid'){
+    status='Held';
+    toast('Recorded as HELD, not Paid: '+m.reasons[0]+'. A bill cannot be marked paid before it matches.',9000);
+  }else if(!m.ok){
+    status='Held';
+  }
+  bills.push({id:blId,vendor:vendor,inv:$('blinv').value.trim(),date:$('bldate').value||sbLocalToday(),due:$('bldue').value,amt:amt,bal:status==='Paid'?0:amt,status:status,
+    po_num:po_num,matched:m.ok,match_reasons:m.ok?[]:m.reasons});
+  st('sb_ap',bills);closeBillModal();rAP();rDash();
+  if(m.ok)toast('Bill added and MATCHED to '+po_num+' - '+vendor);
+  else toast('Bill added and HELD - '+m.reasons[0],9000);
   // A supplier bill has no category field in this app, so it posts to 5010
   // COGS. THAT IS AN ASSUMPTION, and it is written into the entry memo rather
   // than hidden in code -- a bill that is really rent or software is corrected
@@ -2901,6 +3070,7 @@ function rAP(){
   var ov=bills.filter(function(b){return b.status==='Overdue';}).length;
   var pd=bills.filter(function(b){return b.status==='Paid';}).reduce(function(s,b){return s+b.amt;},0);
   var top=bills.filter(function(b){return b.bal>0;}).sort(function(a,b){return b.bal-a.bal;})[0];
+  sbRenderPOs();
   $('ap-total').textContent=fmt(tot);$('ap-week').textContent=fmt(wk);$('ap-over').textContent=ov;$('ap-paid').textContent=fmt(pd);$('ap-top').textContent=top?top.vendor:'--';
   $('aptbody').innerHTML=bills.map(function(b){var sc={Open:'bb',Paid:'bg',Overdue:'br'}[b.status]||'bx';return'<tr><td><strong>'+H(b.vendor)+'</strong></td><td>'+H(b.inv)+'</td><td>'+fdate(b.date)+'</td><td>'+fdate(b.due)+'</td><td>'+fmt(b.amt)+'</td><td><strong>'+fmt(b.bal)+'</strong></td><td><span class="badge '+sc+'">'+H(b.status)+'</span></td><td>'+(b.status==='Paid'?'<span class="kt">Paid '+fdate(b.paidDate)+'</span>':'<button class="btn bo bs" onclick="sbPayBill(\''+H(b.id)+'\')">Pay</button>')+'</td></tr>';}).join('');
 }
@@ -2923,6 +3093,20 @@ function sbPayBill(id){
   // from this same store, so not finding it means something is genuinely wrong.
   if(!b){ toast('That bill is no longer on file - refresh and try again',4000); return; }
   if(b.status==='Paid'){ toast(b.vendor+' - already marked paid'); return; }
+  // ── THE GATE. A BILL THAT DOES NOT MATCH CANNOT BE SETTLED (2026-09-14) ──
+  // BOTH the stored verdict and a fresh evaluation must agree, and that is not
+  // belt-and-braces. The stored one is what was true when the bill was entered
+  // -- a PO edited afterwards must not silently make a held bill payable. The
+  // fresh one is what is true now -- a PO or receipt DELETED afterwards must
+  // not leave a stale `matched:true` standing in for a document that is gone.
+  // Either direction alone can be wrong; requiring both means a change to any
+  // of the three documents can only ever make settlement harder, never easier.
+  var live=sbThreeWayMatch(b.po_num,b.vendor,b.amt);
+  if(!b.matched||!live.ok){
+    var why=(!live.ok?live.reasons:(b.match_reasons||[]))[0]||'the three documents do not agree';
+    toast('NOT PAID - '+b.vendor+' '+fmt(b.amt)+': '+why+'. Correct the PO, the receipt or the bill, then try again.',10000);
+    return;
+  }
   b.status='Paid';
   b.bal=0;
   b.paidDate=sbLocalToday();
