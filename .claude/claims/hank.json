@@ -1645,6 +1645,16 @@
       "claimed_at_epoch": 1789414703.0752459,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789418196",
+      "session": "hank",
+      "subject": "sairnvet",
+      "task": "item39c retrievability of the other nine class A resources by the backing-variable method",
+      "claimed_at": "2026-09-14T20:36:36Z",
+      "claimed_at_epoch": 1789418196.1141555,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
