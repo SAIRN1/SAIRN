@@ -7,7 +7,7 @@ this file assert a check that did not happen.
 | | |
 |---|---|
 | **State** | **COULD NOT TELL** |
-| Last run | 2026-09-14 13:00:54Z |
+| Last run | 2026-09-14 13:19:47Z |
 | Endpoint | `https://sairn.vercel.app/api/cron-watchdog` |
 
 **CRON_SECRET is not set in this environment, so the watchdog was not

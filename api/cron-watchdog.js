@@ -38,6 +38,7 @@
 // ---------------------------------------------------------------------------
 
 const { beat } = require('./_lib/heartbeat');
+const { planResponse } = require('./_lib/cron-response');
 
 const HEARTBEAT_TABLE = 'sairn_cron_heartbeat';
 
@@ -131,6 +132,128 @@ function assess(nowMs, rows) {
   return report;
 }
 
+// ── DELIVERY (item 55) ──────────────────────────────────────────────────────
+// Kept apart from planResponse() on purpose: the DECISION is pure and
+// exhaustively testable without a mail provider, and this half is the only part
+// that talks to the outside world.
+function alertTo(escalated) {
+  return escalated
+    ? (process.env.SAIRN_ESCALATION_EMAIL || process.env.SAIRN_OPS_EMAIL || null)
+    : (process.env.SAIRN_OPS_EMAIL || null);
+}
+
+async function sendAlert(to, subject, text) {
+  if (!process.env.RESEND_API_KEY || !process.env.RESEND_FROM_EMAIL) {
+    return { sent: false, error: 'RESEND_API_KEY / RESEND_FROM_EMAIL not configured' };
+  }
+  try {
+    const r = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + process.env.RESEND_API_KEY,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        from: process.env.RESEND_FROM_EMAIL, to: [to], subject: subject, text: text
+      })
+    });
+    if (!r.ok) {
+      const t = await r.text().catch(function () { return ''; });
+      return { sent: false, error: 'Resend returned ' + r.status + ' ' + t.slice(0, 200) };
+    }
+    // The provider's id is captured so a SUCCESSFUL send is positively
+    // observable rather than inferred from the absence of a failure line --
+    // the same argument api/alf-alerts.js already makes about its own sends.
+    const b = await r.json().catch(function () { return {}; });
+    return { sent: true, id: (b && b.id) || null };
+  } catch (e) {
+    return { sent: false, error: String((e && e.message) || e).slice(0, 200) };
+  }
+}
+
+function baseUrl() {
+  if (process.env.SAIRN_BASE_URL) {
+    return String(process.env.SAIRN_BASE_URL).replace(/\/+$/, '');
+  }
+  if (process.env.VERCEL_URL) return 'https://' + process.env.VERCEL_URL;
+  return null;
+}
+
+// ONE ATTEMPT. Never a loop and never a second try inside the same run: a retry
+// that failed is information, and retrying it again here would turn one bad
+// minute into a stampede against a service that is already unwell.
+async function retryJob(job) {
+  const base = baseUrl();
+  if (!base) {
+    return { ok: false, error: 'neither SAIRN_BASE_URL nor VERCEL_URL is set, so there is no address to retry against' };
+  }
+  try {
+    const r = await fetch(base + job, {
+      method: 'POST',
+      headers: {
+        Authorization: 'Bearer ' + process.env.CRON_SECRET,
+        'Content-Type': 'application/json'
+      },
+      body: '{}'
+    });
+    return { ok: r.ok, status: r.status };
+  } catch (e) {
+    return { ok: false, error: String((e && e.message) || e).slice(0, 200) };
+  }
+}
+
+async function executeActions(actions) {
+  const out = [];
+  for (const a of actions) {
+    if (a.action === 'suppressed' || a.action === 'NO_PLAN') {
+      // Carried through verbatim. `delivered` is deliberately ABSENT rather than
+      // true: nothing was delivered, and nothing needed to be -- and a `true`
+      // here would make the undelivered count below quietly wrong.
+      out.push(a);
+      continue;
+    }
+    if (a.action === 'retry') {
+      const r = await retryJob(a.job);
+      out.push(Object.assign({}, a, { delivered: r.ok, detail: r }));
+      continue;
+    }
+    const escalated = a.action === 'escalate';
+    const to = alertTo(escalated);
+    if (!to) {
+      // AN UNDELIVERABLE ALERT IS NOT A HANDLED EVENT. Recorded as delivered
+      // false so the watchdog's own outcome degrades every run until somebody
+      // configures a destination. An alerting system that is silently inert is
+      // worse than none, because the existence of a watchdog is itself an
+      // assurance somebody is relying on.
+      out.push(Object.assign({}, a, {
+        delivered: false,
+        detail: {
+          error: (escalated ? 'SAIRN_ESCALATION_EMAIL' : 'SAIRN_OPS_EMAIL') +
+                 ' is not configured, so nobody was told'
+        }
+      }));
+      continue;
+    }
+    const NL = String.fromCharCode(10);
+    const subject = (escalated ? 'ESCALATION: ' : 'SAIRN cron: ') + a.job + ' is ' + a.status;
+    const text = [
+      a.job + ' is ' + a.status + '.',
+      '',
+      a.say || '',
+      '',
+      'Why now: ' + a.reason,
+      'Consecutive checks in this state: ' + (a.count || 1),
+      '',
+      'This response was decided in advance -- see api/_lib/cron-response.js.',
+      'Detection: api/cron-watchdog.js.',
+      'Out-of-band check: CRON_SECRET=... python tools/cron_liveness_check.py'
+    ].join(NL);
+    const sent = await sendAlert(to, subject, text);
+    out.push(Object.assign({}, a, { delivered: sent.sent, detail: sent, to: to }));
+  }
+  return out;
+}
+
 module.exports = async (req, res) => {
   if (!process.env.CRON_SECRET) {
     console.error('cron-watchdog: CRON_SECRET not set');
@@ -183,8 +306,19 @@ module.exports = async (req, res) => {
       return;
     }
 
-    const report = assess(Date.now(), rows);
+    const nowMs = Date.now();
+    const report = assess(nowMs, rows);
     const bad = report.filter((x) => x.status !== 'ok');
+
+    // ── ITEM 55: THE RESPONSE, DECIDED IN ADVANCE ───────────────────────
+    // The memo of what was already alerted rides in THIS job's own heartbeat
+    // detail rather than in a new table. It is current-state, it is small, and
+    // that row is written every run anyway -- a second table would be a second
+    // migration to run and a second thing to be missing.
+    const self = rows.filter(function (r) { return r.job === '/api/cron-watchdog'; })[0];
+    const prior = (self && self.detail && self.detail.response_memo) || {};
+    const planned = planResponse(report, prior, nowMs);
+    const executed = await executeActions(planned.actions);
     // LOGGED, NOT JUST RETURNED -- the same reason every cron here logs its
     // completion: Vercel discards the response body, so a watchdog whose only
     // output was a body would itself be the silent job.
@@ -197,13 +331,34 @@ module.exports = async (req, res) => {
     // but tools/cron_liveness_check.py reads this row from outside Vercel, and
     // a missing watchdog beat is the one symptom that separates "no job is in
     // trouble" from "nothing has been checked at all".
+    // AN UNDELIVERED RESPONSE DEGRADES THE WATCHDOG'S OWN OUTCOME. A watchdog
+    // that detected correctly and could not tell anybody is not healthy, and
+    // reporting `ok` because the DETECTION half worked is exactly how an
+    // alerting system ends up silently inert.
+    const undelivered = executed.filter(function (a) { return a.delivered === false; });
     await beat({
       job: '/api/cron-watchdog',
-      outcome: bad.length ? 'partial' : 'ok',
+      outcome: undelivered.length ? 'failed' : (bad.length ? 'partial' : 'ok'),
       expected_interval_seconds: 3600,
-      detail: { checked: report.length, not_ok: bad.map(function (x) { return x.job + '=' + x.status; }) }
+      detail: {
+        checked: report.length,
+        not_ok: bad.map(function (x) { return x.job + '=' + x.status; }),
+        response_memo: planned.memo,
+        undelivered: undelivered.map(function (a) { return a.action + ':' + a.job; })
+      }
     });
-    res.status(200).json({ ok: bad.length === 0, checked: report.length, jobs: report });
+    if (undelivered.length) {
+      console.error('cron-watchdog: ' + undelivered.length +
+        ' RESPONSE(S) COULD NOT BE DELIVERED -- ' + JSON.stringify(undelivered));
+    }
+    res.status(200).json({
+      ok: bad.length === 0 && undelivered.length === 0,
+      checked: report.length, jobs: report,
+      // NAMED SEPARATELY from `jobs`: what was FOUND and what was DONE about it
+      // are different questions, and a reader who cannot tell them apart cannot
+      // tell a suppressed alert from an alert that was never planned.
+      actions: executed
+    });
   } catch (err) {
     console.error('cron-watchdog: error', err && err.message);
     res.status(502).json({ error: { message: 'Upstream error -- try again' } });
@@ -215,3 +370,6 @@ module.exports.assess = assess;
 module.exports.lateAfter = lateAfter;
 module.exports.deadAfter = deadAfter;
 module.exports.GRACE_SECONDS = GRACE_SECONDS;
+module.exports.executeActions = executeActions;
+module.exports.alertTo = alertTo;
+module.exports.baseUrl = baseUrl;

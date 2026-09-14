@@ -167,7 +167,34 @@ def main(argv):
         lines.append('| `%s` | **%s** | %s | %s | %s |' % (
             j.get('job'), j.get('status'), j.get('last_run_at', '—'),
             j.get('age_seconds', '—'), j.get('seconds_until_late', '—')))
-    bad = [j for j in jobs if j.get('status') != 'ok']
+    # ── WHAT WAS DONE ABOUT IT (item 55) ───────────────────────────────────
+    # Reported separately from what was FOUND, because a reader who cannot tell
+    # them apart cannot tell a suppressed alert from an alert that was never
+    # planned -- and UNDELIVERED is the state that matters most here: detection
+    # worked and nobody was told, which is the shape a watchdog is supposed to
+    # make impossible rather than produce.
+    actions = payload.get('actions') or []
+    undelivered = [a for a in actions if a.get('delivered') is False]
+    if actions:
+        lines += ['', '## Response', '',
+                  '| Job | Status | Action | Delivered | Why |', '|---|---|---|---|---|']
+        for a in actions:
+            d = a.get('delivered')
+            lines.append('| `%s` | %s | **%s** | %s | %s |' % (
+                a.get('job'), a.get('status'), a.get('action'),
+                '—' if d is None else ('yes' if d else '**NO**'),
+                str(a.get('reason', ''))[:160]))
+    if undelivered:
+        lines += ['', '### A response could NOT be delivered', '',
+                  '**Detection worked and nobody was told.** This is worse than a',
+                  'missing watchdog, because the existence of one is an assurance',
+                  'somebody is relying on.', '']
+        for a in undelivered:
+            lines.append('- `%s` %s **%s** — %s' % (
+                a.get('job'), a.get('status'), a.get('action'),
+                (a.get('detail') or {}).get('error', 'no reason given')))
+
+    bad = [j for j in jobs if j.get('status') != 'ok'] + undelivered
     if bad:
         lines += ['', '## Not ok', '']
         for j in bad:

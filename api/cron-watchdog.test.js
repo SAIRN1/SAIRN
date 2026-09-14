@@ -214,6 +214,167 @@ t('A DEAD JOB MAKES THE HANDLER ANSWER ok:false -- the pair for the arm above', 
   assert.strictEqual(find(out.body.jobs, '/api/alf-alerts').status, 'DEAD');
 });
 
+// ── 4b. ITEM 55: the response, decided in advance ──────────────────────────
+// planResponse() is PURE, so these arms need no fake at all -- which is why the
+// decision half is where the coverage is. A planner driven through a mail
+// provider would be tested the way the provider allows rather than the way the
+// decision needs.
+section('4b. the pre-planned response');
+const CR = require('./_lib/cron-response.js');
+const dead = (job) => ({ job: job, status: 'DEAD' });
+
+t('EVERY status the watchdog can produce has a planned response', () => {
+  // Derived from the source rather than hand-listed: a new status added to
+  // assess() with no RESPONSE row is the drift this arm exists to catch, and a
+  // hand-list here would go stale in exactly the same way.
+  const src = fs.readFileSync(path.join(__dirname, 'cron-watchdog.js'), 'utf8');
+  const produced = new Set();
+  const re = /status = '([A-Z_]+)'|status: '([A-Z_]+)'/g;
+  let m;
+  while ((m = re.exec(src))) produced.add(m[1] || m[2]);
+  const missing = [...produced].filter((s) => s !== 'ok' && !CR.RESPONSE[s]);
+  assert.deepStrictEqual(missing, [],
+    'these statuses can be produced and have no planned response: ' + missing.join(', '));
+});
+t('...and every planned response is for a status that can actually occur', () => {
+  const src = fs.readFileSync(path.join(__dirname, 'cron-watchdog.js'), 'utf8');
+  const phantom = Object.keys(CR.RESPONSE).filter((s) => src.indexOf("'" + s + "'") === -1);
+  assert.deepStrictEqual(phantom, [], 'planned for but unreachable: ' + phantom.join(', '));
+});
+t('a NEW dead job is alerted AND retried once', () => {
+  const p = CR.planResponse([dead('/api/alf-alerts')], {}, NOW);
+  const kinds = p.actions.map((a) => a.action).sort();
+  assert.deepStrictEqual(kinds, ['alert', 'retry']);
+});
+t('THE SAME DEAD JOB AN HOUR LATER IS SUPPRESSED, and not retried again', () => {
+  const first = CR.planResponse([dead('/api/alf-alerts')], {}, NOW);
+  const second = CR.planResponse([dead('/api/alf-alerts')], first.memo, NOW + 3600 * 1000);
+  const kinds = second.actions.map((a) => a.action);
+  assert.ok(kinds.indexOf('alert') === -1, 'it alerted twice in an hour');
+  assert.ok(kinds.indexOf('retry') === -1, 'it retried a job it already retried');
+  assert.ok(kinds.indexOf('suppressed') !== -1, 'the suppression was silent');
+});
+t('...and the suppression SAYS why and when the next one comes', () => {
+  const first = CR.planResponse([dead('/api/alf-alerts')], {}, NOW);
+  const second = CR.planResponse([dead('/api/alf-alerts')], first.memo, NOW + 3600 * 1000);
+  const s = second.actions.filter((a) => a.action === 'suppressed')[0];
+  assert.ok(/next alert after/.test(s.reason), s.reason);
+});
+t('after the re-alert window it DOES alert again -- suppression is not silence forever', () => {
+  let memo = CR.planResponse([dead('/api/alf-alerts')], {}, NOW).memo;
+  const later = NOW + (CR.REALERT_SECONDS + 60) * 1000;
+  const p = CR.planResponse([dead('/api/alf-alerts')], memo, later);
+  assert.ok(p.actions.some((a) => a.action === 'alert'), 'it went permanently quiet');
+});
+t('IT ESCALATES at the declared count, and only once', () => {
+  let memo = {};
+  let escalations = 0;
+  for (let i = 0; i < 8; i++) {
+    const p = CR.planResponse([dead('/api/alf-alerts')], memo, NOW + i * 3600 * 1000);
+    escalations += p.actions.filter((a) => a.action === 'escalate').length;
+    memo = p.memo;
+  }
+  assert.strictEqual(escalations, 1, 'escalated ' + escalations + ' times over 8 checks');
+});
+t('...at the threshold the table declares, not a number invented here', () => {
+  let memo = {};
+  let at = null;
+  for (let i = 0; i < 8; i++) {
+    const p = CR.planResponse([dead('/api/alf-alerts')], memo, NOW + i * 3600 * 1000);
+    const e = p.actions.filter((a) => a.action === 'escalate')[0];
+    if (e && at === null) at = e.count;
+    memo = p.memo;
+  }
+  assert.strictEqual(at, CR.RESPONSE.DEAD.escalate_after);
+});
+t('RECOVERY CLEARS THE STREAK -- a job that comes back and dies again alerts again', () => {
+  const first = CR.planResponse([dead('/api/alf-alerts')], {}, NOW);
+  const recovered = CR.planResponse([{ job: '/api/alf-alerts', status: 'ok' }],
+                                    first.memo, NOW + 3600 * 1000);
+  assert.deepStrictEqual(recovered.actions, [], 'a healthy job produced an action');
+  assert.deepStrictEqual(recovered.memo, {}, 'the streak survived a recovery');
+  const again = CR.planResponse([dead('/api/alf-alerts')], recovered.memo, NOW + 7200 * 1000);
+  assert.ok(again.actions.some((a) => a.action === 'alert'), 'the second outage was silent');
+});
+t('NEVER_BEAT is NOT retried -- re-invoking a never-deployed job cannot help', () => {
+  const p = CR.planResponse([{ job: '/api/alf-alerts', status: 'NEVER_BEAT' }], {}, NOW);
+  assert.ok(!p.actions.some((a) => a.action === 'retry'));
+  assert.ok(p.actions.some((a) => a.action === 'alert'));
+});
+t('PARTIAL is NOT retried -- on an alert sweep a retry re-sends rather than fixes', () => {
+  const p = CR.planResponse([{ job: '/api/alf-alerts', status: 'PARTIAL' }], {}, NOW);
+  assert.ok(!p.actions.some((a) => a.action === 'retry'));
+});
+t('A STATUS WITH NO PLAN IS A FINDING, not silence', () => {
+  const p = CR.planResponse([{ job: '/api/x', status: 'BRAND_NEW' }], {}, NOW);
+  assert.strictEqual(p.actions[0].action, 'NO_PLAN');
+});
+t('two jobs in trouble each get their own action, not one merged alert', () => {
+  const p = CR.planResponse([dead('/api/a'), dead('/api/b')], {}, NOW);
+  assert.strictEqual(p.actions.filter((a) => a.action === 'alert').length, 2);
+});
+
+section('4c. delivery, and the rule that an undelivered alert is not handled');
+t('WITH NO DESTINATION CONFIGURED, an alert is delivered:false -- never skipped', async () => {
+  const keepOps = process.env.SAIRN_OPS_EMAIL;
+  delete process.env.SAIRN_OPS_EMAIL;
+  delete process.env.SAIRN_ESCALATION_EMAIL;
+  try {
+    const out = await W.executeActions([{ job: '/api/a', status: 'DEAD', action: 'alert', reason: 'x' }]);
+    assert.strictEqual(out[0].delivered, false);
+    assert.ok(/SAIRN_OPS_EMAIL/.test(out[0].detail.error));
+    assert.ok(/nobody was told/.test(out[0].detail.error));
+  } finally { if (keepOps) process.env.SAIRN_OPS_EMAIL = keepOps; }
+});
+t('a SUPPRESSED action carries no `delivered` key, so it cannot count as undelivered', async () => {
+  const out = await W.executeActions([{ job: '/api/a', status: 'DEAD', action: 'suppressed', reason: 'x' }]);
+  assert.ok(!('delivered' in out[0]), 'a suppression was counted as a delivery outcome');
+});
+t('a retry with no base URL is delivered:false and SAYS there is no address', async () => {
+  const keepBase = process.env.SAIRN_BASE_URL, keepVercel = process.env.VERCEL_URL;
+  delete process.env.SAIRN_BASE_URL; delete process.env.VERCEL_URL;
+  try {
+    const out = await W.executeActions([{ job: '/api/a', status: 'DEAD', action: 'retry', reason: 'x' }]);
+    assert.strictEqual(out[0].delivered, false);
+    assert.ok(/no address to retry against/.test(out[0].detail.error));
+  } finally {
+    if (keepBase) process.env.SAIRN_BASE_URL = keepBase;
+    if (keepVercel) process.env.VERCEL_URL = keepVercel;
+  }
+});
+t('escalation prefers the escalation address and falls back to ops, not to nobody', () => {
+  const keepOps = process.env.SAIRN_OPS_EMAIL, keepEsc = process.env.SAIRN_ESCALATION_EMAIL;
+  try {
+    process.env.SAIRN_OPS_EMAIL = 'ops@x.test';
+    delete process.env.SAIRN_ESCALATION_EMAIL;
+    assert.strictEqual(W.alertTo(true), 'ops@x.test');
+    process.env.SAIRN_ESCALATION_EMAIL = 'boss@x.test';
+    assert.strictEqual(W.alertTo(true), 'boss@x.test');
+    assert.strictEqual(W.alertTo(false), 'ops@x.test');
+  } finally {
+    if (keepOps) process.env.SAIRN_OPS_EMAIL = keepOps; else delete process.env.SAIRN_OPS_EMAIL;
+    if (keepEsc) process.env.SAIRN_ESCALATION_EMAIL = keepEsc; else delete process.env.SAIRN_ESCALATION_EMAIL;
+  }
+});
+t('AN UNDELIVERED RESPONSE MAKES THE WHOLE RUN ok:false, even though detection worked', async () => {
+  const keepOps = process.env.SAIRN_OPS_EMAIL;
+  delete process.env.SAIRN_OPS_EMAIL;
+  delete process.env.SAIRN_ESCALATION_EMAIL;
+  const rows = ALL_FRESH().filter((r) => r.job !== '/api/alf-alerts')
+    .concat([hb('/api/alf-alerts', W.deadAfter(3600) + 1)]);
+  try {
+    const out = await call(async (url) => {
+      if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) {
+        return reply(200, JSON.stringify(rows));
+      }
+      return reply(201, '');
+    });
+    assert.strictEqual(out.body.ok, false);
+    assert.ok(out.body.actions.some((a) => a.delivered === false),
+      'the run reported ok while nobody had been told');
+  } finally { if (keepOps) process.env.SAIRN_OPS_EMAIL = keepOps; }
+});
+
 // ── 5. the heartbeat writer's contract ─────────────────────────────────────
 section('5. beat() must never be the thing that breaks a job');
 t('a beat with no job name is REFUSED, not defaulted', async () => {

@@ -105,6 +105,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The watchdog now DOES something, and the response was decided before the incident** | **BUILT 2026-09-14 (Fourth)** &mdash; `api/_lib/cron-response.js`, 55/55 arms in `api/cron-watchdog.test.js` | `api/cron-watchdog.test.js` |
 | **Daily audit checkpoints are BUILT &mdash; and `sql/audit_checkpoint_schema.sql` HAS NOT BEEN RUN** | **BUILT 2026-09-14 (Fourth)**, migration PENDING &mdash; `api/audit-checkpoint.js`, 36/36 arms in `api/audit-checkpoint.test.js` | `api/audit-checkpoint.test.js` |
 | **Item 57: Benford digit distribution &mdash; the automated form of the fabricated-KPI question, and the shape pre-check is most of it** | **BUILT 2026-09-14 (CC)** &mdash; `tools/benford_check.py`, held by `tests/run_benford_probe.py` (37 arms). **NOT wired into any gate and NOT registered** | `tests/run_benford_probe.py` |
 | **RECONCILED for Cody: the report-only sweep timeout is REAL but it is NOT `metamorphic_check.py` &mdash; two pre-existing checkers are 49% of the sweep** | **MEASURED 2026-09-14 (CC) on current `main`, handed over rather than worked on &mdash; Cody holds the active claim** | `tests/run_report_only_checks_probe.py` |
@@ -305,7 +306,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**156 of 352 test files are traced to a stated requirement. 196 are not.**
+**157 of 352 test files are traced to a stated requirement. 195 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -401,7 +402,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/wip-accounting.test.js`
 - `api/alf-append-only-fail-closed.test.js`
 - `api/claude-cost-controls.test.js`
-- `api/cron-watchdog.test.js`
 - `api/dnt-bi.test.js`
 - `api/fail-open-triage-2026-09-04.test.js`
 - `api/greeting.test.js`
@@ -526,7 +526,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 352   tests/**, api/*.test.js
-  open-work rows citing a test       142   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       143   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
