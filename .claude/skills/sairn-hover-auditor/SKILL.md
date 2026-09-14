@@ -181,7 +181,52 @@ deliberately chooses to subvert it -- the identical disclosed-boundary
 shape as seL4's own stated limits below ("Name the property you checked").
 No verification regime, including a fully machine-checked one, closes
 every trust boundary; the discipline is disclosing which one remains open,
-not pretending none does. Full account: `references/case-studies.md`.
+not pretending none does.
+
+**The real, current, quantified ceiling on the automated half of the
+tension above, from Trail of Bits' own current smart-contract practice --
+the single most irreversible deployment condition that exists, since a bug
+reaching mainnet can drain real funds with no recourse at all.** Automated
+static analysis and fuzzing tooling (Slither, Echidna, Mythril, Foundry)
+covers roughly 40-60% of real vulnerability classes in that field, by
+design and by measurement -- these tools systematically miss business-logic
+errors and genuinely novel attack vectors, the exact category the 246-
+finding retrospective above already names. A passing automated sweep is
+real evidence, not proof; manual review stays the PRIMARY source of real
+findings in the field with the least room for error of any this file
+cites, and tooling is an accelerant to that review, never a replacement
+for it.
+
+**Senior smart-contract shops have two separate senior auditors each read
+the entire codebase twice, independently -- not one auditor reviewing the
+other's findings.** This is sharper than a spot-check or a second look at
+someone else's conclusions: each auditor forms a COMPLETE, independent
+assessment before either sees the other's, the same anchoring-avoidance
+shape Elastic's own bug-bounty triage practice above states directly
+("score severity independently before reading the first assessment").
+Two independent full passes, not one pass plus one review of that pass.
+
+**A fixed finding gets its own formal RE-AUDIT of the fixed version,
+named as its own explicit step -- confirming the fix didn't introduce a
+new problem or only partially close the original path, never folded
+silently into "confirmed closed."** Applied here directly, and already the
+practice this session used on Fourth's HIGH password fix and CC's item 78
+disclosure fix: every HIGH or MODERATE finding this role makes that gets
+fixed should receive its own explicit, named re-pass against the fixed
+version specifically, not an assumption that a fix landing is the same
+claim as a fix verified.
+
+**The honest, disclosed limit, independently confirmed a third time from
+a completely unrelated field.** A clean smart-contract audit is
+explicitly understood in the field itself as a POINT-IN-TIME assessment --
+it does not guarantee permanent security, because new attack techniques
+and new code changes both postdate the audit date. The same calibrated
+language as "maximum reasonable assurance" (financial audit's own standard
+term, never "we guarantee this is correct") shows up independently here a
+third time, in a third unrelated field, converging on the identical honest
+framing: a clean result is a true statement about what was checked, when
+it was checked, never a permanent guarantee extending past that moment.
+Full account of all Trail of Bits material: `references/case-studies.md`.
 
 1. Run the stated tests yourself. Don't trust the commit message's "N/N
    passed" -- run N/N yourself and read the output.
@@ -1086,6 +1131,48 @@ challenged. A contested judgment call resolved unilaterally is exactly the
 shape of "one person holding both roles" this whole discipline exists to
 avoid, just moved one level up -- from build-and-verify to accuse-and-judge.
 
+**A real, live, currently-confirmed-working instance of this exact
+pattern, not a theoretical one -- Elastic Security Labs' own published
+account of using Claude to triage their bug bounty reports.** Their own
+stated reason for a second reviewer, in their own words: "if the model
+makes a systematic error in judgment, there's no mechanism to catch it."
+Their fix was a second Claude instance that sees the original bug bounty
+report but is never shown the first instance's conclusion until it has
+formed its own -- the identical concurring-review shape already built into
+this file's Debate section, confirmed working in real production use, not
+only reasoned about in the abstract.
+
+**Four specific checks their second reviewer runs, all directly adoptable
+here, verbatim:**
+
+- **Score severity independently BEFORE reading the first assessment's
+  score**, specifically to defeat anchoring bias -- seeing a number first
+  measurably pulls a second judgment toward it, even when the second
+  reviewer believes they are being independent. Applied here: when a
+  finding is contested and a genuine third read is sought (the Marzullo
+  addition above), that third read should form its own severity judgment
+  BEFORE being shown this role's own score, not after.
+- **An exploitability sanity check:** does the attacker already need a
+  level of access that would hand them the same outcome anyway, without
+  the reported path at all? A vulnerability requiring privileges an
+  attacker with those privileges wouldn't need the vulnerability to
+  exploit is a real, common false-positive shape worth checking explicitly.
+- **Check whether the platform's own established exceptions were actually
+  applied, not silently ignored** -- a documented accepted risk, a named
+  scope exclusion, a prior Debate-resolved judgment call -- before treating
+  a pattern as a fresh finding rather than a rediscovery of a decision
+  already made.
+- **The sharpest one: check whether the first review just echoed the
+  REPORTER's own framing rather than reaching an independent conclusion.**
+  Did the severity score happen to land exactly where the person who
+  reported it claimed it should? This is a real, concrete, checkable test
+  for whether a review that calls itself independent secretly is not --
+  applied here, whenever this role reviews or corroborates another
+  session's finding (as with CC's review of Fourth's work), check
+  specifically whether the corroboration is actually independent
+  verification or a restatement of the original claim in this role's own
+  words. Full account: `references/case-studies.md`.
+
 **A concrete trigger for which findings this applies to, not just a feeling
 of uncertainty.** Evidence from a deep pass splits into two real categories,
 and they carry different weight:
@@ -1339,7 +1426,40 @@ state is the same fix, one level up from what this role already does to the
 four build agents -- a firm, standing practice this role should expect and
 support, not a one-time check. Every deep-pass finding is a candidate for
 that second look, not only the occasional one that happens to draw
-attention. Full account: `references/case-studies.md`.
+attention.
+
+**Real precedent for sabotage-verification itself, at genuinely
+rigorous scale, and a real honest gap it exposes in current practice.**
+LIGO's Blind Injection Challenge is the actual, working, decades-real
+version of exactly what this platform's own sabotage-verified checkers
+do: a small, deliberately secret team injects fake gravitational-wave
+signals directly into live detector data via real physical actuators,
+without telling the analysis team, sealed in a literal "Blind Injection
+Envelope" that is opened only after the analysis team has already
+reported a result. The sharpest, most directly adoptable point: the
+injection team is organizationally SEPARATE from the analysis team, and
+even analysts who know blind injections happen at all do not know WHEN.
+The real gap this exposes against current practice here: sabotage and
+mutation tests on this platform (and this role's own mutation controls,
+driven personally throughout this session) are authored and run by the
+same party being tested, or by this role checking its own driven test.
+Where genuinely feasible, whoever plants a sabotage case should not be
+the same party grading whether the checker caught it -- a gap worth
+naming plainly rather than treating this role's own self-driven mutation
+controls as equivalent to a genuinely separated injection.
+
+**An honest case that a flawed sabotage tool does not automatically
+invalidate what it proves.** LIGO's real 2010 "Big Dog" blind injection
+had two genuine bugs in the injection software ITSELF -- an outdated
+waveform model and a sign error -- and the analysis team still correctly
+recovered and characterized the injected event despite the flawed
+injection tooling. Applied here: if a mutation or sabotage test used to
+verify a checker turns out to have its own flaw, that does not by itself
+invalidate a positive result, provided the checker under test still
+caught the actual anomaly the flawed test happened to produce. Log the
+tool's own flaw plainly when found, the same as any other finding -- but
+as a fact recorded, not as grounds to discard a result the flawed tool
+still correctly produced.
 
 ## A named limit on what this role can actually promise
 
@@ -1405,8 +1525,26 @@ role already runs on: unpredictable, ongoing, continuous re-checking
 (Pnueli's reactive-systems framing at the top of this file) rather than a
 one-time depth guarantee, because a continuously-refreshed external check
 has more chances to eventually catch what a single deep look, however
-thorough, structurally cannot see from where it stands. Full account of
-both limits: `references/case-studies.md`.
+thorough, structurally cannot see from where it stands.
+
+**A real, third self-check this role owes its own GOOD news, not only its
+clean passes -- distrust a positive finding until an alternative
+explanation is ruled out, same as any other claim.** When LIGO's real
+first confirmed gravitational-wave detection arrived (GW150914, September
+2015), the team's own first move was not celebration -- it was ruling out
+that the signal might be an UNANNOUNCED blind injection, before allowing
+themselves to believe their own result was real. A system capable of
+injecting realistic test signals into itself has to be able to
+independently distinguish a genuine finding from a planted one, or it
+cannot actually trust its own good news any more than its clean audits.
+Applied here: before reporting a striking, exciting, or unusually clean
+result -- a Tier A deep pass that comes back entirely clean, a pattern that
+looks like strong confirmation of this role's own method -- apply the same
+skepticism this role applies to a suspicious finding: could this be an
+artifact of how the check was set up, a fixture that happened to be
+favorable, a coincidence of timing, rather than the real signal it appears
+to be. Good news earns the same "prove it, don't assume it" standard as
+anything else in this file. Full account of all three: `references/case-studies.md`.
 
 ## Report to Michael only when
 

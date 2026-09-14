@@ -1176,3 +1176,161 @@ uses rather than an invented list. NIST SP 800-115's own phased structure
 discovery and analysis are their own phase, distinct from the phase where
 an actual attack would be attempted -- and this role only ever occupies the
 discovery and analysis phase, by design, never the attack phase.
+
+## Elastic Security Labs -- a real, live, currently-confirmed concurring-review deployment
+
+Elastic Security Labs has published a real, current, production account of
+using Claude to triage its own bug bounty reports -- a genuinely live
+deployment of the exact concurring-review pattern this file's Debate
+section already describes, not a theoretical construction.
+
+**Their own stated reason, in their own words.** Elastic's own writeup
+states the concern directly: "if the model makes a systematic error in
+judgment, there's no mechanism to catch it." Their response was not more
+prompting or a different single model -- it was a second, independent
+model instance that receives the same original bug bounty report but is
+never shown the first instance's conclusion until it has already formed
+its own. This is the same shape as this file's blind-lock citation
+(a verdict formed before the thing it might be biased by is seen), applied
+to a live security-triage pipeline rather than a synthetic-fixture test.
+
+**The four specific checks their second reviewer runs**, described
+directly in their published account:
+
+1. Independent severity scoring, performed and recorded BEFORE the second
+   reviewer is shown the first reviewer's own severity score -- a direct,
+   deliberate countermeasure against anchoring bias, the well-documented
+   cognitive effect where seeing a number first measurably distorts a
+   second, supposedly independent judgment toward it, even among reviewers
+   who believe they are being fully independent.
+2. An exploitability sanity check asking whether the level of access a
+   reported vulnerability would require is a level of access that would
+   already grant the attacker the same outcome directly, without needing
+   the reported path at all -- catching a real, common false-positive
+   shape where a report describes a vulnerability that adds no actual
+   capability beyond what its own precondition already grants.
+3. A check for whether the organization's own previously-established
+   exceptions, accepted risks, or scope exclusions were actually
+   consulted and applied, rather than a report being treated as novel
+   when it re-discovers a decision already made and recorded elsewhere.
+4. The sharpest of the four: an explicit check for whether the first
+   review's conclusion merely echoed the ORIGINAL REPORTER's own framing
+   and severity claim, rather than reaching an independently-derived
+   conclusion -- specifically asking whether the severity score the first
+   reviewer assigned happens to match what the person who filed the
+   report originally claimed. This is a concrete, checkable test for the
+   exact failure mode where a process that calls itself "independent
+   review" has quietly become a restatement of the subject's own framing
+   in different words.
+
+## LIGO's Blind Injection Challenge -- sabotage-verification at real, decades-long scale
+
+The Laser Interferometer Gravitational-Wave Observatory (LIGO) runs the
+real, operating, decades-long precedent for exactly the sabotage-
+verification principle this platform's own checkers already use (plant a
+defect, confirm detection) -- at a scale and rigor genuinely worth
+learning from directly.
+
+**The mechanism.** A small, deliberately secret "injection team," kept
+organizationally separate from the scientists doing gravitational-wave
+analysis, injects fabricated gravitational-wave-like signals directly into
+the live detector data stream using real physical actuators on the
+detector hardware itself -- not synthetic test data layered on afterward,
+an actual physical perturbation indistinguishable, at the data level, from
+a genuine astrophysical signal. The fact of whether any given observing
+run contains a blind injection is sealed in a literal "Blind Injection
+Envelope," opened only after the analysis team has already produced and
+committed to a result.
+
+**The sharpest, most directly transferable point: organizational
+separation, and even a known possibility carries no known timing.**
+Analysts who are fully aware that blind injections happen as a matter of
+policy still do not know WHEN any given detection might be one -- the
+separation is not merely "different people," it extends to timing
+information being withheld from the very team whose judgment is being
+tested. The real gap this exposes in less rigorous sabotage-testing
+practice: a mutation or sabotage test authored by the same party who built
+the checker being tested, or graded by the same party who planted it,
+is a meaningfully weaker verification than one where planting and grading
+are genuinely separated organizationally -- a gap present in this
+platform's own sabotage-verified checkers (authored by their own builder)
+and in this role's own self-driven mutation controls throughout this
+session, worth naming honestly rather than treating either as equivalent
+to LIGO's actual separation.
+
+**An honest case where the injection tool itself was flawed, and that
+did not invalidate what it proved.** The real 2010 "Big Dog" blind
+injection contained two genuine defects in the injection software itself
+-- an outdated gravitational waveform model, and a sign error in the
+injection code -- discovered after the fact. Despite the flawed injection
+tooling, the analysis team correctly identified, recovered, and
+characterized the injected signal as an event. The lesson: a sabotage or
+mutation tool having its own bug does not automatically invalidate a
+positive verification result, provided the checker under test still
+correctly caught the anomaly the flawed tool happened to produce -- the
+flaw is a fact worth recording, not automatic grounds to discard what the
+test still demonstrated.
+
+**Ruling out your own good news, not only bad news.** When LIGO's real
+first confirmed direct detection of gravitational waves arrived
+(designated GW150914, observed September 14, 2015), the collaboration's
+own documented first response, before any public announcement or
+celebration, was to rule out the possibility that the signal was an
+unannounced blind injection -- opening the question of whether an
+injection envelope existed for that period, before allowing themselves to
+treat the detection as a genuine astrophysical discovery. A system
+sophisticated enough to inject realistic test signals into itself has to
+be equally capable of distinguishing its own real findings from its own
+planted tests, or its confidence in a positive, exciting result is no more
+trustworthy than its confidence in a clean pass.
+
+## Trail of Bits' current smart-contract methodology -- the automated ceiling, the double senior read, and re-audit
+
+Beyond the 246-finding retrospective already cited above (roughly half of
+real findings resist automation, cited alongside Kepler/Flyspeck as the
+opposite-direction data point), Trail of Bits' actual current practice in
+the highest-stakes, least-reversible deployment environment that exists --
+a smart-contract bug reaching a live blockchain mainnet can drain real
+funds immediately and irreversibly, with no undo and frequently no legal
+recourse -- contributes three further, specific practices.
+
+**A real, measured ceiling on what automated tooling covers.** Automated
+static analysis and fuzzing tools in this space (Slither, Echidna,
+Mythril, Foundry, among others) are measured to cover roughly 40 to 60
+percent of real vulnerability classes -- not a criticism of the tools, but
+a measured, structural limit: these tools are built to find the kinds of
+defects that are mechanically expressible, and by design and by
+measurement they miss business-logic errors and genuinely novel attack
+patterns, the same category the human-versus-automated tension elsewhere
+in this file already names. A clean automated sweep is real, positive
+evidence. It is not proof, and manual review remains the primary source of
+real findings in this field specifically because of that measured gap.
+
+**Two full, independent reads, not one review of one read.** The most
+rigorous smart-contract audit shops assign two separate senior auditors to
+read the entire codebase under review TWICE -- independently, each forming
+their own complete assessment before either sees the other's conclusions.
+This is a meaningfully stronger practice than a primary reviewer plus a
+secondary spot-check of that reviewer's own findings; it is closer to
+running the same audit twice from scratch and then comparing the two
+independently-reached results.
+
+**A fixed vulnerability gets a formal, named re-audit of the fix itself.**
+When a finding from an audit gets remediated, professional practice in
+this field treats verifying that remediation as its own distinct audit
+step -- explicitly checking that the fix does not introduce a new
+vulnerability of its own, and that it closes the ENTIRE original attack
+path rather than only the specific case the original finding happened to
+describe. This is never treated as implicit in "the finding was fixed";
+it is its own named pass with its own explicit result.
+
+**The honest, disclosed limit, matching this file's other calibrated
+language a third time from a third unrelated field.** Professional
+practice in this space is explicit that a clean audit is a point-in-time
+assessment of the code as it existed on the audit date -- it does not and
+cannot guarantee permanent security against future attack techniques or
+future code changes. This is the identical calibrated honesty as
+financial audit's own standard phrase "maximum reasonable assurance"
+(never "guaranteed correct"), arrived at independently in a third
+unrelated field, converging on the same disclosed-boundary shape already
+established by seL4 and Flyspeck elsewhere in this file.
