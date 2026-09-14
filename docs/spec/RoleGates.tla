@@ -44,7 +44,14 @@ CONSTANTS
     Provisioning,
     Management,
     Authenticated,
-    BroadRead
+    BroadRead,
+    \* Added 2026-09-14 with I6. Vocabulary is ROLES_BY_APP in api/_lib/auth.js
+    \* -- the one place every auth handler already keys into. StatedAuthenticated
+    \* is the subset of Apps that write AUTHENTICATED_ROLES down themselves, and
+    \* it exists so I6 is checked against evidence rather than against the
+    \* derivation it licenses.
+    Vocabulary,
+    StatedAuthenticated
 
 VARIABLES
     active,      \* [Employees -> BOOLEAN]   is the credential still live
@@ -120,6 +127,30 @@ NoEmptyGate ==
         /\ Management[a] # {}
 
 (***************************************************************************)
+(* I6  WHO MAY SIGN IN *IS* THE APP'S ROLE VOCABULARY. Added 2026-09-14.   *)
+(*                                                                         *)
+(*     This one is different from I3-I5 in kind, and the difference is the *)
+(*     point. I3-I5 are properties the gates must have. I6 is the          *)
+(*     ASSUMPTION that lets the companion checker read Authenticated[a]    *)
+(*     for the fourteen apps that never write it down -- it takes them     *)
+(*     from ROLES_BY_APP in api/_lib/auth.js instead.                      *)
+(*                                                                         *)
+(*     An assumption a tool relies on and nobody checks is how a checker   *)
+(*     grows coverage by getting less true. So it is stated here as an     *)
+(*     invariant and checked against the two apps that DO write            *)
+(*     AUTHENTICATED_ROLES down. If it ever fails, every derived           *)
+(*     Authenticated[a] is withdrawn platform-wide and those checks go     *)
+(*     back to not-checkable -- a derivation whose licence has lapsed must *)
+(*     stop answering rather than keep answering.                          *)
+(*                                                                         *)
+(*     Stated over StatedAuthenticated, the apps that declare it, because  *)
+(*     asserting it over every app would be asserting the derivation       *)
+(*     against itself.                                                     *)
+(***************************************************************************)
+AuthenticatedMatchesVocabulary ==
+    \A a \in StatedAuthenticated : Authenticated[a] = Vocabulary[a]
+
+(***************************************************************************)
 (* AND ONE THAT IS DELIBERATELY *NOT* AN INVARIANT.                        *)
 (*                                                                         *)
 (* In SAIRNroofing today, Management \subseteq BroadRead. That makes the   *)
@@ -143,6 +174,7 @@ Safety ==
     /\ ProvisioningIsManagement
     /\ ManagementIsAuthenticated
     /\ NoEmptyGate
+    /\ AuthenticatedMatchesVocabulary
 
 (***************************************************************************)
 (* Transitions. Only the ones that can move a gate's answer.               *)

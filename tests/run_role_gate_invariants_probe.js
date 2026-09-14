@@ -17,11 +17,19 @@
 // `require` rather than the rule. The tool's REPORTING is covered separately by
 // running the real thing.
 //
-// AND THE DENOMINATOR ARM IS THE ONE THAT MATTERS MOST. 61 of 80 possible
+// AND THE DENOMINATOR ARM IS THE ONE THAT MATTERS MOST. ~~61 of 80 possible
 // checks cannot be made today, because most auth modules do not export their
-// role sets. If that number is ever folded into "no violations" the tool starts
-// reporting a clean bill of health over almost nothing -- so an arm asserts the
-// output distinguishes them, in words.
+// role sets.~~ **2026-09-14: 24, after the tool learned to read a module's
+// internal constants and to derive AUTHENTICATED_ROLES from the app role
+// vocabulary.** The old sentence is struck rather than deleted so the scale of
+// what changed is visible. If that number is ever folded into "no violations"
+// the tool starts reporting a clean bill of health over almost nothing -- so an
+// arm asserts the output distinguishes them, in words.
+//
+// **THE NUMBER ITSELF IS NOT ASSERTED ANYWHERE IN THIS FILE, ON PURPOSE.** An
+// arm pinned to "24" fails the day somebody legitimately adds an auth module,
+// which trains people to edit the test. The arms assert the DISTINCTIONS hold
+// -- run versus not-checkable, and which provenance each check rested on.
 
 'use strict';
 const assert = require('assert');
@@ -128,6 +136,200 @@ console.log('\n--- D. could-not-load is a third state ---');
     /if \(loaded\.unreadable\.length\) return EXIT_COULD_NOT_RUN;/.test(src), 'the guard moved');
   ok('D4 and the source says a module that will not load is not one with no roles',
     /not a module with no roles/i.test(src), 'the reason is no longer stated');
+}
+
+// ── E. the internal probe reads VALUES, and the comment trap proves why ────
+console.log('\n--- E. reading a module\'s internal constants ---');
+{
+  const A = path.join(REPO, 'api');
+  const alf = T.probeInternals(path.join(A, 'alf-auth.js'));
+  ok('E1 it reads a constant the module never exports',
+    Array.isArray(alf.PROVISIONING_ROLES) && alf.PROVISIONING_ROLES.indexOf('owner') !== -1,
+    JSON.stringify(alf));
+  ok('E2 and the object form too, not only the array form',
+    alf.MANAGEMENT_ROLES && alf.MANAGEMENT_ROLES.owner === true, JSON.stringify(alf));
+  ok('E3 it reads APP, which is the whole key into the role vocabulary',
+    alf.APP === 'sairncare', String(alf.APP));
+  // THE ARM THAT JUSTIFIES EXECUTING INSTEAD OF PARSING. sb-auth.js contains
+  // the TEXT "MANAGEMENT_ROLES" inside a comment saying the app has no such
+  // concept. A grep-based reader finds that token; this one must not.
+  const sbSrc = require('fs').readFileSync(path.join(A, 'sb-auth.js'), 'utf8');
+  ok('E4 the comment trap is still in sb-auth.js -- if it is gone this arm proves nothing',
+    /no MANAGEMENT_ROLES concept/.test(sbSrc), 'the trap moved; re-point this arm');
+  const sb = T.probeInternals(path.join(A, 'sb-auth.js'));
+  ok('E5 ...and a token that appears ONLY in a comment reads as ABSENT, not as a set',
+    sb.MANAGEMENT_ROLES === undefined, JSON.stringify(sb.MANAGEMENT_ROLES));
+  ok('E6 a module with no role constants at all comes back empty, not thrown',
+    T.probeInternals(path.join(A, 'sd-sub-auth.js')).PROVISIONING_ROLES === undefined, '');
+}
+
+// ── F. I6 is a real control: it fires, and its failure WITHDRAWS ───────────
+console.log('\n--- F. the derivation is licensed, and can be un-licensed ---');
+{
+  const mk = (auth, app) => ({
+    app: app, authenticated: auth,
+    prov: { authenticated: auth ? 'internal' : 'absent' }
+  });
+  const VOCAB = { appx: ['owner', 'clerk'], appy: ['owner', 'clerk'] };
+
+  const good = { vocabulary: VOCAB, apps: { a: mk(['owner', 'clerk'], 'appx'), b: mk(null, 'appy') } };
+  const g = T.applyDerivation(good);
+  ok('F1 I6 is silent when a stated AUTHENTICATED_ROLES equals the vocabulary',
+    g.violations.length === 0 && g.licensed, JSON.stringify(g));
+  ok('F2 ...and the derivation then fills in the module that states nothing',
+    good.apps.b.authenticated.join() === 'owner,clerk' &&
+    good.apps.b.prov.authenticated === 'derived', JSON.stringify(good.apps.b));
+
+  const bad = { vocabulary: VOCAB, apps: { a: mk(['owner'], 'appx'), b: mk(null, 'appy') } };
+  const f = T.applyDerivation(bad);
+  ok('F3 I6 FIRES when a stated set is not the vocabulary',
+    f.violations.length === 1 && /violates I6/.test(f.violations[0]), JSON.stringify(f));
+  ok('F4 ...and the whole derivation is WITHDRAWN, not just that one app',
+    !f.licensed && f.derived.length === 0 && bad.apps.b.authenticated === null,
+    JSON.stringify(bad.apps.b));
+
+  // A CONTROL WITH NOTHING TO CONTROL IS NOT A PASSING CONTROL.
+  const vac = { vocabulary: VOCAB, apps: { b: mk(null, 'appy') } };
+  const v = T.applyDerivation(vac);
+  ok('F5 no module stating AUTHENTICATED_ROLES means VACUOUS, not licensed',
+    !v.licensed && v.stated === 0 && v.violations.length === 0, JSON.stringify(v));
+  ok('F6 ...so nothing is derived off an unchecked assumption',
+    vac.apps.b.authenticated === null, JSON.stringify(vac.apps.b));
+
+  // A PROBE THAT FAILED MUST NOT BE BACKFILLED BY A DERIVATION. The whole
+  // point of the could-not-probe state is that this tool does not know.
+  const unp = {
+    vocabulary: VOCAB,
+    apps: {
+      a: mk(['owner', 'clerk'], 'appx'),
+      b: { app: 'appy', authenticated: null, prov: { authenticated: 'could-not-probe' } }
+    }
+  };
+  T.applyDerivation(unp);
+  ok('F7 a could-not-probe set is NOT quietly filled in by the derivation',
+    unp.apps.b.authenticated === null &&
+    unp.apps.b.prov.authenticated === 'could-not-probe', JSON.stringify(unp.apps.b));
+
+  ok('F8 the real tree licenses it today -- if this flips, the derived count is 0',
+    T.applyDerivation(T.load()).licensed, 'I6 no longer licenses the derivation');
+}
+
+// ── G. the three coverage numbers are never fused ──────────────────────────
+console.log('\n--- G. coverage that grew because evidence got thinner ---');
+{
+  let out = '';
+  try {
+    out = execFileSync(process.execPath,
+      [path.join(REPO, 'tools', 'role_gate_invariants.js'), '--json'],
+      { encoding: 'utf8' });
+  } catch (e) { out = (e.stdout || '') + (e.stderr || ''); }
+  const j = JSON.parse(out);
+  const b = j.byProvenance;
+  ok('G1 --json reports the three provenances separately',
+    b && typeof b.exported === 'number' && typeof b.internal === 'number' &&
+    typeof b.derived === 'number', out.slice(0, 300));
+  ok('G2 they sum to the headline count -- no check is uncounted or double-counted',
+    b.exported + b.internal + b.derived === j.checks,
+    JSON.stringify(b) + ' vs ' + j.checks);
+  ok('G3 the internal probe actually bought coverage the exports could not',
+    b.internal > 0, JSON.stringify(b));
+  ok('G4 and so did the derivation', b.derived > 0, JSON.stringify(b));
+
+  const txt = execFileSync(process.execPath,
+    [path.join(REPO, 'tools', 'role_gate_invariants.js')], { encoding: 'utf8' });
+  ok('G5 the human output prints the breakdown, not just a total',
+    /WEAKEST evidence/.test(txt) && /derived\s+\d+/.test(txt), txt.slice(0, 400));
+  ok('G6 ...and says what licenses the derived ones',
+    /I6 CONTROL/.test(txt), txt.slice(0, 400));
+  ok('G7 could-not-probe is stated as different from having no such roles',
+    /which is NOT the same as those apps having no such roles/.test(
+      require('fs').readFileSync(
+        path.join(REPO, 'tools', 'role_gate_invariants.js'), 'utf8')),
+    'the distinction is no longer stated in the output');
+}
+
+// ── H. what remains is broken down by WHOSE gap it is ─────────────────────
+console.log('\n--- H. the remainder is not one undifferentiated pile ---');
+{
+  const VOCAB = { appx: ['owner'] };
+  const noKey = {
+    vocabulary: VOCAB,
+    apps: {
+      a: { app: 'appx', authenticated: ['owner'], prov: { authenticated: 'internal' } },
+      b: { app: null, authenticated: null, prov: { authenticated: 'absent' } }
+    }
+  };
+  T.applyDerivation(noKey);
+  ok('H1 a module with no `const APP` is marked no-app-key, not plain absent',
+    noKey.apps.b.prov.authenticated === 'no-app-key', JSON.stringify(noKey.apps.b));
+
+  const txt = execFileSync(process.execPath,
+    [path.join(REPO, 'tools', 'role_gate_invariants.js')], { encoding: 'utf8' });
+  ok('H2 the output separates "the constant is not there" from work anyone can do',
+    /absent\s+\d+\s+the constant is not there/.test(txt), txt.slice(0, 900));
+  ok('H3 ...and says plainly which remainder is CLOSABLE',
+    /no-app-key\s+\d+.*CLOSABLE/.test(txt), txt.slice(0, 900));
+  ok('H4 the two StoneDesk modules are the real no-app-key cases today',
+    /sd-auth\.js .*no-app-key/.test(txt) && /sd-sub-auth\.js .*no-app-key/.test(txt),
+    'if these gained a const APP, drop this arm rather than weakening it');
+  // NO WIDTH SPECIFIERS. console.log is not printf; '%-16s' prints literally and
+  // appends the argument, which shipped twice in this file's own output.
+  ok('H5 no printf width specifier survives in the tool\'s output strings',
+    !/%-\d|%\d+d/.test(require('fs').readFileSync(
+      path.join(REPO, 'tools', 'role_gate_invariants.js'), 'utf8')
+      .split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n')),
+    'a %-Nd or %Ns is back in a non-comment line');
+}
+
+// ── I. the two halves cannot drift apart unnoticed ────────────────────────
+// The tool's own header says a spec that drifts from the code it describes is
+// worse than none. Nothing enforced that until now: I6 was added to both halves
+// by hand, and the next one could as easily go into one.
+console.log('\n--- I. the spec and the checker are held together ---');
+{
+  const tla = require('fs').readFileSync(
+    path.join(REPO, 'docs', 'spec', 'RoleGates.tla'), 'utf8');
+
+  const cited = Array.from(new Set(
+    T.INVARIANTS.map((i) => i.spec).concat(Object.keys(T.SPEC_CHECKED_ELSEWHERE))));
+  const undefinedInSpec = cited.filter(
+    (n) => !new RegExp('^' + n + '\\s*==', 'm').test(tla));
+  ok('I1 every spec name the checker cites is actually DEFINED in the .tla',
+    undefinedInSpec.length === 0, JSON.stringify(undefinedInSpec));
+
+  // The Safety conjunction is the spec's own statement of what must hold.
+  // Taken line by line and STOPPED at the first line that is not a conjunct --
+  // splitting on a blank line ran straight into the transitions section and
+  // collected `UNCHANGED` and every variable name as though they were
+  // invariants, which would have made I3 unpassable for the wrong reason.
+  const conjuncts = [];
+  const after = (tla.split(/^Safety\s*==/m)[1] || '').split('\n');
+  for (const line of after) {
+    const m = line.match(/^\s+\/\\\s*(\w+)\s*$/);
+    if (m) { conjuncts.push(m[1]); continue; }
+    if (line.trim() === '') continue;
+    break;
+  }
+  ok('I2 the Safety conjunction was actually parsed -- an empty list proves nothing',
+    conjuncts.length >= 4, JSON.stringify(conjuncts));
+
+  const unaccounted = conjuncts.filter(
+    (c) => cited.indexOf(c) === -1 && !(c in T.SPEC_NOT_CHECKED_HERE));
+  ok('I3 every Safety conjunct is either checked here or DECLARED as not checked',
+    unaccounted.length === 0,
+    'unaccounted: ' + JSON.stringify(unaccounted) +
+    ' -- add an invariant, or a reason to SPEC_NOT_CHECKED_HERE');
+
+  ok('I4 ...and nothing is declared un-checkable that is in fact being checked',
+    Object.keys(T.SPEC_NOT_CHECKED_HERE).every((k) => cited.indexOf(k) === -1),
+    JSON.stringify(Object.keys(T.SPEC_NOT_CHECKED_HERE).filter(
+      (k) => cited.indexOf(k) !== -1)));
+
+  ok('I5 I6 in particular reached BOTH halves',
+    /AuthenticatedMatchesVocabulary\s*==/m.test(tla) &&
+    conjuncts.indexOf('AuthenticatedMatchesVocabulary') !== -1,
+    'I6 is in the checker but not in the spec Safety conjunction: ' +
+    JSON.stringify(conjuncts));
 }
 
 console.log('');
