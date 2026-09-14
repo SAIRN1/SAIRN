@@ -1112,6 +1112,16 @@
       "claimed_at_epoch": 1789385001.3482673,
       "status": "released",
       "released_at": "2026-09-14T11:46:11Z"
+    },
+    {
+      "id": "fourth-1789386390",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 35 hash chained tamper evident audit log",
+      "claimed_at": "2026-09-14T11:46:30Z",
+      "claimed_at_epoch": 1789386390.131141,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
