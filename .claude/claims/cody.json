@@ -1157,8 +1157,8 @@
       "task": "item 8 metamorphic attack generation, law citation rule conflict defect register, 22 tool registration backlog, item 83 status",
       "claimed_at": "2026-09-14T19:51:12Z",
       "claimed_at_epoch": 1789415472.646527,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T21:49:02Z"
     }
   ]
 }
