@@ -74,6 +74,52 @@ SEVERITIES = ('critical', 'high', 'moderate', 'low')
 # `not-citable` does: a vocabulary with no honest escape hatch does not produce
 # accurate data, it produces data pushed into the nearest bin. A bare
 # `unknown` is a silence, not a decision.
+# ── WHICH CHECKPOINT CAUGHT IT (item 63, added 2026-09-14) ────────────────
+# `detection_method` says WHICH TECHNIQUE found a defect. This says WHAT KIND OF
+# CHECKPOINT that technique is, which is the question behind "are we relying on
+# people reading code, or on something that runs".
+#
+#   human-read         a person read it. No automated checkpoint covered it.
+#   automated-checker  a checker, probe or mutation control found it.
+#   monitoring         it was observed in RUNNING behaviour -- live verification
+#                      or a user report. Nothing static could have seen it.
+#   unknown            requires a note.
+#
+# DERIVED FROM detection_method BY A FIXED RULE, not judged per record -- the
+# mapping is in CHECKPOINT_OF below and there is nothing to get wrong twice.
+#
+# THE LIMIT, AND IT IS THE WHOLE HONEST FRAME: this measures the checkpoint that
+# DID catch each defect, not the one that SHOULD have. Those differ exactly
+# where a gate ought to exist and does not, so this UNDER-COUNTS gaps by
+# construction. It is the closest thing the register's existing fields can
+# support, and calling it the other thing would be a fabrication.
+#
+# AND IT CANNOT SPLIT GATE FROM REPORT-ONLY. A record names the technique, never
+# the tool, so "a checker found it" cannot be resolved into "a blocking gate
+# found it". Adding a `found_by_tool` field is the next thing somebody should do
+# and is deliberately not invented here.
+CHECKPOINTS = ('human-read', 'automated-checker', 'monitoring', 'unknown')
+CHECKPOINT_OF = {
+    'code-review': 'human-read',
+    'independent-review': 'human-read',
+    'static-checker': 'automated-checker',
+    'mutation-testing': 'automated-checker',
+    'fault-injection': 'automated-checker',
+    'probe-control': 'automated-checker',
+    'traceability-matrix': 'automated-checker',
+    'live-verification': 'monitoring',
+    'user-report': 'monitoring',
+}
+
+
+def checkpoint_of(method):
+    """The checkpoint kind for a detection method. Unknown methods are NOT
+    silently bucketed -- a new method added to METHODS without a row here comes
+    back 'unknown' and --check says so, rather than being folded into whichever
+    bucket happened to look closest."""
+    return CHECKPOINT_OF.get(method, 'unknown')
+
+
 PHASES = ('requirement', 'design', 'coding', 'config', 'unknown')
 
 # How good the phase call is. Same shape as citation_confidence, and for the
@@ -428,6 +474,13 @@ def cmd_check(argv=()):
         if r['detection_method'] not in METHODS:
             bad.append('%s -- unknown detection method %r'
                        % (r['commit'], r['detection_method']))
+        # ITEM 63. A method with no CHECKPOINT_OF row would silently come back
+        # 'unknown' and quietly shrink whichever bucket the asymmetry figure is
+        # read from. The vocabulary and the mapping have to stay in step.
+        elif checkpoint_of(r['detection_method']) == 'unknown':
+            bad.append('%s -- detection method %r has no CHECKPOINT_OF row, so '
+                       'it would fall into `unknown` and distort the checkpoint '
+                       'split' % (r['commit'], r['detection_method']))
         if r['layer'] not in LAYERS or r['severity'] not in SEVERITIES:
             bad.append('%s -- layer/severity outside the vocabulary' % r['commit'])
         # ── THE INJECTION PHASE, checked the same way and for the same reason ─
@@ -561,6 +614,23 @@ def cmd_report():
         n = len([r for r in recs if r['detection_method'] == M])
         if n:
             print('  %-20s %d' % (M, n))
+    print('')
+    # ── WHICH CHECKPOINT CAUGHT IT (item 63) ───────────────────────────────
+    print('WHICH CHECKPOINT CAUGHT IT')
+    ck = {}
+    for r in recs:
+        k = checkpoint_of(r['detection_method'])
+        ck[k] = ck.get(k, 0) + 1
+    for k in CHECKPOINTS:
+        if ck.get(k):
+            print('  %-19s %3d   (%.0f%%)' % (k, ck[k], 100.0 * ck[k] / len(recs)))
+    print('  THIS IS THE CHECKPOINT THAT DID CATCH EACH DEFECT, NOT THE ONE')
+    print('  THAT SHOULD HAVE. Those differ exactly where a gate ought to exist')
+    print('  and does not, so this UNDER-COUNTS gaps by construction.')
+    print('  AND `monitoring` BEING %d IS A SELECTION EFFECT, NOT A RESULT: a'
+          % ck.get('monitoring', 0))
+    print('  defect nobody found is not in this register, so escape rate cannot')
+    print('  be measured here at all.')
     print('')
     # ── INJECTION x REMOVAL (item 77) ──────────────────────────────────────
     # UNKNOWN AND INFERRED ARE PRINTED FIRST, ABOVE THE MATRIX, and that

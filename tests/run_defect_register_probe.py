@@ -421,6 +421,36 @@ try:
           True)
     check('P11 and the matrix carries its own do-not-quote warning',
           'DO NOT QUOTE A CELL ALONE' in out, True)
+
+    # -- Q. which checkpoint caught it (item 63) ---------------------------
+    rc, out = run(wt, '--report')
+    check('Q1 the report prints the checkpoint split',
+          'WHICH CHECKPOINT CAUGHT IT' in out, True)
+    check('Q2 and it says the split is what DID catch each defect, not what '
+          'should have -- the difference is the whole honest frame',
+          'NOT THE ONE' in out and 'UNDER-COUNTS gaps' in out, True)
+    check('Q3 and it names `monitoring` being zero as a SELECTION EFFECT rather '
+          'than a result -- a defect nobody found is not in the register',
+          'SELECTION EFFECT' in out, True)
+
+    import importlib
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    dr = importlib.import_module('defect_register')
+    check('Q4 a human method maps to human-read',
+          dr.checkpoint_of('code-review'), 'human-read')
+    check('Q5 an independent review is ALSO human-read -- a second reader is '
+          'not an automated checkpoint', dr.checkpoint_of('independent-review'),
+          'human-read')
+    check('Q6 a checker method maps to automated-checker',
+          dr.checkpoint_of('static-checker'), 'automated-checker')
+    check('Q7 live verification maps to monitoring',
+          dr.checkpoint_of('live-verification'), 'monitoring')
+    check('Q8 AN UNMAPPED METHOD COMES BACK unknown rather than being folded '
+          'into the nearest bucket', dr.checkpoint_of('telepathy'), 'unknown')
+    check('Q9 ...and EVERY method in the vocabulary has a row, so Q8 can never '
+          'fire on real data without --check saying so',
+          [m for m in dr.METHODS if dr.checkpoint_of(m) == 'unknown'], [])
+
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)
     git(REPO, 'worktree', 'prune')
