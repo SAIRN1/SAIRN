@@ -286,3 +286,65 @@ handoff is not written until it is committed.
 and it is still a document rather than the code. Every verdict here has a
 one-line evidence column precisely so the next reader can re-check it in
 seconds instead of trusting it.
+
+---
+
+## Re-verified 2026-09-14 (Cody) — and this file is now stale in the way it was written to prevent
+
+**This document's own warning has come true about this document.** It exists
+because the 2026-08-26 audit's status column called five shipped features
+"Absent" and three sessions reached for them. Twelve days later the same thing
+has happened here.
+
+### StoneDesk #5 is BUILT. This file says OPEN.
+
+The row reads *"No customer e-signature, no deposit collection — OPEN"*, with
+the evidence *"`signedAt`/`signerName` are still only SAIRN's own service
+agreements."* That second part is still true and is not the whole picture.
+Measured against the current file:
+
+| Evidence | Found |
+|---|---|
+| a real `esig` namespace | `esigInit`, `esigApprove`, `esigBlock`, `esigClear`, `esigCreateInvoice`, `esigPrintApproval`, `esigSendDepositEmail` |
+| wired, not dead | `esig-` DOM ids and `onclick="esig…"` handlers in the panel; `esigApprove(` is called |
+| server-persisted | `deposit_amount` and `deposit_status` in `api/sd-data.js`, with `api/sd-data-approvals.test.js` covering them |
+
+So both halves of #5 — customer e-signature AND deposit collection — ship.
+`signedAt`/`signerName` being agreement-only is a *different* fact about a
+*different* field, which is how the row stayed plausible.
+
+### A trap in the marker method, hit while doing this
+
+Searching `esign` returns **47 hits in StoneDesk and every one is `design`** —
+`design`, `designer`, `SAIRNdesign`, `design_change`. This file's own method
+section says to use word boundaries *"where the term is substring-prone"*, and
+`esign` is the most substring-prone term in a platform that contains
+SAIRNdesign. The real namespace is `\besig` and it is invisible to the obvious
+search. Recorded because the next person will type `esign` too.
+
+### What is genuinely still open, and it is all externally gated
+
+Re-checked every remaining OPEN row that is not already marked vendor- or
+certification-blocked:
+
+- **StoneDesk #4, slab-scanner integration — still OPEN and unchanged.**
+  `slabsmith` 2 hits (one comment, two AI prompts, as recorded); `sideshot`,
+  `iride`, `mapascan` all **0**. It needs a third-party scanner interface, so
+  it is vendor-gated in practice even though this file does not label it so.
+- Everything else OPEN here is already labelled **VENDOR-BLOCKED**,
+  **CERTIFICATION-BLOCKED**, **NOT RECOMMENDED** (the audit declined to
+  recommend B4 itself), or **HELD OPEN** on Michael's call (#6, QuickBooks).
+
+**So there is no buildable, un-gated competitive-gap item left in this
+document.** That is the useful finding rather than a disappointment: the
+backlog these two audits produced is exhausted of work that does not require an
+external dependency, a certification, or a decision. The next real item has to
+come from a different source or from a vendor decision.
+
+### And the standing lesson this adds
+
+A status document that supersedes an audit's status column **inherits the
+audit's decay rate, not a better one.** This file was right on 2026-09-02 and
+is wrong on 2026-09-14 about at least one row, which is the same seven-to-twelve
+day half-life the original had. Re-derive before reaching for anything here;
+the grep is cheap and the wasted build is not.

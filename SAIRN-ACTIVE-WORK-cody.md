@@ -4344,3 +4344,89 @@ another tool earlier today and did not want the third instance.
 `restore_coherence_check.js` stays NOT_PROMOTED on its REMAINING blocker: it
 reaches the network to verify a restore. Its entry now records that the runner
 half is closed.
+
+---
+
+## 2026-09-14 (Cody) -- the D1 regrade, a blocker I had invented, and a status
+## doc that went stale in exactly the way it was written to prevent
+
+Claim: `register-regrade`. Files: `docs/defect-density-register.json`,
+`tools/report_only_checks.py`,
+`docs/2026-09-02-competitive-gap-status-rederived.md`.
+
+### The D1 regrade -- 10 moved, 7 deliberately not, 2 out of scope
+
+Michael's decision: a tool falsely reporting clean is `high`, whether it ran
+none of the work or most-but-not-all. **The discriminator I applied, so the
+judgement can be checked rather than the outcome: did the tool EMIT a clean /
+pass / green verdict over work it did not do?** A tool that OVER-reported,
+exited non-zero, or printed an explicit could-not-tell is NOT this -- it was
+loud, and D1's silence half is what separates them. That is the same
+discriminator the rubric's own `low` table uses for the ANCHOR-2 control, so
+this keeps the corpus consistent with the rubric rather than just moving
+records toward the new answer.
+
+Spread 35/33/6/2 -> **25 moderate / 43 high / 6 low / 2 critical.** Verified by
+diff that severity was the only field touched and the record count is unchanged.
+
+**MY FIRST SCRIPT KEYED ON THE COMMIT AND MOVED THE WRONG RECORD.** It regraded
+both records under `72fa7000`, the second of which went RED when its
+precondition was fixed -- a loud expiry, not a false clean. I had handled that
+collision explicitly for `5b98fd27` and missed it here. Measured after
+catching it: **19 commits carry more than one record, and 48 of 76 records
+share a commit with another** -- so a per-commit key is wrong by construction on
+nearly two thirds of the register, not merely where I happened to look.
+Rewritten to key on a distinctive summary substring, and it REFUSES if any
+pattern matches zero or more than one record.
+
+Two app-code records (`scpData`, `mechData` swallowing network errors) are left
+OUT OF SCOPE and said so: that is product error-handling, not a tool asserting
+confidence, and extending the decision to it is a second decision nobody made.
+
+### The restore-checker blocker was mine and it was wrong
+
+I wrote that `restore_coherence_check.js` needs the network, so a gate carrying
+it would make every push depend on the outside world. **Both halves are false.**
+`tests/run_restore_coherence_probe.js` already spins up an `http.createServer`
+on `127.0.0.1:0`, points `SAIRN_TARGET_URL` at it, and passes 26 arms. And with
+no target the tool already exits 2 -- COULD NOT RUN -- which I verified by
+running it.
+
+**I asserted a blocker from the tool's description without checking whether it
+was true, inside the triage whose entire purpose was to replace vague blockers
+with specific ones.** Corrected in the entry rather than reworded.
+
+The real blocker: **its subject does not exist at push time.** There is no
+restored database to point at on an ordinary push, and on Supabase free tier
+there are no automated backups, so there is nothing to point at. Pointing it at
+production would check production's own chain -- a different question that WOULD
+make every push talk to the live database.
+
+Triage confirmed closed: 67 check-shaped tools, 59 decided in registries, 8 by
+wiring, **0 undecided.**
+
+### The competitive-gap status doc is stale, and #5 is built
+
+That file exists because the 2026-08-26 audit called five shipped features
+Absent and three sessions reached for them. **Twelve days later the same thing
+has happened to it.** Row #5 says no customer e-signature and no deposit
+collection; measured now it is BUILT, WIRED and SERVER-PERSISTED -- an `esig`
+namespace, `esig-` DOM ids with live handlers, and `deposit_amount` /
+`deposit_status` in `api/sd-data.js` with a dedicated test file.
+
+The row's stated evidence is still TRUE and is about a different field, which
+is how it stayed plausible.
+
+**A trap in its own marker method, hit while doing this:** searching `esign`
+returns 47 hits in StoneDesk and **every one is `design`**. The real namespace
+is `\besig` and is invisible to the obvious search, on a platform that contains
+SAIRNdesign.
+
+**Nothing buildable and un-gated is left in that document.** #4 slab-scanner is
+still open but needs a third-party interface; everything else is
+vendor-blocked, certification-blocked, explicitly not-recommended, or held open
+on Michael's call. That is the finding, not a disappointment -- the next real
+item needs a different source or a vendor decision.
+
+**And 5 audit docs exist on disk, not 4** -- the
+`build-vet-biz-grounds-cash` one was not in the brief's list.
