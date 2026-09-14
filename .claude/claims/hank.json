@@ -1513,8 +1513,8 @@
       "task": "item 63 which checkpoint should have caught each defect",
       "claimed_at": "2026-09-14T16:23:33Z",
       "claimed_at_epoch": 1789403013.3934517,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T16:28:59Z"
     }
   ]
 }
