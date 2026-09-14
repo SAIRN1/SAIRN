@@ -1150,8 +1150,8 @@
       "task": "item 55 pre-planned automated threshold response on the cron watchdog",
       "claimed_at": "2026-09-14T13:11:22Z",
       "claimed_at_epoch": 1789391482.5741768,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T13:24:43Z"
     }
   ]
 }
