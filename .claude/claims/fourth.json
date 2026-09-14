@@ -1332,6 +1332,16 @@
       "claimed_at_epoch": 1789414529.4935973,
       "status": "released",
       "released_at": "2026-09-14T20:15:46Z"
+    },
+    {
+      "id": "fourth-1789417181",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 6 triage remaining writes, trial-start and enqueue idempotency fixes, derive idempotency key vocabulary, nightly backup acl live",
+      "claimed_at": "2026-09-14T20:19:41Z",
+      "claimed_at_epoch": 1789417181.773643,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
