@@ -1322,6 +1322,16 @@
       "claimed_at_epoch": 1789412910.192973,
       "status": "released",
       "released_at": "2026-09-14T19:25:04Z"
+    },
+    {
+      "id": "fourth-1789414529",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item78 target2 rate limit consume rpc concurrency proof, item 6 41 unguarded retryable writes, item 101 graduated mechanical commitment",
+      "claimed_at": "2026-09-14T19:35:29Z",
+      "claimed_at_epoch": 1789414529.4935973,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
