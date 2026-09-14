@@ -1703,8 +1703,8 @@
       "task": "independent review of failsafe witness atomicity and recovery passes two and three",
       "claimed_at": "2026-09-14T23:33:44Z",
       "claimed_at_epoch": 1789428824.216945,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T23:44:19Z"
     }
   ]
 }
