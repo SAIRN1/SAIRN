@@ -2654,3 +2654,61 @@ The first scan reported `./_lib/heartbeat` as an unresolvable require -- which r
 waiting to happen. It was a **usage example in a comment inside `api/_lib/heartbeat.js` itself.**
 Comments and strings are stripped now, with a fixture pinning it and a CONTROL that a real require
 survives the stripper.
+
+
+---
+
+## 2026-09-14 -- item 61: the secrets inventory, and the column that was wrong first
+
+An inventory of NAMES is a `grep`. The two columns worth having are blast radius (taken FROM
+`tools/dependency_graph.py`, not recomputed, so the two documents cannot disagree) and **absence
+behaviour** -- because **an unset credential that fails CLOSED is an outage and one that fails OPEN
+is a security incident, and they look identical in a list of names.**
+
+**47 variables under `api/`: 18 CREDENTIAL, 29 other.** Widest: `SUPABASE_SERVICE_ROLE_KEY`, 70.
+
+### The first run was wrong about most of the tree, and fixing that is the work
+
+It looked for `!process.env.NAME`. Almost nothing here is written that way. It reported **all four
+OIDC variables and a correctly-guarded LIVE STRIPE KEY as unguarded**, because `checkout.js` does
+`const stripeKey = process.env.STRIPE_SECRET_KEY` and then tests `stripeKey`.
+
+**A column that is wrong about the majority case is a column people switch off** -- this repo's own
+recorded fate for a first draft that over-reports. Four forms are handled now, each pinned against
+the real file that uses it:
+
+| form | real file |
+|---|---|
+| ALIAS `const k = process.env.X; if (!k)` | `api/sairncash/checkout.js` |
+| CONJUNCTION `!!(a && b && c && d)` | `api/_lib/auth.js` |
+| MISSING-LIST `[!process.env.X ? 'X' : null]` | `api/sairndental/send-reminder.js` |
+| ONE HOP into a required module | `api/_lib/stripe-config.js` |
+
+**The hop is the one that matters most going forward.** `checkout.js` does not test the Stripe key
+at all any more -- item 94 moved the whole question into `api/_lib/stripe-config.js` this same
+week. **Without the hop this tool would have reported the refactor that FIXED a real confusion as
+if it had removed a guard.** A checker that punishes the thing it should reward is a checker that
+loses its audience. One hop, not transitive: two hops away, "this file is guarded" stops being
+something a reader can check quickly.
+
+### The result that makes the column worth reading
+
+**After all four forms, NO CREDENTIAL is left with NO GUARD FOUND.** The eight that remain are
+TUNING and ENDPOINT values with defaults, which is correct for them.
+
+Arm 3e goes red the moment a credential loses its guard, and the mutation controls prove it bites:
+reverting to the `process.env`-only heuristic leaves `ANTHROPIC_API_KEY`, `STABILITY_API_KEY` and
+`SAIRNCASH_FIREBASE_SERVICE_ACCOUNT` unexplained; dropping the hop adds both Stripe secrets.
+
+### Two things the page records that are worth knowing on their own
+
+- **`SD_AUTH_SECRET` signs EVERY app's session token** -- one secret, no per-app key, no overlap
+  window. A rotation logs everyone out of everything at once.
+- **`STRIPE_WEBHOOK_SECRET` and `SAIRNCASH_STRIPE_WEBHOOK_SECRET`** are two different secrets for
+  two different endpoints, and their names are one prefix apart.
+
+### What it cannot see -- and the one exception that was measured
+
+It reads the CODE, not the deployment, so it cannot say whether a variable is SET. The exception is
+recorded because it came from production: **`SAIRN_OPS_EMAIL` is unset**, and every cron-watchdog
+alert on 2026-09-14 said so in its own error text -- **the watchdog's alerts currently go nowhere.**

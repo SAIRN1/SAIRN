@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**132 files in `tools/`.** By what actually invokes them:
+**133 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 40 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 41 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 29 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 80 |
+| CHECKER | 81 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
@@ -125,7 +125,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (40)
+## REPORT-ONLY (41)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -166,6 +166,7 @@ quiet in practice.
 | `sairn_dead_button_audit.py` | 2026-09-09 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) |
 | `sairn_strict_args_check.py` | 2026-09-10, after its one real-run finding turned out to be correct code | Guardian check 31 -- a function that mutates a parameter and then forwards `arguments` under strict mode, where the mutation is silently discarded |
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
+| `secrets_inventory.py` | 2026-09-14, and --check rather than the bare report: the bare run prints a ranking and exits 0 whatever it finds, which in a runner that is silent on a clean run means it would never say anything at all | docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved |
 | `soup_register_check.py` | 2026-09-12 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running |
 | `tooling_inventory.py` | 2026-09-12, the day it was built | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated |
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
@@ -333,11 +334,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      132   git ls-files tools/
+  tools on disk                      133   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                38   report_only_checks.REGISTRY
-  tools invoked by tests/             82   tests/**/*.py, *.js
+  report-only registry                39   report_only_checks.REGISTRY
+  tools invoked by tests/             83   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

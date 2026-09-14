@@ -155,6 +155,27 @@ def by_section(rc, out):
 
 REGISTRY = [
     {
+        'tool': 'secrets_inventory.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'args': ['--check'],
+        'promoted': '2026-09-14, and --check rather than the bare report: the '
+                    'bare run prints a ranking and exits 0 whatever it finds, '
+                    'which in a runner that is silent on a clean run means it '
+                    'would never say anything at all',
+        'catches': 'docs/SECRETS-INVENTORY.md drifting from the code -- a new '
+                   'environment variable, a removed one, or a guard that moved',
+        'why_it_matters': 'an unset credential that fails CLOSED is an outage '
+                          'and one that fails OPEN is a security incident, and '
+                          'they look identical in a list of names. The document '
+                          'is the only place that distinction is written down',
+        'evidence': 'real run 2026-09-14: 47 variables, 18 CREDENTIAL, and no '
+                    'CREDENTIAL left with NO GUARD FOUND. Held by '
+                    'tests/run_secrets_inventory_probe.py -- arm 3e fails the '
+                    'moment a credential loses its guard, and three mutation '
+                    'controls take the suite red',
+    },
+    {
         'tool': 'dependency_graph.py',
         'mode': 'once',
         'verdict': by_exit,

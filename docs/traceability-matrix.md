@@ -43,6 +43,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 | Requirement (what it catches) | Tool | Evidence at promotion |
 |---|---|---|
+| docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved | `secrets_inventory.py` | real run 2026-09-14: 47 variables, 18 CREDENTIAL, and no CREDENTIAL left with NO GUARD FOUND. Held by tests/run_secrets_inventory_probe.py -- arm 3e fails the moment a credential loses its guard, and three mutation controls take the suite red |
 | a component at or above SPOF_THRESHOLD with no row in docs/SPOF-REGISTER.md, a row marked OPEN that is no longer a chokepoint, and -- the sharp one -- a row marked RETIRED while the component is still above the bar | `dependency_graph.py` | real run 2026-09-14: 10 components at or above the threshold, 10 rows, 7 OPEN / 3 ACCEPTED / 0 RETIRED, PASS. Held in both directions by tests/run_dependency_graph_probe.py (7d refuses an empty register, 7e is the control that the same rows marked OPEN pass, 7f refuses a false retirement) |
 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies | `vercel_config_check.py` | real run 2026-09-09: buildCommand 92/256, PASS |
 | a handler target never defined (A), an inline handler whose only action is a toast (B), a toast-only function with zero callers (C2), and a same-scope duplicate definition (D1) | `sairn_dead_button_audit.py` | real run 2026-09-09 over all 22 app files: A=0 B=0 C2=0 across every app, D1=1 on sairnmechanical.html (two mechEsc definitions in one script block) |
@@ -106,6 +107,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 61: every secret the platform reads, what it unlocks, and &mdash; the column a `grep` cannot produce &mdash; what happens when it is ABSENT** | **BUILT 2026-09-14 (CC)** &mdash; `tools/secrets_inventory.py`, `docs/SECRETS-INVENTORY.md` (generated), held by `tests/run_secrets_inventory_probe.py` (18 arms, three mutation controls). **Report-onl | `tests/run_secrets_inventory_probe.py` |
 | **Items 88, 53 and 91: the dependency graph, the pairs that are only fatal TOGETHER, and a single-point-of-failure list that shrinks by MEASUREMENT** | **BUILT 2026-09-14 (CC)** &mdash; `tools/dependency_graph.py`, `docs/SPOF-REGISTER.md`, held by `tests/run_dependency_graph_probe.py` (25 arms, five mutation controls). **Report-only, registered, noth | `tests/run_dependency_graph_probe.py` |
 | **The 2026-09-13 "no tool without an inventory entry" decision was CONFIRMED LIVE &mdash; and it did not hold** | **CONFIRMED AND CLOSED 2026-09-14 (Fourth)** &mdash; push-gate check 12b, 5 new arms in `tests/push_gate/check12_probe.py` | `tests/push_gate/check12_probe.py` |
 | **Two hourly crons fired at the SAME MINUTE and BOTH were failing about a third of their runs &mdash; and it is the same minute /api/claude&rsquo;s 504s land on** | **FIXED 2026-09-14 (CC)** &mdash; schedules spread to :07 and :37, plus `api/_lib/cron-jitter.js`. Held by `tests/cron_schedules_do_not_collide.js` (17 arms, three mutation controls). Recorded in the  | `api/cron-watchdog.test.js`, `tests/cron_schedules_do_not_collide.js` |
@@ -319,7 +321,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**167 of 367 test files are traced to a stated requirement. 200 are not.**
+**168 of 368 test files are traced to a stated requirement. 200 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -543,10 +545,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 367   tests/**, api/*.test.js
-  open-work rows citing a test       155   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 368   tests/**, api/*.test.js
+  open-work rows citing a test       156   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                38   report_only_checks.REGISTRY
+  report-only registry                39   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
