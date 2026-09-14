@@ -22,7 +22,10 @@
       "citation_confidence": "not-citable",
       "citation_note": "a domain-logic defect: the AI priced labour from rows it was never told it could not price. No standing rule names this shape.",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b8570ce0012",
@@ -45,7 +48,10 @@
       "citation_confidence": "not-citable",
       "citation_note": "two concurrent suite runs restoring each other's files -- a concurrency defect in the harness, and no standing rule covers it.",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "1348466a2e73",
@@ -68,7 +74,10 @@
       "citation_confidence": "arguable",
       "citation_note": "a suppression flag left on, not a check that passed",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "3f09a48eed54",
@@ -92,7 +101,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "3f09a48eed54",
@@ -117,7 +129,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairn_storage_wrapper_honesty.js"
+      "found_by_tool": "sairn_storage_wrapper_honesty.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5abfcdbacbb4",
@@ -141,7 +156,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "local_only_collection_check.py"
+      "found_by_tool": "local_only_collection_check.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b98fd27209b",
@@ -165,7 +183,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "dnt_vendor_write_confirmation.js"
+      "found_by_tool": "dnt_vendor_write_confirmation.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b98fd27209b",
@@ -189,7 +210,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "dnt_vendor_write_confirmation.js"
+      "found_by_tool": "dnt_vendor_write_confirmation.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b98fd27209b",
@@ -213,7 +237,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "dnt_vendor_write_confirmation.js"
+      "found_by_tool": "dnt_vendor_write_confirmation.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b98fd27209b",
@@ -238,7 +265,10 @@
       "citation_note": "silence by omission rather than a false success printed",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "dnt_vendor_write_confirmation.js"
+      "found_by_tool": "dnt_vendor_write_confirmation.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "5b98fd27209b",
@@ -262,7 +292,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "dnt_vendor_write_confirmation.js"
+      "found_by_tool": "dnt_vendor_write_confirmation.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "6fde9cea7b84",
@@ -291,7 +324,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_write_path_scan_probe.py"
+      "found_by_tool": "run_write_path_scan_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "6fde9cea7b84",
@@ -320,7 +356,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_write_path_scan_probe.py"
+      "found_by_tool": "run_write_path_scan_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "6fde9cea7b84",
@@ -350,7 +389,10 @@
       "citation_note": "a sampling window exempting what it does not reach",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "run_write_path_scan_probe.py"
+      "found_by_tool": "run_write_path_scan_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "94034ed14279",
@@ -371,7 +413,10 @@
       "citation_note": "a dead duplicate definition. Guardian check 27 territory, not a PR class rule.",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "unknown"
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "a858cab7cb17",
@@ -392,7 +437,10 @@
       "citation_confidence": "not-citable",
       "citation_note": "a demo seed reaching a live server. Held by a test, not by a class rule.",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "ad588e6c5dc3",
@@ -414,7 +462,10 @@
       "citation_confidence": "not-citable",
       "citation_note": "a payload too large for the row. A sizing defect with no rule class.",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "bfe591a24c6a",
@@ -442,7 +493,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_write_path_scan_probe.py"
+      "found_by_tool": "run_write_path_scan_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "bfe591a24c6a",
@@ -469,7 +523,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "bfe591a24c6a",
@@ -497,7 +554,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_write_path_scan_probe.py"
+      "found_by_tool": "run_write_path_scan_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "bfe591a24c6a",
@@ -524,7 +584,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "caa5bb7cb6b2",
@@ -548,7 +611,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "run_report_only_checks_probe.py"
+      "found_by_tool": "run_report_only_checks_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d22ce1060e10",
@@ -571,7 +637,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "133f5587a597",
@@ -598,7 +667,10 @@
       "citation_confidence": "arguable",
       "citation_note": "a fact with a tense needing a read, applied to a SHA",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "133f5587a597",
@@ -625,7 +697,10 @@
       "citation_confidence": "arguable",
       "citation_note": "vocabulary validation ran after a continue, so a record with an unresolvable SHA stopped being checked at all -- a check that stopped checking, but only for a subset",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8f9a727f008c",
@@ -671,7 +746,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairndental_write_failure_voice.js"
+      "found_by_tool": "sairndental_write_failure_voice.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8f9a727f008c",
@@ -716,7 +794,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8f9a727f008c",
@@ -761,7 +842,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d77321dfbe21",
@@ -788,7 +872,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "transport_timeout_sweep.js"
+      "found_by_tool": "transport_timeout_sweep.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d77321dfbe21",
@@ -816,7 +903,10 @@
       "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "transport_timeout_sweep.js"
+      "found_by_tool": "transport_timeout_sweep.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d85b98efecb8",
@@ -846,7 +936,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "dd95a5cf6c0e",
@@ -868,7 +961,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "unknown"
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "f75e046a736b",
@@ -893,7 +989,10 @@
       "citation_note": "the wrapper check asked whether a wrapper speaks ANYWHERE, so a silenced catch was exempted by the scope of the question",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairn_storage_wrapper_honesty.js"
+      "found_by_tool": "sairn_storage_wrapper_honesty.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "101b9e374748",
@@ -918,7 +1017,10 @@
       "citation_confidence": "arguable",
       "citation_note": "four push-gate checks had no probe asserting a deny, so nothing had ever proven they refuse -- unproven rather than stopped",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "101b9e374748",
@@ -943,7 +1045,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "check2_and_check5_probe.py"
+      "found_by_tool": "check2_and_check5_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "978df7ae8d27",
@@ -968,7 +1073,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "9d5c85e205fd",
@@ -998,7 +1106,10 @@
       "citation_confidence": "arguable",
       "citation_note": "checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so a wiring on exit code would have read a finding as clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "9d5c85e205fd",
@@ -1028,7 +1139,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "run_tooling_inventory_probe.py"
+      "found_by_tool": "run_tooling_inventory_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "9d5c85e205fd",
@@ -1058,7 +1172,10 @@
       "citation_confidence": "arguable",
       "citation_note": "the inventory did not read NOT_PROMOTED, so six recorded reasons were outside the window it looked at",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "102cb926bd74",
@@ -1086,7 +1203,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "102cb926bd74",
@@ -1115,7 +1235,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "run_githook_install_probe.py"
+      "found_by_tool": "run_githook_install_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "639e9bedf433",
@@ -1140,7 +1263,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "639e9bedf433",
@@ -1165,7 +1291,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "77dd73161646",
@@ -1191,7 +1320,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "sairn_push_gate_hook.py"
+      "found_by_tool": "sairn_push_gate_hook.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "77dd73161646",
@@ -1218,7 +1350,10 @@
       "citation_note": "a probe arm failing on EVERY run inflated every mutation verdict by one -- consistently wrong rather than silently skipped",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairn_push_gate_hook.py"
+      "found_by_tool": "sairn_push_gate_hook.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "832b1a3f0b9a",
@@ -1246,7 +1381,10 @@
       "citation_confidence": "arguable",
       "citation_note": "the matcher could not tell a fold from a concatenation that reads the same -- adjacent to \"grep cannot tell code from text\", one level in",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "832b1a3f0b9a",
@@ -1275,7 +1413,10 @@
       "citation_note": "an anchor that still matched, pinned to a number the classifier moved",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_truthy_sum_probe.py"
+      "found_by_tool": "run_truthy_sum_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1301,7 +1442,10 @@
       "citation_confidence": "arguable",
       "citation_note": "only the checker exit codes were pinned; the GATE refusing was never proven, and detection is a separate claim from wiring",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1327,7 +1471,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "check2_and_check5_probe.py"
+      "found_by_tool": "check2_and_check5_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1354,7 +1501,10 @@
       "citation_note": "verification discipline, not one of the numbered class rules",
       "injection_phase": "unknown",
       "phase_confidence": "inferred",
-      "phase_note": "The defect is in my own STATED REASON for leaving a check uncovered -- a justification never tested against the check's source. That is a verification failure about a decision, not a phase in which anything was built, and none of requirement/design/coding/config fits it without stretching. Recorded as unknown rather than pushed into the nearest bin."
+      "phase_note": "The defect is in my own STATED REASON for leaving a check uncovered -- a justification never tested against the check's source. That is a verification failure about a decision, not a phase in which anything was built, and none of requirement/design/coding/config fits it without stretching. Recorded as unknown rather than pushed into the nearest bin.",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "a7ff2325890f",
@@ -1378,7 +1528,10 @@
       "citation_note": "the probe changed its own input by being committed, so the answer depended on something other than the code under test",
       "injection_phase": "design",
       "phase_confidence": "stated",
-      "found_by_tool": "run_committer_identity_probe.py"
+      "found_by_tool": "run_committer_identity_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "bc32bed288b5",
@@ -1405,7 +1558,10 @@
       "citation_confidence": "not-citable",
       "citation_note": "a git identity leaking from one clone's local config. Real, and no standing rule names it.",
       "injection_phase": "config",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d66a87e64fc7",
@@ -1434,7 +1590,10 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "sairn_push_gate_hook.py"
+      "found_by_tool": "sairn_push_gate_hook.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1465,7 +1624,10 @@
       "citation_note": "a stamping failure skipped the write and told the user the browser's storage was full -- a confident and WRONG reason printed after the error",
       "injection_phase": "coding",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairn_storage_wrapper_honesty.js"
+      "found_by_tool": "sairn_storage_wrapper_honesty.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1495,7 +1657,10 @@
       "citation_confidence": "arguable",
       "citation_note": "an exact scan count pinned as an anchor went red on the first ordinary commit that added a matching line -- the anchor still matched something, just not the thing it was pinned for",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "e414b563f0f9",
@@ -1520,7 +1685,10 @@
       "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "found_by_tool": "unknown"
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "e6130cf81728",
@@ -1542,7 +1710,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "refspec_and_override_probe.py"
+      "found_by_tool": "refspec_and_override_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "106d403717a4",
@@ -1571,7 +1742,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "3ffb0603784b",
@@ -1592,7 +1766,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "72fa70003224",
@@ -1621,7 +1798,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "run_mutation_anchor_probe.py"
+      "found_by_tool": "run_mutation_anchor_probe.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "72fa70003224",
@@ -1649,7 +1829,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "a58af8caae0b",
@@ -1672,7 +1855,10 @@
       "citation_confidence": "arguable",
       "injection_phase": "coding",
       "phase_confidence": "stated",
-      "citation_note": "1.11 is written about a CHECK that fails open when a tool is absent; this is a GATE that fails the other way -- it refused a correct bill -- so the citation is the fail-direction principle rather than the literal case"
+      "citation_note": "1.11 is written about a CHECK that fails open when a tool is absent; this is a GATE that fails the other way -- it refused a correct bill -- so the citation is the fail-direction principle rather than the literal case",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "e059df4cc2d4",
@@ -1698,7 +1884,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "config",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "e059df4cc2d4",
@@ -1724,7 +1913,10 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "f98c1b08d3fc",
@@ -1752,7 +1944,10 @@
       "injection_phase": "design",
       "phase_confidence": "stated",
       "citation_note": "No standing rule covers 'an identifier that was never a secret became a bearer credential'. The nearest, 1.2 and 1.11, are both about CHECKS rather than about authorisation, and forcing one would manufacture agreement the matcher would then score. Recorded as not-citable per the register's own escape hatch.",
-      "correction_note": "Summary corrected 2026-09-14, same day. The first version said the finding was LIVE. I had verified that the !stripeKey guard did not fire, which proves the variable is SET, and then asserted reachability, which it does not prove. The production log line -- 'Expired API Key provided: sk_test_...' -- settled it afterwards. Corrected in place rather than superseded: the defect did not change, my claim about it did, and a second record would inflate the density and split the injection matrix. SECOND CORRECTION, same day: I also wrote that the author had not applied their own argument one level up. The file header says it explicitly -- \"possession of a subscription id still gets you a portal ... recorded here rather than left to be discovered\" -- so this is a CONSCIOUSLY ACCEPTED risk with a stated reason, not an oversight. What is left is that the acceptance lived in a file header and never reached the open-work index or the SOUP register, which is the same information-leakage shape as item 94; that nobody had checked what actually bounds it; and the expired sk_test_ key in a production environment variable."
+      "correction_note": "Summary corrected 2026-09-14, same day. The first version said the finding was LIVE. I had verified that the !stripeKey guard did not fire, which proves the variable is SET, and then asserted reachability, which it does not prove. The production log line -- 'Expired API Key provided: sk_test_...' -- settled it afterwards. Corrected in place rather than superseded: the defect did not change, my claim about it did, and a second record would inflate the density and split the injection matrix. SECOND CORRECTION, same day: I also wrote that the author had not applied their own argument one level up. The file header says it explicitly -- \"possession of a subscription id still gets you a portal ... recorded here rather than left to be discovered\" -- so this is a CONSCIOUSLY ACCEPTED risk with a stated reason, not an oversight. What is left is that the acceptance lived in a file header and never reached the open-work index or the SOUP register, which is the same information-leakage shape as item 94; that nobody had checked what actually bounds it; and the expired sk_test_ key in a production environment variable.",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "57236fe9db01",
@@ -1778,7 +1973,10 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
-      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js"
+      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "4ba885d99f42",
@@ -1801,7 +1999,10 @@
       "injection_phase": "config",
       "phase_confidence": "stated",
       "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "found_by_tool": "unknown"
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     },
     {
       "commit": "973e2471",
@@ -1822,7 +2023,10 @@
       "injection_phase": "coding",
       "phase_confidence": "inferred",
       "citation_note": "No standing rule covers a refusal message that misstates its own guard. The nearest, 1.11, is about a check that could not run being folded into a pass, and this check runs and answers correctly for the rule it actually enforces -- what is wrong is the sentence beside it, plus a gate that was written and never wired. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "found_by_tool": "completeness_check.py"
+      "found_by_tool": "completeness_check.py",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
     }
   ]
 }

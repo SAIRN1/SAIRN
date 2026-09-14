@@ -71,13 +71,13 @@ try:
     rc, out = run(wt, '--add', '--commit', 'deadbeefdead', '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('B1 a commit that does not exist is REFUSED', rc, 2)
     check('B2 and it says so', 'no such commit' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'product', '--severity', 'high',
-                  '--method', 'vibes', '--summary', 'nope', '--rule', '1.1', '--phase', 'coding')
+                  '--method', 'vibes', '--summary', 'nope', '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('B3 an invented detection method is REFUSED', rc, 2)
     check('B4 because the matrix is meaningless with free text',
           '--method must be one of' in out, True)
@@ -85,14 +85,14 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'x',
                   '--layer', 'guesswork', '--severity', 'high',
                   '--method', 'code-review', '--summary', 'nope',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('B5 an invented layer is REFUSED', rc, 2)
 
     # ── C. it derives rather than trusting what it was told ────────────────
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('C1 a real commit is accepted', rc, 0)
     doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                             encoding='utf-8'))
@@ -109,7 +109,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     after = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                   encoding='utf-8'))['records'])
     check('D1 a duplicate is not appended', after, before)
@@ -126,7 +126,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a SECOND fixture',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     after2 = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                    encoding='utf-8'))['records'])
     check('D3 one commit CAN carry several distinct defects', after2, before + 1)
@@ -238,7 +238,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', '9.99', '--phase', 'coding')
+                  '--rule', '9.99', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('H3 a rule id that is not a section in the rules doc is REFUSED', rc, 2)
     check('H4 and says which document it checked against',
           'SAIRN-PROCESS-RULES' in out, True)
@@ -246,14 +246,14 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', 'not-citable', '--phase', 'coding')
+                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('H5 not-citable with NO note is REFUSED -- a bare refusal to cite '
           'is a silence, not a decision', rc, 2)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
                   '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
-                  '--rule', 'not-citable', '--phase', 'coding', '--rule-note', 'no rule names this')
+                  '--rule', 'not-citable', '--phase', 'coding', '--injection-unknown', 'probe fixture', '--rule-note', 'no rule names this')
     check('H6 not-citable WITH a note is accepted', rc, 0)
     doc4 = json.load(io.open(p_reg, encoding='utf-8'))
     hrec = [r for r in doc4['records'] if r['summary'] == 'H fixture'][0]
@@ -376,14 +376,14 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p1',
-                  '--rule', '1.1', '--phase', 'vibes')
+                  '--rule', '1.1', '--phase', 'vibes', '--injection-unknown', 'probe fixture')
     check('P1 an invented phase is REFUSED', rc, 2)
     check('P2 and it names the vocabulary', '--phase must be one of' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p3',
-                  '--rule', '1.1')
+                  '--rule', '1.1', '--injection-unknown', 'probe fixture')
     check('P3 a MISSING phase is refused, not defaulted -- a field that is '
           'optional at recording time is a field that stays empty', rc, 2)
     check('P4 and it says which field', 'missing --phase' in out, True)
@@ -391,7 +391,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p5',
-                  '--rule', '1.1', '--phase', 'unknown')
+                  '--rule', '1.1', '--phase', 'unknown', '--injection-unknown', 'probe fixture')
     check('P5 a bare `unknown` is REFUSED -- the escape hatch exists so a '
           'record can say no phase fits, not so it can say nothing', rc, 2)
     check('P6 and it says a note is required',
@@ -400,7 +400,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'product', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'p7',
-                  '--rule', '1.1', '--phase', 'unknown',
+                  '--rule', '1.1', '--phase', 'unknown', '--injection-unknown', 'probe fixture',
                   '--phase-note', 'none of the four honestly fits this one')
     check('P7 CONTROL: `unknown` WITH a note is accepted -- P5 is not passing '
           'because unknown is banned outright', rc, 0)
@@ -460,7 +460,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'static-checker', '--summary', 'r3',
-                  '--rule', '1.1', '--phase', 'coding')
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture')
     check('R3 an automated find with NO tool is refused', rc, 2)
     check('R4 and it offers `unknown` rather than forcing a guess',
           'unknown' in out and '--found-by-tool is required' in out, True)
@@ -468,7 +468,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'code-review', '--summary', 'r5',
-                  '--rule', '1.1', '--phase', 'coding',
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
                   '--found-by-tool', 'nav_panel_check.py')
     check('R5 a tool name on a HUMAN find is REFUSED -- a column of plausible '
           'names nobody can check is worse than an empty one', rc, 2)
@@ -476,7 +476,7 @@ try:
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'tooling', '--severity', 'low',
                   '--method', 'static-checker', '--found-by-tool', 'unknown', '--summary', 'r6',
-                  '--rule', '1.1', '--phase', 'coding',
+                  '--rule', '1.1', '--phase', 'coding', '--injection-unknown', 'probe fixture',
                   '--found-by-tool', 'unknown')
     check('R6 CONTROL: `unknown` IS accepted, so R3 is not passing because the '
           'field is impossible to satisfy', rc, 0)
@@ -492,6 +492,62 @@ try:
     check('R9 ...and refuses to recompute the blocking classification, because '
           'a second copy of it is a second thing to drift',
           'second thing to drift' in out, True)
+
+
+    # -- S. the injection commit, and the lag it exists to build -----------
+    base = ['--add', '--commit', real2, '--app', 'stonedesk', '--layer', 'tooling',
+            '--severity', 'low', '--method', 'code-review', '--rule', '1.1',
+            '--phase', 'coding']
+
+    rc, out = run(wt, *(base + ['--summary', 's1']))
+    check('S1 NEITHER flag is refused -- silently optional is how '
+          'detection_method got to 1 of 52', rc, 2)
+    check('S2 and it says exactly one is required',
+          'EXACTLY ONE' in out, True)
+
+    rc, out = run(wt, *(base + ['--summary', 's3', '--injection-commit', real,
+                                '--injection-unknown', 'both']))
+    check('S3 BOTH flags is refused too -- a reason beside a sha is a record '
+          'that cannot be read either way', rc, 2)
+
+    rc, out = run(wt, *(base + ['--summary', 's4', '--injection-commit', 'deadbeefdead']))
+    check('S4 an injection sha that does not resolve is REFUSED', rc, 2)
+    check('S5 and it says a bad sha is a guess with a hash on it',
+          'guess with a hash' in out, True)
+
+    rc, out = run(wt, *(base + ['--summary', 's6', '--injection-unknown',
+                                'the introducing commit was not identified']))
+    check('S6 a stated reason IS accepted -- the escape hatch works', rc, 0)
+
+    rc, out = run(wt, *(base + ['--summary', 's7', '--injection-commit', real]))
+    check('S7 CONTROL: a REAL sha is accepted, so S4 is not passing because the '
+          'field is impossible to satisfy', rc, 0)
+
+    doc = json.loads(io.open(os.path.join(wt, REG.replace('/', os.sep)),
+                             encoding='utf-8').read())
+    s6 = [r for r in doc['records'] if r['summary'] == 's6'][0]
+    s7 = [r for r in doc['records'] if r['summary'] == 's7'][0]
+    check('S8 the reason is stored, not merely demanded',
+          bool(s6['injection'].get('unknown_reason')), True)
+    check('S9 a known injection carries the sha AND a computed lag',
+          s7['injection'].get('commit') is not None
+          and 'lag_days' in s7['injection'], True)
+    check('S10 the lag is not negative -- real2 is an ancestor of itself here, '
+          'so zero is the expected floor', s7['injection']['lag_days'] >= 0, True)
+
+    import importlib
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    dr2 = importlib.import_module('defect_register')
+    check('S11 lag_days counts whole days between two dates',
+          dr2.lag_days('2026-09-01', '2026-09-14'), 13)
+    check('S12 ...and returns None rather than 0 on an unparseable date, so a '
+          'bad input cannot look like a same-day discovery',
+          dr2.lag_days('not-a-date', '2026-09-14'), None)
+
+    rc, out = run(wt, '--report')
+    check('S13 with no injection commits the report says NO LAG DISTRIBUTION '
+          'EXISTS rather than printing a median of nothing',
+          'NO LAG DISTRIBUTION EXISTS' in out or 'lag in days' in out, True)
 
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)

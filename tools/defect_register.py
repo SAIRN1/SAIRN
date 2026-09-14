@@ -222,6 +222,33 @@ def save(d):
         json.dumps(d, indent=2, sort_keys=False) + '\n')
 
 
+# ── WHERE THE DEFECT CAME IN, AS A COMMIT (item 66's prerequisite) ────────
+# IBNR -- estimating how many defects exist that nobody has found -- needs a LAG
+# DISTRIBUTION: injection date to discovery date. `injection_phase` says when in
+# the LIFECYCLE; this says when in TIME, and the two are different fields.
+#
+# OPTIONAL, WITH A REQUIRED REASON WHEN OMITTED. Exactly the shape of
+# `--rule not-citable`, and for the same reason: MANDATORY WOULD PRODUCE
+# GUESSES, and silently optional would leave it empty, which is what happened to
+# detection_method before item 2/24 measured 1 of 52.
+#
+# CHEAP AT RECORD TIME AND ONLY THEN. Whoever fixes a defect has just read the
+# code and usually knows, or finds it with one `git log -S`. It is NOT honestly
+# backfillable -- reconstructing an injection point by blame months later
+# produces a lag distribution built from guesses, which is worse than no
+# distribution at all. The 67 records that predate this field say so in their
+# own reason string rather than carrying an invented sha.
+def lag_days(inj_date, fix_date):
+    """Whole days between two YYYY-MM-DD strings, or None if either is unusable."""
+    import datetime
+    try:
+        a = datetime.date(*[int(x) for x in str(inj_date)[:10].split('-')])
+        b = datetime.date(*[int(x) for x in str(fix_date)[:10].split('-')])
+    except Exception:                                          # noqa: BLE001
+        return None
+    return (b - a).days
+
+
 def derive(sha):
     """The mechanical half, from git. A field a human retypes goes wrong."""
     full = git('rev-parse', sha)
@@ -283,6 +310,13 @@ def cmd_add(argv):
     # than the gap this closes.
     # REQUIRED when a tool did the finding, REFUSED when one did not.
     found_by = opt('--found-by-tool', required=False)
+    inj = opt('--injection-commit', required=False)
+    inj_unknown = opt('--injection-unknown', required=False)
+    if bool(str(inj).strip()) == bool(str(inj_unknown).strip()):
+        print('pass EXACTLY ONE of --injection-commit <sha> or '
+              '--injection-unknown "<why>". Both, or neither, is how this field '
+              'would quietly become empty -- which is what happened to '
+              'detection_method before it was measured at 1 of 52.'); return 2
     phase = opt('--phase')
     phase_note = opt('--phase-note', required=False)
     if phase not in PHASES:
@@ -329,6 +363,21 @@ def cmd_add(argv):
     d = derive(sha)
     if not d:
         print('no such commit: %s' % sha); return 2
+    inj_rec = None
+    if str(inj).strip():
+        di = derive(inj)
+        if not di:
+            print('no such injection commit: %s -- a sha that does not resolve '
+                  'is not a lag, it is a guess with a hash on it.' % inj); return 2
+        inj_rec = {'commit': di['commit'], 'date': di['date'],
+                   'subject': di['subject']}
+        lag = lag_days(di['date'], d['date'])
+        if lag is not None and lag < 0:
+            print('the injection commit (%s) is NEWER than the fix (%s). One of '
+                  'the two shas is wrong; a negative lag would poison the '
+                  'distribution this field exists to build.'
+                  % (di['date'], d['date'])); return 2
+        inj_rec['lag_days'] = lag
     reg = load()
     key = (d['commit'], summary)
     if any((r['commit'], r['summary']) == key for r in reg['records']):
@@ -338,7 +387,8 @@ def cmd_add(argv):
                 'detection_method': method, 'summary': summary,
                 'rules': rules, 'citation_confidence': conf,
                 'injection_phase': phase, 'phase_confidence': phase_conf,
-                'found_by_tool': (str(found_by).strip() or None)})
+                'found_by_tool': (str(found_by).strip() or None),
+                'injection': inj_rec or {'unknown_reason': str(inj_unknown).strip()}})
     if note:
         rec['citation_note'] = note
     if phase_note:
@@ -516,6 +566,19 @@ def cmd_check(argv=()):
                        'split' % (r['commit'], r['detection_method']))
         if r['layer'] not in LAYERS or r['severity'] not in SEVERITIES:
             bad.append('%s -- layer/severity outside the vocabulary' % r['commit'])
+        # ── THE INJECTION POINT, same rule as --add ──────────────────────
+        ij = r.get('injection')
+        if not isinstance(ij, dict):
+            bad.append('%s -- no injection block. Every record carries either a '
+                       'commit or a stated reason it has none.' % r['commit'])
+        elif ij.get('commit'):
+            if ij.get('lag_days') is not None and ij['lag_days'] < 0:
+                bad.append('%s -- negative discovery lag (%s days): the '
+                           'injection commit is newer than the fix'
+                           % (r['commit'], ij['lag_days']))
+        elif not str(ij.get('unknown_reason') or '').strip():
+            bad.append('%s -- injection unknown with no reason. A bare unknown '
+                       'is a silence, not a decision.' % r['commit'])
         # ── THE TOOL THAT FOUND IT, same rule as --add so a hand-edited
         # record cannot carry a shape --add would have refused.
         fbt = r.get('found_by_tool')
@@ -658,6 +721,25 @@ def cmd_report():
             print('  %-20s %d' % (M, n))
     print('')
     # ── WHICH CHECKPOINT CAUGHT IT (item 63) ───────────────────────────────
+    known = [r for r in recs
+             if isinstance(r.get('injection'), dict) and r['injection'].get('commit')
+             and r['injection'].get('lag_days') is not None]
+    print('DISCOVERY LAG -- injection to fix')
+    print('  records with an injection commit : %d of %d' % (len(known), len(recs)))
+    if not known:
+        print('  NO LAG DISTRIBUTION EXISTS YET, so no IBNR reserve is offered.')
+        print('  That is the honest state and not a missing feature -- see')
+        print('  docs/2026-09-14-ibnr-scoping.md. Backfilling these by blame')
+        print('  would build the distribution out of guesses.')
+    else:
+        lags = sorted(r['injection']['lag_days'] for r in known)
+        mid = lags[len(lags) // 2]
+        print('  lag in days: min %d, median %d, max %d' % (lags[0], mid, lags[-1]))
+        print('  DO NOT QUOTE THIS AS A RESERVE. It is the lag of the defects')
+        print('  that were FOUND; the ones still hiding are by definition absent')
+        print('  from it, which is the whole reason IBNR needs a fitted tail')
+        print('  rather than a median.')
+    print('')
     print('WHICH CHECKPOINT CAUGHT IT')
     ck = {}
     for r in recs:
