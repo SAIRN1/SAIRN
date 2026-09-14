@@ -1232,6 +1232,16 @@
       "claimed_at_epoch": 1789403662.1803942,
       "status": "released",
       "released_at": "2026-09-14T16:49:34Z"
+    },
+    {
+      "id": "fourth-1789404764",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "backup-role-default-acl-for-role-gap",
+      "claimed_at": "2026-09-14T16:52:44Z",
+      "claimed_at_epoch": 1789404764.021253,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
