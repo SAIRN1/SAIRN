@@ -304,6 +304,22 @@ answer it produced was worth having on its own: for that document a schedule add
 little, because `--check` already runs on every push. **Measure before you
 schedule — the drift may not be the problem.**
 
+**A REGISTERED CHECK IS NOT A RE-REFERENCE, observed 2026-09-14 and sharpening
+the sentence above.** All three derived documents were checked by hand that day.
+`MASTER-PLAN.md` had no check on any push at all — `master_plan.py` was built the
+day before and never registered, so the one document compounding four gates into
+a FINISHED verdict was the only derived document nothing watched. Worse for the
+claim above: **`traceability-matrix.md` WAS registered, its `--check` HAD been
+running on every push, and it was stale anyway** — report-only never blocks, so
+the check fires, prints, and the push proceeds. And `tooling_inventory.py` had
+been answering **exit 2, refusing to generate**, for hours over a tool added
+without an inventory entry, which meant the refusal was also **blocking its own
+repair**: every other document's accumulated drift sat behind it.
+
+So the re-reference is not the check running. **It is somebody CLEARING it**, and
+a report-only check with nobody assigned to clear it degrades into a log line.
+Convention 4's alarm still has to reach a person.
+
 **State the age of the evidence, and say which instrument loses a
 disagreement.** `python tools/schema_snapshot_freshness.py` is the worked
 example. It prints *"VERDICTS ARE AS OF THE CAPTURE, 4.1 HOURS AGO — NOT AS OF

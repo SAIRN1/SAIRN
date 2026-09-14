@@ -24,18 +24,18 @@ makes this the one inventory whose staleness is hardest to notice.
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 37 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 38 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 69 |
-| GENERATOR | 16 |
+| CHECKER | 70 |
+| GENERATOR | 15 |
 | LIBRARY | 20 |
 | LIVE | 13 |
 
@@ -90,7 +90,7 @@ around it. The second exists because the first missed exactly that on
 | `preauth_oracle_check.py` | CHECKER | an endpoint that answers before it authenticates (gate check 7) |
 | `redaction_check.py` | CHECKER | credential shapes in what is about to be written, and in what a push ships |
 | `sairn_load_state_check.py` | LIVE | live seed content differing from the repo seed (gate check 1) |
-| `sairn_push_gate_hook.py` | CHECKER | the ten numbered push checks; the only tool that calls deny() |
+| `sairn_push_gate_hook.py` | CHECKER | the numbered push checks; the only tool that calls deny() |
 | `sairn_reachability_check.py` | CHECKER | a feature no user can reach (gate check 5) |
 | `sairn_seam_check.py` | CHECKER | an endpoint dropping a field the engine reads (gate check 4) |
 | `sairn_sql_preflight.py` | CHECKER | SQL referencing a column or table the live schema does not have (gate check 3) |
@@ -116,7 +116,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (37)
+## REPORT-ONLY (38)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -143,6 +143,7 @@ quiet in practice.
 | `install_git_hooks.py` | 2026-09-13, the day --check was widened to answer the real question | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, or whose gate script or shell wrapper does not execute |
 | `key_collision_check.py` | 2026-09-10 | a localStorage key written by more than one feature, where the two writers disagree about the shape |
 | `literal_drift_check.py` | 2026-09-10 | a duplicated literal whose copies have DIVERGED -- the same constant written twice and then changed once |
+| `master_plan.py` | 2026-09-14, a day after it was built -- see `evidence` | docs/MASTER-PLAN.md no longer matching the repo -- a resource, a test file, a tier or a trace moved and the one document that compounds four gates into a single FINISHED verdict was not regenerated |
 | `md_table_check.py` | 2026-09-10 | a markdown row whose prose pipes broke its own columns, so trailing cells fall off and an edit-by-index writes into the wrong one |
 | `metamorphic_check.py` | 2026-09-13 | a checker whose ANSWER changes under a transform that cannot legitimately change it -- a byte-identical copy at another path, flipped line endings, trailing whitespace, inserted blank lines -- and a finding ERASED by duplicating the file |
 | `mutation_anchor_check.py` | 2026-09-11, the day it was built | a mutation probe whose anchor no longer matches its target exactly once -- so the arm plants nothing and the control stops testing -- and a probe that mutates a tracked file in place without refusing an import |
@@ -167,7 +168,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 |---|---|---|
 | `deploy_verify_notify.py` | CHECKER | a push whose deploy never reached the live site |
 | `html_script_check.py` | CHECKER | a script block that no longer parses, after a Write or Edit |
-| `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the 26 entries above |
+| `report_only_checks.py` | LIBRARY | the report-only registry and its runner -- the entries above |
 
 ---
 
@@ -212,7 +213,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (20)
+## SUITE-ONLY (19)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -231,7 +232,6 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_jscomments_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
-| `master_plan.py` | GENERATOR | docs/MASTER-PLAN.md's numbers -- the only document compounding four gates into one FINISHED verdict, derived rather than hand-counted after it claimed 86-of-273 traced while the matrix it cited said 135-of-328 | `run_master_plan_probe.py` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `sabotage_control_check.py` | CHECKER | a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever | `run_sabotage_control_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_fmea_probe.py` |
@@ -313,7 +313,7 @@ number, and only one of them is a document.
   tools on disk                      118   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                35   report_only_checks.REGISTRY
+  report-only registry                36   report_only_checks.REGISTRY
   tools invoked by tests/             70   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                11   tools\sairn_push_gate_hook.py

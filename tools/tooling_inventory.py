@@ -74,17 +74,32 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
     # --- invoked by a hook or by the push gate -----------------------------
-    'sairn_push_gate_hook.py': ('CHECKER', 'the ten numbered push checks; the only tool that calls deny()'),
+    # NO COUNT HERE, DELIBERATELY. This said "the ten numbered push checks" and
+    # the gate has eleven; the gate's own header says "DO NOT TRUST THAT NUMBER
+    # -- count the `CHECK n:` markers". The closing-error block of this very tool
+    # prints the live figure, so a number written here is a second source that
+    # can only ever drift away from it. Removed rather than corrected -- a
+    # corrected count goes stale again on the next check.
+    'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
     'deploy_verify_notify.py': ('CHECKER', 'a push whose deploy never reached the live site'),
-    'report_only_checks.py': ('LIBRARY', 'the report-only registry and its runner -- the 26 entries above'),
+    # Same reason as the line above: this said "the 26 entries above" and the
+    # registry holds thirty-six. The count is printed by the closing-error block.
+    'report_only_checks.py': ('LIBRARY', 'the report-only registry and its runner -- the entries above'),
     # A LIBRARY, NOT A CHECKER, and it is listed for exactly the reason this
     # refusal exists: it has no findings of its own and would otherwise sit in
     # tools/ as a blank cell. It is the three things every checker here has had
     # to get right -- the three-state exit contract, comment-stripped parsing,
     # and the control-pair declaration -- so the next one is built THROUGH them.
+    #
+    # THIS ENTRY IS THE OTHER SESSION'S, KEPT OVER MINE IN A REBASE (2026-09-14).
+    # We wrote one each within the same hour because the generator was REFUSING
+    # over the missing line and both of us hit the refusal independently. Theirs
+    # names the three things; mine summarised them. One survives, and which one
+    # is recorded so the duplicate work is visible rather than looking like a
+    # single authorship.
     'checker_kit.py': ('LIBRARY', 'the exit-code contract, comment-stripped parsing and the '
                                   'control-pair declaration, extracted so the next checker '
                                   'is built through them rather than re-deriving them'),

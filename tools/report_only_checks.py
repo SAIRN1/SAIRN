@@ -420,6 +420,45 @@ REGISTRY = [
                     'goes RED, regenerate and it agrees again',
     },
     {
+        'tool': 'master_plan.py',
+        'mode': 'once',
+        # --check, NOT bare, for the reason the tooling_inventory.py entry below
+        # records from having got it wrong: without the flag the hook runs the
+        # GENERATOR on every push and rewrites a tracked document, which is the
+        # one thing a report-only checker must never do. Third generator, third
+        # time this flag is load-bearing.
+        'args': ['--check'],
+        'verdict': by_exit,
+        # NOT "the day it was built", which is the honest difference between this
+        # entry and its two siblings. master_plan.py was built on 2026-09-13 and
+        # this registration was MISSED, so the one status document on the platform
+        # that compounds four gates into a FINISHED verdict was the only derived
+        # document with no check on any push.
+        'promoted': '2026-09-14, a day after it was built -- see `evidence`',
+        'catches': 'docs/MASTER-PLAN.md no longer matching the repo -- a '
+                   'resource, a test file, a tier or a trace moved and the '
+                   'one document that compounds four gates into a single '
+                   'FINISHED verdict was not regenerated',
+        'why_it_matters': 'this is the document that answers "is this vertical '
+                          'finished?", and the drift it was built to stop is '
+                          'the drift it then suffered: docs/2026-09-13-stackup-'
+                          'traverse-drift-scoping.md records the hand-maintained '
+                          'version reading "86 of 273" while its own cited source '
+                          'said "135 of 328", three days apart. Making the '
+                          'numbers derived removed the hand-maintenance and left '
+                          'the staleness, because nothing asked',
+        'evidence': 'the check BIT, observed rather than constructed: on '
+                    '2026-09-14 `--check` answered FAIL against the committed '
+                    'document and regenerating moved five lines (test files on '
+                    'disk 340->342, traced 150->152, worst-case bound 480->482) '
+                    'after which it answered OK. It had gone red with nothing '
+                    'reporting it, and was found by running the tool by hand. '
+                    'tests/run_master_plan_probe.py is 43 arms green -- but '
+                    'NOTE, plainly: none of them is a staleness arm, so the '
+                    'sibling entry above can cite a fixture proving --check goes '
+                    'RED and this one cannot yet',
+    },
+    {
         'tool': 'checkblocks.py',
         'mode': 'apps',
         'verdict': by_exit,
