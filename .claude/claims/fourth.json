@@ -1360,8 +1360,8 @@
       "task": "trial-renew double extension fix, remaining 8 idempotency triage, supabase_admin object ownership question",
       "claimed_at": "2026-09-14T21:30:48Z",
       "claimed_at_epoch": 1789421448.6014218,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T21:57:37Z"
     }
   ]
 }
