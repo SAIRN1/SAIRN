@@ -90,6 +90,100 @@ def app_of(text, app_names):
     return 'PLATFORM'
 
 
+# ── DECLARED FILE-PREFIX ALIASES (2026-09-14) ──────────────────────────────
+# app_of() above finds an app by looking for its FULL NAME in the text. That is
+# right for prose and wrong for test filenames, because this repo does not name
+# its test files after the app -- it names them after the app's API PREFIX or
+# its trade. Measured: 27 of 27 SAIRNroofing tests are `roofing-*` or
+# `roofing_*` and none contains the string `sairnroofing`, so the vertical read
+# 0 suites / 0 traced and docs/MASTER-PLAN.md told an auditor that a built
+# vertical with 27 test files had none.
+#
+# EVERY ENTRY IS DECLARED AND WAS READ, NEVER INFERRED. The temptation is to
+# derive this from `ls api/*-auth.js` and stop; that would be a source rather
+# than a guess, and it still would not do. `rf` is SAIRNroofing's auth prefix
+# and matches ZERO test files, while `roofing` matches 27 -- a derivation from
+# the prefix list alone finds none of them.
+#
+# MATCHED AS AN EXACT FIRST TOKEN OF THE BASENAME, never as a substring. This
+# is the whole reason short aliases are safe: `sv` as a substring matches `csv`,
+# and `sc` matches `scp_quotes`. Splitting the basename on -, _ and . and
+# comparing the FIRST token to the alias makes `scp` and `sc` different answers
+# rather than overlapping ones.
+#
+# THE ALIAS ALWAYS LOSES TO app_of(). Nothing already attributed changes, and a
+# file that names a DIFFERENT app in its path stays where app_of() put it.
+APP_ALIASES = {
+    # alias        app                 why this one, in one line
+    'roofing': ('sairnroofing',   'every roofing test is roofing-* or roofing_*; 27 files, none naming another app'),
+    'rf':      ('sairnroofing',   'SAIRNroofing\'s API prefix (api/rf-auth.js). Matches nothing TODAY -- declared because the prefix is real and a future rf_* test must not land in PLATFORM the way the roofing-* ones did'),
+    'dental':  ('sairndental',    'api/_lib/dental-*.test.js -- the BI, credential, GFE, photo and reminder halves'),
+    'dnt':     ('sairndental',    'SAIRNdental\'s API prefix (api/dnt-auth.js)'),
+    'sv':      ('sairnvet',       'SAIRNvet\'s API prefix (api/sv-auth.js) -- safe only because the match is token-exact, since `sv` is a substring of `csv`'),
+    'mech':    ('sairnmechanical', 'SAIRNmechanical\'s API prefix (api/mech-auth.js)'),
+    'alf':     ('sairncare',      'SAIRNcare\'s API prefix (api/alf-auth.js) -- the app is sairncare, the prefix is alf, and nothing in either name suggests the other'),
+    'law':     ('sairnlaw',       'SAIRNlaw\'s API prefix (api/law-auth.js)'),
+    'sc':      ('sairncode',      'SAIRNcode\'s API prefix (api/sc-auth.js). Token-exact, so it does NOT claim scp_* (SAIRNscape)'),
+    'grd':     ('sairngrounds',   'SAIRNgrounds\' API prefix (api/grd-auth.js)'),
+    'sb':      ('sairnbiz',       'SAIRNbiz\'s API prefix (api/sb-auth.js)'),
+}
+
+# ── WHAT IS DELIBERATELY *NOT* AN ALIAS, AND WHY ────────────────────────────
+# Both of these are the largest app-shaped groups left in PLATFORM, and both
+# would have been wrong. Written down so the next person does not have to
+# re-derive the refusal -- and so that "PLATFORM" here is read as an answer
+# rather than as a gap nobody got to.
+REFUSED_ALIASES = {
+    'sd': ('stonedesk', 25,
+           'api/sd-data.js is the SHARED endpoint 17 apps write through. '
+           'sd-data-dental-financial-tier, sd-data-mech-assets and '
+           'sd-data-rf-supplier are tests about OTHER apps\' branches of it, so '
+           'attributing the group to StoneDesk would be wrong in most of it.'),
+    'deadline': ('sairnlaw', 37,
+                 'MEASURED, not assumed: `grep -rln "legal-deadlines" '
+                 '--include=*.html` returns sairnlaw.html AND sairnroofing.html. '
+                 'TWO apps consume the deadline engine, so PLATFORM is the '
+                 'CORRECT answer for these 37 files and not an artefact -- '
+                 'exactly the case app_of() returns PLATFORM for on purpose.'),
+    'run': (None, 81,
+            'a harness prefix, not an app. tests/run_*_probe.py is this repo\'s '
+            'naming for a probe runner and spans every subject there is.'),
+}
+
+
+def first_token(path):
+    """The first -, _ or . delimited token of a path's basename."""
+    return re.split(r'[-_.]', os.path.basename(path))[0].lower()
+
+
+def app_of_test(path, app_names):
+    """app_of() for a test FILE PATH, with the declared prefix aliases applied.
+
+    Separate from app_of() on purpose. app_of() is also used on index-row PROSE,
+    where "dental" in a sentence is not evidence the row is about SAIRNdental --
+    applying the alias table there would turn a conservative answer into a
+    guess. The aliases are a fact about how this repo NAMES FILES, so they only
+    ever see a filename.
+
+    THE CONFLICT CASE IS THE ONE THE PROBE CAUGHT (2026-09-14). app_of() decides
+    "this names two apps, so PLATFORM" by counting FULL APP NAMES ONLY. Once
+    aliases exist a path can name two apps with one of them by alias --
+    `roofing_vs_stonedesk_probe.js` names SAIRNroofing by alias and StoneDesk
+    outright -- and app_of() sees one app and answers confidently. Letting the
+    alias simply "lose" there would attribute a two-app file to one of them,
+    which is precisely the guess-presented-as-fact app_of() exists to refuse. So
+    a disagreement between the two is PLATFORM, not a precedence question.
+    """
+    direct = app_of(path, app_names)
+    hit = APP_ALIASES.get(first_token(path))
+    alias = hit[0] if (hit and hit[0] in app_names) else None
+    if direct != 'PLATFORM' and alias and alias != direct:
+        return 'PLATFORM'
+    if direct != 'PLATFORM':
+        return direct
+    return alias or 'PLATFORM'
+
+
 def all_tests():
     found = []
     for root, dirs, files in os.walk(os.path.join(REPO, 'tests')):

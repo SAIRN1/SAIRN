@@ -215,7 +215,11 @@ def fault_probes():
 def suites_by_app(tests, names):
     out = {}
     for t in tests:
-        out.setdefault(TM.app_of(t, names), []).append(t)
+        # app_of_test, not app_of: the alias table in traceability_matrix.py is
+        # what stops 27 roofing-* files reading as 0 suites for SAIRNroofing.
+        # One function, declared there, so this document and the matrix cannot
+        # attribute the same file to two different apps.
+        out.setdefault(TM.app_of_test(t, names), []).append(t)
     return out
 
 
@@ -275,7 +279,7 @@ def _stackup(names, res, suites, cited, faults, tier_problems, tests):
 
     # suites: test files on disk attributed to NO app. Every one of them is a
     # file that could belong to a vertical and is not counted against it.
-    unattributed = [t for t in tests if TM.app_of(t, names) == 'PLATFORM']
+    unattributed = [t for t in tests if TM.app_of_test(t, names) == 'PLATFORM']
     rows.append(('suites', len(unattributed), 'under',
                  'test files on disk attributed to no single app by path'))
 

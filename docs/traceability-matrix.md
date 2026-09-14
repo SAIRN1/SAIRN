@@ -332,6 +332,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`MASTER-PLAN.md` said SAIRNroofing had NO DEDICATED SUITE. It has 27 test files** &mdash; `traceability_matrix.app_of()` matched a test to an app by its FULL NAME, and no roofing test contains the string `sairnroofing` | **FOUND 2026-09-14 (Hank), FIXED 2026-09-14 (CC)** &mdash; Hank flagged rather than started it because `sairn_claim.py` blocked on `master-plan` against CC&rsquo;s then-active `sairncode` claim, and r | `tests/run_app_attribution_mutation_control.py`, `tests/run_app_attribution_probe.py` |
 | **An unprovisioned table rendered as an EMPTY one on a surety position and a safety record &mdash; "No bonding letter recorded" when the truth was "the table was never created"** | **FIXED 2026-09-13 (CC)** &mdash; `sairnroofing.html`, held by `tests/roofing_unprovisioned_is_not_empty.js` with a mutation control proving it goes RED on the pre-fix source | `tests/roofing_unprovisioned_is_not_empty.js` |
 | A rate-taxed invoice/proposal misreports how its own tax was derived on every read | **Half closed 2026-09-01 — the CODE fix shipped 2026-08-26 in `b044f35`; the LEGACY ROWS were never migrated** | `api/_lib/roofing-billing.test.js` |
 
@@ -373,7 +374,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**195 of 400 test files are traced to a stated requirement. 205 are not.**
+**197 of 402 test files are traced to a stated requirement. 205 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -602,8 +603,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 400   tests/**, api/*.test.js
-  open-work rows citing a test       180   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 402   tests/**, api/*.test.js
+  open-work rows citing a test       181   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                44   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
