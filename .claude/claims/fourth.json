@@ -1330,8 +1330,8 @@
       "task": "item78 target2 rate limit consume rpc concurrency proof, item 6 41 unguarded retryable writes, item 101 graduated mechanical commitment",
       "claimed_at": "2026-09-14T19:35:29Z",
       "claimed_at_epoch": 1789414529.4935973,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T20:15:46Z"
     }
   ]
 }
