@@ -1179,6 +1179,16 @@
       "claimed_at_epoch": 1789426146.041647,
       "status": "released",
       "released_at": "2026-09-14T23:27:33Z"
+    },
+    {
+      "id": "cody-1789428634",
+      "session": "cody",
+      "subject": "register-regrade",
+      "task": "d1 regrade tool falsely reporting clean, registration triage closeout, restore coherence mock target, competitive gap audit next finding",
+      "claimed_at": "2026-09-14T23:30:34Z",
+      "claimed_at_epoch": 1789428634.7625587,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
