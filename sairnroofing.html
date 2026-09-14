@@ -5430,6 +5430,29 @@ var RF_REPORTS=[
     ]
   },
   {
+    // ── THE APPEND-ONLY EVIDENCE, 2026-09-14 (item 39c) ──────────────────
+    // `claims` above exports rf_claims -- the MUTABLE claim record. This is
+    // rf_claim_photos, the APPEND-ONLY tagged evidence attached to it, and
+    // until now there was no way to produce it. An adjuster dispute is about
+    // the photographs.
+    key:'claim_photos', label:'Claim Photo Evidence', resource:'rf_claim_photos',
+    action:'read', payload:{},
+    // Per-CLAIM read, so it fans out the way proposals does.
+    load:function(){return rfLoadClaimPhotosAcrossClaims();},
+    gate:'Evidence follows its claim’s visibility exactly — the server refuses a photo read for a claim you cannot see. Management and estimators export every claim’s evidence; a narrow role exports only the claims assigned to them. The image FILES are not in this CSV: each row records whether one is stored and how large it is.',
+    columns:[
+      ['photo_id','photo_id'],['claim_id','claim_id'],['claim_number','claim_number'],
+      ['carrier','carrier'],['job_id','job_id'],
+      ['phase','phase'],['elevation','elevation'],['damage_type','damage_type'],
+      // Stated rather than implied. `photo_base64` is a full data URL, often
+      // megabytes, and a CSV cell is not where an image belongs -- the same
+      // call the proposals signature already documents. These two columns are
+      // what make the file an honest inventory instead of a quiet omission.
+      ['photo_present','photo_present'],['photo_chars','photo_chars'],
+      ['captured_by','captured_by'],['created_at','created_at']
+    ]
+  },
+  {
     key:'invoices', label:'Invoices', resource:'rf_invoices', action:'read', payload:{},
     // Not assignment-based, unlike every other report here. The server refuses
     // this read outright below the estimator tier, so this one can 403 where
@@ -5532,6 +5555,77 @@ function rfLoadProposalsAcrossJobs(){
         ok:true,
         data:{data:rows,provisioned:true},
         fanout:{jobs:jobs.length,failed:failed}
+      };
+    });
+  });
+}
+
+// ── THE PHOTO EVIDENCE, NOT JUST THE CLAIM (2026-09-14, item 39c) ─────────
+// The reports list exported `claims` and nothing else from this pair, and a
+// claim record is not its evidence: rf_claims is the MUTABLE claim, and
+// rf_claim_photos is the APPEND-ONLY tagged evidence attached to it -- the
+// registry file above says exactly that, in those words. An adjuster dispute
+// is about the photographs, and there was no way to produce them.
+//
+// PER-CLAIM READ, SO IT FANS OUT, exactly like proposals: the server requires
+// payload.claim_id and gates each read on the same assignment rule as the
+// claim itself, so a narrow role gets its own claims' evidence and no more.
+// A claim that refuses is NAMED in the fan-out report rather than quietly
+// missing, which is the rule the proposals loader already sets.
+//
+// THE IMAGE BYTES ARE DELIBERATELY NOT INLINED, and the file says so in its
+// own columns rather than leaving somebody to notice. `photo_base64` is a
+// full data URL -- routinely hundreds of KB to several MB per photo -- and a
+// CSV cell holding one is not evidence anybody can open; a few hundred of
+// them is a file nothing will load. What the export carries instead is the
+// complete evidence INVENTORY with `photo_present` and `photo_bytes` per row,
+// so the file states what exists and what it does not itself contain. Same
+// posture as the proposals export, which strips a 1.5MB signature for the
+// same reason and records why.
+function rfLoadClaimPhotosAcrossClaims(){
+  return rfDataRaw('read','rf_claims',{}).then(function(cr){
+    if(!cr.ok)return cr;
+    var body=cr.data||{};
+    if(body.provisioned===false)return {ok:true,data:{data:[],provisioned:false}};
+    var claims=(body.data||[]).map(function(c){return c.claim_id;}).filter(Boolean);
+    if(!claims.length)return {ok:true,data:{data:[],provisioned:true}};
+    var byId={};
+    (body.data||[]).forEach(function(c){if(c.claim_id)byId[c.claim_id]=c;});
+
+    var rows=[],failed=[],i=0;
+    function next(){
+      if(i>=claims.length)return Promise.resolve();
+      var claimId=claims[i++];
+      return rfDataRaw('read','rf_claim_photos',{claim_id:claimId}).then(function(pr){
+        if(!pr.ok){
+          failed.push(claimId+' ('+(pr.code||pr.status)+')');
+          return next();
+        }
+        var pb=pr.data||{};
+        var claim=byId[claimId]||{};
+        (pb.data||[]).forEach(function(ph){
+          var b64=ph.photo_base64||'';
+          rows.push(Object.assign({},ph,{
+            claim_number:claim.claim_number||'',
+            carrier:claim.carrier||'',
+            job_id:claim.job_id||'',
+            photo_present:b64?'yes':'no',
+            // Length of the data URL as stored. Not the decoded byte count and
+            // not called one -- a number labelled bytes that is 33% out is
+            // worse than a number labelled as what it is.
+            photo_chars:b64.length
+          }));
+        });
+        return next();
+      });
+    }
+    var lanes=[];
+    for(var w=0;w<Math.min(RF_FANOUT_WIDTH,claims.length);w++)lanes.push(next());
+    return Promise.all(lanes).then(function(){
+      return {
+        ok:true,
+        data:{data:rows,provisioned:true},
+        fanout:{jobs:claims.length,failed:failed}
       };
     });
   });

@@ -1180,12 +1180,11 @@ REGISTRY = [
         # --check, not the bare report, for the same reason as the three above:
         # the bare run prints a table and exits 0 whatever it finds.
         'args': ['--check'],
-        'promoted': '2026-09-14, report-only, and IT FAILS ON ITS FIRST DAY -- '
-                    'deliberately. The four it names are real and open, so a '
-                    'runner that stayed silent about them would be the problem '
-                    'rather than the noise. NOT wired into the push gate: a '
-                    'missing export is a product decision and has no business '
-                    "refusing somebody else's push",
+        'promoted': '2026-09-14, report-only. It FAILED ON ITS FIRST DAY on '
+                    'four real gaps and PASSES NOW -- all four were closed the '
+                    'same day. NOT wired into the push gate: a missing export '
+                    'is a product decision and has no business refusing '
+                    "somebody else's push",
         'catches': 'a Class A (append-only by design) resource sitting in an app '
                    'whose CSV export registry ALREADY EXISTS and does not carry '
                    'it. Resources in apps with NO export machinery at all are '
@@ -1202,16 +1201,21 @@ REGISTRY = [
                           'are not the row-level record',
         'evidence': 'real run 2026-09-14: 11 Class A resources parsed from '
                     'docs/2026-09-13-irreversible-write-witnessing-scoping.md '
-                    'rather than hardcoded, 3 exportable, 4 gaps in an existing '
-                    'registry, 4 in apps with no export path at all. The '
+                    'rather than hardcoded. FIRST run: 3 exportable, 4 gaps in '
+                    'an existing registry, 4 in apps with no export path at '
+                    'all. AFTER the fix: 7 exportable, 0 gaps, the same 4 with '
+                    'no machinery -- and the probe now drives the FAILING '
+                    'direction against a planted registry, so closing the real '
+                    'gaps did not disarm it. The '
                     'ON-SCREEN half of item 39 is NOT attempted here and the '
                     'tool says so in its own header: two detectors for it were '
                     'wrong in opposite directions, one missing '
                     'alf_staff_credentials entirely and one binding most of '
                     'SAIRNdental. 21-arm probe; blinding the registry reader '
                     'collapses the EXPORTABLE answers, and section E pins all '
-                    'eleven verdicts by name so a registry change flips an arm. '
-                    '0.2s',
+                    'eleven verdicts by name so a registry change flips an arm -- which is '
+                    'exactly what happened when the four were fixed, and the table '
+                    'was edited in the same commit as the apps. 26 arms. 0.2s',
     },
 ]
 

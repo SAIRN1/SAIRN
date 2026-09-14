@@ -85,6 +85,38 @@ KNOWN_FIXTURES = {
     'tests/sql_preflight/probe_defects.sql',
 }
 
+# ── FILES THAT CANNOT SHARE THE TREE, RETRIED ONCE (2026-09-14) ──────────────
+# WHAT WAS OBSERVED. On 2026-09-14 a suite run reported 14 failures; 11 were
+# real and pre-existing, confirmed by running each at a pre-change baseline.
+# The other three failed only while a SECOND suite was running in a git
+# worktree of the same repo and an extra checkout existed on disk. Each one
+# passes on its own, immediately, with nothing changed.
+#
+# WHY THE LOCK ABOVE DID NOT COVER IT. The lock is keyed on the hash of REPO,
+# and a `git worktree` has a DIFFERENT path -- so two runs over the same
+# history took two different locks and neither waited. That is a real
+# limitation of the lock and it is named here rather than quietly worked
+# around; widening it to the common git-dir is a separate decision.
+#
+# WHY A RETRY AND NOT A SKIP. A skipped file verifies nothing, and a file
+# excluded because it is inconvenient is how a real regression hides -- the
+# whole argument this runner's header makes. So these still RUN, every time,
+# and are still FAILURES if they fail. The only thing that changes is that a
+# single failure buys one re-run ON ITS OWN, and a file that then passes is
+# reported in its own section, by name, as having needed it. A file that fails
+# TWICE is a plain failure and is reported as one.
+#
+# ADDING TO THIS SET IS A CLAIM. It says: this file was seen to fail under
+# concurrent load and pass in isolation, on a named date. Do not add one
+# because it is flaky and you have not looked.
+CONCURRENCY_SENSITIVE = {
+    # All three mutate or snapshot a real tracked file, or shell out to git in
+    # a throwaway clone, which is precisely what a second suite disturbs.
+    'tests/push_gate/check4_probe.py',
+    'tests/push_gate/check7_probe.py',
+    'tests/seam_check/run_delegation_probe.py',
+}
+
 # ── ONE SUITE RUN AT A TIME PER CLONE (2026-09-09) ───────────────────────────
 # WHY. Several probes under tests/ mutate a real tracked file and restore the
 # bytes THEY read at their own start, in a finally. That is correct alone and
@@ -362,8 +394,11 @@ def _hook_body():
     # the whole mechanism.
     js, py, unrun = discover()
     shrunk = (len(js) + len(py)) < MIN_TEST_FILES
-    failures, skipped = _run(js, py, quiet=True)
-    if not failures and not skipped and not shrunk:
+    failures, skipped, retried = _run(js, py, quiet=True)
+    # `retried` breaks the silence too. A file that needed a second attempt
+    # is news; staying quiet about it is how the retry becomes a place to
+    # hide, which is the one way this mechanism could make things worse.
+    if not failures and not skipped and not retried and not shrunk:
         return 0
     lines = []
     if shrunk:
@@ -379,6 +414,11 @@ def _hook_body():
     if skipped:
         lines.append('%d test file(s) SKIPPED, so they verified nothing:' % len(skipped))
         lines += ['  %s -- %s' % (rel, why) for _, rel, why in skipped[:12]]
+    if retried:
+        lines.append('%d CONCURRENCY_SENSITIVE file(s) failed once and passed '
+                     'alone -- not counted as failures, not clean either:'
+                     % len(retried))
+        lines += ['  %s' % rel for _, rel, _ in retried[:12]]
     lines.append('Run `python tools/run_all_tests.py` to see the whole picture.')
     lines.append('REPORT ONLY -- this hook never blocks a push. It exists because '
                  'every session was running 53 of these files and calling it the suite.')
@@ -403,7 +443,7 @@ def _hook_body():
 
 
 def _run(js, py, quiet):
-    failures, skipped = [], []
+    failures, skipped, retried = [], [], []
     for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
         for rel in files:
             r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True)
@@ -411,11 +451,27 @@ def _run(js, py, quiet):
             if r.returncode == 3:
                 skipped.append((kind, rel, next((l for l in out if l.startswith('SKIPPED')),
                                                 'SKIPPED')))
-            elif r.returncode != 0:
+                continue
+            if r.returncode != 0 and rel in CONCURRENCY_SENSITIVE:
+                # One re-run, on its own. A pass here is REPORTED, not hidden:
+                # it is evidence the file is load-sensitive, which is a fact
+                # about the suite somebody should be able to see accumulating.
+                r2 = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True,
+                                    text=True)
+                if r2.returncode == 0:
+                    retried.append((kind, rel, out[-1] if out else '(no output)'))
+                    if not quiet:
+                        print('  ok*  %-5s %s   (failed once, passed alone)' % (kind, rel))
+                    continue
+                out = (r2.stdout or r2.stderr or '').strip().splitlines()
+                failures.append((kind, rel, 'FAILED TWICE, the second time on '
+                                 'its own: ' + (out[-1] if out else '(no output)')))
+                continue
+            if r.returncode != 0:
                 failures.append((kind, rel, out[-1] if out else '(no output)'))
             elif not quiet:
                 print('  ok   %-5s %s' % (kind, rel))
-    return failures, skipped
+    return failures, skipped, retried
 
 
 def _tree():
@@ -450,7 +506,7 @@ def _main_body(quiet):
     # stay. They used to exit 1 for that, which read as "check 4 is broken"
     # when nothing about check 4 had been examined. A precondition is not a
     # failure, and it is not a pass either.
-    failures, skipped = _run(js, py, quiet)
+    failures, skipped, retried = _run(js, py, quiet)
 
     # ── RESIDUE IS REPORTED, BECAUSE A CASCADE LOOKS LIKE A BUG (2026-09-08)
     # Several probes mutate a tracked file and restore it in a finally. If one
@@ -498,6 +554,22 @@ def _main_body(quiet):
         note = 'known fixture' if rel in KNOWN_FIXTURES else 'UNRECOGNISED -- is this a test?'
         print('    %-52s %s' % (rel, note))
     surprises = [u for u in unrun if u not in KNOWN_FIXTURES]
+
+    # Reported on every run that had one, ABOVE the failure list, because a
+    # file that needed a second attempt is news about the suite rather than
+    # nothing. Silence here would make the retry a hiding place.
+    if retried:
+        print('')
+        print('RETRIED, PASSED ALONE (%d) -- these are NOT counted as failures, '
+              'and they are NOT clean either:' % len(retried))
+        for kind, rel, tail in retried:
+            print('    %-52s first attempt: %s' % (rel, tail[:60]))
+        print('    Each is in CONCURRENCY_SENSITIVE and failed once with '
+              'something else running.')
+        print('    If one of these starts needing the retry on a QUIET tree, '
+              'that is a real defect')
+        print('    wearing this section as cover -- read it rather than '
+              're-running until it is green.')
 
     if failures:
         print('')

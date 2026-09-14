@@ -77,8 +77,17 @@ dn, dn_has = X.app_exports('sairndental')
 ok('sairndental: a registry keyed by SHORT LABEL is resolved through its '
    'accessor to a resource name', dn_has and 'dnt_credentials' in dn,
    sorted(dn or []))
+# Compared against the app's OWN sync-pair count rather than a magic number.
+# The first version of this arm was `< 12`, which was one more than the answer
+# on the day it was written -- so adding three real exports on 2026-09-14 took
+# it red on a correct change. A bound derived from the thing it is bounding
+# cannot go stale that way.
+_dn_src = io.open(os.path.join(REPO, 'sairndental.html'),
+                  encoding='utf-8', errors='replace').read()
+_dn_pairs = len(set(a for a, _ in X.PAIR.findall(_dn_src)))
 ok('...and resolving it did NOT sweep in every resource the app holds',
-   dn is not None and len(dn) < 12, sorted(dn or []))
+   dn is not None and 0 < len(dn) < _dn_pairs,
+   '%d resolved of %d sync pairs' % (len(dn or []), _dn_pairs))
 mc, mc_has = X.app_exports('sairnmechanical')
 ok('sairnmechanical has NO export machinery, and that is not the same as an '
    'empty registry', mc == set() and mc_has is False, (mc, mc_has))
@@ -87,21 +96,74 @@ ok('an app file that does not exist is unreadable, not empty', nn is None, nn)
 
 print('\nC. --check gates on the gap that is a GAP, and not on the one that is '
       'a missing feature')
+# ── THIS ARM FLIPPED ON 2026-09-14 AND THE FLIP IS THE RECORD ──────────────
+# It read "the repo FAILS --check today, because four resources sit in apps
+# whose export registry already exists and does not carry them". All four were
+# then closed -- dnt_charges, dnt_payments and dnt_vendor_orders got registry
+# entries and Export CSV buttons, rf_claim_photos got a fanned-out evidence
+# report. So the real repo now passes, and asserting only that would leave the
+# GATING direction untested forever. Both directions are driven, and the
+# failing one is driven against a PLANTED registry rather than against the app,
+# so closing a real gap can never quietly disarm this.
 rc = X.main(['--check'])
-ok('the repo FAILS --check today, because four resources sit in apps whose '
-   'export registry already exists and does not carry them', rc == 1, rc)
+ok('the real repo PASSES --check -- all four gaps found on 2026-09-14 are '
+   'closed', rc == 0, rc)
+
+_real = X.app_exports
+try:
+    X.app_exports = lambda app: ((set(), True) if app == 'sairnroofing'
+                                 else _real(app))
+    ok('a registry that EXISTS and drops a Class A resource fails --check',
+       X.main(['--check']) == 1)
+    X.app_exports = lambda app: (set(), False)
+    ok('...but an app with NO export machinery at all does NOT fail -- that is '
+       'a feature nobody built, not a gap in one that exists',
+       X.main(['--check']) == 0)
+finally:
+    X.app_exports = _real
+ok('app_exports was restored', X.app_exports is _real)
+
 # The registry that runs this keeps only lines starting `  - ` or `FAIL`. A
 # check wired by something it does not emit reports nothing while looking
 # healthy -- literal_drift_check.py sat that way for weeks. Driven through the
-# real reader rather than asserted about the format.
-out = subprocess.run([sys.executable, SUBJECT, '--check'],
-                     capture_output=True, text=True, cwd=REPO)
-sys.path.insert(0, os.path.join(REPO, 'tools'))
-import report_only_checks as R                                   # noqa: E402
-findings, _ = R.by_exit(out.returncode, out.stdout)
-ok('...and the four NAMES survive report_only_checks.by_exit, rather than '
-   'collapsing to the string "exit 1"',
-   len(findings) == 4 and all('sairn' in f for f in findings), findings)
+# real reader, on a planted gap, rather than asserted about the format.
+GAPDIR = tempfile.mkdtemp(prefix='exp_probe_')
+try:
+    PLANT = ('found = set(ROOFING_ENTRY.findall(code))\n'
+             "    if app == 'sairnroofing':\n"
+             "        found.discard('rf_claim_photos')")
+    base = io.open(SUBJECT, encoding='utf-8').read()
+    ok('the plant anchor is present in the subject',
+       'found = set(ROOFING_ENTRY.findall(code))' in base,
+       'anchor gone stale -- this arm plants nothing')
+    io.open(os.path.join(GAPDIR, 'planted_check.py'), 'w',
+            encoding='utf-8').write(
+        base.replace('found = set(ROOFING_ENTRY.findall(code))', PLANT, 1))
+    # REPO and SOURCE are overridden, because a copy in a temp directory
+    # resolves REPO to that directory and then reports COULD-NOT-CHECK -- which
+    # is correct behaviour and would have made this arm pass for the wrong
+    # reason. It did, on the first run.
+    drv = os.path.join(GAPDIR, 'drive_gap.py')
+    io.open(drv, 'w', encoding='utf-8').write(
+        'import sys\n'
+        'sys.path.insert(0, %r)\n' % GAPDIR +
+        'sys.path.insert(0, %r)\n' % os.path.join(REPO, 'tools') +
+        'import planted_check as B\n'
+        'B.REPO = %r\n' % REPO +
+        'B.SOURCE = %r\n' % X.SOURCE +
+        "sys.exit(B.main(['--check']))\n")
+    out = subprocess.run([sys.executable, drv], capture_output=True, text=True,
+                         cwd=REPO)
+    sys.path.insert(0, os.path.join(REPO, 'tools'))
+    import report_only_checks as R                               # noqa: E402
+    findings, _ = R.by_exit(out.returncode, out.stdout)
+    ok('the planted gap really did make the copy fail', out.returncode == 1,
+       'exit=%d %s' % (out.returncode, (out.stdout + out.stderr)[-250:]))
+    ok('...and the resource NAME survives report_only_checks.by_exit rather '
+       'than collapsing to the string "exit 1"',
+       len(findings) == 1 and 'rf_claim_photos' in findings[0], findings)
+finally:
+    shutil.rmtree(GAPDIR, ignore_errors=True)
 
 print('\nD. teeth -- blind the registry reader and the EXPORTABLE answers must '
       'collapse')
@@ -142,13 +204,16 @@ print('\nE. the eleven answers, pinned by name as of 2026-09-14')
 # NO MACHINERY (the app has no export path at all).
 EXPECTED = {
     ('sairncare', 'alf_staff_credentials'): 'NO MACHINERY',
-    ('sairndental', 'dnt_charges'): 'NOT IN REGISTRY',
+    # The four NOT IN REGISTRY verdicts became EXPORTABLE on 2026-09-14, in the
+    # same commit as the app change, which is what this table is for: the edit
+    # is the record that somebody decided, rather than a count quietly moving.
+    ('sairndental', 'dnt_charges'): 'EXPORTABLE',
     ('sairndental', 'dnt_credentials'): 'EXPORTABLE',
-    ('sairndental', 'dnt_payments'): 'NOT IN REGISTRY',
-    ('sairndental', 'dnt_vendor_orders'): 'NOT IN REGISTRY',
+    ('sairndental', 'dnt_payments'): 'EXPORTABLE',
+    ('sairndental', 'dnt_vendor_orders'): 'EXPORTABLE',
     ('sairnmechanical', 'mech_credentials'): 'NO MACHINERY',
     ('sairnroofing', 'rf_certifications'): 'EXPORTABLE',
-    ('sairnroofing', 'rf_claim_photos'): 'NOT IN REGISTRY',
+    ('sairnroofing', 'rf_claim_photos'): 'EXPORTABLE',
     ('sairnroofing', 'rf_proposals'): 'EXPORTABLE',
     ('sairnvet', 'sv_audit_log'): 'NO MACHINERY',
     ('sairnvet', 'sv_controlled'): 'NO MACHINERY',
@@ -168,8 +233,11 @@ ok('the Class A set is exactly the eleven that were verified',
 wrong = {k: (EXPECTED.get(k), v) for k, v in actual.items()
          if k in EXPECTED and EXPECTED[k] != v}
 ok('every verdict still matches the hand-verified answer', not wrong, wrong)
+# Was 3 while four gaps were open. Now 2 -- EXPORTABLE and NO MACHINERY -- and
+# that is stated rather than loosened to `>= 1`, which would pass on a table
+# that had stopped distinguishing anything at all.
 ok('and the answers are not all the same, so the table distinguishes anything',
-   len(set(actual.values())) == 3, sorted(set(actual.values())))
+   len(set(actual.values())) == 2, sorted(set(actual.values())))
 
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:

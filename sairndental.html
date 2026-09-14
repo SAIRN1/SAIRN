@@ -666,7 +666,9 @@ label.chk input{width:auto;}
       </div>
 
       <div class="panel" id="panel-billing">
-        <div class="ph"><div><div class="ptitle">Billing</div><div class="psub">Real-time patient balance &mdash; charges, insurance estimates locked in at entry time, and payments.</div></div></div>
+        <div class="ph"><div><div class="ptitle">Billing</div><div class="psub">Real-time patient balance &mdash; charges, insurance estimates locked in at entry time, and payments.</div></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('charges')" title="Exports every charge row for every patient, not the patient selected below">Export charges CSV</button><button class="btn bo bs" onclick="exportDataset('payments')" title="Exports every payment row for every patient, not the patient selected below">Export payments CSV</button></div>
+        </div>
         <div id="bill-pending"></div>
         <div class="card">
           <div class="fg"><label>Patient</label><select id="bill-patient" onchange="rBilling()"></select></div>
@@ -1015,7 +1017,7 @@ label.chk input{width:auto;}
 
       <div class="panel" id="panel-vendorcat">
         <div class="ph"><div><div class="ptitle">Vendor Catalog</div><div class="psub">Browse dental supplies/PPE/materials across vendors, compare prices, and order.</div></div>
-          <div class="pa"><button class="btn bo bs" onclick="vShowSpendReport()">Spend Report</button></div>
+          <div class="pa"><button class="btn bo bs" onclick="exportDataset('vendororders')" title="Exports the vendor order archive held on this device -- capped at 200 orders; the server keeps every one">Export orders CSV</button><button class="btn bo bs" onclick="vShowSpendReport()">Spend Report</button></div>
         </div>
         <div id="vendor-tabs" style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px"></div>
         <div id="vcat-tabs" style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px"></div>
@@ -1993,6 +1995,63 @@ var DNT_EXPORTS={
     ['Decided on',function(r){return r.decided_on;}],['Recovered',function(r){return r.recovered;}],
     ['Appeal deadline',function(r){var w=dnAppealWindow(r);return w.known?w.deadline:'';}],
     ['Deadline source',function(r){var w=dnAppealWindow(r);return w.known?(w.source||''):'no window on file';}]]},
+  // ── THE TWO APPEND-ONLY MONEY RECORDS THEMSELVES (2026-09-14, item 39c) ──
+  // `ageing` below has been the only billing export since this registry was
+  // written, and it is a DERIVED AGGREGATE -- five buckets and a total. The
+  // rows it aggregates, dnt_charges and dnt_payments, are the two resources
+  // this app's own registry declares APPEND-ONLY, and neither could be
+  // produced as a file at all.
+  //
+  // THAT ASYMMETRY READ AS COVERAGE, which is why it survived: a Billing panel
+  // with an Export CSV button on it looks exported. A bucket total is not the
+  // row-level record, and an auditor asking what was charged and what was paid
+  // cannot be handed five buckets. Same class as the defect the header above
+  // describes -- a plausible file that is quietly partial.
+  //
+  // COLUMNS RESOLVE IDS TO NAMES the way `referrals` and `credentials` already
+  // do, and keep the raw id beside the name rather than instead of it: a
+  // deleted patient still has charges, and a name-only export would make those
+  // rows unattributable.
+  charges:{label:'charges',rows:function(){return charges();},columns:[
+    ['Date',function(r){return r.date;}],
+    ['Charge ID',function(r){return r.id;}],
+    ['Patient',function(r){var p=patients().find(function(x){return x.id===r.patient_id;});return p?p.name:'';}],
+    ['Patient ID',function(r){return r.patient_id;}],
+    ['Procedure',function(r){var t=procedureTypes().find(function(x){return x.id===r.procedure_type_id;});return t?(t.cdt_code?t.cdt_code+' '+t.description:t.description):'';}],
+    ['Procedure type ID',function(r){return r.procedure_type_id;}],
+    ['Appointment ID',function(r){return r.appointment_id||'';}],
+    ['Amount',function(r){return r.amount;}],
+    ['Estimated insurance portion',function(r){return r.estimated_insurance_portion;}]]},
+  payments:{label:'payments',rows:function(){return payments();},columns:[
+    ['Date',function(r){return r.date;}],
+    ['Payment ID',function(r){return r.id;}],
+    ['Patient',function(r){var p=patients().find(function(x){return x.id===r.patient_id;});return p?p.name:'';}],
+    ['Patient ID',function(r){return r.patient_id;}],
+    ['Method',function(r){return r.method;}],
+    ['Amount',function(r){return r.amount;}]]},
+  // ── THE VENDOR ORDER ARCHIVE, WHICH IS NOT `supplies` (2026-09-14) ───────
+  // `supplies` above exports dnt_supplies -- the stock list, a mutable
+  // inventory count. dnt_vendor_orders is a DIFFERENT resource and is the
+  // append-only purchase record. Exporting one and calling the other covered
+  // is the same near-miss as the ageing buckets, one resource over.
+  //
+  // ONE ROW PER ORDER, with the line items flattened into a single column --
+  // the convention `credentials` already sets for a heterogeneous sub-shape,
+  // for the same stated reason: dropping them would be the quietly-partial
+  // defect, and a second file shape would be a second thing to drift.
+  //
+  // THIS READS THE LOCAL ARCHIVE, WHICH IS CAPPED AT 200 AND THE SERVER IS
+  // NOT. Said in the column header rather than left for somebody to discover:
+  // an export of 200 rows from a practice that has placed more is a partial
+  // file, and this registry's whole purpose is that a file says what it is.
+  vendororders:{label:'vendor-orders',rows:function(){return vendorOrderHistory();},columns:[
+    ['Date',function(r){return r.date;}],
+    ['Order ID',function(r){return r.id;}],
+    ['Vendor',function(r){return r.vendor;}],
+    ['Total',function(r){return r.total;}],
+    ['Line count',function(r){return (r.items||[]).length;}],
+    ['Items',function(r){return (r.items||[]).map(function(i){
+      return i.qty+'x '+i.name+' ('+i.sku+') @ '+i.effectivePrice;}).join('; ');}]]},
   ageing:{label:'receivable-ageing',rows:function(){
       var a=dnAging();
       return a.buckets.concat([{label:'Excluded: no usable charge date',count:a.undated,amount:''}]);

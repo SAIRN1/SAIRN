@@ -22,29 +22,44 @@ But the question splits in two, and the second half is where the finding is.
 
 | App | Resource | On screen? | By what | As a **file**? |
 |---|---|---|---|---|
-| sairndental | `dnt_charges` | yes | `rBilling()` | **no** |
-| sairndental | `dnt_payments` | yes | `rBilling()` | **no** |
+| sairndental | `dnt_charges` | yes | `rBilling()` | yes — `exportDataset('charges')` **(added 2026-09-14)** |
+| sairndental | `dnt_payments` | yes | `rBilling()` | yes — `exportDataset('payments')` **(added 2026-09-14)** |
 | sairndental | `dnt_credentials` | yes | `rCredentials()` | yes — `exportDataset('credentials')` |
-| sairndental | `dnt_vendor_orders` | yes | `vShowSpendReport()` | **no** |
+| sairndental | `dnt_vendor_orders` | yes | `vShowSpendReport()` | yes — `exportDataset('vendororders')` **(added 2026-09-14)** |
 | sairnroofing | `rf_certifications` | yes | `rfRenderCertBoard()`, `panel-certifications` | yes — `'certifications'` |
-| sairnroofing | `rf_claim_photos` | yes | `rfLoadClaimPhotos()` | **no** |
+| sairnroofing | `rf_claim_photos` | yes | `rfLoadClaimPhotos()` | yes — `'claim_photos'` **(added 2026-09-14)** |
 | sairnroofing | `rf_proposals` | yes | the job panel's proposal chain | yes — `'proposals'` |
 | sairncare | `alf_staff_credentials` | yes | `crRefresh()` → `rCredentials()` | **no** — app has no export machinery |
 | sairnmechanical | `mech_credentials` | yes | `mechCredRefresh()` → `mechRenderAccess()` | **no** — app has no export machinery |
 | sairnvet | `sv_controlled` | yes | `panel-controlled` | **no** — app has no export machinery |
 | sairnvet | `sv_audit_log` | **no** (Fourth, unchanged) | — | **no** |
 
-**Nine of eleven on screen. Three of eleven as a file.**
+**Nine of eleven on screen. Seven of eleven as a file** — three when this was written, and the four gaps below were closed the same day. The remaining four are in apps with no export machinery at all.
 
 ---
 
 ## The finding: a record you can look at is not a record you can hand over
 
+**Fixed 2026-09-14, after this was written.** The four gaps below were all in an app whose export registry already existed, so each was a missing row rather than a missing feature, and each is now built:
+
+| Gap | What was added |
+|---|---|
+| `dnt_charges` | a `charges` dataset — one row per charge, the charge id kept, patient and procedure resolved to names **with the raw ids beside them**, plus the estimated insurance portion. Export CSV on the Billing panel. |
+| `dnt_payments` | a `payments` dataset — one row per payment with id, patient, method and amount. Export CSV beside it. |
+| `dnt_vendor_orders` | a `vendororders` dataset — one row per order, line items flattened into one cell the way `credentials` already flattens its type-specific half. The header states that the local archive is capped at 200 and the server is not. |
+| `rf_claim_photos` | a `claim_photos` report with its own per-claim fan-out loader, because the server requires `payload.claim_id` and gates each read on the claim's own assignment rule. A claim that refuses is NAMED in the fan-out note. |
+
+**The image bytes are deliberately not in the roofing CSV, and the file says so rather than leaving it to be discovered.** `photo_base64` is a full data URL, routinely megabytes; a CSV cell holding one is not evidence anybody can open, and a few hundred is a file nothing will load. Each row carries `photo_present` and `photo_chars` instead, so the export is a complete evidence inventory that states what it does not itself contain — the same call the proposals export already makes for a 1.5MB signature, and records.
+
+Held by `tests/sairndental_ledger_export.js` (8 arms, which RUN every column closure over seeded data rather than reading them) and `tests/roofing_claim_photo_export.js` (8 arms driving the fan-out). Three sabotage controls: pointing `charges` at the ageing buckets takes 3 arms red, dropping the fan-out's failure list takes 1, and swapping the inventory columns for a `photo_base64` column takes 1. Each asserted its anchor first and each file was restored byte-identical.
+
+### What the gaps were
+
 An inspector, an auditor or a subpoena asks for a **record**, not a screenshot.
 "Can staff look it up" and "can this practice produce what it was asked for" are
 different questions and only the second one has a deadline attached.
 
-**Four of these sit in an app whose export registry ALREADY EXISTS and does not
+**Four of these sat in an app whose export registry ALREADY EXISTED and did not
 carry them.** That is a gap in a built mechanism, not a missing feature:
 
   * `dnt_charges` and `dnt_payments` — SAIRNdental's append-only money records.
@@ -65,8 +80,10 @@ The other four (`alf_staff_credentials`, `mech_credentials`, `sv_controlled`,
 of work and a different decision, so the two are counted separately rather than
 summed into one number.
 
-`tools/export_coverage_check.py` checks this half mechanically and
-`--check` **fails today**, on those four. Held by
+`tools/export_coverage_check.py` checks this half mechanically. It **failed on
+its first day** on those four and **passes now**; the probe's gating direction
+is driven against a PLANTED registry rather than against the app, so closing a
+real gap can never quietly disarm it. Held by
 `tests/run_export_coverage_probe.py`, whose section E pins all eleven verdicts
 by name so a later change to any app's registry flips an arm, and whose section C drives the finding text through
 `report_only_checks.by_exit` so the four NAMES survive rather than collapsing
