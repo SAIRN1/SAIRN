@@ -1099,6 +1099,16 @@
       "claimed_at_epoch": 1789339784.627903,
       "status": "released",
       "released_at": "2026-09-14T10:05:09Z"
+    },
+    {
+      "id": "cody-1789381446",
+      "session": "cody",
+      "subject": "tooling",
+      "task": "sabotage detector replace must feed a file write and report-only sweep timeout",
+      "claimed_at": "2026-09-14T10:24:06Z",
+      "claimed_at_epoch": 1789381446.6041884,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
