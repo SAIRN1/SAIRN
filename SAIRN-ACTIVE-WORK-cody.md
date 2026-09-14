@@ -4149,3 +4149,109 @@ spend path disabled, every arm in both suites stayed green; an expired signature
 would spend successfully and write a controlled-substance row. Two arms added,
 now 14 atomicity + 10 recovery, both green. That is my own
 passing-assertion-checks-the-wrong-thing lesson landing on my own suite.
+
+---
+
+## 2026-09-14 (Cody) -- item 83 pass three, a rotted anchor, a money blind lock,
+## and two self-inflicted defects caught by existing controls
+
+Claim: `reliability-and-witness-expiry`. Files: `tests/failsafe/failsafekit.js`,
+`tests/failsafe/witness_recovery.js`, `tests/run_reliability_growth_probe.py`,
+`tools/three_way_match_check.py`, `tools/ai_prompt_refusal_check.py`,
+`tests/run_ai_prompt_refusal_probe.py`, `sairnlaw.html`, `sairnfreedom.html`.
+
+### Item 83, third pass -- and the first two failed DIFFERENTLY
+
+Pass one MEASURED remaining TTL: a subtraction, not a behaviour. Pass two, by
+an independent reviewer, drove a BACKDATED ROW and proved the comparison
+exists. **Neither drove the transition that happens in production** -- a token
+the lock itself issued as VALID becoming refused because time passed.
+
+**The flaw common to both is that the test did the same arithmetic as the
+code.** The lock mints `Date.now() + TOKEN_TTL_MS`; both old arms add or
+subtract against `Date.now()`. So if TOKEN_TTL_MS were 0, negative, or in
+seconds, every arm in both suites still passed. Agreement is not corroboration
+when both ends come off the same bus.
+
+So the new mechanism MOVES THE CLOCK THE LOCK READS and leaves the row
+untouched. Four arms, three of which bite when the expiry guard is disabled;
+the fourth is the valid-at-T0 control and is **the only thing in either suite
+that would notice a misconfigured window** -- a backdated row cannot.
+
+**MY OWN SEAM WAS BROKEN FIRST, AND ITS OWN ARMS CAUGHT IT.** A synchronous
+`try/finally` around an async fn restores `Date.now` when fn returns its
+PROMISE, before the lock has read the clock once. Three arms failed, and I was
+one step from reporting a production fail-safe defect. Written as "expect no
+findings" it would have gone green for ever while controlling nothing.
+
+**Scope stated:** the lock has TWO expiry checks -- `requireWitness` and the
+HTTP confirm path. These arms drive the first.
+
+### Arm 5c was the same disease, one level out
+
+It asserted a CONDITIONAL section unconditionally. That section prints only
+when some interval has a denominator under `MIN_DENOMINATOR`=10, and nine
+upstream commits pushed every denominator to **28-157**. Nothing is thin, the
+section correctly stopped printing, and the arm **could never pass again until
+the data got sparse enough to be wrong in the old way.**
+
+The arm was wrong, not the tool. The expected state is re-derived from the
+tool's own JSON each run, both branches assert something, and both were proven
+live by raising the bar in-process.
+
+### The money checker's blind lock
+
+18 fixtures, both halves -- locking only the structural half would leave the
+arithmetic tunable against real exports. A penny difference is still caught
+while `0.1+0.2` float noise inside the 0.005 tolerance is not.
+
+**One expected verdict was corrected and which kind is said out loud:** the
+no-bill-yet case, which I first wrote as a finding and the tool's stated design
+treats as an ordinary open order. Corrected to match the DESIGN, not the
+output.
+
+**And the first version of the lock reimplemented the rules inline instead of
+calling `structure()`** -- validating a copy that could pass while the real
+sweep was broken. That is the same lock-tests-a-different-path defect I found
+in `new_checker.py`'s scaffold earlier the same day, **committed again by me
+one task later.**
+
+### Two self-inflicted defects, both caught by controls that already existed
+
+1. The money checker's lock banner printed on stdout under `--json`, so
+   `run_three_way_match_probe.py` died on "Expecting value: line 1 column 1".
+   **That is exactly the push-gate check-10 defect I reported earlier today,
+   reproduced in my own file within the hour.**
+2. `run_ai_prompt_refusal_probe.py`'s G2 anchor rotted when I rewrote
+   `run_fixtures`, and it REFUSED rather than patching nothing.
+
+### The checker's blind spot: a third state, not a wider net
+
+R3 fires when a named verification of the model's OUTPUT runs near the call. It
+detects a CALL, not an intention, and deliberately is NOT a
+verify/check/validate grep -- that matches `checkAiRateLimit` and every
+unrelated helper. A purely STRUCTURAL output contract is a real control and is
+deliberately not counted; conflating the two would make R3 mean "something
+happens afterwards".
+
+**Two fixtures that differ ONLY in kind forced the lock to check the kind** --
+both are flagged, so a flag/no-flag lock discriminated nothing. Third
+occurrence of that shape in this one file. New control G7 holds it.
+
+### SAIRNlaw got the CHECK, not just the rule
+
+A prompt is an instruction; a check on the output is a control. On the
+trust-accounting panel a citation is FORBIDDEN, so finding one is not an
+"unverified citation" -- it is the model having broken a hard rule on a
+client-money surface, and it now says so, verified as well as flagged. The
+decomposition path now runs the SAME verification as the critique rather than
+handing the lawyer a task, with the disclaimer kept as the pre-result state and
+the could-not-check fallback.
+
+### SAIRNfreedom: a named exemption that does NOT silence the finding
+
+`SF_PHOTO_JSON_ONLY_EXEMPTION` records why, verified in the code rather than
+assumed: image in, two-key JSON out, `confident===true` and an integer 0-100
+required, no model prose ever displayed. Image-borne injection can only produce
+a WRONG INTEGER. It names what would END the exemption, and the checker still
+reports the site.

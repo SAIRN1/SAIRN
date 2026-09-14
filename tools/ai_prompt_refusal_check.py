@@ -176,6 +176,23 @@ FIXTURES = [
     # reporting 9/9. The fixture set was the thing that was wrong here, not a
     # verdict in it -- so this is an ADDITION, not a fixture bent to match
     # output.
+    # ── R3: THE BLIND SPOT THIS TOOL WAS REGISTERED AS HAVING ──────────────
+    # A site with no constant but a real control on its OUTPUT is still
+    # reported -- suppressing it would let a genuine omission hide behind any
+    # nearby verifier -- but it must be reported as a DIFFERENT KIND. These two
+    # fixtures differ in one thing only: whether a verification call follows.
+    ('R3 a site with a post-call control is still flagged, but as R3', 'a.html',
+     "var X_RULE='CRITICAL RULE: never do the thing.';\n"
+     "function go(){ call({app_id:'a',system:'You argue.',"
+     "messages:[{role:'user',content:q}]}).then(function(r){"
+     " var c=mtExtractCitations(r.text); mtVerifyCitations(c); }); }", True, 'R3'),
+
+    ('...and the SAME site without the control is R1, not R3', 'a.html',
+     "var X_RULE='CRITICAL RULE: never do the thing.';\n"
+     "function go(){ call({app_id:'a',system:'You argue.',"
+     "messages:[{role:'user',content:q}]}).then(function(r){"
+     " show(r.text); }); }", True, 'R1'),
+
     ('a comma INSIDE the prompt prose does not end the expression', 'a.html',
      "var X_RULE='CRITICAL RULE: never do the thing.';\n"
      "fetch(P,{body:JSON.stringify({app_id:'a',"
@@ -208,6 +225,44 @@ ENVELOPE_WINDOW = 600
 
 # The site wrote its own rule block. Literal markers, not topic inference.
 OWN_RULES_RE = re.compile(r'HARD RULES|CRITICAL RULE', re.I)
+
+# ── R3: A MECHANICAL CONTROL AFTER THE CALL (added 2026-09-14) ─────────────
+# THE BLIND SPOT THIS CLOSES IS RECORDED AS A DEFECT AGAINST THIS TOOL. A
+# prompt-level rule is an INSTRUCTION; a check on the model's OUTPUT is a
+# CONTROL. This checker could only see the first, so it reported sairnlaw's
+# critique step -- whose every citation is extracted and verified against
+# CourtListener and badged -- identically to the trust-accounting explainer,
+# which at the time had no rule AND no check. Same finding text, opposite
+# severity. "A text-presence checker over-implies severity on exactly the
+# best-protected site."
+#
+# WHAT IS DETECTED IS A CALL, NOT AN INTENTION. No inference about whether the
+# control is adequate: either the result handler invokes a verification of the
+# model's output within the window, or it does not. The three shapes below are
+# every one this tree actually contains, and each is a function that takes
+# model output and answers a question about it:
+#
+#   *VerifyCitations / citatorFetch('verify')  -- resolve a citation against a
+#                                                 real reporter
+#   mtAssertNo<Thing>                          -- refuse output containing a
+#                                                 forbidden construct
+#   mtExtractCitations                          -- pull the citations OUT, which
+#                                                 is what any of the above needs
+#
+# DELIBERATELY NOT A GENERIC `verify|check|validate` GREP. That would match
+# `checkAiRateLimit` and every unrelated helper, and a rule that matches by
+# word-shape is the design opinion this file refuses to be elsewhere. Add a
+# name here when a real control appears, not in anticipation.
+POSTCALL_CONTROL_RE = re.compile(
+    r'\b(?:\w*VerifyCitations|mtExtractCitations|mtAssertNo[A-Z]\w*)\s*\('
+    r"|citatorFetch\s*\(\s*['\"]verify['\"]")
+
+# Forward from the `system:` property. Wider than ENVELOPE_WINDOW because the
+# control lives in the RESULT HANDLER -- after the await or inside .then() --
+# which on this platform sits a few hundred to a couple of thousand characters
+# past the request. Bounded anyway: an unbounded forward scan finds the NEXT
+# feature's verifier and credits this site with somebody else's control.
+POSTCALL_WINDOW = 2500
 
 # How far above a call site to look for the assignment of an identifier used as
 # the system value. Bounded on purpose: an unbounded search up the file finds a
@@ -310,7 +365,8 @@ def _resolve(src, at, expr):
 # clean. The population this tool can speak about is: AI call sites inside files
 # that define at least one rule constant. Everything else is out of scope, and
 # saying so is the difference between a measurement and a number.
-POP = {'files_with_consts': 0, 'sites_in_those_files': 0, 'sites_compliant': 0}
+POP = {'files_with_consts': 0, 'sites_in_those_files': 0, 'sites_compliant': 0,
+       'sites_with_postcall_control': 0}
 
 
 def rule(path, src):
@@ -335,14 +391,31 @@ def rule(path, src):
             continue                      # the commitment is kept here
         line = src[:m.start()].count('\n') + 1
         own = bool(OWN_RULES_RE.search(expr))
+        # R3: is there a MECHANICAL CONTROL on the output, after the call? If
+        # so this site is a different finding from one with no control at all,
+        # and collapsing the two is the defect recorded against this tool.
+        after = src[m.end():m.end() + POSTCALL_WINDOW]
+        ctrl = POSTCALL_CONTROL_RE.search(after)
+        if ctrl:
+            POP['sites_with_postcall_control'] += 1
+        kind = 'R3' if ctrl else ('R2' if own else 'R1')
+        note = ''
+        if ctrl:
+            note = ('. A MECHANICAL CONTROL RUNS ON ITS OUTPUT (%s) within %d '
+                    'chars, so the missing constant is NOT the only thing '
+                    'standing between this site and a bad answer. Read this as '
+                    'a SCOPE QUESTION -- is the exception deliberate and named '
+                    '-- rather than as an unguarded surface. R1 and R2 are the '
+                    'ones with nothing downstream.'
+                    % (ctrl.group(0).rstrip('('), POSTCALL_WINDOW))
+        elif own:
+            note = ('. IT WRITES ITS OWN RULE BLOCK INSTEAD, so it reads as '
+                    'covered -- two rule sets for one app and nothing keeps '
+                    'them in step')
         out.append(
             '%s:%d  %s -- this AI call site\'s system prompt references NONE of '
             'the %d rule constant(s) this file defines (%s)%s'
-            % (path, line, 'R2' if own else 'R1', len(consts),
-               ', '.join(consts),
-               '. IT WRITES ITS OWN RULE BLOCK INSTEAD, so it reads as covered '
-               '-- two rule sets for one app and nothing keeps them in step'
-               if own else ''))
+            % (path, line, kind, len(consts), ', '.join(consts), note))
     return out
 
 
@@ -364,9 +437,24 @@ def run_fixtures(verbose=True):
     checker scaffolded from it.
     """
     wrong = []
-    for label, name, src, must_flag in FIXTURES:
+    for fx in FIXTURES:
+        # A FIFTH ELEMENT IS THE EXPECTED KIND, and it exists because two
+        # fixtures differ ONLY in kind: a site with a post-call control (R3)
+        # and the same site without one (R1) are BOTH flagged, so a
+        # flag/no-flag lock is satisfied by either verdict and discriminates
+        # nothing. That is the pass-for-the-wrong-reason shape this file has
+        # already recorded twice.
+        label, name, src, must_flag = fx[0], fx[1], fx[2], fx[3]
+        want_kind = fx[4] if len(fx) > 4 else None
         try:
-            got = bool(rule(name, strip_comments(src)))
+            got_list = rule(name, strip_comments(src))
+            got = bool(got_list)
+            if want_kind and got:
+                kinds = [f.split()[1] for f in got_list if len(f.split()) > 1]
+                if want_kind not in kinds:
+                    wrong.append('%s -- expected kind %s, got %s'
+                                 % (label, want_kind, kinds or '(none)'))
+                    continue
         except NotImplementedError:
             wrong.append('%s -- rule() is not implemented, so NOTHING was judged'
                          % label)
@@ -453,6 +541,21 @@ def main(argv):
     print('    ...of which carry a constant     : %d'
           % POP['sites_compliant'])
     print('    ...of which do not               : %d' % len(findings))
+    # PRINTED, because a counter that is incremented and never shown is a
+    # measurement nobody can act on -- and this one is the whole point of R3.
+    # It splits the findings a reader should worry about from the ones where
+    # something downstream is already checking the model's output.
+    print('    ...and of THOSE, how many have a')
+    print('       mechanical control on the OUTPUT: %d  <- R3; the rest have '
+          'nothing downstream'
+          % POP['sites_with_postcall_control'])
+    print('       (R3 detects a named VERIFICATION of content. A purely '
+          'STRUCTURAL output contract --')
+    print('        e.g. accept nothing but a two-key JSON object -- is a real '
+          'control and is NOT')
+    print('        counted here, deliberately: conflating the two would make '
+          'R3 mean "something')
+    print('        happens afterwards", which is not a useful thing to be told.)')
     # THE IDENTITY, ASSERTED RATHER THAN PRESENTED. compliant + flagged must
     # equal the sites examined; any gap means the population is counting
     # something the verdicts are not, which is what the fixture contamination

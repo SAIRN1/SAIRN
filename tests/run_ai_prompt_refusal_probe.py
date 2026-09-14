@@ -268,9 +268,22 @@ try:
             "        if quote:", "        if False:", [prose], 0)
 
     # 2. the lock runs on raw text again -- the scaffold's own mismatch.
+    # ANCHOR UPDATED 2026-09-14 when run_fixtures() was rewritten to check the
+    # finding KIND as well as flag/no-flag. The control REFUSED rather than
+    # silently patching nothing, which is the behaviour that makes it worth
+    # having: `got = bool(rule(...))` no longer exists in the tool.
     control('G2 the lock stops running the sweep\'s path',
-            'got = bool(rule(name, strip_comments(src)))',
-            'got = bool(rule(name, src))', ['--fixtures'], 0)
+            'got_list = rule(name, strip_comments(src))',
+            'got_list = rule(name, src)', ['--fixtures'], 0)
+
+    # G7: THE R3 CLASSIFICATION ITSELF. Without this, the post-call-control
+    # split is unguarded -- and its whole purpose is to stop a site with a real
+    # control being read at the same severity as one with nothing. Disabling
+    # the detector must make the lock refuse, because two fixtures differ in
+    # kind alone.
+    control('G7 the post-call control detector stops seeing controls',
+            '        ctrl = POSTCALL_CONTROL_RE.search(after)',
+            '        ctrl = None', ['--fixtures'], 0)
 
     # 3. the population is contaminated by the fixtures again.
     control('G3 the fixture run is left inside the denominator',

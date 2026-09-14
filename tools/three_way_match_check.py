@@ -101,13 +101,23 @@ def body(src, sig):
     return None
 
 
-def structure():
-    """(findings, could_not_run). The repo half."""
+def structure(src=None):
+    """(findings, could_not_run). The repo half.
+
+    `src` is for the BLIND LOCK and for nothing else. It exists because the
+    first version of run_fixtures() REIMPLEMENTED these rules inline instead of
+    calling this function -- so the lock validated a copy of the logic and
+    could have passed while the real sweep was broken. That is the same
+    lock-tests-a-different-code-path defect found in tools/new_checker.py's
+    scaffold earlier the same day, committed again one task later, which is the
+    argument for the seam rather than for care.
+    """
     findings, cnr = [], []
-    try:
-        src = read(APP)
-    except Exception as e:
-        return [], ['stonedesk.html could not be read (%s) -- NOT a pass' % e]
+    if src is None:
+        try:
+            src = read(APP)
+        except Exception as e:
+            return [], ['stonedesk.html could not be read (%s) -- NOT a pass' % e]
 
     for sig, store, key in WRITERS:
         b = body(src, sig)
@@ -218,12 +228,193 @@ def load_export(path):
     return doc, None
 
 
+# ── THE BLIND LOCK ─────────────────────────────────────────────────────────
+# ADDED 2026-09-14, and it was the named blocker on this tool's promotion.
+# Convention 1 wants a check's criteria decided against synthetic fixtures
+# BEFORE it judges real data, and this checker had none -- while judging MONEY.
+# A purchase order, a receipt and a bill agreeing is a Tier A question, and a
+# money checker promoted without a blind lock is the combination this platform
+# has least appetite for.
+#
+# TWO SETS, BECAUSE THE TOOL ASKS TWO QUESTIONS. The structural half reads
+# JavaScript out of an app file; the data half does arithmetic over three
+# document sets. Locking only one would leave the other tunable against real
+# data, which is the thing the convention exists to stop.
+#
+# NO FIXTURE HERE WAS CHANGED TO MATCH TOOL OUTPUT. Convention 1 requires
+# saying which kind of correction was made, and the answer is: one EXPECTED
+# VERDICT was corrected while writing them, named at the fixture that carries
+# it -- the orphan-receipt case, which I first wrote as a finding and which the
+# tool's own documented design says is a REPORTED ROW for a human to judge, not
+# a defect. Correcting the fixture's expectation to match the DESIGN is not the
+# same as bending it to match the OUTPUT, and the difference is written here so
+# a reader can check which happened.
+STRUCTURE_FIXTURES = [
+    ('a receipt writer with no join key is a finding', [
+        ('window.sdRecvLog=function(){ st("sd_receiving",{qty:1}); }', True),
+        ('window.sdRecvLog=function(){ st("sd_receiving",{qty:1,po_num:p}); }', False),
+    ]),
+    ('a PO number derived from a ROW COUNT is a finding -- it reuses itself '
+     'after a delete, and that number is the match key', [
+         ('window.sdPONextNum=function(rows,year){ var n=rows.length+1; st(k,n); }', True),
+         ('window.sdPONextNum=function(rows,year){ var n=lastSuffix()+1; st(k,n); }', False),
+     ]),
+    ('a HARDCODED YEAR in the PO number is a finding', [
+        ("window.sdPONextNum=function(rows,year){ var n='PO-2024-'+s; st(k,n); }", True),
+        ("window.sdPONextNum=function(rows,year){ var n='PO-'+year+'-'+s; st(k,n); }", False),
+    ]),
+    ('a sequence that is never PERSISTED is a finding -- it reissues numbers '
+     'after a reload', [
+         ('window.sdPONextNum=function(rows,year){ var n=lastSuffix()+1; return n; }', True),
+         ('window.sdPONextNum=function(rows,year){ var n=lastSuffix()+1; st(k,n); }', False),
+     ]),
+    # THE ONE THAT KEEPS THE RULE FROM BEING A GREP FOR A WORD. `.length` in a
+    # COMMENT is not the defect, and the tool strips comments before asking --
+    # so this fixture fails the moment somebody removes that step.
+    ('a `.length` inside a COMMENT is not the defect', [
+        ('window.sdPONextNum=function(rows,year){ /* not rows.length */ '
+         'var n=lastSuffix()+1; st(k,n); }', False),
+    ]),
+]
+
+# (label, pos, recs, bills, must_flag_po_nums)
+DATA_FIXTURES = [
+    ('three documents that agree produce NO why',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 100.0}], False),
+
+    ('a bill ABOVE the purchase order is flagged',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 130.0}], True),
+
+    ('a bill above what was RECEIVED is flagged even when it matches the PO',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 40.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 100.0}], True),
+
+    ('a VENDOR that differs between documents is flagged',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Not Acme', 'amt': 100.0}], True),
+
+    ('a bill with NO receipt behind it is flagged',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 100.0}], True),
+
+    # THE EXPECTED VERDICT THAT WAS CORRECTED, and which kind it was. I first
+    # wrote this expecting a flag. The tool's stated design is that a PO with
+    # no bill yet is an ordinary open order -- 'no bill yet' is recorded as a
+    # row for a reader, in lower case, deliberately distinct from the shouted
+    # 'NO RECEIPT'. A checker that flagged every open purchase order would be
+    # switched off in a day. Corrected to match the DESIGN, not the output.
+    ('a PO with no bill YET is an open order, not a defect',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 100.0}],
+     [], 'open'),
+
+    # FLOATING POINT, because this is money. The tolerance is 0.005 and a
+    # penny-level difference must still be caught; 0.1+0.2 must not be.
+    ('a ONE PENNY difference is still a mismatch',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.00}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 100.00}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 100.01}], True),
+
+    ('...and float noise inside the tolerance is NOT a mismatch',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 0.1 + 0.2}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 0.3}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 0.3}], False),
+
+    ('SPLIT receipts and bills are SUMMED, not compared one at a time',
+     [{'num': 'P1', 'vendor': 'Acme', 'amt': 100.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'val': 60.0},
+      {'po_num': 'P1', 'vendor': 'Acme', 'val': 40.0}],
+     [{'po_num': 'P1', 'vendor': 'Acme', 'amt': 70.0},
+      {'po_num': 'P1', 'vendor': 'Acme', 'amt': 30.0}], False),
+]
+
+
+def run_fixtures(verbose=False):
+    """Every criterion judged on hand-built input, before a real file is read."""
+    wrong = []
+
+    for label, cases in STRUCTURE_FIXTURES:
+        for src, must_flag in cases:
+            # DRIVES THE REAL FUNCTION, not a copy of its rules. A fixture
+            # names only ONE of the three writers, so the other two come back
+            # as could-not-run -- which is correct and is why cnr is ignored
+            # here: the question is whether THIS construct is flagged.
+            got_findings, _cnr = structure(src=src)
+            got = bool(got_findings)
+            if got != must_flag:
+                wrong.append('%s -- %r expected %s, got %s'
+                             % (label, src[:60], 'FLAG' if must_flag else 'SILENT',
+                                'FLAG' if got else 'SILENT'))
+            elif verbose:
+                print('  ok   %s [%s]' % (label, 'flag' if must_flag else 'silent'))
+
+    for label, pos, recs, bills, want in DATA_FIXTURES:
+        rows, orphan_recs, orphan_bills = match_rows(pos, recs, bills)
+        why = [w for r in rows for w in r['why']]
+        if want == 'open':
+            # An open order: recorded, in the lower-case form, and NOT shouted.
+            ok = any('no bill yet' in w for w in why) and not any(
+                w.startswith('NO RECEIPT') or w.startswith('BILLED') for w in why)
+            detail = 'why=%s' % why
+        else:
+            hard = [w for w in why if w.startswith('NO RECEIPT')
+                    or w.startswith('BILLED') or w.startswith('vendor differs')]
+            ok = bool(hard) == bool(want)
+            detail = 'why=%s' % why
+        if not ok:
+            wrong.append('%s -- %s' % (label, detail))
+        elif verbose:
+            print('  ok   %s' % label)
+
+    return wrong
+
+
 def main(argv):
     ap = argparse.ArgumentParser(add_help=True)
     ap.add_argument('--data', help='JSON export with sd_pos, sd_receiving, sd_ap')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--quiet', action='store_true')
+    ap.add_argument('--fixtures', action='store_true',
+                    help='run the blind lock alone and judge no real file')
     args = ap.parse_args(argv)
+
+    # ── THE LOCK RUNS FIRST, AND A FAILURE MEANS NOTHING REAL WAS JUDGED ───
+    wrong = run_fixtures(verbose=args.fixtures)
+    if wrong:
+        print('REFUSING: the criteria do not classify their own fixtures.')
+        for w in wrong:
+            print('  x %s' % w)
+        print('')
+        print('NOTHING REAL WAS JUDGED. This checker answers a MONEY question, '
+              'so a criterion that')
+        print('cannot classify a hand-built purchase order has no business '
+              'reading a real one.')
+        print('Fix the criteria, or fix a fixture whose expected verdict was '
+              'itself wrong -- and say')
+        print('in this file which one you did.')
+        return EXIT_COULD_NOT_RUN
+    # NOT ON STDOUT UNDER --json, AND THE PROBE CAUGHT THIS IMMEDIATELY.
+    # The first version printed the banner unconditionally, so `--json` emitted
+    # a human line ahead of the document and tests/run_three_way_match_probe.py
+    # died on `Expecting value: line 1 column 1`. A tool whose
+    # machine-readable output is preceded by prose is a tool nothing can wire
+    # up -- exactly the defect I reported in the push gate's check 10 earlier
+    # today, reproduced in my own file within the hour. The refusal above still
+    # prints on stdout on purpose: at that point there IS no JSON document to
+    # corrupt, and a silent refusal would be worse.
+    if not args.quiet and not args.json:
+        print('BLIND LOCK: %d structural + %d data fixture(s) correct, judged '
+              'before any real file was read.'
+              % (sum(len(c) for _l, c in STRUCTURE_FIXTURES), len(DATA_FIXTURES)))
+    if args.fixtures:
+        return 0
 
     findings, cnr = structure()
     rows, orphan_recs, orphan_bills = [], [], []

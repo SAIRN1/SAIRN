@@ -5044,6 +5044,37 @@ var VA_CLAIM_REFUSAL =
   'answer of that shape published under a post’s name is exactly that. Say that the ' +
   'post’s accredited Service Officer or a VA-accredited representative must be asked.';
 
+// ── THE ONE AI SITE HERE THAT DELIBERATELY OMITS THE REFUSAL ABOVE ────────
+// Named 2026-09-14 on Michael's decision, so the exemption is a recorded scope
+// rather than an author's oversight. tools/ai_prompt_refusal_check.py flags
+// this app's bottle-fullness site (sfBottleFill, the photo estimator) for
+// referencing no rule constant, and THE FINDING IS CORRECT -- the constant
+// genuinely is absent. This constant is the reason, attached where a reader
+// will meet it, not a way of making the checker quiet: the flag stays.
+//
+// WHY THE OMISSION IS SAFE, VERIFIED IN THE CODE RATHER THAN ASSUMED. That
+// site sends an IMAGE and its own result handler accepts nothing but a
+// two-key JSON object: it extracts only `text` blocks, requires a
+// `{...}` match, requires `confident === true` and a NUMBER `percent` in
+// 0..100, and on anything else prints "could not be determined ... nothing
+// was recorded". Only `Math.round(parsed.percent)` is ever used. NO MODEL
+// PROSE IS EVER DISPLAYED on that path.
+//
+// So the worst an injected instruction inside a photograph can achieve is A
+// WRONG INTEGER -- not a VA claim-strategy answer, which needs prose to exist
+// at all and has no channel to leave by. Adding a long prose refusal to a
+// 300-token JSON-only prompt would spend budget inviting the very prose the
+// handler refuses.
+//
+// WHAT WOULD END THIS EXEMPTION, stated so it is checkable rather than
+// permanent: the handler accepting free text, displaying any model output
+// verbatim, or that site gaining a second purpose that answers questions.
+var SF_PHOTO_JSON_ONLY_EXEMPTION =
+  'sfBottleFill omits VA_CLAIM_REFUSAL deliberately: image in, a two-key JSON ' +
+  'object out, no model prose ever displayed, so there is no channel for a ' +
+  'claim-strategy question to arrive on or an answer to leave by. Reviewed ' +
+  '2026-09-14. Revisit if that handler ever displays model text.';
+
 /* ---- 5.1 ONBOARDING ----------------------------------------------------
    ONE WRITE PATH. Phase 1's sfAddMember owns admission; onboarding calls the
    same function rather than duplicating the three-money-type ledger logic,

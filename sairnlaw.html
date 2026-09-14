@@ -3328,7 +3328,48 @@ async function explainReconciliation(){
       explainBox.outerHTML='<div class="cb" id="tr-explain-result" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(aiErr)+'</div>';
     }else{
       var text=(data.content&&data.content[0]&&data.content[0].text)||'No response text returned.';
-      explainBox.outerHTML='<div class="cb" id="tr-explain-result" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(text)+'</div>';
+      // ── THE CHECK, not just the rule (2026-09-14) ──────────────────────
+      // LAW_CITATION_RULE was appended to this prompt earlier today, and a
+      // prompt is an instruction rather than a control: "we told it not to" is
+      // the thing this platform refuses to accept as a guard. On THIS surface
+      // a citation is FORBIDDEN outright, so finding one is not an
+      // "unverified citation" -- it is the model having broken a hard rule on
+      // a client-money panel, and it is reported in those words.
+      //
+      // It is still VERIFIED as well as flagged, because the two facts are
+      // different and a reader needs both: a real citation that should not
+      // have been emitted is a rule breach, and a FABRICATED one on trust
+      // accounting is the thing that ends in a disciplinary complaint.
+      var trCites=(typeof mtExtractCitations==='function')?mtExtractCitations(text):[];
+      var trWarn=trCites.length
+        ? '<div id="tr-cite-warn" style="background:#FEF2F2;border:1px solid #FECACA;border-radius:8px;padding:8px 12px;margin-top:8px;color:#991B1B;font-size:12px">'
+          +'<b>This answer contains '+trCites.length+' citation'+(trCites.length===1?'':'s')
+          +', which this panel instructs the model never to produce.</b> Do not rely on '
+          +(trCites.length===1?'it':'them')+'. Checking against a real reporter&hellip;</div>'
+        : '';
+      explainBox.outerHTML='<div class="cb" id="tr-explain-result" style="margin-top:10px;background:var(--bg);border-radius:8px;white-space:pre-wrap">'+H(text)+trWarn+'</div>';
+      if(trCites.length && typeof mtVerifyCitations==='function'){
+        mtVerifyCitations(trCites).then(function(checked){
+          var box=$('tr-cite-warn');
+          if(!box)return;
+          box.innerHTML='<b>This answer contains '+checked.length+' citation'
+            +(checked.length===1?'':'s')+', which this panel instructs the model never to '
+            +'produce.</b> Do not rely on '+(checked.length===1?'it':'them')
+            +' for trust-accounting compliance &mdash; confirm in Westlaw, Lexis or the '
+            +'court&rsquo;s own site.<div style="margin-top:6px">'
+            +checked.map(function(c){
+                // "Unavailable" is kept distinct from "not found" for the same
+                // reason the critique path does: they are different facts and
+                // the badge must not conflate them.
+                var state=c.state==='verified'?'exists, but should not have been cited here'
+                  :c.state==='not_found'?'NOT FOUND &mdash; it appears to be fabricated'
+                  :c.state==='ambiguous'?'ambiguous &mdash; check by hand'
+                  :'could not be checked';
+                return '<div><code>'+H(c.citation)+'</code> &mdash; '+state+'</div>';
+              }).join('')
+            +'</div>';
+        });
+      }
     }
   }catch(e){toast('Could not connect to Claude');}
   $('tr-explain-btn').textContent='Explain This Discrepancy (AI)';$('tr-explain-btn').disabled=false;
@@ -5655,15 +5696,24 @@ function mtRenderPoints(points) {
       if (claimCites.indexOf(c) === -1) claimCites.push(c);
     });
   });
+  // ── THE GAP IS CLOSED, NOT JUST LABELLED (2026-09-14) ───────────────────
+  // The first fix here was a disclaimer: it said these citations are not
+  // checked. True, and the weaker of the two available answers -- a label that
+  // tells a lawyer to go and verify something is a task handed back, while the
+  // critique path two panels down verifies automatically. Same app, same
+  // citator, two different standards for the same kind of string.
+  //
+  // So the decomposition now runs the SAME verification. The disclaimer
+  // remains as the pre-result state and as the fallback when the check cannot
+  // run, because "could not be checked" and "not found" are different facts
+  // and the badge must not conflate them -- the defect mtVerifyCitations
+  // itself records having had.
   var citeWarn = claimCites.length
-    ? '<div style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:8px;color:#92400e;font-size:12px">' +
+    ? '<div id="mt-point-cites" style="background:#fef3c7;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-top:8px;color:#92400e;font-size:12px">' +
       '<b>' + claimCites.length + ' citation' + (claimCites.length === 1 ? '' : 's') +
-      ' in the decomposition above ' + (claimCites.length === 1 ? 'is' : 'are') +
-      ' NOT verified.</b> Unlike the critique below, nothing checks these against a real ' +
-      'reporter. Treat ' + (claimCites.length === 1 ? 'it' : 'them') +
-      ' as ILLUSTRATIVE ONLY and confirm ' + (claimCites.length === 1 ? 'it' : 'them') +
-      ' in Westlaw, Lexis or the court&rsquo;s own site before relying on ' +
-      (claimCites.length === 1 ? 'it' : 'them') + ' for real work: ' +
+      ' in the decomposition above.</b> Checking against a real reporter&hellip; ' +
+      'Until then treat ' + (claimCites.length === 1 ? 'it' : 'them') +
+      ' as ILLUSTRATIVE ONLY: ' +
       claimCites.map(function (c) { return '<code>' + H(c) + '</code>'; }).join(', ') +
       '</div>'
     : '';
@@ -5672,6 +5722,37 @@ function mtRenderPoints(points) {
     '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Your position broken into ' + points.length +
     ' legal data point' + (points.length === 1 ? '' : 's') + '. Each is attacked separately below. Every point quotes the words it came from, and that quote is checked against what you actually wrote.</div>' +
     rows + warn + citeWarn + '</div></div>';
+
+  if (claimCites.length) {
+    mtVerifyCitations(claimCites).then(function (checked) {
+      var box = $('mt-point-cites');
+      if (!box) return;
+      var allOk = checked.every(function (c) { return c.state === 'verified'; });
+      box.style.background = allOk ? '#F0FDF4' : '#fef3c7';
+      box.style.borderColor = allOk ? '#86EFAC' : '#fde68a';
+      box.style.color = allOk ? '#166534' : '#92400e';
+      box.innerHTML = '<b>Citation check on the decomposition</b><div style="margin-top:6px">' +
+        checked.map(function (c) {
+          var badge = c.state === 'verified'
+            ? '<span class="badge bg">Verified</span>'
+            : c.state === 'not_found'
+              ? '<span class="badge br">Not found &mdash; do not rely on this</span>'
+              : c.state === 'ambiguous'
+                ? '<span class="badge bx">Ambiguous &mdash; check by hand</span>'
+                : '<span class="badge bx">Verification unavailable</span>';
+          return '<div><code>' + H(c.citation) + '</code> ' + badge +
+            (c.state === 'verified' && c.case_name
+              ? ' <span style="font-size:11px">' + H(c.case_name) + '</span>'
+              : (c.reason ? ' <span style="font-size:11px">' + H(c.reason) + '</span>' : '')) +
+            '</div>';
+        }).join('') +
+        '</div><div style="font-size:11px;margin-top:6px">' +
+        (allOk
+          ? 'Every citation above resolved to a real case in CourtListener. A real citation is still not an endorsement of the point it sits in.'
+          : 'Only citations marked Verified have been resolved to a real case. Check any other before relying on it.') +
+        '</div>';
+    });
+  }
 }
 
 function mtRun() {

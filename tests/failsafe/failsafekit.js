@@ -178,4 +178,62 @@ async function attempt(fn) {
   }
 }
 
-module.exports = { restWorld, attempt, clone };
+// ── THE CLOCK SEAM: MOVE TIME, DO NOT RECOMPUTE AN OFFSET ─────────────────
+// WHY THIS EXISTS, and it is the second thing an independent reviewer found
+// about item 83. The first pass tested expiry by BACKDATING A ROW --
+// `expires_at: new Date(Date.now() - 1000)`. That proves the comparison
+// exists. It cannot prove the property that actually matters operationally:
+// that a token which WAS valid when the lock issued it becomes refused once
+// real time passes it.
+//
+// The gap is that the test and the code were doing the same arithmetic. The
+// lock mints `Date.now() + TOKEN_TTL_MS` (api/sv-witness.js:261) and the old
+// recovery arm MEASURED the remaining TTL against `Date.now()` -- so both ends
+// came off the same computation and would AGREE WHILE BOTH WERE WRONG. If
+// TOKEN_TTL_MS were zero, negative, or in the wrong unit, a
+// measure-the-remaining-window arm still passes: it is checking the
+// subtraction, not the behaviour. That is disciplines item 8's vacuum-failure
+// case -- agreement is not corroboration when both ends come off the same bus.
+//
+// So this does not compute a different offset. It ADVANCES THE CLOCK THE LOCK
+// READS and leaves the token row untouched, which makes the token's own
+// `expires_at` -- whatever produced it -- the thing under test. The mechanism
+// is structurally different from the assertion, which is what convention 6
+// means by independence.
+//
+// Only Date.now is moved, and Date itself is left alone: the lock reads
+// `new Date(row.expires_at).getTime()` to parse a STORED string, and a Date
+// constructor that lied about parsing would break the parse rather than the
+// comparison, testing the wrong thing again.
+// IT MUST AWAIT, AND THE FIRST VERSION DID NOT -- caught by its own arms going
+// red against a lock that is correct. A synchronous try/finally around an ASYNC
+// fn restores Date.now the moment fn returns its PROMISE, which is before the
+// lock has read the clock even once. So every clock-advanced arm ran against
+// the real wall clock, the token was still inside its window, and the spend
+// proceeded: three arms failed and would have been reported as a fail-safe
+// defect in production code.
+//
+// That is worth keeping rather than quietly fixing. A seam that silently stops
+// applying is the same shape as an anchor that stops matching -- and here it
+// failed LOUDLY only because the arms assert a refusal. Written as
+// "expect no findings" it would have gone green for ever while controlling
+// nothing.
+async function withClockAt(atMs, fn) {
+  const realNow = Date.now;
+  Date.now = function () { return atMs; };
+  try {
+    return await fn();
+  } finally {
+    Date.now = realNow;
+  }
+}
+
+// Advance from a captured instant rather than from "now at call time", so a
+// caller can pin T0 once and step forward from it deterministically. A test
+// that re-read the clock between steps would reintroduce the shared-arithmetic
+// problem through the back door.
+async function withClockAdvanced(fromMs, deltaMs, fn) {
+  return withClockAt(fromMs + deltaMs, fn);
+}
+
+module.exports = { restWorld, attempt, clone, withClockAt, withClockAdvanced };
