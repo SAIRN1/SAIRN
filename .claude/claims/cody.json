@@ -1109,6 +1109,16 @@
       "claimed_at_epoch": 1789381446.6041884,
       "status": "released",
       "released_at": "2026-09-14T13:04:56Z"
+    },
+    {
+      "id": "cody-1789391194",
+      "session": "cody",
+      "subject": "tests",
+      "task": "two probe anchors into the schema snapshot do not match exactly once",
+      "claimed_at": "2026-09-14T13:06:34Z",
+      "claimed_at_epoch": 1789391194.7137043,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
