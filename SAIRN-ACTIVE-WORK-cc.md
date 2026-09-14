@@ -2585,3 +2585,72 @@ behaviour is not the shipped one.
 `a healthy table answers ok:true` builds its fixture from a hardcoded `2026-09-14T11:59:00Z`, now
 four hours stale, so the handler correctly answers DEAD. **Confirmed pre-existing by stashing every
 change here and re-running.** Hank holds item 47 on the watchdog.
+
+
+---
+
+## 2026-09-14 -- items 88, 53 and 91: the graph, the pairs, and a list that shrinks
+
+### The population was wrong before it was right, and that is the first thing to say
+
+**157 of the 303 `.js` files under `api/` are `*.test.js`** -- more than half. Counting them makes
+"82 modules stop working if `api/_lib/license.js` does" read as 82 ENDPOINTS when it is mostly CI.
+Production only, it is **42**. Arm 5c asserts the two populations genuinely differ, so the
+exclusion is KNOWN to be doing work rather than assumed to be.
+
+### Two graphs, not one fused number
+
+| | nodes | edges |
+|---|---|---|
+| A -- our modules | 144 | 201 |
+| B -- modules + the environment they read | 190 | 411 |
+
+B is dominated by two credentials. That is the true answer and it would drown A entirely if the
+two were averaged into one ranking.
+
+**`env:SUPABASE_URL` and `env:SUPABASE_SERVICE_ROLE_KEY`: blast radius 70 of 144 production
+modules**, the widest on the platform by 1.7x over the next thing -- and not theoretical. It is the
+same Supabase project two crons and `/api/claude` were all timing out on at :00 the same day.
+
+### Blast radius is the headline; articulation points are not
+
+The textbook definition over-reports on a dependency graph: a helper required by exactly one
+endpoint is an articulation point and losing it costs one endpoint. Both are reported and **the
+disagreement is the informative part** -- wide-but-not-a-cut means several paths reach the same
+place, so removing it is broad rather than total.
+
+### Item 53 is a different question, not a refinement
+
+Pairs `{u,v}` where removing BOTH disconnects something and removing EITHER ALONE does not.
+**Invisible to any single-point analysis by construction**, and they are what a redundancy argument
+gets wrong: *"there are two paths"* is only reassuring while the two paths do not share a third
+thing. Computed exactly, not sampled. **4 in the module graph, 5 with the environment.**
+
+**The load-bearing fixture is a four-cycle** -- no articulation point at all, exactly two fatal
+pairs. A pair search that degenerated into a second copy of the articulation search returns nothing
+there and looks clean. Proven by mutating it to exactly that: the blind lock refused, exit 2,
+nothing analysed.
+
+### Item 91 -- the part that stops this being a document
+
+`docs/SPOF-REGISTER.md` is hand-written; `--register` checks it against the live graph in both
+directions. The sharp arm: **a row marked RETIRED while the component is STILL above the threshold
+is REFUSED. Retirement is a measurement, not a decision somebody makes.** Driven with a doctored
+register, with a CONTROL that the same rows marked OPEN pass.
+
+**ACCEPTED is a third status and it is not a weakening.** `auth.js` (33) and `license.js` (42)
+SHOULD be single implementations -- exactly what item 94 argued when five SAIRNcash files
+re-derived "is Stripe configured" and three disagreed. They carry a reason and a compensating
+control instead of a defect label.
+
+**10 components at or above the threshold, 10 rows, 7 OPEN / 3 ACCEPTED / 0 RETIRED.** The zero is
+stated rather than left as an empty section. And **the rows are fewer risks than they are rows** --
+the four `OIDC_*` variables and `auth.js` are one risk seen five times; a `Same risk as` column
+says which.
+
+### One real defect found by building it
+
+The first scan reported `./_lib/heartbeat` as an unresolvable require -- which reads as a crash
+waiting to happen. It was a **usage example in a comment inside `api/_lib/heartbeat.js` itself.**
+Comments and strings are stripped now, with a fixture pinning it and a CONTROL that a real require
+survives the stripper.

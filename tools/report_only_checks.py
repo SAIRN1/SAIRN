@@ -155,6 +155,33 @@ def by_section(rc, out):
 
 REGISTRY = [
     {
+        'tool': 'dependency_graph.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        # --register, NOT the bare report. The bare run PRINTS a ranking and
+        # exits 0 whatever it finds, which in a report-only runner that is
+        # silent on a clean run means it would never say anything at all.
+        'args': ['--register'],
+        'promoted': '2026-09-14, registered REPORT-ONLY on its first day and '
+                    'deliberately not wired into the push gate -- its threshold '
+                    'is a policy and a policy has no business refusing a push '
+                    'until somebody has watched it for a while',
+        'catches': 'a component at or above SPOF_THRESHOLD with no row in '
+                   'docs/SPOF-REGISTER.md, a row marked OPEN that is no longer '
+                   'a chokepoint, and -- the sharp one -- a row marked RETIRED '
+                   'while the component is still above the bar',
+        'why_it_matters': 'a single-point-of-failure list generated once and '
+                          'filed is a document, and a document nobody '
+                          're-measures is a claim with a date on it. The '
+                          'retirement check is what stops the register becoming '
+                          'a reassuring lie',
+        'evidence': 'real run 2026-09-14: 10 components at or above the '
+                    'threshold, 10 rows, 7 OPEN / 3 ACCEPTED / 0 RETIRED, PASS. '
+                    'Held in both directions by tests/run_dependency_graph_probe.py '
+                    '(7d refuses an empty register, 7e is the control that the '
+                    'same rows marked OPEN pass, 7f refuses a false retirement)',
+    },
+    {
         'tool': 'vercel_config_check.py',
         'mode': 'once',
         'verdict': by_exit,

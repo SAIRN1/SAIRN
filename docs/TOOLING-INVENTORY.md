@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**131 files in `tools/`.** By what actually invokes them:
+**132 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 40 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 29 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 79 |
+| CHECKER | 80 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
@@ -125,7 +125,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (39)
+## REPORT-ONLY (40)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -142,6 +142,7 @@ quiet in practice.
 | `control_char_check.py` | 2026-09-10 report-only; BLOCKING 2026-09-13 (Michael) as push-gate check 11 | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `criticality_tier_check.py` | 2026-09-12 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line |
 | `defect_register.py` | 2026-09-10, the day it was built | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice |
+| `dependency_graph.py` | 2026-09-14, registered REPORT-ONLY on its first day and deliberately not wired into the push gate -- its threshold is a policy and a policy has no business refusing a push until somebody has watched it for a while | a component at or above SPOF_THRESHOLD with no row in docs/SPOF-REGISTER.md, a row marked OPEN that is no longer a chokepoint, and -- the sharp one -- a row marked RETIRED while the component is still above the bar |
 | `discarded_verdict_check.py` | 2026-09-10 | a refusal that is computed and then not read -- the gate runs and its answer is thrown away |
 | `discarded_verdict_crossfile.py` | 2026-09-10 | the CROSS-MODULE half: a verdict returned by a required module and dropped in another file |
 | `div_balance_check.py` | 2026-09-10 | an unbalanced <div> tree -- the safe-editing rules say run it after EVERY edit and nothing ever did |
@@ -332,11 +333,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      131   git ls-files tools/
+  tools on disk                      132   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             81   tests/**/*.py, *.js
+  report-only registry                38   report_only_checks.REGISTRY
+  tools invoked by tests/             82   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
