@@ -2,12 +2,13 @@
 
 **2026-09-14 (Hank).** A bypass-risk audit, not a new universal gate.
 
-**One live finding, and it is on billing.** The rest of this is the tool, its
-limits, and what it is not.
+**One finding, and it is on billing.** It is **not exploitable today**, and the
+reason is an expired Stripe test key rather than anything the code does — see
+§1. The rest of this is the tool, its limits, and what it is not.
 
 ---
 
-## 1. THE FINDING: `api/sairncash/portal.js` is unauthenticated and reachable
+## 1. THE FINDING: `api/sairncash/portal.js` is unauthenticated
 
 **A POST with a valid `sub_…` id returns a working Stripe Billing Portal URL for
 that subscriber** — card on file, invoice history, and the power to cancel. The
@@ -25,15 +26,36 @@ comparable entropy. **A subscription id was never designed to be a secret**:
 Stripe puts it in dashboards, webhook payloads, emails and CSV exports. It is
 now, accidentally, a bearer credential for a customer's billing.
 
-### It is live. Verified, not inferred.
+### Reachability — and a correction to my own first claim
 
 ```
 POST /api/sairncash/portal  {"subscriptionId":"sub_…does_not_exist…"}
   -> 500 {"error":"Could not open the billing portal"}     <- the CATCH branch
 ```
 
-The `if (!stripeKey)` guard **did not fire**, so the request reached Stripe and
-failed on the bad id. `STRIPE_SECRET_KEY` is set.
+The `if (!stripeKey)` guard **did not fire**, so `STRIPE_SECRET_KEY` is set.
+
+**I reported from that alone that the finding was live. It is not, and the
+correction is mine.** The response body is identical for a bad subscription id
+and a bad key, because the handler swallows both — so the probe could not
+distinguish them and I read one as the other. The production log settled it:
+
+```
+SAIRNcash portal error: Expired API Key provided: sk_test_…
+```
+
+**A present but EXPIRED TEST key.** Every Stripe call dies before reaching a
+customer, so **the bypass is not exploitable today.**
+
+**What that does and does not change.** The endpoint is still unauthenticated by
+design, and that is the defect. What bounds it is an expired key in a production
+environment variable — **an accident of deployment, not a control** — and the
+day a working key is installed the bound disappears with nothing to announce it.
+That is the identical re-read-trigger failure described below.
+
+**And a second finding falls out of the log line: a `sk_test_` key is sitting in
+a production environment variable.** That is its own misconfiguration,
+independent of this endpoint.
 
 ### And that contradicts the SOUP register, which said the blast radius was zero
 

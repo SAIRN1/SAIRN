@@ -103,10 +103,27 @@ or leak the secret key it holds.
 (its own open-work row). So the blast radius is presently zero and **will not
 be once that key is set**. Re-read this entry at that moment.~~
 
-> **⚠️ THAT MOMENT PASSED AND NOBODY NOTICED. Corrected 2026-09-14 (Hank),
-> live-verified, not read off the source.**
+> **⚠️ Corrected 2026-09-14 (Hank), live-verified — and then CORRECTED AGAIN
+> the same hour, because the first correction overreached.**
 >
-> **`STRIPE_SECRET_KEY` IS SET in production.** The blast radius is not zero.
+> **The true state is a third thing neither claim had:
+> `STRIPE_SECRET_KEY` IS SET, and it is an EXPIRED `sk_test_` key.**
+>
+> The production log for a probe request says it outright:
+> `SAIRNcash portal error: Expired API Key provided: sk_test_…`
+>
+> So *"not currently configured"* was wrong, and my first correction —
+> *"the blast radius is not zero"* — was also wrong. **A present but expired
+> test key means every Stripe call dies before reaching a customer, so the
+> blast radius IS currently zero — by accident of deployment, not by any
+> control.** What I had actually proved was that the `!stripeKey` guard did not
+> fire, which establishes the variable is set and nothing about whether it
+> works. I asserted reachability from it.
+>
+> **Two things follow, and the second is the one to act on.** A **test** key in
+> a **production** environment variable is its own misconfiguration. And the day
+> a working key is installed, the bound disappears and **nothing announces it** —
+> which is the identical re-read-trigger failure this entry already had.
 >
 > The entry above was misled by `checkout.js` still answering
 > `{"error":"Stripe not configured"}` — **that guard is
