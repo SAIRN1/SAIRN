@@ -86,6 +86,9 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
+- `pra_event_tree.py` -- ITEM 84. It is an ANALYSIS, not a check: it enumerates which end state each component failure reaches and has no notion of a finding to report or a pass to give. Wiring it into a runner would print the same 20-row tree on every push, which is how a report stops being read. It is run when the SPOF register or the secrets inventory changes -- both of which ARE checked mechanically -- and its own inputs are what change its answer. Held by tests/run_pra_event_tree_probe.py.
+- `reliability_growth.py` -- ITEM 80, and it must not be promoted while it REFUSES. Its verdict today is exit 1 on all three admissibility criteria, and a runner entry would report that on every push for weeks -- a notice whose content cannot change until somebody records effort per interval or enough time passes. Promote it the day the gate ADMITS, because that is the day its output starts varying. The fitters are proven against synthetic curves with known parameters, so the refusal is a statement about the data rather than about a fitter nobody has seen work; held by tests/run_reliability_growth_probe.py.
+- `benford_check.py` -- ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the production question needs `--data <export>`, and ledger_entries, ledger_lines and the StoneDesk invoice and quote amounts live in the database where nothing in this repo can read them. The only corpora it CAN reach here are the seed and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries 29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD 0.0260, n=219) is the instrument proving it fires, not a finding about production. Wiring that into a runner would print a could-not-run notice and a known-expected finding on every push for ever, which is how a notice stops being read -- the same argument already recorded for cleanup_residue_check.py above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is not proof in either direction, a conforming distribution is not evidence of honesty, and real datasets fail it innocently every day (a price list, a tier table, anything with a floor). Promote it the day somebody hands it a real export on a cadence -- and even then as report-only, never as a gate. Registered here on 2026-09-14 once the claim collision with Cody cleared; held by tests/run_benford_probe.py, which passes.
 - `cleanup_residue_check.py` -- it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look".
 - `verify_review_gates.py` -- it takes a PLAN FILE and a ledger as arguments and **nothing in this repo references it at all** -- checked by grep across tools/, tests/, .claude/ and the docs, where the only mention was the old hand-written inventory claiming the push gate invoked it. It does not. The workflow it serves either never landed or is gone; deciding that is a separate call from wiring it, so it is recorded here rather than promoted or deleted.
 - `write_path_fault_scan.py` -- a POINTER, not a gate, and its own output says so on every run: "THIS IS NOT A LIST OF DEFECTS." Of the eight sites it flagged in sairngrounds, FIVE were safe, and of the six in stonedesk, FOUR were. Promoting it would put a standing 25-line report on every push whose entries are candidates to read. Same class as sairn_ai_fact_scan.py above and recorded for the same reason.
@@ -108,6 +111,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 84: probabilistic risk assessment &mdash; the event tree, and the number it REFUSES to invent** | **BUILT 2026-09-14 (CC)** &mdash; `tools/pra_event_tree.py`, held by `tests/run_pra_event_tree_probe.py` (20 arms, four mutation controls). **Recorded as NOT-PROMOTED with a reason: it is an analysis, | `tests/run_pra_event_tree_probe.py` |
+| **Item 80: reliability growth models &mdash; built, proven on synthetic curves, and REFUSING this platform&rsquo;s data on all three criteria** | **BUILT 2026-09-14 (CC)** &mdash; `tools/reliability_growth.py`, held by `tests/run_reliability_growth_probe.py` (18 arms, three mutation controls). **NOT-PROMOTED with a reason: promote it the day th | `tests/run_reliability_growth_probe.py` |
 | **Item 38: the completeness detector &mdash; a rule that is DECLARED and then not applied everywhere. One real finding, and an access gate whose MESSAGE and CHECK disagree** | **BUILT 2026-09-14 (CC)** &mdash; `tools/completeness_check.py`, held by `tests/run_completeness_probe.py` (21 arms, four mutation controls). **Report-only, registered, nothing gates** | `tests/run_completeness_probe.py` |
 | **`isDate` was defined FOURTEEN times, all byte-identical, and all wrong the same way** &mdash; one deep module now owns it | **BUILT 2026-09-14 (Fourth)** &mdash; `api/_lib/calendar-date.js`, 22/22 arms, 14 modules migrated | `tests/sairnbiz_server_backup.js` |
 | **Item 69: can one app&rsquo;s employee session reach another app&rsquo;s data &mdash; and WHERE DOES A SESSION GATE EXIST AT ALL** | **MEASURED 2026-09-14 (CC)** &mdash; `tests/app_session_isolation.js` (54 arms, two mutation controls). **The isolation property holds everywhere a gate exists. SIX APPS HAVE NO RECORDED REASON for ha | `api/_resources/app-boundary.test.js`, `tests/app_session_isolation.js` |
@@ -327,7 +332,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**174 of 377 test files are traced to a stated requirement. 203 are not.**
+**176 of 379 test files are traced to a stated requirement. 203 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -554,11 +559,11 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 377   tests/**, api/*.test.js
-  open-work rows citing a test       161   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 379   tests/**, api/*.test.js
+  open-work rows citing a test       163   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                40   report_only_checks.REGISTRY
-  recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     16   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```
 

@@ -2881,3 +2881,81 @@ outstanding alongside `sql/sairnbiz_po_recv_migration.sql`.
 
 The watchdog reporting itself FAILING/PARTIAL is the watchdog working: it has something not-ok to
 report and `SAIRN_OPS_EMAIL` is unset, so it says so rather than going quiet.
+
+
+---
+
+## 2026-09-14 -- items 57, 84 and 80
+
+### Item 57 -- registered, and the registration is a REFUSAL with a reason
+
+The claim collision with Cody has cleared. `tools/benford_check.py` exists, its probe passes, and
+it is in the tooling inventory. What was missing is the **decision**, and the decision is the
+tool's own: its bare run exits **2 -- COULD NOT RUN**, correctly, because the production question
+needs `--data <export>` and the ledger, invoice and quote amounts live in a database nothing in
+this repo can read.
+
+The only corpora it can reach here are **openly invented seed constants** -- stonedesk.html alone
+carries 29 SEED blocks -- so its one finding is the instrument proving it fires, not a finding
+about production. Wiring that into a runner prints a could-not-run notice and a known-expected
+finding on **every push for ever**, which is how a notice stops being read.
+
+Recorded in `report_only_checks.NOT_PROMOTED` (13 -> 14) with the condition for promotion: the day
+somebody hands it a real export on a cadence -- **and even then as report-only, never as a gate.**
+
+### Item 84 -- the event tree, and the number it refuses to invent
+
+**Not the FMEA.** `fmea_draft.py` is bottom-up and per-file; this is top-down and per-system. An
+FMEA cannot tell you that two independently-fine components share a third one.
+
+**The refusal is the most important thing in it.** A PRA classically multiplies frequency by
+consequence. The only candidate frequency here is the defect register -- **defects found in code
+over six days, a different population from component failures in production.** The end state and
+the consequence tier are reported separately and never multiplied; the JSON carries
+`frequency: null`; a mutation that invents 0.02 and fuses it into a score takes the suite red.
+
+**The tree did not discriminate at first, and that is recorded rather than quietly fixed.** On the
+SPOF register alone all 11 components landed in ONE end state, because every one is guarded. **An
+analysis where every input produces the same output is not discriminating, whatever it says about
+the world.** Adding the 9 secrets with NO GUARD FOUND -- the only components that do NOT fail
+closed -- gives **11 REFUSED / 9 SILENT AND UNRECOVERABLE**.
+
+**And a branch that took one value is reported as such:** RECOVERABLE is False for all 20, because
+only 3 of 384 resources have an independently recomputable record. A fact about the platform, not a
+bug in the tree -- but a branch with one value carries no information.
+
+**Read the kind before the end state:** 7 of the 9 worst-state rows are TUNING values whose default
+is the intended behaviour. The two worth reading are `SAIRN_AI_DAILY_LIMIT` and
+`SAIRN_ANON_INVALID_LIMIT` -- an unbounded default on a **billed** AI ceiling is a different
+sentence from a missing analytics id.
+
+### Item 80 -- built, proven, and refusing on all three criteria
+
+Hank's item 66 produced the series this item needed. **The answer is still no, with a reason.**
+
+| criterion | measured | bar |
+|---|---|---|
+| enough intervals | **7** | 15 |
+| a falling rate | **+0.09** | -0.30 |
+| effort recorded | **no** | -- |
+
+The rate result **agrees with Hank's independently**, which is the point of deriving it live rather
+than copying his table -- defects/day from the register, substantive commits/day from git excluding
+the 49% claim churn. Same numbers, different route.
+
+**The sign, not the size:** on six intervals a rank correlation is weak evidence for any direction.
+What it is NOT is negative, and **flat and rising fail identically here.**
+
+**The effort criterion cannot be met by waiting.** Flat under RISING effort means depletion; flat
+under FLAT effort means a deep reserve. Opposite conclusions from the same series.
+
+**And the blind lock caught a real defect before the real series was ever read.** The same
+`a >= max(observed)` clamp had been applied to both models -- correct for Goel-Okumoto, whose `a`
+IS the asymptote, and **wrong for Musa-Okumoto, which is unbounded.** On a curve with a=40 the
+clamp forced a>=110.9 and returned SSE 3497 against a true SSE of 0. The same constraint copied
+across two models with different semantics: **byte-identical is not safe-in-context, on a file
+nobody had propagated anything into.**
+
+One probe arm was also wrong and is fixed: it asked for `sse < 1.0`, which is not a statement about
+anything -- SSE scales with the point count and the square of the curve's magnitude. It is now RMS
+error as a fraction of the curve peak, where the clamp defect sits at 15% and the bar is 1%.

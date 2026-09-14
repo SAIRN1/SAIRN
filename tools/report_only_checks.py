@@ -1068,6 +1068,39 @@ REGISTRY = [
 # than left unanswered by default". This is that record for the ones that are
 # NOT going in, so the next session does not re-derive it. Printed by --list.
 NOT_PROMOTED = [
+    ('pra_event_tree.py', 'ITEM 84. It is an ANALYSIS, not a check: it enumerates which '
+     'end state each component failure reaches and has no notion of a finding to report '
+     'or a pass to give. Wiring it into a runner would print the same 20-row tree on '
+     'every push, which is how a report stops being read. It is run when the SPOF '
+     'register or the secrets inventory changes -- both of which ARE checked '
+     'mechanically -- and its own inputs are what change its answer. Held by '
+     'tests/run_pra_event_tree_probe.py.'),
+    ('reliability_growth.py', 'ITEM 80, and it must not be promoted while it REFUSES. '
+     'Its verdict today is exit 1 on all three admissibility criteria, and a runner '
+     'entry would report that on every push for weeks -- a notice whose content cannot '
+     'change until somebody records effort per interval or enough time passes. Promote '
+     'it the day the gate ADMITS, because that is the day its output starts varying. '
+     'The fitters are proven against synthetic curves with known parameters, so the '
+     'refusal is a statement about the data rather than about a fitter nobody has seen '
+     'work; held by tests/run_reliability_growth_probe.py.'),
+    ('benford_check.py', "ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run "
+     'exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the '
+     'production question needs `--data <export>`, and ledger_entries, ledger_lines '
+     'and the StoneDesk invoice and quote amounts live in the database where nothing '
+     'in this repo can read them. The only corpora it CAN reach here are the seed '
+     'and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries '
+     '29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD '
+     '0.0260, n=219) is the instrument proving it fires, not a finding about '
+     'production. Wiring that into a runner would print a could-not-run notice and '
+     'a known-expected finding on every push for ever, which is how a notice stops '
+     'being read -- the same argument already recorded for cleanup_residue_check.py '
+     'above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is '
+     'not proof in either direction, a conforming distribution is not evidence of '
+     'honesty, and real datasets fail it innocently every day (a price list, a tier '
+     'table, anything with a floor). Promote it the day somebody hands it a real '
+     'export on a cadence -- and even then as report-only, never as a gate. '
+     'Registered here on 2026-09-14 once the claim collision with Cody cleared; '
+     'held by tests/run_benford_probe.py, which passes.'),
     ('cleanup_residue_check.py', 'it needs a LIVE licence key and a database '
      'reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with '
      '"CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on '

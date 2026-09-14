@@ -19,43 +19,42 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**136 files in `tools/`.** By what actually invokes them:
+**138 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 42 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **DECIDED** | 21 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 84 |
+| CHECKER | 86 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
 
-**18 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**21 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 23 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 22
+**The number to act on: 22 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 21
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 23, by name, so this is actionable rather than a statistic:
+The 22, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `accepted_risk_scan.py` | SUITE-ONLY | a risk somebody deliberately ACCEPTED in a comment and recorded nowhere central -- the shape that got api/sairncash/portal.js read as an unrecognised gap twice in one afternoon. A LOCATOR, not a detector: it reads language, not intent, and scored roughly 1 in 3 on its first weight-3 run. A read-list whose count is not a score; zero would mean deleting comments |
-| `benford_check.py` | SUITE-ONLY | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test |
 | `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
@@ -187,7 +186,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (18)
+## DECIDED -- not promoted, on purpose (21)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -198,12 +197,15 @@ is how a reader stops believing the number.
 
 | Tool | Kind | Why not promoted |
 |---|---|---|
+| `benford_check.py` | CHECKER | ITEM 57, AND THE DECISION IS THE TOOL'S OWN. Its bare run exits 2 -- COULD NOT RUN -- and that is CORRECT rather than a defect: the production question needs `--data <export>`, and ledger_entries, ledger_lines and the StoneDesk invoice and quote amounts live in the database where nothing in this repo can read them. The only corpora it CAN reach here are the seed and demo constants, which are OPENLY INVENTED -- stonedesk.html alone carries 29 SEED blocks -- so its one finding (seed:stonedesk.html, first-digit MAD 0.0260, n=219) is the instrument proving it fires, not a finding about production. Wiring that into a runner would print a could-not-run notice and a known-expected finding on every push for ever, which is how a notice stops being read -- the same argument already recorded for cleanup_residue_check.py above. AND IT MUST STAY A POINTER EVEN WHEN IT CAN RUN: Benford tendency is not proof in either direction, a conforming distribution is not evidence of honesty, and real datasets fail it innocently every day (a price list, a tier table, anything with a floor). Promote it the day somebody hands it a real export on a cadence -- and even then as report-only, never as a gate. Registered here on 2026-09-14 once the claim collision with Cody cleared; held by tests/run_benford_probe.py, which passes. |
 | `cleanup_residue_check.py` | CHECKER | it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look". |
 | `licence_recoverability_check.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `local_only_collection_check.py` | CHECKER | its EXIT CODE is fixed and shipped -- 3 for could-not-tell, 1 only for a real finding -- but it still reports could-not-tell for sairncash.html and sairnroofing.html, so wiring it now means a notice on EVERY push. HAND-CHECKED: every localStorage.setItem in those two is device state (device id, subscription, trial, usage, licence fingerprint), so there is genuinely nothing to find -- the tool just cannot PROVE it. Classifying those five keys was tried and REVERTED: it broke two arms of tests/local_only_shape_probe.py, and changing a classifier to silence a notice is how a checker starts lying. Promote it when it can tell "nothing to find" from "nothing I can see". |
 | `missing_dom_target_check.py` | CHECKER | its 137 findings are an OPEN, OWNED row (Fourth). Promoting it now would fire on every push against work already in progress. |
+| `pra_event_tree.py` | CHECKER | ITEM 84. It is an ANALYSIS, not a check: it enumerates which end state each component failure reaches and has no notion of a finding to report or a pass to give. Wiring it into a runner would print the same 20-row tree on every push, which is how a report stops being read. It is run when the SPOF register or the secrets inventory changes -- both of which ARE checked mechanically -- and its own inputs are what change its answer. Held by tests/run_pra_event_tree_probe.py. |
 | `probe_public_book_guardian.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `reclassification_sweep.py` | LIVE | one-off audits against a point in time, not standing checks. |
+| `reliability_growth.py` | CHECKER | ITEM 80, and it must not be promoted while it REFUSES. Its verdict today is exit 1 on all three admissibility criteria, and a runner entry would report that on every push for weeks -- a notice whose content cannot change until somebody records effort per interval or enough time passes. Promote it the day the gate ADMITS, because that is the day its output starts varying. The fitters are proven against synthetic curves with known parameters, so the refusal is a statement about the data rather than about a fitter nobody has seen work; held by tests/run_reliability_growth_probe.py. |
 | `rf_claim_gate_live_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `rf_roundtrip_probe.py` | LIVE | live probes needing a real licence and a network; correctly manual. |
 | `sairn_ai_fact_scan.py` | CHECKER | a READ-LIST, not a gate. Its own output says "every one is a candidate to READ, not a confirmed defect: a legitimate default (role || 'user') and a fabricated one (city || 'Westlake') are the same shape and only a human can tell them apart." 14 hits today. |
@@ -228,7 +230,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (31)
+## SUITE-ONLY (30)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -236,7 +238,6 @@ fixtures. Nothing points them at the real codebase.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `accepted_risk_scan.py` | CHECKER | a risk somebody deliberately ACCEPTED in a comment and recorded nowhere central -- the shape that got api/sairncash/portal.js read as an unrecognised gap twice in one afternoon. A LOCATOR, not a detector: it reads language, not intent, and scored roughly 1 in 3 on its first weight-3 run. A read-list whose count is not a score; zero would mean deleting comments | `run_accepted_risk_probe.py` |
-| `benford_check.py` | CHECKER | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test | `run_benford_probe.py` |
 | `checker_confidence.py` | CHECKER | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything | `run_checker_confidence_probe.py` |
 | `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
@@ -339,12 +340,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      136   git ls-files tools/
+  tools on disk                      138   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                40   report_only_checks.REGISTRY
-  tools invoked by tests/             86   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/             88   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     21   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
 
