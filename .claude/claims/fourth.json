@@ -1192,6 +1192,16 @@
       "claimed_at_epoch": 1789397707.3083148,
       "status": "released",
       "released_at": "2026-09-14T15:21:41Z"
+    },
+    {
+      "id": "fourth-1789399588",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 90 triage and fix tier a findings",
+      "claimed_at": "2026-09-14T15:26:28Z",
+      "claimed_at_epoch": 1789399588.699302,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
