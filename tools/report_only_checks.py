@@ -50,6 +50,7 @@ import json
 import os
 import re
 import subprocess
+import time
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -1103,16 +1104,103 @@ def run_one(entry, show_all, verbose=False):
     return findings, unrun
 
 
+# The cap the hook actually runs under, READ FROM THE SETTINGS FILE rather
+# than written down here. A second copy of a number is how the two drift, and
+# this one decides whether the sweep completes at all.
+def _hook_timeout():
+    """The cap the hook really runs under, or None with the reason PRINTED.
+
+    THE FIRST VERSION OF THIS SWALLOWED ITS OWN BUG. It called `io.open` in a
+    module that does not import `io`, so every call raised NameError, the bare
+    `except Exception: return None` caught it, and the fallback 300 looked like
+    a correctly-read value -- while the settings file said 600. A silent except
+    that produces a plausible default is the exact shape this sweep exists to
+    report, written into the function whose whole purpose is to avoid keeping a
+    second copy of the number. It says why now.
+    """
+    path = os.path.join(REPO, '.claude', 'settings.json')
+    try:
+        with open(path, encoding='utf-8') as fh:
+            cfg = json.load(fh)
+        for arr in cfg.get('hooks', {}).values():
+            for m in arr:
+                for h in m.get('hooks', []):
+                    if 'report_only_checks.py' in h.get('command', ''):
+                        return int(h.get('timeout', 0)) or None
+    except Exception as e:                           # noqa: BLE001
+        print('NOTE: could not read the hook timeout from %s (%s: %s), so the '
+              'sweep budget below is a FALLBACK and may not match what the hook '
+              'enforces.' % (path, type(e).__name__, e))
+        return None
+    print('NOTE: no report_only_checks.py hook entry found in %s, so the sweep '
+          'budget below is a FALLBACK.' % path)
+    return None
+
+
+HOOK_TIMEOUT_SECONDS = _hook_timeout() or 300
+
+# The sweep stops itself a little BEFORE the hook would kill it, so there is
+# time to print what it never reached. `--budget N` overrides it, which is how
+# the probe exercises the overrun path without waiting six minutes.
+SWEEP_BUDGET_SECONDS = HOOK_TIMEOUT_SECONDS
+
+
 def sweep(show_all=False, quiet=False):
-    findings, unrun = [], []
-    for entry in REGISTRY:
+    """Run every promoted checker, TIMING EACH ONE.
+
+    THE TIMING IS NOT DECORATION. This sweep is wired as a PostToolUse hook
+    with a 300-SECOND timeout in .claude/settings.json, and on 2026-09-13 it
+    exceeded 600s in its own probe -- so it had already stopped completing in
+    production, and the only visible symptom was a probe reporting a TIMEOUT
+    as a failure. Without a per-checker number nobody can tell a sweep that
+    grew from a checker that hangs, and the whole thing reads as one opaque
+    duration. CC capped metamorphic_check for exactly this reason hours
+    earlier and had to measure it by hand to do it.
+    """
+    findings, unrun, timings = [], [], []
+    budget = SWEEP_BUDGET_SECONDS
+    started = time.time()
+    skipped = []
+    for i, entry in enumerate(REGISTRY):
+        # ── THE BUDGET IS SPENT: STOP AND SAY WHAT WAS NOT RUN ──────────────
+        # A hook killed at its timeout reports NOTHING -- no partial result, no
+        # list of what it never reached, and the only trace is somebody's probe
+        # calling it a failure. Stopping ourselves converts a silent kill into a
+        # STATED UNKNOWN, which is the whole difference between "clean" and "I
+        # did not look". The remaining checkers are named, never just counted.
+        if budget and (time.time() - started) >= budget * 0.9:
+            skipped = [e['tool'] for e in REGISTRY[i:]]
+            break
         if not quiet:
             print('-- %s --' % entry['tool'])
+        _t0 = time.time()
         f, u = run_one(entry, show_all, verbose=not quiet)
+        _el = time.time() - _t0
+        timings.append((_el, entry['tool']))
         findings += f
         unrun += u
         if not quiet:
-            print('   %d finding(s), %d could not run' % (len(f), len(u)))
+            print('   %d finding(s), %d could not run   %.1fs' % (len(f), len(u), _el))
+    for tool in skipped:
+        unrun.append('%s -- NOT RUN, the sweep reached its %ds budget first. '
+                     'This is an UNKNOWN, not a clean result.' % (tool, budget))
+    if not quiet and timings:
+        total = sum(e for e, _ in timings)
+        print('')
+        print('SWEEP TOOK %.0fs of a %ss budget.' % (total, budget or 'n/a'))
+        if skipped:
+            print('')
+            print('%d CHECKER(S) NEVER RAN, and that is the point of printing this:'
+                  % len(skipped))
+            for tool in skipped:
+                print('    %s' % tool)
+            print('A sweep that runs out of time reports an UNKNOWN for these, not')
+            print('a clean pass. Raise the budget, or cap whichever checker below')
+            print('grew -- but do not read the silence as nothing found.')
+        print('Slowest, because a sweep that grew and a checker that hangs are')
+        print('different problems and one number cannot tell them apart:')
+        for el, name in sorted(timings, reverse=True)[:5]:
+            print('  %6.1fs  %s' % (el, name))
     return findings, unrun
 
 
@@ -1170,6 +1258,11 @@ def hook_main():
 
 
 def main(argv):
+    # `--budget N` overrides the sweep's stop-before-the-hook-kills-us cap.
+    # It exists so the overrun path is TESTABLE in seconds instead of only
+    # reproducible by waiting for the real six-minute run to grow past 300s.
+    if '--budget' in argv:
+        globals()['SWEEP_BUDGET_SECONDS'] = float(argv[argv.index('--budget') + 1])
     if '--hook' in argv:
         return hook_main()
     if '--list' in argv:
@@ -1198,6 +1291,13 @@ def main(argv):
         print('')
         print('REPORT ONLY. Nothing here blocked anything. Read each one before '
               'acting -- these checkers have run against real code exactly once.')
+    elif unrun:
+        # NOT CLEAN. It said "CLEAN -- 35 promoted checker(s), no findings" over
+        # a run where 33 of them never executed, which is the exact sentence
+        # this whole file exists to stop anybody writing. A sweep that did not
+        # look cannot report nothing found.
+        print('NOT CLEAN and NOT a finding either: %d of %d promoted checker(s) '
+              'did not run, so this is an UNKNOWN.' % (len(unrun), len(REGISTRY)))
     else:
         print('CLEAN -- %d promoted checker(s), no findings.' % len(REGISTRY))
     return 1 if (findings or unrun) else 0

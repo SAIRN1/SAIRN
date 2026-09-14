@@ -659,6 +659,52 @@ check('H7a and it names the checker that found something',
 check('H7b and does NOT name the clean one', 'zz_clean_checker.py' in _out, False)
 check('H7c and it still exits 0 -- report-only never blocks a push', _rc, 0)
 
+# ── J. THE BUDGET: RUNNING OUT OF TIME IS AN UNKNOWN, NOT A CLEAN PASS ────
+# This file's own 600s arm was FAILING on 2026-09-13 with a TimeoutExpired,
+# and that was the only visible symptom of something worse: the PostToolUse
+# hook that runs this sweep was capped at 300s in .claude/settings.json while
+# the sweep took 364s, so in production it had been killed mid-run for some
+# time. A killed process reports nothing at all -- no partial result and no
+# list of what it never reached.
+#
+# The sweep now stops itself just before the cap and NAMES what it skipped.
+# `--budget` makes that path reachable in seconds instead of only by waiting
+# for the real run to grow past the limit again.
+_b = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
+                                                  'report_only_checks.py'),
+                     '--budget', '20'],
+                    cwd=REPO, capture_output=True, text=True, timeout=600)
+_bo = _b.stdout or ''
+check('J1 a sweep that runs out of budget says so', 'NEVER RAN' in _bo, True)
+check('J2 and NAMES the checkers it did not reach, never just a count',
+      'NOT RUN, the sweep reached its' in _bo, True)
+# THE SUMMARY BLOCK IS A SEPARATE CLAIM FROM THE `COULD NOT RUN` LIST, and it
+# needed its own arm: a mutation that blanked the per-tool print in the summary
+# SURVIVED, because J2 was reading the unrun list further down. Two places say
+# it, so two places have to be checked -- or one of them can go quiet unnoticed.
+_after = _bo.split('NEVER RAN')[-1].split('Slowest')[0] if 'NEVER RAN' in _bo else ''
+check('J2a the SUMMARY block names them too, not only the could-not-run list',
+      any(l.strip().endswith('.py') for l in _after.splitlines()), True)
+check('J3 and refuses to call the run CLEAN', 'CLEAN --' in _bo, False)
+check('J4 and says plainly that it is an UNKNOWN', 'UNKNOWN' in _bo, True)
+check('J5 it still exits non-zero by hand, so a caller can chain it',
+      _b.returncode, 1)
+
+# THE BUDGET IS READ FROM THE SETTINGS FILE, not kept as a second copy. The
+# first version called io.open in a module that does not import io, so every
+# read raised NameError, a bare except swallowed it, and the fallback 300
+# looked exactly like a correctly-read value while the file said 600.
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import report_only_checks as _roc                                 # noqa: E402
+_cfg = json.load(io.open(os.path.join(REPO, '.claude', 'settings.json'),
+                         encoding='utf-8'))
+_declared = [h.get('timeout') for arr in _cfg.get('hooks', {}).values()
+             for m in arr for h in m.get('hooks', [])
+             if 'report_only_checks.py' in h.get('command', '')]
+check('J6 the hook entry declares a timeout at all', bool(_declared), True)
+check('J7 and the sweep budget equals it rather than a hardcoded fallback',
+      _roc.HOOK_TIMEOUT_SECONDS, _declared[0] if _declared else None)
+
 for k in sorted(R):
     ok, actual, expected = R[k]
     print('  %-6s %s' % ('ok' if ok else 'FAIL', k))

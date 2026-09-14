@@ -57,7 +57,7 @@
           {
             "type": "command",
             "command": "python \"${CLAUDE_PROJECT_DIR:-.}/tools/report_only_checks.py\" --hook",
-            "timeout": 300,
+            "timeout": 600,
             "statusMessage": "Running the promoted report-only checkers...",
             "async": true,
             "asyncRewake": true

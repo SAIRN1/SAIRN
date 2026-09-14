@@ -3602,3 +3602,57 @@ on a stashed pristine main, and the eighth is
 report-only sweep now takes longer than its own limit. That last one is worth
 somebody's attention: a sweep that cannot finish inside its timeout reports as a
 failure rather than as a result.
+
+## 2026-09-13 (Cody) -- the report-only sweep had stopped completing, and the
+## only symptom was its own probe calling a timeout a failure
+
+Skill used: `sairn-guardian-v2`. Claim: `tooling` --
+`sabotage detector replace must feed a file write and report-only sweep timeout`.
+
+**MEASURED, NOT ESTIMATED.** The sweep is **364s**. The PostToolUse hook that
+runs it was capped at **300s** in `.claude/settings.json`. Two checkers are half
+the run: `comment_sensitivity_check` 104s, `sairn_dead_button_audit` 84s.
+
+**A KILLED PROCESS REPORTS NOTHING** -- no partial result, no list of what it
+never reached. So the sweep had been silently incomplete after every push, and
+the only thing anyone could see was `run_report_only_checks_probe.py` reporting
+a TimeoutExpired as a failure. CC capped `metamorphic_check` hours earlier
+against the PROBE's 600s budget; the number that actually bound it was the
+hook's 300, and nothing connected the two.
+
+**BOTH HALVES, BECAUSE NEITHER ALONE IS HONEST.** The sweep now stops itself
+just before the cap and NAMES the checkers it never reached, as *NOT RUN -- an
+UNKNOWN, not a clean result*; and the cap is raised to 600s, so with 364s
+measured nothing is skipped today. Splitting alone would have quietly dropped
+per-push coverage of two checkers; extending alone would have left the next
+overrun as silent as this one.
+
+**IT ALSO REFUSED TO STOP SAYING CLEAN.** Over a `--budget 25` run where 33 of
+35 checkers never executed it printed *"CLEAN -- 35 promoted checker(s), no
+findings"*. That is the exact sentence this file exists to stop anybody writing,
+printed by the file itself.
+
+**PER-CHECKER TIMING IS PRINTED NOW**, because a sweep that grew and a checker
+that hangs are different problems and one number cannot tell them apart. CC had
+to measure by hand to cap metamorphic; the next person will not.
+
+**TWO OF MY OWN MISTAKES, both caught by checking rather than assuming:**
+
+1. The function I wrote to avoid keeping a SECOND COPY of the timeout called
+   `io.open` in a module that does not import `io`. Every call raised
+   NameError, a bare `except Exception: return None` caught it, and the 300
+   fallback looked exactly like a correctly-read value -- while the settings
+   file said 600. A silent except producing a plausible default, written into
+   the function whose entire purpose was to stop a number drifting. It prints
+   the reason now.
+2. My first seven arms ran AFTER the probe's reporting loop. They were counted
+   but never printed, so a failure would have shown only as a total that did
+   not add up. Found by grepping the output for `J1` and getting nothing while
+   the count had risen by exactly seven.
+
+**5 MUTATION CONTROLS BITE**, tool restored byte-identical, probe green first.
+**ONE SURVIVED THE FIRST PASS:** blanking the per-tool print in the SUMMARY
+changed nothing, because the arm was reading the `COULD NOT RUN` list further
+down. Two places say which checkers were skipped, so two places are checked now
+-- otherwise one of them can go quiet unnoticed, which is the same shape as the
+defect being fixed.
