@@ -1172,8 +1172,8 @@
       "task": "purchase orders goods receipt and a bill that cannot settle unmatched",
       "claimed_at": "2026-09-14T13:19:48Z",
       "claimed_at_epoch": 1789391988.4739008,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T13:28:59Z"
     }
   ]
 }
