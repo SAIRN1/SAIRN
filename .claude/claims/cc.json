@@ -1122,8 +1122,8 @@
       "task": "provisioning triage mech_credentials six soft tables ledger_entries empty state",
       "claimed_at": "2026-09-13T22:42:02Z",
       "claimed_at_epoch": 1789339322.7486439,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T10:22:28Z"
     }
   ]
 }
