@@ -91,7 +91,7 @@ try:
     # ── C. it derives rather than trusting what it was told ────────────────
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a probe fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
                   '--rule', '1.1', '--phase', 'coding')
     check('C1 a real commit is accepted', rc, 0)
     doc = json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
@@ -108,7 +108,7 @@ try:
                                    encoding='utf-8'))['records'])
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a probe fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a probe fixture',
                   '--rule', '1.1', '--phase', 'coding')
     after = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                   encoding='utf-8'))['records'])
@@ -125,7 +125,7 @@ try:
     # would undercount by two.
     rc, out = run(wt, '--add', '--commit', real, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'a SECOND fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'a SECOND fixture',
                   '--rule', '1.1', '--phase', 'coding')
     after2 = len(json.load(io.open(os.path.join(wt, REG.replace('/', os.sep)),
                                    encoding='utf-8'))['records'])
@@ -231,13 +231,13 @@ try:
     real2 = git(wt, 'rev-parse', 'HEAD~1').stdout.strip()[:12]
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'H fixture')
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture')
     check('H1 --add with NO citation is REFUSED', rc, 2)
     check('H2 and names the missing flag', '--rule' in out, True)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
                   '--rule', '9.99', '--phase', 'coding')
     check('H3 a rule id that is not a section in the rules doc is REFUSED', rc, 2)
     check('H4 and says which document it checked against',
@@ -245,14 +245,14 @@ try:
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
                   '--rule', 'not-citable', '--phase', 'coding')
     check('H5 not-citable with NO note is REFUSED -- a bare refusal to cite '
           'is a silence, not a decision', rc, 2)
 
     rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
                   '--layer', 'test', '--severity', 'low',
-                  '--method', 'probe-control', '--summary', 'H fixture',
+                  '--method', 'probe-control', '--found-by-tool', 'unknown', '--summary', 'H fixture',
                   '--rule', 'not-citable', '--phase', 'coding', '--rule-note', 'no rule names this')
     check('H6 not-citable WITH a note is accepted', rc, 0)
     doc4 = json.load(io.open(p_reg, encoding='utf-8'))
@@ -450,6 +450,48 @@ try:
     check('Q9 ...and EVERY method in the vocabulary has a row, so Q8 can never '
           'fire on real data without --check saying so',
           [m for m in dr.METHODS if dr.checkpoint_of(m) == 'unknown'], [])
+
+
+    # -- R. which TOOL found it (2026-09-14) --------------------------------
+    check('R1 a tool name is REQUIRED when a checker found it', dr.tool_required('static-checker'), True)
+    check('R2 ...and NOT required when a person did -- a code review has no tool',
+          dr.tool_required('code-review'), False)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'tooling', '--severity', 'low',
+                  '--method', 'static-checker', '--summary', 'r3',
+                  '--rule', '1.1', '--phase', 'coding')
+    check('R3 an automated find with NO tool is refused', rc, 2)
+    check('R4 and it offers `unknown` rather than forcing a guess',
+          'unknown' in out and '--found-by-tool is required' in out, True)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'tooling', '--severity', 'low',
+                  '--method', 'code-review', '--summary', 'r5',
+                  '--rule', '1.1', '--phase', 'coding',
+                  '--found-by-tool', 'nav_panel_check.py')
+    check('R5 a tool name on a HUMAN find is REFUSED -- a column of plausible '
+          'names nobody can check is worse than an empty one', rc, 2)
+
+    rc, out = run(wt, '--add', '--commit', real2, '--app', 'stonedesk',
+                  '--layer', 'tooling', '--severity', 'low',
+                  '--method', 'static-checker', '--found-by-tool', 'unknown', '--summary', 'r6',
+                  '--rule', '1.1', '--phase', 'coding',
+                  '--found-by-tool', 'unknown')
+    check('R6 CONTROL: `unknown` IS accepted, so R3 is not passing because the '
+          'field is impossible to satisfy', rc, 0)
+
+    doc = json.loads(io.open(os.path.join(wt, REG.replace('/', os.sep)),
+                             encoding='utf-8').read())
+    r6 = [r for r in doc['records'] if r['summary'] == 'r6'][0]
+    check('R7 the value is stored', r6.get('found_by_tool'), 'unknown')
+
+    rc, out = run(wt, '--report')
+    check('R8 the report says how many automated catches NAME their tool',
+          'the TOOL is named in' in out, True)
+    check('R9 ...and refuses to recompute the blocking classification, because '
+          'a second copy of it is a second thing to drift',
+          'second thing to drift' in out, True)
 
 finally:
     git(REPO, 'worktree', 'remove', '--force', wt)

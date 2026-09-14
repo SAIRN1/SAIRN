@@ -116,7 +116,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairn_storage_wrapper_honesty.js"
     },
     {
       "commit": "5abfcdbacbb4",
@@ -139,7 +140,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "local_only_collection_check.py"
     },
     {
       "commit": "5b98fd27209b",
@@ -162,7 +164,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "dnt_vendor_write_confirmation.js"
     },
     {
       "commit": "5b98fd27209b",
@@ -185,7 +188,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "dnt_vendor_write_confirmation.js"
     },
     {
       "commit": "5b98fd27209b",
@@ -208,7 +212,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "dnt_vendor_write_confirmation.js"
     },
     {
       "commit": "5b98fd27209b",
@@ -232,7 +237,8 @@
       "citation_confidence": "arguable",
       "citation_note": "silence by omission rather than a false success printed",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "dnt_vendor_write_confirmation.js"
     },
     {
       "commit": "5b98fd27209b",
@@ -255,7 +261,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "dnt_vendor_write_confirmation.js"
     },
     {
       "commit": "6fde9cea7b84",
@@ -283,7 +290,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_write_path_scan_probe.py"
     },
     {
       "commit": "6fde9cea7b84",
@@ -311,7 +319,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_write_path_scan_probe.py"
     },
     {
       "commit": "6fde9cea7b84",
@@ -340,7 +349,8 @@
       "citation_confidence": "arguable",
       "citation_note": "a sampling window exempting what it does not reach",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "run_write_path_scan_probe.py"
     },
     {
       "commit": "94034ed14279",
@@ -360,7 +370,8 @@
       "citation_confidence": "not-citable",
       "citation_note": "a dead duplicate definition. Guardian check 27 territory, not a PR class rule.",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "unknown"
     },
     {
       "commit": "a858cab7cb17",
@@ -430,7 +441,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_write_path_scan_probe.py"
     },
     {
       "commit": "bfe591a24c6a",
@@ -484,7 +496,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_write_path_scan_probe.py"
     },
     {
       "commit": "bfe591a24c6a",
@@ -534,7 +547,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "run_report_only_checks_probe.py"
     },
     {
       "commit": "d22ce1060e10",
@@ -656,7 +670,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairndental_write_failure_voice.js"
     },
     {
       "commit": "8f9a727f008c",
@@ -772,7 +787,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "transport_timeout_sweep.js"
     },
     {
       "commit": "d77321dfbe21",
@@ -799,7 +815,8 @@
       "citation_confidence": "arguable",
       "citation_note": "a state flag accepted as evidence a transport reports failure: the assertion passed for the wrong reason rather than stopping",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "transport_timeout_sweep.js"
     },
     {
       "commit": "d85b98efecb8",
@@ -850,7 +867,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "unknown"
     },
     {
       "commit": "f75e046a736b",
@@ -874,7 +892,8 @@
       "citation_confidence": "arguable",
       "citation_note": "the wrapper check asked whether a wrapper speaks ANYWHERE, so a silenced catch was exempted by the scope of the question",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairn_storage_wrapper_honesty.js"
     },
     {
       "commit": "101b9e374748",
@@ -923,7 +942,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "check2_and_check5_probe.py"
     },
     {
       "commit": "978df7ae8d27",
@@ -1007,7 +1027,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "run_tooling_inventory_probe.py"
     },
     {
       "commit": "9d5c85e205fd",
@@ -1093,7 +1114,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "run_githook_install_probe.py"
     },
     {
       "commit": "639e9bedf433",
@@ -1168,7 +1190,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "sairn_push_gate_hook.py"
     },
     {
       "commit": "77dd73161646",
@@ -1194,7 +1217,8 @@
       "citation_confidence": "arguable",
       "citation_note": "a probe arm failing on EVERY run inflated every mutation verdict by one -- consistently wrong rather than silently skipped",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairn_push_gate_hook.py"
     },
     {
       "commit": "832b1a3f0b9a",
@@ -1250,7 +1274,8 @@
       "citation_confidence": "clean",
       "citation_note": "an anchor that still matched, pinned to a number the classifier moved",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_truthy_sum_probe.py"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1301,7 +1326,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "check2_and_check5_probe.py"
     },
     {
       "commit": "8dfde7be2b1b",
@@ -1351,7 +1377,8 @@
       "citation_confidence": "arguable",
       "citation_note": "the probe changed its own input by being committed, so the answer depended on something other than the code under test",
       "injection_phase": "design",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "run_committer_identity_probe.py"
     },
     {
       "commit": "bc32bed288b5",
@@ -1406,7 +1433,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "sairn_push_gate_hook.py"
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1436,7 +1464,8 @@
       "citation_confidence": "clean",
       "citation_note": "a stamping failure skipped the write and told the user the browser's storage was full -- a confident and WRONG reason printed after the error",
       "injection_phase": "coding",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairn_storage_wrapper_honesty.js"
     },
     {
       "commit": "d6b3f6e929ec",
@@ -1490,7 +1519,8 @@
       "citation_confidence": "arguable",
       "citation_note": "1.11 is written about a CHECK whose other TOOL is absent; this is the same fail-to-the-permissive-side direction applied to a VALUE whose input was unusable, so the citation is the principle rather than the literal case",
       "injection_phase": "coding",
-      "phase_confidence": "stated"
+      "phase_confidence": "stated",
+      "found_by_tool": "unknown"
     },
     {
       "commit": "e6130cf81728",
@@ -1511,7 +1541,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "refspec_and_override_probe.py"
     },
     {
       "commit": "106d403717a4",
@@ -1589,7 +1620,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "run_mutation_anchor_probe.py"
     },
     {
       "commit": "72fa70003224",
@@ -1745,7 +1777,8 @@
       ],
       "citation_confidence": "clean",
       "injection_phase": "design",
-      "phase_confidence": "inferred"
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js"
     },
     {
       "commit": "4ba885d99f42",
@@ -1767,7 +1800,8 @@
       "citation_confidence": "not-citable",
       "injection_phase": "config",
       "phase_confidence": "stated",
-      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit."
+      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "unknown"
     }
   ]
 }

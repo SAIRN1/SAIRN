@@ -98,6 +98,27 @@ SEVERITIES = ('critical', 'high', 'moderate', 'low')
 # the tool, so "a checker found it" cannot be resolved into "a blocking gate
 # found it". Adding a `found_by_tool` field is the next thing somebody should do
 # and is deliberately not invented here.
+# ── WHICH TOOL FOUND IT (added 2026-09-14) ────────────────────────────────
+# Item 63 could say "a checker found it" and could NOT say whether that checker
+# BLOCKS. A record named the technique and never the tool, so the one question
+# behind the whole checkpoint split -- are we stopped before a push, or merely
+# told afterwards -- was unanswerable. This is that field.
+#
+# REQUIRED exactly when the checkpoint is `automated-checker`, and REFUSED
+# otherwise: a code review has no tool, and inviting one would produce a column
+# of plausible-looking names nobody could check.
+#
+# `unknown` is allowed and is honest for the backfill: 2026-09-14's records
+# name their tool in the summary or not at all, and inventing one for the rest
+# would be exactly the manufactured agreement the citation field is careful to
+# avoid. The report prints the unknown share above the split.
+TOOL_UNKNOWN = 'unknown'
+
+
+def tool_required(method):
+    return checkpoint_of(method) == 'automated-checker'
+
+
 CHECKPOINTS = ('human-read', 'automated-checker', 'monitoring', 'unknown')
 CHECKPOINT_OF = {
     'code-review': 'human-read',
@@ -260,6 +281,8 @@ def cmd_add(argv):
     # `--phase unknown` with a `--phase-note` when none of the four honestly
     # fits; refusing to record a defect because no phase fits would be worse
     # than the gap this closes.
+    # REQUIRED when a tool did the finding, REFUSED when one did not.
+    found_by = opt('--found-by-tool', required=False)
     phase = opt('--phase')
     phase_note = opt('--phase-note', required=False)
     if phase not in PHASES:
@@ -278,6 +301,15 @@ def cmd_add(argv):
         print('--severity must be one of %s' % (SEVERITIES,)); return 2
     if method not in METHODS:
         print('--method must be one of %s' % (METHODS,)); return 2
+    if tool_required(method) and not str(found_by).strip():
+        print('--found-by-tool is required for %r, because it maps to '
+              'automated-checker and the whole point of the field is to say '
+              'WHICH checker -- pass %r if the record genuinely does not know.'
+              % (method, TOOL_UNKNOWN)); return 2
+    if not tool_required(method) and str(found_by).strip():
+        print('--found-by-tool is not accepted for %r: %s found it, not a tool. '
+              'A column of plausible names nobody can check is worse than an '
+              'empty one.' % (method, checkpoint_of(method))); return 2
     if rule == 'not-citable':
         rules, conf = [], 'not-citable'
     else:
@@ -305,7 +337,8 @@ def cmd_add(argv):
     rec.update({'app': app, 'layer': layer, 'severity': sev,
                 'detection_method': method, 'summary': summary,
                 'rules': rules, 'citation_confidence': conf,
-                'injection_phase': phase, 'phase_confidence': phase_conf})
+                'injection_phase': phase, 'phase_confidence': phase_conf,
+                'found_by_tool': (str(found_by).strip() or None)})
     if note:
         rec['citation_note'] = note
     if phase_note:
@@ -483,6 +516,15 @@ def cmd_check(argv=()):
                        'split' % (r['commit'], r['detection_method']))
         if r['layer'] not in LAYERS or r['severity'] not in SEVERITIES:
             bad.append('%s -- layer/severity outside the vocabulary' % r['commit'])
+        # ── THE TOOL THAT FOUND IT, same rule as --add so a hand-edited
+        # record cannot carry a shape --add would have refused.
+        fbt = r.get('found_by_tool')
+        if tool_required(r['detection_method']) and not str(fbt or '').strip():
+            bad.append('%s -- found by an automated checker with no '
+                       'found_by_tool' % r['commit'])
+        if not tool_required(r['detection_method']) and str(fbt or '').strip():
+            bad.append('%s -- carries found_by_tool %r but %s found it'
+                       % (r['commit'], fbt, checkpoint_of(r['detection_method'])))
         # ── THE INJECTION PHASE, checked the same way and for the same reason ─
         ph = r.get('injection_phase')
         phc = r.get('phase_confidence')
@@ -624,6 +666,25 @@ def cmd_report():
     for k in CHECKPOINTS:
         if ck.get(k):
             print('  %-19s %3d   (%.0f%%)' % (k, ck[k], 100.0 * ck[k] / len(recs)))
+    auto = [r for r in recs if checkpoint_of(r['detection_method']) == 'automated-checker']
+    if auto:
+        named = [r for r in auto
+                 if str(r.get('found_by_tool') or '').strip()
+                 and r['found_by_tool'] != TOOL_UNKNOWN]
+        print('')
+        print('  of the %d automated catches, the TOOL is named in %d'
+              % (len(auto), len(named)))
+        print('  BLOCKING vs REPORT-ONLY is the question behind this split, and')
+        print('  it needs the tool classification -- run')
+        print('  `python tools/tooling_inventory.py` and read the class column')
+        print('  for the names below. It is deliberately NOT recomputed here: a')
+        print('  second copy of that classification is a second thing to drift.')
+        by = {}
+        for r in named:
+            by[r['found_by_tool']] = by.get(r['found_by_tool'], 0) + 1
+        for t in sorted(by, key=lambda k: -by[k])[:10]:
+            print('      %-38s %d' % (t, by[t]))
+    print('')
     print('  THIS IS THE CHECKPOINT THAT DID CATCH EACH DEFECT, NOT THE ONE')
     print('  THAT SHOULD HAVE. Those differ exactly where a gate ought to exist')
     print('  and does not, so this UNDER-COUNTS gaps by construction.')

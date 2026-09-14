@@ -1,0 +1,424 @@
+{
+ "app_matched": "PLATFORM",
+ "considered": {
+  "defect_records": 67,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-09-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "3ffb0603784b",
+   "date": "2026-09-14",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the sabotage-control detector counted any file containing a write and a .replace, so datetime.replace(tzinfo=), output-string scrubs and path-separator normalisation were reported as unverified sabotage -- 19 unguarded was really 8",
+   "rules": [
+    "1.2"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "5b8570ce0012",
+   "date": "2026-09-09",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Concurrent suite runs made every mutating probe restore the OTHER run's mutation: it stripped a production corruption guard from sairnvet.html repeatedly while reporting \"restored byte-identical: True\"",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "3f09a48eed54",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "tests/sairn_storage_wrapper_honesty.js crashed on ReferenceError inside the SAIRNmechanical block, so every later block -- stonedesk and sairnvet -- never ran while the file was cited as platform-wide coverage",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "3f09a48eed54",
+   "date": "2026-09-10",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "the same file's speaks regex ran over raw source, so a CODE COMMENT mentioning toast satisfied the assertion that no app has a silent write wrapper",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "5abfcdbacbb4",
+   "date": "2026-09-10",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "bfe591a24c6a",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "bfe591a24c6a",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "caa5bb7cb6b2",
+   "date": "2026-09-10",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "133f5587a597",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The defect register recorded pre-rebase SHAs, so records pointed at commits that never existed on main and the one promoted report-only checker was permanently red in every clone",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "133f5587a597",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "defect_register --check ran its vocabulary validation after a continue, so a record with an unresolvable SHA stopped having its method, layer and severity checked at all",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "8f9a727f008c",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d77321dfbe21",
+   "date": "2026-09-11",
+   "detected_by": "mutation-testing",
+   "prior_severity": "high",
+   "risk": "transport_timeout_sweep.js accepted a state flag as evidence a transport reports failure, clearing the one app of fifteen that logged nothing -- and two new StoneDesk arms matched a report's PRESENCE rather than its attribution to the result",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d85b98efecb8",
+   "date": "2026-09-11",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "f75e046a736b",
+   "date": "2026-09-11",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "the wrapper check asked whether a wrapper speaks ANYWHERE, so silencing sairnvet st()'s write-failure catch left its backup-hook catch talking and the check green -- the delegation narrowing alone did not close this",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "101b9e374748",
+   "date": "2026-09-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "four of the ten push-gate checks had no probe planting a finding and asserting a deny -- checks 1, 2, 3 and 5 -- so nothing had ever proven they refuse anything",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "101b9e374748",
+   "date": "2026-09-12",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "my own first two gate fixtures proved nothing and both arms passed anyway: the commit subjects began with PROBE so check 8 answered instead, and the check-5 fixture did not match the APPEND detector at all",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "9d5c85e205fd",
+   "date": "2026-09-12",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "9d5c85e205fd",
+   "date": "2026-09-12",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "9d5c85e205fd",
+   "date": "2026-09-12",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "102cb926bd74",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "102cb926bd74",
+   "date": "2026-09-13",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "639e9bedf433",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "the push gate disabled NINE of its ten checks when one unrelated tool was absent -- if not os.path.isfile(sairn_load_state_check.py): sys.exit(0) at the top of main(), an early exit from when check 1 was the only check",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "639e9bedf433",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "four more is-the-tool-present fail-opens in the push gate: checks 2, 4 and 5 skipped themselves in silence when their checker file was absent, and check 2 also skipped on an unrunnable subprocess",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "77dd73161646",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "FAIL-OPEN CLOSED: push-gate check 3 skipped itself in silence when tools/sairn_sql_preflight.py was absent from the clone -- every RESULT of the tool denied, the tool's absence did not",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "77dd73161646",
+   "date": "2026-09-13",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "a probe arm that fails on EVERY run inflates every mutation verdict by one and turns a surviving mutation into a bite -- os.path.join backslashes vs git rev-parse forward slashes; run the probe green before mutating",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "832b1a3f0b9a",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "truthy_sum_check.py could not tell a numeric fold from a string-literal concatenation, so 58 of its 140 matches were never defects and every new currency label was answered with a baseline entry -- a checker teaching people to write exemptions",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "832b1a3f0b9a",
+   "date": "2026-09-13",
+   "detected_by": "mutation-testing",
+   "prior_severity": "low",
+   "risk": "a floor pinned to a POST-CLASSIFICATION count goes red on a correctness improvement -- my own occurrences floor broke hours later when concatenation was split out; it floors on raw matches inspected now",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "8dfde7be2b1b",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "push-gate check 3 had no probe proving the GATE refuses -- only the checker's own exit codes were pinned, and detection is a separate claim from wiring",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "8dfde7be2b1b",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "FAIL-OPEN in the blocking push gate: check 3 is wrapped in if os.path.isfile(pf), so with tools/sairn_sql_preflight.py absent a missing-table SQL push is allowed in silence and the gate never says it stopped checking",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "8dfde7be2b1b",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "my own stated reason for leaving check 3 uncovered was a guess never tested against the check's source -- it needs a snapshot FILE, not credentials, and SAIRN_SCHEMA_SNAPSHOT made every deny path reachable offline",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "a7ff2325890f",
+   "date": "2026-09-13",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "a probe whose subject DERIVES its list by scanning tests/ poisoned that list by being committed: its own control identity became a throwaway identity, and the value it had to SET to exercise a fixture was found in the probe instead of the fixture, letting a mutation survive twice",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "bc32bed288b5",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d66a87e64fc7",
+   "date": "2026-09-13",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "control_char_check promoted to push-gate check 11: a raw control byte is an escape typed literally, and a backspace where a word boundary was meant is a regex that can never match -- six instances across the fleet, two of them privilege guards that could not fail",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d6b3f6e929ec",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "the _m stamp call sat INSIDE the storage try in st()/scpSt() across dental, grounds and scape, so a stamping failure skipped the write and told the user the browser's storage was full -- a false reason and a lost save",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d6b3f6e929ec",
+   "date": "2026-09-13",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e414b563f0f9",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e6130cf81728",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "a hand-built probe sandbox stubs only the tools its own arm needs, so a NEW gate check that correctly refuses a missing tool denied before the arm under test ever ran -- four arms went red for a reason unrelated to their subject",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "106d403717a4",
+   "date": "2026-09-14",
+   "detected_by": "independent-review",
+   "prior_severity": "high",
+   "risk": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "72fa70003224",
+   "date": "2026-09-14",
+   "detected_by": "mutation-testing",
+   "prior_severity": "moderate",
+   "risk": "a probe's text anchors into db/schema_snapshot.json died for the THIRD time in a re-capture -- compact after pretty-printed after one-line -- so the only tripwire on a live licence gate was disarmed again; both arms mutate the parsed JSON now and have no anchor to rot",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "72fa70003224",
+   "date": "2026-09-14",
+   "detected_by": "code-review",
+   "prior_severity": "low",
+   "risk": "a negative control whose PRECONDITION was another session's unfixed defect expired the moment they fixed it -- check11_probe asserted the tree still carried a control byte in a file inside fourth's claim; it plants its own now",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e059df4cc2d4",
+   "date": "2026-09-14",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "the report-only sweep took 364s under a 300s PostToolUse cap, so it had been killed mid-run after every push -- a killed process reports no partial result and no list of what it never reached, and the only symptom was its own probe calling the timeout a failure",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e059df4cc2d4",
+   "date": "2026-09-14",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "the sweep printed CLEAN -- 35 promoted checkers, no findings over a run where 33 never executed, and the helper written to avoid a second copy of the timeout swallowed its own NameError and returned a plausible fallback",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "4ba885d99f42",
+   "date": "2026-09-14",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "two hourly crons were scheduled on the identical minute (0 * * * *) and BOTH FAILED ABOUT A THIRD OF THEIR RUNS on a 504 from Supabase -- 23 send-reminder failures and 20 alf-alerts failures over seven days, every one at :00, so appointment reminders were not sent and medication-exception alerts were not computed; /api/claude's Supabase rate-limit RPC also timed out at :00, which was the open unexplained 504 pattern",
+   "source": "defect-register"
+  }
+ ],
+ "target": "tools/sabotage_control_check.py"
+}
