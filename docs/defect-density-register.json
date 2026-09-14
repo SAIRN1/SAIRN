@@ -1748,6 +1748,33 @@
       }
     },
     {
+      "commit": "20afb167",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
+      "files": [
+        "api/sd-data.js",
+        "api/_resources/sairnbiz.js",
+        "sql/sairnbiz_data_schema.sql",
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "found_by_tool": "removal_path_check.py",
+      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers 'a resource was given a server before it was given a way to correct a wrong row'. The nearest standing work is the 53-Tier-A-no-removal-path burn-down row, which is a review queue rather than a numbered rule. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "injection": {
+        "commit": "20afb167"
+      }
+    },
+    {
       "commit": "3ffb0603784b",
       "date": "2026-09-14",
       "subject": "fix(tools): the sabotage detector counted replaces that touch no file -- 19 unguarded was really 8",
@@ -1767,6 +1794,61 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "stated",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "4ba885d99f42",
+      "date": "2026-09-14",
+      "subject": "feat: SAIRNcare Phase 3 items 1-4 -- pharmacy eMAR, doc-to-charges, AI care plans, late-care alerting",
+      "files": [
+        "vercel.json",
+        "api/alf-alerts.js",
+        "api/sairndental/send-reminder.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "fault-injection",
+      "summary": "two hourly crons were scheduled on the identical minute (0 * * * *) and BOTH FAILED ABOUT A THIRD OF THEIR RUNS on a 504 from Supabase -- 23 send-reminder failures and 20 alf-alerts failures over seven days, every one at :00, so appointment reminders were not sent and medication-exception alerts were not computed; /api/claude's Supabase rate-limit RPC also timed out at :00, which was the open unexplained 504 pattern",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "config",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "unknown",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "57236fe9db01",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
+      "files": [
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sairnbiz.html",
+        "tests/sairnbiz_bill_cannot_settle_unmatched.js"
+      ],
+      "lines_added": 500,
+      "lines_removed": 10,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "static-checker",
+      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
+      "rules": [
+        "1.11"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "inferred",
+      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js",
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
@@ -1830,6 +1912,30 @@
       "citation_confidence": "clean",
       "injection_phase": "design",
       "phase_confidence": "inferred",
+      "injection": {
+        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
+      }
+    },
+    {
+      "commit": "973e2471",
+      "date": "2026-09-14",
+      "subject": "feat: sairnsenior.html + api/sen-portal.js -- Family/Client Portal, scoped revocable links (not a PIN account)",
+      "files": [
+        "api/sen-portal.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/sen-portal.js declares MANAGEMENT_ROLES = { owner, billing } and references it nowhere, while the agency-wide list branch beside it refuses with 'ask management for the agency-wide list' and enforces the WIDER BROAD_ROLES -- owner, billing, coordinator and scheduler. The message and the check disagree, so one of the two is wrong: either a coordinator should not have the agency-wide list of every client's portal links, or the refusal misstates the rule to everyone who hits it",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "citation_note": "No standing rule covers a refusal message that misstates its own guard. The nearest, 1.11, is about a check that could not run being folded into a pass, and this check runs and answers correctly for the rule it actually enforces -- what is wrong is the sentence beside it, plus a gate that was written and never wired. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "completeness_check.py",
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
@@ -1919,6 +2025,31 @@
       }
     },
     {
+      "commit": "e7927872775e",
+      "date": "2026-09-14",
+      "subject": "test(failsafe): item 83 independent review -- expiry on the spend path was untested",
+      "files": [
+        "tests/failsafe/witness_atomicity.js"
+      ],
+      "lines_added": 31,
+      "lines_removed": 0,
+      "app": "sairnvet",
+      "layer": "test",
+      "severity": "moderate",
+      "detection_method": "independent-review",
+      "summary": "item 83's fail-safe suites never drove an EXPIRED witness token, so disabling the only expiry guard on the spend path left all 22 arms in both suites green. Both suites build tokens with Date.now()+TOKEN_TTL_MS and the recovery suite MEASURES remaining TTL, which reads like expiry coverage and is not. The CAS checks spent_at is null and says nothing about time, so with the guard gone an expired signature writes a controlled-substance row",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "found_by_tool": null,
+      "injection": {
+        "unknown_reason": "The gap is an absence of coverage rather than a line somebody wrote; there is no introducing commit for a test that was never added."
+      }
+    },
+    {
       "commit": "f98c1b08d3fc",
       "date": "2026-09-14",
       "subject": "feat(tools): item 40 -- and it found a LIVE unauthenticated route into a customer's billing",
@@ -1947,112 +2078,6 @@
       "correction_note": "Summary corrected 2026-09-14, same day. The first version said the finding was LIVE. I had verified that the !stripeKey guard did not fire, which proves the variable is SET, and then asserted reachability, which it does not prove. The production log line -- 'Expired API Key provided: sk_test_...' -- settled it afterwards. Corrected in place rather than superseded: the defect did not change, my claim about it did, and a second record would inflate the density and split the injection matrix. SECOND CORRECTION, same day: I also wrote that the author had not applied their own argument one level up. The file header says it explicitly -- \"possession of a subscription id still gets you a portal ... recorded here rather than left to be discovered\" -- so this is a CONSCIOUSLY ACCEPTED risk with a stated reason, not an oversight. What is left is that the acceptance lived in a file header and never reached the open-work index or the SOUP register, which is the same information-leakage shape as item 94; that nobody had checked what actually bounds it; and the expired sk_test_ key in a production environment variable.",
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
-      }
-    },
-    {
-      "commit": "57236fe9db01",
-      "date": "2026-09-14",
-      "subject": "feat(sairnbiz): purchase orders, goods receipts, and a bill that cannot settle unmatched",
-      "files": [
-        "docs/MASTER-PLAN.md",
-        "docs/SAIRN-OPEN-WORK-INDEX.md",
-        "docs/traceability-matrix.md",
-        "sairnbiz.html",
-        "tests/sairnbiz_bill_cannot_settle_unmatched.js"
-      ],
-      "lines_added": 500,
-      "lines_removed": 10,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "static-checker",
-      "summary": "the three-way match shipped with both of its new documents local-only: sb_po and sb_recv had no table, no resource registration and no place in SB_SYNCED, so the purchase order and the receipt lived in one browser while the bill they justify was already backed up and the ledger entry settling it was durable in Postgres -- a browser clear leaves a payable and a payment with nothing justifying either, and sbThreeWayMatch then reports no purchase order exists against a bill that was correctly matched when it was paid",
-      "rules": [
-        "1.11"
-      ],
-      "citation_confidence": "clean",
-      "injection_phase": "design",
-      "phase_confidence": "inferred",
-      "found_by_tool": "sairnbiz_bill_cannot_settle_unmatched.js",
-      "injection": {
-        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
-      }
-    },
-    {
-      "commit": "4ba885d99f42",
-      "date": "2026-09-14",
-      "subject": "feat: SAIRNcare Phase 3 items 1-4 -- pharmacy eMAR, doc-to-charges, AI care plans, late-care alerting",
-      "files": [
-        "vercel.json",
-        "api/alf-alerts.js",
-        "api/sairndental/send-reminder.js"
-      ],
-      "lines_added": 0,
-      "lines_removed": 0,
-      "app": "PLATFORM",
-      "layer": "product",
-      "severity": "high",
-      "detection_method": "fault-injection",
-      "summary": "two hourly crons were scheduled on the identical minute (0 * * * *) and BOTH FAILED ABOUT A THIRD OF THEIR RUNS on a 504 from Supabase -- 23 send-reminder failures and 20 alf-alerts failures over seven days, every one at :00, so appointment reminders were not sent and medication-exception alerts were not computed; /api/claude's Supabase rate-limit RPC also timed out at :00, which was the open unexplained 504 pattern",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "config",
-      "phase_confidence": "stated",
-      "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "found_by_tool": "unknown",
-      "injection": {
-        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
-      }
-    },
-    {
-      "commit": "973e2471",
-      "date": "2026-09-14",
-      "subject": "feat: sairnsenior.html + api/sen-portal.js -- Family/Client Portal, scoped revocable links (not a PIN account)",
-      "files": [
-        "api/sen-portal.js"
-      ],
-      "lines_added": 0,
-      "lines_removed": 0,
-      "app": "sairnsenior",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "summary": "api/sen-portal.js declares MANAGEMENT_ROLES = { owner, billing } and references it nowhere, while the agency-wide list branch beside it refuses with 'ask management for the agency-wide list' and enforces the WIDER BROAD_ROLES -- owner, billing, coordinator and scheduler. The message and the check disagree, so one of the two is wrong: either a coordinator should not have the agency-wide list of every client's portal links, or the refusal misstates the rule to everyone who hits it",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "coding",
-      "phase_confidence": "inferred",
-      "citation_note": "No standing rule covers a refusal message that misstates its own guard. The nearest, 1.11, is about a check that could not run being folded into a pass, and this check runs and answers correctly for the rule it actually enforces -- what is wrong is the sentence beside it, plus a gate that was written and never wired. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "found_by_tool": "completeness_check.py",
-      "injection": {
-        "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
-      }
-    },
-    {
-      "commit": "20afb167",
-      "date": "2026-09-14",
-      "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
-      "files": [
-        "api/sd-data.js",
-        "api/_resources/sairnbiz.js",
-        "sql/sairnbiz_data_schema.sql",
-        "docs/CRITICALITY-TIERS.md"
-      ],
-      "lines_added": 0,
-      "lines_removed": 0,
-      "app": "sairnbiz",
-      "layer": "product",
-      "severity": "moderate",
-      "detection_method": "static-checker",
-      "found_by_tool": "removal_path_check.py",
-      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
-      "rules": [],
-      "citation_confidence": "not-citable",
-      "injection_phase": "design",
-      "phase_confidence": "stated",
-      "citation_note": "No standing rule covers 'a resource was given a server before it was given a way to correct a wrong row'. The nearest standing work is the 53-Tier-A-no-removal-path burn-down row, which is a review queue rather than a numbered rule. Recorded as not-citable rather than forced onto a rule it does not fit.",
-      "injection": {
-        "commit": "20afb167"
       }
     }
   ]
