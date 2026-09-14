@@ -3656,3 +3656,70 @@ changed nothing, because the arm was reading the `COULD NOT RUN` list further
 down. Two places say which checkers were skipped, so two places are checked now
 -- otherwise one of them can go quiet unnoticed, which is the same shape as the
 defect being fixed.
+
+## 2026-09-14 (Cody) -- the trial-gate tripwire died for the third time, and
+## both remaining reds on main were the same defect
+
+Skill used: `sairn-guardian-v2`. Claim: `tests` --
+`two probe anchors into the schema snapshot do not match exactly once`.
+
+**ONE ROOT CAUSE BEHIND BOTH REDS.** `license_trial_gate_probe.py` reported
+*PROBES THAT DID NOT BITE* for arms 1 and 2, and `mutation_anchor_check`
+independently reported those same two as **ANCHOR-0 in
+`db/schema_snapshot.json`**. Two failing test files, one cause.
+
+**THE FILE ALREADY DOCUMENTED THIS HAPPENING TWICE.** The anchors assumed
+one-line columns; `3d603dd0` re-captured the snapshot PRETTY-PRINTED and killed
+them; they were rewritten for the pretty-printed shape; and it has now been
+re-captured COMPACT -- `"license_keys": [ "id", ...` on one line -- killing them
+again. The file's own comment generalises the lesson correctly: *re-capturing a
+data file can change its formatting, and every text anchor into that file is a
+consumer nobody thinks of as one.* It just kept taking the same bet.
+
+**SO THE ARMS NO LONGER HAVE A TEXT ANCHOR.** Both mutate the PARSED DOCUMENT:
+they say WHAT to change rather than what the bytes around it look like, and the
+probe restores the original bytes in its `finally`, so the re-serialisation
+never reaches a commit. Each transform RAISES if the thing it meant to change is
+absent -- `trial_ends_at` already present, or `stripe_subscription_id` no longer
+a `license_keys` column -- because a transform that silently no-ops is the same
+failure the text anchors kept having, only harder to notice.
+
+**THEN THE ANCHOR CHECKER REPORTED MY FIX AS A DEFECT.** It renders a bare Name
+as `@name`, so it counted `@_snap_add_trial_column` as a literal, found it zero
+times, and reported ANCHOR-0 against an arm that has no anchor by construction.
+It now reports those as **NO TEXT ANCHOR** in their own printed line.
+
+**SKIPPING THEM SILENTLY WOULD HAVE BEEN THE OTHER ERROR** -- a category nobody
+sees is exactly where a real stale anchor would hide, which is the same argument
+`report_only_checks.py` makes for printing its own exclusions. An arm pins that
+the category is printed, and a mutation that suppresses the line fails it.
+
+**4 MUTATION CONTROLS BITE**, both files restored byte-identical, both probes
+green before mutating: the structural-arm branch removed, the structural line
+suppressed, the add-column transform made a no-op, and the rename transform
+pointed away from the sentinel the suite actually reads. The last two fail with
+`PROBES THAT DID NOT BITE` naming the arm, which is the probe reporting its own
+control as dead -- the behaviour the whole file exists for.
+
+### Two of my own probes went red on other people's good work, same hour
+
+**`check11_probe` arm E asserted that somebody else's file was STILL BROKEN.**
+It proved check 11 is scoped by checking that the tree carried a control-byte
+finding elsewhere -- `api/sv-auth.test.js`, inside fourth's claim. They fixed it,
+the tree went clean, and my arm failed while the behaviour it tests was perfectly
+correct. **A control whose precondition is another session's unfixed defect
+expires the moment they do their job.** It plants its own elsewhere now: a dirty
+file committed into the BASE, a clean file pushed on top, so the outgoing range
+holds only the clean one while the worktree still carries a finding.
+
+**`missing_checker_probe`'s html CONTROL was refused by a check that landed
+today.** A new blocking check -- *this push makes a GENERATED document stop
+matching what it is derived from* -- correctly refused it, because a new
+ROOT-level `.html` changes MASTER-PLAN's derived counts. The fixture lives in a
+subdirectory now: reachability scans every changed `.html` wherever it lives, so
+the arm still exercises what it names, while the generated documents count root
+files only.
+
+Both were my probes being wrong about their environment rather than the gate
+being wrong. Four other failures in the same run reproduce on a stashed pristine
+main and are not mine.

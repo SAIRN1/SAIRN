@@ -163,16 +163,31 @@ try:
     ok('a clean text file is allowed, tabs and newlines included', rc == 0,
        'exit=%d\n%s' % (rc, out[-400:]))
 
-    print('\nE. CONTROL -- the standing finding elsewhere in the tree does NOT block')
-    # THE SCOPING ARM. api/sv-auth.test.js carries raw backspaces right now and
-    # is inside another session's claim; if this check read the whole tree,
-    # section D above could not pass at all.
-    standing = subprocess.run([sys.executable, os.path.join(REPO, TOOL_REL)],
+    print('\nE. CONTROL -- a finding ELSEWHERE in the tree does NOT block a clean push')
+    # THE SCOPING ARM, AND IT PLANTS ITS OWN ELSEWHERE (rewritten 2026-09-14).
+    # It used to assert that api/sv-auth.test.js still carried raw backspaces --
+    # somebody else's file, inside another session's claim. They fixed it, the
+    # tree went clean, and this arm failed while the behaviour it tests was
+    # perfectly correct. A control whose precondition is another session's
+    # UNFIXED DEFECT expires the moment they do their job.
+    #
+    # So it commits a dirty file into the BASE, then pushes a clean one on top:
+    # the outgoing range holds only the clean file while the worktree still
+    # carries a finding. If check 11 read the tree instead of the push, this
+    # would be refused.
+    git(wt, 'reset', '-q', '--hard', base); sync_tools(wt)
+    dirty_base = commit(wt, 'probe_check11_elsewhere.txt',
+                        b'x = "' + BS + b'";\n',
+                        'fixture: a control byte that this push will not ship')
+    tip6 = commit(wt, REL, CLEAN, 'fixture: a clean file pushed over a dirty tree')
+    standing = subprocess.run([sys.executable, os.path.join(REPO, TOOL_REL),
+                               os.path.join(wt, 'probe_check11_elsewhere.txt')],
                               capture_output=True, text=True, cwd=REPO)
-    ok('the tree really does still carry a finding somewhere else',
+    ok('the worktree really does carry a finding somewhere else',
        standing.returncode == 1, (standing.stdout or '')[-200:])
-    ok('...and the clean push above was allowed anyway, so the check is scoped',
-       rc == 0, 'exit=%d' % rc)
+    rc6, out6 = run_gate(wt, tip6, dirty_base)
+    ok('...and a push that does not SHIP it is allowed, so the check is scoped',
+       rc6 == 0, 'exit=%d\n%s' % (rc6, out6[-400:]))
 
     print('\nF. a BINARY file carrying control bytes is not refused')
     git(wt, 'reset', '-q', '--hard', base); sync_tools(wt)
@@ -206,7 +221,8 @@ finally:
     ok('the throwaway worktree is removed', not os.path.isdir(wt))
     ok('no fixture was left on this clone',
        not any(os.path.exists(os.path.join(REPO, p))
-               for p in (REL, 'probe_check11.png')))
+               for p in (REL, 'probe_check11.png',
+                         'probe_check11_elsewhere.txt')))
     ok('this clone still has its own control-byte checker',
        os.path.isfile(os.path.join(REPO, TOOL_REL)))
 

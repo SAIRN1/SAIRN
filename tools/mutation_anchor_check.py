@@ -130,6 +130,18 @@ def resolve(consts, entry):
         target, old = consts.get('TARGET'), entry[1]
     if isinstance(target, str) and target.startswith('@'):
         target = consts.get(target[1:])      # the entry named a module constant
+    # ── AN ARM THAT NAMES A FUNCTION HAS NO TEXT ANCHOR TO ROT ──────────
+    # read_probe() renders a bare Name as '@name'. For a TARGET that means a
+    # module constant; for OLD it can also mean a TRANSFORM FUNCTION, which
+    # is what license_trial_gate_probe.py switched its two snapshot arms to
+    # on 2026-09-14 after their text anchors died for the third time in a
+    # re-capture. Counting '@_snap_add_trial_column' as a literal found it
+    # zero times and reported ANCHOR-0 -- a stale-anchor finding against an
+    # arm that has no anchor by construction. Structural arms are reported
+    # in their own line rather than dropped: an exclusion nobody sees is how
+    # a real stale anchor would hide in the same category.
+    if isinstance(old, str) and old.startswith('@') and old[1:] not in consts:
+        return target, None
     if not isinstance(target, str) or not isinstance(old, str):
         return None, old
     p = target if os.path.isabs(target) else os.path.join(REPO, target)
@@ -174,7 +186,7 @@ def mutates_repo_path(body):
 
 
 def main(argv):
-    rows, unreadable = [], []
+    rows, unreadable, structural = [], [], []
     cache = {}
     for path in sorted(glob.glob(os.path.join(REPO, 'tests', '**', '*_probe.py'), recursive=True)):
         rel = os.path.relpath(path, REPO).replace(os.sep, '/')
@@ -187,6 +199,9 @@ def main(argv):
             continue               # not a mutation probe; nothing to check
         for entry in muts:
             target, old = resolve(consts, entry)
+            if target and old is None:
+                structural.append((rel, str(entry[0])[:70]))
+                continue
             if not target:
                 unreadable.append((rel, 'arm %r: target unresolved' % str(entry[0])[:40]))
                 continue
@@ -253,6 +268,14 @@ def main(argv):
             print('\n  COULD NOT READ  %s' % p)
             print('      %s' % why)
         print('')
+        if structural:
+            print('  arms with NO TEXT ANCHOR (a transform function, nothing to '
+                  'rot): %d' % len(structural))
+            for rel, arm in structural:
+                print('      %s  %s' % (rel, arm))
+            print('      Not checked here, which is correct -- but printed,')
+            print('      because an exclusion nobody sees is how a real stale')
+            print('      anchor would hide inside the category that excuses it.')
         print('  probes that mutate in place and do NOT refuse an import: %d'
               % len(unguarded))
         for u in unguarded:

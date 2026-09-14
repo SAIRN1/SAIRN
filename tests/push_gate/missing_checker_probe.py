@@ -97,6 +97,14 @@ PLAIN_API = """// fixture: an api file with nothing interesting in it.
 module.exports = function handler(req, res) { res.status(200).json({ ok: true }); };
 """
 
+# THE HTML FIXTURE LIVES IN A SUBDIRECTORY, AND THAT IS NOT COSMETIC.
+# A new ROOT-level .html is counted as an app by the generated documents, so
+# on 2026-09-14 a new blocking check -- 'this push makes a GENERATED document
+# stop matching what it is derived from' -- correctly refused the CONTROL arm
+# for a reason that had nothing to do with the tool under test. Reachability
+# (check 5) scans every changed .html wherever it lives, so the arm still
+# exercises what it names; MASTER-PLAN.md counts root files only, so the
+# fixture no longer makes a derived document stale.
 PLAIN_HTML = """<!doctype html>
 <div class="panel" id="panel-zz"><button onclick="zzProbe()">go</button></div>
 <script>function zzProbe(){ return 1; }</script>
@@ -211,14 +219,14 @@ try:
         'fixture: an ordinary api file', ['seam'])
 
     arm('D. CHECK 5 -- a missing reachability check',
-        'check 5', TOOLS['reach'], 'probe_missing_checker.html', PLAIN_HTML,
+        'check 5', TOOLS['reach'], 'probe_fixtures/probe_missing_checker.html', PLAIN_HTML,
         'fixture: an ordinary html file', ['reachability'])
 
     # ── THE ONE THAT IS NOT A DENY ────────────────────────────────────────────
     print('\nE. THE WIDEST FAIL-OPEN -- a missing load-state checker must not '
           'switch off checks 2 to 10')
     git(wt, 'reset', '-q', '--hard', base)
-    tip = commit(wt, 'probe_missing_checker.html', UNREACHABLE_HTML,
+    tip = commit(wt, 'probe_fixtures/probe_missing_checker.html', UNREACHABLE_HTML,
                  'fixture: a feature with no way in')
     victim = os.path.join(wt, TOOLS['loadstate'])
     ok('the load-state checker is present before the sabotage removes it',
@@ -236,7 +244,7 @@ try:
     ok('the GATE still refuses, with the load-state checker absent', rc != 0,
        'exit=%d -- if this is 0 the early exit is back\n%s' % (rc, out[-400:]))
     ok('...and the refusal is CHECK 5, so checks 2-10 really did run',
-       'reach' in low and 'probe_missing_checker.html' in out, out[-500:])
+       'reach' in low and 'probe_fixtures/probe_missing_checker.html' in out, out[-500:])
     ok('...and it is NOT the PROBE-fixture check answering instead',
        'PROBE fixture commit' not in out, out[-300:])
     ok('...and the load-state checker is restored in the worktree',
@@ -250,7 +258,7 @@ try:
     for label, rel, body, subject in (
             ('a text file', 'probe_missing_checker.txt', 'probe\n',
              'fixture: harmless text'),
-            ('an html file with a reachable control', 'probe_missing_checker.html',
+            ('an html file with a reachable control', 'probe_fixtures/probe_missing_checker.html',
              PLAIN_HTML, 'fixture: an ordinary html file'),
             ('a sql file whose table the snapshot has', 'sql/probe_missing_checker.sql',
              PLAIN_SQL, 'fixture: ordinary sql')):
@@ -265,7 +273,7 @@ finally:
        all(os.path.isfile(os.path.join(REPO, r)) for r in TOOLS.values()))
     ok('no fixture was left on this clone',
        not any(os.path.exists(os.path.join(REPO, p)) for p in
-               ('probe_missing_checker.html', 'probe_missing_checker.txt',
+               ('probe_fixtures/probe_missing_checker.html', 'probe_missing_checker.txt',
                 'api/probe_missing_checker.js', 'sql/probe_missing_checker.sql')))
     ok('and this clone has no fixture commit on its branch',
        'fixture:' not in git(REPO, 'log', '--oneline', '-5', '--pretty=format:%s').stdout)

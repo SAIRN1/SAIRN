@@ -144,6 +144,15 @@ p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True,
                    env=dict(os.environ, PYTHONIOENCODING='utf-8', PYTHONUTF8='1'))
 check('7a  the real repo has zero bad anchors and zero unguarded probes',
       p.returncode == 0, 'exit %d' % p.returncode)
+# AN ARM WITH NO TEXT ANCHOR IS EXCLUDED, AND THE EXCLUSION IS PRINTED.
+# license_trial_gate_probe.py switched its two snapshot arms to transform
+# FUNCTIONS on 2026-09-14, after their text anchors died for the third time in
+# a re-capture. Counting the function NAME as a literal found it zero times and
+# reported ANCHOR-0 against an arm that has no anchor by construction. Skipping
+# them silently would have been the other error: a category nobody sees is
+# where a real stale anchor hides.
+check('7c  an arm with no text anchor is reported as such, not as ANCHOR-0',
+      'NO TEXT ANCHOR' in p.stdout, p.stdout[-300:])
 check('7b  and it inspected a real number of them',
       'anchors checked              : 0' not in p.stdout and 'anchors checked' in p.stdout,
       [l.strip() for l in p.stdout.split('\n') if 'anchors checked' in l][:1])

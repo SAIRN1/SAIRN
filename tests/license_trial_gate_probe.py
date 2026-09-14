@@ -10,6 +10,7 @@ Nine mutations across four files, restored and sha256-verified.
 Run:  python tests/license_trial_gate_probe.py
 """
 import hashlib
+import json
 import os
 import subprocess
 import sys
@@ -23,6 +24,44 @@ DATA = os.path.join('api', 'sd-data.js')
 RENDER = os.path.join('api', 'sd-render.js')
 STORE = os.path.join('api', '_lib', 'sd-store.js')
 SNAP = os.path.join('db', 'schema_snapshot.json')
+
+# ── THE SNAPSHOT IS MUTATED AS JSON, NOT AS TEXT (2026-09-14) ───────────
+# THIRD TIME THESE TWO ANCHORS DIED, and the file already documents the
+# first two. 2026-09-11 re-captured db/schema_snapshot.json pretty-printed
+# and killed the one-line anchors; the anchors were rewritten for the
+# pretty-printed shape; and it has now been re-captured COMPACT --
+# `"license_keys": [ "id", ...` on one line -- so both died again.
+#
+# Chasing the formatting a fourth time would be the same bet. A JSON
+# transform cannot rot on whitespace because it has no text anchor at all:
+# it says WHAT to change rather than what the bytes around it look like.
+# The probe restores the original bytes in its `finally`, so the
+# re-serialisation never reaches a commit.
+#
+# Each one RAISES if the thing it meant to change is not there, because a
+# transform that silently no-ops is exactly the failure the text anchors
+# kept having -- just harder to notice.
+def _snap_add_trial_column(doc):
+    cols = doc['license_keys']
+    if 'trial_ends_at' in cols:
+        raise AssertionError('trial_ends_at is ALREADY in the snapshot -- this '
+                             'arm can no longer prove the gate notices it '
+                             'appearing, and the absence assertion it guards '
+                             'may now be wrong')
+    return dict(doc, license_keys=['trial_ends_at'] + cols)
+
+
+def _snap_rename_sentinel(doc):
+    cols = doc['license_keys']
+    # stripe_subscription_id is what the SUITE reads. Renaming app_id left
+    # the guard satisfied and this arm came back SILENT once already.
+    if 'stripe_subscription_id' not in cols:
+        raise AssertionError('stripe_subscription_id is no longer a license_keys '
+                             'column, so this arm is renaming something the '
+                             'suite does not read')
+    return dict(doc, license_keys=['zz_subscription_id' if c == 'stripe_subscription_id'
+                                   else c for c in cols])
+
 
 MUTATIONS = [
     # THE TRIPWIRE, which is the whole reason this suite exists. If it does not
@@ -46,8 +85,7 @@ MUTATIONS = [
     # anchor into the snapshot in the repo -- checked on 2026-09-12; every
     # other consumer parses it as JSON and was unaffected.
     ("1. the column APPEARS in the live schema snapshot",
-     SNAP, '"license_keys": [\n        "id",',
-     '"license_keys": [\n        "trial_ends_at",\n        "id",'),
+     SNAP, _snap_add_trial_column, None),
     # The sentinel the SUITE checks is stripe_subscription_id, not app_id --
     # renaming app_id left the guard satisfied and this arm came back SILENT.
     # A control has to break the thing the assertion reads.
@@ -56,8 +94,7 @@ MUTATIONS = [
     # "stripe_subscription_id" alone appears 3 times in the snapshot, so a bare
     # anchor would be ambiguous and main() requires a count of exactly 1.
     ("2. the snapshot stops looking like license_keys at all",
-     SNAP, '"stripe_subscription_id",\n        "plan"',
-     '"zz_subscription_id",\n        "plan"'),
+     SNAP, _snap_rename_sentinel, None),
     ("3. the licence normaliser stops defaulting the field to null",
      LIB, "  out.trial_ends_at = row.trial_ends_at || null;",
      "  out.trial_ends_at = row.trial_ends_at;"),
@@ -99,6 +136,24 @@ def main():
     try:
         for name, target, old, new in MUTATIONS:
             src = orig[target]
+            # A CALLABLE MUTATES THE PARSED DOCUMENT. See the transforms
+            # above for why the snapshot arms stopped using text anchors.
+            if callable(old):
+                try:
+                    mutated = json.dumps(old(json.loads(src.decode('utf-8'))),
+                                         indent=1).encode('utf-8')
+                except AssertionError as e:
+                    results.append((name, 'STALE'))
+                    print('    %s: %s' % (name, e))
+                    continue
+                if mutated == src:
+                    results.append((name, 'NO-OP'))
+                    continue
+                open(os.path.join(ROOT, target), 'wb').write(mutated)
+                r = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True)
+                results.append((name, 'BITES' if r.returncode != 0 else 'SILENT'))
+                open(os.path.join(ROOT, target), 'wb').write(src)
+                continue
             # CRLF-aware: three of these four files are stored CRLF in the
             # working tree, and a \n-only anchor silently matches nothing.
             hit = None
