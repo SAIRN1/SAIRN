@@ -1635,6 +1635,16 @@
       "claimed_at_epoch": 1789413568.3371127,
       "status": "released",
       "released_at": "2026-09-14T19:28:01Z"
+    },
+    {
+      "id": "hank-1789414703",
+      "session": "hank",
+      "subject": "item34",
+      "task": "temporary state leak detection -- declared scope first",
+      "claimed_at": "2026-09-14T19:38:23Z",
+      "claimed_at_epoch": 1789414703.0752459,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
