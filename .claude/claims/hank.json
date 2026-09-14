@@ -1685,6 +1685,16 @@
       "claimed_at_epoch": 1789426469.6525033,
       "status": "released",
       "released_at": "2026-09-14T23:23:51Z"
+    },
+    {
+      "id": "hank-1789428257",
+      "session": "hank",
+      "subject": "sairnsenior",
+      "task": "fault probe gate 4 the EVV suites must DENY",
+      "claimed_at": "2026-09-14T23:24:17Z",
+      "claimed_at_epoch": 1789428257.7608385,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
