@@ -170,6 +170,8 @@ async function computeForFacility(licHash, nowDate) {
   return Object.assign({ ok: true }, result);
 }
 
+const { beat } = require('./_lib/heartbeat');
+
 module.exports = async (req, res) => {
   if (!process.env.SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
     bad(res, 503, 'NOT_CONFIGURED', 'Server storage is not configured.'); return;
@@ -222,12 +224,18 @@ module.exports = async (req, res) => {
     // is the case where the table exists and would not answer.
     if (!fr.ok) {
       console.error('alf-alerts: facility sweep read failed, HTTP', fr.status);
+      // RAN AND FAILED beats too. A watchdog that only sees silence cannot tell
+      // "the scheduler stopped" from "it fires every hour and checks nothing".
+      await beat({ job: '/api/alf-alerts', outcome: 'failed', expected_interval_seconds: 3600,
+                   detail: { error: 'SWEEP_READ_FAILED', http: fr.status } });
       res.status(502).json({ error: { code: 'SWEEP_READ_FAILED', message: 'Could not read the facility list, so no facility was checked. No exceptions were computed.' } });
       return;
     }
     const facilities = await fr.json().catch(() => null);
     if (!Array.isArray(facilities)) {
       console.error('alf-alerts: facility sweep read returned a non-array');
+      await beat({ job: '/api/alf-alerts', outcome: 'failed', expected_interval_seconds: 3600,
+                   detail: { error: 'SWEEP_READ_FAILED', reason: 'non-array' } });
       res.status(502).json({ error: { code: 'SWEEP_READ_FAILED', message: 'Could not read the facility list, so no facility was checked. No exceptions were computed.' } });
       return;
     }
@@ -264,6 +272,26 @@ module.exports = async (req, res) => {
       }
       out.push({ license_hash: f.license_hash, late: r.late.length, emailed: sendRes.sent, error: sendRes.error || null });
     }
+    // ── THE HEARTBEAT (item 54, 2026-09-14) ────────────────────────────
+    // This file already logs each send and each failure, and its own comment
+    // records why: a cron's response body goes nowhere. What no log can do is
+    // announce its own ABSENCE, and a sweep that stops firing writes nothing at
+    // all. This row is the positive fact api/cron-watchdog.js reads.
+    //
+    // `partial` RATHER THAN `ok` WHEN A SEND FAILED, because this is the
+    // medication-exception alert sweep: a run that checked every facility and
+    // delivered nothing is alive and must not read as healthy.
+    await beat({
+      job: '/api/alf-alerts',
+      outcome: out.some(function (x) { return x.error; }) ? 'partial' : 'ok',
+      expected_interval_seconds: 3600,
+      detail: {
+        facilities_checked: out.length,
+        emailed: out.filter(function (x) { return x.emailed; }).length,
+        send_failures: out.filter(function (x) { return x.error; }).length,
+        skipped: out.filter(function (x) { return x.skipped; }).length
+      }
+    });
     res.status(200).json({ ok: true, facilities_checked: out.length, results: out });
     return;
   }

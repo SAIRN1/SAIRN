@@ -103,6 +103,10 @@
     {
       "path": "/api/audit-checkpoint",
       "schedule": "30 3 * * *"
+    },
+    {
+      "path": "/api/cron-watchdog",
+      "schedule": "15 * * * *"
     }
   ]
 }

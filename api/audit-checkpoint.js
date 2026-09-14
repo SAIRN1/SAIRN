@@ -42,6 +42,7 @@
 // ---------------------------------------------------------------------------
 
 const crypto = require('crypto');
+const { beat } = require('./_lib/heartbeat');
 
 const TABLES = ['sairnlaw_audit_log', 'sairncode_audit_log', 'stonedesk_audit_log'];
 const CHECKPOINT_TABLE = 'sairn_audit_checkpoint';
@@ -354,6 +355,20 @@ module.exports = async (req, res) => {
     if (bad.length) {
       console.error('audit-checkpoint: VERIFICATION FAILED -- ' + JSON.stringify(bad));
     }
+    // ── THE HEARTBEAT (item 54) ─────────────────────────────────────────
+    // `partial` when a verification FAILED: the job itself is healthy -- it ran
+    // and did its work -- but its ANSWER is a finding, and the watchdog must
+    // not report that as an ordinary ok while the finding sits in a response
+    // body Vercel throws away.
+    await beat({
+      job: '/api/audit-checkpoint',
+      outcome: bad.length ? 'partial' : 'ok',
+      expected_interval_seconds: 86400,
+      detail: {
+        action: action, failures: bad.length,
+        written: results.reduce(function (n, r) { return n + (r.written || 0); }, 0)
+      }
+    });
     res.status(200).json({
       ok: bad.length === 0, action: action, results: results,
       // NAMED, not folded into `results`: these are a DIFFERENT question
@@ -390,6 +405,10 @@ module.exports = async (req, res) => {
       return;
     }
     console.error('audit-checkpoint: error', err && err.message, err && err.detail);
+    // RAN AND FAILED still beats -- silence and failure need different answers.
+    await beat({ job: '/api/audit-checkpoint', outcome: 'failed',
+                 expected_interval_seconds: 86400,
+                 detail: { error: String((err && err.message) || err).slice(0, 200) } });
     res.status(502).json({ error: { message: 'Upstream error -- try again' } });
   }
 };

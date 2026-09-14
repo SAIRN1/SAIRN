@@ -124,6 +124,12 @@ PURPOSES = {
     # takes over; a run that cannot reach the endpoint overwrites the previous
     # clean verdict with COULD NOT TELL rather than leaving a document
     # asserting a check that never ran.
+    # LIVE for the same reason, and it is the OUT-OF-BAND half of item 54:
+    # api/cron-watchdog.js runs on the same Vercel scheduler as the jobs it
+    # watches, so a total scheduler outage silences both. This runs outside
+    # Vercel and is the only thing here that survives that -- but only when
+    # somebody runs it, which is why the doc it writes says so.
+    'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
     'sairn_load_state_check.py': ('LIVE', 'live seed content differing from the repo seed (gate check 1)'),
     'sairn_seam_check.py': ('CHECKER', 'an endpoint dropping a field the engine reads (gate check 4)'),

@@ -91,6 +91,8 @@ async function stampReminderSent(row, stage, nowISO) {
   }
 }
 
+const { beat } = require('../_lib/heartbeat');
+
 module.exports = async (req, res) => {
   if (!process.env.CRON_SECRET) {
     console.error('CRON_SECRET not set in environment variables');
@@ -179,9 +181,33 @@ module.exports = async (req, res) => {
     console.log('send-reminder: sweep complete -- scanned ' + rows.length +
       ', sent ' + summary.sent + ', skippedNoEmail ' + summary.skippedNoEmail +
       ', skippedNotDue ' + summary.skippedNotDue + ', failed ' + summary.failed);
+    // ── THE HEARTBEAT (item 54, 2026-09-14) ────────────────────────────
+    // The log line above is correct and says what happened. What it cannot do
+    // is announce its own ABSENCE -- a run that never happens writes nothing,
+    // and nothing searches a log for a line that is not there. This row is the
+    // positive fact api/cron-watchdog.js reads to notice that.
+    //
+    // AWAITED BUT NOT CHECKED, deliberately: beat() never throws and returning
+    // false is its way of saying so. A reminder that went unsent because the
+    // MONITORING write failed would be the monitor causing the outage it
+    // exists to detect.
+    await beat({
+      job: '/api/sairndental/send-reminder',
+      outcome: summary.failed ? 'partial' : 'ok',
+      expected_interval_seconds: 3600,
+      detail: summary
+    });
     res.status(200).json({ ok: true, summary: summary });
   } catch (err) {
     console.error('send-reminder: fatal error', err);
+    // A FAILED RUN STILL BEATS, and that is the point of having an outcome
+    // field at all: "ran and failed" and "did not run" need different
+    // responses, and a watchdog that only sees silence cannot tell them apart.
+    await beat({
+      job: '/api/sairndental/send-reminder', outcome: 'failed',
+      expected_interval_seconds: 3600,
+      detail: { error: String((err && err.message) || err).slice(0, 300) }
+    });
     res.status(500).json({ error: { message: 'Internal error' } });
   }
 };
