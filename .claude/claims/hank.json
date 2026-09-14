@@ -1515,6 +1515,16 @@
       "claimed_at_epoch": 1789403013.3934517,
       "status": "released",
       "released_at": "2026-09-14T16:28:59Z"
+    },
+    {
+      "id": "hank-1789403353",
+      "session": "hank",
+      "subject": "scrubber",
+      "task": "refresh sairn-code-scrubber with the bug classes found since aug 7",
+      "claimed_at": "2026-09-14T16:29:13Z",
+      "claimed_at_epoch": 1789403353.0490432,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
