@@ -1683,8 +1683,8 @@
       "task": "fault probe gate 4 the money suites must DENY",
       "claimed_at": "2026-09-14T22:54:29Z",
       "claimed_at_epoch": 1789426469.6525033,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T23:23:51Z"
     }
   ]
 }
