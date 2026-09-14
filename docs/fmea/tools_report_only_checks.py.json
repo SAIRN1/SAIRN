@@ -1,14 +1,14 @@
 {
  "app_matched": "PLATFORM",
  "considered": {
-  "defect_records": 54,
+  "defect_records": 57,
   "detectors_fired": [
    "1.7"
   ],
   "detectors_run": 12,
-  "matched_this_file": 11
+  "matched_this_file": 12
  },
- "drafted_on": "2026-09-13",
+ "drafted_on": "2026-09-14",
  "exists": true,
  "no_detector_yet": [
   "1.6",
@@ -29,6 +29,9 @@
    "detected_by": "static-checker",
    "prior_severity": "moderate",
    "risk": "local_only_collection_check returned 1 for a real finding AND for \"could not read this app\", so it reported local-only 0 in all eighteen apps and still exited non-zero",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -38,6 +41,9 @@
    "detected_by": "static-checker",
    "prior_severity": "high",
    "risk": "nav_panel_check reported RESULT:PASS on two apps whose panel system it could not see -- 32 containers invisible, vouching for what it had not looked at",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -47,6 +53,9 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "report_only_checks.py reported a clean platform after scanning zero apps: an empty target list skipped the per-app loop entirely, so 132 checker runs could vanish into a report byte-identical to a clean sweep",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -56,6 +65,9 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "Guardian Check 0a ran nowhere automatically -- html_script_check.py's name suggests it parses JavaScript and its own header says it does not -- and checkblocks.py printed FAILED_BLOCKS:1 while exiting 0, so wiring it on exit code would have reported a clean pass on a file that does not parse",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -65,6 +77,9 @@
    "detected_by": "static-checker",
    "prior_severity": "moderate",
    "risk": "key_collision_check.py counted a line of prose as a localStorage key write -- 93 raw vs 92 comment-stripped on stonedesk.html -- with the verdict unchanged, which is why it survived",
+   "rules": [
+    "1.2"
+   ],
    "source": "defect-register"
   },
   {
@@ -74,6 +89,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "the tooling inventory reported 13 unpointed checkers without reading NOT_PROMOTED, where six already carried a recorded reason -- overstating the gap, mirroring the same file's SUITE-ONLY error which overstated coverage",
+   "rules": [
+    "1.7"
+   ],
    "source": "defect-register"
   },
   {
@@ -83,6 +101,9 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "install_git_hooks.py --check compared core.hooksPath and nothing else, so it printed OK on a clone whose CRLF pre-push hook git had been skipping silently on every push -- and nothing invoked --check at all",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -92,6 +113,9 @@
    "detected_by": "mutation-testing",
    "prior_severity": "moderate",
    "risk": "a probe that drives a throwaway git clone tests the tool as it stood at committed HEAD, not the change under test -- four arms reported false failures until it pointed this clone's script at the clone instead",
+   "rules": [
+    "1.10"
+   ],
    "source": "defect-register"
   },
   {
@@ -101,6 +125,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "truthy_sum_check.py could not tell a numeric fold from a string-literal concatenation, so 58 of its 140 matches were never defects and every new currency label was answered with a baseline entry -- a checker teaching people to write exemptions",
+   "rules": [
+    "1.2"
+   ],
    "source": "defect-register"
   },
   {
@@ -110,6 +137,9 @@
    "detected_by": "mutation-testing",
    "prior_severity": "low",
    "risk": "a floor pinned to a POST-CLASSIFICATION count goes red on a correctness improvement -- my own occurrences floor broke hours later when concatenation was split out; it floors on raw matches inspected now",
+   "rules": [
+    "1.3"
+   ],
    "source": "defect-register"
   },
   {
@@ -119,6 +149,19 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "131 of 3730 commits on origin/main were authored AND committed as probe@local because one clone had the probes throwaway identity in its LOCAL git config -- and nothing on the platform reads the committing identity, so nothing said anything for three days",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "d66a87e64fc7",
+   "date": "2026-09-13",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "control_char_check promoted to push-gate check 11: a raw control byte is an escape typed literally, and a backspace where a word boundary was meant is a regex that can never match -- six instances across the fleet, two of them privilege guards that could not fail",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -326,6 +369,24 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e414b563f0f9",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e6130cf81728",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "a hand-built probe sandbox stubs only the tools its own arm needs, so a NEW gate check that correctly refuses a missing tool denied before the arm under test ever ran -- four arms went red for a reason unrelated to their subject",
    "source": "defect-register"
   },
   {

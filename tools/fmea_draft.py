@@ -301,10 +301,32 @@ def analyse(path, records, titles):
             'cite': r.get('commit', ''),
             'date': r.get('date', ''),
             'prior_severity': r.get('severity', ''),
-            'detected_by': r.get('detection_method', '')
+            'detected_by': r.get('detection_method', ''),
+            # ── CARRIED SO THE RISK CAN EVER BE SCORED (2026-09-14) ────────
+            # fmea_prediction_check.matched() scores ONLY on a rule citation
+            # and skips any risk whose cite is a commit SHA -- which is every
+            # risk in this block. MEASURED over the 12 drafts on disk before
+            # this line existed: 19 of 274 risks, 6.9%, could EVER produce a
+            # PREDICTED. Drafting more files would have grown coverage while
+            # the scoreable surface stayed flat.
+            #
+            # The rule id is the register's own, set deliberately per record
+            # with a confidence flag, so this is exact-id equality and not the
+            # word-overlap matcher that scored 38% with five false positives.
+            # A `not-citable` record carries [] and still contributes nothing,
+            # which is the escape hatch that stops manufactured agreement.
+            'rules': list(r.get('rules') or [])
         })
 
     # ── evidence 2: the same app, different file ───────────────────────
+    # DELIBERATELY NOT GIVEN `rules`, and this is the load-bearing half of the
+    # change above. A PLATFORM file inherits ~34 same-app risks; if their rule
+    # ids counted, almost every PLATFORM draft would carry the commonest few
+    # and any later defect citing one would score PREDICTED. That prediction
+    # would mean "this platform has had a defect of this kind before", which is
+    # true of everything and is cheap agreement. A rule that has already bitten
+    # THIS FILE is a real prediction; the same rule biting a sibling is
+    # background.
     app = None
     base = os.path.basename(rel)
     for r in records:

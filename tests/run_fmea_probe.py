@@ -177,6 +177,66 @@ check('6e  CONTROL: the before-case really is a MISS when the rule differs, '
       P.matched({'risks': [dict(RISK)]},
                 {'summary': 'x', 'rules': ['2.3']})[0] is None)
 
+print('7. a same-file register risk can be scored; a same-app one cannot')
+# WHY THIS SECTION EXISTS, measured before it was written: matched() scored
+# only on risks citing the rules document, and no defect-register risk does --
+# it cites a commit SHA. Over the 12 drafts then on disk, 19 of 274 risks
+# (6.9%) could EVER produce a PREDICTED, so drafting the 60 undrafted code
+# files would have raised coverage while leaving the scoreable surface flat.
+SAME_FILE = {'source': 'defect-register', 'cite': 'abc123def456',
+             'risk': 'a hung write never settled', 'rules': ['1.5']}
+SAME_APP = {'source': 'defect-register', 'cite': 'abc123def456',
+            'risk': 'a hung write never settled elsewhere'}
+
+check('7a  a same-file register risk whose rule the defect cites DOES score',
+      P.matched({'risks': [dict(SAME_FILE)]},
+                {'summary': 'y', 'rules': ['1.5']})[0] is not None)
+check('7b  and it says WHICH rule and that it came from a register risk',
+      '1.5' in (P.matched({'risks': [dict(SAME_FILE)]},
+                          {'summary': 'y', 'rules': ['1.5']})[0] or '')
+      and 'same-file' in (P.matched({'risks': [dict(SAME_FILE)]},
+                                    {'summary': 'y', 'rules': ['1.5']})[0] or ''))
+check('7c  a DIFFERENT rule still does not score -- this is exact-id '
+      'equality, not the word overlap that scored 38%',
+      P.matched({'risks': [dict(SAME_FILE)]},
+                {'summary': 'y', 'rules': ['2.3']})[0] is None)
+check('7d  a NOT-CITABLE record matches nothing, so the escape hatch that '
+      'stops manufactured agreement still works',
+      P.matched({'risks': [dict(SAME_FILE)]}, {'summary': 'y', 'rules': []})[0] is None)
+check('7e  A SAME-APP RISK CARRIES NO RULES AND MUST NOT SCORE -- otherwise '
+      'every PLATFORM draft predicts every PLATFORM defect',
+      P.matched({'risks': [dict(SAME_APP)]},
+                {'summary': 'y', 'rules': ['1.5']})[0] is None)
+check('7f  CONTROL: 7e is not passing because the whole mechanism is dead -- '
+      'the identical risk WITH rules does score',
+      P.matched({'risks': [dict(SAME_APP, rules=['1.5'])]},
+                {'summary': 'y', 'rules': ['1.5']})[0] is not None)
+
+# THE GENERATOR HALF. The matcher can only read what fmea_draft.py writes, so
+# the two arms above are worth nothing unless the drafter actually attaches
+# `rules` to same-file risks and withholds them from same-app ones.
+import json as _json                                                # noqa: E402
+# --json emits a LIST of per-target drafts, not a single object. The first
+# version of this arm read it as an object, got no risks, and 7h/7i passed
+# VACUOUSLY over an empty list -- which is exactly what 7g is here to catch,
+# and it caught it. The target is one with real same-file register history;
+# a file whose only risks are process-rules ones cannot exercise this at all.
+_rc, _out = run('fmea_draft.py', 'tests/faults/transport_timeout_sweep.js', '--json')
+try:
+    _d = _json.loads(_out)
+    _risks = [r for t in (_d if isinstance(_d, list) else [_d])
+              for r in (t.get('risks') or [])]
+except Exception:                                                   # noqa: BLE001
+    _risks = []
+_sf = [r for r in _risks if 'THIS FILE' in (r.get('basis') or '')]
+_sa = [r for r in _risks if 'same app' in (r.get('basis') or '')]
+check('7g  the drafter emitted same-file risks to judge at all', len(_sf) > 0,
+      'no same-file risk in the draft, so 7h is vacuous')
+check('7h  every same-file risk carries a `rules` key',
+      all('rules' in r for r in _sf), [r.get('basis') for r in _sf][:3])
+check('7i  and no same-app risk does', all('rules' not in r for r in _sa),
+      '%d same-app risk(s) carry rules' % len([r for r in _sa if 'rules' in r]))
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  ' + f)

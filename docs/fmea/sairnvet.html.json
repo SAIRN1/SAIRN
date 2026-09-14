@@ -1,7 +1,7 @@
 {
  "app_matched": "sairnmechanical",
  "considered": {
-  "defect_records": 54,
+  "defect_records": 57,
   "detectors_fired": [
    "1.3",
    "2.1"
@@ -9,7 +9,7 @@
   "detectors_run": 12,
   "matched_this_file": 9
  },
- "drafted_on": "2026-09-13",
+ "drafted_on": "2026-09-14",
  "exists": true,
  "no_detector_yet": [
   "1.6",
@@ -30,6 +30,9 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
+   "rules": [
+    "1.1"
+   ],
    "source": "defect-register"
   },
   {
@@ -39,6 +42,9 @@
    "detected_by": "fault-injection",
    "prior_severity": "high",
    "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -48,6 +54,9 @@
    "detected_by": "fault-injection",
    "prior_severity": "moderate",
    "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -57,6 +66,9 @@
    "detected_by": "static-checker",
    "prior_severity": "moderate",
    "risk": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+   "rules": [
+    "1.7"
+   ],
    "source": "defect-register"
   },
   {
@@ -66,6 +78,7 @@
    "detected_by": "code-review",
    "prior_severity": "critical",
    "risk": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+   "rules": [],
    "source": "defect-register"
   },
   {
@@ -75,6 +88,7 @@
    "detected_by": "code-review",
    "prior_severity": "high",
    "risk": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
+   "rules": [],
    "source": "defect-register"
   },
   {
@@ -84,6 +98,9 @@
    "detected_by": "static-checker",
    "prior_severity": "high",
    "risk": "twelve of fifteen write transports had no timeout on any path and two more bounded only a read, so a hung fetch left ~260 careful await-and-toast call sites silent forever",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -93,6 +110,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "scpData's terminal catch was catch(e){return null;} -- it discarded the error entirely, so every network failure on the app's only server path was unreported",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -102,6 +122,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "mechData's terminal catch took no argument and said nothing, so every network failure was unreported and a timeout would have arrived and vanished",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {

@@ -1,14 +1,14 @@
 {
  "app_matched": "PLATFORM",
  "considered": {
-  "defect_records": 54,
+  "defect_records": 57,
   "detectors_fired": [
    "1.7"
   ],
   "detectors_run": 12,
   "matched_this_file": 7
  },
- "drafted_on": "2026-09-13",
+ "drafted_on": "2026-09-14",
  "exists": true,
  "no_detector_yet": [
   "1.6",
@@ -29,6 +29,9 @@
    "detected_by": "fault-injection",
    "prior_severity": "high",
    "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -38,6 +41,9 @@
    "detected_by": "fault-injection",
    "prior_severity": "moderate",
    "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -47,6 +53,9 @@
    "detected_by": "static-checker",
    "prior_severity": "moderate",
    "risk": "write_path_fault_scan.py only recognised a literal .catch(, so the two-argument .then(ok, err) form in svPushOne and dntPushOne -- the fixes for this very hazard -- were reported as the hazard",
+   "rules": [
+    "1.7"
+   ],
    "source": "defect-register"
   },
   {
@@ -56,6 +65,9 @@
    "detected_by": "static-checker",
    "prior_severity": "high",
    "risk": "43 server writes with no timeout on any path: a hung fetch never returns from the await, so grdData's catch never runs and the toast naming what failed to sync never fires at all",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -65,6 +77,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "cmSavePoints() read nothing from its push while all three callers toasted Point captured unconditionally, so a course point that never reached the server was announced as captured",
+   "rules": [
+    "1.5"
+   ],
    "source": "defect-register"
   },
   {
@@ -74,6 +89,9 @@
    "detected_by": "fault-injection",
    "prior_severity": "high",
    "risk": "write_path_fault_scan.py timeout column matched user-facing STRINGS and counted read-path timeouts, reporting an app with zero timeouts as bounded -- the optimistic direction",
+   "rules": [
+    "1.2"
+   ],
    "source": "defect-register"
   },
   {
@@ -83,6 +101,9 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "the same scan counted writes inside COMMENTS and classified elements of an awaited Promise.all as fire-and-forget, over-reporting 5 safe sites in sairngrounds and 2 phantom sites in other apps",
+   "rules": [
+    "1.2"
+   ],
    "source": "defect-register"
   },
   {
@@ -348,6 +369,15 @@
   },
   {
    "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "d66a87e64fc7",
+   "date": "2026-09-13",
+   "detected_by": "static-checker",
+   "prior_severity": "moderate",
+   "risk": "control_char_check promoted to push-gate check 11: a raw control byte is an escape typed literally, and a backspace where a word boundary was meant is a regex that can never match -- six instances across the fleet, two of them privilege guards that could not fail",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
    "cite": "d6b3f6e929ec",
    "date": "2026-09-13",
    "detected_by": "fault-injection",
@@ -362,6 +392,24 @@
    "detected_by": "code-review",
    "prior_severity": "moderate",
    "risk": "a probe pinned an exact scan count (occurrences : 135) to prove the scan was non-empty, so it went red on the first ordinary commit that added a matching line -- replaced with a floor, the rule MIN_TEST_FILES already carries",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e414b563f0f9",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "sanitizeTools resolved a malformed max_uses to the CEILING, not the floor -- Number(x) || MAX_TOOL_USES_CEILING is falsy for 0, NaN, null and a non-numeric string, so each bought 5 billed web searches; and Number([2]) coerced an array to 2. Both are the trap cappedMaxTokens() type-checks against thirty lines away in the same file",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (PLATFORM) has this defect on record",
+   "cite": "e6130cf81728",
+   "date": "2026-09-13",
+   "detected_by": "fault-injection",
+   "prior_severity": "low",
+   "risk": "a hand-built probe sandbox stubs only the tools its own arm needs, so a NEW gate check that correctly refuses a missing tool denied before the arm under test ever ran -- four arms went red for a reason unrelated to their subject",
    "source": "defect-register"
   },
   {

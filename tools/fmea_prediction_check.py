@@ -135,13 +135,40 @@ def matched(draft, rec):
     on manufactured agreement, and the 38% would come back through the DATA
     instead of through the matcher.
     """
+    want = rec.get('rules') or []
     for r in draft.get('risks', []):
         cite = r.get('cite', '')
-        if 'SAIRN-PROCESS-RULES' not in cite:
+        if 'SAIRN-PROCESS-RULES' in cite:
+            rid = cite.rsplit(' ', 1)[-1]
+            if rid and rid in want:
+                return ('rule ' + rid, r)
             continue
-        rid = cite.rsplit(' ', 1)[-1]
-        if rid and rid in (rec.get('rules') or []):
-            return ('rule ' + rid, r)
+        # ── A SAME-FILE REGISTER RISK NOW CARRIES ITS OWN RULE IDS ────────
+        # Added 2026-09-14. Everything above scores only on a risk that cites
+        # the rules document, and no defect-register risk does -- it cites a
+        # commit SHA. MEASURED before the change, over the 12 drafts then on
+        # disk: 19 of 274 risks, 6.9%, could EVER match. So drafting the 60
+        # undrafted code files would have raised coverage while leaving the
+        # scoreable surface almost exactly where it was.
+        #
+        # STILL EXACT-ID EQUALITY, not the word-overlap matcher that scored
+        # 38% with five false positives. The ids come from the register's
+        # `rules` field, which a person set per record with a confidence flag,
+        # and a `not-citable` record carries [] and matches nothing.
+        #
+        # ONLY SAME-FILE RISKS CARRY THEM -- fmea_draft.py withholds `rules`
+        # from the same-app block on purpose, because a rule that bit a
+        # SIBLING file would make almost every PLATFORM draft carry the
+        # commonest ids and turn PREDICTED into "this platform has seen this
+        # kind of thing before".
+        #
+        # IT CHANGES NOTHING TODAY AND THAT WAS KNOWN BEFORE IT WAS RUN: every
+        # draft on disk postdates every defect, so the scoreable set is empty
+        # and this cannot flatter the current number. It takes effect only on
+        # defects recorded from here on.
+        for rid in (r.get('rules') or []):
+            if rid in want:
+                return ('rule ' + rid + ' (same-file register risk)', r)
     return (None, None)
 
 

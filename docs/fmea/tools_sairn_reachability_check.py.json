@@ -1,7 +1,7 @@
 {
  "app_matched": null,
  "considered": {
-  "defect_records": 54,
+  "defect_records": 57,
   "detectors_fired": [
    "1.1",
    "1.2",
@@ -11,7 +11,7 @@
   "detectors_run": 12,
   "matched_this_file": 0
  },
- "drafted_on": "2026-09-13",
+ "drafted_on": "2026-09-14",
  "exists": true,
  "no_detector_yet": [
   "1.6",
