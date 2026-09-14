@@ -1129,6 +1129,16 @@
       "claimed_at_epoch": 1789395278.0423954,
       "status": "released",
       "released_at": "2026-09-14T14:45:17Z"
+    },
+    {
+      "id": "cody-1789397260",
+      "session": "cody",
+      "subject": "platform",
+      "task": "fail safe verification atomicity and recovery round trip for the witnessing lock",
+      "claimed_at": "2026-09-14T14:47:40Z",
+      "claimed_at_epoch": 1789397260.7054343,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
