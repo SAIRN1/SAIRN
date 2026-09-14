@@ -30680,15 +30680,62 @@ document.addEventListener('DOMContentLoaded', function() {
         +'</tr>';
     }).join('');
   }
+  // ── THE PO NUMBER IS A SEQUENCE, NOT A COUNT (2026-09-14) ────────────────
+  // It was `'PO-2024-0' + (50 + d.length)`, and both halves were wrong.
+  //
+  // DERIVED FROM ARRAY LENGTH, so deleting any PO made the next one REUSE a
+  // number already issued. A purchase order number that is not unique is not a
+  // purchase order number -- it is the key a receipt and a vendor bill are
+  // matched on, and two POs sharing one makes the match ambiguous in exactly
+  // the place the match exists to be unambiguous.
+  //
+  // AND THE YEAR WAS HARDCODED to 2024, so every PO raised today was stamped
+  // with a year two years gone.
+  //
+  // Now: a persistent per-year counter in its own store, seeded from the
+  // highest suffix already issued for that year so it can never collide with
+  // the existing rows (the demo seed issues PO-2024-038..041) and never with a
+  // number a deleted PO already took.
+  //
+  // THE NUMBER IS RESERVED BEFORE THE PO IS WRITTEN, and that ordering is
+  // deliberate: if the write then fails, the sequence has burned a number and
+  // there is a GAP. A gap is auditable and harmless. A REUSE is neither, and
+  // reserving after the write is how you get one.
+  var PO_SEQ_KEY='sd_po_seq';
+  function poSeqLoad(){
+    try{var s=JSON.parse(localStorage.getItem(PO_SEQ_KEY)||'{}');return (s&&typeof s==='object')?s:{};}
+    catch(e){return {};}
+  }
+  window.sdPONextNum=function(rows,year){
+    rows=rows||[];
+    year=year||String(sdLocalToday()).slice(0,4);
+    var seq=poSeqLoad();
+    var highest=Number(seq[year])||0;
+    // The rows are the other half of the floor: a store restored from a backup,
+    // or seed data, can hold numbers the counter has never seen.
+    rows.forEach(function(r){
+      var m=/^PO-(\d{4})-(\d+)$/.exec(String((r&&r.num)||''));
+      if(m&&m[1]===year){var n=parseInt(m[2],10);if(n>highest)highest=n;}
+    });
+    var next=highest+1;
+    seq[year]=next;
+    // A failed reservation REFUSES rather than issuing a number that was never
+    // persisted -- the caller must not mint a PO the sequence does not know
+    // about, because the next one would then collide with it.
+    if(!st(PO_SEQ_KEY,seq)) return null;
+    return 'PO-'+year+'-'+(next<100?('00'+next).slice(-3):String(next));
+  };
   window.sdPOCreate=function(){
     var vendor=document.getElementById('po-vendor').value.trim();
     var amt=parseFloat(document.getElementById('po-amt').value)||0;
     if(!vendor||!amt){showToast('Enter vendor and amount.');return;}
     var d=load();
-    var num='PO-2024-0'+(50+d.length);
+    var num=window.sdPONextNum(d);
+    if(!num){showToast('Could not reserve a PO number -- storage may be full or unavailable, try again');return;}
     d.unshift({num:num,vendor:vendor,mat:document.getElementById('po-mat').value||'Materials',
       amt:amt,exp:document.getElementById('po-exp').value||'TBD',status:'Pending',date:sdLocalToday()});
-    save(d);render();
+    if(!save(d)){showToast('PO number '+num+' was reserved but the PO could not be saved -- storage may be full. The number is not reused; raise it again.',8000);return;}
+    render();
     ['po-vendor','po-amt','po-mat','po-exp'].forEach(function(id){document.getElementById(id).value='';});
     showToast('PO created: '+num);
   };
@@ -30765,6 +30812,7 @@ document.addEventListener('DOMContentLoaded', function() {
         <input id="recv-qty" type="number" placeholder="Qty (slabs)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
         <input id="recv-val" type="number" placeholder="Value ($)" style="padding:8px;border:1px solid var(--border);border-radius:6px;background:var(--bg);color:var(--text)">
       </div>
+      <input id="recv-po" placeholder="PO number (optional, e.g. PO-2026-001)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
       <input id="recv-vendor" placeholder="Vendor / Supplier" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <select id="recv-cond" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text)">
         <option>Perfect</option><option>Good</option><option>Minor Issue</option><option>Damaged — Return</option>
@@ -30815,9 +30863,28 @@ document.addEventListener('DOMContentLoaded', function() {
       vendor:document.getElementById('recv-vendor').value||'Unknown',
       cond:document.getElementById('recv-cond').value,
       notes:document.getElementById('recv-notes').value,
+      // ── THE JOIN KEY (2026-09-14) ──────────────────────────────────────
+      // Before this, StoneDesk shipped all three legs of a three-way match --
+      // purchase orders (sd_pos), this receiving log, and vendor bills
+      // (sd_ap) -- and NOT ONE FIELD joined any of them to either of the
+      // others. A receipt named a vendor and a free-text material string; so
+      // did the PO. Matching them meant guessing from two strings a human
+      // typed on two different days. The match was not unenforced, it was
+      // UNCONSTRUCTIBLE.
+      //
+      // Optional, deliberately: stock can arrive against no PO, and a field
+      // that refuses those would be filled with something untrue to get past
+      // it. What it buys is that a receipt which DOES answer a PO can be
+      // matched to it, and to the bill.
+      //
+      // NOTE the receipt also carries its own `val`, typed here by whoever
+      // booked the delivery with no reference to the PO amount. That is the
+      // second leg of the match and the reason the comparison is worth having
+      // at all -- two independently-entered money figures for one delivery.
+      po_num:(document.getElementById('recv-po').value||'').trim(),
       date:sdLocalToday()});
     save(d);render();
-    ['recv-mat','recv-qty','recv-val','recv-vendor','recv-notes'].forEach(function(id){document.getElementById(id).value='';});
+    ['recv-mat','recv-qty','recv-val','recv-vendor','recv-notes','recv-po'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   };
   window.sdRecvAI=function(){
     var d=load();
@@ -35148,6 +35215,7 @@ document.addEventListener('DOMContentLoaded', function() {
       <input id="ap-vendor" placeholder="Vendor name" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <input id="ap-desc" placeholder="Description" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <input id="ap-amt" type="number" placeholder="Amount ($)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);box-sizing:border-box">
+      <input id="ap-po" placeholder="PO number (optional, e.g. PO-2026-001)" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:8px;background:var(--bg);color:var(--text);border-color:var(--border)">
       <input id="ap-due-date" type="date" style="width:100%;padding:8px;border:1px solid var(--border);border-radius:6px;margin-bottom:10px;background:var(--bg);color:var(--text);box-sizing:border-box">
       <button class="q-btn primary" style="width:100%" onclick="sdAPAdd()">Add Bill</button>
     </div>
@@ -35207,11 +35275,34 @@ document.addEventListener('DOMContentLoaded', function() {
     var amt=parseFloat(document.getElementById('ap-amt').value)||0;
     if(!vendor||!amt){showToast('Enter vendor and amount');return;}
     var d=load();
+    // ── `ap-due` IS THE KPI, NOT THE INPUT (2026-09-14) ────────────────────
+    // This read `document.getElementById('ap-due').value`. That id belongs to
+    // the "Due This Week" KPI DIV a few lines up; the date input is
+    // `ap-due-date`. Reading `.value` off a div is `undefined`, so the `||`
+    // fired and EVERY BILL SILENTLY TOOK TODAY AS ITS DUE DATE -- the date the
+    // user typed was thrown away without a word, and the Due This Week and
+    // OVERDUE figures were then computed from a date nobody chose.
+    //
+    // NOT A CRASH, WHICH IS WHY IT SURVIVED: the id really does exist, so
+    // tools/missing_dom_target_check.py has nothing to report. It checks that
+    // a target EXISTS, not that it is the right KIND of element, and a div
+    // answering for an input is invisible to it.
+    //
+    // The clear loop below had the same id and so never cleared the real
+    // input either -- the stale date stayed on screen after each add, which is
+    // the one visible symptom this had.
     d.unshift({vendor:vendor,desc:document.getElementById('ap-desc').value||'',amt:amt,
-      due:document.getElementById('ap-due').value||sdLocalToday(),
+      due:document.getElementById('ap-due-date').value||sdLocalToday(),
+      // THE JOIN KEY (2026-09-14). Optional on purpose: not every bill comes
+      // from a purchase order -- a utility bill or an equipment lease never
+      // will -- and refusing those would make the field a lie. What it buys is
+      // that a bill which DOES answer a PO can be matched to it and to the
+      // receipt, which was impossible before: no field anywhere joined
+      // sd_pos, sd_receiving and sd_ap.
+      po_num:(document.getElementById('ap-po').value||'').trim(),
       status:'Open',date:sdLocalToday()});
     save(d);render();
-    ['ap-vendor','ap-desc','ap-amt','ap-due'].forEach(function(id){document.getElementById(id).value='';});
+    ['ap-vendor','ap-desc','ap-amt','ap-due-date','ap-po'].forEach(function(id){var el=document.getElementById(id);if(el)el.value='';});
   };
   window.sdAPAI=function(){
     var d=load();

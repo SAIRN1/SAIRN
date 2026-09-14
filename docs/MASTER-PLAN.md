@@ -47,14 +47,14 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnscape` | 12 | ✅ | 1 | 0 | 0 | **nothing traced** · **no fault probe** |
 | `sairnsenior` | 15 | ✅ | 10 | 1 | 0 | **no fault probe** |
 | `sairnvet` | 41 | ✅ | 2 | 1 | 0 | **no fault probe** |
-| `stonedesk` | 36 | ✅ | 14 | 8 | 1 | — |
+| `stonedesk` | 36 | ✅ | 15 | 9 | 1 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 382 resources owned by an app, 75 test files attributed to one, 29 of those traced, 8 fault probes.**
+**Platform totals: 382 resources owned by an app, 76 test files attributed to one, 30 of those traced, 8 fault probes.**
 
-**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **350** test files on disk in total and **154** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
+**And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **352** test files on disk in total and **156** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
@@ -68,12 +68,12 @@ The table above names every contributor, which is necessary and is not enough: a
 
 | Contributor | Could be understating by | Direction | What that figure counts |
 |---|---|---|---|
-| `suites` | 275 | UNDER-counts | test files on disk attributed to no single app by path |
+| `suites` | 276 | UNDER-counts | test files on disk attributed to no single app by path |
 | `traced` | 196 | UNDER-counts | test files no source ties to a stated requirement |
-| `fault` | 21 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
+| `fault` | 22 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 492.** RSS for context: 338.
+**WORST CASE: 494.** RSS for context: 339.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
@@ -120,8 +120,8 @@ The table above names every contributor, which is necessary and is not enough: a
 ```
   app files                         22   git ls-files '*.html'
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
-  test files on disk               350   tests/**, api/*.test.js
-  tests traced to a requirement    159   traceability_matrix.traced()
+  test files on disk               352   tests/**, api/*.test.js
+  tests traced to a requirement    161   traceability_matrix.traced()
   declared fault probes              8   MUTATIONS blocks + *_fault_probe.py
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```

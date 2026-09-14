@@ -108,6 +108,12 @@ PURPOSES = {
     # there is nothing for a gate to do with it. Registration also waits on
     # Cody's report-only sweep-timeout work, because a registry entry is what
     # blew that budget last time.
+    'three_way_match_check.py': ('CHECKER', 'a goods receipt or a vendor bill written with no '
+                                            'join key back to its purchase order, and a PO '
+                                            'number derived from a row count (which reuses '
+                                            'itself after a delete). Structural half runs from '
+                                            'the repo; the PO-vs-receipt-vs-bill comparison '
+                                            'needs an export and is COULD-NOT-RUN without one'),
     'benford_check.py': ('CHECKER', 'money figures whose leading-digit distribution does not '
                                     'look measured -- a LOOK HERE pointer for the '
                                     'fabricated-KPI class, with a shape pre-check that '

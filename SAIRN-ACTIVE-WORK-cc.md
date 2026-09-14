@@ -2163,3 +2163,77 @@ run, and that call is Michael's.
 with reasons and flags 1 with the disagreement stated; `tests/run_benford_probe.py` 37 arms pass
 including four refusal arms, a control that the refusals do not swallow testable data, and two
 arms that break a bar on purpose and assert the lock FAILS.
+
+
+---
+
+## 2026-09-14 -- StoneDesk purchasing: a real sequence, a join key, and a due date nobody chose
+
+### The PO number was a count, not a sequence
+
+`'PO-2024-0' + (50 + d.length)`. Derived from ARRAY LENGTH, so **deleting any PO made the next
+one reuse a number already issued** -- and that number is the key a receipt and a vendor bill are
+matched on. A duplicate makes the match ambiguous in exactly the place it exists to be
+unambiguous. The year was hardcoded to 2024 as well.
+
+Now a persistent per-year counter in `sd_po_seq`, floored by the highest suffix already issued so
+it cannot collide with the demo seed (`PO-2024-038..041`) or with a number a deleted PO took.
+
+**The number is RESERVED BEFORE the PO is written.** If the write then fails, the sequence has
+burned a number and there is a GAP. **A gap is auditable and harmless. A REUSE is neither** --
+and reserving after the write is exactly how you get one.
+
+### `po_num` now joins the three documents, and one substitution is stated rather than silent
+
+`sd_receiving` and `sd_ap` each carry it. Optional by design: stock arrives against no PO, a
+utility bill never has one, and a field that REFUSED those would be filled with something untrue
+to get past it.
+
+**The instruction said `sd_invoices`. StoneDesk's `sd_invoices` is CUSTOMER AR** -- customer name,
+deposit, balance, signature -- and a purchase order does not apply to a customer invoice.
+**`sd_ap` is StoneDesk's vendor-bill store and is the real third leg**, so that is where the key
+went. Putting it on a customer invoice would have created a field that can never be filled
+correctly, which is worse than not having one.
+
+### And a silent wrong value found on the way
+
+`sdAPAdd()` read `getElementById('ap-due').value`. **That id belongs to the "Due This Week" KPI
+DIV**; the date input is `ap-due-date`. Reading `.value` off a div is `undefined`, so the `||`
+fired and **every bill silently took TODAY as its due date** -- the date the user typed was
+discarded without a word, and Due This Week and OVERDUE were then computed from a date nobody
+chose. The clear loop used the same id, so the real input was never cleared either, which was the
+one visible symptom.
+
+**NOT A CRASH, AND THAT IS WHY IT SURVIVED.** The id really exists, so
+`tools/missing_dom_target_check.py` has nothing to report: **it checks that a target EXISTS, not
+that it is the right KIND of element.** A div answering for an input is invisible to it. That is
+a real gap in a promoted checker, and it is recorded here rather than fixed inside someone else's
+claim.
+
+### The checker asks two questions and does not conflate them
+
+STRUCTURE -- can a match be performed at all: every writer carries the key, the PO number is a
+sequence. Answerable from the repo, so it runs every time. DATA -- do the three documents agree.
+Answerable only from an export, because these live in the browser. **With no `--data` the data
+question is COULD-NOT-RUN, exit 2, never clean.** Reporting the structural green alone would be a
+code green read as a business green.
+
+Orphan receipts and bills are **counted, never flagged** -- stock arrives unordered and a utility
+bill has no PO, and flagging those is how an instrument becomes one nobody runs. A PARTIAL
+EXPORT is refused outright: matching two of the three documents is not a three-way match and is
+not reported as one.
+
+### PR 1.2 for the fourth time in one session, now in my own test
+
+Three assertions in the new test went red on **the fix's own explanatory comments** -- a
+file-wide search for `'PO-2024-0'` found the comment describing what was replaced. Fixed with a
+stripper that **cannot remove executable code**: it drops only lines whose trimmed form STARTS
+with `//`. The general form -- blanking from any `//` to end of line -- is what swallowed every
+`https://` in `comment_quote_check.py`'s first version, and an over-reaching stripper makes an
+ABSENCE assertion pass while the defect is present, which is the unsafe direction.
+
+**Verified:** `node --check` 131/131 blocks clean; div_balance PASS; duplicate_global 0;
+`stonedesk_po_sequence_and_join` 26 assertions; `run_three_way_match_probe` 29 arms including
+five that break a structural property on purpose and one that removes the app entirely to prove
+COULD-NOT-RUN is not a pass. The `voiceBtn` missing-target finding is pre-existing -- 0 ids and 5
+references at HEAD too.

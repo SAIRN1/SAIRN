@@ -283,6 +283,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a join key on both other legs, and a silent wrong due date found on the way** | **BUILT 2026-09-14 (CC)** &mdash; `stonedesk.html` + `tools/three_way_match_check.py`; held by `tests/stonedesk_po_sequence_and_join.js` (26 assertions) and `tests/run_three_way_match_probe.py` (29 ar | `tests/run_three_way_match_probe.py`, `tests/stonedesk_po_sequence_and_join.js` |
 | 🚨 **EVERY QUOTE BUILDER DELETE UNDID ITSELF ON THE NEXT SAVED QUOTE &mdash; and the user watched the delete succeed** | **FOUND AND FIXED 2026-09-14 (CC)** while tracing the `sd_drawings` collision row. Held in BOTH directions by `tests/quote_builder_delete_does_not_resurrect.js` | `tests/quote_builder_delete_does_not_resurrect.js` |
 | **The security status panel ASSERTED what it should have measured &mdash; second instance of the Layer 12 shape, found by auditing all 30 layers for it** | **CLOSED 2026-09-10 (CC)** &mdash; `3f3d429d`, live-verified on `sairn.vercel.app/stonedesk` | `tests/sd_security_status_is_measured.js` |
 | **`missing_dom_target_check` reports 137 absent element ids (was 149 &mdash; 12 came off 2026-09-09 with the damage-claim orphan) — 41 are UNGUARDED property reads that throw, and one of them is reachable from a real onclick** | **`setMode` DISPROVEN as reachable and a DIFFERENT, REAL live crash found and fixed 2026-09-08 (Fourth)** — the 40 dead reads remain as Guardian 0d | `tests/stonedesk_dead_dom_readers.js`, `tests/stonedesk_followup_chip.js` |
@@ -304,7 +305,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**154 of 350 test files are traced to a stated requirement. 196 are not.**
+**156 of 352 test files are traced to a stated requirement. 196 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -524,8 +525,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 350   tests/**, api/*.test.js
-  open-work rows citing a test       141   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 352   tests/**, api/*.test.js
+  open-work rows citing a test       142   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                37   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
