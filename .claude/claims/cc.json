@@ -1302,8 +1302,8 @@
       "task": "gate 3 and gate 4 for the 36 resources, three tier A including leg_preneed, and the sairncode tier A billing write gate",
       "claimed_at": "2026-09-14T22:47:28Z",
       "claimed_at_epoch": 1789426048.0783782,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T23:41:18Z"
     }
   ]
 }
