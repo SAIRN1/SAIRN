@@ -1070,8 +1070,8 @@
       "task": "regenerate master plan after check went red",
       "claimed_at": "2026-09-14T09:58:52Z",
       "claimed_at_epoch": 1789379932.62262,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T10:25:55Z"
     }
   ]
 }
