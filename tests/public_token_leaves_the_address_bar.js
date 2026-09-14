@@ -104,7 +104,14 @@ ok(runStrip('sairnsenior.html', 'https://sairn.vercel.app/sairnsenior')
    'sairnsenior.html: a bare URL is untouched');
 
 console.log('\n4. the analytics script is on every root app page, and only once');
-const roots = fs.readdirSync(ROOT).filter(f => f.endsWith('.html'));
+// ── TRACKED FILES, NOT WHATEVER IS ON DISK. Hardened 2026-09-14. ──────────
+// This read `fs.readdirSync(ROOT)` and so asserted over every .html sitting in
+// a clone's working directory, untracked ones included. An untracked
+// `piac.html` turned this suite RED while it was GREEN on a clean origin/main
+// worktree, verified. THE RULE LIVES IN tests/rootpages.js because three other
+// suites had the same shape and survived it by luck -- four copies of a rule is
+// four places for it to drift.
+const roots = require('./rootpages.js').rootPages(ROOT);
 let withScript = 0;
 for (const f of roots) {
   const src = fs.readFileSync(path.join(ROOT, f), 'utf8');

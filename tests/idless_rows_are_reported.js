@@ -129,8 +129,10 @@ APPS.forEach(([app, fnName, how]) => {
 section('a new sync seam cannot appear without a decision');
 
 test('the apps declaring a *SyncCollection seam are exactly the five listed', () => {
-  const found = fs.readdirSync(ROOT)
-    .filter(f => f.endsWith('.html'))
+  // Tracked files, not whatever is on disk -- see tests/rootpages.js. An
+  // untracked .html in a clone turned a sibling suite red on 2026-09-14;
+  // this one survived by luck and a differently-named stray would not have.
+  const found = require('./rootpages.js').rootPages(ROOT)
     .map(f => [f, (read(f).match(/function\s+(\w*SyncCollection)\s*\(/) || [])[1]])
     .filter(([, fnName]) => fnName);
   const declared = APPS.map(a => a[0] + ':' + a[1]).sort();

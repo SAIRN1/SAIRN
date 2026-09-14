@@ -415,7 +415,15 @@ test('the not-covered list is accurate, and nothing has quietly joined it', () =
 test('every app that stores a licence key is in exactly one list', () => {
   // The accounting check. An app with a licence gate that appears in neither
   // list is an unguarded re-key nobody is tracking.
-  const files = fs.readdirSync(ROOT).filter((f) => /^sairn.*\.html$|^stonedesk.*\.html$/.test(f));
+  // Tracked files, not whatever is on disk -- see tests/rootpages.js. An
+  // untracked .html in a clone turned a sibling suite red on 2026-09-14;
+  // this one survived by luck and a differently-named stray would not have.
+  // The /^sairn|^stonedesk/ filter stays: this arm is about APPS WITH A
+  // LICENCE GATE, and the two companion pages that do not match are out of
+  // scope by name rather than by accident. It is applied to the TRACKED
+  // list now, so a stray sairn-something.html cannot join it.
+  const files = require('./rootpages.js').rootPages(ROOT)
+    .filter((f) => /^sairn.*\.html$|^stonedesk.*\.html$/.test(f));
   const known = Object.keys(APPS).concat(Object.keys(NO_GUARD));
   files.forEach((f) => {
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');

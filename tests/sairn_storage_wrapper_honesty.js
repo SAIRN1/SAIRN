@@ -25,6 +25,11 @@ const fs = require('fs');
 const path = require('path');
 
 const ROOT = path.join(__dirname, '..');
+// THE SAME LIST AT ALL THREE CALL SITES BELOW, computed once. Tracked
+// files only -- see tests/rootpages.js for why, and `announce: false`
+// because one line about strays is information and three is noise.
+const ROOT_PAGES = require('./rootpages.js')
+  .rootPages(ROOT, { announce: false });
 let pass = 0, fail = 0;
 function check(name, actual, expected) {
   const a = JSON.stringify(actual), e = JSON.stringify(expected);
@@ -250,7 +255,7 @@ const stampThrows = () => { throw new Error('stamp exploded'); };
 // of asserting a count.
 {
   const swallowing = [];
-  fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
+  ROOT_PAGES.forEach((f) => {
     const src = read(f);
     const m = src.match(/function\s+(\w*[Ss]t)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{try\{localStorage\.setItem\([^}]*\}catch\(e\)\{\}\}/);
     if (m) swallowing.push(f);
@@ -368,7 +373,7 @@ function stripJsComments(src) {
   const mute = [];
   // The second, narrower list -- see the block comment at its push site.
   const guardMute = [];
-  fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
+  ROOT_PAGES.forEach((f) => {
     const src = read(f);
     const re = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
     let m;
@@ -650,7 +655,7 @@ function stripJsComments(src) {
     // green. If this fires, read the named wrapper's catch before anything else.
     check('no wrapper speaks only in prose -- a comment is not a report', (() => {
       const changed = [];
-      fs.readdirSync(ROOT).filter((f) => f.endsWith('.html')).sort().forEach((f) => {
+      ROOT_PAGES.forEach((f) => {
         const src = read(f);
         const re2 = /function\s+(\w+)\s*\(\s*\w+\s*,\s*\w+\s*\)\s*\{/g;
         let mm;
