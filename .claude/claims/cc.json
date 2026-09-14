@@ -1212,8 +1212,8 @@
       "task": "sb_po sb_recv schema sync item 22 checkers items 61 69 88 91 53 38 completeness vercel cron jitter",
       "claimed_at": "2026-09-14T14:42:28Z",
       "claimed_at_epoch": 1789396948.1841059,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T18:22:34Z"
     }
   ]
 }
