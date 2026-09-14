@@ -1675,6 +1675,16 @@
       "claimed_at_epoch": 1789424292.8220327,
       "status": "released",
       "released_at": "2026-09-14T22:24:58Z"
+    },
+    {
+      "id": "hank-1789426469",
+      "session": "hank",
+      "subject": "sairnbiz",
+      "task": "fault probe gate 4 the money suites must DENY",
+      "claimed_at": "2026-09-14T22:54:29Z",
+      "claimed_at_epoch": 1789426469.6525033,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
