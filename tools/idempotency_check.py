@@ -495,6 +495,17 @@ def main(argv):
         print('    UNTRIAGED (nobody has read these; no statement covers them):')
         for f in sorted(untriaged):
             print('      ' + f)
+    else:
+        # ZERO UNTRIAGED IS NOT "EVERY RETRYABLE WRITE IS JUDGED", and the
+        # difference is the checker's own reach. It classifies what it can SEE:
+        # the register records three scope limits it cannot -- an outbound POST
+        # to a third party reads as a mutating write, a uniqueness constraint
+        # that lives in SQL is invisible, and optimistic concurrency on a
+        # version column is not an idempotency key and is not recognised.
+        print('    UNTRIAGED: none. Every file this checker flags has been read.')
+        print('    THAT IS NOT "every retryable write is judged" -- it is every')
+        print('    write THIS CHECKER CAN SEE. Its scope limits are recorded in')
+        print('    the register itself, against the files that revealed them.')
     # A judgment about a file the checker no longer flags is stale, and a stale
     # exemption is how a real finding goes quiet. Named rather than ignored.
     stale = [f for f in judged if f not in unguarded_files]

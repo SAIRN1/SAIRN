@@ -254,8 +254,18 @@ check('7c  the verdicts are from the declared vocabulary',
       str(sorted(set(v['verdict'] for v in tri.values()))))
 check('7d  the run reports judged and untriaged as SEPARATE numbers',
       'ITEM 6 TRIAGE' in out and 'untriaged' in out, out[:400])
-check('7e  ...and names every untriaged file rather than only counting them',
-      'UNTRIAGED (nobody has read these' in out, out[:600])
+# 7e COVERS BOTH STATES. When files are untriaged it must NAME them; when none
+# are, it must say so AND refuse to read that as "every retryable write is
+# judged" -- the checker classifies what it can see, and the register records
+# three things it cannot. The first version asserted only the naming branch and
+# went red the moment the last file was triaged, which would have read as a
+# regression caused by finishing the work.
+check('7e  ...names every untriaged file, or says none remain WITHOUT claiming '
+      'completeness it does not have',
+      ('UNTRIAGED (nobody has read these' in out)
+      or ('UNTRIAGED: none' in out
+          and 'every write THIS CHECKER CAN SEE' in ' '.join(out.split())),
+      out[:900])
 check('7f  a judgment for a file the checker no longer flags is called out as '
       'stale, not left to look current',
       'JUDGED BUT NO LONGER UNGUARDED' in out, out[-1500:])

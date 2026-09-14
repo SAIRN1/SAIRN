@@ -6,7 +6,7 @@
     "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one.",
     "FIXED": "a FIX that has been BUILT. Kept as its own verdict rather than deleted: an entry that vanishes on being fixed leaves nobody able to tell a defect that was closed from one nobody ever judged."
   },
-  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. TWENTY-FIVE files of twenty-nine are judged. The remaining two -- api/sc-credentials.js and api/sd-webauthn.js, both credential inserts -- are named by the checker as UNTRIAGED and are NOT covered by any statement here. They are unread, not cleared.",
+  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. EVERY file the checker flags is now judged. That is not the same as every retryable write on the platform being judged -- the checker's own scope limits are recorded against api/_lib/auth.js (any outbound POST reads as a mutating write), api/audit-checkpoint.js (it cannot see a constraint that lives in SQL) and api/sc-credentials.js (it looks for an idempotency key and cannot recognise optimistic concurrency).",
   "_triaged_by": "fourth",
   "_triaged_at": "2026-09-14",
   "files": {
@@ -179,6 +179,19 @@
       "verdict": "ACCEPTED",
       "why": "Identical shape to api/sen-portal.js: a fresh 32-byte token and a new sd_order_links row per request, with a unique index on link_token that stops collision but not duplication. A retry leaves a second working tracking link for the same job.",
       "but": "Same conditional as sen-portal, and the two are recorded separately rather than merged for the same reason network.js and org-intel.js are: if the reasoning turns out wrong it is wrong in both, and one merged entry would hide the second.",
+      "read_at": "2026-09-14"
+    },
+    "api/sc-credentials.js": {
+      "verdict": "SAFE",
+      "why": "THE BEST-GUARDED WRITE ON THE PLATFORM, and the checker could not see any of it. writeBlob() does a CONDITIONAL UPDATE filtered on `updated_at=eq.<the value it read>` -- a real compare-and-set, with the precondition in the URL. Where no row existed it uses a PLAIN INSERT rather than an upsert, deliberately, so a concurrent first-write loses the race LOUDLY on the unique constraint instead of silently overwriting the row that just landed.",
+      "but": "IT ALSO CARRIES THE ONLY CORRECT RETRY IN THE UNGUARDED LIST. One automatic retry, bounded at one: it re-reads the blob and RE-APPLIES the same single-service change rather than re-sending a stale merge, so a concurrent edit to a DIFFERENT service survives and only a same-service edit is last-write-wins. A second conflict is a 409, not a loop. That is what a safe retry looks like and it is worth pointing at.",
+      "checker_scope_limit": "A THIRD CLASS OF GUARD THE CHECKER CANNOT RECOGNISE. It asks 'is there an idempotency KEY' -- a token identifying the REQUEST. This is OPTIMISTIC CONCURRENCY: a compare-and-set on a VERSION column, which identifies the STATE. Different concept, equally correct, and `updated_at` is neither in the vocabulary nor key-shaped so it is not even a candidate. api/sairncash/trial-renew.js now uses one too. Recorded here rather than widening the vocabulary, because a version column and an idempotency key answer different questions and conflating them would be the fail-open direction.",
+      "read_at": "2026-09-14"
+    },
+    "api/sd-webauthn.js": {
+      "verdict": "SAFE",
+      "why": "The insert cannot duplicate. sql/sd_webauthn_schema.sql carries `unique (credential_id)` -- GLOBALLY, not scoped to the licence -- and the schema says why: a WebAuthn credential id is unique by construction across the whole ecosystem. The id is not generated here either; it comes from the authenticator's attestation response, so a retry re-sends the SAME id and gets a unique violation rather than a second passkey row.",
+      "but": "The 409 is handled as a generic upstream error, so a retried registration tells the user something went wrong. SAME SHAPE as trial-start's lost token and MUCH milder: nothing is lost, because the authenticator already holds the credential and it works on the next login. Worth naming rather than leaving a reader to wonder whether it is the same class of defect -- it is the same shape and a different consequence, and that distinction is the whole point of reading each of these rather than sweeping them.",
       "read_at": "2026-09-14"
     }
   }
