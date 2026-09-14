@@ -1080,8 +1080,8 @@
       "task": "gate check 12 scoped blocking on the three derived documents",
       "claimed_at": "2026-09-14T10:30:16Z",
       "claimed_at_epoch": 1789381816.7568789,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T10:58:01Z"
     }
   ]
 }
