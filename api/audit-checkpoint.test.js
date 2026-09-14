@@ -71,6 +71,7 @@ function makeDb(opts) {
     checkpoints: [],                  // written rows
     missingCheckpointTable: !!opts.missingCheckpointTable,
     shortTotal: opts.shortTotal || 0, // force Content-Range to over-state
+    countMode: opts.countMode || 'exact', // 'exact' | 'star' | 'none'
     writes: []
   };
   db.install = function () {
@@ -123,6 +124,14 @@ function makeDb(opts) {
           rows = all.filter((r) => r.created_at >= a && r.created_at < b);
         }
         const total = db.shortTotal || rows.length;
+        // `countMode` models what the guard's INPUT can actually be. Added
+        // 2026-09-14 after an independent review drove the handler with a
+        // response that stated no total and watched it write a checkpoint over
+        // one row of three.
+        if (db.countMode === 'none') return json(rows, 200, {});
+        if (db.countMode === 'star') {
+          return json(rows, 200, { 'content-range': '0-' + rows.length + '/*' });
+        }
         return json(rows, 200, { 'content-range': '0-' + rows.length + '/' + total });
       }
       throw new Error('the fake was asked something it does not model: ' + u);
@@ -384,6 +393,44 @@ t('AN INCOMPLETE WINDOW READ REFUSES -- a short digest is not a digest', async (
   assert.strictEqual(out.code, 503);
   assert.strictEqual(out.body.error.code, 'WINDOW_INCOMPLETE');
   assert.strictEqual(db.checkpoints.length, 0, 'it wrote a partial checkpoint anyway');
+});
+
+t('A WINDOW WHOSE ROW COUNT IS NOT STATED REFUSES TOO -- the guard must not vanish with its input', async () => {
+  // FOUND 2026-09-14 BY AN INDEPENDENT REVIEW OF THIS FILE, by DRIVING the
+  // shipped handler rather than re-reading it. The comparison was
+  // `total !== null && total !== rows.length`, so a response with NO
+  // Content-Range, or `0-0/*`, left `total` null and SKIPPED THE CHECK. Driven
+  // with one row of three: `0-0/3` correctly refused, while `0-0/*` and a
+  // missing header both returned 200 AND WROTE A CHECKPOINT WITH row_count 1.
+  //
+  // A vacuous checkpoint that verifies cleanly forever is the outcome this
+  // file's own header names as the one it must never produce -- and it arrived
+  // through the ABSENCE of the count, not a wrong one.
+  for (const mode of ['star', 'none']) {
+    const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] },
+                        countMode: mode });
+    const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+    assert.strictEqual(out.code, 503, 'countMode=' + mode + ' did not refuse');
+    assert.strictEqual(out.body.error.code, 'WINDOW_INCOMPLETE');
+    assert.strictEqual(db.checkpoints.length, 0,
+      'countMode=' + mode + ': it wrote a checkpoint over an unconfirmed read');
+    // AND IT MUST SAY WHICH OF THE TWO FAILURES THIS WAS. The short-count arm
+    // alone already refuses here (null !== 1), so without this assertion the
+    // test passes on a handler that has no not-stated branch at all and reports
+    // `expected: null` -- which reads as a bug in the checkpointer rather than
+    // a server that did not answer the question it was asked.
+    assert.match(String(out.body.error.detail.why), /no exact Content-Range total/,
+      'countMode=' + mode + ': refused, but did not say the count was never stated');
+  }
+});
+t('CONTROL: an exact count still writes -- the guard is not simply always shut', async () => {
+  // Without this the arm above passes on a handler that refuses every window,
+  // which would be the same as having no checkpoints at all.
+  const db = makeDb({ audit: { sairnlaw_audit_log: [row('a', D0 + 1)] },
+                      countMode: 'exact' });
+  const out = await call(db, 'checkpoint', D0 + 2 * DAY);
+  assert.strictEqual(out.code, 200);
+  assert.ok(db.checkpoints.length > 0, 'a complete read wrote nothing');
 });
 
 // ── 6. the schema says what the code relies on ─────────────────────────────

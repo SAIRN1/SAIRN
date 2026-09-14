@@ -1514,6 +1514,35 @@
       "phase_confidence": "inferred"
     },
     {
+      "commit": "106d403717a4",
+      "date": "2026-09-14",
+      "subject": "feat(audit): item 35 -- daily checkpoints over closed windows, and the verifier that makes them mean something",
+      "files": [
+        "api/audit-checkpoint.js",
+        "api/audit-checkpoint.test.js",
+        "docs/AUDIT-CHECKPOINT-STATUS.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "sql/audit_checkpoint_schema.sql",
+        "tools/audit_checkpoint_status.py",
+        "vercel.json"
+      ],
+      "lines_added": 1217,
+      "lines_removed": 8,
+      "app": "PLATFORM",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "independent-review",
+      "summary": "audit-checkpoint's paging guard vanished with its input: the comparison was total !== null && total !== rows.length, so a response carrying no Content-Range, or 0-0/*, skipped the completeness check entirely and a checkpoint was written over one row of three -- a vacuous checkpoint that verifies cleanly forever, which the file's own header names as the thing it must never produce",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred"
+    },
+    {
       "commit": "3ffb0603784b",
       "date": "2026-09-14",
       "subject": "fix(tools): the sabotage detector counted replaces that touch no file -- 19 unguarded was really 8",

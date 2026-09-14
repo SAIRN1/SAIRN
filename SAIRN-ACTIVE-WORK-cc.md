@@ -2350,3 +2350,67 @@ English text. The same class of green tick as an always-true `ok()`.
 **Verified:** `run_checker_confidence_probe` 30 arms including the exhaustive corrector proof, the
 averaging mutation, five stability-band arms driven off real ledger shapes, five evidence-band
 arms, and an arm asserting no row in the real run is rated above either of its inputs.
+
+
+---
+
+## 2026-09-14 -- independent review of Fourth's items 35 and 54
+
+**The method is the part that makes it independent.** A second READ shares the assumptions of the
+first, so the shipped handlers were DRIVEN against an adversarial fake PostgREST, probing the
+shapes this platform's own history says to probe: absence reading as health, could-not-tell folded
+into a pass, and a hand-maintained list drifting from its source. The author's method was writing
+the code and its unit tests; this one is structurally different, which is the whole requirement.
+
+### Item 35 -- one confirmed defect, and the author's own suite could not have caught it
+
+`api/audit-checkpoint.js`'s paging guard read:
+
+    if (total !== null && total !== rows.length) { refuse }
+
+So a response carrying **no Content-Range, or `0-0/*`**, left `total` null and **skipped the
+completeness check entirely.** Driven with one row of three:
+
+| server says | result |
+|---|---|
+| `0-0/3` | **503 WINDOW_INCOMPLETE** -- correct |
+| `0-0/*` | **HTTP 200, checkpoint written, row_count 1** |
+| no header | **HTTP 200, checkpoint written, row_count 1** |
+
+**That is a vacuous checkpoint that verifies cleanly forever while covering a third of the
+window** -- the exact outcome the file's own header names as the thing it must never produce --
+and **it arrived through the ABSENCE of the count, not a wrong one.** PR 1.11 in a new disguise.
+
+`Prefer: count=exact` is sent on every request, so a missing total means the server did not answer
+the question that was asked. It refuses now.
+
+**The author's 36 assertions stayed green throughout**, because their fake always supplies an
+exact total. Their one paging arm covers an OVER-stated count, which is the case the old guard
+already handled. This is not a criticism of the test -- it is what an independent method is FOR.
+
+**Mutation control:** restoring the pre-fix comparison takes the suite to 37 passed, 1 failed, so
+the new arm bites. A second CONTROL asserts an exact count still WRITES -- without it the arm
+would pass on a handler that refuses every window, which is the same as having no checkpoints.
+
+### Item 54 -- clean, and not vacuously
+
+Every shape probed was already closed, and closed deliberately:
+
+- a missing heartbeat table returns **503 NOT_PROVISIONED**, never a clean sweep;
+- **NEVER_BEAT is distinct from LATE** -- a job that never ran is a different fix from one that
+  stopped;
+- a job that ran and **FAILED** is distinct from one that is silent;
+- a beating job that is not expected is reported as **UNDECLARED** rather than ignored;
+- `seconds_until_late` is reported beside the verdict, so drift is visible before the failure;
+- **`EXPECTED_JOBS` drift against `vercel.json` is held by a BIDIRECTIONAL arm** -- the
+  list-that-drifts class this platform has corrected seven times elsewhere, controlled here
+  before it happened once.
+
+**One bounded observation, recorded rather than raised as a finding:** the heartbeat read is
+unpaged, so a `db-max-rows` below the expected-job count would silently drop jobs into NEVER_BEAT.
+Unreachable at four jobs. Written down so it is not rediscovered as a surprise.
+
+### Recorded
+
+One register record, `detection_method: independent-review`, rule 1.1 (a check that stopped
+checking), phase coding, severity high. 63 records, `--check` clean.

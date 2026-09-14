@@ -146,7 +146,34 @@ async function readWindow(table, startISO, endISO) {
     offset += PAGE;
     if (offset > 5000000) { const e = new Error('runaway paging'); e.detail = cr; throw e; }
   }
-  if (total !== null && total !== rows.length) {
+  if (total === null) {
+    // ── THE GUARD USED TO VANISH WHEN ITS INPUT DID (found 2026-09-14 by an
+    // independent review of this file, by DRIVING it rather than reading it).
+    //
+    // The check below was `total !== null && total !== rows.length`, so a
+    // response carrying NO Content-Range, or `0-0/*`, left `total` null and
+    // skipped the comparison entirely. Driven against the real handler with a
+    // fake returning ONE row of three: with `0-0/3` it correctly refused 503
+    // WINDOW_INCOMPLETE; with `0-0/*` and with no header at all it returned
+    // HTTP 200 AND WROTE A CHECKPOINT WITH row_count 1.
+    //
+    // That is exactly the outcome this file's own header calls the thing it
+    // must never produce -- "a vacuous checkpoint that passes every
+    // verification while protecting almost nothing" -- and it arrived through
+    // the ABSENCE of the count rather than a wrong one. PR 1.11: could-not-tell
+    // is a third state and is never folded into a pass.
+    //
+    // `Prefer: count=exact` is sent on every request, so a missing total means
+    // the server did not answer the question that was asked, and the read
+    // cannot be confirmed complete. Refusing is loud and says what to do.
+    const e = new Error('row count not stated');
+    e.detail = { table: table, read: rows.length,
+                 why: 'the server returned no exact Content-Range total, so the '
+                      + 'read could not be confirmed complete' };
+    e.incomplete = true;
+    throw e;
+  }
+  if (total !== rows.length) {
     // A SHORT DIGEST IS NOT A DIGEST. Refusing is the only safe answer: a
     // checkpoint over part of a window would verify cleanly forever while
     // covering a fraction of the rows.
