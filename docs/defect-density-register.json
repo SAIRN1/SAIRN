@@ -1802,6 +1802,27 @@
       "phase_confidence": "stated",
       "citation_note": "No standing rule covers scheduling. The nearest, 1.11, is about a check that could not run being folded into a pass, and this is the opposite shape -- the jobs ran, failed loudly, and beat 'failed' to the watchdog exactly as designed. Nothing was silent; nothing was reading. Recorded as not-citable rather than forced onto a rule it does not fit.",
       "found_by_tool": "unknown"
+    },
+    {
+      "commit": "973e2471",
+      "date": "2026-09-14",
+      "subject": "feat: sairnsenior.html + api/sen-portal.js -- Family/Client Portal, scoped revocable links (not a PIN account)",
+      "files": [
+        "api/sen-portal.js"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnsenior",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "summary": "api/sen-portal.js declares MANAGEMENT_ROLES = { owner, billing } and references it nowhere, while the agency-wide list branch beside it refuses with 'ask management for the agency-wide list' and enforces the WIDER BROAD_ROLES -- owner, billing, coordinator and scheduler. The message and the check disagree, so one of the two is wrong: either a coordinator should not have the agency-wide list of every client's portal links, or the refusal misstates the rule to everyone who hits it",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "coding",
+      "phase_confidence": "inferred",
+      "citation_note": "No standing rule covers a refusal message that misstates its own guard. The nearest, 1.11, is about a check that could not run being folded into a pass, and this check runs and answers correctly for the rule it actually enforces -- what is wrong is the sentence beside it, plus a gate that was written and never wired. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "found_by_tool": "completeness_check.py"
     }
   ]
 }
