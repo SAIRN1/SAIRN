@@ -182,4 +182,69 @@ test('limits with no source are flagged even when the arithmetic works', () => {
   assert.ok(/no source recorded/.test(b.problems.join(' ')));
 });
 
+// -- ITEM 50b: which regime the subtraction is in ---------------------------
+// remaining_aggregate is a difference of two large near-equal numbers, so its
+// RELATIVE error grows without bound as the backlog approaches the limit --
+// catastrophic cancellation, a property of the formula rather than of the
+// arithmetic. kappa = (|aggregate| + |backlog|) / |remaining|.
+const cap = (backlog, o) => q.bondingCapacity({ today: TODAY,
+  bonding: bond(Object.assign({ aggregate_limit: 1000000 }, o || {})),
+  committed_backlog: backlog });
+
+test('50b a comfortable book is WELL CONDITIONED and says so', () => {
+  const b = cap(500000);
+  assert.strictEqual(b.remaining_regime, 'well_conditioned');
+  assert.strictEqual(b.remaining_condition_number, 3);
+});
+
+test('50b THE ALARM FIRES WELL BEFORE THE LIMIT DOES -- 90% used is SENSITIVE '
+  + 'while the verdict still reads within_capacity', () => {
+  const b = cap(900000);
+  assert.strictEqual(b.remaining_regime, 'sensitive');
+  assert.strictEqual(b.remaining_condition_number, 19);
+  assert.strictEqual(b.remaining_aggregate, 100000, 'there is still real headroom');
+});
+
+test('50b 99% used is ILL CONDITIONED', () => {
+  assert.strictEqual(cap(990000).remaining_regime, 'ill_conditioned');
+  assert.strictEqual(cap(990000).remaining_condition_number, 199);
+});
+
+test('50b EXACTLY at the limit is its own state, not Infinity -- a formatted '
+  + 'Infinity reads as a bug', () => {
+  const b = cap(1000000);
+  assert.strictEqual(b.remaining_regime, 'at_the_limit');
+  assert.strictEqual(b.remaining_condition_number, null);
+});
+
+test('50b THE REGIME IS A NOTE, NEVER A CHANGE OF VERDICT -- downgrading it '
+  + 'would need to know how wrong the backlog might be, which is the number '
+  + 'nobody has', () => {
+  const b = q.bondingCapacity({ today: TODAY,
+    bonding: bond({ aggregate_limit: 1000000 }),
+    committed_backlog: 900000, candidate_value: 50000 });
+  assert.strictEqual(b.candidate, 'within_capacity');
+  assert.ok(Array.isArray(b.candidate_caveats) && b.candidate_caveats.length === 1);
+  assert.ok(/NOT an estimate of how wrong the backlog is/.test(b.candidate_caveats[0]),
+    'the caveat must refuse to be read as an error bar');
+});
+
+test('50b CONTROL: a well-conditioned within_capacity carries NO caveat, so the '
+  + 'arm above is not passing because every answer is caveated', () => {
+  const b = q.bondingCapacity({ today: TODAY,
+    bonding: bond({ aggregate_limit: 1000000 }),
+    committed_backlog: 300000, candidate_value: 50000 });
+  assert.strictEqual(b.candidate, 'within_capacity');
+  assert.strictEqual(b.candidate_caveats, undefined);
+});
+
+test('50b an OVER-capacity answer is unchanged -- the regime does not soften a '
+  + 'refusal either', () => {
+  const b = q.bondingCapacity({ today: TODAY,
+    bonding: bond({ aggregate_limit: 1000000 }),
+    committed_backlog: 900000, candidate_value: 500000 });
+  assert.strictEqual(b.candidate, 'over_capacity');
+  assert.strictEqual(b.candidate_caveats, undefined);
+});
+
 console.log(passed + ' passed');

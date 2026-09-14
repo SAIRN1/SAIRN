@@ -238,6 +238,45 @@ function bondingCapacity(input) {
     // the condition a surety needs to hear about.
     out.over_aggregate = rem < 0 ? money(Math.abs(rem)) : 0;
     out.aggregate_used_pct = aggregate > 0 ? Math.round((backlog / aggregate) * 1000) / 10 : null;
+
+    // ── ITEM 50b: WHICH REGIME THIS SUBTRACTION IS IN ────────────────────
+    // `aggregate - backlog` is a difference of two large near-equal numbers,
+    // and as the backlog approaches the limit the RELATIVE error in the answer
+    // grows without bound even though both inputs are perfectly good. That is
+    // catastrophic cancellation, and it is a property of the FORMULA, not a
+    // defect in the arithmetic -- integer cents would not help.
+    //
+    // THIS IS NOT AN ERROR BAR AND MUST NOT BE READ AS ONE. The condition
+    // number says "a relative error of X in the inputs comes out about kappa
+    // times X here". It says NOTHING about how big X is, and nothing in this
+    // repo has an honest source for that -- which is exactly why item 50a is
+    // deliberately unbuilt. kappa is computed exactly from the two inputs and
+    // claims no uncertainty it cannot support.
+    //
+    //   kappa = (|aggregate| + |backlog|) / |aggregate - backlog|
+    //
+    // MEASURED against a $1m limit: 80% used -> 9.0, 84% -> 11.5, 90% -> 19,
+    // 95% -> 39, 98% -> 99.
+    //
+    // THE ALARM SITS WELL BEFORE THE FAILURE POINT, which is disciplines 4.
+    // The failure point is remaining = 0, where kappa is infinite; `sensitive`
+    // fires around 84% of the aggregate used, while the verdict still reads
+    // comfortably `within_capacity`. A contractor there has a remaining figure
+    // roughly ten times less trustworthy than its inputs, and nothing else in
+    // this output would say so.
+    const denom = Math.abs(rem);
+    if (denom === 0) {
+      // Exactly at the limit: the relative error is undefined, not enormous.
+      // Reported as its own state rather than as Infinity, which formats badly
+      // and reads as a bug.
+      out.remaining_condition_number = null;
+      out.remaining_regime = 'at_the_limit';
+    } else {
+      const kappa = (Math.abs(aggregate) + Math.abs(backlog)) / denom;
+      out.remaining_condition_number = Math.round(kappa * 10) / 10;
+      out.remaining_regime = kappa >= 100 ? 'ill_conditioned'
+        : (kappa >= 10 ? 'sensitive' : 'well_conditioned');
+    }
   }
 
   if (candidate !== null) {
@@ -256,6 +295,22 @@ function bondingCapacity(input) {
     const unknowable = reasons.some(function (r) { return /no single-project limit|unknown/.test(r); });
     out.candidate = reasons.length === 0 ? 'within_capacity' : (unknowable ? 'cannot_tell' : 'over_capacity');
     out.candidate_reasons = reasons;
+    // ── ITEM 50b: the regime is a NOTE, never a change of verdict ─────────
+    // A `within_capacity` computed in a sensitive regime is still
+    // within_capacity -- downgrading it would require knowing how wrong the
+    // backlog might be, which is the number nobody has. What it gets is a
+    // caveat naming the regime, so a reader can see that the headroom figure
+    // is the fragile part of the answer rather than discovering it later.
+    if (out.candidate === 'within_capacity'
+        && (out.remaining_regime === 'sensitive'
+            || out.remaining_regime === 'ill_conditioned')) {
+      out.candidate_caveats = ['the remaining aggregate is a difference of two '
+        + 'near-equal figures at ' + out.aggregate_used_pct + '% of the limit, so a '
+        + 'small error in the committed backlog moves it about '
+        + out.remaining_condition_number + ' times as much. This is the '
+        + 'sensitivity of the calculation, NOT an estimate of how wrong the '
+        + 'backlog is -- nothing here records that.'];
+    }
   }
   return out;
 }
