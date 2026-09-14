@@ -1250,8 +1250,8 @@
       "task": "item-78-formal-spec-role-gates",
       "claimed_at": "2026-09-14T16:59:02Z",
       "claimed_at_epoch": 1789405142.7388484,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:14:45Z"
     }
   ]
 }
