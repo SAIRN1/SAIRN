@@ -610,8 +610,9 @@
       "task": "server backup twelve collections",
       "claimed_at": "2026-09-08T15:26:42Z",
       "claimed_at_epoch": 1788881202.7488716,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T22:12:37Z",
+      "note": "RELEASED ADMINISTRATIVELY by cc on 2026-09-14, on Michael's explicit instruction. Not released by fourth. This entry was still status=active 151 hours after it was claimed, against a 4-hour expiry (STALE_HOURS in tools/sairn_claim.py), so every `check` had already been ignoring it -- but it stayed in the record as an active claim, which is what a person reading the file sees. Released rather than deleted: \"who ran this gate and when\" is the question the next session asks, and a deleted row cannot answer it. IF THE WORK IS STILL OPEN, RE-CLAIM IT -- this says nothing about whether it was finished, only that the claim had expired."
     },
     {
       "id": "fourth-1788959088",
@@ -930,8 +931,9 @@
       "task": "inventory and structure for the genericized tools package",
       "claimed_at": "2026-09-12T13:17:39Z",
       "claimed_at_epoch": 1789219059.0722675,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T22:12:37Z",
+      "note": "RELEASED ADMINISTRATIVELY by cc on 2026-09-14, on Michael's explicit instruction. Not released by fourth. This entry was still status=active 57 hours after it was claimed, against a 4-hour expiry (STALE_HOURS in tools/sairn_claim.py), so every `check` had already been ignoring it -- but it stayed in the record as an active claim, which is what a person reading the file sees. Released rather than deleted: \"who ran this gate and when\" is the question the next session asks, and a deleted row cannot answer it. IF THE WORK IS STILL OPEN, RE-CLAIM IT -- this says nothing about whether it was finished, only that the claim had expired."
     },
     {
       "id": "fourth-1789225182",
@@ -940,8 +942,9 @@
       "task": "meta-checker every promoted checker needs a plant-defect plant-clean control pair",
       "claimed_at": "2026-09-12T14:59:42Z",
       "claimed_at_epoch": 1789225182.8666952,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T22:12:37Z",
+      "note": "RELEASED ADMINISTRATIVELY by cc on 2026-09-14, on Michael's explicit instruction. Not released by fourth. This entry was still status=active 55 hours after it was claimed, against a 4-hour expiry (STALE_HOURS in tools/sairn_claim.py), so every `check` had already been ignoring it -- but it stayed in the record as an active claim, which is what a person reading the file sees. Released rather than deleted: \"who ran this gate and when\" is the question the next session asks, and a deleted row cannot answer it. IF THE WORK IS STILL OPEN, RE-CLAIM IT -- this says nothing about whether it was finished, only that the claim had expired."
     },
     {
       "id": "fourth-1789296440",
