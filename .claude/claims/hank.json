@@ -1565,6 +1565,16 @@
       "claimed_at_epoch": 1789407188.3660812,
       "status": "released",
       "released_at": "2026-09-14T17:38:54Z"
+    },
+    {
+      "id": "hank-1789407573",
+      "session": "hank",
+      "subject": "item66",
+      "task": "IBNR undiscovered defect reserve scoping",
+      "claimed_at": "2026-09-14T17:39:33Z",
+      "claimed_at_epoch": 1789407573.2872856,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
