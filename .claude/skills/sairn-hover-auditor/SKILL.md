@@ -54,6 +54,15 @@ file, a commit message that describes a scope the diff doesn't match (see
 the item-94 example below -- code was correct, the prose about its own scope
 was not).
 
+**An anomaly found on a fast pass escalates immediately, not at the next
+scheduled slot.** A mismatch, a claim that doesn't resolve, a number that
+doesn't add up -- the moment a fast pass surfaces something real, run a
+targeted deep pass on that specific item right then, in the same round.
+Queuing it for "next time it's this agent's turn" is exactly the predictable
+cadence Rotation exists to avoid, and a real anomaly sitting unconfirmed
+until the next slot is a window where it could compound or get buried under
+newer commits.
+
 **Deep pass (rarely, never on a predictable schedule):** pick one agent's
 recently-completed, *real* (already committed -- a still-active claim has
 nothing to audit yet) work. Prioritize Tier A (financial, health, legal,
@@ -175,6 +184,25 @@ same claim as "this doesn't leak" or "this fails closed," and reporting only
 the first while letting it imply the others is exactly the shape of finding
 this role exists to catch in everyone else's work.
 
+**Report actual coverage scope on every deep pass, as facts, never as a
+number.** Which files were read, which lines were driven with a real input
+versus read and reasoned about versus not looked at at all -- stated against
+the real total changed in the commit, the same coverage-disclosure standard
+the platform's own checkers already hold themselves to (Check 0b-coverage;
+"this shape ran over 147 files and found nothing, a measured zero, not a
+check that did not run"). A deep pass that drove 2 of a commit's 6 touched
+files and read the other 4 should say exactly that, not round up to "the
+change was verified."
+
+**Never state a numeric confidence percentage** -- "~85% confident," "high
+confidence this holds" -- because there is no real statistical basis behind
+that number here, and a precise-looking figure with nothing under it is
+worse than no figure at all. This is the exact failure Hank's item 20 named
+tonight: a confident-sounding line printed after the actual evidence ran
+out, which reads as more certain than what was actually established.
+Coverage is a scope statement -- what was checked, out of what exists --
+never a manufactured precision score standing in for it.
+
 ## Rotation
 
 Never check the same agent twice in a row. Never settle into an evenly-split
@@ -204,6 +232,20 @@ a pattern a build agent could learn and route around:
   enough independent rounds. Read the self-log's own `--tail` output for
   this, not memory of the session.
 
+**Weight rotation and sampling by evidence margin, not tier alone.** Real
+principle (risk-limiting audits in election security): rather than
+re-checking every ballot to the same depth, sample harder where the margin
+between outcomes was close and lighter where it was wide, because a close
+margin is where an error actually has room to change the result. This role
+already has the exact proxy for margin, from the Debate section below: a
+finding confirmed by direct execution on the first try, no contest, is a
+WIDE margin. A finding that needed Debate, or was genuinely contested before
+settling, or came from indirect/pattern evidence rather than a driven test,
+is a CLOSE margin -- regardless of the asset's tier. A low-tier finding with
+a close margin can be worth more re-checking attention than a Tier-A finding
+that closed wide on the first drive. Tier still sets the floor for what gets
+picked up at all; margin decides how hard to look once it's picked.
+
 ## Individual baseline tracking
 
 The fast pass as written compares one claim against its own diff, every
@@ -227,6 +269,24 @@ shift in one agent's own pattern is worth noticing even when the most recent
 single claim, read alone, checks out clean. This is a slower-cadence check
 than the fast pass, layered on top of it, not a replacement -- most rounds
 still just compare claim against diff.
+
+**Order, not concealment, is what makes this honest.** True blinding to
+authorship isn't achievable here -- the agent is always named before a
+single line of the diff is read, unlike a Registered Report's
+pre-registered, author-blind review. The platform's own checkers already
+have the honest version of this, proven repeatedly and worth citing as the
+standing precedent: the BLIND LOCK pattern, where a checker's verdict on
+synthetic fixtures is written and locked BEFORE the real tree is ever read
+-- "blind lock: 5 synthetic sources classify as written, run before the real
+tree was read" -- so the checker's own logic can't be quietly shaped to fit
+what it's about to find. Individual baseline tracking needs the same
+ordering discipline applied to a different bias: lock the verdict and the
+reasoning on the evidence itself -- the diff, the driven test, the read
+source -- BEFORE pulling up that agent's own baseline or track record for
+the night. Never after. Reading the evidence first and the history second
+means a strong or weak recent pattern can inform how hard to look *next*,
+but it can never retroactively soften or harden a verdict already reached on
+what was actually driven.
 
 ## Severity scoring
 
