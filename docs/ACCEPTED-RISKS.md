@@ -118,6 +118,29 @@ live with, and when should that be revisited."*
   resolvable against a primary source and this stops being a judgement call.
 - **Open with:** unassigned.
 
+### AR-4 — the cron watchdog shares a failure mode with the jobs it watches
+
+- **Where:** `api/cron-watchdog.js`
+- **Accepted by:** the file's author (Fourth), recorded in its header
+- **The risk:** the watchdog runs on the **same Vercel cron scheduler** as the
+  jobs it watches. *"If that scheduler stops, the watchdog stops with it and
+  reports nothing — two units sharing a failure mode, which is convention 7's
+  exact lesson: a second copy is not a second opinion."* It is a watchdog for
+  **one job failing**, not for the platform failing.
+- **Why accepted:** closing it completely needs a hosted uptime check pinging
+  from a third party — *"a decision about spend and vendors, not something to
+  invent quietly in a file."* Correct, and the right call to escalate rather
+  than assume.
+- **What bounds it, and this is the strong part:** `tools/cron_liveness_check.py`
+  runs **outside Vercel**, reads the same heartbeats, and is the only thing that
+  survives a total scheduler outage. The mitigation was built, not just named.
+- **Trigger — an EVENT WITH AN OWNER:** Michael, on the spend-and-vendor
+  decision. **Nothing mechanical closes this**, and nothing should pretend to:
+  any checker that could detect a total scheduler outage would have to run
+  outside the scheduler, which is the out-of-band tool that already exists.
+- **Open with:** Michael (third-party uptime check), 2026-09-14.
+- **Found by:** the item 47 First Article Inspection, not by a defect.
+
 ---
 
 ## What this register does NOT claim
