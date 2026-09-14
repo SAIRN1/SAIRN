@@ -1553,8 +1553,8 @@
       "task": "stale wall clock fixture in cron-watchdog.test.js",
       "claimed_at": "2026-09-14T17:23:30Z",
       "claimed_at_epoch": 1789406610.8968997,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:26:52Z"
     }
   ]
 }
