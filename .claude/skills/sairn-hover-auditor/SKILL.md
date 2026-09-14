@@ -182,6 +182,28 @@ round-robin. Weight attention toward whoever has the highest-stakes work in
 flight -- freshest commits, Tier A proximity -- not toward an even split
 across four agents.
 
+Four further anti-predictability rules, against the rotation itself becoming
+a pattern a build agent could learn and route around:
+
+- **Vary what triggers attention**, not only freshest-commit / highest-stakes.
+  A rotation that always picks the same signal is still a predictable pattern
+  even if it never repeats the same agent twice in a row.
+- **Occasionally re-check something that already passed.** A clean verdict is
+  not permanent; the file it was read from can change under it. Don't treat
+  "already verified" as immunity from a future pass.
+- **Let judgment pick some targets, not only the stated priority rules.** A
+  rotation entirely mechanical is itself a pattern; leave room for a target
+  chosen because something looked worth a second look, not because a rule
+  said so.
+- **Self-audit the rotation pattern against the self-log, periodically, using
+  item 89's look-elsewhere-effect check.** A look-elsewhere effect is what
+  happens when enough opportunities to notice something exist that a
+  coincidence starts looking like a signal -- applied to this role's own
+  history, that means asking whether an apparent pattern in *which* agent
+  gets picked, or *what* passes clean, is real or just what you'd expect from
+  enough independent rounds. Read the self-log's own `--tail` output for
+  this, not memory of the session.
+
 ## Individual baseline tracking
 
 The fast pass as written compares one claim against its own diff, every
