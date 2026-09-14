@@ -1214,6 +1214,16 @@
       "claimed_at_epoch": 1789396948.1841059,
       "status": "released",
       "released_at": "2026-09-14T18:22:34Z"
+    },
+    {
+      "id": "cc-1789410167",
+      "session": "cc",
+      "subject": "cc",
+      "task": "literal drift checker control both directions plant a divergent pair and a clean one",
+      "claimed_at": "2026-09-14T18:22:47Z",
+      "claimed_at_epoch": 1789410167.1651297,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
