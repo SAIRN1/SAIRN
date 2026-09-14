@@ -120,10 +120,32 @@ to wait on a real future datetime; recorded here because a control that
 silently does not run is the failure this platform is already burning down in
 23 of 39 negative controls.
 
-> **RESULT: `PENDING` at the time of writing.** This section must be updated
-> with the two log lines before the finding in §3 is treated as confirmed. §3
-> stands on the code regardless — the query text and the index list are facts —
-> but the *causal* claim in §2 is not confirmed until this pair comes back.
+> **RESULT: INCONCLUSIVE — and the reason is a flaw in the test, not in the
+> hypothesis.** Both shots came back clean: `11:00:50` in-window and `11:05:32`
+> out, neither logging `atomic RPC failed`.
+>
+> **That is not a refutation, because the window did not exist that hour.**
+> Checked before drawing any conclusion: **zero 502s across the whole 25-minute
+> span containing 11:00** — both crons succeeded. There was nothing to land in.
+>
+> **THE DESIGN CONDITIONED ON SOMETHING THAT HAPPENS IN ABOUT HALF OF HOURS AND
+> DID NOT RECORD WHETHER IT HAD HAPPENED.** The crons fail 5–6 times in 12; a
+> single-hour test can therefore only answer on a coin flip, and I did not build
+> in the one variable that says whether the coin came up — the cron outcome for
+> that same hour. Asked the right question with an underpowered instrument.
+
+**What the two hours together do say, stated at the strength it deserves:**
+
+| Hour | Crons that hour | `api/claude` in-window |
+|---|---|---|
+| 10:00 | **failed** (send-reminder 504 at 10:00:29) | **timed out** at 10:00:51 |
+| 11:00 | **succeeded** (zero 502s) | **clean** at 11:00:50 |
+
+Two hours, consistent in both directions, and the 11:00 hour is a **negative
+control I did not previously have** — window absent, no timeout. It is n=2 and
+it is not confirmation. Three more shots at `:00:50` are running, each to be
+paired with that hour's cron outcome; an hour with no cron 502 yields **no
+data** and is counted neither way.
 
 ## 5. What the fix looks like
 
