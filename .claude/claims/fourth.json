@@ -1312,6 +1312,16 @@
       "claimed_at_epoch": 1789411314.3783245,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "fourth-1789412910",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "claim tool false NOT CLAIMED and duplicate entries",
+      "claimed_at": "2026-09-14T19:08:30Z",
+      "claimed_at_epoch": 1789412910.192973,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
