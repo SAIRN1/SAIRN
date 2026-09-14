@@ -1342,6 +1342,16 @@
       "claimed_at_epoch": 1789417181.773643,
       "status": "released",
       "released_at": "2026-09-14T20:54:25Z"
+    },
+    {
+      "id": "fourth-1789419499",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 6 triage remaining unguarded writes, sv_audit_backed missing criticality tier row",
+      "claimed_at": "2026-09-14T20:58:19Z",
+      "claimed_at_epoch": 1789419499.0131474,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
