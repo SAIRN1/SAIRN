@@ -1393,8 +1393,8 @@
       "task": "public token suite scans the filesystem not git tracked files",
       "claimed_at": "2026-09-14T22:50:26Z",
       "claimed_at_epoch": 1789426226.717216,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T23:22:00Z"
     }
   ]
 }
