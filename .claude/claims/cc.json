@@ -1144,6 +1144,16 @@
       "claimed_at_epoch": 1789383566.468804,
       "status": "released",
       "released_at": "2026-09-14T11:15:23Z"
+    },
+    {
+      "id": "cc-1789385064",
+      "session": "cc",
+      "subject": "benford-digit-check",
+      "task": "first and second digit frequency analysis on financial numerics in sairnbiz stonedesk ledger",
+      "claimed_at": "2026-09-14T11:24:24Z",
+      "claimed_at_epoch": 1789385064.006507,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
