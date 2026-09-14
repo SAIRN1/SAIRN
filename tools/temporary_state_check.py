@@ -88,7 +88,17 @@ SCOPES = ('command', 'call', 'request', 'session', 'persistent')
 DECL = re.compile(r'TEMPORARY-STATE:\s*scope=([a-z]+)\s+released-by=(\S.*)', re.I)
 
 # Shape 1: a boolean-ish module or file scope flag being switched ON.
-FLAG_ON = re.compile(r'^\s*([A-Za-z_$][\w$.]*)\s*=\s*true\s*;', re.M)
+#
+# `[ \t]*` AND NOT `\s*`, FIXED 2026-09-14. `\s` matches a newline, so under
+# re.M the leading `^\s*` would start the match at the first line of a
+# whitespace run and swallow every blank line down to the assignment. Comments
+# are BLANKED TO SPACES before this runs, so a 20-line comment block above the
+# assignment became 20 lines of whitespace and the reported line number was the
+# top of the COMMENT, not the assignment: sairnvet.html:2396 was reported as
+# :2376. It also made the declaration window (comment, +1, +2) line up by
+# accident rather than by construction. Found by the probe's section F after it
+# was re-aimed to compute the truth independently instead of trusting a proxy.
+FLAG_ON = re.compile(r'^[ \t]*([A-Za-z_$][\w$.]*)\s*=\s*true\s*;', re.M)
 # Shape 2: a persistent git config write -- the substrate of the 131-commit leak.
 # Two spellings: an argv token (`['git', 'config', ...]`) and a shell string
 # (`git config user.email ...`). The argv token is deliberately CASE-SENSITIVE

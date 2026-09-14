@@ -17,10 +17,23 @@ pass with the detector neutered then this file was never testing anything. The
 sabotage asserts its own anchor is present before it patches -- a `.replace()`
 whose anchor has gone stale changes nothing and reports a pass.
 
-Section F is the live instance. `sdSyncSuppressed=true` is in stonedesk.html
-right now with no `finally`. It may be FIXED later, at which point this arm
-stops testing anything -- so it reads the file and says out loud which branch it
-took rather than quietly passing either way.
+Section F runs against the REAL app files, both directions, and computes the
+truth here rather than trusting a proxy. Its first version asked "is the
+literal `sdSyncSuppressed=true` still in stonedesk.html, and if so does the
+checker report it" -- and went RED the moment the leak was FIXED, because the
+literal was still there, now behind a declaration, and the checker was right to
+stay silent. An arm anchored on a proxy for the property fails on a correct
+change. So the property is computed independently: a site is declared if the
+token appears within the two lines above it, and the checker must report every
+undeclared one and stay silent on every declared one. Two further arms assert
+that BOTH directions were actually exercised on real files, because "all
+undeclared sites were reported" is vacuously true when there are none.
+
+That re-aiming immediately found a real defect in the subject: `^\s*` under
+re.M starts a match at the first line of a whitespace run, and comments are
+blanked to SPACES before matching, so a 20-line comment block above an
+assignment made the reported line the top of the comment. sairnvet.html:2396
+was being reported as :2376.
 
 Section G proves a DOCUMENTED BLIND SPOT is real. The subject only matches
 lowercase `= true;`, so a Python `flag = True` is invisible. That limitation is
@@ -178,7 +191,10 @@ print('\nE. teeth -- neuter the detector and the positive arms must collapse')
 TMP = tempfile.mkdtemp(prefix='tsc_probe_')
 try:
     src = io.open(SUBJECT, encoding='utf-8').read()
-    ANCHOR = r"FLAG_ON = re.compile(r'^\s*([A-Za-z_$][\w$.]*)\s*=\s*true\s*;', re.M)"
+    # The two characters backslash-t, NOT a tab. A literal tab here would
+    # silently fail to match and the sabotage would patch nothing -- which
+    # is why the arm below asserts the anchor is PRESENT before using it.
+    ANCHOR = r"FLAG_ON = re.compile(r'^[ \t]*([A-Za-z_$][\w$.]*)\s*=\s*true\s*;', re.M)"
     ok('the sabotage anchor is still present in the subject', ANCHOR in src,
        'anchor has gone stale -- this section tests NOTHING until it is updated')
     broken = src.replace(ANCHOR, "FLAG_ON = re.compile(r'ZZ_NEVER_MATCHES_ZZ')")
@@ -206,24 +222,59 @@ finally:
     shutil.rmtree(TMP, ignore_errors=True)
     ok('the throwaway copy is gone', not os.path.isdir(TMP))
 
-print('\nF. the live instance in stonedesk.html -- says which branch it took')
-sd = os.path.join(REPO, 'stonedesk.html')
-if not os.path.isfile(sd):
-    ok('stonedesk.html is readable', False, 'not found at ' + sd)
-else:
-    raw = io.open(sd, encoding='utf-8', errors='replace').read()
-    live = bool(re.search(r'^\s*sdSyncSuppressed\s*=\s*true\s*;', raw, re.M))
-    rows, _ = T.findings_for('stonedesk.html', raw)
-    hits = [r for r in rows if r['what'] == 'sdSyncSuppressed']
-    if live:
-        print('    (the undeclared hydration flag is STILL IN THE FILE)')
-        ok('the checker reports the real, still-present leak shape',
-           len(hits) >= 1, 'found none -- the checker regressed')
-    else:
-        print('    (the flag is gone or now declared -- THIS ARM NO LONGER '
-              'TESTS THE CHECKER)')
-        ok('...and the checker agrees it is gone, rather than reporting a '
-           'phantom', not hits, hits)
+print('\nF. real app files, both directions, with the truth computed HERE')
+# ── RE-AIMED 2026-09-14, AND THE REASON IS THE POINT ────────────────────────
+# This section used to ask "is the literal `sdSyncSuppressed=true` still in
+# stonedesk.html?" and, if so, demand the checker report it. Then the leak was
+# FIXED -- the flag moved into sdWhileSuppressed() with a `finally` and a
+# declaration above it -- and the arm went RED on a correct change, because the
+# literal was still there and the checker was right not to report it.
+#
+# That is the failure this platform keeps paying for: an arm anchored on a
+# PROXY for the property instead of the property. So the property is computed
+# here, independently of the subject: a site is DECLARED if the declaration
+# token appears within the two lines above it, and UNDECLARED otherwise. The
+# checker must report every undeclared site and stay silent on every declared
+# one -- a real two-direction test on real files that keeps working whichever
+# way the apps go.
+SITE = re.compile(r'^[ \t]*([A-Za-z_$][\w$.]*Suppress\w*)\s*=\s*true\s*;', re.M)
+REAL = ['stonedesk.html', 'sairnfreedom.html', 'sairnvet.html']
+seen_declared = seen_undeclared = 0
+for rel in REAL:
+    p = os.path.join(REPO, rel)
+    if not os.path.isfile(p):
+        ok(rel + ' is readable', False, 'not found at ' + p)
+        continue
+    raw = io.open(p, encoding='utf-8', errors='replace').read()
+    lines = raw.split('\n')
+    rows, _ = T.findings_for(rel, raw)
+    reported = set(r['line'] for r in rows if 'Suppress' in r['what'])
+    declared, undeclared = [], []
+    for m in SITE.finditer(raw):
+        n = raw[:m.start()].count('\n') + 1
+        above = '\n'.join(lines[max(0, n - 3):n - 1])
+        (declared if TOKEN in above else undeclared).append(n)
+    print('    %-20s %d declared, %d undeclared'
+          % (rel, len(declared), len(undeclared)))
+    seen_declared += len(declared)
+    seen_undeclared += len(undeclared)
+    ok(rel + ': every UNDECLARED suppression site is reported',
+       all(n in reported for n in undeclared),
+       'missed %s' % [n for n in undeclared if n not in reported])
+    ok(rel + ': every DECLARED site is silent',
+       not [n for n in declared if n in reported],
+       'reported anyway: %s' % [n for n in declared if n in reported])
+# Both directions must actually be exercised. If the apps ever reach a state
+# where every site is declared, the silent half is still tested but the
+# reporting half is not -- and that is stated, not assumed.
+ok('the reporting direction was exercised on real files at all',
+   seen_undeclared > 0,
+   'ZERO undeclared sites remain across %s -- the arms above only tested the '
+   'SILENT direction. That is good news about the apps and a real loss of '
+   'coverage here; sections A and C still cover reporting on fixtures.'
+   % ', '.join(REAL))
+ok('the silent direction was exercised on real files at all',
+   seen_declared > 0, 'no declared site exists in any real app yet')
 
 print('\nG. the documented blind spot is real, not a hedge')
 s, rows, _ = shapes('fx/flags.py', PY_FLAG)
