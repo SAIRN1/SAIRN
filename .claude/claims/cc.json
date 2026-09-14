@@ -1184,6 +1184,16 @@
       "claimed_at_epoch": 1789392554.9372087,
       "status": "released",
       "released_at": "2026-09-14T13:57:02Z"
+    },
+    {
+      "id": "cc-1789394244",
+      "session": "cc",
+      "subject": "checker-confidence-fusion",
+      "task": "combine flip rate stability with control pair evidence into one signal",
+      "claimed_at": "2026-09-14T13:57:24Z",
+      "claimed_at_epoch": 1789394244.2819228,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
