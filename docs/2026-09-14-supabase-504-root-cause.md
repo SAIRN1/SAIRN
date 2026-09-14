@@ -170,6 +170,33 @@ The only surviving form is *"it takes BOTH sweeps failing together"*, and that
 rests on **one** observation — the 10:00 hour. At n=1 it is not distinguishable
 from coincidence, and it should not be repeated as a finding.
 
+### 4b. The experiment is closed. The answer is negative.
+
+Shot 3 fired at `14:00:58`. **Both crons succeeded that hour, so it yields NO
+DATA** — counted neither way, per the runner's own rule rather than as a
+convenient reading after the fact.
+
+| Hour | Cron outcome | `api/claude` | Verdict |
+|---|---|---|---|
+| 10:00 | both failed | **504** | the single supporting observation |
+| 11:00 | both ok | clean | no data |
+| 12:00 | send-reminder failed | clean | **refutes "any cron"** |
+| 13:00 | alf-alerts failed | clean | **refutes "alf-alerts specifically"** |
+| 14:00 | both ok | clean | no data |
+
+**Five hours, two of them informative, and both of the informative ones point
+against.** `api/claude`'s two 504s are not explained by cron contention and are
+not explained by anything else here either. Whatever they are, they are rare —
+two occurrences in about a dozen requests — and the endpoint answers 200 through
+them because the limiter fails open by design.
+
+**What I would do next if this is picked up again, and deliberately did not do
+now:** stop probing `api/claude` and instrument the RPC instead. The 504 is a
+timeout on one Supabase function call; its duration is not recorded anywhere, so
+there is nothing to correlate against. Two occurrences over two days is too thin
+a signal to chase with more sampling, and more sampling is what the last five
+hours already were.
+
 **So `api/claude`'s two 504s are not explained.** What remains true is narrower
 and still worth acting on: each cron's own failure rate, and the unbounded query
 behind one of them. **§3 is unaffected** — the query text, the missing `dayStr`
@@ -205,6 +232,24 @@ carries `data.day = yesterday` and `created_at = today`. Filtering on
 margin has to be generous enough that no administration for today can have been
 created before the cutoff. Getting that margin wrong **drops a late-medication
 alert**, which is the whole point of the cron.
+
+## 5a. The `alf-alerts` fix, live-verified — and the half that mattered
+
+Shipped in `43a06d9d` at about 13:30Z. The 14:00 firing is the first on the new
+code:
+
+    14:00:43 GET /api/alf-alerts 200
+      alf-alerts: Resend send OK for license_hash 6dd308f1… (1 late) -- resend_id dd95d5a3…
+
+**The 200 is the weaker half and is not yet attributable** — `alf-alerts` also
+succeeded at 12:00 on the old code, so one clean firing proves nothing about the
+failure rate. Three or more consecutive clean firings would.
+
+**`(1 late)` is the half that mattered.** The whole risk of bounding that read
+was that the time window would silently stop the sweep seeing administrations,
+turning a medication-alert cron into one that reports nothing wrong. It found a
+genuinely late dose on real data and emailed the facility. That is the property
+the unit arms assert in a fixture, confirmed against production.
 
 ## 6. Why I stopped here
 
