@@ -1,0 +1,49 @@
+{
+  "_what_this_is": "Item 6. One hand-written judgment per UNGUARDED retryable write that somebody has actually READ. tools/idempotency_check.py reports a shape; this records what was decided about it and why. A file with no entry here is UNTRIAGED, and the checker counts those separately -- which is the whole point, because 'being triaged' with no denominator is indistinguishable from nothing happening.",
+  "_verdicts": {
+    "SAFE": "a retry cannot duplicate the effect, and the reason is stated. No work.",
+    "FIX": "a retry duplicates a real effect. Names the consequence and the pattern to copy.",
+    "ACCEPTED": "a retry DOES duplicate something, and duplicating it is correct or harmless. The reason is the important half -- an accepted finding with no reason is an ignored one."
+  },
+  "_not_a_blanket_sweep": "Every entry below was reached by reading the write, its schema and its error handling. Six files of thirty are judged. The other twenty-four are named by the checker as UNTRIAGED and are NOT covered by any statement here.",
+  "_triaged_by": "fourth",
+  "_triaged_at": "2026-09-14",
+  "files": {
+    "api/agent/stripe-webhook.js": {
+      "verdict": "SAFE",
+      "why": "The only write is setPlanStatus(), a PATCH of plan_status to a CONSTANT string -- 'paid' or 'canceled'. An absolute assignment, not an increment and not an append, so replaying the same webhook writes the same value. Stripe retries webhooks by design and this survives it.",
+      "but": "A DIFFERENT defect lives here and idempotency guards would not fix it: Stripe does not guarantee delivery ORDER. If subscription.updated->canceled is delivered before a delayed invoice.paid, the agent flips back to 'paid' after being cancelled. That is an out-of-order hazard, not a retry hazard, and it is recorded here so it is not lost -- it needs an event-timestamp comparison, not a dedupe key.",
+      "read_at": "2026-09-14"
+    },
+    "api/sairncash/trial-start.js": {
+      "verdict": "FIX",
+      "why": "The row cannot duplicate -- sql/sairncash_trial_schema.sql:18 makes email UNIQUE, so a retry gets a 409 and the handler answers ALREADY_EXISTS explicitly. So it is idempotent against duplicate ROWS.",
+      "but": "It is NOT idempotent against duplicate REQUESTS, and that is the real defect. trialToken is minted per request and returned ONLY on the 200 path. If the insert commits and the response is lost -- a client timeout, a dropped connection -- the retry gets 409 and the caller NEVER RECEIVES THE TOKEN THAT WAS MINTED. The trial exists and is unreachable. The handler's own message anticipates it: 'Contact support if you need help accessing it.'",
+      "fix": "Copy api/sairndental/public-complaint-submit.js, which solved exactly this a day earlier: on the duplicate branch, SELECT the existing row and return the ORIGINAL answer rather than an error. A user who retried must see their trial, not a support instruction.",
+      "read_at": "2026-09-14"
+    },
+    "api/agent/enqueue.js": {
+      "verdict": "FIX",
+      "why": "Inserts a row into sairn_agent_commands with no key, no unique constraint and no read-before-write. A retry after a lost response enqueues a SECOND command, and an agent polling the queue executes it a second time. This is the plainest real instance of the shape in the whole list: the effect duplicated is an arbitrary agent OPERATION, not a log line.",
+      "fix": "A caller-supplied idempotency key carried on the row with a unique index on (agent_id, idempotency_key), and the enqueue returning the existing command_id when it collides. Note that the current response already returns command_id, so the shape of the fix is the same as trial-start's: return the original answer, do not error.",
+      "read_at": "2026-09-14"
+    },
+    "api/_lib/audit.js": {
+      "verdict": "ACCEPTED",
+      "why": "writeAuditLog() appends a row, so a retry appends a second. That is correct and must not be guarded. An audit log records what was ATTEMPTED; if a caller really did retry, two attempts happened and two rows is the truthful record. Collapsing them on a dedupe key would HIDE a real double-execution, which is the opposite of what this table is for.",
+      "but": "The duplicate row is a SYMPTOM of the caller's retry, not the disease. Where a duplicated audit line appears, read the write it was auditing -- that is where the finding is.",
+      "read_at": "2026-09-14"
+    },
+    "api/sairndental/public-complaint-submit.js": {
+      "verdict": "SAFE",
+      "why": "NOT UNGUARDED AND NEVER WAS -- this was a checker false negative, corrected 2026-09-14. It hashes a submission_key over license_hash + NUL + patient name + NUL + message, reads it back with a ten-minute window before writing, and returns the ORIGINAL complaint's answer on a duplicate. It has its own migration, sql/sairndental_complaint_idempotency_2026-09-13.sql. It read as UNGUARDED only because 'submission_key' was not in idempotency_check.py's hand-written key vocabulary.",
+      "but": "It is now the SECOND real positive fixture in that checker's blind lock, so the term cannot be dropped and the guard go invisible again. api/ledger.js alone could not have caught this: it uses two terms the list already knew.",
+      "read_at": "2026-09-14"
+    },
+    "api/cron-watchdog.js": {
+      "verdict": "UNTRIAGED",
+      "why": "Listed explicitly rather than omitted, because it is the one I most expected to be able to judge quickly and could not. It carries 2 writes and is scheduled rather than client-driven, so 'a client timeout is a retry' does not describe its retry model at all -- a cron re-fire is a different thing from a lost response, and deciding it needs reading how the scheduler retries. Not guessed.",
+      "read_at": "2026-09-14"
+    }
+  }
+}

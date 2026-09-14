@@ -164,6 +164,69 @@ check('5e  the real run exits 1 while unguarded writes exist', rc == 1, 'exit %d
 check('5f  and it DISCLOSES that its negative fixture is synthetic',
       'NEGATIVE FIXTURE IS SYNTHETIC' in out)
 
+# ── 6. THE KEY VOCABULARY IS HAND-WRITTEN AND WAS WRONG ────────────────────
+# api/sairndental/public-complaint-submit.js has a real, deliberate, durable
+# guard -- a hashed submission_key read back inside a ten-minute window, with
+# its own migration -- and read as UNGUARDED for a day, because the key was not
+# one of the seven names this checker knew. Section 6 holds the correction.
+print('\n--- 6. the key vocabulary, and the guard it could not see ---')
+check('6a  submission_key is in the vocabulary',
+      'submission_key' in I.KEY_NAMES, I.KEY_NAMES)
+check('6b  the REAL guard reads as durably guarded, not UNGUARDED',
+      I.analyse('api/sairndental/public-complaint-submit.js',
+                io.open(os.path.join(REPO, 'api', 'sairndental',
+                                     'public-complaint-submit.js'),
+                        encoding='utf-8', errors='replace').read()
+                )['verdict'] == 'GUARDED-DURABLE',
+      'the second real positive fixture is not reading as guarded')
+check('6c  the blind lock passes with it included', I.run_fixtures() == [],
+      str(I.run_fixtures()))
+check('6d  and it is PINNED as a real fixture, so dropping the term takes the '
+      'lock RED rather than going silent',
+      'public-complaint-submit' in io.open(
+          os.path.join(REPO, 'tools', 'idempotency_check.py'),
+          encoding='utf-8').read(),
+      'the second real positive fixture is gone from run_fixtures()')
+cov = I.key_term_coverage()
+check('6e  coverage is MEASURED per term, so a never-matching term is visible',
+      isinstance(cov, dict) and set(cov) == set(I.KEY_TERMS), str(cov))
+check('6f  ...and the run prints it rather than keeping it internal',
+      'THE KEY VOCABULARY IS HAND-WRITTEN' in out, out[:400])
+check('6g  the three terms that match nothing are named, not hidden',
+      'match NO file and never have' in out, out[:600])
+
+# ── 7. ITEM 6 TRIAGE -- a denominator for "being triaged" ──────────────────
+print('\n--- 7. how many has anybody actually read ---')
+tri, terr = I.load_triage()
+check('7a  the triage register loads', terr is None and isinstance(tri, dict), str(terr))
+check('7b  every entry carries a verdict AND a reason -- an exemption with no '
+      'reason is an ignored finding',
+      all(v.get('verdict') and v.get('why') for v in tri.values()),
+      str([k for k, v in tri.items() if not (v.get('verdict') and v.get('why'))]))
+check('7c  the verdicts are from the declared vocabulary',
+      all(v['verdict'] in ('SAFE', 'FIX', 'ACCEPTED', 'UNTRIAGED')
+          for v in tri.values()),
+      str(sorted(set(v['verdict'] for v in tri.values()))))
+check('7d  the run reports judged and untriaged as SEPARATE numbers',
+      'ITEM 6 TRIAGE' in out and 'untriaged' in out, out[:400])
+check('7e  ...and names every untriaged file rather than only counting them',
+      'UNTRIAGED (nobody has read these' in out, out[:600])
+check('7f  a judgment for a file the checker no longer flags is called out as '
+      'stale, not left to look current',
+      'JUDGED BUT NO LONGER UNGUARDED' in out, out[-1500:])
+# AN UNREADABLE REGISTER MUST NOT READ AS AN EMPTY ONE. Driven directly rather
+# than by moving the real file, so nothing on disk is touched.
+_real = I.TRIAGE
+try:
+    I.TRIAGE = os.path.join(REPO, 'tools', '__no_such_triage__.json')
+    _t, _e = I.load_triage()
+    check('7g  a missing register is an ERROR, not "nobody has judged anything"',
+          _t is None and _e, 'returned %r / %r' % (_t, _e))
+finally:
+    I.TRIAGE = _real
+check('7h  ...and the patch was removed, or every later arm is bogus',
+      I.TRIAGE == _real, 'TRIAGE left patched')
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  ' + f)

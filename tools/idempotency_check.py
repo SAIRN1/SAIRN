@@ -51,7 +51,39 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CRITERIA_VERSION = '2026-09-13.1'
 
 # A caller-supplied key the handler reads. Names seen in real handlers here.
-KEY_NAMES = r'(source_id|source_kind|idempotency[_-]?key|request_id|client_token|order_id|external_id)'
+# ── THE VOCABULARY IS HAND-WRITTEN, AND ON 2026-09-14 IT WAS WRONG ─────────
+# `submission_key` was added after this checker called
+# api/sairndental/public-complaint-submit.js UNGUARDED. That file has a full,
+# deliberate, durable guard built the same week: a sha256 over
+# license_hash + NUL + name + NUL + message, a PostgREST read on
+# `submission_key=eq.<hash>` inside a ten-minute window, and it returns the
+# ORIGINAL complaint's answer on a duplicate rather than an error. It even has
+# its own migration, sql/sairndental_complaint_idempotency_2026-09-13.sql. The
+# guard was invisible for one reason: it is not named any of the seven things
+# this list knew about.
+#
+# THE SHAPE OF THE MISTAKE IS WORTH MORE THAN THE MISSING WORD. This list was
+# written from what an idempotency key is usually CALLED, not from what this
+# platform actually names them -- and measured on 2026-09-14, THREE of the
+# original seven (`idempotency_key`, `client_token`, `external_id`) match ZERO
+# files and never have, while the one real guard on the platform used an eighth
+# name. An aspirational vocabulary reads exactly like a complete one.
+#
+# IT IS STILL A LIST, DELIBERATELY. The derived alternative was tried and
+# REJECTED, and is recorded here so it is not rebuilt: "a non-scope column that
+# is both filtered on with =eq. and written in a body" matches 37 files,
+# including sixteen whose column is `active` -- a deactivation flag -- and
+# others keyed on ordinary record ids. It would have flipped dozens of files to
+# GUARDED, and a checker that says "guarded" where nothing guards is the
+# fail-open direction and far worse than the false negative it fixes.
+#
+# What IS derived is the disclosure: the run prints how many files each term
+# matched, so a term that has never matched and a key this list does not know
+# are both visible rather than silent.
+KEY_NAMES = (r'(source_id|source_kind|idempotency[_-]?key|request_id|'
+             r'client_token|order_id|external_id|submission_key)')
+KEY_TERMS = ['source_id', 'source_kind', 'idempotency_key', 'request_id',
+             'client_token', 'order_id', 'external_id', 'submission_key']
 # Evidence the key is checked against something that OUTLIVES the process.
 DURABLE = r'(fetch\(\s*rest\(|await\s+\w*[Ff]etch|select=|\.from\(|SELECT\s)'
 # Evidence it is checked against something that does NOT outlive the process.
@@ -170,7 +202,71 @@ def run_fixtures():
             bad.append(('the REAL positive fixture api/ledger.js must read as durably '
                         'guarded -- it checks source_kind+source_id before writing',
                         'GUARDED-DURABLE', got['verdict'] if got else None))
+    # A SECOND REAL POSITIVE, ADDED 2026-09-14 BECAUSE THIS CHECKER GOT IT
+    # WRONG. api/ledger.js alone could not catch the vocabulary being
+    # incomplete: it uses two of the terms the list already knew. This one uses
+    # `submission_key`, which the list did not, and it was read as UNGUARDED
+    # for a day. Pinned here so the term cannot be dropped and the guard go
+    # invisible again.
+    q = os.path.join(REPO, 'api', 'sairndental', 'public-complaint-submit.js')
+    if not os.path.exists(q):
+        bad.append(('api/sairndental/public-complaint-submit.js is missing -- the '
+                    'second real positive fixture is gone',
+                    'GUARDED-DURABLE', None))
+    else:
+        got = analyse('api/sairndental/public-complaint-submit.js',
+                      io.open(q, encoding='utf-8', errors='replace').read())
+        if not got or got['verdict'] != 'GUARDED-DURABLE':
+            bad.append(('the REAL positive fixture public-complaint-submit.js must read '
+                        'as durably guarded -- it hashes a submission_key and reads it '
+                        'back inside a ten-minute window before writing',
+                        'GUARDED-DURABLE', got['verdict'] if got else None))
     return bad
+
+
+TRIAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                      'idempotency_triage.json')
+
+
+def load_triage():
+    """The hand-written judgments. Item 6.
+
+    Returns (entries, error). AN UNREADABLE REGISTER IS AN ERROR, NOT AN EMPTY
+    ONE: falling back to {} would report every file as untriaged, which reads
+    as "nobody has looked" and is indistinguishable from the register having
+    been deleted.
+    """
+    try:
+        d = json.loads(io.open(TRIAGE, encoding='utf-8').read())
+    except Exception as e:
+        return None, '%s: %s' % (type(e).__name__, e)
+    f = d.get('files')
+    if not isinstance(f, dict):
+        return None, 'no "files" object -- the register has the wrong shape'
+    return f, None
+
+
+def key_term_coverage():
+    """How many api/ files contain each vocabulary term.
+
+    A term matching ZERO files has never contributed to a verdict, and an
+    aspirational vocabulary reads exactly like a complete one. Printed on every
+    run so the list's own coverage is visible rather than assumed.
+    """
+    counts = dict((t, 0) for t in KEY_TERMS)
+    for root, _dirs, files in os.walk(os.path.join(REPO, 'api')):
+        for f in files:
+            if not f.endswith('.js') or f.endswith('.test.js'):
+                continue
+            try:
+                code = io.open(os.path.join(root, f), encoding='utf-8',
+                               errors='replace').read()
+            except Exception:
+                continue
+            for t in KEY_TERMS:
+                if t in code:
+                    counts[t] += 1
+    return counts
 
 
 def main(argv):
@@ -181,8 +277,13 @@ def main(argv):
         for n, w, g in bad:
             print('     expected %-22s got %-22s %s' % (w, g, n))
         return 2
+    # TWO real positives now, not one. api/ledger.js alone could never have
+    # caught the vocabulary being incomplete -- it uses two terms the list
+    # already knew. The count is computed, not typed, so adding a third fixture
+    # cannot leave this sentence stale.
     print('  blind lock: %d/%d fixtures correct -- %d synthetic plus the REAL '
-          'api/ledger.js' % (len(SYNTHETIC) + 1, len(SYNTHETIC) + 1, len(SYNTHETIC)))
+          'api/ledger.js and api/sairndental/public-complaint-submit.js'
+          % (len(SYNTHETIC) + 2, len(SYNTHETIC) + 2, len(SYNTHETIC)))
     if '--fixtures' in argv:
         return 0
 
@@ -216,6 +317,74 @@ def main(argv):
                 'UNIQUE-CONSTRAINT-MAYBE': '  <- upsert/unique may carry it; NOT proof',
                 'GUARDED-DURABLE': ''}[v]
         print('    %-24s %3d file(s), %4d write(s)%s' % (v, n, w, note))
+    print('')
+    # ── THE VOCABULARY'S OWN COVERAGE, PRINTED (2026-09-14) ─────────────────
+    # A guard named outside this list reads as UNGUARDED, and that is exactly
+    # how public-complaint-submit.js -- which has a real durable guard and its
+    # own migration -- sat in the UNGUARDED column. The list cannot be derived
+    # (the attempt is recorded at KEY_NAMES), so its limits are disclosed
+    # instead of assumed.
+    cov = key_term_coverage()
+    never = [t for t in KEY_TERMS if cov[t] == 0]
+    print('')
+    print('  THE KEY VOCABULARY IS HAND-WRITTEN, AND A GUARD NAMED OUTSIDE IT')
+    print('  READS AS UNGUARDED. Files containing each term:')
+    print('    ' + '  '.join('%s=%d' % (t, cov[t]) for t in KEY_TERMS))
+    if never:
+        print('    %d term(s) match NO file and never have: %s'
+              % (len(never), ', '.join(never)))
+        print('    That is not an error -- it is the list being aspirational')
+        print('    rather than derived, which reads exactly like a complete one.')
+    print('    If a real guard is in the UNGUARDED list below, READ IT before')
+    print('    triaging it: it may be guarded under a name this list lacks.')
+    print('')
+    # ── ITEM 6: HOW MANY OF THESE HAS ANYBODY ACTUALLY READ ────────────────
+    # "Being triaged" with no denominator is indistinguishable from nothing
+    # happening, and that is what this row existed as for a day. Every UNGUARDED
+    # file either has a hand-written judgment in tools/idempotency_triage.json
+    # or is counted as untriaged, by name.
+    tri, terr = load_triage()
+    unguarded_files = [r['file'] for r in by.get('UNGUARDED', [])]
+    print('')
+    if terr:
+        # NOT an empty register. See load_triage().
+        print('  !! THE TRIAGE REGISTER COULD NOT BE READ (%s).' % terr)
+        print('     Every file below is reported as UNTRIAGED because nothing')
+        print('     could be looked up -- that is this tool failing, NOT a')
+        print('     statement that nobody has judged them.')
+        tri = {}
+    judged = dict((f, v) for f, v in tri.items()
+                  if v.get('verdict') and v.get('verdict') != 'UNTRIAGED')
+    untriaged = [f for f in unguarded_files if f not in judged]
+    covered = [f for f in judged if f in unguarded_files]
+    # THREE NUMBERS AND THEY DO NOT ADD UP TO EACH OTHER, ON PURPOSE. A file can
+    # be judged and no longer UNGUARDED -- public-complaint-submit.js is exactly
+    # that, judged as a checker false negative and then reclassified. Printing
+    # one fused "N of M judged" made the list below contradict its own headline
+    # on the first run.
+    print('  ITEM 6 TRIAGE -- %d UNGUARDED file(s); %d judged, %d untriaged'
+          % (len(unguarded_files), len(covered), len(untriaged)))
+    if len(judged) != len(covered):
+        print('    (%d entr(y/ies) in the register are for files the checker no '
+              'longer flags -- listed below)' % (len(judged) - len(covered)))
+    if judged:
+        counts = {}
+        for v in judged.values():
+            counts[v['verdict']] = counts.get(v['verdict'], 0) + 1
+        print('    verdicts: ' + '  '.join('%s=%d' % kv for kv in sorted(counts.items())))
+        for f in sorted(judged):
+            print('      %-46s %s' % (f, judged[f]['verdict']))
+    if untriaged:
+        print('    UNTRIAGED (nobody has read these; no statement covers them):')
+        for f in sorted(untriaged):
+            print('      ' + f)
+    # A judgment about a file the checker no longer flags is stale, and a stale
+    # exemption is how a real finding goes quiet. Named rather than ignored.
+    stale = [f for f in judged if f not in unguarded_files]
+    if stale:
+        print('    JUDGED BUT NO LONGER UNGUARDED -- re-read or drop the entry:')
+        for f in sorted(stale):
+            print('      %-46s (%s)' % (f, judged[f]['verdict']))
     print('')
     print('  THE NEGATIVE FIXTURE IS SYNTHETIC AND THAT IS A REAL LIMIT: no')
     print('  in-memory-keyed write path exists on this platform to point at, so')
