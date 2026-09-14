@@ -109,6 +109,51 @@ LockedNext == \E r \in Requests : LockedConsume(r)
 LockedSpec == Init /\ [][LockedNext]_vars
 
 (***************************************************************************)
+(* THE ASSUMPTION LockedConsume MAKES, NOW WRITTEN DOWN. Added 2026-09-14. *)
+(*                                                                         *)
+(* "no other request can observe or act on the count in between" is true   *)
+(* of the INSERT because of the lock. It is true of the COUNT only because *)
+(* of the ISOLATION LEVEL, and that was nowhere stated.                    *)
+(*                                                                         *)
+(* pg_advisory_xact_lock serialises ACQUISITION; it does not move the      *)
+(* transaction's SNAPSHOT. Under read committed each statement takes a     *)
+(* fresh snapshot, so the count after the lock sees the previous holder's  *)
+(* committed row and collapsing the request to one step is sound. Under    *)
+(* repeatable read or serializable the snapshot is taken once, before the  *)
+(* wait, and a caller that waited on the lock counts against a world in    *)
+(* which the holder had not yet committed.                                 *)
+(*                                                                         *)
+(* StaleSnapshotConsume is that, as two steps -- the snapshot and the      *)
+(* locked run -- which is exactly the shape RacyConsume has. The lock      *)
+(* removes the interleaving of the WRITE and changes nothing about the     *)
+(* READ, so the counterexample survives:                                   *)
+(*                                                                         *)
+(*   StaleSnapshotSpec => []CapHolds     is FALSE                          *)
+(*                                                                         *)
+(* THE FUNCTION NOW REFUSES TO RUN OUTSIDE READ COMMITTED rather than      *)
+(* relying on nobody changing it. A precondition that is only true because *)
+(* nobody has touched a setting is not a precondition, it is a habit.      *)
+(***************************************************************************)
+StaleSnapshotSnap(r) ==
+    /\ seen[r] = NoRead
+    /\ seen' = [seen EXCEPT ![r] = rows]
+    /\ UNCHANGED <<rows, done>>
+
+StaleSnapshotRun(r) ==
+    /\ seen[r] # NoRead
+    /\ r \notin done
+    /\ IF seen[r] < Limit
+         THEN rows' = rows + 1
+         ELSE UNCHANGED rows
+    /\ done' = done \cup {r}
+    /\ UNCHANGED seen
+
+StaleSnapshotNext ==
+    \E r \in Requests : StaleSnapshotSnap(r) \/ StaleSnapshotRun(r)
+
+StaleSnapshotSpec == Init /\ [][StaleSnapshotNext]_vars
+
+(***************************************************************************)
 (* THE PROPERTY. It is one line, and it is the whole disagreement between  *)
 (* the two specs.                                                          *)
 (*                                                                         *)

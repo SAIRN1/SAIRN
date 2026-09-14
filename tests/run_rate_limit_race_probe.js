@@ -111,8 +111,18 @@ console.log('\n--- D. the stated bound ---');
   ok('D3 the default run exits 0 -- model and spec agree', normal.code === 0, normal.out);
   ok('D4 it names the spec it is modelling',
     /docs\/spec\/RateLimitConsume\.tla/.test(normal.out), normal.out);
-  ok('D5 and it says the racy path is the one DEPLOYED, with the reason',
-    /never been run/.test(normal.out), normal.out);
+  // D5 USED TO ASSERT THE OPPOSITE, and it was holding an overclaim in place.
+  // It required the output to say the RPC "has never been run" -- a claim
+  // sourced from db/schema_snapshot.json, which carries TABLES ONLY and has
+  // never held a function. A zero there is NOT CAPTURED, not NOT RUN. The arm
+  // now requires the tool to DECLINE to say which path is deployed, because
+  // from a clone with no service-role key it genuinely cannot know.
+  ok('D5 it refuses to claim which path is deployed, and says why',
+    /not knowable from this repo/.test(normal.out)
+    && /Read the mode the endpoint returns/.test(normal.out), normal.out);
+  ok('D5b ...and no longer asserts the RPC was never run',
+    !/never been run/.test(normal.out),
+    'the unsupportable claim is back in the output');
   ok('D6 it distinguishes racy from unbounded -- a different claim',
     /Racy is not the same as unbounded/.test(normal.out), normal.out);
 }
@@ -129,6 +139,68 @@ console.log('\n--- E. the model and the code have not drifted ---');
   ok('E3 and the code still warns against enforcing while the fallback is live',
     /DO NOT switch SAIRN_AI_RATE_LIMIT_MODE=enforce/.test(src),
     'the warning is gone -- the model is describing a system that changed');
+}
+
+// ── F. the precondition the locked model was silently resting on ──────────
+// enumerateLocked() collapses each request into ONE step because "the lock
+// means no other request can observe the count in between". That is true of
+// the write and true of the read ONLY under read committed. F exists so the
+// assumption is demonstrated rather than assumed -- and so that an enumerator
+// which quietly stopped demonstrating it fails loudly instead of looking like
+// a proof.
+console.log('\n--- F. read committed is load-bearing, and now says so ---');
+{
+  const stale = M.enumerateLockedStaleSnapshot(3, 2);
+  ok('F1 a snapshot taken before the lock BREAKS the cap',
+    stale.worst > 2, 'worst=' + stale.worst + ' -- this enumerator is meant to violate');
+  ok('F2 ...and it exhibits the schedule rather than asserting one exists',
+    Array.isArray(stale.witness) && stale.witness.length > 0, JSON.stringify(stale));
+  ok('F3 ...in which the LOCK is acquired on every run step -- the lock is not '
+    + 'what failed',
+    stale.witness.filter((s) => /^L\d/.test(s)).length === 3,
+    JSON.stringify(stale.witness));
+  ok('F4 ...and two different requests count the SAME prior value',
+    (() => {
+      const counts = stale.witness.filter((s) => /^L\d/.test(s))
+        .map((s) => (s.match(/counts (\d+)/) || [])[1]);
+      return new Set(counts).size < counts.length;
+    })(), JSON.stringify(stale.witness));
+
+  // THE PAIRED POSITIVE. A model that violated no matter what would pass F1
+  // and prove nothing -- the same enumerator with the snapshot taken AT the
+  // lock is enumerateLocked(), and that one must hold.
+  ok('F5 the same requests through the fresh-snapshot model do NOT break it',
+    M.enumerateLocked(3, 2).worst <= 2, 'the locked path stopped holding');
+
+  ok('F6 one request cannot race itself, under either model',
+    M.enumerateLockedStaleSnapshot(1, 2).worst <= 2
+    && M.enumerateRacy(1, 2).worst <= 2, 'a single request violated the cap');
+
+  const out = execFileSync(process.execPath,
+    [path.join(REPO, 'tools', 'rate_limit_race_model.js')], { encoding: 'utf8' });
+  ok('F7 the tool reports the stale-snapshot result rather than hiding it',
+    /SNAPSHOT TAKEN BEFORE THE LOCK/.test(out), out.slice(0, 400));
+  ok('F8 ...and says the lock is working throughout that trace',
+    /LOCK IS WORKING IN EVERY STEP/.test(out), out.slice(-800));
+
+  const sql = require('fs').readFileSync(
+    path.join(REPO, 'sql', 'sairn_ai_rate_limit_consume_fn.sql'), 'utf8');
+  ok('F9 the SQL function REFUSES outside read committed rather than assuming it',
+    /current_setting\('transaction_isolation'\)/.test(sql)
+    && /raise exception/.test(sql), 'the guard is not in the function');
+  ok('F10 ...and raises rather than returning an error object a caller would read '
+    + 'as an answer',
+    !/return jsonb_build_object\('error', 'transaction/.test(sql)
+    && /invalid_transaction_state/.test(sql), 'the refusal became a return value');
+  ok('F11 the file tells the operator how to watch the guard REFUSE',
+    /set transaction isolation level repeatable read/.test(sql),
+    'there is no way to see this guard fire, so nobody will know if it stops');
+
+  const tla = require('fs').readFileSync(
+    path.join(REPO, 'docs', 'spec', 'RateLimitConsume.tla'), 'utf8');
+  ok('F12 the spec carries the stale-snapshot behaviour too, not just the model',
+    /StaleSnapshotSpec\s*==/.test(tla) && /StaleSnapshotRun\(r\)\s*==/.test(tla),
+    'the spec and the model have drifted apart again');
 }
 
 console.log('');

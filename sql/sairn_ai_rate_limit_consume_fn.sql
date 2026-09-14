@@ -58,9 +58,49 @@ language plpgsql
 as $$
 declare
   v_count bigint;
+  v_iso   text;
 begin
   if p_app_id is null or p_app_id = '' then
     return jsonb_build_object('error', 'app_id required');
+  end if;
+
+  -- ── THE PRECONDITION THIS FUNCTION'S CORRECTNESS RESTS ON ────────────────
+  -- Added 2026-09-14 after the formal model was extended to stop ASSUMING it.
+  --
+  -- pg_advisory_xact_lock serialises ACQUISITION. It does not move the
+  -- transaction's SNAPSHOT. Under read committed the `select count(*)` below
+  -- takes a fresh snapshot, so it sees every row committed by the caller that
+  -- just released the lock, and count-then-insert is genuinely atomic.
+  --
+  -- Under REPEATABLE READ or SERIALIZABLE the snapshot is taken once, at the
+  -- transaction's first data statement, and a caller that WAITED on the lock
+  -- still counts against a snapshot from before the holder committed. It then
+  -- inserts. The cap over-runs with the lock working perfectly the whole time
+  -- -- `node tools/rate_limit_race_model.js` enumerates it and prints the
+  -- schedule: S0, L0(rows=1), S1, S2, L1(counts 1), L2(counts 1, rows=3).
+  --
+  -- Nothing on this deployment sets a non-default isolation level today. That
+  -- is exactly why this guard exists: `alter role service_role set
+  -- default_transaction_isolation = 'repeatable read'` is one statement, would
+  -- be made for an unrelated reason, and would silently turn this function back
+  -- into the bug it was written to fix. There would be no error and no symptom
+  -- until the cap over-ran.
+  --
+  -- RAISES rather than returning an error object, deliberately. The client
+  -- treats an RPC failure as fail-open (allow and log loudly), which is the
+  -- right behaviour for a counting outage -- but an error OBJECT would be read
+  -- as a real answer and the caller would believe a count it must not believe.
+  -- "Could not run" is a third state and is never folded into an answer.
+  v_iso := current_setting('transaction_isolation');
+  if v_iso <> 'read committed' then
+    raise exception
+      'sairn_ai_rate_limit_consume requires READ COMMITTED; this transaction '
+      'is %. The advisory lock serialises acquisition but does not move the '
+      'snapshot, so under % the count is read from before the previous caller '
+      'committed and the cap over-runs while the lock appears to work. '
+      'Refusing rather than returning a count that cannot be trusted.',
+      v_iso, v_iso
+      using errcode = 'invalid_transaction_state';
   end if;
 
   -- Serialise concurrent callers for THIS app only. Held to end of
@@ -104,3 +144,18 @@ grant execute on function public.sairn_ai_rate_limit_consume(text, integer, inte
 --   select x, (public.sairn_ai_rate_limit_consume('__concurrency__', 5, 86400)->>'prior_count')::int
 --     from generate_series(1,20) x;
 -- Repeated prior_count values would mean the lock is not holding.
+--
+-- ── AND VERIFY THE ISOLATION GUARD ITSELF, because a guard nobody has seen
+--    refuse is indistinguishable from one that cannot ──────────────────────
+--   begin;
+--     set transaction isolation level repeatable read;
+--     select public.sairn_ai_rate_limit_consume('__verify__', 1000000, 86400);
+--     -- EXPECTED: ERROR 25000 "requires READ COMMITTED; this transaction is
+--     --           repeatable read". If it returns a jsonb row instead, the
+--     --           guard is not firing and the model's precondition is not
+--     --           being enforced -- report that, do not work around it.
+--   rollback;
+--
+-- The paired positive is the first __verify__ call above, which must still
+-- succeed under the default isolation level. One arm proving refusal and one
+-- proving it still permits: either alone is half a control.
