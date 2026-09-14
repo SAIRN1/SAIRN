@@ -1135,3 +1135,44 @@ mismatch becomes a real, systematic, non-trivial cost, precisely because
 the two roundings don't cancel out on average -- they are each internally
 consistent but mutually inconsistent with each other, so the discrepancy
 accumulates in a consistent direction rather than averaging toward zero.
+
+## PTES / OWASP / NIST SP 800-115 -- the real security-testing framework
+
+Genuinely different in kind from every other citation in this file: not a
+historical incident or an adjacent industry's audit practice, but the
+actual current, real professional standard for the specific question of
+whether something can be broken into. PTES (the Penetration Testing
+Execution Standard) is the field's own de facto structural standard,
+cross-referenced here against OWASP's current Top 10 vulnerability
+categories (the living, regularly-updated checklist of what actually gets
+exploited most in real web applications) and NIST SP 800-115 (the US
+government's own technical guide to information security testing and
+assessment).
+
+**Why this required its own Rules of Engagement, written first.** Every
+other section in this file governs asking whether something IS correct.
+This governs asking whether something can be BROKEN, which is a real,
+different kind of question with a real, different kind of risk if answered
+carelessly -- a traced, careful proof of a real attack path is a genuine
+finding; running that path against real data is a genuinely different act
+with genuinely different consequences, on real customer records this
+platform is responsible for. The professional standard itself distinguishes
+these two acts sharply (a PTES engagement has an explicit, contractually-
+bounded rules-of-engagement phase before any testing begins, for exactly
+this reason), and this role's own boundary is the same distinction, made
+absolute rather than merely contractual: prove the path in the code, never
+run it live, full stop, no severity-based exception.
+
+**The structure PTES and OWASP actually provide.** PTES's own phased
+methodology includes explicit threat modeling as a distinct phase, separate
+from vulnerability analysis and separate from exploitation -- mapping what
+an attacker with a given starting position could reach, before ever
+constructing a specific proof of a specific vulnerability. OWASP's Top 10
+is the field's own living answer to "what actually gets exploited," updated
+from real, aggregated incident data rather than theorized in the abstract,
+which is why it is the checklist lens this role's own threat-modeling pass
+uses rather than an invented list. NIST SP 800-115's own phased structure
+(planning, discovery, attack, reporting) reinforces the same separation:
+discovery and analysis are their own phase, distinct from the phase where
+an actual attack would be attempted -- and this role only ever occupies the
+discovery and analysis phase, by design, never the attack phase.

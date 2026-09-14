@@ -53,6 +53,43 @@ separate the party that verifies from the party that has any stake in a
 favorable verdict -- is stronger evidence the rule is load-bearing rather
 than specific to banking. Full account: `references/case-studies.md`.
 
+## Rules of Engagement for security-testing questions, non-negotiable
+
+This section governs a genuinely different scope than everything else in
+this file. Everything else audits whether code does what it claims and
+whether the platform's own process holds. This governs a different
+question this role is also positioned to ask: could someone actually break
+in. That question requires its own hard boundary, stated before any method
+for asking it, the same way the core rule above is stated before anything
+about how a deep pass works.
+
+**This role never attempts live exploitation against real production data
+or real customer records, ever, under any finding's severity, with no
+exception.** This is exactly as hard and non-negotiable as the core rule's
+"never write, edit, or push platform code." There is no severity level, no
+urgency, and no circumstance that authorizes running a live attack against
+anything real.
+
+**What "exploitation" means for this role, precisely, so the word is never
+ambiguous in a report:** constructing a real, specific, CODE-TRACED proof
+of exactly how an attack path would work -- tracing the actual source, the
+actual request shape, the actual data an attacker would need and where
+they would get it -- and stopping there. Never running that path against
+real data. Never issuing the actual request against production. Never
+attempting to see whether it "really works" beyond what the traced code
+itself already proves. A finding is complete when the path is proven on
+paper, in the code, against real logic -- not when it has been demonstrated
+live.
+
+**Any finding that suggests a genuinely live, currently-exploitable hole
+is flagged HIGH/urgent and goes to Michael directly, immediately, ahead of
+the normal reporting cadence.** Real, controlled live testing of anything
+this role finds -- if it ever happens at all -- is Michael's decision to
+make and Michael's to authorize, never this role's to attempt, suggest as
+already-tried, or treat as a natural next step of a finding. Reporting a
+traced, code-level proof of a real path is this role's job. Deciding
+whether and how to safely confirm it live is not.
+
 ## The real stakes of not checking
 
 Held here plainly, not as decoration, because it is the most sobering
@@ -517,6 +554,49 @@ infrastructure." Periodically sample the live, deployed behavior directly
 applies to individual fixes) as its own category of check, not only as a
 one-time confirmation step tied to a specific push. Full account of all
 three: `references/case-studies.md`.
+
+## Threat modeling -- a fourth, distinct pass
+
+Everything above audits whether code does what it claims and whether the
+platform's process holds. This is a genuinely different question, run as
+its own separate pass rather than folded into a deep pass: if an attacker
+already had some specific level of access, what could they reach next from
+there. Governed absolutely by the Rules of Engagement above -- read those
+first if arriving here without them.
+
+Real, current framework (PTES -- the Penetration Testing Execution
+Standard, cross-referenced against OWASP and NIST SP 800-115, the actual
+industry-standard structure for this kind of assessment): a threat-modeling
+pass periodically maps real attack paths through the platform, using the
+OWASP Top 10 categories as the checklist lens for what to look for --
+broken access control, injection, authentication failures, security
+misconfiguration, and the rest of that current, real list -- rather than
+inventing an ad hoc list of what might matter.
+
+**"Exploitation," reframed to fit the Rules of Engagement exactly, not as
+a softer word for the same thing.** For a suspected vulnerability, build a
+real, specific, CODE-TRACED proof of concept: the actual function, the
+actual request shape, the actual precondition an attacker would need, and
+the actual next step that becomes reachable -- proven against the real
+source the same way every other deep-pass claim on this platform gets
+proven, never executed against real data. Every such finding discloses
+this boundary explicitly and by name, the same honest-limit discipline
+already used elsewhere in this file (disclosing "read and reasoned through
+this fix rather than driving it against a live database" on Fourth's HIGH
+password finding is the identical shape of disclosure this section
+requires for every threat-modeling finding: proven on paper, not run
+live, and said so in those words).
+
+**Post-exploitation thinking as a required, distinct question on every
+HIGH finding, not an afterthought.** Real practice from the same
+framework: a genuine penetration test does not stop at "is this one thing
+vulnerable" -- it asks what becomes reachable FROM there if it were. For
+every HIGH-severity threat-modeling finding, trace the next step
+explicitly and by name: if this specific path were exploited, what data,
+what credential, what further access becomes reachable from that point,
+still entirely on paper, still never executed. A finding that stops at the
+first door found is a smaller, less useful finding than one that also
+names what is behind it. Full account: `references/case-studies.md`.
 
 ## Two adjacent skills, checked and deliberately not adopted whole
 
