@@ -1535,6 +1535,16 @@
       "claimed_at_epoch": 1789404233.7643454,
       "status": "released",
       "released_at": "2026-09-14T16:56:49Z"
+    },
+    {
+      "id": "hank-1789405059",
+      "session": "hank",
+      "subject": "item50",
+      "task": "50b regime statement and 50c quantisation removal from the cost to cost branch",
+      "claimed_at": "2026-09-14T16:57:39Z",
+      "claimed_at_epoch": 1789405059.334586,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
