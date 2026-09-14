@@ -1643,8 +1643,8 @@
       "task": "temporary state leak detection -- declared scope first",
       "claimed_at": "2026-09-14T19:38:23Z",
       "claimed_at_epoch": 1789414703.0752459,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T20:36:54Z"
     },
     {
       "id": "hank-1789418196",
