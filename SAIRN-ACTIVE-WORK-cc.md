@@ -2959,3 +2959,50 @@ nobody had propagated anything into.**
 One probe arm was also wrong and is fixed: it asked for `sse < 1.0`, which is not a statement about
 anything -- SSE scales with the point count and the square of the curve's magnitude. It is now RMS
 error as a fraction of the curve peak, where the clamp defect sits at 15% and the bar is 1%.
+
+
+---
+
+## 2026-09-14 -- the three tools built today had no declared control, and two proved only one direction
+
+Found by running `tools/checker_control_check.py` after the day's work, which is the point of a
+standing meta-checker: **the tools built to close a gap created it three times in one day.**
+
+`completeness_check.py`, `dependency_graph.py` and `secrets_inventory.py` all shipped with probes
+that exercise both directions and **no `CONTROLS_FOR` line**. The meta-checker records three
+inference models that were each wrong within an hour, so it demands a declaration -- and an
+undeclared control is exactly the "we think it is covered" state it exists to end.
+
+### Declaring it was not enough, and the second half is the useful part
+
+With `CONTROLS_FOR` added, two of the three immediately read **ONE DIRECTION, `fires=0`**. Every
+arm proved the checker STAYS QUIET on clean input; not one proved it REPORTS. The arms asserted an
+internal function returned truthy -- which proves **a shape matches** and says nothing about
+whether the tool tells anyone.
+
+### The fix is a better assertion, not a keyword
+
+Adding the words the meta-checker greps for would be the precise defect it was rebuilt to end: it
+counted docstring prose as evidence until `27d62e7b`.
+
+Both probes now assert on the tool's **exit code through its real entry point**:
+
+| tool | FIRES | SILENT |
+|---|---|---|
+| `completeness_check.py` | exit **1** on the real tree, with the `sen-portal.js` finding named | exit **0** on `--fixtures` |
+| `secrets_inventory.py --check` | exit **1** against a doctored document | exit **0** against the committed one |
+
+and, for the third state, exit **2** against a missing document -- COULD NOT RUN, folded into
+neither.
+
+**A tool that finds something and exits 0 is one nothing downstream can chain**, so this is the
+assertion worth having regardless of what the meta-checker counts.
+
+**Fleet now: NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39.**
+
+### Observed, not edited
+
+The open row for `literal_drift_check.py`'s one-directional control still reads OPEN, and the fleet
+measures **0 ONE DIRECTION** with `tests/run_literal_drift_control_probe.py` present since
+`7eff5fb8`. That row looks stale. It belongs to another session and was left alone rather than
+closed on their behalf.

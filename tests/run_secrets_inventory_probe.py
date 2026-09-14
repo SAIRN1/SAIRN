@@ -31,6 +31,14 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import secrets_inventory as S                                    # noqa: E402
 
+# THIS FILE IS THE CONTROL FOR secrets_inventory.py, declared rather than
+# inferred. BOTH DIRECTIONS:
+#   FIRES   2c/3a-3e -- a guarded secret is recognised in all four real forms,
+#           and 3e goes red the moment any CREDENTIAL loses its guard.
+#   SILENT  2a/2b -- a guard on a DIFFERENT variable, and a test with no
+#           refusal behind it, are correctly NOT counted as guards.
+CONTROLS_FOR = ['secrets_inventory.py']
+
 failures = []
 
 
@@ -132,6 +140,43 @@ check('5c  ...and that the absence column is a HEURISTIC with a third state, '
 check('5d  no CREDENTIAL value is printed anywhere in the document -- an '
       'inventory that leaks what it inventories is worse than none',
       'sk_live' not in doc and 'sk_test' not in doc and 'eyJ' not in doc)
+
+# -- FIRES, ASSERTED ON THE TOOL'S OWN EXIT CODE --------------------------
+# Everything above proves the guard heuristic classifies correctly. This proves
+# the CHECKER REPORTS: pointed at a document that no longer matches the code,
+# --check must exit 1. A tool that notices drift and exits 0 is one nothing
+# downstream can chain, which is why tools/checker_control_check.py counts an
+# exit-code comparison as evidence of firing.
+print('6. FIRES and SILENT on the same entry point')
+import contextlib                                                # noqa: E402
+import tempfile                                                  # noqa: E402
+_tmp = tempfile.mkdtemp(prefix='secrets-drift-')
+_doc = os.path.join(_tmp, 'SECRETS-INVENTORY.md')
+io.open(_doc, 'w', encoding='utf-8', newline=chr(10)).write('# not the real document' + chr(10))
+_real_doc = S.DOC
+try:
+    S.DOC = _doc
+    _buf = io.StringIO()
+    with contextlib.redirect_stdout(_buf):
+        _rc = S.main(['--check'])
+    check('6a  FIRES: pointed at a document that does not match the code, --check '
+          'exits 1 and says to regenerate',
+          _rc == 1 and 'no longer matches' in _buf.getvalue(), 'exit %s' % _rc)
+    S.DOC = os.path.join(_tmp, 'absent.md')
+    _buf2 = io.StringIO()
+    with contextlib.redirect_stdout(_buf2):
+        _rc2 = S.main(['--check'])
+    check('6b  a MISSING document is exit 2, COULD NOT RUN -- not folded into '
+          'either a pass or a finding',
+          _rc2 == 2 and 'COULD NOT RUN' in _buf2.getvalue(), 'exit %s' % _rc2)
+finally:
+    S.DOC = _real_doc
+_buf3 = io.StringIO()
+with contextlib.redirect_stdout(_buf3):
+    _rc3 = S.main(['--check'])
+check('6c  SILENT: against the real committed document the same entry point '
+      'exits 0 -- the pair is what makes 6a evidence rather than an observation',
+      _rc3 == 0, 'exit %s' % _rc3)
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:

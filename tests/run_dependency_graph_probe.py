@@ -28,6 +28,18 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import dependency_graph as G                                     # noqa: E402
 
+# THIS FILE IS THE CONTROL FOR dependency_graph.py, declared rather than
+# inferred -- tools/checker_control_check.py records three inference models
+# that were each wrong within an hour, in three different directions.
+#
+# BOTH DIRECTIONS ARE HERE, which is what the declaration is claiming:
+#   FIRES   3b/3d/4b -- a real cut vertex, a real 2-cut pair, a real blast
+#           radius are REPORTED.
+#   SILENT  3a/4a/4c/4d/5a -- a cycle has no cut vertex, adjacent corners are
+#           not a pair, a leaf is not a chokepoint, and a graph cut by ONE node
+#           yields no pair at all.
+CONTROLS_FOR = ['dependency_graph.py']
+
 failures = []
 
 

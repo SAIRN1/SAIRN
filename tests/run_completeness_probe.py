@@ -26,6 +26,16 @@ sys.path.insert(0, os.path.join(REPO, 'tools'))
 import completeness_check as C                                   # noqa: E402
 import dependency_graph as G                                     # noqa: E402
 
+# THIS FILE IS THE CONTROL FOR completeness_check.py, declared rather than
+# inferred. BOTH DIRECTIONS, and the silent half is the larger one here because
+# over-reporting is this shape's recorded failure mode:
+#   FIRES   2a/2c/3b/3d -- a rule consulted nowhere, a rule named only in a
+#           comment, and a genuine fall-through dispatch are REPORTED.
+#   SILENT  2b/3a/3c/3c2/3e -- a rule that IS consulted, a terminal else
+#           covering one leftover, a predicate wearing a dispatch's clothes, a
+#           single-arm test, and a two-value domain all stay quiet.
+CONTROLS_FOR = ['completeness_check.py']
+
 failures = []
 
 
@@ -120,6 +130,28 @@ check('5b  ...and names how many files it ran over, so the zero has a denominato
       'RAN over' in out and str(len(C.js_files())) in out)
 check('5c  it says it is report-only, because a shape that cannot read intent '
       'has no business refusing a push', 'REPORT ONLY' in out)
+
+# -- FIRES, ASSERTED ON THE TOOL'S OWN EXIT CODE --------------------------
+# The internal-function arms above prove a SHAPE matches. This proves the
+# CHECKER REPORTS: a real run with a real finding must exit 1, not print
+# something and exit 0. tools/checker_control_check.py reads direction from
+# parsed assertions and counts an exit-code comparison as evidence of firing,
+# and it is right to -- a tool that finds something and exits 0 is one nothing
+# downstream can chain.
+print('6. FIRES and SILENT on the same entry point')
+_r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py')],
+                    capture_output=True, text=True, cwd=REPO)
+check('6a  FIRES: with a real finding on the real tree the tool exits 1, so a '
+      'caller can chain it -- printing a finding and exiting 0 is how a checker '
+      'becomes decorative', _r.returncode == 1, 'exit %d' % _r.returncode)
+check('6b  ...and the finding it exits 1 for is the real one, not any line that '
+      'happens to be printed',
+      'sen-portal.js' in (_r.stdout or '') and 'MANAGEMENT_ROLES' in (_r.stdout or ''))
+_f = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py'),
+                     '--fixtures'], capture_output=True, text=True, cwd=REPO)
+check('6c  SILENT: with nothing to report the same tool exits 0 -- the pair is '
+      'what makes 6a evidence rather than an observation',
+      _f.returncode == 0, 'exit %d' % _f.returncode)
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
