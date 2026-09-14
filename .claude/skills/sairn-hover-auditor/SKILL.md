@@ -146,7 +146,20 @@ exactly the gap this statistic measures. Full account:
      woke up and started firing live trades the day a new feature reused the
      same flag it still responded to. This is the real dollar figure behind
      items 32/34 (unreachable code, dormant panels): confirmed-dormant is a
-     standing question to keep re-asking, not a closed one. Full account:
+     standing question to keep re-asking, not a closed one.
+   - **State that looks compliant only because it was specially prepared
+     for the check, not because it is genuinely, continuously true.** Real
+     framing (Lloyd's Register, maritime classification): a classification
+     survey is not the moment compliance gets established -- it is a
+     periodic SAMPLE of a state that is supposed to already be
+     continuously true, every day, whether or not a surveyor happens to be
+     aboard. If a deep pass ever finds something that reads as
+     specially arranged for the moment of inspection -- a fixture built to
+     make a checker pass, a state reset right before a known review, data
+     that looks curated rather than organic -- that gap between
+     continuously-true and true-when-checked is itself a real, reportable
+     finding, worth naming on its own terms and not only as a wrapper
+     around whatever defect it happens to be hiding. Full account of both:
      `references/case-studies.md`.
 
 **Process pass (rarest of the three, no fixed schedule):** step back from
@@ -238,8 +251,34 @@ or a deadline ever squeeze this role's own rotation or coverage the same
 way -- a Tier A item checked less thoroughly because something needed to
 move fast that round, not because the actual risk was genuinely lower? The
 NASA/GAO finding on schedule pressure is the concrete version of exactly
-this question, asked of a program built the right way in principle. Full
-account: `references/case-studies.md`.
+this question, asked of a program built the right way in principle.
+
+**A third data point sharpens what Boeing's failure actually was, and it
+was not delegation itself.** Lloyd's Register has independently classified
+ships since 1760 -- 265+ years -- on a model where flag states, including
+the US Coast Guard, delegate real inspection authority to it, the same
+basic SHAPE as the FAA delegating authority to Boeing's ODA. The reason one
+has run cleanly for centuries and the other produced two fatal crashes
+within a few years of the delegation being granted is not that delegation
+is inherently unsafe -- it is WHO the authority was delegated to. Lloyd's
+Register is a genuinely independent third party with its own separate
+reputational stake in getting the classification right, structurally
+unable to profit from waving a bad ship through. Boeing's ODA delegated
+authority back to the party actually being checked. Boeing's failure was
+never delegation in the abstract; it was delegating verification to the
+subject of the verification.
+
+**The real, adoptable test this produces for any future delegation on this
+platform:** before this role treats any check, gate, or verification step
+as trustworthy because "someone already checked it," ask specifically
+whether the checker is genuinely independent of what it's checking, or
+whether it is the same party (or a party with the same incentives) as the
+thing being verified. A checker built and run by the same agent whose work
+it verifies is structurally Boeing's ODA, regardless of how good that
+checker's logic actually is -- this is the same reasoning behind the core
+rule's SOX/Enron citation, now stated as a test to apply going forward
+rather than only as a rule already followed. Full account of all three:
+`references/case-studies.md`.
 
 **A landed fix must be confirmed running on every real target, not trusted
 on the push tool's own success report.** Knight Capital's 2012 deploy
@@ -515,7 +554,28 @@ go before that agent's next SCHEDULED deep pass by roughly 25%, capped at
 shortens it back down immediately. This gives WADA's "watch for a
 deviation from their own history" instinct an actual, defensible number
 to compute rather than leaving it as a general sense of trust earned or
-lost. Full account: `references/case-studies.md`.
+lost.
+
+**Different parts of the same Tier A item can legitimately warrant
+genuinely different cadences from each other, not one blended frequency
+for the whole item.** Real principle (Lloyd's Register, maritime
+classification, independently operating since 1760): a single ship's
+different subsystems are re-surveyed on fundamentally different
+schedules based on their own real wear and criticality -- annual surveys
+for some equipment, every 2-3 years for machinery, a full 5-year survey
+for hull and machinery together, and continuous, running-hours-based
+monitoring for equipment where usage rather than calendar time is the
+real driver of wear. A ship is not one object with one interval; it is
+many subsystems each earning its own. Applied here: a financial engine's
+core math and its UI-facing display layer are not the same re-check
+cadence even though both sit inside the same Tier A feature -- the core
+computation, once independently verified stable, can legitimately earn a
+longer interval under the staircase method above, while the display layer
+(where a re-derived or duplicated value is more likely to silently drift
+from the core it's supposed to reflect, the exact shape item 94 already
+found) may warrant staying on a shorter cycle independent of how the core
+is doing. Set cadence per component within an item, not only per item.
+Full account: `references/case-studies.md`.
 
 **Order, not concealment, is what makes this honest.** True blinding to
 authorship isn't achievable here -- the agent is always named before a

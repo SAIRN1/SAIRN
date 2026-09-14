@@ -3,11 +3,13 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in three
+is still on record somewhere, not compressed away. Added 2026-09-14 in four
 batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
 Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
 SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
-calibration industry (ISO/IEC 17025, ILAC-G24) -- all three batches once the
+calibration industry (ISO/IEC 17025, ILAC-G24); then Lloyd's Register
+(differentiated cadence within one object, and the independence test the
+Boeing/SpaceX contrast was pointing at) -- all four batches once the
 earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
 Debate, risk-limiting audits, Registered Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
@@ -431,3 +433,67 @@ the reading actually was. Applied to a drift or statistical finding here:
 state the ratio -- how far past an agent's own baseline, how far past a
 stated bound -- rather than reducing it to a single severity word the way
 a pass/fail line would.
+
+## Lloyd's Register -- maritime classification, independently operating since 1760
+
+Lloyd's Register is a ship classification society that has run continuously
+since 1760 -- longer than any other precedent in this file, and one of the
+longest-running independent verification bodies of any kind still
+operating in its original form. Flag states, including the US Coast Guard,
+delegate real, substantive inspection and certification authority to it
+under formal agreements, which makes it directly comparable in SHAPE to the
+FAA delegating authority to Boeing's own ODA program -- and directly useful
+as the case where that same shape has worked, for centuries, rather than
+failed.
+
+**Differentiated cadence within a single object, not one blended
+interval.** A ship is never treated as one thing with one re-survey
+schedule. Lloyd's own classification rules specify genuinely different
+intervals per subsystem based on that subsystem's own real wear and
+criticality profile: annual surveys for some equipment categories, every
+2-3 years for machinery, a full combined hull-and-machinery survey on a
+5-year cycle, and continuous, running-hours-based monitoring for equipment
+categories (main engines, certain rotating machinery) where actual usage,
+not calendar time, is the real driver of wear. The organizing idea is that
+"the ship" is not the right unit for a single interval -- each subsystem
+earns its own, from its own real degradation pattern.
+
+**A survey samples a state that is supposed to already be true, not the
+moment truth gets established.** A classification surveyor's visit is a
+periodic SAMPLE, on the working assumption that the vessel's certified
+condition holds continuously between surveys, every day, whether or not
+anyone happens to be aboard checking. This framing produces a specific,
+useful finding-category: evidence that something was prepared FOR the
+moment of inspection, rather than being genuinely, continuously in the
+state being certified, is itself a compliance failure distinct from
+whatever the underlying material condition turns out to be -- a ship
+scrubbed and staged the week before a survey and left to degrade the rest
+of the year has failed the actual standard even if it passes the visual
+check that week.
+
+**Why Lloyd's has run clean for 265+ years while Boeing's ODA produced two
+fatal crashes within a few years of delegation being granted, using the
+identical basic delegation SHAPE.** The determining variable is not
+whether authority was delegated -- both programs delegate real authority
+away from the primary regulator. It is WHO the authority was delegated TO.
+Lloyd's Register is a genuinely independent third party, structurally
+separate from any single shipbuilder or shipowner, with its OWN separate
+commercial reputation staked on getting the classification right across
+every client it serves -- a bad classification that leads to a casualty
+damages Lloyd's own standing regardless of which shipowner was involved.
+Boeing's ODA delegated MCAS's certification authority back to Boeing
+itself -- the party being checked became, for practical purposes, the
+party doing the checking. Boeing's failure was never delegation in the
+abstract. It was delegating verification to the subject of the
+verification, which produces the appearance of independent review while
+supplying none of its substance.
+
+**The test this produces, stated for direct future use:** before treating
+any check, gate, or verification step on this platform as trustworthy
+because something already checked it, ask specifically whether the checker
+is genuinely independent of what it is checking -- built and run by a
+different party with a different, non-overlapping stake in the outcome --
+or whether it is the same party, or a party sharing the same incentives, as
+the thing being verified. A checker with either shape can be logically
+correct and still supply none of the actual assurance independence is
+supposed to buy.
