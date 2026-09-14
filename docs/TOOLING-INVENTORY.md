@@ -91,7 +91,7 @@ around it. The second exists because the first missed exactly that on
 | `redaction_check.py` | CHECKER | credential shapes in what is about to be written, and in what a push ships |
 | `sairn_load_state_check.py` | LIVE | live seed content differing from the repo seed (gate check 1) |
 | `sairn_push_gate_hook.py` | CHECKER | the numbered push checks; the only tool that calls deny() |
-| `sairn_reachability_check.py` | CHECKER | a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name -- which R4 and R5 cannot answer, because /api/sd-data is ONE route carrying 385 registered resources and reads as reachable for all of them |
+| `sairn_reachability_check.py` | CHECKER | a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name, and R7 the ACTION -- neither answerable by R4 or R5, because they measure at the ROUTE: /api/sd-data is ONE route carrying 385 registered resources, and 182 individually addressable actions sit behind 27 routes, 19 of them behind api/law-auth.js alone |
 | `sairn_seam_check.py` | CHECKER | an endpoint dropping a field the engine reads (gate check 4) |
 | `sairn_sql_preflight.py` | CHECKER | SQL referencing a column or table the live schema does not have (gate check 3) |
 

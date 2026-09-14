@@ -205,7 +205,7 @@ PURPOSES = {
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
     'sairn_load_state_check.py': ('LIVE', 'live seed content differing from the repo seed (gate check 1)'),
     'sairn_seam_check.py': ('CHECKER', 'an endpoint dropping a field the engine reads (gate check 4)'),
-    'sairn_reachability_check.py': ('CHECKER', 'a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name -- which R4 and R5 cannot answer, because /api/sd-data is ONE route carrying 385 registered resources and reads as reachable for all of them'),
+    'sairn_reachability_check.py': ('CHECKER', 'a feature no user can reach (gate check 5), plus three REPORT-ONLY rungs that never gate and never suggest removal: R4 is the route still served in production, R5 is the function inside it invoked, and R6 is the RESOURCE asked for by name, and R7 the ACTION -- neither answerable by R4 or R5, because they measure at the ROUTE: /api/sd-data is ONE route carrying 385 registered resources, and 182 individually addressable actions sit behind 27 routes, 19 of them behind api/law-auth.js alone'),
     'preauth_oracle_check.py': ('CHECKER', 'an endpoint that answers before it authenticates (gate check 7)'),
     # NOT gate check 9, and the stale inventory said it was. Check 9 runs the
     # test files named in the gate's own GUARD_TESTS list directly; nothing in

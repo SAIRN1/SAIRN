@@ -572,6 +572,147 @@ def report_resource_demand():
     print('  path anyone runs -- that is R4 and R5, one level up.')
 
 
+# ── R7: IS THE ACTION ASKED FOR? (report only, never gates) ───────────────
+# THE SAME UNIT MISMATCH AS R6, ON A SECOND AXIS -- and finding it there is the
+# reason R6's insight was worth generalising rather than filing.
+#
+# R6 asked whether a RESOURCE is asked for, because /api/sd-data is one route
+# carrying 385 of them. The sweep that followed found the shape is not unique to
+# that route: 182 individually-addressable ACTIONS are dispatched across 27
+# routes, and R4 and R5 measure reachability at the ROUTE for every one of them.
+# api/law-auth.js alone dispatches on 19 distinct action strings behind a single
+# path.
+#
+# An action nothing asks for is the same failure R6 names one level up: it is
+# reachable in principle, answers nothing in practice, and the route around it
+# is busy enough that no route-level measurement will ever say so.
+#
+# ── IT NEVER GATES AND NEVER SUGGESTS REMOVAL ────────────────────────────
+# Inherited from R4, R5 and R6 deliberately, and it matters more here than
+# anywhere else in this file. An admin action run by hand once a quarter, an
+# OAuth callback a provider posts to, a seeding verb used at install: all are
+# quiet, all are correct, and all look identical to dead code from inside the
+# repo. THIS LIST IS A POINTER. Reading the file is the work.
+#
+# ── NO ACKNOWLEDGEMENTS ARE PRE-LOADED, AND THAT IS DELIBERATE ───────────
+# R6 ships with two, because the files themselves argue the decision in a test
+# that names the resource. None of the routes below states why its actions have
+# no caller, so acknowledging any of them would mean INVENTING the
+# justification -- which is the one thing an acknowledgement must never be. They
+# stay open until somebody who owns the file writes the reason.
+R7_ACKNOWLEDGED = {}
+R7_MIN_ACTIONS = 3
+
+
+def _action_dispatch():
+    """{route: [action, ...]} for every api/ module dispatching on >= N actions."""
+    out = {}
+    pat = re.compile(r"\baction\s*===\s*'([a-z][a-z0-9_]{1,40})'")
+    for dp, dn, fn in os.walk(os.path.join(REPO_ROOT, 'api')):
+        dn[:] = [d for d in dn if d != 'node_modules']
+        for f in sorted(fn):
+            if not f.endswith('.js') or f.endswith('.test.js'):
+                continue
+            full = os.path.join(dp, f)
+            rel = os.path.relpath(full, REPO_ROOT).replace(os.sep, '/')
+            src = io.open(full, encoding='utf-8', errors='replace').read()
+            acts = sorted(set(pat.findall(src)))
+            if len(acts) >= R7_MIN_ACTIONS:
+                out[rel] = acts
+    return out
+
+
+def _callers_excluding(rel):
+    """Every app HTML plus every api/ module EXCEPT the one being asked about.
+
+    A ROUTE IS NOT ITS OWN CALLER. Leaving the file in would make every action
+    reachable by definition -- the same closed loop R6 avoids by excluding the
+    registry, and the reason both exclusions are asserted by their probes rather
+    than left as an implementation detail.
+    """
+    blob = []
+    for f in sorted(os.listdir(REPO_ROOT)):
+        if f.endswith('.html'):
+            blob.append(io.open(os.path.join(REPO_ROOT, f), encoding='utf-8',
+                                errors='replace').read())
+    for dp, dn, fn in os.walk(os.path.join(REPO_ROOT, 'api')):
+        dn[:] = [d for d in dn if d != 'node_modules']
+        for f in sorted(fn):
+            if not f.endswith('.js') or f.endswith('.test.js'):
+                continue
+            full = os.path.join(dp, f)
+            if os.path.relpath(full, REPO_ROOT).replace(os.sep, '/') == rel:
+                continue
+            blob.append(io.open(full, encoding='utf-8', errors='replace').read())
+    return ''.join(blob)
+
+
+def report_action_demand():
+    """Print the R7 section. Like R4, R5 and R6 it CANNOT affect the exit code."""
+    print('')
+    print('=== R7: IS THE ACTION ASKED FOR? (report only, never gates) ===')
+    routes = _action_dispatch()
+    if not routes:
+        print('  COULD NOT RUN: no api/ module was readable, so NO action was '
+              'checked. That is not an empty result.')
+        return
+    total = sum(len(v) for v in routes.values())
+    findings = []
+    for rel in sorted(routes):
+        callers = _callers_excluding(rel)
+        for a in routes[rel]:
+            if ("'" + a + "'") in callers or ('"' + a + '"') in callers:
+                continue
+            findings.append((rel, a))
+    acked = [x for x in findings if x in R7_ACKNOWLEDGED]
+    open_rows = [x for x in findings if x not in R7_ACKNOWLEDGED]
+
+    print('  routes dispatching on >=%d actions : %d' % (R7_MIN_ACTIONS, len(routes)))
+    print('  individually addressable actions   : %d' % total)
+    print('  named by NOTHING in this repo      : %d  (%d acknowledged, %d open)'
+          % (len(findings), len(acked), len(open_rows)))
+    print('  THE UNIT IS THE ACTION, NOT THE ROUTE. api/law-auth.js alone carries')
+    print('  19 behind one path, and R4 and R5 measure reachability at the path.')
+
+    if open_rows:
+        print('')
+        print('  READ THESE, DO NOT ACT ON THE LIST. An admin verb run by hand once a')
+        print('  quarter, an OAuth callback a provider posts to, and a seeding action')
+        print('  used at install are all quiet, all correct, and all look exactly like')
+        print('  this from inside the repo:')
+        last = None
+        for rel, a in open_rows:
+            if rel != last:
+                print('    %s' % rel)
+                last = rel
+            print('        %s' % a)
+    else:
+        print('')
+        print('  none open -- a measured zero over %d actions, not a silence.' % total)
+
+    print('')
+    print('  ACKNOWLEDGED (%d).' % len(acked))
+    if not acked:
+        print('    NONE PRE-LOADED, DELIBERATELY. R6 ships with two because the files')
+        print('    themselves argue the decision; none of the routes above states why')
+        print('    its actions have no caller, and acknowledging one would mean')
+        print('    INVENTING the justification -- the one thing an acknowledgement')
+        print('    must never be.')
+    for rel, a in acked:
+        print('    %s %s' % (rel, a))
+        print('      %s' % R7_ACKNOWLEDGED[(rel, a)])
+    stale = [k for k in R7_ACKNOWLEDGED if k not in set(findings)]
+    if stale:
+        print('  STALE ACKNOWLEDGEMENT(S) -- the action HAS a caller now:')
+        for rel, a in stale:
+            print('    %s %s' % (rel, a))
+    print('')
+    print('  CANNOT SEE: an action string BUILT at runtime, a caller outside this')
+    print('  repo (a browser redirect, a provider webhook, an operator with curl),')
+    print('  or whether an action that IS named sits on a path anyone runs. Only')
+    print('  the last of those is R4 and R5, one level up.')
+
+
 def report_function_purpose(snap, coverage_ok):
     print('')
     print('=== R5: FUNCTIONS INSIDE api/ ROUTES (report only, never gates) ===')
@@ -695,6 +836,7 @@ def main(argv):
     # cannot say what the whole tree does not mention.
     if not rest:
         report_resource_demand()
+        report_action_demand()
 
     targets = rest or sorted(glob.glob('*.html'))
     # A STALE REPORT IS ONLY MEANINGFUL ON A FULL RUN, and this tool was missing

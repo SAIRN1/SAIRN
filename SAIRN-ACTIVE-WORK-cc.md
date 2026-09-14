@@ -3226,3 +3226,63 @@ zero and takes the suite red.
 
 Existing rungs unaffected: R1-R3 clean over 22 files, the R4 activity probe passes, Fourth's R5
 probe passes.
+
+
+---
+
+## 2026-09-14 -- the unit mismatch sweep: R6's insight generalises, and R7
+
+### The question
+
+R6 changed the unit from the ROUTE to the RESOURCE because `/api/sd-data` is one path carrying 385
+of them. **Is that shape unique to that route?** It is not.
+
+| route | individually addressable things behind one path |
+|---|---|
+| `api/sd-data.js` | 385 resources **and** 25 actions |
+| `api/law-auth.js` | 19 actions |
+| `api/rf-auth.js`, `api/leg-auth.js` | 8 each |
+| 23 more routes | 3-7 each |
+
+**182 individually addressable actions across 27 routes**, every one measured for reachability at
+the PATH by R4 and R5.
+
+### Measured: 17 named by nothing in this repo
+
+`api/accounting.js` (`authorize_url`, `callback`, `consent`, `refresh`), `api/courtlistener.js`
+(`citation_lookup`, `citing`, `cluster`, `courts`, `opinion_text`), `api/legal-deadlines.js`
+(`add_holidays`, `add_rule`, `rules_fingerprint`), `api/sv-witness.js` (`countersign`, `policy`,
+`set_policy`), `api/ledger.js` (`chart`, `validate`).
+
+**One is worth a second look on its own terms:** `api/courtlistener.js`'s own header calls it *"the
+pass-through endpoint for the parts a user directly searches/browses"* -- and five of its six
+actions have no caller anywhere. Same shape as the 21 `soft_delete` verbs wired into the API that
+nothing in the product ever invoked.
+
+### A correction to my own first measurement
+
+Scanning app HTML alone reported **20** and included `api/cron-watchdog.js`'s `escalate`, `retry`
+and `suppressed`. Those are **response** actions the watchdog emits, not request actions a caller
+sends, and adding the api-to-api half of the corpus clears them.
+
+**A server-to-server route has callers that are not browsers, and a client-only corpus reports
+every one of them as dead.** Recorded because it is the difference between a finding and a false
+alarm, and because it is the same correction R6 needed one axis over.
+
+### No acknowledgement is pre-loaded, and the probe asserts it
+
+R6 ships with two because the files themselves argue the decision in a test that names the
+resource. **None of these five routes states why its actions have no caller.** An OAuth quartet a
+provider posts to, a seeding verb run at install, and an admin action run by hand all look
+identical from inside the repo -- so acknowledging any of them would mean **inventing the
+justification, which is the one thing an acknowledgement must never be.**
+
+They stay OPEN until whoever owns the file writes the reason. The STALE mechanism is in place
+before the first entry rather than added with it.
+
+### Never gates, never suggests removal
+
+Inherited from R4, R5 and R6, and it matters more here than anywhere: this is precisely where a
+disaster-recovery path or a year-end verb lives. Three mutation controls, each run and each red:
+R7 changing the exit code; a route put back in its own caller corpus (the closed loop that would
+make every action reachable by definition); and an acknowledgement added without a reason.
