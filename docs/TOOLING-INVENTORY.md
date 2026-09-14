@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**129 files in `tools/`.** By what actually invokes them:
+**130 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 28 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 77 |
+| CHECKER | 78 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 19 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 18
+**The number to act on: 20 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 19
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 19, by name, so this is actionable rather than a statistic:
+The 20, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -69,6 +69,7 @@ The 19, by name, so this is actionable rather than a statistic:
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
 | `sabotage_control_check.py` | SUITE-ONLY | a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever |
+| `shape_antipattern_check.py` | SUITE-ONLY | Number(x) on an outside value with no guard (Number('') is 0), a guard collapsing several distinct failure reasons into one bit, and three-plus nullable fields carrying one either/or state |
 | `testability_criteria.py` | SUITE-ONLY | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything |
 | `testability_gate.py` | SUITE-ONLY | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus |
 | `three_way_match_check.py` | SUITE-ONLY | a goods receipt or a vendor bill written with no join key back to its purchase order, and a PO number derived from a row count (which reuses itself after a delete). Structural half runs from the repo; the PO-vs-receipt-vs-bill comparison needs an export and is COULD-NOT-RUN without one |
@@ -221,7 +222,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (27)
+## SUITE-ONLY (28)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -251,6 +252,7 @@ fixtures. Nothing points them at the real codebase.
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_fmea_probe.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `schema_provisioning_check.py` | LIVE | a resource the app writes to whose table was never created | `schema_provisioning_probe.py` |
+| `shape_antipattern_check.py` | CHECKER | Number(x) on an outside value with no guard (Number('') is 0), a guard collapsing several distinct failure reasons into one bit, and three-plus nullable fields carrying one either/or state | `run_shape_antipattern_probe.py` |
 | `testability_criteria.py` | CHECKER | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything | `run_testability_gate_probe.py` |
 | `testability_gate.py` | CHECKER | a requirement in the traceability matrix that states no claim anyone could falsify -- and it REFUSES to judge a single real requirement until its own hand-decided fixtures classify correctly, so the criteria cannot be tuned to flatter the corpus | `run_testability_gate_probe.py` |
 | `three_way_match_check.py` | CHECKER | a goods receipt or a vendor bill written with no join key back to its purchase order, and a PO number derived from a row count (which reuses itself after a delete). Structural half runs from the repo; the PO-vs-receipt-vs-bill comparison needs an export and is COULD-NOT-RUN without one | `run_three_way_match_probe.py` |
@@ -328,11 +330,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      129   git ls-files tools/
+  tools on disk                      130   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             79   tests/**/*.py, *.js
+  tools invoked by tests/             80   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
