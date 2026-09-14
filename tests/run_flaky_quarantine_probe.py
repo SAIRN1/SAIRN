@@ -190,6 +190,34 @@ finally:
 check('7j  what a short pass did not reach is NAMED, not counted -- a silent '
       'cap reads as a complete pass', 'STOPPED EARLY' in code and 'for t in skipped' in code)
 
+print('8. A FLIP MUST BE DIAGNOSABLE -- two hashes is not evidence')
+# The first real flip this tool ever found (comment_sensitivity_check.py,
+# 0.333 over 12 runs) could not be investigated at all: the ledger held two
+# digests and nothing else. A detector that can say THAT something flipped and
+# never WHAT produces findings nobody can act on.
+tmp8 = tempfile.mkdtemp(prefix='flaky-sample-')
+p8 = os.path.join(tmp8, 'ledger.json')
+io.open(p8, 'w', encoding='utf-8', newline=chr(10)).write('{"checkers":{}}')
+old_led, old_reg = Q.LEDGER, Q.registry_tools
+try:
+    Q.LEDGER = p8
+    Q.registry_tools = lambda: ['cleanup_confirm_check.py']
+    l8 = Q.load_ledger()
+    Q.measure(l8, runs=2, budget=None)
+    e8 = Q.load_ledger()['checkers']['cleanup_confirm_check.py']
+    check('8a  the ledger records the VERDICT TEXT, not only its hash',
+          bool(e8.get('samples')), list((e8.get('samples') or {}).keys()))
+    check('8b  ...keyed by the digest, so a sample belongs to a specific verdict',
+          all(k in {o['digest'] for o in e8['observations']} for k in e8['samples']))
+    check('8c  ...and BOUNDED, so a genuinely random checker cannot grow the '
+          'ledger without limit', Q.SAMPLE_CAP <= 8 and all(len(v) <= 400 for v in e8['samples'].values()),
+          '%d distinct, cap %d' % (len(e8['samples']), Q.SAMPLE_CAP))
+finally:
+    Q.LEDGER, Q.registry_tools = old_led, old_reg
+check('8d  a tool whose samples predate capture SAYS SO rather than printing '
+      'nothing, which would read as "no difference"',
+      'NO VERDICT TEXT IS ON FILE' in code)
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  ' + f)

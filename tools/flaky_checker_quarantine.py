@@ -92,6 +92,7 @@ MIN_RUNS_TO_JUDGE = 4       # below this, "stable" is not a claim worth making
 QUARANTINE_AT = 0.05        # >5% of runs disagreeing with the modal verdict
 WATCH_AT = 0.0001           # ANY disagreement at all is worth watching first
 REENTRY_RUNS = 10           # consecutive clean runs before it may come back
+SAMPLE_CAP = 4              # distinct verdict excerpts kept per checker
 
 
 def tree_hash():
@@ -292,12 +293,34 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
                 out = normalise((r.stdout or '') + (r.stderr or '')) + '|exit=' + str(r.returncode)
             except Exception as ex:
                 out = 'RUNNER-ERROR:' + type(ex).__name__
-            e['observations'].append({'digest': hashlib.sha256(out.encode('utf-8')).hexdigest()[:16],
-                                      'tree': th})
+            dg = hashlib.sha256(out.encode('utf-8')).hexdigest()[:16]
+            e['observations'].append({'digest': dg, 'tree': th})
+            # ONE SAMPLE PER DISTINCT VERDICT, and this exists because the
+            # first real flip this tool ever found was UNDIAGNOSABLE
+            # (comment_sensitivity_check.py, 2026-09-14, rate 0.333 over 12
+            # runs). The ledger held two digests and nothing else, so there was
+            # no way to see WHAT had differed -- the evidence a quarantine is
+            # required to carry was a pair of hashes. A detector that can say
+            # THAT something flipped and never WHAT is a detector whose findings
+            # cannot be acted on.
+            #
+            # BOUNDED HARD: first occurrence only, first 400 characters, and
+            # only while fewer than SAMPLE_CAP distinct verdicts are held. A
+            # genuinely random checker would otherwise grow the ledger without
+            # limit, which is how a diagnostic aid becomes its own problem.
+            samples = e.setdefault('samples', {})
+            if dg not in samples and len(samples) < SAMPLE_CAP:
+                samples[dg] = out[:400]
         # ACCURACY: observations from a DIFFERENT tree are not comparable. Keep
         # only the current tree's -- a flip measured across an edit is the tool
         # noticing the edit, which is the tool working.
         e['observations'] = [o for o in e['observations'] if o.get('tree') == th][-40:]
+        # Samples for digests no longer held are dropped with them -- an
+        # excerpt of a verdict from a tree nobody can reproduce is worse than
+        # nothing, because it reads as evidence about the current one.
+        live_digests = {o['digest'] for o in e['observations']}
+        if e.get('samples'):
+            e['samples'] = {k: v for k, v in e['samples'].items() if k in live_digests}
         # SAVED AFTER EVERY CHECKER, not once at the end. A full pass is ~200
         # subprocess runs and outran a 560-second window twice; the whole
         # measurement was then lost, because the single save at the end never
@@ -405,6 +428,19 @@ def main(argv):
             print('    %-14s %3d%s' % (v, len(by.get(v, [])), note))
         for r in by.get('QUARANTINE', []) + by.get('WATCH', []):
             print('      %-34s rate %.3f over %d run(s)' % (r['tool'], r['flip_rate'], r['runs']))
+            # THE VERDICTS THEMSELVES, not just the rate. A flip reported as two
+            # hashes is a finding nobody can act on -- which is what the first
+            # real flip here turned out to be.
+            samples = (led.get('checkers', {}).get(r['tool']) or {}).get('samples') or {}
+            if len(samples) > 1:
+                print('        the %d verdicts it gave, first occurrence of each:' % len(samples))
+                for dg, ex in sorted(samples.items()):
+                    print('          [%s] %s' % (dg, ex[:220]))
+            else:
+                print('        NO VERDICT TEXT IS ON FILE for this tool -- its observations')
+                print('        predate sample capture, so WHAT differed is not recoverable')
+                print('        from this ledger. Re-measure to record it. That is a gap in')
+                print('        the evidence, not a reason to discount the rate.')
         ready = [r for r in rows if r['ready_to_reintroduce']]
         if ready:
             print('')
