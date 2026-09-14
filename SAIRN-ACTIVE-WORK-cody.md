@@ -3772,3 +3772,65 @@ per-app baseline is restated to the MEASURED numbers with the reasons, so drift
 detection keeps working, and the file now says why the two arms disagree on
 purpose. **Michael routed `sb_po`/`sb_recv` to CC** -- their tables, their schema
 context. Not mine to touch.
+
+## 2026-09-14 (Cody) -- item 83: the two questions a fail-safe default is never
+## asked
+
+Skill used: `sairn-guardian-v2`. Claim: `platform` -- `fail safe verification
+atomicity and recovery round trip for the witnessing lock`. Applied to item
+19's witnessing lock first, as directed.
+
+**EVERY FAIL-SAFE ON THIS PLATFORM IS TESTED THE SAME WAY:** drive it into the
+unsafe condition and prove it refuses. Necessary, and it only ever asks whether
+the transition FIRES.
+
+**ATOMICITY.** `requireWitness()` is four round trips before an irreversible
+write -- read the token, read the policy, compare-and-set the spend, proceed.
+Kill the process or drop the socket between any two and the system settles
+somewhere. The invariant is **returns null implies the token is SPENT**. The
+unsafe inverse is a caller cleared to write on a REUSABLE signature, on a
+DEA-relevant append-only record, and nothing asserted it could not happen. Every
+interruption point is driven now, and the number of points is MEASURED at run
+time rather than written down -- a count in a test is a claim that goes stale the
+first time a round trip is added.
+
+**THE SHAPE THAT ACTUALLY LOSES DATA** is its own section: a spend applied
+server-side and THEN interrupted. The mutation landed and the caller will never
+learn that it did, which is different in kind from a spend that never happened.
+
+**RECOVERY.** A fail-safe that fired is a system in its safe state, not a working
+one, and nothing anywhere walks the documented recovery. The lock's own words
+are the documentation -- *"a lost token is re-requested, which costs one
+confirmation"* -- so that is what the suite runs: one fresh confirmation restores
+normal operation, costs exactly ONE spend, is available IMMEDIATELY (a burn is
+not a lockout), and the replacement window is read from `TOKEN_TTL_MS` rather
+than typed.
+
+**NO RECOVERY SLA EXISTS, AND I DID NOT INVENT ONE.** Writing a number would be
+fabricating the standard. The arms use what the lock actually commits to, said
+out loud in the file.
+
+**THE ARM WORTH HAVING:** recovery must not WIDEN what may be written. A
+replacement confirmed for a DIFFERENT record is refused -- otherwise an
+interruption becomes an opportunity on a register where the wrong row stands
+forever.
+
+**TWO MUTATIONS SURVIVED THE FIRST PASS.** Dropping the `spent_at=is.null`
+compare-and-set, and treating its zero-row loser as a win, both left every arm
+green -- because nothing RACED two requests at one signature, which is precisely
+the defect the lock's own comment names as "exactly wide enough for a double
+submit to write two controlled-substance rows on one signature". Three race arms
+added, including one that asserts the CAS clause is present in the request the
+lock actually sends; both mutations now bite.
+
+**THE SIXTH SURVIVOR IS DEFENCE IN DEPTH, PROVEN RATHER THAN CLAIMED.** Removing
+the already-spent guard alone still refuses, because the CAS catches it one step
+later. An explanation is a claim, so I turned BOTH off together: 6 arms fail.
+That is what makes the single-mutation survivor a redundancy rather than a hole.
+
+**THE KIT IS THE REUSABLE HALF.** `tests/failsafe/failsafekit.js` keeps a real
+(tiny) table and applies PATCHes to it, including the compare-and-set, because a
+SCRIPTED stub cannot answer "did the write land" -- it replays the same answer
+either way, and atomicity is entirely a question about what landed. The next
+fail-safe in the family -- the cron watchdog, a circuit breaker, a
+deny-by-default gate -- gets both questions asked with the same kit.
