@@ -23,8 +23,8 @@ makes this the one inventory whose staleness is hardest to notice.
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 38 | runs automatically on every push, never blocks |
+| **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
+| **REPORT-ONLY** | 37 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -74,7 +74,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (9)
+## BLOCKING (10)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -84,6 +84,7 @@ around it. The second exists because the first missed exactly that on
 
 | Tool | Kind | What it catches |
 |---|---|---|
+| `control_char_check.py` | CHECKER | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `employee_auth_guard_check.py` | CHECKER | a SQL file writing credential rows with no recoverability guard (gate check 2) |
 | `git_push_master_guard.py` | CHECKER | a push aimed at `master`, which is stale |
 | `preauth_oracle_check.py` | CHECKER | an endpoint that answers before it authenticates (gate check 7) |
@@ -111,10 +112,11 @@ the only source that moves when one is added.
 | 8 | A PROBE FIXTURE COMMIT MUST NOT REACH ORIGIN (2026-09-10) |
 | 9 | THE NAMED GUARD AND SEAM TESTS BLOCK (2026-09-10) |
 | 10 | THE GATE RUNNING IS ONLY AS NEW AS THIS CLONE (2026-09-10) |
+| 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 
 ---
 
-## REPORT-ONLY (38)
+## REPORT-ONLY (37)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -128,7 +130,7 @@ quiet in practice.
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
 | `comment_sensitivity_check.py` | 2026-09-12, once its one real finding was fixed | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code |
 | `committer_identity_check.py` | 2026-09-13, the day the leak was found | a clone configured to commit under one of the throwaway identities this repo's own probes use -- the list is READ out of the probe sources, so a new probe's identity is covered with no edit to the checker |
-| `control_char_check.py` | 2026-09-10, the day it was built | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
+| `control_char_check.py` | 2026-09-10 report-only; BLOCKING 2026-09-13 (Michael) as push-gate check 11 | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `criticality_tier_check.py` | 2026-09-12 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line |
 | `defect_register.py` | 2026-09-10, the day it was built | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice |
 | `discarded_verdict_check.py` | 2026-09-10 | a refusal that is computed and then not read -- the gate runs and its answer is thrown away |
@@ -223,7 +225,7 @@ fixtures. Nothing points them at the real codebase.
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
-| `fmea_prediction_check.py` | CHECKER | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows | `run_fmea_probe.py` |
+| `fmea_prediction_check.py` | CHECKER | whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows | `run_fmea_loop_probe.py`, `run_fmea_probe.py` |
 | `idempotency_check.py` | CHECKER | a retryable write path that checks no caller key, or checks one against an IN-MEMORY store -- which looks idempotent and is not across processes; its POSITIVE fixture is the real api/ledger.js and its negative one is synthetic, disclosed on every run | `run_financial_invariant_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
@@ -310,11 +312,11 @@ number, and only one of them is a document.
 ```
   tools on disk                      118   git ls-files tools/
   hook entries                         8   .claude\settings.json
-  push-gate invocations                7   tools\sairn_push_gate_hook.py
+  push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                35   report_only_checks.REGISTRY
   tools invoked by tests/             70   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
-  numbered gate checks                10   tools\sairn_push_gate_hook.py
+  numbered gate checks                11   tools\sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is
