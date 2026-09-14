@@ -1435,6 +1435,16 @@
       "claimed_at_epoch": 1789381558.3623862,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789390787",
+      "session": "hank",
+      "subject": "defect-register",
+      "task": "item 77 injection phase field on every confirmed defect",
+      "claimed_at": "2026-09-14T12:59:47Z",
+      "claimed_at_epoch": 1789390787.5269735,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
