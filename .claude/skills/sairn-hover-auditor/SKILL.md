@@ -90,6 +90,41 @@ already-tried, or treat as a natural next step of a finding. Reporting a
 traced, code-level proof of a real path is this role's job. Deciding
 whether and how to safely confirm it live is not.
 
+**Real, concrete numbers to anchor "urgent," not a vague word alone --
+Google Project Zero's own actual, published, working coordinated-disclosure
+policy.** A real track record, not a proposal: 1,434 real vulnerabilities
+disclosed over 4.5 years, 97.5% fixed within Project Zero's own stated
+deadline. That deadline is 90 days for a standard finding, cut to 7 days
+specifically for confirmed ACTIVE exploitation -- roughly a 13x
+tightening. Applied here as a real ratio to check this role's own
+severity-scaled urgency against: a HIGH finding with no evidence of active
+exploitation gets normal cadence; a finding with any real evidence of
+CURRENT exploitation gets treated with something like that same order-of-
+magnitude tightening, escalated far faster than an equally HIGH finding
+with no such evidence, rather than both receiving the same "HIGH, report
+soon" treatment.
+
+**A real refinement worth adopting directly: "90+30," decoupling two
+milestones this role's own recent practice has already been tracking
+informally.** Project Zero's policy evolved to time public disclosure 30
+days after a patch is actually MADE AVAILABLE to users, not merely 30 days
+after a patch is written -- treating "a fix exists" and "the fix reached
+real users" as two distinct, separately-tracked milestones rather than
+one. This is the exact distinction this role has already been applying
+this session without a name for it: committed, pushed, and live-verified
+are three genuinely different states of a fix, and conflating "committed"
+with "done" is the identical mistake 90+30 exists to prevent, now with a
+real, external precedent behind the practice.
+
+**A real structural symmetry point, extending "Who checks the auditor"
+directly.** Project Zero holds its own parent company's products to the
+identical disclosure deadline as everyone else's, with no internal
+exception. The same escalation timing that applies to a build agent's open
+finding should apply identically to any of this role's own unresolved
+findings about its own operational tooling (this skill file, the self-log,
+the hover_log.py tool itself) -- no softer deadline for the checker's own
+house than for anyone else's. Full account: `references/case-studies.md`.
+
 ## The real stakes of not checking
 
 Held here plainly, not as decoration, because it is the most sobering
@@ -356,6 +391,32 @@ Full account of all Trail of Bits material: `references/case-studies.md`.
      pre-argue their own soundness this defensively. Not proof of anything
      on its own, but a real, adoptable trigger for extra scrutiny on
      exactly the code the rationalization is attached to.
+   - **A small, unexplained PERFORMANCE anomaly deserves the same
+     suspicion as a correctness anomaly.** Real, sobering precedent: the
+     xz-utils backdoor (CVE-2024-3094, CVSS 10.0), the most sophisticated
+     real software supply-chain attack ever documented, was caught days
+     before shipping broadly to major Linux distributions -- not by any
+     security audit or code review, but by one engineer noticing an
+     unexplained roughly 500-millisecond delay in SSH login during
+     unrelated performance profiling. Nobody was looking for a backdoor;
+     someone was bothered by a timing shift they could not immediately
+     explain, and followed it. A profiling result, a benchmark regression,
+     or a request that got slightly slower for no stated reason deserves
+     the same "why, exactly" scrutiny this file already gives an
+     unexplained correctness result.
+   - **Sustained pressure specifically to merge faster or grant broader
+     access is itself a namable attack precursor, distinct from
+     rationalization language.** The xz-utils backdoor was preceded by a
+     patient, multi-year social-engineering campaign: genuine trust built
+     over time through real, legitimate patches from the eventual attacker,
+     paired with separate, seemingly-unconnected accounts applying
+     sustained pressure on the maintainer to merge changes faster and grant
+     the attacker broader repository access. Where rationalization language
+     is a defect pre-justifying itself, this is a distinct pattern worth
+     naming on its own: repeated, sustained pressure specifically aimed at
+     speeding up a merge or widening someone's access is a real, documented
+     precursor worth noting even when nothing about the code itself yet
+     looks wrong.
    - **Detection of a stale or skipped step, versus structural prevention
      of the next step starting at all.** Real distinction (Toyota's
      Jidoka -- specifically the INTERLOCK mechanism, distinct from Andon's
@@ -499,8 +560,21 @@ thing being verified. A checker built and run by the same agent whose work
 it verifies is structurally Boeing's ODA, regardless of how good that
 checker's logic actually is -- this is the same reasoning behind the core
 rule's SOX/Enron citation, now stated as a test to apply going forward
-rather than only as a rule already followed. Full account of all three:
-`references/case-studies.md`.
+rather than only as a rule already followed.
+
+**"Bus factor of one" -- a real, named audit dimension this platform has
+never had a pass for, distinct from checking SAIRN's own code.** The
+xz-utils backdoor succeeded in significant part because the compromised
+library was a single-maintainer, low-traffic dependency -- structurally
+vulnerable specifically because one person's burnout creates real,
+understandable pressure to accept help from whoever offers sustained
+assistance, exactly the opening the actual attacker patiently created and
+then exploited. Every finding this role has made so far has audited
+SAIRN's own code, tests, and process. This platform's own third-party
+dependency tree has never had a bus-factor or maintainer-health pass at
+all -- a real, currently-missing dimension worth naming explicitly as a
+gap, not assumed covered by anything this role already does. Full account
+of all: `references/case-studies.md`.
 
 **A landed fix must be confirmed running on every real target, not trusted
 on the push tool's own success report.** Knight Capital's 2012 deploy
@@ -641,7 +715,131 @@ explicitly and by name: if this specific path were exploited, what data,
 what credential, what further access becomes reachable from that point,
 still entirely on paper, still never executed. A finding that stops at the
 first door found is a smaller, less useful finding than one that also
-names what is behind it. Full account: `references/case-studies.md`.
+names what is behind it.
+
+**STRIDE (Microsoft's own threat-modeling categories) as a second,
+complementary lens alongside OWASP Top 10, not a replacement for it.** Six
+real categories, each mapped to the specific security property it
+violates: Spoofing (violates Authentication), Tampering (violates
+Integrity), Repudiation (violates Non-repudiation/Accountability -- an
+actor denying they took an action, with nothing to prove otherwise),
+Information Disclosure (violates Confidentiality), Denial of Service
+(violates Availability), Elevation of Privilege (violates Authorization).
+Run a threat-modeling pass against all six explicitly, not only OWASP's
+list. **Repudiation specifically is not covered by OWASP Top 10 at all**,
+and it maps directly onto something this role already has direct stakes
+in: this platform's own hash-chained audit checkpoints and this role's own
+self-log are both real, working mitigations against exactly this category
+-- a repudiation threat-model question ("could an actor deny taking this
+action, with nothing to disprove it") is precisely the question those
+mechanisms exist to answer. **A disclosed limit, honestly acknowledged by
+STRIDE's own creators:** real overlap exists between its six categories --
+a single finding can genuinely belong to more than one. When that happens,
+log it under every category that genuinely applies rather than forcing an
+artificial single choice for the sake of a clean label.
+
+**Red team independence, reinforcing the LIGO organizational-separation
+point from a second, entirely separate field.** Real, current practice in
+offensive security: a red team ideally has no prior knowledge of the
+target's own specific defenses to constitute a genuinely fair test, which
+is the real, stated reason organizations frequently outsource red-team
+work rather than running it internally -- an internal team already knows
+its own defenses too well to test them honestly. This is the identical
+principle as LIGO's injection-team separation, arrived at independently in
+cybersecurity rather than experimental physics, which is exactly the kind
+of cross-field convergence this file already treats as stronger evidence a
+principle is load-bearing rather than field-specific.
+
+**Purple teaming as a real refinement to how Debate should actually run,
+not just confirmation that it should happen.** Purple teaming is
+explicitly NOT the traditional sequential shape ("red team attacks, writes
+a report, blue team reads it and responds later") -- it is real-time,
+continuous collaboration between attacker and defender roles during the
+exercise itself, specifically because that live back-and-forth surfaces
+root causes faster than a strictly sequential report-then-respond pattern
+does. Applied to this file's own Debate mechanism: for a genuinely
+contested finding, real-time back-and-forth with the build agent WHILE
+still investigating (rather than a completed unilateral report followed by
+a separate response phase) may reach the true root cause faster than
+waiting to finish one full independent pass before any exchange begins.
+
+**And purple teaming's own stated purpose is a direct, real confirmation
+of Safe Harbor, from a third distinct field.** Purple team exercises are
+explicitly not run to determine which side "won" -- attacker or
+defender -- but to improve the system being tested. The identical framing
+this file's own Safe Harbor section already states about a finding never
+counting against a build agent's standing, independently confirmed here in
+offensive-security practice rather than invented for this platform. Full
+account of all four: `references/case-studies.md`.
+
+## Chaos engineering -- a fifth, genuinely distinct question
+
+Everything above -- correctness, process, and now threat modeling -- asks
+whether something is right or whether someone could break in. Chaos
+engineering (Netflix's real, current, continuously-running practice) asks
+a different question again: does the REAL system actually survive a real
+failure, on purpose, deliberately induced, before a real outage forces the
+same question with no warning and no control over the blast radius.
+
+**The oldest real form of this idea, older and sharper than even LIGO's
+blind injections.** In 1975, researchers proposed injecting fabricated
+"ghost plane" targets directly into a live, operating air-traffic-control
+system -- not a simulation, the actual system handling actual real traffic
+at the same time. If every ghost plane is handled correctly by the real
+system running alongside genuine air traffic, that is real trust earned
+under live operating conditions, categorically different from trust earned
+against a test harness built specifically to be tested. The oldest version
+of this whole discipline was never "does the code pass a written test" --
+it was "does the live system correctly handle a fake case injected
+directly into its real, live operation, made indistinguishable from a
+genuine one."
+
+**A real, named term worth adopting directly: "dark debt."** Latent
+faults that are structurally undiscoverable by build-time or unit testing
+alone, because they only manifest from a specific, unplanned COMBINATION
+of real operating conditions that no single test was ever built to
+recreate. This platform's own real concurrency findings this session --
+the token-deduction race in the AI rate-limit RPC, the claim-tool's
+retyped-string collision -- are real, live dark debt in exactly this
+sense: invisible to any test that does not specifically construct the
+colliding real-world condition, which is precisely why both were found by
+driving real interleavings rather than by reading code or running an
+existing suite.
+
+**The formal methodology, directly adoptable as a real, adoptable
+sequence.** Define the real steady state first -- what "normal" actually
+measurably looks like, stated concretely rather than assumed. Form an
+explicit hypothesis about what should happen under one specific, named
+injected failure, BEFORE injecting it -- a stated, falsifiable prediction,
+not a story told afterward about what the results must have meant. Inject
+the failure. Observe what actually happened against the stated hypothesis.
+Fix whatever the gap between hypothesis and observation reveals. The
+before-the-fact hypothesis is the discipline; a result explained only
+after the fact is unfalsifiable by construction, the same shape the
+look-elsewhere-effect self-audit above already guards against.
+
+**A named safety discipline this role's own mutation controls should
+adopt explicitly: minimize blast radius, stated before the test runs.**
+Chaos engineering bounds, in advance, how much of the real system an
+injected failure is permitted to touch -- a stated limit, not a boundary
+discovered by observing how far damage actually spread once it happened.
+Applied directly to this role's own practice of driving mutation controls
+against real platform files (dropping a CAS clause, removing a guard):
+state the intended scope and the revert plan BEFORE mutating, not only
+confirm cleanup afterward -- the discipline this role has followed
+throughout this session as a practice, now named formally as the reason
+it matters.
+
+**GameDay (Amazon) -- real, direct, industry-validated confirmation of
+the two-speed design already built here.** Where Netflix's chaos
+engineering runs continuously and automatically, Amazon's GameDay exercises
+run on a scheduled, fully-controlled day with human oversight throughout.
+Both are real, validated approaches to the identical underlying practice,
+chosen for different risk tolerances -- direct confirmation that this
+role's own fast-pass/deep-pass split (frequent lightweight checks, rare
+scheduled-when-warranted deep investigation) is a real, industry-validated
+pattern in its own right, not an invented compromise between two more
+"correct" extremes. Full account of all: `references/case-studies.md`.
 
 ## Two adjacent skills, checked and deliberately not adopted whole
 
@@ -789,6 +987,61 @@ tonight: a confident-sounding line printed after the actual evidence ran
 out, which reads as more certain than what was actually established.
 Coverage is a scope statement -- what was checked, out of what exists --
 never a manufactured precision score standing in for it.
+
+**A second, real, formal axis alongside Tier -- HOW FORMALLY was this
+specific claim established, stated separately from how much it matters.**
+Common Criteria (ISO/IEC 15408, the real, formal government
+security-certification standard used to certify products for
+national-security use) defines a precise seven-rung ladder, EAL1
+(Functionally Tested) through EAL7 (Formally Verified Design and Tested),
+and tracks evidence across specification, design, and implementation as
+THREE SEPARATE columns -- each independently rated informal, semiformal, or
+formal -- rather than one blended score. Applied here: alongside Tier
+(how much a finding matters if wrong), separately state how formally it
+was actually established -- read and reasoned about (informal), driven
+against a real input with an observed result (semiformal in spirit), or
+mathematically/exhaustively proven across the full input space (formal).
+Two findings can share a Tier and differ sharply on this second axis, and
+conflating the two hides exactly the distinction that matters for how much
+weight the finding should carry.
+
+**The sharpest finding from this framework, and a real, humbling
+comparison for this platform's own formal-verification work.** Even
+Common Criteria's own HIGHEST tier, EAL7, requires formal correspondence
+only from the security specification DOWN TO the design -- the further
+step, mapping that design down to the actual implementation, is only
+required to be INFORMAL even at the top of the world's formal
+security-certification standard. seL4's own proof goes further than the
+highest tier of that standard: it is verified all the way down to the
+actual binary, not merely to a design specification. When this file states
+that something was "formally verified," or when a build agent's own claim
+uses that phrase, name specifically how far down the proof actually
+reaches -- specification-level, design-level, or genuine
+implementation/binary-level -- because those are measurably different
+claims routinely collapsed into the same sentence.
+
+**An honest, disclosed limit sharper than "maximum reasonable assurance"
+already logged elsewhere in this file.** Common Criteria's own
+documentation states directly that a certificate "does not make a clear
+statement about the error-proneness of the system" and explicitly "does
+not preclude vendor over-marketing" of a certified product. A passed
+formal evaluation is real evidence the EVALUATION PROCESS was rigorous. It
+is never, on its own, a license to describe the underlying product as
+bug-free, and this file should hold itself to the identical restraint
+when reporting its own clean passes.
+
+**A real, three-way conceptual split worth adopting as vocabulary, not
+just as a citation.** ASSURANCE (systematic evaluation and testing that a
+system behaves as intended), VERIFICATION (mathematical proof that
+intended behavior actually holds), and CERTIFICATION (independent
+examination confirming that the assurance or verification work was
+genuinely done correctly, by someone other than whoever did it) are three
+distinct, separately-meaningful things. State explicitly which of the
+three a given finding or a given pass actually provides -- a deep pass
+that drove real inputs provides assurance; a formally-checked spec
+provides verification; this role's own independent corroboration of
+another session's finding provides certification of that finding, in the
+precise sense of the word. Full account of all four: `references/case-studies.md`.
 
 **Every verdict cites the specific evidence, never a bare assertion.** Real
 precedent, deployed rather than theoretical: a real, live system auditing
@@ -1073,7 +1326,30 @@ one framework onto both produces a number that doesn't mean what it claims
 to.
 
 - **Security-shaped findings** (someone could exploit this): asset
-  criticality × impact × exploitability, the standard framework.
+  criticality × impact × exploitability, the standard framework. **State
+  Exploitability and Impact as two separately-computed figures BEFORE
+  combining them, not only as two factors silently multiplied into one
+  number.** Real structural precedent (CVSS -- the Common Vulnerability
+  Scoring System, the actual industry-standard formula NIST's National
+  Vulnerability Database reports exclusively): CVSS builds its Base Score
+  from two independently-computed sub-scores, Exploitability (how easy the
+  flaw is to trigger) and Impact (how much damage results if it is), kept
+  visibly separate before they combine -- specifically because a flaw can
+  be trivial to reach but cause little real harm, or devastating but very
+  hard to trigger, and a single blended number erases which of those two
+  very different situations a given finding actually is. State both
+  sub-scores explicitly on any security-shaped finding, so a reader can
+  see which factor is actually driving the severity rather than only the
+  combined result.
+- **Scope, a real axis this framework doesn't otherwise have: does the
+  effect stay contained, or does it spread beyond the originally-affected
+  component.** Also from CVSS: a Scope factor asks specifically whether a
+  successful exploit of one component can affect resources belonging to a
+  different component entirely -- a credential leak confined to one app is
+  a different, generally lower severity than the identical leak in a
+  shared module that every app on the platform imports. Score a finding's
+  real blast radius -- contained or spreading -- as its own explicit
+  factor, not folded silently into asset criticality.
 - **Structural/operational findings** (nothing has to be exploited -- the
   risk is an absence, a gap, a thing that was never built): asset
   criticality × real-world impact of the scenario actually occurring.

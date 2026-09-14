@@ -1334,3 +1334,176 @@ financial audit's own standard phrase "maximum reasonable assurance"
 (never "guaranteed correct"), arrived at independently in a third
 unrelated field, converging on the same disclosed-boundary shape already
 established by seL4 and Flyspeck elsewhere in this file.
+
+## STRIDE and Red/Blue/Purple teaming
+
+**STRIDE** is Microsoft's own, real, widely-adopted threat-modeling
+taxonomy: six categories -- Spoofing, Tampering, Repudiation, Information
+Disclosure, Denial of Service, Elevation of Privilege -- each named for the
+specific security property it violates (Authentication, Integrity,
+Non-repudiation, Confidentiality, Availability, Authorization
+respectively). Its creators have been open that the six categories
+genuinely overlap in practice; the framework's value is as a checklist
+lens ensuring each property gets deliberately considered, not as a set of
+mutually exclusive bins a finding must be forced into exactly one of.
+
+**Red team, blue team, and purple team** describe the real, current
+organizational structure of offensive-security exercises: a red team plays
+the attacker, a blue team defends and responds, and purple teaming is a
+real, distinct third mode -- not a report handed from one side to the
+other after the fact, but real-time, continuous collaboration between both
+roles during the exercise itself, explicitly aimed at improving the system
+under test rather than declaring either side the winner. Industry practice
+widely holds that a red team engagement is most honest when the red team
+has no prior special knowledge of the target's own specific defenses,
+which is the real, commonly-cited reason organizations contract external
+red teams rather than relying solely on staff who already know their own
+system's defenses too well to test them with genuine surprise.
+
+## Netflix chaos engineering, 1975 ghost planes, and Amazon GameDay
+
+**The real, current practice.** Netflix's chaos engineering deliberately
+and continuously injects real failures into its real, live production
+systems -- killing real server instances, introducing real network
+latency, simulating real regional outages -- specifically to discover
+whether the system actually survives conditions it was designed to
+survive, rather than assuming it does because it was designed to. This
+grew from Netflix's own "Chaos Monkey" tool into a full discipline with a
+real, formal methodology.
+
+**The oldest known form of the same idea, predating even LIGO's blind
+injections.** In 1975, researchers studying air-traffic-control system
+reliability proposed injecting fabricated "ghost plane" targets directly
+into a LIVE, operating air-traffic-control system handling real air
+traffic at the same time -- not a simulation running in parallel, an
+actual perturbation of the real system's real, live operation. If the
+system correctly tracked, displayed, and handled every ghost plane
+alongside genuine aircraft, that was real evidence of correct behavior
+under live operating conditions specifically, which a laboratory test
+environment built to be tested cannot by itself provide.
+
+**"Dark debt,"** a term from the chaos-engineering and resilience-
+engineering literature: latent faults that are structurally undiscoverable
+by build-time testing or unit testing alone, because they manifest only
+from a specific, unplanned COMBINATION of real operating conditions no
+individual test was ever constructed to reproduce. This is distinct from
+"technical debt" in the ordinary sense -- dark debt is not known and
+deferred, it is genuinely unknown until the specific colliding condition
+that reveals it actually occurs.
+
+**The formal methodology**, applied as a repeatable sequence: (1) define
+and measure the real steady state -- what normal operation concretely looks
+like, in measured terms, not assumed; (2) form an explicit, falsifiable
+hypothesis about what should happen under one specific, named injected
+failure, stated BEFORE the injection runs; (3) inject that failure for
+real; (4) observe and compare the actual result against the stated
+hypothesis; (5) fix whatever gap the comparison reveals. The
+before-the-fact hypothesis is what makes the method falsifiable rather
+than a story constructed afterward to explain whatever happened.
+
+**Minimizing blast radius** is chaos engineering's own core safety
+discipline: bound, in advance and explicitly, how much of the real system
+an injected failure is permitted to affect, rather than discovering the
+actual scope only by observing how far the damage spread once the
+experiment was already running.
+
+**GameDay**, Amazon's own version of the same underlying practice, runs
+chaos exercises on a scheduled day with full human oversight and control
+throughout, rather than continuously and automatically the way Netflix's
+approach does. Both are real, currently-used, validated approaches to the
+identical underlying discipline, differing in risk tolerance and
+operational maturity rather than one being a compromise version of the
+other.
+
+## Google Project Zero's coordinated disclosure policy
+
+Google's Project Zero team is a real, currently-operating vulnerability
+research group with a real, published, and measured track record: 1,434
+vulnerabilities disclosed over a 4.5-year measured period, with 97.5% of
+vendors fixing the reported issue within Project Zero's own stated
+disclosure deadline.
+
+**The real numbers behind the deadline.** The standard deadline is 90
+days from initial report to public disclosure, giving the vendor time to
+develop and ship a fix. That deadline is cut to 7 days specifically when
+there is confirmed evidence the vulnerability is being ACTIVELY exploited
+in the wild -- roughly a thirteen-fold tightening for exactly the
+circumstance where the normal timeline would leave real, ongoing harm
+unaddressed for far too long.
+
+**The "90+30" refinement.** Project Zero's policy evolved to time the
+30-day public-disclosure grace period from the date a patch actually
+becomes AVAILABLE to users, not from the date a patch is merely written or
+committed -- a deliberate, named distinction between a fix existing in a
+codebase and a fix having actually reached the people who need it.
+
+**Applied to its own parent company, with no exception.** Project Zero
+holds Google's own products to the identical 90-day (or 7-day, under
+active exploitation) deadline as any other vendor's products, without a
+softer internal standard for the company that funds the team doing the
+disclosing.
+
+## The xz-utils backdoor (CVE-2024-3094)
+
+Discovered in late March 2024, days before the compromised version would
+have shipped broadly into major Linux distributions, the xz-utils backdoor
+is widely regarded as the most sophisticated real software supply-chain
+attack ever publicly documented -- a deliberately, carefully obfuscated
+backdoor inserted into a widely-depended-on compression library, rated
+CVSS 10.0, the maximum possible severity score.
+
+**How it was actually found.** Not by any security audit, code review, or
+automated scanner -- a Microsoft engineer performing unrelated PostgreSQL
+performance benchmarking noticed that SSH logins on a system running the
+compromised library were taking roughly 500 milliseconds longer than
+expected, investigated the unexplained timing anomaly out of simple
+curiosity about the discrepancy, and traced it back to the backdoor.
+
+**The social-engineering campaign that preceded it.** Investigation after
+the discovery revealed a patient, multi-year effort: the eventual attacker
+built genuine trust with the library's sole, overburdened maintainer
+through real, legitimate, useful contributions over an extended period,
+while separate, seemingly unconnected accounts applied sustained pressure
+on that maintainer -- pushing for faster merges, and eventually for the
+attacker to be granted broader commit and release access to the project.
+
+**"Bus factor of one."** The library had exactly one maintainer for a
+long period, a structural vulnerability in itself: a single, burned-out
+maintainer facing real, sustained pressure and offers of help has a real,
+understandable incentive to accept assistance from whoever is offering it
+consistently, which is precisely the opening the attack was patiently
+constructed to exploit over years rather than a single moment of
+carelessness.
+
+## CVSS -- the real industry-standard severity formula
+
+The Common Vulnerability Scoring System is the actual formula NIST's
+National Vulnerability Database reports exclusively as its Base Score for
+every catalogued vulnerability, making it the closest thing the security
+industry has to a single standard severity number. Two structural design
+choices in it are directly transferable regardless of whether the
+underlying 0-10 numeric scale is adopted.
+
+**Exploitability and Impact, computed separately before combining.** CVSS
+builds its Base Score from two independently-scored sub-metrics --
+Exploitability (attack vector, complexity, required privileges, required
+user interaction: collectively, how easy the flaw is to actually trigger)
+and Impact (confidentiality, integrity, and availability effects:
+collectively, how much damage results once triggered) -- kept visible as
+two separate figures before they combine into the final score. This
+exists specifically because the two can move independently: a flaw
+trivial to reach but causing negligible damage, and a flaw devastating in
+effect but requiring an implausible set of preconditions to trigger, are
+both real but very differently urgent situations that a single blended
+number collapses into the same-looking result.
+
+**Scope, a factor with no equivalent in a simple asset-criticality
+rating.** CVSS's Scope metric asks specifically whether a successful
+exploit of one component can affect resources belonging to a security
+scope OTHER than the one initially compromised -- the difference between a
+vulnerability whose damage stays contained to the component it was found
+in, and one that becomes a pivot point into resources the initially-
+compromised component was never supposed to have any influence over. A
+scope-changing vulnerability is treated as materially more severe than an
+otherwise-identical one that stays contained, independent of either
+component's own individual asset-criticality rating.
