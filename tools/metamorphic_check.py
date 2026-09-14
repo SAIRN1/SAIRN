@@ -4,6 +4,7 @@
     python tools/metamorphic_check.py --fixtures      # the blind lock alone
     python tools/metamorphic_check.py --all           # every root app file
     python tools/metamorphic_check.py --targets 5
+    python tools/metamorphic_check.py --max-bytes 600000 --targets 1   # registry
     python tools/metamorphic_check.py --json
     python tools/metamorphic_check.py --quiet
 
@@ -395,7 +396,7 @@ def blind_lock():
 
 
 # ── the real measurement ─────────────────────────────────────────────────────
-def app_targets(limit):
+def app_targets(limit, max_bytes=None):
     """The largest root app files first, plus the names of the ones left out.
 
     LARGEST FIRST because a relation is a property of the CHECKER, not of the
@@ -403,14 +404,34 @@ def app_targets(limit):
     falsify a relation, and the biggest files exercise the most of each
     checker's code. The cap is DECLARED and the excluded names are PRINTED --
     a silent top-N reads as "covered everything" when it did not.
+
+    `max_bytes` EXISTS FOR THE REGISTRY AND IT WAS EARNED (2026-09-13).
+    Promoting this into tools/report_only_checks.py pushed the whole
+    report-only sweep past the 600s budget in its own probe, and the cost is
+    almost entirely one file: 6 checkers x 6 runs over stonedesk.html at 2.6MB
+    is ~160 seconds on its own, against ~40 for everything else put together.
+    So the registry runs with a size cap and the deep pass
+    (`--all`, 660 comparisons) stays a deliberate command.
+
+    A CAP IS A COVERAGE CLAIM, so it is printed with the file it excluded
+    beside it rather than folded into the NOT COVERED count. A sample that
+    quietly skips the biggest app is the truncation shape this platform keeps
+    finding.
     """
     out = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
                          capture_output=True, text=True).stdout
     roots = [f for f in out.split('\n') if f.strip() and '/' not in f]
     roots.sort(key=lambda f: -os.path.getsize(os.path.join(REPO, f)))
+    too_big = []
+    if max_bytes:
+        keep = []
+        for f in roots:
+            (keep if os.path.getsize(os.path.join(REPO, f)) <= max_bytes
+             else too_big).append(f)
+        roots = keep
     if limit is None or limit >= len(roots):
-        return roots, []
-    return roots[:limit], roots[limit:]
+        return roots, too_big, []
+    return roots[:limit], too_big, roots[limit:]
 
 
 def measure(targets, checkers=None, tools_dir=None, target_root=None):
@@ -479,6 +500,10 @@ def main(argv):
                     help='every root app file, not the declared sample')
     ap.add_argument('--targets', type=int, default=3,
                     help='how many of the largest app files to measure (default 3)')
+    ap.add_argument('--max-bytes', type=int, default=0,
+                    help='skip app files larger than this; PRINTED, never silent. '
+                         'The registry uses it because stonedesk.html alone is '
+                         '~160s of a ~200s run.')
     ap.add_argument('--json', action='store_true')
     ap.add_argument('--quiet', action='store_true')
     args = ap.parse_args(argv)
@@ -523,13 +548,16 @@ def main(argv):
                   'would mean something.')
         return 0
 
-    targets, skipped = app_targets(None if args.all else args.targets)
+    targets, too_big, skipped = app_targets(
+        None if args.all else args.targets, args.max_bytes or None)
     rows, could_not_run = measure(targets)
     violations = [r for r in rows if not r['holds']]
 
     if args.json:
         print(json.dumps({'locked': True, 'lock_rows': lock_rows,
                           'targets': targets, 'not_covered': skipped,
+                          'over_size_cap': too_big,
+                          'max_bytes': args.max_bytes or None,
                           'comparisons': rows,
                           'could_not_run': could_not_run}, indent=1))
         return EXIT_COULD_NOT_RUN if could_not_run else (1 if violations else 0)
@@ -543,6 +571,14 @@ def main(argv):
         print('  NOT COVERED         : %d app file(s)%s'
               % (len(skipped),
                  (' -- ' + ', '.join(skipped)) if skipped else ''))
+        # A SIZE CAP IS A COVERAGE CLAIM. Printed separately from the top-N
+        # exclusion above, because "we sampled 1 of 22" and "we skipped the
+        # biggest app in the fleet" are different things to know.
+        if too_big:
+            print('  OVER THE %d-BYTE CAP, NOT MEASURED AT ALL : %s'
+                  % (args.max_bytes, ', '.join(too_big)))
+            print('    run `python tools/metamorphic_check.py --all` for the '
+                  'deep pass that includes them')
         print('  comparisons run     : %d' % len(rows))
         print('  relations violated  : %d' % len(violations))
         by_checker = {}

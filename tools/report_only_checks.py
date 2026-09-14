@@ -466,6 +466,13 @@ REGISTRY = [
     {
         'tool': 'metamorphic_check.py',
         'mode': 'once',
+        # A SIZE CAP AND ONE TARGET, AND IT WAS EARNED THE HOUR THIS WAS
+        # PROMOTED. The full pass is 6 checkers x 22 apps x 5 relations and
+        # stonedesk.html alone is ~160s of a ~200s run, which pushed the whole
+        # report-only sweep past the 600s budget in its own probe. The deep
+        # pass stays a deliberate command: `metamorphic_check.py --all`.
+        # The cap and the files it excludes are PRINTED on every run.
+        'args': ['--max-bytes', '600000', '--targets', '1'],
         'verdict': by_exit,
         'promoted': '2026-09-13',
         'catches': "a checker whose ANSWER changes under a transform that cannot "

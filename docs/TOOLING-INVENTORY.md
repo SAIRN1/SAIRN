@@ -19,24 +19,24 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**116 files in `tools/`.** By what actually invokes them:
+**118 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 9 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 37 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 38 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 68 |
+| CHECKER | 69 |
 | GENERATOR | 16 |
-| LIBRARY | 19 |
+| LIBRARY | 20 |
 | LIVE | 13 |
 
 **18 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -114,7 +114,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (37)
+## REPORT-ONLY (38)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -142,6 +142,7 @@ quiet in practice.
 | `key_collision_check.py` | 2026-09-10 | a localStorage key written by more than one feature, where the two writers disagree about the shape |
 | `literal_drift_check.py` | 2026-09-10 | a duplicated literal whose copies have DIVERGED -- the same constant written twice and then changed once |
 | `md_table_check.py` | 2026-09-10 | a markdown row whose prose pipes broke its own columns, so trailing cells fall off and an edit-by-index writes into the wrong one |
+| `metamorphic_check.py` | 2026-09-13 | a checker whose ANSWER changes under a transform that cannot legitimately change it -- a byte-identical copy at another path, flipped line endings, trailing whitespace, inserted blank lines -- and a finding ERASED by duplicating the file |
 | `mutation_anchor_check.py` | 2026-09-11, the day it was built | a mutation probe whose anchor no longer matches its target exactly once -- so the arm plants nothing and the control stops testing -- and a probe that mutates a tracked file in place without refusing an import |
 | `nav_panel_check.py` | 2026-09-09, AFTER its matcher was fixed -- NOT as it stood | a panel no nav control reaches (Guardian checks 16-18), and a duplicate id in static markup |
 | `npm_audit_check.py` | 2026-09-10, the day it was built | a known advisory against a package in the committed lockfile, direct or transitive, with the advisory URL |
@@ -209,7 +210,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (19)
+## SUITE-ONLY (20)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -217,6 +218,7 @@ fixtures. Nothing points them at the real codebase.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
+| `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_metamorphic_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_flaky_quarantine_probe.py` |
@@ -306,11 +308,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      116   git ls-files tools/
+  tools on disk                      118   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                7   tools\sairn_push_gate_hook.py
-  report-only registry                34   report_only_checks.REGISTRY
-  tools invoked by tests/             68   tests/**/*.py, *.js
+  report-only registry                35   report_only_checks.REGISTRY
+  tools invoked by tests/             70   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                10   tools\sairn_push_gate_hook.py
 ```

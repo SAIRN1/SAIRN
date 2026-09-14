@@ -80,6 +80,14 @@ PURPOSES = {
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
     'deploy_verify_notify.py': ('CHECKER', 'a push whose deploy never reached the live site'),
     'report_only_checks.py': ('LIBRARY', 'the report-only registry and its runner -- the 26 entries above'),
+    # A LIBRARY, NOT A CHECKER, and it is listed for exactly the reason this
+    # refusal exists: it has no findings of its own and would otherwise sit in
+    # tools/ as a blank cell. It is the three things every checker here has had
+    # to get right -- the three-state exit contract, comment-stripped parsing,
+    # and the control-pair declaration -- so the next one is built THROUGH them.
+    'checker_kit.py': ('LIBRARY', 'the exit-code contract, comment-stripped parsing and the '
+                                  'control-pair declaration, extracted so the next checker '
+                                  'is built through them rather than re-deriving them'),
     'session_lock_check.py': ('CHECKER', 'a second session in the same clone, at start and on every prompt'),
     'sairn_claim_hook.py': ('CHECKER', "another session's active claim on the work about to start"),
     'employee_auth_guard_check.py': ('CHECKER', 'a SQL file writing credential rows with no recoverability guard (gate check 2)'),
