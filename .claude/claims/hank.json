@@ -1563,8 +1563,8 @@
       "task": "regime statement on remaining_aggregate",
       "claimed_at": "2026-09-14T17:33:08Z",
       "claimed_at_epoch": 1789407188.3660812,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T17:38:54Z"
     }
   ]
 }
