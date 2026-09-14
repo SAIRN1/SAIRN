@@ -644,6 +644,21 @@ def cmd_check(argv=()):
             print('    %s -> %s  %s' % (old, new, subj[:66]))
         print('    Not a failure. Run `python tools/defect_register.py '
               '--reseat` to write them back.')
+    # ── ONE ENTITY, ONE SPELLING (2026-09-14) ──────────────────────────────
+    # `SAIRNBIZ` and `sairnbiz` sat in this file as two apps, splitting one
+    # entity in half. Nothing noticed, because every per-app figure simply
+    # reported both. It surfaced while measuring whether there is enough data
+    # for a PER-ENTITY baseline (item 51) -- where a silent split is not a
+    # cosmetic problem, it halves the very count the baseline is computed from.
+    seen_apps = {}
+    for r in reg['records']:
+        seen_apps.setdefault(str(r.get('app', '')).lower(), set()).add(r.get('app'))
+    for low, spellings in sorted(seen_apps.items()):
+        if len(spellings) > 1:
+            bad.append('the app %r appears under %d spellings %s -- one entity '
+                       'with two names is two entities to every per-app figure '
+                       'in this file' % (low, len(spellings), sorted(spellings)))
+
     if bad:
         print('FAIL: %d register problem(s)' % len(bad))
         for b in bad:

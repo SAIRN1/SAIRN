@@ -1962,7 +1962,7 @@
       ],
       "lines_added": 500,
       "lines_removed": 10,
-      "app": "SAIRNBIZ",
+      "app": "sairnbiz",
       "layer": "product",
       "severity": "high",
       "detection_method": "static-checker",
