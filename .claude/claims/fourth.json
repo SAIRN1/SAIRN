@@ -1240,8 +1240,8 @@
       "task": "backup-role-default-acl-for-role-gap",
       "claimed_at": "2026-09-14T16:52:44Z",
       "claimed_at_epoch": 1789404764.021253,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T16:58:45Z"
     }
   ]
 }
