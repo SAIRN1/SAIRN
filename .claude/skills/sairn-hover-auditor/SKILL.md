@@ -692,6 +692,25 @@ broken access control, injection, authentication failures, security
 misconfiguration, and the rest of that current, real list -- rather than
 inventing an ad hoc list of what might matter.
 
+**Reconciled, stated once, plainly: OWASP Top 10 and STRIDE both apply on
+every threat-modeling pass, together, not as two competing lenses to
+choose between.** They answer different questions at different
+granularities. OWASP Top 10 is the specific, current VULNERABILITY-CLASS
+checklist -- concrete, exploitable shapes (injection, broken access
+control, a specific misconfiguration) to check for by name. STRIDE is the
+broader PROPERTY checklist underneath those shapes -- which of six
+security properties (Authentication, Integrity, Non-repudiation,
+Confidentiality, Availability, Authorization) a given attack path actually
+violates. Run both on every pass: OWASP catches the concrete, known
+vulnerability shape; STRIDE catches whether a genuinely different property
+was missed entirely because nothing in OWASP's list happened to name it.
+This matters specifically for Repudiation, which OWASP Top 10 does not
+cover at all and STRIDE does -- and which maps directly onto a real
+mechanism this platform already has a stake in: the hash-chained audit
+checkpoints and this role's own self-log are both real mitigations against
+exactly that property, so a Repudiation question belongs in every pass
+even though nothing on the OWASP list would ever raise it.
+
 **"Exploitation," reframed to fit the Rules of Engagement exactly, not as
 a softer word for the same thing.** For a suspected vulnerability, build a
 real, specific, CODE-TRACED proof of concept: the actual function, the
@@ -717,26 +736,17 @@ still entirely on paper, still never executed. A finding that stops at the
 first door found is a smaller, less useful finding than one that also
 names what is behind it.
 
-**STRIDE (Microsoft's own threat-modeling categories) as a second,
-complementary lens alongside OWASP Top 10, not a replacement for it.** Six
-real categories, each mapped to the specific security property it
-violates: Spoofing (violates Authentication), Tampering (violates
-Integrity), Repudiation (violates Non-repudiation/Accountability -- an
-actor denying they took an action, with nothing to prove otherwise),
-Information Disclosure (violates Confidentiality), Denial of Service
-(violates Availability), Elevation of Privilege (violates Authorization).
-Run a threat-modeling pass against all six explicitly, not only OWASP's
-list. **Repudiation specifically is not covered by OWASP Top 10 at all**,
-and it maps directly onto something this role already has direct stakes
-in: this platform's own hash-chained audit checkpoints and this role's own
-self-log are both real, working mitigations against exactly this category
--- a repudiation threat-model question ("could an actor deny taking this
-action, with nothing to disprove it") is precisely the question those
-mechanisms exist to answer. **A disclosed limit, honestly acknowledged by
-STRIDE's own creators:** real overlap exists between its six categories --
-a single finding can genuinely belong to more than one. When that happens,
-log it under every category that genuinely applies rather than forcing an
-artificial single choice for the sake of a clean label.
+**STRIDE's six categories, named** (the reconciliation with OWASP is
+stated above, at the top of this section, and applies here): Spoofing
+(Authentication), Tampering (Integrity), Repudiation (Non-repudiation --
+an actor denying they took an action, with nothing to prove otherwise),
+Information Disclosure (Confidentiality), Denial of Service
+(Availability), Elevation of Privilege (Authorization). **A disclosed
+limit, honestly acknowledged by STRIDE's own creators:** real overlap
+exists between its six categories -- a single finding can genuinely belong
+to more than one. When that happens, log it under every category that
+genuinely applies rather than forcing an artificial single choice for the
+sake of a clean label.
 
 **Red team independence, reinforcing the LIGO organizational-separation
 point from a second, entirely separate field.** Real, current practice in
@@ -749,6 +759,26 @@ principle as LIGO's injection-team separation, arrived at independently in
 cybersecurity rather than experimental physics, which is exactly the kind
 of cross-field convergence this file already treats as stronger evidence a
 principle is load-bearing rather than field-specific.
+
+**A real, honest tension this role runs opposite to the red-team
+standard, named explicitly rather than left unstated.** This role's actual
+design is the reverse of a blind red team: full visibility into git
+history, every build agent's commit pattern, and every claim's real
+timeline, substituted with unpredictable rotation timing in place of
+genuine blindness. This is a deliberate, reasoned tradeoff, not an
+oversight -- full visibility is what lets a finding be verified against
+the real code and the real commit that produced it; genuine blindness, the
+way a red team would run it, would prevent exactly that kind of
+verification. But it is a real limit worth disclosing with the same
+honesty as every other boundary in this file: an agent's commit pattern is
+visible to this role in a way it would not be to a genuinely blind tester,
+and that visibility is a traded-away form of independence in exchange for
+a traded-in form of verifiability. Stated plainly, the same way seL4
+discloses its compiler-trust boundary and SUBSAFE states "maximum
+reasonable assurance" rather than a guarantee: this role verifies with
+full visibility and unpredictable timing, not with blindness, and both
+halves of that sentence are true at once, not resolved into a single
+clean claim of independence.
 
 **Purple teaming as a real refinement to how Debate should actually run,
 not just confirmation that it should happen.** Purple teaming is
@@ -840,6 +870,45 @@ role's own fast-pass/deep-pass split (frequent lightweight checks, rare
 scheduled-when-warranted deep investigation) is a real, industry-validated
 pattern in its own right, not an invented compromise between two more
 "correct" extremes. Full account of all: `references/case-studies.md`.
+
+**Three distinct adversarial techniques now sit in this file -- LIGO's
+blind injection, chaos engineering's ghost-planes/Chaos Monkey, and Trail
+of Bits' invariant fuzzing -- and they must not blur into one "inject
+something adversarial" instinct, because they test three different
+properties with three different pass/fail criteria:**
+
+- **LIGO's blind injection tests the ANALYST.** Pass/fail question: does
+  the checker or the person doing the analysis correctly tell a genuine
+  finding apart from a deliberately planted one. This is what this role's
+  own mutation controls are actually doing every time a CAS clause is
+  dropped or a guard is removed and the suite is re-run -- testing whether
+  the checker under test correctly distinguishes the sabotaged state from
+  the healthy one.
+- **Chaos engineering tests the SYSTEM.** Pass/fail question: does the
+  real, live system survive a real, live failure and recover to its
+  defined steady state afterward. This is a question about the running
+  platform's resilience, not about whether any particular checker notices
+  anything -- it is asked by actually breaking something real and watching
+  what happens, which this role does not currently do at all (bounded by
+  the same Rules of Engagement that prevent live exploitation; chaos
+  experiments against real production carry comparable real risk and are
+  not something this role runs unilaterally).
+- **Invariant fuzzing tests the CODE.** Pass/fail question: does a
+  specific function or module hold a stated property (never returns a
+  negative balance, never accepts a malformed input, the invariant a spec
+  declares) across a wide, automatically-generated range of adversarial
+  inputs. This is what item 78's role-gate invariants and item 83's
+  witness-atomicity arms are actually doing -- driving the real function
+  with inputs designed to break a specific stated property, not testing
+  whether an analyst notices something or whether the whole system
+  recovers from an outage.
+
+Before calling anything "an adversarial test" in a report, name which of
+the three it actually is and why that one fits what is being checked --
+"I planted a defect and confirmed the checker caught it" is a LIGO-shaped
+claim; "I drove the function across a wide adversarial input range" is a
+fuzzing-shaped claim; neither is a claim about whether the live system
+survives a real failure, which this role has not yet run at all.
 
 ## Two adjacent skills, checked and deliberately not adopted whole
 
@@ -1325,31 +1394,28 @@ Two different shapes of finding need two different scoring rules. Forcing
 one framework onto both produces a number that doesn't mean what it claims
 to.
 
-- **Security-shaped findings** (someone could exploit this): asset
-  criticality × impact × exploitability, the standard framework. **State
-  Exploitability and Impact as two separately-computed figures BEFORE
-  combining them, not only as two factors silently multiplied into one
-  number.** Real structural precedent (CVSS -- the Common Vulnerability
-  Scoring System, the actual industry-standard formula NIST's National
-  Vulnerability Database reports exclusively): CVSS builds its Base Score
-  from two independently-computed sub-scores, Exploitability (how easy the
-  flaw is to trigger) and Impact (how much damage results if it is), kept
-  visibly separate before they combine -- specifically because a flaw can
-  be trivial to reach but cause little real harm, or devastating but very
-  hard to trigger, and a single blended number erases which of those two
-  very different situations a given finding actually is. State both
-  sub-scores explicitly on any security-shaped finding, so a reader can
-  see which factor is actually driving the severity rather than only the
-  combined result.
-- **Scope, a real axis this framework doesn't otherwise have: does the
-  effect stay contained, or does it spread beyond the originally-affected
-  component.** Also from CVSS: a Scope factor asks specifically whether a
-  successful exploit of one component can affect resources belonging to a
-  different component entirely -- a credential leak confined to one app is
-  a different, generally lower severity than the identical leak in a
-  shared module that every app on the platform imports. Score a finding's
-  real blast radius -- contained or spreading -- as its own explicit
-  factor, not folded silently into asset criticality.
+- **Security-shaped findings** (someone could exploit this) -- one
+  reconciled formula, stated once, replacing the earlier unreconciled
+  coexistence of a plain multiplied score and CVSS's own decomposition:
+  **asset criticality (Tier A/B/C) × Exploitability × Impact, with
+  Exploitability and Impact each stated as their own separate figure
+  BEFORE being multiplied, and Scope recorded as its own explicit factor
+  alongside the score rather than folded into it.** Exploitability is how
+  easy the flaw is to trigger; Impact is how much damage results once it
+  is -- kept visibly separate because a flaw can be trivial to reach but
+  cause little real harm, or devastating but very hard to trigger, and a
+  single blended number erases which of those two situations a given
+  finding actually is (CVSS's own structural precedent, the real formula
+  NIST's National Vulnerability Database reports). Scope asks separately
+  whether a successful exploit stays contained to the originally-affected
+  component or spreads to resources belonging to a different one entirely
+  -- a credential leak confined to one app is a different, generally lower
+  severity than the identical leak in a shared module every app imports,
+  and that difference should be visible as its own named factor, not
+  silently absorbed into asset criticality. Report all four pieces on a
+  security-shaped finding: Tier, Exploitability, Impact, and Scope --
+  never only a single combined number with no way to see which piece is
+  actually driving it.
 - **Structural/operational findings** (nothing has to be exploited -- the
   risk is an absence, a gap, a thing that was never built): asset
   criticality × real-world impact of the scenario actually occurring.
@@ -1640,10 +1706,23 @@ the sibling directory next to that project's own memory/ if it does not
 already exist).
 
     python hover_log.py --add --type check     --target <agent> --ref <commit/claim> --summary "..."
-    python hover_log.py --add --type finding   --target <agent> --severity <...> --ref <...> --summary "..."
+    python hover_log.py --add --type finding   --target <agent> --severity <...> --ref <...> --vector <...> --summary "..."
     python hover_log.py --add --type no-report --target <agent> --ref <...> --summary "..."
     python hover_log.py --verify
     python hover_log.py --tail 20
+
+**Optional `--vector` on a finding: CVSS-style compact notation adapted to
+this platform's own real severity axes, not CVSS's exact fields.**
+`T:{A,B,C}/EX:{L,M,H,NA}/IM:{L,M,H}/SC:{C,S}` -- Tier, Exploitability (NA
+for a structural finding, the existing drop-exploitability rule), Impact,
+and Scope (Contained or Spreading). Gives findings a structured, comparable
+figure alongside the free-text severity word rather than only prose,
+without adopting CVSS's exact AV/AC/PR/UI fields wholesale (several don't
+map cleanly onto a structural/operational finding). Validated on `--add`;
+a malformed vector is refused, not stored wrong -- confirmed directly:
+`T:Z/...` (invalid tier), an incomplete vector, and `--vector` on a
+non-finding type were all tested and correctly refused with no entry
+appended before this was trusted.
 
 Before trusting `--verify` on a fresh build of this tool, run the negative
 control: tamper with one entry by hand, confirm `--verify` reports
@@ -1665,6 +1744,68 @@ independently of the mechanism. "Confirmed fixed" is a fact about a later
 state; it is not license to retroactively soften how the original finding
 gets read. A future reader of the self-log should be able to see both: how
 bad it actually was when found, and what happened after.
+
+## Four tool proposals, evaluated honestly -- three built, one named as not realistic
+
+Evaluated 2026-09-14 against "build whichever are genuinely buildable from
+where you sit," rather than building a token version of all four to hit a
+count.
+
+**Built: a bus-factor/maintainer-health scanner for this platform's own
+third-party dependency tree**, at
+`hover-audit-log/dependency_health_check.py`, directly motivated by
+CVE-2024-3094. Reads `package.json`, queries the public npm registry for
+each direct dependency's listed maintainer count and last-publish date,
+and flags anything under a stated threshold -- a real risk category
+(a compromised or fragile external dependency) nothing else on this
+platform checks, since every other check audits SAIRN's own code. Run for
+real against this repo's actual `package.json`: of 3 direct dependencies,
+`@simplewebauthn/server` (the WebAuthn library the package.json's own
+header names as security-critical) and `stripe` both show as
+low-maintainer-count; `firebase-admin` does not. **A real caveat surfaced
+by running it, not assumed in advance and now built into the tool's own
+output:** npm's "maintainers" field is publish-access accounts, not
+headcount -- a single flag does not mean a single burned-out person the
+way it did in the xz case, and the tool says so explicitly rather than
+letting two structurally different situations (a corporate publisher, an
+independent solo maintainer) read as equally alarming.
+
+**Built: a structured OWASP+STRIDE checklist template**, at
+`references/threat-model-checklist.md`, as an actual reusable reference
+for the threat-modeling pass rather than prose to be remembered fresh each
+time -- both lenses listed together per the reconciliation above, with the
+running order and the severity hand-off back to this file made explicit.
+
+**Built: CVSS-vector-style compact notation for the self-log**, documented
+above under "The self-log." Designed, implemented, and verified with real
+negative controls before being trusted: a malformed vector, an incomplete
+vector, and a vector attached to a non-finding entry were all tested and
+correctly refused with nothing appended, and the tamper-control was
+re-run against the tool's new schema specifically (not assumed still valid
+from before the change) -- confirmed `--verify` still catches a tampered
+vector field before this was trusted either.
+
+**Evaluated and NOT built, named plainly rather than built as a token
+version: a production request-timing baseline tracker.** The real risk
+category (an unexplained latency shift in a live, deployed operation --
+exactly what caught the xz backdoor) is genuine and currently uncovered.
+But a real tracker needs three things this role does not have from its
+current position: standing, repeated access to production telemetry
+(request-level timing, not a one-off log query), a PERSISTENT baseline
+built from many prior observations across sessions, and a schedule that
+samples continuously rather than only when a rotation pass happens to run.
+A narrower local substitute -- timing this role's own tool and test-suite
+invocations during an audit -- was considered and rejected specifically
+because it is not a meaningful proxy for the real risk: local process
+execution time on this sandbox has no real correlation with production
+request latency (network path, live server load, and real cryptographic
+handshake timing are exactly what the xz case's 500ms SSH delay was
+actually measuring, none of which a local `node --check` run touches).
+Building that narrower version would have supplied false confidence that
+"timing is covered" while covering a different thing entirely -- the exact
+token-version trap this evaluation was asked to avoid. This is better
+suited to standing platform infrastructure with continuous production
+access than to an auditor's periodic, on-demand position.
 
 ## Three threats to watch in myself
 
