@@ -215,6 +215,38 @@ t('a healthy table answers ok:true', async () => {
   assert.strictEqual(out.code, 200);
   assert.strictEqual(out.body.ok, true, JSON.stringify(out.body));
 });
+// -- THE FREEZE IS LOAD-BEARING, AND NOTHING PINNED IT UNTIL NOW ------------
+// The arm above builds "fresh" heartbeats relative to the fixed NOW, so it is
+// only deterministic because call() also freezes Date.now to NOW. Without that
+// freeze the rows age against the real wall clock and the handler correctly
+// answers DEAD: CC hit exactly that on 2026-09-14 and reported 54 passed,
+// 1 failed. The freeze arrived in 7099d99f as a side effect of item 94's date
+// work, which means the arm was repaired by a commit that was not about it --
+// and NOTHING asserted the repair had to stay.
+//
+// Reproduced before writing this: removing the one freeze line reproduces
+// 54 passed / 1 failed on that same arm, and the file restores byte-identical.
+// This is the eighth discipline's exact shape -- nothing announces the day a
+// check stops testing anything -- so the announcement is here.
+t('THE HARNESS FREEZES THE CLOCK -- remove it and the arm above rots silently '
+  + 'against the wall clock instead of failing on the code', async () => {
+  let seen = null;
+  await call(async (url) => {
+    if (seen === null) seen = Date.now();
+    if (String(url).indexOf('sairn_cron_heartbeat?select=') !== -1) {
+      return reply(200, JSON.stringify(ALL_FRESH()));
+    }
+    return reply(201, '');
+  });
+  assert.strictEqual(seen, NOW,
+    'Date.now() inside the handler was ' + seen + ', not the fixed NOW (' + NOW
+    + '). Every fixture in this file is built relative to NOW, so an unfrozen '
+    + 'clock makes them age in real time.');
+});
+t('CONTROL: the real clock is NOT frozen outside call(), so the arm above is '
+  + 'asserting a property of the harness and not of the process', () => {
+  assert.notStrictEqual(Date.now(), NOW);
+});
 t('A DEAD JOB MAKES THE HANDLER ANSWER ok:false -- the pair for the arm above', async () => {
   const rows = ALL_FRESH().filter((r) => r.job !== '/api/alf-alerts')
     .concat([hb('/api/alf-alerts', W.deadAfter(3600) + 1)]);
