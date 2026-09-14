@@ -67,9 +67,23 @@ function refuse(code, message, extra) {
   return Object.assign({ ok: false, error: { code: code, message: message } }, extra || {});
 }
 
-function isDate(s) {
-  return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s);
-}
+// ── THE DATE CONCEPT MOVED OUT (item 94, 2026-09-14) ───────────────────────
+// This function was defined here and imported by mech-assets, mech-credentials,
+// roofing-credentials and others -- so a module that needed to know WHAT A DATE
+// IS had to depend on a module about CREDENTIAL EXPIRY. That is the shallow-
+// module symptom: the concern leaked into whichever file happened to need it
+// first, and everything downstream carries that file's name in its imports.
+//
+// IT IS ALSO A BEHAVIOUR FIX, NOT A MOVE. The old body validated the SHAPE of a
+// date and not the DATE, so `2026-02-31` passed -- and `new Date` does not
+// reject an impossible date, it SILENTLY REPAIRS IT: that one becomes
+// 2026-03-03, and `2026-02-29` in a non-leap year becomes 2026-03-01. A
+// credential expiring on an impossible day was accepted here and then expired
+// three days later than anybody wrote down.
+//
+// So the alias below is deliberately NOT bug-compatible. A migration that
+// preserved the old behaviour would have been a rename.
+const isDate = require('./calendar-date').isCalendarDate;
 
 // Whole days from `today` to `dateStr`. Negative = already past.
 // UTC midnight on both sides so a run at 23:00 and a run at 01:00 agree, and

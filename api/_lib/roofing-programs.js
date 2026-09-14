@@ -72,7 +72,14 @@ const DENOMINATORS = ['all_active', 'listed_roles'];
 
 const DEFAULT_WARN_DAYS = 30;
 
-function isDate(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+// THE DATE CONCEPT IS OWNED BY ONE MODULE (item 94, 2026-09-14). This was a
+// local copy of a line that existed FOURTEEN times across api/, all identical
+// and all wrong the same way: they validated the SHAPE and not the DATE, so
+// '2026-02-31' passed and `new Date` then SILENTLY REPAIRED it into 2026-03-03.
+// The import is not bug-compatible -- rejecting the impossible date is the
+// reason to move, and a migration that kept the old behaviour would be a
+// rename. See api/_lib/calendar-date.js.
+const isDate = require('./calendar-date').isCalendarDate;
 // null/''/undefined are ABSENT, not zero. Number(null) is 0, so the naive
 // version turned a requirement stored with `threshold: null` into a threshold
 // of ZERO -- which every holding satisfies, so an unusable requirement would

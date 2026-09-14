@@ -107,6 +107,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`isDate` was defined FOURTEEN times, all byte-identical, and all wrong the same way** &mdash; one deep module now owns it | **BUILT 2026-09-14 (Fourth)** &mdash; `api/_lib/calendar-date.js`, 22/22 arms, 14 modules migrated | `tests/sairnbiz_server_backup.js` |
 | **Item 61: every secret the platform reads, what it unlocks, and &mdash; the column a `grep` cannot produce &mdash; what happens when it is ABSENT** | **BUILT 2026-09-14 (CC)** &mdash; `tools/secrets_inventory.py`, `docs/SECRETS-INVENTORY.md` (generated), held by `tests/run_secrets_inventory_probe.py` (18 arms, three mutation controls). **Report-onl | `tests/run_secrets_inventory_probe.py` |
 | **Items 88, 53 and 91: the dependency graph, the pairs that are only fatal TOGETHER, and a single-point-of-failure list that shrinks by MEASUREMENT** | **BUILT 2026-09-14 (CC)** &mdash; `tools/dependency_graph.py`, `docs/SPOF-REGISTER.md`, held by `tests/run_dependency_graph_probe.py` (25 arms, five mutation controls). **Report-only, registered, noth | `tests/run_dependency_graph_probe.py` |
 | **The 2026-09-13 "no tool without an inventory entry" decision was CONFIRMED LIVE &mdash; and it did not hold** | **CONFIRMED AND CLOSED 2026-09-14 (Fourth)** &mdash; push-gate check 12b, 5 new arms in `tests/push_gate/check12_probe.py` | `tests/push_gate/check12_probe.py` |
@@ -321,7 +322,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**168 of 368 test files are traced to a stated requirement. 200 are not.**
+**168 of 369 test files are traced to a stated requirement. 201 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -329,6 +330,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/ai-rate-limit.test.js`
 - `api/_lib/ai-usage.test.js`
 - `api/_lib/auth.test.js`
+- `api/_lib/calendar-date.test.js`
 - `api/_lib/claude.test.js`
 - `api/_lib/courtlistener-rate-limit.test.js`
 - `api/_lib/credential-expiry.test.js`
@@ -545,8 +547,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 368   tests/**, api/*.test.js
-  open-work rows citing a test       156   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 369   tests/**, api/*.test.js
+  open-work rows citing a test       157   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                39   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

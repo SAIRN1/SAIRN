@@ -154,15 +154,29 @@ function makeRes() {
   const out = { code: null, body: null };
   return { out, status(c) { out.code = c; return this; }, json(b) { out.body = b; return this; } };
 }
+// ── THE CLOCK IS PINNED, AND IT WAS NOT (found 2026-09-14) ─────────────────
+// These arms build heartbeats relative to the fixed NOW above, but the HANDLER
+// calls the real Date.now(). So "a heartbeat 60 seconds old" aged with the wall
+// clock: the suite passed while the machine's time was near 12:00 UTC on
+// 2026-09-14 and went RED a few hours later, reporting every healthy fixture as
+// DEAD. A test that passes in the morning and fails in the afternoon is worse
+// than one that always fails -- it gets blamed on whatever was committed nearest
+// to when somebody noticed.
+//
+// assess() already takes nowMs as a parameter for exactly this reason. The
+// handler cannot, because a cron has a real clock, so the clock is stubbed here
+// the way api/audit-checkpoint.test.js stubs it.
 async function call(fetchImpl) {
   const realFetch = global.fetch;
+  const realNow = Date.now;
   global.fetch = fetchImpl;
+  Date.now = () => NOW;
   process.env.CRON_SECRET = 'secret';
   process.env.SUPABASE_URL = 'https://example.test';
   process.env.SUPABASE_SERVICE_ROLE_KEY = 'srv';
   const res = makeRes();
   try { await W({ headers: { authorization: 'Bearer secret' } }, res); }
-  finally { global.fetch = realFetch; }
+  finally { global.fetch = realFetch; Date.now = realNow; }
   return res.out;
 }
 const reply = (status, text) => ({

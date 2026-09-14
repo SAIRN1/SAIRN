@@ -53,7 +53,14 @@ const DEFAULT_WARN_DAYS = 30;
 // refused need opposite actions, and collapsing them loses the second entirely.
 const WARRANTY_STATUSES = ['not_registered', 'submitted', 'registered', 'registration_rejected', 'void'];
 
-function isDate(s) { return typeof s === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(s); }
+// THE DATE CONCEPT IS OWNED BY ONE MODULE (item 94, 2026-09-14). This was a
+// local copy of a line that existed FOURTEEN times across api/, all identical
+// and all wrong the same way: they validated the SHAPE and not the DATE, so
+// '2026-02-31' passed and `new Date` then SILENTLY REPAIRED it into 2026-03-03.
+// The import is not bug-compatible -- rejecting the impossible date is the
+// reason to move, and a migration that kept the old behaviour would be a
+// rename. See api/_lib/calendar-date.js.
+const isDate = require('./calendar-date').isCalendarDate;
 function str(v) { return typeof v === 'string' ? v.trim() : ''; }
 function whole(v) {
   if (v === null || v === undefined || v === '') return null;
