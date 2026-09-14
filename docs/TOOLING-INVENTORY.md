@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**128 files in `tools/`.** By what actually invokes them:
+**129 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,7 +27,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 26 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 27 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -35,7 +35,7 @@ By what they are, independent of wiring:
 | Kind | Count |
 |---|---:|
 | CHECKER | 77 |
-| GENERATOR | 15 |
+| GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
 
@@ -221,7 +221,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (26)
+## SUITE-ONLY (27)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -244,6 +244,7 @@ fixtures. Nothing points them at the real codebase.
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_jscomments_probe.py` |
 | `load_schema_snapshot.py` | CHECKER | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped | `run_snapshot_loader_probe.py` |
+| `new_checker.py` | GENERATOR | scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean | `run_new_checker_probe.py` |
 | `restore_coherence_check.js` | LIVE | a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about | `run_restore_coherence_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
 | `sabotage_control_check.py` | CHECKER | a negative control that never verifies its sabotage APPLIED -- when the anchor stops matching, str.replace silently does nothing and the control runs the checker against an unmodified file; the loud outcome is an arm failing against a working tool, the quiet one is an expect-no-findings arm passing forever | `run_sabotage_control_probe.py` |
@@ -327,11 +328,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      128   git ls-files tools/
+  tools on disk                      129   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             78   tests/**/*.py, *.js
+  tools invoked by tests/             79   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

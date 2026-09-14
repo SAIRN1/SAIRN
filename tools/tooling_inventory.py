@@ -156,6 +156,12 @@ PURPOSES = {
     # somebody does at 3am, and this is what asks whether the result is
     # coherent. Needs no scratch environment and no baseline capture: the
     # audit checkpoint chain is a fingerprint carried inside the data.
+    # A GENERATOR, and item 28's fold-in. checker_kit.py holds the three
+    # things every checker here has had to get right; what a library cannot
+    # do is make anyone USE them. Every defect that file's header lists was
+    # a checker that skipped one -- their authors had the library, not a
+    # starting point with the wiring already in it.
+    'new_checker.py': ('GENERATOR', 'scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean'),
     'restore_coherence_check.js': ('LIVE', 'a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about'),
     'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
