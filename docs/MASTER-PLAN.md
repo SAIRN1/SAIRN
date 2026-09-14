@@ -46,7 +46,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `sairnroofing` | 27 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairnscape` | 12 | ✅ | 1 | 0 | 0 | **nothing traced** · **no fault probe** |
 | `sairnsenior` | 15 | ✅ | 10 | 1 | 0 | **no fault probe** |
-| `sairnvet` | 41 | ✅ | 2 | 1 | 0 | **no fault probe** |
+| `sairnvet` | 41 | ⚠ | 2 | 1 | 0 | **tier: NO TIER      sairnvet/sv_audit_backed is registered and has no row.** · **no fault probe** |
 | `stonedesk` | 36 | ✅ | 15 | 9 | 1 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |

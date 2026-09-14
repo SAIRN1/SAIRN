@@ -93,7 +93,21 @@ function makeWorld(opts) {
   //   'hang'    -- never settles. A gateway timeout with no response.
   //   'partial' -- resolves a record MISSING fields the caller sent, which is
   //                what a truncated or filtered response looks like.
+  // AN UNKNOWN TRANSPORT IS REFUSED, NOT TREATED AS 'ok' (2026-09-14).
+  // A typo fell through to the happy path and an arm written as "a REFUSED
+  // push must not mark the audit entry evictable" reported a FALSE DEFECT in a
+  // DEA-relevant trail -- the fixture never reproduced a refusal, so the arm
+  // was measuring the OK path and calling it a failure. The mode was 'refuse';
+  // the mode is 'refused'. A harness that silently accepts a fault it does not
+  // implement is the could-not-tell-reported-as-a-result shape, one level down
+  // from the code it is testing.
+  const MODES = ['ok', 'refused', 'throw', 'hang', 'partial'];
   const mode = opts.transport || 'ok';
+  if (MODES.indexOf(mode) === -1) {
+    throw new Error('faultkit: unknown transport ' + JSON.stringify(mode) +
+      '. Known modes: ' + MODES.join(', ') + '. An unrecognised mode used to '
+      + 'fall through to the happy path, which made a typo look like a finding.');
+  }
   const failFrom = opts.failFrom || 1;
   ctx.sdnData = ctx.svData = ctx.sdData = function (action, resource, payload) {
     state.calls += 1;

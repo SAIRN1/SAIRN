@@ -3723,3 +3723,52 @@ files only.
 Both were my probes being wrong about their environment rather than the gate
 being wrong. Four other failures in the same run reproduce on a stashed pristine
 main and are not mine.
+
+## 2026-09-14 (Cody) -- four suite failures, three harness bugs, and one real
+## finding I refused to bury
+
+Skill used: `sairn-guardian-v2`. Claim: `tests` -- `four pre-existing suite
+failures sv backup faults local only shape fmea loop tooling inventory`.
+
+**`sv_backup_write_faults` -- SIX arms died on `SV_AUDIT_KEY is not defined`.**
+`svSyncCollection()` grew two dependencies and the vm world only contains what
+it is told about, so a fine subject read as a broken one. Same shape as the
+storage-wrapper harness earlier. The KEY is lifted from the app rather than
+retyped; the MARKER is a recording stub, which is what made four new arms
+possible: **an audit entry becomes evictable only if the SERVER answered.** The
+app states that rule in a comment and nothing checked it. 16/16 now.
+
+**THREE HARNESS TRAPS, all mine, all caught by checking:**
+
+1. A vm-realm Array is not `deepStrictEqual` to a host `[]`. Node says *"same
+   structure but not reference-equal"*, which reads exactly like a real
+   mismatch. Comparing a primitive crosses the realm boundary cleanly.
+2. **My refusal arm used `transport: 'refuse'` and the mode is `'refused'`.**
+   faultkit fell through to the HAPPY PATH, and the arm reported that a refused
+   push marks a DEA-relevant audit entry evictable -- **a false defect in a
+   controlled-substance trail, from a fixture that never reproduced a refusal.**
+   faultkit now THROWS on an unknown transport; no existing suite depended on a
+   typo. A harness that silently accepts a fault it does not implement is the
+   could-not-tell-reported-as-a-result shape, one level below the code.
+3. Both are candidates for their own bug class, recorded here rather than left
+   in a commit message.
+
+**`run_tooling_inventory_probe` -- `master_plan.py` was described TWICE**, in the
+REGISTRY and in PURPOSES. Same removal `install_git_hooks.py` needed yesterday,
+caught by the same assertion. **`run_fmea_loop_probe`** is green on current main
+with no change from me.
+
+**`local_only_shape_probe` -- IT CAUGHT TWO REAL NEW LOCAL-ONLY COLLECTIONS.**
+`sv_audit_backed` is per-device bookkeeping, not a record -- another device's
+confirmations say nothing about whether THIS device's copy is safe to evict --
+so it is DECLARED not-synced and that half is closed. **`sb_po` and `sb_recv`
+(`57236fe9`) are purchase orders and goods receipts with NO route to a server,
+on one workstation.**
+
+**ARM 6 STAYS RED AND THAT IS THE CORRECT STATE.** It asserts *no business
+record anywhere reaches no server*, which is the claim the whole sweep exists to
+make; a sweep that quietly lowers its own bar has stopped being one. Arm 5's
+per-app baseline is restated to the MEASURED numbers with the reasons, so drift
+detection keeps working, and the file now says why the two arms disagree on
+purpose. **Michael routed `sb_po`/`sb_recv` to CC** -- their tables, their schema
+context. Not mine to touch.

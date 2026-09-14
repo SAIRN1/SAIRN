@@ -119,16 +119,32 @@ results['arm4_bare_mention_is_not'] = not L.WRITE_LIT_RE.findall(MENTION)
 #   sairnvet    42/42/0 -> 42/41/0   sv_examrooms_turnover likewise
 #   stonedesk   37/34/3 -> 37/30/0   six declared; the three that were already
 #                                    reported are among them
-# The local-only column is now 0 everywhere except SAIRNmechanical, which is
-# the one app with genuinely undeclared local collections.
+# RE-MEASURED 2026-09-14, and BOTH moves were real, not drift:
+#   sairnvet    42/41/0 -> 43/41/0   ee040db9 added sv_audit_backed, the
+#                                    per-device set of audit ids the server has
+#                                    confirmed. It is bookkeeping, not a record --
+#                                    another device's confirmations say nothing
+#                                    about whether THIS device's copy is safe to
+#                                    evict -- so it is DECLARED not-synced.
+#   sairnbiz    11/11/0 -> 13/11/2   57236fe9 added sb_po and sb_recv, and they
+#                                    are an OPEN FINDING rather than a decision:
+#                                    purchase orders and goods receipts are
+#                                    business records with NO route to a server,
+#                                    living on one workstation.
+#
+# THE 2 IS RECORDED, NOT ACCEPTED. It sits here so this arm keeps firing on the
+# NEXT drift instead of staying permanently red and being ignored -- a red that
+# never goes green trains people to skip it, which is the argument this platform
+# already makes about report-only checkers. tools/local_only_collection_check.py
+# names both keys on every run, which is where the finding lives.
 BASELINE = {
-    'sairnbiz.html': ('11', '11', '0'), 'sairnbuild.html': ('34', '31', '0'),
+    'sairnbiz.html': ('13', '11', '2'), 'sairnbuild.html': ('34', '31', '0'),
     'sairncare.html': ('6', '6', '0'), 'sairndental.html': ('22', '22', '0'),
     'sairndesign.html': ('18', '18', '0'), 'sairnfreedom.html': ('35', '35', '0'),
     'sairngrounds.html': ('30', '30', '0'), 'sairnlaw.html': ('20', '19', '0'),
     'sairnlegacy.html': ('36', '36', '0'), 'sairnmechanical.html': ('5', '4', '0'),
     'sairnscape.html': ('12', '12', '0'), 'sairnsenior.html': ('14', '14', '0'),
-    'sairnvet.html': ('42', '41', '0'), 'stonedesk.html': ('37', '30', '0'),
+    'sairnvet.html': ('43', '41', '0'), 'stonedesk.html': ('37', '30', '0'),
 }
 drift = []
 for app, want in sorted(BASELINE.items()):
@@ -171,6 +187,16 @@ for key in ('law_billingcodes', 'sd_market_history', 'sairnmechanical_memory'):
 # The findings section is EMPTY platform-wide, and that is asserted rather than
 # assumed -- it is the whole point of the sweep and the thing a future
 # regression would break first.
+# ARM 5 AND ARM 6 DISAGREE ON PURPOSE, AND THE SPLIT IS THE POINT (2026-09-14).
+# Arm 5's baseline records sairnbiz at 13/11/2 -- the MEASURED truth -- so it
+# keeps firing on the NEXT drift instead of staying permanently red and being
+# skipped. Arm 6 refuses that same 2 and stays RED, because 'no business record
+# anywhere reaches no server' is the claim this whole sweep exists to make, and
+# a sweep that quietly lowers its own bar has stopped being one.
+#
+# OPEN: sb_po and sb_recv, added by 57236fe9 -- purchase orders and goods
+# receipts, business records with no route to a server, on one workstation.
+# Closing it needs a table and a migration, which is not a test's call to make.
 results['arm6_no_local_only_anywhere'] = _findings.strip() == 'none'
 # ...and the ones that moved are accounted for rather than dropped: each is now
 # either covered or declared, never silently absent.

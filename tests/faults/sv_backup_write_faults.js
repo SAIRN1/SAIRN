@@ -76,6 +76,23 @@ function ctxFor(opts) {
   const localOnly = SRC.slice(SRC.indexOf('var SV_LOCAL_ONLY_FIELDS=')).split(/\r?\n/)[0];
   K.vm.runInContext(localOnly, ctx);
   K.vm.runInContext(K.grab(SRC, 'function svOutbound(', ''), ctx);
+  // ── THE SUBJECT GREW TWO DEPENDENCIES AND THIS HARNESS DID NOT NOTICE ──
+  // svSyncCollection() now routes audit-log pushes through svAuditMarkBacked
+  // so an entry becomes evictable only once the SERVER answered. Neither name
+  // existed here, so every arm that ran the real function died on
+  // `SV_AUDIT_KEY is not defined` -- SIX of twelve, all reporting a broken
+  // subject when the subject was fine. Same shape as the storage-wrapper
+  // harness earlier the same day: a `new Function` world only contains what
+  // it is told about, so a new global reads as a broken function.
+  //
+  // The KEY is lifted from the app rather than retyped -- a second copy of a
+  // storage key is how the two drift. The MARKER is a recording stub, which
+  // is what lets the arms below assert WHEN it is called; the real one writes
+  // through st() and would need half the app.
+  const auditKeyLine = SRC.slice(SRC.indexOf('var SV_AUDIT_KEY')).split(/\r?\n/)[0];
+  K.vm.runInContext(auditKeyLine, ctx);
+  K.vm.runInContext('var svAuditMarked = [];', ctx);
+  K.vm.runInContext('function svAuditMarkBacked(id){ svAuditMarked.push(id); }', ctx);
   if (SRC.indexOf('function svPushOne(') > 0) {
     const consts = SRC.slice(SRC.indexOf('var SV_PUSH_TIMEOUT ')).split(/\r?\n/).slice(0, 3).join('\n');
     K.vm.runInContext(consts.replace(/SV_PUSH_TIMEOUT_MS\s*=\s*\d+/, 'SV_PUSH_TIMEOUT_MS = 120'), ctx);
@@ -141,6 +158,53 @@ test('a hang does NOT claim the record reached the server', async () => {
   ctx.svSyncCollection('sv_patients', [REC], []);
   await new Promise((r) => setTimeout(r, 400));
   assert.strictEqual(ctx._state.written.length, 0);
+});
+
+// ── THE AUDIT ENTRY IS EVICTABLE ONLY IF THE SERVER ANSWERED ───────────
+// Added 2026-09-14 with the two injected globals that made these reachable.
+// The app states the rule in a comment -- "svPushOne() resolves null on a
+// refusal, a rejection and a timeout alike, and all three must leave the
+// entry un-evictable" -- and nothing checked it. An audit log that evicts an
+// entry the server never took is a record of something that did not happen,
+// which is worse than a missing entry: it reads as proof.
+test('a CONFIRMED audit push marks the entry evictable', async () => {
+  const ctx = ctxFor({});
+  ctx.svSyncCollection(ctx.SV_AUDIT_KEY, [REC], []);
+  await new Promise((r) => setTimeout(r, 400));
+  // JOINED, NOT deepStrictEqual. svAuditMarked is built inside the vm realm,
+  // and a vm-realm Array is not deep-strict-equal to a host [] -- node says
+  // "same structure but not reference-equal", which reads exactly like a real
+  // mismatch. Comparing a primitive crosses the realm boundary cleanly.
+  assert.strictEqual(ctx.svAuditMarked.join(','), 'p1');
+});
+
+test('a REFUSED audit push leaves it un-evictable', async () => {
+  // 'refused', not 'refuse'. The first version of this arm used the wrong mode
+  // name, faultkit fell through to the OK path, and the arm reported that a
+  // REFUSED push marks the audit entry evictable -- a false defect in a
+  // DEA-relevant trail, from a fixture that never reproduced a refusal.
+  const ctx = ctxFor({ transport: 'refused' });
+  ctx.svSyncCollection(ctx.SV_AUDIT_KEY, [REC], []);
+  await new Promise((r) => setTimeout(r, 400));
+  assert.strictEqual(ctx.svAuditMarked.join(','), '',
+    'a refused push marked the audit entry as backed up');
+});
+
+test('a HUNG audit push leaves it un-evictable', async () => {
+  // The one that matters most: a hang resolves null LATER, so a marker
+  // written off the wrong branch would evict on a request that never landed.
+  const ctx = ctxFor({ transport: 'hang' });
+  ctx.svSyncCollection(ctx.SV_AUDIT_KEY, [REC], []);
+  await new Promise((r) => setTimeout(r, 400));
+  assert.strictEqual(ctx.svAuditMarked.join(','), '',
+    'a hung push marked the audit entry as backed up');
+});
+
+test('and a NON-audit collection never touches the marker at all', async () => {
+  const ctx = ctxFor({});
+  ctx.svSyncCollection('sv_patients', [REC], []);
+  await new Promise((r) => setTimeout(r, 400));
+  assert.strictEqual(ctx.svAuditMarked.join(','), '');
 });
 
 test('one hung record does not stop the OTHERS in the same collection', async () => {

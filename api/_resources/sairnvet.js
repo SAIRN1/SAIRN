@@ -151,5 +151,13 @@ module.exports = {
   notSynced: [
     'sv_examrooms_turnover',  // NOT RECORDS -- a flat array of NUMBERS from log.push(minutes)
     'sv_settings',            // device configuration
+    // PER-DEVICE BOOKKEEPING, NOT A RECORD. sv_audit_backed holds the ids this
+    // DEVICE has seen the server confirm, so the dosing-audit cap knows which
+    // entries still have only one copy. Syncing it would be meaningless and
+    // actively wrong: another device's confirmations say nothing about whether
+    // THIS device's copy is safe to evict. Declared 2026-09-14 after
+    // local_only_collection_check reported it as an undeclared local-only
+    // collection -- which it is; the decision just had not been written down.
+    'sv_audit_backed',
   ],
 };
