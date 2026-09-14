@@ -1200,8 +1200,8 @@
       "task": "item 90 triage and fix tier a findings",
       "claimed_at": "2026-09-14T15:26:28Z",
       "claimed_at_epoch": 1789399588.699302,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T15:44:38Z"
     }
   ]
 }
