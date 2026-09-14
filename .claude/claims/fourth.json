@@ -1403,8 +1403,8 @@
       "task": "declared rate constant bypassed by its own literal in app html, sairnbiz fica",
       "claimed_at": "2026-09-14T23:30:30Z",
       "claimed_at_epoch": 1789428630.7412431,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T23:48:37Z"
     }
   ]
 }
