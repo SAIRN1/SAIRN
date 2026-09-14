@@ -1595,6 +1595,16 @@
       "claimed_at_epoch": 1789408675.5237548,
       "status": "released",
       "released_at": "2026-09-14T18:10:16Z"
+    },
+    {
+      "id": "hank-1789410302",
+      "session": "hank",
+      "subject": "item20",
+      "task": "defect budget triggered priority -- what the data can actually support",
+      "claimed_at": "2026-09-14T18:25:02Z",
+      "claimed_at_epoch": 1789410302.673943,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
