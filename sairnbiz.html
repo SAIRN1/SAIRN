@@ -2481,6 +2481,10 @@ function closeBillModal(){$('billmodal').classList.remove('on');}
 // leaving somebody to guess how close is close enough.
 var SB_MATCH_TOLERANCE = 0.00;
 
+// Money in, integer cents out. A non-finite value is 0 rather than NaN, so a
+// corrupt row cannot turn every comparison into false and quietly MATCH -- NaN
+// compares false against everything, including the tolerance.
+function sbMoneyCents(v){ var n=Number(v); return isFinite(n)?Math.round(n*100):0; }
 function sbPOAll(){ var d=ld('sb_po',[]); return Array.isArray(d)?d:[]; }
 function sbRecvAll(){ var d=ld('sb_recv',[]); return Array.isArray(d)?d:[]; }
 function sbVendorKey(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
@@ -2521,12 +2525,33 @@ function sbThreeWayMatch(po_num,vendor,amt){
     if(sbVendorKey(r.vendor)&&sbVendorKey(r.vendor)!==sbVendorKey(po.vendor))
       reasons.push('a receipt names "'+r.vendor+'" but the PO says "'+po.vendor+'"');
   });
-  var poAmt=Number(po.amt)||0, billAmt=Number(amt)||0;
-  var recvVal=recs.reduce(function(a,r){return a+(Number(r.val)||0);},0);
-  if(Math.abs(billAmt-poAmt)>SB_MATCH_TOLERANCE)
-    reasons.push('billed '+fmt(billAmt)+' against a PO of '+fmt(poAmt)+' (difference '+fmt(billAmt-poAmt)+')');
-  if(recs.length&&Math.abs(billAmt-recvVal)>SB_MATCH_TOLERANCE)
-    reasons.push('billed '+fmt(billAmt)+' against '+fmt(recvVal)+' actually received');
+  // ── COMPARED IN INTEGER CENTS (2026-09-14, independent review) ──────────
+  // This was a float comparison against a tolerance of exactly 0.00, and it
+  // REFUSED CORRECT BILLS. Two partial deliveries of $1,870.93 and $1,957.54
+  // against a $3,828.47 PO sum to 3828.4700000000003 in floating point, so
+  // Math.abs(billAmt - recvVal) came out 4.5e-13, which is greater than zero.
+  // The refusal it printed was "billed $3828.47 against $3828.47 actually
+  // received" -- TWO IDENTICAL FIGURES AND A REFUSAL, with nothing a person
+  // could correct. Reproduced against this function as shipped, not reasoned
+  // about; a second pair ($286.15 + $1,271.90 vs $1,558.05) fails the same way.
+  //
+  // A zero tolerance is the right policy and is kept. What was wrong is
+  // deciding money equality in binary floating point at all -- the same rule
+  // api/_lib/ledger.js already states: "a ledger that decides balance with a
+  // float comparison will one day refuse a correct entry or accept a wrong
+  // one." Here it was the first of those, which is the safe direction and is
+  // still a gate people would route around.
+  //
+  // THE TOLERANCE IS CONVERTED, NOT ASSUMED ZERO, so a future non-zero
+  // SB_MATCH_TOLERANCE keeps working without this becoming a second place that
+  // has to be remembered.
+  var poC=sbMoneyCents(po.amt), billC=sbMoneyCents(amt);
+  var recvC=recs.reduce(function(a,r){return a+sbMoneyCents(r.val);},0);
+  var tolC=sbMoneyCents(SB_MATCH_TOLERANCE);
+  if(Math.abs(billC-poC)>tolC)
+    reasons.push('billed '+fmt(billC/100)+' against a PO of '+fmt(poC/100)+' (difference '+fmt((billC-poC)/100)+')');
+  if(recs.length&&Math.abs(billC-recvC)>tolC)
+    reasons.push('billed '+fmt(billC/100)+' against '+fmt(recvC/100)+' actually received');
   return {ok:reasons.length===0,reasons:reasons};
 }
 

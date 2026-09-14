@@ -78,7 +78,13 @@ function makeCtx(store, fields) {
   };
   vm.createContext(ctx);
   vm.runInContext('window = this;', ctx);
-  for (const sig of ['function sbPOAll(){', 'function sbRecvAll(){',
+  // sbMoneyCents was added 2026-09-14 by the independent review that found
+  // sbThreeWayMatch deciding money equality in floating point. It has to be
+  // loaded BEFORE sbThreeWayMatch, which now calls it -- a missing helper here
+  // throws at match time rather than failing an assertion, which is louder but
+  // reads like a harness fault rather than a missing dependency.
+  for (const sig of ['function sbMoneyCents(v){',
+                     'function sbPOAll(){', 'function sbRecvAll(){',
                      'function sbVendorKey(v){', 'function sbPONext(rows,year){',
                      'function sbThreeWayMatch(po_num,vendor,amt){',
                      'function sbPOCreate(){', 'function sbRecvLog(){',
@@ -299,6 +305,77 @@ console.log('\n5. controls -- the gate must not refuse everything');
   ctx.sbPOCreate();
   ok(!store.sb_po, 'a failed write leaves no PO behind');
   ok(/Could not reserve a PO number/.test(ctx.toasts.join(' ')), '...and refuses out loud');
+}
+
+// -- 7. MONEY IS COMPARED IN CENTS, NOT IN FLOATS -------------------------
+// FOUND 2026-09-14 BY INDEPENDENT REVIEW, and it refused CORRECT bills. The
+// comparison was Math.abs(billAmt - recvVal) > SB_MATCH_TOLERANCE with the
+// tolerance at exactly 0.00 and recvVal a float sum of the receipts. Two
+// partial deliveries of $1,870.93 and $1,957.54 sum to 3828.4700000000003, so
+// a $3,828.47 bill against a $3,828.47 PO came out 4.5e-13 apart and was
+// refused -- printing "billed $3828.47 against $3828.47 actually received",
+// two identical figures and a refusal, with nothing a person could correct.
+//
+// THE ARMS BELOW GO BOTH WAYS ON PURPOSE. Making the comparison lenient enough
+// to settle these would also settle a genuine overbill, so the arm proving a
+// correct bill now settles is paired with one proving a wrong one still does
+// not.
+console.log('\n7. money is compared in cents -- a correct multi-receipt bill settles');
+{
+  const store = {};
+  let ctx = makeCtx(store, { popvendor: 'Mountain Stone', popdesc: 'Slabs', popamt: '3828.47' });
+  ctx.sbPOCreate();
+  const po = JSON.parse(store.sb_po)[0];
+
+  for (const v of ['1870.93', '1957.54']) {
+    ctx = makeCtx(store, { rcvpo: po.po_num, rcvvendor: 'Mountain Stone', rcvval: v });
+    ctx.sbRecvLog();
+  }
+  ok(JSON.parse(store.sb_recv).length === 2, 'two partial deliveries are on file');
+  const floatSum = 1870.93 + 1957.54;
+  ok(floatSum !== 3828.47,
+     'CONTROL: the float sum really is off (' + floatSum + '), so this arm is not vacuous');
+
+  ctx = makeCtx(store, {
+    blvendor: 'Mountain Stone', blinv: 'INV-FL', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '3828.47', blstatus: 'Open', blpo: po.po_num
+  });
+  ctx.saveBill();
+  const b = bills(ctx).filter(x => x.inv === 'INV-FL')[0];
+  ok(b.matched === true,
+     'a bill that agrees TO THE CENT with two receipts is MATCHED, not held');
+  ok(b.status !== 'Held', '...and is not put on hold');
+}
+{
+  // The other direction, on the same shape: one cent over must still refuse.
+  const store = {};
+  let ctx = makeCtx(store, { popvendor: 'Mountain Stone', popdesc: 'Slabs', popamt: '3828.47' });
+  ctx.sbPOCreate();
+  const po = JSON.parse(store.sb_po)[0];
+  for (const v of ['1870.93', '1957.54']) {
+    ctx = makeCtx(store, { rcvpo: po.po_num, rcvvendor: 'Mountain Stone', rcvval: v });
+    ctx.sbRecvLog();
+  }
+  ctx = makeCtx(store, {
+    blvendor: 'Mountain Stone', blinv: 'INV-OVER', bldate: '2026-09-14', bldue: '2026-10-14',
+    blamt: '3828.48', blstatus: 'Open', blpo: po.po_num
+  });
+  ctx.saveBill();
+  const b = bills(ctx).filter(x => x.inv === 'INV-OVER')[0];
+  ok(b.matched === false, 'ONE CENT over the PO is still refused -- the fix did not widen the gate');
+  ok(b.status === 'Held', '...and the bill is held');
+  ok(/3828\.48/.test((b.match_reasons || []).join(' ')),
+     '...and the refusal still prints the real figures');
+}
+{
+  // The helper itself, at the boundaries that decide everything above.
+  const ctx = makeCtx({}, {});
+  ok(ctx.sbMoneyCents('1870.93') === 187093, 'a decimal string converts exactly');
+  ok(ctx.sbMoneyCents(0.1) + ctx.sbMoneyCents(0.2) === ctx.sbMoneyCents(0.3),
+     'the classic float case is exact in cents');
+  ok(ctx.sbMoneyCents(undefined) === 0 && ctx.sbMoneyCents('abc') === 0,
+     'a non-number is 0, NOT NaN -- NaN compares false against everything, '
+     + 'including the tolerance, so it would silently MATCH');
 }
 
 console.log('\nALL ' + n + ' ASSERTIONS PASS');
