@@ -108,6 +108,72 @@ check('6b  the measure step filters by the CURRENT tree hash',
 check('6c  and an empty ledger reports an honest zero rather than a clean fleet',
       'NO EVIDENCE YET' in code and 'honest' in code)
 
+print('7. STARVATION -- the order decides who never gets measured (item 22)')
+# THE DEFECT THESE ARMS HOLD, measured rather than imagined: the pass was
+# alphabetical, one registered checker (comment_sensitivity_check.py) takes
+# 103 SECONDS PER RUN against a fleet median under a second, and a pass never
+# finished inside a real session window. So the same alphabetical tail starved
+# EVERY time and eleven checkers had no evidence at all months after the rest
+# had six observations each. A fixed order plus a budget that always runs out
+# is not partial coverage, it is a permanent blind spot that reports as a
+# clean fleet.
+th = 'TREE'
+led7 = {'checkers': {
+    'zebra_never_measured.py': {'observations': []},
+    'alpha_well_measured.py': obs(['a'] * 6, tree=th),
+    'mid_partly_measured.py': obs(['a', 'a'], tree=th),
+}}
+order = Q.measure_order(led7, ['alpha_well_measured.py', 'mid_partly_measured.py',
+                               'zebra_never_measured.py'], th)
+check('7a  the checker with NO evidence is measured FIRST, not last alphabetically',
+      order[0] == 'zebra_never_measured.py', order)
+check('7b  ...and the best-covered one goes last, so a truncated pass converges',
+      order[-1] == 'alpha_well_measured.py', order)
+check('7c  CONTROL: the order is not simply reverse-alphabetical -- the MIDDLE '
+      'one sorts by its evidence count, between the other two',
+      order[1] == 'mid_partly_measured.py', order)
+# A tool with observations from ANOTHER tree has no evidence about THIS one, so
+# it must sort as unmeasured. Without this the starved checkers would be
+# re-starved the moment anybody edited the repo, which is continuously.
+led7['checkers']['other_tree.py'] = obs(['a'] * 20, tree='DIFFERENT')
+order2 = Q.measure_order(led7, list(led7['checkers'].keys()), th)
+check('7d  evidence from a DIFFERENT tree does not count as coverage of this one',
+      order2.index('other_tree.py') < order2.index('mid_partly_measured.py'), order2)
+check('7e  the order is deterministic -- two passes that measured different '
+      'tools in different orders would be indistinguishable from a flip',
+      Q.measure_order(led7, list(led7['checkers'].keys()), th) == order2)
+check('7f  ...and it is the SAME order the tool actually measures in, not a '
+      'helper nothing calls', 'measure_order(led, tools, th)' in code)
+
+# THE BUDGET ARM IS BEHAVIOURAL, NOT A GREP. Written that way after the
+# source-level version was proven worthless: deleting the `break` outright left
+# every word the grep looked for still in the file and the suite stayed GREEN.
+# A source arm on a behaviour is the same shape as a checker nobody has seen
+# fail -- it looks covered and is not.
+tmp7 = tempfile.mkdtemp(prefix='flaky-budget-')
+led7_path = os.path.join(tmp7, 'ledger.json')
+io.open(led7_path, 'w', encoding='utf-8', newline=chr(10)).write('{"checkers":{}}')
+old_led, old_reg = Q.LEDGER, Q.registry_tools
+try:
+    Q.LEDGER = led7_path
+    # Two REAL registered checkers, both measured at well under a second above,
+    # so the control below cannot be slow enough to trip its own budget.
+    Q.registry_tools = lambda: ['checkblocks.py', 'cleanup_confirm_check.py']
+    l7 = Q.load_ledger()
+    reached, tools = Q.measure(l7, runs=1, budget=0)
+    check('7g  a budget of zero REACHES NOTHING and says so, rather than being '
+          'killed mid-pass with no output at all',
+          reached == [] and len(tools) == 2, (reached, tools))
+    l8 = Q.load_ledger()
+    reached2, tools2 = Q.measure(l8, runs=1, budget=None)
+    check('7h  CONTROL: with no budget the same two ARE measured -- 7g would '
+          'otherwise pass on a measure() that never runs anything',
+          sorted(reached2) == sorted(tools2) and len(reached2) == 2, reached2)
+finally:
+    Q.LEDGER, Q.registry_tools = old_led, old_reg
+check('7i  what a short pass did not reach is NAMED, not counted -- a silent '
+      'cap reads as a complete pass', 'STOPPED EARLY' in code and 'for t in skipped' in code)
+
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
     print('  ' + f)

@@ -2,8 +2,20 @@
 
     python tools/flaky_checker_quarantine.py --fixtures     # the blind lock alone
     python tools/flaky_checker_quarantine.py --measure --runs 6   # one tree, N runs
+    python tools/flaky_checker_quarantine.py --measure --runs 6 --budget-seconds 400
     python tools/flaky_checker_quarantine.py                # read the ledger, report
     python tools/flaky_checker_quarantine.py --json
+
+── THE PASS IS WEAKEST-EVIDENCE-FIRST, AND A BUDGET STOPS IT CLEANLY ─────
+Measured 2026-09-14: one registered checker (comment_sensitivity_check.py)
+takes 103 SECONDS PER RUN against a fleet median under a second, so a full pass
+does not fit the window a session here actually gets. It used to run
+alphabetically, so the SAME TAIL STARVED EVERY TIME and eleven checkers had no
+evidence at all months after the rest had six observations each. The order is
+now by evidence-at-this-tree, so a truncated pass advances the checkers that
+know least and coverage converges. `--budget-seconds` stops before the kill
+instead of after it, and NAMES what it did not reach -- a pass that is killed
+prints nothing, and a third of the fleet then looks exactly like all of it.
 
 ── WHY, FROM A REAL INSTANCE ─────────────────────────────────────────────
 tools/literal_drift_check.py answered differently on identical input: its
@@ -68,6 +80,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 LEDGER = os.path.join(REPO, 'docs', 'flaky-checker-ledger.json')
@@ -209,13 +222,52 @@ def registry_tools():
     return sorted(set(re.findall(r"'tool':\s*'([^']+)'", src)))
 
 
-def measure(led, runs=RUNS_PER_MEASURE):
+def measure_order(led, tools, th):
+    """WEAKEST EVIDENCE FIRST, and this ordering is the whole of item 22.
+
+    It used to be alphabetical. A full pass is ~37 checkers times N runs of a
+    subprocess each, and one of them -- comment_sensitivity_check.py -- takes
+    103 SECONDS PER RUN, measured, against a fleet median under a second. So a
+    pass never finished inside the window this repo's sessions actually get,
+    and because the order was fixed, THE SAME TAIL STARVED EVERY TIME. Eleven
+    checkers had never been measured at all, months after the others had six
+    observations each: committer_identity, invisible_in_pattern, master_plan,
+    metamorphic, schema_snapshot_freshness, soup_register, tooling_inventory,
+    traceability_matrix, truthy_sum, vercel_config, write_without_readback.
+
+    Sorting by evidence-at-this-tree means a truncated pass always advances the
+    checkers that know least, so coverage CONVERGES instead of a fixed
+    suffix being permanently unmeasured. It does not make the pass faster and
+    is not meant to -- it makes the part that does run the part worth running.
+
+    Ties break on name so the order is deterministic, which matters: two runs
+    that disagree because they measured different tools in different orders
+    would be indistinguishable from a flip.
+    """
+    def weight(t):
+        e = led.get('checkers', {}).get(t) or {}
+        obs = [o for o in e.get('observations', []) if o.get('tree') == th]
+        return (len(obs), t)
+    return sorted(tools, key=weight)
+
+
+def measure(led, runs=RUNS_PER_MEASURE, budget=None):
     th = tree_hash()
-    tools = registry_tools()
+    tools = [t for t in registry_tools() if os.path.exists(os.path.join(REPO, 'tools', t))]
+    tools = measure_order(led, tools, th)
+    started = time.time()
+    reached = []
     for t in tools:
+        # A BUDGET THAT STOPS CLEANLY, because the alternative is being KILLED,
+        # and a killed pass prints nothing at all -- so the run that covered a
+        # third of the fleet and the run that covered all of it look the same
+        # from outside. Checked BEFORE each checker rather than after, so the
+        # stated budget is the one honoured. Nothing is capped silently: what
+        # was not reached is printed and named by main().
+        if budget is not None and time.time() - started >= budget:
+            break
         p = os.path.join(REPO, 'tools', t)
-        if not os.path.exists(p):
-            continue
+        reached.append(t)
         e = led['checkers'].setdefault(t, {'observations': []})
         for _ in range(runs):
             try:
@@ -237,7 +289,7 @@ def measure(led, runs=RUNS_PER_MEASURE):
         # evidence this repo will never actually gather -- the sessions here get
         # interrupted constantly. A partial pass now contributes what it managed.
         save_ledger(led)
-    return len(tools)
+    return reached, tools
 
 
 def main(argv):
@@ -266,10 +318,24 @@ def main(argv):
         if '--runs' in argv:
             i = argv.index('--runs')
             runs = max(1, int(argv[i + 1])) if i + 1 < len(argv) else runs
-        n = measure(led, runs)
+        budget = None
+        if '--budget-seconds' in argv:
+            i = argv.index('--budget-seconds')
+            budget = max(1, int(argv[i + 1])) if i + 1 < len(argv) else None
+        reached, tools = measure(led, runs, budget)
         save_ledger(led)
-        print('  measured %d registered checker(s), %d run(s) each, tree %s'
-              % (n, runs, tree_hash()))
+        print('  measured %d of %d registered checker(s), %d run(s) each, tree %s'
+              % (len(reached), len(tools), runs, tree_hash()))
+        # NO SILENT CAP. A pass that stopped early and says nothing is a pass
+        # that reads as complete; the skipped names are printed, not a count.
+        if len(reached) < len(tools):
+            skipped = [t for t in tools if t not in set(reached)]
+            print('  STOPPED EARLY on a %ss budget -- %d checker(s) NOT measured '
+                  'this pass, and that is not evidence about them:' % (budget, len(skipped)))
+            for t in skipped:
+                print('     - ' + t)
+            print('  They sort FIRST next pass, because the order is '
+                  'weakest-evidence-first. Run again to advance them.')
 
     rows = []
     for tool, e in sorted(led.get('checkers', {}).items()):
