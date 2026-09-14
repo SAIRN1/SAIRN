@@ -221,28 +221,51 @@ def scan_text(path, src):
 # benign occurrence this tool must stay silent about, and the exact live line
 # from sairnroofing.html, because a checker that flags a correct BOM in a CSV
 # writer is a checker somebody turns off.
+# ── COMPOSED FROM chr(), NEVER TYPED AS LITERAL CHARACTERS ──────────────────
+# The first version of this block held REAL zero-width spaces, a real NBSP, a
+# real RLO and a real BOM. It was clean on its first sweep only because the file
+# was not yet git-tracked; the run after the commit flagged THIS FILE, correctly,
+# for containing an invisible character inside a pattern.
+#
+# NOT EXEMPTED -- REMOVED. An exemption would hide a real occurrence elsewhere in
+# this same file, and it would leave bytes in the tree that a reader cannot see.
+# control_char_check.py's own advice is the rule here: replace the raw byte with
+# its escape, because what changes is that the file becomes SEARCHABLE and the
+# intent becomes VISIBLE. Composed names also document which character each
+# fixture is about, which a literal never could.
+ZWSP = chr(0x200B)
+NBSP = chr(0x00A0)
+RLO = chr(0x202E)      # the Trojan Source override
+BOM = chr(0xFEFF)
+
+# (label, filename, source, must_flag). Hand-built, judged in ISOLATION, before
+# any real file is opened. The LAST THREE are the ones that matter: two
+# real-world benign occurrences this tool must stay SILENT about -- the exact
+# live line from sairnroofing.html, and a C0 byte, which is the other tool's
+# question -- plus a division that is not a regex.
 FIXTURES = [
     ('a ZWSP inside a regex literal', 'f.js',
-     'assert.ok(/de​lete/i.test(src));', True),
+     'assert.ok(/de' + ZWSP + 'lete/i.test(src));', True),
     ('an NBSP inside a regex literal', 'f.js',
-     'if (/a b/.test(s)) { return 1; }', True),
+     'if (/a' + NBSP + 'b/.test(s)) { return 1; }', True),
     ('a bidi override inside a regex literal', 'f.js',
-     'var re = /admin‮/;', True),
+     'var re = /admin' + RLO + '/;', True),
     ('a ZWSP in a new RegExp string', 'f.js',
-     "var re = new RegExp('de​lete', 'i');", True),
+     "var re = new RegExp('de" + ZWSP + "lete', 'i');", True),
     ('a ZWSP in a python re.compile', 'f.py',
-     "PAT = re.compile('de​lete')", True),
+     "PAT = re.compile('de" + ZWSP + "lete')", True),
     ('a clean regex literal', 'f.js',
      'assert.ok(/delete/i.test(src));', False),
-    ('an NBSP in ORDINARY PROSE is not this tool\'s finding', 'f.js',
-     '// the word here is prose, not a pattern\nvar x = 1;', False),
+    ("an NBSP in ORDINARY PROSE is not this tool's finding", 'f.js',
+     '// the' + NBSP + 'word here is prose, not a pattern' + '\\n' + 'var x = 1;', False),
     ('a division that is not a regex', 'f.js',
-     'var r = total / count / 2;', False),
+     'var r = total / count / 2;', False),
     ('the LIVE sairnroofing BOM -- correct, and must stay silent', 'f.js',
-     "  // CRLF per RFC 4180, and a BOM so Excel reads it as UTF-8\n"
-     "  return '﻿'+[head].concat(body).join('\\r\\n')+'\\r\\n';", False),
-    ('a C0 backspace is control_char_check\'s, NOT this tool\'s', 'f.js',
-     'assert.ok(!/\x08delete\x08/i.test(src));', False),
+     "  // CRLF per RFC 4180, and a BOM so Excel reads it as UTF-8" + '\\n' +
+     "  return '" + BOM + "'+[head].concat(body).join('" + chr(92) + "r" + chr(92) + "n')+'"
+     + chr(92) + "r" + chr(92) + "n';", False),
+    ("a C0 backspace is control_char_check's, NOT this tool's", 'f.js',
+     'assert.ok(!/' + chr(8) + 'delete' + chr(8) + '/i.test(src));', False),
 ]
 
 
