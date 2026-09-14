@@ -3,31 +3,21 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in nine
-batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
-Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
-SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
-calibration industry (ISO/IEC 17025, ILAC-G24); then Lloyd's Register
-(differentiated cadence within one object, and the independence test the
-Boeing/SpaceX contrast was pointing at); then METR's sleeper-agent finding
-and entity-based assessment shift, and CAICT/Taobao's "false alignment"
-research (direct, current research about the exact category of system this
-role belongs to, rather than adjacent-industry analogy); then Kepler/
-Flyspeck (the hard scale limit of human review) and loophole-free Bell
-tests (closing every explanation together, not one at a time); then the
-Audit Risk Model (the real professional formula underneath the rotation-
-weighting technique, not another borrowed analogy); then Marzullo's
-Algorithm and NTP stratum (the formal, quantified answer to this role's own
-Debate problem, and a named warning against conflating provenance-distance
-with correctness); then GLI (proving zero architectural path for bias, not
-just clean output), RICOCHET (an external vantage point no depth reaches),
-and the Patriot missile failure at Dhahran (a vague interim warning is no
-warning, and a third independent confirmation of Ariane 5's requalification
-lesson). All nine once the earlier research (NASA IV&V, SUBSAFE,
-WADA, seL4, Pnueli, AI Safety via Debate, risk-limiting audits, Registered
-Reports) had already pushed
-SKILL.md large enough that further detail belonged in its own file rather
-than bloating the one every invocation loads.
+is still on record somewhere, not compressed away.
+
+Built up across many sessions on 2026-09-14, one real precedent at a time,
+once SKILL.md itself had grown large enough that further narrative detail
+belonged here instead. Rather than keep a growing list of every batch by
+name (this note was becoming exactly the kind of low-yield bulk this file's
+own "Auditing this file's own checklist" section now warns against), this
+intro states the principle once: every section below is cited from SKILL.md
+by name, so use this file's own table of contents (the `##` headings) or
+search for the term SKILL.md pointed you here for. Ten fields represented so
+far: public-company/financial audit law, aviation and spacecraft
+certification, metrology/calibration, maritime classification, frontier-AI
+safety research, mathematics/formal verification, quantum physics
+methodology, forensic fraud examination, industrial process control, and
+logistics/certification for consumer goods.
 
 ## SOX / PCAOB -- public-company audit law
 
@@ -930,3 +920,218 @@ unchanged into a genuinely different operational context than the one it
 was proven correct for, failed in exactly the dimension that context
 changed in -- the same shape as Ariane 5's reused guidance software, now
 independently confirmed a third time in a third, unrelated domain.
+
+## FIA Formula 1 scrutineering -- physical spec conformance and mandatory re-checks
+
+The FIA (Fédération Internationale de l'Automobile) scrutineers every car
+in Formula 1 for regulatory compliance before and after every race
+session, and the specific mechanics of how it does this are directly
+transferable.
+
+**The "deep dive" -- comparing the artifact to its own declaration, not
+just testing its behavior.** At least one car per race weekend is
+selected for an invasive teardown that goes beyond checking whether the
+car performs within the rules: components are physically compared against
+the team's OWN SUBMITTED CAD (computer-aided design) files, confirming
+that what is actually bolted to the car is what the team declared it to
+be. This checks a fundamentally different property than a behavioral or
+performance test -- a car could conceivably perform within legal limits
+while carrying an undeclared or substituted component, and the deep dive
+exists specifically to catch the mismatch between declared spec and actual
+deployed artifact, not the mismatch between performance and rules.
+
+**Mandatory re-scrutineering after any modification, not discretionary.**
+Any car that has been repaired, modified, or involved in an incident
+during a session must be re-scrutineered before it is permitted back on
+track. This is not left to team judgment about whether the modification
+was significant enough to warrant it -- it is a blanket, mandatory
+requirement triggered by the fact of modification itself, regardless of
+how minor the team believes the change to be.
+
+**The honest limit, stated by the regulator itself.** The FIA's own
+technical delegates have stated directly that it is impossible to cover
+every parameter of every car in the time available during a race weekend
+-- an explicit, disclosed acknowledgment of the same shape as seL4's
+stated proof boundary and Flyspeck's disclosed trust point: a rigorous
+verification process states plainly what it does not have time or
+capacity to fully cover, rather than implying completeness by silence.
+
+## UL -- off-market sampling, not only factory inspection
+
+UL (Underwriters Laboratories) is one of the primary independent product
+safety certification bodies in North America, testing and certifying
+electrical and consumer products before they can carry the UL mark.
+
+**Buying the actual retail product, not only inspecting the factory that
+makes it.** Beyond auditing a manufacturer's factory and production
+process, UL separately purchases finished units directly off retail
+shelves -- the literal product a real consumer would buy -- for
+independent re-evaluation against the same safety standard. This exists
+specifically because factory-process inspection and off-market retail
+sampling catch genuinely different failure classes: a certified process
+can drift over time, a factory can behave differently when it knows an
+audit is imminent (the same compliance-theater shape Lloyd's Register's
+framing already names above), and a manufacturing change made after
+certification might never surface in a factory-only audit trail.
+
+**The transferable distinction: checking the source is not the same
+claim as checking what is actually deployed.** Reading and driving source
+code answers "is this correct as written and as tested." It does not, on
+its own, answer "is this what is genuinely running in live production
+right now" -- a distinction this platform's own push protocol already
+partially recognizes with its live-verification requirement after a push,
+but one worth treating as its own standing category of check rather than
+only a one-time confirmation tied to a specific deploy event.
+
+## TÜV -- near-zero findings as a red flag, and fail-closed certification
+
+TÜV (Technischer Überwachungsverein) is Germany's system of technical
+inspection organizations, among the oldest and most established
+inspection regimes in the world, operating continuously since the 1860s.
+
+**A real, current measurement: even a 150+ year old rigorous regime still
+finds real defects at a startling rate.** A 2025 measurement of German
+elevator inspections found that roughly three out of every four elevators
+inspected carried at least one real, documented defect -- inside one of
+the most mature, well-resourced, longest-running inspection systems that
+exists. The transferable lesson is not about elevators specifically: a
+near-zero or consistently declining finding rate, sustained over time, in
+any domain that keeps producing real problems elsewhere, is a more likely
+signal that the CHECKING has grown complacent than that the underlying
+work has genuinely become that much cleaner. A rigorous, working
+inspection regime should expect to keep finding real things.
+
+**Automatic, fail-closed certificate invalidation on modification.** A TÜV
+equipment certificate does not merely become "due for re-inspection" when
+something is modified without authorization -- it becomes automatically
+VOID the instant that happens, with no separate decision or notice
+required to invalidate it. The burden shifts entirely onto the equipment's
+owner to proactively seek re-certification before returning the equipment
+to service; the default state after an unauthorized modification is
+uncertified, not certified-until-checked. This is a structurally stronger
+guarantee than "should be re-checked soon" -- it removes the window where
+modified, unverified equipment could otherwise continue operating under a
+certificate that no longer actually describes its current state.
+
+## ACFE -- rationalization language, and the UK Post Office Horizon scandal
+
+The Association of Certified Fraud Examiners (ACFE) trains forensic fraud
+examiners in recognizing real, recurring behavioral and textual signals
+that correlate with fraud and deliberate shortcuts, distinct from the
+purely technical evidence a code review or audit would otherwise look for.
+
+**Rationalization language as a trained, documented signal.** A
+statement that pre-justifies a decision before anyone has questioned it --
+"this is fine because X," "acceptable since Y," "safe to skip given Z" --
+is a specific, named pattern fraud examiners are trained to notice,
+because a genuinely sound decision rarely needs to argue defensively for
+its own soundness before being challenged. The presence of such language
+is not proof of a defect on its own; it is a real, trained trigger for
+closer scrutiny of whatever the rationalization is attached to,
+independent of whether the underlying reasoning turns out to hold up.
+
+**The UK Post Office Horizon scandal, held as the real, sobering stakes
+behind independent verification, not a technique.** Between the late
+1990s and the 2010s, the Post Office's Horizon computerised accounting
+system reported financial shortfalls at hundreds of local branches. Those
+reported shortfalls were treated as ground truth -- the system's own
+output was trusted without genuinely independent verification of whether
+the software itself was producing correct numbers. More than 900
+sub-postmasters were prosecuted, and many convicted, for theft, fraud, and
+false accounting based substantially on shortfalls that were, in a large
+proportion of cases, defects in the Horizon software rather than any
+missing money at all. The consequences were not abstract: people lost
+their livelihoods, their homes, and their reputations; some were
+imprisoned; the scandal has been linked to at least four deaths, including
+suicides, among those wrongly accused. It stands as one of the widest-
+reaching miscarriages of justice in British legal history, and its root
+cause was structural: a system's own report was trusted as authoritative
+for well over a decade because nobody with the standing and the mandate
+to check independently actually did.
+
+## Toyota Jidoka -- the interlock, distinct from Andon
+
+Toyota's Jidoka ("automation with a human touch") principle is widely
+known through Andon -- the cord or button that lets any worker stop the
+entire production line the instant a defect is spotted, making problems
+visible immediately rather than letting them flow downstream. Less widely
+cited, and structurally distinct, is Jidoka's INTERLOCK mechanism.
+
+**Structural prevention, not detection after the fact.** An interlock
+mechanically gates the next step in a process so that it cannot physically
+begin until the prior step's actual completion has been confirmed --
+addressing 工程飛ばし (kōtei-tobashi, "process-skipping") by making the
+skip structurally impossible rather than by detecting it once it has
+already happened. Andon answers "how fast can a problem be noticed and
+stopped." The interlock answers a different, in some ways stronger
+question: "can the problem happen at all, given how the next step is
+gated." Applied directly to a real bug shape already found on this
+platform this session -- a schema snapshot with no way to detect its own
+staleness -- the interlock framing asks a sharper question than "does
+something eventually notice staleness": does the step that CONSUMES that
+snapshot structurally refuse to proceed until the snapshot's freshness is
+confirmed, the same way a physical interlock refuses to let the next
+station's tooling engage until the part in front of it is confirmed
+correctly seated.
+
+## Amazon -- multi-checkpoint identity, and trimming the checklist itself
+
+Two genuinely distinct lessons from the same company's real operational
+practice, at very different points in its process.
+
+**Multi-checkpoint identity confirmation as a concrete provenance
+model.** Amazon's fulfillment operation assigns a unique, serialized
+identifier to units moving through its network and scans that identifier
+at multiple INDEPENDENT points along the physical journey -- inbound
+receipt at a fulfillment center, and again at the point a customer
+actually receives the item. A unit that cannot produce a valid, matching
+code at any checkpoint is blocked from shipping rather than being allowed
+through on the strength of an earlier scan. This is a real, working
+example of what genuine provenance tracking looks like in practice: not
+one attestation carried through a whole chain, but the same claimed
+identity independently reconfirmed at more than one point that chain
+actually has to pass through regardless.
+
+**Amazon's own published internal research on its warehouse
+equipment-audit checklists, and the fix that followed.** Internal review
+of Amazon's own equipment safety-audit process found real checks were
+being skipped in practice -- not through negligence, but because the
+checklist itself had grown to contain more items than the time allotted
+for an inspection could actually cover. The same review found a
+meaningful portion of the checklist was genuinely duplicated or
+overlapping: multiple items effectively testing the same underlying
+condition, consuming inspection time without adding distinct coverage.
+Amazon's actual fix was not adding more inspectors or more time -- it was
+trimming the checklist itself: removing genuine duplicates outright, and
+deprioritizing items with a consistently very high pass rate that rarely
+surfaced a real finding, freeing the capacity that both classes of waste
+had been consuming and redirecting it toward the checks that were
+actually finding problems.
+
+## FedEx / UPS -- inline chokepoint verification, and the cost of rounding mismatch
+
+**Verification built into a structural chokepoint, not run as a separate
+process.** Both major parcel carriers automatically re-measure every
+package using 3D scanning hardware built directly into the physical
+conveyor system every package already has to travel through on its way
+through a hub -- not a separate lane, not an optional secondary check
+requiring a package to be pulled aside, but a measurement embedded in the
+one pipeline nothing can avoid passing through. A check placed at a
+genuine structural chokepoint like this is both cheaper to run (no
+separate process competing for its own time and resources) and more
+complete (nothing can slip past it, because nothing can avoid the
+conveyor it is built into) than the equivalent check run as its own
+standalone audit step.
+
+**A real, quantified cost from rounding-convention mismatch, not a
+hypothetical.** Both carriers' billing systems have documented real
+financial impact from a specific, narrow shape of bug: two parties
+measuring or computing a value for the same physical package -- a
+shipper's own system and the carrier's system -- using different, each
+individually legitimate and defensible rounding or unit-conversion
+conventions. Any single package's discrepancy from this is negligible.
+Compounded across the volume either carrier actually processes, the
+mismatch becomes a real, systematic, non-trivial cost, precisely because
+the two roundings don't cancel out on average -- they are each internally
+consistent but mutually inconsistent with each other, so the discrepancy
+accumulates in a consistent direction rather than averaging toward zero.

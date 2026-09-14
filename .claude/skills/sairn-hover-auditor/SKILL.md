@@ -53,6 +53,32 @@ separate the party that verifies from the party that has any stake in a
 favorable verdict -- is stronger evidence the rule is load-bearing rather
 than specific to banking. Full account: `references/case-studies.md`.
 
+## The real stakes of not checking
+
+Held here plainly, not as decoration, because it is the most sobering
+real-world confirmation of why this entire role exists rather than a
+technique to apply. The UK Post Office Horizon scandal: a buggy
+computerised accounting system's output was trusted as ground truth for
+over a decade, with no genuinely independent verification of whether its
+numbers were actually correct. More than 900 sub-postmasters were
+prosecuted, and many convicted, for theft and false accounting based on
+shortfalls the system reported -- shortfalls that were, in a large number
+of cases, the system's own defects rather than any real missing money.
+People lost their livelihoods, their reputations, their homes; some were
+imprisoned; at least four deaths have been linked to the scandal, including
+suicides. It stands as one of the largest miscarriages of justice in
+British legal history, and it happened because a system's own report was
+treated as authoritative for years without anyone independently, adversarially
+checking whether it was telling the truth.
+
+This is the real, concrete answer to "why does an independent check matter
+this much" for every instance in this file of "never trust a system's own
+report without independent verification," "don't take N/N passed at face
+value," and "drive it, don't just read it." Those are not process
+formalities. They are the difference between catching a Horizon-shaped
+defect while it is still a bug report and catching it after it has already
+ruined hundreds of real people's lives.
+
 ## Three passes, all at high effort
 
 **Fast pass (most of the time):** pick one build agent. Check its real
@@ -131,8 +157,24 @@ not pretending none does. Full account: `references/case-studies.md`.
    supplied. Madoff's own "independent" auditor spent years verifying
    numbers that traced back through Madoff's own operation regardless of
    which document was on top; that is not a second source, and item 23
-   (claim provenance) needs this checked explicitly. Full account:
-   `references/case-studies.md`.
+   (claim provenance) needs this checked explicitly.
+
+   **A real, concrete multi-checkpoint model for what "provenance" should
+   actually mean, not just a principle.** Amazon's fulfillment network
+   assigns a unique, serialized code to a unit and scans it at multiple
+   INDEPENDENT checkpoints across its physical journey -- inbound at the
+   fulfillment center, and again at the customer's actual point of
+   receipt -- and a unit lacking a valid, matching code at any checkpoint
+   is blocked from shipping at all rather than being allowed through on
+   the strength of the earlier scans alone. This is a concrete, working
+   version of claim provenance: not one attestation trusted throughout a
+   chain, but the SAME identity confirmed independently at more than one
+   point that chain actually passes through. Applied here: when tracing a
+   claim's provenance, prefer a chain that can be confirmed at more than
+   one independent checkpoint (a commit hash AND a live test result AND a
+   register entry, for instance) over a chain resting on one attestation
+   carried through, however carefully that one attestation was produced.
+   Full account of both: `references/case-studies.md`.
 3. **Drive the code with real inputs**, not just read it -- the standard this
    role exists to hold everyone to. A control/mutation test that proves the
    checker *can* fail is worth more than reading the happy path.
@@ -206,8 +248,48 @@ not pretending none does. Full account: `references/case-studies.md`.
      that looks curated rather than organic -- that gap between
      continuously-true and true-when-checked is itself a real, reportable
      finding, worth naming on its own terms and not only as a wrapper
-     around whatever defect it happens to be hiding. Full account of both:
-     `references/case-studies.md`.
+     around whatever defect it happens to be hiding.
+   - **Diff the running artifact against its own declared spec, not just
+     against what it does.** Real technique (FIA Formula 1 scrutineering's
+     "deep dive"): at least one car per race is selected for an invasive
+     teardown specifically comparing its actual physical components against
+     the team's own submitted CAD files -- not testing whether the car
+     performs within rules, but confirming the deployed artifact IS what it
+     was declared to be. Applied here: periodically diff the actual running
+     code against its own design document or spec (a `.tla` file, a design
+     doc in `docs/superpowers/specs/`), not only against whether its
+     behavior currently looks acceptable -- a spec and its implementation
+     can drift apart while the implementation still passes every test,
+     the same shape item 78's TLA+ spec is built specifically to catch.
+     (FIA's own scrutineering process states its limit openly, the same
+     disclosed-boundary shape as seL4 and Flyspeck: it is "impossible to
+     cover every parameter of every car in the short time available," said
+     plainly rather than implied by silence.)
+   - **Rationalization language in the comment or commit message itself.**
+     Real, trained signal (forensic fraud examination, ACFE): a comment or
+     commit message that pre-justifies a shortcut before anyone asked --
+     "this is fine because X," "safe to skip since Y," "acceptable risk
+     given Z" -- is a documented red flag fraud examiners are specifically
+     trained to notice, because genuinely sound decisions rarely need to
+     pre-argue their own soundness this defensively. Not proof of anything
+     on its own, but a real, adoptable trigger for extra scrutiny on
+     exactly the code the rationalization is attached to.
+   - **Detection of a stale or skipped step, versus structural prevention
+     of the next step starting at all.** Real distinction (Toyota's
+     Jidoka -- specifically the INTERLOCK mechanism, distinct from Andon's
+     alert-and-stop): beyond detecting a defect after it happens, Toyota's
+     production line mechanically GATES the next process step so it
+     cannot physically begin until the prior step's real completion is
+     confirmed -- preventing 工程飛ばし (process-skipping) structurally,
+     rather than catching it after the fact. Applied here: this platform
+     has already found real step-skipping bugs this session (a schema
+     snapshot with no way to detect its own staleness). The sharper
+     question on a deep pass is not only "does something detect when this
+     went stale" but "does the next dependent step structurally REFUSE to
+     proceed until the prior one is confirmed complete" -- a checker that
+     notices staleness after the fact is weaker than a gate that never lets
+     the stale state get consumed in the first place. Full account of all
+     three: `references/case-studies.md`.
 
 **Process pass (rarest of the three, no fixed schedule):** step back from
 any single piece of work and check whether the *process itself* is holding,
@@ -398,7 +480,43 @@ server was not actually clean. This is the sharpest lesson for item 86
 that item is built or audited: the override needs a target that has been
 verified safe under the same "prove it, don't assume it" standard as any
 other claim, not a target that is merely familiar or was working recently.
-Full account of both: `references/case-studies.md`.
+
+**Any modification triggers mandatory re-verification, not discretionary
+re-verification -- and the default state should be fail-closed until it
+happens.** Two real regulatory precedents converge on the identical rule.
+FIA F1 scrutineering requires any car that has been modified, repaired, or
+involved in an incident to be re-scrutineered before it is permitted back
+on track -- not at the team's discretion, mandatory every time. TÜV
+(Germany's technical inspection authority) goes one step further
+structurally: an equipment certificate is automatically VOID the instant
+something is modified without authorization, with no separate decision
+required to invalidate it -- the burden shifts onto the subject to
+proactively seek re-certification before returning to service, rather
+than staying certified until someone gets around to checking. Applied
+here: a fix or change to anything this role has previously deep-passed
+clean should be treated as having invalidated that prior clean verdict by
+default, not as still-covered until re-checked. The prior pass was a
+statement about the code as it existed then; a modification is a new,
+unverified state until proven otherwise, the same fail-closed default this
+platform's own standing rules already require of its checkers.
+
+**Checking the source code is not the same claim as checking what is
+actually running in live production right now, and the gap between them
+is worth sampling directly.** Real precedent (UL, product safety
+certification): beyond inspecting a factory's production process and
+initial samples, UL separately buys finished products off the retail shelf
+-- the actual thing a real customer would receive -- for independent
+re-evaluation, specifically because factory inspection and off-market
+sampling catch different failure classes; a process can be certified sound
+while what actually ships drifts from it over time. Applied here: this
+role's own checks mostly read and drive source code, which answers "is
+this correct as written" -- a genuinely different question from "is this
+what is actually deployed and running right now, on the platform's real
+infrastructure." Periodically sample the live, deployed behavior directly
+(the same standard the push protocol's live-verification step already
+applies to individual fixes) as its own category of check, not only as a
+one-time confirmation step tied to a specific push. Full account of all
+three: `references/case-studies.md`.
 
 ## Two adjacent skills, checked and deliberately not adopted whole
 
@@ -481,7 +599,28 @@ to a different owner than whoever disburses funds is the identical
 principle IOLTA states outright -- the person who can move money out of an
 account must not be the same person who reconciles that account, with a
 named, accountable sign-off as part of the control rather than a formality
-layered on top of it. Full account: `references/case-studies.md`.
+layered on top of it.
+
+**A real, quantified cost from a different domain, directly relevant given
+this platform's own float/rounding history tonight: two independently
+computed values from the same input, using different but individually
+legitimate rounding conventions, produce a real, systematic mismatch at
+scale.** Real precedent (FedEx and UPS's billing systems): both carriers
+have documented, real cost from exactly this shape -- two parties (a
+shipper's own system and the carrier's system) measuring or computing the
+same physical package using different, individually defensible rounding
+rules, which does not cancel out over many packages but compounds into
+real, systematic discrepancy at volume. This is the identical shape as
+item 92's finding on this platform: `api/ledger.js` was computing
+`debit_cents / 100` independently of the nine internal uses of `money()`
+inside `api/_lib/ledger.js`'s own core, agreeing today only because
+`cents()` happens to always produce an integer -- nothing enforced that
+agreement structurally. The adoptable check: whenever two parts of a
+system independently compute the same value from the same input, confirm
+they use the IDENTICAL rounding/conversion convention -- not just that
+each individually produces a plausible-looking number -- because two
+individually correct roundings of the same value are not guaranteed to be
+the same rounding. Full account of both precedents: `references/case-studies.md`.
 
 ## Name the property you checked, not just "verified"
 
@@ -568,6 +707,20 @@ a pattern a build agent could learn and route around:
   gets picked, or *what* passes clean, is real or just what you'd expect from
   enough independent rounds. Read the self-log's own `--tail` output for
   this, not memory of the session.
+- **A near-zero finding rate over time is not evidence of cleanliness --
+  it is itself worth scrutinizing.** Real, current data point (TÜV,
+  Germany's technical inspection authority, operating rigorously for over
+  150 years): a 2025 measurement found roughly three of every four
+  elevators inspected carried a real defect, inside one of the most
+  mature, established inspection regimes in the world. A near-perfect
+  clean rate from any checker or any rotation of passes, sustained over
+  time, in a domain that keeps producing real defects elsewhere, is more
+  likely a signal the checking itself has grown complacent or has stopped
+  looking hard enough than a signal the underlying work has actually
+  gotten that much better. Applied to this role directly: if the self-log
+  shows an unusually long clean streak, that streak is itself a prompt to
+  ask whether rotation has quietly settled into checking only what is
+  already known to be safe.
 
 **Weight rotation and sampling by evidence margin, not tier alone.** Real
 principle (risk-limiting audits in election security): rather than
@@ -981,6 +1134,54 @@ has no `hover-audit` value and adding one is a code edit this role does not
 make itself -- hold findings that need this tag, report them in chat, and
 route the enum fix to a build agent rather than forcing an existing
 mismatched value.
+
+## Auditing this file's own checklist
+
+This file has grown very large in one session, one real precedent at a
+time, and growth in the number of techniques is not the same thing as
+growth in how much any of them actually finds. Left unexamined, a growing
+checklist is exactly the failure Amazon's own published internal research
+on its warehouse equipment-audit process documented directly: real checks
+were being SKIPPED not because anyone decided to skip them, but because
+there were simply too many for the time available, and a real portion of
+the checklist turned out to be duplicate or overlapping checks quietly
+wasting the capacity that skipped ones needed. Amazon's own fix was not
+adding more auditors or more time -- it was trimming the checklist itself:
+cutting genuine duplicates, deprioritizing checks with a consistently high
+pass rate that rarely surfaced anything real, and concentrating the
+capacity that freed up on the checks that actually found problems.
+
+**The direct, adoptable practice for this file, using data this role
+already has and nowhere else does.** Periodically -- on the same
+irregular, unscheduled cadence as a process pass -- review this role's own
+self-log for which TYPES of check and which named techniques have actually
+produced real findings versus which have been applied repeatedly and never
+found anything. A technique that has run many times with zero real
+findings is not automatically wrong to keep, the same way a clean pass on
+a build agent's work is a real result and not evidence of a bad check --
+but it is a real candidate for the same question Amazon asked of its own
+checklist: is this still earning the attention it takes, or has this file
+grown a duplicate of something another section already covers, or a check
+whose near-100% pass rate reflects that it stopped finding real problems
+somewhere upstream of the check itself. This role is the only one with
+the standing self-log data to ask this question honestly; nobody else has
+the history to ask it from.
+
+**And the cheapest place to add a new check, when one is genuinely needed,
+is a real structural chokepoint -- not a new, separate audit step.** Real
+precedent (FedEx and UPS's parcel hubs): every package is automatically
+re-measured by 3D scanners built directly INTO the conveyor pipeline every
+package already has to physically pass through regardless, rather than
+being pulled aside for a separate inspection process. A check placed at a
+genuine chokepoint -- something that already has to happen to every item,
+every time, with no exception -- is cheaper and more complete than a
+parallel audit process competing for its own separate time and attention.
+Applied here: when a genuinely new check earns a place in this file's own
+method, prefer folding it into a step every deep pass already goes
+through (the existing four-step sequence, the existing coverage-scope
+report) over adding it as its own separate, additional pass competing for
+time against everything else already in this file. Full account of both:
+`references/case-studies.md`.
 
 ## The self-log
 
