@@ -1693,6 +1693,33 @@
       "citation_confidence": "clean",
       "injection_phase": "coding",
       "phase_confidence": "inferred"
+    },
+    {
+      "commit": "f98c1b08d3fc",
+      "date": "2026-09-14",
+      "subject": "feat(tools): item 40 -- and it found a LIVE unauthenticated route into a customer's billing",
+      "files": [
+        "docs/2026-09-14-tier-a-bypass-audit.md",
+        "docs/MASTER-PLAN.md",
+        "docs/SOUP-REGISTER.md",
+        "docs/TOOLING-INVENTORY.md",
+        "docs/traceability-matrix.md",
+        "tests/run_tier_a_bypass_probe.py",
+        "tools/tier_a_bypass_check.py",
+        "tools/tooling_inventory.py"
+      ],
+      "lines_added": 489,
+      "lines_removed": 18,
+      "app": "sairncash",
+      "layer": "product",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "api/sairncash/portal.js returns a working Stripe Billing Portal URL -- card on file, invoice history, the power to cancel -- to an unauthenticated POST carrying only a subscription id, which Stripe puts in dashboards, webhooks, emails and CSV exports and never treated as a secret. The file refuses a cus_ id for exactly this reason and then accepts a sub_ id, which has comparable entropy. LIVE: the if(!stripeKey) guard did not fire, so STRIPE_SECRET_KEY is set -- and the SOUP register still said blast radius zero because checkout.js guards on (!stripeKey || !priceId) and only STRIPE_PRICE_ID is missing",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers 'an identifier that was never a secret became a bearer credential'. The nearest, 1.2 and 1.11, are both about CHECKS rather than about authorisation, and forcing one would manufacture agreement the matcher would then score. Recorded as not-citable per the register's own escape hatch."
     }
   ]
 }
