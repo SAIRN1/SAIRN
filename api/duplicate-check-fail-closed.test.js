@@ -159,17 +159,55 @@ async function main() {
     });
   });
 
-  await test('ledger: trial_balance and reverse refuse rather than compute from a partial read', () => {
-    // A balanced, empty trial balance is a FABRICATED FINANCIAL STATEMENT: it
-    // says the books contain nothing and balance, when they could not be read.
-    assert.match(ledger, /rowsOrFail/, 'no checked reader in ledger.js');
-    assert.match(ledger, /READ_FAILED/);
-    assert.match(ledger, /Nothing was computed from a partial read/);
-    assert.match(ledger, /no lines to reverse -- nothing was posted/,
-      'a reversal built from zero lines reverses nothing while claiming to');
-    // Every former fail-open site now goes through the checked reader.
-    const uses = (ledger.match(/await rowsOrFail\(/g) || []).length;
-    assert.ok(uses >= 4, 'expected at least 4 checked reads, found ' + uses);
+  await test('ledger: read / trial_balance / reverse are GONE, not hardened', () => {
+    // THE ARM THIS REPLACES asserted that trial_balance and reverse refused
+    // rather than computing from a partial read. They did, correctly, and the
+    // assertion was worth having -- it is what found four fail-open reads in
+    // this file in the first place.
+    //
+    // All three actions had ZERO CALLERS anywhere on the platform.
+    // sairnbiz.html is this endpoint's only client and it calls `post` and
+    // nothing else. They also carried the only SOFT failure shape left in the
+    // file: an absent ledger_entries answered 200 with provisioned:false and
+    // trial_balance:null, so whoever wired a trial balance up would have
+    // inherited A BALANCED, EMPTY SET OF BOOKS RENDERED FROM A TABLE THAT DOES
+    // NOT EXIST.
+    //
+    // Deleted rather than hardened on 2026-09-14: hardening code nobody calls
+    // leaves the same trap for later and adds a second thing to keep true.
+    ['read', 'trial_balance', 'reverse'].forEach((a) => {
+      assert.ok(ledger.indexOf("action === '" + a + "'") === -1,
+        "action '" + a + "' is back in api/ledger.js -- it had no callers and "
+        + 'carried the soft provisioned:false shape');
+    });
+    // The helper went with its last caller.
+    assert.ok(!/await rowsOrFail\(/.test(ledger),
+      'rowsOrFail is called again -- it existed only for the deleted actions');
+    // A request for one of them must get a NAMED refusal, never a silent 200.
+    assert.match(ledger, /Unknown action: /,
+      'the fall-through refusal is the thing that makes deleting them safe');
+  });
+
+  await test('ledger: CONTROL -- the surviving actions and their HARD refusal are untouched', () => {
+    // Without this the arm above passes just as well on an empty file, and a
+    // deletion that took too much would look identical to one that took
+    // exactly enough.
+    ['chart', 'validate', 'post'].forEach((a) => {
+      assert.ok(ledger.indexOf("action === '" + a + "'") !== -1,
+        "action '" + a + "' was deleted too -- that is not the change");
+    });
+    // post refuses an absent table LOUDLY, at both of its write sites. This is
+    // the shape a real trial-balance feature should be built on, and the
+    // reason the soft one was not worth keeping.
+    const hard = (ledger.match(/notProvisioned\(\);/g) || []).length;
+    assert.ok(hard >= 2,
+      'expected the write path to refuse at both sites, found ' + hard);
+    assert.match(ledger, /NOT_PROVISIONED/);
+    // And the pure functions a rebuild would use are still exported and still
+    // tested elsewhere -- deleting the endpoint actions did not delete them.
+    const lib = fs.readFileSync(path.join(__dirname, '_lib', 'ledger.js'), 'utf8');
+    assert.match(lib, /^\s*trialBalance,?$/m, '_lib/ledger.js no longer exports trialBalance');
+    assert.match(lib, /^\s*reversalOf,?$/m, '_lib/ledger.js no longer exports reversalOf');
   });
 
   // ── a live sanity check on the helper both refusals lean on ──────────────

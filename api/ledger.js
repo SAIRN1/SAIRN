@@ -99,35 +99,20 @@ module.exports = async (req, res) => {
   const today = (payload && typeof payload.today === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(payload.today)) ? payload.today : null;
   if (!today) { res.status(400).json({ error: { code: 'NO_TODAY', message: 'payload.today (YYYY-MM-DD) is required' } }); return; }
 
-  // ── A FAILED READ IS NOT AN EMPTY LEDGER (2026-09-04) ────────────────────
-  // Four reads in this file did `x.ok ? await x.json() : []`, and on a set of
-  // BOOKS that is not a degraded display, it is a fabricated financial
-  // statement:
-  //   * trial_balance computed `posted` and `all` this way, so a failed
-  //     ledger_lines read produced a BALANCED, EMPTY TRIAL BALANCE -- the books
-  //     reported as containing nothing, and balancing, when they simply could
-  //     not be read;
-  //   * reverse built `srcLines` this way, so a failed read produced a
-  //     reversal entry with NO LINES -- a reversal that reverses nothing,
-  //     posted as though it had;
-  //   * list attached no lines to any entry.
-  // Every one of them answers "the answer is none" to "I could not ask".
-  // Found by the test written for the duplicate check three lines below, which
-  // asserted the SHAPE was gone from the whole file rather than from one line.
-  const rowsOrFail = async (r, what) => {
-    if (!r.ok) {
-      console.error('ledger: read failed (' + what + '), HTTP', r.status);
-      res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the ledger (' + what + '). Nothing was computed from a partial read.' } });
-      return null;
-    }
-    const rows = await r.json().catch(() => null);
-    if (!Array.isArray(rows)) {
-      console.error('ledger: read returned a non-array (' + what + ')');
-      res.status(502).json({ error: { code: 'READ_FAILED', message: 'Could not read the ledger (' + what + '). Nothing was computed from a partial read.' } });
-      return null;
-    }
-    return rows;
-  };
+  // rowsOrFail(): DELETED 2026-09-14 with its last caller.
+  //
+  // WHAT IT WAS FOR IS WORTH KEEPING EVEN THOUGH THE CODE IS GONE. Four reads
+  // in this file did `x.ok ? await x.json() : []`, and on a set of BOOKS that
+  // is not a degraded display, it is a fabricated financial statement:
+  // trial_balance produced a BALANCED, EMPTY trial balance from a failed read,
+  // and reverse produced a reversal with NO LINES, posted as though it had
+  // reversed something. Every one of them answered "the answer is none" to
+  // "I could not ask".
+  //
+  // Its three callers were read / trial_balance / reverse, all deleted below
+  // as dead. api/duplicate-check-fail-closed.test.js still asserts the SHAPE
+  // is absent from this whole file, which is the assertion that found those
+  // four in the first place and is the one worth keeping.
 
   const notProvisioned = () => res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'The ledger is not set up yet — run sql/ledger_schema.sql in Supabase first.' } });
 
@@ -278,78 +263,29 @@ module.exports = async (req, res) => {
       return;
     }
 
-    // ── READ ──────────────────────────────────────────────────────────────
-    if (action === 'read') {
-      let q = 'ledger_entries?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
-        '&select=entry_id,entry_date,memo,status,source_app,source_kind,source_id,posted_at,posted_by,void_reason&order=entry_date.desc';
-      if (payload.from) q += '&entry_date=gte.' + enc(String(payload.from));
-      if (payload.to) q += '&entry_date=lte.' + enc(String(payload.to));
-      const r = await fetch(rest(q), { headers });
-      if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, data: [] }); return; }
-      const rows = await r.json();
-      if (!r.ok) { res.status(502).json({ error: { message: 'Data store error' } }); return; }
-      const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
-        '&select=entry_id,line_no,account_code,debit,credit,memo&order=entry_id.asc,line_no.asc'), { headers });
-      const lines = await rowsOrFail(lr, 'ledger_lines'); if (!lines) return;
-      const byEntry = Object.create(null);
-      (Array.isArray(lines) ? lines : []).forEach((l) => { (byEntry[l.entry_id] = byEntry[l.entry_id] || []).push(l); });
-      res.status(200).json({
-        ok: true, provisioned: true,
-        data: (rows || []).map((x) => Object.assign({}, x, { lines: byEntry[x.entry_id] || [] }))
-      });
-      return;
-    }
-
-    // ── TRIAL BALANCE ─────────────────────────────────────────────────────
-    // Derived from stored lines on every read and never persisted, so it
-    // cannot drift from what it summarises. Only POSTED entries count: a draft
-    // is by definition not in the books.
-    if (action === 'trial_balance') {
-      const er = await fetch(rest('ledger_entries?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
-        '&status=eq.posted&select=entry_id'), { headers });
-      if (er.status === 404 || er.status === 400) { res.status(200).json({ ok: true, provisioned: false, trial_balance: null }); return; }
-      const posted = await rowsOrFail(er, 'ledger_entries'); if (!posted) return;
-      const ids = new Set((Array.isArray(posted) ? posted : []).map((x) => x.entry_id));
-      const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&app_id=eq.' + enc(appId) +
-        '&select=entry_id,account_code,debit,credit'), { headers });
-      const all = await rowsOrFail(lr, 'ledger_lines'); if (!all) return;
-      const lines = (Array.isArray(all) ? all : []).filter((l) => ids.has(l.entry_id))
-        .map((l) => ({ account_code: l.account_code, debit: Number(l.debit), credit: Number(l.credit) }));
-      const tb = ledger.trialBalance({ today: today, lines: lines });
-      if (!tb.ok) { res.status(400).json({ error: tb.error }); return; }
-      res.status(200).json({ ok: true, provisioned: true, trial_balance: tb, entries_counted: ids.size });
-      return;
-    }
-
-    // ── REVERSE ───────────────────────────────────────────────────────────
-    // The only correction. There is no edit action, deliberately.
-    if (action === 'reverse') {
-      const entryId = String(payload.entry_id || '').trim();
-      if (!entryId) { res.status(400).json({ error: { message: 'payload.entry_id is required' } }); return; }
-      const er = await fetch(rest('ledger_entries?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(entryId) +
-        '&select=entry_id,memo,status,source_app&limit=1'), { headers });
-      if (er.status === 404 || er.status === 400) { notProvisioned(); return; }
-      const erows = await er.json();
-      const src = Array.isArray(erows) && erows[0];
-      if (!src) { res.status(404).json({ error: { code: 'NO_ENTRY', message: 'No entry with that id on this licence' } }); return; }
-      const lr = await fetch(rest('ledger_lines?license_hash=eq.' + enc(licHash) + '&entry_id=eq.' + enc(entryId) +
-        '&select=account_code,debit,credit,memo&order=line_no.asc'), { headers });
-      const srcRows = await rowsOrFail(lr, 'ledger_lines'); if (!srcRows) return;
-      // A reversal built from zero lines reverses nothing while claiming to.
-      if (!srcRows.length) { res.status(502).json({ error: { code: 'READ_FAILED', message: 'That entry has no lines to reverse -- nothing was posted.' } }); return; }
-      const srcLines = srcRows.map((l) => ({
-        account_code: l.account_code, debit: Number(l.debit), credit: Number(l.credit), memo: l.memo
-      }));
-      const rev = ledger.reversalOf({ today: today, entry: Object.assign({}, src, { entry_id: entryId, lines: srcLines }),
-        reversal_date: payload.reversal_date });
-      if (!rev.ok) { res.status(422).json({ error: rev.error }); return; }
-      // Handed back rather than posted here: the reversal is itself an entry
-      // and goes through the SAME post path, gate and all. A second write path
-      // to the ledger is exactly what this design refuses to have.
-      res.status(200).json({ ok: true, reversal: rev.entry,
-        next: 'Post this with action "post" — it goes through the same balance gate as any other entry.' });
-      return;
-    }
+    // ── read / trial_balance / reverse: DELETED 2026-09-14 ───────────────
+    // Three actions with ZERO callers anywhere on the platform. sairnbiz.html
+    // is this endpoint's only client and it calls `post` and nothing else.
+    //
+    // THEY CARRIED THE ONLY SOFT FAILURE SHAPE LEFT IN THIS FILE: an absent
+    // ledger_entries answered 200 with provisioned:false and trial_balance:null,
+    // so whoever wired a trial balance up would have inherited A BALANCED, EMPTY
+    // SET OF BOOKS RENDERED FROM A TABLE THAT DOES NOT EXIST -- which is exactly
+    // the defect the 2026-09-04 comment block above rowsOrFail was written
+    // about, one step removed. The write path has always refused properly
+    // (notProvisioned(), twice), so nothing a caller can reach is affected.
+    //
+    // DELETED RATHER THAN HARDENED, on Michael's call: hardening code nobody
+    // calls leaves the same trap for later and adds a second thing to keep
+    // true. git history has them if they are ever wanted.
+    //
+    // A REQUEST FOR ONE NOW FALLS THROUGH TO THE 400 BELOW, which is the right
+    // answer: a named refusal, not a silent 200 with an empty body.
+    //
+    // api/_lib/ledger.js KEEPS trialBalance() and reversalOf(). They are pure,
+    // tested directly by api/_lib/ledger.test.js, and they are what a real
+    // trial-balance feature should be built on -- with the HARD
+    // notProvisioned() shape this file already proves three times.
 
     res.status(400).json({ error: { message: 'Unknown action: ' + action } });
   } catch (err) {

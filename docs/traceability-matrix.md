@@ -103,6 +103,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **RECONCILED for Cody: the report-only sweep timeout is REAL but it is NOT `metamorphic_check.py` &mdash; two pre-existing checkers are 49% of the sweep** | **MEASURED 2026-09-14 (CC) on current `main`, handed over rather than worked on &mdash; Cody holds the active claim** | `tests/run_report_only_checks_probe.py` |
 | **Web Analytics turned on &mdash; and the three public pages that carried a CREDENTIAL in the query string now strip it first** | **BUILT 2026-09-13 (CC)** on Michael's decision. Script on all **22** root app pages; held by `tests/public_token_leaves_the_address_bar.js` | `tests/public_token_leaves_the_address_bar.js` |
 | **Item 4: the FMEA loop &mdash; the standing-rules citation field, and the two defects that only appeared once it existed** | **BUILT 2026-09-13 (CC)** &mdash; `rules` / `citation_confidence` / `citation_note` on all 54 register records, `--rule` on `--add`, 12 saved drafts; held by `tests/run_defect_register_probe.py` (59 c | `tests/run_defect_register_probe.py`, `tests/run_fmea_probe.py` |
 | **Item 26, FMEA-prediction branch: the loop-closing question was asked by nobody at the moment its answer changes** | **WIRED 2026-09-13 (Hank)** &mdash; `tools/defect_register.py` `fmea_loop()`, `tests/run_fmea_loop_probe.py`, 14 arms | `tests/run_fmea_loop_probe.py` |
@@ -189,6 +190,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The three dead `api/ledger.js` actions are DELETED, not hardened &mdash; they carried the only soft failure shape left in a financial endpoint** | **DONE 2026-09-14 (CC)** on Michael's call. `read`, `trial_balance`, `reverse` and their `rowsOrFail` helper removed; held by two arms in `api/duplicate-check-fail-closed.test.js`, one of them a CONTR | `api/_lib/ledger.test.js`, `api/duplicate-check-fail-closed.test.js` |
 | ~~`api/sd-data-memory-app-scope.test.js` is RED &mdash; its deliberate tripwire fired: the resource registry now knows `sairnbiz`~~ | **RESOLVED 2026-09-04 (CC, `31572bd6`)** &mdash; and the answer was NEITHER of the two options this row offered | `api/sd-data-memory-app-scope.test.js` |
 | **Benefits enrolment recorded a real employer cost that payroll ignored, and the same $520 was documented monthly but charged per pay period** | **CLOSED 2026-09-03 (Cody) &mdash; `pay_freq` is now a per-employee field and every payroll figure derives from it** | `tests/sairnbiz_pay_frequency.js` |
 | ~~`saveExp()` mints a ledger `source_id` that is stored nowhere &mdash; the journal entry points at a record that cannot be found~~ | **CLOSED 2026-09-04 (Cody)** in `ba55a4bc`, live-verified &mdash; and the identical site in `saveBill()` closed with it | `tests/sairnbiz_ledger_source_id.js` |
@@ -296,7 +298,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**149 of 344 test files are traced to a stated requirement. 195 are not.**
+**151 of 344 test files are traced to a stated requirement. 193 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -349,7 +351,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/dnt-location.test.js`
 - `api/_lib/employee-lifecycle.test.js`
 - `api/_lib/job-risk.test.js`
-- `api/_lib/ledger.test.js`
 - `api/_lib/mech-assets.test.js`
 - `api/_lib/mech-credentials.test.js`
 - `api/_lib/roofing-agreements-endpoint.test.js`
@@ -394,7 +395,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/alf-append-only-fail-closed.test.js`
 - `api/claude-cost-controls.test.js`
 - `api/dnt-bi.test.js`
-- `api/duplicate-check-fail-closed.test.js`
 - `api/fail-open-triage-2026-09-04.test.js`
 - `api/greeting.test.js`
 - `api/sairncash-ai.test.js`
@@ -516,7 +516,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 344   tests/**, api/*.test.js
-  open-work rows citing a test       135   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       137   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                36   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED

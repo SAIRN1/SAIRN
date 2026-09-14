@@ -1991,3 +1991,42 @@ The script is on all **22** root app pages. The project-side toggle is a dashboa
 **3. A COMMENT THAT QUOTED THE MARKUP IT DESCRIBED.** `stonedesk.html` has **64 `</head>` tags and 63 of them build printable documents inside `document.write` strings**, so a blind insert would have put a tracker inside a printed quote. I inserted at the first one and wrote a comment explaining why -- **which contained the tag literally, putting a second copy in front of the real one, and the placement test then found the copy.** PR 1.2 in yet another disguise. The tag is named in words now.
 
 **Verified:** all 22 apps `node --check` 0 failures and `div_balance` PASS; `roofing_unprovisioned_is_not_empty` 14 assertions with a mutation control (RED on pre-fix source, GREEN on shipped); `public_token_leaves_the_address_bar` 13 assertions including a control that an untouched URL is left alone; `roofing_jobs_load_failure`, `roofing_claim_gate_single_source`, `intake_form_public_surface`, `intake_link_no_credential`, `public_catalog_no_false_empty` all still pass.
+
+
+---
+
+## 2026-09-14 -- the dead ledger actions deleted, and a reconciliation with Cody settled by measurement
+
+### Reconciling the report-only sweep timeout
+
+Cody reported it still broken, unfixed, pre-existing. **Both of us were partly right, and the numbers settle it rather than either report.**
+
+`tests/run_report_only_checks_probe.py` **PASSES on current main** -- exit 0, 70 checks, 0 failed -- so "still broken, unfixed" is not true as of `9009ce69`. **But it burns 363s of its own 600s budget, 61%**, and a probe at 61% of its timeout is a WATCH, not a pass; that is the margin discipline in `docs/2026-09-13-cross-domain-disciplines.md`, set the alarm tighter than the failure point. **Cody's concern stands. The cause does not.**
+
+Timed per registry entry -- whole sweep **347.4s over 35 entries**:
+
+| | |
+|---|---|
+| `comment_sensitivity_check.py` | **95.9s, 28%** |
+| `sairn_dead_button_audit.py` | **73.7s, 21%** |
+| `write_without_readback_check.py` | 35.3s |
+| **`metamorphic_check.py`** | **29.4s, 8.5% -- FOURTH** |
+| `checkblocks.py` | 18.6s |
+| `literal_drift_check.py` | 16.3s |
+| the remaining 23 entries, together | 31.2s |
+
+**The top two are half the sweep and both predate all of this work.** `comment_sensitivity_check.py` runs 6 checkers x 22 apps x 2 = 264 subprocesses; `sairn_dead_button_audit.py` runs across 22 files. **Neither has a size cap**, and the same `--max-bytes` shape that took `metamorphic_check.py` from ~198s to 29.4s applies directly to both.
+
+**I did not touch either of them.** Cody claimed that subject 0.0h before I measured, and a second session fixing a claimed subject is the collision the claim system exists to stop. The measurement went into the index and was pushed immediately so it reaches Cody's next pull.
+
+### The three dead ledger actions, deleted
+
+`read`, `trial_balance` and `reverse` had **zero callers anywhere on the platform** -- `sairnbiz.html` is the only client and calls `post` and nothing else -- and they carried **the only soft failure shape left in the file**: an absent `ledger_entries` answered 200 with `provisioned:false` and `trial_balance:null`. Whoever wired a trial balance up would have inherited **a balanced, empty set of books rendered from a table that does not exist**.
+
+**Deleted rather than hardened, on Michael's call**, and the reasoning is the durable part: hardening code nobody calls leaves the same trap for later and adds a second thing to keep true. `rowsOrFail` went with its last caller. **A request for one of them now falls through to the existing `Unknown action` 400** -- a named refusal, not a silent 200 with an empty body, which is what makes the deletion safe rather than merely tidy.
+
+**`api/_lib/ledger.js` keeps `trialBalance()` and `reversalOf()`.** They are pure, exported, and tested directly by `api/_lib/ledger.test.js`. A real trial-balance feature should be built on those with the HARD `notProvisioned()` shape this endpoint already proves three times.
+
+**The arm I replaced was a good one and was not deleted silently.** It asserted that `trial_balance` and `reverse` refused rather than computing from a partial read -- and it is the assertion that found four fail-open reads in this file in the first place. The file-wide shape assertion beside it stays. In its place: one arm asserting the three actions and `rowsOrFail` are gone and the named 400 survives, and a **CONTROL** asserting `chart`/`validate`/`post` are still present, the write path still refuses at both sites, and the library still exports both pure functions. **Without the control the first arm passes just as well on an empty file, and a deletion that took too much would look identical to one that took exactly enough.**
+
+**Verified:** `node --check` clean on `api/ledger.js`; `api/duplicate-check-fail-closed.test.js` 13 assertions pass (was 11, +2 net after the replacement); `api/_lib/ledger.test.js` passes; no dangling reference to any deleted action anywhere outside `archive/` -- the `action:'read'` hits elsewhere are `sd-data`, a different endpoint.
