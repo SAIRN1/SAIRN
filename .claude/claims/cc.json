@@ -1222,8 +1222,8 @@
       "task": "literal drift checker control both directions plant a divergent pair and a clean one",
       "claimed_at": "2026-09-14T18:22:47Z",
       "claimed_at_epoch": 1789410167.1651297,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T18:31:43Z"
     }
   ]
 }
