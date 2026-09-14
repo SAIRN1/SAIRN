@@ -1423,8 +1423,8 @@
       "task": "draft the remaining undrafted code files",
       "claimed_at": "2026-09-14T10:22:26Z",
       "claimed_at_epoch": 1789381346.7463164,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T10:25:06Z"
     }
   ]
 }
