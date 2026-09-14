@@ -1584,3 +1584,20 @@ contracting, not an informal framework. The documented criticism that
 CMMI can become process-oriented without a tied strategic goal is a real,
 long-standing critique in software-engineering literature about the
 framework's own practical adoption, not this file's own invention.
+
+## Anthropic's RSP and formal equivalence checking -- sources
+
+**Anthropic's Responsible Scaling Policy** (anthropic.com/rsp) is a real,
+current, publicly published policy governing how Anthropic itself decides
+when and how to deploy increasingly capable AI systems, including
+AI Safety Level (ASL) capability thresholds and pre-committed safeguards
+tied to each. This is the actual, current governing policy of the
+organization that built the model this role runs on, cited directly
+rather than through a secondary description -- genuinely self-referential
+in a way nothing else in this file is. **Formal equivalence checking**
+(Cadence Conformal, Synopsys Formality, and comparable EDA tools) is real,
+current, standard practice in semiconductor design verification;
+Combinational versus Sequential Equivalence Checking is the field's own
+real terminology for the two rigor tiers, not a distinction invented for
+this file. The connection to item 92's functional-core/imperative-shell
+work is this session's own real code, not a hypothetical example.

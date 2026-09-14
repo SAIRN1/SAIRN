@@ -151,6 +151,144 @@ formalities. They are the difference between catching a Horizon-shaped
 defect while it is still a bug report and catching it after it has already
 ruined hundreds of real people's lives.
 
+## Anthropic's Responsible Scaling Policy -- a real, self-referential precedent
+
+Added on Michael's explicit "think outside the box, somebody built you"
+request. This is not analogy borrowed from an unrelated field -- it is the
+real, current, published policy of the company that built the model
+running this role, applied to a genuinely different scale of decision
+(whether and how to deploy increasingly capable AI systems at all), and
+directly transferable to how this platform manages its own growth.
+
+**Capability Thresholds paired with pre-committed Required Safeguards,
+decided BEFORE the threshold is ever reached.** The RSP's structural core:
+a Capability Threshold names a specific, measurable point in advance, and
+the Required Safeguard triggered by crossing it is decided and written
+down before that crossing happens -- so reaching the threshold is a moment
+to EXECUTE a decision already made, not a moment to debate one under
+whatever pressure exists at that moment. Real, adoptable target: name
+real, specific growth thresholds for this platform now -- real customer
+count crossing a stated number, a single app's real transaction volume
+crossing a stated dollar figure per month, genuinely sensitive health or
+financial PII existing for a stated number of real customers at once --
+and pre-commit the exact safeguard each one triggers (mandatory backups,
+a formal security audit, a dedicated on-call rotation) while the decision
+can be made calmly, rather than negotiated later under the pressure of
+having already arrived there.
+
+**A real, named, accountable role -- and an honest statement that this
+platform doesn't need a new one.** The RSP names a Responsible Scaling
+Officer, tasked with evaluating when a real threshold has actually been
+crossed, reviewing decisions made at that threshold, and overseeing
+ongoing compliance. Stated plainly rather than inventing a new persona:
+this is chat's own existing spot-check/concurring-partner role ("Who
+checks the auditor," above), extended explicitly to cover GROWTH
+thresholds, not only individual findings. **Kept explicitly distinct from
+the escalation ladder already built** (Google Project Zero's 90/7-day
+timing): the escalation ladder ages a single OPEN FINDING over time.
+Capability thresholds change the platform's own STANDING REQUIREMENTS as
+it grows. Two different axes -- one about how urgently to act on something
+already found, one about what the platform is obligated to have in place
+at all past a certain size -- kept separate rather than blended into one
+idea.
+
+**A real, disclosed commitment worth holding onto directly: explicitly
+halting or slowing deployment when safeguards cannot keep pace with the
+real risk level already reached.** The RSP commits to this in plain
+terms, not as a hypothetical. Real, adoptable principle: growth on this
+platform should be explicitly gated on the relevant safeguard actually
+being ready and built, not on "we'll add it once we notice we need it" --
+the identical shape as the no-backups finding earlier in this file,
+except stated here as a standing policy rather than discovered after the
+fact as a gap.
+
+**Real, recurring, mandatory evaluations for specific NAMED risk
+categories, run both before and during deployment -- distinct from the
+general coverage-denominator this file already tracks.** The
+coverage-denominator (19 of 80 checks, 56 of 80, and so on) measures raw
+breadth of Tier A coverage across everything. A named-category evaluation
+is narrower and sharper: a specific, recurring, SCHEDULED test tied to one
+named risk regardless of which app or tier it happens to sit in --
+trust-money handling, controlled-substance dosing, PII exposure. This
+platform's own highest-stakes categories deserve a real, dedicated,
+recurring evaluation of their own, run on a schedule because the category
+matters, not only picked up incidentally when Tier A rotation happens to
+land on the app that contains it.
+
+**An honest, disclosed limit, from the same organization, in the same
+calibrated register as SUBSAFE's "maximum reasonable assurance" already
+in this file.** The RSP states plainly that risk assessment in a rapidly
+evolving domain requires continuous refinement and carries real, stated
+uncertainty -- not a claim of having solved the problem once and for all.
+The identical honesty this file already asks of every other verification
+regime it cites, confirmed here by the organization whose own policy this
+role is quoting.
+
+## Formal equivalence checking -- a genuinely different technique from mutation testing
+
+Real, current practice in semiconductor design (Cadence Conformal,
+Synopsys Formality): rather than sampling behavior across chosen or
+adversarial inputs the way mutation and fuzz testing do, equivalence
+checking MATHEMATICALLY PROVES two representations of the same thing
+produce EXACTLY IDENTICAL output for EVERY possible input -- complete
+coverage, not a sample, guaranteed rather than measured. Real, current
+practice for signing off multi-million-gate chip designs before
+fabrication specifically because a hardware bug cannot be patched once
+it exists in physical silicon.
+
+**The sharpest, most directly adoptable idea: this technique exists
+specifically to prove a REFACTORED version behaves identically to the
+original.** RTL-to-RTL equivalence checking is chip design's own real
+answer to "we restructured this, does it still do exactly the same
+thing" -- the identical question every refactor on this platform (item
+92's functional-core/imperative-shell split, most directly) makes and
+needs proven, not merely tested. **A pure, deterministic core with no
+side effects is the specific precondition that makes this technique
+applicable at all** -- `sbMatchPure`, `money()`, and any function like
+them are exactly the shape this reaches. For a pure core specifically:
+generate a large, systematic space of real inputs -- not only the
+existing fixtures a test suite happens to use -- and confirm the
+pre-refactor and post-refactor implementations produce byte-identical
+output across all of them. This is a real, cheap, buildable in-house
+differential-equivalence check, short of a full mathematical proof but
+structurally much stronger than "the old tests still pass," because it
+generates its own input space rather than relying on whatever a human
+happened to write fixtures for.
+
+**The boundary of this technique, stated precisely so it is never
+overclaimed.** The impure "shell" around any pure core -- the database
+write, the network call, anything with a side effect -- structurally
+CANNOT be equivalence-checked this way, because equivalence checking
+proves output-for-input, and a side effect is not captured by an output
+value alone. That impure half stays covered by mutation and sabotage
+testing exactly as before -- this is a genuine ADDITION alongside that
+discipline for the pure-core half of a refactor, never a replacement for
+it on the impure half.
+
+**Real, honest calibration on matching rigor to how much actually
+changed.** The field itself splits into two real tiers: Combinational
+Equivalence Checking (cheaper, used when the internal structure stays
+recognizably similar to the original) and Sequential Equivalence Checking
+(more expensive, used when the internals were genuinely restructured).
+Applied here: match the rigor of a differential-equivalence check to how
+much a given refactor actually changed internally, not a fixed level of
+effort applied identically to every refactor regardless of scope.
+
+**Honest, sobering stakes -- and a boundary on the ANALOGY itself, stated
+carefully rather than overreached.** This level of rigor exists in
+hardware specifically because a shipped chip cannot be patched -- the
+identical irreversibility logic already used in this file to justify
+smart-contract audits' extreme rigor. That justifies the general
+PRINCIPLE directly: irreversibility deserves this platform's most
+expensive verification effort. **It is NOT a claim that equivalence
+checking itself literally applies to this platform's own irreversible
+WRITES** -- a disbursed trust payment, a voided PO, a permanent
+controlled-substance entry. Those are genuinely impure, state-changing
+operations, exactly the "shell" category above that this technique
+structurally cannot reach. The real tool for an irreversible, impure
+write remains mutation and sabotage testing; equivalence checking's real
+reach on this platform is the pure core beneath it, nothing further.
+
 ## Three passes, all at high effort
 
 **Fast pass (most of the time):** pick one build agent. Check its real
