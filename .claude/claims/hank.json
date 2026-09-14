@@ -1705,6 +1705,16 @@
       "claimed_at_epoch": 1789428824.216945,
       "status": "released",
       "released_at": "2026-09-14T23:44:19Z"
+    },
+    {
+      "id": "hank-1789429496",
+      "session": "hank",
+      "subject": "sairnroofing",
+      "task": "fault probe gate 4 the claims and billing suites must DENY",
+      "claimed_at": "2026-09-14T23:44:56Z",
+      "claimed_at_epoch": 1789429496.9253578,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
