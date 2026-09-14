@@ -15,16 +15,42 @@ that subscriber** — card on file, invoice history, and the power to cancel. Th
 endpoint requires no licence key, no session, and no proof whatsoever that the
 caller is that customer.
 
-The file is not careless and its header shows the author thought about exactly
-this: it refuses to accept a `cus_…` customer id, and reads the customer off the
-subscription instead, *"so anyone who guessed or observed a cus_… string would
-[not] get a working portal link for a stranger's account."*
+### ⚠️ Second correction: the author already knew, and I said they did not
 
-**The same argument applies one level up and was not applied.** The mitigation
-moved the guessable identifier from `cus_` to `sub_` — two Stripe ids of
-comparable entropy. **A subscription id was never designed to be a secret**:
-Stripe puts it in dashboards, webhook payloads, emails and CSV exports. It is
-now, accidentally, a bearer credential for a customer's billing.
+**I wrote that "the same argument applies one level up and was not applied."
+That is wrong, and it is the second thing I got wrong about this finding.** The
+file's own header says it, in terms:
+
+> *"It is not a perfect gate — possession of a subscription id still gets you a
+> portal for that subscription, so a leaked `sub_…` is a real credential. It is
+> materially better than accepting a customer id, and it matches what the client
+> already holds. Tightening it further needs a server-side session, which
+> SAIRNcash does not have; **recorded here rather than left to be discovered**."*
+
+So this is **a consciously accepted risk with a stated reason**, not an
+oversight. I read the file, quoted the paragraph above it, and still
+characterised it as a gap. That is exactly the failure mode of reviewing a diff
+without reading what the author already wrote down.
+
+### What is actually left, once the accepted risk is subtracted
+
+1. **It was recorded in a file header and nowhere else.** *"Recorded here rather
+   than left to be discovered"* is true of the file and false of the platform:
+   it never reached `docs/SAIRN-OPEN-WORK-INDEX.md` or the SOUP register, so it
+   was invisible to anyone not reading that one file — **which is the same
+   information-leakage shape as item 94, one level up.** An accepted risk that
+   only one file knows about is indistinguishable from an unnoticed one.
+2. **The bound was never checked.** The header reasons about entropy and client
+   storage; nobody established what actually stops exploitation today, which
+   turns out to be an expired key rather than anything argued.
+3. **The expired `sk_test_` key in a production environment variable**, which is
+   new and is not in anyone's notes.
+
+The underlying property stands and is worth stating plainly for the index, since
+the header's phrasing is softer than the consequence: **a leaked `sub_…` id is
+full access to that customer's billing** — card on file, invoice history, the
+power to cancel — and Stripe puts those ids in dashboards, webhook payloads,
+emails and CSV exports.
 
 ### Reachability — and a correction to my own first claim
 
