@@ -1252,6 +1252,16 @@
       "claimed_at_epoch": 1789405142.7388484,
       "status": "released",
       "released_at": "2026-09-14T17:14:45Z"
+    },
+    {
+      "id": "fourth-1789407139",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item-23-claim-provenance-recording",
+      "claimed_at": "2026-09-14T17:32:19Z",
+      "claimed_at_epoch": 1789407139.847176,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
