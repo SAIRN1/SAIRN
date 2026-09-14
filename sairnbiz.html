@@ -814,7 +814,7 @@ textarea{resize:vertical;min-height:80px;}
       <div class="fg"><label>Amount ($)</label><input id="popamt" type="number" placeholder="1200.00"></div>
       <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbPOCreate()">Raise PO</button></div>
     </div>
-    <div class="tw" tabindex="0" role="region" aria-label="Purchase orders"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Received</th><th>Billed</th><th>Date</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Purchase orders"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Description</th><th>Amount</th><th>Received</th><th>Billed</th><th>Date</th><th>Status</th><th></th></tr></thead>
     <tbody id="potbody"></tbody></table></div>
   </div></div>
 
@@ -827,7 +827,8 @@ textarea{resize:vertical;min-height:80px;}
       <div class="fg"><label style="visibility:hidden">.</label><button class="btn bp bs" style="width:100%" onclick="sbRecvLog()">Log Receipt</button></div>
     </div>
     <div style="font-size:11px;color:var(--muted,#666);margin-bottom:8px">Enter what ACTUALLY arrived, independently of the PO. Two figures that were typed separately are the whole point of the match &mdash; copying the PO amount across defeats it.</div>
-    <div class="tw" tabindex="0" role="region" aria-label="Goods received"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Value</th><th>Date</th></tr></thead>
+    <div style="font-size:11px;color:var(--muted,#666);margin-bottom:8px">A row entered in error is <b>voided, never deleted</b> &mdash; it stays here with its reason and stops counting toward what was received. Restricted to owner or manager.</div>
+    <div class="tw" tabindex="0" role="region" aria-label="Goods received"><table><thead><tr><th>PO #</th><th>Vendor</th><th>Value</th><th>Date</th><th>Status</th><th></th></tr></thead>
     <tbody id="rcvtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -2489,10 +2490,64 @@ function sbPOAll(){ var d=ld('sb_po',[]); return Array.isArray(d)?d:[]; }
 function sbRecvAll(){ var d=ld('sb_recv',[]); return Array.isArray(d)?d:[]; }
 function sbVendorKey(v){ return String(v||'').trim().toLowerCase().replace(/\s+/g,' '); }
 
+// ── VOID, NEVER DELETE (2026-09-14) ──────────────────────────────────────
+// sb_po and sb_recv reached a server on 2026-09-14 and were tiered A with NO
+// WAY TO CORRECT A WRONG ROW. That is sharper here than on any other
+// collection because these two are consumed by a CONTROL: sbMatchPure sums
+// EVERY receipt against a PO, so a receipt entered in error inflates the
+// received total for ever and the bill is refused with "billed $X against $Y
+// actually received" -- two figures and a refusal, against a number nobody in
+// the product could correct. After the sync, two POs sharing a number refuse
+// the match outright by design, so a PO raised in error on a second device was
+// permanent and blocked a correct bill. A CONTROL A PERSON CANNOT CORRECT IS
+// ONE THEY ROUTE AROUND, which is the failure the three-way match exists to
+// prevent.
+//
+// THE ROW IS NEVER REMOVED. It is marked Void, stays visible in both tables
+// with its reason, and is excluded from the sums the match reads -- the same
+// call sd_quote_requests already made, and it needs NO new database privilege:
+// this platform grants no `delete`, and the generic SB_RESOURCES pair in
+// api/sd-data.js has a read path and a write path and nothing else. A void is
+// an ordinary `update` to the jsonb the row already carries.
+//
+// WHO MAY VOID, AND THE HONEST LIMIT OF THAT GATE. SAIRNbiz's roles are
+// owner/hr/accounting/manager/staff (api/_lib/auth.js ROLES_BY_APP) -- there is
+// no 'admin' role in this app, so the decision's "Admin/Manager" is owner and
+// manager here. THIS IS A CLIENT GATE AND NOTHING MORE. The server block that
+// accepts sb_po and sb_recv writes is a SESSION gate, deliberately not a role
+// gate, and argues that choice in api/sd-data.js: accounting legitimately reads
+// AP, HR legitimately reads training, and a per-resource role map would break
+// the app for roles that are supposed to read. So a signed-in employee of any
+// role can still write a voided row directly to the endpoint. Making this a
+// real restriction means a server-side role check on the write path, which is a
+// change to that deliberate design and is NOT made here. Stated rather than
+// implied, for the same reason sbExecuteTool's own gate says so out loud.
+var SB_VOID_ROLES=['owner','manager'];
+function sbCanVoid(){ return SB_VOID_ROLES.indexOf(sbMyRole())!==-1; }
+// PURE, and deliberately so: sbMatchPure calls it, and the functional core
+// reaches for nothing outside its arguments (tests/functional_core_is_pure.js
+// drives it in a sandbox with no clock, no storage and no randomness).
+function sbIsVoid(r){ return !!(r&&String(r.status)==='Void'); }
+// The key the Void button hands back for a PO. A PO's id is minted on first
+// sync (sbEnsureIds), so a device that has never been licensed holds rows with
+// no id -- and on such a device po_num IS unique, because sb_po_seq is a
+// per-device counter and nothing has arrived from anywhere else. Duplicate PO
+// NUMBERS only exist after a sync, by which point every row has an id. So the
+// fallback is safe exactly where it is used, and keying on po_num alone -- which
+// would void both halves of a duplicate pair -- is not.
+function sbPOKey(p){ return String((p&&p.id)||(p&&p.po_num)||''); }
+
 // THE NUMBER IS RESERVED BEFORE THE PO IS WRITTEN. If the write then fails the
 // sequence has burned a number and there is a GAP -- auditable and harmless.
 // A REUSE is neither, and it is what a count-derived number produces after any
 // delete. Same shape as StoneDesk's sdPONextNum, fixed the same day.
+//
+// A VOIDED PO STILL HOLDS ITS NUMBER, and the scan below is deliberately over
+// ALL rows rather than the live ones (2026-09-14, with the void mechanism).
+// Skipping voided rows here would hand PO-2026-004 out twice -- once to the
+// order that was voided and once to its replacement -- and the second would
+// then match against a bill that names the first. The gap a void leaves is the
+// same auditable, harmless gap a failed write leaves.
 function sbPONext(rows,year){
   rows=rows||[];
   year=year||String(sbLocalToday()).slice(0,4);
@@ -2537,7 +2592,26 @@ function sbMatchPure(pos,recs,po_num,vendor,amt){
   if(!po_num) return {ok:false,reasons:['no purchase order number on this bill']};
   pos=(Array.isArray(pos)?pos:[]).filter(function(p){return String(p&&p.po_num)===po_num;});
   recs=(Array.isArray(recs)?recs:[]).filter(function(r){return String(r&&r.po_num)===po_num;});
-  if(!pos.length) return {ok:false,reasons:['no purchase order '+po_num+' exists']};
+  // ── VOIDED DOCUMENTS ARE EXCLUDED FROM THE DECISION, NOT FROM THE RECORD ──
+  // (2026-09-14.) The counts BEFORE the filter are kept, because they are the
+  // difference between two refusals that mean opposite things. "No purchase
+  // order PO-2026-004 exists" against a PO somebody voided this morning is a
+  // false statement, and the person reading it goes looking for a missing
+  // record instead of raising the replacement. A named reason a person can act
+  // on is the standing rule for this function.
+  //
+  // THE DUPLICATE CHECK BELOW NOW SEES ONLY LIVE POs, AND THAT IS THE POINT.
+  // Two workstations both raise PO-2026-001; the ambiguity guard refuses the
+  // bill outright and, before this, nothing in the product could clear it.
+  // Voiding the one raised in error leaves a single live PO and the correct
+  // bill matches -- while both rows, and the reason, stay on the record.
+  var posHeld=pos.length, recsHeld=recs.length;
+  pos=pos.filter(function(p){return !sbIsVoid(p);});
+  recs=recs.filter(function(r){return !sbIsVoid(r);});
+  if(!pos.length) return {ok:false,reasons:[posHeld
+    ?(posHeld>1?'all '+posHeld+' purchase orders numbered '+po_num+' have been voided'
+               :'purchase order '+po_num+' has been voided')
+    :'no purchase order '+po_num+' exists']};
   // TWO POs WITH THE SAME NUMBER IS A REFUSAL, NOT A PICK-THE-FIRST
   // (2026-09-14, added with the sb_po server sync, which is what makes this
   // reachable). po_num comes from sb_po_seq, a PER-DEVICE counter, so two
@@ -2551,7 +2625,12 @@ function sbMatchPure(pos,recs,po_num,vendor,amt){
   if(pos.length>1) return {ok:false,reasons:[pos.length+' different purchase orders are numbered '+po_num
     +' -- this bill cannot be matched until that is corrected']};
   var po=pos[0];
-  if(!recs.length) reasons.push('nothing has been recorded as received against '+po_num);
+  // Same distinction as the PO above: "nothing has been recorded as received"
+  // is FALSE when receipts exist and were voided, and it sends somebody to the
+  // loading dock instead of to the receipt they corrected.
+  if(!recs.length) reasons.push(recsHeld
+    ?'every receipt against '+po_num+' has been voided -- nothing is outstanding to match'
+    :'nothing has been recorded as received against '+po_num);
   if(sbVendorKey(po.vendor)!==sbVendorKey(vendor))
     reasons.push('vendor differs: the PO says "'+po.vendor+'", the bill says "'+vendor+'"');
   recs.forEach(function(r){
@@ -2601,29 +2680,117 @@ function sbThreeWayMatch(po_num,vendor,amt){
   return sbMatchPure(sbPOAll(),sbRecvAll(),po_num,vendor,amt);
 }
 
+// VOIDED ROWS ARE RENDERED, NOT HIDDEN, and the trail is the reason: the
+// three-way match is an audit control, and a control whose corrections are
+// invisible cannot be reviewed. What a void removes is the row's contribution
+// to the FIGURES -- the Received column below, and the sums inside sbMatchPure.
+function sbVoidMark(r){
+  return '<span class="badge bx">Void</span>'
+    +(r.void_reason?'<div style="font-size:11px;color:var(--muted,#666)">'+H(r.void_reason)
+      +(r.voided_at?' &mdash; '+H(r.voided_at):'')+(r.voided_by?' &mdash; '+H(r.voided_by):'')+'</div>':'');
+}
 function sbRenderPOs(){
   var pos=sbPOAll(), recs=sbRecvAll(), bills=ld('sb_ap',[]);
+  // Read ONCE per render rather than per row: sbMyRole() touches sessionStorage,
+  // and a table of 200 POs would otherwise hit it 200 times for one answer that
+  // cannot change mid-render.
+  var canVoid=sbCanVoid();
   var pob=$('potbody');
   if(pob){
     pob.innerHTML=pos.map(function(p){
-      var rv=recs.filter(function(r){return String(r.po_num)===String(p.po_num);})
+      var isVoid=sbIsVoid(p);
+      // THE RECEIVED FIGURE EXCLUDES VOIDED RECEIPTS, and it must, because this
+      // is the same number sbMatchPure compares the bill against. If the panel
+      // showed one total and the gate used another, a refusal would name a
+      // figure the screen does not show -- which is the exact shape of the
+      // "billed $X against $Y" refusal this whole mechanism exists to make
+      // correctable.
+      var rv=recs.filter(function(r){return String(r.po_num)===String(p.po_num)&&!sbIsVoid(r);})
                  .reduce(function(a,r){return a+(Number(r.val)||0);},0);
       var bv=(Array.isArray(bills)?bills:[]).filter(function(b){return String(b.po_num)===String(p.po_num);})
                  .reduce(function(a,b){return a+(Number(b.amt)||0);},0);
+      // &#39; rather than an escaped quote: the browser decodes the entity
+      // before evaluating the attribute, so this needs no backslash. Same
+      // shape as sbRenderAccess() above.
+      var keyArg='&#39;'+H(sbPOKey(p))+'&#39;';
       // The three figures side by side is the whole instrument. Two of them
       // were typed independently; a reader can see a difference without
       // anything having to decide what it means.
-      return '<tr><td><strong>'+H(p.po_num)+'</strong></td><td>'+H(p.vendor)+'</td><td>'+H(p.desc||'')+'</td>'
+      return '<tr'+(isVoid?' style="opacity:.55"':'')+'><td><strong>'+H(p.po_num)+'</strong></td><td>'+H(p.vendor)+'</td><td>'+H(p.desc||'')+'</td>'
         +'<td>'+fmt(p.amt)+'</td><td>'+(rv?fmt(rv):'<span class="badge bx">none</span>')+'</td>'
-        +'<td>'+(bv?fmt(bv):'--')+'</td><td>'+H(p.date)+'</td></tr>';
-    }).join('')||'<tr><td colspan="7" style="color:var(--muted,#666)">No purchase orders raised</td></tr>';
+        +'<td>'+(bv?fmt(bv):'--')+'</td><td>'+H(p.date)+'</td>'
+        +'<td>'+(isVoid?sbVoidMark(p):'<span class="badge bb">'+H(p.status||'Open')+'</span>')+'</td>'
+        +'<td>'+(isVoid||!canVoid?'':'<button class="btn bo bs" onclick="sbPOVoid('+keyArg+')">Void</button>')+'</td></tr>';
+    }).join('')||'<tr><td colspan="9" style="color:var(--muted,#666)">No purchase orders raised</td></tr>';
   }
   var rcb=$('rcvtbody');
   if(rcb){
     rcb.innerHTML=recs.map(function(r){
-      return '<tr><td><strong>'+H(r.po_num)+'</strong></td><td>'+H(r.vendor||'')+'</td><td>'+fmt(r.val)+'</td><td>'+H(r.date)+'</td></tr>';
-    }).join('')||'<tr><td colspan="4" style="color:var(--muted,#666)">Nothing received yet</td></tr>';
+      var isVoid=sbIsVoid(r);
+      // Keyed on the receipt's OWN id, never on po_num: many receipts answer one
+      // PO, so a po_num key would void the whole delivery history for that
+      // order. sbRecvLog() assigns a collision-checked id at creation, so the
+      // id is always there; a row without one gets no button rather than a
+      // button that would void the wrong thing.
+      var idArg=r.id?('&#39;'+H(String(r.id))+'&#39;'):null;
+      return '<tr'+(isVoid?' style="opacity:.55"':'')+'><td><strong>'+H(r.po_num)+'</strong></td><td>'+H(r.vendor||'')+'</td><td>'+fmt(r.val)+'</td><td>'+H(r.date)+'</td>'
+        +'<td>'+(isVoid?sbVoidMark(r):'<span class="badge bb">Received</span>')+'</td>'
+        +'<td>'+(isVoid||!canVoid||!idArg?'':'<button class="btn bo bs" onclick="sbRecvVoid('+idArg+')">Void</button>')+'</td></tr>';
+    }).join('')||'<tr><td colspan="6" style="color:var(--muted,#666)">Nothing received yet</td></tr>';
   }
+}
+
+// ── THE VOID ACTIONS ─────────────────────────────────────────────────────
+// A REASON IS REQUIRED AND IS ASKED FOR, not sent blank -- the same shape and
+// the same reason as sbSetActive() above: the reason is what somebody
+// reconstructs months later, and a void with no reason is indistinguishable
+// from a mistake.
+function sbVoidReason(what){
+  var reason=window.prompt('Why is '+what+' being voided?\n\nThe row is NOT deleted -- it stays on the record with this reason and is excluded from the three-way match.');
+  if(reason===null)return null;
+  reason=String(reason).trim();
+  if(!reason){toast('A reason is required to void '+what+' -- nothing was changed',6000);return null;}
+  return reason.slice(0,500);
+}
+// The role check is repeated in each action rather than trusted to the render.
+// The button is HIDDEN for a role that may not void, and a hidden button is a
+// UI state, not a control: rAP() runs on a role read at render time, and
+// nothing repaints these tables when a session changes underneath them.
+// A BUILDER, NOT A TOAST WRAPPER. The sentence is written once so the two
+// refusals cannot drift apart, and returning the string rather than showing it
+// keeps the message assertable without standing up a toast -- the same reason
+// sbMatchPure returns reasons instead of rendering them.
+function sbVoidRefusal(what){
+  return 'Voiding '+what+' is restricted to '+SB_VOID_ROLES.join(' or ')+' -- nothing was changed';
+}
+function sbPOVoid(key){
+  if(!sbCanVoid()){toast(sbVoidRefusal('a purchase order'),7000);return;}
+  var rows=sbPOAll(),row=null;
+  // ld() reparses from localStorage on every call, so `rows` is a private copy.
+  // A failed st() below therefore leaves the stored record untouched and needs
+  // no revert -- the mutation exists only in this array.
+  rows.forEach(function(p){if(!row&&sbPOKey(p)===String(key))row=p;});
+  if(!row){toast('That purchase order is no longer on this device -- nothing was changed',6000);return;}
+  if(sbIsVoid(row)){toast(row.po_num+' is already void');return;}
+  var reason=sbVoidReason(row.po_num);
+  if(reason===null)return;
+  row.status='Void';row.void_reason=reason;
+  row.voided_at=sbLocalToday();row.voided_by=sbMyEmployeeId()||sbMyRole()||'';
+  if(!st('sb_po',rows)){toast(row.po_num+' was NOT voided -- storage may be full or unavailable. Nothing was changed; try again.',9000);return;}
+  rAP();toast(row.po_num+' voided. It stays on the record and is excluded from the match.',7000);
+}
+function sbRecvVoid(id){
+  if(!sbCanVoid()){toast(sbVoidRefusal('a goods receipt'),7000);return;}
+  var rows=sbRecvAll(),row=null;
+  rows.forEach(function(r){if(!row&&r&&String(r.id)===String(id))row=r;});
+  if(!row){toast('That receipt is no longer on this device -- nothing was changed',6000);return;}
+  if(sbIsVoid(row)){toast('That receipt is already void');return;}
+  var reason=sbVoidReason('the '+fmt(row.val)+' receipt against '+row.po_num);
+  if(reason===null)return;
+  row.status='Void';row.void_reason=reason;
+  row.voided_at=sbLocalToday();row.voided_by=sbMyEmployeeId()||sbMyRole()||'';
+  if(!st('sb_recv',rows)){toast('That receipt was NOT voided -- storage may be full or unavailable. Nothing was changed; try again.',9000);return;}
+  rAP();toast('Receipt voided. It stays on the record and no longer counts toward what was received against '+row.po_num+'.',7000);
 }
 
 function sbPOCreate(){
@@ -2641,8 +2808,15 @@ function sbPOCreate(){
 function sbRecvLog(){
   var po_num=$('rcvpo').value.trim(), val=parseFloat($('rcvval').value)||0;
   if(!po_num){toast('A receipt has to name the PO it answers');return;}
-  if(!sbPOAll().some(function(p){return String(p.po_num)===po_num;})){
+  var poRows=sbPOAll().filter(function(p){return String(p.po_num)===po_num;});
+  if(!poRows.length){
     toast('No purchase order '+po_num+' exists -- raise the PO first',6000);return;}
+  // A RECEIPT AGAINST A VOIDED PO IS REFUSED AT ENTRY (2026-09-14). It would be
+  // excluded from the match anyway, so accepting it would write a row that can
+  // never affect anything and would sit in the trail looking as though it did.
+  // The refusal names the replacement, because that is the action to take.
+  if(!poRows.some(function(p){return !sbIsVoid(p);})){
+    toast('Purchase order '+po_num+' has been voided -- raise a new PO before recording what arrived against it',8000);return;}
   var recs=sbRecvAll();
   // COLLISION-CHECKED, not just timestamped (2026-09-14, with the sb_recv
   // sync). `'RC'+Date.now().toString(36)` alone gives two receipts logged in
@@ -2653,6 +2827,9 @@ function sbRecvLog(){
   // REPLACES the first. Two deliveries would become one and the three-way match
   // would then refuse the bill for a short receipt total that is an artefact.
   // Same loop as sbEnsureIds() and sbNormalizeBills() rather than a new shape.
+  // THE SCAN INCLUDES VOIDED RECEIPTS, deliberately. A voided row is still a
+  // row on the server under that id, so minting over it would merge-duplicate
+  // the new receipt onto the void and the new delivery would inherit the void.
   var seenRc={};
   recs.forEach(function(r){if(r&&r.id)seenRc[String(r.id)]=true;});
   var rcId,rcN=0;

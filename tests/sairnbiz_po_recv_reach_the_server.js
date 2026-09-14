@@ -248,6 +248,10 @@ function recvCtx(store) {
   vm.createContext(ctx);
   vm.runInContext(grab('function sbRecvAll(){'), ctx);
   vm.runInContext(grab('function sbPOAll(){'), ctx);
+  // sbIsVoid joined 2026-09-14 with the void mechanism -- sbRecvLog now refuses
+  // a receipt against a voided PO, and this sandbox threw ReferenceError the
+  // moment it landed.
+  vm.runInContext(grab('function sbIsVoid(r){'), ctx);
   vm.runInContext(grab('function sbRecvLog(){'), ctx);
   return ctx;
 }
@@ -301,7 +305,7 @@ function matchCtx(store) {
   // ReferenceError on a CORRECT file the moment a declaration moves -- which is
   // exactly what it did here, loudly, rather than going quietly green.
   for (const sig of ['function sbMoneyCents(v){', 'function sbPOAll(){', 'function sbRecvAll(){',
-                     'function sbVendorKey(v){',
+                     'function sbVendorKey(v){', 'function sbIsVoid(r){',
                      'function sbMatchPure(pos,recs,po_num,vendor,amt){',
                      'function sbThreeWayMatch(po_num,vendor,amt){']) {
     vm.runInContext(grab(sig), ctx);

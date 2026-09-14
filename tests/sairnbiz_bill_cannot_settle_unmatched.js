@@ -86,6 +86,11 @@ function makeCtx(store, fields) {
   for (const sig of ['function sbMoneyCents(v){',
                      'function sbPOAll(){', 'function sbRecvAll(){',
                      'function sbVendorKey(v){', 'function sbPONext(rows,year){',
+                     // sbIsVoid joined 2026-09-14 with the void mechanism.
+                     // sbMatchPure and sbRecvLog both call it; it threw
+                     // ReferenceError here the moment it landed, which is this
+                     // hand-listed set doing its job loudly again.
+                     'function sbIsVoid(r){',
                      // sbMatchPure is the FUNCTIONAL CORE and must load BEFORE the
                      // shell that calls it (item 92, 2026-09-14). This hand-listed
                      // set is the same shape this repo has recorded going stale

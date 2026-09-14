@@ -135,6 +135,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **INDEPENDENT REVIEW of Fourth&rsquo;s item 65a (nightly backup) and item 78 (role-gate formal spec): FOUR findings, one of them a published credential** | **REVIEWED 2026-09-14 (CC)** at `518782ec` and `858ad4a6`+`d7091d3f`. Three register records, `detection_method: independent-review`. **Findings raised, NOT fixed &mdash; they are Fourth&rsquo;s files | `tests/app_session_isolation.js` |
 | **Item 32 gets R6: the rung R4 and R5 cannot reach &mdash; is the RESOURCE asked for, not just the route** | **BUILT 2026-09-14 (CC)** &mdash; inside the EXISTING `tools/sairn_reachability_check.py`, not a second checker. Held by `tests/reachability/resource_demand_probe.py` (18 arms, three mutation controls | `api/sd-data-dental-ledger-validation.test.js`, `tests/reachability/resource_demand_probe.py` |
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
+| **`master_plan.py` gate 4 counts fault probes in PYTHON ONLY, so a JavaScript mutation probe reads as no probe at all** | **FOUND 2026-09-14 (CC)** while closing the SAIRNbiz void row. **MEASURED, not inferred:** `fault_probes()` in `tools/master_plan.py` walks `tests/` and skips any file not ending `.py` | `tests/sairnbiz_void_mutation_control.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
 | **23 of 64 check-shaped tools had NO RECORDED DECISION either way &mdash; not promoted, not recorded as deliberately unpromoted, and therefore measured by nothing** | **MEASURED AND DISCLOSED 2026-09-14 (Cody)** &mdash; coverage disclosure widened in `tools/flaky_checker_quarantine.py`; my own new checker given a recorded NOT_PROMOTED reason, 23 &rarr; 22 | `tests/run_tooling_inventory_probe.py` |
@@ -248,6 +249,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`sb_po` and `sb_recv` reached a server as Tier A with NO WAY TO CORRECT A WRONG ROW &mdash; now VOIDABLE, never deletable** | **FOUND 2026-09-14 (CC)** by `tools/removal_path_check.py` in the post-work sweep. **MECHANISM BUILT 2026-09-14 (CC)** on Michael&rsquo;s decision. **COMMITTED, NOT YET PUSHED &mdash; so NOT LIVE-VERI | `tests/functional_core_is_pure.js`, `tests/sairnbiz_void_mutation_control.js`, `tests/sairnbiz_void_not_delete.js` |
 | **The three-way match shipped with BOTH of its documents local-only &mdash; `sb_po` and `sb_recv` reached no server at all** | **BUILT 2026-09-14 (CC)** &mdash; `sql/sairnbiz_po_recv_migration.sql` written and **NOT YET RUN**; held by `tests/sairnbiz_po_recv_reach_the_server.js` (28 arms, four mutation controls). Registered,  | `tests/sairnbiz_po_recv_reach_the_server.js` |
 | **A bill can no longer be settled unless a purchase order, a goods receipt and the invoice all agree &mdash; and the two missing documents now exist** | **BUILT 2026-09-14 (CC)** on Michael's decision &mdash; `sb_po`, `sb_recv`, `sbThreeWayMatch()`, gates on `saveBill()` and `sbPayBill()`. Held by `tests/sairnbiz_bill_cannot_settle_unmatched.js` (32 a | `tests/sairnbiz_bill_cannot_settle_unmatched.js` |
 | **The three dead `api/ledger.js` actions are DELETED, not hardened &mdash; they carried the only soft failure shape left in a financial endpoint** | **DONE 2026-09-14 (CC)** on Michael's call. `read`, `trial_balance`, `reverse` and their `rowsOrFail` helper removed; held by two arms in `api/duplicate-check-fail-closed.test.js`, one of them a CONTR | `api/_lib/ledger.test.js`, `api/duplicate-check-fail-closed.test.js` |
@@ -360,7 +362,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**185 of 389 test files are traced to a stated requirement. 204 are not.**
+**187 of 391 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -588,8 +590,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 389   tests/**, api/*.test.js
-  open-work rows citing a test       174   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 391   tests/**, api/*.test.js
+  open-work rows citing a test       176   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                42   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED

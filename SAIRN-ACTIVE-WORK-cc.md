@@ -3286,3 +3286,111 @@ Inherited from R4, R5 and R6, and it matters more here than anywhere: this is pr
 disaster-recovery path or a year-end verb lives. Three mutation controls, each run and each red:
 R7 changing the exit code; a route put back in its own caller corpus (the closed loop that would
 make every action reachable by definition); and an acknowledgement added without a reason.
+
+---
+
+## 2026-09-14 -- a wrong row is VOIDED, never deleted (sb_po and sb_recv)
+
+### What was open
+
+`tools/removal_path_check.py` found it in the post-work sweep on the same day the
+sync landed: **`sb_po` and `sb_recv` reached a server as Tier A with no way to
+correct a wrong row.** Sharper than the other 53 in the burn-down queue because
+**these two are consumed by a CONTROL** -- `sbMatchPure` sums EVERY receipt
+against a PO, so a receipt entered in error inflated the received total for ever
+and the bill was refused with *"billed $X against $Y actually received"*, two
+figures and a refusal against a number nobody in the product could correct. And
+the ambiguity guard refuses two POs sharing a number outright, so a PO raised in
+error on a second device was permanent and blocked a correct bill.
+
+### One correction to the brief, recorded because it changed the work
+
+The brief said *"sb_po already has a Void status; add the equivalent to
+sb_recv."* **It does not.** `sbPOCreate()` writes `status:'Open'` and **nothing
+in the file ever read it** -- the open-work row's own words were *"`sb_po` rows
+already carry a `status` FIELD"*, which is a different claim. So this was two
+halves, not one, and neither existed. `grep -i void sairnbiz.html` returned one
+hit, in an unrelated comment about double-counting.
+
+### What shipped
+
+`status:'Void'` inside the jsonb both rows already carry, with `void_reason`,
+`voided_at` and `voided_by`. **No new database privilege and no server verb:**
+this platform grants no `delete`, so a void is an ordinary `update` on the
+existing write path -- the same call `sd_quote_requests` already made.
+
+- **Excluded from every SUM the control reads**, and from the SAME figures the
+  screen shows: `sbMatchPure` and the Received column in `sbRenderPOs`. If the
+  panel showed one total and the gate used another, a refusal would name a
+  figure the screen does not show -- the exact shape of the uncorrectable
+  refusal this whole mechanism exists to fix.
+- **The refusals were re-WORDED, not just filtered.** *"No purchase order
+  PO-2026-004 exists"* is FALSE about a PO somebody voided this morning, and it
+  sends the reader hunting for a lost record instead of raising the replacement.
+  Three new named reasons: one PO voided, all N of that number voided, every
+  receipt voided.
+- **The duplicate-number deadlock is the point.** Voiding the PO raised in error
+  leaves a single live PO and the correct bill matches, while both rows stay on
+  the record.
+- **Keyed on the minted id, not `po_num`.** `po_num` is not unique across
+  devices, so a `po_num` key would void BOTH halves of a duplicate pair --
+  destroying the correct PO along with the wrong one. The id fallback to
+  `po_num` is safe exactly where it is used: a device that has never been
+  licensed has no ids, and on such a device `sb_po_seq` makes `po_num` unique.
+- **Three traps closed on the way through.** The PO SEQUENCE still counts voided
+  rows, or a voided number is handed out twice and the ambiguity guard then
+  refuses both bills. A receipt against a voided PO is refused AT ENTRY rather
+  than written and silently ignored. The receipt id-collision scan still sees
+  voided rows, or a mint would merge-duplicate the new receipt onto the void.
+
+### Coverage, and the half that usually goes missing
+
+- `tests/sairnbiz_void_not_delete.js` -- **56 arms**: the role gate from both
+  sides and re-checked in the ACTION rather than trusted to a hidden button;
+  reason required / cancelled / blank / trimmed / capped at 500; a failed `st()`
+  leaves the row UNVOIDED, says so, and does not repaint; idempotence; keyed
+  correctly on both halves; the row still rendered; the sequence not reused.
+- The void arms of `tests/functional_core_is_pure.js` -- driven by ARGUMENT in a
+  sandbox with no clock, no storage and no randomness, plus **six negative
+  controls on statuses that are NOT `Void`** (`void`, `VOID`, `Voided`,
+  `Cancelled`, `Open`, `''`), so a typo in a future writer cannot silently
+  exclude a real receipt from a financial control.
+- `tests/sairnbiz_void_mutation_control.js` -- **12 mutations, each asserted in
+  THREE parts: the anchor is FOUND exactly once, the mutated copy DIFFERS from
+  the original, and the named suite EXITS NON-ZERO.** Part two is the half
+  `tools/sabotage_control_check.py` measured **23 of 39 controls on this
+  platform skipping**. A baseline arm runs both suites green against an
+  unmutated copy first, and a closing arm asserts `sairnbiz.html` was never
+  written to.
+
+### The residual, and it is real
+
+**THE ROLE GATE IS CLIENT-SIDE ONLY.** SAIRNbiz has no `admin` role -- its
+vocabulary is `owner/hr/accounting/manager/staff` -- so *"Admin/Manager"* is
+`SB_VOID_ROLES=['owner','manager']`, asserted against `ROLES_BY_APP.sairnbiz` so
+a role that does not exist cannot be named. **A literal implementation would
+have shipped a gate no account on this app could ever pass.**
+
+But the `SB_RESOURCES` block in `api/sd-data.js` is a **SESSION gate,
+deliberately not a role gate**, and argues that choice in the file. So a
+signed-in employee of any role can still POST a voided row directly to the
+endpoint. Making the restriction real means a server-side role check on the
+write path, which is a change to that deliberate design -- **Michael's call, not
+mine.** Stated out loud in the code, the same way `sbExecuteTool`'s own gate
+already states its limit.
+
+**And `accounting` is not in the list.** A literal reading of the decision
+excludes it; on an AP control that is worth a second look, and it is one
+constant to change.
+
+### Verified
+
+`python tools/checkblocks.py sairnbiz.html` -> 5 blocks, 0 failed.
+`sairnbiz_void_not_delete` 56, `functional_core_is_pure` 43,
+`sairnbiz_void_mutation_control` 51, `sairnbiz_bill_cannot_settle_unmatched` 42,
+`sairnbiz_po_recv_reach_the_server` 28 -- all pass.
+`sairn_dead_button_audit` 0 flagged, `duplicate_global_check` 0,
+`div_balance_check` PASS, `md_table_check` 0 malformed,
+`removal_path_check` CLEAN.
+
+**NOT PUSHED, SO NOT LIVE-VERIFIED.** A clean commit is not proof (PR &sect;3.2).
