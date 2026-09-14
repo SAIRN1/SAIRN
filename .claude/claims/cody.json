@@ -1147,8 +1147,8 @@
       "task": "item 8 indirect injection and stated refusals deterministic half no model calls",
       "claimed_at": "2026-09-14T18:21:23Z",
       "claimed_at_epoch": 1789410083.4529946,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:34:44Z"
     }
   ]
 }
