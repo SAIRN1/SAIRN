@@ -239,7 +239,19 @@ test('sb_incidents IS in the backup registry now that it has a writer', () => {
   // from anything else in the app if the browser is lost.
   assert.ok(registry.resources.indexOf('sb_incidents') !== -1,
     'sb_incidents is not registered, so every injury logged stays on one machine');
-  assert.strictEqual(registry.resources.length, 10);
+  // THE TOTAL-COUNT ASSERTION THAT USED TO SIT HERE IS GONE, and removing it is
+  // the fix rather than updating it. `assert.strictEqual(registry.resources
+  // .length, 10)` had nothing to do with this test's subject: it made a test
+  // named "sb_incidents IS in the backup registry" FAIL because somebody added
+  // sb_po and sb_recv, which is a test asserting beyond what it is about. A
+  // suite that breaks on unrelated work is how people learn to edit tests until
+  // they pass.
+  //
+  // The population size IS worth pinning and it is pinned, in the one place
+  // that owns it: tests/sairnbiz_server_backup.js's four-file agreement
+  // section, which asserts the count literally BECAUSE a resource appearing in
+  // three of four files and not the fourth is the failure it exists to catch.
+  // Checked once, where it means something.
 });
 
 test('and the client actually syncs it -- registered is not the same as sent', () => {

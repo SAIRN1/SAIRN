@@ -119,6 +119,29 @@ function harness(opts, syncOverride, stOverride) {
 // Pushes are fire-and-forget promise chains. Drain the microtask queue.
 const flush = () => new Promise((r) => setTimeout(r, 0));
 
+// HOW MANY COLLECTIONS sbHydrateAll() TOUCHES, DERIVED FROM THE CLIENT LIST
+// rather than typed. Added 2026-09-14, after three arms below asserted a
+// hard-coded 10 and went RED when the three-way match added sb_po and sb_recv.
+//
+// THIS IS THE OPPOSITE DECISION FROM THE AGREEMENT SECTION ABOVE, on purpose.
+// That one asserts the population SIZE literally, because a resource appearing
+// in three of four files and not the fourth is exactly what it exists to catch
+// and a self-adjusting count would not see it. These three arms are not about
+// the population at all -- they are about whether a FAILED read is counted as
+// failed and an UNPROVISIONED one as unprovisioned. Pinning them to a literal
+// made every resource addition break a test about error accounting, which is
+// how people learn to edit tests until they pass.
+//
+// The number is checked ONCE, in the place that owns it. Here it is derived
+// from the same SB_SYNCED list the agreement section pins against the registry,
+// so these arms cannot disagree with it and cannot go stale on their own.
+const SYNCED_COUNT = (slice(html, "var SB_SYNCED=['sb_invs'", '];')
+  .match(/'sb_[a-z_]+'/g) || []).length;
+assert.ok(SYNCED_COUNT >= 10,
+  'SB_SYNCED parsed to ' + SYNCED_COUNT + ' collections -- that is a broken '
+  + 'reader, not a client that stopped syncing, and every count arm below '
+  + 'would pass vacuously against it');
+
 const writesOf = (c) => c.__calls.filter((x) => x.action === 'write');
 
 const INV_A = { id: 'INV-2601', cust: 'Hartley', amt: 8420, status: 'Paid' };
@@ -128,14 +151,30 @@ const RUN_A = { id: 'PR1a2b3c', run_on: '2026-09-04', employees: 8, gross: 12000
 // ═══════════════════════════════════════════════════════════════════════════
 section('the ten collections agree across all four files');
 
-test('registry, server handler, client list and SQL declare the same ten', () => {
+test('registry, server handler, client list and SQL declare the same set', () => {
   // NINE until 2026-09-10, when sb_incidents got a write path (the OSHA Form
-  // 300 log) and moved out of the excluded list below. The number is asserted
-  // rather than derived on purpose: a resource silently appearing in three of
-  // the four files and not the fourth is the failure this whole section is
-  // for, and a self-adjusting count would not catch it.
+  // 300 log) and moved out of the excluded list below. TEN until 2026-09-14,
+  // when the three-way match added sb_po and sb_recv -- and the count was not
+  // updated with them, so THIS SUITE WAS RED FROM THAT COMMIT UNTIL IT WAS
+  // FOUND, with nothing reporting it: `run_all_tests.py --hook` has been
+  // PAUSED since 2026-09-10 (docs/2026-09-10-run-all-tests-hook-PAUSED.md) and
+  // nothing else runs this file.
+  //
+  // The number is asserted rather than derived ON PURPOSE: a resource silently
+  // appearing in three of the four files and not the fourth is the failure this
+  // whole section is for, and a self-adjusting count would not catch it. That
+  // cost is real and is accepted -- adding a resource means editing this line,
+  // and forgetting to is exactly what happened. The history is kept in this
+  // comment rather than overwritten so the next reader can see how often.
+  //
+  // ALL FOUR SIDES WERE MEASURED BEFORE THIS NUMBER WAS MOVED, and they agree
+  // at 12: registry, sd-data.js SB_RESOURCES, sairnbiz.html SB_SYNCED, and the
+  // SQL (table AND grant) for every one. The suite was red because the count
+  // was stale, not because anything had drifted -- and the difference is worth
+  // stating, because "update the number until it passes" is how a real
+  // disagreement gets buried.
   const declared = registry.resources.slice().sort();
-  assert.strictEqual(declared.length, 10, 'registry should declare 10 resources');
+  assert.strictEqual(declared.length, 12, 'registry should declare 12 resources');
 
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const handled = (handlerBlock.match(/\bsb_[a-z_]+(?=:)/g) || []).sort();
@@ -154,7 +193,7 @@ test('registry, server handler, client list and SQL declare the same ten', () =>
 test('every id column in the handler exists in the SQL table it names', () => {
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const pairs = handlerBlock.match(/sb_[a-z_]+:\s*'[a-z_]+'/g) || [];
-  assert.strictEqual(pairs.length, 10);
+  assert.strictEqual(pairs.length, 12);
   pairs.forEach((p) => {
     const [res, col] = p.split(':').map((s) => s.trim().replace(/'/g, ''));
     const table = slice(schema, 'create table if not exists public.' + res + ' (', ');');
@@ -439,7 +478,7 @@ test('a FAILED read leaves local data untouched and is counted as failed', async
   const c = harness({ store: { sb_invs: JSON.stringify([INV_A]) }, readFails: true });
   const r = await c.sbHydrateAll();
   assert.strictEqual(r.merged, 0);
-  assert.strictEqual(r.failed, 10, 'a failed read was not counted');
+  assert.strictEqual(r.failed, SYNCED_COUNT, 'a failed read was not counted');
   assert.strictEqual(r.notProvisioned, 0, 'a failure was miscounted as an unprovisioned backup');
   assert.deepStrictEqual(JSON.parse(c.__store.sb_invs), [INV_A], 'a failed read modified local data');
 });
@@ -455,7 +494,7 @@ test('a failed read TELLS THE USER, and does not say the backup is empty', () =>
 test('provisioned:false is counted as not-provisioned, not as an empty backup', async () => {
   const c = harness({ notProvisioned: true });
   const r = await c.sbHydrateAll();
-  assert.strictEqual(r.notProvisioned, 10);
+  assert.strictEqual(r.notProvisioned, SYNCED_COUNT);
   assert.strictEqual(r.failed, 0);
 });
 
@@ -572,7 +611,7 @@ const probes = [
     async () => {
       const c = harness({ readFails: true }, probeSrc);
       const r = await c.sbHydrateAll();
-      assert.strictEqual(r.failed, 10);
+      assert.strictEqual(r.failed, SYNCED_COUNT);
     }],
   ['hydration overwrites local edits instead of merging additively',
     (s) => s.replace('if(r&&r.id!=null&&!have[String(r.id)]){local.push(r);added++;}', 'if(r&&r.id!=null){local.push(r);added++;}'),
