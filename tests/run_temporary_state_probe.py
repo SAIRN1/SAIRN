@@ -68,19 +68,30 @@ function hydrate(key, blob){
 }
 """
 
+# The declaration token in every fixture below is ASSEMBLED AT RUNTIME. The
+# subject walks the whole repo including tests/, which is correct -- the
+# 131-commit leak lived in a probe -- so a literal declaration written here
+# would be read as a real one in a real file: the valid ones would inflate the
+# subject's declaration count with fixtures, and `scope=forever` would be
+# reported as a genuinely malformed declaration. Assembling it keeps the
+# fixtures honest for findings_for() without lying to the repo walk. An
+# exclusion rule for tests/ was the alternative, and it would have blinded the
+# tool to the exact directory the original leak came from.
+TOKEN = 'TEMPORARY' + '-STATE:'
+
 DECLARED_JS = """var sdSyncSuppressed=false;
 function hydrate(key, blob){
-  // TEMPORARY-STATE: scope=call released-by=finally below
+  // %s scope=call released-by=finally below
   sdSyncSuppressed=true;
   try { st(key, blob); } finally { sdSyncSuppressed=false; }
 }
-"""
+""" % TOKEN
 
 # The declaration is FOUR lines above the assignment. The window is three, so
 # this must NOT silence it -- otherwise one declaration anywhere in a function
 # covers everything under it.
 FAR_DECL_JS = """var sdSyncSuppressed=false;
-// TEMPORARY-STATE: scope=call released-by=finally below
+// %s scope=call released-by=finally below
 function hydrate(key, blob){
   var x = 1;
   var y = 2;
@@ -88,16 +99,16 @@ function hydrate(key, blob){
   st(key, blob);
   sdSyncSuppressed=false;
 }
-"""
+""" % TOKEN
 
 BAD_SCOPE_JS = """var sdSyncSuppressed=false;
 function hydrate(key, blob){
-  // TEMPORARY-STATE: scope=forever released-by=nothing
+  // %s scope=forever released-by=nothing
   sdSyncSuppressed=true;
   st(key, blob);
   sdSyncSuppressed=false;
 }
-"""
+""" % TOKEN
 
 # The 131-commit substrate: the identity written into the clone's config.
 GIT_LEAK_PY = """import subprocess
@@ -141,7 +152,7 @@ s, rows, bad = shapes('fx/declared.js', DECLARED_JS)
 ok('scope=call on the preceding line covers the assignment',
    not any(r['shape'] == 'flag-on' for r in rows), rows)
 ok('...and the fixture really does carry the declaration',
-   'TEMPORARY-STATE: scope=call' in DECLARED_JS)
+   TOKEN + ' scope=call' in DECLARED_JS)
 s, rows, _ = shapes('fx/ok.py', GIT_OK_PY)
 ok('a per-invocation `-c` is not a persistent write',
    not any(r['shape'] == 'git-config-write' for r in rows), rows)
@@ -222,6 +233,28 @@ subject_doc = io.open(SUBJECT, encoding='utf-8').read()
 ok('...and the subject says so in its own limits section',
    'lowercase' in subject_doc.lower() and 'True' in subject_doc,
    'the limit is real but undisclosed -- a silent blind spot')
+
+print('\nH. --check has a verdict, and it is the one thing that needs no '
+      'threshold')
+H = tempfile.mkdtemp(prefix='tsc_check_')
+_real_repo = T.REPO
+try:
+    ok('the real repo passes --check today', T.main(['--check']) == 0)
+    T.REPO = H
+    io.open(os.path.join(H, 'bad.js'), 'w', encoding='utf-8').write(BAD_SCOPE_JS)
+    ok('a declaration naming a scope that does not exist FAILS --check',
+       T.main(['--check']) == 1)
+    io.open(os.path.join(H, 'bad.js'), 'w', encoding='utf-8').write(LEAK_JS)
+    ok('...but 1 undeclared candidate and 0 declarations does NOT fail, '
+       'because the count is not a score', T.main(['--check']) == 0)
+    T.REPO = os.path.join(H, 'empty')
+    os.mkdir(T.REPO)
+    ok('ZERO TARGETS IS NOT A CLEAN SWEEP -- an empty tree exits 2',
+       T.main([]) == 2)
+finally:
+    T.REPO = _real_repo
+    shutil.rmtree(H, ignore_errors=True)
+    ok('REPO was restored', T.REPO == _real_repo)
 
 print('\n%d failure(s)' % len(FAIL))
 for f in FAIL:

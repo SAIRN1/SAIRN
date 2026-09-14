@@ -1103,6 +1103,46 @@ REGISTRY = [
                     'silencing the detector takes 9, each sabotage asserting '
                     'its own anchor matched first. 0.2s',
     },
+    {
+        'tool': 'temporary_state_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        # --check, NOT the bare report. The bare run prints a read-list and
+        # exits 0 whatever it finds, which in a runner silent on a clean run
+        # means it would never say anything -- the same reason secrets_inventory
+        # and dependency_graph were registered with a flag rather than bare.
+        'args': ['--check'],
+        'promoted': '2026-09-14, report-only and deliberately NOT wired into '
+                    'the push gate. What it reports is state that LOOKS '
+                    'temporary, and it cannot read intent -- a long-expiry '
+                    'session token and a leaked suppression flag are the same '
+                    'shape. The only thing --check FAILS on is a declaration '
+                    'naming a scope the vocabulary has no word for, because '
+                    'that needs no threshold and no policy',
+        'catches': 'a `// TEMPORARY-STATE: scope=... released-by=...` comment '
+                   'whose scope is not one of command/call/request/session/'
+                   'persistent. The UNDECLARED count is printed on every run '
+                   'and gates NOTHING',
+        'why_it_matters': 'item 34. A checker CANNOT tell a leaked flag from a '
+                          'deliberately long-lived one, so the requirement is '
+                          'the DECLARATION, not the detection -- item 3/33 '
+                          'falsifiable-requirement discipline applied to '
+                          'lifetime. Without a stated intended scope there is '
+                          'nothing to falsify, and a detector that guesses '
+                          'either floods the report or stays silent',
+        'evidence': 'real run 2026-09-14: 723 files, 0 declarations, 175 '
+                    'undeclared candidates, PASS. TWO REAL DEFECTS IN THE '
+                    'SUBJECT were found by building the control first -- a '
+                    "case-insensitive /config/ matched storeError('CONFIG', "
+                    '...) in api/_lib/sd-store.js, and the Python `= True` '
+                    'blind spot was real and undisclosed. And a LIVE finding, '
+                    'not historical: stonedesk.html 2286/2299/6350 set '
+                    'sdSyncSuppressed=true, call st(), clear it, with no '
+                    '`finally` -- a throw between them silences every later '
+                    'server write for the session. 24-arm probe; neutering '
+                    'FLAG_ON collapses the positive arms, and the sabotage '
+                    'asserts its own anchor is present first. 0.4s',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

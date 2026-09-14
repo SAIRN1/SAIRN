@@ -2,6 +2,7 @@
 
     python tools/temporary_state_check.py
     python tools/temporary_state_check.py --json
+    python tools/temporary_state_check.py --check
 
 ── ITEM 34, AND WHY THE DECLARATION COMES FIRST ──────────────────────────
 Two real leaks, two different substrates, one shape:
@@ -58,7 +59,20 @@ line, and a missed leak costs 131 misattributed commits.
     localStorage, and anything set inside a library.
   * `released-by` is free text and is NOT verified.
 
-REPORT ONLY. Exit 0 with findings, 2 when it could not look.
+── WHY --check FAILS ON SO LITTLE ────────────────────────────────────────
+The bare run prints a read-list and exits 0 whatever it finds, so inside a
+runner that is silent on a clean run it would never say anything at all -- the
+failure two other report-only tools on this platform were registered to avoid.
+
+`--check` therefore fails on ONE thing, and it is not the count: a declaration
+naming a scope that does not exist. That is an objective defect -- the comment
+claims a lifetime the vocabulary has no word for, so no reader and no tool can
+act on it -- and it needs no threshold and no policy. The UNDECLARED count is
+printed on every run and gates NOTHING, because choosing a number for it would
+be exactly the guess this tool was built to refuse.
+
+REPORT ONLY. Exit 0 with findings, 2 when it could not look. With `--check`,
+exit 1 when a declaration names an unknown scope.
 """
 import io
 import json
@@ -166,6 +180,18 @@ def main(argv):
         print(json.dumps({'undeclared': rows, 'declarations': declared,
                           'bad_scopes': bad_scopes}, indent=1))
         return 0
+
+    if '--check' in argv:
+        print('TEMPORARY STATE --check : %d declaration(s) over %d files, '
+              '%d undeclared candidate(s) (NOT gated)'
+              % (declared, len(files), len(rows)))
+        if not bad_scopes:
+            return 0
+        print('  A DECLARATION WITH AN UNKNOWN SCOPE IS NOT A DECLARATION:')
+        for rel, i, s in bad_scopes:
+            print('    %s:%d  scope=%r is not one of %s'
+                  % (rel, i, s, ', '.join(SCOPES)))
+        return 1
 
     print('TEMPORARY STATE -- report only, nothing was written')
     print('  files read                    : %d' % len(files))
