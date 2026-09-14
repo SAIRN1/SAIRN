@@ -80,6 +80,6 @@ Sorted by blast radius, because that is the order in which these matter.
 ## What this cannot see
 
 - **Whether a variable is actually SET in production.** This reads the code, not the deployment. The one place that is known is in the table: `SAIRN_OPS_EMAIL` was measured unset on 2026-09-14, because every cron-watchdog alert said so in its own error text.
-- Secrets read anywhere other than `process.env` under `api/`.
+- Secrets read anywhere other than `process.env` under `api/`. **Recounted 2026-09-14: 47 in `api/`, exactly the rows above, so this page is complete for its scope. `tools/` reads 11 more, 8 of them synthetic fixture names (`A`, `MY_KEY`, `X`) inside checkers' own tests.** The exclusion is not empty though: **`tools/restore_coherence_check.js` accepts `SAIRN_TARGET_KEY` and falls back to `SUPABASE_SERVICE_ROLE_KEY`** -- the widest credential on the platform, held by a tool this page cannot see.
 - **Whether a CREDENTIAL is scoped to one app or grants the whole platform.** `SUPABASE_SERVICE_ROLE_KEY` is the sharpest case and its row says so; a general answer needs per-app isolation work, not this page.
 

@@ -364,7 +364,19 @@ def render(rows):
                'the deployment. The one place that is known is in the table: `SAIRN_OPS_EMAIL` '
                'was measured unset on 2026-09-14, because every cron-watchdog alert said so in '
                'its own error text.')
-    out.append('- Secrets read anywhere other than `process.env` under `api/`.')
+    # THE EXCLUSION IS NOT EMPTY, AND SAYING SO IS THE POINT (2026-09-14).
+    # "We do not scan tools/" and "a tool holds the service-role key" are
+    # different statements, and only the first was written down. Recounted the
+    # same day: 47 in api/, exactly the rows above.
+    out.append('- Secrets read anywhere other than `process.env` under `api/`. '
+               '**Recounted 2026-09-14: 47 in `api/`, exactly the rows above, '
+               'so this page is complete for its scope. `tools/` reads 11 more, '
+               '8 of them synthetic fixture names (`A`, `MY_KEY`, `X`) inside '
+               "checkers' own tests.** The exclusion is not empty though: "
+               '**`tools/restore_coherence_check.js` accepts `SAIRN_TARGET_KEY` '
+               'and falls back to `SUPABASE_SERVICE_ROLE_KEY`** -- the widest '
+               'credential on the platform, held by a tool this page cannot '
+               'see.')
     out.append('- **Whether a CREDENTIAL is scoped to one app or grants the whole platform.** '
                '`SUPABASE_SERVICE_ROLE_KEY` is the sharpest case and its row says so; a general '
                'answer needs per-app isolation work, not this page.')
