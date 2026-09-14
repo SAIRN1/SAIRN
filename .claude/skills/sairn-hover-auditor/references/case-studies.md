@@ -3,11 +3,13 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in two
-batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first, then Trail of
-Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA -- both
-once the earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety
-via Debate, risk-limiting audits, Registered Reports) had already pushed
+is still on record somewhere, not compressed away. Added 2026-09-14 in three
+batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
+Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
+SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
+calibration industry (ISO/IEC 17025, ILAC-G24) -- all three batches once the
+earlier research (NASA IV&V, SUBSAFE, WADA, seL4, Pnueli, AI Safety via
+Debate, risk-limiting audits, Registered Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
 than bloating the one every invocation loads.
 
@@ -340,3 +342,92 @@ arrangement can drift from its original design intent before independent
 oversight becomes nominal rather than actual, useful here as a concrete
 answer to "how bad can boundary erosion actually get" rather than as a
 mechanism this role tries to replicate.
+
+## SpaceX / NASA Commercial Crew -- the contrast case, same industry
+
+Added specifically as a check against citing only failures: does the same
+broad mechanism (risk-prioritized sampling plus full verification reserved
+for the highest tier) ever go right, in the same industry Boeing's MCAS
+failure came from? Yes, currently, with real caveats attached.
+
+**The working version of the same design.** NASA's Safety Technical Review
+Board (part of the Commercial Crew Program's oversight structure) runs a
+documented, risk-prioritized sampling approach for routine hazard reports
+and material/process verification, while reserving full, independent
+verification specifically for mission-critical software and the
+highest-criticality hardware -- structurally the same two-tier shape this
+role already uses (a sampled fast pass, full deep-pass verification
+reserved for Tier A). This is not a novel design being proposed here; it is
+a live, currently-operating precedent in the same broad domain that
+produced the MCAS failure.
+
+**Why the outcome differs, and it is not because NASA samples less than
+Boeing's ODA arrangement did.** The load-bearing difference is that NASA's
+Safety Technical Review Board retained genuine, exercised authority over
+WHAT gets sampled and how, and never allowed full independent verification
+on the highest-criticality software to erode toward a self-certified
+default the way FAA's ODA oversight of MCAS did between 2016 and 2017. Both
+programs delegate routine verification. Only one of them kept the authority
+over that delegation real rather than letting it become a formality over
+time.
+
+**The honest correction, stated because it would be dishonest not to.**
+NASA's own Office of Inspector General and the Government Accountability
+Office have both published real findings against this exact program:
+documented review-timeliness problems (verification not keeping pace with
+the contractor's own development schedule), an internally undefined
+risk-tolerance threshold that has not been precisely pinned down even by
+NASA's own account, and genuine schedule pressure -- the commercial partner
+controls the pace of development, and NASA's review process has to keep up
+with that pace rather than set it independently. This case is evidence that
+a well-designed two-tier verification structure CAN hold under real
+operational pressure over years, not evidence that it has been tested by an
+actual failure and survived one the way, for instance, a near-miss caught
+in time would be. The distinction matters and should not be collapsed into
+a simpler "it worked" claim.
+
+## Calibration industry -- ISO/IEC 17025 and ILAC-G24
+
+The international standard governing how measuring-instrument calibration
+labs operate (ISO/IEC 17025) and its companion guidance on setting
+re-calibration intervals (ILAC-G24) are a genuinely mature, decades-refined
+discipline for exactly the problem this role also has: how often should a
+given thing be re-checked, and how should degrading performance be
+reported honestly.
+
+**AS-FOUND versus AS-LEFT, and why conflating them is a documented,
+recurring failure mode in the calibration industry itself.** Every proper
+calibration report states the instrument's AS-FOUND condition -- how far it
+had actually drifted from spec before anyone touched it -- as a distinct,
+preserved figure from its AS-LEFT condition after any adjustment was made.
+ILAC-G24 and ISO/IEC 17025 both exist partly because many providers,
+historically, reported only the as-left (post-adjustment, looks-fine) state
+and never recorded how bad the as-found state actually was -- which erases
+the only evidence that would let anyone later ask "how much was this
+actually drifting, and for how long, before someone caught it."
+
+**The staircase method (ILAC-G24) -- a real, specific algorithm for
+setting an individual interval from individual history, not a general
+instinct.** Rather than a fixed re-calibration interval applied to every
+instrument of a given type, the staircase method adjusts each instrument's
+OWN interval from its own track record: three consecutive verifications
+that come back within tolerance extend the interval before the next
+verification by approximately 25%, up to a cap of twice the original
+baseline interval; a verification that comes back marginal or outside
+tolerance shortens the interval back down. An instrument that has
+repeatedly proven stable earns less frequent checking, within a bounded
+ceiling; one that shows any sign of drift is checked again sooner. This is
+a real, decades-tested, bounded algorithm for exactly the shape WADA's
+biological-passport principle gestures at more generally -- individual
+history should inform individual check frequency -- with an actual formula
+behind it rather than only a direction to "check occasionally."
+
+**Severity by ratio, not by a pass/fail line.** A calibration standard
+never reports an out-of-tolerance instrument as a single binary
+fail -- 0.1% past tolerance and 40% past tolerance are both "failed" under
+a binary read, and that collapse discards exactly the information that
+decides how urgently it matters. The report states how far past tolerance
+the reading actually was. Applied to a drift or statistical finding here:
+state the ratio -- how far past an agent's own baseline, how far past a
+stated bound -- rather than reducing it to a single severity word the way
+a pass/fail line would.

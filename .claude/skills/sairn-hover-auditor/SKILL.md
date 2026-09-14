@@ -206,6 +206,41 @@ by the time of the crashes -- real data on how far delegated verification
 can drift before independent oversight becomes theoretical rather than
 actual. Full account: `references/case-studies.md`.)
 
+**The real contrast case, same broad industry, opposite outcome --
+SpaceX / NASA Commercial Crew.** NASA's Safety Technical Review Board
+already runs a documented, risk-prioritized SAMPLING method for routine
+hazard and material verification on Commercial Crew -- live, current
+confirmation this role's own two-tier design (a sampled fast pass, full
+independent verification reserved for the highest-criticality tier) is a
+real, working pattern, not an invented shortcut. The load-bearing
+difference from Boeing's MCAS failure is not that NASA samples less than
+Boeing did -- NASA's board KEPT genuine review and approval authority over
+what gets sampled, and never let full independent verification on the
+highest-criticality software erode toward zero the way FAA's ODA oversight
+of MCAS did. Same industry, the same broad two-speed mechanism, opposite
+outcome, because one program's authority over the sampling stayed real and
+the other's authority was delegated away.
+
+**Say the honest correction plainly, do not skip it: this is a
+"no-failure-yet" case, not a "survived a real test" case.** NASA's own
+Inspector General and GAO have both documented real, ongoing problems with
+this exact program -- review-timeliness failures, an undefined
+risk-tolerance threshold nobody has pinned down precisely, and genuine
+schedule pressure, since the contractor controls the development pace and
+NASA's review has to keep up with it rather than set it. Citing Commercial
+Crew as a working contrast to Boeing is not the same claim as citing it as
+proven, tested success -- it has not yet been tested by a failure the way
+Boeing's approach was.
+
+**A standing self-check this contrast produces, same shape as the
+Arrogance/Complacency watch already in this file:** does dispatch pressure
+or a deadline ever squeeze this role's own rotation or coverage the same
+way -- a Tier A item checked less thoroughly because something needed to
+move fast that round, not because the actual risk was genuinely lower? The
+NASA/GAO finding on schedule pressure is the concrete version of exactly
+this question, asked of a program built the right way in principle. Full
+account: `references/case-studies.md`.
+
 **A landed fix must be confirmed running on every real target, not trusted
 on the push tool's own success report.** Knight Capital's 2012 deploy
 "succeeded" on 8 servers by the deploy tool's own account; the 8th was
@@ -464,6 +499,24 @@ single claim, read alone, checks out clean. This is a slower-cadence check
 than the fast pass, layered on top of it, not a replacement -- most rounds
 still just compare claim against diff.
 
+**A real, named algorithm for setting check frequency, not just an
+instinct to check "occasionally."** ISO/IEC 17025 and ILAC-G24 (the
+calibration-industry standard for how often a measuring instrument gets
+re-verified) specify a concrete "staircase" method rather than a fixed
+interval for everyone: three consecutive clean verifications on a given
+instrument extend the interval before its next one by roughly 25%, capped
+at twice the original baseline interval; a marginal or failed verification
+shortens the interval instead. Applied here as the actual mechanism behind
+individual baseline tracking, not a separate idea: three consecutive clean
+deep passes on a given agent's Tier A work extends how long this role can
+go before that agent's next SCHEDULED deep pass by roughly 25%, capped at
+2x the original baseline cadence -- and a marginal or contested pass
+(anything that needed Debate, or came back anything short of clean)
+shortens it back down immediately. This gives WADA's "watch for a
+deviation from their own history" instinct an actual, defensible number
+to compute rather than leaving it as a general sense of trust earned or
+lost. Full account: `references/case-studies.md`.
+
 **Order, not concealment, is what makes this honest.** True blinding to
 authorship isn't achievable here -- the agent is always named before a
 single line of the diff is read, unlike a Registered Report's
@@ -526,6 +579,19 @@ to.
   file is LOW impact (wastes a future reader's time) even though the file it
   sits in is high-stakes. Keep the two axes (where it is / what it does)
   separate rather than letting the first inflate the second.
+- **For a drift or statistical finding specifically, score by RATIO, not
+  pass/fail.** Real principle (calibration-industry practice, ISO/IEC
+  17025): a measurement out of tolerance is judged by how far past
+  tolerance it is, not treated as a single binary fail state -- a reading
+  0.1% outside spec and a reading 40% outside spec are both "failed" in a
+  pass/fail read, and that collapse throws away the information that
+  actually decides urgency. Applied to the structural/operational category
+  above: a claim rate that has drifted 5% from an agent's own baseline and
+  one that has drifted 80% are not the same severity even if both cross
+  whatever threshold flags them as worth a second look. Compute and state
+  the ratio -- how far past the baseline or the stated bound -- rather than
+  reducing a drift finding to a single severity word the way a binary
+  pass/fail would.
 
 ## Safe harbor
 
@@ -631,6 +697,21 @@ control: tamper with one entry by hand, confirm `--verify` reports
 `TAMPERED`, then restore it and confirm `--verify` reports clean again. A
 verifier that has never been shown to fail is not yet a verifier -- the same
 standard this role holds every checker it audits to.
+
+**Record AS-FOUND separately from AS-LEFT, and never let the second
+overwrite the first.** Real principle (ISO/IEC 17025 calibration practice):
+every calibration reports the instrument's AS-FOUND state -- how far it had
+actually drifted before anyone touched it -- distinctly from its AS-LEFT
+state after adjustment, because many providers report only as-left, and
+that erases the real evidence of how bad the original drift was. Applied
+here: when a finding gets fixed, that is a NEW entry (a `check` or `note`
+confirming the fix), never an edit to the original `finding` entry's
+severity or description -- the hash-chain's append-only structure already
+makes overwriting impossible mechanically, but the discipline matters
+independently of the mechanism. "Confirmed fixed" is a fact about a later
+state; it is not license to retroactively soften how the original finding
+gets read. A future reader of the self-log should be able to see both: how
+bad it actually was when found, and what happened after.
 
 ## Three threats to watch in myself
 
