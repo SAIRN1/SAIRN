@@ -201,6 +201,60 @@ const OUT = (id, at) => ({ id: id, clock_out_at: at, status: 'completed', servic
     check('with no licence key the flush does nothing rather than erroring', [r.sent, r.left, w.calls.length], [0, 1, 0]);
   }
 
+  // -- CONCURRENCY: THE TWO GUARDS NOTHING HAD EVER EXERCISED --------------
+  // ADDED 2026-09-14, and tests/sairnsenior_fault_probe.py found the hole
+  // rather than a reader. Both guards below carry a written reason at their
+  // site in sairnsenior.html; neither was exercised by anything, so removing
+  // either left this suite GREEN. That is precisely what a mutation probe is
+  // for, and it is the second time in one day that the DENSEST part of a suite
+  // turned out to have the untested guard in it.
+  {
+    // THE POST-AWAIT RE-READ. A caregiver clocks the next visit while the
+    // queue is draining. If the flush writes back the array it read BEFORE the
+    // send, that new entry is silently overwritten -- an EVV record that was
+    // accepted on the device and then vanished without ever being sent.
+    const w = build({
+      store: {
+        sen_visits: [],
+        sen_evv_queue: [{ queued_at: 'a', payload: IN('V1', '2026-09-02T14:00:00.000Z') }]
+      },
+      online: (n) => {
+        if (n === 1) {
+          const q = w.store.sen_evv_queue.slice();
+          q.push({ queued_at: 'b', payload: IN('V2', '2026-09-02T14:30:00.000Z') });
+          w.store.sen_evv_queue = q;
+        }
+        return true;
+      }
+    });
+    const r = await w.api.senFlushEvvQueue();
+    check('an event queued WHILE a send is in flight is not overwritten',
+      [r.sent, w.calls.map((c) => c.id)], [2, ['V1', 'V2']]);
+    check('...and the queue ends empty rather than having lost one',
+      w.api.evvQueue().length, 0);
+  }
+  {
+    // THE RE-ENTRY GUARD. The flush is triggered by a timer, by the browser's
+    // `online` event and by a clock action, so two can genuinely start at once.
+    // Without the guard both loops read the same head entry and send it twice
+    // -- a duplicate EVV record, which is a billing artefact rather than a
+    // harmless retry.
+    const w = build({
+      store: {
+        sen_visits: [],
+        sen_evv_queue: [
+          { queued_at: 'a', payload: IN('V1', '2026-09-02T14:00:00.000Z') },
+          { queued_at: 'b', payload: OUT('V1', '2026-09-02T15:00:00.000Z') }
+        ]
+      }
+    });
+    const [r1, r2] = await Promise.all([w.api.senFlushEvvQueue(), w.api.senFlushEvvQueue()]);
+    check('a second flush started while one is running does not double-send',
+      [r1.sent + r2.sent, w.calls.length], [2, 2]);
+    check('...and each queued event reached the server exactly once, in order',
+      w.calls.map((c) => (c.clock_in_at ? 'in' : 'out')), ['in', 'out']);
+  }
+
   // ── the page ──────────────────────────────────────────────────────────
   check('the queue lives only on the device -- it is by definition what could not reach the server',
     /sen_evv_queue/.test(fs.readFileSync(path.join(__dirname, '..', '_resources', 'sairnsenior.js'), 'utf8')), false);
