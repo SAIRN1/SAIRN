@@ -9,6 +9,8 @@ Run this checklist on any file being touched before commit. Each item below is a
 
 Items 1–15 are defects in APP code. **Item 16 is a defect in TEST code**, added 2026-09-02 because the platform hit it five times in one session across three apps. It is listed here rather than kept separate on purpose: a test that passes for the wrong reason does not merely fail to catch a bug, it certifies the bug — which makes it the most expensive class in this file. This preamble is amended rather than left saying "shipped in a SAIRN app", which would have stopped being true the moment item 16 was added.
 
+**Items 17–21 added 2026-09-14**, and four of the five are defects in the TOOLS AND TESTS rather than in app code — which is now the majority of this file's recent growth and is worth saying out loud. The measured split over all 67 confirmed defects on 2026-09-14: **49% were caught only because a person read the code**, 51% by an automated checker, and **0% by monitoring**. A checklist a human runs is therefore still doing half the work here, so a bug class that lives in the checking apparatus itself is the one most likely to go unnoticed — there is nothing behind it.
+
 ## 1. Unquoted/mis-quoted object keys with spaces
 JS object literal keys containing spaces MUST be quoted: `{'Sent to Client': 'bb'}` not `{Sent to Client: 'bb'}`. Unquoted breaks parsing silently in some contexts and produces duplicate map entries in others (one broken, one working) — grep any statusColors/lookup map literal for unquoted multi-word keys.
 
@@ -71,3 +73,34 @@ A test that passes for the wrong reason does not merely fail to catch a bug -- i
 **THE RULE: assert the thing is CONSULTED, not that it is declared; and assert rows land in the right bucket, not that the buckets sum.** `total === expected` is satisfied by every possible misallocation. Assert the per-bucket contents. Where a mechanism replaces an older one, assert the old one is ABSENT at the call site as well as that the new one is present.
 
 **AND THE STANDING PRACTICE THAT CAUGHT ALL FIVE:** before trusting a new suite, break the behaviour it exists to protect -- one deliberate edit per claim -- and confirm the suite goes red and names the right thing. Restore the file and verify it is byte-identical afterwards. A suite that has never been seen to fail is a suite whose behaviour nobody knows.
+
+## 17. A sabotage control that silently no-ops when its anchor moves
+A negative control proves a checker can FIRE by planting a defect and asserting the checker goes red. Almost all of them do it with `src.replace(anchor, ...)` — and **`str.replace` returns the string unchanged when the anchor is not found**. Rename the thing the anchor points at and the control runs the checker against an UNMODIFIED file, forever, saying nothing. **MEASURED 2026-09-13: 24 of 40 probes that patch a real source file never verify the patch landed** — read the live figure from `python tools/sabotage_control_check.py`, never from a document, because it moved three times in one evening.
+
+The loud outcome is an arm failing against a tool that works, which is how it was noticed. **THE QUIET ONE IS WHY IT MATTERS: an arm written as "expect no findings" keeps PASSING on a file nobody touched, and reports green forever.**
+
+**THE RULE: a control asserts its own sabotage APPLIED before it asserts anything about the checker.** Compare the bytes, or use a helper that RAISES when the anchor is absent — never call `str.replace` directly in a probe. And restore by comparing byte-for-byte afterwards, **after `tr -d ''`**: a CRLF-vs-LF difference is not drift, and mistaking one for drift produced three false alarms in a single session on 2026-09-03.
+
+## 18. A control character typed literally instead of as an escape
+`\b` typed into a heredoc becomes byte `0x08`, a literal BACKSPACE, and a regex containing it **can never match**. An assertion built on it passes unconditionally forever. **This has now happened FOUR times**, most recently at `api/sv-auth.test.js:301`, where `!/\bdelete\b/i.test(SRC)` became `!/[BS]delete[BS]/i.test(SRC)` — so the test *"NOTHING in this endpoint deletes a credential row"* had always passed without checking anything, on a DEA-relevant path.
+
+**THE RULE: never build a regex through a shell heredoc.** Write the script to a file, or construct the escape with `chr(92)` so no raw byte can exist. `python tools/control_char_check.py` finds them; it is promoted to push-gate check 11. **And when you find one, check what the corrected pattern actually matches before fixing it** — a vacuous green becoming a real red is a different, larger job than a one-line repair.
+
+**AND IT HAPPENED AGAIN WHILE THIS ENTRY WAS BEING WRITTEN — the fourth time.** The heredoc that added this section turned its own `\\b` into three literal `0x08` bytes, inside the paragraph explaining that exact failure. `control_char_check` caught it before the commit. **That is the argument for the rule in its strongest possible form: knowing about this class does not protect you from it — only building the escape with `chr(92)`, or never using a heredoc, does.**
+
+## 19. A helper called with its arguments in the wrong order
+A checker or adapter that takes two same-typed parameters — `(expected, actual)`, `(engine, invariant)`, `(needle, haystack)` — silently does nothing useful when they are swapped, because both sides are strings and nothing complains. The financial invariant runner reported `ledger.validateEntry` as **2000/2000 STABLE while MISCLASSIFIED**: the adapter asked for `debits_cents`, the engine returns `debit_total`, and `undefined === undefined` is true on every case. **A vacuous perfect score.**
+
+**THE RULE: a comparison whose two sides can both be `undefined` must assert they are DEFINED before it asserts they are equal.** And report accuracy and stability as two numbers, never one — a single figure hides which of the two failed, and here the very next row failed the opposite way.
+
+## 20. A seam that agrees on the number and disagrees on the unit
+Two modules pass a value across a boundary and both are internally correct; what neither owns is the SCALE. Cents against dollars, minutes against milliseconds, a rate against a percentage. Nothing throws, the arithmetic is plausible, and the answer is wrong by exactly 100 or 60 or 1000. Related to item 19 but distinct: the arguments are in the right order and the shapes match — **only the unit is unstated, so no type check and no shape assertion can see it.**
+
+**THE RULE: put the unit in the NAME at every seam** — `amount_cents`, `window_seconds`, `rate_bp` — and assert a boundary value that would be visibly absurd at the wrong scale, not a round number that looks reasonable either way. A test using `100` cannot tell cents from dollars; one using `1870.93` can.
+
+## 21. Money compared as a floating-point number
+`Math.abs(a - b) > TOLERANCE` on money, with the tolerance at `0.00`, **refuses correct values**. Two partial deliveries of `$1,870.93` and `$1,957.54` sum to `3828.4700000000003`, so a `$3,828.47` bill against a `$3,828.47` purchase order came out `4.5e-13` apart and was REFUSED — printing *"billed $3828.47 against $3828.47 actually received"*, two identical figures and a refusal nobody could act on. Found 2026-09-14 in SAIRNbiz's three-way match, by an independent review that RAN the shipped function rather than reading it.
+
+`api/_lib/ledger.js` already states the rule in its own header: *"a ledger that decides balance with a float comparison will one day refuse a correct entry or accept a wrong one."* This was the first of the two, which is the safe direction and is still a gate people route around.
+
+**THE RULE: convert to integer cents at the boundary and compare integers.** Convert the TOLERANCE too rather than assuming it is zero, so a future non-zero tolerance does not become a second place somebody has to remember. And return `0`, never `NaN`, for a non-finite input — **NaN compares false against everything including the tolerance, so a corrupt row would silently MATCH.**
