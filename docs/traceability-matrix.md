@@ -113,6 +113,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 43: the one literal Copy-Exactly block no longer matches its own app &mdash; 0 of 5 identical** | **BUILT 2026-09-14 (Hank)** &mdash; `tools/copy_exactly_check.py`, `tests/run_copy_exactly_probe.py` (17 arms), `docs/2026-09-14-copy-exactly-audit.md` | `tests/run_copy_exactly_probe.py` |
 | **Item 92: functional core / imperative shell, applied to the TWO functions that decide money &mdash; and a red suite nobody had noticed** | **DONE 2026-09-14 (CC)** &mdash; `api/_lib/ledger.js` + `api/ledger.js`, `sbMatchPure` in `sairnbiz.html`. Held by `tests/functional_core_is_pure.js` (26 arms, four mutation controls). Every pre-exist | `tests/functional_core_is_pure.js`, `tests/sairnbiz_ledger_source_id.js` |
 | **The three checkers built today had NO DECLARED CONTROL, and two of them then proved only ONE DIRECTION** | **CLOSED 2026-09-14 (CC)** &mdash; `python tools/checker_control_check.py` now reports **NO DECLARED CONTROL 0, ONE DIRECTION 0, BOTH EVIDENCED 39** | `tests/run_literal_drift_control_probe.py` |
 | **Item 89 (look-elsewhere) found the multiplicity gap it was sent for &mdash; and underneath it, THE WATCH TIER HAD BEEN ARITHMETICALLY DISABLED FOR THE ENTIRE FLEET** | **FIXED + MEASURED 2026-09-14 (Cody)** &mdash; `tools/flaky_checker_quarantine.py`, 14 fixtures (3 added), the removal of the fix makes exactly the new ones fail; `tests/run_flaky_quarantine_probe.py` | `tests/run_flaky_quarantine_probe.py` |
@@ -339,7 +340,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**180 of 384 test files are traced to a stated requirement. 204 are not.**
+**181 of 384 test files are traced to a stated requirement. 203 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -488,7 +489,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_citator_freshness_probe.py`
 - `tests/run_cleanup_confirm_probe.py`
 - `tests/run_condition_coverage_probe.py`
-- `tests/run_copy_exactly_probe.py`
 - `tests/run_defect_budget_probe.py`
 - `tests/run_eaten_substitution_probe.py`
 - `tests/run_financial_invariant_probe.py`
@@ -568,7 +568,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 384   tests/**, api/*.test.js
-  open-work rows citing a test       168   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       169   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                41   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     17   report_only_checks.NOT_PROMOTED
