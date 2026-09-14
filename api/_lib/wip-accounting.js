@@ -284,7 +284,23 @@ function jobWip(input) {
     // The accounting standard method, used ONLY when a caller actually
     // supplies costs. Never inferred.
     out.basis = 'cost_to_cost';
-    out.pct_complete = Math.round(Math.min(1, costToDate / estTotalCost) * 1000) / 10;
+    // ── ITEM 50c: ROUND WHAT IS REPORTED, NOT WHAT IS COMPUTED FROM ───────
+    // This was one line: pct_complete = round(ratio * 1000) / 10, and `earned`
+    // was then derived from the ROUNDED figure. On a $1M contract a 0.05pp
+    // rounding is $500 of earned revenue, invented by the display precision --
+    // and over_under is a difference of two large near-equal numbers, so the
+    // error lands somewhere its relative size is much larger than it looks.
+    //
+    // DORMANT TODAY AND WRONG WHENEVER IT WAKES: this branch only runs when a
+    // caller supplies real costs, which nothing currently does. Fixed anyway,
+    // because a defect that waits for its first real input is one nobody will
+    // connect to the change that finally supplies it.
+    //
+    // The exact ratio is kept for the arithmetic; the reported percent stays
+    // at one decimal place, which is what a person reads.
+    const ratio = Math.min(1, costToDate / estTotalCost);
+    out.pct_complete = Math.round(ratio * 1000) / 10;
+    out.pct_complete_exact = ratio;
   } else {
     // What the contractor stated on the most recent draw by period end. This
     // is how a roofing draw is really written -- usually off squares installed
@@ -302,7 +318,12 @@ function jobWip(input) {
   }
 
   if (out.pct_complete !== null && contract !== null) {
-    out.earned = money(contract * out.pct_complete / 100);
+    // The exact ratio when the cost-to-cost branch computed one; otherwise the
+    // contractor's STATED percent, where the figure itself is the datum and
+    // dividing by 100 is not a loss.
+    const frac = (typeof out.pct_complete_exact === 'number')
+      ? out.pct_complete_exact : (out.pct_complete / 100);
+    out.earned = money(contract * frac);
     out.billed = out.requested_total;
     out.over_under = money(out.billed - out.earned);
     out.position = out.over_under > 0 ? 'over_billed' : (out.over_under < 0 ? 'under_billed' : 'level');

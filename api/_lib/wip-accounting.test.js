@@ -345,4 +345,40 @@ test('not_computable is UNCHANGED -- an uncomputable job still lands there and n
     'a job cannot be in both -- the two fields must partition, or a reader double-counts');
 });
 
+// -- ITEM 50c: the reported precision must not invent earned revenue --------
+// The cost_to_cost branch computed pct_complete = round(ratio*1000)/10 and then
+// derived `earned` from the ROUNDED figure. On a $1M contract a 0.05pp rounding
+// is hundreds of dollars of earned revenue created by the display precision --
+// and over_under is a difference of two large near-equal numbers, so that error
+// lands where its relative size is far bigger than it looks.
+test('50c the exact ratio drives earned, not the one-decimal display figure', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J1', contract_value: 1000000 },
+    draws: [], cost_to_date: 666666, estimated_total_cost: 1000000 });
+  assert.strictEqual(r.basis, 'cost_to_cost');
+  assert.strictEqual(r.pct_complete, 66.7, 'the REPORTED percent is still one decimal place');
+  assert.strictEqual(r.earned, 666666, 'earned follows the exact ratio');
+});
+
+test('50c CONTROL: the old rounded arithmetic really would differ, so the arm '
+  + 'above is not asserting a value that was always going to hold', () => {
+  const ratio = 666666 / 1000000;
+  const oldWay = Math.round(1000000 * (Math.round(ratio * 1000) / 10) / 100 * 100) / 100;
+  assert.strictEqual(oldWay, 667000);
+  assert.ok(oldWay - 666666 === 334, 'the display precision invented $334');
+});
+
+test('50c NO EXACT RATIO IS INVENTED where none was computed -- the field '
+  + 'appears only on the cost_to_cost path, so the other branches keep using '
+  + 'the stated percent, where the figure IS the datum', () => {
+  const r = w.jobWip({ today: TODAY, job: { job_id: 'J2', contract_value: 200000 },
+    draws: [draw({ pct_complete: 40 })] });
+  assert.notStrictEqual(r.basis, 'cost_to_cost');
+  assert.strictEqual(r.pct_complete_exact, undefined);
+  // NOT asserted here: what the contractor-stated branch computes for `earned`.
+  // Reaching it needs a draw shape summariseDraw carries pct_complete through,
+  // and this fixture does not produce one -- an arm that asserted a value on a
+  // path it never entered would pass for the wrong reason, which is the most
+  // expensive class in the scrubber.
+});
+
 console.log(passed + ' passed');
