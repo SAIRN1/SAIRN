@@ -87,6 +87,30 @@ member of nothing, with `ALTER DEFAULT PRIVILEGES` so tables created later are
 covered too — **the half that is usually forgotten**, and whose absence is the
 same silent-omission shape as the RLS one, arriving later.
 
+### `FOR ROLE` is not optional, and leaving it off is the same bug one level in
+
+**Corrected 2026-09-14 after review, before the role was ever created.**
+`ALTER DEFAULT PRIVILEGES` **without** `FOR ROLE` applies only to objects created
+by the role running the statement. Run it as `postgres` and it covers exactly
+what `postgres` goes on to create — and nothing made by anything else.
+
+On Supabase that is not a corner case: the dashboard's table editor, the
+migration runner and several extensions create objects as `supabase_admin`. A
+table created that way would carry no grant for the backup role, `pg_dump` would
+skip it **without an error**, and the backup would be missing a table while
+exiting zero — the identical shape as the RLS gap, arriving months later and
+only for tables added after today.
+
+Both grantors are now named explicitly, and **a `FOR ROLE` that cannot be applied
+raises rather than continuing**: the clause requires membership in the target
+role, `postgres` is not always a member of `supabase_admin`, and silently
+skipping it would leave exactly the gap it was added to close. *Could not set it*
+is a third state and it is not *set*.
+
+**The verify block is what proves it took**, not the statement: query 2b reads
+`pg_default_acl` and must return **one row per grantor**. A single row there is
+the failure, not a pass — it means only the role that ran the file is covered.
+
 **Why not reuse `service_role`:** a backup job needs to read everything and
 should be able to do nothing else. `service_role` can write to every table on the
 platform. A credential that leaks from CI should cost a disclosure, not a

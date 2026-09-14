@@ -72,10 +72,58 @@ grant select on all sequences in schema public to sairn_backup_reader;
 --    forgotten. Without this, every table created after today is absent from
 --    the backup and nothing says so -- the same silent-omission shape as the
 --    RLS one above, arriving later.
-alter default privileges in schema public
-  grant select on tables to sairn_backup_reader;
-alter default privileges in schema public
-  grant select on sequences to sairn_backup_reader;
+--
+-- ── FOR ROLE IS NOT OPTIONAL, AND LEAVING IT OFF IS THE SAME BUG ONE LEVEL IN
+-- `ALTER DEFAULT PRIVILEGES` WITHOUT `FOR ROLE` APPLIES ONLY TO OBJECTS CREATED
+-- BY THE ROLE RUNNING THE STATEMENT. Run this as `postgres` and it covers
+-- exactly the tables `postgres` goes on to create -- and NOTHING made by
+-- anything else.
+--
+-- On Supabase that is not a corner case. The dashboard's table editor, the
+-- migration runner and several extensions create objects as `supabase_admin`.
+-- A table created that way would carry no grant for this role, `pg_dump` would
+-- skip it without an error, and the backup would be missing a table WHILE
+-- EXITING ZERO -- the identical silent-omission shape as the RLS gap above,
+-- arriving months later and only for the tables added after today.
+--
+-- Found by review before the role was ever created. Both grantors are covered
+-- explicitly.
+--
+-- AND IT FAILS LOUDLY IF IT CANNOT. `FOR ROLE x` requires membership in x, and
+-- `postgres` is not always a member of `supabase_admin`. A statement that
+-- silently could not be applied would leave exactly the gap it was added to
+-- close, so each one is attempted and a failure RAISES with what to do about
+-- it. "Could not set it" is a third state and it is not "set".
+do $$
+declare
+  r text;
+begin
+  foreach r in array array['postgres', 'supabase_admin'] loop
+    if not exists (select 1 from pg_roles where rolname = r) then
+      raise notice 'default privileges NOT set for %: no such role on this '
+                   'deployment. If objects are never created by it, that is '
+                   'correct; confirm rather than assume.', r;
+      continue;
+    end if;
+    begin
+      execute format(
+        'alter default privileges for role %I in schema public '
+        'grant select on tables to sairn_backup_reader', r);
+      execute format(
+        'alter default privileges for role %I in schema public '
+        'grant select on sequences to sairn_backup_reader', r);
+      raise notice 'default privileges set for objects created by %', r;
+    exception when insufficient_privilege then
+      raise exception
+        'Could not set default privileges FOR ROLE % -- you must be a member '
+        'of that role. Run this file as a role that is (supabase_admin), or '
+        'grant membership first. STOPPING: leaving it unset would mean every '
+        'table % creates from today on is silently absent from the backup, '
+        'which is the exact failure this clause exists to prevent.', r, r;
+    end;
+  end loop;
+end
+$$;
 
 -- 5. Belt and braces: it must not be able to write, ever.
 revoke insert, update, delete, truncate, references, trigger
@@ -94,6 +142,23 @@ select distinct privilege_type
   from information_schema.role_table_grants
  where grantee = 'sairn_backup_reader'
  order by privilege_type;
+
+-- 2b. THE DEFAULT ACLs ACTUALLY TOOK, AND FOR WHICH GRANTOR. Expect ONE ROW PER
+--     GRANTOR that exists on this deployment -- `postgres` and `supabase_admin`
+--     -- each showing a grant to sairn_backup_reader.
+--
+--     A SINGLE ROW HERE IS THE FAILURE, not a pass: it means only the role that
+--     ran this file is covered, and every table the OTHER one creates from
+--     today on is silently absent from the backup. That is what `FOR ROLE`
+--     exists to prevent and this is the only query that proves it worked.
+select pg_get_userbyid(d.defaclrole) as objects_created_by,
+       d.defaclobjtype                as object_type,
+       d.defaclacl                    as acl
+  from pg_default_acl d
+  join pg_namespace n on n.oid = d.defaclnamespace
+ where n.nspname = 'public'
+   and array_to_string(d.defaclacl, ',') like '%sairn_backup_reader%'
+ order by 1, 2;
 
 -- 3. It is a member of nothing. Expect: 0
 select count(*)
