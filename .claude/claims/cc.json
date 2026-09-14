@@ -1174,6 +1174,16 @@
       "claimed_at_epoch": 1789391988.4739008,
       "status": "released",
       "released_at": "2026-09-14T13:28:59Z"
+    },
+    {
+      "id": "cc-1789392554",
+      "session": "cc",
+      "subject": "defect-dispersion",
+      "task": "is defect causation concentrated or uniform across commits files apps",
+      "claimed_at": "2026-09-14T13:29:14Z",
+      "claimed_at_epoch": 1789392554.9372087,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
