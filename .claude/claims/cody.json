@@ -1169,6 +1169,16 @@
       "claimed_at_epoch": 1789423168.034463,
       "status": "released",
       "released_at": "2026-09-14T22:33:22Z"
+    },
+    {
+      "id": "cody-1789426146",
+      "session": "cody",
+      "subject": "rubric-ratification",
+      "task": "phase 0 severity rubric ratification blind grading pass, flaky ledger js runner restore_coherence_check",
+      "claimed_at": "2026-09-14T22:49:06Z",
+      "claimed_at_epoch": 1789426146.041647,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
