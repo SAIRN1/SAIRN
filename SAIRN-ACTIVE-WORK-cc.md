@@ -3006,3 +3006,47 @@ The open row for `literal_drift_check.py`'s one-directional control still reads 
 measures **0 ONE DIRECTION** with `tests/run_literal_drift_control_probe.py` present since
 `7eff5fb8`. That row looks stale. It belongs to another session and was left alone rather than
 closed on their behalf.
+
+
+---
+
+## 2026-09-14 -- the post-work sweep caught my own change
+
+`tools/report_only_checks.py`, run after the day's work rather than before it. 412s of a 600s
+budget, 7 findings. Triaged:
+
+| finding | verdict |
+|---|---|
+| `removal_path_check`: **`sb_po`, `sb_recv`** | **MINE, real, recorded, not fixed** |
+| `truthy_sum_check`: `(r.written \|\| 0)` in `audit-checkpoint.js:396` | **false positive** -- the fallback IS 0, so `0 \|\| 0` is 0 |
+| `criticality_tier_check`: `sairnvet/sv_audit_backed` | another session's new resource, theirs to tier |
+| `gate_column_check`, `schema_snapshot_freshness` | both rest on a snapshot 23.8h old -- the open re-capture row |
+| `completeness_check` exit 1 | the `sen-portal` finding recorded earlier today |
+
+### The one that is mine
+
+The same change that gave the three-way match a server added **two Tier A resources with no way to
+correct a wrong row.** Neither has a removal verb, because this platform grants no `delete`.
+
+**Why that is sharper here than on the other 53 in the burn-down queue: these two are consumed by a
+CONTROL.** `sbThreeWayMatch` sums every receipt against a PO, so **a receipt entered in error
+inflates the received total for ever** -- the bill is refused with *"billed $X against $Y actually
+received"*, two figures and a refusal against a number nobody in the product can correct. And after
+the sync, **two POs sharing a number refuse the match outright** by the ambiguity guard I added the
+same day, so a PO raised in error on a second device is permanent and blocks a correct bill.
+
+**A control a person cannot correct is one they route around** -- the failure the three-way match
+exists to prevent.
+
+**The minimal fix needs no new database privilege**, and the platform has made this call once
+already: `sd_quote_requests` took a soft delete inside the existing jsonb plus a default panel
+filter. Here it is smaller -- `sb_po` rows **already carry a `status` field**, so a `Void` status
+consumed by the match and the render is the whole change; receipts need an equivalent flag. Both
+excluded from the sums rather than removed, which keeps the trail the match depends on.
+
+**Not done unilaterally: it is a behaviour change to a financial control.** Who may void, whether a
+voided PO still shows, and whether a voided receipt stays visible are product decisions -- the same
+reasoning that kept the `sen-portal` gate and SAIRNlaw phase 2 out of my hands.
+
+Recorded with a **known `injection.commit`** -- the first record able to say exactly where the gap
+arrived, since it arrived with the commit that registered the two resources.

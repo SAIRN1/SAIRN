@@ -2027,6 +2027,33 @@
       "injection": {
         "unknown_reason": "Recorded before injection_commit existed (field added 2026-09-14). NOT backfilled by blame: reconstructing an injection point after the fact produces a lag distribution built from guesses, which is worse than no distribution -- the same refusal the register already makes for detection_method and found_by_tool. See docs/2026-09-14-ibnr-scoping.md."
       }
+    },
+    {
+      "commit": "20afb167",
+      "date": "2026-09-14",
+      "subject": "feat(sairnbiz): the three-way match's own two documents reach a server",
+      "files": [
+        "api/sd-data.js",
+        "api/_resources/sairnbiz.js",
+        "sql/sairnbiz_data_schema.sql",
+        "docs/CRITICALITY-TIERS.md"
+      ],
+      "lines_added": 0,
+      "lines_removed": 0,
+      "app": "sairnbiz",
+      "layer": "product",
+      "severity": "moderate",
+      "detection_method": "static-checker",
+      "found_by_tool": "removal_path_check.py",
+      "summary": "the same change that gave sb_po and sb_recv a server added two TIER A resources with no removal path, and the consequence is specific rather than theoretical: sbThreeWayMatch sums every receipt for a PO, so a receipt entered in error inflates the received total for ever and the bill is refused against a figure nobody can correct -- and after the sync a duplicate po_num refuses the match outright. A control a person cannot correct is one they route around",
+      "rules": [],
+      "citation_confidence": "not-citable",
+      "injection_phase": "design",
+      "phase_confidence": "stated",
+      "citation_note": "No standing rule covers 'a resource was given a server before it was given a way to correct a wrong row'. The nearest standing work is the 53-Tier-A-no-removal-path burn-down row, which is a review queue rather than a numbered rule. Recorded as not-citable rather than forced onto a rule it does not fit.",
+      "injection": {
+        "commit": "20afb167"
+      }
     }
   ]
 }
