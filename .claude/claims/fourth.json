@@ -1092,6 +1092,16 @@
       "claimed_at_epoch": 1789383494.6339018,
       "status": "released",
       "released_at": "2026-09-14T11:07:57Z"
+    },
+    {
+      "id": "fourth-1789384120",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sv-auth test delete guard regex can never match",
+      "claimed_at": "2026-09-14T11:08:40Z",
+      "claimed_at_epoch": 1789384120.9082832,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
