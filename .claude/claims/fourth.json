@@ -1260,8 +1260,8 @@
       "task": "item-23-claim-provenance-recording",
       "claimed_at": "2026-09-14T17:32:19Z",
       "claimed_at_epoch": 1789407139.847176,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789410425",
@@ -1270,8 +1270,8 @@
       "task": "item-78-target-3-role-gate-coverage and next gap",
       "claimed_at": "2026-09-14T18:27:05Z",
       "claimed_at_epoch": 1789410425.3849623,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789411001",
@@ -1280,8 +1280,8 @@
       "task": "item-78-target-3-role-gate-coverage done, next gap",
       "claimed_at": "2026-09-14T18:36:41Z",
       "claimed_at_epoch": 1789411001.8993142,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789411239",
@@ -1290,8 +1290,8 @@
       "task": "scrubber item 18 second vehicle -- eaten command substitution in commit messages",
       "claimed_at": "2026-09-14T18:40:39Z",
       "claimed_at_epoch": 1789411239.7427866,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789411269",
@@ -1300,8 +1300,8 @@
       "task": "scrubber item 18 second vehicle -- eaten command substitution in commit messages",
       "claimed_at": "2026-09-14T18:41:09Z",
       "claimed_at_epoch": 1789411269.0688856,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789411314",
@@ -1310,8 +1310,8 @@
       "task": "scrubber item 18 second vehicle -- eaten command substitution in commit messages",
       "claimed_at": "2026-09-14T18:41:54Z",
       "claimed_at_epoch": 1789411314.3783245,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     },
     {
       "id": "fourth-1789412910",
@@ -1320,8 +1320,8 @@
       "task": "claim tool false NOT CLAIMED and duplicate entries",
       "claimed_at": "2026-09-14T19:08:30Z",
       "claimed_at_epoch": 1789412910.192973,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T19:25:04Z"
     }
   ]
 }
