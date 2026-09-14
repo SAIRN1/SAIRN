@@ -1,0 +1,71 @@
+{
+ "app_matched": "sairnvet",
+ "considered": {
+  "defect_records": 57,
+  "detectors_fired": [],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-09-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "ad588e6c5dc3",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A peer-consult photo is a base64 JPEG against a 64KB CHECK, so every photo consult write was rejected and surfaced only as a console warning",
+   "rules": [],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "1348466a2e73",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "high",
+   "risk": "A throw mid-hydration left svSyncSuppressed true, silencing every later server write for the whole session, with the surrounding .catch swallowing the evidence",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "high",
+   "risk": "A hung server backup was completely silent: no timeout anywhere, so svData() never settled, the saved===null warning never printed, and the record stayed on one device with nothing saying so",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "6fde9cea7b84",
+   "date": "2026-09-10",
+   "detected_by": "fault-injection",
+   "prior_severity": "moderate",
+   "risk": "recordSvSharedTopics() wrote shared_knowledge fire-and-forget with no timeout, so a hung AI-context write was unobservable at the call site",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (sairnvet) has this defect on record",
+   "cite": "a858cab7cb17",
+   "date": "2026-09-10",
+   "detected_by": "code-review",
+   "prior_severity": "critical",
+   "risk": "Lazy demo seeding reached the LIVE server on a fresh device: opening the controlled-substance panel wrote invented drug balances with invented vet names into the real DEA-relevant register, and hydration is additive-only with no delete path",
+   "source": "defect-register"
+  }
+ ],
+ "target": "api/sd-data.js"
+}

@@ -1,0 +1,64 @@
+{
+ "app_matched": "stonedesk",
+ "considered": {
+  "defect_records": 57,
+  "detectors_fired": [
+   "3.4"
+  ],
+  "detectors_run": 12,
+  "matched_this_file": 1
+ },
+ "drafted_on": "2026-09-14",
+ "exists": true,
+ "no_detector_yet": [
+  "1.6",
+  "2.2",
+  "3.1",
+  "3.2",
+  "3.3",
+  "4.1",
+  "4.2",
+  "4.3",
+  "5"
+ ],
+ "risks": [
+  {
+   "basis": "THIS FILE has a confirmed defect on record",
+   "cite": "dd95a5cf6c0e",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sql/stonedesk_recovery_admin_seed.sql wrote credential rows with no recoverability guard and no transaction, landing a day after the guard tool and check 2 shipped and never being stopped",
+   "rules": [
+    "3.4"
+   ],
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "52adc1b8182a",
+   "date": "2026-09-09",
+   "detected_by": "code-review",
+   "prior_severity": "moderate",
+   "risk": "The timesheet AI panel priced labour from raw rows, so unrated rows reached the model as bare hours and the cost estimate carried no exclusion note",
+   "source": "defect-register"
+  },
+  {
+   "basis": "the same app (stonedesk) has this defect on record",
+   "cite": "d77321dfbe21",
+   "date": "2026-09-11",
+   "detected_by": "static-checker",
+   "prior_severity": "high",
+   "risk": "sdData was the only transport of fifteen with no console call: it set the READ-path flag _sdReadFailed and returned null, so a write that never reached the server left no trace on the two call sites that read no result",
+   "source": "defect-register"
+  },
+  {
+   "action": "zero rows, or at least one ACTIVE provisioner -- read the app's own PROVISIONING_ROLES",
+   "basis": "section 3.4 applies -- SQL that writes credential rows must carry the recoverability guard",
+   "cite": "docs/SAIRN-PROCESS-RULES.md section 3.4",
+   "risk": "SQL writing credential rows can leave a licence unrecoverable through the API",
+   "source": "process-rules"
+  }
+ ],
+ "target": "sql/stonedesk_recovery_admin_seed.sql"
+}
