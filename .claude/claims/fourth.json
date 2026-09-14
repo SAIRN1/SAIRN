@@ -1202,6 +1202,16 @@
       "claimed_at_epoch": 1789399588.699302,
       "status": "released",
       "released_at": "2026-09-14T15:44:38Z"
+    },
+    {
+      "id": "fourth-1789400690",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "confirm the tool-inventory gate holds live",
+      "claimed_at": "2026-09-14T15:44:50Z",
+      "claimed_at_epoch": 1789400690.1700237,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
