@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**139 files in `tools/`.** By what actually invokes them:
+**140 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 42 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 21 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 30 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 34 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 86 |
+| CHECKER | 87 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 17 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 22 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 21
+**The number to act on: 23 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 22
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 22, by name, so this is actionable rather than a statistic:
+The 23, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -59,6 +59,7 @@ The 22, by name, so this is actionable rather than a statistic:
 | `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
 | `copy_exactly_check.py` | SUITE-ONLY | whether the one literal must-copy-exactly block still matches the app it was copied from -- 0 of 5 identical on 2026-09-14, 4 differing because the APP was fixed and the document was not. Four states, never collapsed: identical / reflowed (NOT drift) / differs / absent. It does NOT answer disciplines 7 -- agreeing bytes are what that section warns is not safety |
+| `defect_budget.py` | SUITE-ONLY | which STANDING RULE has bitten often enough that its next occurrence is predictable rather than incidental -- 1.1 sixteen times and 1.5 fourteen as of 2026-09-14. Per RULE because per APP cannot work: item 51 measured 9 of 11 apps at three records or fewer, and a per-app budget would punish looking, since the app audited hardest looks worst. Report-only and must stay so -- a gate here would reward not citing a rule |
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
 | `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
@@ -230,7 +231,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (30)
+## SUITE-ONLY (31)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -244,6 +245,7 @@ fixtures. Nothing points them at the real codebase.
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
 | `copy_exactly_check.py` | CHECKER | whether the one literal must-copy-exactly block still matches the app it was copied from -- 0 of 5 identical on 2026-09-14, 4 differing because the APP was fixed and the document was not. Four states, never collapsed: identical / reflowed (NOT drift) / differs / absent. It does NOT answer disciplines 7 -- agreeing bytes are what that section warns is not safety | `run_copy_exactly_probe.py` |
+| `defect_budget.py` | CHECKER | which STANDING RULE has bitten often enough that its next occurrence is predictable rather than incidental -- 1.1 sixteen times and 1.5 fourteen as of 2026-09-14. Per RULE because per APP cannot work: item 51 measured 9 of 11 apps at three records or fewer, and a per-app budget would punish looking, since the app audited hardest looks worst. Report-only and must stay so -- a gate here would reward not citing a rule | `run_defect_budget_probe.py` |
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
@@ -341,11 +343,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      139   git ls-files tools/
+  tools on disk                      140   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                40   report_only_checks.REGISTRY
-  tools invoked by tests/             88   tests/**/*.py, *.js
+  tools invoked by tests/             89   tests/**/*.py, *.js
   recorded NOT-promoted decisions     21   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

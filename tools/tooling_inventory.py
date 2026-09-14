@@ -80,6 +80,14 @@ PURPOSES = {
         'it reads language, not intent, and scored roughly 1 in 3 on its first '
         'weight-3 run. A read-list whose count is not a score; zero would mean '
         'deleting comments'),
+    'defect_budget.py': ('CHECKER',
+        'which STANDING RULE has bitten often enough that its next occurrence '
+        'is predictable rather than incidental -- 1.1 sixteen times and 1.5 '
+        'fourteen as of 2026-09-14. Per RULE because per APP cannot work: item '
+        '51 measured 9 of 11 apps at three records or fewer, and a per-app '
+        'budget would punish looking, since the app audited hardest looks '
+        'worst. Report-only and must stay so -- a gate here would reward not '
+        'citing a rule'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '
