@@ -1625,6 +1625,16 @@
       "claimed_at_epoch": 1789412333.2108705,
       "status": "released",
       "released_at": "2026-09-14T19:13:24Z"
+    },
+    {
+      "id": "hank-1789413568",
+      "session": "hank",
+      "subject": "failsafe-witness-83",
+      "task": "item 83 failsafe witness atomicity and recovery -- second reader on cad72dca",
+      "claimed_at": "2026-09-14T19:19:28Z",
+      "claimed_at_epoch": 1789413568.3371127,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
