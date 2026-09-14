@@ -155,6 +155,31 @@ def by_section(rc, out):
 
 REGISTRY = [
     {
+        'tool': 'completeness_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-14, report-only on its first day and deliberately '
+                    'not wired into the push gate: it cannot read intent, only '
+                    'sites, and a shape that cannot tell a deliberate '
+                    'one-direction rule from a forgotten one has no business '
+                    'refusing a push',
+        'catches': 'a rule declared and consulted NOWHERE in its own file; a '
+                   'rule consulted on a read path and on no write path; and a '
+                   'dispatch chain over a declared domain with a member '
+                   'reaching no arm and no terminal else',
+        'why_it_matters': 'item 90 makes a class of bug impossible to WRITE, '
+                          'and cannot reach legacy code that never had a '
+                          'boundary. The SITES a rule must be applied at are '
+                          'not a type -- they are a list somebody has to '
+                          'remember, and forgetting one is silent',
+        'evidence': 'real run 2026-09-14: S1 found api/sen-portal.js '
+                    'MANAGEMENT_ROLES, declared and never consulted, sitting '
+                    'beside a branch whose refusal says "ask management" while '
+                    'enforcing the WIDER BROAD_ROLES. S3 reports a measured '
+                    'zero over 147 files after four narrowings, each one paid '
+                    'for by a real false positive and kept as a fixture',
+    },
+    {
         'tool': 'secrets_inventory.py',
         'mode': 'once',
         'verdict': by_exit,

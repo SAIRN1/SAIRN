@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**135 files in `tools/`.** By what actually invokes them:
+**136 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 41 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 42 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 31 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 83 |
+| CHECKER | 84 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
@@ -127,7 +127,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (41)
+## REPORT-ONLY (42)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -141,6 +141,7 @@ quiet in practice.
 | `comment_quote_check.py` | 2026-09-11, the day it was built | a probe whose assertion matches the target file COMMENTS rather than its code -- a literal that exists only inside a comment, undeclared |
 | `comment_sensitivity_check.py` | 2026-09-12, once its one real finding was fixed | a checker whose ANSWER changes when the target's comments are stripped -- it is matching text that describes code rather than code |
 | `committer_identity_check.py` | 2026-09-13, the day the leak was found | a clone configured to commit under one of the throwaway identities this repo's own probes use -- the list is READ out of the probe sources, so a new probe's identity is covered with no edit to the checker |
+| `completeness_check.py` | 2026-09-14, report-only on its first day and deliberately not wired into the push gate: it cannot read intent, only sites, and a shape that cannot tell a deliberate one-direction rule from a forgotten one has no business refusing a push | a rule declared and consulted NOWHERE in its own file; a rule consulted on a read path and on no write path; and a dispatch chain over a declared domain with a member reaching no arm and no terminal else |
 | `control_char_check.py` | 2026-09-10 report-only; BLOCKING 2026-09-13 (Michael) as push-gate check 11 | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `criticality_tier_check.py` | 2026-09-12 | a registered resource in a re-tiered app with no criticality tier, a tier row naming a resource that no longer exists, and a Tier A resource with no evidence line |
 | `defect_register.py` | 2026-09-10, the day it was built | a record in docs/defect-density-register.json that has stopped being true -- a commit that no longer resolves, a detection method outside the vocabulary, or the same defect counted twice |
@@ -338,11 +339,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      135   git ls-files tools/
+  tools on disk                      136   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
-  report-only registry                39   report_only_checks.REGISTRY
-  tools invoked by tests/             85   tests/**/*.py, *.js
+  report-only registry                40   report_only_checks.REGISTRY
+  tools invoked by tests/             86   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

@@ -43,6 +43,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 
 | Requirement (what it catches) | Tool | Evidence at promotion |
 |---|---|---|
+| a rule declared and consulted NOWHERE in its own file; a rule consulted on a read path and on no write path; and a dispatch chain over a declared domain with a member reaching no arm and no terminal else | `completeness_check.py` | real run 2026-09-14: S1 found api/sen-portal.js MANAGEMENT_ROLES, declared and never consulted, sitting beside a branch whose refusal says "ask management" while enforcing the WIDER BROAD_ROLES. S3 reports a measured zero over 147 files after four narrowings, each one paid for by a real false positive and kept as a fixture |
 | docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved | `secrets_inventory.py` | real run 2026-09-14: 47 variables, 18 CREDENTIAL, and no CREDENTIAL left with NO GUARD FOUND. Held by tests/run_secrets_inventory_probe.py -- arm 3e fails the moment a credential loses its guard, and three mutation controls take the suite red |
 | a component at or above SPOF_THRESHOLD with no row in docs/SPOF-REGISTER.md, a row marked OPEN that is no longer a chokepoint, and -- the sharp one -- a row marked RETIRED while the component is still above the bar | `dependency_graph.py` | real run 2026-09-14: 10 components at or above the threshold, 10 rows, 7 OPEN / 3 ACCEPTED / 0 RETIRED, PASS. Held in both directions by tests/run_dependency_graph_probe.py (7d refuses an empty register, 7e is the control that the same rows marked OPEN pass, 7f refuses a false retirement) |
 | a buildCommand over Vercel's 256-char schema limit, and a route whose destination file no cp copies | `vercel_config_check.py` | real run 2026-09-09: buildCommand 92/256, PASS |
@@ -107,6 +108,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Item 38: the completeness detector &mdash; a rule that is DECLARED and then not applied everywhere. One real finding, and an access gate whose MESSAGE and CHECK disagree** | **BUILT 2026-09-14 (CC)** &mdash; `tools/completeness_check.py`, held by `tests/run_completeness_probe.py` (21 arms, four mutation controls). **Report-only, registered, nothing gates** | `tests/run_completeness_probe.py` |
 | **`isDate` was defined FOURTEEN times, all byte-identical, and all wrong the same way** &mdash; one deep module now owns it | **BUILT 2026-09-14 (Fourth)** &mdash; `api/_lib/calendar-date.js`, 22/22 arms, 14 modules migrated | `tests/sairnbiz_server_backup.js` |
 | **Item 69: can one app&rsquo;s employee session reach another app&rsquo;s data &mdash; and WHERE DOES A SESSION GATE EXIST AT ALL** | **MEASURED 2026-09-14 (CC)** &mdash; `tests/app_session_isolation.js` (54 arms, two mutation controls). **The isolation property holds everywhere a gate exists. SIX APPS HAVE NO RECORDED REASON for ha | `api/_resources/app-boundary.test.js`, `tests/app_session_isolation.js` |
 | **Item 61: every secret the platform reads, what it unlocks, and &mdash; the column a `grep` cannot produce &mdash; what happens when it is ABSENT** | **BUILT 2026-09-14 (CC)** &mdash; `tools/secrets_inventory.py`, `docs/SECRETS-INVENTORY.md` (generated), held by `tests/run_secrets_inventory_probe.py` (18 arms, three mutation controls). **Report-onl | `tests/run_secrets_inventory_probe.py` |
@@ -323,7 +325,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**169 of 372 test files are traced to a stated requirement. 203 are not.**
+**170 of 373 test files are traced to a stated requirement. 203 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -550,10 +552,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 372   tests/**, api/*.test.js
-  open-work rows citing a test       158   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 373   tests/**, api/*.test.js
+  open-work rows citing a test       159   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                39   report_only_checks.REGISTRY
+  report-only registry                40   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     13   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   sairn_push_gate_hook.py
 ```

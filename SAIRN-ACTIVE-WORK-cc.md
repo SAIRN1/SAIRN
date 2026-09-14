@@ -2785,3 +2785,70 @@ The posture loop compared the returned OBJECT to `401` instead of `out.code`, so
 measured as ungated -- including ones section 2 had just proven were gated.** Caught because the
 hand-written table disagreed with the measurement. That is the table doing its job, and the reason
 the map is asserted rather than printed.
+
+
+---
+
+## 2026-09-14 -- item 38: the completeness detector, and a gate whose message and check disagree
+
+### Why this is the PAIR of item 90 rather than a copy
+
+Item 90 makes a class of bug impossible to WRITE -- parse once at the boundary and nothing
+downstream can hold an unvalidated value. **It cannot reach legacy code that never had a boundary,
+and it cannot reach external input before it is parsed.** This detects what is left: a rule that
+exists, is written down, and is applied at some of its sites and not others. **No type can force
+that, because the sites are not a type -- they are a list somebody has to remember.**
+
+### S1 found a real one, and the second version of it is the interesting half
+
+`api/sen-portal.js` declares `MANAGEMENT_ROLES = { owner, billing }` and **references it nowhere**.
+
+The `list` branch below it refuses with *"ask management for the agency-wide list"* while enforcing
+`BROAD_ROLES` -- owner, billing, **coordinator and scheduler**. **The message says management; the
+check says broad.** A coordinator gets the agency-wide list of every client's portal links. The
+unused `MANAGEMENT_ROLES` directly above, containing exactly the roles the message names, is what
+makes this look like a gate somebody wrote and did not wire.
+
+**Not fixed -- narrowing a live access gate is a product decision.** Either the gate is right and
+the message is wrong, or the message is right and a coordinator should not have that list.
+
+### S3's zero is earned, and that is the point
+
+| version | candidates | verdict |
+|---|---|---|
+| naive -- a declared member with no comparison anywhere | 14 files | would have been switched off the same day |
+| narrowed -- a chain on ONE variable, no terminal `else` | 5 | **every one a false positive** |
+| after four narrowings + one named acknowledgement | **0** | a measured zero |
+
+Four exclusions are **fixtures named after the file that paid for them**: `RESCISSION_UNITS` (a
+terminal `else` covers one leftover and `validateRule()` closes the domain), `DRAW_STATUSES`
+(`status === 'requested' || status === 'approved'` is a PREDICATE), a single-arm test, and a
+two-value domain. The fifth is **acknowledged by name with a written reason** --
+`roofing-warranties.js` falls through deliberately into the deadline computation, which is control
+flow no regex can see.
+
+**The acknowledged count prints on every run**, because an acknowledgement nobody can see is a
+suppression; an acknowledgement whose finding stops occurring is reported **STALE**.
+
+### A defect in the tool's own reasoning, found by its own mutation control
+
+The first draft carried a `len(arms) < 2` guard whose comment claimed it excluded the `||`
+predicate. **Sabotaging it changed nothing** -- `len(hit) < 2` had already caught every case it
+claimed, and the `||` case is excluded far earlier by the pattern that starts a chain only on a
+bare equality. **A guard believed to be doing work it is not is how a redundant check survives
+while a real one gets deleted instead.** Removed; the comment now states exactly which line
+excludes which false positive.
+
+### Every empty shape reports a denominator
+
+*"this shape RAN over 147 files and found nothing -- a measured zero, not a check that did not
+run."* A checker that finds nothing and one that did not run look identical from outside, and this
+platform has shipped the second while reading it as the first.
+
+### Item 91 proved itself on an unplanned event, same day
+
+`--register` refused a run because `api/_lib/calendar-date.js` (blast 20) crossed the threshold
+from another session's work with no row. **The register caught a new chokepoint nobody told it
+about** -- the first thing that page did which a static document could not. Added as ACCEPTED: it
+is the item-94 module that replaced fourteen byte-identical copies of `isDate`, all wrong the same
+way, so a wide blast radius there is the point rather than the problem.

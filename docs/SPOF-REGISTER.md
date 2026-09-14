@@ -45,7 +45,7 @@ The graph is `require()` edges and `process.env` reads. It does **not** contain:
 
 ## The register
 
-Measured 2026-09-14 against `tools/dependency_graph.py` (module + environment graph, production modules only).
+Measured 2026-09-14 against `tools/dependency_graph.py` (module + environment graph, production modules only). **Updated the same day when `--register` refused a run: `api/_lib/calendar-date.js` crossed the threshold from another session's work and had no row. The refusal is the first thing this page did that a static document could not.**
 
 | Component | Owner | Status | Blast | Same risk as | What it is, and what would have to change |
 |---|---|---|---|---|---|
@@ -58,6 +58,7 @@ Measured 2026-09-14 against `tools/dependency_graph.py` (module + environment gr
 | `env:OIDC_ISSUER_URL` | **Michael** | OPEN | 34 | `api/_lib/auth.js` | See `env:OIDC_CLIENT_ID`. |
 | `env:OIDC_REDIRECT_URI` | **Michael** | OPEN | 34 | `api/_lib/auth.js` | See `env:OIDC_CLIENT_ID`. |
 | `api/_lib/auth.js` | CC | ACCEPTED | 33 | — | **One session/token implementation shared by every app, and that is deliberate.** This is the "one deep module" principle the platform has already applied twice this week. **Compensating control:** `api/_lib/auth.test.js` exists and the module fails closed — an unverifiable token is no session, not a session. **Why it is on this page anyway:** a bug here is a bug in 33 endpoints simultaneously, which is a fact about how carefully it must be changed rather than an argument for duplicating it. |
+| `api/_lib/calendar-date.js` | CC | ACCEPTED | 20 | — | **Added to this register by the register, not by a person** — it appeared above the threshold on 2026-09-14 with no row, and `--register` refused the run until one was written. That is the mechanism working on its first real test rather than on a fixture. **What it is:** one module owning *what is a calendar date, and how do two of them compare*, from item 94. **It is ACCEPTED for the reason it exists:** `isDate` was defined FOURTEEN TIMES across `api/`, byte-identical and all wrong the same way — the failure mode of copying rather than importing, where one fix would have been fourteen. A wide blast radius here is the *point*: it is the number that used to be fourteen separate radii nobody could see. **Compensating control:** it is a pure function with no state and no I/O, and its failure mode is a refusal rather than a wrong date. **What would change this:** nothing should; it is listed so its width is a known fact rather than a surprise the next time somebody reads the graph. |
 | `api/_lib/employee-lifecycle.js` | CC | ACCEPTED | 13 | — | The shared credential-deactivation lifecycle — `set_active`, last-admin refusal, no self-deactivation, deactivated-caller re-check. **Shared on purpose:** the same gap was found and fixed independently in three apps before this existed, which is the argument against thirteen copies. **Compensating control:** `sairn-app-scaffold` names this lifecycle as required in v1, so a new app inherits it rather than re-deriving it. |
 
 **Nothing is RETIRED yet.** That is the honest state on the day the register was created, and it is stated rather than left as an empty section somebody reads as "all clear".
