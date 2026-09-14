@@ -35,6 +35,19 @@
 const { validateLicenseKey } = require('./_lib/license');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest } = require('./_lib/auth');
 
+// This module's OWN app namespace -- the one it MINTS tokens for. Declared
+// rather than repeated as a literal, as every other api/*-auth.js already
+// does; these two StoneDesk modules were the only ones that did not, so
+// tools/role_gate_invariants.js could not look their role vocabulary up in
+// ROLES_BY_APP and reported 4 checks as no-app-key. Added 2026-09-14.
+//
+// DELIBERATELY NOT 'stonedesk'. The `verifySessionToken(..., 'stonedesk')`
+// below is a different app on purpose -- it checks the EMPLOYEE token of the
+// owner/admin doing the provisioning, and the separation between the two
+// namespaces is the whole point of this file (see the header). That literal is
+// left as a literal so the two can never be collapsed by a careless rename.
+const APP = 'stonedesk_sub';
+
 module.exports = async (req, res) => {
   if (req.method !== 'POST') {
     res.status(405).json({ error: { message: 'Method not allowed — POST only' } });
@@ -194,7 +207,7 @@ module.exports = async (req, res) => {
         if (nameRes.ok && Array.isArray(nameRows) && nameRows[0] && nameRows[0].name) name = nameRows[0].name;
       } catch (e) { /* non-fatal — fall back to sub_id as the display name */ }
 
-      const token = signSessionToken({ employee_id: row.sub_id, role: 'sub', license_hash: licHash, app: 'stonedesk_sub' });
+      const token = signSessionToken({ employee_id: row.sub_id, role: 'sub', license_hash: licHash, app: APP });
       res.status(200).json({ ok: true, token, sub_id: row.sub_id, name });
       return;
     }

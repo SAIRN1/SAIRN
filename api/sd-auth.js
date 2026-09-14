@@ -39,6 +39,14 @@ const { writeAuditLog } = require('./_lib/audit');
 const { hashPin, verifyPin, signSessionToken, verifySessionToken, tokenFromRequest, ROLES } = require('./_lib/auth');
 
 const AUDIT_TABLE = 'stonedesk_audit_log';
+// This module's app namespace, declared rather than repeated as a literal at
+// each call site. Every other api/*-auth.js already does this; these two
+// StoneDesk modules were the only ones that did not, which is why
+// tools/role_gate_invariants.js could not look their role vocabulary up in
+// ROLES_BY_APP and reported 4 checks as no-app-key. Added 2026-09-14.
+// The VALUE is unchanged -- the five call sites below said 'stonedesk' before
+// and say APP now, byte-for-byte the same string.
+const APP = 'stonedesk';
 // Roles that can provision or change credentials on StoneDesk. BOTH count
 // toward the last-admin guard -- unlike SAIRNcode, where 'admin' is the only
 // provisioning role. Matches this file's own setup and roster gates exactly,
@@ -162,7 +170,7 @@ module.exports = async (req, res) => {
       });
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
-      const token = signSessionToken({ employee_id, role: 'owner', license_hash: licHash, app: 'stonedesk' });
+      const token = signSessionToken({ employee_id, role: 'owner', license_hash: licHash, app: APP });
       res.status(200).json({ ok: true, token, role: 'owner', employee_id });
       return;
     }
@@ -225,7 +233,7 @@ module.exports = async (req, res) => {
           });
         } catch (e) { /* non-fatal */ }
       }
-      const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: 'stonedesk' });
+      const token = signSessionToken({ employee_id: row.employee_id, role: row.role, license_hash: licHash, app: APP });
       res.status(200).json({ ok: true, token, role: row.role, employee_id: row.employee_id });
       return;
     }
@@ -237,7 +245,7 @@ module.exports = async (req, res) => {
       // also pass this check, letting a SAIRNbiz login provision StoneDesk
       // credentials. Caught while wiring up api/sb-auth.js's mirror of this
       // same endpoint.
-      const caller = verifySessionToken(callerToken, licHash, 'stonedesk');
+      const caller = verifySessionToken(callerToken, licHash, APP);
       if (!caller || (caller.role !== 'owner' && caller.role !== 'admin')) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can provision employee credentials' } });
         return;
@@ -281,7 +289,7 @@ module.exports = async (req, res) => {
     // StoneDesk, not this app's own login credentials). Read-only, no PIN
     // hashes/salts/lockout state ever leave this endpoint.
     if (action === 'roster') {
-      const caller = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
       if (!caller || (caller.role !== 'owner' && caller.role !== 'admin')) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can view the employee roster' } });
         return;
@@ -335,7 +343,7 @@ module.exports = async (req, res) => {
     // would auto-heal a lockout, but would also let anyone holding a license
     // key deactivate their way to a fresh bootstrap and seize the account.
     if (action === 'set_active') {
-      const caller = verifySessionToken(tokenFromRequest(req), licHash, 'stonedesk');
+      const caller = verifySessionToken(tokenFromRequest(req), licHash, APP);
       if (!caller || PROVISIONING_ROLES.indexOf(caller.role) === -1) {
         res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Owner or Manager can activate or deactivate a credential' } });
         return;

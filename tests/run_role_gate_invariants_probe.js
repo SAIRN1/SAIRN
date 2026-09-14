@@ -267,11 +267,20 @@ console.log('\n--- H. the remainder is not one undifferentiated pile ---');
     [path.join(REPO, 'tools', 'role_gate_invariants.js')], { encoding: 'utf8' });
   ok('H2 the output separates "the constant is not there" from work anyone can do',
     /absent\s+\d+\s+the constant is not there/.test(txt), txt.slice(0, 900));
-  ok('H3 ...and says plainly which remainder is CLOSABLE',
-    /no-app-key\s+\d+.*CLOSABLE/.test(txt), txt.slice(0, 900));
-  ok('H4 the two StoneDesk modules are the real no-app-key cases today',
-    /sd-auth\.js .*no-app-key/.test(txt) && /sd-sub-auth\.js .*no-app-key/.test(txt),
-    'if these gained a const APP, drop this arm rather than weakening it');
+  // H3/H4 USED TO PIN sd-auth.js AND sd-sub-auth.js AS THE no-app-key CASES.
+  // They gained `const APP` on 2026-09-14 and the state emptied, so those two
+  // arms were DROPPED rather than weakened -- which is what the note on the old
+  // H4 said to do. The code path is still live and still needs a control: H1
+  // above drives it directly, which is a better test than a fact about the tree
+  // that anyone can close. What is asserted here instead is that the remainder
+  // is still EXPLAINED rather than presented as one undifferentiated pile.
+  ok('H3 the output says what `absent` means -- a fact about the app, not a gap here',
+    /absent\s+\d+\s+the constant is not there -- a fact about the app/.test(txt),
+    txt.slice(0, 900));
+  ok('H4 no no-app-key remains in the tree today -- if this fails, a module lost '
+    + 'its `const APP`',
+    !/no-app-key/.test(txt),
+    'a module stopped declaring const APP; find it in the UNSPECIFIED list');
   // NO WIDTH SPECIFIERS. console.log is not printf; '%-16s' prints literally and
   // appends the argument, which shipped twice in this file's own output.
   ok('H5 no printf width specifier survives in the tool\'s output strings',
