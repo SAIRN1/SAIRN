@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**130 files in `tools/`.** By what actually invokes them:
+**131 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -27,14 +27,14 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 39 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 18 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 28 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 29 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 33 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 78 |
+| CHECKER | 79 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 16 |
@@ -44,16 +44,17 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 20 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 19
+**The number to act on: 21 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 1 wired nowhere at all, and 20
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 20, by name, so this is actionable rather than a statistic:
+The 21, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
+| `accepted_risk_scan.py` | SUITE-ONLY | a risk somebody deliberately ACCEPTED in a comment and recorded nowhere central -- the shape that got api/sairncash/portal.js read as an unrecognised gap twice in one afternoon. A LOCATOR, not a detector: it reads language, not intent, and scored roughly 1 in 3 on its first weight-3 run. A read-list whose count is not a score; zero would mean deleting comments |
 | `benford_check.py` | SUITE-ONLY | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test |
 | `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `checker_control_check.py` | SUITE-ONLY | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two |
@@ -222,13 +223,14 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (28)
+## SUITE-ONLY (29)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
 
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
+| `accepted_risk_scan.py` | CHECKER | a risk somebody deliberately ACCEPTED in a comment and recorded nowhere central -- the shape that got api/sairncash/portal.js read as an unrecognised gap twice in one afternoon. A LOCATOR, not a detector: it reads language, not intent, and scored roughly 1 in 3 on its first weight-3 run. A read-list whose count is not a score; zero would mean deleting comments | `run_accepted_risk_probe.py` |
 | `benford_check.py` | CHECKER | money figures whose leading-digit distribution does not look measured -- a LOOK HERE pointer for the fabricated-KPI class, with a shape pre-check that REFUSES any dataset too small, too narrow, too rounded or too repetitive to carry the test | `run_benford_probe.py` |
 | `checker_confidence.py` | CHECKER | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything | `run_checker_confidence_probe.py` |
 | `checker_control_check.py` | CHECKER | a promoted checker with no control proving it can FIRE -- one direction evidenced is not two | `run_checker_control_probe.py` |
@@ -330,11 +332,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      130   git ls-files tools/
+  tools on disk                      131   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                37   report_only_checks.REGISTRY
-  tools invoked by tests/             80   tests/**/*.py, *.js
+  tools invoked by tests/             81   tests/**/*.py, *.js
   recorded NOT-promoted decisions     18   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```

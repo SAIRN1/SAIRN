@@ -73,6 +73,13 @@ GATE = os.path.join('tools', 'sairn_push_gate_hook.py')
 # LIVE means it makes a real network or database request, so it cannot be wired
 # into a hook without making every push talk to the outside world.
 PURPOSES = {
+    'accepted_risk_scan.py': ('CHECKER',
+        'a risk somebody deliberately ACCEPTED in a comment and recorded '
+        'nowhere central -- the shape that got api/sairncash/portal.js read as '
+        'an unrecognised gap twice in one afternoon. A LOCATOR, not a detector: '
+        'it reads language, not intent, and scored roughly 1 in 3 on its first '
+        'weight-3 run. A read-list whose count is not a score; zero would mean '
+        'deleting comments'),
     'tier_a_bypass_check.py': ('CHECKER',
         'an HTTP handler that names a Tier A resource IN CODE without both an '
         'identity check and a refusal. Three states, never two -- COULD NOT '
