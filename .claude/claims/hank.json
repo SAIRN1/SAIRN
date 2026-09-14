@@ -1605,6 +1605,16 @@
       "claimed_at_epoch": 1789410302.673943,
       "status": "released",
       "released_at": "2026-09-14T18:34:07Z"
+    },
+    {
+      "id": "hank-1789411739",
+      "session": "hank",
+      "subject": "spof-baseline",
+      "task": "item 91 frozen baseline so shrinkage is visible",
+      "claimed_at": "2026-09-14T18:48:59Z",
+      "claimed_at_epoch": 1789411739.6206574,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
