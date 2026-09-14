@@ -1284,6 +1284,16 @@
       "claimed_at_epoch": 1789422818.7475474,
       "status": "released",
       "released_at": "2026-09-14T22:06:54Z"
+    },
+    {
+      "id": "cc-1789424070",
+      "session": "cc",
+      "subject": "traceability-app-attribution",
+      "task": "app_of undercounts roofing dental law test files, declared alias table with a collision control",
+      "claimed_at": "2026-09-14T22:14:30Z",
+      "claimed_at_epoch": 1789424070.4342616,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
