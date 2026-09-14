@@ -1107,8 +1107,8 @@
       "task": "sabotage detector replace must feed a file write and report-only sweep timeout",
       "claimed_at": "2026-09-14T10:24:06Z",
       "claimed_at_epoch": 1789381446.6041884,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-14T13:04:56Z"
     }
   ]
 }
