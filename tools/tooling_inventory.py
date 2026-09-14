@@ -174,6 +174,11 @@ PURPOSES = {
     # of the tree and switched off inside a day.
     'shape_antipattern_check.py': ('CHECKER', "Number(x) on an outside value with no guard (Number('') is 0), a guard collapsing several distinct failure reasons into one bit, and three-plus nullable fields carrying one either/or state"),
     'new_checker.py': ('GENERATOR', 'scaffolds a checker and its control pair, wired through checker_kit -- and what it emits REFUSES (exit 2) until its rule is written, so a fresh checker can never report clean'),
+    # Item 78's runnable half. docs/spec/RoleGates.tla states the properties
+    # formally; this checks the REAL exported role sets still have them.
+    # Neither alone is enough -- a spec that drifts from its code is a
+    # document asserting properties nobody holds.
+    'role_gate_invariants.js': ('CHECKER', 'a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key'),
     'restore_coherence_check.js': ('LIVE', 'a restored or hand-recovered database that is NOT coherent -- audit windows that lost, gained or changed rows, and orphaned references the database has no foreign key to complain about'),
     'cron_liveness_check.py': ('LIVE', 'a scheduled job that stopped, ran late, or ran and failed -- asked from OUTSIDE Vercel and written to docs/CRON-LIVENESS-STATUS.md'),
     'audit_checkpoint_status.py': ('LIVE', 'a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens'),
