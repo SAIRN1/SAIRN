@@ -3,7 +3,7 @@
 Full narratives for the precedents cited in `SKILL.md`. SKILL.md carries the
 rule each precedent produced; this file carries the story, so the file
 Claude loads by default stays navigable while the reasoning behind each rule
-is still on record somewhere, not compressed away. Added 2026-09-14 in eight
+is still on record somewhere, not compressed away. Added 2026-09-14 in nine
 batches: SOX/PCAOB, Knight Capital, IOLTA, Madoff, IRS first; then Trail of
 Bits, Stanford's medical-record auditor, and Boeing 737 MAX/FAA ODA; then
 SpaceX/NASA Commercial Crew (the contrast case to Boeing) and the
@@ -19,7 +19,11 @@ Audit Risk Model (the real professional formula underneath the rotation-
 weighting technique, not another borrowed analogy); then Marzullo's
 Algorithm and NTP stratum (the formal, quantified answer to this role's own
 Debate problem, and a named warning against conflating provenance-distance
-with correctness). All eight once the earlier research (NASA IV&V, SUBSAFE,
+with correctness); then GLI (proving zero architectural path for bias, not
+just clean output), RICOCHET (an external vantage point no depth reaches),
+and the Patriot missile failure at Dhahran (a vague interim warning is no
+warning, and a third independent confirmation of Ariane 5's requalification
+lesson). All nine once the earlier research (NASA IV&V, SUBSAFE,
 WADA, seL4, Pnueli, AI Safety via Debate, risk-limiting audits, Registered
 Reports) had already pushed
 SKILL.md large enough that further detail belonged in its own file rather
@@ -798,3 +802,131 @@ answers a question about DISTANCE from the source, not a question about
 whether that particular reading is correct right now, and treating the
 first as a proxy for the second is a specific, well-understood mistake in
 the field this mechanism comes from.
+
+## GLI -- proving zero architectural path, not just clean statistical output
+
+Gaming Laboratories International (and comparable labs -- BMM, iTech Labs)
+are the real, independent certification bodies that test and approve the
+random number generator inside every legal slot machine and electronic
+gaming device before it is permitted to accept real money, in essentially
+every regulated gambling jurisdiction. Their methodology is a genuinely
+higher bar than statistical output testing, and the specific way it is
+higher is directly transferable.
+
+**Full source-code review proving zero PATH for influence, not just clean
+output.** A purely statistical approach to certifying an RNG would run
+millions of trials and confirm the output distribution looks unbiased --
+which is necessary but provably insufficient, because a sufficiently
+subtle bias (one correlated with bet size, account balance, or betting
+history in a way that only manifests under specific real-money conditions
+a lab's generic test battery would never happen to trigger) could pass
+statistical testing while still being present and exploitable. GLI's
+actual practice includes full source-code review specifically to confirm
+there is no architectural CODE PATH by which bet size, balance, or history
+could reach the outcome-determination logic at all -- not that no bias was
+observed, but that no mechanism for one to enter exists in the code as
+written. Any detectable coupling, however statistically small, is grounds
+for automatic rejection, because the standard is architectural impossibility
+of influence, not merely the absence of observed influence.
+
+**The mapping layer is verified separately, as its own distinct
+question.** A random number generator produces a raw, presumably-fair
+random value. Something else -- the "mapping" or "paytable" layer -- takes
+that raw value and converts it into what the player actually sees: which
+symbols land in which positions, which prize tier a given number range
+corresponds to. GLI certifies this layer separately and explicitly,
+because a perfectly fair underlying RNG feeding a subtly biased mapping
+function (one that maps a slightly wider range of raw values to a losing
+outcome than the stated odds would imply) produces an unfair machine
+regardless of how clean the RNG's own certification is. Proving the source
+is fair and proving the consumer of that source doesn't introduce its own
+bias are treated as two separate, both-necessary certifications, never
+one certification standing in for both.
+
+## RICOCHET -- an external vantage point, not a hidden internal pattern
+
+Call of Duty's RICOCHET anti-cheat system runs a kernel-level driver on
+players' machines -- the deepest privilege level ordinarily available to
+any software running on a general-purpose computer, with visibility into
+essentially everything the operating system itself can see. It has still
+been documented being bypassed by cheat hardware that reads a target
+machine's memory from a SECOND, PHYSICALLY SEPARATE device connected via
+DMA (direct memory access) -- hardware that reads memory contents from
+outside the operating system entirely, without the OS or anything running
+on it ever being aware the read occurred.
+
+**A structurally different limit from the sleeper-agent finding, worth
+keeping distinct.** The sleeper-agent finding (elsewhere in this file) is
+about a hidden pattern existing INSIDE the system being checked, invisible
+because the specific trigger that activates it was never tried -- in
+principle, driving the right input would reveal it. RICOCHET's limit is
+different in kind: the observing hardware is reading from a vantage point
+genuinely OUTSIDE the system the kernel-level driver has any visibility
+into at all, regardless of privilege level, regardless of what input is
+tried. No amount of "going deeper" inside the monitored system reaches an
+observer standing entirely outside it.
+
+**The honest, adopted response, already this role's actual design.** There
+is no software-only fix that closes an externally-observing hardware
+channel from the inside -- the industry's actual response has been
+continuous, evolving detection and periodic hardware-level
+countermeasures rather than a single definitive kernel-level fix, because
+the limit is structural, not a bug to be patched once. This is the same
+shape as this role's own reactive, continuously-refreshed rotation rather
+than a one-time deep audit: an external vantage point a single check
+cannot see is addressed by giving the checking process more opportunities
+over time to catch what it happens to observe, not by claiming any single
+pass reached a depth nothing could evade.
+
+## The Patriot missile failure at Dhahran -- a vague interim warning is no warning
+
+On February 25, 1991, during the Gulf War, a Patriot missile air-defense
+battery stationed at Dhahran, Saudi Arabia, failed to track and intercept
+an incoming Iraqi Scud missile. The Scud struck a US Army barracks, killing
+28 soldiers and wounding around 100 more -- the single deadliest incident
+for US forces in the entire war.
+
+**The known cause, and the real timeline of who knew what, when.** The
+failure was traced to a software defect: the system's internal clock was
+tracked as an integer and converted to a floating-point value for
+targeting calculations using an imprecise conversion, producing a small
+timing error that grew larger the longer the system had been running
+continuously without a restart. Israel had identified this exact defect
+and reported it to the US Army on February 11, 1991. A corrected software
+version was produced by February 16. Interim guidance was sent to Patriot
+batteries in the field on February 21 -- and that guidance stated only
+that "very long run times could cause a shift in the range gate," with no
+specific number attached: no stated hour threshold, no explicit
+"restart before X hours" instruction. The Dhahran battery had been
+running continuously for over 100 hours at the time of the failure on
+February 25 -- roughly twelve times past the point the timing drift became
+operationally significant enough to cause a miss. The corrected software
+arrived at that battery's location the day AFTER the attack.
+
+**The precise lesson: a description of risk without a number is not
+actionable, and functions as no warning at all.** A battery commander
+reading "very long run times could cause a shift" has no way to evaluate
+their own specific situation against it -- "very long" could mean six
+hours or six hundred, and nothing in the guidance let anyone compare their
+actual run time against the actual danger threshold that had already been
+identified internally. The gap between a known, already-fixed defect and
+that fix reaching every affected deployment is a real, dangerous window
+that existed for this defect for roughly two weeks, and the interim
+guidance issued specifically for that window carried no way to check
+against it.
+
+**An independent, third confirmation of Ariane 5's requalification
+lesson, from a different domain entirely.** The Patriot system had
+originally been engineered and qualified for short-duration deployments
+intercepting fast, short-range aircraft -- a use case where the timing
+drift, accumulating over a period of a few hours at most, never grew large
+enough to matter. Deployed during the Gulf War for continuous,
+multi-day operation against a different threat type (Scud ballistic
+missiles) at Dhahran, the system was run in a context it had never been
+re-qualified for, and the specific parameter that changed -- continuous run
+duration -- was exactly the one the original timing-precision decision had
+implicitly assumed would stay bounded. Correct, working software, deployed
+unchanged into a genuinely different operational context than the one it
+was proven correct for, failed in exactly the dimension that context
+changed in -- the same shape as Ariane 5's reused guidance software, now
+independently confirmed a third time in a third, unrelated domain.

@@ -349,6 +349,47 @@ real clones this platform runs on, not just that `origin/main` shows the
 commit. A push succeeding is a claim about git; it is not the same claim as
 "the fix is running everywhere it needs to be."
 
+**A known, already-fixed defect still has a real, dangerous window before
+the fix reaches everywhere -- and vague interim guidance during that
+window is functionally the same as no guidance at all.** The Patriot
+missile failure at Dhahran, Saudi Arabia, February 1991, is the sharpest
+documented real case of exactly this gap, and it killed 28 people. A
+software defect causing a small timing-clock drift was identified on
+February 11; a corrected software version was produced by February 16. In
+the days between discovery and full deployment, the interim guidance sent
+out to batteries in the field (February 21) said only that "very long run
+times could cause a shift" -- with no hard number attached, no stated
+threshold at which the risk became acute. The battery at Dhahran had been
+continuously running for over 100 hours by the time it failed to track
+and intercept an incoming Scud missile -- roughly twelve times past the
+point at which the drift became operationally dangerous -- and the
+corrected software arrived the following day, one day too late for that
+specific battery.
+
+**The real, adoptable rule this produces, stated precisely:** when a real
+defect has been found and fixed, but the fix is not yet confirmed deployed
+everywhere it needs to be, any interim guidance issued for the gap period
+needs a HARD, CHECKABLE NUMBER attached -- a specific run-time threshold, a
+specific commit range, a specific date after which the old behavior is
+confirmed gone -- not a qualitative description of the risk ("very long
+run times," "under unusual load," "in rare cases"). A description without
+a number gives a reader nothing to check their own situation against, and
+a battery commander with no hard number to compare against had no way to
+know 100+ hours was already twelve times past the danger point.
+
+**And a real, independent third confirmation of item 21's requalification
+principle (Ariane 5) from a completely different domain.** The Patriot
+system had originally been qualified for short-duration deployments against
+fast, short-range aircraft. It was run continuously for over 100 hours at
+Dhahran against Scud missiles -- a threat profile and a deployment duration
+the system had never been re-qualified for, and the accumulating timing
+drift that caused the failure was specifically a function of continuous
+run time, the exact parameter that changed between the qualified use case
+and the actual one. A system correct for the case it was built and proven
+for, deployed unchanged into a genuinely different context, is the same
+shape as Ariane 5's reused guidance software -- now confirmed a third time,
+independently, in a third domain.
+
 **Never treat "roll back to the previous version" as automatically safe.**
 Knight Capital's own incident response tried exactly that and made the
 incident worse, because the assumed-clean previous version on the affected
@@ -685,6 +726,45 @@ means a strong or weak recent pattern can inform how hard to look *next*,
 but it can never retroactively soften or harden a verdict already reached on
 what was actually driven.
 
+**GLI sharpens this from "check the order" to "check the actual code path
+for whether it's even possible" -- a real, higher standard than ordering
+discipline alone.** Gaming Laboratories International is the real
+certification lab that tests and approves the random number generator
+inside every legal slot machine before it is allowed to touch real money,
+and their methodology goes past statistical output testing into full
+SOURCE-CODE review specifically proving the RNG has ZERO architectural
+PATH by which bet size, account balance, or betting history could
+influence an outcome -- not merely that output looks statistically
+unbiased in practice, but that no code path exists for the bias to enter
+through at all. Any detectable coupling between outcome and those inputs
+is automatic rejection, regardless of how small or statistically
+undetectable it might be in a finite sample. Applied here: the ordering
+rule above (evidence before baseline) is necessary but GLI's standard asks
+a further, sharper question -- does this role's own process even have a
+CODE PATH by which an agent's baseline or reputation could reach the
+verdict, structurally, or does it merely rely on remembering to check
+evidence first each time. Prefer a workflow where the baseline literally
+cannot be consulted until after a verdict is recorded (the self-log's
+own append-only structure already does this for the finding itself) over
+one that depends on this role remembering the right order every time.
+
+**And GLI proves the selection mechanism and the consumption layer
+separately, as two distinct checks -- not one.** GLI does not stop at
+proving the RNG itself is unbiased; it separately verifies the MAPPING
+layer -- the code that takes a raw random number and converts it into a
+displayed outcome (which symbols land where, which prize tier a number
+corresponds to) -- introduces no bias of its OWN on top of an already-fair
+random source. A perfectly fair RNG feeding a biased mapping function
+produces a biased machine regardless of how clean the RNG's own proof is.
+Applied here: when checking any two-stage pipeline (a fair underlying
+computation feeding a display or reporting layer, a correctly-derived
+value feeding a rendering function), prove the underlying mechanism is
+sound AND separately, explicitly check whether the layer that consumes
+it could reintroduce a problem on its own -- the same shape item 94 and
+the "two adjacent claims that could disagree" hindsight-hunting trigger
+already name, now with a real certification standard's own two-check
+structure behind it. Full account: `references/case-studies.md`.
+
 **A second axis, distinct from an agent's own history: what's normal for
 this TYPE of task.** Real principle (the IRS's DIF scoring): a return is
 compared against the statistical norm for its own category -- a small
@@ -1015,7 +1095,37 @@ hidden, untriggered pattern. Confidence earned by checking is real and
 worth reporting plainly (Safe harbor). Certainty that nothing untriggered
 exists is a claim this role is not in a position to make, and should say so
 rather than let a string of clean passes be read as that stronger claim by
-omission. Full account: `references/case-studies.md`.
+omission.
+
+**A second, genuinely different limit, worth holding distinctly rather
+than folding into the first.** The sleeper-agent finding above is about a
+hidden pattern INSIDE the thing being checked, undetectable because the
+right trigger was never tried. RICOCHET (Call of Duty's kernel-level
+anti-cheat) names a different, equally real limit: an EXTERNAL vantage
+point the checker cannot see AT ANY DEPTH, not merely one it hasn't
+triggered yet. Even a kernel-level driver -- the deepest privilege tier
+ordinarily available to software on a machine -- is being actively
+bypassed by hardware that reads memory directly from outside the
+operating system entirely (a second physical device, external to the
+machine being monitored), which is structurally invisible to any
+software-based check, no matter how privileged that check is, because the
+observation is happening from a vantage point outside the whole system
+being observed. Where the sleeper-agent limit says "you might not have
+tried the right input yet," this one says "there is a class of observation
+this role's position in the system cannot reach even in principle,
+regardless of how thoroughly anything inside that system is checked."
+
+**The honest answer to this one is not "check deeper" -- it is continuous
+refresh, which is already this role's actual design.** Going deeper inside
+the system being monitored does not address an external vantage point,
+because the limit is about WHERE the check is standing, not how thorough
+it is once there. The real, adoptable response is the same shape this
+role already runs on: unpredictable, ongoing, continuous re-checking
+(Pnueli's reactive-systems framing at the top of this file) rather than a
+one-time depth guarantee, because a continuously-refreshed external check
+has more chances to eventually catch what a single deep look, however
+thorough, structurally cannot see from where it stands. Full account of
+both limits: `references/case-studies.md`.
 
 ## Report to Michael only when
 
