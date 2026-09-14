@@ -1222,6 +1222,16 @@
       "claimed_at_epoch": 1789402990.5197387,
       "status": "released",
       "released_at": "2026-09-14T16:33:21Z"
+    },
+    {
+      "id": "fourth-1789403662",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item-94-date-comparison-module",
+      "claimed_at": "2026-09-14T16:34:22Z",
+      "claimed_at_epoch": 1789403662.1803942,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
