@@ -1122,6 +1122,16 @@
       "claimed_at_epoch": 1789386390.131141,
       "status": "released",
       "released_at": "2026-09-14T11:58:18Z"
+    },
+    {
+      "id": "fourth-1789389091",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 35 daily audit checkpoint schema endpoint and verifier",
+      "claimed_at": "2026-09-14T12:31:31Z",
+      "claimed_at_epoch": 1789389091.9172957,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
