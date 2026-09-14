@@ -1555,6 +1555,16 @@
       "claimed_at_epoch": 1789406610.8968997,
       "status": "released",
       "released_at": "2026-09-14T17:26:52Z"
+    },
+    {
+      "id": "hank-1789407188",
+      "session": "hank",
+      "subject": "item50b",
+      "task": "regime statement on remaining_aggregate",
+      "claimed_at": "2026-09-14T17:33:08Z",
+      "claimed_at_epoch": 1789407188.3660812,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
