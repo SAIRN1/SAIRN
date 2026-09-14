@@ -1397,6 +1397,73 @@
         "1.6"
       ],
       "citation_confidence": "clean"
+    },
+    {
+      "commit": "3ffb0603784b",
+      "date": "2026-09-14",
+      "subject": "fix(tools): the sabotage detector counted replaces that touch no file -- 19 unguarded was really 8",
+      "files": [
+        "tools/sabotage_control_check.py"
+      ],
+      "lines_added": 127,
+      "lines_removed": 1,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the sabotage-control detector counted any file containing a write and a .replace, so datetime.replace(tzinfo=), output-string scrubs and path-separator normalisation were reported as unverified sabotage -- 19 unguarded was really 8",
+      "rules": [
+        "1.2"
+      ],
+      "citation_confidence": "clean"
+    },
+    {
+      "commit": "e059df4cc2d4",
+      "date": "2026-09-14",
+      "subject": "fix(tools): the report-only sweep had stopped completing, and only its probe's timeout said so",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_report_only_checks_probe.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 207,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "high",
+      "detection_method": "code-review",
+      "summary": "the report-only sweep took 364s under a 300s PostToolUse cap, so it had been killed mid-run after every push -- a killed process reports no partial result and no list of what it never reached, and the only symptom was its own probe calling the timeout a failure",
+      "rules": [
+        "1.1"
+      ],
+      "citation_confidence": "clean"
+    },
+    {
+      "commit": "e059df4cc2d4",
+      "date": "2026-09-14",
+      "subject": "fix(tools): the report-only sweep had stopped completing, and only its probe's timeout said so",
+      "files": [
+        ".claude/settings.json",
+        "SAIRN-ACTIVE-WORK-cody.md",
+        "docs/SAIRN-OPEN-WORK-INDEX.md",
+        "docs/traceability-matrix.md",
+        "tests/run_report_only_checks_probe.py",
+        "tools/report_only_checks.py"
+      ],
+      "lines_added": 207,
+      "lines_removed": 5,
+      "app": "PLATFORM",
+      "layer": "tooling",
+      "severity": "moderate",
+      "detection_method": "code-review",
+      "summary": "the sweep printed CLEAN -- 35 promoted checkers, no findings over a run where 33 never executed, and the helper written to avoid a second copy of the timeout swallowed its own NameError and returned a plausible fallback",
+      "rules": [
+        "1.5"
+      ],
+      "citation_confidence": "clean"
     }
   ]
 }
