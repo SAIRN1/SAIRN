@@ -1314,6 +1314,16 @@
       "claimed_at_epoch": 1789468386.5508723,
       "status": "released",
       "released_at": "2026-09-15T10:42:56Z"
+    },
+    {
+      "id": "cc-1789468986",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sairnbiz timesheet rTS hardcoded hours five fabricated kpis",
+      "claimed_at": "2026-09-15T10:43:06Z",
+      "claimed_at_epoch": 1789468986.7849863,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
