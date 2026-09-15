@@ -1423,8 +1423,8 @@
       "task": "competitive gap audit mining -- mechanical, build/vet/biz/grounds/cash, roofing/dental/senior reverify",
       "claimed_at": "2026-09-15T10:58:00Z",
       "claimed_at_epoch": 1789469880.5076067,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T11:13:01Z"
     }
   ]
 }
