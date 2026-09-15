@@ -30,8 +30,14 @@ and why:
   * two credentials -- zz-gate-coder (role coder) and zz-gate-auditor (auditor),
     because the DENY-by-ROLE path needs a real subject and a no-session refusal
     only proves the session half
-  * up to two data rows -- ZZ-GATE-CLAIM in sc_claims and ZZ-GATE-COMP in
-    sc_compliance
+  * up to three data rows -- ZZ-GATE-CLAIM in sc_claims, ZZ-GATE-COMP in
+    sc_compliance, and ZZ-GATE-CODED in sc_coded_items. The third is the
+    coder's own UNGATED resource, written by the control arm that makes the
+    six refusals a split rather than a lockout. It said "two" until
+    2026-09-15 because the control arm was added after this paragraph was
+    written and nothing re-reads a docstring; the row it leaves behind is a
+    SUCCESSFUL write, so it is the one row here that a reader would find in
+    real data.
 
 UNLIKE the roofing probe, this one CAN clean up: SAIRNcode declares a `delete`
 verb on all 28 resources and an admin session may use it, so the rows are deleted
@@ -74,6 +80,7 @@ AUDITOR_PIN = os.environ.get('SC_AUDITOR_PIN', '')
 
 CLAIM_ROW = 'ZZ-GATE-CLAIM'
 COMP_ROW = 'ZZ-GATE-COMP'
+CODED_ROW = 'ZZ-GATE-CODED'
 
 fails = []
 notes = []
@@ -215,7 +222,7 @@ def main():
             # above a split rather than a lockout.
             st, body = post(DATA, {'action': 'write', 'resource': 'sc_coded_items',
                                    'app_id': 'sairncode',
-                                   'payload': {'id': 'ZZ-GATE-CODED'}},
+                                   'payload': {'id': CODED_ROW}},
                             key=LICENSE, token=tokens[CODER_ID])
             check('CONTROL: coder write sc_coded_items -> %s (its own resource, '
                   'ungated)' % st, st == 200, json.dumps(body)[:200])
@@ -243,7 +250,12 @@ def main():
     # A failure to clean up is a FINDING. A probe that leaves live credentials
     # active is worse than one that never ran.
     print('\n6. cleanup')
-    for res, row in (('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW)):
+    # sc_coded_items is here because the section-4 control arm WRITES it and
+    # succeeds. The other two rows are deleted unconditionally even when the
+    # section that writes them was skipped -- a delete of an absent id answers
+    # 200 -- so this one follows the same shape rather than adding a branch.
+    for res, row in (('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW),
+                     ('sc_coded_items', CODED_ROW)):
         st, body = post(DATA, {'action': 'delete', 'resource': res,
                                'app_id': 'sairncode', 'payload': {'id': row}},
                         key=LICENSE, token=admin)
