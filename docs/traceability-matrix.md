@@ -133,6 +133,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
+| **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
 | **The restore-checker blocker I named was WRONG &mdash; the mock target already existed, and the real blocker is that its subject does not exist at push time** | **CORRECTED 2026-09-14 (Cody)** &mdash; `tools/report_only_checks.py` NOT_PROMOTED entry rewritten; triage gap confirmed **0 of 67** | `tests/run_restore_coherence_probe.js` |
 | **The four Class A export gaps item 39c found are CLOSED &mdash; and a concurrency-sensitive test is now retried once rather than read as a failure** | **BUILT 2026-09-14 (Hank)** &mdash; `sairndental.html` (`charges`, `payments`, `vendororders` datasets plus their buttons), `sairnroofing.html` (`claim_photos` report + `rfLoadClaimPhotosAcrossClaims( | `tests/roofing_claim_photo_export.js`, `tests/run_concurrency_retry_probe.py`, `tests/sairndental_ledger_export.js` |
@@ -354,6 +356,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **An unprovisioned table rendered as an EMPTY one on a surety position and a safety record &mdash; "No bonding letter recorded" when the truth was "the table was never created"** | **FIXED 2026-09-13 (CC)** &mdash; `sairnroofing.html`, held by `tests/roofing_unprovisioned_is_not_empty.js` with a mutation control proving it goes RED on the pre-fix source | `tests/roofing_unprovisioned_is_not_empty.js` |
 | A rate-taxed invoice/proposal misreports how its own tax was derived on every read | **Half closed 2026-09-01 — the CODE fix shipped 2026-08-26 in `b044f35`; the LEGACY ROWS were never migrated** | `api/_lib/roofing-billing.test.js` |
 
+### sairnscape
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| **Gate 4 on the thinnest column &mdash; and TWELVE apps&rsquo; licence-wipe decision was executed by nothing** | **BUILT 2026-09-15 (Hank)** &mdash; `239565a0`. `tests/sairnscape_fault_probe.py`, 9 mutation arms + 3 controls, green after three real coverage gaps were closed. MASTER-PLAN `sairnscape` fault 0 &rar | `tests/licence_rekey_isolation.js`, `tests/sairnscape_fault_probe.py` |
+
 ### sairnsenior
 
 | Requirement | Status | Proved by |
@@ -400,7 +408,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**213 of 418 test files are traced to a stated requirement. 205 are not.**
+**216 of 418 test files are traced to a stated requirement. 202 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -490,7 +498,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/sairnsenior-payer-contracts.test.js`
 - `api/_lib/stonedesk-public.test.js`
 - `api/_lib/stonedesk-remnant-publishing.test.js`
-- `api/_lib/stripe-api-version.test.js`
 - `api/_lib/style-profile.test.js`
 - `api/_lib/subcontractor-compliance.test.js`
 - `api/_lib/token-vault.test.js`
@@ -561,7 +568,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_sabotage_control_probe.py`
 - `tests/run_sairnlaw_rate_limit_probe.js`
 - `tests/run_schema_verdict_probe.py`
-- `tests/run_semgrep_encoding_probe.py`
 - `tests/run_shape_antipattern_probe.py`
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
@@ -593,7 +599,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairndesign_sairngrounds_fault_probe.py`
 - `tests/sairndesign_server_backup.js`
 - `tests/sairngrounds_server_backup.js`
-- `tests/sairnscape_fault_probe.py`
 - `tests/sairnscape_memory.js`
 - `tests/sairnsenior/test-evv-readiness.js`
 - `tests/sb_sync_badge_honesty.js`
@@ -630,7 +635,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 418   tests/**, api/*.test.js
-  open-work rows citing a test       194   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       197   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED
