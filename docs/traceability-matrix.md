@@ -137,6 +137,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
@@ -436,7 +437,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**227 of 437 test files are traced to a stated requirement. 210 are not.**
+**228 of 437 test files are traced to a stated requirement. 209 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -559,7 +560,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/ai_shortcuts_reach_the_chat.js`
 - `tests/approval_persistence.js`
 - `tests/claims/run_claim_retype_mutation_control.py`
-- `tests/claims/run_matcher_probe.py`
 - `tests/claims/run_push_verify_probe.py`
 - `tests/composite_context.js`
 - `tests/cut_sheet_basis_parity.js`
@@ -671,7 +671,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 437   tests/**, api/*.test.js
-  open-work rows citing a test       216   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       217   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
