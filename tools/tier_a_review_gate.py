@@ -364,6 +364,31 @@ def touched_tier_a(diff_text, resources):
             continue
         if not (line[:1] in ('+', '-', ' ') or line.startswith('@@')):
             continue
+        # ── CHANGED LINES ONLY, AND I ARGUED THE OPPOSITE (2026-09-15) ───────
+        # This counted a resource named in a hunk's CONTEXT as strongly as one
+        # on an added or removed line, on my own argument that "an edit three
+        # lines from law_trusttx is an edit about law_trusttx".
+        #
+        # MEASURED AGAINST EVERY REAL CASE THE GATE HAS SEEN, and the argument
+        # does not survive it:
+        #
+        #   item 97 soft-delete        TRUE   context 8   changed 8
+        #   sc_denial_events gate      TRUE   context 7   changed 7
+        #   358-site decode sweep      FALSE  context 1   changed 0
+        #   report-only artefact fix   FALSE  context 0   changed 0
+        #
+        # CONTEXT ADDED NOTHING TO EITHER TRUE POSITIVE and produced the only
+        # remaining false one -- `rf_certifications`, sitting three lines from a
+        # mechanical one-argument edit in a probe. A platform-wide sweep touches
+        # a line in 137 files and therefore produces context lines everywhere,
+        # which is how a gate that blocks on context becomes a gate people
+        # override.
+        #
+        # THE INFORMATION IS NOT THROWN AWAY. A context-only name is collected
+        # separately and REPORTED, never blocking -- see context_only_tier_a().
+        # Demoting a signal is not the same as deleting it.
+        if line[:1] not in ('+', '-'):
+            continue
         for name in resources:
             # Word-bounded. `sc_ar` must not match `sc_archive`, and this
             # platform has already been bitten once by a substring search --
@@ -372,6 +397,49 @@ def touched_tier_a(diff_text, resources):
                 fs = hits.setdefault(name, [])
                 if cur not in fs:
                     fs.append(cur)
+    return hits
+
+
+def context_only_tier_a(diff_text, resources):
+    """Names that appear ONLY in hunk context, never on a changed line.
+
+    Reported and never blocking. Kept because the weaker signal is still worth a
+    human seeing -- a change that edits around a Tier A resource without
+    touching its name may still be about it -- but four-for-four, every real
+    case where this fired alone was a false positive.
+    """
+    everything = _scan(diff_text, resources, changed_only=False)
+    changed = touched_tier_a(diff_text, resources)
+    return {k: v for k, v in everything.items() if k not in changed}
+
+
+def _scan(diff_text, resources, changed_only=True):
+    """The context-inclusive walk, kept for context_only_tier_a() to diff
+    against. Deliberately a thin duplicate of the loop above rather than a flag
+    threaded through it: the blocking path must not gain a parameter that could
+    be passed the wrong way and quietly restore the behaviour this removed."""
+    hits, cur, skip = {}, None, False
+    for line in diff_text.split('\n'):
+        if line.startswith('+++ '):
+            path = line[4:].strip()
+            if path == '/dev/null':
+                cur, skip = None, True
+                continue
+            cur = (path[2:] if path[:2] in ('a/', 'b/') else path).replace('\\', '/')
+            skip = (cur in SELF or cur.startswith('docs/')
+                    or cur.startswith('sql/') or cur.lower().endswith('.md'))
+            continue
+        if cur is None or skip:
+            continue
+        if line.startswith('diff --git') or line.startswith('--- '):
+            continue
+        if not (line[:1] in ('+', '-', ' ') or line.startswith('@@')):
+            continue
+        if changed_only and line[:1] not in ('+', '-'):
+            continue
+        for name in resources:
+            if re.search(r'(?<![a-z0-9_])' + re.escape(name) + r'(?![a-z0-9_])', line):
+                hits.setdefault(name, []).append(cur)
     return hits
 
 
@@ -430,10 +498,21 @@ def check(diff_text, verbose=True):
         return 1, lines
 
     hits = touched_tier_a(diff_text, resources)
+    # DEMOTED, NOT DELETED. A name that appears only in hunk CONTEXT used to
+    # block; four-for-four it was a false positive and it added nothing to
+    # either true one. It is still worth a human seeing, so it is said out loud
+    # and never gates.
+    ctx_only = context_only_tier_a(diff_text, resources)
     if not hits:
         if verbose:
-            lines.append('No file in this change names a Tier A resource. '
-                         'Nothing to record.')
+            lines.append('No file in this change names a Tier A resource on a '
+                         'changed line. Nothing to record.')
+            if ctx_only:
+                lines.append('FYI, not blocking: %s appear(s) in hunk CONTEXT '
+                             'only. If the change really is about one of them, '
+                             'record it -- the gate cannot tell from context '
+                             'alone and no longer pretends to.'
+                             % ', '.join(sorted(ctx_only)))
         return 0, lines
 
     session = session_name()

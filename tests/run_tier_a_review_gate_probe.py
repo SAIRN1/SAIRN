@@ -114,13 +114,41 @@ own = g.touched_tier_a(diff_for('tools/tier_a_review_gate.py', "'sc_claims'"), R
 check('the gate\'s own files are excluded, or recording an obligation would '
       'itself create one', own == {}, own)
 
-ctx = g.touched_tier_a(
-    'diff --git a/api/x.js b/api/x.js\n--- a/api/x.js\n+++ b/api/x.js\n'
-    '@@ -1,3 +1,3 @@\n const a = 1;\n-const b = 2;\n+const b = 3;\n'
-    " const c = 'law_trusttx';\n", RES)
-check('a resource in the CONTEXT of a hunk counts -- an edit three lines from '
-      'law_trusttx is an edit about law_trusttx',
-      list(ctx) == ['law_trusttx'], ctx)
+# ── THIS ARM ASSERTED THE OPPOSITE UNTIL 2026-09-15, ON MY OWN ARGUMENT ────
+# It read: "a resource in the CONTEXT of a hunk counts -- an edit three lines
+# from law_trusttx is an edit about law_trusttx." Measured against every real
+# case the gate has seen, that argument does not survive:
+#
+#   item 97 soft-delete        TRUE   context 8   changed 8
+#   sc_denial_events gate      TRUE   context 7   changed 7
+#   358-site decode sweep      FALSE  context 1   changed 0
+#   report-only artefact fix   FALSE  context 0   changed 0
+#
+# Context added NOTHING to either true positive and produced the only remaining
+# false one. A platform-wide sweep touches one line in 137 files and therefore
+# produces context lines everywhere, which is how a gate that blocks on context
+# becomes a gate people override.
+CTX_DIFF = ('diff --git a/api/x.js b/api/x.js\n--- a/api/x.js\n+++ b/api/x.js\n'
+            '@@ -1,3 +1,3 @@\n const a = 1;\n-const b = 2;\n+const b = 3;\n'
+            " const c = 'law_trusttx';\n")
+check('a resource named ONLY in hunk context does NOT block',
+      g.touched_tier_a(CTX_DIFF, RES) == {}, g.touched_tier_a(CTX_DIFF, RES))
+check('...but it is still REPORTED -- demoted, not deleted',
+      list(g.context_only_tier_a(CTX_DIFF, RES)) == ['law_trusttx'],
+      g.context_only_tier_a(CTX_DIFF, RES))
+CHG_DIFF = ('diff --git a/api/x.js b/api/x.js\n--- a/api/x.js\n+++ b/api/x.js\n'
+            '@@ -1,2 +1,2 @@\n-const c = 1;\n'
+            "+const c = 'law_trusttx';\n")
+check('CONTROL: a resource on an ADDED line still blocks -- the narrowing did '
+      'not turn the gate off',
+      list(g.touched_tier_a(CHG_DIFF, RES)) == ['law_trusttx'],
+      g.touched_tier_a(CHG_DIFF, RES))
+DEL_DIFF = ('diff --git a/api/x.js b/api/x.js\n--- a/api/x.js\n+++ b/api/x.js\n'
+            "@@ -1,2 +1,2 @@\n-const c = 'law_trusttx';\n+const c = 1;\n")
+check('CONTROL: and so does one on a REMOVED line -- deleting a reference to a '
+      'Tier A resource is a change about it',
+      list(g.touched_tier_a(DEL_DIFF, RES)) == ['law_trusttx'],
+      g.touched_tier_a(DEL_DIFF, RES))
 
 print('\n3. FAIL CLOSED -- an unreadable register is 2, never "no findings"')
 tmp = tempfile.mkdtemp(prefix='tier-a-review-probe-')
@@ -169,7 +197,7 @@ try:
     check('...and the message says so in those words',
           any('SELF-SIGNED' in ln for ln in lines), lines)
 
-    code, lines = g.check(diff_for('api/x.js', "'sb_ts'"))
+    code, lines = g.check(diff_for('api/x.js', "'zz_not_a_resource'"))
     check('CONTROL: a self-signed record is a finding even on a push that '
           'touches NO Tier A code -- it is already in the file',
           code == 1, '%s %s' % (code, lines))
@@ -179,7 +207,13 @@ try:
         {'author_session': 'cc', 'reviewer_session': 'hank', 'status': 'reviewed',
          'resources': ['sc_claims']}]}))
     g.REVIEWS = crossed
-    code, _ = g.check(diff_for('api/x.js', "'sb_ts'"))
+    # NOT A REAL RESOURCE NAME, DELIBERATELY. This fixture used `sb_ts` as a
+    # stand-in for "definitely not Tier A" -- and sb_ts BECAME Tier A on
+    # 2026-09-15, six hours after the timesheet write path was built, so the
+    # control started failing for a reason that had nothing to do with what it
+    # tests. A placeholder that can be promoted is a placeholder with a clock
+    # in it; `zz_not_a_resource` cannot be registered or tiered by anybody.
+    code, _ = g.check(diff_for('api/x.js', "'zz_not_a_resource'"))
     check('CONTROL: a record reviewed by a DIFFERENT session is not a finding',
           code == 0, code)
 
