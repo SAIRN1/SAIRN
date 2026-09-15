@@ -1875,6 +1875,16 @@
       "claimed_at_epoch": 1789490038.6908944,
       "status": "released",
       "released_at": "2026-09-15T17:01:42Z"
+    },
+    {
+      "id": "hank-1789492224",
+      "session": "hank",
+      "subject": "504-cron",
+      "task": "supabase 504 cron failure rate re-measure alf-alerts send-reminder verification",
+      "claimed_at": "2026-09-15T17:10:24Z",
+      "claimed_at_epoch": 1789492224.0256028,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
