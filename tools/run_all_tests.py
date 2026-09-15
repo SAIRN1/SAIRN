@@ -258,7 +258,7 @@ def release_lock():
 # It then happened AGAIN on the next push attempt -- a second rebase, five
 # more commits, one more test file -- which is how 313 became 314. Two
 # rebases, two stale numbers, inside one hour.
-MIN_TEST_FILES = 320
+MIN_TEST_FILES = 324
 
 def discover():
     js, py, unrun = [], [], []

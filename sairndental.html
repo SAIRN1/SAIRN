@@ -171,6 +171,18 @@ label.chk input{width:auto;}
      The project-side toggle is a dashboard setting and is NOT in this repo;
      until it is on, this script 404s harmlessly. -->
 <script defer src="/_vercel/insights/script.js"></script>
+<!-- qrcodejs 1.0.0 -- MIT -- cdnjs, SRI-pinned. The SAME library and the SAME
+     sha384 stonedesk.html already carries for its slab labels; propagating a
+     pinned hash rather than re-deriving one, because two hashes for one file is
+     the drift this platform keeps recording.
+     UNMAINTAINED UPSTREAM (last release 2016) and trusted on that narrow basis:
+     it renders a QR from a string, touches no network and no credentials, and
+     the hash means it cannot change under us. `defer` so it never blocks the
+     app, and the complaints panel degrades with a NAMED message when it is
+     absent rather than showing a blank square. -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"
+        integrity="sha384-3zSEDfvllQohrq0PHL1fOXJuC/jSOO34H46t6UQfobFOmxE5BpjjaIJY5F2/bMnU"
+        crossorigin="anonymous" referrerpolicy="no-referrer" defer></script>
 </head>
 <body>
 <div id="toast"></div>
@@ -353,6 +365,17 @@ label.chk input{width:auto;}
         <div class="ph"><div><div class="ptitle">Complaints</div><div class="psub">Anonymous-optional patient feedback, routed privately &mdash; every open thread needs a real owner response, not a passive drop-box.</div></div></div>
         <div class="card"><div class="cb">
           <div style="font-size:11px;color:var(--muted)" id="cp-link-preview"></div>
+          <!-- QR DISTRIBUTION. The four other halves of this feature shipped
+               2026-09; this is the one that did not, and it is the one that
+               decides whether a patient ever reaches the thread. A link read
+               off a wall is not a link anybody types. -->
+          <div id="cp-qr-wrap" style="display:none;margin-top:12px">
+            <div id="cp-qr" style="display:inline-block;padding:10px;background:#fff;border:1px solid var(--border);border-radius:8px"></div>
+            <div id="cp-qr-note" style="font-size:11px;color:var(--muted);margin-top:6px"></div>
+            <div style="margin-top:8px">
+              <button class="btn bo" onclick="cpPrintQRPoster()" id="cp-qr-print">Print waiting-room poster</button>
+            </div>
+          </div>
         </div></div>
         <div class="card"><div class="ch"><div class="ct">Threads</div></div><div class="cb" id="cp-list"></div></div>
       </div>
@@ -5173,6 +5196,7 @@ function rComplaints(){
   var s=settings();
   var linkEl=$('cp-link-preview');
   if(linkEl)linkEl.textContent=s.booking_slug?('Patient feedback link: sairn.vercel.app/sairndental-complaint?slug='+s.booking_slug):'Set a public link slug on the Booking Settings panel to get your patient feedback link.';
+  cpRenderQR(s.booking_slug);
   var host=$('cp-list');
   if(!host)return;
   if(!list.length){host.innerHTML='<div style="color:var(--muted);text-align:center;padding:20px">No complaints on file yet</div>';return;}
@@ -5195,6 +5219,104 @@ function rComplaints(){
       msgsHtml+respondHtml+'</div></div>';
   }).join('');
 }
+// ── QR DISTRIBUTION FOR THE PATIENT FEEDBACK LINK ──────────────────────────
+// The anonymous-complaint feature shipped four of its five halves in 2026-09:
+// the two-way thread, the 256-bit unguessable link, the no-PII record and the
+// nav badge. THIS is the one that did not, and it is the one that decides
+// whether a patient ever reaches any of the others -- a URL on a wall is not a
+// URL anybody types, and a patient who has just had a bad visit is exactly the
+// person who will not type it.
+//
+// SAME PATTERN AS stonedesk.html'S SLAB LABELS, DELIBERATELY, INCLUDING THE
+// PART THAT IS NOT IDEAL. qrcodejs is loaded from cdnjs, pinned with an SRI
+// hash so it cannot change under us, and the feature DEGRADES rather than
+// breaking when it does not load. That library is unmaintained upstream (last
+// release 2016) and is trusted on the same narrow basis StoneDesk records: it
+// turns a string into an image, touches no network and no credentials.
+//
+// THE DEGRADATION IS THE POINT, and it is why this is not a one-liner. If the
+// script is blocked -- an offline surgery, a locked-down practice network, a
+// CDN outage -- the panel must SAY the QR is missing. A silently absent QR
+// reads as "this practice has no feedback channel", which is the opposite of
+// what the feature is for.
+//
+// THE QR ENCODES THE PUBLIC SLUG URL AND NOTHING ELSE. No token, no patient
+// id, no practice identifier beyond the slug that is already public. A QR is
+// photographed, forwarded and printed on a wall; anything in it is disclosed.
+function cpQRUrl(slug){
+  return 'https://sairn.vercel.app/sairndental-complaint?slug=' + encodeURIComponent(slug || '');
+}
+function cpRenderQR(slug){
+  var wrap = $('cp-qr-wrap'), box = $('cp-qr'), note = $('cp-qr-note'), btn = $('cp-qr-print');
+  if (!wrap || !box) return;
+  box.innerHTML = '';
+  if (!slug) { wrap.style.display = 'none'; return; }
+  wrap.style.display = '';
+  if (typeof QRCode === 'undefined') {
+    // NAMED, not blank. A reader must be able to tell "the code did not load"
+    // from "this practice has no feedback link".
+    box.innerHTML = '<div style="width:180px;height:180px;display:flex;align-items:center;'
+      + 'justify-content:center;text-align:center;font-size:11px;color:#b45309;'
+      + 'border:1px dashed #f59e0b;border-radius:6px;padding:8px">QR code library did not load</div>';
+    if (note) note.innerHTML = '<strong>No QR code.</strong> The library is served from a CDN and did not load '
+      + '&mdash; the link above still works and can be typed or copied. Printing is disabled rather than '
+      + 'producing a poster with a blank square on it.';
+    if (btn) { btn.disabled = true; btn.title = 'The QR library did not load'; }
+    return;
+  }
+  if (btn) { btn.disabled = false; btn.title = ''; }
+  try {
+    new QRCode(box, { text: cpQRUrl(slug), width: 180, height: 180,
+                      correctLevel: QRCode.CorrectLevel.M });
+  } catch (e) {
+    box.innerHTML = '<div style="font-size:11px;color:#b45309">QR could not be rendered.</div>';
+    if (note) note.textContent = 'QR could not be rendered: ' + (e && e.message ? e.message : 'unknown error');
+    if (btn) btn.disabled = true;
+    return;
+  }
+  if (note) note.textContent = 'Patients scan this to reach the feedback thread. It encodes the public link only '
+    + '-- no patient or practice data.';
+}
+// The poster is the actual distribution mechanism: a QR nobody prints is a QR
+// nobody scans. Deliberately plain -- one instruction, one code, the typed URL
+// underneath for anyone who cannot or will not scan.
+function cpPrintQRPoster(){
+  var s = settings(); var slug = s && s.booking_slug;
+  if (!slug) { if (typeof notify === 'function') notify('Set a public link slug first.', 'warn'); return; }
+  if (typeof QRCode === 'undefined') {
+    if (typeof notify === 'function') notify('The QR library did not load -- not printing a poster with a blank square on it.', 'warn');
+    return;
+  }
+  var holder = document.createElement('div');
+  try { new QRCode(holder, { text: cpQRUrl(slug), width: 420, height: 420,
+                             correctLevel: QRCode.CorrectLevel.M }); }
+  catch (e) {
+    if (typeof notify === 'function') notify('QR could not be rendered: ' + (e && e.message), 'warn');
+    return;
+  }
+  var img = holder.querySelector('img'), cvs = holder.querySelector('canvas');
+  var markup = img ? img.outerHTML : (cvs ? '<img src="' + cvs.toDataURL('image/png') + '" width="420" height="420">' : '');
+  if (!markup) { if (typeof notify === 'function') notify('QR produced no image to print.', 'warn'); return; }
+  var practice = (s && s.practice_name) ? H(s.practice_name) : 'our practice';
+  var w = window.open('', '_blank');
+  if (!w) { if (typeof notify === 'function') notify('Allow pop-ups to print the poster.', 'warn'); return; }
+  w.document.write('<!doctype html><html><head><title>Patient Feedback</title>'
+    + '<style>@media print{@page{margin:12mm}}body{font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;'
+    + 'text-align:center;padding:40px 24px;color:#111}h1{font-size:34px;margin:0 0 6px}'
+    + 'p{font-size:17px;color:#444;margin:0 0 26px}img{image-rendering:pixelated}'
+    + '.u{font-size:13px;color:#666;margin-top:22px;word-break:break-all}</style></head><body>'
+    + '<h1>Tell us how we did</h1>'
+    + '<p>Scan with your phone camera. You can stay anonymous, and ' + practice + ' will reply here.</p>'
+    + markup
+    + '<div class="u">' + H(cpQRUrl(slug)) + '</div>'
+    + '</body></html>');
+  w.document.close();
+  w.focus();
+  // print() is left to the operator rather than fired automatically: an
+  // auto-print that races the image decode prints a blank square, which is the
+  // failure this whole block is written to avoid.
+}
+
 
 // Case-insensitive exact match only -- no fuzzy matching (design spec
 // §2, a fuzzy match risks a wrong guess on a genuinely different

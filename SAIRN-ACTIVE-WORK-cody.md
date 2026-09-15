@@ -4701,3 +4701,58 @@ one policy applied to both jobs would be wrong in one of them.
 Item 3 (SAIRNdental complaint QR half), item 5 (`sairn-resilience-patterns`
 skill), item 78 (formal property verification), and the remaining three item 6
 candidates. Not attempted rather than attempted badly.
+
+---
+
+## 2026-09-15 (later still) — the QR half, and a SOC2 answer that is "does not exist"
+
+### Item 1 — QR distribution built, StoneDesk's pattern propagated exactly
+
+`sairndental.html`: a QR on the Complaints panel plus a printable waiting-room
+poster. `tests/dnt_complaint_qr.js`, 24 arms.
+
+**The SRI hash is COPIED from `stonedesk.html`, not re-derived**, and an arm
+asserts the two are byte-identical. Two hashes for one file is the
+claim-in-two-places drift this repo keeps recording.
+
+**The degradation path is the feature, not a nicety.** On a locked-down surgery
+network a blocked CDN is the ordinary case. A silently missing QR reads as *"this
+practice has no feedback channel"* — the opposite of what the feature says — so
+the panel names the failure, says the link still works, and **disables printing
+rather than producing a poster with a blank square on it.** Four arms drive that,
+plus a control that it still works when the library loads.
+
+**It does not auto-print.** `w.print()` fired immediately races the image decode
+and prints a blank square; an arm asserts the call is absent.
+
+**A self-caught scanner defect, the same shape I have recorded before:** my first
+"no PII in the QR" arm searched the source for the word `patient` and failed on
+the feature's own UI copy — *"no patient or practice data"*, which is the feature
+working. Replaced with the real structural property: every `text:` handed to
+QRCode must be exactly `cpQRUrl(...)`, plus a driven arm proving no adversarial
+slug can smuggle a second parameter past `encodeURIComponent`.
+
+### Item 6 — the answer is not "stalled vs progressing". Two of three do not exist
+
+Searched 1668 tracked files:
+
+| item | real state |
+|---|---|
+| SOC 2 readiness | **NO SUCH WORK EXISTS.** The only real hit in the repo is a string inside the CTO advisor's AI system prompt (`api/_lib/exec-context.js:169`) listing "HIPAA/SOC2 compliance" as an area of expertise. **That is an AI persona description, not a compliance programme** |
+| NHI credential inventory | **EXISTS UNDER ANOTHER NAME** — `docs/SECRETS-INVENTORY.md`, generated, 18 CREDENTIAL / 5 ENDPOINT / 8 ADDRESS, with blast radius from the dependency graph and an absence-behaviour column that separates *fails closed* from *fails open*. Nobody searching "NHI" would find it. **Third time tonight** an item recorded as missing ships under a name nobody searched |
+| incident-response plan | **DOES NOT EXIST.** `sairn-decision-gate` asks the question — *"is there a real monitoring and incident-response plan, or does 'we'll handle it if it happens' count as the plan"* — and on this platform the answer today is the second one |
+| SAIRNlaw privacy scoping | **ZERO FILES** |
+
+**AND THE ONE THAT EXISTS IS CURRENTLY REFUSING.**
+`python tools/secrets_inventory.py --check` returns **REFUSING**: two new secrets
+(`SAIRN_AI_CONTENTION_FLOOR`, `SAIRN_AI_TENANT_SHARE`) were added by another clone
+with no classification, so the credential inventory cannot regenerate and the
+published document is not currently true. **Not fixed here** — classifying
+somebody else's new env vars is a judgement about what they unlock, and guessing
+it is how a wrong blast-radius number gets published.
+
+### Not started
+
+Items 2 (three recombination passes), 3 (item 78 FPV), 4 (AI-proposes /
+human-approves enforcement sweep), 5 (triage-plan staleness tool). Not attempted
+rather than attempted badly.
