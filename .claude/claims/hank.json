@@ -1823,8 +1823,8 @@
       "task": "per tenant sub budget licence key",
       "claimed_at": "2026-09-15T14:13:01Z",
       "claimed_at_epoch": 1789481581.485082,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T14:24:57Z"
     }
   ]
 }
