@@ -64,8 +64,18 @@ function harness(opts) {
   const store = Object.assign({}, opts.store || {});
   const writes = [];
   const reads = [];
+  // THE WARNING IS CAPTURED, NOT JUST ALLOWED THROUGH. The no-id branch's
+  // only output is a console.warn, so passing the real console in made the
+  // DISCLOSURE untestable -- the rows were asserted skipped and nothing could
+  // observe whether anybody was told. Found 2026-09-15 by
+  // tests/sairnbuild_fault_probe.py: deleting `skipped++` left every assertion
+  // in this file green, which is the StoneDesk shape exactly (six collections
+  // left the sync without a sound while sitting on a list named "backed up").
+  const warnings = [];
   const ctx = {
-    console,
+    console: Object.assign(Object.create(console), {
+      warn: function () { warnings.push(Array.prototype.join.call(arguments, ' ')); }
+    }),
     JSON,
     Array,
     Promise,
@@ -83,7 +93,8 @@ function harness(opts) {
       return Promise.resolve(opts.serverRows ? (opts.serverRows[resource] || []) : []);
     },
     __writes: writes,
-    __store: store
+    __store: store,
+    __warnings: warnings
   };
   vm.createContext(ctx);
   vm.runInContext(syncSrc + '\n' + stSrc, ctx);
@@ -199,6 +210,32 @@ test('a record with no id is skipped rather than pushed without one', () => {
   c.st('bld_jobs', [{ client: 'no id here' }, { id: '', client: 'empty id' },
                     { id: null }, JOB_A]);
   assert.deepStrictEqual(c.__writes.map((w) => w.id), ['J-1']);
+});
+
+// ── AND THE SKIP IS DISCLOSED, WHICH IS A SEPARATE FACT ────────────────────
+// Skipping the row is correct. Skipping it SILENTLY is the defect: a record
+// that never reaches the server while the collection sits on a list called
+// BLD_SYNCED is indistinguishable, from every screen in the app, from one that
+// did. StoneDesk lost six collections to exactly that, found only by reading
+// writers one at a time. The count is the only thing that scales.
+test('...and the skip is REPORTED, with a count, not swallowed', () => {
+  const c = harness();
+  c.st('bld_jobs', [{ client: 'no id here' }, { id: '', client: 'empty id' },
+                    { id: null }, JOB_A]);
+  assert.strictEqual(c.__warnings.length, 1,
+    'got ' + c.__warnings.length + ' warning(s) -- ONE LINE PER COLLECTION PER SAVE, '
+    + 'not one per row and not none');
+  const w = c.__warnings[0];
+  assert.match(w, /3 record\(s\)/, 'the warning does not say HOW MANY were dropped: ' + w);
+  assert.match(w, /bld_jobs/, 'the warning does not name the collection: ' + w);
+  assert.match(w, /this device only/i,
+    'the warning does not say what the consequence is: ' + w);
+});
+
+test('a clean save says NOTHING -- a warning that is always on stops being read', () => {
+  const c = harness();
+  c.st('bld_jobs', [JOB_A, JOB_B]);
+  assert.deepStrictEqual(c.__warnings, []);
 });
 
 test('a non-array value on a synced key pushes nothing', () => {
