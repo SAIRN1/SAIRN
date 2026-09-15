@@ -1405,6 +1405,16 @@
       "claimed_at_epoch": 1789428630.7412431,
       "status": "released",
       "released_at": "2026-09-14T23:48:37Z"
+    },
+    {
+      "id": "fourth-1789468448",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "sairncare fault probe gate 4 the MAR and incident suites must DENY",
+      "claimed_at": "2026-09-15T10:34:08Z",
+      "claimed_at_epoch": 1789468448.1348324,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
