@@ -671,6 +671,22 @@ the real code in this clone, not assumed.
 
 ### Row 1 — StoneDesk Subcontractor Portal: no compliance layer at all
 
+> **SUPERSEDED 2026-09-01 — this row is CLOSED. Appended 2026-09-15 (Fourth);
+> the row below is left exactly as written.** StoneDesk shipped the compliance
+> layer in `c6dcb69f`: `coi_expiry`, `licence_no`/`licence_expiry` and
+> `w9_on_file` on the roster, a four-state badge (`subxCompliancePill`), and the
+> enforcement half this row said was the part that matters — a server-side
+> **409 `SUB_NOT_COMPLIANT`** on the assignment path in `api/sd-sub-data.js`,
+> not a UI warning. Migration: `sql/sd_subs_compliance_2026-09-01.sql`.
+> **What is still open is different from what this row asked for:** three
+> implementations of subcontractor compliance now coexist and they disagree on
+> not-tracked and on the clock. See the `SAIRN-BACKLOG.md` row's own
+> *"CORRECTION 2026-09-02"* and
+> `docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md` §2.
+> **This pointer exists because the correction was written in the backlog and
+> never reached this document, which is the one a session sent at
+> SAIRNmechanical actually reads.**
+
 **Verified state.** `stonedesk.html:28823-28827` — the entire subcontractor roster payload is:
 
 ```

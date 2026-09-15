@@ -5,6 +5,24 @@
 before being written down. Four of the supplied items turned out to be already
 built and are recorded as corrections in §9 rather than shipped as gaps.**
 
+> ## ✅ RE-DERIVED 2026-09-15 — EVERY STATUS CELL IN THIS FILE STILL HOLDS.
+>
+> **Appended 2026-09-15 (Fourth); nothing below was edited.** All 33 state
+> cells were re-derived against the app files at HEAD, twelve days on. **Four
+> markers fired and all four are false positives** (SAIRNbuild `offline` = two
+> code comments; SAIRNvet `ambient` = a ball python's enclosure gradient;
+> SAIRNgrounds `portfolio` = comments about a platform CODE sweep; SAIRNbiz A1
+> `wage base` = a disclosure added 2026-09-14, and the auto-update gap the row
+> names is untouched). **Zero rows moved.**
+>
+> That is the opposite of what happened to the 2026-08-26 audit over a
+> comparable span, and the reason is structural rather than lucky: these rows
+> are mostly *"zero occurrences of an entire vocabulary"*, which can only move
+> when a feature is genuinely built. See
+> [`docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md`](../../2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md)
+> §0 and §1. **Re-derive anyway before building** — this file predicts its own
+> decay in §10 and one confirmation is not a warranty.
+
 ---
 
 ## 0. What this document closes

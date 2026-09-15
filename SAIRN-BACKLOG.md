@@ -1140,7 +1140,25 @@ summed across order history) or to formally drop it from the design
 spec's own stated scope. Item 4 — hoist `var all=vAllProducts();` once
 before the `productOverrides` filter callback.
 
-## StoneDesk Subcontractor Portal has no compliance layer — no COI, no insurance, no licence, no expiry
+## CLOSED 2026-09-01 — StoneDesk Subcontractor Portal compliance layer (the original title below asserted a gap that no longer exists)
+
+**Heading retitled 2026-09-15 (Fourth).** The body of this row already carried
+an accurate self-correction — *"CORRECTION 2026-09-02, later the same day"*,
+about 100 lines down — but the `##` heading was never touched, so every outline,
+every `grep '^## '` and every skim of this file kept reporting the closed gap as
+open for a further thirteen days. **A correction that does not reach the heading
+does not reach the reader.** The original heading is preserved verbatim
+immediately below so the row is still findable by its old wording; everything
+after it is unchanged.
+
+**Original heading, as logged 2026-08-27:** *StoneDesk Subcontractor Portal has
+no compliance layer — no COI, no insurance, no licence, no expiry.*
+
+**What is still open out of this row**, so retitling it does not bury live work:
+the three coexisting implementations (see the 2026-09-02 correction below), and
+specifically the UTC-clock default in `api/sd-sub-data.js` that correction
+identifies as *"not a tie"*. Consolidation is a decision, not a cleanup. The
+compliance layer itself is done.
 
 **Logged:** 2026-08-27, from the SAIRNmechanical worldwide competitive
 research pass (`docs/superpowers/specs/2026-08-27-sairnmechanical-shared-platform-competitive-research.md`,

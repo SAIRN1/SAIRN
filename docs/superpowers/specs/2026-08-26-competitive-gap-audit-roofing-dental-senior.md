@@ -3,7 +3,19 @@
 > ## ⚠ THE STATE COLUMNS IN THIS FILE ARE OUT OF DATE. DO NOT DISPATCH FROM THEM.
 >
 > **Current status lives in
-> [`docs/2026-09-02-competitive-gap-status-rederived.md`](../../2026-09-02-competitive-gap-status-rederived.md).**
+> [`docs/2026-09-02-competitive-gap-status-rederived.md`](../../2026-09-02-competitive-gap-status-rederived.md),
+> and that file is itself now stale — see
+> [`docs/2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md`](../../2026-09-15-competitive-gap-status-rederived-mechanical-and-five-apps.md) §3.**
+>
+> **Re-derived 2026-09-15: the decay is far wider than the five rows below.**
+> Twenty rows here are buildable in-house (i.e. not clearinghouse / EPCS-PDMP /
+> EVV-aggregator / imaging-vendor gated). **Nineteen of the twenty now return
+> substantial marker counts against code that read zero when this was written**,
+> five of them verified to the schema and server-lib layer. Exactly one —
+> SAIRNdental B2, cross-location roll-up — is genuinely still open, and it is
+> half-open: write-side location capture ships in `api/_lib/dnt-location.js`
+> and only the aggregation is held. **Treat every state cell in this file as
+> unusable and re-derive before building.**
 >
 > On 2026-09-02 most of the items below were built. Three sessions that night
 > independently reached for work this file calls **"Absent"** — SAIRNdental A8,
