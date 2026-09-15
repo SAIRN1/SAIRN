@@ -1855,6 +1855,16 @@
       "claimed_at_epoch": 1789486078.8528843,
       "status": "released",
       "released_at": "2026-09-15T15:38:12Z"
+    },
+    {
+      "id": "hank-1789486820",
+      "session": "hank",
+      "subject": "sairncash",
+      "task": "fault probe gate 4 the entitlement gate must DENY",
+      "claimed_at": "2026-09-15T15:40:20Z",
+      "claimed_at_epoch": 1789486820.0153642,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
