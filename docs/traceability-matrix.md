@@ -138,6 +138,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`comment_sensitivity_check.py` QUARANTINE diagnosed &mdash; the flake was never its own, and the ledger&rsquo;s &ldquo;other-tree runs are discarded&rdquo; was a SENTENCE with no code behind it** | **DIAGNOSED AND THE UNDERLYING TOOL FIXED 2026-09-15 (CC)** &mdash; `tools/flaky_checker_quarantine.py` verdicts are tree-aware now, 7 new probe arms, 0 failed. &#9888; **THE QUARANTINE IS STILL OPEN  | `tests/run_literal_drift_determinism_probe.py` |
 | ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
 | **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
@@ -674,7 +675,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 439   tests/**, api/*.test.js
-  open-work rows citing a test       219   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       220   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
