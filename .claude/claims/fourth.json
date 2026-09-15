@@ -1465,6 +1465,16 @@
       "claimed_at_epoch": 1789492636.711068,
       "status": "released",
       "released_at": "2026-09-15T22:28:51Z"
+    },
+    {
+      "id": "fourth-1789511988",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "item 52 complementary measurement fusion, item 59 superspreading dispersion analysis",
+      "claimed_at": "2026-09-15T22:39:48Z",
+      "claimed_at_epoch": 1789511988.1596768,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
