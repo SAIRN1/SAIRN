@@ -193,6 +193,33 @@ correctly-separated tools that a name-and-size scan made look like duplicates.
 
 ---
 
+## 5. Design-time hardening vs audit — added 2026-09-15
+
+`sairn-resilience-patterns` was added on 2026-09-15 and is deliberately NOT a
+fifth member of any group above. It is the only skill on this platform consulted
+BEFORE the code exists rather than after, and the precedence is a direction of
+travel rather than a ranking:
+
+| Question | Skill |
+|---|---|
+| Should this exist at all? | `sairn-software-architect` |
+| **What shape should it have?** | **`sairn-resilience-patterns`** |
+| Is the code that exists correct? | `sairn-guardian-v2`, `sairn-code-scrubber` |
+| Is somebody else's claim about it true? | `sairn-hover-auditor`, `sairn-adversarial-reviewer` |
+
+**It does not compete with `sairn-software-architect` and the boundary is worth
+stating** because it is the one somebody will get wrong: the architect skill
+decides WHETHER and HOW IT FITS THE PLATFORM, and is where an expensive-to-reverse
+call belongs. Resilience-patterns assumes that decision is made and is about the
+internal shape of the thing — which is why its triggers are all mechanical
+(*you are about to call something you do not control*, *a budget more than one
+customer shares*) rather than judgements.
+
+**Every pattern in it carries the SAIRN file that implements it**, which is the
+property that keeps it from becoming a generic hardening checklist. If an anchor
+stops existing, that section is describing something this platform does not have
+and should be corrected rather than left as advice.
+
 ## What this note does not cover
 
 - **The 29 general skills' behaviour in other projects.** They are user-level.
