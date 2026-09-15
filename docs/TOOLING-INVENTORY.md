@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**152 files in `tools/`.** By what actually invokes them:
+**153 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 98 |
+| CHECKER | 99 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
@@ -349,7 +349,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      152   git ls-files tools/
+  tools on disk                      153   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                9   tools\sairn_push_gate_hook.py
   report-only registry                45   report_only_checks.REGISTRY

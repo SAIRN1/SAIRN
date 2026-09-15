@@ -316,6 +316,62 @@ r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'tier_a_review_g
                     '--list'], cwd=REPO, capture_output=True, text=True, timeout=120)
 check('--list runs and exits 0', r.returncode == 0, r.stderr[:300])
 
+# ── 8. A CRASH IS NOT A FINDING (added 2026-09-15, after it was one) ─────────
+# OBSERVED. On a real push this gate hit `UnicodeDecodeError: 'charmap' codec
+# can't decode byte 0x90` -- `subprocess.run(text=True)` with no `encoding=`
+# decodes with the Windows locale codec, and this repo's diffs are full of bytes
+# cp1252 cannot represent. The decode failed on a reader thread, `r.stdout` came
+# back None, and `.split('\n')` raised. Python exits 1 on an uncaught exception,
+# and section 6 above records that the hook maps exit 1 to deny() -- so the push
+# was refused with the words of a REAL FINDING, naming an independent-review
+# obligation for a change that touches no Tier A resource at all.
+#
+# A gate that cries wolf in the vocabulary of a genuine finding is worse than one
+# that crashes visibly: a crash gets fixed, a false finding gets believed and
+# worked around. These arms pin all three outcomes apart.
+print('\n8. exit codes: a finding, a could-not-tell and a crash are three answers')
+sys.path.insert(0, os.path.join(REPO, 'tools'))
+import tier_a_review_gate as _G                                     # noqa: E402
+
+_res = _G.tier_a_resources()
+_name = sorted(_res)[0]
+_code, _ = _G.check(diff_for('api/sd-data.js', '+  // touches %s here' % _name))
+check('a REAL Tier A touch is still exit 1', _code == 1,
+      'the crash guard must not have swallowed findings into could-not-tell; got %r'
+      % _code)
+
+_saved = _G.check
+try:
+    _G.check = lambda *a, **k: (_ for _ in ()).throw(RuntimeError('planted crash'))
+    _crash = _G._guarded([])
+finally:
+    _G.check = _saved
+check('an UNEXPECTED EXCEPTION is exit 2, not exit 1', _crash == 2,
+      'exit 1 would make the hook print "no independent-review obligation is '
+      'recorded", which is a specific false accusation; got %r' % _crash)
+
+# The encoding half, at the source rather than through the symptom.
+try:
+    _G.git('cat-file', '-p', '0' * 40)
+    check('a FAILING git call raises CouldNotTell', False,
+          'it returned normally -- the old code returned "" here, which this '
+          'gate reads as "no Tier A resource touched", i.e. a PASS')
+except _G.CouldNotTell:
+    check('a FAILING git call raises CouldNotTell', True)
+except Exception as _e:
+    check('a FAILING git call raises CouldNotTell', False, repr(_e))
+
+import inspect                                                      # noqa: E402
+_src = inspect.getsource(_G.git)
+_body = _src.split('"""')[2] if _src.count('"""') >= 2 else _src
+check('git() decodes UTF-8 explicitly, not the locale codec',
+      "encoding='utf-8'" in _body,
+      'text=True with no encoding= is cp1252 on Windows')
+check('git() no longer returns "" on a failed command',
+      "else ''" not in _body,
+      'an empty diff means NO TIER A TOUCH, which is a pass -- so returning "" '
+      'on error was a fail-open in a BLOCKING gate (PR 1.11)')
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))

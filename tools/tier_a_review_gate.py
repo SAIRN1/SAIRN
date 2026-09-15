@@ -140,17 +140,44 @@ def save_reviews(data):
 
 
 def git(*args):
-    # ENCODING IS EXPLICIT, AND THIS IS A REAL DEFECT THAT WAS HERE (2026-09-15).
+    """Run git and return its stdout as text, or raise CouldNotTell.
+
+    ── ENCODING IS EXPLICIT, AND THIS IS A REAL DEFECT THAT WAS HERE (2026-09-15).
     # `text=True` alone decodes with the LOCALE default, which is cp1252 on this
-    # platform -- and this repo's diffs are full of box-drawing characters and
-    # em-dashes. The reader thread raised UnicodeDecodeError, the exception was
-    # printed by the threading machinery, and the call returned with stdout
-    # TRUNCATED rather than failing. A diff-reading gate that silently gets a
-    # short diff under-detects and reports clean, which is the worst direction
-    # for this particular tool to be wrong in.
-    r = subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
-                       text=True, encoding='utf-8', errors='replace')
-    return r.stdout if r.returncode == 0 else ''
+    platform -- and this repo's diffs are full of box-drawing characters and
+    em-dashes. Two clones hit this within an hour of each other and diagnosed the
+    symptom DIFFERENTLY, which is worth keeping: one saw stdout come back
+    TRUNCATED, the other saw the decode raise on the subprocess reader THREAD and
+    leave `r.stdout` as None, which then crashed `.split('\\n')`. Both are the
+    same cause and both are fixed by naming the codec.
+
+    ── AND THE RETURN LINE FAILED OPEN, WHICH THE ENCODING FIX DID NOT CLOSE ──
+    `return r.stdout if r.returncode == 0 else ''` collapses THREE outcomes into
+    two: a real empty diff and a git command that FAILED both became `''`. An
+    empty diff means NO TIER A RESOURCE WAS TOUCHED, which is a PASS. So any git
+    failure produced a clean push, in a BLOCKING gate, on the check whose entire
+    subject is somebody not being told (PR 1.11).
+
+    That is the half worth the extra lines. The crash was the loud version of a
+    failure mode that was otherwise completely silent, and fixing only the
+    encoding converts a visible crash into an invisible pass.
+
+    `errors='replace'` rather than `'strict'`: a lone undecodable byte must not
+    take a blocking gate down, and a replacement character cannot create or hide
+    a resource NAME, which is the only thing the caller looks for.
+    """
+    try:
+        r = subprocess.run(['git'] + list(args), cwd=REPO, capture_output=True,
+                           encoding='utf-8', errors='replace')
+    except Exception as e:                      # noqa: BLE001 -- any launch failure
+        raise CouldNotTell('could not run `git %s`: %r' % (' '.join(args), e))
+    if r.returncode != 0:
+        raise CouldNotTell('`git %s` exited %d: %s'
+                           % (' '.join(args), r.returncode,
+                              (r.stderr or '').strip()[:200]))
+    if r.stdout is None:
+        raise CouldNotTell('`git %s` produced no readable output' % ' '.join(args))
+    return r.stdout
 
 
 def touched_tier_a(diff_text, resources):
@@ -451,14 +478,23 @@ def main(argv):
         return 1
     if '--list' in argv:
         return cmd_list()
-    if '--diff-range' in argv:
-        rng = argv[argv.index('--diff-range') + 1]
-        base, _, tip = rng.partition('..')
-        text = range_diff(base, tip or 'HEAD')
-    elif '--stdin-diff' in argv:
-        text = sys.stdin.read()
-    else:
-        text = working_diff()
+    # READING THE DIFF CAN FAIL, AND THAT IS A THIRD ANSWER. It used to be a
+    # silent empty string, which this gate reads as "no Tier A resource touched"
+    # -- a pass. Exit 2 keeps could-not-tell separate from both a finding and a
+    # clean run, the same way check() has always treated an unreadable register.
+    try:
+        if '--diff-range' in argv:
+            rng = argv[argv.index('--diff-range') + 1]
+            base, _, tip = rng.partition('..')
+            text = range_diff(base, tip or 'HEAD')
+        elif '--stdin-diff' in argv:
+            text = sys.stdin.read()
+        else:
+            text = working_diff()
+    except CouldNotTell as e:
+        sys.stderr.write('COULD NOT TELL -- the diff could not be read, so NOTHING '
+                         'WAS CHECKED. This is NOT a pass:\n  %s\n' % e)
+        return 2
     code, lines = check(text)
     out = sys.stderr if code else sys.stdout
     for ln in lines:
@@ -466,5 +502,46 @@ def main(argv):
     return code
 
 
+def _guarded(argv):
+    """An unexpected exception must NOT leave here as exit 1.
+
+    ── THE HALF THE ENCODING FIX DID NOT REACH, AND THE WORSE HALF ─────────────
+    tools/sairn_push_gate_hook.py maps this tool's exit codes:
+
+        returncode == 1  ->  deny("this push changes code serving a Tier A
+                                   resource and no independent-review
+                                   obligation is recorded for it")
+        returncode == 2  ->  "COULD NOT TELL -- this is NOT a pass"
+
+    An uncaught Python exception ALSO exits 1. So when the decode defect above
+    crashed this tool on a real push, the hook did not report a crash -- IT MADE
+    A SPECIFIC, CREDIBLE, FALSE ACCUSATION, naming a review obligation that did
+    not exist for a change touching no Tier A resource. Re-running the identical
+    range against the fixed tool returns "No file in this change names a Tier A
+    resource", exit 0. Verified by running the PRE-FIX file from a scratch copy
+    against that same range: AttributeError, exit 1.
+
+    A gate that cries wolf in the vocabulary of a genuine finding is worse than
+    one that crashes visibly: a crash gets fixed, a false finding gets believed
+    and worked around. Every unexpected exception now becomes exit 2, which the
+    hook already treats as not-a-pass WITHOUT inventing a reason.
+
+    The FINDING path still exits 1. Nothing about what this gate refuses has
+    changed -- only what it is allowed to claim when it does not know.
+    """
+    try:
+        return main(argv)
+    except SystemExit:
+        raise
+    except Exception as e:                      # noqa: BLE001 -- deliberate
+        import traceback
+        sys.stderr.write(
+            'COULD NOT TELL -- the Tier A review gate raised an unexpected '
+            'exception, so NOTHING WAS CHECKED. This is NOT a pass, and it is '
+            'NOT a finding either:\n  %s: %s\n' % (type(e).__name__, e))
+        traceback.print_exc(file=sys.stderr)
+        return 2
+
+
 if __name__ == '__main__':
-    sys.exit(main(sys.argv[1:]))
+    sys.exit(_guarded(sys.argv[1:]))
