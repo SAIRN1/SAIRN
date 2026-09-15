@@ -244,6 +244,7 @@ PURPOSES = {
     'missing_dom_target_check.py': ('CHECKER', 'a getElementById target that appears as no id in the file'),
     'reclassification_sweep.py': ('LIVE', 'a statutory rule whose source has been reclassified'),
     'rf_claim_gate_live_probe.py': ('LIVE', "SAIRNroofing's claim gate, against the deployed endpoint"),
+    'sc_tier_a_write_gate_live_probe.py': ('LIVE', 'a SAIRNcode Tier A billing resource accepting a WRITE from the licence key alone, or refusing one from a role that should be allowed -- measured on the DEPLOYED function, and reporting absent credentials as UNVERIFIED rather than as a pass'),
     'rf_roundtrip_probe.py': ('LIVE', 'a SAIRNroofing write read back through the real API'),
     'probe_public_book_guardian.py': ('LIVE', "the public booking endpoint's guards, live"),
     'stonedesk_storefront_live_check.py': ('LIVE', 'whether sql/stonedesk_public_surface_schema.sql was really run, by probing the three public endpoints -- the instruction "confirm by re-probing, not by the editor reporting success", mechanised'),
