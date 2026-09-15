@@ -1,5 +1,42 @@
 {
  "checkers": {
+  "bypassed_constant_check.py": {
+   "observations": [
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "18940189abc421c5",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "18940189abc421c5": "BYPASSED CONSTANT CHECK -- app HTML, distinctive decimals only files scanned : 22 distinctive constants : 2 bypassed by a literal : 0 SCOPE, STATED BECAUSE A CLEAN RUN MUST NOT READ AS MORE THAN IT IS: only DECIMALS with three or more significant digits. A bypassed INTEGER constant -- a cap, a day count, a limit -- is invisible to this and that is deliberate: widening to catch it took the platform"
+   }
+  },
   "checkblocks.py": {
    "observations": [
     {
@@ -211,478 +248,779 @@
   "committer_identity_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "e38accd55970f320",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "e38accd55970f320": "committer identity check this clone commits as : Michael Dibert <mikied68@gmail.com> probe identities found in tests/ : 7 commits already carrying one : 131 (history, NOT rewritten) CLEAN -- this clone will not commit under a probe identity.|exit=0"
+   }
+  },
+  "completeness_check.py": {
+   "observations": [
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "26795a4981fd89d3",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "26795a4981fd89d3": "COMPLETENESS -- item 38: a rule declared, then not applied everywhere blind lock: 13 synthetic sources classify as written, including the four narrowings each paid for by a real false positive. S1 -- DECLARED AND NEVER CONSULTED: 1 api/sen-portal.js MANAGEMENT_ROLES declared and consulted NOWHERE in its own file -- a rule that gates nothing is either dead or a gate somebody forgot to wire, and the"
+   }
   },
   "control_char_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "99a779c273a63808",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "99a779c273a63808": "control character check tracked files scanned : 2059 skipped as binary (3, NOT silently): archive/branch-lucid-ptolemy-b73vu0/SAIRN_All_Apps_Deploy.zip, archive/branch-lucid-ptolemy-b73vu0/SAIRN_v6_SAIRNlaw20.zip, archive/branch-lucid-ptolemy-b73vu0/ CLEAN -- no raw control bytes in any tracked text file.|exit=0"
+   }
   },
   "criticality_tier_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "18259847b0c2acf0",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "18259847b0c2acf0": "APPS_WITH_REGISTRIES:17 RESOURCES_REGISTERED:386 RESOURCE_ROWS:386 RETIERED_APPS:17 TIER_A:82 PROBLEMS:0 NOTE: this says every registered resource in a RE-TIERED app has a tier, and that every Tier A carries evidence. It does not say the tier is right -- nothing mechanical can.|exit=0"
+   }
   },
   "defect_register.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "eee97aa1b007f376",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "eee97aa1b007f376": "DEFECT REGISTER -- 77 confirmed record(s) since 2026-09-09 BY LAYER product 32 tooling 25 test 20 BY SEVERITY critical 2 high 44 moderate 25 low 6 BY DETECTION METHOD -- the column that matters code-review 31 mutation-testing 11 fault-injection 12 static-checker 15 independent-review 7 probe-control 1 DISCOVERY LAG -- injection to fix records with an injection commit : 0 of 77 NO LAG DISTRIBUTION "
+   }
+  },
+  "dependency_graph.py": {
+   "observations": [
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "7a662831b9315661",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "7a662831b9315661": "DEPENDENCY GRAPH -- single points of failure, and pairs (items 88, 53) blind lock: 5 synthetic graphs classify as written, plus the blast-radius and comment-stripping fixtures. Run BEFORE the repo was read. GRAPH A -- our modules only. 151 nodes, 232 edges. GRAPH B -- modules PLUS the environment they read. 200 nodes, 445 edges. Reported separately on purpose: B is dominated by two credentials, wh"
+   }
   },
   "discarded_verdict_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "a7674440405b49b5",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "a7674440405b49b5": "discarded verdicts found: 0 (to read 0, accepted 0) NOTE: this cannot see across files -- a verdict returned by a required module and dropped in another file is NOT caught. See the header. === A REFUSAL WAS COMPUTED AND NOT READ -- READ EVERY ONE === none|exit=0"
+   }
   },
   "discarded_verdict_crossfile.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "db61c7651a95cead",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "db61c7651a95cead": "VERDICT_SHAPED_EXPORTS:86 BARE_STATEMENT_CROSS_FILE:0 ASSIGNED_NEVER_READ_CROSS_FILE:0 NOTE: a clean run means no hit matched these two SHAPES. It is not a guarantee -- see the limits in this file's header.|exit=0"
+   }
   },
   "div_balance_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "00d85f94eb6dd69b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "00d85f94eb6dd69b": "Traceback (most recent call last): File \"<path>\", line 4, in <module> path = sys.argv[1] ~~~~~~~~^^^ IndexError: list index out of range|exit=1"
+   }
   },
   "duplicate_global_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "91944377dfc7ba8a",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "91944377dfc7ba8a": "TOTAL_DEPTH0_GLOBALS:799 DISTINCT_NAMES:799 DUPLICATE_NAMES:0|exit=0"
+   }
+  },
+  "eaten_substitution_check.py": {
+   "observations": [
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "8faab1632004247a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "8faab1632004247a": "EATEN-SUBSTITUTION CHECK -- scrubber item 18, second vehicle range : origin/main..HEAD commits scanned : 0 NOTHING WAS SCANNED. An empty range is not a clean result -- it is a check that did not run. If this was the default range, the branch is level with its upstream.|exit=0"
+   }
+  },
+  "export_coverage_check.py": {
+   "observations": [
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "fff7406f78c86caa",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "fff7406f78c86caa": "EXPORT COVERAGE OF THE CLASS A SET -- can the record be produced as a FILE Class A resources parsed from the scoping doc : 11 sairncare alf_staff_credentials NO EXPORT MACHINERY sairndental dnt_charges EXPORTABLE sairndental dnt_credentials EXPORTABLE sairndental dnt_payments EXPORTABLE sairndental dnt_vendor_orders EXPORTABLE sairnmechanical mech_credentials NO EXPORT MACHINERY sairnroofing rf_ce"
+   }
   },
   "fail_open_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "6c684c678caa7a0b",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "6c684c678caa7a0b": "fail-open reads found: 12 (decision-shaped 0, untriaged 1, accepted 11) NOTE: a clean decision-shaped list means no hit matched a KNOWN shape. It does not mean there are no fail-open decisions left -- see the header. === DECISION-SHAPED -- READ EVERY ONE === none === NOT OBVIOUSLY DECISION-SHAPED -- UNTRIAGED, NOT CLEARED === (what the heuristics did not match, which is not the same as a value tha"
+   }
   },
   "gate_column_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a5320d0182ca9de",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "5a5320d0182ca9de": "GATE COLUMN CHECK -- report only, nothing was written schema snapshot : db/schema_snapshot.json, 380 tables generated <ts> (<t> ago); committed <ago> files attributed : 3 (query exactly one table) reads of a column that DOES NOT EXIST: 2 NOT checked : 22 (multi-table or unknown table -- NOT a pass) api/_lib/license.js reads row.trial_ends_at `trial_ends_at` is not a column of license_keys, so this"
+   }
   },
   "index_duplicate_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "af129bdd5158e423",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "af129bdd5158e423": "INDEX DUPLICATE CHECK -- report only, nothing was written rows compared : 487 near-duplicate pairs : 0 (same app, >= 0.92 similar with numbers removed) UNDECLARED : 0 NOTE: numbers are stripped before comparing, on purpose -- a count that has moved is the commonest way one subject becomes two rows. This does NOT check whether a unique row's own number is stale; see the module docstring.|exit=0"
+   }
   },
   "install_git_hooks.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "5a35245695b54220",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "5a35245695b54220": "core.hooksPath = .githooks Gate script runs. Shell wrapper executes. Installed. Verify end to end with a real push from a NON-Bash caller: python tools/sairn_claim.py claim <subject> <task> A push that touches sql/ with no db/schema_snapshot.json must now be refused through that path too, not only through a typed git push.|exit=0"
+   }
   },
   "invisible_in_pattern_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "1d7056ddca5b1b3f",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "1d7056ddca5b1b3f": "BLIND LOCK -- 10 fixture(s), judged before any real file is opened 10/10 fixtures correct. files scanned : 791 not scanned : archive/ -- the preserved ancestor branch; CLAUDE.md says it must not be run or recreated, and scanning it reports dead 2026-06 snapshots forever not scanned : docs/skill-backups/ -- a stored copy of a third-party skill's bundled asset that nothing here deploys or maintains "
+   }
   },
   "key_collision_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "c4b3acde64a4a64d",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "c4b3acde64a4a64d": "DETECTED_STORAGE_WRAPPERS:['st', 'stRaw'] TOTAL_KEY_WRITES:101 DISTINCT_KEYS:79 COLLISIONS:7 (unacknowledged: 0) ACKNOWLEDGED: sd_aiquotes ['ai', 'd'] -- The other half of the same 2026-09-04 fix: the History panel's save() routes AI-quote rows back here ('ai'), and the AI quote builder writes its own list ('d'). Same suite. ACKNOWLEDGED: sd_business_snapshots ['d', 'next', 'snaps'] -- TRACED BY H"
+   }
   },
   "literal_drift_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "3a3b4e1fd7b1b864",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "3a3b4e1fd7b1b864": "Traceback (most recent call last): File \"<path>\", line 38, in <module> path = sys.argv[1] ~~~~~~~~^^^ IndexError: list index out of range|exit=1"
+   }
   },
   "master_plan.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de643eaa63ca9e10",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "de643eaa63ca9e10": "CLOSING ERROR -- docs\\MASTER-PLAN.md derives from 6 source(s): app files 22 git ls-files '*.html' apps owning a resource 17 api/_resources/index.js OWNER_BY_RESOURCE test files on disk 434 tests/**, api/*.test.js tests traced to a requirement 231 traceability_matrix.traced() declared fault probes 26 MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js attested migrations"
+   }
   },
   "md_table_check.py": {
    "observations": [
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     },
     {
-     "digest": "723a2ad36f6d0343",
-     "tree": "ab63e6958d6c2fbb"
+     "digest": "de9764e1b33b30bd",
+     "err": false,
+     "tree": "5db1ba681b711008"
     }
-   ]
+   ],
+   "samples": {
+    "de9764e1b33b30bd": "docs/SAIRN-OPEN-WORK-INDEX.md: OK (502/502 rows checked) CLAUDE.md: OK (5/5 rows checked) docs/SAIRN-PROCESS-RULES.md: OK (4/4 rows checked) TOTAL_MALFORMED_ROWS:0 TOTAL_UNCHECKABLE_LINES:0|exit=0"
+   }
   },
   "metamorphic_check.py": {
    "observations": [
@@ -824,6 +1162,43 @@
     }
    ]
   },
+  "ownership_evidence_drift.py": {
+   "observations": [
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "0d6b24a813b5e736",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "0d6b24a813b5e736": "OWNERSHIP EVIDENCE DRIFT -- schema public last MEASURED : 2026-08-26 by Michael, via sql/supabase_admin_default_acl_check_2026-08-26.sql Section 1 tables then : 251 (100% postgres, 0 supabase_admin-owned) tables now : 380 (db/schema_snapshot.json, captured <ts> UNOBSERVED : 129 tables, 51% growth since the evidence THE ACCEPTED RISK CANNOT BE CLOSED OUT ON THIS EVIDENCE. docs/SAIRN-OPEN-WORK-INDEX"
+   }
+  },
   "panel_nesting_check.py": {
    "observations": [
     {
@@ -964,6 +1339,43 @@
     }
    ]
   },
+  "secrets_inventory.py": {
+   "observations": [
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "65fe6ab33cd3e673",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "65fe6ab33cd3e673": "SECRETS INVENTORY -- item 61 blind lock: 5 synthetic sources classify as written, run before the real tree was read. REFUSING: the hand-written half does not cover the code. UNCLASSIFIED SAIRN_AI_CONTENTION_FLOOR is read by 1 file(s) and has no entry in SECRETS. A new secret breaks this tool on purpose. UNCLASSIFIED SAIRN_AI_TENANT_SHARE is read by 1 file(s) and has no entry in SECRETS. A new secr"
+   }
+  },
   "soup_register_check.py": {
    "observations": [
     {
@@ -991,6 +1403,80 @@
      "tree": "ab63e6958d6c2fbb"
     }
    ]
+  },
+  "subprocess_decode_check.py": {
+   "observations": [
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "ddaa4c5ab5871f4d",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "ddaa4c5ab5871f4d": "SUBPROCESS TEXT DECODE -- the locale default here is cp1252 text-mode subprocess calls with NO explicit encoding= : 0 CLEAN. Every text-mode subprocess names its encoding. This is a GATE and not a score: the correct number IS zero, because the fix is one keyword argument, and \"this caller only checks an exit code\" is how a latent fail-open survives. <unknown>:32: SyntaxWarning: \"\\s\" is an invalid "
+   }
+  },
+  "temporary_state_check.py": {
+   "observations": [
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    },
+    {
+     "digest": "bb2a0dd3e1d7c01a",
+     "err": false,
+     "tree": "5db1ba681b711008"
+    }
+   ],
+   "samples": {
+    "bb2a0dd3e1d7c01a": "TEMPORARY STATE -- report only, nothing was written files read : 790 declarations found : 3 UNDECLARED candidates : 177 flag-on (145) agent/sairn-agent.js :148 loggedBlocked api/_lib/ai-rate-limit.js :198 tenantArgsUnsupported api/_lib/cron-response.js :124 alerted api/_lib/cron-response.js :129 alerted api/_lib/dental-credentials-endpoint.test.js :336 tablesExist api/_lib/employee-lifecycle.test."
+   }
   },
   "tooling_inventory.py": {
    "observations": [
