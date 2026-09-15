@@ -20,8 +20,14 @@ authMod.verifySessionToken = (token, licHash, expectedApp) => {
   return JSON.parse(token);
 };
 
-// Fixture: RES-1 assigned to MA-1, RES-2 assigned to MA-2.
-const RESIDENTS = { 'RES-1': 'MA-1', 'RES-2': 'MA-2' };
+// Fixture: RES-1 assigned to MA-1, RES-2 assigned to MA-2, and RES-3 assigned
+// to NOBODY. The unassigned case is not decoration -- it is the real state of a
+// resident between staffing changes, and it is the only fixture under which the
+// write path's "never trust a client-supplied assigned_employee_id" rule can be
+// observed at all. With every resident assigned, a gate that fell back to the
+// client's value would look identical to one that did not
+// (tests/sairncare_fault_probe.py arm 7 found exactly that).
+const RESIDENTS = { 'RES-1': 'MA-1', 'RES-2': 'MA-2', 'RES-3': null };
 let MAR_ROWS = []; // {entry_id, resident_id, assigned_employee_id, entry_type, data}
 
 global.fetch = async (url, opts) => {
@@ -153,6 +159,25 @@ function assertEq(actual, expected, msg) {
   await check('medication_order IS editable in place (same id, no 409)', async () => {
     const res = await call('owner', 'EMP-OWN', 'write', { id: 'MED-1', resident_id: 'RES-1', entry_type: 'medication_order', name: 'Metformin', dose: '1000mg', discontinued: false });
     assertEq(res.statusCode, 200);
+  });
+
+  await check('an UNRECOGNISED entry_type is refused (400) and nothing is stored', async () => {
+    // A typo'd entry_type stored silently is a MAR row no panel filters on and
+    // no report counts -- present in the table, absent from the record. The
+    // whitelist could be disabled with no suite noticing until this arm existed.
+    const before = MAR_ROWS.length;
+    const res = await call('owner', 'EMP-OWN', 'write', { id: 'BAD-1', resident_id: 'RES-1', entry_type: 'administrtion', status: 'given' });
+    assertEq(res.statusCode, 400);
+    assertEq(MAR_ROWS.length, before, 'a rejected entry_type must not reach the table');
+  });
+
+  await check('an UNASSIGNED resident cannot be claimed by a med_aide who supplies their own id in the payload', async () => {
+    // The write path looks the assignment up live and says so in a comment.
+    // This is the only arm that can tell that apart from trusting the caller:
+    // RES-3 has no assignee, so a fallback to payload.assigned_employee_id
+    // would let MA-1 assign the resident to themselves mid-write.
+    const res = await call('med_aide', 'MA-1', 'write', { id: 'ADM-3', resident_id: 'RES-3', entry_type: 'administration', assigned_employee_id: 'MA-1', status: 'given' });
+    assertEq(res.statusCode, 403);
   });
 
   await check('unknown resident_id is 400', async () => {
