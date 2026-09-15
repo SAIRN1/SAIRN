@@ -1209,6 +1209,16 @@
       "claimed_at_epoch": 1789476274.2989578,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789485003",
+      "session": "cody",
+      "subject": "cody",
+      "task": "sairndental complaint QR renderer, canonical safe-number split, recombination passes, item 78 FPV",
+      "claimed_at": "2026-09-15T15:10:03Z",
+      "claimed_at_epoch": 1789485003.0632207,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
