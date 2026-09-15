@@ -90,8 +90,12 @@ PURPOSES = {
         'deleting comments'),
     'defect_budget.py': ('CHECKER',
         'which STANDING RULE has bitten often enough that its next occurrence '
-        'is predictable rather than incidental -- 1.1 sixteen times and 1.5 '
-        'fourteen as of 2026-09-14. Per RULE because per APP cannot work: item '
+        'is predictable rather than incidental. The RANKING is deliberately not '
+        'quoted here: the same figures were written into '
+        'docs/2026-09-14-item20-and-entity-split-sweep.md and four of them were '
+        'wrong within a day, because a hand-typed copy of a generated number '
+        'has no way to announce that it moved. Run the tool. Per RULE because '
+        'per APP cannot work: item '
         '51 measured 9 of 11 apps at three records or fewer, and a per-app '
         'budget would punish looking, since the app audited hardest looks '
         'worst. Report-only and must stay so -- a gate here would reward not '

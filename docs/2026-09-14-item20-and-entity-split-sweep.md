@@ -16,24 +16,47 @@ on n=1 is that single value wearing a decision.
 audited hardest looks worst and the untouched app looks clean. **Budgeting on
 that punishes looking**, which is the last behaviour this platform should tax.
 
-**The standing rule is the entity the data supports.** Measured over 68 records:
+**The standing rule is the entity the data supports.**
 
-| Rule | bites | |
-|---|---|---|
-| **1.1** a check that stopped checking | **16** | over budget |
-| **1.5** the confident line printed after the error | **14** | over budget |
-| **1.11** a check that depends on another tool must fail CLOSED | **7** | over budget |
-| **1.3** an anchor that still matches ≠ points at the right thing | **6** | over budget |
-| **1.2** grep cannot tell code from text that describes code | **6** | over budget |
-| 1.7 | 3 | |
-| 1.6 | 2 | |
-| 2.3 · 3.4 · 1.10 · 1.9 · Part 5 | 1 each | |
+**THE RANKING IS NOT COPIED HERE ANY MORE, AND THAT IS THE CORRECTION.** This
+section originally reproduced the table — 68 records, 1.1 at 16, 1.11 at 7, two
+rules accounting for 30 bites. **Twenty-four hours later every one of those
+figures was wrong**: 77 records, 1.1 at 17, 1.11 at **10**, and the
+not-citable count up from 9 to 14. Nothing announced it, because a hand-typed
+copy of a generated number has no way to. Re-reference against the source:
 
-**Two rules account for 30 of the bites.** A rule crosses apps and sessions, so
-it is far less a measure of where somebody happened to look than a per-app count
-is — less distorted, not undistorted.
+    python tools/defect_budget.py            # the ranking, as of now
+    python tools/defect_budget.py --json     # same, machine-readable
+    python tools/defect_budget.py --budget 3 # the threshold is an argument
 
-`tools/defect_budget.py`, report-only, 16 probe arms.
+The **dated snapshot of 2026-09-14** is kept below for the record, clearly as a
+historical reading and not as current state, because the *decision* this
+document records was made against those numbers:
+
+> 68 records · **1.1** a check that stopped checking — 16 · **1.5** the
+> confident line printed after the error — 14 · **1.11** a check that depends on
+> another tool must fail CLOSED — 7 · **1.3** an anchor that still matches ≠
+> points at the right thing — 6 · **1.2** grep cannot tell code from text that
+> describes code — 6 · 1.7 — 3 · 1.6 — 2 · 2.3 · 3.4 · 1.10 · 1.9 · Part 5 — 1
+> each. Two rules accounted for 30 of the bites.
+
+**What is stable is the CONCLUSION, not the counts.** A rule crosses apps and
+sessions, so it is far less a measure of where somebody happened to look than a
+per-app count is — less distorted, not undistorted. 1.1 and 1.5 have held the
+top two places across both readings.
+
+`tools/defect_budget.py`, 16 probe arms in `tests/run_defect_budget_probe.py`.
+
+**IT IS DELIBERATELY NOT WIRED, and "report-only" was the wrong word for that.**
+This line previously read *"report-only"*, which on this platform names a
+specific thing: an entry in `report_only_checks.REGISTRY` that runs on every
+push. It has never been in that registry, so the document described a wiring
+state the repo did not have. The decision is now recorded where it can be
+queried by tool name — a `NOT_PROMOTED` entry in `tools/report_only_checks.py`
+— and the reason is not merely that it would be noisy. **A number somebody is
+pushed to drive down rewards not citing a rule**, and `--rule not-citable`
+exists so a record can decline honestly. Run it when the register is reviewed,
+or before choosing which control to build next.
 
 **Over budget means: this failure mode has recurred often enough that the next
 occurrence is predictable rather than incidental**, so the next control built
@@ -51,8 +74,10 @@ right and the practice around it is not.
 
 ### What it cannot see
 
-- The **9 `not-citable` records** are bites nobody could attribute. Counted in
-  the denominator and named, never quietly dropped.
+- The **`not-citable` records** are bites nobody could attribute. Counted in the
+  denominator and named, never quietly dropped. It was 9 on 2026-09-14 and 14 on
+  2026-09-15; the tool prints the current figure and this line no longer copies
+  it, for the reason given above.
 - **A rule you are looking for is a rule you find.**
 - `arguable` citations count the same as `clean` ones; weighting them needs a
   confidence model nothing here has.

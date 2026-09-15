@@ -26,8 +26,8 @@ makes this the one inventory whose staleness is hardest to notice.
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 36 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **DECIDED** | 37 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 32 | nothing runs these at all |
 
 By what they are, independent of wiring:
@@ -39,24 +39,23 @@ By what they are, independent of wiring:
 | LIBRARY | 20 |
 | LIVE | 18 |
 
-**36 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**37 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 13 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 13
+**The number to act on: 12 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 0 wired nowhere at all, and 12
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 13, by name, so this is actionable rather than a statistic:
+The 12, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
-| `defect_budget.py` | SUITE-ONLY | which STANDING RULE has bitten often enough that its next occurrence is predictable rather than incidental -- 1.1 sixteen times and 1.5 fourteen as of 2026-09-14. Per RULE because per APP cannot work: item 51 measured 9 of 11 apps at three records or fewer, and a per-app budget would punish looking, since the app audited hardest looks worst. Report-only and must stay so -- a gate here would reward not citing a rule |
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
 | `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
@@ -182,7 +181,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (36)
+## DECIDED -- not promoted, on purpose (37)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -200,6 +199,7 @@ is how a reader stops believing the number.
 | `cleanup_residue_check.py` | CHECKER | it needs a LIVE licence key and a database reachable from this clone: run 2026-09-12 it exits 2, could-not-tell, with "CLEAN files, nothing to run". Wiring a tool that reports could-not-tell on every push trains people to ignore it, and its own output already says a clean result does NOT mean the file was run. Promote it the day it can tell "the rows are gone" from "I could not look". |
 | `copy_exactly_check.py` | CHECKER | ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE, not a finding: 0 of 5 identical on 2026-09-14, with 4 differing because the APP was fixed and the must-copy-exactly DOCUMENT was not. Wiring it now means four rows on every push until somebody updates the document -- a notice whose content cannot change by pushing. Promote it the day the documented block and the app agree, because that is the day its output starts varying with what a push actually did. Note its own caveat too: it does NOT answer disciplines item 7, since agreeing bytes are precisely what that section warns is not safety. |
 | `cron_liveness_check.py` | LIVE | IT MAKES A LIVE NETWORK REQUEST, which is the same reason waf_rule_check.py and sairn_app_map_check.py are already held out on this list. Its whole subject is whether a scheduled job actually fired, so the network half is not incidental to it -- there is nothing useful left if you remove it. A push gate that talks to the outside world makes every push depend on the outside world being up, and this repo has already recorded what a network-dependent gate costs when a 403 gets swallowed. It does carry a real three-state exit, so the blocker is the network dependency alone, not the contract. |
+| `defect_budget.py` | CHECKER | ITS INPUT IS THE REGISTER, NOT THE PUSH, so a push-time entry would print the same five over-budget rules on every push regardless of what the push contained -- the definition of a notice people stop reading. It ranks which STANDING RULE has bitten often enough that its next occurrence is predictable (1.1 seventeen times, 1.5 fourteen, 1.11 ten as of 2026-09-15, over 77 records), and that ranking changes when a RECORD is added, not when code changes. Same cadence shape as sabotage_control_check.py above: measured periodically, read by a person, never gating. AND GATING IT WOULD BE ACTIVELY HARMFUL, which is the reason that matters rather than the noise: a number somebody is pushed to drive down rewards NOT CITING A RULE, and `--rule not-citable` exists precisely so a record can decline honestly. 14 of the 77 records decline today. Run it when the defect register is reviewed, or before choosing which control to build next, which is the decision it exists to change. |
 | `fmea_prediction_check.py` | CHECKER | IT REFUSES TO BE QUOTED BARE, which is exactly what a registry entry would do to it. It prints NO-DRAFT first and carries DO NOT QUOTE THIS ALONE beside the drafted-only figure, because a hit rate over the subset somebody happened to draft an FMEA for is not a hit rate. Promotion would put the unqualified number on every push, which is the one presentation the tool was built to prevent. It is run by the FMEA loop when a register record is added, which is the moment its answer can change. |
 | `idempotency_check.py` | CHECKER | NOT REJECTED -- BLOCKED, and the blocker is specific: it reaches the network, and unlike the two LIVE tools above that dependency looks removable rather than essential. It already has a FIXTURES block, so the blind lock is in place. What it needs before promotion is the network half separated from the static half so the static half can run offline and report a real verdict instead of COULD NOT RUN. That is a code change with an owner, not a decision, and it is deliberately not made here because narrowing somebody else's checker to make it promotable is how a criterion gets loosened to produce a number. |
 | `independence_check.py` | CHECKER | BLOCKED ON A CONTROL PAIR, which is the one thing that cannot be waived. It has FIXTURES and no probe anywhere under tests/ references it, so nothing has ever made it fail on purpose -- and this repo's own record is that literal_drift_check.py was promoted with `verdict: by_exit` and no sys.exit in it, and checkblocks.py exited 0 for months, both of which a control pair would have caught on day one. Write tests/run_independence_probe.py with both directions and a CONTROLS_FOR line, then this is a promotion candidate rather than a judgement call. |
@@ -241,7 +241,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (20)
+## SUITE-ONLY (19)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -252,7 +252,6 @@ fixtures. Nothing points them at the real codebase.
 | `checker_kit.py` | LIBRARY | the exit-code contract, comment-stripped parsing and the control-pair declaration, extracted so the next checker is built through them rather than re-deriving them | `run_benford_probe.py`, `run_metamorphic_probe.py` |
 | `closing_error.py` | LIBRARY | not a checker: the CLOSING-ERROR guard every generated document uses -- one row per derivation source, and a REFUSAL if any source contributes nothing, because --check compares a document to its own generator and cannot see a source that went silent | `run_closing_error_probe.py`, `run_traceability_matrix_probe.py` |
 | `condition_coverage.py` | CHECKER | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it | `run_condition_coverage_probe.py` |
-| `defect_budget.py` | CHECKER | which STANDING RULE has bitten often enough that its next occurrence is predictable rather than incidental -- 1.1 sixteen times and 1.5 fourteen as of 2026-09-14. Per RULE because per APP cannot work: item 51 measured 9 of 11 apps at three records or fewer, and a per-app budget would punish looking, since the app audited hardest looks worst. Report-only and must stay so -- a gate here would reward not citing a rule | `run_defect_budget_probe.py` |
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
@@ -345,7 +344,7 @@ number, and only one of them is a document.
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                45   report_only_checks.REGISTRY
   tools invoked by tests/             95   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     36   report_only_checks.NOT_PROMOTED
+  recorded NOT-promoted decisions     37   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
 
