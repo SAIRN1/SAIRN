@@ -36,6 +36,7 @@ const mechCred = require('./_lib/mech-credentials');
 const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
+const dntRollup = require('./_lib/dnt-rollup');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
 const {
   paymentProblem: dntPaymentProblem,
@@ -10960,6 +10961,76 @@ module.exports = async (req, res) => {
       const rows = await r.json();
       if (!r.ok) return upstream(res, rows);
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
+      return;
+    }
+
+    // ── SAIRNDENTAL: CROSS-LOCATION ROLL-UP (2026-09-15) ────────────────────
+    // Competitive-gap row SAIRNdental B2, and the read half of the multi-
+    // location model api/_lib/dnt-location.js shipped the write half of on
+    // 2026-08-24. That file listed "any server-side cross-location aggregation"
+    // in its own NOT IN SCOPE block; this is that, and nothing more.
+    //
+    // OWNER ONLY, and the reason is what the report IS rather than what it
+    // contains. Per-office production and patient counts are the HQ view of a
+    // practice group -- the competitive row's own framing is "HQ cannot manage
+    // what it can only read one practice at a time". A front desk already reads
+    // financials for THEIR practice via DNT_FINANCIAL_ROLES; comparing offices
+    // is a different act. DNT_MANAGEMENT_ROLES is reused rather than a fourth
+    // role table being declared, because a fourth table is how the three that
+    // exist drift apart.
+    //
+    // NO ROW-LEVEL DATA LEAVES THIS BRANCH. It returns counts and sums. That is
+    // deliberate: a roll-up that also shipped the rows would be a patient
+    // export wearing a report's name, and dnt_patients has its own
+    // provider-scoping gate that this branch must not become a way around.
+    //
+    // EVERY READ'S FAILURE IS CARRIED, NOT SWALLOWED. A 404/400 from PostgREST
+    // means the table is not provisioned, and it is passed to the roll-up as
+    // `{unreadable}` so that metric comes back NULL. Substituting `rows: []`
+    // here would turn "we could not read charges" into "this office produced
+    // nothing" -- the whole reason api/_lib/dnt-rollup.js is written the way it
+    // is. See its header rule 3.
+    if (resource === 'dnt_rollup' && action === 'read') {
+      const session = dntGate(res);
+      if (!session) return;
+      if (!DNT_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'The cross-location roll-up is available to practice management only' } });
+        return;
+      }
+      const readSet = async (table, select) => {
+        const r = await fetch(rest(table + '?license_hash=eq.' + enc(licHash) + '&select=' + select), { headers });
+        if (r.status === 404 || r.status === 400) return { unreadable: 'NOT_PROVISIONED' };
+        const rows = await r.json();
+        if (!r.ok || !Array.isArray(rows)) return { unreadable: 'UPSTREAM_' + r.status };
+        return { rows: rows.map((x) => Object.assign({}, x.data, { __id: x.id })) };
+      };
+      const [setP, setC, setA, settingsR] = await Promise.all([
+        readSet('dnt_patients', 'data'),
+        readSet('dnt_charges', 'data'),
+        readSet('dnt_appointments', 'data'),
+        fetch(rest('dnt_settings?license_hash=eq.' + enc(licHash) + '&select=data'), { headers })
+      ]);
+      // The registry is settings, so an unreadable settings row is NOT an empty
+      // registry -- it means every office is about to be reported as
+      // unregistered. Refuse instead: a roll-up whose office names are all
+      // missing is not a smaller answer, it is a different one.
+      if (settingsR.status === 404 || settingsR.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Practice settings are not set up yet — run sql/sairndental_schema.sql in Supabase first.' } });
+        return;
+      }
+      const settingsRows = await settingsR.json();
+      if (!settingsR.ok) return upstream(res, settingsRows);
+      const settingsData = (Array.isArray(settingsRows) && settingsRows[0] && settingsRows[0].data) || {};
+      const out = dntRollup.rollup({
+        registry: Array.isArray(settingsData.locations) ? settingsData.locations : [],
+        sets: { dnt_patients: setP, dnt_charges: setC, dnt_appointments: setA },
+        metrics: [
+          { key: 'patients', resource: 'dnt_patients', kind: 'count', label: 'Patients' },
+          { key: 'appointments', resource: 'dnt_appointments', kind: 'count', label: 'Appointments' },
+          { key: 'production', resource: 'dnt_charges', kind: 'sum', field: 'amount', label: 'Production' }
+        ]
+      });
+      res.status(200).json({ ok: true, data: out, provisioned: true });
       return;
     }
 

@@ -59,6 +59,13 @@ module.exports = {
   // promoted columns the EXCLUDE constraints check against -- still
   // listed here since this map only gates "is this a known resource
   // string," not which code path handles it.
+  // Cross-location ROLL-UP (2026-09-15) -- competitive-gap row B2, and the read
+  // half of the multi-location model api/_lib/dnt-location.js shipped the write
+  // half of. READ-ONLY AND DERIVED: it owns no table and stores nothing. It is
+  // listed here because this map gates "is this a known resource string", and
+  // an unregistered name is refused by the envelope before any handler runs --
+  // which is how the first version of its endpoint suite failed, correctly.
+    'dnt_rollup',
     'dnt_settings',
     'dnt_referrals',
     'dnt_complaints',

@@ -1,0 +1,208 @@
+// api/_lib/dnt-rollup.js
+// ---------------------------------------------------------------------------
+// SAIRNdental cross-location ROLL-UP -- the read side of the multi-location
+// model, and a PURE function on purpose.
+//
+// WHAT THIS CLOSES. api/_lib/dnt-location.js shipped the write half on
+// 2026-08-24 and named this explicitly in its own NOT IN SCOPE list: "any
+// server-side cross-location aggregation". Its reasoning for the split is worth
+// repeating because it is why this can be built now at all:
+//
+//   "Consolidated reporting, a per-location booking page, and a client-side
+//    location selector can all be built later at the same cost. Attribution
+//    cannot -- a charge, payment, AR entry or appointment recorded without a
+//    location can never be assigned to one afterwards."
+//
+// The attribution was the deadline. This is the part that waited, and it is
+// competitive-gap row SAIRNdental B2 -- the only in-house, un-gated item left
+// across all four competitive-gap audits as of the 2026-09-15 re-derivation.
+//
+// ── PURE, AND THAT IS ITEM 92'S PATTERN, NOT A STYLE PREFERENCE ────────────
+// Every fetch, every gate and every 503 lives in the caller. This file takes
+// rows that have already been read and authorised and returns numbers. That is
+// the functional-core / imperative-shell split item 92 applied to the two
+// functions that decide money, and a roll-up is the same kind of thing: an
+// arithmetic claim somebody will act on.
+//
+// ── THE FOUR RULES THAT MAKE THIS A REPORT RATHER THAN A FABRICATION ───────
+//
+// 1. UNASSIGNED IS A BUCKET, NEVER A LOCATION AND NEVER DROPPED.
+//    Rows written before stampLocation shipped carry no location_id.
+//    api/_lib/dental-bi.js already refuses to back-fill them: "Rows written
+//    before that shipped have none and report null rather than being
+//    back-filled with a default this feed would be inventing." Folding them
+//    into LOC-DEFAULT would attribute a real charge to an office that may not
+//    have taken it; dropping them would make the per-location figures sum to
+//    less than the practice's real total with nothing saying so. They get their
+//    own line.
+//
+// 2. A location_id ON ROWS BUT NOT IN THE REGISTRY IS ITS OWN BUCKET TOO.
+//    A location removed from dnt_settings.data.locations still has history. It
+//    is reported as an unregistered id, not merged and not hidden -- the
+//    registry is the CURRENT list of offices, not the list of offices that ever
+//    existed.
+//
+// 3. A RESOURCE THAT COULD NOT BE READ SUPPRESSES ITS OWN METRICS ENTIRELY.
+//    This is the rule the whole file exists for. A roll-up that silently omits
+//    an unprovisioned table prints "Production: $12,400" when the true answer
+//    is "we could not read charges". The number looks authoritative and is
+//    smaller than reality by an unknown amount, which is worse than no number.
+//    Every metric therefore carries the resource it came from, and an
+//    unreadable resource yields `null` plus a named entry in `unreadable`.
+//    NEVER 0. Zero is a measurement.
+//
+// 4. EVERY FIGURE CARRIES ITS ROW COUNT. A total nobody can trace back to a
+//    population is a total nobody can check.
+//
+// ── WHAT IT DELIBERATELY DOES NOT DO ──────────────────────────────────────
+// No ranking, no "best performing location", no period-over-period change. Each
+// of those is a judgement dressed as a number, and the competitive row asks for
+// consolidated REPORTING, not a scoreboard. A caller that wants a comparison
+// has the per-location figures and can make it explicitly.
+// ---------------------------------------------------------------------------
+
+'use strict';
+
+const { DEFAULT_LOCATION_ID } = require('./dnt-location');
+
+// The id used for rows that carry no location at all. Deliberately NOT
+// DEFAULT_LOCATION_ID: that string means "the implicit single practice, stamped
+// on purpose", and this means "nobody ever recorded one". Reusing it would
+// destroy exactly the distinction rule 1 exists to keep.
+const UNASSIGNED = '__unassigned__';
+
+function num(v) {
+  const n = typeof v === 'number' ? v : parseFloat(v);
+  return Number.isFinite(n) ? n : 0;
+}
+
+// A row's location, as recorded. `data` is the jsonb blob every SAIRNdental
+// resource stores; sd-data.js hands rows through with it merged or nested
+// depending on the resource, so both shapes are read and neither is assumed.
+function locationOf(row) {
+  const v = (row && (row.location_id
+    || (row.data && row.data.location_id)));
+  return (typeof v === 'string' && v.trim()) ? v.trim() : UNASSIGNED;
+}
+
+/**
+ * @param {object} input
+ *   registry   {Array<{id,name}>}  dnt_settings.data.locations, or []
+ *   sets       {object}  resource name -> { rows: [...] } | { unreadable: 'why' }
+ *   metrics    {Array}   [{ key, resource, kind:'count'|'sum', field? , label }]
+ * @returns {object} the roll-up, shaped so a caller cannot accidentally read a
+ *   suppressed metric as zero.
+ */
+function rollup(input) {
+  const registry = Array.isArray(input && input.registry) ? input.registry : [];
+  const sets = (input && input.sets) || {};
+  const metrics = Array.isArray(input && input.metrics) ? input.metrics : [];
+
+  // ── which resources could not be read, by name ──────────────────────────
+  const unreadable = {};
+  Object.keys(sets).forEach((r) => {
+    if (sets[r] && sets[r].unreadable) unreadable[r] = String(sets[r].unreadable);
+  });
+
+  // ── the buckets: every registered location, plus whatever the rows show ──
+  const known = {};
+  registry.forEach((l) => {
+    const id = l && typeof l.id === 'string' ? l.id : null;
+    if (id) known[id] = (l.name || id);
+  });
+  // DEFAULT_LOCATION_ID is a real bucket even when the registry is empty: it is
+  // what a single-practice licence's rows are stamped with, and a roll-up that
+  // showed nothing for the only office anybody has would be absurd.
+  const buckets = {};
+  const touch = (id) => {
+    if (!buckets[id]) {
+      buckets[id] = {
+        location_id: id,
+        name: id === UNASSIGNED ? null : (known[id] || null),
+        registered: id === UNASSIGNED ? false : Object.prototype.hasOwnProperty.call(known, id),
+        metrics: {}
+      };
+    }
+    return buckets[id];
+  };
+  Object.keys(known).forEach(touch);
+  // DEFAULT_LOCATION_ID IS SEEDED ONLY WHEN THE REGISTRY IS EMPTY, and the
+  // first version of this file seeded it unconditionally. That was wrong in
+  // both directions and the test suite caught it: a two-office practice got a
+  // phantom third bucket for an office nobody has, AND that phantom was then
+  // reported under `unregistered_location_ids`, which is supposed to mean "an
+  // id on real rows that the registry does not know about" -- a signal that a
+  // location was removed while it still had history. Manufacturing that signal
+  // out of a seed would make the one thing on this report worth investigating
+  // fire on every multi-location licence.
+  //
+  // If rows DO carry LOC-DEFAULT on a licence that has a registry, touch()
+  // creates the bucket during the row pass and it is correctly flagged
+  // unregistered -- because that genuinely means rows were written before the
+  // offices were registered, which is exactly what somebody should see.
+  if (Object.keys(known).length === 0) touch(DEFAULT_LOCATION_ID);
+
+  // ── the arithmetic ──────────────────────────────────────────────────────
+  metrics.forEach((m) => {
+    const set = sets[m.resource];
+    const dead = !set || set.unreadable || !Array.isArray(set.rows);
+    // Seed every bucket so a suppressed metric is explicitly null everywhere
+    // rather than an absent key a caller would read as 0.
+    Object.keys(buckets).forEach((id) => {
+      buckets[id].metrics[m.key] = dead
+        ? { value: null, rows: null, unreadable: (set && set.unreadable) || 'resource not supplied' }
+        : { value: 0, rows: 0 };
+    });
+    if (dead) return;
+    set.rows.forEach((row) => {
+      const b = touch(locationOf(row));
+      if (!b.metrics[m.key]) b.metrics[m.key] = { value: 0, rows: 0 };
+      b.metrics[m.key].rows += 1;
+      b.metrics[m.key].value += (m.kind === 'sum')
+        ? num(row[m.field] !== undefined ? row[m.field]
+          : (row.data && row.data[m.field]))
+        : 1;
+    });
+  });
+
+  // ── the totals line, which must agree with the buckets by construction ──
+  // Summing the buckets rather than the rows is deliberate: two independent
+  // passes over the same data is how a roll-up ends up with a total that does
+  // not match its own rows.
+  const ids = Object.keys(buckets).sort();
+  const totals = {};
+  metrics.forEach((m) => {
+    let v = 0, rows = 0, suppressed = false;
+    ids.forEach((id) => {
+      const cell = buckets[id].metrics[m.key];
+      if (!cell || cell.value === null) { suppressed = true; return; }
+      v += cell.value; rows += cell.rows;
+    });
+    totals[m.key] = suppressed
+      ? { value: null, rows: null, unreadable: unreadable[m.resource] || 'suppressed' }
+      : { value: v, rows: rows };
+  });
+
+  const unassigned = buckets[UNASSIGNED] || null;
+  return {
+    locations: ids.filter((id) => id !== UNASSIGNED).map((id) => buckets[id]),
+    // Hoisted out of `locations` so no caller can iterate offices and
+    // accidentally render "__unassigned__" as one.
+    unassigned: unassigned,
+    totals: totals,
+    // The honest header a client must be able to show. `complete` is false the
+    // moment anything was unreadable OR any row lacks a location -- both make
+    // the per-location figures an incomplete partition of the practice.
+    disclosure: {
+      complete: Object.keys(unreadable).length === 0
+        && !(unassigned && Object.keys(unassigned.metrics).some(
+          (k) => unassigned.metrics[k] && unassigned.metrics[k].rows > 0)),
+      unreadable: unreadable,
+      unregistered_location_ids: ids.filter(
+        (id) => id !== UNASSIGNED && !buckets[id].registered),
+      registry_size: Object.keys(known).length
+    }
+  };
+}
+
+module.exports = { rollup, UNASSIGNED };

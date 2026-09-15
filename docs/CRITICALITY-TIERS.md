@@ -34,7 +34,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `sairnbuild` | 32 | **5** | 27 | 0 | **RE-TIERED** — `bld_bids`, `bld_costs`, `bld_incidents`, `bld_price_points`, `bld_sub_bids` |
 | `sairncare` | 13 | **7** | 6 | 0 | **RE-TIERED** — `alf_billing`, `alf_claim_routes`, `alf_compliance_rules`, `alf_incidents`, `alf_op_audits`, `alf_payer_rules`, `alf_staff_credentials` |
 | `sairncode` | 28 | **7** | 20 | 1 | **RE-TIERED** — `sc_ar`, `sc_claims`, `sc_compliance`, `sc_credential_scope`, `sc_denial`, `sc_denial_events`, `sc_revenue` |
-| `sairndental` | 24 | **11** | 12 | 1 | **RE-TIERED** — `dnt_ar`, `dnt_charges`, `dnt_coverage_rules`, `dnt_credentials`, `dnt_denial`, `dnt_gfe`, `dnt_patients`, `dnt_payments`, `dnt_revenue`, `dnt_txplans`, `dnt_vendor_pricing_rules` |
+| `sairndental` | 25 | **12** | 12 | 1 | **RE-TIERED** — `dnt_ar`, `dnt_charges`, `dnt_coverage_rules`, `dnt_credentials`, `dnt_denial`, `dnt_gfe`, `dnt_patients`, `dnt_payments`, `dnt_revenue`, `dnt_rollup`, `dnt_txplans`, `dnt_vendor_pricing_rules` |
 | `sairndesign` | 18 | **2** | 16 | 0 | **RE-TIERED** — `sdn_discounts`, `sdn_invoices` |
 | `sairnfreedom` | 35 | **3** | 32 | 0 | **RE-TIERED** — `sf_accounts`, `sf_ledger`, `sf_vendor_prices` |
 | `sairngrounds` | 30 | **4** | 26 | 0 | **RE-TIERED** — `grd_invoices`, `msb_food_cost_log`, `msb_licenses`, `quotes` |
@@ -218,6 +218,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `dnt_recall_outreach` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `dnt_referrals` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `dnt_revenue` | **A** | Revenue reported wrong | Money |
+| `dnt_rollup` | **A** | An office comparison is wrong, or looks complete when it is not | Money, and a DERIVED resource -- it owns no table. Tier A because a practice-group owner makes staffing and investment decisions from per-office production; a figure that is quietly short by an unreadable table or by pre-stamp rows is the wrong number presented with the authority of a report. `api/_lib/dnt-rollup.js` therefore returns NULL and names the resource rather than 0, and `api/_lib/dnt-rollup-endpoint.test.js` pins both halves |
 | `dnt_settings` | **C** | A preference resets | Device/practice preference; `api/sd-data-dental-settings-patch.test.js` treats it as a PATCH-merged settings object |
 | `dnt_supplies` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `dnt_txplans` | **A** | A priced treatment plan wrong | Money: per-item fees and the patient portion |
