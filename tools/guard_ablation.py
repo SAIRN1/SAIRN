@@ -74,7 +74,14 @@ import tempfile
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
                       capture_output=True, text=True).stdout.strip()
 SUBJECT = os.path.join('api', 'sd-data.js')
-GATE = re.compile(r'^(\s*)if \(!(\w+_ROLES)\[session\.role\]\) \{$', re.M)
+# `[ \t]*` AND NOT `\s*`, AND THE DIFFERENCE COST A GATE. `\s` includes the
+# newline, so with re.M the `^` could match at a BLANK line and `(\s*)` would
+# then eat that line's newline plus the next line's indentation -- producing an
+# anchor that spans two lines and can never equal any single line. It happened
+# exactly once in 38 gates (EMPLOYEE_PROFILE_MANAGE_ROLES, the one preceded by a
+# blank line) and was reported as COULD-NOT-RUN rather than silently skipped,
+# which is the only reason it was visible at all.
+GATE = re.compile(r'^([ \t]*)if \(!(\w+_ROLES)\[session\.role\]\) \{$', re.M)
 
 
 def fail(msg):
