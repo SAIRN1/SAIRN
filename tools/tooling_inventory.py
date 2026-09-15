@@ -81,6 +81,17 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'line_endings.py': ('LIBRARY',
+        'the CRLF-vs-LF recombination: 52 files here handle line endings '
+        'independently and most are RIGHT, because they had already converged '
+        'on `newline=\'\'` for round-tripping. What none of them wrote down is '
+        'that COMPARING is a different job with THREE answers -- IDENTICAL, '
+        'ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what '
+        'produced the false "files differ" alarms four times in one session. '
+        'Validated against the real case: repo vs user-store skills, a bare '
+        'byte compare reports 11 diverged, the true answer is 0. Does NOT '
+        'migrate the 52 -- it exists so the next one is not a 53rd '
+        'implementation'),
     'ai_action_approval_audit.py': ('CHECKER',
         'an AI-PROPOSED action that reaches storage with no human approval -- '
         'the mechanical half of a rule that is currently only written down. '

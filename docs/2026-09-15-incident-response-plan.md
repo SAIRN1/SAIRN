@@ -40,21 +40,55 @@ argument that incident response is not a separate activity bolted onto security
 but a part of managing cybersecurity risk continuously. This document follows
 Rev 3.
 
+**IT IS NOT A FLAT LIST OF SIX PEER FUNCTIONS, and reading it as one is the
+easiest way to misuse it.** The six sit at two different levels:
+
+```
+  PREPARATION  (supports incident response; is not itself incident response)
+    GOVERN   ──┐
+    IDENTIFY ──┤──────────►  INCIDENT RESPONSE
+    PROTECT  ──┘               DETECT  ──►  RESPOND  ──►  RECOVER
+                   ▲                                          │
+                   └───────  IMPROVEMENT  ◄────────────────────┘
+                        (a Category INSIDE Identify, feeding
+                         lessons back into all six Functions)
+```
+
+- **GOVERN, IDENTIFY and PROTECT are the preparation level.** They are broader
+  risk-management work that *supports* incident response without being it. That
+  distinction matters here in a practical way: §2 and §3 describe standing
+  posture, and a responder reading this at 3am should start at §4, not §1.
+- **DETECT, RESPOND and RECOVER are the incident-response layer** — the part
+  that runs when something has actually happened.
+- **IMPROVEMENT is a Category inside IDENTIFY, not a seventh phase**, and it has
+  explicit feedback lines into all six. That placement is the argument of the
+  whole revision: lessons learned are not a report filed after the event, they
+  are an input to the preparation level that changes what GOVERN, IDENTIFY and
+  PROTECT do next. §8 is that feedback path here, and it is why §8 requires a
+  *control* rather than a resolution.
+
 Most people know the Rev 2 phases, so the mapping is stated once rather than
 left implicit:
 
-| Rev 2 phase | Where it lives here |
-|---|---|
-| Preparation | GOVERN, IDENTIFY, PROTECT (§1–§3) |
-| Detection & Analysis | DETECT (§4) and Triage (§5) |
-| Containment, Eradication & Recovery | RESPOND (§6) and RECOVER (§7) |
-| Post-Incident Activity | §8, and the defect register |
+| Rev 2 phase | Where it lives here | Level |
+|---|---|---|
+| Preparation | GOVERN, IDENTIFY, PROTECT (§1–§3) | preparation |
+| Detection & Analysis | DETECT (§4) and Triage (§5) | incident response |
+| Containment, Eradication & Recovery | RESPOND (§6) and RECOVER (§7) | incident response |
+| Post-Incident Activity | §8 — Improvement, inside IDENTIFY, feeding back | preparation |
 
-**This document is written from knowledge of SP 800-61r3's structure, not from a
-fetched copy of it** — no clone here has network access to NIST. Before this
-plan is shown to an auditor or a customer, somebody must open the real
-publication and check the Function/Category names against §1–§7. That is a real
-caveat and it is at the top rather than in a footnote.
+**Provenance of this section, because it changed after review.** The first
+version was written from knowledge of Rev 3's structure with no access to the
+publication — no clone here has network access to NIST — and it presented the
+six Functions as a flat list. **Checked against NIST's own csrc.nist.gov on
+2026-09-15 by a session that does have network access:** the Rev 3 supersession
+and the six Functions are confirmed exactly as written, and the two-level
+hierarchy plus Improvement's placement inside IDENTIFY is the correction that
+came back. It is recorded as a correction rather than silently absorbed, because
+"written from memory" and "checked against the source" are different claims and
+a reader of a compliance document is entitled to know which one they are
+holding. **The remaining unverified part is the Category-level naming below
+§1–§7**, which has still not been read against the publication.
 
 ---
 

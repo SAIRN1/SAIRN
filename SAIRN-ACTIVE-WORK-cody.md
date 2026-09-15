@@ -4811,3 +4811,76 @@ compliance artefact is worse than none** — it reads as coverage to exactly the
 reader who most needs it not to. Same reasoning as refusing to print a poster
 with a blank square where the QR should be. Not attempted rather than attempted
 badly.
+
+---
+
+## 2026-09-15 (final) — the IR plan's hierarchy corrected, item 78 measured, CRLF recombined
+
+### The incident-response plan: structure corrected against the real source
+
+Michael checked csrc.nist.gov (chat has network, no clone does) and confirmed the
+Rev 3 supersession and the six Functions exactly as written. **One real
+correction came back and is applied: it is not a flat list of six peers.**
+GOVERN/IDENTIFY/PROTECT are a *preparation* level that supports incident response
+without being it; DETECT/RESPOND/RECOVER are the incident-response layer; and
+**Improvement is a Category INSIDE Identify**, feeding lessons back into all six.
+
+Recorded as a correction rather than silently absorbed — *"written from memory"*
+and *"checked against the source"* are different claims, and a reader of a
+compliance document is entitled to know which one they hold. The remaining
+unverified part is now named: **Category-level naming below §1–§7 has still not
+been read against the publication.**
+
+### Item 78 — essentially complete. The remaining gap is Java, not engineering
+
+Verified by running, not reading:
+
+- **CC's FINDING 4 is CLOSED.** `SPEC_NOT_CHECKED_HERE` exists and the run prints
+  both uncheckable invariants with their reasons — *AppIsolation* ("requires
+  presenting a token minted for one app to another… behaviour, not a role set")
+  and *DeactivationBinds* ("the set of roles is unchanged by deactivation, so
+  this file is structurally blind to it"). The disclosure CC asked for is there.
+- Targets 1, 2 and 3 are built (Fourth), `no-app-key` is empty, 58 of 80 checks
+  made, and the row's own words are *"there is no tooling gap left here."*
+
+**The one thing genuinely missing is what every row already discloses: no TLA+
+spec on this platform has ever been model-checked.** `command -v java` returns
+nothing. **That is a one-line environment blocker, not an engineering gap**, and
+writing a hand-translated model checker in JS would check a second copy of the
+spec against a second copy of the invariants — the drift problem item 78's own
+row warns about, introduced to solve it.
+
+### CRLF-vs-LF recombination — `tools/line_endings.py`
+
+52 files handle line endings independently. **Most are correct**, and they had
+already converged on the right primitive: `io.open(..., newline='')` on both read
+and write, which is what stops a read-modify-write silently rewriting every line
+of a CRLF file.
+
+**What none of them wrote down is that there are THREE jobs, and the recurring
+defect lives in the one almost nobody writes:**
+
+| job | who does it right | status |
+|---|---|---|
+| round-trip a file | ~50 files, `newline=''` | already correct |
+| **compare two copies** | **nobody** | **the false-alarm class** |
+| flip on purpose | `metamorphic_check.py:161` | correct, kept identical |
+
+**The fix is not "normalise before comparing" — it is that the comparison has
+THREE answers and everybody wrote two.** `tr -d '\r'` then compare collapses
+*identical* and *differs only in line endings*, which is right for content and
+wrong the moment somebody needs to know whether a file was rewritten.
+`compare()` returns `IDENTICAL` / `ENDINGS_ONLY` / `DIFFERS`.
+
+**Validated against the real recurring case rather than fixtures alone:** repo
+skills vs the user store — **a bare byte compare reports 11 diverged; the true
+answer is 0.** Every one is `ENDINGS_ONLY`.
+
+It does **not** migrate the 52. Most are correct, and a mass edit across probes
+that mutate tracked files is a poor trade — the module exists so the next one is
+not a 53rd implementation.
+
+### Not done
+
+The negative-control-that-cannot-fail recombination. `tools/sabotage_control_check.py`
+already measures the class, so it is instrumented but not consolidated.

@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**157 files in `tools/`.** By what actually invokes them:
+**158 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,7 +28,7 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 40 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 21 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 34 | nothing runs these at all |
+| **UNWIRED** | 35 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -36,7 +36,7 @@ By what they are, independent of wiring:
 |---|---:|
 | CHECKER | 103 |
 | GENERATOR | 16 |
-| LIBRARY | 20 |
+| LIBRARY | 21 |
 | LIVE | 18 |
 
 **40 tool(s) are DECIDED -- deliberately not promoted, with the reason
@@ -284,7 +284,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (34)
+## UNWIRED (35)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -317,6 +317,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `gh_verify.py` | LIBRARY | whether a commit is really on the remote | &mdash; |
 | `guard_ablation.py` | CHECKER | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass | &mdash; |
 | `js_code_only_diff.py` | LIBRARY | a diff with comment-only changes removed | &mdash; |
+| `line_endings.py` | LIBRARY | the CRLF-vs-LF recombination: 52 files here handle line endings independently and most are RIGHT, because they had already converged on `newline=''` for round-tripping. What none of them wrote down is that COMPARING is a different job with THREE answers -- IDENTICAL, ENDINGS_ONLY and DIFFERS -- and that collapsing the first two is what produced the false "files differ" alarms four times in one session. Validated against the real case: repo vs user-store skills, a bare byte compare reports 11 diverged, the true answer is 0. Does NOT migrate the 52 -- it exists so the next one is not a 53rd implementation | &mdash; |
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
@@ -355,7 +356,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      157   git ls-files tools/
+  tools on disk                      158   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                46   report_only_checks.REGISTRY
