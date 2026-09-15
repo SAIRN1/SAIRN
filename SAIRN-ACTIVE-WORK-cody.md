@@ -4527,3 +4527,100 @@ file moved a derived figure and the generated documents had not been regenerated
 Fixed, and it is why the baseline was worth taking.
 
 **Not pushed at the time of writing, so nothing here is live-verified (PR 3.2).**
+
+---
+
+## 2026-09-15 (later) — a guard, a resilience layer that says what it cannot do, and an audit of what "accepted" costs
+
+### The mutation control now refuses to run mid-rebase
+
+Observed, not anticipated: running the worktree-based control during a `git
+rebase` broke the rebase (`unable to read tree`), and the second of two commits
+silently did not apply. `git fsck --connectivity-only` was clean — **nothing was
+corrupted**; it was a live race between the control's `worktree add/remove/prune`
+and the rebase's in-flight refs.
+
+The guard resolves the git dir with `rev-parse --absolute-git-dir` rather than
+assuming `.git/` — in a linked worktree `.git` is a FILE, and a hardcoded path
+would make the guard pass while the hazard was live, which is worse than no
+guard because it reads as coverage. It covers cherry-pick, merge, revert and
+bisect too: same condition, and the cherry-pick case is what the recovery used.
+
+**Proven by planting a marker in a throwaway worktree's git dir** — refuses with
+exit 2, and with the marker removed the control runs 155/155.
+
+### Circuit breaker + bulkhead — and the part worth reading is what does NOT work
+
+`api/_lib/resilience.js` (34 arms). Timeout, bulkhead, breaker, composed
+breaker→bulkhead→timeout so an open circuit costs no socket.
+
+**THE THREE DO NOT SURVIVE THIS RUNTIME EQUALLY, and shipping them as one
+feature is how a decorative gate gets built.** A classic in-process breaker —
+Hystrix, Resilience4j, Polly — is a per-instance failure counter with a
+threshold. `api/_lib/anon-rate-limit.js` MEASURED what that does here on
+2026-09-05: 40 concurrent requests against a limit of 20, not one trip, a dozen
+instances each counting from 1. For a breaker it is worse than for a limiter,
+because **load is what makes a dependency degrade, so the counter is diluted most
+at the moment the breaker is supposed to trip.**
+
+So the breaker takes a STORE. Postgres-backed is real; per-instance is honest
+about being approximate and **`createBreaker` THROWS if asked to enforce on
+one** — the one configuration refused outright, because silently downgrading to
+observe leaves a caller believing in a breaker that never trips.
+
+**The circularity is stated rather than discovered later:** the shared store
+lives in Supabase, so it cannot break on Supabase. A Supabase breaker is
+instance-backed and observe-only BY CONSTRUCTION. The timeout and the bulkhead
+are what protect a caller from a slow Supabase, and both work.
+
+**The load-bearing half is the timeout, and it is nearly absent: 684 non-test
+`fetch(` call sites in `api/`, ONE with a timeout** (`api/sc-eligibility.js`).
+Without a timeout there is nothing for a breaker to count — a hung call does not
+fail, it waits, and the invocation dies still holding it.
+
+**NOT DONE, stated plainly: nothing is wired.** The module and its SQL exist;
+683 call sites are unchanged. Wiring is a separate, large, per-dependency change.
+
+No effectiveness percentage appears anywhere in the module, and **an arm asserts
+that** so it cannot come back in quietly.
+
+### Accepted risks: 9 of 11 have no expiry condition at all
+
+`tools/accepted_risk_expiry_audit.py`. Not `accepted_risk_scan.py` — that asks
+whether an acceptance reached a register at all; this reads the ones that did and
+asks whether their expiry can ever fire. (The near-miss was real; the name was
+close enough that my first 0e search should have found it and did not.)
+
+Criteria locked against 7 synthetic fixtures in BOTH directions before any real
+number was believed. Hand-checking the first real run found a population defect —
+rows whose STATUS says CLOSED were matching on evidence-cell language that
+survives the fix — so the filter reads the status cell. 14 → 11.
+
+**RUNNING 1 · UNINVOKED 1 · MANUAL 0 · UNCONDITIONAL 9.**
+
+**It found its own first case immediately, and it is the one I was sent at.** The
+`supabase_admin` row names a trigger and no monitor — while
+`tools/ownership_evidence_drift.py` had been watching it since 2026-09-14,
+registered report-only, **currently RED at 380 tables against the 251 the
+acceptance was measured on**. The risk and its monitor were linked in one
+direction only, so any audit reading the row concluded nobody was watching. Row
+rebuilt whole; it now moves UNINVOKED → RUNNING.
+
+**And the sharper half, which the fix does not close:** that tool measures a
+PROXY — population growth — not the trigger. The trigger is ownership, no clone
+can query ownership, so nothing here can ever report the ACL fired. It can only
+report that nobody has checked. **The best-instrumented accepted risk on the
+platform still cannot close itself.**
+
+### Verified
+
+`node --check` clean; resilience 34/34; mutation control 155/155 with the clone
+unwritten and the new guard proven in both directions; expiry-audit selftest 7/7;
+`check12_probe` (no tool without an inventory entry) exit 0; md_table 0
+malformed; MASTER-PLAN, traceability-matrix and TOOLING-INVENTORY all
+regenerated and OK.
+
+**`sql/sairn_circuit_breaker_schema.sql` HAS NOT BEEN RUN** — no clone here has
+database access. Its verify block is per-statement with expected answers,
+including a real breaker round trip, because the Supabase editor reports success
+for the statements it did run.

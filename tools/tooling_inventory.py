@@ -81,6 +81,16 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'accepted_risk_expiry_audit.py': ('CHECKER',
+        'an accepted risk whose EXPIRY CONDITION cannot fire -- no trigger '
+        'stated, or a trigger no tool evaluates, or a tool nothing invokes. '
+        'Complements accepted_risk_scan.py rather than repeating it: that one '
+        'asks whether an acceptance reached a register at all, this one reads '
+        'the ones that did. Found its own first case immediately -- the '
+        'supabase_admin row named a trigger and no monitor, while '
+        'ownership_evidence_drift.py had been watching it for a day and the row '
+        'had never been updated to say so. Over-reports on purpose; the count '
+        'is a read-list, not a score'),
     'accepted_risk_scan.py': ('CHECKER',
         'a risk somebody deliberately ACCEPTED in a comment and recorded '
         'nowhere central -- the shape that got api/sairncash/portal.js read as '

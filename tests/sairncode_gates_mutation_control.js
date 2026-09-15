@@ -121,6 +121,70 @@ function stamp(p) { return sha(p) + ':' + fs.statSync(p).mtimeMs; }
 const CLONE_BEFORE = {};
 UNDER_TEST.forEach((rel) => { CLONE_BEFORE[rel] = stamp(path.join(ROOT, rel)); });
 
+// ── REFUSE TO RUN WHILE GIT IS MID-OPERATION (2026-09-15) ──────────────────
+// OBSERVED, NOT ANTICIPATED. This control was run during a `git rebase` an hour
+// after the worktree conversion landed, and the rebase broke:
+//
+//     error: Could not read 58e3e55e096b99dc62480f808417957982eb03bf
+//     fatal: unable to read tree (e73e7eeb0939f8b77ce337ac50af00385bebe569)
+//
+// The second commit of a two-commit rebase silently did not apply. `git fsck
+// --connectivity-only` came back clean and `git cat-file` read the commit
+// fine, so NOTHING WAS CORRUPTED -- it was a live race between this file's
+// `worktree add` / `worktree remove` / `worktree prune` against ROOT and the
+// rebase's own in-flight refs. Recovered by finishing the rebase and
+// cherry-picking; the cost was twenty minutes and a scare, not data.
+//
+// WHY A GUARD AND NOT A NOTE TO SELF. "Remember not to run the mutation control
+// during a rebase" is exactly the class of rule this platform has repeatedly
+// found does not hold at 3am on a four-clone night. The state is CHECKABLE, so
+// it gets checked.
+//
+// IT COVERS MORE THAN REBASE, AND THAT IS THE SAME CONDITION RATHER THAN SCOPE
+// CREEP: a cherry-pick, a merge and a bisect are all "git is holding partial
+// state in the git dir", which is precisely what worktree churn disturbs. The
+// cherry-pick case is not hypothetical either -- it is what the recovery above
+// used.
+//
+// THE GIT DIR IS RESOLVED, NOT ASSUMED TO BE `.git/`. In a linked worktree
+// `.git` is a FILE pointing at `.git/worktrees/<name>`, so a hardcoded path
+// would look in the wrong place and the guard would pass while the hazard was
+// live -- a guard that cannot fire is worse than none, because it reads as
+// coverage.
+{
+  const gd = spawnSync('git', ['-C', ROOT, 'rev-parse', '--absolute-git-dir'],
+                       { encoding: 'utf8', timeout: 60000 });
+  if (gd.status !== 0) {
+    console.log('COULD NOT CHECK: `git rev-parse --absolute-git-dir` failed, so');
+    console.log('whether a rebase is in progress is UNKNOWN. Refusing rather than');
+    console.log('assuming the safe answer. ' + String(gd.stderr || '').trim().slice(0, 200));
+    process.exit(2);
+  }
+  const GITDIR = (gd.stdout || '').trim();
+  const MID_OPERATION = [
+    ['rebase-merge', 'an interactive or merge-backend REBASE'],
+    ['rebase-apply', 'a REBASE (apply backend) or `git am`'],
+    ['CHERRY_PICK_HEAD', 'a CHERRY-PICK'],
+    ['MERGE_HEAD', 'a MERGE'],
+    ['REVERT_HEAD', 'a REVERT'],
+    ['BISECT_LOG', 'a BISECT'],
+  ];
+  const live = MID_OPERATION.filter(([p]) => fs.existsSync(path.join(GITDIR, p)));
+  if (live.length) {
+    console.log('REFUSING TO RUN: ' + live.map(([, w]) => w).join(' and ')
+                + ' is in progress.');
+    console.log('');
+    console.log('  git dir : ' + GITDIR);
+    console.log('  found   : ' + live.map(([p]) => p).join(', '));
+    console.log('');
+    console.log('This control creates and removes a git worktree and runs');
+    console.log('`worktree prune` against the repo. Doing that mid-operation raced a');
+    console.log('real rebase on 2026-09-15 and made it fail to apply a commit.');
+    console.log('NOTHING WAS MEASURED. Finish or abort the git operation, then re-run.');
+    process.exit(2);
+  }
+}
+
 // ── THE WORKTREE. FAIL CLOSED IF IT CANNOT BE MADE ─────────────────────────
 // "Could not isolate" is a third answer and it is never folded into "every
 // mutation caught". Exit 2, loudly, naming what was missing.
