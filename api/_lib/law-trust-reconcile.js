@@ -113,7 +113,7 @@ function dayOf(v) {
  *                          reported as NOT COMPARED and never as agreement.
  * @returns {object}
  */
-function reconcile(input) {
+function reconcileTrustLedger(input) {
   const rows = Array.isArray(input && input.rows) ? input.rows : null;
   const statements = Array.isArray(input && input.statements)
     ? input.statements : [];
@@ -265,4 +265,4 @@ function reconcile(input) {
   };
 }
 
-module.exports = { reconcile, cents, UNATTRIBUTED };
+module.exports = { reconcileTrustLedger, cents, UNATTRIBUTED };

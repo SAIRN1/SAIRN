@@ -8,7 +8,7 @@
 // The pairs are what say anything.
 'use strict';
 const assert = require('assert');
-const { reconcile, cents, UNATTRIBUTED } = require('./law-trust-reconcile');
+const { reconcileTrustLedger: reconcile, cents, UNATTRIBUTED } = require('./law-trust-reconcile');
 
 let pass = 0, fail = 0;
 function t(name, fn) {

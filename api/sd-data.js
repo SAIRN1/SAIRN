@@ -11686,7 +11686,7 @@ module.exports = async (req, res) => {
       // An unreadable STATEMENTS table is survivable and is NOT silently an
       // empty list: reconcile() reports the bank leg as NOT COMPARED, which is
       // the honest answer and is not agreement.
-      const out = lawTrustReconcile.reconcile({
+      const out = lawTrustReconcile.reconcileTrustLedger({
         rows: txRows,
         statements: stRows || [],
         clientTotalCents: (payload && typeof payload.client_total_cents === 'number')
