@@ -9696,8 +9696,53 @@ module.exports = async (req, res) => {
       sb_invs: 'inv_id', sb_exps: 'exp_id', sb_ap: 'ap_id', sb_vends: 'vend_id',
       sb_payruns: 'payrun_id', sb_train: 'train_id', sb_perf: 'perf_id',
       sb_hire: 'hire_id', sb_bud: 'bud_id', sb_incidents: 'incident_id',
-      sb_po: 'po_id', sb_recv: 'recv_id'
+      sb_po: 'po_id', sb_recv: 'recv_id', sb_ts: 'ts_id'
     };
+    // ── RECORDED HOURS ARE VALIDATED, AND THE VALIDATION REFUSES ───────────
+    // (2026-09-15) sb_ts joined the generic pair with a write path built the
+    // same day. Every other resource here is an ordinary business record; this
+    // one is MULTIPLIED BY A PAY RATE, and the defect it replaced is the
+    // reference case for why that matters -- a plausible wrong dollar figure
+    // in a payroll product, produced by hours nobody entered.
+    //
+    // IT REFUSES RATHER THAN COERCES, which is the sen_settings precedent
+    // rather than a new idea. `Number("eight")` is NaN and `Number("")` is 0;
+    // a coercing validator would turn a typo into a zero-hour day and a
+    // zero-hour day is a real, payable statement. The client validates too and
+    // that is a convenience, never the boundary.
+    //
+    // 24 IS A DAY. A cap is not a judgement about overtime -- the app computes
+    // OT above 40 and that is untouched -- it is the statement that a value
+    // above 24 in a per-DAY cell is a data-entry error, not a long shift.
+    if (resource === 'sb_ts' && action === 'write') {
+      const tsBad = (m) => { res.status(400).json({ error: { code: 'INVALID_TIMESHEET', message: m } }); };
+      const p = payload || {};
+      if (!p.emp || typeof p.emp !== 'string') { tsBad('emp is required and must be an employee id'); return; }
+      if (typeof p.week !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(p.week)) {
+        tsBad('week must be an ISO date, YYYY-MM-DD'); return;
+      }
+      // The week START, not any day in it. Two devices disagreeing about which
+      // day names a week would produce two rows for the same seven days, which
+      // is the duplicate the deterministic id exists to prevent.
+      const wk = new Date(p.week + 'T00:00:00Z');
+      if (isNaN(wk.getTime())) { tsBad('week is not a real date: ' + p.week); return; }
+      if (wk.getUTCDay() !== 1) { tsBad('week must be the MONDAY that starts the week; ' + p.week + ' is not a Monday'); return; }
+      if (!Array.isArray(p.hours) || p.hours.length !== 6) {
+        tsBad('hours must be an array of exactly 6 values, Monday to Saturday'); return;
+      }
+      for (let i = 0; i < 6; i++) {
+        const v = p.hours[i];
+        if (typeof v !== 'number' || !Number.isFinite(v) || v < 0 || v > 24) {
+          tsBad('hours[' + i + '] must be a number between 0 and 24 -- got '
+                + JSON.stringify(v) + '. Nothing was saved.');
+          return;
+        }
+      }
+      // The id is DERIVED here and not taken from the caller. A client free to
+      // choose it could write two rows for one employee-week, which is the one
+      // thing the deterministic id exists to make impossible.
+      p.id = p.emp + '|' + p.week;
+    }
     if (SB_RESOURCES[resource]) {
       const sbBizSession = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbiz');
       if (!sbBizSession) {

@@ -29,7 +29,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 | Vertical | res | tiered | suites | traced | fault | Gaps |
 |---|---|---|---|---|---|---|
-| `sairnbiz` | 12 | ✅ | 11 | 10 | 1 | — |
+| `sairnbiz` | 13 | ⚠ | 11 | 10 | 1 | **tier: NO TIER      sairnbiz/sb_ts is registered and has no row.** |
 | `sairnbuild` | 32 | ✅ | 5 | 4 | 1 | — |
 | `sairncare` | 13 | ✅ | 21 | 4 | 1 | — |
 | `sairncash` | 0 | ✅ | 2 | 0 | 0 | **nothing traced** · **no fault probe** |
@@ -52,7 +52,7 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 384 resources owned by an app, 151 test files attributed to one, 67 of those traced, 16 fault probes.**
+**Platform totals: 385 resources owned by an app, 151 test files attributed to one, 67 of those traced, 16 fault probes.**
 
 **And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **418** test files on disk in total and **216** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 

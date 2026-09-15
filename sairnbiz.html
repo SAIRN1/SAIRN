@@ -560,6 +560,32 @@ textarea{resize:vertical;min-height:80px;}
     </div>
   </div>
 </div>
+<!-- TIMESHEET ENTRY (2026-09-15). The write path the Timesheets panel never
+     had. Six day cells and nothing else: the app computes overtime above 40
+     and the pay estimate from the employee's own rate, so asking for either
+     here would create a second place they could be stated and disagree. -->
+<div class="modal" id="tsmodal">
+  <div class="mbox">
+    <div class="mtitle">Record Hours &mdash; <span id="ts-emp-name"></span></div>
+    <div class="psub" style="margin:-8px 0 14px;">Week of <span id="ts-modal-week"></span> &middot; Monday to Saturday. Leave a day blank for zero.</div>
+    <div class="fr">
+      <div class="fg"><label>Mon</label><input id="ts-d0" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+      <div class="fg"><label>Tue</label><input id="ts-d1" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+      <div class="fg"><label>Wed</label><input id="ts-d2" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label>Thu</label><input id="ts-d3" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+      <div class="fg"><label>Fri</label><input id="ts-d4" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+      <div class="fg"><label>Sat</label><input id="ts-d5" type="number" min="0" max="24" step="0.25" inputmode="decimal"></div>
+    </div>
+    <div id="ts-modal-err" class="psub" style="display:none;color:var(--danger);margin-top:4px;"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeTsModal()">Cancel</button>
+      <button class="btn bp" onclick="saveTimesheet()">Save Hours</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="vendmodal">
   <div class="mbox">
     <div class="mtitle">Add Vendor</div>
@@ -592,8 +618,8 @@ textarea{resize:vertical;min-height:80px;}
 
 <!-- TIMESHEETS -->
 <div class="panel" id="panel-timesheet">
-  <div class="ph"><div><div class="ptitle">Timesheets</div><div class="psub">Hours tracked &middot; Week of <span id="tsweek"></span></div></div>
-  <div class="pa"><button class="btn bo bs" onclick="csv('timesheet')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
+  <div class="ph"><div><div class="ptitle">Timesheets</div><div class="psub">Hours recorded &middot; Week of <span id="tsweek"></span></div></div>
+  <div class="pa"><button class="btn bo bs" onclick="tsShiftWeek(-1)">&larr; Prev week</button><button class="btn bo bs" onclick="tsShiftWeek(1)" id="ts-next">Next week &rarr;</button><button class="btn bo bs" onclick="csv('timesheet')">Export CSV</button><button class="btn bp bs" onclick="window.print()">Print</button></div></div>
   <!-- Billable Hours ("Job-coded") and Utilization Rate were REMOVED 2026-09-15
        rather than dashed. Neither had anything behind it even in principle:
        billable was Math.round(total*0.85) in a file with no job-coding model
@@ -606,7 +632,7 @@ textarea{resize:vertical;min-height:80px;}
   </div>
   <div id="ts-note" class="psub" style="display:none;margin:-16px 0 20px;"></div>
   <div class="card"><div class="cb">
-    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th></tr></thead>
+    <div class="tw" tabindex="0" role="region" aria-label="Scrollable data table"><table><thead><tr><th>Employee</th><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Total Hrs</th><th>OT Hrs</th><th>Est. Pay</th><th>Hours</th></tr></thead>
     <tbody id="tstbody"></tbody></table></div>
   </div></div>
 </div>
@@ -2943,22 +2969,75 @@ function saveVendor(){
 // unfit to export while the other half presented them as the week's payroll.
 //
 // SAME FIX AS THE SAFETY-INCIDENTS TILE (rTrain, below): while nothing writes
-// the hours, the app says so instead of showing a number. Hours now come from
+// the hours, the app says so instead of showing a number. Hours come from
 // `sb_ts` keyed by EMPLOYEE ID, so a record can never attach to the wrong
 // person, and an employee with no record is `--` across the row and excluded
 // from all three figures rather than defaulted to a full week.
 //
+// ── AND THE WRITE PATH NOW EXISTS (2026-09-15, Michael's decision) ─────────
+// The fix above deliberately shipped without one: removing an invented number
+// is not the same job as building the feature that replaces it, and a panel
+// that says "no hours recorded" is honest while a panel that invents them is
+// not. This is the second half. saveTimesheet() below is the writer,
+// sql/sairnbiz_timesheet_schema.sql is the table, and `sb_ts` is registered in
+// api/_resources/sairnbiz.js and SB_SYNCED so recorded hours reach a server --
+// the last record a shop should keep on one workstation, because wages are
+// computed from it.
+//
 // THE FLAG IS CHECKABLE, NOT DECORATIVE. tests/sairnbiz_timesheet_hours.js
-// counts the real st('sb_ts') writers in this file and fails if this disagrees
-// with it -- the day an entry path lands the dash is replaced by a measurement
-// rather than by somebody remembering to come back here.
-var SB_TS_HAVE_A_WRITE_PATH=false;
+// counts the real st('sb_ts') writers in this file and fails IN BOTH
+// DIRECTIONS if this disagrees with them, so neither half can move alone.
+var SB_TS_HAVE_A_WRITE_PATH=true;
+// ── ONE ROW IS ONE EMPLOYEE'S ONE WEEK ────────────────────────────────────
+// `sb_ts` is an ARRAY of {id, emp, week, hours[6]} rather than the map the
+// first version used. Three reasons and none of them is style: the backup loop
+// requires id-bearing records, a map cannot hold more than the current week,
+// and an id of `<emp>|<week>` makes a re-save an UPDATE -- two disagreeing
+// timesheets for one week is a payroll dispute with no tiebreaker.
+//
+// MONDAY STARTS THE WEEK, AND THE PANEL USED TO LIE ABOUT THIS. Its subhead
+// read "Week of" followed by TODAY's date, which is not the start of a week;
+// that was flagged and left alone in 200aaba8 because it was orthogonal to
+// removing the fabricated hours. It is not orthogonal any more -- a stored
+// week needs a stable name -- so it is fixed here.
+function sbWeekStart(d){
+  var x=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  // getDay() is 0 for Sunday, so Sunday belongs to the week that STARTED six
+  // days earlier rather than to the one beginning tomorrow.
+  var back=(x.getDay()+6)%7;
+  x.setDate(x.getDate()-back);
+  return x.getFullYear()+'-'+String(x.getMonth()+1).padStart(2,'0')+'-'+String(x.getDate()).padStart(2,'0');
+}
+var sbTsWeek=sbWeekStart(new Date());
+function tsShiftWeek(n){
+  var p=sbTsWeek.split('-');
+  var d=new Date(Number(p[0]),Number(p[1])-1,Number(p[2]));
+  d.setDate(d.getDate()+7*n);
+  var next=sbWeekStart(d);
+  // NO FUTURE WEEKS. Hours are a record of work done; a timesheet for a week
+  // that has not happened is a forecast wearing a record's clothes, and this
+  // app has already paid once for a number that looked recorded and was not.
+  if(next>sbWeekStart(new Date())){toast('That week has not happened yet');return;}
+  sbTsWeek=next;rTS();
+}
+function sbTsRows(){var v=ld('sb_ts',[]);return Array.isArray(v)?v:[];}
+function sbTsFor(empId,week){
+  var rows=sbTsRows();
+  for(var i=0;i<rows.length;i++){
+    if(rows[i]&&rows[i].emp===empId&&rows[i].week===week)return rows[i];
+  }
+  return null;
+}
 function rTS(){
   var emps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
-  var hrs=ld('sb_ts',{})||{};
+  var week=sbTsWeek;
+  $('tsweek').textContent=week;
+  var nx=$('ts-next');if(nx)nx.disabled=(week>=sbWeekStart(new Date()));
   var th=0,tot=0,tc=0,recorded=0;
   $('tstbody').innerHTML=emps.map(function(e){
-    var d=hrs[e.id];
+    var row=sbTsFor(e.id,week);
+    var d=row&&row.hours;
+    var btn='<td style="text-align:center;"><button class="btn bo bs" onclick="openTsModal(\''+H(e.id)+'\')">'+(d?'Edit':'Enter')+'</button></td>';
     // A missing record is six dashes and no contribution to any total. It is
     // NEVER a default week -- that fallback is the defect this replaced.
     if(!Array.isArray(d)){
@@ -2966,12 +3045,12 @@ function rTS(){
         '<td style="text-align:center;color:var(--muted);">--</td>'.repeat(6)+
         '<td style="text-align:center;">--</td>'+
         '<td style="text-align:center;color:var(--muted);">--</td>'+
-        '<td style="text-align:right;">--</td></tr>';
+        '<td style="text-align:right;">--</td>'+btn+'</tr>';
     }
     var t=d.reduce(function(a,b){return a+(Number(b)||0);},0);
     var ot=Math.max(0,t-40);var c=(t-ot)*e.rate+ot*e.rate*1.5;
     th+=t;tot+=ot;tc+=c;recorded++;
-    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td></tr>';
+    return'<tr><td><strong>'+H(e.fn+' '+e.ln)+'</strong></td>'+d.map(function(x){return'<td style="text-align:center;">'+(x||'--')+'</td>';}).join('')+'<td style="text-align:center;"><strong>'+t+'</strong></td><td style="text-align:center;color:'+(ot?'var(--danger)':'var(--muted)')+'">'+ot+'</td><td style="text-align:right;">'+fmt(c)+'</td>'+btn+'</tr>';
   }).join('');
   var note;
   if(SB_TS_HAVE_A_WRITE_PATH&&recorded>0){
@@ -2983,10 +3062,80 @@ function rTS(){
     note=missing?recorded+' of '+emps.length+' active employees have hours recorded. The other '+missing+' are excluded from all three figures above.':'';
   }else{
     $('ts-hrs').textContent='--';$('ts-ot').textContent='--';$('ts-cost').textContent='--';
-    note='Hours are not recorded in this app yet, so there is nothing to total. These figures are shown as -- rather than 0 because no hours and no way to enter hours are different facts.';
+    // THE TWO EMPTY STATES ARE DIFFERENT SENTENCES, and collapsing them would
+    // rebuild the defect one layer up: "nobody has entered hours for this week
+    // yet" and "this app cannot record hours at all" look identical as a row of
+    // dashes, and only one of them is something a user can act on.
+    note=SB_TS_HAVE_A_WRITE_PATH
+      ? 'No hours recorded for the week of '+week+'. Use Enter on a row to record them; the figures above stay -- rather than 0, because nobody has said anyone worked zero.'
+      : 'Hours are not recorded in this app yet, so there is nothing to total. These figures are shown as -- rather than 0 because no hours and no way to enter hours are different facts.';
   }
   $('ts-note').textContent=note;
   $('ts-note').style.display=note?'':'none';
+}
+
+// ── THE WRITE PATH (2026-09-15) ───────────────────────────────────────────
+// Six day cells and nothing else. Overtime is derived above 40 and the pay
+// estimate comes from the employee's own rate, so offering either here would
+// create a second place the same fact could be stated -- and two places that
+// can disagree about money is the shape this app has already been bitten by
+// twice (the FICA rate bypassed by its own literal; two price lists in two
+// files).
+var tsEditing=null;
+function openTsModal(empId){
+  var e=ld('sb_emps',[]).find(function(x){return x.id===empId;});
+  if(!e){toast('No such employee');return;}
+  if(e.status!=='Active'){toast('Hours can only be recorded for an active employee');return;}
+  tsEditing=empId;
+  $('ts-emp-name').textContent=e.fn+' '+e.ln;
+  $('ts-modal-week').textContent=sbTsWeek;
+  var row=sbTsFor(empId,sbTsWeek);
+  for(var i=0;i<6;i++){
+    // A blank field is NOT a zero until somebody saves it as one. Prefilling
+    // zeros would make an untouched form look like a recorded week of no work.
+    $('ts-d'+i).value=(row&&row.hours&&typeof row.hours[i]==='number')?String(row.hours[i]):'';
+  }
+  $('ts-modal-err').style.display='none';
+  $('tsmodal').classList.add('on');
+}
+function closeTsModal(){tsEditing=null;$('tsmodal').classList.remove('on');}
+// REFUSES RATHER THAN COERCES, and the server refuses again independently.
+// `Number('')` is 0 and `Number('eight')` is NaN; a coercing reader turns a
+// typo into a zero-hour day, and a zero-hour day is a real, payable statement.
+// A BLANK is the one input treated as zero, and only because the modal says so
+// on screen -- that is a stated convention, not a coercion.
+function tsReadDays(){
+  var out=[],bad=null;
+  for(var i=0;i<6;i++){
+    var raw=String($('ts-d'+i).value||'').trim();
+    if(raw===''){out.push(0);continue;}
+    var v=Number(raw);
+    if(!isFinite(v)||v<0||v>24){bad=bad||{i:i,raw:raw};out.push(null);continue;}
+    out.push(v);
+  }
+  return{hours:out,bad:bad};
+}
+function saveTimesheet(){
+  if(!tsEditing){toast('Nothing to save');return;}
+  var r=tsReadDays();
+  if(r.bad){
+    var days=['Mon','Tue','Wed','Thu','Fri','Sat'];
+    var msg=days[r.bad.i]+' is "'+r.bad.raw+'". Enter a number of hours between 0 and 24, or leave it blank. NOTHING WAS SAVED.';
+    $('ts-modal-err').textContent=msg;
+    $('ts-modal-err').style.display='';
+    return;
+  }
+  var rows=sbTsRows().filter(function(x){return!(x&&x.emp===tsEditing&&x.week===sbTsWeek);});
+  // The id is DERIVED, never generated, so re-saving a week UPDATES it. The
+  // server derives the same id from emp+week and ignores whatever arrives in
+  // this field, so the two cannot disagree.
+  rows.push({id:tsEditing+'|'+sbTsWeek,emp:tsEditing,week:sbTsWeek,hours:r.hours});
+  if(!st('sb_ts',rows)){toast('Hours were NOT saved -- the write failed');return;}
+  var total=r.hours.reduce(function(a,b){return a+b;},0);
+  closeTsModal();
+  rTS();
+  rDash();
+  toast('Hours recorded -- '+total+' h for the week of '+sbTsWeek);
 }
 
 // Pre-payroll validation (2026-08-10) -- deterministic checks that run
@@ -4361,6 +4510,40 @@ function csv(type){
   // built: the user has no reason to look again.
   //
   // Implemented here are the seven whose rows genuinely exist in a store.
+  // ── TIMESHEET, ADDED 2026-09-15 WITH THE HOURS THAT MADE IT POSSIBLE ────
+  // This type was in the REFUSAL list below until today, and the reason given
+  // there was right: rTS() drove its hours from a hardcoded array indexed by
+  // employee position, so "exporting it would launder demo figures into a
+  // spreadsheet somebody costs a week against". Those hours are gone and real
+  // ones are recorded, so the refusal is lifted -- and lifting it is part of
+  // the same change rather than a later tidy-up, because an Export button that
+  // toasts a refusal for a reason that has stopped being true is its own small
+  // lie.
+  //
+  // ONLY EMPLOYEES WITH A RECORDED WEEK ARE ROWS, and the ones without are
+  // NAMED in a note rather than dropped silently or exported as zeros. A
+  // spreadsheet that omits three of eight people without saying so is the same
+  // defect as a total that omits them, one file further from anyone who could
+  // notice -- and a zero row would state that somebody worked no hours.
+  else if(type==='timesheet'){
+    var tsEmps=ld('sb_emps',[]).filter(function(e){return e.status==='Active';});
+    var tsMissing=[];
+    rows=[['Employee','Week Of','Mon','Tue','Wed','Thu','Fri','Sat','Total Hrs','OT Hrs','Est. Pay']];
+    tsEmps.forEach(function(e){
+      var row=sbTsFor(e.id,sbTsWeek);
+      if(!row||!Array.isArray(row.hours)){tsMissing.push(e.fn+' '+e.ln);return;}
+      var t=row.hours.reduce(function(a,b){return a+(Number(b)||0);},0);
+      var ot=Math.max(0,t-40);
+      rows.push([e.fn+' '+e.ln,sbTsWeek].concat(row.hours).concat(
+        [t,ot,((t-ot)*e.rate+ot*e.rate*1.5).toFixed(2)]));
+    });
+    if(tsMissing.length){
+      rows.push([]);
+      rows.push(['NOTE','No hours recorded for '+tsMissing.length+' of '+tsEmps.length+
+                 ' active employees, and they are EXCLUDED from this file rather than exported as zero: '+
+                 tsMissing.join('; ')]);
+    }
+  }
   else if(type==='performance'){rows=[['Employee','Type','Due','Reviewer','Score','Raise','PIP','Status']];ld('sb_perf',[]).forEach(function(r){rows.push([r.emp,r.type,r.due,r.rev,r.score,r.raise?'Yes':'No',r.pip?'Yes':'No',r.status]);});}
   else if(type==='training'){rows=[['Employee','Certification','Completed','Expires','Provider','Cost','Hours','Status']];ld('sb_train',[]).forEach(function(r){rows.push([r.emp,r.cert,r.done,r.exp,r.prov,r.cost,r.hrs,r.status]);});}
   else if(type==='hiring'){rows=[['Position','Department','Applicants','Stage','Posted','Rate','Status']];ld('sb_hire',[]).forEach(function(r){rows.push([r.pos,r.dept,r.apps,r.stage,r.posted,r.rate,r.status]);});}
@@ -4396,12 +4579,13 @@ function csv(type){
   }
   // THE FALLBACK REFUSES AND WRITES NOTHING. Three views legitimately reach it
   // and each is named rather than lumped together:
-  //   timesheet -- rTS() reads `sb_ts` and NOTHING writes it
-  //     (SB_TS_HAVE_A_WRITE_PATH), so there are no hours to export. Until
-  //     2026-09-15 the reason was worse and is worth keeping on the record:
-  //     the hours were a hardcoded array in the source indexed by employee
-  //     POSITION, and this refusal was the only thing in the app that treated
-  //     them as unfit to leave the screen. The screen showed them anyway.
+  //   timesheet -- NO LONGER REFUSED, and the history is kept because it is the
+  //     clearest case on this list. It was refused because rTS() drove its
+  //     hours from a hardcoded array in the source indexed by employee
+  //     POSITION, and this refusal was THE ONLY THING IN THE APP that treated
+  //     those figures as unfit to leave the screen -- while the screen showed
+  //     them undisclosed. Both halves were fixed on 2026-09-15 and the export
+  //     is implemented above.
   //   pl        -- no row set exists; the panel is computed totals.
   //   report    -- "report" is not a data set, it is the panel name.
   // Any future button passing an unhandled key now fails LOUDLY here instead
@@ -4803,7 +4987,14 @@ window.recordSbSharedTopics = recordSbSharedTopics;
 // PO-2026-001 exists" against a bill that was correctly matched when it was
 // paid. A control that goes quiet is a gap; one that starts accusing correct
 // work is worse, because somebody acts on it.
-var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud','sb_incidents','sb_po','sb_recv'];
+// sb_ts joined 2026-09-15, with the write path that made it exist. Same
+// reasoning as sb_incidents above and the same rule applied in the same
+// order: the fix that removed the fabricated hours deliberately registered
+// NOTHING, because there was still nothing to back up. saveTimesheet() is
+// the writer. Recorded hours are what wages are computed from, so this is
+// the last collection that should live on one workstation -- and unlike an
+// invoice there is no second document anywhere that could reconstruct it.
+var SB_SYNCED=['sb_invs','sb_exps','sb_ap','sb_vends','sb_payruns','sb_train','sb_perf','sb_hire','sb_bud','sb_incidents','sb_po','sb_recv','sb_ts'];
 var _sbSyncOn={};
 SB_SYNCED.forEach(function(k){_sbSyncOn[k]=true;});
 // Set while seed() runs and while hydration writes merged rows back. Seeding

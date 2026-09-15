@@ -168,13 +168,20 @@ test('registry, server handler, client list and SQL declare the same set', () =>
   // comment rather than overwritten so the next reader can see how often.
   //
   // ALL FOUR SIDES WERE MEASURED BEFORE THIS NUMBER WAS MOVED, and they agree
-  // at 12: registry, sd-data.js SB_RESOURCES, sairnbiz.html SB_SYNCED, and the
+  // at 13: registry, sd-data.js SB_RESOURCES, sairnbiz.html SB_SYNCED, and the
   // SQL (table AND grant) for every one. The suite was red because the count
   // was stale, not because anything had drifted -- and the difference is worth
   // stating, because "update the number until it passes" is how a real
   // disagreement gets buried.
+  //
+  // 12 -> 13 on 2026-09-15: sb_ts, recorded timesheet hours, added with the
+  // write path that made them exist. The same four sides were checked one by
+  // one before this line moved, and the reason the resource could not exist
+  // sooner is in api/_resources/sairnbiz.js: until saveTimesheet() there was
+  // nothing to back up, and "a registry entry without a caller is still a claim
+  // nothing backs".
   const declared = registry.resources.slice().sort();
-  assert.strictEqual(declared.length, 12, 'registry should declare 12 resources');
+  assert.strictEqual(declared.length, 13, 'registry should declare 13 resources');
 
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const handled = (handlerBlock.match(/\bsb_[a-z_]+(?=:)/g) || []).sort();
@@ -193,7 +200,7 @@ test('registry, server handler, client list and SQL declare the same set', () =>
 test('every id column in the handler exists in the SQL table it names', () => {
   const handlerBlock = slice(sdData, 'const SB_RESOURCES = {', '};');
   const pairs = handlerBlock.match(/sb_[a-z_]+:\s*'[a-z_]+'/g) || [];
-  assert.strictEqual(pairs.length, 12);
+  assert.strictEqual(pairs.length, 13);
   pairs.forEach((p) => {
     const [res, col] = p.split(':').map((s) => s.trim().replace(/'/g, ''));
     const table = slice(schema, 'create table if not exists public.' + res + ' (', ');');

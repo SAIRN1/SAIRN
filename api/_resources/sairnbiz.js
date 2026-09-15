@@ -102,6 +102,25 @@ module.exports = {
   // one row. See sql/sairnbiz_po_recv_migration.sql.
     'sb_po',
     'sb_recv',
+  // RECORDED TIMESHEET HOURS, added 2026-09-15 with the write path that made
+  // them exist. Until that day the Timesheets panel had NO writer at all --
+  // rTS() built five KPIs and every cell from a hardcoded array in the source
+  // indexed by employee POSITION, so real pay rates were multiplied by invented
+  // hours and deactivating one employee moved another's overtime onto them.
+  //
+  // THE OLD RULE STILL APPLIES AND IS WHY THIS APPEARS ONLY NOW: "a registry
+  // entry without a caller is still a claim nothing backs", the same sentence
+  // that kept sb_incidents out of this list until saveIncident() existed. The
+  // fix that removed the fabricated hours deliberately did NOT register
+  // anything, because there was still nothing to back up. saveTimesheet() is
+  // the writer, and recorded hours are what wages are computed from -- the last
+  // record that should live on one workstation.
+  //
+  // ONE ROW IS ONE EMPLOYEE'S ONE WEEK, id `<employee_id>|<week>`. See
+  // sql/sairnbiz_timesheet_schema.sql for why that id is deterministic rather
+  // than generated: two disagreeing timesheets for one week is a payroll
+  // dispute with no tiebreaker.
+    'sb_ts',
   // DELIBERATELY NOT SYNCED, and why -- so the next reader does not have to
   // re-derive the judgement or assume it was an oversight:
   //   sb_emps -- ALREADY synced, by the bespoke `employees` branch, which

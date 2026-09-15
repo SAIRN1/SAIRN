@@ -324,7 +324,41 @@ alter table public.sb_recv enable row level security;
 revoke all on public.sb_recv from service_role;
 grant select, insert, update on public.sb_recv to service_role;
 
--- Verify after running. Expect exactly 13 rows -- the TWELVE above plus the
+-- RECORDED TIMESHEET HOURS, added 2026-09-15 with the write path that made
+-- them exist. Until that day the Timesheets panel had NO writer at all: rTS()
+-- built five KPIs and every cell from a hardcoded array in the source indexed
+-- by employee POSITION, so real pay rates were multiplied by invented hours,
+-- deactivating one employee moved another's overtime onto them, and the ninth
+-- hire got a full week nobody worked.
+--
+-- ONE ROW IS ONE EMPLOYEE'S ONE WEEK, and ts_id is `<employee_id>|<week>`
+-- rather than a generated id. That is the only interesting decision here: a
+-- generated id would let the same employee-week be saved twice, and two
+-- disagreeing timesheets for one week is a payroll dispute with no tiebreaker.
+-- The unique constraint below is what makes that structural rather than a
+-- convention, and the server derives the id from emp+week rather than
+-- accepting the caller's.
+--
+-- If you have ALREADY run this file, run sql/sairnbiz_timesheet_schema.sql
+-- instead -- it creates this one table and nothing else. Running both is fine;
+-- every statement is `if not exists`.
+create table if not exists public.sb_ts (
+  id uuid primary key default gen_random_uuid(),
+  license_hash text not null,
+  app_id text not null default 'sairnbiz',
+  ts_id text not null,
+  data jsonb not null default '{}'::jsonb,
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (license_hash, ts_id),
+  constraint sb_ts_data_size check (octet_length(data::text) <= 65536)
+);
+create index if not exists idx_sb_ts_license on public.sb_ts(license_hash);
+alter table public.sb_ts enable row level security;
+revoke all on public.sb_ts from service_role;
+grant select, insert, update on public.sb_ts to service_role;
+
+-- Verify after running. Expect exactly 14 rows -- the THIRTEEN above plus the
 -- pre-existing sb_employee_auth -- each with INSERT / SELECT / UPDATE and
 -- nothing else. (Was 10 before sb_incidents was added on 2026-09-10, and 11
 -- before sb_po and sb_recv on 2026-09-14; a stale expected count is a
