@@ -255,6 +255,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The Timesheets panel reported a week of hours nobody ever entered, and two KPI tiles had nothing behind them at all** | **FIXED 2026-09-15 (CC)** &mdash; `rTS()` reads `sb_ts` keyed by employee ID, `SB_TS_HAVE_A_WRITE_PATH=false`; `tests/sairnbiz_timesheet_hours.js` 17/17, and **14 of its 17 arms FAIL against the pre-f | `tests/sairnbiz_timesheet_hours.js` |
 | **Gate 4 on the densest suite on the platform &mdash; and the probe found a guard nothing had ever exercised** | **BUILT 2026-09-14 (Hank)** &mdash; `tests/sairnbiz_fault_probe.py`, 8 mutation arms + 5 controls; `tests/sairnbiz_bill_cannot_settle_unmatched.js` gained section 8 (5 arms, 42 &rarr; 47). MASTER-PLAN | `tests/sairnbiz_bill_cannot_settle_unmatched.js`, `tests/sairnbiz_fault_probe.py` |
 | **`sb_po` and `sb_recv` reached a server as Tier A with NO WAY TO CORRECT A WRONG ROW &mdash; now VOIDABLE, never deletable** | **FOUND 2026-09-14 (CC)** by `tools/removal_path_check.py` in the post-work sweep. **MECHANISM BUILT 2026-09-14 (CC)** on Michael&rsquo;s decision. **COMMITTED, NOT YET PUSHED &mdash; so NOT LIVE-VERI | `tests/functional_core_is_pure.js`, `tests/sairnbiz_void_mutation_control.js`, `tests/sairnbiz_void_not_delete.js` |
 | **The three-way match shipped with BOTH of its documents local-only &mdash; `sb_po` and `sb_recv` reached no server at all** | **BUILT 2026-09-14 (CC)** &mdash; `sql/sairnbiz_po_recv_migration.sql` written and **NOT YET RUN**; held by `tests/sairnbiz_po_recv_reach_the_server.js` (28 arms, four mutation controls). Registered,  | `tests/sairnbiz_po_recv_reach_the_server.js` |
@@ -394,7 +395,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**208 of 412 test files are traced to a stated requirement. 204 are not.**
+**209 of 413 test files are traced to a stated requirement. 204 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -622,8 +623,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 412   tests/**, api/*.test.js
-  open-work rows citing a test       190   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 413   tests/**, api/*.test.js
+  open-work rows citing a test       191   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
