@@ -288,6 +288,28 @@ check('THE OTHER DIRECTION: a genuinely unreadable RESOURCE is still null, not 0
 // would have been two copies of one rule under two field names, free to
 // disagree -- the exact shape this file's own subject is about.
 // The finding-1 arms above stay: 17aa211e did not fix finding 1.
+// CORRECTED 2026-09-15: THREE WENT AND ONLY TWO WERE DUPLICATES. The
+// count-metric arm was re-added above -- upstream's control asserts on a
+// SUM metric, so the COUNT case was pinned by nothing once mine was gone.
+// Found by re-running both sides' suites against the merged module and
+// then checking each surviving property was pinned, not merely true.
+
+check('a COUNT metric never reports unread rows -- it has no field to read', () => {
+  // RE-ADDED 2026-09-15 after the merge verification. I deleted this as a
+  // duplicate of upstream's unread arms; it was not one. The clean-column
+  // CONTROL above asserts on `production`, a SUM metric, so nothing pinned the
+  // COUNT case -- a module that incremented `unread` on every count row would
+  // have passed every other arm in this file.
+  //
+  // A property that holds and is pinned by nothing is a property one edit from
+  // being wrong with no suite to say so, which is the whole subject of this
+  // file.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [{ id: 'P1', location_id: 'LOC-N' }] },
+    dnt_charges: { rows: [] } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.patients.unread, 0);
+  assert.strictEqual(out.totals.patients.unread, 0);
+});
 
 check('no ranking, no best-performer, no period change is emitted', () => {
   const out = rollup(base());

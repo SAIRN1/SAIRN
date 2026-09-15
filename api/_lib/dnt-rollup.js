@@ -199,6 +199,11 @@ function rollup(input) {
       const raw = row[m.field] !== undefined ? row[m.field]
         : (row.data && row.data[m.field]);
       const n = measureNumber(raw);
+      // The row still counts -- it exists, it just carries no readable amount --
+      // and the amount it could not read is now NAMED instead of being an
+      // invisible 0 inside a total that calls itself complete.
+      // (Upstream 17aa211e's comment, restored 2026-09-15: I removed it when I
+      // restructured this loop for finding 1, which was not mine to do.)
       if (n === null) { cell.unread += 1; return; }
       cell.value += n;
     });

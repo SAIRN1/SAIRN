@@ -148,6 +148,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
 | **`tier_a_review_gate.py` counted a WORKLOG as code serving a Tier A resource &mdash; closed by SHRINKING the rule, not growing the list** | **FIXED 2026-09-15 (Fourth)** &mdash; `tools/tier_a_review_gate.py`, 5 new arms in `tests/run_tier_a_review_gate_probe.py`, all pass | `tests/run_tier_a_review_gate_probe.py` |
+| **The conflict-marker incident, verified closed &mdash; and the standing fix is a tool that tells file CLASSES apart instead of a rule to remember** | **FIXED + VERIFIED 2026-09-15 (Fourth)** &mdash; `tools/sairn_rebase_resolve.py`, `tests/run_rebase_resolve_probe.py` 15 arms on REAL rebase conflicts, all pass | `tests/run_rebase_resolve_probe.py` |
 | **Item 100 closed at the three call sites &mdash; a paid tier derived from an identifier could grant and could never revoke** | **FIXED 2026-09-15 (Fourth)** &mdash; `api/sd-data.js`, `api/sd-render.js`, `api/_lib/sd-store.js`, plus the `subscription_status` mapping in `api/_lib/license.js`. `api/license-trial-gate.test.js` 8  | `api/license-trial-gate.test.js` |
 | **Item 98 ablation &mdash; 17 of 38 role gates in `api/sd-data.js` can be removed and NOTHING goes red** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/guard_ablation.py`, 38 gates &times; 93 observing suites. 21 LOAD-BEARING, 17 SILENT, 0 COULD-NOT-RUN. `docs/2026-09-15-item98-guard-ablation.md` | `tests/sairncare_fault_probe.py` |
 | **The restore-checker blocker I named was WRONG &mdash; the mock target already existed, and the real blocker is that its subject does not exist at push time** | **CORRECTED 2026-09-14 (Cody)** &mdash; `tools/report_only_checks.py` NOT_PROMOTED entry rewritten; triage gap confirmed **0 of 67** | `tests/run_restore_coherence_probe.js` |
@@ -437,7 +438,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**228 of 437 test files are traced to a stated requirement. 209 are not.**
+**229 of 438 test files are traced to a stated requirement. 209 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -670,8 +671,8 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 437   tests/**, api/*.test.js
-  open-work rows citing a test       217   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 438   tests/**, api/*.test.js
+  open-work rows citing a test       218   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
