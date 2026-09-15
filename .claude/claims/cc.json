@@ -1374,6 +1374,16 @@
       "claimed_at_epoch": 1789485847.854606,
       "status": "released",
       "released_at": "2026-09-15T15:35:27Z"
+    },
+    {
+      "id": "cc-1789487214",
+      "session": "cc",
+      "subject": "cc",
+      "task": "flaky checker ledger nine unmeasured checkers biometric consent module",
+      "claimed_at": "2026-09-15T15:46:54Z",
+      "claimed_at_epoch": 1789487214.5459383,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
