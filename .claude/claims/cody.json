@@ -1189,6 +1189,16 @@
       "claimed_at_epoch": 1789428634.7625587,
       "status": "released",
       "released_at": "2026-09-14T23:51:14Z"
+    },
+    {
+      "id": "cody-1789468440",
+      "session": "cody",
+      "subject": "cody",
+      "task": "item 83 countersign suite sv-witness sairnvet",
+      "claimed_at": "2026-09-15T10:34:00Z",
+      "claimed_at_epoch": 1789468440.6861305,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
