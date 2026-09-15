@@ -1354,6 +1354,16 @@
       "claimed_at_epoch": 1789479699.802161,
       "status": "released",
       "released_at": "2026-09-15T14:29:00Z"
+    },
+    {
+      "id": "cc-1789483738",
+      "session": "cc",
+      "subject": "cc",
+      "task": "subprocess decode fail open sweep 23 tools",
+      "claimed_at": "2026-09-15T14:48:58Z",
+      "claimed_at_epoch": 1789483738.0774503,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
