@@ -1325,6 +1325,13 @@ REGISTRY = [
                           'tests/run_hover_separation_probe.py, including the '
                           'chain verifier shown to FAIL on a tampered entry '
                           'and pass again on the restored one',
+        'evidence': '2026-09-15 first run: 5,241 commits, 20 auditor commits, '
+                    '0 violations; self-log 105 entries, chain INTACT, 33 SHAs '
+                    'claimed, 16 resolve and all 16 in scope. 15 of 15 '
+                    '"Committed a, pushed b" pairs have the local sha absent '
+                    'and the pushed one present, which is what explains 15 of '
+                    'the 17 that do not resolve here rather than a plausible '
+                    'story doing it. EXIT 2 TODAY, not 0, on the remaining 2',
     },
 ]
 
