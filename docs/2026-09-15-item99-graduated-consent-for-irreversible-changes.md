@@ -123,6 +123,67 @@ document is the specification for it.
 
 ---
 
+## 5.1 OVERTAKEN THE SAME DAY — the gate exists, and it is better than the trailer
+
+**Appended 2026-09-15, hours after §5 was written. §5 is left exactly as it
+stood, because the reasoning is still the reasoning and editing it silently
+would hide that this document was overtaken.**
+
+Another session shipped **`tools/tier_a_review_gate.py`**, and it refused a push
+of mine within the hour. It closes property **(a)** — consent attached to the
+change — by a different and better route than the `Reviewed-By:` trailer §5
+proposed:
+
+| | §5's proposal | What shipped |
+|---|---|---|
+| Where consent lives | a git trailer on the commit | `docs/tier-a-reviews.json`, an OBLIGATION opened at push time |
+| When it is required | at review time | **at push time, and it does not require the review to have happened** |
+| Self-review | checkable | **refused mechanically — a record signed by its own author** |
+
+**The design decision §5 got wrong** is the one that solves the objection §5
+raised against itself. §5 declined to build a gate because *"a checker shipped
+today reports 32 of 32 non-compliant against a convention that did not exist"*.
+That gate sidesteps the problem entirely: it does not ask whether a change WAS
+reviewed, it asks that the **obligation be RECORDED** so the next session can
+see an unreviewed Tier A change instead of guessing. Nothing historical is
+retroactively non-compliant, and nothing is red on arrival. That is a better
+answer than waiting for a vocabulary decision, and it is worth saying plainly.
+
+Its header also reports the same discarded measurement this document does, found
+independently: a content-based rule *"reported 78 Tier A resources touched,
+because api/sd-data.js contains every resource name on the platform"*. §3 threw
+out its own 107 for the same reason. **Two sessions hit the same false positive
+and both threw it out** — which is the independence property
+`docs/2026-09-13-cross-domain-disciplines.md` asks for, arrived at by accident.
+
+**Property (b) is still open.** The gate records THAT an obligation exists, not
+what KIND of review discharges it — "I read it" and "I ran it" are still
+indistinguishable in the record. That is the half §2 shows this platform already
+does well in prose, and the half a vocabulary would make countable. It remains
+Michael's call.
+
+### 5.2 One false positive, reported rather than worked around
+
+The gate tripped on **`SAIRN-ACTIVE-WORK-fourth.md`** — a worklog — because the
+entry described `dnt_patients` and `dnt_rollup` by name. Its own exclusion list
+already excludes `docs/` and `sql/` on exactly the right reasoning: *"a document
+or a migration naming a resource is not code serving it"*. A root-level
+`SAIRN-ACTIVE-WORK-*.md` is a document by the same argument and is not excluded,
+because the list is keyed on `docs/` rather than on what the file is.
+
+**Not fixed here**: the gate is another session's, the exclusion list is
+deliberately kept tiny, and *"a growing exclusion list is how a gate stops
+covering anything"* is its own stated reason. This is one row to add, not a
+policy change — recorded for its author to judge rather than edited under a
+different claim.
+
+**The obligation it prompted was recorded anyway and is real**: the `dnt_rollup`
+work is genuinely Tier A code written by one session, and it should have an
+independent eye on it. A false positive that produced a true obligation is still
+a false positive, and both halves are said here.
+
+---
+
 ## 6. What this does NOT claim
 
 - **It does not claim any Tier A change went unreviewed.** It claims the review
