@@ -740,24 +740,26 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
 
 <!-- DRAW REQUESTS -->
 <div class="panel" id="panel-draws">
-  <div class="ph"><div><div class="ptitle">Draw Requests</div><div class="psub">Progress billing &mdash; requested vs received, retainage held</div></div>
+  <div class="ph"><div><div class="ptitle">Draw Requests</div><div class="psub">Progress billing &mdash; requested vs received, retainage held and released</div></div>
   <div class="pa"><button class="btn bo bs" onclick="csv('draws')">Export CSV</button><button class="btn bp bs" onclick="openDrawModal()">+ New Draw</button></div></div>
   <div class="krow">
     <div class="kpi"><div class="klbl">Outstanding Requested</div><div class="kval" id="dr-outstanding">$0</div><div class="kt" id="dr-outstanding-sub">Not yet received</div></div>
     <div class="kpi"><div class="klbl">Received to Date</div><div class="kval" id="dr-received">$0</div><div class="kt">All draws</div></div>
-    <!-- RELABELLED 2026-09-03, NOT re-engineered. This figure is a LIFETIME
-         ACCRUAL: it sums retainage_held across every draw ever entered and has
-         no concept of retainage being released, so on a job whose retainage has
-         been paid out it still counts the money as withheld. The label used to
-         read "Retainage Held / Across all draws", which reads as a current
-         balance and is the specific way this number misleads.
-         The real fix is repointing this panel at api/_lib/wip-accounting.js,
-         which gained held / released / outstanding the same day and is the
-         platform's only server-side progress-billing engine. That repoint is
-         its own task (see the 2026-09-03 competitive-gap audit, SAIRNbuild B2),
-         and a second client-side release model here would be deleted by it.
-         Until then this says what it actually is. -->
-    <div class="kpi"><div class="klbl">Retainage Withheld to Date</div><div class="kval" id="dr-retainage">$0</div><div class="kt">Lifetime total &mdash; releases are not tracked</div></div>
+    <!-- REPOINTED 2026-09-15 (competitive-gap audit B2). This used to be a
+         LIFETIME ACCRUAL under a label that reads as a current balance: it
+         summed retainage_held across every draw ever entered, had no concept of
+         a release, and so on a job whose retainage had actually been paid out
+         it still counted the money as withheld. The 2026-09-03 relabel said so
+         out loud rather than pretending otherwise; this is the fix it named.
+         The number shown is now OUTSTANDING -- held less released -- which is
+         the figure this label has always claimed to be, and the gross total is
+         kept visible underneath rather than discarded, because "how much have
+         we ever withheld" is a real question with a different answer.
+         A RELEASE IS NOT AUTHORED HERE. Every rule about whether one is legal
+         lives in api/_lib/wip-accounting.js via /api/sd-data's
+         release_retainage action -- this panel records what the server decided
+         and renders it. See releaseRetainage() for why that boundary matters. -->
+    <div class="kpi"><div class="klbl">Retainage Outstanding</div><div class="kval" id="dr-retainage">$0</div><div class="kt" id="dr-retainage-sub">Held less released</div></div>
     <div class="kpi"><div class="klbl">Past 30 Days</div><div class="kval" id="dr-overdue">0</div><div class="kt" id="dr-overdue-sub">Requested, unreceived</div></div>
     <div class="kpi"><div class="klbl">Missing Waiver</div><div class="kval" id="dr-nowaiver">0</div><div class="kt" id="dr-nowaiver-sub">Received with no waiver on file</div></div>
   </div>
@@ -770,7 +772,7 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
         <option value="received">Received</option>
       </select>
     </div>
-    <div class="tw"><table><thead><tr><th>Job</th><th>Draw #</th><th>Period End</th><th>% Complete</th><th>Requested</th><th>Retainage Held</th><th>Received</th><th>Status</th><th>Actions</th></tr></thead>
+    <div class="tw"><table><thead><tr><th>Job</th><th>Draw #</th><th>Period End</th><th>% Complete</th><th>Requested</th><th>Retainage Outstanding</th><th>Received</th><th>Status</th><th>Actions</th></tr></thead>
     <tbody id="drtbody"></tbody></table></div>
   </div></div>
 </div>
@@ -1546,6 +1548,34 @@ label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bot
   </div>
 </div>
 
+<!-- RETAINAGE RELEASE (2026-09-15, competitive-gap audit B2).
+     A SEPARATE MODAL FROM "Add / Edit Draw" ON PURPOSE. A release is a
+     contractual event that gets disputed, not a field somebody corrects in
+     passing, and it is the one thing on this panel that is written by the
+     server rather than by this browser. Putting it on the draw form would put
+     a server-refusable write next to nine local ones that never fail. -->
+<div class="modal" id="relmodal">
+  <div class="mbox">
+    <div class="mtitle">Release Retainage</div>
+    <div id="rel-context" style="font-size:13px;color:var(--muted);margin-bottom:10px;"></div>
+    <div class="fr">
+      <div class="fg"><label>Total Released to Date ($)</label><input id="rel-amount" type="number" placeholder="4500"></div>
+      <div class="fg"><label>Release Date</label><input id="rel-date" type="date"></div>
+    </div>
+    <!-- CUMULATIVE, NOT INCREMENTAL, and it is said on the form rather than
+         only in the code. The server stores a running total and refuses a
+         figure below the one already on file, so a user who reads this box as
+         "how much am I releasing now" would be refused on the second release
+         with a message about a number they never typed. -->
+    <div style="font-size:12px;color:var(--muted);margin-top:-4px;">This is the CUMULATIVE amount released on this draw, not just today's payment. It cannot be reduced later &mdash; record a reversing draw instead.</div>
+    <div id="rel-err" style="color:var(--danger,#c0392b);font-size:13px;margin-top:8px;"></div>
+    <div style="display:flex;gap:10px;margin-top:8px;justify-content:flex-end;">
+      <button class="btn bo" onclick="closeReleaseModal()">Cancel</button>
+      <button class="btn bp" id="rel-save" onclick="releaseRetainage()">Record Release</button>
+    </div>
+  </div>
+</div>
+
 <div class="modal" id="lwmodal">
   <div class="mbox">
     <div class="mtitle">Add / Edit Lien Waiver</div>
@@ -2189,7 +2219,19 @@ function bldFetchTimeoutSignal(){
     return AbortSignal.timeout(BLD_FETCH_TIMEOUT_MS); }catch(e){}
   return undefined;
 }
-function bldData(action,resource,payload,withSession){
+// ── RAW vs UNWRAPPED (2026-09-15) ────────────────────────────────────────
+// bldData() returns `d.data` and throws the rest of the envelope away, which
+// is right for the thirty backup collections and wrong for any branch whose
+// answer is not a row array. The retainage release answers with `summary` and
+// `release_log` and no `data` key at all, so through bldData() a SUCCESSFUL
+// release is indistinguishable from a failed one -- both arrive as a falsy
+// value. Same split sairnroofing.html already carries as rfDataRaw/rfData.
+//
+// Every existing caller keeps the exact shape it was written for: bldData()
+// below is the same function it was, one line thinner. The refusal codes, the
+// provisioned tracking, the timeout and the network catch all still live in
+// ONE place rather than being copied for the new call sites.
+function bldDataRaw(action,resource,payload,withSession){
   var lic=bldLicenseKey();
   if(!lic)return Promise.resolve(null);
   var h={'Content-Type':'application/json','Authorization':'Bearer '+lic};
@@ -2207,16 +2249,27 @@ function bldData(action,resource,payload,withSession){
         // keep failing -- a different thing from a network blip and the one
         // state the operator has to be told about.
         if(d&&d.error&&d.error.code==='NOT_PROVISIONED')_bldBackup.provisioned=false;
-        console.warn('bldData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');return null;
+        console.warn('bldData '+resource+' failed ('+r.status+'):',(d&&d.error&&(d.error.code||d.error.message))||'unknown');
+        // THE REFUSAL IS CARRIED, NOT JUST LOGGED. A caller that has to tell
+        // somebody WHY a contractual write was rejected cannot do it from a
+        // null. bldData() below still collapses this to null, so no existing
+        // caller sees a truthy value where it used to see a falsy one.
+        return {ok:false,status:r.status,error:(d&&d.error)||{message:'unknown'}};
       }
       // Read branches answer with provisioned:true|false. Writes and the two
       // bespoke branches (bld_bids, bld_tna) answer without the key at all,
       // which is why this tests the TYPE -- `d.provisioned` being absent must
       // not read as false.
       if(typeof d.provisioned==='boolean')_bldBackup.provisioned=d.provisioned;
-      return d.data;
+      return d;
     });
-  }).catch(function(e){console.warn('bldData network error:',e.message);return null;});
+  }).catch(function(e){console.warn('bldData network error:',e.message);return {ok:false,status:0,error:{code:'NETWORK',message:e.message}};});
+}
+function bldData(action,resource,payload,withSession){
+  return bldDataRaw(action,resource,payload,withSession).then(function(d){
+    if(!d||d.ok===false)return null;
+    return d.data;
+  });
 }
 
 
@@ -5253,11 +5306,22 @@ function drawScope(){
   var jf=(($('drjob')||{}).value||''),sf=(($('drstatus')||{}).value||'');
   return bldDraws().filter(function(d){return(!jf||d.job_id===jf)&&(!sf||d.status===sf);});
 }
+// ONE SPELLING OF THE COERCION, used everywhere a retainage figure is read.
+// Not a truthiness guard: `x||0` on a raw string like '4500' keeps the STRING
+// and then `s+x` concatenates instead of adding, which is how a retainage
+// total becomes "04500780" rather than a number. Number() first, and a value
+// that will not convert is 0 -- which is a real loss of information and is why
+// nothing here may WRITE a retainage figure this function has read. Writes go
+// to the server, which refuses what it cannot work out instead of guessing.
+function drawMoney(v){var n=Number(v);return isFinite(n)?n:0;}
 function rDrawsTbl(){
   var list=drawScope();
   var outstanding=list.filter(function(d){return d.status==='requested';}).reduce(function(s,d){return s+(d.amount||0);},0);
   var received=list.reduce(function(s,d){return s+(d.amount_received||0);},0);
-  var retainage=list.reduce(function(s,d){return s+(d.retainage_held||0);},0);
+  // HELD IS GROSS AND OUTSTANDING IS WHAT IS STILL WITHHELD.
+  var retHeld=list.reduce(function(s,d){return s+drawMoney(d.retainage_held);},0);
+  var retReleased=list.reduce(function(s,d){return s+drawMoney(d.retainage_released);},0);
+  var retainage=Math.round((retHeld-retReleased)*100)/100;
   var overdue=list.filter(function(d){return d.status==='requested'&&drawDaysOutstanding(d)>30;});
   // Compare by id, not object reference: ld() parses a fresh object graph on
   // every call, so bldDraws() called here and bldDraws() called inside
@@ -5269,6 +5333,10 @@ function rDrawsTbl(){
   $('dr-outstanding').textContent=fmt(outstanding);
   $('dr-received').textContent=fmt(received);
   $('dr-retainage').textContent=fmt(retainage);
+  // The gross figure is kept in view rather than deleted. It was the ONLY
+  // number here until today and somebody reconciling against a prior export
+  // has to be able to find it.
+  $('dr-retainage-sub').textContent=fmt(retHeld)+' held, '+fmt(retReleased)+' released';
   $('dr-overdue').textContent=overdue.length;
   $('dr-overdue-sub').className='kt'+(overdue.length?' d':'');
   $('dr-overdue-sub').textContent=overdue.length?'Past 30 days, needs follow-up':'None past 30 days';
@@ -5286,11 +5354,18 @@ function rDrawsTbl(){
         '<td>'+(d.period_end?fdate(d.period_end):'--')+'</td>'+
         '<td>'+(d.pct_complete||0)+'%</td>'+
         '<td><strong>'+fmt(d.amount)+'</strong></td>'+
-        // Same caveat as the KPI above: withheld, never reduced by a release.
-        '<td>'+fmt(d.retainage_held)+'</td>'+
+        // OUTSTANDING is the headline and the released figure sits under it,
+        // mirroring the same cell in sairnroofing.html's draws table -- one
+        // engine, one way of reading it.
+        '<td>'+fmt(drawMoney(d.retainage_held)-drawMoney(d.retainage_released))+
+          (drawMoney(d.retainage_released)>0
+            ? '<div style="font-size:11px;color:var(--muted);">'+fmt(drawMoney(d.retainage_released))+' released'+(d.retainage_released_at?' '+H(fdate(d.retainage_released_at)):'')+'</div>'
+            : '')+'</td>'+
         '<td>'+(d.status==='received'?fmt(d.amount_received):'--')+(missing?' <span class="badge br" style="margin-left:4px;">No Waiver</span>':'')+'</td>'+
         '<td><span class="badge '+s.c+'">'+s.l+'</span></td>'+
-        '<td><button class="btn bo bs" onclick="editDraw(\''+H(d.id)+'\')">Edit</button></td></tr>';
+        '<td><button class="btn bo bs" onclick="editDraw(\''+H(d.id)+'\')">Edit</button>'+
+          (drawMoney(d.retainage_held)>0?' <button class="btn bo bs" onclick="openReleaseModal(\''+H(d.id)+'\')">Release</button>':'')+
+          '</td></tr>';
     }).join('');
   }
 }
@@ -5351,6 +5426,90 @@ function saveDraw(){
   var saved=st('bld_draws',list);
   closeDrawModal();rDraws();
   toast(saved?('Saved - Draw #'+rec.draw_no):'Could not save -- storage may be full or unavailable, try again');
+}
+
+// ── RETAINAGE RELEASE (2026-09-15, competitive-gap audit B2) ──────────────
+// The audit's finding was one sentence: "Money can go in and never come out."
+// This panel held retainage on every draw and had no path to release it, so
+// the board reported a LIFETIME ACCRUAL as though it were a current balance.
+//
+// -- WHY THE SERVER AUTHORS THE RELEASE AND THIS FILE DOES NOT --
+// Every rule about whether a release is legal lives in
+// api/_lib/wip-accounting.js: it refuses one larger than was ever held, one on
+// a draw whose retainage percentage nobody recorded, and one that would go
+// backwards. That engine is the platform's ONLY server-side progress-billing
+// model and sairnroofing.html's draws panel already calls it. A second copy of
+// those rules in this file is the drift the codebase keeps recording -- and it
+// would be a copy that disagrees the first time either side is edited.
+//
+// -- WHY THE ANSWER IS THEN WRITTEN BACK INTO LOCAL STORAGE --
+// This is the part that is easy to get wrong and it is not tidiness. The
+// backup hook pushes WHOLE RECORDS: api/sd-data.js's generic bld_* write
+// stores `data: payload`, replacing the row's jsonb outright. So if the local
+// copy did not carry retainage_released / retainage_released_at /
+// retainage_release_log, the next ordinary edit to this draw -- changing a
+// note, marking it received -- would push a record without them and SILENTLY
+// DELETE the release and its audit trail on the server. Carrying the server's
+// answer locally is what stops a local edit from un-paying somebody.
+//
+// The figures written here are the SERVER'S, never this browser's arithmetic.
+var relDrawId=null;
+function openReleaseModal(id){
+  var d=bldDraws().find(function(x){return x.id===id;});if(!d)return;
+  relDrawId=id;
+  var held=drawMoney(d.retainage_held),rel=drawMoney(d.retainage_released);
+  $('rel-context').innerHTML='<strong>'+H(jobLabel(d.job_id))+'</strong> &mdash; Draw #'+H(String(d.draw_no||''))+
+    '<br>'+fmt(held)+' held, '+fmt(rel)+' released, <strong>'+fmt(held-rel)+' outstanding</strong>';
+  $('rel-amount').value=rel||'';
+  $('rel-date').value=d.retainage_released_at||bldLocalToday();
+  $('rel-err').textContent='';
+  $('rel-save').disabled=false;
+  $('relmodal').classList.add('on');
+}
+function closeReleaseModal(){$('relmodal').classList.remove('on');relDrawId=null;}
+function releaseRetainage(){
+  var d=bldDraws().find(function(x){return x.id===relDrawId;});
+  if(!d){$('rel-err').textContent='That draw is no longer on file.';return;}
+  // REFUSED, NOT COERCED. A garbled amount silently becoming 0 or NaN on a
+  // contractual write is the failure this whole change exists to stop.
+  var raw=$('rel-amount').value.trim();
+  var amt=Number(raw);
+  if(!raw||!isFinite(amt)||amt<=0){$('rel-err').textContent='Enter the total amount released, as a number greater than zero.';return;}
+  var on=$('rel-date').value;
+  if(!on){$('rel-err').textContent='A release date is required — a release with no date is not a record of anything.';return;}
+  // The client-side role check is an AFFORDANCE, not the gate. The gate is
+  // server-side in api/sd-data.js and refuses anything but owner/office.
+  if(!bldSession||!bldSession.token){
+    $('rel-err').textContent='Sign in first — a retainage release is recorded against the person who made it.';return;
+  }
+  $('rel-save').disabled=true;
+  $('rel-err').textContent='Recording…';
+  bldDataRaw('release_retainage','bld_draws',{
+    today:bldLocalToday(),draw_id:d.id,amount:amt,released_at:on
+  },true).then(function(r){
+    $('rel-save').disabled=false;
+    // A NULL HERE MEANS NO LICENCE KEY, which is a different fact from a
+    // refusal and is said as one rather than as a generic failure.
+    if(!r){$('rel-err').textContent='No licence key on this device, so nothing could be recorded.';return;}
+    if(r.ok===false){
+      // THE SERVER'S OWN SENTENCE IS SHOWN. Rewriting it here would be a second
+      // copy of the rules, in the place they are hardest to keep in step.
+      $('rel-err').textContent=(r.error&&r.error.message)||'The release was refused and no reason was given.';
+      return;
+    }
+    var s=r.summary||{};
+    var list=bldDraws();
+    var i=list.findIndex(function(x){return x.id===relDrawId;});
+    if(i===-1){$('rel-err').textContent='Recorded on the server, but that draw is no longer on this device.';return;}
+    list[i].retainage_released=s.retainage_released;
+    list[i].retainage_released_at=s.retainage_released_at;
+    list[i].retainage_release_log=r.release_log||[];
+    var saved=st('bld_draws',list);
+    closeReleaseModal();rDraws();
+    toast(saved
+      ?('Release recorded — '+fmt(s.retainage_outstanding)+' still withheld on this draw')
+      :'Recorded on the server, but this device could not save its copy — reload to pull it back.');
+  });
 }
 
 // ── LIEN WAIVERS ──────────────────────────────────────────────────────────
@@ -7919,8 +8078,12 @@ function csv(type){
   } else if(type==='draws'){
     var drlist=drawScope();
     if(!drlist.length){toast('No draw requests in scope to export');return;}
-    rows=[['Job','Draw #','Period End','% Complete','Requested','Retainage %','Retainage Held','Status','Requested Date','Received Date','Amount Received','Notes']];
-    drlist.forEach(function(d){rows.push([jobLabel(d.job_id),d.draw_no,d.period_end,d.pct_complete,d.amount,d.retainage_pct,d.retainage_held,(DRAWSTATUS[d.status]||{l:d.status}).l,d.requested_at,d.received_at,d.amount_received,d.notes]);});
+    // THE EXPORT CARRIES THE SAME THREE FIGURES THE SCREEN DOES. It used to
+    // carry gross held alone, so a spreadsheet built from it reported money as
+    // withheld on a draw whose retainage had been paid out -- the same defect
+    // as the KPI, one step further from anybody who could notice it.
+    rows=[['Job','Draw #','Period End','% Complete','Requested','Retainage %','Retainage Held','Retainage Released','Released On','Retainage Outstanding','Status','Requested Date','Received Date','Amount Received','Notes']];
+    drlist.forEach(function(d){rows.push([jobLabel(d.job_id),d.draw_no,d.period_end,d.pct_complete,d.amount,d.retainage_pct,d.retainage_held,drawMoney(d.retainage_released),d.retainage_released_at||'',drawMoney(d.retainage_held)-drawMoney(d.retainage_released),(DRAWSTATUS[d.status]||{l:d.status}).l,d.requested_at,d.received_at,d.amount_received,d.notes]);});
   } else if(type==='lienwaivers'){
     var lwlist=lwScope();
     if(!lwlist.length){toast('No lien waivers in scope to export');return;}

@@ -3694,6 +3694,205 @@ module.exports = async (req, res) => {
     // sync before this, so there is no generic-loop fallback registered for it anywhere else in
     // this file -- this branch is the only code path that ever handles this resource.
     const BLD_BID_MANAGEMENT_ROLES = { owner: true, office: true };
+
+    // ── SAIRNBUILD: RETAINAGE CAN NOW COME BACK OUT (2026-09-14) ─────────────
+    // Competitive-gap audit B2, and the audit's own sentence is the whole
+    // finding: "Money can go in and never come out." SAIRNbuild held retainage
+    // on every draw, showed a LIFETIME ACCRUAL, and had no release path at all
+    // -- so on a job whose retainage had actually been paid, the board still
+    // counted the money as withheld. The panel was relabelled honestly on
+    // 2026-09-03 ("Lifetime total -- releases are not tracked") and its comment
+    // names this exact fix: repoint at api/_lib/wip-accounting.js rather than
+    // grow a second client-side model that the repoint would then delete.
+    //
+    // THE ENGINE IS NOT REIMPLEMENTED HERE, AND THAT IS THE POINT.
+    // api/_lib/wip-accounting.js already owns held / released / outstanding,
+    // already refuses a release with no date and a release larger than what was
+    // held, and is already the only server-side progress-billing engine on the
+    // platform -- SAIRNroofing's rf_draws branch calls exactly these functions.
+    // A second copy of this arithmetic is the drift this file keeps recording.
+    //
+    // RELEASE IS AN EVENT, NOT AN EDIT, which is why it is its own action
+    // rather than a field on `write`. A release is a contractual moment that
+    // gets disputed, so who did it and when are part of the record: the branch
+    // refuses to write a release without both, and refuses to reduce one that
+    // already exists -- correcting a release downward is not a correction, it
+    // is un-paying somebody, and it must be a new draw or a reversing entry
+    // that says so.
+    //
+    // READ-MODIFY-WRITE ON `data`, because bld_draws is a jsonb-blob table --
+    // the retainage fields live inside `data`, so a blind upsert of the caller's
+    // copy would drop every field the caller did not send. Same rule the
+    // soft_delete branches in this file already follow.
+    if (resource === 'bld_draws' && (action === 'wip' || action === 'release_retainage')) {
+      const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
+      if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      // Progress billing is management-level information, the same call
+      // SAIRNroofing's rf_draws branch makes for the same reason.
+      if (!BLD_BID_MANAGEMENT_ROLES[session.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Progress billing is management-level information' } });
+        return;
+      }
+      const bwip = require('./_lib/wip-accounting');
+      // ── THE DATE CONCEPT IS IMPORTED, NOT RE-SPELLED (item 94) ────────────
+      // The first draft of this branch tested `/^\d{4}-\d{2}-\d{2}$/` inline,
+      // which would have been the FIFTEENTH byte-identical copy of the helper
+      // api/_lib/calendar-date.js was written to retire -- all fourteen of them
+      // validating the SHAPE of a date and not the DATE, so '2026-02-31' passes
+      // and `new Date` silently repairs it into 2026-03-03. On a retainage
+      // release date that is a contractual instant nobody can reproduce.
+      const isBldDate = require('./_lib/calendar-date').isCalendarDate;
+      // The engine REFUSES to assume a clock, deliberately, so the caller
+      // supplies the date. A server-side `new Date()` would be a second clock
+      // and the two would disagree across a timezone.
+      const bToday = (payload && payload.today) || null;
+      if (!isBldDate(bToday)) {
+        res.status(400).json({ error: { code: 'NO_TODAY', message: 'today (YYYY-MM-DD) is required and must be a real calendar date — this engine will not assume a clock' } });
+        return;
+      }
+      // FORWARDED, NOT DROPPED. summariseDraw() reads `aged_days` to decide
+      // whether an outstanding draw is overdue, and all three call sites below
+      // originally left it off. That does not throw: the engine takes its
+      // 30-day default and the answer looks entirely reasonable, which is the
+      // seam the push gate exists to catch and did.
+      //
+      // VALIDATED RATHER THAN PASSED THROUGH, the same shape and the same
+      // bounds the rf_draws WIP branch already uses. The engine coerces with
+      // num(), so an unusable value would quietly become 30 -- and "nobody
+      // asked for a window" and "somebody asked for a window we could not read"
+      // are different facts about a figure somebody chases money on.
+      // Named bldAged, not bAged: that name is already taken by the roofing
+      // branch further down this file for the same concept in another app.
+      let bldAged;
+      if (payload && payload.aged_days !== undefined && payload.aged_days !== null) {
+        const bldAd = payload.aged_days;
+        if (typeof bldAd !== 'number' || !isFinite(bldAd) || Math.floor(bldAd) !== bldAd || bldAd < 0 || bldAd > 365) {
+          res.status(400).json({ error: { code: 'BAD_AGED_DAYS', message: 'aged_days must be a whole number of days between 0 and 365, sent as a JSON number' } });
+          return;
+        }
+        bldAged = bldAd;
+      }
+      const bSelect = 'draw_id,data';
+
+      if (action === 'wip') {
+        const r = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) + '&select=' + bSelect), { headers });
+        if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, provisioned: false, data: [], totals: null }); return; }
+        const rows = await r.json();
+        if (!r.ok) return upstream(res, rows);
+        const draws = (rows || []).map((x) => Object.assign({ draw_id: x.draw_id }, x.data || {}));
+        const out = draws.map((d) => bwip.summariseDraw({ draw: d, today: bToday, aged_days: bldAged }));
+        // TOTALS ARE SUMMED FROM THE SUMMARIES, and a draw the engine could not
+        // work out is EXCLUDED and COUNTED rather than treated as zero. A
+        // missing retainage percentage means "nobody recorded what is held",
+        // which is not the same fact as "nothing is held", and folding it into
+        // a total would understate what a contractor is owed.
+        let held = 0, released = 0, outstanding = 0, unknown = 0;
+        out.forEach((s) => {
+          if (!s.ok || s.retainage_held === null || s.retainage_outstanding === null) { unknown++; return; }
+          held += s.retainage_held;
+          released += s.retainage_released;
+          outstanding += s.retainage_outstanding;
+        });
+        res.status(200).json({
+          ok: true, provisioned: true, today: bToday, data: out,
+          statuses: bwip.DRAW_STATUSES,
+          totals: {
+            retainage_held: Math.round(held * 100) / 100,
+            retainage_released: Math.round(released * 100) / 100,
+            retainage_outstanding: Math.round(outstanding * 100) / 100,
+            draws_counted: out.length - unknown,
+            draws_not_computable: unknown
+          }
+        });
+        return;
+      }
+
+      // action === 'release_retainage'
+      const drawId = payload && payload.draw_id ? String(payload.draw_id) : '';
+      if (!drawId) { res.status(400).json({ error: { message: 'draw_id is required' } }); return; }
+      const relAmt = Number(payload && payload.amount);
+      if (!isFinite(relAmt) || relAmt <= 0) {
+        res.status(400).json({ error: { code: 'BAD_AMOUNT', message: 'amount must be a positive number of dollars' } });
+        return;
+      }
+      // A REAL CALENDAR DATE, not a date-shaped string. An impossible one used
+      // to get through to the engine, which would then drop it and report "no
+      // release date recorded" -- a true statement about the wrong cause, which
+      // is the shape of refusal this file has fixed elsewhere.
+      const relOn = payload && payload.released_at ? String(payload.released_at) : '';
+      if (!isBldDate(relOn)) {
+        res.status(400).json({ error: { code: 'NO_RELEASE_DATE', message: 'released_at must be a real calendar date (YYYY-MM-DD) — a release with no date, or with a date that does not exist, is not a record of anything' } });
+        return;
+      }
+      const cur = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) +
+        '&draw_id=eq.' + enc(drawId) + '&select=' + bSelect + '&limit=1'), { headers });
+      if (cur.status === 404 || cur.status === 400) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Draw requests are not set up yet — run sql/sairnbuild_data_schema.sql in Supabase first.' } });
+        return;
+      }
+      const curRows = await cur.json();
+      if (!cur.ok) return upstream(res, curRows);
+      const curRow = (Array.isArray(curRows) && curRows[0]) || null;
+      if (!curRow) { res.status(404).json({ error: { code: 'NO_SUCH_DRAW', message: 'That draw is not on file.' } }); return; }
+      const curData = curRow.data || {};
+
+      // THE ENGINE DECIDES WHETHER THE RELEASE IS LEGAL, not this branch.
+      // Summarise the draw AS IT WOULD BE after the release and refuse if the
+      // engine reports a problem it would not have reported before -- so the
+      // rules stay in one place and a rule added there is enforced here for
+      // free.
+      const before = bwip.summariseDraw({ draw: Object.assign({ draw_id: curRow.draw_id }, curData), today: bToday, aged_days: bldAged });
+      if (!before.ok) { res.status(400).json({ error: { code: 'UNSUMMARISABLE', message: before.error.message } }); return; }
+      const already = Number(curData.retainage_released) || 0;
+      if (relAmt < already) {
+        res.status(409).json({ error: { code: 'RELEASE_WOULD_DECREASE', message: 'This draw already records ' + already + ' released. Reducing a release is un-paying somebody — record a reversing draw instead.' } });
+        return;
+      }
+      const after = bwip.summariseDraw({
+        draw: Object.assign({ draw_id: curRow.draw_id }, curData,
+          { retainage_released: relAmt, retainage_released_at: relOn }),
+        today: bToday, aged_days: bldAged
+      });
+      if (!after.ok) { res.status(400).json({ error: { code: 'UNSUMMARISABLE', message: after.error.message } }); return; }
+      const newProblems = after.problems.filter((p) => before.problems.indexOf(p) === -1);
+      if (newProblems.length) {
+        res.status(409).json({ error: { code: 'RELEASE_REFUSED', message: newProblems.join('; ') } });
+        return;
+      }
+
+      // The audit trail is APPEND-ONLY and lives beside the figure it explains.
+      // A release with no history is a number somebody has to take on trust,
+      // which on a disputed contractual event is the thing being asked for.
+      //
+      // IT IS NOT CAPPED HERE, and the reason is that the failure is already
+      // safe: `data` carries a 64KB CHECK constraint (sql/sairnbuild_data_
+      // schema.sql:99), so a log that ever grew that far makes the PATCH fail
+      // and the release is REFUSED with the upstream error. Fail-closed on a
+      // financial write is the right end state; a silent trim of the oldest
+      // entries would not be.
+      const trail = Array.isArray(curData.retainage_release_log) ? curData.retainage_release_log.slice() : [];
+      trail.push({
+        at: new Date().toISOString(),
+        released_at: relOn,
+        amount: relAmt,
+        previous: already,
+        by_employee_id: session.employee_id || null,
+        by_role: session.role || null
+      });
+      const nextData = Object.assign({}, curData, {
+        retainage_released: relAmt,
+        retainage_released_at: relOn,
+        retainage_release_log: trail
+      });
+      const w = await fetch(rest('bld_draws?license_hash=eq.' + enc(licHash) + '&draw_id=eq.' + enc(drawId)), {
+        method: 'PATCH', headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+        body: JSON.stringify({ data: nextData, updated_at: new Date().toISOString() })
+      });
+      const wrote = await w.json().catch(() => null);
+      if (!w.ok) return upstream(res, wrote);
+      res.status(200).json({ ok: true, provisioned: true, summary: after, release_log: trail });
+      return;
+    }
     if (resource === 'bld_bids' && action === 'read') {
       const session = verifySessionToken(tokenFromRequest(req), licHash, 'sairnbuild');
       if (!session) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }

@@ -122,6 +122,25 @@ module.exports = {
   //   bld_integrations -- connection configuration. Syncing config across devices needs its own conflict story, and this is not it.
   //   bld_ai_chat -- an unbounded conversation transcript, not a business record.
   ],
+  // ── EXTRA ACTIONS ───────────────────────────────────────────────────────
+  // 'wip' and 'release_retainage' (2026-09-14, competitive-gap audit B2).
+  // SAIRNbuild held retainage on every draw and had NO PATH TO RELEASE IT --
+  // the audit's own sentence is "money can go in and never come out" -- so the
+  // Draw Requests board showed a LIFETIME ACCRUAL under a label that reads as
+  // a current balance. Both actions are served by api/_lib/wip-accounting.js,
+  // the platform's only server-side progress-billing engine and the one
+  // SAIRNroofing's rf_draws already calls. A second copy of that arithmetic is
+  // the drift this platform keeps recording, so there is not one.
+  //
+  // 'wip' READS ONLY -- looking at a WIP position must never change one, the
+  // same rule rf_draws states. 'release_retainage' is the ONLY write, and it is
+  // a separate action rather than a field on `write` because a release is a
+  // CONTRACTUAL EVENT that gets disputed: it refuses without a release date,
+  // refuses to release more than was held, refuses to reduce an existing
+  // release, and appends to a who/when/how-much log beside the figure.
+  extraActions: {
+    bld_draws: ['wip', 'release_retainage'],
+  },
   // ── DECLARED NOT SYNCED (2026-09-10) ────────────────────────────────────
   // The same decisions already written in prose above, in a form the checker
   // can read. tools/local_only_collection_check.py had been CLEARING these
