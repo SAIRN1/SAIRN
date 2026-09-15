@@ -1735,6 +1735,16 @@
       "claimed_at_epoch": 1789470595.2534702,
       "status": "released",
       "released_at": "2026-09-15T11:23:59Z"
+    },
+    {
+      "id": "hank-1789471465",
+      "session": "hank",
+      "subject": "sairnbuild",
+      "task": "fault probe gate 4 the draws and bids suites must DENY",
+      "claimed_at": "2026-09-15T11:24:25Z",
+      "claimed_at_epoch": 1789471465.0468721,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
