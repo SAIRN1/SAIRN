@@ -1785,6 +1785,16 @@
       "claimed_at_epoch": 1789475366.257577,
       "status": "released",
       "released_at": "2026-09-15T12:55:50Z"
+    },
+    {
+      "id": "hank-1789477355",
+      "session": "hank",
+      "subject": "sairncash",
+      "task": "reverifysubscription forged localstorage entitlement suite",
+      "claimed_at": "2026-09-15T13:02:35Z",
+      "claimed_at_epoch": 1789477355.7780278,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
