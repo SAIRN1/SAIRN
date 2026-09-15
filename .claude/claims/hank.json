@@ -1755,6 +1755,16 @@
       "claimed_at_epoch": 1789472720.2445538,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789473719",
+      "session": "hank",
+      "subject": "sairnscape",
+      "task": "fault probe gate 4 the suites must DENY",
+      "claimed_at": "2026-09-15T12:01:59Z",
+      "claimed_at_epoch": 1789473719.294461,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
