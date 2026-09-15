@@ -1795,6 +1795,16 @@
       "claimed_at_epoch": 1789477355.7780278,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789477369",
+      "session": "hank",
+      "subject": "dnt-rollup-review",
+      "task": "independent review of the cross location rollup null not zero rule",
+      "claimed_at": "2026-09-15T13:02:49Z",
+      "claimed_at_epoch": 1789477369.9023583,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
