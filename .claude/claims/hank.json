@@ -1715,6 +1715,16 @@
       "claimed_at_epoch": 1789429496.9253578,
       "status": "released",
       "released_at": "2026-09-14T23:50:40Z"
+    },
+    {
+      "id": "hank-1789430411",
+      "session": "hank",
+      "subject": "sairnbuild",
+      "task": "retainage release repoint the draws panel at wip-accounting",
+      "claimed_at": "2026-09-15T00:00:11Z",
+      "claimed_at_epoch": 1789430411.3022468,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
