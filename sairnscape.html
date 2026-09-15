@@ -2931,12 +2931,29 @@ async function scpSendDesignToQuote(){
   var quotes=scpLd('scp_quotes',[]);
   var qrec={id:'Q-'+Date.now(),customer_id:rec.customer_id,lines:lines,status:'Draft',valid:scpDaysFromNow(30)};
   quotes.push(qrec);scpSt('scp_quotes',quotes);
-  scpData('write','scp_quotes',qrec);
+  // ── THE QUOTE'S OWN SYNC WAS NEVER READ (2026-09-15, item 6 triage) ────
+  // This was `scpData('write','scp_quotes',qrec);` -- un-awaited and unchecked
+  // -- while the DESIGN record's write on the next line was awaited and its
+  // result drove the toast. So whenever the design synced and the quote did
+  // not, the button flipped to "Sent to Quoting (Q-...)", rec.quote_id was set,
+  // and the QUOTE existed on this device only. The sentence reported the
+  // design's outcome about the quote.
+  //
+  // TWO WRITES, TWO FACTS, AND THE MESSAGE NOW NAMES WHICHEVER FAILED. A quote
+  // is what a customer is priced from; "sent" has to mean sent.
+  var quoteSynced=await scpData('write','scp_quotes',qrec);
   rec.quote_id=qrec.id;
   var syncResult=await scpSaveDesignRecord(rec);
   scpRQuotes();scpUpdateApprovalUI(rec);
   var sendBtn=scp$('scp-dw-send-quote-btn');sendBtn.disabled=true;sendBtn.textContent='Sent to Quoting ('+qrec.id+')';
-  scpToast(syncResult?('Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in'):('Sent to Quoting as draft '+qrec.id+' locally -- the design record itself did not sync to the server, try again with a connection'),syncResult?4000:7000);
+  // NAMED PER WRITE rather than one sentence for both. "Both reached the
+  // server", "the quote did not", and "the design did not" are three different
+  // things to do next, and the previous message could only say the third.
+  var scpSentMsg;
+  if(quoteSynced&&syncResult){scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- pricing still needs to be filled in';}
+  else if(!quoteSynced){scpSentMsg='Draft '+qrec.id+' is on THIS DEVICE ONLY -- the quote did not reach the server, so nobody else can price it. Try again with a connection.';}
+  else{scpSentMsg='Sent to Quoting as draft '+qrec.id+' -- the quote reached the server but the DESIGN record did not, so the two disagree until you retry with a connection.';}
+  scpToast(scpSentMsg,(quoteSynced&&syncResult)?4000:7000);
 }
 
 function scpRSched(){

@@ -33,6 +33,12 @@ module.exports = {
     'law_clients',
     'law_matters',
     'law_trusttx',
+  // IOLTA RECONCILIATION (2026-09-15) -- items #46/#47, the hover auditor's
+  // finding. READ-ONLY AND DERIVED: it owns no table and stores nothing, and it
+  // is listed here only because this map gates "is this a known resource
+  // string". An unregistered name is refused by the envelope before any handler
+  // runs.
+    'law_trust_reconcile',
   // Deadlines (2026-08-21) -- FIXING A REAL PRE-EXISTING BREAK, not adding a
   // feature. sairnlaw.html has been calling sdnData('write','law_deadlines')
   // since before this session (lines ~2188 and ~2195) against a resource that

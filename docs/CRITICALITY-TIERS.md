@@ -38,7 +38,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `sairndesign` | 18 | **2** | 16 | 0 | **RE-TIERED** — `sdn_discounts`, `sdn_invoices` |
 | `sairnfreedom` | 35 | **3** | 32 | 0 | **RE-TIERED** — `sf_accounts`, `sf_ledger`, `sf_vendor_prices` |
 | `sairngrounds` | 30 | **4** | 26 | 0 | **RE-TIERED** — `grd_invoices`, `msb_food_cost_log`, `msb_licenses`, `quotes` |
-| `sairnlaw` | 19 | **5** | 14 | 0 | **RE-TIERED** — `law_barcerts`, `law_deadlines`, `law_invoices`, `law_opaccounts`, `law_trusttx` |
+| `sairnlaw` | 20 | **6** | 14 | 0 | **RE-TIERED** — `law_barcerts`, `law_deadlines`, `law_invoices`, `law_opaccounts`, `law_trust_reconcile`, `law_trusttx` |
 | `sairnlegacy` | 36 | **3** | 33 | 0 | **RE-TIERED** — `leg_certs`, `leg_invoices`, `leg_preneed` |
 | `sairnmechanical` | 6 | **2** | 4 | 0 | **RE-TIERED** — `mech_credentials`, `mech_quotes` |
 | `sairnroofing` | 27 | **7** | 19 | 1 | **RE-TIERED** — `rf_cert_rules`, `rf_certifications`, `rf_claim_agreements`, `rf_claim_photos`, `rf_claims`, `rf_contingency_rules`, `rf_invoices` |
@@ -348,6 +348,7 @@ A tier asserted with no evidence is a label. **Every Tier A row cites something 
 | `law_portalmessages` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `law_timeentries` | **B** | Operational data lost or wrong | Employee-auth-gated operational data: neither money nor a regulated record. Classified by the stated B rule rather than individually read -- see the gaps note on why A is hand-verified and B is not |
 | `law_trusttx` | **A** | A client trust account transaction wrong | REGULATED AND MONEY, and the least forgiving pair on the platform: a lawyer`s trust account is held for a client |
+| `law_trust_reconcile` | **A** | A trust reconciliation says the books balance when they do not, or says they do not when they do | REGULATED AND MONEY, and DERIVED -- it owns no table. Tier A because a bar association audits this figure and because BOTH directions are expensive: a false AGREES lets a shortfall sit, and a false DISAGREES sends a firm looking for money that is not missing. The two failure modes it is built against are an unreadable `law_trusttx` reconciling as a $0 ledger (refused with 503, `api/_lib/law-trust-reconcile-endpoint.test.js`) and an absent leg reported as agreement (`status` is PARTIAL, never a single `matches` boolean) |
 
 ### `sairnlegacy` — 36 resources
 

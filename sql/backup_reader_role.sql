@@ -41,7 +41,15 @@
 -- NOTHING ELSE, and service_role can write to every table on the platform. A
 -- credential that leaks from CI should cost a disclosure, not a database.
 --
--- WRITTEN 2026-09-14. NOT RUN.
+-- WRITTEN 2026-09-14. THE ROLE EXISTS -- Michael confirmed `sairn_backup_reader`
+-- is present in Supabase on 2026-09-15, so step 1 will take its else-branch and
+-- ROTATE the password rather than create the role.
+--
+-- WHAT IS STILL UNANSWERED, AND ONLY THIS DATABASE CAN ANSWER IT: which role
+-- actually creates tables here. Verify 2c is the query; 2d says whether every
+-- such role is covered. Until those two have been run and read, the default-ACL
+-- half of this file is WRITTEN AND UNVERIFIED -- which is a different state from
+-- both "working" and "broken", and is the state it is in.
 -- ---------------------------------------------------------------------------
 
 -- 1. The role. Replace the password below before running; it goes straight into
@@ -151,11 +159,41 @@ grant select on all sequences in schema public to sairn_backup_reader;
 -- silently could not be applied would leave exactly the gap it was added to
 -- close, so each one is attempted and a failure RAISES with what to do about
 -- it. "Could not set it" is a third state and it is not "set".
+-- ── THE LIST OF GRANTORS IS DERIVED, NOT WRITTEN DOWN (2026-09-15) ────────
+-- The previous version looped over a HARDCODED array['postgres',
+-- 'supabase_admin']. Verify 2b proved those two took -- and nothing anywhere
+-- proved the LIST WAS COMPLETE. A table created by any THIRD role would carry
+-- no grant, `pg_dump` would skip it without an error, and 2b would show two
+-- healthy rows while the backup quietly lost a table.
+--
+-- That is a hand-written list claiming to match a population nothing compares
+-- it to, which is the defect shape this platform has now been bitten by four
+-- times (SC_TIER_A_WRITE_GATED six-vs-seven, the 28-name delete grant, the
+-- transport-name table, and this).
+--
+-- So the loop runs over the roles that ACTUALLY OWN TABLES in `public` today,
+-- read from pg_tables, UNIONED with the two known creators. The union matters
+-- in both directions: a role that owns nothing yet but will create tables
+-- later is still covered, and a creator nobody predicted is covered the moment
+-- it owns one table.
+--
+-- ON SUPABASE THIS IS THE QUESTION THAT DECIDES IT. The dashboard table editor
+-- and the migration runner are widely reported to create objects as
+-- `supabase_admin` rather than `postgres`. VERIFY 2c BELOW ANSWERS IT FOR THIS
+-- DEPLOYMENT rather than repeating the report -- run it and read the owners.
 do $$
 declare
   r text;
 begin
-  foreach r in array array['postgres', 'supabase_admin'] loop
+  for r in
+    select rolname from (
+      select tableowner as rolname from pg_tables where schemaname = 'public'
+      union
+      select unnest(array['postgres', 'supabase_admin'])
+    ) x
+    where rolname is not null
+    order by 1
+  loop
     if not exists (select 1 from pg_roles where rolname = r) then
       raise notice 'default privileges NOT set for %: no such role on this '
                    'deployment. If objects are never created by it, that is '
@@ -242,6 +280,53 @@ select pg_get_userbyid(d.defaclrole) as objects_created_by,
  where n.nspname = 'public'
    and array_to_string(d.defaclacl, ',') like '%sairn_backup_reader%'
  order by 1, 2;
+
+-- 2c. WHO ACTUALLY CREATES TABLES ON THIS DEPLOYMENT -- the open question, and
+--     the only thing that can answer it is this database.
+--     Added 2026-09-15. Michael's question: does Supabase's dashboard/migration
+--     runner create tables as `supabase_admin`? If it does, then every table
+--     added through the dashboard from today on needs a default-ACL entry FOR
+--     THAT ROLE, and a grant set only FOR ROLE postgres would silently miss all
+--     of them.
+--
+--     READ THE RESULT LIKE THIS:
+--       * only `postgres` appears      -> the dashboard is creating as postgres
+--                                         on this project, and the supabase_admin
+--                                         clause is harmless insurance
+--       * `supabase_admin` appears     -> confirmed, and the FOR ROLE clause is
+--                                         load-bearing rather than defensive
+--       * a THIRD role appears         -> the old hardcoded pair was incomplete.
+--                                         The derived loop above now covers it;
+--                                         2d proves it did
+select tableowner                       as objects_created_by,
+       count(*)                         as tables_owned,
+       min(tablename)                   as example_table
+  from pg_tables
+ where schemaname = 'public'
+ group by tableowner
+ order by tables_owned desc;
+
+-- 2d. EVERY OWNER IS COVERED BY A DEFAULT ACL. Expect: uncovered = 0
+--     This is the completeness half that 2b does not provide. 2b asks "did the
+--     grants I made take"; this asks "did I make one for every role that
+--     creates tables here". A hand-written list passes 2b while failing this,
+--     which is exactly how the gap would have survived.
+with owners as (
+  select distinct tableowner as rolname
+    from pg_tables where schemaname = 'public'
+), covered as (
+  select distinct pg_get_userbyid(d.defaclrole) as rolname
+    from pg_default_acl d
+    join pg_namespace n on n.oid = d.defaclnamespace
+   where n.nspname = 'public'
+     and array_to_string(d.defaclacl, ',') like '%sairn_backup_reader%'
+)
+select (select count(*) from owners)                          as distinct_owners,
+       (select count(*) from owners
+         where rolname not in (select rolname from covered))  as uncovered,
+       (select string_agg(rolname, ', ' order by rolname)
+          from owners
+         where rolname not in (select rolname from covered))  as uncovered_names;
 
 -- 3. It is a member of nothing. Expect: 0
 select count(*)

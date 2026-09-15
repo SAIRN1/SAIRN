@@ -37,6 +37,7 @@ const mechAssets = require('./_lib/mech-assets');
 const rfSupplier = require('./_lib/roofing-supplier-match');
 const dntLocation = require('./_lib/dnt-location');
 const dntRollup = require('./_lib/dnt-rollup');
+const lawTrustReconcile = require('./_lib/law-trust-reconcile');
 const { guardianProblem: dntGuardianProblem } = require('./_lib/dental-guardian');
 const {
   paymentProblem: dntPaymentProblem,
@@ -11631,6 +11632,71 @@ module.exports = async (req, res) => {
       res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
       return;
     }
+    // ── SAIRNLAW: IOLTA RECONCILIATION (2026-09-15, items #46/#47) ──────────
+    // The hover auditor's finding: law_trusttx gates disbursements correctly
+    // PER CLIENT, and nothing sums every client's allocation against the
+    // ledger-wide total. A per-client gate cannot see money that moved BETWEEN
+    // two clients with the total unchanged, which is the error the IOLTA third
+    // leg exists for.
+    //
+    // WHAT WAS ALREADY THERE, AND WHY IT IS NOT THIS. sairnlaw.html's
+    // reconcileTrust() compares three figures, CLIENT-SIDE, over one device's
+    // localStorage -- and one of its legs cannot fail: it partitions the same
+    // array it sums whole, so `ledgerVsClient` is equal by arithmetic. Its
+    // `matches` is also TRUE when no bank statement exists, which is a green
+    // verdict from a comparison never made. See api/_lib/law-trust-reconcile.js
+    // for both in full.
+    //
+    // MANAGEMENT ONLY, AND THE REASON IS IOLTA'S OWN RULE rather than the data
+    // being sensitive: "the person who can move money out of an account must
+    // not be the same person who reconciles that account." This endpoint does
+    // not enforce that separation -- it cannot know who disbursed -- but it must
+    // not be the thing that makes reconciliation available to everybody who can
+    // disburse. `owner` and `admin` only; a paralegal who records trust
+    // transactions is deliberately not on this list.
+    //
+    // NO ROW-LEVEL DATA LEAVES THE BRANCH. Per-client balances and counts, and
+    // no transaction rows: this is a reconciliation, not a trust-ledger export.
+    if (resource === 'law_trust_reconcile' && action === 'read') {
+      const recSess = verifySessionToken(tokenFromRequest(req), licHash, 'sairnlaw');
+      if (!recSess) { res.status(401).json({ error: { code: 'NO_SESSION', message: 'Sign in first' } }); return; }
+      const LAW_RECONCILE_ROLES = { owner: true, admin: true };
+      if (!LAW_RECONCILE_ROLES[recSess.role]) {
+        res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Trust reconciliation is available to firm management only' } });
+        return;
+      }
+      const readLaw = async (table) => {
+        const r = await fetch(rest(table + '?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
+        if (r.status === 404 || r.status === 400) return null;
+        const rows = await r.json();
+        if (!r.ok || !Array.isArray(rows)) return null;
+        return rows.map((x) => x.data || {});
+      };
+      const [txRows, stRows] = await Promise.all([
+        readLaw('law_trusttx'), readLaw('law_bankstatements')
+      ]);
+      // A TRANSACTION TABLE THAT COULD NOT BE READ IS NOT AN EMPTY LEDGER.
+      // Reconciling an unreadable table would report a balance of zero against
+      // a real bank statement -- a catastrophic-looking discrepancy whose cause
+      // is the read, on the one figure a bar association audits.
+      if (txRows === null) {
+        res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: 'Trust transactions could not be read — run sql/sairnlaw_data_schema.sql in Supabase first. Nothing was reconciled.' } });
+        return;
+      }
+      // An unreadable STATEMENTS table is survivable and is NOT silently an
+      // empty list: reconcile() reports the bank leg as NOT COMPARED, which is
+      // the honest answer and is not agreement.
+      const out = lawTrustReconcile.reconcile({
+        rows: txRows,
+        statements: stRows || [],
+        clientTotalCents: (payload && typeof payload.client_total_cents === 'number')
+          ? payload.client_total_cents : undefined
+      });
+      res.status(200).json({ ok: true, data: out, provisioned: true,
+        statements_readable: stRows !== null });
+      return;
+    }
+
     if (resource === 'law_trusttx' && action === 'read') {
       const r = await fetch(rest('law_trusttx?license_hash=eq.' + enc(licHash) + '&select=data'), { headers });
       if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
