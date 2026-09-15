@@ -199,9 +199,21 @@ jobs:
           psql -h localhost -U postgres -d restored -t -c \
             "select count(*) from information_schema.tables where table_schema='public';"
 
+      # NODE 20 -> 24 (2026-09-15). The clones develop and verify on v24.16.0
+      # and this job pinned 20, so the ONLY place `tools/restore_coherence_check.js`
+      # was ever executed ran it on a major nobody uses -- and Node 20 is out of
+      # active LTS, so it is a line that stops getting fixes rather than one that
+      # merely lags. A restore checker is the last thing that should first
+      # disagree with its developers at 3am during an actual restore.
+      #
+      # 24 is chosen because it is what the repo is worked on, not because it is
+      # newest: this pin exists to make CI and the clones ONE fact instead of two.
+      # If the clones move, move this with them. Verified before changing:
+      # `node --check tools/restore_coherence_check.js` parses on v24.16.0 and
+      # the script reaches its own COULD-NOT-RUN refusal rather than throwing.
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
 
       - name: Stand PostgREST in front of the restored copy
         run: |

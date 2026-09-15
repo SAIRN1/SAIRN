@@ -40,6 +40,46 @@ REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 RULES = os.path.join(REPO, 'tools', 'semgrep')
 
 
+# ── THE OUTPUT STREAM IS MADE SAFE BEFORE ANYTHING IS PRINTED ──────────────
+# Found 2026-09-15 while running `--test` from a hook-shaped invocation.
+#
+# THE BUG: semgrep's own output contains U+2713 (a tick). On Windows, Python
+# encodes stdout with the LOCALE encoding -- cp1252 -- whenever stdout is not a
+# terminal, which is to say whenever a hook, a CI step or another script
+# CAPTURES it. `print(out.strip())` then raised
+# UnicodeEncodeError: 'charmap' codec can't encode character '✓'.
+#
+# AND THE FAILURE MODE IS THE WORST SHAPE THIS REPO RECORDS. Semgrep had
+# already run and already passed. What the caller received was not a verdict
+# and not a clean failure -- it was a TRACEBACK with a non-zero exit, from a
+# check that had actually succeeded. A gate reading that exit code sees a
+# failed scan. The tool works perfectly when a human runs it in a terminal and
+# breaks in precisely the configuration that matters.
+#
+# UTF-8 RATHER THAN errors='replace' ON THE LOCALE ENCODING, deliberately:
+# replacing silently turns a tick into `?` and a box-drawing rule into noise,
+# which is information loss in a tool whose whole reason to exist is that it
+# refuses to imply coverage it does not have. errors='replace' stays as the
+# floor for anything UTF-8 still cannot carry.
+#
+# NOT SWEPT PLATFORM-WIDE, and the number is stated rather than left implied:
+# 94 of 138 files in tools/ contain non-ASCII output characters and carry no
+# such guard, so this is one instance of a class. Fixing the other 93 is a
+# separate decision, not a rider on this one.
+def _make_stdout_safe():
+    for stream in (sys.stdout, sys.stderr):
+        try:
+            stream.reconfigure(encoding='utf-8', errors='replace')
+        except Exception:
+            # Python without io.TextIOWrapper.reconfigure, or a stream that is
+            # not one. Nothing to do; the print below is still the old hazard,
+            # which is why this is a try and not a hard requirement.
+            pass
+
+
+_make_stdout_safe()
+
+
 def scripts_dirs():
     out = []
     for scheme in (('nt_user', 'nt') if os.name == 'nt' else ('posix_user', 'posix_prefix')):

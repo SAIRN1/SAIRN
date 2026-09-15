@@ -49,7 +49,13 @@ module.exports = async (req, res) => {
     const email = (req.body && req.body.email) || undefined;
 
     const Stripe = require('stripe');
-    const stripe = new Stripe(stripeKey);
+    // apiVersion PINNED (2026-09-15). Without it this inherits whatever the
+    // installed SDK happens to default to, so bumping `"stripe": "^17.4.0"`
+    // would move the WIRE FORMAT on a live payments path as a side effect of a
+    // dependency change -- two changes, one of them not in the diff.
+    // api/_lib/stripe-api-version.js carries the value and the upgrade order.
+    const { STRIPE_API_VERSION } = require('../_lib/stripe-api-version');
+    const stripe = new Stripe(stripeKey, { apiVersion: STRIPE_API_VERSION });
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',

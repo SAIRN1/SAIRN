@@ -27,8 +27,8 @@ makes this the one inventory whose staleness is hardest to notice.
 | **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 38 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 32 | nothing runs these at all |
+| **SUITE-ONLY** | 20 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **UNWIRED** | 31 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
@@ -242,7 +242,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (19)
+## SUITE-ONLY (20)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -264,6 +264,7 @@ fixtures. Nothing points them at the real codebase.
 | `rate_limit_race_model.js` | CHECKER | the AI rate limiter's count-then-insert breaking its own cap under concurrency -- enumerated over EVERY interleaving, with the violating schedule printed, against docs/spec/RateLimitConsume.tla | `run_rate_limit_race_probe.js` |
 | `role_gate_invariants.js` | CHECKER | a cross-app role gate that has stopped satisfying docs/spec/RoleGates.tla -- a provisioner who is not management, a management role that cannot sign in, or an empty allowed-set that is a door with no key. Reads three sources and NEVER fuses their counts: what a module exports, what it declares internally (read by executing it, because `sb-auth.js` carries the text MANAGEMENT_ROLES inside a comment saying the app has no such concept and any text scraper is wrong there), and AUTHENTICATED_ROLES derived from ROLES_BY_APP -- that last licensed by invariant I6 and WITHDRAWN PLATFORM-WIDE if I6 fails, because a derivation whose control lapsed must stop answering rather than keep answering. Distinguishes a constant that is absent from one this tool could not read, and separates the remainder that is a fact about an app from the remainder anyone can close | `run_role_gate_invariants_probe.js` |
 | `run_all_tests.py` | LIBRARY | every .js and .py under tests/, plus api/**/*.test.js | `run_all_tests_floor_probe.py`, `run_all_tests_hook_gate_probe.py` |
+| `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | `run_semgrep_encoding_probe.py` |
 | `sairn_claim.py` | LIBRARY | claim / release / check / list on the work-claim files | `run_all_tests_hook_gate_probe.py`, `run_claim_retype_mutation_control.py` |
 | `sairn_http.py` | LIBRARY | browser-shaped HTTP, raising Challenged rather than letting a 403 look like an answer | `sairn_http_challenge.py`, `sairn_http_response_shape.py` |
 | `testability_criteria.py` | CHECKER | not a checker itself: the LOCKED pass/fail criteria and the hand-decided fixtures that testability_gate.py must satisfy before it may judge anything | `run_testability_gate_probe.py` |
@@ -271,7 +272,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (32)
+## UNWIRED (31)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -304,7 +305,6 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | `load_deadline_seed.py` | LIVE | loads a deadline seed into a live licence | &mdash; |
 | `outline.py` | LIBRARY | a function/section outline of a large file | &mdash; |
 | `posthook.cjs` | LIBRARY | the Node half of a PostToolUse hook | &mdash; |
-| `run_semgrep.py` | LIBRARY | the .semgrep rules, when semgrep is installed | &mdash; |
 | `sairn_build_load_gates.py` | GENERATOR | SUPERSEDED -- its header says so; a generated gate goes stale by design | &mdash; |
 | `sairn_dom_snapshot.js` | LIBRARY | a rendered-DOM snapshot, run in the browser | &mdash; |
 | `sairn_source_fetch.py` | LIBRARY | fetching a primary source with its retrieval date recorded | &mdash; |
@@ -344,7 +344,7 @@ number, and only one of them is a document.
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                45   report_only_checks.REGISTRY
-  tools invoked by tests/             96   tests/**/*.py, *.js
+  tools invoked by tests/             97   tests/**/*.py, *.js
   recorded NOT-promoted decisions     38   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
