@@ -55,7 +55,16 @@ costs one register entry, an under-inclusive one is a Tier A change that slips
 through looking clean. What changed is that the answer is now specific enough to
 act on.
 
-TWO EXCLUSIONS, both narrow and both named rather than silent:
+THE EXCLUSIONS, each narrow, each a predicate about what a file IS rather than a
+filename somebody has to remember to add, and each named here rather than left
+silent. Deliberately not counted: this list has grown twice and a number in
+prose would be wrong the third time.
+
+  * a REPORT-ONLY REVIEW ARTEFACT -- see is_report_only_artefact(), which also
+    records why this is NOT "exclude tests/". A file that cannot fail cannot be
+    a guard, so changing it cannot weaken one; and a review of a Tier A module
+    necessarily names that module, so refusing it blocks the artefact that
+    discharges the obligation being demanded.
   * docs/ and sql/ -- a document or a migration naming a resource is not code
     serving it, and CRITICALITY-TIERS.md names every Tier A resource by
     definition, so including docs/ would make every push a Tier A push and the
@@ -180,6 +189,109 @@ def git(*args):
     return r.stdout
 
 
+def _strip_code_noise(text, lang):
+    """Comments and string literals blanked, so a predicate about CODE is not
+    answered by PROSE. Written char-by-char rather than with regexes because the
+    regex version of exactly this has already shipped a defect on this platform
+    -- a literal backspace inside a heredoc'd `\\b` -- and because a string
+    containing a comment marker breaks the regex version silently."""
+    out = []
+    i, n = 0, len(text)
+    in_s = None          # the quote character currently open, or None
+    while i < n:
+        c = text[i]
+        nxt = text[i + 1] if i + 1 < n else ''
+        if in_s:
+            if c == '\\':
+                i += 2
+                continue
+            if c == in_s:
+                in_s = None
+            out.append(' ')
+            i += 1
+            continue
+        if lang == 'js' and c == '/' and nxt == '*':
+            j = text.find('*/', i + 2)
+            i = n if j == -1 else j + 2
+            continue
+        if lang == 'js' and c == '/' and nxt == '/':
+            j = text.find('\n', i)
+            i = n if j == -1 else j
+            continue
+        if lang == 'py' and c == '#':
+            j = text.find('\n', i)
+            i = n if j == -1 else j
+            continue
+        if c in ('"', "'", '`'):
+            in_s = c
+            out.append(' ')
+            i += 1
+            continue
+        out.append(c)
+        i += 1
+    return ''.join(out)
+
+
+def is_report_only_artefact(path, content):
+    """Is this a REVIEW ARTEFACT rather than code that serves a resource?
+
+    ── WHY THIS PREDICATE EXISTS (2026-09-15) ──────────────────────────────
+    Second recorded false positive of the same shape. The first was a WORKLOG
+    (`SAIRN-ACTIVE-WORK-fourth.md`), fixed by excluding markdown. The second was
+    `tests/dnt_rollup_review_probe.js` -- an independent review of somebody
+    else's Tier A module, report-only by design, which the gate refused because
+    a review of dnt_rollup necessarily NAMES dnt_rollup.
+
+    A review artefact that serves nothing cannot be reviewed for correctness;
+    there is no behaviour in it to review. Refusing it does not protect
+    anything, and the failure is self-perpetuating: the gate blocks the very
+    artefact that discharges the obligation it is asking for.
+
+    ── WHY THIS IS NOT "EXCLUDE tests/" ────────────────────────────────────
+    That would be the dangerous direction and it is worth being explicit. A
+    test is often the ONLY thing pinning a Tier A behaviour, and weakening one
+    is exactly the blind-spot case the review rule exists for. Excluding
+    `tests/` wholesale would let a session delete assertions from a Tier A suite
+    and push it as clean.
+
+    ── THE PREDICATE, AND WHY IT IS THIS ONE ───────────────────────────────
+    A file that CANNOT FAIL cannot be a guard, so changing it cannot weaken
+    one. Three conditions, all required:
+
+      1. it lives under `tests/` -- not beside a handler in `api/`;
+      2. with comments and strings stripped, it makes NO assertion;
+      3. with comments and strings stripped, every exit it takes is the literal
+         0 -- so no input can make it report a failure.
+
+    Condition 3 is the load-bearing one and it is deliberately strict.
+    `tests/failsafe/countersign_coverage_probe.py` is report-only in intent but
+    ends `sys.exit(main())`, whose value is not visibly constant -- so it is NOT
+    excluded by this and would still raise an obligation. That is the safe
+    direction, it is a known consequence rather than an oversight, and the fix
+    if it ever matters is for that file to exit a literal.
+
+    THE EXCLUSION SHRINKS THE RULE RATHER THAN GROWING A LIST, which this
+    file's own header warns about: one predicate about what a file IS, not a
+    filename somebody has to remember to add.
+    """
+    p = path.replace('\\', '/')
+    if not p.startswith('tests/'):
+        return False
+    lang = 'py' if p.endswith('.py') else ('js' if p.endswith('.js') else None)
+    if lang is None:
+        return False
+    code = _strip_code_noise(content, lang)
+    # 2. no assertion of any kind.
+    if re.search(r'(?<![A-Za-z0-9_])assert(?![A-Za-z0-9_])', code):
+        return False
+    # 3. every exit is a literal zero, and there is at least one -- a file with
+    #    no exit at all is not evidence of anything and is left to the gate.
+    exits = re.findall(r'(?:process|sys)\s*\.\s*exit\s*\(([^)]*)\)', code)
+    if not exits:
+        return False
+    return all(a.strip() == '0' for a in exits)
+
+
 def touched_tier_a(diff_text, resources):
     """resource -> [files whose CHANGED HUNKS name it].
 
@@ -219,10 +331,32 @@ def touched_tier_a(diff_text, resources):
             # otherwise be four root-level filenames plus the next one somebody
             # adds. It cannot under-cover: no `.md` file has ever served a
             # resource at runtime on this platform.
+            # ── AND A REPORT-ONLY REVIEW ARTEFACT, ADDED 2026-09-15 ────────
+            # Second false positive of this shape, after the worklog above.
+            # `tests/dnt_rollup_review_probe.js` is an independent review of
+            # somebody else's Tier A module and was refused because a review of
+            # dnt_rollup necessarily names dnt_rollup. See
+            # is_report_only_artefact() for the predicate and, more importantly,
+            # for why this is NOT "exclude tests/", which would let a session
+            # delete assertions from a Tier A suite and push it as clean.
+            #
+            # READ FROM THE WORKING TREE, not from the diff: the question is
+            # what the file IS after this change, and the diff carries only the
+            # hunks. A file deleted by this change is not on disk and is not
+            # excluded, which is correct -- deleting a guard is a change worth
+            # reviewing.
             skip = (cur in SELF
                     or cur.startswith('docs/')
                     or cur.startswith('sql/')
                     or cur.lower().endswith('.md'))
+            if not skip and cur.replace('\\', '/').startswith('tests/'):
+                try:
+                    body = io.open(os.path.join(REPO, cur), encoding='utf-8',
+                                   errors='replace').read()
+                except OSError:
+                    body = None
+                if body is not None and is_report_only_artefact(cur, body):
+                    skip = True
             continue
         if cur is None or skip:
             continue

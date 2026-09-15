@@ -372,6 +372,82 @@ check('git() no longer returns "" on a failed command',
       'an empty diff means NO TIER A TOUCH, which is a pass -- so returning "" '
       'on error was a fail-open in a BLOCKING gate (PR 1.11)')
 
+print('\n6. a REPORT-ONLY review artefact is not a Tier A change (2026-09-15)')
+
+# SECOND FALSE POSITIVE OF THIS SHAPE. The first was a worklog, fixed by
+# excluding markdown. This one was tests/dnt_rollup_review_probe.js -- an
+# independent review of somebody else's Tier A module, refused because a review
+# of dnt_rollup necessarily NAMES dnt_rollup. The gate was blocking the very
+# artefact that discharges the obligation it was asking for.
+#
+# THE ARM THAT MATTERS IS THE SECOND ONE. Excluding `tests/` wholesale would be
+# the dangerous repair: a test is often the only thing pinning a Tier A
+# behaviour, and a session could then delete its assertions and push it clean.
+# Every other arm here exists to prove the exclusion did NOT become that.
+_ART = (
+    "// a review of dnt_rollup\n"
+    "const x = require('../api/_lib/dnt-rollup');\n"
+    "console.log('finding: dnt_rollup suppresses a measured total');\n"
+    "process.exit(0);\n")
+_REAL = (
+    "const assert = require('assert');\n"
+    "assert.strictEqual(rollup().totals.dnt_rollup, 1);\n"
+    "process.exit(fail ? 1 : 0);\n")
+
+check('a report-only artefact under tests/ is EXCLUDED',
+      g.is_report_only_artefact('tests/x_review_probe.js', _ART),
+      'the gate still refuses the artefact that discharges its own obligation')
+
+check('A REAL TEST NAMING THE SAME RESOURCE IS STILL INCLUDED',
+      not g.is_report_only_artefact('tests/x.test.js', _REAL),
+      'THE EXCLUSION BECAME "ignore tests/" -- a session can now delete the '
+      'assertions from a Tier A suite and push it as clean')
+
+check('...and the same content under api/ is included too',
+      not g.is_report_only_artefact('api/_lib/x.js', _ART),
+      'a file beside a handler was excluded on its exit code alone')
+
+check('a non-literal exit is NOT excluded, even with no assertions',
+      not g.is_report_only_artefact('tests/y_probe.py',
+                                    "import sys\nsys.exit(main())\n"),
+      'sys.exit(main()) can return non-zero, so the file CAN fail and IS a guard')
+
+check('a file with NO exit at all is not excluded either',
+      not g.is_report_only_artefact('tests/y2_probe.js', "console.log('dnt_rollup');\n"),
+      'absence of an exit is not evidence of anything and must not be read as one')
+
+# The predicate reads CODE, not prose. Without the strip, the word "assert"
+# inside a comment would disqualify a real artefact -- the grep-matched-prose
+# class this platform has now recorded five times.
+check('an "assert" in a COMMENT does not disqualify an artefact',
+      g.is_report_only_artefact(
+          'tests/z_probe.js',
+          "// this does not assert anything about dnt_rollup\nprocess.exit(0);\n"),
+      'comments are being read as code')
+check('...but an assert in CODE does',
+      not g.is_report_only_artefact(
+          'tests/z2_probe.js',
+          "assert(dnt_rollup !== null);\nprocess.exit(0);\n"),
+      'a real assertion was stripped along with the comments')
+
+# END TO END, through the real diff walker rather than the predicate alone: a
+# hunk naming a Tier A resource inside a report-only artefact raises nothing,
+# and the SAME hunk in a production file raises. Without the second half the
+# first proves only that the gate found nothing, which an empty resource set
+# also does -- the exact vacuity section 3 exists for.
+_tier = g.tier_a_resources()
+_name = 'dnt_rollup' if 'dnt_rollup' in _tier else sorted(_tier)[0]
+check('END TO END: the artefact raises no obligation',
+      not g.touched_tier_a(
+          diff_for('tests/dnt_rollup_review_probe.js', 'console.log("%s");' % _name),
+          _tier),
+      'expected no hits -- the file on disk must satisfy the predicate')
+check('END TO END: the same hunk in a production file DOES raise one',
+      bool(g.touched_tier_a(
+          diff_for('api/_lib/made_up_handler.js', 'const t = "%s";' % _name), _tier)),
+      'the walker stopped attributing hunks at all, so the arm above passes '
+      'for the wrong reason')
+
 print()
 if fails:
     print('%d ARM(S) FAILED:' % len(fails))
