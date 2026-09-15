@@ -1304,6 +1304,16 @@
       "claimed_at_epoch": 1789426048.0783782,
       "status": "released",
       "released_at": "2026-09-14T23:41:18Z"
+    },
+    {
+      "id": "cc-1789468386",
+      "session": "cc",
+      "subject": "cc",
+      "task": "sairncode tier a write gate push and live probe rerun",
+      "claimed_at": "2026-09-15T10:33:06Z",
+      "claimed_at_epoch": 1789468386.5508723,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
