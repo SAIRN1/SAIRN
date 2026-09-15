@@ -385,6 +385,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **`tests/stonedesk_server_backup.js` is RED on origin/main right now, and the arm that is red is the one written to stop exactly this** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED, item 97 is CC&rsquo;s active claim** | `tests/stonedesk_server_backup.js` |
 | **The competitive-gap STATUS doc is stale in exactly the way it was written to prevent &mdash; #5 is BUILT, and there is no un-gated item left in it** | **RE-VERIFIED 2026-09-14 (Cody)** &mdash; correction appended to `docs/2026-09-02-competitive-gap-status-rederived.md` | `api/sd-data-approvals.test.js` |
 | **The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a join key on both other legs, and a silent wrong due date found on the way** | **BUILT 2026-09-14 (CC)** &mdash; `stonedesk.html` + `tools/three_way_match_check.py`; held by `tests/stonedesk_po_sequence_and_join.js` (26 assertions) and `tests/run_three_way_match_probe.py` (29 ar | `tests/run_three_way_match_probe.py`, `tests/stonedesk_po_sequence_and_join.js` |
 | 🚨 **EVERY QUOTE BUILDER DELETE UNDID ITSELF ON THE NEXT SAVED QUOTE &mdash; and the user watched the delete succeed** | **FOUND AND FIXED 2026-09-14 (CC)** while tracing the `sd_drawings` collision row. Held in BOTH directions by `tests/quote_builder_delete_does_not_resurrect.js` | `tests/quote_builder_delete_does_not_resurrect.js` |
@@ -639,7 +640,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 422   tests/**, api/*.test.js
-  open-work rows citing a test       197   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       198   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED
