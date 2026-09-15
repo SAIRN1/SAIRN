@@ -4947,3 +4947,88 @@ improvement was the tool rather than the controls.
 `run_traceability_matrix_probe`. Each needs its own reading — a mechanical
 rewrite of somebody else's control is how a working control becomes a broken one,
 and four of those six are already RED for unrelated pre-existing reasons.
+
+---
+
+## 2026-09-15 (continued) — two items already built, one answered, one blocked
+
+### Items 1 and 2 — ALREADY BUILT by Fourth, verified by running
+
+**Check 0e before building, and it paid twice.**
+
+| item | state | verified how |
+|---|---|---|
+| **18** metamorphic relations | **BUILT** — `tools/metamorphic_check.py`, general-purpose and standalone, 5 relations (`identity`, `crlf`, `trailing_ws`, `blank_lines`, `duplicate`) | ran `--fixtures`: the blind lock passes and asserts the sensitive fixture is caught by every SAME relation and the robust one by **none**, so a violation would mean something |
+| **28** the generator half | **BUILT** — `tools/new_checker.py` + `tools/checker_kit.py` | its scaffold's `rule()` **raises `NotImplementedError`** and the generated control treats that as "NOTHING was judged". Item 28's one stated property — a fresh checker exits 2, not 0 — holds |
+| **32 / R5** sharper reachability | **BUILT** — extends `tools/sairn_reachability_check.py` (16 R5 references), not a second tool | `tests/run_reachability_r5_probe.py` exits 0 |
+
+**The note in the brief — "extract the structural skeleton as a reusable
+generator per item 28's fold-in decision, stated here so it doesn't quietly never
+happen" — already happened.** `new_checker.py` is that generator, and its
+argument is the one worth keeping: *a library is available; a scaffold is what
+arrives already wired.* Every defect it was built against was a checker whose
+author **had** `checker_kit.py` and skipped one of the three things anyway.
+
+**R5's design decision is also already the one item 32 asked for**: report-only,
+never gated to suggest removal, and it splits the inference by direction —
+*observed* routes report today, *silent* ones stay gated, because "this route saw
+zero" carries no information when almost every route saw zero. An inference from
+silence needs a denominator; an inference from a served route does not.
+
+### Item 4 — SAIRNlaw privacy scoping: the app answers a different question
+
+`docs/2026-09-15-sairnlaw-privacy-scoping.md`. Every factual claim re-verified.
+
+**`practice_area` IS FREE TEXT.** No option list, no `MATTER_TYPES`, no
+validation; the two areas in the file are sample data. Measured across the app
+and the deadline engine: `immigration`, `asylum`, `USCIS`, `I-130/485/N-400`,
+`divorce`, `dissolution`, `child support`, `parenting`, `guardian ad litem` — **0
+hits each.** The 7 `custody` hits are **all "AI Chain of Custody"**.
+
+**So scoping Privacy to practice area would scope to something the platform
+cannot observe, validate or control** — and a firm can change the answer by
+typing, with no deploy.
+
+**RECOMMENDATION: IN SCOPE, and drop the practice-area question.** Reached on the
+data instead: `law_pimedical` holds personal-injury **medical records**, plus
+`law_trusttx` / `law_opaccounts` / `law_bankstatements` (client money and bank
+statements), `law_clients`, `law_portalmessages`, `law_portalesign`, `law_picases`
+— and `law_barcerts` / `law_clecredits`, which are a **second data subject**
+(employees). All ten confirmed registered.
+
+**The method generalises and is the part worth copying: SCOPE FROM THE SCHEMA,
+NOT FROM THE SALES DESCRIPTION.** And a correction to the question's premise —
+**no vertical has a Privacy scoping document.** This is the first, so it is the
+precedent rather than the exception.
+
+Deliberately NOT done in it: no P1–P8 mapping (that would be the first half of a
+compliance document with no second half), and no legal determination.
+
+### Item 3 — NHI credential inventory: the real gap, and a blocker that is not mine
+
+Not built, and the reason is specific rather than a shortfall of time.
+
+**`docs/SECRETS-INVENTORY.md` covers ENVIRONMENT VARIABLES ONLY**, because
+`tools/secrets_inventory.py` finds credentials by scanning code for
+`process.env.X` reads. Three of the four identities the item names are therefore
+**structurally invisible to it**:
+
+- the **GitHub PAT** — used by a human and by CI, never read from `process.env`
+  in this repo;
+- **`sairn_backup_reader`** — a Postgres LOGIN role created by
+  `sql/backup_reader_role.sql`, not an env var (and already carrying CC's HIGH
+  finding: a published placeholder password made permanent by an idempotence
+  guard);
+- **each agent's own session access** — four clones with git push rights, whose
+  credential is the Windows credential manager, not this repo.
+
+So the deliverable is a **new register keyed on IDENTITY rather than on env var**,
+with owner and scope per identity, complementary to the existing tool rather than
+replacing it. **The env-var half is additionally blocked right now:**
+`secrets_inventory.py --check` is **REFUSING** because `SAIRN_AI_CONTENTION_FLOOR`
+and `SAIRN_AI_TENANT_SHARE` have no classification — another clone's two
+decisions, and classifying somebody else's secret is a judgement about what
+holding it lets you do.
+
+Recommended as its own full slot, with the two unclassified secrets resolved
+first.
