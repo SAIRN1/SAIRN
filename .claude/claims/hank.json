@@ -1825,6 +1825,16 @@
       "claimed_at_epoch": 1789481581.485082,
       "status": "released",
       "released_at": "2026-09-15T14:24:57Z"
+    },
+    {
+      "id": "hank-1789482311",
+      "session": "hank",
+      "subject": "tier-a-review-gate",
+      "task": "false positive report only artefact",
+      "claimed_at": "2026-09-15T14:25:11Z",
+      "claimed_at_epoch": 1789482311.3385098,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
