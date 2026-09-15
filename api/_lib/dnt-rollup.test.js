@@ -278,47 +278,16 @@ check('THE OTHER DIRECTION: a genuinely unreadable RESOURCE is still null, not 0
   assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, null);
   assert.strictEqual(out.totals.production.value, null);
 });
-
-check('FINDING 2: rows whose summed field is unreadable are COUNTED and named', () => {
-  // Four charges, three with no readable amount. The arithmetic is unchanged --
-  // an unreadable amount still contributes 0 rather than NaN -- but the report
-  // may no longer assert it is whole.
-  const out = rollup(base({ sets: {
-    dnt_patients: { rows: [] },
-    dnt_charges: { rows: [
-      { id: 'C1', location_id: 'LOC-N', amount: 100 },
-      { id: 'C2', location_id: 'LOC-N', amount: '' },
-      { id: 'C3', location_id: 'LOC-N', amount: 'n/a' },
-      { id: 'C4', location_id: 'LOC-N' }
-    ] } } }));
-  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, 100,
-    'the arithmetic is deliberately unchanged');
-  assert.strictEqual(loc(out, 'LOC-N').metrics.production.unreadable_rows, 3);
-  assert.strictEqual(out.totals.production.unreadable_rows, 3);
-  assert.strictEqual(out.disclosure.unreadable_field_rows, 3);
-  assert.strictEqual(out.disclosure.complete, false,
-    'a figure short by an unknown amount may not assert that it is whole');
-});
-
-check('...and a literal 0 is READABLE, so an honest zero is not counted as unreadable', () => {
-  // The false-positive direction. 0 means zero; blank means nothing. Collapsing
-  // them would make `complete` false on every practice that ever wrote a
-  // zero-value charge, which is the alarm that gets learned and then ignored.
-  const out = rollup(base({ sets: {
-    dnt_patients: { rows: [] },
-    dnt_charges: { rows: [
-      { id: 'C1', location_id: 'LOC-N', amount: 0 },
-      { id: 'C2', location_id: 'LOC-N', amount: '0.00' }
-    ] } } }));
-  assert.strictEqual(loc(out, 'LOC-N').metrics.production.unreadable_rows, 0);
-  assert.strictEqual(out.disclosure.unreadable_field_rows, 0);
-  assert.strictEqual(out.disclosure.complete, true);
-});
-
-check('a COUNT metric never reports unreadable rows -- it has no field to read', () => {
-  const out = rollup(base());
-  assert.strictEqual(loc(out, 'LOC-N').metrics.patients.unreadable_rows, 0);
-});
+// NOTE, 2026-09-15: THREE ARMS WERE REMOVED FROM HERE, NOT LOST.
+// I wrote arms for review finding 2 (an unreadable summed field contributing 0
+// while `complete` stayed true) at the same time another session fixed it
+// independently in 17aa211e -- and THEIRS IS BETTER: `measureNumber` also
+// catches parseFloat's PARTIAL PARSE, where '12abc' silently became 12 and
+// '1,200' became 1, which is a plausible wrong number and worse than an
+// unreadable one. Their arms are below, under `unread`. Keeping mine as well
+// would have been two copies of one rule under two field names, free to
+// disagree -- the exact shape this file's own subject is about.
+// The finding-1 arms above stay: 17aa211e did not fix finding 1.
 
 check('no ranking, no best-performer, no period change is emitted', () => {
   const out = rollup(base());

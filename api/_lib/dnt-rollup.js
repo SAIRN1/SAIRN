@@ -70,20 +70,10 @@ const { DEFAULT_LOCATION_ID } = require('./dnt-location');
 // on purpose", and this means "nobody ever recorded one". Reusing it would
 // destroy exactly the distinction rule 1 exists to keep.
 const UNASSIGNED = '__unassigned__';
-// Accumulator key separator. A NUL cannot occur in a location id --
-// dnt-location.js validates them -- so `bucket + SEP + metric` is unambiguous
-// where a hyphen or a colon would not be.
+// Accumulator key separator for the two-pass arithmetic below. A NUL cannot
+// occur in a location id -- dnt-location.js validates them -- so
+// `bucket + SEP + metric` is unambiguous where a hyphen or a colon would not be.
 const SEP = '\u0000';
-
-// Is this field READABLE as a number at all? Distinct from num() on purpose: a
-// literal 0 is readable and means zero; a blank, absent or unparseable value is
-// not readable and means nothing. num() collapses both to 0, which is right for
-// the arithmetic and wrong for the disclosure -- finding 2.
-function readable(v) {
-  if (v === undefined || v === null) return false;
-  if (typeof v === 'string' && v.trim() === '') return false;
-  return Number.isFinite(typeof v === 'number' ? v : parseFloat(v));
-}
 
 // ── RULE 3, ONE LEVEL DOWN (2026-09-15) ────────────────────────────────────
 // The independent review raised this and it was raised as a DISAGREEMENT
@@ -174,16 +164,16 @@ function rollup(input) {
   // offices were registered, which is exactly what somebody should see.
   if (Object.keys(known).length === 0) touch(DEFAULT_LOCATION_ID);
 
-  // ── the arithmetic, IN TWO PASSES, AND THE SPLIT IS A REVIEW FINDING ────
-  // FINDING 1 (Hank, independent review ce7764fa, 2026-09-15). The first
-  // version seeded every bucket's cell INSIDE the per-metric loop, over the
-  // buckets that existed WHEN THAT METRIC RAN. A later metric's row pass then
-  // created a new bucket via touch() -- in the reported case the unassigned
+  // ── the arithmetic ──────────────────────────────────────────────────────
+  // ── TWO PASSES, AND THE SPLIT IS THE OTHER REVIEW FINDING ──────────────
+  // FINDING 1 (Hank, ce7764fa). Cells used to be seeded INSIDE this loop, over
+  // the buckets that existed WHEN THAT METRIC RAN. A later metric's row pass
+  // then creates a new bucket via touch() -- in the reported case the unassigned
   // one, from a single legacy charge with no location -- and that bucket never
   // got a cell for the EARLIER metrics. The totals loop treated a MISSING cell
-  // identically to a SUPPRESSED one, so an ordinary two-office practice with
-  // one pre-stamp charge reported patients and appointments as UNMEASURABLE
-  // while `disclosure.unreadable` was EMPTY: a client could not even say which
+  // identically to a SUPPRESSED one, so an ordinary two-office practice with one
+  // pre-stamp charge reported patients and appointments as UNMEASURABLE while
+  // `disclosure.unreadable` was EMPTY: a client could not even say which
   // resource had failed, because none had.
   //
   // MISSING AND SUPPRESSED ARE DIFFERENT FACTS. Missing means "no rows for this
@@ -191,11 +181,11 @@ function rollup(input) {
   // "could not read the resource", which is null. Collapsing them is rule 3
   // running backwards.
   //
-  // IT WAS ORDER-DEPENDENT, which is what made it a defect rather than a
-  // policy: the same data with the metric list in a different order reported a
-  // real figure. A number that is a function of argument order is not a
-  // measurement. So the bucket set is settled FIRST and the cells are
-  // materialised once, over the final set.
+  // IT WAS ORDER-DEPENDENT, which is what made it a defect rather than a policy:
+  // the same data with the metric list in a different order reported a real
+  // figure. A number that is a function of argument order is not a measurement.
+  // So the bucket set is settled FIRST and the cells are materialised once, over
+  // the final set.
   const acc = {};
   metrics.forEach((m) => {
     const set = sets[m.resource];
@@ -203,28 +193,14 @@ function rollup(input) {
     set.rows.forEach((row) => {
       const b = touch(locationOf(row));
       const k = b.location_id + SEP + m.key;
-      const cell = acc[k] || (acc[k] = { value: 0, rows: 0, unreadableRows: 0 });
+      const cell = acc[k] || (acc[k] = { value: 0, rows: 0, unread: 0 });
       cell.rows += 1;
-      if (m.kind === 'sum') {
-        // FINDING 2 (same review). `num()` coerces a blank, absent or
-        // unparseable amount to 0, so three unreadable charges among four
-        // reported an authoritative total short by an unknown amount AND said
-        // `complete: true`. That is rule 3's own sentence one level down -- at
-        // the FIELD rather than at the RESOURCE.
-        //
-        // THE ARITHMETIC IS UNCHANGED, deliberately: an unreadable amount still
-        // contributes 0 rather than poisoning the sum with NaN, and the arm
-        // that pins that keeps passing. What changes is that the rows it could
-        // not read are COUNTED AND NAMED, and `complete` goes false when there
-        // are any. A figure short by an unknown amount may exist; positively
-        // asserting that it is whole may not.
-        const raw = row[m.field] !== undefined ? row[m.field]
-          : (row.data && row.data[m.field]);
-        if (!readable(raw)) cell.unreadableRows += 1;
-        cell.value += num(raw);
-      } else {
-        cell.value += 1;
-      }
+      if (m.kind !== 'sum') { cell.value += 1; return; }
+      const raw = row[m.field] !== undefined ? row[m.field]
+        : (row.data && row.data[m.field]);
+      const n = measureNumber(raw);
+      if (n === null) { cell.unread += 1; return; }
+      cell.value += n;
     });
   });
 
@@ -235,40 +211,17 @@ function rollup(input) {
     const set = sets[m.resource];
     const dead = !set || set.unreadable || !Array.isArray(set.rows);
     Object.keys(buckets).forEach((id) => {
-<<<<<<< HEAD
-      buckets[id].metrics[m.key] = dead
-        ? { value: null, rows: null, unread: null,
-            unreadable: (set && set.unreadable) || 'resource not supplied' }
-        : { value: 0, rows: 0, unread: 0 };
-    });
-    if (dead) return;
-    set.rows.forEach((row) => {
-      const b = touch(locationOf(row));
-      if (!b.metrics[m.key]) b.metrics[m.key] = { value: 0, rows: 0, unread: 0 };
-      const cell = b.metrics[m.key];
-      cell.rows += 1;
-      if (m.kind !== 'sum') { cell.value += 1; return; }
-      const raw = row[m.field] !== undefined ? row[m.field]
-        : (row.data && row.data[m.field]);
-      const n = measureNumber(raw);
-      // The row still counts -- it exists, it just carries no readable amount --
-      // and the amount it could not read is now NAMED instead of being an
-      // invisible 0 inside a total that calls itself complete.
-      if (n === null) { cell.unread += 1; return; }
-      cell.value += n;
-=======
       if (dead) {
         buckets[id].metrics[m.key] = {
-          value: null, rows: null,
+          value: null, rows: null, unread: null,
           unreadable: (set && set.unreadable) || 'resource not supplied'
         };
         return;
       }
       const cell = acc[id + SEP + m.key];
       buckets[id].metrics[m.key] = cell
-        ? { value: cell.value, rows: cell.rows, unreadable_rows: cell.unreadableRows }
-        : { value: 0, rows: 0, unreadable_rows: 0 };
->>>>>>> 6fefae0e (fix(dnt_rollup,transport): both review findings closed, and a hand-written transport name that rotted against a correct refactor)
+        ? { value: cell.value, rows: cell.rows, unread: cell.unread }
+        : { value: 0, rows: 0, unread: 0 };
     });
   });
 
@@ -278,35 +231,17 @@ function rollup(input) {
   // not match its own rows.
   const ids = Object.keys(buckets).sort();
   const totals = {};
-  let unreadableFieldRows = 0;
   metrics.forEach((m) => {
-<<<<<<< HEAD
     let v = 0, rows = 0, unread = 0, suppressed = false;
-=======
-    let v = 0, rows = 0, bad = 0, suppressed = false;
->>>>>>> 6fefae0e (fix(dnt_rollup,transport): both review findings closed, and a hand-written transport name that rotted against a correct refactor)
     ids.forEach((id) => {
       const cell = buckets[id].metrics[m.key];
-      // A MISSING cell can no longer happen -- pass 2 materialises one on every
-      // bucket -- but the distinction stays explicit rather than being assumed
-      // away, because assuming it away is what produced finding 1.
       if (!cell || cell.value === null) { suppressed = true; return; }
-<<<<<<< HEAD
       v += cell.value; rows += cell.rows; unread += (cell.unread || 0);
-=======
-      v += cell.value; rows += cell.rows; bad += (cell.unreadable_rows || 0);
->>>>>>> 6fefae0e (fix(dnt_rollup,transport): both review findings closed, and a hand-written transport name that rotted against a correct refactor)
     });
-    unreadableFieldRows += bad;
     totals[m.key] = suppressed
-<<<<<<< HEAD
       ? { value: null, rows: null, unread: null,
           unreadable: unreadable[m.resource] || 'suppressed' }
       : { value: v, rows: rows, unread: unread };
-=======
-      ? { value: null, rows: null, unreadable: unreadable[m.resource] || 'suppressed' }
-      : { value: v, rows: rows, unreadable_rows: bad };
->>>>>>> 6fefae0e (fix(dnt_rollup,transport): both review findings closed, and a hand-written transport name that rotted against a correct refactor)
   });
   // Rolled up across metrics so `complete` has one thing to read, and so a
   // caller can show the count without walking every bucket.
@@ -325,7 +260,6 @@ function rollup(input) {
     // the per-location figures an incomplete partition of the practice.
     disclosure: {
       complete: Object.keys(unreadable).length === 0
-<<<<<<< HEAD
         && unreadFields === 0
         && !(unassigned && Object.keys(unassigned.metrics).some(
           (k) => unassigned.metrics[k] && unassigned.metrics[k].rows > 0)),
@@ -334,17 +268,6 @@ function rollup(input) {
       // who already suspects something. 4 rows against $100 is visible to a
       // reader who looks; `complete: true` was telling them not to.
       unread_fields: unreadFields,
-=======
-        && unreadableFieldRows === 0
-        && !(unassigned && Object.keys(unassigned.metrics).some(
-          (k) => unassigned.metrics[k] && unassigned.metrics[k].rows > 0)),
-      unreadable: unreadable,
-      // Named rather than only folded into `complete`: a client showing the
-      // header has to be able to say WHY, and "3 of 4 charges carried no
-      // readable amount" is a different sentence from "one office has no
-      // location on its rows".
-      unreadable_field_rows: unreadableFieldRows,
->>>>>>> 6fefae0e (fix(dnt_rollup,transport): both review findings closed, and a hand-written transport name that rotted against a correct refactor)
       unregistered_location_ids: ids.filter(
         (id) => id !== UNASSIGNED && !buckets[id].registered),
       registry_size: Object.keys(known).length
