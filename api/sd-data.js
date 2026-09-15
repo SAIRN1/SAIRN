@@ -822,7 +822,41 @@ module.exports = async (req, res) => {
       // mistaken for a session, because dropping expectedApp is exactly the
       // looseness the comment above warns about: this branch's deny-list names
       // only StoneDesk roles, so a SAIRNbiz role would slip through it.
+      //
+      // THE SUPPRESSION BELOW IS THE POINT OF THIS WHOLE COMMENT BLOCK, and it
+      // is annotated rather than left to run red every time. Before 2026-09-15
+      // `python tools/run_semgrep.py` reported exactly one ERROR on this line,
+      // on every run, forever. A permanent unrecorded exception is
+      // INDISTINGUISHABLE FROM A REAL FINDING to the next reader, and a scanner
+      // that always reports one error trains people to skim past the one that
+      // is not this one. The rule is correct and this call is deliberate; both
+      // facts have to be written down in the same place or the next person
+      // resolves the contradiction by guessing.
+      //
+      // Why this specific call is safe, restated so the annotation is not just
+      // a silencer: `otherApp` is READ ONLY to name the app in a 403 message.
+      // It is never assigned to `session`, never consulted by any role check,
+      // and the branch it guards refuses in every case. Scoping it would defeat
+      // its only purpose -- a token bound to 'stonedesk' cannot tell you that
+      // the caller holds a SAIRNbiz session, which is the entire question being
+      // answered here.
+      //
+      // VERIFIED IN BOTH DIRECTIONS BEFORE BEING COMMITTED, because a
+      // suppression that silences more than it should is worse than the noise
+      // it removed. Measured 2026-09-15 in a throwaway worktree, not reasoned
+      // about:
+      //   A. annotation REMOVED  -> the rule fires again, exactly 1 finding, on
+      //      this line. So it is doing real work rather than sitting next to a
+      //      call the rule never matched.
+      //   B. annotation PRESENT + a second unscoped verifySessionToken() added
+      //      two lines below -> 1 finding, on the NEW line and not this one.
+      //      So the suppression is LINE-scoped and shields nothing else in this
+      //      file.
+      // Either half alone proves nothing: a no-op annotation passes B, and a
+      // file-wide suppression passes A.
+      //
       if (!session) {
+        // nosemgrep: verify-session-token-missing-expected-app
         const otherApp = verifySessionToken(tokenFromRequest(req), licHash);
         if (otherApp && otherApp.app !== 'stonedesk') {
           // Discloses nothing the caller does not already hold: they came with
