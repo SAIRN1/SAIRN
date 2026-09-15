@@ -1324,6 +1324,16 @@
       "claimed_at_epoch": 1789468986.7849863,
       "status": "released",
       "released_at": "2026-09-15T11:04:12Z"
+    },
+    {
+      "id": "cc-1789470265",
+      "session": "cc",
+      "subject": "cc",
+      "task": "item 20 status correction and item 97 tier a sanity pass",
+      "claimed_at": "2026-09-15T11:04:25Z",
+      "claimed_at_epoch": 1789470265.7877092,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
