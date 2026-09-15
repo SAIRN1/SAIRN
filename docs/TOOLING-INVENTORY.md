@@ -19,14 +19,14 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**147 files in `tools/`.** By what actually invokes them:
+**148 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 10 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
-| **DECIDED** | 37 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
+| **DECIDED** | 38 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 19 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 32 | nothing runs these at all |
 
@@ -34,12 +34,12 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 93 |
+| CHECKER | 94 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
 
-**37 tool(s) are DECIDED -- deliberately not promoted, with the reason
+**38 tool(s) are DECIDED -- deliberately not promoted, with the reason
 recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
@@ -181,7 +181,7 @@ And 3 that are PostToolUse hooks in their own right, not registry entries:
 
 ---
 
-## DECIDED -- not promoted, on purpose (37)
+## DECIDED -- not promoted, on purpose (38)
 
 **These are not gaps.** Each carries a recorded reason in
 `tools/report_only_checks.py`'s `NOT_PROMOTED` list -- a read-list whose own
@@ -225,6 +225,7 @@ is how a reader stops believing the number.
 | `stonedesk_storefront_live_check.py` | LIVE | LIVE BY NAME AND BY DESIGN -- it probes the deployed StoneDesk storefront. Same network reasoning as cron_liveness_check.py above, and with one addition specific to it: its correct answer today is that those tables are NOT provisioned, confirmed by two sources sharing no mechanism (absent from a schema capture AND answering 503 NOT_PROVISIONED live). A gate reporting a correct, expected, unchanging 503 on every push teaches people to skip its output. Run it when the storefront is actually provisioned. |
 | `three_way_match_check.py` | CHECKER | SAME TRACK-RECORD HOLD, and it is the closest of the fourteen to ready: three-state exit, a declared control pair in tests/run_three_way_match_probe.py. It has no FIXTURES block, which is the one gap worth naming rather than waiving -- convention 1 wants the criteria locked against synthetic cases before real data, and this checker judges MONEY (a purchase order, a receipt and an invoice agreeing). A money checker promoted without a blind lock is the combination this platform has least appetite for. Add the fixtures and it is a promotion candidate. |
 | `tier_a_bypass_check.py` | CHECKER | SAME SHAPE, and again its own line already says it: a read-list, not a number to drive to zero. Its interesting column is COULD NOT TELL -- it cannot see whether a refusal runs BEFORE the write, and naming a Tier A resource is not writing to one. A push gate needs a verdict; this tool deliberately produces three states of which the middle one is the useful one. Promote it only if the GATED column ever becomes a real clearance rather than "an identity check and a refusal both appear in this file". |
+| `tier_a_replaceability_check.py` | CHECKER | ITS INPUTS ARE THE REGISTER AND THE REGISTRY, NOT THE PUSH, so a push-time entry would print the same seven sc_* names on every push regardless of what the push contained. The two counts move when a TIER changes or a VERB GRANT changes, neither of which happens often and neither of which a push-time notice would surface any sooner than the probe does. AND IT IS NOT A NUMBER TO DRIVE TO ZERO: a hard delete verb is a decision, not a defect -- the SAIRNcode live probe depends on that verb to clean up after itself. What it reports is that the decision was never made per RESOURCE. Read it when a tier is assigned or a delete verb is granted, which is when its answer can change. Its own weaker half (how many Tier A evidence cells mention recoverability) reads LANGUAGE and says so on every run; promoting that to a push-time figure would turn a documentation-coverage number into an apparent defect count, which is the presentation the tool is written to prevent. |
 | `va_rule_currency.py` | LIVE | one-off audits against a point in time, not standing checks. |
 | `verify_review_gates.py` | CHECKER | it takes a PLAN FILE and a ledger as arguments and **nothing in this repo references it at all** -- checked by grep across tools/, tests/, .claude/ and the docs, where the only mention was the old hand-written inventory claiming the push gate invoked it. It does not. The workflow it serves either never landed or is gone; deciding that is a separate call from wiring it, so it is recorded here rather than promoted or deleted. |
 | `waf_rule_check.py` | LIVE | CLEAN today, and gate-shaped -- but it makes a LIVE API call, so a transient network failure would read as a finding on a push. That is the false alarm that gets a report-only checker switched off. Run it by hand, or promote it once it distinguishes "drifted" from "could not ask" the way the SQL preflight does. |
@@ -339,12 +340,12 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      147   git ls-files tools/
+  tools on disk                      148   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                8   tools\sairn_push_gate_hook.py
   report-only registry                45   report_only_checks.REGISTRY
-  tools invoked by tests/             95   tests/**/*.py, *.js
-  recorded NOT-promoted decisions     37   report_only_checks.NOT_PROMOTED
+  tools invoked by tests/             96   tests/**/*.py, *.js
+  recorded NOT-promoted decisions     38   report_only_checks.NOT_PROMOTED
   numbered gate checks                12   tools\sairn_push_gate_hook.py
 ```
 

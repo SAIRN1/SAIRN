@@ -88,6 +88,14 @@ PURPOSES = {
         'it reads language, not intent, and scored roughly 1 in 3 on its first '
         'weight-3 run. A read-list whose count is not a score; zero would mean '
         'deleting comments'),
+    'tier_a_replaceability_check.py': ('CHECKER',
+        'item 97 -- whether a Tier A resource is the real irreplaceable '
+        'artifact or a stand-in: which Tier A resources grant a HARD delete '
+        'rather than soft_delete or none, read from the LIVE registry because '
+        'SAIRNcode builds its grants with a reduce() that a source scrape '
+        'would miss. Reports the count, never a verdict; the under-assignment '
+        'direction (a Tier B/C resource that is the only copy of something '
+        'irreplaceable) is deliberately NOT swept and says so on every run'),
     'defect_budget.py': ('CHECKER',
         'which STANDING RULE has bitten often enough that its next occurrence '
         'is predictable rather than incidental. The RANKING is deliberately not '
