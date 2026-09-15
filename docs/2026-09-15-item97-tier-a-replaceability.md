@@ -124,11 +124,9 @@ rows where it is load-bearing — not a new column and not a new document.
 ## 4. What this pass did NOT do, named rather than implied
 
 - **No re-tiering.** Not this session's call.
-- **THE UNDER-ASSIGNMENT DIRECTION IS NOT SWEPT, and it is the dangerous one.**
-  A Tier B or C resource that is in fact the only copy of something
-  irreplaceable is the accident case in §1, and nothing here looks for it. It
-  is a larger pass: it needs the 304 non-A rows read against what actually
-  writes them. **Recorded as a known hole, not left as an apparent absence.**
+- ~~**THE UNDER-ASSIGNMENT DIRECTION IS NOT SWEPT**~~ — **SWEPT 2026-09-15,
+  later the same day, and §6 below is what it found.** The hole named here is
+  closed by `--under`; what remains is a decision, not a measurement.
 - **No infrastructure was checked.** See the caveat in §2 about the backup.
 - **`sairncash` has no registered resources at all**, so it contributes nothing
   to any figure here and is not evidence of a clean result.
@@ -155,3 +153,74 @@ It is **report-only and deliberately unwired**, recorded as a `NOT_PROMOTED`
 entry: its input is the register and the registry, not the push, so a push-time
 entry would print the same seven names on every push regardless of what the push
 contained.
+
+
+---
+
+## 6. The under-assignment sweep — `--under`, added the same day
+
+**Over-tiering costs rigour. UNDER-tiering is the accident**, and §4 recorded
+that direction as this tool's known hole. It is swept now.
+
+**THE REGISTER ALREADY SAYS THIS IS ITS WEAK POINT**, which is why the sweep is
+a triage and not an accusation:
+
+> *"The B tier is 299 rows and it is the honest weak point of this file. Each
+> says the same thing — auth-gated, not money, not regulated — because that is
+> what the rule says, not because 299 files were read. A resource misfiled as B
+> is the failure mode that matters."*
+
+**274 rows carry the words "Classified by the stated B rule rather than
+individually read."** Re-reading 274 files is not the answer. Narrowing them to
+the rows an irreplaceability test flags is: **304 Tier B/C rows → 38.**
+
+### Three signals, and the third is the one the B rule structurally cannot see
+
+| Signal | Why it means irreplaceable |
+|---|---|
+| `HARD-DELETE` | a destroying `delete` verb — the row can be removed, not hidden |
+| `LOG-SHAPED` | audit / log / history / trail / events in the name. An append-only record's whole value is that it cannot be reconstructed |
+| `ATTESTATION` | its writer stores a **signer, a signature, a sign-off or a content hash**. **The B rule asks whether a resource is money or regulated and never asks whether it is EVIDENCE** |
+
+### THE FINDING: a client's executed e-signature is filed as operational data
+
+`law_portalesign` — **SAIRNlaw, Tier B.** Its writer stores
+`{matter_id, document_id, esign_name, esign_at}`: a client's typed signature on
+a matter document, with a timestamp. Its evidence cell reads *"neither money nor
+a regulated record. **Classified by the stated B rule rather than individually
+read.**"*
+
+**An executed signature on a legal document is not operational data.** It is the
+artifact — and the rule that filed it never had a question that could see that.
+
+**Others on the shortlist, same shape:** `sf_signatures` (SAIRNfreedom — signer,
+typed signature and a **document hash**, and the app's own refusal message says
+*"a signature that does not match the name it is filed under is not evidence of
+anything"*, so the app already calls it evidence); `sc_auth_requests`
+(prior-auth with a **server-stamped** `signedOffBy`/`signedOffAt` — **and a hard
+delete verb**); `leg_documents`, `sdn_contracts`, `rf_proposals`, `alf_mar`.
+
+**NOT RE-TIERED HERE.** Same rule as §2: the measurement is mine, the tier is
+Michael's call.
+
+### THE SIGNAL SHIPPED DEAD, AND A POSITIVE CONTROL IS WHAT CAUGHT IT
+
+The `ATTESTATION` pattern reached the file with a **literal backspace — byte
+0x08** — where a word boundary was intended. `ATTEST.search('signer:signer')`
+was `False` and the signal reported **zero hits platform-wide**: a clean result
+from a dead pattern, on the one signal that was the whole reason for the sweep.
+
+**CLAUDE.md already names this exact defect** as one of the three that made the
+cross-domain disciplines necessary — *"a regex that shipped with a literal
+backspace and could never match."* It was found by asserting the signal **fires
+on a known case**, not by reading the line, which looks correct at any font
+size. The tool now **refuses to import** if the pattern cannot match its own
+reference case, and the probe carries a positive and a negative control for
+every signal.
+
+**And it was blind to one level of indirection.** Once alive it still returned
+nothing for `sf_signatures`, because sairnfreedom binds
+`var K_SIGNATURES='sf_signatures'` and every writer uses the **constant** — the
+signing function sits 150 lines from the only place the string appears. It
+resolves aliases now. **Two separate ways to report a confident zero, in one
+signal, in one afternoon.**

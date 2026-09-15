@@ -2,6 +2,7 @@
 
     python tools/tier_a_replaceability_check.py
     python tools/tier_a_replaceability_check.py --json
+    python tools/tier_a_replaceability_check.py --under   # the OTHER direction
 
 ITEM 97 -- THE HALF THE TIER RUBRIC DOES NOT ASK. `docs/CRITICALITY-TIERS.md`
 assigns a tier from "the worst consequence of that resource being WRONG". That
@@ -34,10 +35,9 @@ WHAT IT CANNOT SEE, said plainly:
 
   * WHETHER A TIER IS RIGHT. criticality_tier_check.py already says nothing
     mechanical can, and that is still true. This adds one axis, not a verdict.
-  * THE UNDER-ASSIGNMENT DIRECTION, which is the dangerous one. A Tier B or C
-    resource that is in fact the only copy of something irreplaceable is
-    exactly what item 97 is about and this tool does NOT sweep for it. Naming
-    the gap rather than implying coverage.
+  * ...THE UNDER-ASSIGNMENT DIRECTION WAS THIS TOOL'S NAMED HOLE UNTIL
+    2026-09-15, and `--under` now sweeps it. See below. It is still a
+    TRIAGE and not a verdict.
   * WHETHER A BACKUP EXISTS. It reads no infrastructure. As of 2026-09-14
     `docs/2026-09-14-nightly-backup-design.md` records that the nightly backup
     has NEVER RUN and Supabase is on a free tier with no automated backups, so
@@ -110,11 +110,159 @@ def extra_actions():
     return json.loads(r.stdout)
 
 
+# ── THE OTHER DIRECTION, ADDED 2026-09-15 ──────────────────────────────────────
+# Over-tiering costs rigour. UNDER-tiering is the accident, and this is the half
+# that looks for it.
+#
+# THE REGISTER SAYS SO ITSELF, which is why this is a triage and not an
+# accusation: "The B tier is 299 rows and it is the honest weak point of this
+# file. Each says the same thing -- auth-gated, not money, not regulated --
+# because that is what the rule says, not because 299 files were read. A
+# resource misfiled as B is the failure mode that matters."
+#
+# 274 rows carry the words "Classified by the stated B rule rather than
+# individually read". Re-reading 274 files is not the answer; NARROWING them to
+# the ones an irreplaceability test flags is.
+#
+# THREE SIGNALS, and the third is the one the B rule structurally cannot see:
+#   HARD-DELETE    a destroying `delete` verb -- it can be removed, not hidden
+#   LOG-SHAPED     audit / log / history / trail / events / incidents in the
+#                  name. An append-only record's whole value is that it cannot
+#                  be reconstructed
+#   ATTESTATION    its writer records a SIGNER, a SIGNATURE, a SIGN-OFF or a
+#                  content HASH. THE B RULE ASKS "is it money or regulated" AND
+#                  NEVER ASKS "is it evidence", so an attestation filed as
+#                  operational data is invisible to the rule that filed it
+SHAPE = re.compile(r'(?:^|_)(audit|logs?|history|trail|signatures?|consent|events|incidents)(?:$|_)')
+# ── THIS PATTERN SHIPPED WITH A LITERAL BACKSPACE AND COULD NEVER MATCH ──────
+# Written as \b for a word boundary, it reached the file as the BYTE 0x08.
+# `ATTEST.search('signer:signer')` was False and the whole ATTESTATION signal
+# reported ZERO hits platform-wide -- a clean result from a dead pattern.
+#
+# CLAUDE.md ALREADY NAMES THIS EXACT DEFECT as one of the three that made the
+# cross-domain disciplines necessary: "a regex that shipped with a literal
+# backspace and could never match". It was found here by the positive control
+# in the probe -- assert the signal FIRES on a known case -- and not by reading
+# the line, which looks correct at every size of font.
+#
+# Boundaries are written as explicit character classes now, so the pattern
+# cannot be silently re-broken by an escape that does not survive being typed.
+BOUND = '(?<![A-Za-z0-9_])%s(?![A-Za-z0-9_])'
+ATTEST = re.compile(BOUND % '(?:signedOffBy|signedOffAt|signer|signature|'
+                    'signed_at|signedAt|witness|countersign|attest)', re.I)
+# A DEAD PATTERN MUST NOT SHIP AGAIN. This is the cheapest possible control and
+# it is at import time: if the signal cannot match the case it was written for,
+# the tool refuses to load rather than reporting a confident zero.
+assert ATTEST.search('list.push({ signer:signer, typed:typed'), (
+    'the ATTESTATION pattern does not match its own reference case -- it is '
+    'dead and would report zero hits platform-wide')
+
+
+def attestation_writers(name):
+    """Files whose code mentions this resource AND an attestation field. Read
+    from the app sources, because the register cannot see what a writer stores
+    -- and what it stores is the whole question."""
+    hits = []
+    for rel in sorted(os.listdir(REPO)):
+        if not rel.endswith('.html'):
+            continue
+        try:
+            body = io.open(os.path.join(REPO, rel), encoding='utf-8',
+                           errors='replace').read()
+        except OSError:
+            continue
+        if name not in body:
+            continue
+        # ── ALIASES, AND WITHOUT THEM THIS SIGNAL FOUND NOTHING ──────────────
+        # The first version searched only for the literal resource name and
+        # returned ZERO attestation hits across the platform. It was wrong:
+        # sairnfreedom.html binds `var K_SIGNATURES='sf_signatures'` and every
+        # writer uses the CONSTANT, so sfSignDocument() -- which stores a
+        # signer, a typed signature and a document hash -- sits 150 lines away
+        # from the only place the string appears. A signal that cannot see
+        # through one level of indirection reports clean on the exact resource
+        # it was written to find, which is the same shape as everything else
+        # found today.
+        terms = [name]
+        for am in re.finditer(r'([A-Z][A-Z0-9_]{2,})\s*=\s*[\'"]' + re.escape(name)
+                              + r'[\'"]', body):
+            terms.append(am.group(1))
+        # Look near the mentions rather than anywhere in a 2MB file: an app that
+        # happens to contain the word "signer" somewhere is not evidence about
+        # THIS resource.
+        found = False
+        for term in terms:
+            for m in re.finditer(r'(?<![A-Za-z0-9_])' + re.escape(term)
+                                 + r'(?![A-Za-z0-9_])', body):
+                # NARROW ON PURPOSE. At +/-1200 this fired on 55 resources,
+                # most of them adjacency in a 2MB file rather than the
+                # resource's own writer -- dnt_operatories is not an
+                # attestation. At +/-300 it keeps the real ones and drops
+                # the neighbours. It is still the WEAKEST of the three
+                # signals and the report says so.
+                window = body[max(0, m.start() - 300):m.start() + 300]
+                if ATTEST.search(window):
+                    hits.append(rel)
+                    found = True
+                    break
+            if found:
+                break
+    return hits
+
+
+def under_assigned(rows, verbs, owner):
+    out = []
+    for name, tier, ev in rows:
+        if tier not in ('B', 'C'):
+            continue
+        v = verbs.get(name) or []
+        signals = []
+        if 'delete' in v:
+            signals.append('HARD-DELETE')
+        if SHAPE.search(name):
+            signals.append('LOG-SHAPED')
+        att = attestation_writers(name)
+        if att:
+            signals.append('ATTESTATION(%s)' % ','.join(att))
+        by_rule = 'rather than individually read' in ev
+        if signals:
+            out.append({'resource': name, 'app': owner.get(name), 'tier': tier,
+                        'signals': signals, 'classified_by_rule': by_rule})
+    return out
+
+
 def main():
     reg = extra_actions()
     verbs, owner, names = reg['e'], reg['o'], reg['n']
     rows = tier_rows(io.open(REGISTER, encoding='utf-8').read())
     tier_a = [r for r in rows if r[1] == 'A']
+
+    if '--under' in sys.argv:
+        found = under_assigned(rows, verbs, owner)
+        by_rule = [r for r in found if r['classified_by_rule']]
+        print('UNDER-ASSIGNMENT TRIAGE -- the direction that is the accident')
+        print('  Tier B/C rows                     : %d'
+              % len([r for r in rows if r[1] in ('B', 'C')]))
+        print('  ...flagged by at least one signal : %d' % len(found))
+        print('  ...AND classified BY RULE, never individually read: %d' % len(by_rule))
+        print('')
+        for r in sorted(found, key=lambda x: (not x['classified_by_rule'],
+                                              x['app'] or '', x['resource'])):
+            print('  %-24s %-14s %s  %s%s'
+                  % (r['resource'], r['app'], r['tier'], ' '.join(r['signals']),
+                     '' if r['classified_by_rule'] else '   (individually read)'))
+        print('')
+        print('  THIS IS A TRIAGE, NOT A RE-TIERING. The register says of itself')
+        print('  that its B tier is "the honest weak point of this file" and that')
+        print('  the rows say the same thing "because that is what the rule says,')
+        print('  not because 299 files were read". This narrows those rows to the')
+        print('  ones an irreplaceability test flags, so a person reads a handful')
+        print('  instead of 274. Re-tiering is a judgement and stays one.')
+        print('')
+        print('  ATTESTATION is the signal the B rule structurally cannot see: it')
+        print('  asks whether a resource is money or regulated and never asks')
+        print('  whether it is EVIDENCE.')
+        return 0
 
     # A register row naming a resource the registry does not have would make
     # every count below meaningless. criticality_tier_check owns that check;

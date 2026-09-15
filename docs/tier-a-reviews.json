@@ -76,6 +76,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-15T14:23:47Z",
+      "resources": [
+        "sv_audit_log"
+      ],
+      "files": [
+        "tests/run_tier_a_replaceability_probe.py"
+      ],
+      "what": "The item 97 under-assignment sweep. NOTE FOR THE REVIEWER: this obligation is a FALSE POSITIVE of the gate and is recorded rather than excluded. The only Tier A name in the diff is sv_audit_log, appearing as a FIXTURE STRING in tests/run_tier_a_replaceability_probe.py -- t.SHAPE.search('sv_audit_log') -- so no code serving sv_audit_log changed. The gate's documented posture is that over-inclusion costs one register entry and under-inclusion is a Tier A change slipping through clean, so the honest response is to record it; adding a tests/ exclusion would blind the gate to real test-side changes to Tier A behaviour, which is a worse trade. What DID change and is worth a look: tools/tier_a_replaceability_check.py gained --under, whose ATTESTATION signal shipped with a literal backspace (byte 0x08) and reported zero hits platform-wide until a positive control caught it, then reported zero again until it learned to resolve constant aliases. Check whether the +/-300 window is the right narrowness and whether any OTHER signal on this platform has never been asserted to FIRE on a known case.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

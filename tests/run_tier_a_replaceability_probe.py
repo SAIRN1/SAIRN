@@ -161,6 +161,41 @@ check('api/_resources/sairncode.js is restored BYTE FOR BYTE',
 check('the registry mutation actually applied (not a vacuous pass)',
       reg_mutated_ok, 'the arm above never ran, so it proved nothing')
 
+print('\n3c. THE UNDER-ASSIGNMENT SIGNALS -- and the one that shipped DEAD')
+# ── POSITIVE CONTROLS, AND THEY EARNED THEIR KEEP IMMEDIATELY ───────────────
+# The ATTESTATION pattern shipped with a LITERAL BACKSPACE where a word boundary
+# was intended -- the byte 0x08 -- so `ATTEST.search('signer:signer')` was False
+# and the signal reported ZERO hits across the whole platform. A clean result
+# from a dead pattern. CLAUDE.md already names this exact defect as one of the
+# three that made the cross-domain disciplines necessary: "a regex that shipped
+# with a literal backspace and could never match."
+#
+# IT WAS FOUND BY ASSERTING THE SIGNAL FIRES ON A KNOWN CASE, not by reading the
+# line, which looks correct at every size of font. So every signal below has a
+# positive control and a negative one, and the tool now refuses to IMPORT if the
+# attestation pattern cannot match its own reference case.
+check('ATTEST matches a real signature write', bool(t.ATTEST.search(
+    "list.push({ signer:signer, typed:typed, hash:doc.hash })")))
+check('ATTEST matches a server-stamped sign-off',
+      bool(t.ATTEST.search("payload.signedOffBy = arCaller.employee_id;")))
+check('CONTROL: ATTEST does NOT match a word that merely contains one',
+      not t.ATTEST.search("var designer = 1;"),
+      'it matches inside `designer` -- the substring trap this platform has '
+      'already been bitten by once')
+check('ATTEST carries NO control bytes -- the defect that made it dead',
+      not any(ord(c) < 32 for c in t.ATTEST.pattern), repr(t.ATTEST.pattern))
+check('SHAPE matches a log name', bool(t.SHAPE.search('sd_sms_log')))
+check('SHAPE matches an audit name', bool(t.SHAPE.search('sv_audit_log')))
+check('CONTROL: SHAPE does NOT match a name that merely contains one',
+      not t.SHAPE.search('sc_dialogue'), 'substring match')
+check('the attestation reader sees through a CONSTANT alias -- sairnfreedom '
+      'binds K_SIGNATURES and every writer uses the constant',
+      t.attestation_writers('sf_signatures') == ['sairnfreedom.html'],
+      t.attestation_writers('sf_signatures'))
+check('...and it finds the SAIRNlaw e-signature record, which is Tier B today',
+      t.attestation_writers('law_portalesign') == ['sairnlaw.html'],
+      t.attestation_writers('law_portalesign'))
+
 print('\n4. the live-registry read is load-bearing, not a style choice')
 js = io.open(SAIRNCODE, encoding='utf-8').read()
 code_only = '\n'.join(re.sub(r'^\s*//.*$', '', ln) for ln in js.split('\n'))
