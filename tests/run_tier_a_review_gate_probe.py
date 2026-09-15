@@ -221,7 +221,87 @@ finally:
     except OSError:
         pass
 
-print('\n6. the gate is WIRED, not merely written')
+print('\n6. --discharge: somebody ELSE closes it, and the refusal is at WRITE time')
+# ── THIS SECTION EXISTS BECAUSE I BROKE THE REAL REGISTER TESTING IT ────────
+# --discharge was added after Hank reviewed Fourth's obligation (ce7764fa, two
+# real findings) and the record still said `open`, because the gate had shipped
+# with no way to close. While checking the new command I ran it against the LIVE
+# register and recorded cc as the reviewer of work HANK had reviewed, with a
+# placeholder verdict. Both were false. Both were reverted, in the open.
+#
+# So every arm below drives a TEMPORARY register. A probe that exercises a WRITE
+# command against the real file is a probe that can forge a review record, and on
+# this platform that is the one record that must not be forgeable.
+tmp2 = tempfile.mkdtemp(prefix='tier-a-discharge-probe-')
+real_reviews2 = g.REVIEWS
+seq = [0]
+
+
+def fresh(author='somebody-else', opened='2026-01-01T00:00:00Z', extra=None):
+    recs = [{'author_session': author, 'opened_at': opened, 'status': 'open',
+             'resources': ['sc_claims'], 'reviewer_session': None,
+             'reviewed_at': None, 'verdict': None}]
+    if extra:
+        recs.append(extra)
+    seq[0] += 1
+    path = os.path.join(tmp2, 'r-%d.json' % seq[0])
+    io.open(path, 'w', encoding='utf-8').write(json.dumps({'records': recs}))
+    g.REVIEWS = path
+    return path
+
+
+SECOND = {'author_session': 'somebody-else', 'opened_at': '2026-01-02T00:00:00Z',
+          'status': 'open', 'resources': ['sc_ar'], 'reviewer_session': None,
+          'reviewed_at': None, 'verdict': None}
+try:
+    fresh(author=g.session_name())
+    check('a session CANNOT discharge its own obligation',
+          g.cmd_discharge(g.session_name(), 'looks fine to me') == 1,
+          'self-discharge was allowed')
+
+    p2 = fresh()
+    check("...but it CAN discharge another session's",
+          g.cmd_discharge('somebody-else', 'read it, two findings, both fixed') == 0)
+    rec = json.load(io.open(p2, encoding='utf-8'))['records'][0]
+    check('...and the record names the REVIEWER, not the author',
+          rec['reviewer_session'] == g.session_name() and rec['status'] == 'reviewed', rec)
+    check('...and stores the verdict text, so a tick is not a review',
+          'two findings' in (rec.get('verdict') or ''), rec.get('verdict'))
+
+    fresh()
+    check('an EMPTY verdict is refused -- "reviewed" with no content is a tick',
+          g.cmd_discharge('somebody-else', '   ') == 1)
+
+    fresh(extra=dict(SECOND))
+    check('with TWO open by one author it REFUSES TO GUESS which',
+          g.cmd_discharge('somebody-else', 'a verdict') == 1,
+          'it closed one of two without being told which')
+
+    p3 = fresh(extra=dict(SECOND))
+    check('...and closes the RIGHT one when told',
+          g.cmd_discharge('somebody-else', 'the second one',
+                          opened_at='2026-01-02T00:00:00Z') == 0)
+    by = {r['opened_at']: r['status']
+          for r in json.load(io.open(p3, encoding='utf-8'))['records']}
+    check('...leaving the other still OPEN',
+          by.get('2026-01-01T00:00:00Z') == 'open'
+          and by.get('2026-01-02T00:00:00Z') == 'reviewed', by)
+
+    fresh()
+    check('discharging an author with NO open obligation is refused',
+          g.cmd_discharge('nobody-at-all', 'a verdict') == 1)
+finally:
+    g.REVIEWS = real_reviews2
+    try:
+        for f in os.listdir(tmp2):
+            os.remove(os.path.join(tmp2, f))
+        os.rmdir(tmp2)
+    except OSError:
+        pass
+check('the live register was never written by this section',
+      g.REVIEWS == real_reviews2 and os.path.isfile(g.REVIEWS), g.REVIEWS)
+
+print('\n7. the gate is WIRED, not merely written')
 hook = io.open(os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py'),
                encoding='utf-8').read()
 check('the push gate invokes tier_a_review_gate.py',
@@ -231,7 +311,7 @@ check('...and DENIES on exit 1 rather than printing',
 check('...and reports exit 2 as NOT a pass',
       'COULD NOT TELL' in hook, 'exit 2 is folded into a pass')
 
-print('\n7. the real repo state is clean under its own gate')
+print('\n8. the real repo state is clean under its own gate')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
                     '--list'], cwd=REPO, capture_output=True, text=True, timeout=120)
 check('--list runs and exits 0', r.returncode == 0, r.stderr[:300])

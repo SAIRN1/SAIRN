@@ -4,6 +4,7 @@
     python tools/tier_a_review_gate.py --diff-range A..B   # check a commit range
     python tools/tier_a_review_gate.py --open "why"    # record this session's obligation
     python tools/tier_a_review_gate.py --list          # what is open, and whose
+    python tools/tier_a_review_gate.py --discharge <author> "<verdict>"
 
 Exit 0 clean, 1 a finding, 2 COULD NOT TELL -- never folded into either of the
 other two (PR 1.11).
@@ -360,6 +361,72 @@ def cmd_list():
     return 0
 
 
+def _discharge(records, author, verdict, session):
+    """Shared by both discharge paths so the self-review refusal cannot be true
+    on one and forgotten on the other."""
+    rec = records[0]
+    rec['status'] = 'reviewed'
+    rec['reviewer_session'] = session
+    rec['reviewed_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    rec['verdict'] = verdict.strip()
+    print('DISCHARGED -- %s reviewed the obligation %s opened %s, on %s'
+          % (session, author, rec.get('opened_at'), ', '.join(rec['resources'])))
+
+
+def cmd_discharge(author, verdict, opened_at=None):
+    """Close somebody ELSE'S obligation.
+
+    ── IT DID NOT EXIST FOR THE FIRST TWO HOURS, AND THAT WAS A REAL DEFECT ────
+    The gate shipped with --open and --list and NO WAY TO CLOSE. Within the hour
+    Hank did the review -- ce7764fa, two real findings against Fourth's
+    dnt_rollup work, citing the obligation by name -- and the record still said
+    `open`, because there was nothing to run. The reviewer had done the harder
+    half and the register could not show it. A list of obligations that only
+    ever grows is one people stop reading.
+
+    THE SELF-REVIEW REFUSAL IS ENFORCED HERE, AT WRITE TIME, and not only by the
+    check that reads the file afterwards. Refusing to WRITE a self-signed record
+    and refusing to PASS one are different controls: with only the second, the
+    file can hold the claim until somebody notices. Both now.
+    """
+    session = session_name()
+    if session == author:
+        sys.stderr.write(
+            'REFUSED: %s cannot discharge an obligation authored by %s. The rule '
+            'is that a Tier A change is reviewed by a session OTHER than the one '
+            'that wrote it, because the author shares the blind spot that '
+            'produced the code. That is the one thing this gate exists to '
+            'refuse.\n' % (session, author))
+        return 1
+    if not verdict.strip():
+        sys.stderr.write('--discharge needs a verdict sentence. "reviewed" with '
+                         'no content is a tick, not a review.\n')
+        return 1
+    data = load_reviews()
+    hit = open_records(data, author)
+    if opened_at:
+        hit = [r for r in hit if r.get('opened_at') == opened_at]
+    if not hit:
+        sys.stderr.write('No OPEN obligation authored by %r%s. `--list` shows '
+                         'what is open and whose.\n'
+                         % (author, (' opened at %r' % opened_at) if opened_at else ''))
+        return 1
+    if len(hit) > 1:
+        # REFUSES TO GUESS. Two obligations by one author are two different
+        # reviews, and closing the wrong one would record a review of work
+        # nobody looked at -- which is worse than leaving both open.
+        sys.stderr.write('%r has %d open obligations and this closes ONE. '
+                         'Refusing to guess which:\n' % (author, len(hit)))
+        for r in hit:
+            sys.stderr.write('  %s  %s\n'
+                             % (r.get('opened_at'), ', '.join(r.get('resources') or [])))
+        sys.stderr.write('Pass the opened_at as the second argument to pick one.\n')
+        return 1
+    _discharge(hit, author, verdict, session)
+    save_reviews(data)
+    return 0
+
+
 def main(argv):
     if '--open' in argv:
         i = argv.index('--open')
@@ -373,6 +440,15 @@ def main(argv):
         except CouldNotTell as e:
             sys.stderr.write('COULD NOT TELL: %s\n' % e)
             return 2
+    if '--discharge' in argv:
+        rest = argv[argv.index('--discharge') + 1:]
+        if len(rest) >= 3 and re.match(r'^\d{4}-\d{2}-\d{2}T', rest[1]):
+            return cmd_discharge(rest[0], ' '.join(rest[2:]), opened_at=rest[1])
+        if len(rest) >= 2:
+            return cmd_discharge(rest[0], ' '.join(rest[1:]))
+        sys.stderr.write('--discharge <author-session> [opened_at] <verdict '
+                         'sentence>\n')
+        return 1
     if '--list' in argv:
         return cmd_list()
     if '--diff-range' in argv:

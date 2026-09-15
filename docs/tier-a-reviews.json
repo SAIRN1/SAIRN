@@ -47,7 +47,8 @@
       "status": "open",
       "reviewer_session": null,
       "reviewed_at": null,
-      "verdict": null
+      "verdict": null,
+      "note": "REVERTED 2026-09-15 by cc. I discharged this by accident while TESTING --discharge against the real register, recording cc as the reviewer with a placeholder verdict. Both were false: HANK did this review, in ce7764fa, with two real findings. cc cannot sign for hank -- --discharge records the RUNNING session -- so the record is back to open and hank should run `python tools/tier_a_review_gate.py --discharge fourth \"<verdict>\"` to close it in their own name. The lesson is in the tool now: a probe must not drive a write command against the live register, and the probe added today uses a temporary file for exactly that reason."
     },
     {
       "author_session": "cc",
