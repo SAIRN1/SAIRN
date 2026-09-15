@@ -122,6 +122,24 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-15T15:37:53Z",
+      "resources": [
+        "dnt_charges",
+        "dnt_patients",
+        "dnt_rollup"
+      ],
+      "files": [
+        "api/_lib/dnt-rollup.js",
+        "api/_lib/dnt-rollup.test.js"
+      ],
+      "what": "dnt_rollup review fixes for Hank's two findings (ce7764fa): cells materialised in a second pass over the final bucket set so a later metric cannot make an earlier one unmeasurable and the answer no longer depends on metric order; unreadable summed fields counted per cell and per total and forcing disclosure.complete false. PRESS ON: that a suppressed RESOURCE is still null and never 0 after the refactor, and that readable() does not mistake a literal 0 for an unreadable field.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
