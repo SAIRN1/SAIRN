@@ -252,6 +252,8 @@ PURPOSES = {
     'fmea_prediction_check.py': ('CHECKER', 'whether a saved FMEA draft actually predicted the defect that then landed in that file -- the loop-closing half, and the cadence: the answer changes every time the defect register grows'),
     'load_schema_snapshot.py': ('CHECKER', 'a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped'),
     'licence_recoverability_check.py': ('LIVE', 'a licence with credential rows and zero active provisioners'),
+    "entitlement_freshness_check.py": ("CHECKER", "an entitlement field with readers and NO in-repo writer -- a mirror nothing here can ever revoke -- and, separately, a paid-tier gate decided from an external identifier's PRESENCE rather than its state, which a cancelled subscription keeps forever"),
+    'guard_ablation.py': ('CHECKER', 'a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass'),
     'local_only_collection_check.py': ('CHECKER', 'a collection written only to localStorage that never reaches a server'),
     'missing_dom_target_check.py': ('CHECKER', 'a getElementById target that appears as no id in the file'),
     'reclassification_sweep.py': ('LIVE', 'a statutory rule whose source has been reclassified'),
