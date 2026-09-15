@@ -557,8 +557,47 @@ module.exports = async (req, res) => {
   // a billing decision and Stripe is not configured, so nobody is on a paid
   // plan to expire. api/license-trial-gate.test.js pins this AS-IS -- the day
   // the column is added, that suite goes red and names all three handlers.
-  const isPaid = !!lic.stripe_subscription_id;
-  if (!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {
+  //
+  // ── AN IDENTIFIER IS NOT A STATE (2026-09-15, item 100) ────────────────
+  // This was `const isPaid = !!lic.stripe_subscription_id;`. A CANCELLED
+  // SUBSCRIPTION KEEPS ITS ID FOREVER -- `sub_...` is the receipt that a
+  // subscription once existed, never evidence that it exists now -- so that
+  // expression could grant a paid tier and could never revoke one. Fixed
+  // before B2B Stripe is configured rather than after, because the same fix
+  // on a live billing system is a migration plus three call sites plus a
+  // reconciliation job with real customers on it.
+  //
+  // THREE STATES, AND THE THIRD IS NOT FOLDED INTO EITHER OTHER:
+  //   knownNotPaid  no subscription was EVER created, or the mirror says the
+  //                 subscription is positively dead. This is the only state
+  //                 that may refuse anybody.
+  //   knownPaid     the mirror says it is active or trialing.
+  //   cannotTell    an id exists and the mirror carries no state for it --
+  //                 TODAY'S CASE, since license_keys has no
+  //                 subscription_status column. It must NOT refuse: doing so
+  //                 would 402 every real subscriber the day trial_ends_at is
+  //                 added and this column is not. It must not grant either,
+  //                 which is why it has its own name instead of being
+  //                 absorbed into `knownPaid`.
+  //
+  // BEHAVIOUR IS UNCHANGED TODAY, deliberately. With no status column every
+  // licence is either knownNotPaid (no id -- refusable, exactly as before) or
+  // cannotTell (id present -- not refused, exactly as before). What changes is
+  // that a positively-cancelled subscription can now be revoked at all.
+  const subState = String(lic.subscription_status || '').trim().toLowerCase();
+  const everSubscribed = !!lic.stripe_subscription_id;
+  const knownPaid = everSubscribed && (subState === 'active' || subState === 'trialing');
+  const knownNotPaid = !everSubscribed
+    || subState === 'canceled' || subState === 'cancelled'
+    || subState === 'unpaid' || subState === 'past_due'
+    || subState === 'incomplete_expired';
+  // THE CONDITION BELOW IS `knownNotPaid`, NOT `!knownPaid`, and that is the
+  // whole fix in one line. `!knownPaid` would sweep cannot-tell in with
+  // positively-not-paid and refuse a real subscriber. An earlier draft of this
+  // block carried a named `cannotTell` const to make the third state visible;
+  // it was removed because an unused binding is dormant code, and the
+  // distinction lives here instead, where the decision is actually made.
+  if (knownNotPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now()) {
     res.status(402).json({ error: { code: 'TRIAL_EXPIRED', message: 'Your trial has ended. Please subscribe to continue.' } });
     return;
   }

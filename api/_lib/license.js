@@ -48,6 +48,7 @@ async function validateLicenseKey(key) {
     app_id: null,
     trial_ends_at: null,
     stripe_subscription_id: null,
+    subscription_status: null,
     license_hash: null,
     key: (typeof key === 'string' ? key : null)
   };
@@ -99,6 +100,19 @@ async function validateLicenseKey(key) {
   out.app_id = row.app_id || null;
   out.trial_ends_at = row.trial_ends_at || null;
   out.stripe_subscription_id = row.stripe_subscription_id || null;
+  // ── SUBSCRIPTION STATE, READ IF PRESENT (2026-09-15, item 100) ──────────
+  // `stripe_subscription_id` is an IDENTIFIER. A cancelled subscription keeps
+  // its `sub_...` forever, so the id is the receipt that a subscription once
+  // existed and is never evidence that it exists now. Three handlers derived a
+  // paid tier from its mere presence, which is a gate that can never revoke.
+  //
+  // THIS COLUMN DOES NOT EXIST TODAY AND NOTHING IS INVENTED BY READING IT.
+  // The query above is `select=*` precisely so a newly-added column is read if
+  // present and simply absent before its migration -- the same treatment
+  // trial_ends_at already gets, and the same sentence four lines up says so.
+  // Absent, it normalises to null, and the call sites treat null as
+  // CANNOT-TELL rather than as either answer.
+  out.subscription_status = row.subscription_status || null;
   return out;
 }
 

@@ -139,6 +139,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
+| **Item 100 closed at the three call sites &mdash; a paid tier derived from an identifier could grant and could never revoke** | **FIXED 2026-09-15 (Fourth)** &mdash; `api/sd-data.js`, `api/sd-render.js`, `api/_lib/sd-store.js`, plus the `subscription_status` mapping in `api/_lib/license.js`. `api/license-trial-gate.test.js` 8  | `api/license-trial-gate.test.js` |
 | **Item 98 ablation &mdash; 17 of 38 role gates in `api/sd-data.js` can be removed and NOTHING goes red** | **BUILT 2026-09-15 (Fourth)** &mdash; `tools/guard_ablation.py`, 38 gates &times; 93 observing suites. 21 LOAD-BEARING, 17 SILENT, 0 COULD-NOT-RUN. `docs/2026-09-15-item98-guard-ablation.md` | `tests/sairncare_fault_probe.py` |
 | **The restore-checker blocker I named was WRONG &mdash; the mock target already existed, and the real blocker is that its subject does not exist at push time** | **CORRECTED 2026-09-14 (Cody)** &mdash; `tools/report_only_checks.py` NOT_PROMOTED entry rewritten; triage gap confirmed **0 of 67** | `tests/run_restore_coherence_probe.js` |
 | **The four Class A export gaps item 39c found are CLOSED &mdash; and a concurrency-sensitive test is now retried once rather than read as a failure** | **BUILT 2026-09-14 (Hank)** &mdash; `sairndental.html` (`charges`, `payments`, `vendororders` datasets plus their buttons), `sairnroofing.html` (`claim_photos` report + `rfLoadClaimPhotosAcrossClaims( | `tests/roofing_claim_photo_export.js`, `tests/run_concurrency_retry_probe.py`, `tests/sairndental_ledger_export.js` |
@@ -654,7 +655,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 427   tests/**, api/*.test.js
-  open-work rows citing a test       204   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       205   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED

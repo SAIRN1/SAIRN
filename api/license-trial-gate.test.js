@@ -45,9 +45,27 @@ const ROOT = path.join(__dirname, '..');
 // fixed-size window that ran past a callback -- so the model and the shape
 // assertion are kept as two simple things instead of one clever one. If the
 // shape assertion holds, this model is faithful to what actually runs.
+//
+// ── UPDATED 2026-09-15 (item 100): AN IDENTIFIER IS NOT A STATE ───────────
+// The model used to be `const isPaid = !!lic.stripe_subscription_id;`, which
+// is the defect this suite now pins the FIX for: a cancelled subscription
+// keeps its id forever, so that expression could grant a paid tier and could
+// never revoke one. The shape assertion below went red on the change, named
+// all three handlers, and that is exactly what it was written to do.
 function trialExpired(lic) {
-  const isPaid = !!lic.stripe_subscription_id;
-  return !!(!isPaid && lic.trial_ends_at && new Date(lic.trial_ends_at).getTime() < Date.now());
+  const subState = String(lic.subscription_status || '').trim().toLowerCase();
+  const everSubscribed = !!lic.stripe_subscription_id;
+  const knownPaid = everSubscribed && (subState === 'active' || subState === 'trialing');
+  const knownNotPaid = !everSubscribed
+    || subState === 'canceled' || subState === 'cancelled'
+    || subState === 'unpaid' || subState === 'past_due'
+    || subState === 'incomplete_expired';
+  // knownPaid is read so this model cannot drift into `!knownNotPaid` and
+  // still look faithful; the two are NOT complements -- cannot-tell is
+  // neither.
+  if (knownPaid) return false;
+  return !!(knownNotPaid && lic.trial_ends_at
+            && new Date(lic.trial_ends_at).getTime() < Date.now());
 }
 
 let pass = 0, fail = 0;
@@ -82,6 +100,104 @@ test('NO trial date means not expired -- and this is the ONLY case in production
   assert.strictEqual(trialExpired({ stripe_subscription_id: null }), false);
 });
 
+// ── THE FIX: an identifier is not a state (item 100, 2026-09-15) ───────
+// Every arm here is BOTH directions of one rule. The defect being fixed was a
+// gate that could grant and never revoke, so "a cancelled subscription is now
+// refused" alone proves nothing -- a check that refuses everybody passes it.
+// Each is paired with the case that must still be allowed.
+
+test('FIXED: a CANCELLED subscription no longer bypasses the trial', () => {
+  // The whole defect in one arm. Under the old expression this was `false`:
+  // the id is present, so isPaid was true, so the gate let them straight
+  // through forever. `sub_...` is the receipt that a subscription once
+  // existed, never evidence that it exists now.
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: 'canceled',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), true);
+});
+
+test('...and the British spelling too, because Stripe is not the only writer', () => {
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: 'cancelled',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), true);
+});
+
+test('...as do unpaid, past_due and incomplete_expired', () => {
+  ['unpaid', 'past_due', 'incomplete_expired'].forEach((st) => {
+    assert.strictEqual(trialExpired({
+      stripe_subscription_id: 'sub_123', subscription_status: st,
+      trial_ends_at: '2020-01-01T00:00:00Z' }), true, st + ' should be refusable');
+  });
+});
+
+test('THE OTHER DIRECTION: an ACTIVE subscription still bypasses', () => {
+  // Without this, a gate that refused everybody would pass every arm above.
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: 'active',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false);
+});
+
+test('...and so does trialing', () => {
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: 'trialing',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false);
+});
+
+test('CANNOT-TELL is NOT refused -- an id with no state column is the case today', () => {
+  // This is the arm that protects real subscribers. license_keys has no
+  // subscription_status column, so EVERY subscribed licence is in this state
+  // right now. Folding it into not-paid would 402 every paying customer the
+  // day trial_ends_at is added and this column is not.
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: null,
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false);
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false, 'an absent field is the same as null');
+});
+
+test('CANNOT-TELL is not GRANTED either: an UNRECOGNISED status still falls through', () => {
+  // Deliberately recorded rather than asserted as a refusal. A status nobody
+  // has mapped is a cannot-tell, and this suite pins that it behaves like one
+  // -- so if a future Stripe state should refuse, the change is visible here
+  // rather than silently already-done.
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: 'some_future_state',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false);
+});
+
+test('NEVER SUBSCRIBED is knownNotPaid, exactly as before -- behaviour preserved', () => {
+  // The fix must not change what happens today. With no status column a
+  // licence is either knownNotPaid (no id) or cannot-tell (id present), and
+  // both outcomes match the old expression.
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: null, subscription_status: 'active',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), true,
+    'a status without a subscription id is not a subscription');
+});
+
+test('case and whitespace in the status do not decide entitlement', () => {
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: '  CANCELED  ',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), true);
+  assert.strictEqual(trialExpired({
+    stripe_subscription_id: 'sub_123', subscription_status: ' Active ',
+    trial_ends_at: '2020-01-01T00:00:00Z' }), false);
+});
+
+test('AS-IS: subscription_status is not a column yet either', () => {
+  // The companion tripwire to trial_ends_at. If this goes red the column has
+  // been added, which is GOOD -- it is what makes revocation possible -- but
+  // it also means every licence with an id and no backfilled status is a
+  // cannot-tell, and something must now WRITE this column. Nothing in api/
+  // does today (tools/entitlement_freshness_check.py).
+  const snap = JSON.parse(read(path.join('db', 'schema_snapshot.json')));
+  const cols = snap.license_keys;
+  assert.ok(Array.isArray(cols) && cols.length, 're-capture the snapshot');
+  assert.strictEqual(cols.indexOf('subscription_status'), -1,
+    'subscription_status EXISTS NOW -- confirm something writes it before trusting the gate');
+});
+
 // ── the two tripwires ─────────────────────────────────────────────────────
 test('AS-IS: `trial_ends_at` is NOT a column on license_keys', () => {
   // The live snapshot, captured 2026-09-02. If this arm goes red, the column
@@ -114,8 +230,21 @@ test('all three sites say the gate is inert, and point at this suite', () => {
     // All three still carry their own copy, deliberately -- see the note at
     // the top. What each MUST carry is the correction, so a reader of any one
     // of them learns the gate is inert.
-    assert.match(src, /!isPaid && lic\.trial_ends_at && new Date\(lic\.trial_ends_at\)/,
+    assert.match(src, /knownNotPaid && lic\.trial_ends_at && new Date\(lic\.trial_ends_at\)/,
       f + ' no longer contains the trial gate at all');
+    // THE CONDITION MUST BE knownNotPaid AND NOT !knownPaid. They are not
+    // complements: cannot-tell is neither, and `!knownPaid` would sweep it in
+    // with positively-not-paid and 402 a real subscriber. This is the arm that
+    // stops the fix being undone by a plausible-looking simplification.
+    assert.ok(src.indexOf('!knownPaid && lic.trial_ends_at') === -1,
+      f + ' refuses on !knownPaid, which folds cannot-tell into not-paid');
+    // ANCHORED AT THE START OF A LINE, because the first version of this arm
+    // was a plain indexOf and it went RED against the fixed file -- the fix's
+    // own comment QUOTES the defective expression to explain what was wrong
+    // with it. A marker search that cannot tell code from prose about code is
+    // the same trap as `esign` matching 47 occurrences of `design`.
+    assert.ok(!/^[ \t]*const isPaid = !!lic\.stripe_subscription_id;/m.test(src),
+      f + ' is back to deriving a paid tier from the presence of an identifier');
     assert.ok(src.indexOf('NOT A COLUMN') !== -1,
       f + ' no longer says the gate is inert, so it reads as enforcement again');
     assert.ok(src.indexOf('license-trial-gate.test.js') !== -1,

@@ -79,9 +79,28 @@ EXTERNAL_OWNED = ('status', 'stripe_subscription_id', 'trial_ends_at', 'plan')
 # `!!<anything>_subscription_id` and friends: a boolean derived from an
 # identifier's PRESENCE. Deliberately not `\bsubscription\b` -- that matches
 # prose, comments and a dozen unrelated variables.
+#
+# NARROWED TWICE ON 2026-09-15, both times against a real false positive the
+# first version produced the moment the defect it names was actually FIXED.
+#
+#  1. ANCHORED AT THE START OF A LINE. Unanchored, it matched the FIX'S OWN
+#     COMMENT -- `// This was `const isPaid = !!lic.stripe_subscription_id;`` --
+#     so repairing the defect made the count go UP, from 3 to 6. A marker
+#     search that cannot tell code from prose about code is the `esign`/`design`
+#     trap in a new costume, and this repo has now been bitten by it twice in
+#     one day (`api/license-trial-gate.test.js` hit the identical thing).
+#
+#  2. `ever...` IS EXCLUDED FROM THE NAME, because a name in the PAST TENSE is
+#     the honest reading of an identifier. `const everSubscribed =
+#     !!lic.stripe_subscription_id` is exactly right: an id proves a
+#     subscription once existed, and that is what the name claims. The defect
+#     is a boolean named for a CURRENT entitlement (`isPaid`, `entitled`)
+#     derived from a fact about the past. The tense IS the bug, so the rule
+#     keys on it -- and `isSubscribed` is still caught, which the control
+#     asserts so this narrowing cannot quietly gut the check.
 PRESENCE_GATE = re.compile(
-    r'(?:const|let|var)\s+(\w*(?:[Pp]aid|[Ee]ntitled|[Ss]ubscribed)\w*)\s*=\s*'
-    r'!!\s*[\w.]*\.(\w*subscription_id|\w*customer_id)\b')
+    r'^[ \t]*(?:const|let|var)\s+(?!ever)(\w*(?:[Pp]aid|[Ee]ntitled|[Ss]ubscribed)\w*)\s*=\s*'
+    r'!!\s*[\w.]*\.(\w*subscription_id|\w*customer_id)\b', re.M)
 
 
 def fail(msg):
