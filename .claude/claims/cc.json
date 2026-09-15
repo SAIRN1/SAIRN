@@ -1384,6 +1384,16 @@
       "claimed_at_epoch": 1789487214.5459383,
       "status": "released",
       "released_at": "2026-09-15T16:27:01Z"
+    },
+    {
+      "id": "cc-1789490309",
+      "session": "cc",
+      "subject": "cc",
+      "task": "conflict marker push gate control and comment sensitivity flake capture",
+      "claimed_at": "2026-09-15T16:38:29Z",
+      "claimed_at_epoch": 1789490309.650443,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
