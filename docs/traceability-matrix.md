@@ -285,6 +285,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **Gate 4 on the vertical with the MOST resources and no probe &mdash; 32 resources, four green suites, none ever observed red** | **BUILT 2026-09-15 (Hank)** &mdash; `tests/sairnbuild_fault_probe.py`, 11 mutation arms + 4 controls, green after one real coverage gap was closed. MASTER-PLAN `sairnbuild` fault 0 &rarr; 1 | `tests/sairnbuild_fault_probe.py`, `tests/sairnbuild_server_backup.js` |
 | **Competitive-gap B2 &mdash; retainage could be held and never released, and the board printed a lifetime accrual under a current-balance label** | **BUILT 2026-09-15 (Hank)** &mdash; `e2624577`. `wip` + `release_retainage` on `bld_draws`, `api/_lib/sairnbuild-retainage-endpoint.test.js` 29 arms. **Every refusal live-verified; the HAPPY PATH IS N | `api/_lib/sairnbuild-retainage-endpoint.test.js` |
+| **`tests/faults/transport_timeout_sweep.js` is RED on a clean tree &mdash; a string anchor that rotted against a CORRECT refactor** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED** | `tests/faults/transport_timeout_sweep.js` |
 | ~~AI Budget Early Warning: `f072765` fixed 5 review findings and was never independently re-reviewed~~ | **CLOSED 2026-09-04 (Cody)** in `1fc666ec` — reviewed, one real defect found and fixed, two reported for decision | `tests/sairnbuild_budget_early_warning.js` |
 
 ### sairncare
@@ -306,6 +307,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **A Tier A medical-billing record took a write from the LICENCE KEY ALONE &mdash; `sc_denial_events` was the seventh, and the gate was a hand-written list of six** | **FIXED 2026-09-15 (CC), measured LIVE first** &mdash; `SC_TIER_A_WRITE_GATED` is now DERIVED from the pinned Tier A list; `tests/sairncode_gates.js` 120/120, mutation control 155/155 with all 29 caug | `tests/sairncode_gates.js` |
+| **MASTER-PLAN called SAIRNcode &ldquo;no fault probe&rdquo; while a 563-line sabotage-verifying mutation control sat in `tests/` &mdash; the rule was Python-only** | **FIXED 2026-09-15 (Fourth)** &mdash; `tools/master_plan.py` rule (c), 7 new arms in `tests/run_master_plan_probe.py`. `sairncode` fault **0 &rarr; 1**, gaps cleared. Declared probes 18 &rarr; 26 | `tests/faults/transport_timeout_sweep.js`, `tests/run_master_plan_probe.py`, `tests/sairncode_gates.js`, `tests/sairncode_gates_mutation_control.js` |
 | **28 registered resources, ZERO test files &mdash; and the three server-side gates standing between a licence key and a deleted medical-billing record had never been exercised** | **CLOSED 2026-09-14 (CC)** &mdash; `tests/sairncode_gates.js` (50 arms, driven against the real handler) and `tests/sairncode_gates_mutation_control.js` (8 mutations, all caught). **The POSTURE findin | `tests/sairncode_gates.js`, `tests/sairncode_gates_mutation_control.js` |
 | **The six Tier A billing resources accepted a write from the LICENCE KEY ALONE &mdash; now admin or biller. Reads unchanged** | **DECIDED by Michael and BUILT 2026-09-14 (CC)** after `tests/sairncode_gates.js` measured the posture. `SC_TIER_A_WRITE_ROLES` / `SC_TIER_A_WRITE_GATED` in `api/sd-data.js`; suite grown 50 &rarr; 90  | `tests/sairncode_gates.js` |
 
@@ -658,7 +660,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 428   tests/**, api/*.test.js
-  open-work rows citing a test       209   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       211   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     34   report_only_checks.NOT_PROMOTED

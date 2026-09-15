@@ -84,7 +84,7 @@ check(MP.TM.traced is TM.traced,
 # ── 2. A FAULT PROBE IS A DECLARATION, NOT A MENTION ─────────────────────────
 print('')
 print('2. the fault column counts DECLARATIONS, and nothing else')
-by_app, declarers = MP.fault_probes()
+by_app, declarers, too_broad = MP.fault_probes()
 
 # THE FABRICATION THAT SHIPPED FOR A MINUTE. tests/key_collision_probe.py
 # mentions stonedesk.html and contains the word "plant". It plants nothing.
@@ -106,6 +106,38 @@ check('tests/sd_timesheet_pay_est_probe.py' in declarers,
       'a probe declaring a parseable MUTATIONS block is counted')
 check('stonedesk' in by_app,
       '...and attributed from its resolved TARGET, not from its filename')
+
+# ── THE JAVASCRIPT HALF OF THE DECLARATION, ADDED 2026-09-15 ────────────────
+# The rule was Python-only, which was an accident of which probe got written
+# first rather than a decision -- and this document called SAIRNcode "no fault
+# probe" while a 563-line, sabotage-verifying mutation control sat in tests/.
+# Both directions, because a widening that silently credits everything is worse
+# than the undercount it replaced.
+check('tests/sairncode_gates_mutation_control.js' in declarers,
+      'a *_mutation_control.js is a declaration in the other language')
+check('sairncode' in by_app,
+      '...and SAIRNcode is credited for it, which it was not before')
+check('tests/faults/sv_backup_write_faults.js' in declarers,
+      'a tests/faults/*.js is counted too')
+
+# THE CAP, AND IT IS THE REASON THE WIDENING IS SAFE.
+# tests/faults/transport_timeout_sweep.js names FIFTEEN app files. Crediting
+# all fifteen from one file would flip nearly every remaining gap label at once
+# on much weaker per-app evidence.
+check('tests/faults/transport_timeout_sweep.js' not in declarers,
+      'a file naming more apps than the cap is NOT credited')
+check(any(r == 'tests/faults/transport_timeout_sweep.js' for r, _n in too_broad),
+      '...and it is REMEMBERED BY NAME, not dropped silently -- excluded is '
+      'not the same as absent')
+check(all(n > MP.MAX_APPS_PER_JS_PROBE for _r, n in too_broad),
+      'nothing is in the too-broad list that was under the cap')
+
+# A JS FILE THAT DECLARES NOTHING IS STILL NOT A PROBE -- the widening must not
+# have turned "any .js under tests/" into coverage.
+check('tests/faults/faultkit.js' not in declarers,
+      'a tests/faults helper that names no app file is not a probe')
+check('tests/sairncode_gates.js' not in declarers,
+      'the SUITE is not a probe -- only the control that mutates is')
 
 # Two apps from one probe, because the attribution reads string constants
 # rather than splitting the filename.
@@ -183,7 +215,8 @@ try:
         'import sys\n'
         'sys.path.insert(0, %r)\n' % os.path.join(REPO, 'tools') +
         'import master_plan as G\n'
-        'G.fault_probes = lambda: ({}, [])\n'
+        # Three-tuple since 2026-09-15: (by_app, declarers, too_broad).
+        'G.fault_probes = lambda: ({}, [], [])\n'
         'G.DOC = %r\n' % out +
         'sys.exit(G.main([]))\n')
     p = subprocess.run([sys.executable, shim], cwd=REPO, capture_output=True,

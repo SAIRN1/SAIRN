@@ -29,37 +29,39 @@ Every column names the tool that produced it. `res` = resources owned in `api/_r
 
 | Vertical | res | tiered | suites | traced | fault | Gaps |
 |---|---|---|---|---|---|---|
-| `sairnbiz` | 13 | ⚠ | 11 | 10 | 1 | **tier: NO TIER      sairnbiz/sb_ts is registered and has no row.** |
+| `sairnbiz` | 13 | ⚠ | 11 | 10 | 2 | **tier: NO TIER      sairnbiz/sb_ts is registered and has no row.** |
 | `sairnbuild` | 32 | ✅ | 5 | 4 | 1 | — |
-| `sairncare` | 13 | ✅ | 21 | 4 | 1 | — |
+| `sairncare` | 13 | ✅ | 21 | 4 | 2 | — |
 | `sairncash` | 0 | ✅ | 4 | 2 | 0 | **no fault probe** |
-| `sairncode` | 28 | ✅ | 3 | 2 | 0 | **no fault probe** |
-| `sairndental` | 25 | ✅ | 26 | 9 | 3 | — |
+| `sairncode` | 28 | ✅ | 3 | 2 | 1 | — |
+| `sairndental` | 25 | ✅ | 26 | 9 | 4 | — |
 | `sairndental-book` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndental-complaint` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `sairndesign` | 18 | ✅ | 1 | 0 | 1 | **nothing traced** |
 | `sairnfreedom` | 35 | ✅ | 2 | 2 | 1 | — |
-| `sairngrounds` | 30 | ✅ | 2 | 1 | 1 | — |
+| `sairngrounds` | 30 | ✅ | 2 | 1 | 2 | — |
 | `sairnlaw` | 19 | ✅ | 11 | 7 | 1 | — |
 | `sairnlegacy` | 36 | ✅ | 3 | 3 | 1 | — |
 | `sairnmechanical` | 6 | ✅ | 4 | 2 | 1 | — |
 | `sairnroofing` | 27 | ✅ | 28 | 5 | 1 | — |
 | `sairnscape` | 12 | ✅ | 2 | 1 | 1 | — |
 | `sairnsenior` | 15 | ✅ | 11 | 3 | 1 | — |
-| `sairnvet` | 41 | ✅ | 8 | 7 | 1 | — |
-| `stonedesk` | 36 | ✅ | 15 | 9 | 1 | — |
+| `sairnvet` | 41 | ✅ | 8 | 7 | 3 | — |
+| `stonedesk` | 36 | ✅ | 15 | 9 | 2 | — |
 | `stonedesk-catalog` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-hr` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 | `stonedesk-intake` | 0 | ✅ | 0 | 0 | 0 | **no dedicated suite** · **no fault probe** |
 
-**Platform totals: 386 resources owned by an app, 157 test files attributed to one, 71 of those traced, 17 fault probes.**
+**Platform totals: 386 resources owned by an app, 157 test files attributed to one, 71 of those traced, 25 fault probes.**
 
 **And the denominators that are NOT the same thing**, stated because conflating them is what went wrong: there are **428** test files on disk in total and **222** of them are traced — most are not attributed to any single app, so the per-app `traced` column above sums to less. A rate over the subset you looked at is not a rate.
 
 ### What these three columns cannot see
 
 - **`suites` counts test files whose PATH names the app.** A test that covers an app without saying so in its filename is invisible to it. That is why `sairncode` and `sairnroofing` read 0 here while the hand-written version claimed 8 and 26 — the old figures used a rule nobody wrote down, and neither number can be checked against the other. This one can at least be checked against `ls tests/`.
-- **`fault` is a FLOOR of 18 declared probes, not a census.** A probe counts only if it declares a parseable `MUTATIONS` block or is named `*_fault_probe.py`. A probe that mutates real source while declaring neither is not counted, and `tools/mutation_anchor_check.py` records that four of six could not be swept on 2026-09-11 for exactly that reason. **The previous hand-written figure of 14 was higher and rested on a rule nobody can reconstruct** — an early draft of this generator reproduced that kind of number by accident, crediting StoneDesk with 19 including a probe written that morning which plants nothing at all.
+- **`fault` is a FLOOR of 26 declared probes, not a census.** A probe counts only if it declares a parseable `MUTATIONS` block, is named `*_fault_probe.py`, is named `*_mutation_control.js`, or lives under `tests/faults/`. A probe that mutates real source while declaring none of those is not counted, and `tools/mutation_anchor_check.py` records that four of six could not be swept on 2026-09-11 for exactly that reason. **The previous hand-written figure of 14 was higher and rested on a rule nobody can reconstruct** — an early draft of this generator reproduced that kind of number by accident, crediting StoneDesk with 19 including a probe written that morning which plants nothing at all.
+- **The JavaScript half of that rule was added 2026-09-15, and it was not a widening for its own sake.** The rule had been Python-only, which was an accident of which probe got written first. `tests/sairncode_gates_mutation_control.js` is 563 lines, plants its mutations in a throwaway worktree and asserts its own sabotage applied in four parts — and this document said SAIRNcode had **no fault probe** while it sat there. Exactly one app label changed.
+- **1 file(s) DECLARE themselves a probe and are EXCLUDED by the three-app cap, named here rather than dropped silently:** `tests/faults/transport_timeout_sweep.js` (15 apps). A single file naming that many apps would credit each of them on much weaker per-app evidence than a dedicated probe gives, and would flip several gap labels at once. Excluded is not the same as absent, which is why they are printed.
 - **`tiered` means `criticality_tier_check.py` raised nothing**, which is a completeness check, not a judgement about whether a tier is right.
 
 ### The stack-up — a worst-case bound, with RSS beside it
@@ -70,10 +72,10 @@ The table above names every contributor, which is necessary and is not enough: a
 |---|---|---|---|
 | `suites` | 271 | UNDER-counts | test files on disk attributed to no single app by path |
 | `traced` | 206 | UNDER-counts | test files no source ties to a stated requirement |
-| `fault` | 28 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
+| `fault` | 26 | UNDER-counts | test files that write to a tracked app file and declare neither a MUTATIONS block nor a *_fault_probe.py name |
 | `tiered` | 0 | no contribution | binary and complete -- criticality_tier_check either raised something for an app or did not |
 
-**WORST CASE: 505.** RSS for context: 342.
+**WORST CASE: 503.** RSS for context: 341.
 
 **All three contributors err in the SAME direction — they UNDER-count — so this document understates coverage and cannot overstate it.** A budget on a status page that flattered the platform would be worth very little; this one can only ever say "at least this good".
 
@@ -122,7 +124,7 @@ The table above names every contributor, which is necessary and is not enough: a
   apps owning a resource            17   api/_resources/index.js OWNER_BY_RESOURCE
   test files on disk               428   tests/**, api/*.test.js
   tests traced to a requirement    228   traceability_matrix.traced()
-  declared fault probes             18   MUTATIONS blocks + *_fault_probe.py
+  declared fault probes             26   MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js + tests/faults/*.js
   attested migrations                5   hand-recorded, Michael, directly, 2026-09-10
 ```
 

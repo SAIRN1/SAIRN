@@ -111,7 +111,31 @@ ATTESTED_UNVERIFIED = [
 #       to a real file -- read with tools/mutation_anchor_check.py, which
 #       already owns that parse and does it with `ast` rather than by import
 #       (importing a probe RUNS it; most have no __main__ guard); or
-#   (b) the file is named `*_fault_probe.py`, which is the author saying so.
+#   (b) the file is named `*_fault_probe.py`, which is the author saying so; or
+#   (c) ADDED 2026-09-15 -- the same declaration in the OTHER LANGUAGE. A file
+#       named `*_mutation_control.js`, or living under `tests/faults/`, is its
+#       author saying the same thing. The rule was Python-only and that was an
+#       accident of which probe got written first, not a decision:
+#       `tests/sairncode_gates_mutation_control.js` is 563 lines, plants its
+#       mutations in a throwaway worktree, and asserts its own sabotage applied
+#       in four parts -- and this document called SAIRNcode **no fault probe**
+#       while it sat there. A status document asserting something false about
+#       the repo is the failure this file exists to prevent.
+#
+#       CAPPED AT THREE APPS PER FILE, and the cap is the whole reason (c) is
+#       safe. `tests/faults/transport_timeout_sweep.js` names FIFTEEN app files.
+#       Crediting all fifteen from one file would flip nearly every remaining
+#       gap label at once on much weaker per-app evidence -- the same shape as
+#       the tier gate's first version reporting "you touched 78 Tier A
+#       resources" for a one-line edit. A file over the cap is EXCLUDED AND
+#       PRINTED BY NAME in the document, never silently dropped.
+#
+#       MEASURED BEFORE IT SHIPPED: exactly one app label changes (sairncode
+#       0 -> 1) and exactly one file is excluded by the cap. A generator change
+#       whose blast radius was not measured first is a document nobody can
+#       check.
+FAULT_PROBE_JS = re.compile(r'_mutation_control\.js$')
+MAX_APPS_PER_JS_PROBE = 3
 #
 # THE COUNT IS A FLOOR AND THE DOCUMENT SAYS SO. A probe that mutates real
 # source while declaring neither is invisible here, and mutation_anchor_check's
@@ -168,12 +192,17 @@ def fault_probes():
     """
     import mutation_anchor_check as MA
     names = TM.apps()
-    out, declarers = {}, set()
+    out, declarers, too_broad = {}, set(), []
     root = os.path.join(REPO, 'tests')
     for dirpath, dirs, files in os.walk(root):
         dirs[:] = [d for d in dirs if d != '__pycache__']
         for f in sorted(files):
-            if not f.endswith('.py'):
+            _rel_early = os.path.relpath(os.path.join(dirpath, f),
+                                         REPO).replace(os.sep, '/')
+            _is_js_probe = (f.endswith('.js')
+                            and (FAULT_PROBE_JS.search(f)
+                                 or _rel_early.startswith('tests/faults/')))
+            if not f.endswith('.py') and not _is_js_probe:
                 continue
             path = os.path.join(dirpath, f)
             rel = os.path.relpath(path, REPO).replace(os.sep, '/')
@@ -203,13 +232,29 @@ def fault_probes():
                     if ("'%s.html'" % a) in body or ('"%s.html"' % a) in body:
                         targets.add(a + '.html')
 
+            # (c) the same declaration in JavaScript, read the same way. The
+            #     CAP is applied here and the excluded file is remembered by
+            #     name so the document can print it -- a broad sweep dropped
+            #     silently would read as "that file does not exist".
+            if _is_js_probe:
+                body = io.open(path, encoding='utf-8', errors='replace').read()
+                js_targets = set()
+                for a in names:
+                    if ("'%s.html'" % a) in body or ('"%s.html"' % a) in body:
+                        js_targets.add(a + '.html')
+                if len(js_targets) > MAX_APPS_PER_JS_PROBE:
+                    too_broad.append((rel, len(js_targets)))
+                else:
+                    targets |= js_targets
+
             if not targets:
                 continue
             declarers.add(rel)
             for a in names:
                 if (a + '.html') in targets:
                     out.setdefault(a, []).append(rel)
-    return {k: sorted(set(v)) for k, v in out.items()}, sorted(declarers)
+    return ({k: sorted(set(v)) for k, v in out.items()}, sorted(declarers),
+            sorted(too_broad))
 
 
 def suites_by_app(tests, names):
@@ -337,7 +382,7 @@ def build():
                       'The resource counts are the spine of this document and '
                       'guessing them is the failure it exists to end.' % e)
     tier_clean, tier_problems, _tier_out = tiered_apps()
-    faults, fault_declarers = fault_probes()
+    faults, fault_declarers, fault_too_broad = fault_probes()
     suites = suites_by_app(tests, names)
 
     tv = closing_error.Traverse(DOC)
@@ -348,7 +393,8 @@ def build():
     tv.leg('tests traced to a requirement', len(cited),
            'traceability_matrix.traced()')
     tv.leg('declared fault probes', len(fault_declarers),
-           'MUTATIONS blocks + *_fault_probe.py')
+           'MUTATIONS blocks + *_fault_probe.py + *_mutation_control.js '
+           '+ tests/faults/*.js')
     tv.leg('attested migrations', len(ATTESTED_RUN),
            'hand-recorded, %s, %s' % (ATTESTED_BY, ATTESTED_ON))
     try:
@@ -466,15 +512,32 @@ def build():
       'nobody wrote down, and neither number can be checked against the other. '
       'This one can at least be checked against `ls tests/`.')
     W('- **`fault` is a FLOOR of %d declared probes, not a census.** A probe '
-      'counts only if it declares a parseable `MUTATIONS` block or is named '
-      '`*_fault_probe.py`. A probe that mutates real source while declaring '
-      'neither is not counted, and `tools/mutation_anchor_check.py` records '
+      'counts only if it declares a parseable `MUTATIONS` block, is named '
+      '`*_fault_probe.py`, is named `*_mutation_control.js`, or lives under '
+      '`tests/faults/`. A probe that mutates real source while declaring none '
+      'of those is not counted, and `tools/mutation_anchor_check.py` records '
       'that four of six could not be swept on 2026-09-11 for exactly that '
       'reason. **The previous hand-written figure of 14 was higher and rested '
       'on a rule nobody can reconstruct** — an early draft of this generator '
       'reproduced that kind of number by accident, crediting StoneDesk with '
       '19 including a probe written that morning which plants nothing at all.'
       % len(fault_declarers))
+    W('- **The JavaScript half of that rule was added 2026-09-15, and it was '
+      'not a widening for its own sake.** The rule had been Python-only, which '
+      'was an accident of which probe got written first. '
+      '`tests/sairncode_gates_mutation_control.js` is 563 lines, plants its '
+      'mutations in a throwaway worktree and asserts its own sabotage applied '
+      'in four parts — and this document said SAIRNcode had **no fault '
+      'probe** while it sat there. Exactly one app label changed.')
+    if fault_too_broad:
+        W('- **%d file(s) DECLARE themselves a probe and are EXCLUDED by the '
+          'three-app cap, named here rather than dropped silently:** %s. A '
+          'single file naming that many apps would credit each of them on much '
+          'weaker per-app evidence than a dedicated probe gives, and would '
+          'flip several gap labels at once. Excluded is not the same as '
+          'absent, which is why they are printed.'
+          % (len(fault_too_broad),
+             ', '.join('`%s` (%d apps)' % (r, n) for r, n in fault_too_broad)))
     W('- **`tiered` means `criticality_tier_check.py` raised nothing**, which '
       'is a completeness check, not a judgement about whether a tier is right.')
     W('')
