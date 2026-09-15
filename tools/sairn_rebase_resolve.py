@@ -61,7 +61,7 @@ import subprocess
 import sys
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 # The self-declaration. Read from the file, never from a list kept here.
 DECLARES = re.compile(
@@ -84,7 +84,7 @@ def fail(msg):
 
 def conflicted():
     r = subprocess.run(['git', '-C', REPO, 'diff', '--name-only',
-                        '--diff-filter=U'], capture_output=True, text=True)
+                        '--diff-filter=U'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         fail('git diff --diff-filter=U failed: ' + (r.stderr or '')[:200])
     return [p for p in r.stdout.split('\n') if p.strip()]
@@ -183,7 +183,7 @@ def main(argv):
         return 2
 
     add = subprocess.run(['git', '-C', REPO, 'add'] + [r for r, _g in gen_files],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         fail('git add failed: ' + (add.stderr or '')[:200])
     print('\nStaged %d regenerated document(s). Run `git rebase --continue`.'
