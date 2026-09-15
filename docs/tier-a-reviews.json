@@ -140,6 +140,27 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-15T22:25:27Z",
+      "resources": [
+        "law_trust_reconcile",
+        "law_trusttx",
+        "scp_quotes"
+      ],
+      "files": [
+        "api/_lib/law-trust-reconcile-endpoint.test.js",
+        "api/_lib/law-trust-reconcile.js",
+        "api/_resources/sairnlaw.js",
+        "api/sd-data.js",
+        "sairnscape.html"
+      ],
+      "what": "SAIRNlaw IOLTA reconciliation and the sairnscape scp_quotes write fix. Press on: whether allocation_vs_ledger can genuinely disagree, the on-or-before statement-date boundary, the undated-transaction case where the bank leg can agree while the all-time ledger is larger, and the single Math.round at the cents boundary.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
