@@ -84,6 +84,32 @@ docs = g.touched_tier_a(diff_for('docs/CRITICALITY-TIERS.md', '| `sc_claims` | *
 check('docs/ is excluded, so the register itself is not a Tier A change', docs == {}, docs)
 sql = g.touched_tier_a(diff_for('sql/x.sql', 'create table sc_claims (...)'), RES)
 check('sql/ is excluded', sql == {}, sql)
+# ── THE WORKLOG FALSE POSITIVE, 2026-09-15, AND BOTH DIRECTIONS OF IT ───────
+# The gate refused a push whose ONLY Tier-A-naming file was a root-level
+# SAIRN-ACTIVE-WORK-*.md -- a worklog describing dnt_rollup in prose. Its own
+# reasoning already covered that ("a document naming a resource is not code
+# serving it"); the rule was keyed on the docs/ PREFIX rather than on what the
+# file is, and every session's worklog lives at the repo root by convention.
+wl = g.touched_tier_a(
+    diff_for('SAIRN-ACTIVE-WORK-fourth.md', 'built the sc_claims roll-up today'), RES)
+check('a root-level WORKLOG is not code serving a Tier A resource', wl == {}, wl)
+
+md = g.touched_tier_a(diff_for('SAIRN-BACKLOG.md', 'sc_claims is still open'), RES)
+check('...nor is any other root-level .md', md == {}, md)
+
+MD = g.touched_tier_a(diff_for('README.MD', "'sc_claims'"), RES)
+check('...and the test is case-insensitive on the extension', MD == {}, MD)
+
+# THE OTHER DIRECTION, and it is the one that matters. Excluding prose must not
+# start excluding code: a file whose NAME merely contains ".md" is not markdown,
+# and a real handler must still count.
+notmd = g.touched_tier_a(diff_for('api/sc-md-export.js', "'sc_claims'"), RES)
+check('a .js whose name CONTAINS "md" is still code', notmd == {'sc_claims': ['api/sc-md-export.js']}, notmd)
+
+still = g.touched_tier_a(diff_for('api/x.js', "'sc_claims'"), RES)
+check('...and an ordinary handler still counts, so the exclusion did not widen',
+      still == {'sc_claims': ['api/x.js']}, still)
+
 own = g.touched_tier_a(diff_for('tools/tier_a_review_gate.py', "'sc_claims'"), RES)
 check('the gate\'s own files are excluded, or recording an obligation would '
       'itself create one', own == {}, own)

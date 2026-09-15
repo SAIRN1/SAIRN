@@ -166,7 +166,27 @@ def touched_tier_a(diff_text, resources):
             # naming a resource is not code serving it, and CRITICALITY-TIERS.md
             # names every Tier A resource by definition, so including docs/ would
             # make every push a Tier A push and the gate would mean nothing.
-            skip = (cur in SELF or cur.startswith('docs/') or cur.startswith('sql/'))
+            #
+            # ── AND ANY .md ANYWHERE, ADDED 2026-09-15 ──────────────────────
+            # This gate refused a push whose only Tier-A-naming file was
+            # `SAIRN-ACTIVE-WORK-fourth.md` -- a WORKLOG, describing dnt_rollup
+            # and dnt_patients in prose. The reasoning three lines above already
+            # covers that case exactly: a document naming a resource is not code
+            # serving it. It was missed only because the rule was keyed on the
+            # `docs/` PREFIX rather than on what the file IS, and every session's
+            # worklog lives at the repo root by convention.
+            #
+            # THIS SHRINKS THE RULE RATHER THAN GROWING THE LIST, which matters
+            # because this file's own header warns that "a growing exclusion list
+            # is how a gate stops covering anything". One principled predicate --
+            # markdown is prose, never a request handler -- replaces what would
+            # otherwise be four root-level filenames plus the next one somebody
+            # adds. It cannot under-cover: no `.md` file has ever served a
+            # resource at runtime on this platform.
+            skip = (cur in SELF
+                    or cur.startswith('docs/')
+                    or cur.startswith('sql/')
+                    or cur.lower().endswith('.md'))
             continue
         if cur is None or skip:
             continue
