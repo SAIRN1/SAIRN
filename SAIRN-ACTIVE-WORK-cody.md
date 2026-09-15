@@ -4884,3 +4884,66 @@ not a 53rd implementation.
 
 The negative-control-that-cannot-fail recombination. `tools/sabotage_control_check.py`
 already measures the class, so it is instrumented but not consolidated.
+
+---
+
+## 2026-09-15 (last) — the negative-control recombination, and the tool was the problem
+
+### `tools/sabotage.py` — plant a defect so failing to plant it is LOUD
+
+Four approaches already existed here and **each is right about a different
+failure**, which is why the module offers both planting strategies rather than a
+house style:
+
+| approach | catches | who does it |
+|---|---|---|
+| PRESENCE `anchor in src` | a rename | the common shape |
+| UNIQUENESS `count != 1` | hitting the **wrong site** | `countersign_coverage_probe.py` |
+| MATERIALISATION read back from disk | the write not landing | `sairncode_gates_mutation_control.js` |
+| LINE-NUMBER ablation | ambiguous anchors entirely | `guard_ablation.py` |
+
+`CouldNotSabotage` is an **exception, not a return value** — a caller who
+ignores a returned `None` writes exactly the silent no-op the module exists to
+remove. 19 arms, both directions, including that CRLF survives planting (a
+control must sabotage **one** thing) and that `Planted` restores after the body
+raises.
+
+### AND THE MEASURING TOOL WAS UNDER-CREDITING THE BEST CONTROLS
+
+`sabotage_control_check.py` reported **11 UNGUARDED**. Reading one of them —
+`entitlement_freshness_control.py`, my own tool's control — found it already
+guarded, by `once()`: `assert n == 1` on the original before use.
+
+**Five of the eleven guard by COUNTING the anchor, which is strictly stronger
+than the `anchor in src` shape the tool accepted.** Presence catches a rename and
+is blind to four matches; a count catches both — and `guard_ablation.py` records
+four real gates that `replace(..., 1)` would silently have collapsed into the
+first one.
+
+**So the signal was inverted: a probe that did the harder thing scored worse.**
+Added the uniqueness shape, with fixtures in **both** directions — including a
+negative one proving that counting the *checker's findings* still reads as
+unguarded, so the pattern cannot be satisfied by any `.count(` at all.
+
+**Measured: 11 → 6 unguarded, 39 → 44 verifying, of 50. Blind lock 14/14 → 17/17
+and still run before the tree is read.**
+
+**`CRITERIA_VERSION` was stale on the very run that accepted the new shape** —
+it printed `2026-09-13.2` over criteria that had already moved. A version stamp
+that does not travel with the thing it stamps is worse than none, because it is
+read as evidence. Bumped, with the rule written next to it.
+
+### CLAUDE.md corrected
+
+It carried *"23 of 39 negative controls never verify their own sabotage"* as
+standing guidance. Now re-measured in place with both figures and their dates,
+the instruction **not to quote either from there**, and the note that part of the
+improvement was the tool rather than the controls.
+
+### Remaining 6, not migrated
+
+`run_invisible_in_pattern_probe`, `run_literal_drift_determinism_probe`,
+`run_master_plan_probe`, `run_new_checker_probe`, `run_testability_gate_probe`,
+`run_traceability_matrix_probe`. Each needs its own reading — a mechanical
+rewrite of somebody else's control is how a working control becomes a broken one,
+and four of those six are already RED for unrelated pre-existing reasons.

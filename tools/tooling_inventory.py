@@ -81,6 +81,18 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'sabotage.py': ('LIBRARY',
+        'the negative-control recombination: plant a defect so that FAILING to '
+        'plant it is LOUD. Four approaches already existed here and each was '
+        'right about a different failure -- PRESENCE catches a rename, '
+        'UNIQUENESS catches hitting the wrong site, MATERIALISATION catches the '
+        'write not landing, and LINE-NUMBER ablation avoids ambiguous anchors '
+        'entirely. This applies the first three to both planting strategies, '
+        'and raises CouldNotSabotage as an EXCEPTION rather than returning None '
+        'so a caller cannot reproduce the silent no-op. It does NOT migrate the '
+        'remaining unguarded controls -- a mechanical rewrite of somebody '
+        'else\'s control is how a working one breaks. Companion to '
+        'sabotage_control_check.py, which MEASURES the class'),
     'line_endings.py': ('LIBRARY',
         'the CRLF-vs-LF recombination: 52 files here handle line endings '
         'independently and most are RIGHT, because they had already converged '

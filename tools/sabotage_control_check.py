@@ -55,7 +55,12 @@ import re
 import sys
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CRITERIA_VERSION = '2026-09-13.2'
+# BUMPED WITH THE CRITERIA, and that is the point of the string existing. It
+# printed 2026-09-13.2 on the run that first accepted the uniqueness shape, so
+# the output named criteria that had already moved -- a version stamp that does
+# not travel with the thing it stamps is worse than none, because it is read as
+# evidence. Any change to GUARDS, REPLACES or FIXTURES bumps this.
+CRITERIA_VERSION = '2026-09-15.1'
 
 # Writes a file AND builds the content with a replacement: the patch-a-real-file
 # shape. A probe that only writes a fresh fixture has no anchor to rot.
@@ -80,6 +85,30 @@ GUARDS = (
     re.compile(r"assert\s+\w+\s*!=\s*\w+"),
     re.compile(r"anchor[^\n]{0,60}(match|found|applies|still)", re.I),
     re.compile(r"sabotage[^\n]{0,60}(applied|changed|matches)", re.I),
+    # ── THE UNIQUENESS SHAPE, ADDED 2026-09-15, AND IT WAS THE STRONGEST ONE ──
+    # This tool reported 11 UNGUARDED. Five of those eleven guard by COUNTING
+    # the anchor and refusing unless it matches exactly once:
+    #
+    #   entitlement_freshness_control.py   assert n == 1, 'fixture invalid: ...'
+    #   law_custody_attribution_probe.py   if n != 1: ...
+    #   license_trial_gate_probe.py        .count(ob) == 1
+    #   sairndental_write_failure_probe.py if n != 1: ...
+    #   faults/run_fault_suite_probe.py    if n != 1: ...
+    #
+    # A COUNT IS STRICTLY STRONGER THAN THE PRESENCE SHAPES ABOVE. `assert old
+    # in src` catches a rename and is blind to an anchor that matches in four
+    # places; a count catches both, and `tools/guard_ablation.py` records four
+    # real gates that `replace(..., 1)` would silently have collapsed into the
+    # first one.
+    #
+    # SO THE TOOL WAS UNDER-CREDITING EXACTLY THE BEST-WRITTEN CONTROLS, which
+    # inverts the signal it exists to give: a probe that did the harder thing
+    # scored worse than one that did the easy thing. Found while consolidating
+    # the class into tools/sabotage.py, by reading a flagged file and finding it
+    # already guarded.
+    re.compile(r"\.count\([^)]*\)\s*(?:!=|==)\s*1"),
+    re.compile(r"\bif\s+n\s*!=\s*1\b"),
+    re.compile(r"\bassert\s+n\s*==\s*1\b"),
 )
 
 
@@ -216,6 +245,22 @@ FIXTURES = [
      "src = open(p).read()\nm = src.replace('a','b')\nassert m != src\nopen(p,'w').write(m)\n", True),
     ('a JS probe using !== src is not',
      "const s = read(p);\nconst m = s.replace('a','b');\nif (m !== s) write(p, m);\n", True),
+    # ── ADDED 2026-09-15 WITH THE UNIQUENESS SHAPE ────────────────────────
+    # The criterion is new, so it gets fixtures in BOTH directions before the
+    # real number is believed. Without the negative one, "it recognises a
+    # count" would also be satisfied by a pattern that matches any `.count(`
+    # at all -- including a probe that counts findings and guards nothing.
+    ('a guarded one that COUNTS the anchor and demands exactly one is not '
+     'reported -- stronger than `old in src`, which is blind to four matches',
+     "src = open(p).read()\nn = src.count(old)\nif n != 1: raise SystemExit(2)\n"
+     "open(p,'w').write(src.replace(old,new,1))\n", True),
+    ('...and the assert spelling of the same thing',
+     "src = open(p).read()\nn = src.count(old)\nassert n == 1\n"
+     "open(p,'w').write(src.replace(old,new,1))\n", True),
+    ('NEGATIVE: counting the CHECKER\'S FINDINGS guards nothing and is still '
+     'reported',
+     "src = open(p).read()\nopen(p,'w').write(src.replace('a','b'))\n"
+     "hits = out.count('FINDING')\nassert hits == 1\n", False),
     ('CONTROL: a probe that writes a FRESH fixture is not judged at all',
      "open(p,'w').write('| A | B |\\n')\n", None),
     ('CONTROL: a probe that only reads is not judged',

@@ -161,9 +161,15 @@ TIME rather than design: nothing announces the day a check stops testing
 anything** -- a string anchor that no longer matches, a generator's `--check`
 comparing a document to its own output, a snapshot whose verdicts are as of a
 capture hours ago. Re-reference against the SOURCE, on a cadence taken from a
-MEASURED drift rate. Measured 2026-09-13: **23 of 39 negative controls on this
-platform never verify their own sabotage applied**
-(`python tools/sabotage_control_check.py`).
+MEASURED drift rate. **Re-measured 2026-09-15: 6 of 50, down from 23 of 39 on
+2026-09-13** (`python tools/sabotage_control_check.py`). Do not quote either
+figure from here — run it. **Part of that improvement was the TOOL, not the
+controls:** it did not recognise the UNIQUENESS guard (`count(anchor) != 1`),
+which is *stronger* than the `anchor in src` shape it did accept, so five
+well-written controls were being reported as unguarded and the signal was
+inverted — a probe that did the harder thing scored worse. Criteria are now
+stamped `CRITERIA_VERSION` and the blind lock carries fixtures for that shape in
+both directions.
 
 The other six exist because **the tools written to enforce them kept committing
 the defects they were built to catch** — a risk scorer that
