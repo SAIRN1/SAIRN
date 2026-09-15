@@ -31,29 +31,123 @@
 // medical-billing record: it is the only app on the platform where all 28
 // registered resources declare a `delete` verb.
 //
-// The mutations are written to a temp copy of the whole api/ tree. api/sd-data.js
-// is never touched, and the closing section asserts that.
+// ── THE MUTATIONS ARE PLANTED IN A THROWAWAY GIT WORKTREE ───────────────────
+// Corrected 2026-09-15, and the correction is the point of this paragraph
+// rather than a footnote to it. THIS HEADER USED TO SAY *"the mutations are
+// written to a temp copy of the whole api/ tree. api/sd-data.js is never
+// touched, and the closing section asserts that"* -- and the code forty lines
+// below said the opposite in its own comment: *"the handler is swapped in place
+// and restored in a finally."* It was swapped in place, every mutation, every
+// run, in this clone, on THREE tracked files. The temp directory existed and
+// held nothing the suite ever ran against.
+//
+// A control whose header describes a mechanism it does not implement is the
+// worst version of this defect class, not a documentation nit: the header is
+// exactly what somebody reads to decide whether a risk is already covered, and
+// this one answered the isolation question with the reassuring answer while
+// doing the unsafe thing. It went unnoticed because every assertion still
+// passed -- the restore really did work, on every run anybody watched.
+//
+// WHAT THE IN-PLACE VERSION RISKED, all three reachable rather than theoretical:
+//   * A KILLED PROCESS leaves a sabotaged handler on disk in a tracked file. The
+//     `finally` does not run for a SIGKILL or a closed terminal, and
+//     tools/run_all_tests.py deliberately does NOT clean residue -- it reports
+//     it, because `git checkout --` on somebody's working tree is the worse
+//     trade. A stranded PROBE commit reached origin twice in two days on
+//     2026-09-10; tests/sairnlegacy_fault_probe.py cites that incident as the
+//     reason it uses a worktree, and it shipped in the SAME COMMIT as the Tier A
+//     mutations this file added.
+//   * A CONCURRENT DIRECT RUN restores the wrong bytes. The snapshot is taken at
+//     module load, so a second run starting mid-mutation captures the MUTATED
+//     file as its "original", restores to that, and passes its byte-identical
+//     arm. run_all_tests.py's lock does not help: it guards the runner, and
+//     nothing stops `node tests/sairncode_gates_mutation_control.js` directly.
+//   * A TREE THAT WAS ALREADY DIRTY is "restored" to its dirty state and section
+//     2 reports success, because the baseline it compares against is whatever it
+//     happened to find.
+// Now: the worktree is created at HEAD, the working-tree copies of the files
+// under test are copied in so the semantics stay "test what is on disk now", and
+// every write lands inside it. If the worktree cannot be created this file FAILS
+// CLOSED and says so -- a control that cannot isolate must not report a full
+// sheet of caught mutations (PR 1.11).
+//
+// THE REGISTRY HALF (item 97) CAME IN ON THE SAME DAY, FROM ANOTHER CLONE, and
+// is why UNDER_TEST is a list rather than three constants: a fourth mutable half
+// is one string, not another parallel snapshot/restore/assert triple to keep in
+// step. The two changes met in a rebase; the isolation was re-applied on top of
+// the registry work rather than either being taken whole.
 
 'use strict';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
+const crypto = require('crypto');
 const { spawnSync } = require('child_process');
 
 const ROOT = path.join(__dirname, '..');
-const SRC = path.join(ROOT, 'api', 'sd-data.js');
 // THE CLIENT HALF IS MUTATED TOO (2026-09-14). The Tier A write gate has two
 // halves that can each be wrong on their own: the server refusing, and the
 // client not rendering that refusal as a refusal. A control on only the first
 // would pass on a build where a coder is told to "wait until resolved" for
 // something that will never resolve.
-const APP = path.join(ROOT, 'sairncode.html');
+//
 // THE REGISTRY IS THE THIRD MUTABLE HALF (2026-09-15, item 97). The list that
 // decides which resources may be destroyed lives in api/_resources/sairncode.js,
 // not in the handler, so a control that could only sabotage the handler could
 // not reach the one edit that reopens the whole finding -- emptying the list.
-const REGISTRY = path.join(ROOT, 'api/_resources/sairncode.js');
-const SUITE = path.join(__dirname, 'sairncode_gates.js');
+const UNDER_TEST = ['api/sd-data.js', 'sairncode.html', 'api/_resources/sairncode.js',
+                    'tests/sairncode_gates.js'];
+
+// ── THE CLONE'S OWN BYTES, RECORDED BEFORE ANYTHING HAPPENS ─────────────────
+// Hashed rather than kept in memory as text: the closing control's job is to
+// prove this process never wrote these paths, and a hash is the cheap way to say
+// so about a 2MB document.
+function sha(p) {
+  return crypto.createHash('sha256').update(fs.readFileSync(p)).digest('hex');
+}
+// ── MTIME IS RECORDED TOO, AND THAT IS NOT BELT-AND-BRACES ─────────────────
+// The hash alone cannot tell NEVER WRITTEN from WRITTEN AND RESTORED, which is
+// the same conflation this whole change exists to remove -- and it was caught by
+// running the finished control with its own isolation deliberately broken
+// (SRC repointed at the clone, 2026-09-15). Arms went red and the structural arm
+// fired, but every hash arm PASSED, because `runSuiteWith`'s `finally` had
+// already put the original bytes back. A control that only compares end-state
+// bytes reports a clean clone about a run that mutated it many times over.
+// LIMIT, stated rather than implied: this detects a write-and-restore only
+// because the pre-run mtime is minutes or hours old. Two writes inside one
+// filesystem timestamp granularity would be invisible, so the STRUCTURAL arm
+// below -- not this one -- is what carries the guarantee.
+function stamp(p) { return sha(p) + ':' + fs.statSync(p).mtimeMs; }
+const CLONE_BEFORE = {};
+UNDER_TEST.forEach((rel) => { CLONE_BEFORE[rel] = stamp(path.join(ROOT, rel)); });
+
+// ── THE WORKTREE. FAIL CLOSED IF IT CANNOT BE MADE ─────────────────────────
+// "Could not isolate" is a third answer and it is never folded into "every
+// mutation caught". Exit 2, loudly, naming what was missing.
+const WT = fs.mkdtempSync(path.join(os.tmpdir(), 'sairncode-gates-wt-'));
+fs.rmSync(WT, { recursive: true, force: true });   // git insists on creating it
+{
+  const add = spawnSync('git', ['-C', ROOT, 'worktree', 'add', '-q', '--detach', WT, 'HEAD'],
+                        { encoding: 'utf8', timeout: 300000 });
+  if (add.status !== 0) {
+    console.log('COULD NOT CHECK: no git worktree, so NOTHING WAS MEASURED.');
+    console.log('Zero failures here is not a sheet of caught mutations -- it is');
+    console.log('a control that never ran. '
+                + String(add.stderr || add.error || '').trim().slice(0, 300));
+    process.exit(2);
+  }
+}
+// The worktree is at HEAD; the mutations must apply to what is ON DISK NOW, or
+// this control would silently stop covering uncommitted work -- which is exactly
+// when a gate is most likely to be wrong.
+UNDER_TEST.forEach((rel) => {
+  fs.copyFileSync(path.join(ROOT, rel), path.join(WT, rel));
+});
+
+const SRC = path.join(WT, 'api', 'sd-data.js');
+const APP = path.join(WT, 'sairncode.html');
+const REGISTRY = path.join(WT, 'api/_resources/sairncode.js');
+const SUITE = path.join(WT, 'tests', 'sairncode_gates.js');
 const ORIGINAL = fs.readFileSync(SRC, 'utf8');
 const APP_ORIGINAL = fs.readFileSync(APP, 'utf8');
 const REGISTRY_ORIGINAL = fs.readFileSync(REGISTRY, 'utf8');
@@ -67,17 +161,18 @@ function ok(cond, label, detail) {
 }
 function section(s) { console.log('\n' + s); }
 
-// The suite requires api/sd-data.js BY PATH from ROOT, so the mutant has to be
-// swapped in at that path. Copying the whole repo would be slow and copying
-// only api/ breaks the suite's other requires, so the handler is swapped in
-// place and restored in a finally -- and section 2 asserts the restore worked
-// by comparing bytes, not by trusting that the finally ran.
+// The suite requires api/sd-data.js BY PATH from its own ROOT, which inside the
+// worktree resolves to the worktree -- so the mutant is swapped in at that path
+// there and the suite needs no knowledge that any of this is happening. The
+// restore between mutations still matters (each mutation must run ALONE, or a
+// verdict is a claim about two defects at once), but it is no longer the only
+// thing standing between a killed process and a sabotaged tracked file.
 // `target` defaults to the handler, so every pre-existing mutation is unchanged.
 function runSuiteWith(source, target) {
   const file = target || SRC;
   fs.writeFileSync(file, source, 'utf8');
   try {
-    const r = spawnSync(process.execPath, [SUITE], { cwd: ROOT, encoding: 'utf8',
+    const r = spawnSync(process.execPath, [SUITE], { cwd: WT, encoding: 'utf8',
                                                      timeout: 300000 });
     return { code: r.status, out: (r.stdout || '') + (r.stderr || '') };
   } finally {
@@ -374,9 +469,11 @@ try {
     let parses = true;
     if (m.app) {
       fs.writeFileSync(APP, mutated, 'utf8');
+      // The TOOL comes from the clone (it is not what is under test); the
+      // DOCUMENT it reads comes from the worktree, which is why cwd is WT.
       const cb = spawnSync('python', [path.join(ROOT, 'tools', 'checkblocks.py'),
                                       'sairncode.html'],
-                           { cwd: ROOT, encoding: 'utf8', timeout: 300000 });
+                           { cwd: WT, encoding: 'utf8', timeout: 300000 });
       parses = /FAILED_BLOCKS:0/.test(cb.stdout || '');
       fs.writeFileSync(APP, APP_ORIGINAL, 'utf8');
     } else {
@@ -404,22 +501,44 @@ try {
        r.out.split('\n').filter((l) => l.trim()).slice(-4).join('\n'));
   });
 
-  // ── 2. THE SHIPPED HANDLER IS UNTOUCHED ───────────────────────────────────
-  // Asserted by comparing bytes rather than by trusting that every `finally`
-  // ran. This control swaps a real file in the real tree, so "it was restored"
-  // is the one claim it must not take on faith.
-  section('2. all three mutated files were restored byte for byte');
+  // ── 2. THE WORKTREE COPIES WERE RESTORED BETWEEN MUTATIONS ────────────────
+  // Still asserted, because each mutation has to run ALONE: residue from one
+  // would make the next one's verdict a claim about two defects at once.
+  section('2. all three mutated files were restored byte for byte in the worktree');
   ok(fs.readFileSync(SRC, 'utf8') === ORIGINAL,
-     'the shipped handler is byte-identical to how this run found it');
+     'the worktree handler is byte-identical to how this run found it');
   ok(fs.readFileSync(APP, 'utf8') === APP_ORIGINAL,
-     'and so is sairncode.html');
+     'and so is the worktree sairncode.html');
   ok(fs.readFileSync(REGISTRY, 'utf8') === REGISTRY_ORIGINAL,
-     'and so is api/_resources/sairncode.js -- the file whose ONE list decides '
-     + 'which records can be destroyed');
+     'and so is the worktree api/_resources/sairncode.js -- the file whose ONE '
+     + 'list decides which records can be destroyed');
+
+  // ── 3. THE CLONE WAS NEVER WRITTEN AT ALL ─────────────────────────────────
+  // The control that the isolation is real, and the one the in-place version
+  // could not have. "Restored" and "never touched" are different claims, and
+  // only the second survives a killed process: the old design's guarantee lived
+  // entirely inside a `finally` that a SIGKILL skips.
+  section('3. THE CLONE\'S OWN FILES WERE NEVER WRITTEN -- not merely restored');
+  UNDER_TEST.forEach((rel) => {
+    ok(stamp(path.join(ROOT, rel)) === CLONE_BEFORE[rel],
+       rel + ' in this clone is unchanged AND unwritten -- same bytes and the '
+       + 'same mtime, so a write-then-restore would fail this too');
+  });
+  ok([SRC, APP, REGISTRY, SUITE].every((p) => p.indexOf(WT) === 0),
+     'STRUCTURAL: every mutation target resolves inside the worktree, so the '
+     + 'arms above cannot pass by luck -- there is no code path that writes the '
+     + 'clone');
 } finally {
-  try { fs.writeFileSync(SRC, ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
-  try { fs.writeFileSync(APP, APP_ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
-  try { fs.writeFileSync(REGISTRY, REGISTRY_ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
+  // The worktree goes whether or not anything above succeeded. `--force`
+  // because it is deliberately dirty: the last mutation's restore may not have
+  // run, and refusing to clean up a throwaway would leave the residue this
+  // change exists to prevent.
+  try {
+    spawnSync('git', ['-C', ROOT, 'worktree', 'remove', '--force', WT],
+              { encoding: 'utf8', timeout: 300000 });
+    spawnSync('git', ['-C', ROOT, 'worktree', 'prune'], { encoding: 'utf8', timeout: 300000 });
+  } catch (e) { /* prune is best-effort; the next run's mkdtemp is unique */ }
+  try { fs.rmSync(WT, { recursive: true, force: true }); } catch (e) { /* gone already */ }
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) { /* temp */ }
 }
 

@@ -153,17 +153,27 @@ bottom of this document being followed rather than described.
 | 2 | Nesting produces no machine output | *Highest operational risk* | **BUILT — DXF ONLY, AND G-CODE IS REFUSED ON PURPOSE** | `nestingExportDXF` / `nestBuildDXF` on `panel-nesting`, `tests/nesting_dxf.js` (Fourth, `ee51217`). R12 ASCII, closed POLYLINE contours, inches, origin bottom-left, Y converted from the canvas convention. Kerf is deliberately NOT in the geometry — it is a CAM toolpath offset, and baking it in would change every part's finished size. **G-code is not emitted and will not be**: it needs feeds, speeds, tool numbers and a machine origin this app has never seen, which is fabrication with a saw on the other end. The paper half (saw/pick tickets, `tests/nesting_saw_ticket.js`) shipped the same day |
 | 3 | No barcode / scanner support | Absent (`barcode` zero) | **BUILT** | `stonedesk.html:7087` — SCAN / FIND, USB barcode path, `externalBarcode` bound to slabs, duplicate external barcodes **reported not resolved** |
 | 4 | No slab-scanner integration | Absent | **OPEN** | 3 `slabsmith` hits: one comment, two AI system prompts. No SideShot / Iride / Mapascan interface |
-| 5 | No customer e-signature, no deposit collection | Absent | **OPEN** | `signedAt`/`signerName` are still only SAIRN's own service agreements. The 3 `stripe` hits are the price-book comment and the agreement text. "Deposit Required %" is a quote **term**, not payment processing |
+| 5 | No customer e-signature, no deposit collection | Absent | **BUILT — BOTH HALVES** (was OPEN here until 2026-09-15) | `esigInit`, `esigApprove`, `esigBlock`, `esigClear`, `esigCreateInvoice`, `esigPrintApproval`, `esigSendDepositEmail`; `esig-` DOM ids and `onclick="esig…"` handlers on the panel, `esigApprove(` called; `deposit_amount` / `deposit_status` server-persisted in `api/sd-data.js` with `api/sd-data-approvals.test.js` covering them. **The old OPEN evidence was true and not the whole picture:** `signedAt`/`signerName` really are agreement-only, but they are a *different field* from the e-signature namespace, which is how this row stayed plausible for thirteen days. **The real namespace is `\besig` — searching `esign` returns 47 hits and every one is `design`.** See the correction section below |
 | 6 | No QuickBooks integration | **HELD OPEN ON PURPOSE** | **HELD OPEN — UNCHANGED** | Michael's call, 2026-09-02. A known competitive disadvantage StoneDesk is choosing to carry. Reopening is a SAIRNbiz platform decision, not a StoneDesk feature request |
 | 7 | No multi-location support | Absent | **BUILT — ATTRIBUTION, NOT ACCESS PARTITIONING** | `sd_locations`, `panel-locations` (Yards), `location_id` on the slab, per-yard rollup with Unassigned always its own row, yard filter on the Slabs panel; `tests/stonedesk_locations.js` 54/54 (Hank, 2026-09-03). **The panel states in terms that this does NOT scope any employee to a yard** — that is an authorisation change reaching every panel and the roster, and implying it were done would let a shop believe its yards were separated when they are not. ⚠ SQL pending |
 | 8 | No remnant publishing to the public website | Absent | **BUILT** (was PARTIAL earlier the same day) | `sd_remnants`, `publicRemnantView`, remnant card on `stonedesk-catalog.html`, publish toggle on the shop panel (Hank, 2026-09-02). Only a published **and still Available** piece reaches the web; the price **is** published, unlike a slab's cost. ⚠ SQL pending |
 
-**StoneDesk genuinely open: 4 and 5, both vendor-gated.** GAP 7 closed 2026-09-03. GAP 1 (public catalog and order
-tracking), GAP 2 (DXF machine output) and the remnant half of GAP 8 all closed
-2026-09-02 -- 1 and 2 by Fourth, 8 by Hank. **GAP 2 is closed for DXF and
+**StoneDesk genuinely open: 4 only, and it is vendor-gated.** GAP 5
+(e-signature and deposit collection) was found **BUILT** on 2026-09-15 by
+re-deriving it against the file; its row above now reads correctly, and the
+correction is recorded below. GAP 7 closed 2026-09-03. GAP 1 (public catalog and
+order tracking), GAP 2 (DXF machine output) and the remnant half of GAP 8 all
+closed 2026-09-02 -- 1 and 2 by Fourth, 8 by Hank. **GAP 2 is closed for DXF and
 permanently declined for G-code**, which is a real distinction and not a
 half-finish; see its row rather than reopening it. 6 is a standing decision, not
 a work item.
+
+**This summary line itself was the stale one for a day.** The 2026-09-15
+correction section below proved GAP 5 built and was appended *underneath* a
+summary still reading "genuinely open: 4 and 5" — which is the same failure this
+file's own warning box describes, committed by the person fixing it. **A
+correction that does not reach the summary has not landed.** Whoever re-derives a
+row next: update the row, the summary, and the closure table in the same edit.
 
 > ### ⚠ THIS FILE WENT STALE IN TWO HOURS, AND THE FIRST CASUALTY WAS ITS AUTHOR
 >
@@ -199,6 +209,7 @@ a work item.
 |---|---|---|
 | ~~StoneDesk~~ | ~~GAP 7 — multi-location~~ | **Closed 2026-09-03** |
 | ~~StoneDesk~~ | ~~GAP 8 (remnant half)~~ | **Closed 2026-09-02** |
+| ~~StoneDesk~~ | ~~GAP 5 — e-signature + deposit collection~~ | **Found already BUILT 2026-09-15** — not closed by new work, closed by re-deriving the row against the file. It had also been mislisted as vendor-blocked below |
 | ~~SAIRNsenior~~ | ~~A2 telephony fallback~~ | **Moved to vendor-blocked 2026-09-03** — needs an inbound DID/IVR provider |
 | ~~SAIRNsenior~~ | ~~B3 franchise royalty~~ | **Closed 2026-09-02** |
 | SAIRNroofing | B6 supplier EDI -- **transport half only**; the three-way match shipped 2026-09-02 | Tier B procurement |
@@ -208,7 +219,12 @@ a work item.
 certification — engineering is not the constraint:**
 
 SAIRNdental A2, A3, A5, A6; SAIRNsenior A1, A4 and **A2's telephony half**; StoneDesk GAP 4 (scanner
-vendor), GAP 5 (payment processor). SAIRNdental A1 is partly here too.
+vendor). SAIRNdental A1 is partly here too.
+
+**GAP 5 was listed here as "payment processor" blocked and that was wrong** —
+removed 2026-09-15. Deposit collection is built and server-persisted; no vendor
+contract was ever the constraint. **A vendor-blocked label is the most expensive
+kind of stale row in this file, because it stops anyone from even re-checking.**
 
 **Standing decisions, not work items:** StoneDesk GAP 6 (QuickBooks, held open
 deliberately), SAIRNdental B4 (call centre, never recommended), SAIRNroofing

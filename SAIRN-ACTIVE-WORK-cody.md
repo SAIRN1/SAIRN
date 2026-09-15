@@ -4430,3 +4430,100 @@ item needs a different source or a vendor decision.
 
 **And 5 audit docs exist on disk, not 4** -- the
 `build-vet-biz-grounds-cash` one was not in the brief's list.
+
+---
+
+## 2026-09-15 — the countersign suite, and a control whose header lied about itself
+
+### Item 83's countersign half is closed
+
+`tests/failsafe/witness_countersign.js`, 30 arms. The probe Hank left behind now
+reports **0 of 6 MISSED** with the control still CAUGHT by all four suites.
+
+Each section is keyed to the mutation it kills (M1 SAME_PERSON … M6 the
+spend-path boundary) so the suite and the probe can be checked against each
+other rather than trusted, and one arm reads the probe's own mutation list and
+fails if it grew without this file growing.
+
+**The HTTP layer is stubbed by replacing `require.cache` exports BEFORE the lock
+is required.** `api/sv-witness.js` destructures `verifySessionToken` /
+`tokenFromRequest` at require time, so stubbing afterwards changes nothing and
+every arm would have been driving the real signature verifier while the header
+claimed a stub. The real modules are loaded first and only two functions are
+overridden.
+
+**The two BOUNDARY arms are the ones more of the old kind could never have
+caught.** `witness_recovery.js` proves the window at TTL−1 and TTL+1 — both
+sides, neither ON it — and `<=` and `<` agree everywhere except at exactly
+`expires_at`. A window LENGTH was proven and the OPERATOR was not. The arms
+freeze `Date.now` and land on the millisecond, in both directions.
+
+**A fixture bug worth keeping.** The EXPIRED arm FAILED on the first run,
+reporting 200. My `NOW` was a hardcoded wall-clock instant that sat hours in the
+FUTURE of this machine, so `PAST` was not past and an expired token was not
+expired. Fixtures are now relative to the real clock; only the boundary arms
+freeze it. **A fixture that is only sometimes in the past is a fixture that only
+sometimes tests anything.**
+
+The probe is KEPT rather than deleted — it is the only thing that can tell a
+suite which CATCHES these mutations from one that merely mentions them. Its
+closing verdict is now DERIVED from `missed`, because three hardcoded lines
+saying the gap was open, printed under a line reading "0 of 6", would be the tool
+contradicting its own output.
+
+### SAIRNcode: the gates already had a control. Its HEADER was false.
+
+Routed here as "the six Tier A billing role-gates have never had a
+planted-defect mutation arm." **That is not true and I did not build a
+duplicate.** `tests/sairncode_gates_mutation_control.js` already carried 20
+mutations across BOTH halves (server + `sairncode.html`), every one biting, each
+verifying its own sabotage reached the bytes on disk. Removal AND substitution of
+a gated resource are both caught — section 5 compares a hand-written table
+against measured behaviour, so swapping one resource for another fails it even
+though the `length === 6` arm would not.
+
+**What was actually wrong: the file's header said *"api/sd-data.js is never
+touched"* and it was written twenty times a run, in this clone, on two TRACKED
+files.** The code's own comment twenty lines below said the opposite. Nobody
+caught it because every assertion passed — the restore really did work on every
+run anybody watched.
+
+Converted to throwaway-worktree isolation: the pattern
+`tests/sairnlegacy_fault_probe.py` used **in the same commit**, citing the
+2026-09-10 stranded-PROBE-commit incident. Fails CLOSED (exit 2) if the worktree
+cannot be made. 108/108, all 20 still bite.
+
+**Then I ran my own fix with its isolation deliberately broken, and it caught me.**
+SRC repointed at the clone: 17 arms went red and the structural arm fired — but
+all three HASH arms PASSED, because `runSuiteWith`'s `finally` had already put the
+original bytes back. **"Restored" and "never written" are different claims, and
+comparing end-state bytes cannot tell them apart** — the exact conflation this
+change existed to remove, committed inside the fix for it. mtime is now in the
+stamp and the write-then-restore fails.
+
+### The competitive-gap doc: the correction had not reached the summary
+
+The 2026-09-14 finding that StoneDesk #5 is BUILT was appended UNDERNEATH a
+summary still reading "genuinely open: 4 and 5". **A correction that does not
+reach the summary has not landed**, and it was stale in four places, not one: the
+row, the summary, the closure table, and — worst — the vendor-blocked list, which
+named "GAP 5 (payment processor)". **A vendor-blocked label is the most expensive
+kind of stale row, because it stops anyone re-checking at all.**
+
+### Verified
+
+`node --check` clean on both changed JS files; `witness_countersign` 30/30;
+`witness_atomicity`, `witness_recovery`, `api/sv-witness.test.js` all exit 0;
+`countersign_coverage_probe` 0 of 6 missed, control caught by 4/4;
+`sairncode_gates_mutation_control` 108/108 with the clone unwritten;
+`control_char` CLEAN (2009 files); `md_table` 0 malformed; `index_duplicate` 0;
+MASTER-PLAN and traceability-matrix regenerated, TOOLING-INVENTORY already
+matching; `run_master_plan_probe` ALL CHECKS PASS.
+
+**Full suite: 307 files, 12 red — 11 of them RED AT HEAD TOO**, confirmed by
+running the same twelve in a throwaway worktree at HEAD before attributing any of
+them. The twelfth was `run_master_plan_probe`, which was MINE: adding one test
+file moved a derived figure and the generated documents had not been regenerated.
+Fixed, and it is why the baseline was worth taking.
+
+**Not pushed at the time of writing, so nothing here is live-verified (PR 3.2).**

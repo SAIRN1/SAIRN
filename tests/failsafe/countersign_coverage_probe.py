@@ -31,6 +31,15 @@ and nothing framed it as in scope. Pass three's own commit says so plainly --
 These arms drive the first."* That disclosure was accurate; what nobody had
 done was MEASURE what the second one costs.
 
+── CLOSED 2026-09-15, AND THE PROBE IS KEPT ────────────────────────────────
+`tests/failsafe/witness_countersign.js` (30 arms) now kills all six, with the
+control still caught by all four suites. The probe is NOT deleted: it is the
+only thing that can tell a suite that catches these mutations from a suite that
+merely mentions them, and it is what will notice if an arm rots. Its verdict
+paragraph is derived from the measurement rather than written down, because a
+hardcoded "the gap is open" printed under a line reading "0 of 6" would be this
+file contradicting its own output.
+
 ── REPORT ONLY, AND EXIT 0, DELIBERATELY ───────────────────────────────────
 This measures COVERAGE, not a defect in shipped behaviour: the lock is correct
 today and every refusal is present. Failing a suite over it would block pushes
@@ -57,7 +66,12 @@ REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 LOCK = os.path.join('api', 'sv-witness.js')
 SUITES = [os.path.join('tests', 'failsafe', 'witness_atomicity.js'),
           os.path.join('tests', 'failsafe', 'witness_recovery.js'),
-          os.path.join('api', 'sv-witness.test.js')]
+          os.path.join('api', 'sv-witness.test.js'),
+          # Added 2026-09-15 with the suite it measures. A probe that reports
+          # "0 of 6 caught" while the suite built to catch them is not in this
+          # list would be the exact defect this file exists to find, committed
+          # by this file.
+          os.path.join('tests', 'failsafe', 'witness_countersign.js')]
 
 # Each entry: (what the mutation destroys, anchor, replacement).
 MUTATIONS = [
@@ -190,9 +204,23 @@ def main():
     print('')
     print('  %d of %d mutations are caught by NOTHING on this platform.'
           % (len(missed), len(rows)))
-    print('  The lock is CORRECT today -- every refusal is present. What is')
-    print('  missing is anything that would notice if one were removed, and the')
-    print('  countersign action is where "two person" actually lives.')
+    # ── THE VERDICT IS DERIVED, NOT WRITTEN DOWN ────────────────────────────
+    # This paragraph was three hardcoded lines saying the gap was open. It
+    # stayed literally true for one day and would then have been printed under
+    # a line reading "0 of 6", which is a tool contradicting its own
+    # measurement in its own output. The conclusion now comes from `missed`.
+    if missed:
+        print('  The lock is CORRECT today -- every refusal is present. What is')
+        print('  missing is anything that would notice if one were removed, and')
+        print('  the countersign action is where "two person" actually lives.')
+    else:
+        print('  Closed 2026-09-15 by tests/failsafe/witness_countersign.js.')
+        print('  READ THIS BEFORE TREATING IT AS FINISHED: every arm in that')
+        print('  suite drives a STUBBED session, licence and REST layer, so what')
+        print('  is now covered is the DECISION LOGIC -- which refusal for which')
+        print('  state, and in which order. PostgREST behaviour, real signature')
+        print('  verification and the live schema remain unproven here, and the')
+        print('  suite says so in its own header rather than leaving it implied.')
     return 0
 
 
