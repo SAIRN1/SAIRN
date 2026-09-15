@@ -1521,6 +1521,82 @@ def main():
         if MODE == 'prepush':
             sys.stderr.write("\n" + guard_note + "\n\n")
 
+    # ── CHECK 14: AN UNRESOLVED CONFLICT MARKER IN WHAT THIS PUSH SHIPS ─────
+    # BLOCKING, AND ON DAY ONE, which departs from how every other check here was
+    # staged. The reason is that the false-positive rate is MEASURED rather than
+    # unknown: all four marker shapes, anchored to column zero, across 2,069
+    # tracked files on 2026-09-15 -- zero hits, including the bare `=======`
+    # that ASCII banners and markdown rules would be expected to produce.
+    # Report-only exists to learn a rate nobody knows. This one is known.
+    #
+    # THREE REAL INCIDENTS IN FIVE DAYS:
+    #   2026-09-11  three markers in docs/SAIRN-OPEN-WORK-INDEX.md. After the
+    #               first, no header+separator pair occurs again, so
+    #               md_table_check read 110 OF 350 ROWS AND PRINTED A CLEAN PASS.
+    #   2026-09-15  api/_lib/dnt-rollup.js -- markers pushed into a TIER A FILE
+    #               by a session's own rebase automation (98bfea1e).
+    #   2026-09-15  the open-work index again. md_table_check printed
+    #               MALFORMED_ROWS:0 and UNCHECKABLE_LINES:406 on the same run,
+    #               and only the first number gates.
+    #
+    # md_table_check HAS CARRIED A CONFLICT REGEX SINCE 2026-09-12 AND STOPPED
+    # NONE OF THEM: it reads only markdown tables (Ted's was a .js file), it is
+    # report-only, and it gates on MALFORMED_ROWS while measuring
+    # UNCHECKABLE_LINES -- so a file it could not read passed a check about
+    # whether it could be read. A marker is not a markdown problem.
+    #
+    # THE COMMON CAUSE IS `git add -A` DURING A REBASE, not carelessness: four
+    # clones rebase onto each other constantly and a staged unmerged file looks
+    # exactly like a resolved one to `git add`.
+    #
+    # SCOPED TO THE OUTGOING RANGE, same causation principle as check 12.
+    if changed:
+        _cm_tool = os.path.join(repo, 'tools', 'conflict_marker_check.py')
+        # ── A MISSING TOOL IS "COULD NOT RUN", NEVER A PASS (PR 1.11) ───────
+        # This was written as a bare `if os.path.isfile(tool):` with no else,
+        # and FOUND BY DRIVING IT: a throwaway worktree at a commit predating
+        # the tool was handed a real marker-bearing commit and the gate exited
+        # 0. The check did not fail -- it was never there, and nothing said so.
+        # That is CLAUDE.md's most-repeated rule, reproduced inside the gate
+        # written to close a recurring incident class.
+        #
+        # It does not DENY on absence -- a clone that has not synced would be
+        # unable to push at all, and check 10 already reports staleness. It says
+        # loudly that nothing was verified.
+        if not os.path.isfile(_cm_tool) and MODE == 'prepush':
+            sys.stderr.write(
+                '\nConflict-marker check NOT RUN: tools/conflict_marker_check.py '
+                'is not in this clone. NOTHING was verified about markers in '
+                'this push -- a could-not-tell, not a clean result.\n\n')
+        if os.path.isfile(_cm_tool):
+            try:
+                _cm = subprocess.run(
+                    [sys.executable, _cm_tool, '--files'] + list(changed),
+                    capture_output=True, text=True, encoding='utf-8',
+                    errors='replace', timeout=180, cwd=repo)
+            except Exception as _e:
+                _cm = None
+                if MODE == 'prepush':
+                    sys.stderr.write(
+                        '\nConflict-marker check COULD NOT RUN (%s: %s). That is '
+                        'not a pass.\n\n' % (type(_e).__name__, _e))
+            if _cm is not None and _cm.returncode == 1:
+                deny("\n".join([
+                    "Blocked: this push ships a file with an unresolved conflict marker.",
+                    "",
+                    (_cm.stdout or '') + (_cm.stderr or ''),
+                    OVERRIDE_HINT,
+                    "There is no good reason to override this one. A marker means the",
+                    "file is not finished, and it has reached origin/main three times",
+                    "in five days -- once into a Tier A source file.",
+                ]))
+            if _cm is not None and _cm.returncode not in (0, 1) and MODE == 'prepush':
+                # An unexpected exit is NOT a pass and NOT a finding either.
+                sys.stderr.write(
+                    '\nConflict-marker check exited %s, which is neither clean '
+                    'nor a finding. Nothing was verified about markers.\n'
+                    % _cm.returncode)
+
     # ── CHECK 13: THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) ───
     # BLOCKING. Michael's decision: the standing rule that a Tier A change is
     # reviewed by a session OTHER than the one that wrote it has been real and
@@ -1557,6 +1633,16 @@ def main():
     # possible way for this to stop working (PR 1.11).
     if changed:
         _rev_tool = os.path.join(repo, 'tools', 'tier_a_review_gate.py')
+        # SAME SILENT SKIP, SAME FIX. Check 14's guard was copied from this one,
+        # so when driving check 14 in a worktree that predated its tool exposed
+        # the defect, it exposed this one too. A missing tool is a
+        # could-not-tell, and a gate that skips in silence is indistinguishable
+        # from a gate that passed.
+        if not os.path.isfile(_rev_tool) and MODE == 'prepush':
+            sys.stderr.write(
+                '\nTier A review gate NOT RUN: tools/tier_a_review_gate.py is '
+                'not in this clone. NOTHING was verified about Tier A review '
+                'obligations in this push.\n\n')
         if os.path.isfile(_rev_tool):
             _rev_base = base
             if not _rev_base:

@@ -125,6 +125,16 @@ PURPOSES = {
         'produces no row, which is the fix. A read-list rather than a score: '
         'its first run gave 12 rows and 1 defect, and the one was inside the '
         'live probe built to catch this'),
+    'conflict_marker_check.py': ('CHECKER',
+        'an unresolved VCS conflict marker at the start of a line, in any file '
+        'in any language -- push-gate check 14, BLOCKING on day one because the '
+        'false-positive baseline is MEASURED: all four shapes across 2,069 '
+        'tracked files, zero hits, including the bare seven equals signs that '
+        'ASCII banners would be expected to produce. Markers reached '
+        'origin/main THREE TIMES in five days, once into a Tier A source file, '
+        'while md_table_check carried a conflict regex the whole time -- it '
+        'reads only markdown tables, is report-only, and gates on the wrong '
+        'number'),
     'tier_a_replaceability_check.py': ('CHECKER',
         'item 97 -- whether a Tier A resource is the real irreplaceable '
         'artifact or a stand-in: which Tier A resources grant a HARD delete '

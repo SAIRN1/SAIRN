@@ -37,6 +37,7 @@ Source: the numbered `CHECK n:` blocks in `tools/sairn_push_gate_hook.py`. Deriv
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 | 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
 | 13 | THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) |
+| 14 | AN UNRESOLVED CONFLICT MARKER IN WHAT THIS PUSH SHIPS |
 
 ## 3. Enforced report-only
 
@@ -137,6 +138,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
 | **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
@@ -438,7 +440,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**229 of 438 test files are traced to a stated requirement. 209 are not.**
+**230 of 439 test files are traced to a stated requirement. 209 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -671,12 +673,12 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 438   tests/**, api/*.test.js
-  open-work rows citing a test       218   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 439   tests/**, api/*.test.js
+  open-work rows citing a test       219   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
-  numbered gate checks                13   sairn_push_gate_hook.py
+  numbered gate checks                14   sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is MISSING, not that any source is RIGHT.

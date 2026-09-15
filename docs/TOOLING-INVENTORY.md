@@ -19,11 +19,11 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**156 files in `tools/`.** By what actually invokes them:
+**157 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
-| **BLOCKING** | 11 | reachable from something that can refuse a push or a tool call |
+| **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
 | **REPORT-ONLY** | 48 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 40 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 102 |
+| CHECKER | 103 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
@@ -77,7 +77,7 @@ outside world. Unwired is the right state for them and is not a finding.
 
 ---
 
-## BLOCKING (11)
+## BLOCKING (12)
 
 Two entry points, and they are not the same one. `.claude/settings.json`
 PreToolUse fires on a Claude Code **tool call**; `.githooks/pre-push` fires on
@@ -87,6 +87,7 @@ around it. The second exists because the first missed exactly that on
 
 | Tool | Kind | What it catches |
 |---|---|---|
+| `conflict_marker_check.py` | CHECKER | an unresolved VCS conflict marker at the start of a line, in any file in any language -- push-gate check 14, BLOCKING on day one because the false-positive baseline is MEASURED: all four shapes across 2,069 tracked files, zero hits, including the bare seven equals signs that ASCII banners would be expected to produce. Markers reached origin/main THREE TIMES in five days, once into a Tier A source file, while md_table_check carried a conflict regex the whole time -- it reads only markdown tables, is report-only, and gates on the wrong number |
 | `control_char_check.py` | CHECKER | a raw C0 control byte in any tracked text file -- an escape sequence typed as its literal character |
 | `employee_auth_guard_check.py` | CHECKER | a SQL file writing credential rows with no recoverability guard (gate check 2) |
 | `git_push_master_guard.py` | CHECKER | a push aimed at `master`, which is stale |
@@ -119,6 +120,7 @@ the only source that moves when one is added.
 | 11 | RAW CONTROL BYTES IN WHAT THIS PUSH SHIPS (2026-09-13) |
 | 12 | A GENERATED DOCUMENT THAT *THIS PUSH* BROKE (2026-09-14) |
 | 13 | THE INDEPENDENT-REVIEW RULE ON TIER A CODE (2026-09-15) |
+| 14 | AN UNRESOLVED CONFLICT MARKER IN WHAT THIS PUSH SHIPS |
 
 ---
 
@@ -353,13 +355,13 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      156   git ls-files tools/
+  tools on disk                      157   git ls-files tools/
   hook entries                         8   .claude\settings.json
-  push-gate invocations                9   tools\sairn_push_gate_hook.py
+  push-gate invocations               10   tools\sairn_push_gate_hook.py
   report-only registry                46   report_only_checks.REGISTRY
-  tools invoked by tests/            102   tests/**/*.py, *.js
+  tools invoked by tests/            103   tests/**/*.py, *.js
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
-  numbered gate checks                13   tools\sairn_push_gate_hook.py
+  numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```
 
 A closed traverse is **not** a correct survey: it means no source is
