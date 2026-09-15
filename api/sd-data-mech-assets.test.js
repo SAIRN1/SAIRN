@@ -225,6 +225,38 @@ async function main() {
     assert.strictEqual(res.body.board.citation, '40 CFR 82.157');
   });
 
+  // ── AN EMPTY CHARGE STRING, WHICH IS WHAT A FORM ACTUALLY SENDS ─────────
+  // Added 2026-09-15 after tests/sairnmechanical_fault_probe.py removed
+  // chargeLb()'s empty-string guard and this file stayed GREEN.
+  //
+  // THE CAUSE IS THE FIXTURE, NOT A MISSING IDEA. The board case above proves
+  // `unknown_charge: 1` using asset A2, whose `refrigerant_charge_lb` is
+  // ABSENT -- and an absent field was never the failure mode. `Number('')` is
+  // 0, so the defect is the EMPTY STRING a form submits when somebody tabs
+  // past the field, which would coerce to a measured zero and classify the
+  // unit as BELOW the 40 CFR 82.157 threshold.
+  //
+  // The input shape that was at risk had no test; the input shape that was
+  // never at risk had one.
+  await test('an EMPTY charge string is unknown_charge, never below threshold', async () => {
+    const { handler } = loadHandler({
+      rows: [
+        { asset_id: 'A1', customer_name: 'C', asset_type: 'chiller', refrigerant_type: 'r22', refrigerant_charge_lb: '' },
+        { asset_id: 'A2', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: '   ' },
+        { asset_id: 'A3', customer_name: 'C', asset_type: 'rtu', refrigerant_type: 'r410a', refrigerant_charge_lb: 12 }
+      ]
+    });
+    const res = mockRes();
+    await handler(mockReq('read', { today: '2026-09-02' }), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.strictEqual(res.body.board.refrigerant.unknown_charge, 2,
+      'an empty or blank charge field was read as a measured zero -- a unit '
+      + 'nobody weighed is being reported against the threshold');
+    assert.strictEqual(res.body.board.refrigerant.below, 1,
+      'only the unit with a REAL recorded charge may count as below');
+    assert.strictEqual(res.body.board.refrigerant.at_or_above, 0);
+  });
+
   await test('un-run migration: READ is provisioned:false, WRITE is 503 naming the file', async () => {
     const r1 = mockRes();
     await loadHandler({ readStatus: 404 }).handler(mockReq('read'), r1);

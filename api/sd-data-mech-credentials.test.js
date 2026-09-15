@@ -220,6 +220,44 @@ async function main() {
     assert.strictEqual(calls.filter(c => c.method !== 'GET').length, 0, 'asking who may be dispatched wrote something');
   });
 
+  // ── THE SECTION RULE, AT THE ENDPOINT, WITH A CASE THAT CAN FAIL ────────
+  // Added 2026-09-15 after tests/sairnmechanical_fault_probe.py collapsed
+  // satisfies() to `return true` and this file stayed GREEN.
+  //
+  // THE CAUSE IS THE FIXTURE, NOT A MISSING IDEA. The only eligibility case
+  // above holds a technician with `epa_section: 'universal'` and asks for
+  // `type_ii` -- and universal covers everything, so `eligible: ['t1']` is the
+  // right answer under the REAL rule AND under an implementation that returns
+  // true for anything. The one assertion exercising the section rule could not
+  // discriminate between them.
+  //
+  // EPA 608 sections are EQUIPMENT, not RANKS: Type I is small appliances,
+  // Type II high-pressure, Type III low-pressure. So the case that has to
+  // exist is a technician whose section does NOT cover the job -- which is
+  // the dispatch this whole gate is for refusing.
+  await test('a technician whose EPA section does NOT cover the job is NOT eligible', async () => {
+    const { handler } = loadHandler({
+      rows: [
+        { technician_id: 't1', record_type: 'epa_608', epa_section: 'type_i', has_expiry: false },
+        { technician_id: 't2', record_type: 'epa_608', epa_section: 'type_ii', has_expiry: false }
+      ]
+    });
+    const res = mockRes();
+    await handler(mockReq('eligibility', {
+      requirements: [{ record_type: 'epa_608', epa_section: 'type_ii' }],
+      today: '2026-09-02'
+    }), res);
+    assert.strictEqual(res.statusCode, 200);
+    assert.deepStrictEqual(res.body.eligibility.eligible, ['t2'],
+      'a Type I technician was dispatched to high-pressure work -- the sections '
+      + 'are being read as a rank rather than as equipment');
+    const t1 = res.body.eligibility.technicians.filter((t) => t.technician_id === 't1')[0];
+    assert.strictEqual(t1.eligible, false);
+    assert.strictEqual(t1.blocking[0].reason, 'missing',
+      'the refusal does not say WHY -- a dispatcher cannot act on it');
+    assert.strictEqual(t1.blocking[0].epa_section, 'type_ii');
+  });
+
   // ---- provisioning -------------------------------------------------------
   await test('un-run migration: READ is 200 provisioned:false, WRITE is 503 naming the file', async () => {
     const r1 = mockRes();
