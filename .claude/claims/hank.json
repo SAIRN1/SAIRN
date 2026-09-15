@@ -1883,8 +1883,8 @@
       "task": "supabase 504 cron failure rate re-measure alf-alerts send-reminder verification",
       "claimed_at": "2026-09-15T17:10:24Z",
       "claimed_at_epoch": 1789492224.0256028,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T21:58:18Z"
     }
   ]
 }
