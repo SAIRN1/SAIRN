@@ -1322,8 +1322,8 @@
       "task": "sairnbiz timesheet rTS hardcoded hours five fabricated kpis",
       "claimed_at": "2026-09-15T10:43:06Z",
       "claimed_at_epoch": 1789468986.7849863,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T11:04:12Z"
     }
   ]
 }
