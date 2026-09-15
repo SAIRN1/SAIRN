@@ -270,6 +270,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Competitive-gap B2 &mdash; retainage could be held and never released, and the board printed a lifetime accrual under a current-balance label** | **BUILT 2026-09-15 (Hank)** &mdash; `e2624577`. `wip` + `release_retainage` on `bld_draws`, `api/_lib/sairnbuild-retainage-endpoint.test.js` 29 arms. **Every refusal live-verified; the HAPPY PATH IS N | `api/_lib/sairnbuild-retainage-endpoint.test.js` |
 | ~~AI Budget Early Warning: `f072765` fixed 5 review findings and was never independently re-reviewed~~ | **CLOSED 2026-09-04 (Cody)** in `1fc666ec` — reviewed, one real defect found and fixed, two reported for decision | `tests/sairnbuild_budget_early_warning.js` |
 
 ### sairncare
@@ -395,7 +396,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**209 of 413 test files are traced to a stated requirement. 204 are not.**
+**210 of 413 test files are traced to a stated requirement. 203 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -472,7 +473,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `api/_lib/roofing-supplement.test.js`
 - `api/_lib/roofing-supplier-match.test.js`
 - `api/_lib/roofing-warranties.test.js`
-- `api/_lib/sairnbuild-retainage-endpoint.test.js`
 - `api/_lib/sairncash-trial.test.js`
 - `api/_lib/sairnlaw-grounded-drafting.test.js`
 - `api/_lib/sairnlaw-trust-void-race.test.js`
@@ -624,7 +624,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 413   tests/**, api/*.test.js
-  open-work rows citing a test       191   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       192   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     31   report_only_checks.NOT_PROMOTED
