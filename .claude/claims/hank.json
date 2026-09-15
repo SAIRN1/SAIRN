@@ -1813,8 +1813,8 @@
       "task": "shared resource tenancy audit which tenants share a backend",
       "claimed_at": "2026-09-15T13:56:05Z",
       "claimed_at_epoch": 1789480565.5680661,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T14:07:07Z"
     }
   ]
 }
