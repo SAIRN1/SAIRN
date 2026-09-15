@@ -1229,6 +1229,16 @@
       "claimed_at_epoch": 1789486781.6199806,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789488425",
+      "session": "cody",
+      "subject": "cody",
+      "task": "AI proposes human approves enforcement audit, SOC2 readiness, incident response plan, sairnlaw privacy scoping",
+      "claimed_at": "2026-09-15T16:07:05Z",
+      "claimed_at_epoch": 1789488425.587785,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
