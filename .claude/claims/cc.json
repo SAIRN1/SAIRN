@@ -1372,8 +1372,8 @@
       "task": "tier a review gate context attribution false positives",
       "claimed_at": "2026-09-15T15:24:07Z",
       "claimed_at_epoch": 1789485847.854606,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T15:35:27Z"
     }
   ]
 }
