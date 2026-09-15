@@ -1805,6 +1805,16 @@
       "claimed_at_epoch": 1789477369.9023583,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "hank-1789480565",
+      "session": "hank",
+      "subject": "item93",
+      "task": "shared resource tenancy audit which tenants share a backend",
+      "claimed_at": "2026-09-15T13:56:05Z",
+      "claimed_at_epoch": 1789480565.5680661,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
