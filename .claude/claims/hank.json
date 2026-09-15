@@ -1895,6 +1895,16 @@
       "claimed_at_epoch": 1789510188.2884605,
       "status": "released",
       "released_at": "2026-09-15T22:51:31Z"
+    },
+    {
+      "id": "hank-1789513326",
+      "session": "hank",
+      "subject": "item54-liveness",
+      "task": "cron watchdog self retry 508 loop and self failing latch, independent second watchdog",
+      "claimed_at": "2026-09-15T23:02:06Z",
+      "claimed_at_epoch": 1789513326.3830838,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
