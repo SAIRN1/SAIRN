@@ -1815,6 +1815,16 @@
       "claimed_at_epoch": 1789480565.5680661,
       "status": "released",
       "released_at": "2026-09-15T14:07:07Z"
+    },
+    {
+      "id": "hank-1789481581",
+      "session": "hank",
+      "subject": "ai-rate-limit",
+      "task": "per tenant sub budget licence key",
+      "claimed_at": "2026-09-15T14:13:01Z",
+      "claimed_at_epoch": 1789481581.485082,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
