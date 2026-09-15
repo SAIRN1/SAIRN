@@ -12,6 +12,21 @@ the consumer subscription product, and its surface is five bespoke endpoints
 under `api/sairncash/`. There are FIVE suites, not two; the attribution counts
 by path and does not reach them. Every one is green.
 
+── AND THIS PROBE DOES NOT MOVE THE `fault` COLUMN. SAY SO RATHER THAN IMPLY ──
+`tools/master_plan.py` credits a fault probe to an app only when the probe's
+body names `'<app>.html'` -- deliberately, as the fix for an earlier version
+that inferred targets and reported nineteen fault probes for StoneDesk. This
+file names three files under `api/sairncash/` and never touches sairncash.html,
+so it counts in `declared fault probes` and is credited to no app. The column
+stays 0 and is RIGHT to.
+
+WHAT IS STILL UNCOVERED, named here because a 0 in that column will otherwise be
+read as "nobody looked": sairncash.html's client-side entitlement gate.
+`reverifySubscription()` is what closes "forged localStorage grants permanent
+free access" -- its own comment says exactly that -- and NO SUITE DRIVES IT.
+Gate 4 asks whether the existing suites DENY; there, there is no suite to ask.
+A suite has to exist before a probe against it can mean anything.
+
 ── WHY THIS APP IS DIFFERENT FROM EVERY OTHER ONE IN THE SEAM ──────────────
 The others hold a customer's records. This one takes a customer's MONEY, and
 two of its guards are the only thing between a stranger and a paid plan:
