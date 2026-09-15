@@ -1352,8 +1352,8 @@
       "task": "pinned list drift sweep hand written lists against registries",
       "claimed_at": "2026-09-15T13:41:39Z",
       "claimed_at_epoch": 1789479699.802161,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T14:29:00Z"
     }
   ]
 }
