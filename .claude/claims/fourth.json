@@ -1413,8 +1413,8 @@
       "task": "sairncare fault probe gate 4 the MAR and incident suites must DENY",
       "claimed_at": "2026-09-15T10:34:08Z",
       "claimed_at_epoch": 1789468448.1348324,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T10:57:30Z"
     }
   ]
 }
