@@ -2,8 +2,22 @@
 
 **2026-09-15 (CC).** A sanity pass over the platform's current Tier A
 assignments, not a re-tiering. Nothing was re-tiered here; the two findings
-below are for Michael's judgement, the same way the 2026-09-10 decision to tier
-by resource was.
+below were put to Michael's judgement, the same way the 2026-09-10 decision to
+tier by resource was.
+
+> **DECIDED AND FIXED THE SAME DAY — finding 1 is CLOSED.** Michael's call:
+> the seven were an inconsistency, not a designed exception, and SAIRNcode's
+> grant now matches the precedent it departed from. `api/_resources/sairncode.js`
+> grants `soft_delete` to the seven and `delete` to the other 21;
+> `api/sd-data.js` implements the soft delete, excludes marked rows from every
+> read of those seven, and refuses a destroying `delete` on them even from an
+> admin. **`tools/tier_a_replaceability_check.py` now reports 0 hard-deletable
+> Tier A resources platform-wide, down from 7.** The measurement sections below
+> are kept AS WRITTEN, describing the state that was found — a finding rewritten
+> into the past tense stops being checkable against the commit that fixed it.
+> Finding 2 is narrowed but still open: 68 of 80 evidence cells, down from 75.
+> The unswept under-assignment direction in §4 is untouched and is still the
+> dangerous one.
 
 ---
 

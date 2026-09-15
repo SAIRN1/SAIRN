@@ -64,14 +64,24 @@ check('exits 0 on a clean repo', code == 0, err)
 data = json.loads(out) if code == 0 else {}
 check('it finds Tier A rows at all', data.get('tier_a', 0) > 0, data)
 hard = [h[0] for h in data.get('hard_delete', [])]
-apps = set(h[1] for h in data.get('hard_delete', []))
-check('every hard-deletable Tier A resource is in ONE app',
-      len(apps) == 1, apps)
-check('...and that app is sairncode', apps == {'sairncode'}, apps)
-check('the seven are the sc_* money and regulated resources',
-      sorted(hard) == ['sc_ar', 'sc_claims', 'sc_compliance',
-                       'sc_credential_scope', 'sc_denial', 'sc_denial_events',
-                       'sc_revenue'], hard)
+# ── THE STATE THIS ARM ASSERTS CHANGED ON 2026-09-15, AND SO DID THE ARM ────
+# Until the item 97 fix it asserted the DEFECT -- seven hard-deletable Tier A
+# resources, all in sairncode. That was the right assertion for the day it was
+# written and it is the wrong one now: the fix made the count zero, and an arm
+# still demanding seven would report the repaired platform as broken.
+# Section 3's registry mutation is what keeps THIS arm from being vacuous, by
+# putting the seven back and requiring the number to move.
+check('NO Tier A resource on the platform can be hard-deleted -- 0, and the '
+      'names if not: %s' % (sorted(hard) or 'none'),
+      hard == [], hard)
+check('...and the Tier A set is not empty, so the zero above is a measurement '
+      'and not an absence of rows',
+      data.get('tier_a', 0) >= 70, data.get('tier_a'))
+check('the seven SAIRNcode records are soft-delete-only now',
+      set(['sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',
+           'sc_denial', 'sc_denial_events', 'sc_revenue'])
+      <= set(data.get('soft_delete_only', [])),
+      sorted(data.get('soft_delete_only', [])))
 
 print('\n2. the three buckets partition the Tier A set')
 tot = (len(data.get('hard_delete', [])) + len(data.get('soft_delete_only', []))
@@ -81,7 +91,7 @@ check('hard + soft-only + none == the Tier A count',
 check('no resource is in two buckets',
       not (set(hard) & set(data.get('soft_delete_only', []))), 'overlap')
 
-print('\n3. MUTATION -- demote one of the seven and the count must move')
+print('\n3a. MUTATION on the REGISTER -- demote a Tier A row and the total moves')
 before_sha = sha(REGISTER)
 src = io.open(REGISTER, encoding='utf-8', newline='').read()
 # The row is matched by its resource name at the start of a cell, so this does
@@ -97,12 +107,14 @@ if hits == 1:
             pat.sub(r'\1**B**\2', src))
         code2, out2, _ = run_json()
         d2 = json.loads(out2) if code2 == 0 else {}
-        h2 = [h[0] for h in d2.get('hard_delete', [])]
-        check('demoting sc_compliance to B drops the count to 6',
-              len(h2) == 6 and 'sc_compliance' not in h2, h2)
-        check('...and the Tier A total falls by exactly one',
+        check('demoting sc_compliance drops the Tier A total by exactly one',
               d2.get('tier_a') == data.get('tier_a') - 1,
               '%s vs %s' % (d2.get('tier_a'), data.get('tier_a')))
+        check('...and it leaves the soft-delete-only set one shorter',
+              len(d2.get('soft_delete_only', [])) ==
+              len(data.get('soft_delete_only', [])) - 1,
+              '%s vs %s' % (len(d2.get('soft_delete_only', [])),
+                            len(data.get('soft_delete_only', []))))
         mutated_ok = True
     finally:
         io.open(REGISTER, 'w', encoding='utf-8', newline='').write(src)
@@ -110,6 +122,44 @@ check('the register is restored BYTE FOR BYTE', sha(REGISTER) == before_sha,
       'docs/CRITICALITY-TIERS.md was left modified -- restore it by hand')
 check('the mutation actually applied (not a vacuous pass)', mutated_ok,
       'the arm above never ran, so it proved nothing')
+
+print('\n3b. MUTATION on the REGISTRY -- put the seven destroy verbs back')
+# THE ARM THAT KEEPS SECTION 1 HONEST. Section 1 now asserts ZERO hard-deletable
+# Tier A resources, and a tool that had simply stopped detecting them would pass
+# it just as well as the fix does. So the defect is RECREATED: the per-resource
+# test in api/_resources/sairncode.js is defeated, restoring the uniform grant
+# item 97 found, and the count must come back as exactly the seven.
+#
+# SINGLE-LINE ANCHOR ON PURPOSE -- that file is CRLF in this working tree while
+# api/sd-data.js is LF, and a multi-line anchor written with \n reported
+# ANCHOR-0 against it the first time this was tried.
+REGISTRY = os.path.join(REPO, 'api', '_resources', 'sairncode.js')
+reg_sha = sha(REGISTRY)
+rsrc = io.open(REGISTRY, encoding='utf-8', newline='').read()
+RANCHOR = '    map[name] = SC_TIER_A_SOFT_DELETE_ONLY.indexOf(name) === -1'
+rhits = rsrc.count(RANCHOR)
+check('the registry anchor matches EXACTLY once (ANCHOR-%d)' % rhits, rhits == 1,
+      'the grant is no longer built by a per-resource test -- re-anchor this arm')
+reg_mutated_ok = False
+if rhits == 1:
+    try:
+        io.open(REGISTRY, 'w', encoding='utf-8', newline='').write(
+            rsrc.replace(RANCHOR, '    map[name] = [].indexOf(name) === -1', 1))
+        code3, out3, _ = run_json()
+        d3 = json.loads(out3) if code3 == 0 else {}
+        h3 = sorted(h[0] for h in d3.get('hard_delete', []))
+        check('defeating the per-resource test makes all seven hard-deletable '
+              'again -- the tool DOES detect this, it is not blind',
+              h3 == ['sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',
+                     'sc_denial', 'sc_denial_events', 'sc_revenue'], h3)
+        reg_mutated_ok = True
+    finally:
+        io.open(REGISTRY, 'w', encoding='utf-8', newline='').write(rsrc)
+check('api/_resources/sairncode.js is restored BYTE FOR BYTE',
+      sha(REGISTRY) == reg_sha,
+      'the registry was left modified -- restore it by hand before pushing')
+check('the registry mutation actually applied (not a vacuous pass)',
+      reg_mutated_ok, 'the arm above never ran, so it proved nothing')
 
 print('\n4. the live-registry read is load-bearing, not a style choice')
 js = io.open(SAIRNCODE, encoding='utf-8').read()

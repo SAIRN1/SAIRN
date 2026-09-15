@@ -48,9 +48,15 @@ const SRC = path.join(ROOT, 'api', 'sd-data.js');
 // would pass on a build where a coder is told to "wait until resolved" for
 // something that will never resolve.
 const APP = path.join(ROOT, 'sairncode.html');
+// THE REGISTRY IS THE THIRD MUTABLE HALF (2026-09-15, item 97). The list that
+// decides which resources may be destroyed lives in api/_resources/sairncode.js,
+// not in the handler, so a control that could only sabotage the handler could
+// not reach the one edit that reopens the whole finding -- emptying the list.
+const REGISTRY = path.join(ROOT, 'api/_resources/sairncode.js');
 const SUITE = path.join(__dirname, 'sairncode_gates.js');
 const ORIGINAL = fs.readFileSync(SRC, 'utf8');
 const APP_ORIGINAL = fs.readFileSync(APP, 'utf8');
+const REGISTRY_ORIGINAL = fs.readFileSync(REGISTRY, 'utf8');
 
 let n = 0, failures = 0;
 function ok(cond, label, detail) {
@@ -77,11 +83,24 @@ function runSuiteWith(source, target) {
   } finally {
     fs.writeFileSync(SRC, ORIGINAL, 'utf8');
     fs.writeFileSync(APP, APP_ORIGINAL, 'utf8');
+    fs.writeFileSync(REGISTRY, REGISTRY_ORIGINAL, 'utf8');
   }
 }
-function sourceFor(m) { return m.app ? APP_ORIGINAL : ORIGINAL; }
-function pathFor(m) { return m.app ? APP : SRC; }
-function labelFor(m) { return m.app ? 'sairncode.html' : 'api/sd-data.js'; }
+function sourceFor(m) {
+  if (m.app) return APP_ORIGINAL;
+  if (m.registry) return REGISTRY_ORIGINAL;
+  return ORIGINAL;
+}
+function pathFor(m) {
+  if (m.app) return APP;
+  if (m.registry) return REGISTRY;
+  return SRC;
+}
+function labelFor(m) {
+  if (m.app) return 'sairncode.html';
+  if (m.registry) return 'api/_resources/sairncode.js';
+  return 'api/sd-data.js';
+}
 
 // EVERY MUTATION IS A REAL DEFECT SOMEBODY COULD WRITE -- a gate relaxed, a
 // check inverted, a server-set field taken from the client instead. None is a
@@ -270,6 +289,49 @@ const MUTATIONS = [
         + "        }\n"
         + "        // sc_settings ROLE GATE",
   },
+  // ── ITEM 97: THE THREE WAYS THE SOFT-DELETE FIX CAN BE UNDONE (2026-09-15) ─
+  // Each of these leaves a handler that still passes every arm written before
+  // today, which is why they are here rather than trusted to the existing 25.
+  {
+    registry: true,
+    // A SINGLE-LINE ANCHOR ON PURPOSE. The first version of this spanned four
+    // lines and reported ANCHOR-0 immediately: api/_resources/sairncode.js is
+    // CRLF in this working tree while api/sd-data.js is LF, so a multi-line
+    // anchor written with \n cannot match one of them. The harness reads bytes
+    // from disk, which is the honest thing for it to do, so the anchor is the
+    // part that has to not care -- and CLAUDE.md's own line-endings note is
+    // about exactly this trap.
+    name: 'REGISTRY: the per-resource test is defeated, so all 28 grant a '
+        + 'destroying delete again -- the exact state item 97 found',
+    find: "    map[name] = SC_TIER_A_SOFT_DELETE_ONLY.indexOf(name) === -1",
+    replace: "    map[name] = [].indexOf(name) === -1",
+  },
+  {
+    name: 'the READ stops excluding soft-deleted rows, so hiding a record is '
+        + 'cosmetic and it returns on the next read',
+    find: "        const scSoftFilter = scIsSoftDeleteOnly(resource) ? '&data->>_deleted_at=is.null' : '';",
+    replace: "        const scSoftFilter = '';",
+  },
+  {
+    name: "the handler's own SOFT_DELETE_ONLY refusal is removed, so a "
+        + "'delete' that gets past the envelope destroys a Tier A record",
+    find: "        if (scIsSoftDeleteOnly(resource)) {\n"
+        + "          res.status(403).json({\n"
+        + "            error: {\n"
+        + "              code: 'SOFT_DELETE_ONLY',",
+    replace: "        if (false) {\n"
+        + "          res.status(403).json({\n"
+        + "            error: {\n"
+        + "              code: 'SOFT_DELETE_ONLY',",
+  },
+  {
+    name: 'soft_delete loses its admin gate -- the verb is narrowed but anyone '
+        + 'signed in can hide a claims record',
+    find: "        const scSoftCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');\n"
+        + "        if (!scSoftCaller || scSoftCaller.role !== 'admin') {",
+    replace: "        const scSoftCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode') || { role: 'admin', employee_id: 'x' };\n"
+        + "        if (!scSoftCaller || scSoftCaller.role !== 'admin' && false) {",
+  },
 ];
 
 console.log('SAIRNcode gates: every arm is shown to FAIL on a sabotaged '
@@ -346,14 +408,18 @@ try {
   // Asserted by comparing bytes rather than by trusting that every `finally`
   // ran. This control swaps a real file in the real tree, so "it was restored"
   // is the one claim it must not take on faith.
-  section('2. both mutated files were restored byte for byte');
+  section('2. all three mutated files were restored byte for byte');
   ok(fs.readFileSync(SRC, 'utf8') === ORIGINAL,
      'the shipped handler is byte-identical to how this run found it');
   ok(fs.readFileSync(APP, 'utf8') === APP_ORIGINAL,
      'and so is sairncode.html');
+  ok(fs.readFileSync(REGISTRY, 'utf8') === REGISTRY_ORIGINAL,
+     'and so is api/_resources/sairncode.js -- the file whose ONE list decides '
+     + 'which records can be destroyed');
 } finally {
   try { fs.writeFileSync(SRC, ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
   try { fs.writeFileSync(APP, APP_ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
+  try { fs.writeFileSync(REGISTRY, REGISTRY_ORIGINAL, 'utf8'); } catch (e) { /* last resort */ }
   try { fs.rmSync(tmpDir, { recursive: true, force: true }); } catch (e) { /* temp */ }
 }
 

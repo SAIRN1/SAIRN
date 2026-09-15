@@ -200,6 +200,16 @@ const SC_TIER_A_WRITE_GATED = [
 const SC_TIER_A_WRITE_ROLES_BY_RESOURCE = {
   sc_compliance: ['admin', 'biller', 'auditor'],
 };
+// ── THE SEVEN MAY BE HIDDEN, NEVER DESTROYED (2026-09-15, item 97) ─────────
+// IMPORTED, NOT RETYPED. This is the list api/_resources/sairncode.js uses to
+// decide which verb each resource grants, and the two must agree exactly or the
+// envelope gate would accept a verb this branch does not implement -- a 400
+// from an unreachable branch, which is the failure checkEnvelope's own header
+// records having been found the hard way.
+const SC_TIER_A_SOFT_DELETE_ONLY = require('./_resources/sairncode').tierASoftDeleteOnly;
+function scIsSoftDeleteOnly(resource) {
+  return SC_TIER_A_SOFT_DELETE_ONLY.indexOf(resource) !== -1;
+}
 function scTierAWriteRoles(resource) {
   return SC_TIER_A_WRITE_ROLES_BY_RESOURCE[resource] || SC_TIER_A_WRITE_ROLES;
 }
@@ -11589,7 +11599,19 @@ module.exports = async (req, res) => {
 
     if (isScResource) {
       if (action === 'read') {
-        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + '&select=entry_id,data&order=created_at.asc'), { headers });
+        // SOFT-DELETED ROWS ARE EXCLUDED FOR THE SEVEN (2026-09-15, item 97).
+        // Without this the soft delete is cosmetic: the row is marked and comes
+        // straight back on the next read, so the record a user believes they
+        // removed reappears. `->>` on a key that is absent yields NULL, so a row
+        // that has never been soft-deleted matches `is.null` -- same filter and
+        // same reasoning as the dnt_* and sd_* blocks above.
+        //
+        // THE OTHER 21 ARE UNFILTERED, deliberately: they hard-delete, so no row
+        // of theirs ever carries the marker and adding the clause would be a
+        // predicate that can only ever be true, read by every future reader as
+        // though it meant something.
+        const scSoftFilter = scIsSoftDeleteOnly(resource) ? '&data->>_deleted_at=is.null' : '';
+        const r = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) + scSoftFilter + '&select=entry_id,data&order=created_at.asc'), { headers });
         if (r.status === 404 || r.status === 400) { res.status(200).json({ ok: true, data: [], provisioned: false }); return; }
         const rows = await r.json();
         if (!r.ok) return upstream(res, rows);
@@ -11741,7 +11763,83 @@ module.exports = async (req, res) => {
         res.status(200).json({ ok: true, data: (Array.isArray(rows) && rows[0]) ? rows[0].data : payload });
         return;
       }
+      // ── SOFT DELETE, FOR THE SEVEN TIER A RECORDS ONLY (2026-09-15) ──────
+      // Item 97, Michael's decision. The record is marked and hidden; the row
+      // stays and stays recoverable. Same shape as the StoneDesk and dnt_*
+      // blocks above rather than a fourth invention.
+      //
+      // ADMIN-GATED EXACTLY AS THE HARD DELETE WAS. This is a narrowing of what
+      // the verb DOES, not of who may call it, and quietly changing both at once
+      // would make the live diff impossible to reason about.
+      //
+      // READ-MODIFY-WRITE, NOT A BLIND UPSERT OF THE CALLER'S COPY -- a delete
+      // must not also be an opportunity to overwrite the stored record with a
+      // stale one. This reads what is actually stored, adds the marker and
+      // writes that back, so the record is preserved exactly.
+      //
+      // NO NEW DATABASE PRIVILEGE, and this is the part that matters given the
+      // backup state: the marker lives inside the existing `data` jsonb and the
+      // write is a PATCH. The row is never removed, so recovering it needs no
+      // backup at all -- which is the whole point, because
+      // docs/2026-09-14-nightly-backup-design.md records that the nightly
+      // backup has NEVER RUN and Supabase is on a free tier with no automated
+      // backups. Until that changes, "hidden" is the only recoverable state
+      // this platform actually has.
+      //
+      // 404 IS AN HONEST ANSWER, not a silent success: soft-deleting a record
+      // that is not there says so rather than reporting a deletion that did not
+      // happen.
+      if (action === 'soft_delete') {
+        if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
+        const scSoftCaller = verifySessionToken(tokenFromRequest(req), licHash, 'sairncode');
+        if (!scSoftCaller || scSoftCaller.role !== 'admin') {
+          res.status(403).json({ error: { code: 'FORBIDDEN', message: 'Only Compliance Admin can remove records' } });
+          return;
+        }
+        const scRowId = String(payload.id);
+        const scCur = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+          '&entry_id=eq.' + enc(scRowId) + '&select=data'), { headers });
+        if (scCur.status === 404 || scCur.status === 400) { res.status(503).json({ error: { code: 'NOT_PROVISIONED', message: scNotProvisionedMessage(resource) } }); return; }
+        const scCurRows = await scCur.json();
+        if (!scCur.ok) return upstream(res, scCurRows);
+        if (!Array.isArray(scCurRows) || scCurRows.length === 0) {
+          res.status(404).json({ error: { code: 'NOT_FOUND', message: 'No ' + resource + ' record with that id — nothing was removed' } });
+          return;
+        }
+        const scStored = scCurRows[0].data || {};
+        if (scStored._deleted_at) { res.status(200).json({ ok: true, data: scStored, already_deleted: true }); return; }
+        const scMarked = Object.assign({}, scStored, {
+          _deleted_at: nowISO(),
+          _deleted_by: String(scSoftCaller.employee_id || '')
+        });
+        const scW = await fetch(rest(resource + '?license_hash=eq.' + enc(licHash) +
+          '&entry_id=eq.' + enc(scRowId)), {
+          method: 'PATCH',
+          headers: Object.assign({}, headers, { Prefer: 'return=representation' }),
+          body: JSON.stringify({ data: scMarked, updated_at: nowISO() })
+        });
+        const scWRows = await scW.json().catch(function () { return null; });
+        if (!scW.ok) return upstream(res, scWRows);
+        res.status(200).json({ ok: true, data: scMarked });
+        return;
+      }
       if (action === 'delete') {
+        // REFUSE LOUDLY RATHER THAN SOFT-DELETE UNDER THE OTHER VERB'S NAME.
+        // checkEnvelope already rejects 'delete' on these seven because the
+        // registry no longer grants it, so this is defence in depth and it is
+        // deliberate: if the two lists ever disagree, the failure must be a
+        // refusal naming the right verb and NOT a destroy that succeeded. Two
+        // verbs that destroy different amounts of data must not share a name.
+        if (scIsSoftDeleteOnly(resource)) {
+          res.status(403).json({
+            error: {
+              code: 'SOFT_DELETE_ONLY',
+              message: resource + ' is a Tier A record and cannot be destroyed. '
+                + "Use action 'soft_delete', which hides the record and keeps the row."
+            }
+          });
+          return;
+        }
         if (!payload || !payload.id) { res.status(400).json({ error: { message: 'payload.id is required' } }); return; }
         // Server-side RBAC re-check (2026-08-18, same discipline as
         // grd_progress_photos' QC-decision gate, a8afe3e) -- the client's

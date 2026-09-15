@@ -15,7 +15,10 @@
 // because a client-side check is not a boundary, and NOTHING EXERCISED ANY OF
 // THEM:
 //
-//   1. `delete` on all 28 resources requires an `admin` session
+//   1. removal on all 28 resources requires an `admin` session -- and as of
+//      2026-09-15 (item 97) the SEVEN Tier A records grant `soft_delete`
+//      rather than a destroying `delete`, so the gate now has two halves:
+//      who may remove, and whether removal can destroy at all
 //   2. `sc_settings` WRITE requires an `admin` session (practice-level settings)
 //   3. `sc_auth_requests` SIGN-OFF requires an `admin` session, and the server
 //      sets signedOffBy FROM THE SESSION rather than from the payload
@@ -243,15 +246,47 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
   // registered resource declares a removal verb (removal_path_check.py:
   // "SAIRNcode 28/28"), so this gate is the whole of what stands between a
   // licence key and a deleted claims record.
-  section('1. delete requires an ADMIN session -- on all 28 resources');
+  section('1. removal requires an ADMIN session -- and 7 may never be destroyed');
   {
     const nonAdmin = ROLES.filter((r) => r !== 'admin');
     ok(nonAdmin.length > 0, 'CONTROL: there are non-admin roles to refuse -- '
        + nonAdmin.join(', '));
 
+    // ── THE SEVEN, AND THE PIN THAT KEEPS THE LIST HONEST (2026-09-15) ──────
+    // Item 97: a Tier A record may be HIDDEN and never destroyed. The list is
+    // read from the registry, and then pinned against docs/CRITICALITY-TIERS.md
+    // IN BOTH DIRECTIONS -- a resource tiered A there without a verb change
+    // here fails, and a name added here that is not Tier A fails too. Without
+    // the pin this is one more hand-kept copy of a list, which is the exact
+    // shape item 97 is about.
+    const SOFT_ONLY = SC.tierASoftDeleteOnly;
+    ok(Array.isArray(SOFT_ONLY) && SOFT_ONLY.length > 0,
+       'api/_resources/sairncode.js exports tierASoftDeleteOnly -- '
+       + (SOFT_ONLY || []).length + ' name(s)');
+    {
+      const md = require('fs').readFileSync(
+        path.join(ROOT, 'docs/CRITICALITY-TIERS.md'), 'utf8');
+      const tierA = [];
+      for (const line of md.split('\n')) {
+        const m = /^\|\s*`(sc_[a-z_]+)`\s*\|\s*\*\*A\*\*\s*\|/.exec(line);
+        if (m) tierA.push(m[1]);
+      }
+      ok(tierA.length > 0,
+         'CONTROL: the register really does mark sc_* rows Tier A -- '
+         + tierA.length + ' found, so the comparison below is not vacuous');
+      ok(tierA.slice().sort().join(',') === SOFT_ONLY.slice().sort().join(','),
+         'the soft-delete-only list EQUALS the Tier A sc_* rows in '
+         + 'docs/CRITICALITY-TIERS.md, both directions -- register ['
+         + tierA.slice().sort().join(', ') + ']');
+    }
+    const hardDeletable = SC.resources.filter((r) => SOFT_ONLY.indexOf(r) === -1);
+    ok(hardDeletable.length === SC.resources.length - SOFT_ONLY.length,
+       'CONTROL: the two sets partition the 28 -- ' + hardDeletable.length
+       + ' hard-deletable + ' + SOFT_ONLY.length + ' soft-only');
+
     let refusedNoSession = 0, refusedNonAdmin = 0, reachedAsAdmin = 0;
     const leaks = [];
-    for (const resource of SC.resources) {
+    for (const resource of hardDeletable) {
       const anon = await call(h, { resource, action: 'delete', payload: { id: 'X1' } });
       if (anon.code === 403 && !anon.sawUpstream) refusedNoSession += 1;
       else leaks.push(resource + ' (no session -> ' + anon.code
@@ -269,17 +304,161 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
       else leaks.push(resource + ' (admin -> ' + admin.code + ', methods '
                       + JSON.stringify(admin.upstreamMethods) + ')');
     }
-    ok(refusedNoSession === 28,
-       'all 28 refuse a delete with NO session, 403, without touching storage -- '
-       + refusedNoSession + '/28');
-    ok(refusedNonAdmin === 28,
-       'all 28 refuse a delete from a signed-in ' + nonAdmin[0]
-       + ' the same way -- ' + refusedNonAdmin + '/28');
+    const HD = hardDeletable.length;
+    ok(refusedNoSession === HD,
+       'all ' + HD + ' hard-deletable refuse a delete with NO session, 403, '
+       + 'without touching storage -- ' + refusedNoSession + '/' + HD);
+    ok(refusedNonAdmin === HD,
+       'all ' + HD + ' refuse a delete from a signed-in ' + nonAdmin[0]
+       + ' the same way -- ' + refusedNonAdmin + '/' + HD);
     // WITHOUT THIS ARM THE TWO ABOVE WOULD PASS ON A HANDLER THAT REFUSED
     // EVERY DELETE FOR ANY REASON, INCLUDING A BROKEN ONE.
-    ok(reachedAsAdmin === 28,
-       'CONTROL: all 28 DO reach storage with a real admin session, and with an '
-       + 'actual DELETE -- ' + reachedAsAdmin + '/28');
+    ok(reachedAsAdmin === HD,
+       'CONTROL: all ' + HD + ' DO reach storage with a real admin session, and '
+       + 'with an actual DELETE -- ' + reachedAsAdmin + '/' + HD);
+
+    // ── THE SEVEN: DESTROY IS REFUSED FOR EVERYONE, INCLUDING ADMIN ─────────
+    // The arm that would have been green before this change and is the whole
+    // point of it. `admin` is the role that COULD destroy every one of these
+    // until today, so asserting a non-admin refusal would prove nothing.
+    //
+    // ANY REFUSAL COUNTS AND ONLY A DELETE REACHING STORAGE IS A FAILURE. Two
+    // guards can answer -- checkEnvelope rejects the verb the registry no
+    // longer grants, and the handler's own SOFT_DELETE_ONLY branch answers if
+    // the lists ever disagree -- and pinning one status would make this fail
+    // when the other correct guard fires first.
+    let destroyRefused = 0;
+    for (const resource of SOFT_ONLY) {
+      const admin = await call(h, { resource, action: 'delete', payload: { id: 'X1' },
+                                    token: token('admin') });
+      if (admin.code !== 200 && admin.upstreamMethods.indexOf('DELETE') === -1) destroyRefused += 1;
+      else leaks.push(resource + ' (admin DESTROYED it -> ' + admin.code
+                      + ', methods ' + JSON.stringify(admin.upstreamMethods) + ')');
+    }
+    ok(destroyRefused === SOFT_ONLY.length,
+       'all ' + SOFT_ONLY.length + ' Tier A records refuse a destroying delete '
+       + 'even from an ADMIN, and none issues a DELETE to storage -- '
+       + destroyRefused + '/' + SOFT_ONLY.length);
+
+    // ── THE SECOND GUARD, DRIVEN IN THE ONLY STATE IT EXISTS FOR ────────────
+    // The arm above is answered by checkEnvelope, which refuses a verb the
+    // registry does not grant. The handler carries its OWN refusal underneath
+    // it, for the case the two ever disagree -- and while they agree, that
+    // branch is unreachable and therefore untested.
+    //
+    // THE MUTATION CONTROL PROVED THAT RATHER THAN MY READING IT: deleting the
+    // handler's guard left this suite entirely GREEN. An untested guard on a
+    // destroy path is worth very little, and "it can never be reached" is the
+    // sentence that precedes finding out otherwise.
+    //
+    // So the disagreement is CREATED here, in process, by granting `delete`
+    // back to sc_claims in the shared registry object the handler reads -- the
+    // exact shape of a registry edit that forgot the handler -- and the
+    // handler's own refusal is then the only thing standing. Restored in a
+    // finally, and the restore is asserted rather than assumed.
+    {
+      const before = reg.EXTRA_ACTIONS.sc_claims;
+      let widened;
+      try {
+        reg.EXTRA_ACTIONS.sc_claims = ['delete', 'soft_delete'];
+        widened = await call(h, { resource: 'sc_claims', action: 'delete',
+                                  payload: { id: 'X1' }, token: token('admin') });
+      } finally {
+        reg.EXTRA_ACTIONS.sc_claims = before;
+      }
+      ok(widened.code === 403 && widened.body
+         && widened.body.error && widened.body.error.code === 'SOFT_DELETE_ONLY',
+         'DEFENCE IN DEPTH: with the registry wrongly granting `delete` on '
+         + 'sc_claims, the handler still refuses with SOFT_DELETE_ONLY -- '
+         + widened.code + ' ' + ((widened.body || {}).error || {}).code);
+      ok(widened.upstreamMethods.indexOf('DELETE') === -1,
+         '...and it never issued a DELETE to storage: '
+         + JSON.stringify(widened.upstreamMethods));
+      ok(reg.EXTRA_ACTIONS.sc_claims === before
+         && reg.EXTRA_ACTIONS.sc_claims.indexOf('delete') === -1,
+         'CONTROL: the registry object was restored, so no later arm inherits '
+         + 'the widened grant');
+    }
+
+    // ── ...AND soft_delete IS GATED THE SAME WAY THE HARD DELETE WAS ────────
+    // This narrows what the verb DOES, not who may call it. If the role gate
+    // had been dropped in the same change, every arm above would still pass.
+    let softAnon = 0, softNonAdmin = 0, softReached = 0;
+    for (const resource of SOFT_ONLY) {
+      const anon = await call(h, { resource, action: 'soft_delete', payload: { id: 'X1' } });
+      if (anon.code === 403 && !anon.sawUpstream) softAnon += 1;
+      else leaks.push(resource + ' (soft, no session -> ' + anon.code + ')');
+
+      const coder = await call(h, { resource, action: 'soft_delete', payload: { id: 'X1' },
+                                    token: token(nonAdmin[0]) });
+      if (coder.code === 403 && !coder.sawUpstream) softNonAdmin += 1;
+      else leaks.push(resource + ' (soft, ' + nonAdmin[0] + ' -> ' + coder.code + ')');
+
+      // The stub answers every storage read with [], so a reached soft_delete
+      // ends at the honest 404 -- "no record with that id, nothing was removed"
+      // -- having issued a GET and never a DELETE. That is the shape being
+      // asserted: it got past the gate, it looked, and it destroyed nothing.
+      const admin = await call(h, { resource, action: 'soft_delete', payload: { id: 'X1' },
+                                    token: token('admin') });
+      if (admin.sawUpstream && admin.upstreamMethods.indexOf('DELETE') === -1
+          && admin.code === 404) softReached += 1;
+      else leaks.push(resource + ' (soft, admin -> ' + admin.code + ', methods '
+                      + JSON.stringify(admin.upstreamMethods) + ')');
+    }
+    ok(softAnon === SOFT_ONLY.length,
+       'all ' + SOFT_ONLY.length + ' refuse soft_delete with NO session -- '
+       + softAnon + '/' + SOFT_ONLY.length);
+    ok(softNonAdmin === SOFT_ONLY.length,
+       'all ' + SOFT_ONLY.length + ' refuse soft_delete from a signed-in '
+       + nonAdmin[0] + ' -- ' + softNonAdmin + '/' + SOFT_ONLY.length);
+    ok(softReached === SOFT_ONLY.length,
+       'CONTROL: all ' + SOFT_ONLY.length + ' DO reach storage as admin, with a '
+       + 'GET and never a DELETE, answering 404 on a row that is not there -- '
+       + softReached + '/' + SOFT_ONLY.length);
+
+    // ── AND THE READ EXCLUDES THEM, without which the hiding is cosmetic ────
+    // A soft delete that the next read returns anyway is not a delete at all.
+    // Asserted from the REQUEST THE HANDLER ISSUES, not from the response,
+    // because the stub has no rows to filter.
+    {
+      const urls = [];
+      const realFetch = global.fetch;
+      let seen = 0;
+      const names = { url: ['SUPABASE', 'URL'].join('_'),
+                      key: ['SUPABASE', 'SERVICE', 'ROLE', 'KEY'].join('_') };
+      const envURL = process.env[names.url], envKey = process.env[names.key];
+      process.env[names.url] = 'https://stub.invalid';
+      process.env[names.key] = ['stub', 'fixture', 'value'].join('-');
+      global.fetch = async (url) => {
+        seen += 1;
+        if (seen > 1) urls.push(String(url));
+        return { ok: true, status: 200,
+                 json: async () => (seen === 1 ? [{ status: 'active', app_id: null }] : []) };
+      };
+      try {
+        for (const resource of SOFT_ONLY.concat(hardDeletable.slice(0, 3))) {
+          seen = 0;
+          const res2 = { status() { return res2; }, json() { return res2; }, setHeader() {} };
+          await h({ method: 'POST', headers: { authorization: 'Bearer ' + LICENSE_KEY },
+                    body: { action: 'read', resource: resource, payload: {} } }, res2);
+        }
+      } finally {
+        global.fetch = realFetch;
+        if (envURL === undefined) delete process.env[names.url]; else process.env[names.url] = envURL;
+        if (envKey === undefined) delete process.env[names.key]; else process.env[names.key] = envKey;
+      }
+      const filtered = urls.filter((u) => u.indexOf('_deleted_at=is.null') !== -1);
+      ok(filtered.length === SOFT_ONLY.length,
+         'every read of the ' + SOFT_ONLY.length + ' Tier A resources filters '
+         + 'out soft-deleted rows -- ' + filtered.length + '/' + SOFT_ONLY.length);
+      // WITHOUT THIS THE ARM ABOVE WOULD PASS ON A HANDLER THAT ADDED THE
+      // FILTER TO EVERY RESOURCE, which would be a predicate that can only
+      // ever be true on the 21 and reads to a later maintainer as meaning
+      // something.
+      ok(urls.length === SOFT_ONLY.length + 3 && filtered.length === SOFT_ONLY.length,
+         'CONTROL: three hard-deletable resources were read too and NONE of '
+         + 'them carries the filter');
+    }
     ok(leaks.length === 0, 'no resource behaved differently: '
        + (leaks.slice(0, 6).join('; ') || 'none'));
 
@@ -300,24 +479,41 @@ section('0. the fixture is a real token, really app-bound and really licence-bou
     ok(auth.ROLES_BY_APP.stonedesk.indexOf('admin') !== -1,
        'CONTROL: StoneDesk really does have an `admin` role, so the next arm '
        + 'tests the APP claim and not the role check');
-    const crossAdmin = await call(h, { resource: 'sc_claims', action: 'delete',
+    // THE VERB MOVED WITH THE SUBJECT (2026-09-15, item 97). sc_claims is Tier
+    // A and no longer grants a destroying `delete`, so these three arms send
+    // `soft_delete` -- the verb that now reaches the session check on this
+    // resource. Keeping `delete` here would have passed for the WRONG REASON:
+    // checkEnvelope rejects the ungranted verb with a 400 before the app claim
+    // is ever examined, so the arm would have stopped testing the thing it is
+    // named for while still going green on a handler with no app check at all.
+    // That is exactly the stale-anchor shape PR 1.3 is about, and it appeared
+    // the moment the verb changed.
+    const crossAdmin = await call(h, { resource: 'sc_claims', action: 'soft_delete',
                                        payload: { id: 'X1' },
                                        token: token('admin', 'stonedesk') });
     ok(crossAdmin.code === 403 && !crossAdmin.sawUpstream,
-       'a StoneDesk ADMIN session cannot delete sc_claims -- the token carries '
+       'a StoneDesk ADMIN session cannot remove sc_claims -- the token carries '
        + 'the right role and the wrong app: ' + crossAdmin.code);
-    const other = await call(h, { resource: 'sc_claims', action: 'delete',
+    const other = await call(h, { resource: 'sc_claims', action: 'soft_delete',
                                   payload: { id: 'X1' },
                                   token: token(auth.ROLES_BY_APP.sairnbiz[0], 'sairnbiz') });
     ok(other.code === 403 && !other.sawUpstream,
        'and neither can a SAIRNbiz owner session -- wrong app AND wrong role: '
        + other.code);
-    const wrongLic = await call(h, { resource: 'sc_claims', action: 'delete',
+    const wrongLic = await call(h, { resource: 'sc_claims', action: 'soft_delete',
                                      payload: { id: 'X1' },
                                      token: token('admin', 'sairncode', 'OTHER-HASH') });
     ok(wrongLic.code === 403 && !wrongLic.sawUpstream,
        'nor can a sairncode admin session bound to a different licence -- '
        + wrongLic.code);
+    // AND THE SAME THREE ON A RESOURCE THAT STILL HARD-DELETES, so the cross-app
+    // property is proved on BOTH verbs rather than only on the one that changed.
+    const crossHard = await call(h, { resource: 'sc_dme', action: 'delete',
+                                      payload: { id: 'X1' },
+                                      token: token('admin', 'stonedesk') });
+    ok(crossHard.code === 403 && !crossHard.sawUpstream,
+       'a StoneDesk ADMIN session cannot delete sc_dme either -- the hard-delete '
+       + 'branch checks the app claim the same way: ' + crossHard.code);
   }
 
   // ── 2. sc_settings WRITE ──────────────────────────────────────────────────

@@ -60,11 +60,35 @@ Run:  SC_LICENSE=... SC_EMP=... SC_PIN=... python tools/sc_tier_a_write_gate_liv
 
 import json
 import os
+import subprocess
 import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import sairn_http                                                # noqa: E402
+
+
+def soft_delete_only():
+    """The Tier A names that may be hidden and never destroyed, READ FROM THE
+    REGISTRY by running it. Not typed here: a copy of that list in a probe is
+    the drift api/_resources exists to prevent, and it would go stale silently
+    the first time a resource is added -- the probe would then hard-delete a
+    Tier A record while reporting a clean run, which is the worst possible
+    direction for this particular tool to be wrong in."""
+    src = ('process.stdout.write(JSON.stringify('
+           'require("./api/_resources/sairncode").tierASoftDeleteOnly||[]));')
+    try:
+        r = subprocess.run(['node', '-e', src], cwd=ROOT,
+                           capture_output=True, text=True, timeout=120)
+    except (OSError, subprocess.SubprocessError) as e:
+        return None, '%s: %s' % (type(e).__name__, e)
+    if r.returncode != 0:
+        return None, (r.stderr or '')[:300]
+    try:
+        names = json.loads(r.stdout)
+    except ValueError as e:
+        return None, str(e)
+    return (names, None) if names else (None, 'the registry returned an empty list')
 
 AUTH = 'https://sairn.vercel.app/api/sc-auth'
 DATA = 'https://sairn.vercel.app/api/sd-data'
@@ -114,6 +138,15 @@ def post(url, payload, key=None, token=None):
 
 def main():
     print('SAIRNcode -- the Tier A billing write gate, against the LIVE endpoint\n')
+
+    # FAIL CLOSED IF THE REGISTRY CANNOT BE READ (PR 1.11). Guessing the verb
+    # would mean sending a destroying 'delete' at a Tier A record on a live
+    # tenant, so "could not tell" is UNVERIFIED and never a default.
+    soft_only, why = soft_delete_only()
+    if soft_only is None:
+        unverified('could not read tierASoftDeleteOnly from '
+                   'api/_resources/sairncode.js, so the cleanup verb for each '
+                   'resource is unknown: %s' % why)
 
     if not LICENSE or not EMP or not PIN:
         unverified('SC_LICENSE, SC_EMP and SC_PIN are not all set in the '
@@ -246,6 +279,31 @@ def main():
                       'EXCEPTION)' % (res, st, c),
                       st == 403 and c == 'FORBIDDEN', json.dumps(body)[:160])
 
+    # ── 5b. A TIER A RECORD CANNOT BE DESTROYED (2026-09-15, item 97) ────────
+    # The write gate above proves WHO may change these records. This proves what
+    # can be done to them at all: an admin -- the role that COULD hard-delete
+    # every sc_* resource until today -- is refused the destroying verb on a
+    # Tier A record by the deployed function.
+    #
+    # ANY REFUSAL COUNTS AND 200 IS THE ONLY FAILURE. Two different guards can
+    # answer: checkEnvelope rejects the verb because the registry no longer
+    # grants it, and the handler's own SOFT_DELETE_ONLY branch answers if the
+    # two lists ever disagree. Asserting one specific status would make this arm
+    # fail when the OTHER correct guard fires first.
+    print('\n5b. a Tier A record cannot be destroyed, only hidden')
+    st, body = post(DATA, {'action': 'delete', 'resource': 'sc_claims',
+                           'app_id': 'sairncode', 'payload': {'id': CLAIM_ROW}},
+                    key=LICENSE, token=admin)
+    c = (body or {}).get('error', {}).get('code', '') if isinstance(body, dict) else ''
+    check('admin hard-delete on sc_claims is REFUSED -> %s %s' % (st, c),
+          st != 200, 'the row was destroyed: ' + json.dumps(body)[:200])
+    st, body = post(DATA, {'action': 'delete', 'resource': 'sc_coded_items',
+                           'app_id': 'sairncode', 'payload': {'id': CODED_ROW}},
+                    key=LICENSE, token=admin)
+    check('CONTROL: admin hard-delete on sc_coded_items still works -> %s' % st,
+          st == 200,
+          'the refusal is blanket rather than Tier A only: ' + json.dumps(body)[:200])
+
     # ── 6. CLEAN UP, AND REPORT IT ───────────────────────────────────────────
     # A failure to clean up is a FINDING. A probe that leaves live credentials
     # active is worse than one that never ran.
@@ -254,13 +312,32 @@ def main():
     # succeeds. The other two rows are deleted unconditionally even when the
     # section that writes them was skipped -- a delete of an absent id answers
     # 200 -- so this one follows the same shape rather than adding a branch.
+    #
+    # THE VERB DIFFERS BY RESOURCE NOW, AND THE PROBE IS WHY IT HAD TO (item 97,
+    # 2026-09-15). sc_claims and sc_compliance are Tier A and no longer accept a
+    # destroying 'delete'; sc_coded_items is not Tier A and still does. THE VERB
+    # IS DERIVED FROM THE REGISTRY, NOT TYPED HERE -- a fourth copy of the
+    # seven-name list in a probe is precisely the drift api/_resources exists to
+    # prevent, and this probe's own cleanup loop has already gone stale once by
+    # naming resources by hand.
+    #
+    # AND SOFT-DELETED ROWS DO NOT VANISH, so the read-back that follows checks
+    # the row is EXCLUDED FROM READS rather than gone. A probe asserting absence
+    # from the table would now fail against a correct implementation.
     for res, row in (('sc_claims', CLAIM_ROW), ('sc_compliance', COMP_ROW),
                      ('sc_coded_items', CODED_ROW)):
-        st, body = post(DATA, {'action': 'delete', 'resource': res,
+        verb = 'soft_delete' if res in soft_only else 'delete'
+        st, body = post(DATA, {'action': verb, 'resource': res,
                                'app_id': 'sairncode', 'payload': {'id': row}},
                         key=LICENSE, token=admin)
-        check('deleted %s from %s -> %s' % (row, res, st), st == 200,
+        check('%s %s from %s -> %s' % (verb, row, res, st), st == 200,
               json.dumps(body)[:200])
+        st, body = post(DATA, {'action': 'read', 'resource': res,
+                               'app_id': 'sairncode'}, key=LICENSE, token=admin)
+        rows = (body or {}).get('data') or []
+        left = [x for x in rows if isinstance(x, dict) and x.get('id') == row]
+        check('...and %s no longer appears in a read of %s' % (row, res),
+              st == 200 and not left, json.dumps(left)[:200])
     if CODER_PIN and AUDITOR_PIN:
         for emp in (CODER_ID, AUDITOR_ID):
             st, body = post(AUTH, {'action': 'set_active', 'employee_id': emp,

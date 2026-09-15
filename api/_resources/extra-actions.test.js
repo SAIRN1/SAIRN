@@ -93,11 +93,42 @@ async function callHandler(action, resource, key) {
     }
   });
 
-  test('every sc_ resource grants exactly delete', () => {
-    const sc = require('./sairncode').resources;
+  // ── SPLIT BY TIER, NOT UNIFORM (2026-09-15, item 97) ─────────────────────
+  // This arm asserted ['delete'] for all 28 and was GREEN the whole time seven
+  // Tier A medical-billing records could be destroyed by a uniform grant nobody
+  // had decided per resource. The assertion was true; the thing it asserted was
+  // the defect. It is split now so the two populations are checked separately
+  // and a name moving between them has to move here too.
+  test('every sc_ resource grants exactly one removal verb, split by tier', () => {
+    const mod = require('./sairncode');
+    const sc = mod.resources;
+    const soft = mod.tierASoftDeleteOnly;
     assert.strictEqual(sc.length, 28);
+    assert.ok(Array.isArray(soft) && soft.length > 0,
+              'tierASoftDeleteOnly is missing or empty, so the split below is vacuous');
+    for (const name of soft) {
+      assert.ok(sc.indexOf(name) !== -1, name + ' is soft-delete-only but not registered');
+    }
+    let hard = 0;
     for (const name of sc) {
-      assert.deepStrictEqual(reg.EXTRA_ACTIONS[name], ['delete'], name);
+      const expected = soft.indexOf(name) === -1 ? ['delete'] : ['soft_delete'];
+      assert.deepStrictEqual(reg.EXTRA_ACTIONS[name], expected, name);
+      if (expected[0] === 'delete') hard += 1;
+    }
+    // CONTROL: without this, a tierASoftDeleteOnly listing all 28 would pass
+    // every assertion above while removing the app's only removal path.
+    assert.strictEqual(hard, 28 - soft.length,
+                       'the two populations do not partition the 28');
+    assert.ok(hard > 0, 'no sc_ resource can be hard-deleted at all any more');
+  });
+
+  test('no sc_ resource grants BOTH removal verbs', () => {
+    // The failure that would make the tier split meaningless: a Tier A record
+    // that still accepts a destroying delete alongside the soft one.
+    for (const name of require('./sairncode').resources) {
+      const verbs = reg.EXTRA_ACTIONS[name] || [];
+      assert.ok(!(verbs.indexOf('delete') !== -1 && verbs.indexOf('soft_delete') !== -1),
+                name + ' grants both delete and soft_delete');
     }
   });
 
@@ -268,8 +299,16 @@ async function callHandler(action, resource, key) {
   await atest('write is allowed on a plain resource', async () => {
     assert.strictEqual((await gate('write', 'profile')).code, PASSED_GATE);
   });
-  await atest('delete is allowed on sc_denial', async () => {
-    assert.strictEqual((await gate('delete', 'sc_denial')).code, PASSED_GATE);
+  // sc_denial is Tier A as of 2026-09-15 and grants soft_delete, not delete.
+  // Both directions are asserted here rather than swapping one for the other:
+  // the verb it DOES grant must pass the gate, and the destroying verb it no
+  // longer grants must be refused BY THE GATE -- which is the half that makes
+  // this a tier split rather than a rename.
+  await atest('soft_delete is allowed on sc_denial (Tier A)', async () => {
+    assert.strictEqual((await gate('soft_delete', 'sc_denial')).code, PASSED_GATE);
+  });
+  await atest('...and delete is REFUSED on sc_denial by the gate itself', async () => {
+    assert.notStrictEqual((await gate('delete', 'sc_denial')).code, PASSED_GATE);
   });
   await atest('delete is allowed on the newest sc_ resource (sc_dme)', async () => {
     assert.strictEqual((await gate('delete', 'sc_dme')).code, PASSED_GATE);

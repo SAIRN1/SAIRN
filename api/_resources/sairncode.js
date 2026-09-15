@@ -169,19 +169,66 @@ const RESOURCES = [
     'sc_dme',
 ];
 
+// ── THE SEVEN TIER A RECORDS MAY BE HIDDEN, NEVER DESTROYED (2026-09-15) ────
+// Michael's decision on item 97. The reduce() below used to grant a real,
+// row-removing 'delete' to all 28 names uniformly, and the reasoning it carried
+// was sound FOR THE SET -- which is precisely how these seven ended up with a
+// destroy verb nobody chose for them. A compliance finding and a DME catalogue
+// row had identical destroy rights because they were in one list.
+//
+// THE PLATFORM HAD ALREADY MADE THIS CALL TWICE, IN WRITING, AND NEITHER
+// PRECEDENT REACHED HERE:
+//   * api/_resources/sairnvet.js on sv_controlled -- "having no delete verb is
+//     the CORRECT design for a controlled-substance register"
+//   * api/_resources/sairndental.js -- "'soft_delete', not 'delete': the record
+//     is marked and hidden, the row [survives]"
+//
+// SOFT, NOT ABSENT, and that is the SAIRNdental half of the precedent rather
+// than the SAIRNvet half. sv_controlled has no remove button; these seven do,
+// and have since 2026-08-18. Removing the verb outright would break a real
+// workflow and teach people to work around it; making it non-destructive keeps
+// the workflow and keeps the record.
+//
+// THE LIST IS NOT DERIVED FROM docs/CRITICALITY-TIERS.md AT RUNTIME -- a
+// registry that read a markdown file would be worse than the copy it replaced.
+// It is pinned instead: tests/sairncode_gates.js asserts this array equals the
+// Tier A sc_* rows in that register exactly, in both directions, so a tier
+// added there without a change here FAILS rather than drifting.
+//
+// sc_denial_events IS IN THIS LIST AND IS NOT IN SC_TIER_A_WRITE_GATED, which
+// is a real inconsistency in the WRITE gate and not a mistake here. The
+// register tiers it A -- "the event history an appeal is argued from" -- and
+// the write gate, decided separately on 2026-09-14, names six. Flagged in the
+// open-work row rather than silently widened, because widening a role gate is
+// a different decision from narrowing a destroy verb.
+const SC_TIER_A_SOFT_DELETE_ONLY = [
+  'sc_ar', 'sc_claims', 'sc_compliance', 'sc_credential_scope',
+  'sc_denial', 'sc_denial_events', 'sc_revenue'
+];
+
 module.exports = {
   app: 'sairncode',
   resources: RESOURCES,
-  // 'delete' is a real verb for every sc_* resource and only for them --
-  // SAIRNcode's client has had real remove buttons since 2026-08-18. Declared
-  // here rather than as a hand-kept list inside api/sd-data.js, which is where
-  // it used to live: that file carried a SECOND copy of the 28 names purely to
-  // answer "may this resource be deleted", and a copy of a list is the exact
-  // drift this directory exists to prevent (employee_profile had already gone
-  // missing from one such copy). Derived from RESOURCES above, so a resource
-  // added to this file can never be silently ungated or over-gated.
+  tierASoftDeleteOnly: SC_TIER_A_SOFT_DELETE_ONLY,
+  // 'delete' is a real verb for the sc_* resources that are not Tier A, and
+  // only for them -- SAIRNcode's client has had real remove buttons since
+  // 2026-08-18. Declared here rather than as a hand-kept list inside
+  // api/sd-data.js, which is where it used to live: that file carried a SECOND
+  // copy of the 28 names purely to answer "may this resource be deleted", and a
+  // copy of a list is the exact drift this directory exists to prevent
+  // (employee_profile had already gone missing from one such copy). Derived
+  // from RESOURCES above, so a resource added to this file can never be
+  // silently ungated or over-gated.
+  //
+  // TWO VERBS THAT DESTROY DIFFERENT AMOUNTS OF DATA MUST NOT SHARE A NAME --
+  // api/sd-data.js's StoneDesk block already says so, and it is why the seven
+  // get 'soft_delete' rather than a 'delete' that quietly behaves differently.
+  // A caller copying a working delete call from sc_dme to sc_claims now gets a
+  // refusal naming the right verb, not the other behaviour.
   extraActions: RESOURCES.reduce(function (map, name) {
-    map[name] = ['delete'];
+    map[name] = SC_TIER_A_SOFT_DELETE_ONLY.indexOf(name) === -1
+      ? ['delete']
+      : ['soft_delete'];
     return map;
   }, {}),
 };

@@ -3113,6 +3113,19 @@ D0120,CDT,Periodic oral evaluation established patient,"></textarea>
             showToast('Only Compliance Admin can delete records');
             return false;
         }
+        // ── THE SEVEN TIER A RECORDS ARE HIDDEN, NOT DESTROYED (2026-09-15) ──
+        // Item 97, Michael's decision. These seven now call 'soft_delete' and
+        // the row survives with a `_deleted_at` marker, excluded from every
+        // subsequent read. The button is an unlabelled x and never SAID
+        // "permanently", so nothing on screen was false -- but a Compliance
+        // Admin removing a claim or a compliance finding needs to know the
+        // record is retained, because that is exactly the fact a retention
+        // policy or an erasure request turns on. Saying nothing would leave
+        // them to assume the ordinary meaning.
+        function scSoftRemoveToast(what){
+            showToast(what + ' hidden. The record is RETAINED on the server and '
+                + 'excluded from this view -- Tier A records are never destroyed.');
+        }
 
 
 // -- LICENCE RE-KEY ISOLATION (2026-09-03) ---------------------------------
@@ -3807,8 +3820,9 @@ How to answer:
         }
         async function removeRevenueEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_revenue', { id: id });
+            var result = await scData('soft_delete', 'sc_revenue', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Revenue entry');
             var list = getRevenueEntries().filter(function(r){ return r.id !== id; });
             saveRevenueEntries(list);
             renderRevenue();
@@ -3878,8 +3892,9 @@ How to answer:
         }
         async function removeDenialEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_denial', { id: id });
+            var result = await scData('soft_delete', 'sc_denial', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Denial');
             saveDenialEntries(getDenialEntries().filter(function(d){return d.id!==id;}));
             renderDenial();
             renderDashboard();
@@ -3974,8 +3989,9 @@ How to answer:
         }
         async function removeDenialEventEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_denial_events', { id: id });
+            var result = await scData('soft_delete', 'sc_denial_events', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Denial event');
             saveDenialEventEntries(getDenialEventEntries().filter(function(e){return e.id!==id;}));
             renderDenialEvents();
         }
@@ -4033,8 +4049,9 @@ How to answer:
         }
         async function removeComplianceItem(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_compliance', { id: id });
+            var result = await scData('soft_delete', 'sc_compliance', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Compliance item');
             saveComplianceItems(getComplianceItems().filter(function(c){return c.id!==id;}));
             renderCompliance();
         }
@@ -6209,8 +6226,9 @@ How to answer:
         }
         async function removeArEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_ar', { id: id });
+            var result = await scData('soft_delete', 'sc_ar', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('A/R entry');
             saveArEntries(getArEntries().filter(function(a){return a.id!==id;}));
             renderAr();
         }
@@ -6458,8 +6476,9 @@ How to answer:
         }
         async function removeClaimEntry(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_claims', { id: id });
+            var result = await scData('soft_delete', 'sc_claims', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Claim');
             saveClaimEntries(getClaimEntries().filter(function(c){return c.id!==id;}));
             renderClaims();
             renderDashboard();
@@ -7291,8 +7310,9 @@ How to answer:
         }
         async function removeCredentialScope(id){
             if (!requireAdminForDelete()) return;
-            var result = await scData('delete', 'sc_credential_scope', { id: id });
+            var result = await scData('soft_delete', 'sc_credential_scope', { id: id });
             if (result === null) { showToast('Could not delete -- server rejected the request or is unreachable'); return; }
+            scSoftRemoveToast('Credential scope');
             saveCredentialScopes(getCredentialScopes().filter(function(r){ return r.id !== id; }));
             renderCredentialScopes();
         }
