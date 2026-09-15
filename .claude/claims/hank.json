@@ -1885,6 +1885,16 @@
       "claimed_at_epoch": 1789492224.0256028,
       "status": "released",
       "released_at": "2026-09-15T21:58:18Z"
+    },
+    {
+      "id": "hank-1789510188",
+      "session": "hank",
+      "subject": "hover-auditor",
+      "task": "hover auditor separation scope gate and git history audit trail",
+      "claimed_at": "2026-09-15T22:09:48Z",
+      "claimed_at_epoch": 1789510188.2884605,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
