@@ -1425,6 +1425,16 @@
       "claimed_at_epoch": 1789469880.5076067,
       "status": "released",
       "released_at": "2026-09-15T11:13:01Z"
+    },
+    {
+      "id": "fourth-1789471672",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "nosemgrep exception, items 98 ablation 99 graduated-consent 100 watchtower, sairndental B2 cross-location rollup",
+      "claimed_at": "2026-09-15T11:27:52Z",
+      "claimed_at_epoch": 1789471672.8253458,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
