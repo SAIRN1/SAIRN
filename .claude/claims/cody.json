@@ -1199,6 +1199,16 @@
       "claimed_at_epoch": 1789468440.6861305,
       "status": "active",
       "released_at": null
+    },
+    {
+      "id": "cody-1789476274",
+      "session": "cody",
+      "subject": "cody",
+      "task": "circuit breaker bulkhead external dependency isolation, temporary workaround expiry audit, mutation control rebase guard",
+      "claimed_at": "2026-09-15T12:44:34Z",
+      "claimed_at_epoch": 1789476274.2989578,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
