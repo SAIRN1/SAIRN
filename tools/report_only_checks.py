@@ -1342,6 +1342,34 @@ NOT_PROMOTED = [
      'the unqualified number on every push, which is the one presentation the tool was '
      'built to prevent. It is run by the FMEA loop when a register record is added, '
      'which is the moment its answer can change.'),
+    # ── RECORDED BY ITS OWN AUTHOR, 2026-09-15 ────────────────────────────────
+    # CC found this tool had no recorded decision and correctly REFUSED TO GUESS
+    # at another author's intent. That refusal is the right default and it is
+    # why this entry exists rather than a plausible sentence written by somebody
+    # else -- a decision register filled in by inference is a register of
+    # inferences.
+    ('entitlement_freshness_check.py',
+     'ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE THAT A PUSH CANNOT CHANGE, the same '
+     'reasoning as copy_exactly_check.py below. It exits 1 today because `plan`, '
+     '`trial_ends_at`, `stripe_subscription_id` and their neighbours have readers '
+     'across api/_lib/license.js, api/_lib/sd-store.js, api/sd-data.js and '
+     'api/sd-render.js and NO IN-REPO WRITER. That is not a defect somebody '
+     'introduced and it is not fixable by editing this repo: THE WRITER IS STRIPE, '
+     'and the whole point of item 100 is that the remedy must not depend on the '
+     'counterparty. Wiring it report-only would print the same unchanging block on '
+     'every push by every session until a revocation path is BUILT -- a notice '
+     'whose content cannot vary with what a push did, which is how a gate gets '
+     'read past and then ignored. '
+     'IT IS NOT UNWIRED: it is SUITE-ONLY and runs with '
+     'tools/entitlement_freshness_control.py, so its criteria are exercised and '
+     'its sabotage is verified on every suite run. What is being declined is '
+     'PROMOTION TO REPORT-ONLY, not execution. '
+     'PROMOTE IT THE DAY A REVOCATION PATH EXISTS -- an in-repo writer that can '
+     'clear an entitlement without Stripe cooperating -- because that is the day '
+     'its answer starts varying with what the code does, and the day a regression '
+     'in it would be a real finding rather than a restatement of a known gap. '
+     'Until then the right home for the gap is the open-work index, where a '
+     'standing unbuilt thing belongs, and not a per-push notice.'),
     ('copy_exactly_check.py', 'ITS CURRENT OUTPUT IS A KNOWN-OPEN STATE, not a finding: '
      '0 of 5 identical on 2026-09-14, with 4 differing because the APP was fixed and '
      'the must-copy-exactly DOCUMENT was not. Wiring it now means four rows on every '
