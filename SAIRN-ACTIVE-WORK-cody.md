@@ -4624,3 +4624,80 @@ regenerated and OK.
 database access. Its verify block is per-statement with expected answers,
 including a real breaker round trip, because the Supabase editor reports success
 for the statements it did run.
+
+---
+
+## 2026-09-15 (later still) — a review that was already done, and two premises that were wrong
+
+### Item 1 — dnt_rollup review DISCHARGED, and the review was Hank's
+
+The 12:51Z obligation was open only because `--discharge` did not exist when the
+work was done. **Hank had already reviewed it in `ce7764fa`, with both findings.**
+I did not claim them. What I added is INDEPENDENT CONFIRMATION BY A DIFFERENT
+ROUTE, which is worth more than a second opinion reached the same way:
+
+- **Finding 1** — a readable metric reports `{value:null, unreadable:'suppressed'}`
+  while `disclosure.unreadable` is `{}` and `complete` is `true`: three parts of
+  one object contradicting each other. Hank reached it through a legacy
+  unstamped charge; I reached it through an appointment at a location id the
+  charges resource had never seen, registry empty. **Two different populations,
+  same cause** — `dnt-rollup.js:151` seeds cells only on buckets that exist when
+  that metric runs, and `:178` then treats a MISSING cell identically to a
+  SUPPRESSED one. Different inputs reaching the same defect is what makes it a
+  property of the code rather than of one fixture.
+- **Finding 2** — unreadable AMOUNTS contribute 0 and are counted:
+  `100 + null + '' + '$1,200' + '12abc'` reports **112 over 5 rows, complete:true**.
+  Agreed with Hank that this is a DISAGREEMENT and not an oversight —
+  `dnt-rollup.test.js:199` pins the zeroing deliberately. The objection is that
+  nothing NAMES the unread fields and `complete:true` tells a client not to look.
+- **NEW, not in Hank's review** — the sum accumulates in FLOATS: `0.1 + 0.2`
+  reports `0.30000000000000004`. Low severity for a display report, and the same
+  class as the recorded incident where two figures 4.5e-13 apart refused a
+  correct bill and was fixed in integer cents.
+
+**Not fixed by me.** I hold a review, not the file; a reviewer who lands the fix
+stops being independent of it. Hank's reasoning, and it is right.
+
+### Item 2 — BLOCKED, not skipped. Hank claimed it 0.1h before I looked
+
+`hank / stonedesk / "drawing tool inside corner radius chamfer sink vendor
+plumbing"`, claimed 14:42:26Z. The claim matcher blocked it and **the task string
+was not reworded to slip past** (PR 4.3).
+
+### Item 4 — the premise is wrong: it is BUILT, except the QR half
+
+Verified per sub-feature rather than by filename, after the StoneDesk #5 lesson
+from earlier today:
+
+| claimed | real |
+|---|---|
+| two-way anonymous thread | **BUILT** — `public-complaint-thread.js`, `{token}` loads / `{token,reply}` appends; a patient reply reopens a Resolved thread to New |
+| unguessable link | **BUILT** — `crypto.randomBytes(32).toString('hex')`, 256-bit |
+| no PII ever captured | **BUILT** — the insert writes `license_hash, app_id, complaint_id, access_token, data, updated_at, submission_key`. No IP column; IP is used only by the rate limiter, in its own table |
+| persistent nav badge | **BUILT** — `complaints-badge`, `rComplaintsBadge()`, counts `status==='New'` |
+| QR distribution | **GENUINELY ABSENT** — zero `qr` hits in `sairndental.html`. QR exists in `sairndesign.html`, `stonedesk.html` and `tests/slab_scan_labels.js`, so the platform has the capability and dental never got it. What ships today is a plain text link |
+
+All four complaint suites green. **The real gap is one sub-feature, not a
+feature.**
+
+### Item 6 — groundwork only, and the finding is better than the task assumed
+
+190 non-test `Number(`/`parseFloat(`/`parseInt(` call sites, which is too many to
+recombine responsibly in one pass. **The useful finding is that the platform has
+ALREADY converged on two distinct policies independently**, and they are both
+right for their own job:
+
+- **a CONFIG read falls back to a DEFAULT** — `ai-rate-limit.js:117,135,139`,
+  `anon-rate-limit.js:126,131`, `cron-jitter.js:68`
+- **a MEASUREMENT returns NULL** — `ai-rate-limit.js:164`, `dental-bi.js:89`
+
+`dnt-rollup.js:76` returns **0** for a measurement, which is the outlier — and it
+is the same file whose own header says *"NEVER 0. Zero is a measurement."* A
+canonical helper should encode the split, not a single "safe number" function;
+one policy applied to both jobs would be wrong in one of them.
+
+### Not started, and said plainly
+
+Item 3 (SAIRNdental complaint QR half), item 5 (`sairn-resilience-patterns`
+skill), item 78 (formal property verification), and the remaining three item 6
+candidates. Not attempted rather than attempted badly.
