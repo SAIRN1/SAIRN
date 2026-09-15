@@ -28,7 +28,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 REL = 'tools/sairn_push_gate_hook.py'
 R = {}
 
@@ -38,7 +38,7 @@ def check(label, actual, expected):
 
 
 def git(cwd, *a):
-    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True)
+    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(wt):
@@ -52,7 +52,7 @@ def run_gate(wt):
     payload = 'refs/heads/main %s refs/heads/main %s\n' % (tip, base)
     p = subprocess.run([sys.executable, os.path.join(wt, REL.replace('/', os.sep)),
                         '--pre-push'],
-                       input=payload, cwd=wt, capture_output=True, text=True,
+                       input=payload, cwd=wt, capture_output=True, text=True, encoding='utf-8', errors='replace',
                        timeout=600)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
@@ -131,7 +131,7 @@ try:
     tip = git(wt, 'rev-parse', 'HEAD').stdout.strip()
     p = subprocess.run([sys.executable, path, '--pre-push'],
                        input='refs/heads/main %s refs/heads/main %s\n' % (tip, tip),
-                       cwd=wt, capture_output=True, text=True, timeout=600)
+                       cwd=wt, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
     check('D1 with no origin/main to compare, it stays quiet',
           'Gate-freshness' in ((p.stdout or '') + (p.stderr or '')), False)
     check('D2 and does not block', p.returncode, 0)

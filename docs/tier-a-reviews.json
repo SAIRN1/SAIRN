@@ -91,6 +91,21 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "cc",
+      "opened_at": "2026-09-15T15:16:41Z",
+      "resources": [
+        "rf_certifications"
+      ],
+      "files": [
+        "tests/run_export_coverage_probe.py"
+      ],
+      "what": "The platform-wide subprocess decode sweep -- 358 text-mode subprocess calls given an explicit encoding. FOURTH FALSE POSITIVE OF THIS GATE, recorded rather than overridden. The only Tier A name in the diff is rf_certifications, appearing in CONTEXT around a touched line in tests/run_export_coverage_probe.py; no code serving rf_certifications changed. The pattern across all four is now clear and is worth a reviewer's judgement: the gate attributes a resource named in a hunk's CONTEXT lines as strongly as one named in an ADDED or REMOVED line, and a mechanical one-line-per-call sweep produces context lines everywhere. I proposed context-counting myself, on the argument that an edit three lines from law_trusttx is an edit about law_trusttx; four false positives and zero true positives from context alone say that argument is wrong in practice. THE REVIEWER SHOULD DECIDE whether attribution should require the name on a +/- line, with context demoted to a reported-but-not-blocking signal -- and should check that the item 97 commit would still fire under the narrower rule before agreeing.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }

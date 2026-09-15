@@ -50,7 +50,7 @@ def check(name, cond, detail=''):
 
 def run_json():
     r = subprocess.run([sys.executable, TOOL, '--json'], cwd=REPO,
-                       capture_output=True, text=True, timeout=180)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
     return r.returncode, r.stdout, r.stderr
 
 

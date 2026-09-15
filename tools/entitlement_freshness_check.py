@@ -63,7 +63,7 @@ import subprocess
 import sys
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 LICENSE_LIB = os.path.join('api', '_lib', 'license.js')
 
 # The authority module and the table it reads. Derived from the file rather than
@@ -111,7 +111,7 @@ def fail(msg):
 
 def tracked(patterns):
     r = subprocess.run(['git', '-C', REPO, 'ls-files'] + list(patterns),
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         fail('git ls-files failed: ' + (r.stderr or '')[:200])
     return [p for p in r.stdout.splitlines() if p.strip()]

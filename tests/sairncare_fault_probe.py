@@ -65,7 +65,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 DATA = os.path.join('api', 'sd-data.js')
 HTML = 'sairncare.html'
 MAR = os.path.join('tests', 'sairncare', 'test-alf-mar.js')
@@ -88,7 +88,7 @@ def check(name, cond, detail=''):
 
 def run(wt, suite):
     r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -97,7 +97,7 @@ print('sairncare -- the MAR, incident and pharmacy-review gates must REFUSE\n')
 wt = tempfile.mkdtemp(prefix='sairn-care-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])

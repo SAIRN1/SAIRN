@@ -45,7 +45,7 @@ def obs(digests, tree='t'):
 print('1. the blind lock')
 check('1a  every fixture classifies as decided', Q.run_fixtures() == [], Q.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'flaky_checker_quarantine.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
 check('1c  it is stated as running BEFORE anything was measured',
       'before any checker was measured' in (p.stdout or ''))

@@ -55,7 +55,7 @@ print('1. the blind lock')
 check('1a  every synthetic source classifies as written', C.run_fixtures() == [],
       C.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
 check('1c  the narrowings are stated as paid for by real false positives, not as taste',
       'paid for by a real false positive' in (p.stdout or ''))
@@ -122,7 +122,7 @@ for shape, f, rule in C.ACKNOWLEDGED:
 
 print('5. what the report claims about itself is true')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py')],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = r.stdout or ''
 check('5a  a shape with no findings says it is a MEASURED zero, not a silence',
       'a measured zero, not a check that did not run' in out)
@@ -140,7 +140,7 @@ check('5c  it says it is report-only, because a shape that cannot read intent '
 # downstream can chain.
 print('6. FIRES and SILENT on the same entry point')
 _r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py')],
-                    capture_output=True, text=True, cwd=REPO)
+                    capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('6a  FIRES: with a real finding on the real tree the tool exits 1, so a '
       'caller can chain it -- printing a finding and exiting 0 is how a checker '
       'becomes decorative', _r.returncode == 1, 'exit %d' % _r.returncode)
@@ -148,7 +148,7 @@ check('6b  ...and the finding it exits 1 for is the real one, not any line that 
       'happens to be printed',
       'sen-portal.js' in (_r.stdout or '') and 'MANAGEMENT_ROLES' in (_r.stdout or ''))
 _f = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'completeness_check.py'),
-                     '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                     '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('6c  SILENT: with nothing to report the same tool exits 0 -- the pair is '
       'what makes 6a evidence rather than an observation',
       _f.returncode == 0, 'exit %d' % _f.returncode)

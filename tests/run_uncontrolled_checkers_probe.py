@@ -72,7 +72,7 @@ def check(cond, label):
 
 def run(tool, *args):
     p = subprocess.run([sys.executable, os.path.join(TOOLS, tool)] + list(args),
-                       cwd=REPO, capture_output=True, text=True, timeout=600)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 

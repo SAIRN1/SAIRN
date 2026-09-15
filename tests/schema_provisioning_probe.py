@@ -96,7 +96,7 @@ env = dict(os.environ)
 env.pop('SAIRN_LICENSE_KEY', None)
 p = subprocess.run([sys.executable, TOOL, '--app', 'sairnfreedom',
                     '--schema', 'sql/sairnfreedom_data_schema.sql'],
-                   capture_output=True, text=True, cwd=REPO, env=env)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, env=env)
 results['arm5_no_key_exits_2'] = p.returncode == 2
 results['arm5_no_key_says_not_a_pass'] = 'not a pass' in (p.stderr or '').lower()
 
@@ -104,11 +104,11 @@ results['arm5_no_key_says_not_a_pass'] = 'not a pass' in (p.stderr or '').lower(
 # Schema filenames genuinely differ in shape (sairnvet_data_schema.sql,
 # sairndental_vendor_schema.sql), so a guess would check the wrong file.
 p = subprocess.run([sys.executable, TOOL, '--app', 'sairnfreedom', '--key', 'ZZ'],
-                   capture_output=True, text=True, cwd=REPO, env=env)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, env=env)
 results['arm6_missing_schema_exits_3'] = p.returncode == 3
 p = subprocess.run([sys.executable, TOOL, '--app', 'zz_not_an_app', '--key', 'ZZ',
                     '--schema', 'sql/sairnfreedom_data_schema.sql'],
-                   capture_output=True, text=True, cwd=REPO, env=env)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, env=env)
 results['arm6_unknown_app_exits_3'] = p.returncode == 3
 
 # ── ARM 7: it is READ ONLY, and that is checked rather than promised ──────

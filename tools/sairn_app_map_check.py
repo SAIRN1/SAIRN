@@ -73,7 +73,7 @@ COMPANION_PAGES = {
 
 
 def sh(args):
-    r = subprocess.run(args, cwd=REPO, capture_output=True, text=True)
+    r = subprocess.run(args, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         sys.stderr.write((r.stderr or r.stdout).strip() + '\n')
         sys.exit(2)

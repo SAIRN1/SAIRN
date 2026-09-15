@@ -60,7 +60,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 WEBHOOK = os.path.join('api', 'sairncash', 'stripe-webhook.js')
 VERIFY = os.path.join('api', 'sairncash', 'verify.js')
@@ -84,7 +84,7 @@ def check(name, cond, detail=''):
 
 def run(wt, suite):
     r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -94,7 +94,7 @@ print('sairncash -- the webhook signature, the ordering guard and the trial '
 wt = tempfile.mkdtemp(prefix='sairn-cash-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])

@@ -67,7 +67,7 @@ def _today():
     import subprocess
     try:
         out = subprocess.run(['git', 'log', '-1', '--format=%cI'], cwd=REPO,
-                             capture_output=True, text=True).stdout.strip()
+                             capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
         return out[:10]
     except Exception:
         return ''

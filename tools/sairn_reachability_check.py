@@ -271,7 +271,7 @@ def routed_api_paths():
     """
     import subprocess
     out = subprocess.run(['git', 'ls-files', 'api/*.js', 'api/*/*.js'],
-                         cwd=REPO_ROOT, capture_output=True, text=True).stdout
+                         cwd=REPO_ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     paths = []
     for f in out.split('\n'):
         f = f.strip()

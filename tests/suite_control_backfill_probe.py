@@ -31,7 +31,7 @@ import subprocess
 import sys
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 # suite -> (target source, [(control name, exact text, replacement), ...])
 SUITES = [
@@ -137,7 +137,7 @@ def run(suite):
 
 def dirty(paths):
     r = subprocess.run(['git', 'status', '--porcelain', '--'] + list(paths),
-                       cwd=ROOT, capture_output=True, text=True)
+                       cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [l for l in (r.stdout or '').splitlines() if l.strip()]
 
 

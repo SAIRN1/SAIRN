@@ -19,12 +19,12 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**153 files in `tools/`.** By what actually invokes them:
+**154 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 11 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 47 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 48 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 39 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 21 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
@@ -34,7 +34,7 @@ By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 99 |
+| CHECKER | 100 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
@@ -121,7 +121,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (47)
+## REPORT-ONLY (48)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -169,6 +169,7 @@ quiet in practice.
 | `schema_snapshot_freshness.py` | 2026-09-11, the day it was built | db/schema_snapshot.json no longer knowing a table that sql/ creates -- either that SQL has never been run, or the snapshot is behind the database |
 | `secrets_inventory.py` | 2026-09-14, and --check rather than the bare report: the bare run prints a ranking and exits 0 whatever it finds, which in a runner that is silent on a clean run means it would never say anything at all | docs/SECRETS-INVENTORY.md drifting from the code -- a new environment variable, a removed one, or a guard that moved |
 | `soup_register_check.py` | 2026-09-12 | a third-party component the product RUNS that is absent from the SOUP register, and a register entry for something no longer running |
+| `subprocess_decode_check.py` | 2026-09-15, report-only on its first day. The correct number IS zero -- unlike every read-list in this registry it is a gate, not a score -- but it is registered rather than made blocking on day one, on the same staging this file uses everywhere: a week of pushes says whether it is quiet, and a check nobody has watched be quiet should not be able to refuse a push | a text-mode subprocess call with no explicit encoding=, which decodes the child output with the LOCALE default (cp1252 on this platform) rather than UTF-8 |
 | `temporary_state_check.py` | 2026-09-14, report-only and deliberately NOT wired into the push gate. What it reports is state that LOOKS temporary, and it cannot read intent -- a long-expiry session token and a leaked suppression flag are the same shape. The only thing --check FAILS on is a declaration naming a scope the vocabulary has no word for, because that needs no threshold and no policy | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING |
 | `tooling_inventory.py` | 2026-09-12, the day it was built | docs/TOOLING-INVENTORY.md no longer matching the wiring -- a tool added, promoted, wired or removed without the inventory being regenerated |
 | `traceability_matrix.py` | 2026-09-10, the day it was built | docs/traceability-matrix.md no longer matching the sources it is derived from -- a guard test, a gate check, a registry entry or an index row moved and the matrix did not |
@@ -349,11 +350,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      153   git ls-files tools/
+  tools on disk                      154   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                9   tools\sairn_push_gate_hook.py
-  report-only registry                45   report_only_checks.REGISTRY
-  tools invoked by tests/            100   tests/**/*.py, *.js
+  report-only registry                46   report_only_checks.REGISTRY
+  tools invoked by tests/            101   tests/**/*.py, *.js
   recorded NOT-promoted decisions     39   report_only_checks.NOT_PROMOTED
   numbered gate checks                13   tools\sairn_push_gate_hook.py
 ```

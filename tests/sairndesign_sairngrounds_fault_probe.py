@@ -30,7 +30,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 DSN_SUITE = os.path.join('tests', 'sairndesign_server_backup.js')
 GRD_SUITE = os.path.join('tests', 'sairngrounds_server_backup.js')
@@ -61,7 +61,7 @@ print('sairndesign + sairngrounds -- both new suites must refuse a tree that has
 wt = tempfile.mkdtemp(prefix='sairn-dg-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])
@@ -74,7 +74,7 @@ try:
 
     def run(suite):
         r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         return r.returncode, (r.stdout or '') + (r.stderr or '')
 
     def write(rel, text):
@@ -166,11 +166,11 @@ try:
     check('all seven files restored byte for byte after every arm', ok)
 finally:
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     shutil.rmtree(wt, ignore_errors=True)
 
 dirty = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--'] + TOUCHED,
-                       capture_output=True, text=True).stdout.strip()
+                       capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 check('this clone\'s own files are untouched', dirty == '', dirty)
 
 print('\n%s  sairndesign_sairngrounds_fault_probe: %d failed'

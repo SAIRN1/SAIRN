@@ -26,7 +26,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = 'tools/defect_register.py'
 REG = 'docs/defect-density-register.json'
 R = {}
@@ -37,12 +37,12 @@ def check(label, actual, expected):
 
 
 def git(cwd, *a):
-    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True)
+    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run(wt, *args):
     p = subprocess.run([sys.executable, TOOL] + list(args), cwd=wt,
-                       capture_output=True, text=True, timeout=300)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 

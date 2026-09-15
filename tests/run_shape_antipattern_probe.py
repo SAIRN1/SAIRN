@@ -49,7 +49,7 @@ def ok(name, cond, detail=''):
 
 def run(*args):
     r = subprocess.run([sys.executable, TOOL] + list(args),
-                       capture_output=True, text=True, cwd=REPO, timeout=900)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, timeout=900)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

@@ -61,7 +61,7 @@ def read(path):
 
 def root_html():
     out = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     return [f for f in out.split('\n') if f and '/' not in f]
 
 

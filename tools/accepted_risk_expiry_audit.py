@@ -168,7 +168,7 @@ def _paused_docs():
     risk wearing a filename, and it is the shape most likely to be forgotten --
     nothing in the index has to mention it at all."""
     ls = subprocess.run(['git', '-C', REPO, 'ls-files', 'docs/*PAUSED*',
-                         'docs/*paused*'], capture_output=True, text=True)
+                         'docs/*paused*'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [f for f in ls.stdout.split('\n') if f.strip()]
 
 

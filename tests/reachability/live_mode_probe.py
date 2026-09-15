@@ -64,7 +64,7 @@ if __name__ != '__main__':
 
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'sairn_reachability_check.py')
 EXEMPTIONS = 'tools/reachability_exemptions.json'
 
@@ -81,7 +81,7 @@ EXEMPTIONS = 'tools/reachability_exemptions.json'
 # This guard closes the other half the lock cannot see -- a run KILLED before
 # its finally -- and stops the probe adopting somebody's real uncommitted edit.
 _dirty = subprocess.run(['git', 'status', '--porcelain', '--', EXEMPTIONS],
-                        cwd=REPO, capture_output=True, text=True).stdout.strip()
+                        cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 if _dirty:
     print('SKIPPED: %s is already modified, so the bytes this probe would'
           % EXEMPTIONS)
@@ -129,7 +129,7 @@ def snap(**kw):
 
 def run(target, *extra):
     r = subprocess.run([sys.executable, TOOL] + list(extra) + [target],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout
 
 
@@ -208,7 +208,7 @@ try:
         R['targeted_run_reports_no_staleness'] = ('STALE EXEMPTIONS' not in out)
 
         r_full = subprocess.run([sys.executable, TOOL], cwd=REPO,
-                                capture_output=True, text=True)
+                                capture_output=True, text=True, encoding='utf-8', errors='replace')
         R['full_run_still_reports_a_dead_exemption'] = (
             'STALE EXEMPTIONS' in (r_full.stdout or '')
             and 'zzDefinitelyNotAFinding' in (r_full.stdout or ''))

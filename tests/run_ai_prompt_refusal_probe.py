@@ -94,7 +94,7 @@ def run(*args, **kw):
     env['PYTHONPATH'] = (os.path.join(REPO, 'tools') + os.pathsep +
                          env.get('PYTHONPATH', ''))
     r = subprocess.run([sys.executable, tool] + list(args),
-                       capture_output=True, text=True, cwd=REPO, env=env)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, env=env)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

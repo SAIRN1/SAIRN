@@ -41,7 +41,7 @@ def check(label, ok, detail=''):
 print('1. the blind lock')
 check('1a  every fixture classifies as written', R.run_fixtures() == [], R.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'reliability_growth.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
 
 print('2. THE FITTERS WORK -- without this, the refusal below is worthless')
@@ -113,7 +113,7 @@ check('4d  the EFFORT criterion fires on its own, and is not a threshold that '
 
 print('5. what the real run says about itself')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'reliability_growth.py')],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = r.stdout or ''
 check('5a  it refuses on the real series (exit 1) rather than fitting it',
       r.returncode == 1, 'exit %d' % r.returncode)
@@ -147,7 +147,7 @@ check('5b  it prints the series it judged, so the refusal can be checked',
 # and it cannot rot when the register grows again.
 _series = json.loads(subprocess.run(
     [sys.executable, os.path.join(REPO, 'tools', 'reliability_growth.py'), '--json'],
-    capture_output=True, text=True, cwd=REPO).stdout).get('series') or []
+    capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout).get('series') or []
 _thin = [s for s in _series
          if s.get('rate_per_100') is not None
          and s.get('substantive', 0) < R.MIN_DENOMINATOR]
@@ -172,7 +172,7 @@ check('5d  it does not overclaim the DIRECTION of a weak correlation -- flat and
 check('5e  it says what would change the answer, and which of those is a BUILD '
       'rather than a wait', 'WHAT WOULD CHANGE THE ANSWER' in out and 'is a BUILD' in out)
 j = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'reliability_growth.py'),
-                    '--json'], capture_output=True, text=True, cwd=REPO)
+                    '--json'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 data = json.loads(j.stdout)
 check('5f  the JSON carries fit: null -- a consumer cannot pick up a model the '
       'report refused to fit', data['fit'] is None and data['admissible'] is False)

@@ -111,7 +111,7 @@ def read_origin_claims(repo):
     """
     ls = subprocess.run(['git', 'ls-tree', '--name-only', 'origin/main',
                          '.claude/claims/'], cwd=repo,
-                        capture_output=True, text=True, timeout=FETCH_TIMEOUT)
+                        capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FETCH_TIMEOUT)
     if ls.returncode != 0:
         return None
     out = []
@@ -120,7 +120,7 @@ def read_origin_claims(repo):
         if not path.endswith('.json'):
             continue
         r = subprocess.run(['git', 'show', 'origin/main:' + path], cwd=repo,
-                           capture_output=True, text=True, timeout=FETCH_TIMEOUT)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=FETCH_TIMEOUT)
         if r.returncode != 0:
             continue
         try:

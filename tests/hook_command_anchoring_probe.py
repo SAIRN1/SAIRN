@@ -114,7 +114,7 @@ code = ('import sys;sys.path.insert(0, r"%s");'
 names = {}
 for cwd in (REPO, ELSEWHERE, os.path.join(REPO, 'tools')):
     r = subprocess.run([sys.executable, '-c', code], cwd=cwd,
-                       capture_output=True, text=True, timeout=120)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
     names[os.path.basename(cwd)] = (r.stdout or r.stderr).strip()
 print('        %s' % names)
 check(len(set(names.values())) == 1,
@@ -142,7 +142,7 @@ loader = (
 for tool in named:
     path = os.path.join(REPO, 'tools', tool)
     r = subprocess.run([sys.executable, '-c', loader, path], cwd=ELSEWHERE,
-                       capture_output=True, text=True, timeout=120)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
     check('LOADED' in (r.stdout or ''),
           '%s executes its module body from docs/ %s'
           % (tool, ('-- ' + (r.stderr or '').strip().splitlines()[-1][:70])

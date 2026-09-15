@@ -70,7 +70,7 @@ def check(name, cond, detail=''):
 
 
 def git(cwd, *args, **kw):
-    r = subprocess.run(('git',) + args, cwd=cwd, capture_output=True, text=True)
+    r = subprocess.run(('git',) + args, cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if kw.get('check', True) and r.returncode != 0:
         raise RuntimeError('git %s failed in %s:\n%s' % (' '.join(args), cwd, r.stderr))
     return r
@@ -78,7 +78,7 @@ def git(cwd, *args, **kw):
 
 def run_tool(clone, *args):
     r = subprocess.run([sys.executable, os.path.join(clone, 'tools', 'sairn_claim.py')] + list(args),
-                       cwd=clone, capture_output=True, text=True)
+                       cwd=clone, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -294,7 +294,7 @@ def main():
 
         r = subprocess.run([sys.executable,
                             os.path.join(clone, 'tools', 'sairn_claim_hook.py')],
-                           cwd=clone, capture_output=True, text=True)
+                           cwd=clone, capture_output=True, text=True, encoding='utf-8', errors='replace')
         check('the hook exits 0', r.returncode == 0, r.stderr)
         try:
             ctx = json.loads(r.stdout)['hookSpecificOutput']['additionalContext']
@@ -439,7 +439,7 @@ def main():
             'print("SAVE_MINE_RETURNED", S.save_mine(doc, "chore(claims): probe no-op", True))\n'
         ) % os.path.join(clone, 'tools')
         r = subprocess.run([sys.executable, '-c', drive], cwd=clone,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         out5 = (r.stdout or '') + (r.stderr or '')
         check('save_mine really took its no-change path -- otherwise this is a '
               'different test', '(no change to commit)' in out5, out5[-400:])

@@ -43,7 +43,7 @@ if __name__ == '__main__':
         try:
             try:
                 r = subprocess.run(['node', '--check', tf.name],
-                                   capture_output=True, text=True)
+                                   capture_output=True, text=True, encoding='utf-8', errors='replace')
             except FileNotFoundError:
                 node_missing = True
                 break

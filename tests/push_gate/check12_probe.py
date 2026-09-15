@@ -61,7 +61,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 FAIL = []
 
@@ -75,14 +75,14 @@ def ok(name, cond, detail=''):
 
 def git(cwd, *args):
     return subprocess.run(['git', '-C', cwd] + list(args),
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(cwd, tip, base):
     """Drive the REAL hook through its pre-push entry point."""
     line = 'refs/heads/probe %s refs/heads/probe %s\n' % (tip, base)
     r = subprocess.run([sys.executable, GATE, '--pre-push'],
-                       input=line, capture_output=True, text=True, cwd=cwd)
+                       input=line, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

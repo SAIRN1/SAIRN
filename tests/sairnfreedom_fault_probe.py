@@ -26,7 +26,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 SUITE = os.path.join('tests', 'sairnfreedom_server_backup.js')
 HTML = os.path.join('sairnfreedom.html')
 REG = os.path.join('api', '_resources', 'sairnfreedom.js')
@@ -43,7 +43,7 @@ def check(name, cond, detail=''):
 
 def run(wt):
     r = subprocess.run(['node', os.path.join(wt, SUITE)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -53,7 +53,7 @@ print('sairnfreedom -- the suite must refuse a registry, client or schema that '
 wt = tempfile.mkdtemp(prefix='sairn-sf-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])
@@ -143,11 +143,11 @@ try:
     check('all three files restored byte for byte after every arm', ok)
 finally:
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     shutil.rmtree(wt, ignore_errors=True)
 
 dirty = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--',
-                        HTML, REG, SCHEMA], capture_output=True, text=True).stdout.strip()
+                        HTML, REG, SCHEMA], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 check('this clone\'s own files are untouched', dirty == '', dirty)
 
 print('\n%s  sairnfreedom_fault_probe: %d failed'

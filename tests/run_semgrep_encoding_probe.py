@@ -35,7 +35,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join('tools', 'run_semgrep.py')
 
 fails = []
@@ -65,7 +65,7 @@ print('tools/run_semgrep.py -- a captured stdout must still get a verdict\n')
 wt = tempfile.mkdtemp(prefix='sairn-sg-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])

@@ -77,7 +77,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 FAIL = []
 
@@ -90,7 +90,7 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(cwd, tip, base, snapshot):
@@ -103,7 +103,7 @@ def run_gate(cwd, tip, base, snapshot):
     env['SAIRN_SCHEMA_SNAPSHOT'] = snapshot
     line = 'refs/heads/probe %s refs/heads/probe %s\n' % (tip, base)
     r = subprocess.run([sys.executable, GATE, '--pre-push'],
-                       input=line, capture_output=True, text=True, cwd=cwd, env=env)
+                       input=line, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd, env=env)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -181,7 +181,7 @@ try:
                               ('no tables', SNAP_EMPTY, 4)):
         p = subprocess.run([sys.executable, pf, '--gate', '--require-live', '--live', snap,
                             os.path.join(wt, SQL_REL)],
-                           capture_output=True, text=True, cwd=REPO)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
         ok('the preflight itself exits %d on a %s snapshot' % (want, label),
            p.returncode == want, 'exit=%d %s' % (p.returncode, (p.stdout or '')[-200:]))
 
@@ -206,7 +206,7 @@ try:
                          'fixture: sql naming a table the snapshot lacks')
     p = subprocess.run([sys.executable, pf, '--gate', '--require-live', '--live', SNAP_GOOD,
                         os.path.join(wt, SQL_REL)],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('the preflight itself exits 1 on the missing table', p.returncode == 1,
        'exit=%d %s' % (p.returncode, (p.stdout or '')[-300:]))
     rc, out = run_gate(wt, tip_missing, base, SNAP_GOOD)

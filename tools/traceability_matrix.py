@@ -66,7 +66,7 @@ TEST_RE = re.compile(r'(?:tests?/[\w/.-]+\.(?:js|py)|api/[\w/.-]+\.test\.js)')
 # is covered the day it lands rather than the day somebody remembers this list.
 def apps():
     r = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return sorted(os.path.splitext(f)[0] for f in r.stdout.split('\n')
                   if f.strip() and '/' not in f)
 

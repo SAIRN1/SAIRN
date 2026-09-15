@@ -72,7 +72,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 SUBJECT = os.path.join('api', 'sd-data.js')
 # `[ \t]*` AND NOT `\s*`, AND THE DIFFERENCE COST A GATE. `\s` includes the
 # newline, so with re.M the `^` could match at a BLANK line and `(\s*)` would
@@ -93,7 +93,7 @@ def fail(msg):
 def suites():
     """Every tracked test that loads api/sd-data.js. Derived, not listed."""
     r = subprocess.run(['git', '-C', REPO, 'ls-files', 'tests/', 'api/'],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         fail('git ls-files failed')
     out = []
@@ -115,7 +115,7 @@ def suites():
 def run(wt, suite, timeout=60):
     try:
         r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                           capture_output=True, text=True, timeout=timeout)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=timeout)
         return r.returncode
     except subprocess.TimeoutExpired:
         return 124
@@ -159,7 +159,7 @@ def main(argv):
     wt = tempfile.mkdtemp(prefix='sairn-abl-')
     shutil.rmtree(wt, ignore_errors=True)
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q',
-                          '--detach', wt, 'HEAD'], capture_output=True, text=True)
+                          '--detach', wt, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         fail('could not create a worktree: ' + add.stderr.strip()[:200])
 
@@ -174,7 +174,7 @@ def main(argv):
         # is not "reading the working tree", it is reading half of it.
         dirty = subprocess.run(
             ['git', '-C', REPO, 'diff', '--name-only', 'HEAD'],
-            capture_output=True, text=True).stdout.split()
+            capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split()
         for rel in sorted(set([SUBJECT] + list(S) + dirty)):
             srcp = os.path.join(REPO, rel)
             dstp = os.path.join(wt, rel)

@@ -46,7 +46,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 HTML = 'sairnsenior.html'
 EVV = os.path.join('api', '_lib', 'sairnsenior-offline-evv.test.js')
 SUBJECTS = (HTML, EVV)
@@ -63,7 +63,7 @@ def check(name, cond, detail=''):
 
 def run(wt, suite):
     r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -72,7 +72,7 @@ print('sairnsenior -- the offline-EVV suite must REFUSE\n')
 wt = tempfile.mkdtemp(prefix='sairn-sen-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])

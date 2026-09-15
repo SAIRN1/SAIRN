@@ -109,7 +109,7 @@ def fetch_live(spec):
     cmd = 'vercel api "%s"' % path
     try:
         p = subprocess.run(cmd, cwd=ROOT, shell=True,
-                           capture_output=True, text=True, timeout=90)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=90)
     except Exception as err:
         raise Unverified('could not run the vercel CLI: %s: %s'
                          % (type(err).__name__, err))

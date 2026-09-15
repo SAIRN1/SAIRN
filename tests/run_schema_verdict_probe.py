@@ -108,7 +108,7 @@ S.create_introduced = real_introduced
 # means calling a table NEVER RUN on the strength of a comment.
 print('3. the CREATE date comes from the CREATE, not from prose naming it')
 tmp = tempfile.mkdtemp(prefix='schemaverdict-')
-run = lambda *a: subprocess.run(a, cwd=tmp, capture_output=True, text=True)
+run = lambda *a: subprocess.run(a, cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
 run('git', 'init', '-q')
 run('git', 'config', 'user.email', 'probe@local')
 run('git', 'config', 'user.name', 'probe')
@@ -118,9 +118,9 @@ p = os.path.join(tmp, 'sql', 'x.sql')
 
 def commit(text, when):
     io.open(p, 'w', encoding='utf-8', newline='\n').write(text)
-    subprocess.run(['git', 'add', '-A'], cwd=tmp, capture_output=True, text=True)
+    subprocess.run(['git', 'add', '-A'], cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
     subprocess.run(['git', 'commit', '-q', '-m', 'x'], cwd=tmp, capture_output=True,
-                   text=True, env=dict(os.environ, GIT_AUTHOR_DATE=when,
+                   text=True, encoding='utf-8', errors='replace', env=dict(os.environ, GIT_AUTHOR_DATE=when,
                                        GIT_COMMITTER_DATE=when))
 
 
@@ -198,7 +198,7 @@ check('a capture with no timestamp refuses rather than passing quietly',
 print('5. the live repo')
 import json
 out = subprocess.run([sys.executable, 'tools/schema_snapshot_freshness.py', '--json'],
-                     cwd=real_repo, capture_output=True, text=True)
+                     cwd=real_repo, capture_output=True, text=True, encoding='utf-8', errors='replace')
 d = json.loads(out.stdout)
 check('the checker still exits 1 while tables are absent -- it does not pass vacuously',
       out.returncode, 1)

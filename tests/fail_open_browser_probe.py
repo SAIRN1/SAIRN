@@ -50,7 +50,7 @@ function zzLd(k,d){try{var r=localStorage.getItem(k);return r===null?d:JSON.pars
 
 def run(target):
     p = subprocess.run([sys.executable, TOOL, target],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     return (p.stdout or '') + (p.stderr or '')
 
 
@@ -104,7 +104,7 @@ results['a_catch_returning_null_is_NOT_this_shape'] = with_file(
 # section, whatever the count turns out to be. `live_loader_count` stays as a
 # reported number rather than an assertion -- it is the burndown, and it is
 # expected to be 0 now.
-full = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, cwd=REPO)
+full = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = (full.stdout or '')
 results['the_browser_pass_actually_ran'] = 'BROWSER-SIDE' in out
 results['the_real_tree_is_scanned'] = 'fail-open reads found:' in out

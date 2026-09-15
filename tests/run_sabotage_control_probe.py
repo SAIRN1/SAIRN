@@ -43,7 +43,7 @@ print('1. the blind lock')
 check('1a  every hand-decided fixture classifies as written', S.run_fixtures() == [],
       S.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sabotage_control_check.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs alone and passes', p.returncode == 0, 'exit %d' % p.returncode)
 check('1c  it states it ran before the tree was read',
       'before the tests tree was read' in (p.stdout or ''))

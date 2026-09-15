@@ -69,12 +69,12 @@ def probe_identities():
 def effective():
     def get(k):
         r = subprocess.run(['git', '-C', REPO, 'config', '--get', k],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         return r.stdout.strip()
 
     def local(k):
         r = subprocess.run(['git', '-C', REPO, 'config', '--local', '--get', k],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         return r.stdout.strip()
     return get('user.name'), get('user.email'), local('user.name'), local('user.email')
 
@@ -82,7 +82,7 @@ def effective():
 def history_count(values):
     """How many commits on HEAD already carry one of these identities."""
     r = subprocess.run(['git', '-C', REPO, 'log', '--format=%an|%ae|%cn|%ce', 'HEAD'],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     n = 0
     for line in r.stdout.splitlines():
         if any(v in line.split('|') for v in values):

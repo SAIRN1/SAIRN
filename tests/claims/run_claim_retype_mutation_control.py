@@ -62,7 +62,7 @@ def run_probe(tool_path):
     env = dict(os.environ)
     env['SAIRN_CLAIM_TOOL'] = tool_path
     r = subprocess.run([sys.executable, PROBE], cwd=ROOT, env=env,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

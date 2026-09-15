@@ -26,7 +26,7 @@ import sys
 import tempfile
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(ROOT, 'tools', 'write_without_readback_check.py')
 
 FAIL = []
@@ -41,7 +41,7 @@ def check(name, got, want):
 
 
 def run(paths):
-    p = subprocess.run([sys.executable, TOOL] + paths, capture_output=True, text=True, cwd=ROOT)
+    p = subprocess.run([sys.executable, TOOL] + paths, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=ROOT)
     return p.returncode, p.stdout
 
 

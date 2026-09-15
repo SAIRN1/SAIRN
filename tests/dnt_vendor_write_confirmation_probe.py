@@ -23,7 +23,7 @@ import subprocess
 import sys
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TARGET = 'sairndental.html'
 SUITE = os.path.join('tests', 'dnt_vendor_write_confirmation.js')
 
@@ -84,7 +84,7 @@ MUTATIONS = [
 
 def dirty():
     r = subprocess.run(['git', 'status', '--porcelain', '--', TARGET], cwd=ROOT,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.stdout.strip()
 
 

@@ -231,7 +231,7 @@ def repo_corpora():
     """
     import subprocess
     out = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     for f in sorted(x for x in out.split('\n') if x.strip() and '/' not in x):
         try:
             src = strip_comments(io.open(os.path.join(REPO, f), encoding='utf-8',

@@ -48,7 +48,7 @@ FOUR = ['dnt_supplies', 'dnt_vendor_orders', 'dnt_vendor_contacts', 'dnt_vendor_
 
 # ── ARM 1: the measurement moved, and it is the tool that says so ───────────
 p = subprocess.run([sys.executable, CHECKER, 'sairndental.html'],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = (p.stdout or '') + (p.stderr or '')
 row = ''
 for ln in out.splitlines():
@@ -134,7 +134,7 @@ law = io.open(os.path.join(REPO, 'api', '_resources', 'sairnlaw.js'),
 # a check its own documentation could break.
 _law_names = subprocess.run(
     ['node', '-e', "process.stdout.write(require('./api/_resources/sairnlaw.js').resources.join(','))"],
-    capture_output=True, text=True, cwd=REPO, shell=False).stdout.split(',')
+    capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO, shell=False).stdout.split(',')
 results['arm8_registry_loaded'] = len(_law_names) > 10
 results['arm8_law_billingcodes_not_registered'] = 'law_billingcodes' not in _law_names
 results['arm8_reason_is_recorded'] = 'law_billingcodes' in law and 'REFERENCE DATA' in law

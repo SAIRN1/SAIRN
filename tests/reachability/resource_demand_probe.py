@@ -42,7 +42,7 @@ def run_r6():
     """Capture just the R6 section from a real full run."""
     p = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                      'sairn_reachability_check.py')],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     out = p.stdout or ''
     i = out.find('=== R6:')
     return (out[i:] if i >= 0 else ''), p.returncode

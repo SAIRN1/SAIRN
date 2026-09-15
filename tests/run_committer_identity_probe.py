@@ -35,7 +35,7 @@ import tempfile
 CONTROLS_FOR = ['committer_identity_check.py']
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 REL = 'tools/committer_identity_check.py'
 FAIL = []
 
@@ -48,12 +48,12 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run(cwd, *args):
     r = subprocess.run([sys.executable, os.path.join(cwd, REL.replace('/', os.sep))]
-                       + list(args), capture_output=True, text=True, cwd=cwd,
+                       + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd,
                        env=dict(os.environ, PYTHONIOENCODING='utf-8'))
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
@@ -106,7 +106,7 @@ TMP = tempfile.mkdtemp(prefix='identity-probe-')
 CLONE = os.path.join(TMP, 'clone')
 try:
     c = subprocess.run(['git', 'clone', '--local', '--quiet', REPO, CLONE],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     ok('a throwaway clone was made', os.path.isdir(os.path.join(CLONE, 'tools')),
        c.stderr[-300:])
     shutil.copy2(os.path.join(REPO, REL.replace('/', os.sep)),

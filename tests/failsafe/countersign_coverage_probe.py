@@ -62,7 +62,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 LOCK = os.path.join('api', 'sv-witness.js')
 SUITES = [os.path.join('tests', 'failsafe', 'witness_atomicity.js'),
           os.path.join('tests', 'failsafe', 'witness_recovery.js'),
@@ -121,7 +121,7 @@ def main():
     wt = tempfile.mkdtemp(prefix='sv-countersign-')
     shutil.rmtree(wt, ignore_errors=True)
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                         capture_output=True, text=True)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         print('COULD NOT CHECK: no worktree -- nothing was measured. '
               'ZERO FINDINGS HERE IS NOT A CLEAN SWEEP.')
@@ -134,7 +134,7 @@ def main():
 
         def run(suite):
             r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                               capture_output=True, text=True)
+                               capture_output=True, text=True, encoding='utf-8', errors='replace')
             return r.returncode
 
         baseline = [(os.path.basename(s), run(s)) for s in SUITES]

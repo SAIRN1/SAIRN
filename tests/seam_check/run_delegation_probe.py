@@ -29,13 +29,13 @@ import subprocess
 import sys
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 EP = 'api/sd-data.js'
 LIB = 'api/_lib/subcontractor-compliance.js'
 
 
 def run(*a):
-    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True)
+    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def tool():

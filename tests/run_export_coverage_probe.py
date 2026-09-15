@@ -152,7 +152,7 @@ try:
         'B.REPO = %r\n' % REPO +
         'B.SOURCE = %r\n' % X.SOURCE +
         "sys.exit(B.main(['--check']))\n")
-    out = subprocess.run([sys.executable, drv], capture_output=True, text=True,
+    out = subprocess.run([sys.executable, drv], capture_output=True, text=True, encoding='utf-8', errors='replace',
                          cwd=REPO)
     sys.path.insert(0, os.path.join(REPO, 'tools'))
     import report_only_checks as R                               # noqa: E402
@@ -188,7 +188,7 @@ try:
         "B.SOURCE = %r\n" % X.SOURCE +
         "found, has = B.app_exports('sairnroofing')\n"
         'print(json.dumps({"found": sorted(found or []), "has": has}))\n')
-    out = subprocess.run([sys.executable, drv], capture_output=True, text=True,
+    out = subprocess.run([sys.executable, drv], capture_output=True, text=True, encoding='utf-8', errors='replace',
                          cwd=TMP)
     ok('the broken copy runs at all', out.returncode == 0, out.stderr[-300:])
     ok('a blinded registry reader reports rf_certifications as NOT exportable',

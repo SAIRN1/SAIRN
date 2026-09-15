@@ -36,7 +36,7 @@ import sys
 CONTROLS_FOR = ['invisible_in_pattern_check.py']
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 FAIL = []
 ZWSP = chr(0x200B)
 BS = chr(0x08)
@@ -51,13 +51,13 @@ def ok(name, cond, detail=''):
 
 def git(cwd, *args):
     return subprocess.run(['git', '-C', cwd] + list(args),
-                          capture_output=True, text=True)
+                          capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_tool(cwd, *args):
     r = subprocess.run([sys.executable,
                         os.path.join(cwd, 'tools', 'invisible_in_pattern_check.py')]
-                       + list(args), capture_output=True, text=True, cwd=cwd)
+                       + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -155,7 +155,7 @@ try:
     # Without this, "silent" is indistinguishable from "nobody checks C0 at all",
     # which is the gap the division of labour is supposed to close rather than open.
     r = subprocess.run([sys.executable, os.path.join(wt, 'tools', 'control_char_check.py')],
-                       capture_output=True, text=True, cwd=wt)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=wt)
     ok('D2 and control_char_check DOES catch it -- the split leaves no hole',
        r.returncode == 1 and '0x08' in (r.stdout or ''),
        'rc=%d\n%s' % (r.returncode, (r.stdout or '')[-500:]))

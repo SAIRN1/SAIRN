@@ -39,7 +39,7 @@ import tempfile
 CONTROLS_FOR = ['new_checker.py']
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 FAIL = []
 NAME = 'zzprobe_shape'
 
@@ -52,12 +52,12 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run(cwd, *args):
     r = subprocess.run([sys.executable] + list(args), capture_output=True,
-                       text=True, cwd=cwd, timeout=300)
+                       text=True, encoding='utf-8', errors='replace', cwd=cwd, timeout=300)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

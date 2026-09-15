@@ -336,7 +336,7 @@ for _p in ('gen_ma_calendar.py', 'gen_ma_seed.py', 'gen_mn_calendar.py', 'gen_mn
 
 
 def git(*args):
-    r = subprocess.run(['git', '-C', REPO] + list(args), capture_output=True, text=True)
+    r = subprocess.run(['git', '-C', REPO] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.stdout if r.returncode == 0 else ''
 
 
@@ -975,7 +975,7 @@ DRIFT_OBSERVED_MAX = 5
 
 def _commits_since(path_spec, since_epoch):
     r = subprocess.run(['git', 'log', '--format=%ct', '--', path_spec],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return len([t for t in r.stdout.split()
                 if t.strip() and int(t) > since_epoch])
 
@@ -983,7 +983,7 @@ def _commits_since(path_spec, since_epoch):
 def drift():
     """How far behind its sources is the committed document, right now?"""
     r = subprocess.run(['git', 'log', '-1', '--format=%ct', '--', DOC],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if not r.stdout.strip():
         print('DRIFT: %s has no commit history here -- nothing to measure '
               'against. That is not a clean answer.' % DOC)

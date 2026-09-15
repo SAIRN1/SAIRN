@@ -79,7 +79,7 @@ def series():
     recs = json.load(open(REGISTER, encoding='utf-8'))['records']
     defects = Counter(r['date'] for r in recs)
     out = subprocess.run(['git', 'log', '--since=2026-09-08', '--date=short',
-                          '--format=%ad|%s'], capture_output=True, text=True,
+                          '--format=%ad|%s'], capture_output=True, text=True, encoding='utf-8', errors='replace',
                          cwd=REPO).stdout
     commits, subst = Counter(), Counter()
     for line in (out or '').strip().split(chr(10)):

@@ -54,7 +54,7 @@ results = {}
 
 
 def run():
-    p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, cwd=REPO)
+    p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 

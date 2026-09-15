@@ -52,7 +52,7 @@ EP = os.path.join(REPO, 'api', 'sairndental', 'public-book.js')
 
 
 def run():
-    p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, cwd=REPO)
+    p = subprocess.run([sys.executable, TOOL], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 
@@ -71,7 +71,7 @@ def line_for(out, needle):
 # from pass and fail. See tests/run_suite_lock_probe.py.
 _rel = ['api/_lib/dental-guardian.js', 'api/sairndental/public-book.js']
 _dirty = subprocess.run(['git', 'status', '--porcelain', '--'] + _rel, cwd=REPO,
-                        capture_output=True, text=True).stdout.strip()
+                        capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 if _dirty:
     print('SKIPPED: a target is already modified, so the bytes this probe would')
     print('snapshot as "original" are not the original and restoring them would')

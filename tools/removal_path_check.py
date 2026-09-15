@@ -106,7 +106,7 @@ def registry():
            "process.stdout.write(JSON.stringify({names: r.RESOURCE_NAMES,"
            " owner: r.OWNER_BY_RESOURCE, extra: r.EXTRA_ACTIONS}));")
     p = subprocess.run(['node', '-e', src], cwd=REPO, capture_output=True,
-                       text=True)
+                       text=True, encoding='utf-8', errors='replace')
     if p.returncode != 0 or not p.stdout.strip():
         raise RuntimeError('could not load api/_resources/index.js: %s'
                            % (p.stderr or '').strip()[:300])

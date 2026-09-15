@@ -78,7 +78,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 FAIL = []
 
@@ -91,14 +91,14 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(cwd, tip, base):
     """Drive the REAL hook in prepush mode, from inside `cwd`."""
     line = 'refs/heads/probe %s refs/heads/probe %s\n' % (tip, base)
     r = subprocess.run([sys.executable, GATE, '--pre-push'],
-                       input=line, capture_output=True, text=True, cwd=cwd)
+                       input=line, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -163,7 +163,7 @@ try:
     # The guard tool must see it on its own first, or the gate arm proves nothing.
     g = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'employee_auth_guard_check.py'),
                         '--changed', os.path.join(wt, rel)],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('the guard tool itself refuses the fixture (exit 1)', g.returncode == 1,
        'exit=%d %s' % (g.returncode, g.stdout[-200:]))
     rc, out = run_gate(wt, tip, base)
@@ -191,7 +191,7 @@ try:
         'commit', '-q', '-m', 'fixture: unreachable feature')
     tip2 = git(wt, 'rev-parse', 'HEAD').stdout.strip()
     r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_reachability_check.py'),
-                        os.path.join(wt, rel2)], capture_output=True, text=True, cwd=REPO)
+                        os.path.join(wt, rel2)], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('the reachability checker itself refuses the fixture (exit 1)', r.returncode == 1,
        'exit=%d %s' % (r.returncode, (r.stdout or '')[-300:]))
     rc2, out2 = run_gate(wt, tip2, base)

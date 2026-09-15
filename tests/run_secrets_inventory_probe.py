@@ -52,7 +52,7 @@ print('1. the blind lock')
 check('1a  every synthetic source classifies as written', S.run_fixtures() == [],
       S.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'secrets_inventory.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
 
 print('2. TOO PERMISSIVE -- a guard is a guard on THIS variable or it is nothing')
@@ -128,7 +128,7 @@ check('4c  CONTROL: with the real map, there are no vocabulary problems at all',
 
 print('5. the document and the code cannot silently disagree')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'secrets_inventory.py'),
-                    '--check'], capture_output=True, text=True, cwd=REPO)
+                    '--check'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('5a  --check passes against the committed document', r.returncode == 0,
       (r.stdout or '')[-200:])
 doc = io.open(os.path.join(REPO, 'docs', 'SECRETS-INVENTORY.md'), encoding='utf-8').read()

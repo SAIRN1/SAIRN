@@ -39,7 +39,7 @@ import sys
 import time
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 spec = importlib.util.spec_from_file_location(
     'sairnclaim', os.path.join(REPO, 'tools', 'sairn_claim.py'))
 claim = importlib.util.module_from_spec(spec)
@@ -148,7 +148,7 @@ check('and it does not use the word that stops a session', 'DO NOT start this' i
 # that runs unattended.
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_claim.py'),
                     'check', 'zz-probe-subject-that-matches-nothing'],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('the real CLI still exits 0 on a clear check', r.returncode, 0)
 check('and still prints CLEAR', 'CLEAR' in r.stdout, True)
 

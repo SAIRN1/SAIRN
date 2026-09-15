@@ -62,7 +62,7 @@ def fetch(url):
         body = os.path.join(td, "body")
         p = subprocess.run(["curl", "-sSL", "-A", UA, "-H", "Accept: text/html,application/pdf,*/*",
                             "-o", body, "-w", "%{http_code}\t%{content_type}", url],
-                           capture_output=True, text=True, timeout=180)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
         if p.returncode != 0:
             raise RuntimeError(f"curl failed: {p.stderr.strip()[:200]}")
         code, _, ctype = p.stdout.partition("\t")

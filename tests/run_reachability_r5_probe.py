@@ -57,7 +57,7 @@ sys.path.insert(0, os.path.join(
 import sairn_reachability_check as R                             # noqa: E402
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 FAIL = []
 
 SERVED_ROUTE = '/api/alf-alerts'
@@ -77,7 +77,7 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def worktree(tag):
@@ -116,7 +116,7 @@ def run(wt, activity=None):
             '--activity']
     if activity:
         args.append(activity)
-    r = subprocess.run(args, capture_output=True, text=True, cwd=wt, timeout=600)
+    r = subprocess.run(args, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=wt, timeout=600)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

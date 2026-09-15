@@ -53,7 +53,7 @@ print('1. the blind lock')
 check('1a  every synthetic graph classifies as written', G.run_fixtures() == [],
       G.run_fixtures())
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'dependency_graph.py'),
-                    '--fixtures'], capture_output=True, text=True, cwd=REPO)
+                    '--fixtures'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('1b  the lock runs on its own and passes', p.returncode == 0, 'exit %d' % p.returncode)
 check('1c  it is stated as running BEFORE the repo was read',
       'BEFORE the repo was read' in (p.stdout or ''))
@@ -126,9 +126,9 @@ check('5d  CONTROL: --with-tests really does put them back',
 
 print('6. what it reports about the real repo is reproducible')
 r1 = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'dependency_graph.py'),
-                     '--json'], capture_output=True, text=True, cwd=REPO)
+                     '--json'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 r2 = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'dependency_graph.py'),
-                     '--json'], capture_output=True, text=True, cwd=REPO)
+                     '--json'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('6a  two runs on the same tree give the same answer -- set iteration '
       'order has flipped a checker on this platform before',
       r1.stdout == r2.stdout and r1.returncode == 0)
@@ -147,7 +147,7 @@ print('7. ITEM 91 -- the register shrinks by MEASUREMENT, not by decision')
 # arms below are about the failure that turns a live register back into one:
 # a row somebody marked RETIRED while the thing was still a chokepoint.
 rp = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'dependency_graph.py'),
-                     '--register'], capture_output=True, text=True, cwd=REPO)
+                     '--register'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('7a  the real register passes against the live graph',
       rp.returncode == 0, (rp.stdout or '')[-300:])
 

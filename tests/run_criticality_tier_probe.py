@@ -30,7 +30,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 REL_DOC = os.path.join('docs', 'CRITICALITY-TIERS.md')
 REL_TOOL = os.path.join('tools', 'criticality_tier_check.py')
 
@@ -45,7 +45,7 @@ def check(name, cond, detail=''):
 
 def run(wt):
     r = subprocess.run([sys.executable, os.path.join(wt, REL_TOOL)],
-                       cwd=wt, capture_output=True, text=True)
+                       cwd=wt, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -55,7 +55,7 @@ print('criticality tiers -- the checker must refuse a register that has stopped 
 wt = tempfile.mkdtemp(prefix='sairn-crit-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])
@@ -139,11 +139,11 @@ try:
           io.open(DOC, encoding='utf-8', newline='').read() == ORIGINAL)
 finally:
     subprocess.run(['git', '-C', REPO, 'worktree', 'remove', '--force', wt],
-                   capture_output=True, text=True)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace')
     shutil.rmtree(wt, ignore_errors=True)
 
 here = subprocess.run(['git', '-C', REPO, 'status', '--porcelain', '--', REL_DOC],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 check('this clone\'s own register is untouched', here == '', here)
 
 

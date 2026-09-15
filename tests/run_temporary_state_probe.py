@@ -212,7 +212,7 @@ try:
     fx = os.path.join(TMP, 'leak.js')
     io.open(fx, 'w', encoding='utf-8').write(LEAK_JS)
     out = subprocess.run([sys.executable, drv, fx], capture_output=True,
-                         text=True, cwd=TMP)
+                         text=True, encoding='utf-8', errors='replace', cwd=TMP)
     ok('the broken copy runs at all', out.returncode == 0, out.stderr[-300:])
     ok('the neutered detector reports NOTHING for the leak fixture',
        out.stdout.strip() == '[]',

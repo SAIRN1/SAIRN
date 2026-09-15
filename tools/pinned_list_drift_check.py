@@ -104,7 +104,7 @@ def registry():
            'process.stdout.write(JSON.stringify({o:i.OWNER_BY_RESOURCE,'
            'n:i.RESOURCE_NAMES}));')
     r = subprocess.run(['node', '-e', src], cwd=REPO, capture_output=True,
-                       text=True, timeout=120)
+                       text=True, encoding='utf-8', errors='replace', timeout=120)
     if r.returncode != 0:
         sys.stderr.write('COULD NOT RUN -- the resource registry did not load. '
                          'That is a finding about api/_resources/, not a clean '

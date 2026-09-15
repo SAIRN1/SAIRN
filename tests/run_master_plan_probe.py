@@ -185,7 +185,7 @@ original = io.open(path, encoding='utf-8', newline='').read()
 try:
     rc = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                       'master_plan.py'),
-                         '--check'], cwd=REPO, capture_output=True, text=True,
+                         '--check'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
                         timeout=900)
     check(rc.returncode == 0, 'it passes on the committed document (got %d)'
           % rc.returncode)
@@ -193,7 +193,7 @@ try:
         original.replace('| `sairnbiz` |', '| `sairnbiz` MUTATED |', 1))
     rc = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                       'master_plan.py'),
-                         '--check'], cwd=REPO, capture_output=True, text=True,
+                         '--check'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
                         timeout=900)
     check(rc.returncode == 1, 'a hand-edited row makes it FAIL (got %d)'
           % rc.returncode)

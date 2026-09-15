@@ -99,7 +99,7 @@ def app_files(verbose=False):
     the "could not run is not a pass" code the rest of this platform uses.
     """
     r = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         raise RuntimeError(
             'git ls-files failed (exit %d): %s -- the app list could not be '
@@ -154,6 +154,38 @@ def by_section(rc, out):
 
 
 REGISTRY = [
+    {
+        'tool': 'subprocess_decode_check.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-15, report-only on its first day. The correct '
+                    'number IS zero -- unlike every read-list in this registry '
+                    'it is a gate, not a score -- but it is registered rather '
+                    'than made blocking on day one, on the same staging this '
+                    'file uses everywhere: a week of pushes says whether it is '
+                    'quiet, and a check nobody has watched be quiet should not '
+                    'be able to refuse a push',
+        'catches': 'a text-mode subprocess call with no explicit encoding=, '
+                   'which decodes the child output with the LOCALE default '
+                   '(cp1252 on this platform) rather than UTF-8',
+        'why_it_matters': 'it fails in two ways and the quiet one is worse. '
+                          'MOJIBAKE: the call succeeds and returns text that is '
+                          'not what the child wrote, so a scanner looking for a '
+                          'box-drawing character or an arrow silently stops '
+                          'matching and reports clean. HARD FAIL: cp1252 has no '
+                          'mapping for 0x81/0x8D/0x8F/0x90/0x9D, four tracked '
+                          'files contain one, and the reader THREAD raises -- '
+                          'MEASURED 2026-09-15, a git show of one of those '
+                          'files returned 0 characters through a bare call and '
+                          '76891 through an explicit one. Observed first in '
+                          'tier_a_review_gate.py, where the consequence was '
+                          'worse than a crash: the push gate maps that tool exit '
+                          '1 to a specific Tier A accusation, and an uncaught '
+                          'exception also exits 1, so a crash became a credible '
+                          'FALSE FINDING about a push that touched no Tier A '
+                          'resource. 358 sites in 137 files were fixed in one '
+                          'sweep; this keeps the number at zero',
+    },
     {
         'tool': 'completeness_check.py',
         'mode': 'once',
@@ -1558,7 +1590,7 @@ def run_one(entry, show_all, verbose=False):
         cmd = ([sys.executable, os.path.join('tools', tool)]
                + list(entry.get('args', [])) + ([t] if t else []))
         try:
-            r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True,
+            r = subprocess.run(cmd, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
                                timeout=300)
         except Exception as e:                       # noqa: BLE001
             unrun.append('%s %s -- %s' % (tool, t or '', e))

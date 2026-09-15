@@ -75,7 +75,7 @@ def main(argv):
         return cannot_tell('`npm` is not on PATH in this clone')
     try:
         r = subprocess.run([npm, 'audit', '--json'], cwd=REPO,
-                           capture_output=True, text=True, timeout=180)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
     except OSError as e:
         return cannot_tell('could not run `%s audit`: %s' % (npm, e))
     except subprocess.TimeoutExpired:

@@ -71,7 +71,7 @@ def main():
                             'import checker_confidence as C;'
                             'C.fuse=lambda a,b:int(round((a+b)/2.0));'
                             'sys.exit(C.main([]))' % os.path.join(REPO, 'tools')],
-                           capture_output=True, text=True, cwd=REPO,
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO,
                            env=dict(os.environ, PYTHONIOENCODING='utf-8',
                                     PYTHONUTF8='1'))
         check('a broken corrector makes the tool exit 2, not report', r.returncode, 2)

@@ -28,7 +28,7 @@ if __name__ != '__main__':
 
 
 MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 EP = 'api/legal-deadlines.js'
 
 # ── THE FIXTURES ARE PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ──────────
@@ -62,7 +62,7 @@ EP = 'api/legal-deadlines.js'
 #     assumed: a planted seam violation blocked with the real refusal text.
 WT = os.path.join(tempfile.gettempdir(), 'check4-probe-%d' % os.getpid())
 _add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, 'HEAD'], capture_output=True, text=True)
+                       WT, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if _add.returncode != 0:
     print('SKIPPED: could not create the throwaway worktree this probe needs, so')
     print('nothing about check 4 was verified: %s' % (_add.stderr or '').strip()[:200])
@@ -99,7 +99,7 @@ PROBE_ENV = dict(os.environ, SAIRN_PROBE_PUSH='1')
 
 
 def run(*a, **k):
-    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True,
+    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
                           env=PROBE_ENV, **k)
 
 
@@ -124,10 +124,10 @@ def clean_tree():
 # stronger claim than the old one and is asserted at the bottom against these:
 MAIN_TREE_BEFORE = subprocess.run(
     ['git', '-C', MAIN, 'status', '--porcelain'],
-    capture_output=True, text=True).stdout
+    capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
 MAIN_HEAD_BEFORE = subprocess.run(
     ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
-    capture_output=True, text=True).stdout.strip()
+    capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 # The untracked files that were here BEFORE this probe ran. The restore check at
@@ -217,9 +217,9 @@ R['head_restored'] = (run('git', 'rev-parse', 'HEAD').stdout.strip() == start)
 # That claim is this one, and until now nothing asserted it.
 R['clone_untouched'] = (
     subprocess.run(['git', '-C', MAIN, 'status', '--porcelain'],
-                   capture_output=True, text=True).stdout == MAIN_TREE_BEFORE
+                   capture_output=True, text=True, encoding='utf-8', errors='replace').stdout == MAIN_TREE_BEFORE
     and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
-                       capture_output=True, text=True).stdout.strip()
+                       capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
     == MAIN_HEAD_BEFORE)
 
 for k, v in R.items():

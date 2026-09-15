@@ -197,7 +197,7 @@ print('6. the BINARY itself, because an import is not what runs unattended')
 t0 = time.time()
 p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'run_all_tests.py'),
                     '--hook'],
-                   input=payload('git status'), capture_output=True, text=True,
+                   input=payload('git status'), capture_output=True, text=True, encoding='utf-8', errors='replace',
                    cwd=REPO, timeout=120)
 elapsed = time.time() - t0
 check('the binary exits 0 on a non-push payload', p.returncode, 0)

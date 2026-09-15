@@ -39,7 +39,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'truthy_sum_check.py')
 
 fails = 0
@@ -74,7 +74,7 @@ def build(tmp, files, baseline=None):
 def run(tmp, *args):
     r = subprocess.run([sys.executable,
                         os.path.join(tmp, 'tools', 'truthy_sum_check.py')]
-                       + list(args), cwd=tmp, capture_output=True, text=True)
+                       + list(args), cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout + r.stderr
 
 
@@ -170,7 +170,7 @@ check('--full lists both the grandfathered and the new one',
       ('o.total' in out, 'o.freight' in out), (True, True))
 
 # ── 11. and the REAL repo is clean, since that is what it is for ──────────
-r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True, text=True)
+r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
 check('the real SAIRN tree currently has no UNBASELINED occurrence', r.returncode, 0)
 # A FLOOR, NOT AN EQUALITY (2026-09-13). This was `'occurrences : 135' in
 # r.stdout`, and it went red the first time an ordinary commit added a matching

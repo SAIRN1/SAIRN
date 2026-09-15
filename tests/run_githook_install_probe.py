@@ -41,7 +41,7 @@ import tempfile
 CONTROLS_FOR = ['install_git_hooks.py']
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 FAIL = []
 
 
@@ -53,7 +53,7 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def check(cwd):
@@ -67,7 +67,7 @@ def check(cwd):
     script at that directory checks that directory.
     """
     r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'install_git_hooks.py'),
-                        '--check'], capture_output=True, text=True, cwd=cwd,
+                        '--check'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd,
                        env=dict(os.environ, PYTHONIOENCODING='utf-8'))
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
@@ -98,7 +98,7 @@ TMP = tempfile.mkdtemp(prefix='githook-probe-')
 CLONE = os.path.join(TMP, 'clone')
 try:
     c = subprocess.run(['git', 'clone', '--local', '--quiet', REPO, CLONE],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     ok('a throwaway clone was made', os.path.isfile(hookpath(CLONE)),
        c.stderr[-300:])
 

@@ -44,7 +44,7 @@ def check(label, ok, detail=''):
 def run_r7():
     p = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                      'sairn_reachability_check.py')],
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     out = p.stdout or ''
     i = out.find('=== R7:')
     return (out[i:] if i >= 0 else ''), p.returncode

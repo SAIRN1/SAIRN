@@ -60,7 +60,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 FAIL = []
 
@@ -77,7 +77,7 @@ def norm(s):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(cwd, tip, base, snapshot):
@@ -85,7 +85,7 @@ def run_gate(cwd, tip, base, snapshot):
     env['SAIRN_SCHEMA_SNAPSHOT'] = snapshot
     line = 'refs/heads/probe %s refs/heads/probe %s\n' % (tip, base)
     r = subprocess.run([sys.executable, GATE, '--pre-push'],
-                       input=line, capture_output=True, text=True, cwd=cwd, env=env)
+                       input=line, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd, env=env)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 

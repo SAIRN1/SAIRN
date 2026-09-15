@@ -154,7 +154,7 @@ def resources_by_app():
     src = ("const r = require('./api/_resources/index.js');"
            "process.stdout.write(JSON.stringify(r.OWNER_BY_RESOURCE));")
     p = subprocess.run(['node', '-e', src], cwd=REPO, capture_output=True,
-                       text=True, timeout=300)
+                       text=True, encoding='utf-8', errors='replace', timeout=300)
     if p.returncode:
         raise RuntimeError(
             'could not load api/_resources/index.js through node (exit %d): %s'

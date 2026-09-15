@@ -53,7 +53,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 SUITE = os.path.join('tests', 'sairnlegacy_reservation_lock.js')
 
 APP = 'sairnlegacy.html'
@@ -170,7 +170,7 @@ def check(name, cond, detail=''):
 
 def run(wt):
     r = subprocess.run(['node', os.path.join(wt, SUITE)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -187,7 +187,7 @@ def write(wt, rel, data):
 def dirty_now():
     """This clone's dirty tracked files, as a set."""
     out = subprocess.run(['git', '-C', REPO, 'status', '--porcelain',
-                          '--untracked-files=no'], capture_output=True, text=True).stdout
+                          '--untracked-files=no'], capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     return set(l.strip() for l in out.split('\n') if l.strip())
 
 
@@ -210,7 +210,7 @@ def main():
     wt = tempfile.mkdtemp(prefix='sairn-leg-')
     shutil.rmtree(wt, ignore_errors=True)
     add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach',
-                          wt, 'HEAD'], capture_output=True, text=True)
+                          wt, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
     if add.returncode != 0:
         print('SKIPPED: could not create a worktree -- NOTHING WAS VERIFIED.')
         print(add.stderr.strip()[:300])
@@ -229,7 +229,7 @@ def main():
               'WAS VERIFIED. %s' % e)
         shutil.rmtree(wt, ignore_errors=True)
         subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
         return 3
 
     try:
@@ -275,7 +275,7 @@ def main():
     finally:
         shutil.rmtree(wt, ignore_errors=True)
         subprocess.run(['git', '-C', REPO, 'worktree', 'prune'],
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
 
     # ── THIS CLONE WAS NEVER TOUCHED. The one claim a probe like this must not
     #    take on faith, because taking it on faith is what stranded two commits.

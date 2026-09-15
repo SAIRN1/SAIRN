@@ -87,7 +87,7 @@ def check(name, cond, detail=''):
 
 
 def git(cwd, *args, **kw):
-    r = subprocess.run(('git',) + args, cwd=cwd, capture_output=True, text=True)
+    r = subprocess.run(('git',) + args, cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if kw.get('check', True) and r.returncode != 0:
         raise RuntimeError('git %s failed in %s:\n%s' % (' '.join(args), cwd, r.stderr))
     return r
@@ -95,7 +95,7 @@ def git(cwd, *args, **kw):
 
 def run_tool(clone, *args):
     r = subprocess.run([sys.executable, os.path.join(clone, 'tools', 'sairn_claim.py')]
-                       + list(args), cwd=clone, capture_output=True, text=True)
+                       + list(args), cwd=clone, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -306,7 +306,7 @@ def main():
             f.write('old tip\n')
         git(seed, 'add', '-A')
         subprocess.run(('git', 'commit', '-q', '-m', 'an old tip'), cwd=seed,
-                       env=env, capture_output=True, text=True)
+                       env=env, capture_output=True, text=True, encoding='utf-8', errors='replace')
         git(seed, 'push', '-q', 'origin', 'main')
         git(clone, 'fetch', '-q', 'origin')
         tip_age_h = ((time.time()
@@ -361,7 +361,7 @@ def main():
         if os.path.exists(fh):
             os.remove(fh)
         r = subprocess.run(('git', 'fetch', 'origin'), cwd=clone,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         check('a FAILED fetch still exits non-zero (fixture sane)',
               r.returncode != 0, r.stderr)
         check('...and it CREATES FETCH_HEAD anyway, so its age reads as "now" '

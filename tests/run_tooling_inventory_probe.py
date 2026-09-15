@@ -26,7 +26,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'tooling_inventory.py')
 
 FAIL = []
@@ -50,7 +50,7 @@ ti = load()
 
 print('\nA. the document on disk matches the repo right now')
 rc = subprocess.run([sys.executable, TOOL, '--check'],
-                    capture_output=True, text=True, cwd=REPO)
+                    capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 ok('--check passes against the committed document', rc.returncode == 0,
    (rc.stdout + rc.stderr).strip()[-300:])
 
@@ -151,7 +151,7 @@ try:
     ok('the mutation really changed the document', mutated != orig)
     io.open(doc_path, 'w', encoding='utf-8', newline='').write(mutated)
     rc = subprocess.run([sys.executable, TOOL, '--check'],
-                        capture_output=True, text=True, cwd=REPO)
+                        capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('a stale count makes --check exit non-zero', rc.returncode != 0,
        'exit=%d' % rc.returncode)
     ok('...and it says what to run', 'tooling_inventory.py' in rc.stdout, rc.stdout[:200])
@@ -267,7 +267,7 @@ print('\nI. DRIFT MARGIN -- the alarm is tighter than the failure point')
 # not chosen: over 16 regenerations this document's worst staleness was FIVE
 # source commits and its median was two, so the warn line sits at three.
 _d = subprocess.run([sys.executable, TOOL, '--drift'], cwd=REPO,
-                    capture_output=True, text=True, timeout=600)
+                    capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
 _out = (_d.stdout or '') + (_d.stderr or '')
 ok('--drift reports a margin rather than a verdict',
    'source commits since it was last regenerated' in _out, _out[:200])

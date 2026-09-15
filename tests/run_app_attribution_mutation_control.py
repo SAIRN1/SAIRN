@@ -68,7 +68,7 @@ def run_probe_with(source):
         f.write(source)
     try:
         r = subprocess.run([sys.executable, PROBE], cwd=ROOT, capture_output=True,
-                           text=True, timeout=300)
+                           text=True, encoding='utf-8', errors='replace', timeout=300)
         return r.returncode, (r.stdout or '') + (r.stderr or '')
     finally:
         with open(SRC, 'w', encoding='utf-8', newline='') as f:

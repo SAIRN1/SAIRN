@@ -32,7 +32,7 @@ import tempfile
 import time
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 HOOK = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 TARGET = os.path.join(REPO, 'api', 'legal-deadlines.js')
 NEEDLE = '        service_methods: body.service_methods,\n'
@@ -51,7 +51,7 @@ def check(name, cond, detail=''):
 
 def hook(cmd='git push origin main'):
     r = subprocess.run([sys.executable, HOOK], cwd=REPO, capture_output=True,
-                       text=True, input=json.dumps({'tool_input': {'command': cmd}}))
+                       text=True, encoding='utf-8', errors='replace', input=json.dumps({'tool_input': {'command': cmd}}))
     try:
         out = json.loads(r.stdout) if r.stdout.strip() else {}
     except ValueError:
@@ -72,7 +72,7 @@ print('push-gate check 9 -- a named guard test must be able to stop a push\n')
 # siblings use. Untracked files are not dirt: this probe rewrites ONE named
 # tracked file and puts the original bytes back.
 _status = subprocess.run(['git', '-C', REPO, 'status', '--porcelain'],
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
 if [l for l in _status.split('\n') if l.strip() and not l.startswith('??')]:
     print('SKIPPED: this probe rewrites api/legal-deadlines.js and restores it, so a')
     print('tracked-dirty tree could not be told apart from its own damage. Nothing')
@@ -190,7 +190,7 @@ finally:
 check('the target file was restored byte for byte',
       io.open(TARGET, encoding='utf-8', newline='').read() == ORIGINAL)
 _after = subprocess.run(['git', '-C', REPO, 'status', '--porcelain'],
-                        capture_output=True, text=True).stdout
+                        capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
 check('...and no tracked file is left modified',
       not [l for l in _after.split('\n') if l.strip() and not l.startswith('??')],
       _after[:200])

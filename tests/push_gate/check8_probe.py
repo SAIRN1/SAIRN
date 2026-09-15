@@ -27,7 +27,7 @@ import sys
 import tempfile
 
 MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 # ── THE FIXTURE IS PLANTED IN A THROWAWAY WORKTREE (2026-09-11) ────────────
 # THIS FILE WAS NOT ON THE LIST AND HAD THE DEFECT IT TESTS.
@@ -50,7 +50,7 @@ MAIN = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
 # depends on absolutely, since its entire subject is what that hook decides.
 WT = os.path.join(tempfile.gettempdir(), 'check8-probe-%d' % os.getpid())
 _add = subprocess.run(['git', '-C', MAIN, 'worktree', 'add', '-q', '--detach',
-                       WT, 'HEAD'], capture_output=True, text=True)
+                       WT, 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace')
 if _add.returncode != 0:
     print('SKIPPED: could not create the throwaway worktree this probe needs, so')
     print('nothing about check 8 was verified: %s' % (_add.stderr or '').strip()[:200])
@@ -80,7 +80,7 @@ BARE_ENV = {k: v for k, v in os.environ.items() if k != 'SAIRN_PROBE_PUSH'}
 
 
 def run(*a, **k):
-    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True,
+    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace',
                           env=BARE_ENV, **k)
 
 
@@ -97,10 +97,10 @@ def clean_tree():
 # tracked file, which is most of them most of the time.
 MAIN_TREE_BEFORE = subprocess.run(
     ['git', '-C', MAIN, 'status', '--porcelain'],
-    capture_output=True, text=True).stdout
+    capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
 MAIN_HEAD_BEFORE = subprocess.run(
     ['git', '-C', MAIN, 'rev-parse', 'HEAD'],
-    capture_output=True, text=True).stdout.strip()
+    capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 start = run('git', 'rev-parse', 'HEAD').stdout.strip()
 START_UNTRACKED = {l for l in clean_tree().split('\n') if l.startswith('??')}
@@ -113,7 +113,7 @@ def dry_push(probe_env=False):
     if probe_env:
         env['SAIRN_PROBE_PUSH'] = '1'
     r = subprocess.run(['git', 'push', '--dry-run', 'origin', 'HEAD:main'],
-                       cwd=REPO, capture_output=True, text=True, env=env)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env)
     err = (r.stderr or '') + (r.stdout or '')
     return {
         'exit': r.returncode,
@@ -126,7 +126,7 @@ def dry_push(probe_env=False):
 def pretooluse(cmd):
     """Drive the hook the way Claude Code does: a JSON payload on stdin."""
     r = subprocess.run([sys.executable, HOOK], cwd=REPO, capture_output=True,
-                       text=True, env=BARE_ENV,
+                       text=True, encoding='utf-8', errors='replace', env=BARE_ENV,
                        input=json.dumps({'tool_input': {'command': cmd}}))
     try:
         out = json.loads(r.stdout) if r.stdout.strip() else {}
@@ -236,9 +236,9 @@ check('...and HEAD is back where it started', R['head_restored'])
 # it is the one this probe was quietly not making about itself.
 check('and the CLONE was never touched -- no commit, no modified file',
       subprocess.run(['git', '-C', MAIN, 'status', '--porcelain'],
-                     capture_output=True, text=True).stdout == MAIN_TREE_BEFORE
+                     capture_output=True, text=True, encoding='utf-8', errors='replace').stdout == MAIN_TREE_BEFORE
       and subprocess.run(['git', '-C', MAIN, 'rev-parse', 'HEAD'],
-                         capture_output=True, text=True).stdout.strip()
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
       == MAIN_HEAD_BEFORE)
 
 print('\n%s  check8_probe: %d failed' % ('FAILED' if fails else 'ok', len(fails)))

@@ -97,7 +97,7 @@ def tracked(*patterns):
     if not patterns:
         patterns = ('*.html', '*.js')
     out = subprocess.run(['git', 'ls-files'] + list(patterns), cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     files = []
     for f in out.split('\n'):
         f = f.strip()

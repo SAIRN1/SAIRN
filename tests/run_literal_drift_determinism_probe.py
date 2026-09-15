@@ -60,7 +60,7 @@ def check(cond, label):
 def run(tool, app, seed):
     env = dict(os.environ, PYTHONHASHSEED=seed)
     r = subprocess.run([sys.executable, tool, os.path.join(REPO, app)],
-                       cwd=REPO, capture_output=True, text=True, env=env,
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', env=env,
                        timeout=300)
     return r.stdout
 

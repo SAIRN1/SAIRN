@@ -221,7 +221,7 @@ check('8e  the commit date is still shown -- a capture only one clone has is '
 # the moment a fresh snapshot landed, which is a probe failing for a reason that
 # has nothing to do with the thing it guards.
 _cp = subprocess.run(['git', 'log', '-1', '--format=%cI', '--', 'db/schema_snapshot.json'],
-                     capture_output=True, text=True, cwd=REPO)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 _cs = (_cp.stdout or '').strip()
 _chours = None
 if len(_cs) >= 19:

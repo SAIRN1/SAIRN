@@ -79,7 +79,7 @@ def soft_delete_only():
            'require("./api/_resources/sairncode").tierASoftDeleteOnly||[]));')
     try:
         r = subprocess.run(['node', '-e', src], cwd=ROOT,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
     except (OSError, subprocess.SubprocessError) as e:
         return None, '%s: %s' % (type(e).__name__, e)
     if r.returncode != 0:

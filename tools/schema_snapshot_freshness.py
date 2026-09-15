@@ -142,11 +142,11 @@ def captured_when(snap):
     gen = str(snap.get('_generated_at') or '').strip() or 'no _generated_at in the file'
     r = subprocess.run(['git', 'log', '-1', '--format=%cs', '--',
                         'db/schema_snapshot.json'],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     committed = (r.stdout or '').strip() or 'never committed'
     dirty = subprocess.run(['git', 'status', '--porcelain', '--',
                             'db/schema_snapshot.json'],
-                           cwd=REPO, capture_output=True, text=True)
+                           cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     pending = ' -- UNCOMMITTED, so no other clone has it yet' if (dirty.stdout or '').strip() else ''
     return '%s (generated); last committed %s%s' % (gen, committed, pending)
 
@@ -203,7 +203,7 @@ def create_introduced(table, sql_path):
         return None
     r = subprocess.run(['git', 'log', '--reverse', '--format=%ad',
                         '--date=iso-strict', '-S', m.group(0), '--', sql_path],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     for line in (r.stdout or '').split('\n'):
         if line.strip():
             return _parse_stamp(line.strip())

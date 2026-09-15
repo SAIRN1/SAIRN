@@ -27,7 +27,7 @@ import sys
 
 
 def git(*args):
-    r = subprocess.run(['git'] + list(args), capture_output=True, text=True)
+    r = subprocess.run(['git'] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout.strip(), r.stderr.strip()
 
 
@@ -46,13 +46,13 @@ def runs_cleanly(repo, hookfile):
     reasons = []
     gate = os.path.join(repo, 'tools', 'sairn_push_gate_hook.py')
     r = subprocess.run([sys.executable, gate, '--pre-push'],
-                       input='', capture_output=True, text=True, cwd=repo)
+                       input='', capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=repo)
     if r.returncode not in (0, 1):
         reasons.append('the gate script did not run cleanly (exit %d): %s'
                        % (r.returncode, r.stderr.strip()[:200]))
     try:
         w = subprocess.run(['sh', hookfile], input='', capture_output=True,
-                           text=True, cwd=repo)
+                           text=True, encoding='utf-8', errors='replace', cwd=repo)
         if ('not found' in (w.stderr or '').lower()
                 or 'bad interpreter' in (w.stderr or '').lower()
                 or w.returncode not in (0, 1)):

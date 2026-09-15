@@ -80,7 +80,7 @@ print('CLEANUP RESIDUE PROBE -- offline, no network, nothing written to the repo
 
 # ------------------------------------------------- arm 1: no clean by subtraction
 p = subprocess.run([sys.executable, TOOL, COMMENTED_ONLY],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = (p.stdout or '') + (p.stderr or '')
 clean_line = re.search(r'CLEAN\s+:\s*(\d+)', out)
 unread_line = re.search(r'COULD NOT READ:\s*(\d+)', out)

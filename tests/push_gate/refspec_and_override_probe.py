@@ -23,7 +23,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import sairn_push_gate_hook as H  # noqa: E402
 
@@ -41,9 +41,9 @@ def check(name, got, want):
 # ── A1: pushed_tip parses the refspec shapes that actually occur ────────────
 print("\nA1. pushed_tip() reads the ref the command really sends")
 head = subprocess.run(['git', '-C', REPO, 'rev-parse', 'HEAD'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 prev = subprocess.run(['git', '-C', REPO, 'rev-parse', 'HEAD~1'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 check("bare `git push` -> HEAD", H.pushed_tip(REPO, 'git push'), 'HEAD')
 check("`git push origin main` -> main", H.pushed_tip(REPO, 'git push origin main'), 'main')
@@ -117,7 +117,7 @@ try:
                     '-q', '-m', 'PROBE ahead-of-origin fixture'], capture_output=True)
     _widen = subprocess.run(['git', '-C', _ahead, 'log', 'origin/main..HEAD',
                              '--name-only', '--pretty=format:'],
-                            capture_output=True, text=True).stdout
+                            capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     check("fixture is valid: the worktree is ahead of origin/main AND the "
           "outgoing range names a file",
           bool(_widen.strip()), True)
@@ -167,13 +167,13 @@ _sand = tempfile.mkdtemp(prefix='pushgate-newbranch-')
 _clone = os.path.join(_sand, 'clone')
 try:
     _c = subprocess.run(['git', 'clone', '--quiet', '--local', REPO, _clone],
-                        capture_output=True, text=True)
+                        capture_output=True, text=True, encoding='utf-8', errors='replace')
     if _c.returncode != 0:
         print('  SKIP  could not clone: ' + (_c.stderr.strip() or '?'))
     else:
         def _g(*a):
             return subprocess.run(['git', '-C', _clone] + list(a),
-                                  capture_output=True, text=True)
+                                  capture_output=True, text=True, encoding='utf-8', errors='replace')
         _g('config', 'user.email', 'probe@local')
         _g('config', 'user.name', 'probe')
         check("fixture is valid: the clone is LEVEL with its origin/main, which is "
@@ -229,7 +229,7 @@ check("...and says why rather than failing silently", bool(bad_note), True)
 
 def seed_names_at(rev):
     out = subprocess.run(['git', '-C', REPO, 'ls-tree', '-r', '--name-only', rev, 'sql/'],
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     return sorted(os.path.basename(n) for n in out.split() if n.endswith('.json'))
 
 
@@ -241,7 +241,7 @@ def seed_names_at(rev):
 here = seed_names_at('HEAD')
 older = None
 log = subprocess.run(['git', '-C', REPO, 'log', '--format=%H', '-n', '400', '--', 'sql/'],
-                     capture_output=True, text=True).stdout.split()
+                     capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.split()
 for sha in log:
     if seed_names_at(sha) and seed_names_at(sha) != here:
         older = sha
@@ -290,7 +290,7 @@ print("\nB2. the hook itself honours an inline override on a real payload")
 def run_hook(command):
     payload = json.dumps({"tool_input": {"command": command}})
     p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')],
-                       input=payload, capture_output=True, text=True, timeout=180, cwd=REPO)
+                       input=payload, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180, cwd=REPO)
     denied = '"permissionDecision": "deny"' in p.stdout
     return p.returncode, denied
 
@@ -335,7 +335,7 @@ print("\nC. check 1 receives --sql-dir pointing at the exported tip")
 
 
 def sh(cwd, *a):
-    return subprocess.run(list(a), cwd=cwd, capture_output=True, text=True)
+    return subprocess.run(list(a), cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 sandbox = tempfile.mkdtemp(prefix='sairn-gate-probe-')
@@ -387,7 +387,7 @@ try:
 
     payload = json.dumps({"tool_input": {"command": "git push origin HEAD:main"}})
     p = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')],
-                       input=payload, capture_output=True, text=True, cwd=sandbox, timeout=180)
+                       input=payload, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=sandbox, timeout=180)
     argv_file = os.path.join(sandbox, 'tools', 'sairn_load_state_check.py.argv')
     check("check 1 ran at all (fixture is valid)", os.path.exists(argv_file), True)
     rec = json.load(open(argv_file)) if os.path.exists(argv_file) else {}
@@ -406,7 +406,7 @@ try:
     payload = json.dumps({"tool_input": {
         "command": "git push origin %s:main" % base_sha}})
     subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')],
-                   input=payload, capture_output=True, text=True, cwd=sandbox, timeout=180)
+                   input=payload, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=sandbox, timeout=180)
     check("THE 2026-09-01 CASE, end to end: pushing the pre-seed commit does not "
           "run the seed check even though the seed sits in HEAD",
           os.path.exists(argv_file), False)

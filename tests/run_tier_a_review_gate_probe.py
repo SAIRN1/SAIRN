@@ -313,7 +313,7 @@ check('...and reports exit 2 as NOT a pass',
 
 print('\n8. the real repo state is clean under its own gate')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'tier_a_review_gate.py'),
-                    '--list'], cwd=REPO, capture_output=True, text=True, timeout=120)
+                    '--list'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
 check('--list runs and exits 0', r.returncode == 0, r.stderr[:300])
 
 # ── 8. A CRASH IS NOT A FINDING (added 2026-09-15, after it was one) ─────────

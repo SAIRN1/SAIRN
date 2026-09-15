@@ -22,7 +22,7 @@ import subprocess
 import sys
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TARGET = 'stonedesk.html'
 SUITE = os.path.join('tests', 'sd_timesheet_pay_est.js')
 
@@ -84,7 +84,7 @@ def main():
     # where nobody would notice one changed line. See
     # tests/run_suite_lock_probe.py.
     already = subprocess.run(['git', 'status', '--porcelain', '--', TARGET],
-                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+                             cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
     if already:
         print('SKIPPED: %s is already modified, so the bytes this probe' % TARGET)
         print('would snapshot as "original" are not the original and the restore')

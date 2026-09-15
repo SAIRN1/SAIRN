@@ -419,7 +419,7 @@ def app_targets(limit, max_bytes=None):
     finding.
     """
     out = subprocess.run(['git', 'ls-files', '*.html'], cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     roots = [f for f in out.split('\n') if f.strip() and '/' not in f]
     roots.sort(key=lambda f: -os.path.getsize(os.path.join(REPO, f)))
     too_big = []

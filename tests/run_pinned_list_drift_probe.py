@@ -118,7 +118,7 @@ try:
                         'd.REGISTER = %r;'
                         'sys.exit(d.main())'
                         % (os.path.join(REPO, 'tools'), tmp)],
-                       cwd=REPO, capture_output=True, text=True, timeout=180)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
     check('an empty register exits 2, not 0', r.returncode == 2,
           'exit %s\n%s' % (r.returncode, (r.stdout or r.stderr)[:300]))
     check('...and says WHY, naming the empty-set trap',
@@ -135,7 +135,7 @@ check('the temporary fixture is gone', not os.path.exists(tmp), tmp)
 print('\n5. the real repo, and the finding it already produced')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                  'pinned_list_drift_check.py')],
-                   cwd=REPO, capture_output=True, text=True, timeout=300)
+                   cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300)
 check('it runs on the real repo and exits 0 (report-only)', r.returncode == 0,
       r.stderr[:300])
 out = r.stdout

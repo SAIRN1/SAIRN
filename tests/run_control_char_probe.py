@@ -36,7 +36,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'control_char_check.py')
 
 NUL = bytes([0])
@@ -75,7 +75,7 @@ def build(tmp, files, untracked=None):
 def run(tmp):
     r = subprocess.run([sys.executable,
                         os.path.join(tmp, 'tools', 'control_char_check.py')],
-                       cwd=tmp, capture_output=True, text=True)
+                       cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout
 
 
@@ -145,7 +145,7 @@ check('0x7f DEL FAILS', rc, 1)
 
 # ── and the REAL repo is clean, since that is what it is for ──────────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
-                   text=True)
+                   text=True, encoding='utf-8', errors='replace')
 check('the real SAIRN tree is currently clean', r.returncode, 0)
 
 print()

@@ -47,7 +47,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 HTML = 'sairnbiz.html'
 MATCH = os.path.join('tests', 'sairnbiz_bill_cannot_settle_unmatched.js')
 LEDGER = os.path.join('tests', 'sairnbiz_ledger_source_id.js')
@@ -66,7 +66,7 @@ def check(name, cond, detail=''):
 
 def run(wt, suite):
     r = subprocess.run(['node', os.path.join(wt, suite)], cwd=wt,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -75,7 +75,7 @@ print('sairnbiz -- the three-way match and the ledger trail must REFUSE\n')
 wt = tempfile.mkdtemp(prefix='sairn-sb-')
 shutil.rmtree(wt, ignore_errors=True)
 add = subprocess.run(['git', '-C', REPO, 'worktree', 'add', '-q', '--detach', wt, 'HEAD'],
-                     capture_output=True, text=True)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace')
 if add.returncode != 0:
     print('SKIPPED: could not create a worktree -- nothing was verified.')
     print(add.stderr.strip()[:300])

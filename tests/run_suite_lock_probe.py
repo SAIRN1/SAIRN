@@ -50,7 +50,7 @@ import tempfile
 import time
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 sys.path.insert(0, os.path.join(ROOT, 'tools'))
 import run_all_tests as rat                              # noqa: E402
 
@@ -75,7 +75,7 @@ def check(label, actual, expected):
 
 
 def git(cwd, *a):
-    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True)
+    return subprocess.run(['git'] + list(a), cwd=cwd, capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 # ---- A. the lock is exclusive, and releasing it makes it available ----
@@ -110,7 +110,7 @@ check('C2 the lockfile never appears in git status',
 # The lock is still held here, so this must come back SKIPPED without having
 # executed a single test file.
 r = subprocess.run([sys.executable, 'tools/run_all_tests.py'], cwd=ROOT,
-                   capture_output=True, text=True, timeout=180)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180)
 out = (r.stdout or '') + (r.stderr or '')
 check('D1 a concurrent manual run exits 3', r.returncode, 3)
 check('D2 and says SKIPPED', out.startswith('SKIPPED'), True)
@@ -154,7 +154,7 @@ try:
         os.utime(tgt, (stamp, stamp))
 
         p = subprocess.run([sys.executable, probe], cwd=wt,
-                           capture_output=True, text=True, timeout=900)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=900)
         pout = (p.stdout or '') + (p.stderr or '')
         check('E %-34s skips on a dirty target' % name, p.returncode, 3)
         check('E %-34s says SKIPPED' % name, 'SKIPPED' in pout, True)

@@ -23,7 +23,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'cleanup_confirm_check.py')
 R = {}
 
@@ -40,7 +40,7 @@ def verdict(sql):
         fh.write(sql)
     try:
         r = subprocess.run([sys.executable, TOOL, p], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
         return r.returncode, (r.stdout or '') + (r.stderr or '')
     finally:
         os.remove(p)

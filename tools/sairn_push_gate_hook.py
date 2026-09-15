@@ -291,7 +291,7 @@ def deny(reason):
 
 def git(repo, *args):
     out = subprocess.run(['git', '-C', repo] + list(args),
-                         capture_output=True, text=True, timeout=20)
+                         capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=20)
     return out.stdout if out.returncode == 0 else ''
 
 
@@ -556,7 +556,7 @@ def export_sql_at(repo, tip):
     import tempfile
     try:
         out = subprocess.run(['git', '-C', repo, 'ls-tree', '-r', '--name-only', tip, 'sql/'],
-                             capture_output=True, text=True, timeout=20)
+                             capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=20)
         if out.returncode != 0:
             return None, 'sql/ could not be listed at %s' % tip
         names = [n.strip() for n in out.stdout.splitlines()
@@ -744,7 +744,7 @@ def main():
             g = subprocess.run(
                 [sys.executable, gcheck, '--changed']
                 + [os.path.join(repo, q) for q in sql_changed],
-                capture_output=True, text=True, timeout=60, cwd=repo)
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60, cwd=repo)
         except Exception as e:
             # Was `g = None` followed by `if g is not None`, which skipped the
             # check in silence. A checker that cannot be RUN has not passed
@@ -833,7 +833,7 @@ def main():
             p = subprocess.run(
                 [sys.executable, pf, '--gate', '--require-live', '--live', snapshot]
                 + [os.path.join(repo, q) for q in sql_changed],
-                capture_output=True, text=True, timeout=120, cwd=repo)
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120, cwd=repo)
         except Exception as e:
             # Was `p = None` followed by a check that skipped silently. A
             # checker that cannot be run has not passed anything.
@@ -929,7 +929,7 @@ def main():
             # this reason. This is the same fix, one flag instead of a temp
             # directory, and it is what the pushed commits actually contain.
             s = subprocess.run([sys.executable, seam, '--ref', tip],
-                               capture_output=True, text=True, timeout=90, cwd=repo)
+                               capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=90, cwd=repo)
         except Exception as e:
             deny(chr(10).join([
                 "Blocked: the endpoint/engine seam check could not be run, so this",
@@ -1033,7 +1033,7 @@ def main():
             ]))
         try:
             rr = subprocess.run([sys.executable, reach] + html_changed,
-                                capture_output=True, text=True, timeout=120, cwd=repo)
+                                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120, cwd=repo)
             if rr.returncode == 1:
                 deny(chr(10).join([
                     "Blocked: this push touches HTML that ships an unreachable feature.",
@@ -1462,7 +1462,7 @@ def main():
                 _guard_unrun.append((_t, 'the file does not exist'))
                 continue
             try:
-                _r = subprocess.run(['node', _p], capture_output=True, text=True,
+                _r = subprocess.run(['node', _p], capture_output=True, text=True, encoding='utf-8', errors='replace',
                                     timeout=120, cwd=repo)
             except Exception as _e:
                 _guard_unrun.append((_t, '%s: %s' % (type(_e).__name__, _e)))
@@ -1566,7 +1566,7 @@ def main():
                     _rev = subprocess.run(
                         [sys.executable, _rev_tool, '--diff-range',
                          '%s..%s' % (_rev_base, tip)],
-                        capture_output=True, text=True, timeout=180, cwd=repo)
+                        capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=180, cwd=repo)
                 except Exception as _e:
                     _rev = None
                     if MODE == 'prepush':
@@ -1639,7 +1639,7 @@ def main():
         try:
             _r = subprocess.run([sys.executable, _cc]
                                 + [os.path.join(repo, q) for q in _cc_files],
-                                capture_output=True, text=True, timeout=120, cwd=repo)
+                                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120, cwd=repo)
         except Exception as _e:
             deny(chr(10).join([
                 "Blocked: the control-byte check could not be run, so this push is",
@@ -1743,7 +1743,7 @@ def main():
         """(rc, output) for one generator's --check, or (None, reason)."""
         try:
             r = subprocess.run([sys.executable, os.path.join(cwd, tool_rel), '--check'],
-                               capture_output=True, text=True, timeout=300, cwd=cwd)
+                               capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=300, cwd=cwd)
             return r.returncode, ((r.stdout or '') + (r.stderr or '')).strip()
         except Exception as e:
             return None, '%s: %s' % (type(e).__name__, e)
@@ -1972,7 +1972,7 @@ def main():
             if _on_disk.replace(b'\r\n', b'\n') != _on_origin.stdout.replace(b'\r\n', b'\n'):
                 _behind = len([l for l in subprocess.run(
                     ['git', '-C', repo, 'log', '--oneline', 'HEAD..origin/main',
-                     '--', _rel], capture_output=True, text=True,
+                     '--', _rel], capture_output=True, text=True, encoding='utf-8', errors='replace',
                     timeout=20).stdout.split('\n') if l.strip()])
                 _msg = (
                     "Gate-freshness (check 10) NOTICE: the push gate that just ran is "
@@ -2029,7 +2029,7 @@ def main():
             r = subprocess.run(
                 [sys.executable, checker, '--app', app, '--key', key]
                 + (['--sql-dir', seed_dir] if seed_dir else []),
-                capture_output=True, text=True, timeout=60, cwd=repo)
+                capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=60, cwd=repo)
         except Exception:
             untold.append((app, 'the check could not be run'))
             continue

@@ -195,7 +195,7 @@ finally:
 import subprocess  # noqa: E402  (used only for the end-to-end run below)
 out = subprocess.run([sys.executable,
                       os.path.join(ROOT, 'tools', 'preauth_oracle_check.py')],
-                     capture_output=True, text=True, cwd=ROOT).stdout
+                     capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=ROOT).stdout
 check('the end-to-end run reports a stale-exemption count at all',
       'STALE_EXEMPTIONS:' in out)
 check('...and the shipped tree has ZERO stale exemptions',

@@ -26,7 +26,7 @@ import sys
 import tempfile
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(ROOT, 'tools', 'local_only_collection_check.py')
 
 FAIL = []

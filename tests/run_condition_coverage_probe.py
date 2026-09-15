@@ -58,7 +58,7 @@ check('3c  mutating it changes ONLY that operator',
 
 print('4. it REFUSES to run on a dirty tree')
 dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
-                       text=True, cwd=REPO).stdout.strip()
+                       text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout.strip()
 tmpf = None
 if not dirty:
     tmpf = os.path.join(REPO, 'tools', '_probe_dirty_marker.tmp')

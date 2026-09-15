@@ -267,7 +267,7 @@ def sweep(key, engine, suite, limit=None):
         # Last resort, and LOUD: take the file back from git rather than leave
         # a mutated engine on disk because a hash check was inconclusive.
         subprocess.run(['git', 'checkout', '--', engine], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
         restored = sha(path) == before_hash
         how = 'git checkout -- (the write-back could not be confirmed)'
     return {'engine': key, 'file': engine, 'suite': suite,
@@ -293,7 +293,7 @@ def main(argv):
         return 0
 
     dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
-                           text=True, cwd=REPO).stdout.strip()
+                           text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout.strip()
     if dirty:
         print('  !! THE WORKING TREE IS DIRTY. This tool WRITES to real source files')
         print('     and verifies the restore against a baseline; it will not run when')

@@ -40,7 +40,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 GATE = os.path.join(REPO, 'tools', 'sairn_push_gate_hook.py')
 TOOL_REL = 'tools/control_char_check.py'
 FAIL = []
@@ -60,13 +60,13 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_gate(cwd, tip, base):
     line = 'refs/heads/probe %s refs/heads/probe %s\n' % (tip, base)
     r = subprocess.run([sys.executable, GATE, '--pre-push'],
-                       input=line, capture_output=True, text=True, cwd=cwd)
+                       input=line, capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=cwd)
     return r.returncode, (r.stdout or '') + (r.stderr or '')
 
 
@@ -130,7 +130,7 @@ try:
        BS in raw and b'\\b' not in raw, repr(raw))
     # The checker must see it on its own, or the gate arm proves nothing.
     c = subprocess.run([sys.executable, os.path.join(REPO, TOOL_REL),
-                        os.path.join(wt, REL)], capture_output=True, text=True, cwd=REPO)
+                        os.path.join(wt, REL)], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('the checker itself reports it (exit 1)', c.returncode == 1,
        'exit=%d %s' % (c.returncode, (c.stdout or '')[-200:]))
 
@@ -182,7 +182,7 @@ try:
     tip6 = commit(wt, REL, CLEAN, 'fixture: a clean file pushed over a dirty tree')
     standing = subprocess.run([sys.executable, os.path.join(REPO, TOOL_REL),
                                os.path.join(wt, 'probe_check11_elsewhere.txt')],
-                              capture_output=True, text=True, cwd=REPO)
+                              capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     ok('the worktree really does carry a finding somewhere else',
        standing.returncode == 1, (standing.stdout or '')[-200:])
     rc6, out6 = run_gate(wt, tip6, dirty_base)

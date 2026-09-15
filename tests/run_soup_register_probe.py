@@ -47,7 +47,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'soup_register_check.py')
 
 fails = 0
@@ -83,7 +83,7 @@ def build(tmp, deps, lockversions, html, register):
 
 def run(tmp):
     r = subprocess.run([sys.executable, os.path.join(tmp, 'tools', 'soup_register_check.py')],
-                       cwd=tmp, capture_output=True, text=True)
+                       cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout
 
 
@@ -228,7 +228,7 @@ rc, out = run(d)
 check('a missing register exits 2 rather than passing', rc, 2)
 
 # ── and the REAL repo is clean, since that is what it is for ──────────────
-r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True, text=True)
+r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
 check('the real SAIRN register is currently clean', r.returncode, 0)
 
 print()

@@ -41,7 +41,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 
 FAIL = []
 
@@ -62,7 +62,7 @@ def ok(name, cond, detail=''):
 
 
 def git(cwd, *args):
-    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True)
+    return subprocess.run(['git', '-C', cwd] + list(args), capture_output=True, text=True, encoding='utf-8', errors='replace')
 
 
 def run_hook(clone, tip_sha, base_sha, hook_src=None):
@@ -85,7 +85,7 @@ def run_hook(clone, tip_sha, base_sha, hook_src=None):
     env = dict(os.environ)
     env.pop('SAIRN_SEED_GATE', None)
     p = subprocess.run([sys.executable, script, '--pre-push'],
-                       cwd=clone, input=stdin, capture_output=True, text=True,
+                       cwd=clone, input=stdin, capture_output=True, text=True, encoding='utf-8', errors='replace',
                        env=env, timeout=180)
     return p.returncode, p.stdout, p.stderr
 
@@ -98,7 +98,7 @@ def main():
         # store, and NO core.hooksPath (git does not clone config), so invoking
         # the gate here cannot recurse into another gate.
         c = subprocess.run(['git', 'clone', '--quiet', '--local', REPO, clone],
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
         if c.returncode != 0:
             print('  SKIP  could not create a local clone: ' + (c.stderr.strip() or '?'))
             return 0

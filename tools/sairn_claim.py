@@ -263,7 +263,7 @@ def block_reason(mine_subj, mine_task, their_subj, their_task):
 
 
 def sh(args, check=True):
-    r = subprocess.run(args, cwd=REPO, capture_output=True, text=True)
+    r = subprocess.run(args, cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if check and r.returncode != 0:
         sys.stderr.write((r.stderr or r.stdout).strip() + '\n')
         sys.exit(2)
@@ -316,7 +316,7 @@ def read_origin_claims():
     """
     out = {}
     ls = subprocess.run(['git', 'ls-tree', '--name-only', 'origin/main',
-                         '.claude/claims/'], cwd=REPO, capture_output=True, text=True)
+                         '.claude/claims/'], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if ls.returncode != 0:
         return None
     for path in ls.stdout.split('\n'):
@@ -324,7 +324,7 @@ def read_origin_claims():
         if not path.endswith('.json'):
             continue
         r = subprocess.run(['git', 'show', 'origin/main:' + path],
-                           cwd=REPO, capture_output=True, text=True)
+                           cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if r.returncode == 0:
             out[os.path.basename(path)] = r.stdout
     return out
@@ -471,13 +471,13 @@ def published_claim_ids():
     """
     rel = os.path.relpath(my_file(), REPO).replace(os.sep, '/')
     r = subprocess.run(['git', 'show', 'origin/main:' + rel],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode != 0:
         # The file may simply not exist on origin yet -- a session that has
         # never published a claim. That is READABLE and means "none published",
         # so it is only unknown if origin/main itself is unreadable.
         ok = subprocess.run(['git', 'rev-parse', '--verify', 'origin/main'],
-                            cwd=REPO, capture_output=True, text=True)
+                            cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
         return set() if ok.returncode == 0 else None
     try:
         doc = json.loads(r.stdout)
@@ -497,7 +497,7 @@ def on_origin(sha):
     """
     sh(['git', 'fetch', 'origin'], check=False)
     r = subprocess.run(['git', 'merge-base', '--is-ancestor', sha, 'origin/main'],
-                       cwd=REPO, capture_output=True, text=True)
+                       cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode == 0
 
 
@@ -540,7 +540,7 @@ def fetch_origin():
     say how old its answer is.
     """
     r = subprocess.run(['git', 'fetch', 'origin'], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     if r.returncode == 0:
         d = git_dir()
         if d:
@@ -715,15 +715,15 @@ def push_verified():
         # of one-file-per-session. If it stops anyway, abort rather than
         # leaving the tree mid-rebase for whatever runs next.
         rb = subprocess.run(['git', 'rebase', 'origin/main'],
-                            cwd=REPO, capture_output=True, text=True)
+                            cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if rb.returncode != 0:
             subprocess.run(['git', 'rebase', '--abort'], cwd=REPO,
-                           capture_output=True, text=True)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace')
             last_err = (rb.stderr or rb.stdout or '').strip().split('\n')[-1]
             continue
         sha = sh(['git', 'rev-parse', 'HEAD'])   # rebase rewrites it
         r = subprocess.run(['git', 'push', 'origin', 'HEAD:main'],
-                           cwd=REPO, capture_output=True, text=True)
+                           cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
         if r.returncode != 0:
             last_err = (r.stderr or '').strip().split('\n')[-1]
             continue

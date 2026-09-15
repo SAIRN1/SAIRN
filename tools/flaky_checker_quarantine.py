@@ -98,9 +98,9 @@ SAMPLE_CAP = 4              # distinct verdict excerpts kept per checker
 
 def tree_hash():
     """What the working tree looked like. A flip across two trees is not a flip."""
-    p = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, cwd=REPO)
+    p = subprocess.run(['git', 'rev-parse', 'HEAD'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     dirty = subprocess.run(['git', 'status', '--porcelain'], capture_output=True,
-                           text=True, cwd=REPO).stdout
+                           text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout
     # THE LEDGER IS EXCLUDED FROM ITS OWN TREE HASH, and this is not a nicety.
     # Without it the tool cannot accumulate ANY evidence: the first --measure
     # writes docs/flaky-checker-ledger.json, which changes `git status`, which
@@ -362,7 +362,7 @@ def interpreter_for(tool):
         # per-run exception that then looks like a stable verdict.
         try:
             r = subprocess.run(argv + ['--version'], capture_output=True,
-                               text=True, timeout=30)
+                               text=True, encoding='utf-8', errors='replace', timeout=30)
             if r.returncode != 0:
                 return None
         except Exception:                                       # noqa: BLE001
@@ -618,7 +618,7 @@ def main(argv):
     # up, and the exit code would have been an unhandled 1 that read like a
     # finding.
     today = subprocess.run(['git', 'log', '-1', '--format=%cs'], capture_output=True,
-                           text=True, cwd=REPO).stdout.strip() or '2026-01-01'
+                           text=True, encoding='utf-8', errors='replace', cwd=REPO).stdout.strip() or '2026-01-01'
     overdue = [r for r in rows if r['quarantined'] and r['quarantine']
                and r['quarantine'].get('deadline', '9999') < today]
 
@@ -703,7 +703,7 @@ def main(argv):
                              'OVER-reports by however many tools are hook- or '
                              'gate-wired' % type(_we).__name__)
             _ondisk = [os.path.basename(f) for f in subprocess.run(
-                ['git', 'ls-files', 'tools/'], capture_output=True, text=True,
+                ['git', 'ls-files', 'tools/'], capture_output=True, text=True, encoding='utf-8', errors='replace',
                 cwd=REPO).stdout.split(chr(10))
                 if f.endswith(('_check.py', '_check.js', '_scan.py', '_sweep.py'))]
             _nodecision = sorted(set(_ondisk) - _decided)

@@ -45,7 +45,7 @@ import tempfile
 import time
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 sys.path.insert(0, os.path.join(REPO, 'tools'))
 import report_only_checks as roc                                  # noqa: E402
 
@@ -63,7 +63,7 @@ def nav_on(html):
         fh.write(html)
     try:
         p = subprocess.run([sys.executable, NAV, path], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
         return p.returncode, (p.stdout or '') + (p.stderr or '')
     finally:
         os.remove(path)
@@ -214,7 +214,7 @@ def dup_on(html):
         fh.write(html)
     try:
         p = subprocess.run([sys.executable, DUP, path], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
         return p.returncode, (p.stdout or '') + (p.stderr or '')
     finally:
         os.remove(path)
@@ -259,7 +259,7 @@ def nest_on(html):
         fh.write(html)
     try:
         p = subprocess.run([sys.executable, NEST, path], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
         return p.returncode, (p.stdout or '') + (p.stderr or '')
     finally:
         os.remove(path)
@@ -310,7 +310,7 @@ def strict_on(js):
                  '  var _orig = window.fetch;\n' + js + '\n})();\n</script></body></html>')
     try:
         p = subprocess.run([sys.executable, STRICT, path], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
         return p.returncode, (p.stdout or '') + (p.stderr or '')
     finally:
         os.remove(path)
@@ -342,7 +342,7 @@ with os.fdopen(fd, 'w', encoding='utf-8') as fh:
              '  return _orig.apply(this, arguments);\n};\n'
              '</script></body></html>')
 _r = subprocess.run([sys.executable, STRICT, _p], cwd=REPO, capture_output=True,
-                    text=True, timeout=120)
+                    text=True, encoding='utf-8', errors='replace', timeout=120)
 os.remove(_p)
 check('D6c the same shape in SLOPPY mode is not a defect and is not reported',
       _r.returncode, 0)
@@ -570,7 +570,7 @@ def hook(cmd):
                                                      'report_only_checks.py'),
                         '--hook'],
                        input=payload, cwd=REPO, capture_output=True,
-                       text=True, timeout=600)
+                       text=True, encoding='utf-8', errors='replace', timeout=600)
     return p.returncode, (p.stdout or ''), time.time() - t0
 
 
@@ -673,7 +673,7 @@ check('H7c and it still exits 0 -- report-only never blocks a push', _rc, 0)
 _b = subprocess.run([sys.executable, os.path.join(REPO, 'tools',
                                                   'report_only_checks.py'),
                      '--budget', '20'],
-                    cwd=REPO, capture_output=True, text=True, timeout=600)
+                    cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=600)
 _bo = _b.stdout or ''
 check('J1 a sweep that runs out of budget says so', 'NEVER RAN' in _bo, True)
 check('J2 and NAMES the checkers it did not reach, never just a count',

@@ -146,7 +146,7 @@ try:
         "B.CONCURRENCY_SENSITIVE = {'flaky.py'}\n"
         "f, s, r = B._run([], ['flaky.py'], quiet=True)\n"
         'print(json.dumps({"failures": len(f), "retried": len(r)}))\n')
-    out = subprocess.run([sys.executable, drv], capture_output=True, text=True,
+    out = subprocess.run([sys.executable, drv], capture_output=True, text=True, encoding='utf-8', errors='replace',
                          cwd=TMP2)
     ok('the broken copy runs at all', out.returncode == 0, out.stderr[-300:])
     ok('with the retry removed, the listed file is a FAILURE again',

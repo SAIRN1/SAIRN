@@ -54,7 +54,7 @@ check('1e  every end state is NAMED rather than numbered -- "state 6" is not '
 
 print('2. the number it refuses to invent')
 r = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'pra_event_tree.py')],
-                   capture_output=True, text=True, cwd=REPO)
+                   capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 out = r.stdout or ''
 check('2a  the report says FREQUENCY: UNKNOWN', 'FREQUENCY: UNKNOWN' in out)
 check('2b  ...and says WHY, naming the population problem rather than just '
@@ -62,7 +62,7 @@ check('2b  ...and says WHY, naming the population problem rather than just '
 check('2c  the end state and the tier are stated as reported SEPARATELY',
       'never multiplied' in out or 'SEPARATELY' in out)
 j = subprocess.run([sys.executable, os.path.join(REPO, 'tools', 'pra_event_tree.py'),
-                    '--json'], capture_output=True, text=True, cwd=REPO)
+                    '--json'], capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 check('2d  the JSON carries frequency: null -- a consumer cannot pick up a '
       'number the report declined to give', '"frequency": null' in (j.stdout or ''))
 # THE ARM LOOKS FOR A SCORE, NOT FOR THE WORD. The first version matched

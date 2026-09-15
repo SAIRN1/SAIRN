@@ -31,7 +31,7 @@ import subprocess
 import sys
 
 ROOT = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TARGET = os.path.join(ROOT, 'sairndental.html')
 SUITE = os.path.join('tests', 'sairndental_write_failure_voice.js')
 
@@ -105,7 +105,7 @@ def main():
     # That is exactly how sairnvet.html lost its corrupt-store guard overnight.
     # See tests/run_suite_lock_probe.py.
     already = subprocess.run(['git', 'status', '--porcelain', '--', 'sairndental.html'],
-                             cwd=ROOT, capture_output=True, text=True).stdout.strip()
+                             cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
     if already:
         print('SKIPPED: sairndental.html is already modified, so the bytes this')
         print('probe would snapshot as "original" are not the original and the')
@@ -116,7 +116,7 @@ def main():
     before = hashlib.sha256(orig.encode('utf-8')).hexdigest()
 
     # The suite must be GREEN before any of this means anything.
-    baseline = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True, text=True)
+    baseline = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
     # Labelled GREEN rather than BITES: nothing was broken here, and a baseline
     # row reading like a passing probe is exactly the kind of small dishonesty
     # that makes a report harder to read than it needs to be.
@@ -130,7 +130,7 @@ def main():
                 results.append((name, 'ANCHOR-%d' % n))
                 continue
             open(TARGET, 'w', encoding='utf-8', newline='').write(orig.replace(old, new, 1))
-            r = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True, text=True)
+            r = subprocess.run(['node', SUITE], cwd=ROOT, capture_output=True, text=True, encoding='utf-8', errors='replace')
             results.append((name, 'BITES' if r.returncode != 0 else 'SILENT'))
     finally:
         # Restored even if the run dies mid-way. A probe that leaves a mutated

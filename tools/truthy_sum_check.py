@@ -85,7 +85,7 @@ BINARY_EXT = ('.zip', '.png', '.jpg', '.jpeg', '.gif', '.ico', '.pdf', '.woff',
 
 def tracked():
     out = subprocess.run(['git', 'ls-files', '*.html', '*.js'], cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     return [f for f in out.split('\n')
             if f.strip()
             # The preserved ancestor branch is kept for provenance and CLAUDE.md

@@ -15,7 +15,7 @@ EP = 'api/legal-deadlines.js'
 
 
 def run(*a, **k):
-    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, **k)
+    return subprocess.run(list(a), cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace', **k)
 
 
 def tool():

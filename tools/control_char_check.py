@@ -77,7 +77,7 @@ NAMES = {
 
 def tracked():
     out = subprocess.run(['git', 'ls-files'], cwd=REPO,
-                         capture_output=True, text=True).stdout
+                         capture_output=True, text=True, encoding='utf-8', errors='replace').stdout
     return [f for f in out.split('\n') if f.strip()]
 
 

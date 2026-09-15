@@ -97,7 +97,7 @@ def extra_actions():
            'o:i.OWNER_BY_RESOURCE,n:i.RESOURCE_NAMES}));')
     try:
         r = subprocess.run(['node', '-e', src], cwd=REPO,
-                           capture_output=True, text=True, timeout=120)
+                           capture_output=True, text=True, encoding='utf-8', errors='replace', timeout=120)
     except (OSError, subprocess.SubprocessError) as e:
         sys.stderr.write('COULD NOT RUN -- node is required to read the live '
                          'registry: %s: %s\n' % (type(e).__name__, e))

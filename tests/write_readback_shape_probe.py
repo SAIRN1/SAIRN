@@ -72,7 +72,7 @@ results = {}
 
 def run(*paths):
     p = subprocess.run([sys.executable, TOOL] + list(paths),
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 

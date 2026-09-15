@@ -68,7 +68,7 @@ LIB = os.path.join(REPO, 'api', '_lib', 'dental-guardian.js')
 
 def run(*extra):
     p = subprocess.run([sys.executable, TOOL] + list(extra),
-                       capture_output=True, text=True, cwd=REPO)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
     return p.returncode, (p.stdout or '') + (p.stderr or '')
 
 
@@ -87,7 +87,7 @@ results['baseline_counts'] = counts(base_out)
 # file already differed from HEAD, --ref would be reading a different program
 # for reasons unrelated to the fix.
 _st = subprocess.run(['git', 'status', '--porcelain', '--', LIB],
-                     capture_output=True, text=True, cwd=REPO)
+                     capture_output=True, text=True, encoding='utf-8', errors='replace', cwd=REPO)
 results['fixture_matches_head'] = (_st.stdout or '').strip() == ''
 
 lib_orig = io.open(LIB, 'rb').read()

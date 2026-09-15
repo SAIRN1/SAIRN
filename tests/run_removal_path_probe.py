@@ -34,7 +34,7 @@ import sys
 import tempfile
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 TOOL = os.path.join(REPO, 'tools', 'removal_path_check.py')
 
 fails = 0
@@ -82,7 +82,7 @@ def build(tmp, names, extra, sd_data, app_js, baseline=None):
 def run(tmp, *args):
     r = subprocess.run([sys.executable,
                         os.path.join(tmp, 'tools', 'removal_path_check.py')]
-                       + list(args), cwd=tmp, capture_output=True, text=True)
+                       + list(args), cwd=tmp, capture_output=True, text=True, encoding='utf-8', errors='replace')
     return r.returncode, r.stdout + r.stderr
 
 
@@ -332,7 +332,7 @@ check('11D both halves of a shared dispatch are classified keyed',
 
 # ── 10. and the REAL repo is clean, since that is what it is for ──────────
 r = subprocess.run([sys.executable, TOOL], cwd=REPO, capture_output=True,
-                   text=True)
+                   text=True, encoding='utf-8', errors='replace')
 check('the real SAIRN baseline currently accounts for every one', r.returncode, 0)
 
 print()

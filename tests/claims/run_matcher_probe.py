@@ -26,7 +26,7 @@ import subprocess
 import sys
 
 REPO = subprocess.run(['git', 'rev-parse', '--show-toplevel'],
-                      capture_output=True, text=True).stdout.strip()
+                      capture_output=True, text=True, encoding='utf-8', errors='replace').stdout.strip()
 spec = importlib.util.spec_from_file_location(
     'sairnclaim', os.path.join(REPO, 'tools', 'sairn_claim.py'))
 claim = importlib.util.module_from_spec(spec)

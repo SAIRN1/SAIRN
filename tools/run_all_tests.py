@@ -474,7 +474,7 @@ def _run(js, py, quiet):
     failures, skipped, retried = [], [], []
     for kind, cmd, files in (('node', ['node'], js), ('py', [sys.executable], py)):
         for rel in files:
-            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True)
+            r = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True, text=True, encoding='utf-8', errors='replace')
             out = (r.stdout or r.stderr or '').strip().splitlines()
             if r.returncode == 3:
                 skipped.append((kind, rel, next((l for l in out if l.startswith('SKIPPED')),
@@ -485,7 +485,7 @@ def _run(js, py, quiet):
                 # it is evidence the file is load-sensitive, which is a fact
                 # about the suite somebody should be able to see accumulating.
                 r2 = subprocess.run(cmd + [rel], cwd=REPO, capture_output=True,
-                                    text=True)
+                                    text=True, encoding='utf-8', errors='replace')
                 if r2.returncode == 0:
                     retried.append((kind, rel, out[-1] if out else '(no output)'))
                     if not quiet:
@@ -504,7 +504,7 @@ def _run(js, py, quiet):
 
 def _tree():
     r = subprocess.run(['git', 'status', '--porcelain'], cwd=REPO,
-                       capture_output=True, text=True)
+                       capture_output=True, text=True, encoding='utf-8', errors='replace')
     return [l for l in (r.stdout or '').splitlines() if l.strip()]
 
 
