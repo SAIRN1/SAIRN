@@ -1753,8 +1753,8 @@
       "task": "stripe apiversion nightly backup node version semgrep unicode",
       "claimed_at": "2026-09-15T11:45:20Z",
       "claimed_at_epoch": 1789472720.2445538,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T12:14:50Z"
     },
     {
       "id": "hank-1789473719",
