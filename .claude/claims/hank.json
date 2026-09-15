@@ -1783,8 +1783,8 @@
       "task": "fault probe gate 4 the trial and webhook suites must DENY",
       "claimed_at": "2026-09-15T12:29:26Z",
       "claimed_at_epoch": 1789475366.257577,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T12:55:50Z"
     }
   ]
 }
