@@ -1865,6 +1865,16 @@
       "claimed_at_epoch": 1789486820.0153642,
       "status": "released",
       "released_at": "2026-09-15T16:14:36Z"
+    },
+    {
+      "id": "hank-1789490038",
+      "session": "hank",
+      "subject": "claim-matcher",
+      "task": "false clear phrase straddles subject task boundary",
+      "claimed_at": "2026-09-15T16:33:58Z",
+      "claimed_at_epoch": 1789490038.6908944,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
