@@ -1443,8 +1443,8 @@
       "task": "sairncode fault probe gate 4 the soft delete and admin gates must DENY",
       "claimed_at": "2026-09-15T13:59:21Z",
       "claimed_at_epoch": 1789480761.6139505,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T14:10:25Z"
     }
   ]
 }
