@@ -620,8 +620,21 @@ function isSubscribed() {
 // verify.js returned subscriptionId would now hit the paywall. Both of its
 // response paths return `subscriptionId` today (api/sairncash/verify.js:88 for
 // the checkout session, :123 for the direct lookup), so this affects nothing
-// currently reachable -- and the unverifiable record is REMOVED rather than
-// left to be believed by the next offline load.
+// currently reachable.
+//
+// WHY THE RECORD IS REMOVED AND NOT JUST REFUSED -- CORRECTED 2026-09-15 after
+// tests/sairncash_entitlement_fault_probe.py made me trace it. The first
+// version of this comment said the record was removed so the next OFFLINE load
+// would not believe it. That is not the mechanism and the difference matters:
+// this branch returns false on every load regardless, because the catch that
+// falls back to isSubscribed() is only reachable AFTER a fetch, which only
+// happens when subscriptionId exists. Removing it changes no verdict here.
+//
+// What it actually stops is the app holding TWO CONTRADICTORY ANSWERS about the
+// same fact. getSub() is read by initFirebase() and showAccount() as well as by
+// this gate, so a record the gate has already rejected would keep being
+// returned to them -- an account panel rendering a subscription the paywall
+// just refused. The gate's verdict and the stored state have to agree.
 async function reverifySubscription() {
   const s = getSub();
   if (!s) return false;

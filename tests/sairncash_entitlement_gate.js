@@ -145,6 +145,23 @@ const PAST = new Date(Date.now() - 86400000).toISOString();
       'unexpected: a record with no subscriptionId produced a round-trip');
   });
 
+  await test('FORGED: the refused record is REMOVED, not just refused', async () => {
+    // Added 2026-09-15 by tests/sairncash_entitlement_fault_probe.py, which
+    // deleted the removeItem and left this whole file green.
+    //
+    // The verdict is the same either way -- this branch returns false on every
+    // load, because the offline fallback is only reachable after a fetch and a
+    // fetch needs a subscriptionId. What the removal stops is the app holding
+    // TWO CONTRADICTORY ANSWERS: getSub() is read by initFirebase() and
+    // showAccount() as well as by the gate, so a record the paywall has
+    // rejected would keep being handed to an account panel that renders it.
+    const c = harness({ local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE }) } });
+    await c.reverifySubscription();
+    assert.strictEqual(c.__store.sairncash_sub, undefined,
+      'the rejected record survived, so getSub() still reports a subscription '
+      + 'the gate has already refused');
+  });
+
   await test('FORGED: a made-up subscriptionId the server rejects is REFUSED', async () => {
     const c = harness({
       local: { sairncash_sub: JSON.stringify({ valid: true, expiresAt: FUTURE, subscriptionId: 'sub_made_up' }) },
