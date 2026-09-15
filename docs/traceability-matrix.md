@@ -138,6 +138,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 |---|---|---|
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
 | **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
+| ~~**23 tools read `git` output with a bare `text=True`**~~ &mdash; **the real figure was 358 sites in 137 files, and &ldquo;truncates&rdquo; was the LESS important failure mode** | **FIXED 2026-09-15 (CC), all 358** &mdash; `tools/subprocess_decode_check.py` (report-only) reports **0**; `tests/run_subprocess_decode_probe.py` REPRODUCES the defect rather than describing it. **Thi | `tests/run_subprocess_decode_probe.py` |
 | **The list-drift sweep: 12 candidates, ONE real defect &mdash; and it was inside the probe built to catch this exact shape** | **SWEPT 2026-09-15 (CC)** &mdash; `tools/pinned_list_drift_check.py` (report-only, NOT_PROMOTED), `tests/run_pinned_list_drift_probe.py` all arms pass, triage written up in `docs/2026-09-15-pinned-lis | `tests/phi_cache_scoped_to_user.js`, `tests/run_pinned_list_drift_probe.py` |
 | **The independent-review rule on Tier A code was real and enforced by nothing but remembering &mdash; it is push-gate check 13 now** | **BUILT 2026-09-15 (CC)**, BLOCKING &mdash; `tools/tier_a_review_gate.py`, `docs/tier-a-reviews.json`, check 13 in `tools/sairn_push_gate_hook.py`; `tests/run_tier_a_review_gate_probe.py` all arms pas | `tests/run_tier_a_review_gate_probe.py` |
 | **The `fault` column can read 0 for an app whose risk lives in `api/` rather than in its `.html`** | **MEASURED 2026-09-15 (Hank)**, nothing changed. `tools/master_plan.py` is being accurate; the READING of it is what misleads | `tests/sairncash_fault_probe.py` |
@@ -434,7 +435,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**226 of 437 test files are traced to a stated requirement. 211 are not.**
+**227 of 437 test files are traced to a stated requirement. 210 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -603,7 +604,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/run_sairnlaw_rate_limit_probe.js`
 - `tests/run_schema_verdict_probe.py`
 - `tests/run_shape_antipattern_probe.py`
-- `tests/run_subprocess_decode_probe.py`
 - `tests/run_testability_gate_probe.py`
 - `tests/run_tier_a_bypass_probe.py`
 - `tests/run_traceability_matrix_probe.py`
@@ -670,7 +670,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 437   tests/**, api/*.test.js
-  open-work rows citing a test       215   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       216   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     34   report_only_checks.NOT_PROMOTED
