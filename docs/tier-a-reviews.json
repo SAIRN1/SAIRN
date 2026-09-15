@@ -32,6 +32,22 @@
       "reviewer_session": null,
       "reviewed_at": null,
       "verdict": null
+    },
+    {
+      "author_session": "fourth",
+      "opened_at": "2026-09-15T12:51:17Z",
+      "resources": [
+        "dnt_patients",
+        "dnt_rollup"
+      ],
+      "files": [
+        "SAIRN-ACTIVE-WORK-fourth.md"
+      ],
+      "what": "dnt_rollup cross-location roll-up (api/_lib/dnt-rollup.js + its sd-data.js branch, Tier A): the arithmetic, the owner-only gate, and specifically the rule that an unreadable resource yields null rather than 0 -- a wrong number there is a staffing decision made on a figure short by an unknown amount. Also worth an independent eye: whether the UNASSIGNED bucket can ever be read as an office by a client.",
+      "status": "open",
+      "reviewer_session": null,
+      "reviewed_at": null,
+      "verdict": null
     }
   ]
 }
