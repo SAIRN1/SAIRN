@@ -135,6 +135,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **The independent-review rule on Tier A code was real and enforced by nothing but remembering &mdash; it is push-gate check 13 now** | **BUILT 2026-09-15 (CC)**, BLOCKING &mdash; `tools/tier_a_review_gate.py`, `docs/tier-a-reviews.json`, check 13 in `tools/sairn_push_gate_hook.py`; `tests/run_tier_a_review_gate_probe.py` all arms pas | `tests/run_tier_a_review_gate_probe.py` |
+| **The `fault` column can read 0 for an app whose risk lives in `api/` rather than in its `.html`** | **MEASURED 2026-09-15 (Hank)**, nothing changed. `tools/master_plan.py` is being accurate; the READING of it is what misleads | `tests/sairncash_fault_probe.py` |
 | **The Stripe API version was unpinned on FIVE payment paths, not two &mdash; and I had reported two** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `api/_lib/stripe-api-version.js` + `api/_lib/stripe-api-version.test.js` (4 arms). A NO-OP today by construction | `api/_lib/stripe-api-version.test.js` |
 | **A check that PASSED, reported to its caller as a crash &mdash; and 93 more tools can do the same thing** | **FIXED 2026-09-15 (Hank)** &mdash; `1cdfff8d`. `tools/run_semgrep.py` + `tests/run_semgrep_encoding_probe.py` (6 arms). `run_semgrep.py` moved UNWIRED &rarr; SUITE-ONLY in `docs/TOOLING-INVENTORY.md` | `tests/run_semgrep_encoding_probe.py` |
 | **Item 97: seven Tier A artifacts can be DESTROYED rather than hidden, and all seven are in one app &mdash; because the grant was never a per-resource decision** | **MEASURED 2026-09-15 (CC)**, not re-tiered &mdash; `docs/2026-09-15-item97-tier-a-replaceability.md`, `tools/tier_a_replaceability_check.py` (report-only, NOT_PROMOTED) and `tests/run_tier_a_replacea | `tests/run_tier_a_replaceability_probe.py` |
@@ -289,6 +290,12 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | **Gate 4 on the vertical with the most suites and no probe &mdash; 18 green suites, none ever observed red** | **BUILT 2026-09-15 (Fourth)** &mdash; `tests/sairncare_fault_probe.py`, 14 mutation arms + 6 controls, green after two real findings were closed. MASTER-PLAN `sairncare` fault 0 &rarr; 1 | `api/alf-append-only-fail-closed.test.js`, `tests/sairncare_fault_probe.py` |
 | **A failed rule read rendered as an authoritative EMPTY RULE SET on the compliance and billing panels &mdash; and told the operator to re-run the seed.** The guard against it was already written and could not fire | **CLOSED 2026-09-11 (Cody)** &mdash; 13 fault arms in `tests/faults/alf_rule_read_faults.js`, 6 mutation controls bite, file restored byte-identical; the first suite on this platform aimed at the READ | `tests/faults/alf_rule_read_faults.js` |
 
+### sairncash
+
+| Requirement | Status | Proved by |
+|---|---|---|
+| **Gate 4 on the app that takes money &mdash; and the webhook HTTP handler had never been invoked by anything** | **BUILT 2026-09-15 (Hank)** &mdash; `497bbf24`, corrected by `3afe8fbd`. `tests/sairncash_fault_probe.py`, 8 mutation arms + 3 controls. **The `fault` column stays 0 and is RIGHT to** &mdash; see next | `tests/sairncash_fault_probe.py` |
+
 ### sairncode
 
 | Requirement | Status | Proved by |
@@ -347,6 +354,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Gate 4 on the most regulated subject in the seam &mdash; and both endpoint fixtures tested the input shape that was never at risk** | **BUILT 2026-09-15 (Hank)** &mdash; `7e7e4513`. `tests/sairnmechanical_fault_probe.py`, 11 mutation arms + 5 controls, green after two real coverage gaps were closed. MASTER-PLAN `sairnmechanical` fau | `tests/sairnmechanical_fault_probe.py` |
 | `tests/sairn_storage_wrapper_honesty.js` CRASHED, so every app after SAIRNmechanical was covered by nothing &mdash; and the check that survived could be satisfied by a CODE COMMENT | **FIXED 2026-09-10 (Cody)** &mdash; 41 arms restored to life and 10 added, 51 pass; 3 mutation controls across three app files all bite, all restored byte-identical | `tests/sairn_storage_wrapper_honesty.js` |
 | ~~**REVIEWED: the cheque number is NOT a safe key, and the SQL has not run yet**~~ &mdash; **CLOSED: check_id is a minted per-record id, the number stays data, and a repeat is REPORTED** | **CLOSED 2026-09-10 (CC)**, `bcee0215`. Built `6ddb8154` (CC), independently reviewed the same day (Hank), fixed by the author on the reviewer's finding | `tests/mech_check_register_identity.js` |
 
@@ -412,7 +420,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**217 of 425 test files are traced to a stated requirement. 208 are not.**
+**219 of 425 test files are traced to a stated requirement. 206 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -601,14 +609,12 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-med-schedule.js`
 - `tests/sairncare/test-op-audit.js`
 - `tests/sairncare/test-payer-routing.js`
-- `tests/sairncash_fault_probe.py`
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`
 - `tests/sairndental_unlinked_referral_queue.js`
 - `tests/sairndesign_sairngrounds_fault_probe.py`
 - `tests/sairndesign_server_backup.js`
 - `tests/sairngrounds_server_backup.js`
-- `tests/sairnmechanical_fault_probe.py`
 - `tests/sairnscape_memory.js`
 - `tests/sairnsenior/test-evv-readiness.js`
 - `tests/sb_sync_badge_honesty.js`
@@ -645,7 +651,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 425   tests/**, api/*.test.js
-  open-work rows citing a test       200   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       203   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     33   report_only_checks.NOT_PROMOTED
