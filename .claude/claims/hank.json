@@ -1765,6 +1765,16 @@
       "claimed_at_epoch": 1789473719.294461,
       "status": "released",
       "released_at": "2026-09-15T12:14:40Z"
+    },
+    {
+      "id": "hank-1789474753",
+      "session": "hank",
+      "subject": "sairnmechanical",
+      "task": "fault probe gate 4 the suites must DENY",
+      "claimed_at": "2026-09-15T12:19:13Z",
+      "claimed_at_epoch": 1789474753.9686208,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
