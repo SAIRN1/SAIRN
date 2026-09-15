@@ -1455,6 +1455,16 @@
       "claimed_at_epoch": 1789483866.4939866,
       "status": "released",
       "released_at": "2026-09-15T15:47:54Z"
+    },
+    {
+      "id": "fourth-1789492636",
+      "session": "fourth",
+      "subject": "fourth",
+      "task": "backup reader supabase_admin ownership, item 6 ungoverned writes, item 101 settling phase recheck, IOLTA ledger-wide reconciliation",
+      "claimed_at": "2026-09-15T17:17:16Z",
+      "claimed_at_epoch": 1789492636.711068,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
