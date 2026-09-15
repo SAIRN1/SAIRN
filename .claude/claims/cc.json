@@ -1342,8 +1342,8 @@
       "task": "sairncode tier a delete grant sairnbiz hour entry tier a review gate",
       "claimed_at": "2026-09-15T11:37:45Z",
       "claimed_at_epoch": 1789472265.9128065,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T13:35:43Z"
     }
   ]
 }
