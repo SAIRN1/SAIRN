@@ -52,7 +52,17 @@ const ROOT = K.ROOT;
 // The vocabulary differs and that is deliberate per app -- asserted, not assumed.
 const APPS = [
   ['sairnbiz.html', 'sbData', 'SB', 'null'],
-  ['sairnbuild.html', 'bldData', 'BLD', 'null'],
+  // RE-ANCHORED 2026-09-15. This row said `bldData`, and four arms went red
+  // while the timeout was PRESENT AND CORRECT. `e2624577` split the transport
+  // into bldDataRaw() -- fetch, signal, catch -- and bldData(), a thin wrapper
+  // that collapses a shaped failure to null for existing callers. The refactor
+  // was right; this hand-written name rotted against it, which is the eighth
+  // cross-domain discipline exactly: nothing announces the day a check stops
+  // testing anything. The `status0` vocabulary follows the same split --
+  // bldDataRaw resolves to {ok:false,status:0,error} and it is bldData that
+  // returns null. The wrapper's own contract is arm-tested below rather than
+  // being lost with the re-anchor.
+  ['sairnbuild.html', 'bldDataRaw', 'BLD', 'status0'],
   ['sairncare.html', 'alfData', 'ALF', 'null'],
   ['sairncode.html', 'scData', 'SC', 'null'],
   ['sairndental.html', 'sdnData', 'DNT', 'null'],
@@ -146,6 +156,72 @@ APPS.forEach(([app, fn, CONST]) => {
       hm[1] + '() never calls AbortSignal.timeout');
   });
 });
+
+// ── THE ANTI-ROT ARM, ADDED 2026-09-15 AFTER THIS TABLE ROTTED ─────────
+// The APPS table is a HAND-WRITTEN LIST of function names claiming to match the
+// real transports. Nothing verified that claim. When `e2624577` split
+// sairnbuild's transport into bldDataRaw()/bldData(), the row kept pointing at
+// the wrapper and FOUR arms went red -- against a timeout that was present and
+// correct the whole time. Four confusing downstream failures instead of one
+// precise sentence.
+//
+// This arm is that sentence. A named transport that does not itself call fetch
+// is not the transport any more, and the overwhelmingly likely cause is a
+// wrapper split. Measured when written: 14 of 15 already satisfied it and the
+// one that did not was exactly the rotted row.
+//
+// It is the same defect class as a pinned register drifting from the
+// hand-written list that claims to mirror it -- checked in ONE direction here
+// on purpose: the list must name real transports, and this file does not claim
+// to enumerate every transport on the platform.
+test('every NAMED transport is the function that actually calls fetch', () => {
+  const wrong = [];
+  APPS.forEach(([app, fn]) => {
+    const b = transportBody(read(app), fn);
+    // THE BOUNDARY IS A LOOKBEHIND AND NOT `\b`, AND THE FIRST VERSION OF THIS
+    // LINE SHIPPED A LITERAL BACKSPACE (0x08) INSTEAD -- written through a
+    // generator whose string escaping turned it into the control character, so
+    // the regex could never match and ALL FIFTEEN apps reported 'does not call
+    // fetch'. That is the exact defect CLAUDE.md already records: "a regex that
+    // shipped with a literal backspace and could never match". It failed LOUDLY
+    // and in the wrong direction, which is the only reason it took a minute
+    // rather than a month.
+    if (!/(?<![\w.$])fetch\s*\(/.test(stripComments(b))) {
+      wrong.push(app + ': ' + fn + '() does not call fetch -- it is probably now '
+        + 'a wrapper, and this table still names it');
+    }
+  });
+  assert.deepStrictEqual(wrong, []);
+});
+
+// ── AND THE OTHER HALF OF THE SPLIT, SO RE-ANCHORING LOST NOTHING ────────
+// Re-anchoring the row to bldDataRaw moved every arm above onto the real
+// transport. bldData() is what a hundred call sites actually invoke, and its
+// contract -- collapse a shaped failure to null, never reject -- is the one
+// those callers depend on. Asserted here rather than left uncovered.
+test('sairnbuild.html: bldData() collapses the raw failure to null and never rejects',
+  async () => {
+    const ctx = driveCtx('sairnbuild.html', 'bldDataRaw', 'timeout');
+    // Load the wrapper into the SAME context, so it calls the real
+    // bldDataRaw rather than a stub -- a stubbed inner function would make
+    // this arm pass against a wrapper that does nothing at all.
+    const src = read('sairnbuild.html');
+    const dm = /function\s+bldData\s*\(/.exec(src);
+    assert.ok(dm, 'bldData() is gone -- the wrapper half of the split no longer exists');
+    const o = src.indexOf('{', dm.index);
+    let d = 0, k = o;
+    for (; k < src.length; k++) {
+      if (src[k] === '{') d++;
+      else if (src[k] === '}' && --d === 0) break;
+    }
+    K.vm.runInContext(src.slice(dm.index, k + 1), ctx);
+    const r = await drive(ctx, 'bldData', ['write', 'probe_resource', { id: 'X1' }]);
+    assert.strictEqual(r.settled, true, 'the wrapper never settled on a timeout');
+    assert.ok(!r.rejected, 'the wrapper REJECTS, so every await caller throws');
+    assert.strictEqual(r.value, null,
+      'the wrapper no longer collapses a failure to null -- callers that test '
+      + 'falsiness would now see a truthy {ok:false} object');
+  });
 
 test('all 15 use the SAME 15s, or the platform has no single number', () => {
   const odd = [];

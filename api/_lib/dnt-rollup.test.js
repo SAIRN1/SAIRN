@@ -215,6 +215,111 @@ check('an empty registry still reports the implicit single practice', () => {
   assert.strictEqual(out.disclosure.registry_size, 0);
 });
 
+// ---- THE TWO INDEPENDENT-REVIEW FINDINGS (Hank, ce7764fa, 2026-09-15) ------
+// Both were real, both are fixed, and both get a regression arm here rather
+// than living on in a report-only probe. Each is paired with the case that must
+// still behave the old way, because a fix that changed everything would pass a
+// one-directional arm just as well as a fix that changed the right thing.
+
+check('FINDING 1: a bucket created by a LATER metric still reports the earlier ones', () => {
+  // The exact reported shape: a two-office practice, every patient and
+  // appointment stamped, ONE legacy charge with no location. That charge
+  // creates the unassigned bucket during the LAST metric's row pass. Before the
+  // fix the earlier metrics had no cell on it, and the totals loop read a
+  // MISSING cell as a SUPPRESSED one -- so patients and appointments came back
+  // null with `disclosure.unreadable` EMPTY.
+  const out = rollup({
+    registry: REGISTRY,
+    metrics: [
+      { key: 'patients', resource: 'dnt_patients', kind: 'count' },
+      { key: 'appointments', resource: 'dnt_appts', kind: 'count' },
+      { key: 'production', resource: 'dnt_charges', kind: 'sum', field: 'amount' }
+    ],
+    sets: {
+      dnt_patients: { rows: [{ id: 'P1', location_id: 'LOC-N' },
+                             { id: 'P2', location_id: 'LOC-S' }] },
+      dnt_appts: { rows: [{ id: 'A1', location_id: 'LOC-N' },
+                          { id: 'A2', location_id: 'LOC-S' }] },
+      dnt_charges: { rows: [{ id: 'C1', location_id: 'LOC-N', amount: 300 },
+                            { id: 'C0', amount: 250 }] }
+    }
+  });
+  assert.strictEqual(out.totals.patients.value, 2, 'patients was read and must report');
+  assert.strictEqual(out.totals.appointments.value, 2);
+  assert.strictEqual(out.unassigned.metrics.patients.value, 0,
+    'the unassigned bucket has no patients -- 0 is a measurement, null is not');
+  assert.strictEqual(out.unassigned.metrics.patients.rows, 0);
+  assert.deepStrictEqual(out.disclosure.unreadable, {},
+    'nothing failed, so nothing may be named as unreadable');
+});
+
+check('...and the answer does not depend on the ORDER of the metric list', () => {
+  // The order-dependence is what made finding 1 a defect rather than a policy.
+  // A number that is a function of argument order is not a measurement.
+  const sets = {
+    dnt_patients: { rows: [{ id: 'P1', location_id: 'LOC-N' }] },
+    dnt_charges: { rows: [{ id: 'C0', amount: 250 }] }
+  };
+  const A = { key: 'patients', resource: 'dnt_patients', kind: 'count' };
+  const B = { key: 'production', resource: 'dnt_charges', kind: 'sum', field: 'amount' };
+  const first = rollup({ registry: REGISTRY, metrics: [A, B], sets: sets });
+  const second = rollup({ registry: REGISTRY, metrics: [B, A], sets: sets });
+  assert.strictEqual(first.totals.patients.value, second.totals.patients.value);
+  assert.strictEqual(first.totals.production.value, second.totals.production.value);
+  assert.strictEqual(first.totals.patients.value, 1);
+});
+
+check('THE OTHER DIRECTION: a genuinely unreadable RESOURCE is still null, not 0', () => {
+  // Finding 1's fix turns missing cells into 0. It must not have turned
+  // SUPPRESSED cells into 0 as well -- that would undo rule 3 completely.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [{ id: 'P1', location_id: 'LOC-N' }] },
+    dnt_charges: { unreadable: 'NOT_PROVISIONED' } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, null);
+  assert.strictEqual(out.totals.production.value, null);
+});
+
+check('FINDING 2: rows whose summed field is unreadable are COUNTED and named', () => {
+  // Four charges, three with no readable amount. The arithmetic is unchanged --
+  // an unreadable amount still contributes 0 rather than NaN -- but the report
+  // may no longer assert it is whole.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 100 },
+      { id: 'C2', location_id: 'LOC-N', amount: '' },
+      { id: 'C3', location_id: 'LOC-N', amount: 'n/a' },
+      { id: 'C4', location_id: 'LOC-N' }
+    ] } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.value, 100,
+    'the arithmetic is deliberately unchanged');
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.unreadable_rows, 3);
+  assert.strictEqual(out.totals.production.unreadable_rows, 3);
+  assert.strictEqual(out.disclosure.unreadable_field_rows, 3);
+  assert.strictEqual(out.disclosure.complete, false,
+    'a figure short by an unknown amount may not assert that it is whole');
+});
+
+check('...and a literal 0 is READABLE, so an honest zero is not counted as unreadable', () => {
+  // The false-positive direction. 0 means zero; blank means nothing. Collapsing
+  // them would make `complete` false on every practice that ever wrote a
+  // zero-value charge, which is the alarm that gets learned and then ignored.
+  const out = rollup(base({ sets: {
+    dnt_patients: { rows: [] },
+    dnt_charges: { rows: [
+      { id: 'C1', location_id: 'LOC-N', amount: 0 },
+      { id: 'C2', location_id: 'LOC-N', amount: '0.00' }
+    ] } } }));
+  assert.strictEqual(loc(out, 'LOC-N').metrics.production.unreadable_rows, 0);
+  assert.strictEqual(out.disclosure.unreadable_field_rows, 0);
+  assert.strictEqual(out.disclosure.complete, true);
+});
+
+check('a COUNT metric never reports unreadable rows -- it has no field to read', () => {
+  const out = rollup(base());
+  assert.strictEqual(loc(out, 'LOC-N').metrics.patients.unreadable_rows, 0);
+});
+
 check('no ranking, no best-performer, no period change is emitted', () => {
   const out = rollup(base());
   const keys = Object.keys(out).sort().join(',');
