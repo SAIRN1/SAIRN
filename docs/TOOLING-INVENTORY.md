@@ -19,7 +19,7 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**154 files in `tools/`.** By what actually invokes them:
+**155 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
@@ -28,13 +28,13 @@ makes this the one inventory whose staleness is hardest to notice.
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 39 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
 | **SUITE-ONLY** | 21 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
-| **UNWIRED** | 33 | nothing runs these at all |
+| **UNWIRED** | 34 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 100 |
+| CHECKER | 101 |
 | GENERATOR | 16 |
 | LIBRARY | 20 |
 | LIVE | 18 |
@@ -44,17 +44,18 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 15 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 2 wired nowhere at all, and 13
+**The number to act on: 16 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 13
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 15, by name, so this is actionable rather than a statistic:
+The 16, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
 | `accepted_risk_expiry_audit.py` | UNWIRED | an accepted risk whose EXPIRY CONDITION cannot fire -- no trigger stated, or a trigger no tool evaluates, or a tool nothing invokes. Complements accepted_risk_scan.py rather than repeating it: that one asks whether an acceptance reached a register at all, this one reads the ones that did. Found its own first case immediately -- the supabase_admin row named a trigger and no monitor, while ownership_evidence_drift.py had been watching it for a day and the row had never been updated to say so. Over-reports on purpose; the count is a read-list, not a score |
+| `ai_action_approval_audit.py` | UNWIRED | an AI-PROPOSED action that reaches storage with no human approval -- the mechanical half of a rule that is currently only written down. Measured 2026-09-15: 74 AI call sites across all 17 apps, 39 gated BY CONSTRUCTION (render-only), 14 that write in the same handler, and ZERO carrying an explicit approval gate. A LOCATOR, not a detector: a chat-transcript write reads the same as an invoice write, and a confirm() one function away reads as absent. Its first real run was WRONG TWICE and both are recorded in its header -- it missed ten apps that hold the proxy URL in a constant, and it counted the AI call's own POST as a data write, inflating the headline from 14 to 59 |
 | `checker_confidence.py` | SUITE-ONLY | a promoted checker whose answer is not worth much -- the CONTINUOUS flip-rate signal and the INFREQUENT control-pair signal fused by MINIMUM, so a perfect flip rate with no control caps at LOW rather than averaging to MEDIUM. The corrector proves its own safety exhaustively before reporting anything |
 | `condition_coverage.py` | SUITE-ONLY | an operand of a compound condition in a Tier A financial engine that the suite does NOT notice being wrong -- mutation-derived condition coverage, deliberately NOT called MC/DC since it proves the suite would catch a wrong operand rather than that a test merely touched it |
 | `defect_dispersion.py` | SUITE-ONLY | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one |
@@ -280,7 +281,7 @@ fixtures. Nothing points them at the real codebase.
 
 ---
 
-## UNWIRED (33)
+## UNWIRED (34)
 
 Nothing runs these. Read the Kind column before calling any of it a
 finding: a LIBRARY is imported by something else and a LIVE tool is
@@ -289,6 +290,7 @@ correctly manual. Only `CHECKER` rows here are a gap.
 | Tool | Kind | What it catches | Probe under tests/ |
 |---|---|---|---|
 | `accepted_risk_expiry_audit.py` | CHECKER | an accepted risk whose EXPIRY CONDITION cannot fire -- no trigger stated, or a trigger no tool evaluates, or a tool nothing invokes. Complements accepted_risk_scan.py rather than repeating it: that one asks whether an acceptance reached a register at all, this one reads the ones that did. Found its own first case immediately -- the supabase_admin row named a trigger and no monitor, while ownership_evidence_drift.py had been watching it for a day and the row had never been updated to say so. Over-reports on purpose; the count is a read-list, not a score | &mdash; |
+| `ai_action_approval_audit.py` | CHECKER | an AI-PROPOSED action that reaches storage with no human approval -- the mechanical half of a rule that is currently only written down. Measured 2026-09-15: 74 AI call sites across all 17 apps, 39 gated BY CONSTRUCTION (render-only), 14 that write in the same handler, and ZERO carrying an explicit approval gate. A LOCATOR, not a detector: a chat-transcript write reads the same as an invoice write, and a confirm() one function away reads as absent. Its first real run was WRONG TWICE and both are recorded in its header -- it missed ten apps that hold the proxy URL in a constant, and it counted the AI call's own POST as a data write, inflating the headline from 14 to 59 | &mdash; |
 | `audit_checkpoint_status.py` | LIVE | a daily audit checkpoint that FAILED, or could not be asked -- written to docs/AUDIT-CHECKPOINT-STATUS.md instead of a log line nobody opens | &mdash; |
 | `claim_provenance.py` | LIVE | not a checker and deliberately not one: it RECORDS how a Tier A claim was established -- what was observed, WHEN it was observed as distinct from when it was typed, by what method, and how somebody else could redo it -- and refuses a record that could not later be checked. Judging staleness is a separate build, after the chain has something in it, because the two tools that shipped able to judge with nothing to judge are the pattern this avoids. Subjects derive from docs/CRITICALITY-TIERS.md plus `migration:<file>.sql` validated against sql/, never a second hand-maintained list, and a zero-subject parse is treated as a broken reader rather than an empty register | &mdash; |
 | `extract_panels.py` | LIBRARY | panel containers out of an app file | &mdash; |
@@ -350,7 +352,7 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      154   git ls-files tools/
+  tools on disk                      155   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations                9   tools\sairn_push_gate_hook.py
   report-only registry                46   report_only_checks.REGISTRY

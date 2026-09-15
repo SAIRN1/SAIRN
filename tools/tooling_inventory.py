@@ -81,6 +81,17 @@ PURPOSES = {
         'Item 8 sub-item 7, the half that needs NO MODEL CALL. It counts WORDS '
         'PRESENT IN A PROMPT and cannot show the model obeys them; that half is '
         'deferred. Report-only, and a divergence is not automatically a bug'),
+    'ai_action_approval_audit.py': ('CHECKER',
+        'an AI-PROPOSED action that reaches storage with no human approval -- '
+        'the mechanical half of a rule that is currently only written down. '
+        'Measured 2026-09-15: 74 AI call sites across all 17 apps, 39 gated BY '
+        'CONSTRUCTION (render-only), 14 that write in the same handler, and '
+        'ZERO carrying an explicit approval gate. A LOCATOR, not a detector: a '
+        'chat-transcript write reads the same as an invoice write, and a '
+        'confirm() one function away reads as absent. Its first real run was '
+        'WRONG TWICE and both are recorded in its header -- it missed ten apps '
+        'that hold the proxy URL in a constant, and it counted the AI call\'s '
+        'own POST as a data write, inflating the headline from 14 to 59'),
     'accepted_risk_expiry_audit.py': ('CHECKER',
         'an accepted risk whose EXPIRY CONDITION cannot fire -- no trigger '
         'stated, or a trigger no tool evaluates, or a tool nothing invokes. '

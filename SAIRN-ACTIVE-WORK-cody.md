@@ -4756,3 +4756,58 @@ it is how a wrong blast-radius number gets published.
 Items 2 (three recombination passes), 3 (item 78 FPV), 4 (AI-proposes /
 human-approves enforcement sweep), 5 (triage-plan staleness tool). Not attempted
 rather than attempted badly.
+
+---
+
+## 2026-09-15 (later still) — the AI-approval sweep, and a scanner that was wrong twice before it was right
+
+### Item 1 — `tools/ai_action_approval_audit.py`
+
+**74 AI call sites across all 17 app files. 39 gated BY CONSTRUCTION
+(render-only — the save is a separate click). 14 that write in the same handler
+that received the model's answer. ZERO carrying an explicit approval gate.**
+
+The zero is the headline and it is not the same as "14 defects". Most of what is
+enforced here is enforced *structurally* — the answer goes to the DOM or a form
+field and a person clicks save — which is a real control. What does not exist
+anywhere on this platform is an explicit `confirm`/`approvedBy`/
+`requireApproval` step inside an AI handler.
+
+The 14 write through `sdData(`, `grdData(`, `st(`, `saveSD3Data(`,
+`saveAndRender(` — real writes, not the model call. Whether each is a chat
+transcript or a proposed business action needs a human read, which is what the
+tool says it is for.
+
+**IT WAS WRONG TWICE BEFORE IT WAS RIGHT, and both are recorded in its header
+rather than quietly fixed:**
+
+1. **Coverage.** The first pattern matched the literal `api/claude` and the named
+   wrappers: 38 sites across **7** apps, while 17 app files mention AI. The
+   missing ten hold the URL in a constant (`var PROXY='…/api/claude'`). A
+   scanner reading one spelling reports a clean sweep over every app using the
+   other — and it would have read as *"ten apps have no AI writes"* rather than
+   *"this tool cannot see ten apps."*
+2. **The AI call is itself a POST.** `method:'POST'` matched anywhere in the body
+   counted as a data write, so **every** AI handler counted as writing and the
+   headline read **59**. Caught by spot-checking three findings — `sdInvAI`,
+   `commsAIReply`, `invSmartReorder` — whose only POST *was* the model call.
+   Wrong in the direction that manufactures alarm, which is how a locator gets
+   ignored. Real figure: **14**.
+
+**And a third, which is a defect this codebase already documents and I committed
+anyway:** the fix for (2) shipped with a **literal backspace byte** where `\b`
+should have been, so the regex could never match and the fix silently did
+nothing. Written through a shell heredoc that ate the escape — twice in a row,
+including in the attempt to fix it. **The selftest caught it; reading the source
+did not, on either pass.** Repaired from a real file rather than a heredoc.
+
+Nine fixtures, both directions, locked before any real number was believed.
+
+### Items 2–4 — NOT STARTED, and deliberately so
+
+The SOC 2 readiness mapping, the NIST SP 800-61 incident-response plan, and the
+SAIRNlaw privacy scoping. Each is a substantial document and **a half-written
+compliance artefact is worse than none** — it reads as coverage to exactly the
+reader who most needs it not to. Same reasoning as refusing to print a poster
+with a blank square where the QR should be. Not attempted rather than attempted
+badly.
