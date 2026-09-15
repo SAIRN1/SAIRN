@@ -302,6 +302,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Gate 4 on the paywall &mdash; and my own stated reason for one of its guards was wrong** | **BUILT 2026-09-15 (Hank)** &mdash; `88ae704f`. `tests/sairncash_entitlement_fault_probe.py`, 5 arms + 2 controls. Suite 14 &rarr; 15 | `tests/sairncash_entitlement_fault_probe.py` |
 | **A LIVE BYPASS: one devtools line opened the paid product, against a function whose own comment says it closes exactly that** | **FIXED 2026-09-15 (Hank)** &mdash; `fd9f0a2c`. `tests/sairncash_entitlement_gate.js` 14 arms, NEW. Measured both ways: **13/1 at origin/main, 14/0 now** | `tests/sairncash_entitlement_gate.js` |
 | **Gate 4 on the app that takes money &mdash; and the webhook HTTP handler had never been invoked by anything** | **BUILT 2026-09-15 (Hank)** &mdash; `497bbf24`, corrected by `3afe8fbd`. `tests/sairncash_fault_probe.py`, 8 mutation arms + 3 controls. **The `fault` column stays 0 and is RIGHT to** &mdash; see next | `tests/sairncash_fault_probe.py` |
 
@@ -433,7 +434,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**225 of 436 test files are traced to a stated requirement. 211 are not.**
+**226 of 436 test files are traced to a stated requirement. 210 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -626,7 +627,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-med-schedule.js`
 - `tests/sairncare/test-op-audit.js`
 - `tests/sairncare/test-payer-routing.js`
-- `tests/sairncash_entitlement_fault_probe.py`
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`
 - `tests/sairndental_unlinked_referral_queue.js`
@@ -669,7 +669,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 436   tests/**, api/*.test.js
-  open-work rows citing a test       214   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       215   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                46   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     34   report_only_checks.NOT_PROMOTED
