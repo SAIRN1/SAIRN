@@ -595,9 +595,40 @@ function isSubscribed() {
 // pure isSubscribed() check (client-only, no server round-trip) can't
 // close on its own. Falls back to the last known real expiresAt only on
 // a network failure, never on an actual server rejection.
+// ── THE NO-IDENTITY PATH WAS THE HOLE THIS FUNCTION EXISTS TO CLOSE ───────
+// Fixed 2026-09-15. This read `if (!s || !s.subscriptionId) return
+// isSubscribed();` -- so a record that simply OMITS subscriptionId never
+// reached the server at all and fell through to the pure client-side check.
+// One line in devtools:
+//     localStorage.sairncash_sub = '{"valid":true,"expiresAt":"2030-01-01"}'
+// opened the paid product, with ZERO network calls, against a function whose
+// own comment above says it closes exactly that gap. Found by
+// tests/sairncash_entitlement_gate.js, which was written RED against this.
+//
+// THE SIBLING THREE HUNDRED LINES BELOW ALREADY GOT THIS RIGHT, and the two
+// disagreeing is what makes it a defect rather than a design choice:
+// reverifyTrial() opens with `if (!t || !t.trialToken) return false;` -- no
+// server-checkable identity, no access.
+//
+// AND THERE IS NO THIRD OPTION, which is worth stating because it looks like
+// there should be. A forged record can carry any marker we agree to look for,
+// so "was this genuinely saved by us" is not a question the client can ask.
+// Refusing everything unverifiable and accepting everything forged are the
+// only two reachable states; this picks the first.
+//
+// THE COST, STATED RATHER THAN DISCOVERED LATER: a stored record from before
+// verify.js returned subscriptionId would now hit the paywall. Both of its
+// response paths return `subscriptionId` today (api/sairncash/verify.js:88 for
+// the checkout session, :123 for the direct lookup), so this affects nothing
+// currently reachable -- and the unverifiable record is REMOVED rather than
+// left to be believed by the next offline load.
 async function reverifySubscription() {
   const s = getSub();
-  if (!s || !s.subscriptionId) return isSubscribed();
+  if (!s) return false;
+  if (!s.subscriptionId) {
+    try { localStorage.removeItem('sairncash_sub'); } catch (e) {}
+    return false;
+  }
   try {
     const res = await fetch('/api/sairncash/verify', {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({subscriptionId: s.subscriptionId})});
     const data = await res.json();

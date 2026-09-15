@@ -421,7 +421,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**219 of 425 test files are traced to a stated requirement. 206 are not.**
+**219 of 426 test files are traced to a stated requirement. 207 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -610,6 +610,7 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/sairncare/test-med-schedule.js`
 - `tests/sairncare/test-op-audit.js`
 - `tests/sairncare/test-payer-routing.js`
+- `tests/sairncash_entitlement_gate.js`
 - `tests/sairndental_outbound_queue.js`
 - `tests/sairndental_settings_patch.js`
 - `tests/sairndental_unlinked_referral_queue.js`
@@ -651,7 +652,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 425   tests/**, api/*.test.js
+  test files on disk                 426   tests/**, api/*.test.js
   open-work rows citing a test       204   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
