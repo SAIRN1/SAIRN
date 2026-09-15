@@ -1312,8 +1312,8 @@
       "task": "sairncode tier a write gate push and live probe rerun",
       "claimed_at": "2026-09-15T10:33:06Z",
       "claimed_at_epoch": 1789468386.5508723,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T10:42:56Z"
     }
   ]
 }
