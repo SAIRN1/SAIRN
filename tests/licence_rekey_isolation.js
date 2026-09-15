@@ -189,14 +189,65 @@ test('it is called BEFORE the key is stored, not after', () => {
 // ── THE FIRST-RUN RULE ─────────────────────────────────────────────────────
 section('first run adopts, and never wipes on a guess');
 
-test('no fingerprint yet -> adopt, delete nothing', () => {
-  // An existing install has no fingerprint and there is no way to know which
-  // licence its data belongs to. Wiping on that guess is the worse error.
-  const c = load('sairndental.html', { local: { dnt_patients: '[1,2,3]', dnt_license_key: 'DNT-A' } });
-  assert.strictEqual(c.guard('DNT-A-2026'), true);
-  assert.strictEqual(c.__local.dnt_patients, '[1,2,3]');
-  assert.ok(c.__local[c.FPKEY], 'the fingerprint was not recorded');
-  assert.strictEqual(c.__prompts.length, 0, 'it asked the user something on first run');
+// ── RUN PER APP, NOT ON ONE OF THEM (2026-09-15) ─────────────────────────
+// These three decision-path tests -- first-run adopt, cancel-means-no-wipe and
+// fail-closed -- were each written against `sairndental.html` ALONE, while the
+// "a re-key wipes this app and nothing else" test below already looped over
+// every app. So twelve of the thirteen guards had their WIPE DECISION executed
+// by nothing.
+//
+// Found by tests/sairnscape_fault_probe.py: breaking SAIRNscape's first-run
+// adopt, its cancel refusal and its fail-closed scope check each left this
+// whole file GREEN. The thirteen copies are byte-identical today, which is
+// exactly why this was invisible -- and byte-identical is not the same fact as
+// covered. A second copy is not a second opinion; it is a second place the
+// behaviour can change with nothing watching.
+//
+// The foreign key is `sd_jobs` throughout: StoneDesk carries no guard (it is
+// in NO_GUARD), so that key is foreign to all thirteen and to none of them
+// ambiguously.
+Object.keys(APPS).forEach(function (file) {
+  const pfx = APPS[file];
+  const P = pfx.replace(/_$/, '').toUpperCase();
+
+  test(file + ': no fingerprint yet -> adopt, delete nothing', () => {
+    // An existing install has no fingerprint and there is no way to know which
+    // licence its data belongs to. Wiping on that guess is the worse error.
+    const c = load(file, { local: { [pfx + 'patients']: '[1,2,3]', [pfx + 'license_key']: 'A' } });
+    assert.strictEqual(c.guard('KEY-A-2026'), true);
+    assert.strictEqual(c.__local[pfx + 'patients'], '[1,2,3]',
+      'it wiped an existing install on a guess');
+    assert.ok(c.__local[c.FPKEY], 'the fingerprint was not recorded');
+    assert.strictEqual(c.__prompts.length, 0, 'it asked the user something on first run');
+  });
+
+  test(file + ': CANCEL means nothing is deleted and the key is refused', () => {
+    const c = load(file, {
+      confirm: false,
+      local: { [pfx + 'patients']: '[1,2]', sd_jobs: '[9]' }
+    });
+    c.guard('KEY-A-2026');
+    const before = Object.keys(c.__local).length;
+    assert.strictEqual(c.guard('KEY-B-2026'), false,
+      'a cancelled re-key was allowed through');
+    assert.strictEqual(Object.keys(c.__local).length, before,
+      'something was deleted after the user said no');
+    assert.strictEqual(c.__local[pfx + 'patients'], '[1,2]');
+    assert.strictEqual(c.__local[c.FPKEY], c.fp('KEY-A-2026'),
+      'the fingerprint moved to the licence that was refused');
+  });
+
+  test(file + ': a failed scope assertion refuses BOTH the wipe and the entry', () => {
+    const c = load(file, { local: { [pfx + 'patients']: '[1]', sd_jobs: '[2]' } });
+    c.guard('KEY-A');
+    c[P + '_SCOPE_OK'] = false;       // simulate a widened prefix
+    assert.strictEqual(c.guard('KEY-B'), false,
+      'it let the new licence in with a broken scope check');
+    assert.strictEqual(c.__local[pfx + 'patients'], '[1]',
+      'it wiped with a broken scope check');
+    assert.strictEqual(c.__local.sd_jobs, '[2]');
+    assert.ok(c.__prompts.some((x) => x.kind === 'alert'), 'it failed closed silently');
+  });
 });
 
 test('the same key twice -> no prompt, no wipe', () => {
@@ -280,7 +331,11 @@ test('the user is ASKED, and told what will be removed', () => {
   assert.match(ask.m, /Local-only records are gone for good/i);
 });
 
-test('CANCEL means nothing is deleted and the key is refused', () => {
+// KEPT as well as the per-app loop above, and deliberately: this one runs
+// through rekeyFixture(), which seeds OTHER apps' keys alongside this app's,
+// so it asserts the cancel path over a realistic mixed store rather than the
+// two-key one the loop uses. Different fixture, same rule.
+test('CANCEL means nothing is deleted and the key is refused (mixed store)', () => {
   const { c, ok, before } = rekeyFixture('sairndental.html', false);
   assert.strictEqual(ok, false, 'a cancelled re-key was allowed through');
   assert.strictEqual(Object.keys(c.__local).length, before, 'something was deleted anyway');
@@ -291,19 +346,6 @@ test('CANCEL means nothing is deleted and the key is refused', () => {
 
 // ── FAIL CLOSED ────────────────────────────────────────────────────────────
 section('when the safety check itself is broken');
-
-test('a failed scope assertion refuses BOTH the wipe and the entry', () => {
-  const c = load('sairndental.html', {
-    local: { dnt_patients: '[1]', sd_jobs: '[2]' }
-  });
-  c.guard('KEY-A');
-  c.DNT_SCOPE_OK = false;            // simulate a widened prefix
-  const ok = c.guard('KEY-B');
-  assert.strictEqual(ok, false, 'it let the new licence in with a broken scope check');
-  assert.strictEqual(c.__local.dnt_patients, '[1]', 'it wiped with a broken scope check');
-  assert.strictEqual(c.__local.sd_jobs, '[2]');
-  assert.ok(c.__prompts.some((x) => x.kind === 'alert'), 'it failed closed silently');
-});
 
 test('the scope assertion is TRUE in every shipped app', () => {
   Object.keys(APPS).forEach((f) => {
