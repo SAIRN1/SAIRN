@@ -517,6 +517,7 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
     started = time.time()
     reached = []
     unrunnable = []
+    budget_starved = []
     for t in tools:
         # A BUDGET THAT STOPS CLEANLY, because the alternative is being KILLED,
         # and a killed pass prints nothing at all -- so the run that covered a
@@ -534,9 +535,30 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
             # digest -- see interpreter_for().
             unrunnable.append(t)
             continue
-        reached.append(t)
         e = led['checkers'].setdefault(t, {'observations': []})
-        for _ in range(runs):
+        # ── A CHECKER THAT TIMES OUT EATS THE WHOLE BUDGET (found 2026-09-15) ─
+        # MEASURED, not predicted: a 1200-second pass advanced EXACTLY ZERO
+        # checkers. metamorphic_check.py times out at 180s on every run, so six
+        # runs is 1080 seconds -- the entire budget, spent re-confirming the one
+        # thing already known about it, while every other checker got nothing.
+        #
+        # The weakest-evidence-first ordering made this WORSE rather than
+        # better: an unrunnable checker never accumulates a usable verdict, so
+        # it stays weakest for ever and sorts first for ever. Item 22 fixed a
+        # starving TAIL and created a starving HEAD.
+        #
+        # It is not skipped silently and not skipped permanently: one run still
+        # happens, so a checker that starts working is noticed on the next pass,
+        # and main() names what it did. Re-confirming a timeout five more times
+        # is what costs the fleet its measurement window.
+        prior, _basis = observations_at(e, th)
+        known_dead = (len(prior) >= runs
+                      and all(o.get('err') for o in prior[-runs:]))
+        this_runs = 1 if known_dead else runs
+        if known_dead:
+            budget_starved.append(t)
+        reached.append(t)
+        for _ in range(this_runs):
             err = False
             try:
                 r = subprocess.run(argv + [p], capture_output=True, text=True,
@@ -587,7 +609,7 @@ def measure(led, runs=RUNS_PER_MEASURE, budget=None):
         # evidence this repo will never actually gather -- the sessions here get
         # interrupted constantly. A partial pass now contributes what it managed.
         save_ledger(led)
-    return reached, tools, unrunnable
+    return reached, tools, unrunnable, budget_starved
 
 
 def main(argv):
@@ -620,7 +642,14 @@ def main(argv):
         if '--budget-seconds' in argv:
             i = argv.index('--budget-seconds')
             budget = max(1, int(argv[i + 1])) if i + 1 < len(argv) else None
-        reached, tools, unrunnable = measure(led, runs, budget)
+        reached, tools, unrunnable, budget_starved = measure(led, runs, budget)
+        if budget_starved:
+            # NAMED, because the alternative is a pass that looks thin for no
+            # visible reason. These are checkers whose last full round was ALL
+            # errors, so this pass gave them ONE run instead of N rather than
+            # spending the window re-confirming a timeout.
+            print('  ONE RUN ONLY, last round was all errors (not skipped, not '
+                  'forgotten): ' + ', '.join(sorted(budget_starved)))
         save_ledger(led)
         print('  measured %d of %d registered checker(s), %d run(s) each, tree %s'
               % (len(reached), len(tools), runs, tree_hash()))

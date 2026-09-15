@@ -217,12 +217,16 @@ try:
     # measure() returns a THIRD value since 2026-09-14: the registered
     # checkers this runner cannot execute at all. Unpacked rather than
     # starred, so the next signature change breaks here loudly too.
-    reached, tools, unrunnable = Q.measure(l7, runs=1, budget=0)
+    # FOURTH RETURN VALUE ADDED 2026-09-15: checkers given ONE run instead of N
+    # because their last full round was all errors. Measured cause -- a
+    # 1200-second pass advanced EXACTLY ZERO checkers, because
+    # metamorphic_check.py times out at 180s and six runs of it IS the budget.
+    reached, tools, unrunnable, starved = Q.measure(l7, runs=1, budget=0)
     check('7h  a budget of zero REACHES NOTHING and says so, rather than being '
           'killed mid-pass with no output at all',
           reached == [] and len(tools) == 2, (reached, tools))
     l8 = Q.load_ledger()
-    reached2, tools2, unrunnable2 = Q.measure(l8, runs=1, budget=None)
+    reached2, tools2, unrunnable2, _starved = Q.measure(l8, runs=1, budget=None)
     check('7i  CONTROL: with no budget the same two ARE measured -- 7g would '
           'otherwise pass on a measure() that never runs anything',
           sorted(reached2) == sorted(tools2) and len(reached2) == 2, reached2)
@@ -258,6 +262,30 @@ finally:
 check('8d  a tool whose samples predate capture SAYS SO rather than printing '
       'nothing, which would read as "no difference"',
       'NO VERDICT TEXT IS ON FILE' in code)
+
+# ── THE STARVATION GUARD (2026-09-15) ──────────────────────────────────────
+# MEASURED CAUSE, not a predicted one: a 1200-second measurement pass advanced
+# EXACTLY ZERO checkers. metamorphic_check.py times out at 180s on every run,
+# six runs is 1080 seconds, and weakest-evidence-first sorted it FIRST because a
+# checker that never produces a usable verdict stays weakest for ever. Item 22
+# fixed a starving TAIL and created a starving HEAD.
+_SRC = io.open(os.path.join(REPO, 'tools', 'flaky_checker_quarantine.py'),
+               encoding='utf-8').read()
+ALL_ERR = {'observations': [{'digest': 'x', 'tree': 'T', 'err': True}] * 6}
+SOME_OK = {'observations': [{'digest': 'a', 'tree': 'T', 'err': False}] * 5
+           + [{'digest': 'x', 'tree': 'T', 'err': True}]}
+check('a checker whose last full round was ALL errors is recognised',
+      all(o.get('err') for o in Q.observations_at(ALL_ERR, 'T')[0][-6:]))
+check('CONTROL: one good run in the round means it is NOT starved -- the guard '
+      'must not throttle a checker that sometimes works',
+      not all(o.get('err') for o in Q.observations_at(SOME_OK, 'T')[0][-6:]))
+check('CONTROL: a checker with NO history still gets its full first round',
+      len(Q.observations_at({'observations': []}, 'T')[0]) == 0)
+check('it is ONE RUN, not zero -- a checker that starts working is noticed on '
+      'the next pass rather than written off',
+      '1 if known_dead else runs' in _SRC)
+check('and the pass NAMES what it throttled, so a thin pass is not mysterious',
+      'ONE RUN ONLY, last round was all errors' in _SRC)
 
 print('\n%d arm(s) failed' % len(failures))
 for f in failures:
