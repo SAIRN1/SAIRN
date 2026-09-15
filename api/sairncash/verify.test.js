@@ -106,7 +106,25 @@ async function main() {
     const res = mockRes();
     await freshVerify()(post({ sessionId: 'cs_test_a1' }), res);
     assert.strictEqual(res.statusCode, 500);
-    assert.strictEqual(res.body.error, 'Not configured');
+    // ASSERTED AGAINST THE MODULE'S CONSTANT, NOT A LITERAL (2026-09-15).
+    // This line read `'Not configured'` and had been RED since 3b115e8a, the
+    // item-94 change that made api/_lib/stripe-config.js the one owner of "is
+    // Stripe configured" and moved the wording to CLIENT_MESSAGE. A copy of a
+    // string another module owns is exactly what that refactor existed to
+    // remove, so re-typing the NEW wording here would reintroduce the same
+    // defect with a fresher value. Importing it means the next rewording
+    // cannot make this stale.
+    const CLIENT_MESSAGE = require('../_lib/stripe-config').CLIENT_MESSAGE;
+    assert.strictEqual(res.body.error, CLIENT_MESSAGE);
+    // ...and the constant is not VACUOUSLY satisfiable. Asserting a value
+    // against the module that produced it would pass if that module started
+    // returning an empty string, so the two properties the message has to
+    // keep are asserted directly: it says something, and it never names the
+    // variable whose absence caused it.
+    assert.ok(CLIENT_MESSAGE && CLIENT_MESSAGE.length > 10,
+      'the client message is empty or near-empty: ' + JSON.stringify(CLIENT_MESSAGE));
+    assert.doesNotMatch(String(res.body.error), /STRIPE_SECRET_KEY|sk_/,
+      'the refusal names the missing secret to an unauthenticated caller');
   });
 
   process.env.STRIPE_SECRET_KEY = 'sk_test_fixture_not_a_real_key';

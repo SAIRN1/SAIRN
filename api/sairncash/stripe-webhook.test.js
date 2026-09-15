@@ -164,5 +164,85 @@ assert.strictEqual(hook.HANDLED.length, 5);
   await hook.handleEvent(ev('invoice.payment_failed', {}, 'evt_102', 3000));
   assert.strictEqual(writes.length, 0, 'an event with no customer writes nothing anywhere');
 
+  // ── THE HANDLER ITSELF, WHICH NOTHING ABOVE EVER INVOKED ─────────────────
+  // Added 2026-09-15 after tests/sairncash_fault_probe.py replaced
+  // `stripe.webhooks.constructEvent(...)` in the ENDPOINT with a bare
+  // `JSON.parse(rawBody)` and this file stayed GREEN.
+  //
+  // THE CAUSE IS NOT A MISSING IDEA -- the signature section at the top of this
+  // file is thorough. It calls `stripe.webhooks.constructEvent` DIRECTLY, from
+  // its own local `construct()` helper, and proves that Stripe's library
+  // rejects a forged signature. That was never in doubt. What it cannot prove
+  // is that OUR HANDLER CALLS IT, and the header's claim that this is "the same
+  // call the endpoint makes" is an assertion of equivalence by narration rather
+  // than by execution.
+  //
+  // Nothing above this line ever invoked `module.exports`. So the whole request
+  // path -- method check, config check, body read, signature verification, the
+  // 400 -- was untested, on the one endpoint whose ONLY authentication IS the
+  // signature. Anybody who knew the URL could have POSTed a subscription event.
+  function reqFor(raw, sigHeader, method) {
+    const listeners = {};
+    return {
+      method: method || 'POST',
+      headers: sigHeader === undefined ? {} : { 'stripe-signature': sigHeader },
+      on: function (ev2, fn) {
+        listeners[ev2] = fn;
+        if (ev2 === 'error') {
+          // Emit once both handlers are attached, so the promise settles.
+          process.nextTick(function () {
+            if (listeners.data) listeners.data(raw);
+            if (listeners.end) listeners.end();
+          });
+        }
+        return this;
+      }
+    };
+  }
+  function resFor() {
+    const out = { statusCode: null, body: null };
+    out.status = function (c) { out.statusCode = c; return out; };
+    out.json = function (b) { out.body = b; return out; };
+    return out;
+  }
+
+  process.env.SAIRNCASH_STRIPE_WEBHOOK_SECRET = SECRET;
+  process.env.STRIPE_SECRET_KEY = 'sk_test_dummy_never_used_for_a_signature_check';
+
+  const liveBody = JSON.stringify(
+    ev('customer.subscription.updated',
+       { id: 'sub_live', customer: 'cus_live', status: 'active' }, 'evt_live', 9000));
+
+  // A correctly signed request reaches the mirror.
+  writes.length = 0;
+  let r = resFor();
+  await hook(reqFor(liveBody, sign(liveBody, SECRET)), r);
+  assert.strictEqual(r.statusCode, 200, 'a correctly signed event was refused: '
+    + JSON.stringify(r.body));
+  assert.ok(writes.some(w => w.path === 'sairncash/customers/cus_live/billing'),
+    'a verified event did not reach the mirror, so the arms below could pass '
+    + 'for the wrong reason');
+
+  // THE ONE THAT MATTERS. Signed with a DIFFERENT secret -- which is what a
+  // forged request from anybody who knows the URL looks like.
+  writes.length = 0;
+  r = resFor();
+  await hook(reqFor(liveBody, sign(liveBody, 'whsec_' + 'y'.repeat(32))), r);
+  assert.strictEqual(r.statusCode, 400,
+    'a payload signed with the WRONG secret was accepted by the endpoint');
+  assert.strictEqual(writes.length, 0, 'a forged event wrote to the mirror');
+
+  // No signature header at all.
+  writes.length = 0;
+  r = resFor();
+  await hook(reqFor(liveBody, undefined), r);
+  assert.strictEqual(r.statusCode, 400, 'an unsigned payload was accepted');
+  assert.strictEqual(writes.length, 0, 'an unsigned event wrote to the mirror');
+
+  // And the method gate, which was equally unexercised.
+  r = resFor();
+  await hook(reqFor(liveBody, sign(liveBody, SECRET), 'GET'), r);
+  assert.strictEqual(r.statusCode, 405, 'a non-POST reached the webhook body');
+
   console.log('api/sairncash/stripe-webhook.test.js: all assertions passed');
 })();
