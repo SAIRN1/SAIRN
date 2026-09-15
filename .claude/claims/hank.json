@@ -1843,8 +1843,8 @@
       "task": "drawing tool inside corner radius chamfer sink vendor plumbing",
       "claimed_at": "2026-09-15T14:42:26Z",
       "claimed_at_epoch": 1789483346.6666896,
-      "status": "active",
-      "released_at": null
+      "status": "released",
+      "released_at": "2026-09-15T15:18:49Z"
     }
   ]
 }
