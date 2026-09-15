@@ -1745,6 +1745,16 @@
       "claimed_at_epoch": 1789471465.0468721,
       "status": "released",
       "released_at": "2026-09-15T11:40:45Z"
+    },
+    {
+      "id": "hank-1789472720",
+      "session": "hank",
+      "subject": "platform-fixes",
+      "task": "stripe apiversion nightly backup node version semgrep unicode",
+      "claimed_at": "2026-09-15T11:45:20Z",
+      "claimed_at_epoch": 1789472720.2445538,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
