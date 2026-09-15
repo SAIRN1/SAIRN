@@ -135,6 +135,8 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
+| **The Tier A gate refused the artefact that discharges its own obligation &mdash; second instance** | **FIXED 2026-09-15 (Hank)** &mdash; `34ed0649`. `is_report_only_artefact()` + 9 arms in `tests/run_tier_a_review_gate_probe.py` | `tests/dnt_rollup_review_probe.js`, `tests/run_tier_a_review_gate_probe.py` |
 | **The list-drift sweep: 12 candidates, ONE real defect &mdash; and it was inside the probe built to catch this exact shape** | **SWEPT 2026-09-15 (CC)** &mdash; `tools/pinned_list_drift_check.py` (report-only, NOT_PROMOTED), `tests/run_pinned_list_drift_probe.py` all arms pass, triage written up in `docs/2026-09-15-pinned-lis | `tests/phi_cache_scoped_to_user.js`, `tests/run_pinned_list_drift_probe.py` |
 | **The independent-review rule on Tier A code was real and enforced by nothing but remembering &mdash; it is push-gate check 13 now** | **BUILT 2026-09-15 (CC)**, BLOCKING &mdash; `tools/tier_a_review_gate.py`, `docs/tier-a-reviews.json`, check 13 in `tools/sairn_push_gate_hook.py`; `tests/run_tier_a_review_gate_probe.py` all arms pas | `tests/run_tier_a_review_gate_probe.py` |
 | **The `fault` column can read 0 for an app whose risk lives in `api/` rather than in its `.html`** | **MEASURED 2026-09-15 (Hank)**, nothing changed. `tools/master_plan.py` is being accurate; the READING of it is what misleads | `tests/sairncash_fault_probe.py` |
@@ -405,6 +407,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 | Requirement | Status | Proved by |
 |---|---|---|
+| **Carolyn&rsquo;s drawing-tool requirements &mdash; and half the premise was wrong, which is stated before anything was built** | **BUILT 2026-09-15 (Hank)** &mdash; `9bc2dd2b`. `tests/stonedesk_inside_corner_radius.js` 14 arms + `tests/stonedesk_fixture_catalog.js` 15 arms | `tests/stonedesk_fixture_catalog.js`, `tests/stonedesk_inside_corner_radius.js` |
 | **`tests/stonedesk_server_backup.js` is RED on origin/main right now, and the arm that is red is the one written to stop exactly this** | **FOUND 2026-09-15 (Fourth) &mdash; NOT FIXED, item 97 is CC&rsquo;s active claim** | `tests/stonedesk_server_backup.js` |
 | **The competitive-gap STATUS doc is stale in exactly the way it was written to prevent &mdash; #5 is BUILT, and there is no un-gated item left in it** | **RE-VERIFIED 2026-09-14 (Cody)** &mdash; correction appended to `docs/2026-09-02-competitive-gap-status-rederived.md` | `api/sd-data-approvals.test.js` |
 | **The three-way match is now CONSTRUCTIBLE &mdash; a real PO sequence, a join key on both other legs, and a silent wrong due date found on the way** | **BUILT 2026-09-14 (CC)** &mdash; `stonedesk.html` + `tools/three_way_match_check.py`; held by `tests/stonedesk_po_sequence_and_join.js` (26 assertions) and `tests/run_three_way_match_probe.py` (29 ar | `tests/run_three_way_match_probe.py`, `tests/stonedesk_po_sequence_and_join.js` |
@@ -429,12 +432,11 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**222 of 432 test files are traced to a stated requirement. 210 are not.**
+**225 of 432 test files are traced to a stated requirement. 207 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
 - `api/_lib/accounting-connector.test.js`
-- `api/_lib/ai-rate-limit-tenant.test.js`
 - `api/_lib/ai-rate-limit.test.js`
 - `api/_lib/ai-usage.test.js`
 - `api/_lib/auth.test.js`
@@ -637,8 +639,6 @@ An untraced test is not a bad test. It means no source in this repo states what 
 - `tests/slab_reserve_client.js`
 - `tests/slab_scan_labels.js`
 - `tests/sql_preflight/constraint_probe.py`
-- `tests/stonedesk_fixture_catalog.js`
-- `tests/stonedesk_inside_corner_radius.js`
 - `tests/stonedesk_locations.js`
 - `tests/stonedesk_remake_causes.js`
 - `tests/style_profile_parity.js`
@@ -664,7 +664,7 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 ```
   app files                           22   git ls-files '*.html'
   test files on disk                 432   tests/**, api/*.test.js
-  open-work rows citing a test       211   docs\SAIRN-OPEN-WORK-INDEX.md
+  open-work rows citing a test       214   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
   report-only registry                45   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     34   report_only_checks.NOT_PROMOTED
