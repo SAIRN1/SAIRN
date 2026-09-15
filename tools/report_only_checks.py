@@ -1289,6 +1289,43 @@ REGISTRY = [
                     'exactly what happened when the four were fixed, and the table '
                     'was edited in the same commit as the apps. 26 arms. 0.2s',
     },
+    {
+        'tool': 'hover_separation_audit.py',
+        'mode': 'once',
+        'verdict': by_exit,
+        'promoted': '2026-09-15, report-only from the first day and it should '
+                    'never be anything else: it reports on a role that is not '
+                    'this clone, and a tool that could block a build agent\'s '
+                    'push over the hover auditor\'s behaviour would be '
+                    'punishing the wrong session. Its job is to be READ',
+        'catches': 'a commit by the hover auditor -- the fifth, review-only '
+                   'role -- that touches platform code, which its own skill '
+                   'forbids in terms; and the inverse, a build agent editing '
+                   'the auditor\'s own tooling. Cross-checks git history '
+                   'against the auditor\'s hash-chained self-log, and '
+                   'RE-DERIVES that chain independently rather than calling '
+                   'the log\'s own --verify',
+        'why_it_matters': 'the auditor is the only role here with no second '
+                          'reader -- the four build agents review each other '
+                          'and nobody reviews the auditor -- which is the '
+                          'exact condition its own skill cites Barings and '
+                          'Arthur Andersen for. It is also the DETECT half of '
+                          'a two-layer control whose PREVENT half '
+                          '(tools/hover_auditor_scope_gate.py) lives in a '
+                          'per-clone marker under .git/ and can therefore go '
+                          'missing in a fresh clone with nothing announcing '
+                          'it. THIS is the layer that would notice. IT '
+                          'CANNOT PROVE THE NEGATIVE and says so in its own '
+                          'output: all five roles commit through ONE git '
+                          'identity, attribution is derived from co-changed '
+                          'bookkeeping files, and a commit where the auditor '
+                          'DID write platform code would land in the '
+                          'unattributed 64%. Exit 2 is could-not-run and is '
+                          'never folded into clean. 72-arm probe at '
+                          'tests/run_hover_separation_probe.py, including the '
+                          'chain verifier shown to FAIL on a tampered entry '
+                          'and pass again on the restored one',
+    },
 ]
 
 # ── DELIBERATELY NOT PROMOTED, AND WHY ──────────────────────────────────────

@@ -1,0 +1,484 @@
+#!/usr/bin/env python
+"""tools/hover_separation_audit.py -- the audit trail for the hover auditor's
+separation, built from real history rather than from anybody's account of it.
+
+THE QUESTION: has the fifth role -- which audits the four build agents and is
+itself reviewed by nobody -- ever written platform code? Its skill file forbids
+it in terms ("Never write, edit, or push platform code"). This asks the
+repository and the auditor's own black-box whether that held.
+
+WHY THE OBVIOUS METHOD DOES NOT WORK, MEASURED FIRST RATHER THAN DISCOVERED
+HALFWAY THROUGH. `git log --format=%an` is useless here: all five roles commit
+through ONE git identity (`Michael Dibert <mikied68@gmail.com>`, verified
+across the whole history by this tool's own `--authors` output). There is no
+author field to group by. Attribution has to be DERIVED, and derived
+attribution is incomplete by construction, so the incomplete fraction is
+printed at the top of the report instead of at the bottom.
+
+THE THREE SIGNALS, in the order they are trusted:
+
+  1. A commit touching `.claude/claims/<session>.json` or
+     `SAIRN-ACTIVE-WORK-<session>.md` is that session's. These are per-clone
+     bookkeeping files no other session writes.
+  2. A commit touching ONLY paths inside the auditor's own scope is the
+     auditor's.
+  3. Everything else is UNATTRIBUTED -- and that word is load-bearing. It does
+     NOT mean "a build agent's".
+
+AND THE LIMIT THAT MATTERS MOST, STATED BEFORE ANY RESULT: signal 2 IS
+CIRCULAR FOR THE VERY QUESTION BEING ASKED. A commit in which the auditor
+touched platform code would, by construction, fail the "only its own scope"
+test and land in UNATTRIBUTED. **Git alone cannot prove the negative.** It can
+only show that the auditor's KNOWN commits are clean, which is a weaker claim
+and is reported as one.
+
+WHAT CLOSES THAT GAP IS A STRUCTURALLY DIFFERENT SOURCE -- the auditor's own
+hash-chained self-log, which records what it did entry by entry including the
+SHAs it committed. Two independent records that agree are worth more than one
+that cannot be cross-examined; that is the same reason this platform requires
+a structurally different method for independence. The chain is VERIFIED before
+any of it is believed, and if it does not verify, this tool refuses rather
+than reporting from a record somebody could have edited.
+
+    python tools/hover_separation_audit.py              # the report
+    python tools/hover_separation_audit.py --trail      # per-commit audit trail
+    python tools/hover_separation_audit.py --authors    # prove the one-identity claim
+    python tools/hover_separation_audit.py --json
+
+EXIT CODES, because "found nothing" and "could not look" are different:
+    0  checked, no separation violation found
+    1  a violation was found
+    2  COULD NOT RUN some part of it -- never reported as clean
+"""
+
+import argparse
+import hashlib
+import io
+import json
+import os
+import re
+import subprocess
+import sys
+from collections import Counter, OrderedDict
+
+SESSIONS = ('hank', 'cc', 'cody', 'fourth')
+SKILL_DIR = '.claude/skills/sairn-hover-auditor/'
+REGISTER = 'docs/defect-density-register.json'
+
+# Kept identical in meaning to tools/hover_auditor_scope_gate.py's ALLOWED, and
+# the probe asserts the two agree. They are separate constants on purpose: the
+# gate must run with no imports in a hook, and a shared module that one of them
+# silently stopped importing is a failure mode neither would report.
+AUDITOR_SCOPE = (SKILL_DIR, REGISTER)
+
+# ── SCOPE AND SIGNATURE ARE NOT THE SAME SET, AND CONFLATING THEM WAS A REAL
+# BUG IN THE FIRST VERSION OF THIS FILE, caught by its own output before it
+# shipped. `docs/defect-density-register.json` is in SCOPE -- the auditor is
+# told to write findings there. It is NOT a SIGNATURE, because all four build
+# agents write it too via tools/defect_register.py --add. Using the scope set
+# for attribution credited every register-only commit on the platform to the
+# auditor and inflated its commit count from 20 to 46.
+#
+# The general shape is worth naming: "what this role MAY touch" and "what
+# identifies this role" are different questions, and the second must be
+# EXCLUSIVE to be worth anything. Only the skill directory is.
+AUDITOR_SIGNATURE = (SKILL_DIR,)
+
+GENESIS = 'genesis:hover-auditor-self-log:v1'
+
+CLAIM_RE = re.compile(r'^\.claude/claims/(\w+)\.json$')
+WORKLOG_RE = re.compile(r'^SAIRN-ACTIVE-WORK-(\w+)\.md$')
+OWN_COMMIT_RE = re.compile(r'(?:[Cc]ommitted|[Pp]ushed)\s+([0-9a-f]{7,40})')
+# "Committed <a>, pushed <b>" -- the auditor's own habit of recording BOTH the
+# local sha and the one that reached origin. It is the thing that turns most of
+# the unresolvable half below from an unknown into an explained gap, so the
+# pairing is MEASURED here rather than offered as an explanation.
+PAIR_RE = re.compile(r'[Cc]ommitted\s+([0-9a-f]{7,40})[,\s]+pushed\s+([0-9a-f]{7,40})')
+
+
+def git(*args):
+    r = subprocess.run(['git'] + list(args), capture_output=True, text=True,
+                       encoding='utf-8', errors='replace')
+    return r.returncode, r.stdout, r.stderr
+
+
+def _under(path, prefixes):
+    for p in prefixes:
+        if p.endswith('/'):
+            if path.startswith(p):
+                return True
+        elif path == p:
+            return True
+    return False
+
+
+def in_auditor_scope(path):
+    return _under(path, AUDITOR_SCOPE)
+
+
+def is_auditor_signature(path):
+    return _under(path, AUDITOR_SIGNATURE)
+
+
+def load_commits():
+    """Every commit with its file list. Returns (commits, error)."""
+    code, out, err = git('log', '--all', '--format=%x00%H%x00%at%x00%s',
+                         '--name-only')
+    if code != 0:
+        return None, 'git log failed: ' + err.strip()
+    commits, cur = [], None
+    for chunk in out.split('\x00'):
+        pass
+    # Parsed line-wise rather than by the NUL split above, because a commit
+    # SUBJECT may itself contain anything; the NUL prefix marks the header line
+    # unambiguously and the rest of that line is split only twice.
+    for line in out.split('\n'):
+        if line.startswith('\x00'):
+            parts = line[1:].split('\x00', 2)
+            if len(parts) < 3:
+                return None, 'unparseable log header: %r' % line[:80]
+            cur = {'sha': parts[0], 'ts': int(parts[1]), 'subject': parts[2],
+                   'files': []}
+            commits.append(cur)
+        elif line.strip() and cur is not None:
+            cur['files'].append(line.strip().replace('\\', '/'))
+    return commits, ''
+
+
+def attribute(commit):
+    """(who, how). `who` is a session name, 'hover', or None for unattributed."""
+    files = commit['files']
+    who = set()
+    for p in files:
+        m = CLAIM_RE.match(p)
+        if m and m.group(1) in SESSIONS:
+            who.add(m.group(1))
+        m = WORKLOG_RE.match(p)
+        if m and m.group(1) in SESSIONS:
+            who.add(m.group(1))
+    if len(who) == 1:
+        return who.pop(), 'bookkeeping'
+    if len(who) > 1:
+        return None, 'multiple-sessions'
+    if files and all(is_auditor_signature(p) for p in files):
+        return 'hover', 'signature-only'
+    return None, 'unattributed'
+
+
+# ── the auditor's own black box ─────────────────────────────────────────────
+
+def find_hover_log():
+    env = os.environ.get('SAIRN_HOVER_LOG')
+    if env:
+        return env if os.path.isfile(env) else None
+    base = os.path.join(os.path.expanduser('~'), '.claude', 'projects')
+    if not os.path.isdir(base):
+        return None
+    hits = []
+    for name in sorted(os.listdir(base)):
+        p = os.path.join(base, name, 'hover-audit-log', 'hover-audit-log.jsonl')
+        if os.path.isfile(p):
+            hits.append(p)
+    # More than one is NOT a case to pick a winner in: two black boxes for one
+    # role means somebody has a second copy and neither is authoritative.
+    return hits[0] if len(hits) == 1 else (hits or None)
+
+
+def _canonical(value):
+    """Recursive, sorted-key canonicalisation.
+
+    WRITTEN FROM THE RULE, NOT COPIED FROM hover_log.py. The point of a second
+    implementation is that it can DISAGREE; a paste of the first would agree
+    with it even when the first is wrong, which is the Ariane 5 lesson CLAUDE.md
+    already records -- a second copy is not a second opinion.
+    """
+    if value is None or isinstance(value, (str, int, float, bool)):
+        return json.dumps(value)
+    if isinstance(value, list):
+        return '[' + ','.join(_canonical(v) for v in value) + ']'
+    if isinstance(value, dict):
+        return '{' + ','.join(json.dumps(k) + ':' + _canonical(value[k])
+                              for k in sorted(value)) + '}'
+    raise TypeError('cannot canonicalise %r' % (value,))
+
+
+def _digest(prev_digest, entry_without_hash):
+    h = hashlib.sha256()
+    h.update((prev_digest + '\n').encode('utf-8'))
+    h.update((_canonical(entry_without_hash) + '\n').encode('utf-8'))
+    return h.hexdigest()
+
+
+def verify_chain(rows):
+    """Re-derive the hash chain. Returns (ok, reason, checked).
+
+    The auditor's own skill sets the standard this implements: "Before trusting
+    --verify on a fresh build of this tool, run the negative control ... A
+    verifier that has never been shown to fail is not yet a verifier." The
+    probe does exactly that to THIS function.
+
+    It recomputes the chain independently rather than calling hover_log.py
+    --verify, because a record and its own verifier share a failure: if the
+    tool's hashing is wrong, its verifier agrees with it. A second
+    implementation is the only thing that can disagree.
+    """
+    if not rows:
+        return False, 'the log is empty', 0
+    prev = GENESIS
+    for i, r in enumerate(rows):
+        if r.get('prev_hash') != prev:
+            return False, ('entry %d (seq %s) has prev_hash %r but the previous '
+                           'entry hashes to %r'
+                           % (i, r.get('seq'), str(r.get('prev_hash'))[:16], prev[:16])), i
+        body = {k: v for k, v in r.items() if k != 'hash'}
+        if _digest(prev, body) != r.get('hash'):
+            return False, ('entry %d (seq %s) does not hash to its stored value '
+                           '-- its content was changed after it was written'
+                           % (i, r.get('seq'))), i
+        prev = r['hash']
+    return True, '', len(rows)
+
+
+def read_hover_log():
+    """Returns (rows, path, problem). `problem` non-empty means COULD NOT RUN."""
+    path = find_hover_log()
+    if path is None:
+        return None, None, ('no hover auditor self-log found under '
+                            '~/.claude/projects/*/hover-audit-log/. Set '
+                            'SAIRN_HOVER_LOG to point at it. Its absence is '
+                            'not evidence of anything -- it lives outside this '
+                            'repository by design and a clone that is not the '
+                            'auditor\'s will not have one.')
+    if isinstance(path, list):
+        return None, None, ('MORE THAN ONE self-log found and none of them is '
+                            'authoritative:\n      ' + '\n      '.join(path))
+    try:
+        rows = [json.loads(l) for l in io.open(path, encoding='utf-8') if l.strip()]
+    except (OSError, ValueError) as exc:
+        return None, path, 'the self-log could not be read: %s' % exc
+    return rows, path, ''
+
+
+def main(argv=None):
+    ap = argparse.ArgumentParser(add_help=True)
+    ap.add_argument('--trail', action='store_true',
+                    help='print the per-commit audit trail, not just the summary')
+    ap.add_argument('--authors', action='store_true',
+                    help='print every distinct git author, to prove the one-identity claim')
+    ap.add_argument('--json', action='store_true')
+    args = ap.parse_args(argv)
+
+    could_not_run = []
+    violations = []
+
+    if args.authors:
+        code, out, err = git('log', '--all', '--format=%an <%ae>')
+        if code != 0:
+            print('COULD NOT RUN: ' + err.strip())
+            return 2
+        c = Counter(l for l in out.split('\n') if l.strip())
+        print('Distinct git authors across all history:')
+        for a, n in c.most_common():
+            print('  %6d  %s' % (n, a))
+        print('')
+        print('ONE identity for five roles is why attribution in this tool is')
+        print('derived from co-changed bookkeeping files and is incomplete.')
+        return 0
+
+    commits, err = load_commits()
+    if commits is None:
+        print('COULD NOT RUN: ' + err)
+        return 2
+
+    by_who = Counter()
+    trail = []
+    hover_commits = []
+    for k in commits:
+        who, how = attribute(k)
+        by_who[who or 'UNATTRIBUTED'] += 1
+        rec = {'sha': k['sha'], 'short': k['sha'][:8], 'ts': k['ts'],
+               'who': who or 'UNATTRIBUTED', 'how': how,
+               'subject': k['subject'], 'n_files': len(k['files'])}
+        if who == 'hover':
+            hover_commits.append(k)
+            rec['outside'] = [p for p in k['files'] if not in_auditor_scope(p)]
+            if rec['outside']:
+                violations.append(('git', k['sha'][:8], k['subject'], rec['outside']))
+        trail.append(rec)
+
+    total = len(commits)
+    unattr = by_who['UNATTRIBUTED']
+
+    print('')
+    print('HOVER AUDITOR SEPARATION -- AUDIT TRAIL FROM REAL HISTORY')
+    print('=' * 72)
+    print('')
+    print('COVERAGE FIRST, because every number below is bounded by it.')
+    print('  %d commits examined. %d (%.1f%%) are UNATTRIBUTED -- no bookkeeping'
+          % (total, unattr, 100.0 * unattr / total if total else 0))
+    print('  file names their session and they touch paths outside the auditor\'s')
+    print('  scope. UNATTRIBUTED DOES NOT MEAN "a build agent\'s".')
+    print('')
+    print('  A commit in which the auditor DID write platform code would land in')
+    print('  that bucket by construction. Git alone therefore cannot prove the')
+    print('  negative, and this section does not claim to.')
+    print('')
+    print('ATTRIBUTION')
+    for who, n in by_who.most_common():
+        print('  %-14s %6d  %5.1f%%' % (who, n, 100.0 * n / total if total else 0))
+    print('')
+
+    print('THE AUDITOR\'S KNOWN COMMITS: %d' % len(hover_commits))
+    if hover_commits:
+        span = (min(k['ts'] for k in hover_commits), max(k['ts'] for k in hover_commits))
+        import time
+        print('  first %s, last %s (UTC)'
+              % (time.strftime('%Y-%m-%d %H:%M', time.gmtime(span[0])),
+                 time.strftime('%Y-%m-%d %H:%M', time.gmtime(span[1]))))
+    bad_git = [v for v in violations if v[0] == 'git']
+    print('  touching anything outside the auditor\'s scope: %d' % len(bad_git))
+    for v in bad_git:
+        print('    VIOLATION %s %s' % (v[1], v[2][:60]))
+        for p in v[3][:8]:
+            print('        %s' % p)
+    print('')
+
+    # ── the second, structurally different source ────────────────────────────
+    rows, path, problem = read_hover_log()
+    log_report = {}
+    if problem:
+        could_not_run.append('self-log cross-reference: ' + problem)
+        print('SELF-LOG CROSS-REFERENCE -- COULD NOT RUN')
+        print('  %s' % problem)
+        print('')
+        print('  This is reported as COULD NOT RUN and NOT as a pass. The git')
+        print('  half above cannot prove the negative on its own, so without')
+        print('  this the question is open, not answered.')
+        print('')
+    else:
+        ok, why, checked = verify_chain(rows)
+        print('SELF-LOG CROSS-REFERENCE')
+        print('  %s' % path)
+        print('  %d entries; hash chain re-derived independently: %s'
+              % (len(rows), 'INTACT' if ok else 'BROKEN'))
+        if not ok:
+            print('  %s' % why)
+            print('')
+            print('  REFUSING to report from a record whose chain does not')
+            print('  verify. A tampered black box is worse than none, because')
+            print('  it reads as evidence.')
+            could_not_run.append('self-log chain broken at entry %d: %s' % (checked, why))
+        else:
+            claimed = set()
+            for r in rows:
+                blob = (r.get('summary') or '') + ' ' + (r.get('ref') or '')
+                for m in OWN_COMMIT_RE.finditer(blob):
+                    claimed.add(m.group(1))
+            resolved, unresolved = {}, []
+            for s in sorted(claimed):
+                code, out, _ = git('rev-parse', '--verify', s + '^{commit}')
+                if code != 0:
+                    unresolved.append(s)
+                else:
+                    resolved[s] = out.strip()
+            log_bad = []
+            for short, full in sorted(resolved.items()):
+                code, out, _ = git('show', '--name-only', '--format=', full)
+                files = [l.strip().replace('\\', '/') for l in out.split('\n') if l.strip()]
+                outside = [p for p in files if not in_auditor_scope(p)]
+                if outside:
+                    log_bad.append((short, outside))
+                    violations.append(('self-log', short, 'named by the auditor as its own', outside))
+            git_hover = {k['sha'] for k in hover_commits}
+            named_full = set(resolved.values())
+            print('  SHAs the log names as its OWN commits/pushes: %d' % len(claimed))
+            print('    resolve in this clone : %d' % len(resolved))
+            print('    of those, in scope    : %d' % (len(resolved) - len(log_bad)))
+            print('    of those, VIOLATIONS  : %d' % len(log_bad))
+            for short, outside in log_bad:
+                print('      VIOLATION %s -> %s' % (short, ', '.join(outside[:6])))
+            # ── THE UNRESOLVABLE HALF, EXPLAINED BY MEASUREMENT ─────────────
+            # The obvious reading is "a rebase before push rewrote the sha, so
+            # the local object never reached this clone." That is a hypothesis,
+            # and the log itself can test it: entries of the form "Committed a,
+            # pushed b" name both ends of exactly that rewrite. If the
+            # hypothesis holds, a is absent and b is present, every time.
+            paired, pair_ok = {}, 0
+            for r in rows:
+                m = PAIR_RE.search(r.get('summary') or '')
+                if m:
+                    local, pushed = m.group(1), m.group(2)
+                    paired[local] = pushed
+                    if local not in resolved and pushed in resolved:
+                        pair_ok += 1
+            explained = [s for s in unresolved if s in paired and paired[s] in resolved]
+            unexplained = [s for s in unresolved if s not in explained]
+            print('    DO NOT RESOLVE here   : %d' % len(unresolved))
+            if unresolved:
+                print('      %d of %d are EXPLAINED rather than assumed away: the'
+                      % (len(explained), len(unresolved)))
+                print('      log names both ends of the rewrite ("Committed a,')
+                print('      pushed b"), and the pushed counterpart resolves here')
+                print('      and is in scope. Tested over every such pair in the')
+                print('      log: %d of %d have the local sha ABSENT and the'
+                      % (pair_ok, len(paired)))
+                print('      pushed one PRESENT, which is what a rebase-before-')
+                print('      push produces and nothing else here does.')
+                if unexplained:
+                    print('      %d are NOT explained and are NOT shown to be clean'
+                          % len(unexplained))
+                    print('      by this tool: %s' % ', '.join(unexplained[:10]))
+                    could_not_run.append(
+                        '%d sha(s) the self-log claims are unresolvable in this '
+                        'clone and unpaired: %s'
+                        % (len(unexplained), ', '.join(unexplained[:6])))
+            only_git = sorted(git_hover - named_full)
+            print('    git-visible auditor commits NOT named by the log: %d'
+                  % len(only_git))
+            for s in only_git[:10]:
+                code, out, _ = git('log', '-1', '--format=%s', s)
+                print('      %s %s' % (s[:8], out.strip()[:58]))
+            log_report = {'entries': len(rows), 'chain': 'intact',
+                          'claimed': len(claimed), 'resolved': len(resolved),
+                          'unresolved': unresolved, 'violations': len(log_bad),
+                          'git_only': [s[:8] for s in only_git]}
+        print('')
+
+    print('=' * 72)
+    if violations:
+        print('RESULT: %d SEPARATION VIOLATION(S) FOUND.' % len(violations))
+        rc = 1
+    elif could_not_run:
+        print('RESULT: NO VIOLATION FOUND IN WHAT COULD BE CHECKED, and part of')
+        print('the check DID NOT RUN. That is not a clean bill:')
+        for c in could_not_run:
+            print('  - %s' % c)
+        rc = 2
+    else:
+        print('RESULT: no separation violation found by either source.')
+        print('Bounded by the coverage stated at the top: the git half cannot')
+        print('prove the negative, and the self-log half is as complete as the')
+        print('auditor\'s own record-keeping.')
+        rc = 0
+    print('')
+
+    if args.trail:
+        print('PER-COMMIT TRAIL (auditor commits and violations only; the full')
+        print('%d-commit table is what --json carries)' % total)
+        for rec in trail:
+            if rec['who'] == 'hover' or rec.get('outside'):
+                print('  %s  %-8s %-12s %s'
+                      % (rec['short'], rec['who'], rec['how'], rec['subject'][:52]))
+        print('')
+
+    if args.json:
+        print(json.dumps({'total': total, 'attribution': dict(by_who),
+                          'auditor_commits': [k['sha'][:8] for k in hover_commits],
+                          'violations': violations, 'could_not_run': could_not_run,
+                          'self_log': log_report, 'trail': trail if args.trail else []},
+                         indent=1))
+    return rc
+
+
+if __name__ == '__main__':
+    sys.exit(main())

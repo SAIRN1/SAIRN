@@ -24,4 +24,25 @@
 # Override deliberately with SAIRN_SEED_GATE=off, and say so out loud.
 
 command -v python >/dev/null 2>&1 && PY=python || PY=python3
-exec "$PY" "$(git rev-parse --show-toplevel)/tools/sairn_push_gate_hook.py" --pre-push
+ROOT=$(git rev-parse --show-toplevel)
+GITDIR=$(git rev-parse --git-dir)
+
+# ── HOVER AUDITOR SCOPE GATE, and ONLY in the auditor's own clone ───────────
+# The marker is in .git/, so it is not versioned and no build clone inherits
+# it. A build clone pays one file test and then takes the original path below,
+# byte for byte.
+#
+# THE STDIN IS READ ONCE AND REPLAYED TO BOTH, which is the whole reason this
+# is not two `exec` lines. git feeds a pre-push hook its ref lines on STDIN;
+# a stream is consumed by the first reader, so chaining naively would leave
+# the existing push gate with an empty stdin -- and sairn_push_gate_hook.py
+# treats no ref lines as nothing to check. That would have silently disabled
+# all six of its checks in exchange for adding one.
+if [ -f "$GITDIR/sairn-hover-auditor-clone" ]; then
+    REFS=$(cat)
+    printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --pre-push || exit 1
+    printf '%s\n' "$REFS" | "$PY" "$ROOT/tools/sairn_push_gate_hook.py" --pre-push
+    exit $?
+fi
+
+exec "$PY" "$ROOT/tools/sairn_push_gate_hook.py" --pre-push

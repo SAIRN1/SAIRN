@@ -200,6 +200,10 @@ PURPOSES = {
     # corrected count goes stale again on the next check.
     'sairn_push_gate_hook.py': ('CHECKER', 'the numbered push checks; the only tool that calls deny()'),
     'git_push_master_guard.py': ('CHECKER', 'a push aimed at `master`, which is stale'),
+    # The PREVENT half of the hover auditor separation control. Its DETECT half
+    # is hover_separation_audit.py, which is in report_only_checks.REGISTRY and
+    # must therefore NOT be described here as well.
+    'hover_auditor_scope_gate.py': ('CHECKER', 'a commit, push or working tree in the HOVER AUDITOR\'s clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone\'s rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage'),
     'redaction_check.py': ('CHECKER', 'credential shapes in what is about to be written, and in what a push ships'),
     'html_script_check.py': ('CHECKER', 'a script block that no longer parses, after a Write or Edit'),
     'deploy_verify_notify.py': ('CHECKER', 'a push whose deploy never reached the live site'),

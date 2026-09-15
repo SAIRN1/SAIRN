@@ -19,22 +19,22 @@ makes this the one inventory whose staleness is hardest to notice.
 
 ## The headline
 
-**159 files in `tools/`.** By what actually invokes them:
+**161 files in `tools/`.** By what actually invokes them:
 
 | Status | Count | Meaning |
 |---|---:|---|
 | **BLOCKING** | 12 | reachable from something that can refuse a push or a tool call |
-| **REPORT-ONLY** | 48 | runs automatically on every push, never blocks |
+| **REPORT-ONLY** | 49 | runs automatically on every push, never blocks |
 | **ADVISORY** | 2 | session-start or prompt hooks, informational |
 | **DECIDED** | 40 | deliberately NOT promoted, with a reason recorded in report_only_checks.py |
-| **SUITE-ONLY** | 21 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
+| **SUITE-ONLY** | 22 | run by `tests/`, so proved to WORK -- on fixtures. Never pointed at the codebase |
 | **UNWIRED** | 36 | nothing runs these at all |
 
 By what they are, independent of wiring:
 
 | Kind | Count |
 |---|---:|
-| CHECKER | 103 |
+| CHECKER | 105 |
 | GENERATOR | 16 |
 | LIBRARY | 22 |
 | LIVE | 18 |
@@ -44,13 +44,13 @@ recorded in `report_only_checks.py`.** They are listed below with those
 reasons and are NOT counted as gaps. The first version of this document did
 not read that list and reported six of them as unaddressed.
 
-**The number to act on: 16 checker(s) that answer a question about this
-codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 13
+**The number to act on: 17 checker(s) that answer a question about this
+codebase and are pointed at it by nobody** -- 3 wired nowhere at all, and 14
 that the suite runs against FIXTURES only. The second group is the worse one:
 a green probe on an unpointed checker is the most convincing possible form of
 "we are covered", and it is coverage of the tool rather than of the code.
 
-The 16, by name, so this is actionable rather than a statistic:
+The 17, by name, so this is actionable rather than a statistic:
 
 | Tool | Status | What it catches |
 |---|---|---|
@@ -62,6 +62,7 @@ The 16, by name, so this is actionable rather than a statistic:
 | `flaky_checker_quarantine.py` | SUITE-ONLY | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard |
 | `fmea_draft.py` | SUITE-ONLY | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted |
 | `guard_ablation.py` | UNWIRED | a role gate in api/sd-data.js whose REMOVAL no suite notices -- reported as a question (redundant or untested, it cannot tell) and never folded into a pass |
+| `hover_auditor_scope_gate.py` | SUITE-ONLY | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage |
 | `invariant_registry.js` | SUITE-ONLY | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine |
 | `invariant_runner.js` | SUITE-ONLY | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality |
 | `load_schema_snapshot.py` | SUITE-ONLY | a candidate db/schema_snapshot.json that is empty, malformed, not newer, or has LOST tables -- the last being a truncated transfer, which is indistinguishable downstream from tables genuinely dropped |
@@ -124,7 +125,7 @@ the only source that moves when one is added.
 
 ---
 
-## REPORT-ONLY (48)
+## REPORT-ONLY (49)
 
 Run by `tools/report_only_checks.py` as a PostToolUse hook on every push.
 `catches` is read out of that file's own REGISTRY, so it cannot disagree with
@@ -152,6 +153,7 @@ quiet in practice.
 | `export_coverage_check.py` | 2026-09-14, report-only. It FAILED ON ITS FIRST DAY on four real gaps and PASSES NOW -- all four were closed the same day. NOT wired into the push gate: a missing export is a product decision and has no business refusing somebody else's push | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists |
 | `fail_open_check.py` | 2026-09-10 | a read that turns "I could not ask" into "there is none" -- an absent record and an unreachable server rendering the same |
 | `gate_column_check.py` | 2026-09-11, the day it was built | a server file reading a property off a queried row that is NOT a column of that table -- a read that can only ever produce undefined, and a gate built on it that can never fire |
+| `hover_separation_audit.py` | 2026-09-15, report-only from the first day and it should never be anything else: it reports on a role that is not this clone, and a tool that could block a build agent's push over the hover auditor's behaviour would be punishing the wrong session. Its job is to be READ | a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify |
 | `index_duplicate_check.py` | 2026-09-11, the day it was built | two rows of docs/SAIRN-OPEN-WORK-INDEX.md describing the same subject -- a superseded row that was never removed, so the file every session reads to choose work gives two answers and the reader cannot tell which is current |
 | `install_git_hooks.py` | 2026-09-13, the day --check was widened to answer the real question | a clone whose pre-push hook is not installed, is CRLF and therefore silently skipped by git, or whose gate script or shell wrapper does not execute |
 | `invisible_in_pattern_check.py` | 2026-09-14, the day it was built | an invisible character INSIDE a regex literal or a string handed to a regex constructor -- a zero-width space, an NBSP, or a bidi override, where it silently changes what the pattern matches and no reader can see it |
@@ -253,7 +255,7 @@ is how a reader stops believing the number.
 
 ---
 
-## SUITE-ONLY (21)
+## SUITE-ONLY (22)
 
 `tests/` names these, so they are executed on every push -- against
 fixtures. Nothing points them at the real codebase.
@@ -267,6 +269,7 @@ fixtures. Nothing points them at the real codebase.
 | `defect_dispersion.py` | CHECKER | whether defect causation is concentrated in a few commits, files, apps or sessions or spread evenly -- every figure reported BOTH over the affected units and over the full population including the zeros, because the first alone always looks uniform and is the flattering one | `run_defect_dispersion_probe.py` |
 | `flaky_checker_quarantine.py` | CHECKER | a checker whose VERDICT flips on UNCHANGED code past a measured rate -- quarantine is never entered on a single red, carries a named owner and a deadline, and reports READY TO REINTRODUCE plus OVERDUE so the list cannot become a graveyard | `run_checker_confidence_probe.py`, `run_flaky_quarantine_probe.py` |
 | `fmea_draft.py` | CHECKER | a FIRST-DRAFT risk analysis for one file, seeded only from confirmed prior defects and the standing lessons whose detector fires on it -- every risk cites the record or rule it matched, or it is not emitted | `run_fmea_probe.py` |
+| `hover_auditor_scope_gate.py` | CHECKER | a commit, push or working tree in the HOVER AUDITOR's clone that touches platform code -- the role reviews the four build agents and is reviewed by nobody, and its own skill forbids it writing platform code in terms. Armed per-clone by a marker under .git/, so no build clone can inherit it by pulling and each pays one shell file-test per commit. Fails OPEN where the marker is absent (a scope condition: not that clone's rule) and CLOSED everywhere else, including when the core-rule sentence is no longer in the skill file -- a gate enforcing a repealed rule reads as coverage | `run_hover_separation_probe.py` |
 | `invariant_registry.js` | CHECKER | not a checker itself: the LOCKED hand-derived classification of which invariant applies to which engine, the evidence it was read from, and the synthetic fixtures invariant_runner.js must satisfy before touching a real engine | `run_financial_invariant_probe.py` |
 | `invariant_runner.js` | CHECKER | the three financial invariants -- double-entry, rollup, conservation -- property-tested against the real pure engines, reporting ACCURACY and STABILITY as two numbers and margin only where the invariant is an inequality | `run_financial_invariant_probe.py` |
 | `jscomments.py` | LIBRARY | the one comment stripper every scanner should use | `run_bypassed_constant_probe.py`, `run_citator_freshness_probe.py` |
@@ -357,11 +360,11 @@ thinner document** -- a broken reader and an empty repo produce the same
 number, and only one of them is a document.
 
 ```
-  tools on disk                      159   git ls-files tools/
+  tools on disk                      161   git ls-files tools/
   hook entries                         8   .claude\settings.json
   push-gate invocations               10   tools\sairn_push_gate_hook.py
-  report-only registry                46   report_only_checks.REGISTRY
-  tools invoked by tests/            103   tests/**/*.py, *.js
+  report-only registry                47   report_only_checks.REGISTRY
+  tools invoked by tests/            105   tests/**/*.py, *.js
   recorded NOT-promoted decisions     40   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   tools\sairn_push_gate_hook.py
 ```

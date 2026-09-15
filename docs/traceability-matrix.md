@@ -91,6 +91,7 @@ Source: `REGISTRY` in `tools/report_only_checks.py`. Each entry carries the evid
 | a commit message whose paragraph has a continuation line beginning with a stray single space -- what bash leaves behind when a backticked expression inside a double-quoted -m evaluates to nothing and is deleted | `eaten_substitution_check.py` | FALSE POSITIVES MEASURED ON REAL DATA: 0 in 2,998. Over the last 3,000 commits it flags exactly 2, and both are the instances item 18 already records. RECALL IS NOT MEASURED and is not claimed -- the criterion was read off those same two commits, so finding them is circular. The blind spot is structural and stated on every clean run: a substitution that produced OUTPUT leaves no gap at all, so only the empty-output case is detectable afterwards and `git commit -F` remains the control. 32-arm probe; removing the list-item exclusion takes 7 arms red and silencing the detector takes 9, each sabotage asserting its own anchor matched first. 0.2s |
 | a `// TEMPORARY-STATE: scope=... released-by=...` comment whose scope is not one of command/call/request/session/persistent. The UNDECLARED count is printed on every run and gates NOTHING | `temporary_state_check.py` | real run 2026-09-14: 723 files, 0 declarations, 175 undeclared candidates, PASS. TWO REAL DEFECTS IN THE SUBJECT were found by building the control first -- a case-insensitive /config/ matched storeError('CONFIG', ...) in api/_lib/sd-store.js, and the Python `= True` blind spot was real and undisclosed. And a LIVE finding, not historical: stonedesk.html 2286/2299/6350 set sdSyncSuppressed=true, call st(), clear it, with no `finally` -- a throw between them silences every later server write for the session. 24-arm probe; neutering FLAG_ON collapses the positive arms, and the sabotage asserts its own anchor is present first. 0.4s |
 | a Class A (append-only by design) resource sitting in an app whose CSV export registry ALREADY EXISTS and does not carry it. Resources in apps with NO export machinery at all are counted separately and are NOT gated -- that is a feature nobody built, not a gap in one that exists | `export_coverage_check.py` | real run 2026-09-14: 11 Class A resources parsed from docs/2026-09-13-irreversible-write-witnessing-scoping.md rather than hardcoded. FIRST run: 3 exportable, 4 gaps in an existing registry, 4 in apps with no export path at all. AFTER the fix: 7 exportable, 0 gaps, the same 4 with no machinery -- and the probe now drives the FAILING direction against a planted registry, so closing the real gaps did not disarm it. The ON-SCREEN half of item 39 is NOT attempted here and the tool says so in its own header: two detectors for it were wrong in opposite directions, one missing alf_staff_credentials entirely and one binding most of SAIRNdental. 21-arm probe; blinding the registry reader collapses the EXPORTABLE answers, and section E pins all eleven verdicts by name so a registry change flips an arm -- which is exactly what happened when the four were fixed, and the table was edited in the same commit as the apps. 26 arms. 0.2s |
+| a commit by the hover auditor -- the fifth, review-only role -- that touches platform code, which its own skill forbids in terms; and the inverse, a build agent editing the auditor's own tooling. Cross-checks git history against the auditor's hash-chained self-log, and RE-DERIVES that chain independently rather than calling the log's own --verify | `hover_separation_audit.py` |  |
 
 **Deliberately NOT enforced, with the reason recorded** -- a decision, not an oversight:
 
@@ -139,6 +140,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 | Requirement | Status | Proved by |
 |---|---|---|
 | **`comment_sensitivity_check.py` QUARANTINE diagnosed &mdash; the flake was never its own, and the ledger&rsquo;s &ldquo;other-tree runs are discarded&rdquo; was a SENTENCE with no code behind it** | **DIAGNOSED AND THE UNDERLYING TOOL FIXED 2026-09-15 (CC)** &mdash; `tools/flaky_checker_quarantine.py` verdicts are tree-aware now, 7 new probe arms, 0 failed. &#9888; **THE QUARANTINE IS STILL OPEN  | `tests/run_literal_drift_determinism_probe.py` |
+| **The hover auditor's separation is MECHANICAL now &mdash; and both alleged breaches did not happen, while a third, differently-shaped one did** | **BUILT 2026-09-15 (Hank)** &mdash; `tools/hover_auditor_scope_gate.py` (prevent) + `tools/hover_separation_audit.py` (detect, report-only registered), `.githooks/pre-commit`, 72-arm probe `tests/run_ | `tests/run_hover_separation_probe.py` |
 | ~~**`md_table_check.py` gates on the wrong number**~~ &mdash; **CLOSED BY A DIFFERENT CHECK, because the real gap was never a markdown gap** | **CLOSED 2026-09-15 (CC)** &mdash; push-gate **check 14**, `tools/conflict_marker_check.py`, BLOCKING; `tests/run_conflict_marker_probe.py` all arms. **Driven end to end in a throwaway worktree: the r | `tests/run_conflict_marker_probe.py` |
 | **The claim matcher gave THREE false CLEARs in one run &mdash; and the obvious repair for the third was measured and REJECTED** | **FIXED 2026-09-15 (Hank)** &mdash; `04d1c601`. `tools/sairn_claim.py` phrase rule + 8 arms in `tests/claims/run_matcher_probe.py`. **One arm asserts the residual is STILL OPEN** | `tests/claims/run_matcher_probe.py` |
 | **The AI quota was shared by every customer of an app, and the question had been answered by a column name** | **BUILT 2026-09-15 (Hank)** &mdash; `69668db5`. `sql/sairn_ai_tenant_subbudget_2026-09-15.sql` (&#9888; NOT RUN), `api/_lib/ai-rate-limit-tenant.test.js` 10 arms | `api/_lib/ai-rate-limit-tenant.test.js` |
@@ -441,7 +443,7 @@ Source: rows of `docs/SAIRN-OPEN-WORK-INDEX.md` that name a test file. The row s
 
 ## 5. THE GAPS -- read this section first
 
-**230 of 441 test files are traced to a stated requirement. 211 are not.**
+**231 of 442 test files are traced to a stated requirement. 211 are not.**
 
 An untraced test is not a bad test. It means no source in this repo states what it is for in a form this can read, so an auditor cannot tell what would be lost if it were deleted. The fix is one line in the open-work index or a `GUARD_TESTS` entry -- not a new document.
 
@@ -676,10 +678,10 @@ The headline on this page is a RATIO, which is the reason this section exists. A
 
 ```
   app files                           22   git ls-files '*.html'
-  test files on disk                 441   tests/**, api/*.test.js
-  open-work rows citing a test       220   docs\SAIRN-OPEN-WORK-INDEX.md
+  test files on disk                 442   tests/**, api/*.test.js
+  open-work rows citing a test       221   docs\SAIRN-OPEN-WORK-INDEX.md
   GUARD_TESTS entries                  5   sairn_push_gate_hook.GUARD_TESTS
-  report-only registry                46   report_only_checks.REGISTRY
+  report-only registry                47   report_only_checks.REGISTRY
   recorded NOT-promoted decisions     35   report_only_checks.NOT_PROMOTED
   numbered gate checks                14   sairn_push_gate_hook.py
 ```

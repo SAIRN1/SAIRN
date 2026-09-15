@@ -1,0 +1,27 @@
+#!/bin/sh
+# .githooks/pre-commit
+#
+# ONE JOB: keep the hover auditor's core rule -- "never write, edit, or push
+# platform code" -- from depending on the auditor remembering it. The auditor
+# is the only role here with no second reader, which is exactly the condition
+# its own skill file cites Barings and Arthur Andersen for.
+#
+# IN EVERY OTHER CLONE THIS COSTS ONE FILE TEST AND EXITS. The marker lives in
+# .git/, which is not versioned, so no build clone can inherit it by pulling
+# and none of them pay for a Python start-up on every commit. That shell test
+# is deliberately the first thing here rather than a check inside the Python:
+# .githooks/ is shared by all four build clones and a pre-commit hook that
+# costs real time on every commit is one somebody eventually turns off.
+#
+# Arm the auditor's clone with:
+#     python tools/hover_auditor_scope_gate.py --install
+#
+# INSTALL (per clone, once, same as pre-push): python tools/install_git_hooks.py
+
+ROOT=$(git rev-parse --show-toplevel) || exit 0
+GITDIR=$(git rev-parse --git-dir) || exit 0
+
+[ -f "$GITDIR/sairn-hover-auditor-clone" ] || exit 0
+
+command -v python >/dev/null 2>&1 && PY=python || PY=python3
+exec "$PY" "$ROOT/tools/hover_auditor_scope_gate.py" --pre-commit
