@@ -1394,6 +1394,16 @@
       "claimed_at_epoch": 1789490309.650443,
       "status": "released",
       "released_at": "2026-09-15T22:25:53Z"
+    },
+    {
+      "id": "cc-1789512274",
+      "session": "cc",
+      "subject": "cc",
+      "task": "master plan fault probe counter item 20 defect budget item 61 secrets inventory",
+      "claimed_at": "2026-09-15T22:44:34Z",
+      "claimed_at_epoch": 1789512274.615404,
+      "status": "active",
+      "released_at": null
     }
   ]
 }
